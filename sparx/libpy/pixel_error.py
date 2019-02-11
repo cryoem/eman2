@@ -1243,6 +1243,72 @@ def helical_params_err(params1, params2, fil_list):
 
 	return phierr_byfil,prot,pref
 
+'''
+def read_meridien_parameters():
+	# this is simple example how to read all orientation parameters ("smear") produced by Meririen
+	# Note this is just an example.  It works, but it is not really useful for anythin in particular.
+	import json
+	main = 21
+
+
+	fin = open( os.path.join("main%03d"%main, "Tracker_%03d.json"%main),'r')
+	Tracker = convert_json_fromunicode(json.load(fin))
+	fin.close()
+
+	refang = read_text_row(os.path.join("main%03d"%main,"refang.txt"))
+	rshifts = read_text_row(os.path.join(os.path.join("main%03d"%main, "rshifts.txt")))
+	params = []
+	for iproc in range(2):
+		chunk = read_text_file(os.path.join("main%03d"%main,"chunk_%1d_%03d.txt"%(iproc,main)))
+		params_previous = read_text_row(os.path.join(os.path.join("main%03d"%(main-1), "params-chunk_%1d_%03d.txt"%(iproc,main-1))))
+
+		cnt = True
+		imi = -1
+		myid = -1
+		while(cnt):
+			try:
+				#if( myid < 100 ):
+				myid += 1
+				f = os.path.join("main%03d"%main,"oldparamstructure", "oldparamstructure_%1d_%03d_%03d.json"%(iproc,myid,main))
+				fin = open(f,'r')
+				print(f)
+				paramstructure = convert_json_fromunicode(json.load(fin))
+				fin.close()
+				print(iproc,myid,len(paramstructure))
+				for im in range(len(paramstructure)):
+					imi += 1
+					numbor = len(paramstructure[im][2])
+					params.append([chunk[imi],[]])
+					for norient in range(numbor):
+						ipsiandiang = paramstructure[im][2][norient][0]/1000
+						ishift      = paramstructure[im][2][norient][0]%1000
+						prob        = paramstructure[im][2][norient][1]
+						ipsi = ipsiandiang%100000
+						iang = ipsiandiang/100000
+						phi = refang[iang][0]
+						theta = refang[iang][1]
+						psi = refang[iang][2]+ipsi*Tracker["delta"]
+						tx = int(round(params_previous[im][3])) + rshifts[ishift][0]
+						ty = int(round(params_previous[im][4])) + rshifts[ishift][1]
+						params[-1][1].append([phi,theta,psi,tx,ty,prob])
+						#print(params[-1])
+
+			except:
+				cnt = False
+
+
+	del params_previous, refang, rshift, chunk, paramstructure
+	params_previous = read_text_row(os.path.join(os.path.join("main%03d"%(main-1), "params_%03d.txt"%(main-1))))
+
+	params = sorted(params)
+	opar = []
+	for i,q in enumerate(params):
+		for k in range(len(params[i][1])):
+			opar.append([params[i][0], params[i][1][k][0], params[i][1][k][1], params[i][1][k][2], params[i][1][k][3], params[i][1][k][4], params[i][1][k][5]])
+
+	write_text_row(opar,"junki.txt")
+'''
+
 
 # These are some obsolete codes, we retain them just in case.
 '''

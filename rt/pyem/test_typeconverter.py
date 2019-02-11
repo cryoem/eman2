@@ -329,7 +329,8 @@ class TestTypeConverter(unittest.TestCase):
         diff = numpy.max(numpy.max(n2 - n1))
         self.assertAlmostEqual(diff, 0, 3)
 
-    test_numpy2em2.broken = True
+    if platform.system() == "Windows":
+        test_numpy2em2.broken = True
         
     def test_em2numpy2(self):
         """test em2numpy again .............................."""

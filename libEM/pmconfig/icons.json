@@ -13,6 +13,10 @@
     "eulers":"/images/eulerxplor.png",
     "resolution":"/images/plot.png",
     "tomo_hunter":"/images/tomo_hunter.png",
-    "eulers":"/images/eulerxplor.png"
+    "tomo_recon":"/images/eman_tomo_recon.png",
+    "tomo_seg":"/images/eman_tomo_seg.png",
+    "tomo_raw":"/images/eman_tomo_raw.png",
+    "tomo_spt":"/images/eman_tomo_spt.png",
+    "tomo_plt":"/images/eman_tomo_plot.png"
   }
 ]

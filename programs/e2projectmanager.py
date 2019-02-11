@@ -36,7 +36,6 @@ from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import Qt
 from eman2_gui.pmicons import *
 from PyQt4.QtGui import QTreeWidgetItem
 import os, json, re, glob, signal
@@ -599,7 +598,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		for child in toplevel["CHILDREN"]:
 			qtreewidget = PMQTreeWidgetItem([child["NAME"]])
-			qtreewidget.setIcon(0, self.icons[child["ICON"]])
+			if "ICON" in  child: qtreewidget.setIcon(0, self.icons[child["ICON"]])
 			# optional program
 			if "PROGRAM" in child: qtreewidget.setProgram(child["PROGRAM"])
 			# optional table to diaply rather than a program
@@ -640,7 +639,7 @@ class EMProjectManager(QtGui.QMainWindow):
 
 		for toplevel in tree:
 			qtreewidget = PMQTreeWidgetItem([toplevel["NAME"]])
-			qtreewidget.setIcon(0, self.icons[toplevel["ICON"]])
+			if "ICON" in toplevel: qtreewidget.setIcon(0, self.icons[toplevel["ICON"]])
 			# optional program
 			if "PROGRAM" in toplevel: qtreewidget.setProgram(toplevel["PROGRAM"])
 			# optional table to diaply rather than a program

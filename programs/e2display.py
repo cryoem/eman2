@@ -44,7 +44,6 @@ import os
 import sys
 
 from OpenGL import GL, GLU, GLUT
-from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 
 def main():
@@ -80,7 +79,11 @@ def main():
 	#QtGui.QApplication(sys.argv)
 	win=[]
 	if options.fullrange:
-		fullrangeparms = set_full_range()
+		print("""The --fullrange option has been removed, and replaced with an option in user preferences.
+To set your preferences for full-range 2-D display, please run:
+e2procjson.py --setoption display2d.autocontrast:true
+""")
+		sys.exit(0)
 	
 	if len(args) < 1:
 		global dialog
@@ -128,60 +131,10 @@ def main():
 				print("%s doesn't exist" %i)
 				sys.exit(1)
 			display_file(i,app,options.singleimage,usescenegraph=options.newwidget)
-	
-	if options.fullrange:
-		revert_full_range(fullrangeparms)
 
 	app.exec_()
 
 #	E2end(logid)
-
-def set_full_range():
-	'''
-	Turns all auto contrasting flags to False etc.
-	This is just a convenience function for users who do no want to use e2preferences.
-	This makes sense if the user would like auto contrasting to be on or off at the same time (i.e. at one moment they
-	want it off, and at the next they want it on, on a regular basis).
-	Note if auto contrast is on that it is not difficult to manipulate the contrast settings manually anyway.
-	Regular users are advised to just use e2preferences.
-	@return the current settings - so the calling function can call revert_full_range
-	'''
-	current_settings = {}
-	#global HOMEDB
-	#HOMEDB=EMAN2db.EMAN2DB.open_db()
-	#HOMEDB.open_dict("display_preferences")
-	#db = HOMEDB.display_preferences
-	#auto_contrast = db.get("display_2d_auto_contrast",dfl=True)
-	#db["display_2d_auto_contrast"] = False
-	#current_settings["display_2d_auto_contrast"] = auto_contrast
-	current_settings["display_2d_auto_contrast"] = True
-
-	#stack_auto_contrast = db.get("display_stack_auto_contrast",dfl=True)
-	#stack_np_for_auto = db.get("display_stack_np_for_auto",dfl=5)
-
-	#db["display_stack_auto_contrast"] = False
-	#current_settings["display_stack_auto_contrast"] = stack_auto_contrast
-	current_settings["display_stack_auto_contrast"] = True
-
-	#db["display_stack_np_for_auto"] = -1
-	#current_settings["display_stack_np_for_auto"] = stack_np_for_auto
-	current_settings["display_stack_np_for_auto"] = -1
-
-	return current_settings
-
-def revert_full_range(d):
-	'''
-	Reverts the call to set_full_range.
-	@param d - that which was returned by set_full_range
-	'''
-	#global HOMEDB
-	#HOMEDB=EMAN2db.EMAN2DB.open_db()
-	#HOMEDB.open_dict("display_preferences")
-	#db = HOMEDB.display_preferences
-
-	#for key,value in d.items():
-		#db[key] = d[key]
-	pass
 
 def on_browser_done():
 	pass

@@ -39,7 +39,6 @@ from __future__ import division
 from past.utils import old_div
 from builtins import range
 from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -54,8 +53,6 @@ from time import *
 
 from .emglobjects import EM3DModel, EMViewportDepthTools, Camera2, Camera, EMOpenGLFlagsAndTools
 from .emimageutil import ImgHistogram, EMTransformPanel
-
-MAG_INCREMENT_FACTOR = 1.1
 
 
 class EMVolumeModel(EM3DModel):

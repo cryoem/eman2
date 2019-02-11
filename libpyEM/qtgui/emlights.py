@@ -54,9 +54,6 @@ from .valslider import ValSlider, CheckBox
 import weakref # for EMLightsInspector
 
 
-
-MAG_INCREMENT_FACTOR = 1.1
-
 class EMLightsDrawer(object):
 	'''
 	Base clase, works with EMLightsInspectorBase

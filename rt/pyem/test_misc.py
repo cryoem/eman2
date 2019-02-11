@@ -35,10 +35,10 @@ from __future__ import division
 
 from EMAN2 import *
 import unittest
-from pyemtbx.exceptions import *
 import testlib
 import sys
 from optparse import OptionParser
+from testlib import exception_type
 
 IS_TEST_EXCEPTION = False
 

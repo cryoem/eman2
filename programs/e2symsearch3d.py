@@ -120,7 +120,10 @@ def main():
 	
 	options = checkinput( options )
 	
-	options = detectThreads( options )
+	if int(options.parallel.split(':')[-1]) == 1:
+		options = detectThreads( options )
+	else:
+		print('\nNOT detecting threads automatically since a specific number was requested: {}'.format(options.parallel.split(':')[-1]))
 	
 	#If no failures up until now, initialize logger
 	log = 0

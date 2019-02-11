@@ -116,8 +116,8 @@ def main():
 	parser.add_header(name="orblock6", help='Just a visual separation', title="Optimization: ", row=21, col=0, rowspan=2, colspan=3, mode="align,tomo")
 
 	parser.add_argument("--optbox", type=int,help="Box size to use during alignment optimization. Default is 512.",default=512, guitype='intbox', row=23, col=0, rowspan=1, colspan=1, mode="align,tomo")
-	parser.add_argument("--optstep", type=int,help="Step size to use during alignment optimization. Default is 400.",default=400,  guitype='intbox', row=23, col=1, rowspan=1, colspan=1, mode="align,tomo")
-	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 0.5. If 0.0, unpenalized least squares will be performed (i.e., no trajectory smoothing).",default=0.5, guitype='floatbox', row=23, col=2, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--optstep", type=int,help="Step size to use during alignment optimization. Default is 448.",default=448,  guitype='intbox', row=23, col=1, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 0.1. If 0.0, unpenalized least squares will be performed (i.e., no trajectory smoothing).",default=0.1, guitype='floatbox', row=23, col=2, rowspan=1, colspan=1, mode="align,tomo")
 	parser.add_argument("--optccf",default="robust",type=str, choices=["robust","centerofmass","ccfmax"],help="Use this approach to determine relative frame translations.\nNote: 'robust' utilizes a bimodal Gaussian to robustly determine CCF peaks between pairs of frames in the presence of a fixed background.", guitype='combobox', row=24, col=0, rowspan=1, colspan=2, mode='align["robust"],tomo["robust"]',choicelist='["robust","centerofmass","ccfmax"]')
 
 	parser.add_header(name="orblock5", help='Just a visual separation', title="Optional: ", row=25, col=0, rowspan=2, colspan=3, mode="align,tomo")
@@ -147,7 +147,7 @@ def main():
 		parser.error("Specify input DDD stack to be processed.")
 
 	if options.frames == False and options.noali == False and options.align_frames == False:
-		print("No outputs specified. See --frames, --noali, or --align_frames. Exiting.") 
+		print("No outputs specified. See --frames, --noali, or --align_frames. Exiting.")
 		sys.exit(1)
 
 	if options.align_frames == True:
@@ -163,8 +163,8 @@ def main():
 
 	if options.bad_columns == "":
 		options.bad_columns = []
-	else: 
-		try: 
+	else:
+		try:
 			options.bad_columns = [int(c) for c in options.bad_columns.split(",")]
 		except:
 			print("Error: --bad_columns contains nonnumeric input.")
@@ -173,7 +173,7 @@ def main():
 	if options.bad_rows == "":
 		options.bad_rows = []
 	else:
-		try: 
+		try:
 			options.bad_rows = [int(r) for r in options.bad_rows.split(",")]
 		except:
 			print("Error: --bad_rows contains nonnumeric input.")
@@ -357,11 +357,11 @@ def main():
 
 		if options.invert_gain: gain.process_inplace("math.reciprocal",{"zero_to":0.0})
 
-		if options.rotate_gain!="0" and gain != None:
-			if options.rotate_gain == "90":
+		if options.rotate_gain!=0 and gain != None:
+			if options.rotate_gain == 90:
 				gain.process_inplace("xform.transpose")
 				gain.process_inplace("xform.reverse",{"axis":"y"})
-			elif options.rotate_gain == "180":
+			elif options.rotate_gain == 180:
 				gain.process_inplace("xform.transpose")
 				gain.process_inplace("xform.reverse",{"axis":"y"})
 				gain.process_inplace("xform.transpose")
@@ -487,13 +487,13 @@ def main():
 
 def process_movie(options,fsp,dark,gain,first,flast,step,idx):
 	cwd = os.getcwd()
-	
+
 	# format outname
 	if options.frames: outname="{}/{}_{}".format(cwd,base_name(fsp,nodir=True),options.suffix) #Output contents vary with options
 	else: outname="{}/{}".format(cwd,base_name(fsp,nodir=True))
-	
+
 	if options.groupby > 1: outname = "{}_group{}".format(outname,options.groupby)
-	
+
 	if options.ext == "mrc": outname = "{}.mrcs".format(outname)
 	else: outname = "{}.{}".format(outname,options.ext)
 
@@ -524,7 +524,7 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx):
 
 		#im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
 #			im.mult(-1.0)
-		#if options.normalize: im.process_inplace("normalize.edgemean") 
+		#if options.normalize: im.process_inplace("normalize.edgemean")
 
 		if options.bad_rows != [] or options.bad_columns != []:
 			im = im.process("math.xybadlines",{"rows":options.bad_rows,"cols":options.bad_columns})
@@ -541,7 +541,7 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx):
 		else:
 			alioutname = os.path.join(".","micrographs","{}__noali.hdf".format(base_name(fsp,nodir=True)))
 			out.write_image(alioutname,0) #write out the unaligned average movie
- 
+
 	# group frames by moving window
 	if options.groupby > 1:
 		print("Grouping frames")
@@ -562,7 +562,7 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx):
 	# 		avgr = Averagers.get("mean")
 	# 		avgr.add_image_list(outim[i:i+options.groupby])
 	# 		grouped.append(avg)
-			
+
 	# 		if options.frames: avg.write_image(outname,ii-first)
 	# 	outim = grouped
 
@@ -814,7 +814,7 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx):
 		#	plt.show()
 
 	if options.align_frames or options.realign:
-		try: 
+		try:
 		# Load previous/current alignment params (or input translations) (BOX FORMAT, tab separated values):
 			if options.tomo:
 				db=js_open_dict(info_name(options.tomo_name,nodir=True))
@@ -827,17 +827,21 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx):
 
 			# shift frames
 			print("{:1.1f} s\nShift images".format(time()-t0))
-			for i,im in enumerate(outim):
+			alioutname = os.path.join(".","micrographs","{}__movieali.hdf".format(base_name(fsp,nodir=True)))
+			for im in range(len(outim)):
 				if options.round == "int":
-					dx = int(round(locs[i*2],0))
-					dy = int(round(locs[i*2+1],0))
-					im.translate(dx,dy,0)
+					dx = int(round(locs[im*2],0))
+					dy = int(round(locs[im*2+1],0))
+					outim[im].translate(dx,dy,0)
 				else: # float by default
-					dx = float(locs[i*2])
-					dy = float(locs[i*2+1])
-					im.translate(dx,dy,0)
+					dx = float(locs[im*2])
+					dy = float(locs[im*2+1])
+					from fundamentals import fshift
+					outim[im] = fshift(outim[im],dx,dy)
+					outim[im].write_image(alioutname,im) #write out the unaligned average movie
+					#im.translate(dx,dy,0)
 				if options.debug or options.verbose > 5:
-					print("{}\t{}\t{}".format(i,dx,dy))
+					print("{}\t{}\t{}".format(im,dx,dy))
 
 			#if options.normaxes:
 			#	for f in outim:
@@ -970,26 +974,24 @@ def split_fft(options,img,i,box,step,out):
 	#img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.4})
 	#proc.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.3})
 	#patchid = 0
-	
+
 	# img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.45})
-	
+
 	for dx in range(old_div(box,2),nx-box,step):
 		for dy in range(old_div(box,2),ny-box,step):
 			clp = img.get_clip(Region(dx,dy,box,box))
 
 			#clp.process_inplace("math.fft.resample",{"n":4})
-			clp.process_inplace("math.meanshrink",{"n":4.})
-			clp.process_inplace("filter.highpass.gauss",{"cutoff_pixels":3})
+			#clp.process_inplace("math.meanshrink",{"n":2.})
+			#clp.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
 			#if options.normalize: clp.process_inplace("normalize.edgemean")
 			#if box >= 512:
 			#	if not options.tomo:
 			#		if img["apix_x"] == 1.0: # likely an image with incorrect header or simulated data
 			#			clp.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
-			#		else: 
-			
-			
+			#		else:
 			#clp.process_inplace("mask.soft",{"outer_radius":(nx-box/2)/2,"width":box/8})
-			clp.process_inplace("filter.xyaxes0",{"neighbor":1})
+			#clp.process_inplace("filter.xyaxes0",{"neighbor":1})
 			#clp.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
 			#clp.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.45})
 			clp.process_inplace("normalize")
@@ -998,7 +1000,8 @@ def split_fft(options,img,i,box,step,out):
 			#	clp["frame_id"] = i
 			#	clp.write_image("patch_{}.hdf".format(str(patchid).zfill(4)),i)
 			#patchid += 1
-			lst.append(clp.do_fft())
+			clp.do_fft_inplace()
+			lst.append(clp)
 	out.put((i,lst))
 
 def correlation_peak_model(x_y, xo, yo, sigma, amp):
@@ -1017,14 +1020,14 @@ def fixedbg_peak_model(x_y, sigma, amp):
 	g = amp*np.exp(old_div(-(((x-xo)**2)+((y-yo)**2)),(2.*sigma**2)))
 	return g.ravel()
 
-def twod_bimodal(x_y,x1,y1,sig1,amp1,sig2,amp2):
+def twod_bimodal(x_y,x1,y1,sig1,amp1,sig2,amp2,offset):
 	x, y = x_y
 	if sig1 <= 0 or sig2 <= 0: return np.ones_like(x)*np.inf #np.zeros_like(x)
 	#correlation_peak = correlation_peak_model((x,y),x1,y1,sig1,amp1)
 	cp = amp1*np.exp(old_div(-(((x-x1)**2+(y-y1)**2)),(2.*sig1**2)))
 	#fixedbg_peak = fixedbg_peak_model((x,y),sig2,amp2)
 	fp = amp2*np.exp(old_div(-(((x-old_div(len(x),2.))**2+(y-old_div(len(y),2.))**2)),(2.*sig2**2)))
-	return cp.ravel() + fp.ravel() # + noise
+	return offset + cp.ravel() + fp.ravel() # + noise
 
 # def edgemean(a,xc,yc):
 # 	# mean of values around perimeter of image
@@ -1068,7 +1071,7 @@ def find_com(ccf): # faster alternative to gaussian fitting...less robust in the
 
 def bimodal_peak_model(options,ccf):
 	nxx = ccf["nx"]
-	bs = int(old_div(nxx,4))
+	bs = nxx/4
 
 	xx = np.linspace(0,bs,bs)
 	yy = np.linspace(0,bs,bs)
@@ -1079,12 +1082,13 @@ def bimodal_peak_model(options,ccf):
 	ccfreg = ccf.get_clip(r)
 	ncc = ccfreg.numpy().copy()
 
-	x1 = int(old_div(bs,2.))
-	y1 = int(old_div(bs,2.))
-	a1 = ncc.mean()#.0
+	x1 = float(bs)/2.
+	y1 = float(bs)/2.
+	a1 = ncc.mean()
 	s1 = 10.0
 	a2 = ncc.max()
 	s2 = 0.6
+        offset=ncc.mean()
 
 	if options.optccf == "centerofmass":
 		#initial_guess = [x1,y1,s1,a1,s2,a2]
@@ -1101,7 +1105,7 @@ def bimodal_peak_model(options,ccf):
 		# 		from_numpy(pncc).write_image("tmp.hdf",ii)`
 		# 	except:
 		# 		from_numpy(pncc).write_image("tmp.hdf",0)
-		return [x1,y1,s1,a1,s2,a2],ccf.sget_value_at_interp(x1,y1)
+		return [x1,y1,s1,a1,s2,a2,offset],ccf.sget_value_at_interp(x1,y1)
 		# try: # run optimization
 		# 	bds = [(-np.inf, -np.inf,  0.01, 0.01),(np.inf, np.inf, 100.0, 100000.0)]
 		# 	#bds = [(-bs/2, -bs/2,  0.0, 0.0),(bs/2, bs/2, 100.0, 100000.0)]
@@ -1112,19 +1116,24 @@ def bimodal_peak_model(options,ccf):
 		yc,xc = np.where(ncc==ncc.max())
 		popt = [float(xc[0]+old_div(nxx,2)),float(yc[0]+old_div(nxx,2)),ncc.max(),1.,0.,0.]
 		return popt,ccf.sget_value_at_interp(popt[0],popt[1])
-
 	elif options.optccf == "robust":
-		initial_guess = [x1,y1,s1,a1,s2,a2]
-		bds = [(old_div(-bs,2), old_div(-bs,2), 0.6, ncc.min(), 0.6, 0.01),(old_div(bs,2), old_div(bs,2), 1000.0, ncc.max(), 2.0, ncc.max())]
+		initial_guess = [x1,y1,s1,a1,s2,a2,offset]
+		bds = [(-bs/2, -bs/2, 0, 0, 0.6, 0.0,ncc.min()),(bs/2, bs/2, 100.0, 20000.0, 2.5, 100000.0,ncc.max())]
 		try:
-			popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method="dogbox",max_nfev=250,xtol=1e-3,ftol=1e-6,loss='linear')
-		except RuntimeError:
-			return None,-1
+			popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds)
+			#popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method="dogbox",max_nfev=250,xtol=1e-3,ftol=1e-6,loss='linear')
+		except:
+			try:
+				x1,y1 = find_com(ncc)
+				popt = [x1,y1,0.,0.,0.,0.,0.]
+			except:
+				return None,-1
 
 		popt = [p for p in popt]
 		popt[0] = popt[0] + old_div(nxx,2) - old_div(bs,2)
 		popt[1] = popt[1] + old_div(nxx,2) - old_div(bs,2)
 		popt[2] = np.abs(popt[2])
+
 		return popt,ccf.sget_value_at_interp(popt[0],popt[1])
 	# elif options.optccf == "robust":
 	# 	initial_guess = [x1,y1,s1,a1]

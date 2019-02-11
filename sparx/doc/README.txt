@@ -202,6 +202,7 @@ $ cp ~/EMAN2/src/eman2/sparx/bin/sxgui_auto.py ~/EMAN2/bin/sxgui.py
 
 $ sxgui.py &
 
+
 That's it!
 
 ==========================================================================================

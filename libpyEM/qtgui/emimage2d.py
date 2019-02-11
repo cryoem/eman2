@@ -36,7 +36,6 @@ from __future__ import division
 
 from past.utils import old_div
 from builtins import range
-import PyQt4
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
@@ -64,8 +63,6 @@ from .emimageutil import EMMetaDataTable
 from .emanimationutil import SingleValueIncrementAnimation, LineAnimation
 
 import platform
-
-MAG_INC = 1.1
 
 from .emglobjects import EMOpenGLFlagsAndTools
 
@@ -521,11 +518,8 @@ class EMImage2DWidget(EMGLWidget):
 		#except: pass
 
 	def auto_contrast(self,bool=False,inspector_update=True,display_update=True):
-		global HOMEDB
-		HOMEDB=EMAN2db.EMAN2DB.open_db()
-		HOMEDB.open_dict("display_preferences")
-		db = HOMEDB.display_preferences
-		auto_contrast = db.get("display_2d_auto_contrast",dfl=True)
+		auto_contrast = E2getappval("display2d","autocontrast",True)
+		
 		if self.curfft == 0:
 			if self.data == None: return
 			# histogram is impacted by downsampling, so we need to compensate
@@ -713,8 +707,7 @@ class EMImage2DWidget(EMGLWidget):
 			return
 
 		self.curfft=val
-
-		fourier = self.__set_display_image(val)
+		fourier = self.__set_display_image(self.curfft)
 
 		self.inspector_update(use_fourier=fourier)
 
@@ -747,7 +740,6 @@ class EMImage2DWidget(EMGLWidget):
 			self.display_fft = None
 
 	def __set_display_image(self,val):
-		if self.list_data!=None and val>=len(self.list_data) : val=len(self.list_data)-1
 		if self.list_data == None:
 			if val > 0 :
 				try:
@@ -774,13 +766,15 @@ class EMImage2DWidget(EMGLWidget):
 				if self.data == None:
 					self.data = self.fft.do_ift()
 				return False
-			else:
+			else:						# val is negative!?!?
 				self.display_fft=None
 
 			return False
 		else:
+			if self.list_idx>=len(self.list_data): self.list_idx=len(self.list_data)-1
 			if val > 0 :
 				try:
+					if len(self.list_fft_data)!=len(self.list_data) : self.list_fft_data=[None for i in range(len(self.list_data))]
 					if self.list_fft_data[self.list_idx] == None:
 						self.list_fft_data[self.list_idx] = self.list_data[self.list_idx].do_fft()
 						if self.fftorigincenter :

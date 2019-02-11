@@ -104,8 +104,8 @@ XYData.__len__=XYData.get_size
 
 try:
 	if __IPYTHON__ : GUIMode=True
-	import PyQt4
-	app=PyQt4.QtGui.qApp
+	from PyQt4 import QtGui
+	app=QtGui.qApp
 except:
 	GUIMode=False
 	app = 0
@@ -297,28 +297,30 @@ When settings are read, the local value is checked first, then if necessary, the
 		return
 
 	try:
-		db=shelve.open(".eman2settings")
+		db=js_open_dict(".eman2settings.json")
 		db[app+"."+key]=value
-		db.close()
+#		db.close()
 	except:
 		pass
 
 	try:
 		dir=e2gethome()
 		dir+="/.eman2"
-		os.mkdir(dir)
 	except:
 		return
+	
+	try: os.mkdir(dir)
+	except: pass
 
 	try:
-		db=shelve.open(dir+"/appdefaults")
+		db=js_open_dict(dir+"/eman2settings.json")
 		db[app+"."+key]=value
-		db.close()
+#		db.close()
 	except:
 		return
 
 
-def E2getappval(app,key):
+def E2getappval(app,key,dfl=None):
 	"""E2getappval
 This function will get an application default by first checking the local directory, followed by
 ~/.eman2"""
@@ -330,9 +332,8 @@ This function will get an application default by first checking the local direct
 		return None
 
 	try:
-		db=shelve.open(".eman2settings")
+		db=js_open_dict(".eman2settings.json")
 		ret=db[app+"."+key]
-		db.close()
 		return ret
 	except:
 		pass
@@ -340,15 +341,38 @@ This function will get an application default by first checking the local direct
 	try:
 		dir=e2gethome()
 		dir+="/.eman2"
-		db=shelve.open(dir+"/appdefaults")
+		db=js_open_dict(dir+"/eman2settings.json")
 		ret=db[app+"."+key]
 		db.close()
 
 		return ret
 	except: pass
 
-	return None
+	return dfl
 
+def E2getappvals():
+	"""E2getappvals
+This function will return a list of lists containing all currently set application defaults as [program,option,value,global|local]"""
+
+	ret=[]
+	ret2=[]
+
+	try:
+		db=js_open_dict(".eman2settings.json")
+		keys=db.keys()
+		ret=[(k.split(".")[0],k.split(".")[1],db[k],"local") for k in keys]
+	except:
+		pass
+	
+	try:
+		dir=e2gethome()
+		dir+="/.eman2"
+		dbu=js_open_dict(dir+"/eman2settings.json")
+		ret2=[(k.split(".")[0],k.split(".")[1],dbu[k],"user") for k in dbu.keys() if k not in keys]  # only show global when local doesn't exist
+		
+	except: pass
+
+	return ret2+ret
 
 def e2getinstalldir() :
 	"""platform independent path with '/'"""
@@ -746,6 +770,32 @@ def read_number_file(path):
 		return [int(i) for i in regex.findall(open(path,"r").read())]
 	except:
 		return []
+
+def angle_ab_sym(sym,a,b,c=None,d=None):
+	"""Computes the angle of the rotation required to go from Transform A to Transform B under symmetry,
+	such that the smallest symmetry-related angle is returned. sym may be either a list of Transforms
+	or a symmetry specifier, eg "c4". For the two orientations, specify either
+	two Transform objects, or the symmetry followed by four floats in the order 
+	AltA,AzA,AltB,AzB. Return in degrees."""
+	
+	if c!=None :
+		A=Transform({"type":"eman","alt":a,"az":b})
+		B=Transform({"type":"eman","alt":c,"az":d})
+	else :
+		A=a
+		B=b
+	
+	# easier to do it here
+	Bi=B.inverse()
+		
+	# needs to be a list of Transforms
+	if isinstance(sym,str):
+		sym=parsesym(sym).get_syms()
+		
+	#if not (isinstance(A,Transform) and isinstance(B,Transform)):
+		#raise Exception,"angle_ab_sym requries two transforms or 4 angles"
+
+	return min([(A*s*Bi).get_rotation("spin")["omega"] for s in sym])
 
 def display(img,force_2d=False,force_plot=False):
 	"""Generic display function for images or sets of images. You can force images to be displayed in 2-D or as a plot with
@@ -1314,7 +1364,7 @@ def base_name( file_name,extension=False,bdb_keep_dir=False,nodir=False ):
 	else:
 		apath=os.path.relpath(file_name).replace("\\","/").split("/")
 		# for specific directories, we want any references to the same micrograph to share an id
-		if nodir or (len(apath)>1 and apath[-2] in ("sets","particles","micrographs","movies","movieparticles","ddd","raw","info", "tiltseries", "tomograms", "particles3d")) :
+		if nodir or (len(apath)>1 and apath[-2] in ("sets","particles","micrographs","movies","movieparticles","ddd","raw","info", "tiltseries", "tomograms", "particles3d", "segmentations")) :
 			if extension :
 				return os.path.basename(file_name)
 			else :
@@ -1587,7 +1637,7 @@ def test_image(type=0,size=(128,128)):
 	type=4  circular sinewave
 	type=5  axes
 	type=6  linewave
-	type=7  scurve pluse x,y gradient
+	type=7  scurve plus x,y gradient
 	type=8  scurve translated
 	type=9  scurve with gaussian noise(mean 0, sigma 1)
 	size=(128,128) """

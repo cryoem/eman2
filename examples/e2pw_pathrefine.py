@@ -102,7 +102,7 @@ def numpy2pdb_sc(data,fname,occ=[],bfac=[],chainid=[], model=0, residue=[],sidec
 	curchain=chainid[i]
 	
 
-	f.write("TER  {:6d}      ALA {}{:4d}\n""".format(atomid+1, 'A', resid))
+	f.write("TER  {:6d}      ALA {}{:4d}\n".format(atomid+1, 'A', resid))
 	f.write("ENDMDL\n")
 	f.close()
 

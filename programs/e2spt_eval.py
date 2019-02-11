@@ -78,7 +78,7 @@ class SptEvalGUI(QtGui.QWidget):
 		#print self.wg_thumbnail_width
 		self.wg_thumbnail.setMinimumHeight(330)
 		self.wg_thumbnail.setMinimumWidth(330)
-		self.gbl.addWidget(self.wg_thumbnail, 0,1,2,2)
+		self.gbl.addWidget(self.wg_thumbnail, 1,1,2,2)
 
 		self.wg_thumbnail.newnode=None
 
@@ -101,14 +101,14 @@ class SptEvalGUI(QtGui.QWidget):
 
 		self.fscplot = EMPlot2DWidget()
 
-		self.setspanel=QtGui.QListWidget(self)
+		self.setspanel=TomoListWidget(self)
 		self.gbl.addWidget(self.setspanel, 5,1,5,2)
-		self.itemflags=	Qt.ItemFlags(Qt.ItemIsEditable)|Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)
+		self.itemflags=	Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)
 		
 		#self.wg_notes=QtGui.QTextEdit(self)
 		#self.gbl.addWidget(self.wg_notes, 10,1,1,2)
 				
-		self.setspanel.itemChanged[QtGui.QListWidgetItem].connect(self.click_set)
+		#self.setspanel.itemChanged[QtGui.QListWidgetItem].connect(self.click_set)
 		#QtCore.QObject.connect(self.wg_notes,QtCore.SIGNAL("textChanged()"),self.noteupdate)
 		
 		#self.wg_plot2d=EMPlot2DWidget()
@@ -125,7 +125,8 @@ class SptEvalGUI(QtGui.QWidget):
 		rows = []
 		for k in jd.keys():
 			dct = jd[k]
-			tf = dct[u'xform.align3d']
+			#### inverse since we want the transform from reference to particle
+			tf = dct[u'xform.align3d'].inverse()
 			t = tf.get_trans()
 			r = tf.get_rotation()
 			row = [r["az"],r["alt"],r["phi"],t[0],t[1],t[2],dct["score"],dct["coverage"]]
@@ -138,13 +139,17 @@ class SptEvalGUI(QtGui.QWidget):
 		for f in sorted(os.listdir(self.path)):
 			if "particle_parms_" in f:
 				parms = self.json_to_array("{}/{}".format(self.path,f))
-				self.paramplot.set_data(parms,f)
+				try:
+					self.paramplot.set_data(parms,f)
+				except: 
+					print("Cannot parse {}..".format(f))
+				
 		self.paramplot.show()
 		return
 
 	def plot_fscs(self):
 		for f in sorted(os.listdir(self.path)):
-			if "fsc_maskedtight_" in f and "ali.txt" in f:
+			if "fsc_maskedtight_" in f:
 				self.fscplot.set_data_from_file("{}/{}".format(self.path,f))
 		self.fscplot.show()
 		return
@@ -293,6 +298,54 @@ class SPTBrowserWidget(embrowser.EMBrowserWidget):
 		self.updtimer.stop()
 		# self.app().close_specific(self)
 		self.module_closed.emit()
+
+		
+class TomoListWidget(QtGui.QListWidget):
+	def __init__(self, parent=None):
+		super(TomoListWidget, self).__init__(parent)
+		self.parent=parent
+		
+	def mousePressEvent(self, event):
+		self._mouse_button = event.buttons()
+		item=self.itemAt(event.pos())
+		self.setCurrentItem(item)
+		
+		#print(item.text(), event.button())
+		
+		if event.button()==1:
+			if item==None:
+				for i in range(self.count()):
+					self.item(i).setCheckState(Qt.Checked)
+			else:
+				if item.checkState()==Qt.Checked:
+					item.setCheckState(Qt.Unchecked)
+				else:
+					item.setCheckState(Qt.Checked)
+			#return
+		
+		elif event.button()==2:
+			for i in range(self.count()):
+				self.item(i).setCheckState(Qt.Unchecked)
+			if item!=None:
+				item.setCheckState(Qt.Checked)
+		
+		
+		
+		for i in range(self.count()):
+			txt=str(self.item(i).text().split(":")[0]).strip()
+			self.parent.paramlst[txt]=(self.item(i).checkState()==Qt.Checked)
+			
+			
+		self.parent.update_list()
+		#print(self.currentItem(),event)
+		#print(item.text(), self._mouse_button)
+		#super(TomoListWidget, self).mousePressEvent(event)
+		
+		
+	def mouseReleaseEvent(self, event):
+		#print("aaa")
+		return
+
 
 def run(cmd):
 	print(cmd)

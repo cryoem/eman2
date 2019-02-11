@@ -52,7 +52,6 @@ sxcter exists in for both MPI and non-MPI versions (Running MPI version does not
   ; output_directory : Output directory: The CTF parameters (partres file), rotationally averaged power spectra (rotinf), and micrograph thumbnails (thumb files) will be written here. It cannot be an existing one. (default required string)
 
   ; %%--%%selection_list : Micrograph selection file: Specify path of a micrograph selection list text file for Selected Micrographs Mode. The file extension must be '.txt'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. (default none)
-  ; %%--%%wn : CTF window size [Pixels]: The window size should be slightly larger than particle box size. This will be ignored in Stack Mode. (default 512)
   ; %%--%%apix : Pixel size [A]: The pixel size of input micrograph(s) or images in input particle stack. (default -1.0)
   ; %%--%%Cs : Microscope spherical aberration (Cs) [mm]: The spherical aberration (Cs) of microscope used for imaging. (default 2.0)
   ; %%--%%voltage : Microscope voltage [kV]: The acceleration voltage of microscope used for imaging. (default 300.0)
@@ -62,6 +61,7 @@ sxcter exists in for both MPI and non-MPI versions (Running MPI version does not
 
 \\
 === Advanced Parameters ===
+  ; %%--%%wn : CTF window size [Pixels]: The window size should be slightly larger than particle box size. This will be ignored in Stack Mode. (default 512)
   ; %%--%%kboot : Number of CTF estimates per micrograph: Used for error assessment. (default 16)
   ; %%--%%overlap_x : X overlap [%]: Overlap between micrograph windows in the x direction. This will be ignored in Stack Mode. (default 50)
   ; %%--%%overlap_y : Y overlap [%]: Overlap between micrograph windows in the y direction. This will be ignored in Stack Mode. (default 50)
@@ -71,12 +71,12 @@ sxcter exists in for both MPI and non-MPI versions (Running MPI version does not
   ; %%--%%stack_mode : Use stack mode: Use a stack as the input. Please set the file path of a stack as the first argument and output directory for the second argument. This is an advanced option. Not supported by sxgui. (default False)
   ; %%--%%debug_mode : Enable debug mode: Print out debug information. (default False)
   ; %%--%%vpp : Volta Phase Plate Dataset: UNDER DEVELOPMENT! Estimate phase shift. (default False)
-  ; %%--%%defocus_min : Minimum defocus search [um]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 0.3)
-  ; %%--%%defocus_max : Maximum defocus search [um]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 9.0)
-  ; %%--%%defocus_step : Defocus search step [um]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 0.1)
-  ; %%--%%phase_min : Minimum phase search [degrees]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 5.0)
-  ; %%--%%phase_max : Maximum phase search [degrees]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 175.0)
-  ; %%--%%phase_step : Phase search step [degrees]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 5.0)
+  ; %%--%%defocus_min : Minimum defocus search [um]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 0.3) : %%--%%vpp==True
+  ; %%--%%defocus_max : Maximum defocus search [um]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 9.0) : %%--%%vpp==True
+  ; %%--%%defocus_step : Defocus search step [um]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 0.1) : %%--%%vpp==True
+  ; %%--%%phase_min : Minimum phase search [degrees]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 5.0) : %%--%%vpp==True
+  ; %%--%%phase_max : Maximum phase search [degrees]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 175.0) : %%--%%vpp==True
+  ; %%--%%phase_step : Phase search step [degrees]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 5.0) : %%--%%vpp==True
   ; %%--%%pap : Use PW spectrum: UNDER DEVELOPMENT! Use power spectrum for CTF parameter search instead of amplitude. (default False)
 
 \\

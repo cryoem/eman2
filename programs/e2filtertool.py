@@ -35,7 +35,6 @@ from __future__ import division
 from past.utils import old_div
 from builtins import range
 from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import Qt
 from PyQt4.QtCore import QTimer
 
 import sys
@@ -507,6 +506,8 @@ class EMFilterTool(QtGui.QMainWindow):
 			self.timer.timeout.connect(self.timeOut)
 			self.timer.start(100)
 		else:
+			for p in self.processorlist:
+				p.wenable.setChecked(False)
 			self.on_doprocess()
 			
 		E2loadappwin("e2filtertool","main",self)

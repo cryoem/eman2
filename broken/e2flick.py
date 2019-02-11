@@ -43,7 +43,6 @@ import os
 #from PyQt4.QtCore import Qt
 #from OpenGL import GL,GLU,GLUT
 
-from optparse import OptionParser
 
 def main():
 	progname = os.path.basename(sys.argv[0])

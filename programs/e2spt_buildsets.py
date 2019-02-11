@@ -11,7 +11,7 @@ def main():
 	
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_pos_argument(name="particle_stacks",help="Specify particles input.", default="", guitype='filebox', browser="EMParticlesEditTable(withmodal=True,multiselect=True)", row=0, col=0,rowspan=1, colspan=2, mode="sets")
+	parser.add_pos_argument(name="particle_stacks",help="Specify particles input.", default="", guitype='filebox', browser="EMSPTParticleTable(withmodal=True,multiselect=True)", row=0, col=0,rowspan=1, colspan=2, mode="sets")
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=3, col=0, rowspan=1, colspan=1, mode="sets")
 	parser.add_argument("--label", type=str,help="label of particles for sets", default="", guitype='strbox',row=2, col=0,rowspan=1, colspan=1, mode="sets")
 	parser.add_argument("--allparticles", action="store_true", default=False ,help="make sets for all particles",guitype='boolbox',row=3, col=1, rowspan=1, colspan=1,mode="sets")

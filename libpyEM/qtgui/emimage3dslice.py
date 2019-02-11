@@ -53,8 +53,6 @@ from .emglobjects import EM3DModel, EMOpenGLFlagsAndTools, Camera2, EMViewportDe
 from .emimageutil import ImgHistogram, EMTransformPanel
 
 
-MAG_INCREMENT_FACTOR = 1.1
-
 class EM3DSliceModel(EM3DModel):
 	
 	def __init__(self, gl_widget, image=None):

@@ -122,9 +122,11 @@ def main():
 			except :
 				print("Image read error (%s)"%imagefile)
 				continue
+			if d["HostEndian"]!=d["ImageEndian"]: swapped="(swap)"
+			else: swapped = ""
 			if options.count : print("%d\t"%(nimg), end=' ')
-			if d["nz"]==1 : print("%s\t %d images in %s format\t%d x %d"%(imagefile,nimg,imgtypename,d["nx"],d["ny"]))
-			else : print("%s\t %d images in %s format\t%d x %d x %d"%(imagefile,nimg,imgtypename,d["nx"],d["ny"],d["nz"]))
+			if d["nz"]==1 : print("%s\t %d images in %s format %s\t%d x %d"%(imagefile,nimg,imgtypename,swapped,d["nx"],d["ny"]))
+			else : print("%s\t %d images in %s format %s\t%d x %d x %d"%(imagefile,nimg,imgtypename,swapped,d["nx"],d["ny"],d["nz"]))
 			
 			
 		else :

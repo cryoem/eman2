@@ -104,7 +104,7 @@ const string DoGFourierProcessor::NAME = "filter.DoG";
 const string AzSharpProcessor::NAME = "filter.azimuthal.contrast";
 const string HighpassAutoPeakProcessor::NAME = "filter.highpass.autopeak";
 const string LinearRampProcessor::NAME = "eman1.filter.ramp";
-const string AbsoluateValueProcessor::NAME = "math.absvalue";
+const string AbsoluteValueProcessor::NAME = "math.absvalue";
 const string FloorValueProcessor::NAME = "math.floor";
 const string BooleanProcessor::NAME = "threshold.notzero";
 const string KmeansSegmentProcessor::NAME = "segment.kmeans";
@@ -175,6 +175,8 @@ const string RealToFFTProcessor::NAME = "math.realtofft";
 const string SigmaZeroEdgeProcessor::NAME = "mask.zeroedgefill";
 const string WedgeFillProcessor::NAME = "mask.wedgefill";
 const string FFTPeakProcessor::NAME = "mask.fft.peak";
+const string FFTConeProcessor::NAME = "mask.fft.cone";
+const string FFTWedgeProcessor::NAME = "mask.fft.wedge";
 const string BeamstopProcessor::NAME = "mask.beamstop";
 const string MeanZeroEdgeProcessor::NAME = "mask.dampedzeroedgefill";
 const string AverageXProcessor::NAME = "math.averageovery";
@@ -316,6 +318,7 @@ const string GrowSkeletonProcessor::NAME = "morph.grow";
 const string FixSignProcessor::NAME = "math.fixmode";
 const string ZThicknessProcessor::NAME = "misc.zthick";
 const string ReplaceValuefromListProcessor::NAME = "misc.colorlabel";
+const string PolyMaskProcessor::NAME = "mask.poly";
 
 //#ifdef EMAN2_USING_CUDA
 //const string CudaMultProcessor::NAME = "cuda.math.mult";
@@ -344,7 +347,7 @@ template <> Factory < Processor >::Factory()
 
 	force_add<LinearPyramidProcessor>();
 	force_add<LinearRampProcessor>();
-	force_add<AbsoluateValueProcessor>();
+	force_add<AbsoluteValueProcessor>();
 	force_add<FloorValueProcessor>();
 	force_add<BooleanProcessor>();
 	force_add<KmeansSegmentProcessor>();
@@ -429,6 +432,8 @@ template <> Factory < Processor >::Factory()
 	force_add<SigmaZeroEdgeProcessor>();
 	force_add<WedgeFillProcessor>();
 	force_add<FFTPeakProcessor>();
+	force_add<FFTConeProcessor>();
+	force_add<FFTWedgeProcessor>();
 	force_add<RampProcessor>();
 
 	force_add<BeamstopProcessor>();
@@ -600,6 +605,7 @@ template <> Factory < Processor >::Factory()
 	force_add<BinaryBlackHatProcessor>();
 	force_add<ZThicknessProcessor>();
 	force_add<ReplaceValuefromListProcessor>();
+	force_add<PolyMaskProcessor>();
 
 //#ifdef EMAN2_USING_CUDA
 //	force_add<CudaMultProcessor>();
@@ -943,6 +949,85 @@ void FFTPeakProcessor::process_inplace(EMData * image)
 		}
 	}
 	
+	
+	if (fft!=image) {
+		EMData *ift=fft->do_ift();
+		memcpy(image->get_data(),ift->get_data(),(nx-2)*ny*nz*sizeof(float));
+		delete fft;
+		delete ift;
+	}
+	image->update();
+
+//	image->update();
+}
+
+void FFTConeProcessor::process_inplace(EMData * image)
+{
+	EMData *fft;
+
+	if (!image) throw InvalidParameterException("FFTConeProcessor: no image provided");
+	if (!image->is_complex()) fft = image->do_fft();
+	else fft = image;
+
+
+	int nx=fft->get_xsize();
+	int ny=fft->get_ysize();
+	int nz=fft->get_zsize();
+	if (nz==1) throw ImageDimensionException("FFTConeProcessor only works on 3-D images");
+	
+	float angle = (float)params.set_default("angle",15.0f);
+	float rmin = (float)params.set_default("rmin",1.0f);
+	
+	for (int z=-nz/2; z<nz/2; z++) {
+		for (int y=-ny/2; y<ny/2; y++) {
+			for (int x=0; x<nx/2; x++) {
+				float ang=0;
+				if (x!=0 ||y!=0) ang=90.0-atan(fabs(float(z)/nz)/hypot(float(x)/nx,float(y)/ny))*180.0/M_PI;
+				if (ang>angle || Util::hypot3(x,y,z)<rmin) continue;
+				fft->set_complex_at(x,y,z,0.0f);
+			}
+		}
+	}	
+	
+	if (fft!=image) {
+		EMData *ift=fft->do_ift();
+		memcpy(image->get_data(),ift->get_data(),(nx-2)*ny*nz*sizeof(float));
+		delete fft;
+		delete ift;
+	}
+	image->update();
+
+//	image->update();
+}
+
+void FFTWedgeProcessor::process_inplace(EMData * image)
+{
+	EMData *fft;
+
+	if (!image) throw InvalidParameterException("FFTWedgeProcessor: no image provided");
+	if (!image->is_complex()) fft = image->do_fft();
+	else fft = image;
+
+
+	int nx=fft->get_xsize();
+	int ny=fft->get_ysize();
+	int nz=fft->get_zsize();
+	if (nz==1) throw ImageDimensionException("FFTWedgeProcessor only works on 3-D images");
+	
+	float anglemin = (float)params.set_default("anglemin",-30.0f);
+	float anglemax = (float)params.set_default("anglemax",30.0f);
+	float rmin = (float)params.set_default("rmin",1.0f);
+	
+	for (int z=-nz/2; z<nz/2; z++) {
+		for (int y=-ny/2; y<ny/2; y++) {
+			for (int x=0; x<nx/2; x++) {
+				float ang=90.0f;
+				if (z!=0) ang=atan((float(y)/ny)/fabs(float(z)/nz))*180.0/M_PI;
+				if (ang<anglemin||ang>anglemax || Util::hypot3(x,y,z)<rmin) continue;
+				fft->set_complex_at(x,y,z,0.0f);
+			}
+		}
+	}	
 	
 	if (fft!=image) {
 		EMData *ift=fft->do_ift();
@@ -1995,41 +2080,36 @@ void MaskAzProcessor::process_inplace(EMData *image) {
 	float phicen = params.set_default("phicen",0.0f)*M_PI/180.0;
 	phicen=Util::angle_norm_pi(phicen);
 	float phirange = params.set_default("phirange",180.0f)*M_PI/180.0;
+	float phitrirange = params.set_default("phitrirange",0.0f)*M_PI/180.0;
 	int phitriangle = params.set_default("phitriangle",0);
 	float cx = params.set_default("cx",nx/2);
 	float cy = params.set_default("cy",ny/2);
 	float zmin = params.set_default("zmin",0);
 	float zmax = params.set_default("zmax",nz);
+	float ztri = params.set_default("ztriangle",0.0f);
 	float inner_radius = params.set_default("inner_radius",0.0f);
 	float outer_radius = params.set_default("outer_radius",nx+ny);
 
 	for (int x=0; x<nx; x++) {
 		for (int y=0; y<ny; y++) {
 			float az=atan2(y-cy,x-cx);
+			float az2=az-M_PI*2.0f;
+			float az3=az+M_PI*2.0f;
 			float r=hypot(y-cy,x-cx);
 			float val=0.0f;
 			if (r>inner_radius&&r<=outer_radius) {
-				if (az>phicen-phirange&&az<phicen+phirange) {
-					if (phitriangle) val=1.0f-fabs(az-phicen)/phirange;
-					else val=1.0f;
-				}
-				else if (az+M_PI*2.0>phicen-phirange&&az+M_PI*2.0<phicen+phirange) {
-					if (phitriangle) val=1.0f-fabs(az+M_PI*2.0-phicen)/phirange;
-					else val=1.0f;
-				}
-				else if (az-M_PI*2.0>phicen-phirange&&az-M_PI*2.0<phicen+phirange) {
-					if (phitriangle) val=1.0f-fabs(az-M_PI*2.0-phicen)/phirange;
-					else val=1.0f;
-				}
+				float as=Util::angle_sub_2pi(az,phicen);
+				if (as<phirange) val=1.0f;
+				else if (!phitriangle || as>phirange+phitrirange) val=0.0f;
+				else val=1.0-(as-phirange)/float(phitrirange);
 			}
-			if (r==0 && inner_radius<=0) {
-				if (phitriangle) val=phirange/360.0;
-				else val=1.0;
-			}
+			if (r==0 && inner_radius<=0)  val=1.0;
 
 			for (int z=0; z<nz; z++) {
-				if (z<zmin || z>zmax) image->mult_value_at_fast(x,y,z,0);
-				image->mult_value_at_fast(x,y,z,val);
+				if (z<zmin-ztri || z>zmax+ztri) image->mult_value_at_fast(x,y,z,0);
+				else if (z>=zmin+ztri && z<=zmax-ztri) image->mult_value_at_fast(x,y,z,val);
+				else if (z>=zmin-ztri && z<=zmin+ztri) image->mult_value_at_fast(x,y,z,val*((z-zmin)/(2.0f*ztri)+0.5));
+				else image->mult_value_at_fast(x,y,z,val*((zmax-z)/(2.0f*ztri)+0.5));
 			}
 		}
 	}
@@ -2638,9 +2718,7 @@ EMData* FFTResampleProcessor::process(const EMData *const image)
 		// the type casting here is because FourTruncate was not defined to be const (but it is)
 		result=((EMData *)image)->FourInterpol(nnx, nny, nnz, 1, 0);	// nnx,nny,nnz,returnreal,normalize
 	}
-	result->set_attr("apix_x",(float)result->get_attr("apix_x")*(float)nx/(float)nnx);
-	result->set_attr("apix_y",(float)result->get_attr("apix_y")*(float)ny/(float)nny);
-	result->set_attr("apix_z",(float)result->get_attr("apix_z")*(float)nz/(float)nnz);
+	result->scale_pixel((float)nx/(float)nnx);
 	result->update();
 	return result;
 	
@@ -2686,9 +2764,7 @@ void FFTResampleProcessor::process_inplace(EMData * image)
 
 	image->set_size(nnx,nny,nnz);
 	memcpy(image->get_data(),result->get_data(),nnx*nny*nnz*sizeof(float));
-	image->set_attr("apix_x",(float)image->get_attr("apix_x")*(float)nx/(float)nnx);
-	image->set_attr("apix_y",(float)image->get_attr("apix_y")*(float)ny/(float)nny);
-	image->set_attr("apix_z",(float)image->get_attr("apix_z")*(float)nz/(float)nnz);
+	image->scale_pixel((float)nx/(float)nnx);
 	image->update();
 	delete result;
 
@@ -4116,23 +4192,45 @@ void DecayEdgeProcessor::process_inplace(EMData * image)
 		return;
 	}
 
-	if (image->get_zsize() > 1) throw ImageDimensionException("3D model not supported");
-
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 
 	float *d = image->get_data();
 	int width = params["width"];
 
-	for (int i=0; i<width; i++) {
-		float frac=i/(float)width;
-		for (int j=0; j<nx; j++) {
-			d[j+i*nx]*=frac;
-			d[nx*ny-j-i*nx-1]*=frac;
+	if (width > min(nx,ny)/2.){
+		LOGERR("width parameter cannot be greater than min(nx,ny)/2");
+		throw InvalidParameterException("width cannot be greater than min(nx,ny)/2");
+	}
+
+	if (image->get_zsize() > 1){
+		for (int k=0; k<image->get_zsize(); k++){
+			int zidx = k*nx*ny;
+			for (int i=0; i<width; i++) {
+				float frac=i/(float)width;
+				for (int j=0; j<nx; j++) {
+					d[zidx+j+i*nx]*=frac;
+					d[zidx+nx*ny-j-i*nx-1]*=frac;
+				}
+				for (int j=0; j<ny; j++) {
+					d[zidx+j*nx+i]*=frac;
+					d[zidx+nx*ny-j*nx-i-1]*=frac;
+				}
+			}
 		}
-		for (int j=0; j<ny; j++) {
-			d[j*nx+i]*=frac;
-			d[nx*ny-j*nx-i-1]*=frac;
+	} 
+	else {
+
+		for (int i=0; i<width; i++) {
+			float frac=i/(float)width;
+			for (int j=0; j<nx; j++) {
+				d[j+i*nx]*=frac;
+				d[nx*ny-j-i*nx-1]*=frac;
+			}
+			for (int j=0; j<ny; j++) {
+				d[j*nx+i]*=frac;
+				d[nx*ny-j*nx-i-1]*=frac;
+			}
 		}
 	}
 
@@ -7029,6 +7127,7 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 	}
 
 	int int_shift_only = params.set_default("int_shift_only",1);
+	int powercenter = params.set_default("powercenter",0);
 	float threshold = params.set_default("threshold",0.0f);
 //	int positive = params.set_default("positive",0);
 
@@ -7038,7 +7137,10 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 		threshold=(float)image->get_attr("mean")+(float)image->get_attr("sigma");
 	}
 
+	EMData *tmp = 0;
+	if (powercenter) { tmp=image; image=tmp->process("math.squared"); }  // yes, I know, not very efficient
 	FloatPoint com = image->calc_center_of_mass(threshold);
+	if (powercenter) { delete image; image=tmp; }
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
@@ -7906,6 +8008,12 @@ void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *ima
 		image->set_attr("apix_x", (float)params["apix"]);
 		image->set_attr("apix_y", (float)params["apix"]);
 		image->set_attr("apix_z", (float)params["apix"]);
+		if (image->has_attr("ctf")) {
+			Ctf *ctf=image->get_attr("ctf");
+			ctf->apix=(float)params["apix"];
+			image->set_attr("ctf",ctf);
+			delete(ctf);
+		}
 	}
 
 	float apix=image->get_attr("apix_x");
@@ -12841,7 +12949,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		cimage->set_complex(1);
 		cimage->set_ri(1);
 		cimage->set_fftpad(1);
-		int step=int(floor(tmp->get_ysize()/(2*cimage->get_ysize())));
+		int step=int(floor(tmp->get_ysize()/(2.0f*cimage->get_ysize())));
 //		int step=int(floor(tmp->get_ysize()/(cimage->get_ysize())));
 		if (step==0) step=1;
 //		printf("%d\n",step);
@@ -12915,7 +13023,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 			for (int x=0; x<nkx-1; x++) {
 				for (int y=-nky; y<nky; y++) {
 					complex<float> val=ret->get_complex_at(x,y);
-//					if (x<=2&&abs(y)<=2&&Util::hypot_fast(x,y)<2.0) val=0.0;		// We filter out the very low resolution
+					if (x<=2&&abs(y)<=2&&Util::hypot_fast(x,y)<2.0) val=0.0;		// We filter out the very low resolution
 					ret2->set_value_at(x,y+nky+nky*dk*2,cbrt(std::real(val)));
 //					ret2->set_value_at(x,y+nky+nky*dk*2,std::real(val));
 				}

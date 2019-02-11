@@ -36,7 +36,6 @@ from __future__ import division
 from builtins import range
 import EMAN2
 from EMAN2 import *
-from pyemtbx.exceptions import *
 import unittest
 import testlib
 import sys

@@ -826,8 +826,8 @@ class FakeKaiserBessel : public KaiserBessel {
 	*/
 	static void search2(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* matchlist, int* costlist, int J);
 	
-	static void explore2(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* curintx, int size_curintx, int* next, int size_next, int depth, int J, int* matchlist, int*
-costlist, int* curbranch);
+	static void explore2(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* curintx, int size_curintx, 
+				int* next, int size_next, int depth, int J, int* matchlist, int* costlist, int* curbranch);
 	
 	/** First element of output is total cost of the matches in the output
 	 * Second element of output is the total number of matches in output
@@ -967,6 +967,7 @@ costlist, int* curbranch);
 	/* ######### STRIDPACK USED COMMANDS FOR VORONOI #########################*/
 
 	static EMData* shrinkfvol(EMData* img, int npad);
+	static void divclreal(EMData* img1, EMData* img2, float cutoff);
 	static EMData* mulreal(EMData* img1, EMData* img2);
 	static void mulreal_2D_in_place(EMData* img0, EMData* img1, EMData* img2, int slice_index);
 	static void mulclreal(EMData* img1, EMData* img2);
@@ -1024,9 +1025,9 @@ costlist, int* curbranch);
 	/* img /= Re(img1) with zero check  */
 	static void div_filter(EMData* img, EMData* img1);
 
-	static EMData*  unroll1dpw( int ny, const vector<float>& bckgnoise );
+	static EMData*  unroll1dpw( int onx, int ny, const vector<float>& bckgnoise );
 
-	static EMData*  unrollmask( int ny );
+	static EMData*  unrollmask( int onx, int ny );
 
 	static vector<float> rotavg_fourier(EMData* img);
 
@@ -1048,6 +1049,7 @@ costlist, int* curbranch);
                 
 	static vector<int> cast_coarse_into_fine_sampling(const vector<vector<float> >& coarse_sampling_angles, const vector<vector<float> >& fine_sampling_angles, string symmetry);
 
+	static vector<float> shift_gradients( EMData* avg, EMData* img, EMData* wght, float sx, float sy);
 
 	/* pack absolute values of complex image into  real image with addition of Friedel part  */
 	static EMData* pack_complex_to_real(EMData* img);
@@ -1315,7 +1317,12 @@ public:
 
 	static float local_inner_product(EMData* image1, EMData* image2, int lx, int ly, int lz, int w);
 
+
+	static void init_threads(int nthreads);
+	static void cleanup_threads();
+
 	static void version();
+
 	static EMData* move_points(EMData* img,  float qprob, int ri, int ro);
 
 	static EMData* get_biggest_cluster( EMData* mg );
@@ -1326,17 +1333,17 @@ public:
 	static EMData* ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage,float cs,float wgh,float b_factor,float dza,float azz,float sign);
 	static EMData* ctf2_rimg(int nx, int ny, int nz, float dz, float ps, float voltage,float cs,float wgh,float b_factor,float dza,float azz,float sign);
 	static EMData* cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg, float s);
-	static EMData* adaptive_mask(EMData* img, float threshold, float surface_dilation_ini, float cosine_width);
+	static EMData* soft_edge(EMData* img, int edge_width, string mode);
 
 	static inline int mono(int k1, int k2) {
 		int  mk = std::max(k1,k2);
 		return  std::min(k1,k2) + mk*(mk-1)/2;
 	}
 
-        static inline int nint180(float arg) {
-	    int res = int(arg + 180.5) - 180;
-	    return res;
-        }
+	static inline int nint180(float arg) {
+	int res = int(arg + 180.5) - 180;
+	return res;
+	}
 	
 	static inline double mean(double *x, int n) {
 		double s = 0.0;
@@ -1367,6 +1374,12 @@ public:
 	 * 1 for x-dimension, 2 for y-dimension and 3 for z-dimension
 	*/
 	static EMData* get_slice(EMData *vol, int dim, int index);
+	/**
+	 * This function inserts a 2-D image into a 3-D EMData object
+	 * dim denotes the slice is perpendicular to which dimension
+	 * 1 for x-dimension, 2 for y-dimension and 3 for z-dimension
+	*/
+	static void put_slice(EMData *vol, EMData *slice, int dim, int index);
 
 	static void image_mutation(EMData *img, float mutation_rate);
 

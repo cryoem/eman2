@@ -37,7 +37,6 @@ from builtins import range
 from EMAN2 import *
 import unittest,os,sys
 import testlib
-from pyemtbx.exceptions import *
 from optparse import OptionParser
 
 IS_TEST_EXCEPTION = False

@@ -22,7 +22,7 @@ def alifn(jsd,fsp,i,a,options):
 	b.process_inplace("xform.phaseorigin.tocorner")
 
 	# we align backwards due to symmetry
-	c=a.xform_align_nbest("rotate_translate_3d_tree",b,{"verbose":0,"sym":"c1","sigmathis":0.1,"sigmato":0.1, "maxres":(1./options.filterto)*.8},1)
+	c=a.xform_align_nbest("rotate_translate_3d_tree",b,{"verbose":0,"sym":"c1","sigmathis":1,"sigmato":1, "maxres":(1./options.filterto)*.8},1)
 	for cc in c : cc["xform.align3d"]=cc["xform.align3d"].inverse()
 
 	jsd.put((fsp,i,c[0]))
@@ -47,7 +47,7 @@ def main():
 
 	parser.add_argument("--filterto", type=float,help="Fiter map to frequency after each iteration. Default is 0.02", default=.02, guitype='floatbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
 
-	parser.add_argument("--fourier", action="store_true", default=False ,help="gradient descent in fourier space", guitype='boolbox',row=6, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--fourier", action="store_true", default=False ,help="gradient descent in fourier space", guitype='boolbox',row=6, col=1,rowspan=1, colspan=1, mode="model[True]")
 
 	parser.add_argument("--batchsize", type=int,help="SGD batch size", default=12,guitype='intbox',row=9, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--learnrate", type=float,help="Learning rate. Default is 0.1", default=.1,guitype='floatbox',row=9, col=1,rowspan=1, colspan=1, mode="model")
@@ -56,6 +56,8 @@ def main():
 	parser.add_argument("--nbatch", type=int,help="Number of batches per iteration", default=10,guitype='intbox',row=10, col=1,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--applysym", action="store_true", default=False ,help="apply symmetry", guitype='boolbox',row=11, col=0,rowspan=1, colspan=1, mode="model")
+	
+	parser.add_argument("--writemovie", action="store_true", default=False ,help="write all temporary files as a stack")
 	parser.add_argument("--shrink", type=int,help="Shrink factor for particles", default=1,guitype='intbox',row=11, col=1,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--path", type=str,help="path of output", default=None)
@@ -154,22 +156,24 @@ def main():
 			avg.process_inplace('normalize.edgemean')
 			if options.applysym:
 				avg.process_inplace("xform.applysym",{"sym":options.sym,"averager":"mean.tomo"})
+			
 			if options.fourier:
 				avgft=avg.do_fft()
 				refft=ref.do_fft()
-				avgft.process_inplace("mask.wedgefill",{"fillsource":refft, "thresh_sigma":3})
+				avgft.process_inplace("mask.wedgefill",{"fillsource":refft, "thresh_sigma":1})
+				avg=avgft.do_ift()
 
-				dmap=avgft-refft
-				refft=refft+learnrate*dmap
-				refnew=refft.do_ift()
-				refnew.process_inplace('normalize.edgemean')
-				dmap=refnew-ref
-				ref=refnew.copy()
-			else:
+				#dmap=avgft-refft
+				#refft=refft+learnrate*dmap
+				#refnew=refft.do_ift()
+				#refnew.process_inplace('normalize.edgemean')
+				#dmap=refnew-ref
+				#ref=refnew.copy()
+			#else:
 
-				dmap=avg-ref
-				ref=ref+learnrate*dmap
-				ref.process_inplace('normalize.edgemean')
+			dmap=avg-ref
+			ref=ref+learnrate*dmap
+			ref.process_inplace('normalize.edgemean')
 
 			ddm=dmap*dmap
 			cc.append(ddm["mean_nonzero"])
@@ -183,6 +187,8 @@ def main():
 
 			#ref.write_image(tmpout,-1)
 			ref0.write_image(os.path.join(path,"output.hdf"))
+			if options.writemovie:
+				ref0.write_image(os.path.join(path,"output_all.hdf"), -1)
 			sys.stdout.write('#')
 			sys.stdout.flush()
 

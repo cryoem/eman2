@@ -71,6 +71,8 @@ def main():
 		w=EMImageWidget(data=img,old=None,app=app,force_2d=True)
 		#w = EMWidgetFromFile(filename,application=app,force_2d=True)
 		w.setWindowTitle(base_name(filename))
+		w.set_scale(2.5)
+		w.resize(400,400)
 		w.show_inspector(1)
 		ins=w.get_inspector()
 		ins.mmtab.setCurrentIndex(5)
@@ -84,12 +86,16 @@ def main():
 			e.process_inplace("threshold.belowtozero", {"minval":99})
 			e.process_inplace("threshold.binary", {"value":1})
 			e.write_image(options.output,-1)
+		print("Segmented particles saved to {}.".format(options.output))
 			
 	#### build set ###
 	
 	if options.buildset:
 		tomo_in=options.particles_raw
 		seg_in=options.particles_label
+		if seg_in==None:
+			seg_in=tomo_in[:-4]+"_seg.hdf"
+			print("Using {} as particle label..".format(seg_in))
 		neg_in=options.boxes_negative
 		if tomo_in and neg_in and seg_in:
 			n_ptcl=EMUtil.get_image_count(tomo_in)

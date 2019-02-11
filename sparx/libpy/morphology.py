@@ -28,9 +28,136 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
+import numpy
 
 from builtins import range
 from global_def import *
+import global_def
+import scipy.ndimage.morphology as snm
+import EMAN2_cppwrap
+
+
+def fill_soft_edge_kernel_mask(kernel_mask, length, mode):
+	"""
+	Get the soft edge kernel value at the specified position.
+	If the position is greater than the length, the value is zero.
+
+	Arguments:
+	position - Kernel position
+	length - Maximum edge width
+	mode - Soft edge mode: 'c' - cosine else gaussian
+
+	Returns:
+	Edge kernel value
+	"""
+	if mode.lower() == 'c':
+		numpy.add(0.5, numpy.multiply(0.5, numpy.cos(numpy.pi * kernel_mask / float(length), out=kernel_mask), out=kernel_mask), out=kernel_mask)
+	else:
+		Q = -4.605170185988091
+		numpy.exp(Q * (kernel_mask / float(length))**2, out=kernel_mask)
+
+
+def soft_edge(img, length, mode='c', do_approx=False):
+	"""
+	Add a soft edge mask to a 2D/3D image binary image.
+
+	Arguments:
+	img - Input 2D or 3D image
+	length - Length of the edge in pixel.
+	mode - Mode of the mask 'c' - cosine; 'g' - gaussian
+
+	Returns:
+	Expanded mask
+	"""
+	if isinstance(img, EMAN2_cppwrap.EMData):
+		img_data = EMAN2_cppwrap.EMNumPy.em2numpy(img)
+		return_object = EMAN2_cppwrap.EMData(*img_data.shape)
+		return_data = EMAN2_cppwrap.EMNumPy.em2numpy(return_object)
+		out_eman = True
+	else:
+		img_data = img
+		out_eman = False
+
+	if length <= 0:
+		return img.copy()
+
+	# Get the mask shape for the soft edge kernel
+	kernel_mask_dim = 2 * length + 1
+	dimension = len(img_data.shape)
+	mask_shape = tuple([kernel_mask_dim]*dimension)
+	if dimension not in (2, 3):
+		global_def.ERROR('morphology/soft_edge', 'Only 2D and 3D images are supported!', 1)
+
+	# Create the outline for the array by erosing it once.
+	# Pad the outline with the edge mask to avoid edge effects later.
+	outline = img_data - snm.binary_erosion(img_data)
+	outline = numpy.pad(outline, length + 1, mode='constant', constant_values=0)
+	outline_index = numpy.where(outline == 1)
+
+	# Fill the kernel with the soft edge values
+	edge_norm = length**2
+	cosine_falloff = 100
+	if dimension == 2:
+		x, y = numpy.ogrid[0:kernel_mask_dim, 0:kernel_mask_dim]
+		kernel_mask = numpy.sqrt(((x - length)**2 + (y - length)**2) / float(edge_norm))*cosine_falloff
+	elif dimension == 3:
+		x, y, z = numpy.ogrid[0:kernel_mask_dim, 0:kernel_mask_dim, 0:kernel_mask_dim]
+		kernel_mask = numpy.sqrt(((x - length)**2 + (y - length)**2 + (z - length)**2) / float(edge_norm))*cosine_falloff
+	else:
+		assert False
+
+	if do_approx:
+		numpy.add(kernel_mask, numpy.copysign(0.5, kernel_mask), kernel_mask)
+		numpy.trunc(kernel_mask, kernel_mask)
+	kernel_mask[kernel_mask >= cosine_falloff] = cosine_falloff
+	fill_soft_edge_kernel_mask(kernel_mask, cosine_falloff, mode)
+
+	# Replace the region around every outline pixel with the gaussian kernel.
+	if dimension == 2:
+		for x, y in zip(*outline_index):
+			x_start = x - length
+			x_stop = x + length + 1
+			y_start = y - length
+			y_stop = y + length + 1
+			mask_slice = outline[
+				x_start:x_stop,
+				y_start:y_stop,
+				]
+			numpy.maximum(kernel_mask, mask_slice, mask_slice)
+		outline = outline[
+			length+1:outline.shape[0]-length-1,
+			length+1:outline.shape[1]-length-1,
+			]
+	elif dimension == 3:
+		for x, y, z in zip(*outline_index):
+			x_start = x - length
+			x_stop = x + length + 1
+			y_start = y - length
+			y_stop = y + length + 1
+			z_start = z - length
+			z_stop = z + length + 1
+			mask_slice = outline[
+				x_start:x_stop,
+				y_start:y_stop,
+				z_start:z_stop,
+				]
+			numpy.maximum(kernel_mask, mask_slice, mask_slice)
+		outline = outline[
+			length+1:outline.shape[0]-length-1,
+			length+1:outline.shape[1]-length-1,
+			length+1:outline.shape[2]-length-1,
+			]
+	else:
+		assert False
+
+	# Return a EMData object if an EMData object was the input
+	combined_mask = numpy.maximum(img_data, outline)
+	if out_eman:
+		return_data[...] = combined_mask
+	else:
+		return_object = combined_mask
+	return return_object
+
 
 def binarize(img, minval = 0.0):
 	"""
@@ -76,19 +203,19 @@ def dilation(f, mask = None, morphtype="BINARY"):
 	from EMAN2 import morph_type, filt_dilation_
 
 	if not mask:
-		from utilities import model_blank
+		from utilities import model_circle
 		nx = f.get_xsize()
 		ny = f.get_ysize()
 		nz = f.get_zsize()
-		if(nz == 1):	mask = model_blank(3,3,bckg = 1.0)
-		elif(nz >1):  mask = model_blank(3,3,3,bckg = 1.0)
+		if(nz == 1):	mask = model_circle(2,5,5)
+		elif(nz >1):  mask = model_circle(2,5,5,5)
 		else:  ERROR("Command does not work for 1D images","dilation",1)
 
 	if morphtype=="BINARY":
 		return filt_dilation_(f, mask, morph_type.BINARY)
 	elif morphtype=="GRAYLEVEL":
 		return filt_dilation_(f, mask, morph_type.GRAYLEVEL)
-	else: print("Unknown dilation type.")
+	else: ERROR("Unknown dilation type","dilation",1)
 
 def erosion(f, mask = None, morphtype="BINARY"):
 	"""
@@ -112,22 +239,26 @@ def erosion(f, mask = None, morphtype="BINARY"):
 		nx = f.get_xsize()
 		ny = f.get_ysize()
 		nz = f.get_zsize()
-		if(nz == 1):	mask = model_blank(3,3,bckg = 1.0)
-		elif(nz >1):  mask = model_blank(3,3,3,bckg = 1.0)
-		else:  ERROR("Command does not work for 1D images","dilation",1)
+		from utilities import model_circle
+		nx = f.get_xsize()
+		ny = f.get_ysize()
+		nz = f.get_zsize()
+		if(nz == 1):	mask = model_circle(2,5,5)
+		elif(nz >1):  mask = model_circle(2,5,5,5)
+		else:  ERROR("Command does not work for 1D images","erosion",1)
 
 	if morphtype=="BINARY":
 		return filt_erosion_(f, mask, morph_type.BINARY)
 	elif morphtype=="GRAYLEVEL":
 		return filt_erosion_(f, mask, morph_type.GRAYLEVEL)
-	else: print("Unknown erosion type.")
+	else: ERROR("Unknown erosion type","erosion",1)
 
 def invert(im):
 	"""
 	 Invert contrast of an image (while keeping the average)
 	"""
-	p = Util.infomask(im, None, True)
-	return ((-1.0*im) + 2*p[0])
+	p = Util.infomask(im, None, True)[0]
+	return ((-1.0*im) + 2*p)
 
 #def compress(img, value = 0.0, frange=1.0):
 #	return img.process( "threshold.compress", {"value": value, "range": frange } )
@@ -230,24 +361,14 @@ def threshold_outside(img, minval, maxval):
 	"""
 	return img.process( "threshold.clampminmax", {"minval": minval, "maxval": maxval } )
 
-def threshold_outside(img, minval, maxval):
-	"""
-		Name
-			threshold_outside - replace values outside given thresholds by respective threshold values
-		Input
-			img: input image
-			minval: value below which image pixels will be set to this value.
-			maxval: value above which image pixels will be set to this value.
-	"""
-	return img.process( "threshold.clampminmax", {"minval": minval, "maxval": maxval } )
-
 def threshold_inside(img, minval, maxval):
 	"""
 		Name
-			threshold_inside - replace values outside given thresholds by respective threshold values
+			threshold_inside - replace values inside given thresholds by zeroes
 		Input
 			img: input image
 			minval, maxval: image pixels that have values between these thresholds will be set to zero.
+		WARNING: This function is written in python and thus very slow for large images/volumes
 	"""
 	im = img.copy()
 	nx = im.get_xsize()
@@ -1210,7 +1331,7 @@ def flcc(t, e):
 ##-----------------------------img formation parameters related functions---------------------------------
 def imf_params_cl1(pw, n=2, iswi=3, Pixel_size=1):
 	"""
-		Extract image formation parameters using contrained simplex method
+		Extract image formation parameters using constrained simplex method
 		The output is a list of list, which contains the following four elements:
 		1. frequencies in 1/Angstrom
 		2. fitted curve, either background noise or envelope function
@@ -1368,7 +1489,7 @@ def residual_1dpw2(list_1dpw2, polynomial_rankB = 2, Pixel_size = 1, cut_off = 0
 			freq.append(i/(2*Pixel_size*len(list_1dpw2)))
 	return res, freq
 
-def adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, kernel_size = 11, gauss_standard_dev =9):
+def adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5, mode = "C"):
 	"""
 		Name
 			adaptive_mask - create a mask from a given image.
@@ -1376,9 +1497,9 @@ def adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, kernel_
 			img: input image
 			nsigma: value for initial thresholding of the image.
 		Output
-			mask: The mask will have values one, zero, with Gaussian smooth transition between two regions.
+			mask: The mask will have values one, zero, with cosine smooth transition between two regions.
 	"""
-	from utilities  import gauss_edge, model_circle
+	from utilities  import model_circle
 	from morphology import binarize, dilation
 	nx = vol.get_xsize()
 	ny = vol.get_ysize()
@@ -1387,7 +1508,7 @@ def adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, kernel_
 	s1 = Util.infomask(vol, mc, True) # flip true: find statistics under the mask (mask >0.5)
 	if threshold <= -9999.0:
 		# Use automatic mode
-		s1 = [s1[0] + s1[1] * nsigma, s1[0], s1[1], nsigma] 
+		s1 = [s1[0] + s1[1] * nsigma, s1[0], s1[1], nsigma]
 		# new s1[0] is calculated threshold for binarize
 	else: 
 		# use the user-provided threshold
@@ -1398,9 +1519,52 @@ def adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, kernel_
 		# new s1[3] is calculated nsigma corresponding to user-provided threshold
 	mask = Util.get_biggest_cluster(binarize(vol, s1[0]))
 	for i in range(ndilation):   mask = dilation(mask)
-	mask = gauss_edge(mask, kernel_size, gauss_standard_dev)
-	return mask, s1 # s1[0]: threshold for binarize, s1[1]: background density average, s1[2]: background density sigma, s1[3]: sigma factor (nsigma)
-	
+	mask = Util.soft_edge(mask, edge_width, mode)
+	return mask
+
+def adaptive_mask_scipy(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5, mode = "C", allow_disconnected=False, nerosion = 0, do_approx=False):
+	"""
+		Name
+			adaptive_mask - create a mask from a given image.
+		Input
+			img: input image
+			nsigma: value for initial thresholding of the image.
+		Output
+			mask: The mask will have values one, zero, with cosine smooth transition between two regions.
+	"""
+	from utilities  import model_circle
+	from morphology import binarize, dilation
+	nx = vol.get_xsize()
+	ny = vol.get_ysize()
+	nz = vol.get_zsize()
+	mc = model_circle(nx//2, nx, ny, nz) - model_circle(nx//3, nx, ny, nz)
+	s1 = Util.infomask(vol, mc, True) # flip true: find statistics under the mask (mask >0.5)
+	if threshold <= -9999.0:
+		# Use automatic mode
+		bin_threshold = s1[0] + s1[1] * nsigma
+		#s1 = [s1[0] + s1[1] * nsigma, s1[0], s1[1], nsigma]
+		# new s1[0] is calculated threshold for binarize
+	else: 
+		# use the user-provided threshold
+		bin_threshold = threshold
+		#if s1[1] != 0.0:
+		#	s1 = [threshold, s1[0], s1[1], (threshold - s1[0])/s1[1]] 
+		#else:
+		#	s1 = [threshold, s1[0], s1[1], 0.0]
+		# new s1[3] is calculated nsigma corresponding to user-provided threshold
+
+	mask = binarize(vol, bin_threshold)
+	if not allow_disconnected:
+		mask = Util.get_biggest_cluster(mask)
+	for i in range(ndilation):
+		mask = dilation(mask)
+	for i in range(nerosion):
+		mask = erosion(mask)
+	if edge_width > 0:
+		mask = soft_edge(mask, edge_width, mode, do_approx)
+	return mask
+
+'''
 def adaptive_mask2D(img, nsigma = 1.0, ndilation = 3, kernel_size = 11, gauss_standard_dev =9):
 	"""
 		Name
@@ -1421,6 +1585,7 @@ def adaptive_mask2D(img, nsigma = 1.0, ndilation = 3, kernel_size = 11, gauss_st
 	for i in range(ndilation):   mask = dilation(mask)
 	#mask = gauss_edge(mask, kernel_size, gauss_standard_dev)
 	return mask
+'''
 
 def cosinemask(im, radius = -1, cosine_width = 5, bckg = None, s=999999.0):
 	"""
@@ -1665,6 +1830,11 @@ def compute_bfactor(pws, freq_min, freq_max, pixel_size = 1.0):
 		idx_freq_max = i
 		if(x[i] > freq_max**2):
 			break
+
+	# Linear regression will crash if min & max frequencies are only one apart
+	if idx_freq_max-idx_freq_min <= 1: 
+		ERROR("B_start is too high a resolution! Decrease it (under Advanced) and re-run the program! ", "compute_bfactor")
+		
 	B, s = linreg(x[idx_freq_min:idx_freq_max], pws_log[idx_freq_min:idx_freq_max])
 	#print  B,s
 
@@ -1932,7 +2102,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			print(("Found %d micrographs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern))))
 			if len(input_mic_path_list) == 0:
 				# The result shouldn't be empty if the specified  file name pattern is invalid
-				error_status = ("There are no s whose paths match with the specified file path pattern (%s) for %s. Please check input_image_path. Run %s -h for help." % (mic_pattern, cter_mode_name, program_name), getframeinfo(currentframe()))
+				error_status = ("There are no micrographs whose paths match with the specified file path pattern (%s) for %s. Please check input_image_path. Run %s -h for help." % (mic_pattern, cter_mode_name, program_name), getframeinfo(currentframe()))
 				break
 		
 			# Register  id substrings to the global entry dictionary
@@ -2223,20 +2393,6 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			except:
 				print("MRK_DEBUG: tilemic() in cter_mrk() raised an exception. The micrographs {} might have a problem. Please check it and remove it if necessary.".format(img_name))
 				raise
-			# # NOTE: 2017/07/24 Toshio Moriya 
-			# # Writing thumbnail at this timing causes exception with MPI processing for some micrographs
-			# # RuntimeError:     FileAccessException at EMAN2_SRC_DIR/eman2/libEM/hdfio2.cpp:517: 
-			# # error with 'CTER_OUTDIR/micthumb/MIC_BASENAME_ROOT.hdf': 'cannot access file 'CTER_OUTDIR/micthumb/MIC_BASENAME_ROOT.hdf'' caught
-			# 
-			# if stack == None:
-			# 	# create  thumbnail
-			# 	nx = mic.get_xsize()
-			# 	if nx > 512:
-			# 		img_micthumb = resample(mic, 512.0/nx)
-			# 	else:
-			# 		img_micthumb = mic
-			# 	img_micthumb.write_image(os.path.join(outmicthumb, "%s_thumb.hdf" % (img_basename_root)))
-			# 	del img_micthumb
 			del mic
 		else:
 			img_type = "Stack"
@@ -3001,7 +3157,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			print(("Found %d micrographs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern))))
 			if len(input_mic_path_list) == 0:
 				# The result shouldn't be empty if the specified  file name pattern is invalid
-				error_status = ("There are no s whose paths match with the specified file path pattern (%s) for %s. Please check input_image_path. Run %s -h for help." % (mic_pattern, cter_mode_name, program_name), getframeinfo(currentframe()))
+				error_status = ("There are no micrographs whose paths match with the specified file path pattern (%s) for %s. Please check input_image_path. Run %s -h for help." % (mic_pattern, cter_mode_name, program_name), getframeinfo(currentframe()))
 				break
 		
 			# Register  id substrings to the global entry dictionary
@@ -3292,20 +3448,6 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			except:
 				print("MRK_DEBUG: tilemic() in cter_pap() raised an exception. The micrographs {} might have a problem. Please check it and remove it if necessary.".format(img_name))
 				raise
-			# # NOTE: 2017/07/24 Toshio Moriya 
-			# # Writing thumbnail at this timing causes exception with MPI processing for some micrographs
-			# # RuntimeError:     FileAccessException at EMAN2_SRC_DIR/eman2/libEM/hdfio2.cpp:517: 
-			# # error with 'CTER_OUTDIR/micthumb/MIC_BASENAME_ROOT.hdf': 'cannot access file 'CTER_OUTDIR/micthumb/MIC_BASENAME_ROOT.hdf'' caught
-			# 
-			# if stack == None:
-			# 	# create  thumbnail
-			# 	nx = mic.get_xsize()
-			# 	if nx > 512:
-			# 		img_micthumb = resample(mic, 512.0/nx)
-			# 	else:
-			# 		img_micthumb = mic
-			# 	img_micthumb.write_image(os.path.join(outmicthumb, "%s_thumb.hdf" % (img_basename_root)))
-			# 	del img_micthumb
 			del mic
 		else:
 			img_type = "Stack"
@@ -3597,9 +3739,6 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				bd1 = -bd1
 				cd1 = 90.0 + cd1
 			cd1 = cd1 % 180
-			#  TOSHIO: please avoid this style of coding at all cost.  It follows from the above paragraph that the conditions below can never be met.  So what do you have them?
-			#if bd1 < 0.0: ERROR("Logical Error: Encountered unexpected astig. amp. value (%f). Consult with the developer." % (ad1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
-			#if cd1 < 0.0 or cd1 >= 180: ERROR("Logical Error: Encountered unexpected astig. angle value (%f). Consult with the developer." % (cd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
 			
 			#  SANITY CHECK, do not produce anything if defocus abd astigmatism amplitude are out of whack
 			reject_img_messages = []
@@ -3607,11 +3746,6 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				pwrot2 = rotavg_ctf( model_blank(wn, wn), ad1, Cs, voltage, pixel_size, bd1, cd1)
 			except:
 				reject_img_messages.append("    - Astigmatism amplitude (%f) is larger than defocus (%f) or defocus (%f) is negative." % (bd1, ad1, ad1))
-			
-			#  TOSHIO:  where do you get 0.3 from?  It cannot be here.  If you need something like that ask the user what acceptable minimum should be.
-			#valid_min_defocus = 0.3
-			#if ad1 < valid_min_defocus:
-			#	reject_img_messages.append("    - Defocus (%f) is smaller than valid minimum value (%f)." % (ad1, valid_min_defocus))
 			
 			if len(reject_img_messages) > 0:
 				rejected_img_names.append(img_name)
@@ -3668,17 +3802,8 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				cvavad1 = stdavad1 / ad1 * 100 # use percentage
 				
 				if bd1 < 0.0: ERROR("Logical Error: Encountered unexpected astig. amp. value (%f). Consult with the developer." % (bd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
-				#  TOSHIO - no need to ceck, it was computed as sqrt above, so it cannot be <0
-				#if stdavbd1 < 0.0: ERROR("Logical Error: Encountered unexpected astig. amp. SD value (%f). Consult with the developer." % (stdavbd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
 
-
-				#  TOSHIO, I am not sure why do you need it, but I guess what you are trying to write is:
 				bd1 = max(bd1, 1.0e-15)
-				""" Please delete
-				bd1_precision = 1.0e-15  # use double precision
-				if bd1 < bd1_precision:
-					bd1 = bd1_precision
-				"""
 				
 				cvavbd1 = stdavbd1 / bd1 * 100 # use percentage
 				
@@ -5693,10 +5818,10 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			img_type = "Micrograph"
 			img_name = namics[ifi]
 			img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
-			
+
 			if my_mpi_proc_id == main_mpi_proc:
 				print(("    Processing %s ---> %6.2f%%" % (img_name, (ifi - set_start) / progress_percent_step)))
-			
+
 			if not os.path.exists(img_name):
 				missing_img_names.append(img_name)
 				print("    %s %s: Can not find this file. Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name))
@@ -5707,20 +5832,6 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			except:
 				print("MRK_DEBUG: tilemic() in cter_vpp() raised an exception. The micrographs {} might have a problem. Please check it and remove it if necessary.".format(img_name))
 				raise
-			# # NOTE: 2017/07/24 Toshio Moriya 
-			# # Writing thumbnail at this timing causes exception with MPI processing for some micrographs
-			# # RuntimeError:     FileAccessException at EMAN2_SRC_DIR/eman2/libEM/hdfio2.cpp:517: 
-			# # error with 'CTER_OUTDIR/micthumb/MIC_BASENAME_ROOT.hdf': 'cannot access file 'CTER_OUTDIR/micthumb/MIC_BASENAME_ROOT.hdf'' caught
-			# 
-			# if stack == None:
-			# 	# create  thumbnail
-			# 	nx = mic.get_xsize()
-			# 	if nx > 512:
-			# 		img_micthumb = resample(mic, 512.0/nx)
-			# 	else:
-			# 		img_micthumb = mic
-			# 	img_micthumb.write_image(os.path.join(outmicthumb, "%s_thumb.hdf" % (img_basename_root)))
-			# 	del img_micthumb
 			del mic
 
 		else:
@@ -5933,9 +6044,6 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				bd1 = -bd1
 				cd1 += 90.0
 			cd1 = cd1%180
-
-			#if bd1 < 0.0: ERROR("Logical Error: Encountered unexpected astig. amp. value (%f). Consult with the developer." % (ad1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
-			#if cd1 < 0.0 or cd1 >= 180: ERROR("Logical Error: Encountered unexpected astig. angle value (%f). Consult with the developer." % (cd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
 			
 			#  SANITY CHECK, do not produce anything if defocus abd astigmatism amplitude are out of whack
 			reject_img_messages = []

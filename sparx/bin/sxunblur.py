@@ -1,7 +1,8 @@
 #! /usr/bin/env python
 from __future__ import print_function
 #
-# Copyright (C) 2016  Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
+# Author 2016  Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
+# Copyright (C) 2019 Max planck institute for molecular physiology, Dortmund
 #
 
 # source code in this file under either license. However, note that the
@@ -34,7 +35,7 @@ import subprocess
 import global_def
 from global_def import SPARXVERSION, ERROR
 from optparse import OptionParser, SUPPRESS_HELP
-from sxsummovie import create_summovie_command
+from utilities import create_summovie_command
 
 def main():
 

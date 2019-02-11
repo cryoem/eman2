@@ -14,8 +14,9 @@ set -xe
 RECIPES_DIR=$(cd $(dirname $0)/../recipes && pwd -P)
 numpy_version=${1//.}
 
-conda remove fftw-mpi --force --yes
-conda install pydusa=1.15=np${numpy_version}* --use-local --yes
-conda install fftw-mpi --use-local --yes
+CONDA_BLD=$(conda info --root)/conda-bld
+
+conda install fftw-mpi --yes --force-reinstall --override-channels -c file://${CONDA_BLD}
+conda install pydusa=1.15=np${numpy_version}* --force-reinstall --yes -c file://${CONDA_BLD} --override-channels
 
 conda inspect linkages pydusa

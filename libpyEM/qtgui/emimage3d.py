@@ -41,7 +41,7 @@ from OpenGL import GL, GLU, GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import QTimer, Qt
+from PyQt4.QtCore import Qt
 from e2eulerxplor import EMEulerExplorer
 from .emglobjects import Camera, Camera2, EMGLWidget, EMViewportDepthTools, EMGLProjectionViewMatrices, EMOpenGLFlagsAndTools
 from .emimage3diso import EMIsosurfaceModel
@@ -53,11 +53,6 @@ from .emlights import EMLightsInspectorBase, EMLightsDrawer
 from math import *
 import weakref
 
-
-
-
-
-MAG_INCREMENT_FACTOR = 1.1
 
 class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 	""" 
@@ -128,7 +123,6 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		self.last_window_height = -1 # used for automatic resizing from the desktop
 		
 		self.file_name = None		
-		self.emit_events = False		
 		self.perspective = False
 
 		if image != None: 
@@ -187,10 +181,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		# Need to set the rank appropriately
 		for i in range(0,len(self.viewables)):
 			self.viewables[i].set_rank(i+1)
-	def enable_emit_events(self,val=True):
-		for v in self.viewables: v.enable_emit_events(val)
-		self.emit_events = val
-		self.cam.enable_emit_events(val)
+
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 	def get_current_idx(self):
@@ -214,13 +205,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		if self.data != None:
 			return [self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize()]
 		else: return [0,0,0]
-	def get_emit_signals_and_connections(self):
-		ret = {}
-		for v in self.viewables: ret.update(v.get_emit_signals_and_connections())
-		ret.update(self.cam.get_emit_signals_and_connections())
-		ret.update({"set_perspective":self.set_perspective})
-		
-		return ret
+
 	def get_fov(self):
 		return self.fov
 	def get_inspector(self):
@@ -283,7 +268,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		
 		
 		glEnable(GL_NORMALIZE)
-	def is_emitting(self): return self.emit_events
+	
 	def load_last_viewable_camera(self):
 		return
 		size = len(self.viewables)
@@ -576,7 +561,6 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 			self.qt_parent.setWindowTitle(remove_directories_from_name(self.file_name))
 	def set_perspective(self,bool):
 		self.perspective = bool
-		if self.emit_events: self.set_perspective.emit(bool)
 		self.updateGL()
 		#self.set_perspective(bool)
 	def set_scale(self,val):

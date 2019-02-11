@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from __future__ import division
-
 from past.utils import old_div
 '''
 ====================
@@ -89,8 +88,21 @@ def main():
 		print("If specifying --radiusinner, you must also specify --heightinner.")
 		sys.exit(1)	
 	
+	radius = 0
+	height = 0
+	box = options.boxsize
+	if options.radius:
+		radius = options.radius
+	else:
+		radius = int(old_div(box,2.0))
+		
+	if options.height:
+		height = options.height
+	else:
+		height = int(old_div(box,2.0))
+
 	from EMAN2_utils import makepath
-	options = makepath( options, 'cylmask')
+	options = makepath( options, 'cylmask_R' +str(radius)+'_H'+str(height))
 	
 	logger = E2init(sys.argv, options.ppid)
 	
@@ -103,7 +115,7 @@ def main():
 	#	axisdict.update( { 'z } )
 	ts = {}
 	
-	mask = cylinder(options)
+	mask = cylinder( options, box, radius, height)
 	
 	rt=Transform()
 	if options.rotation or options.translation:
@@ -190,28 +202,22 @@ def main():
 	return
 
 
-def cylinder( options ):
+def cylinder( options, box, radius, height ):
 	
-	box = options.boxsize
 	mask = EMData( box, box, box)
 	mask.to_one()
-	
-	if options.radius:
-		radius = options.radius
-	else:
-		radius = old_div(box,2.0)
-		
-	if options.height:
-		height = options.height
-	else:
-		height = old_div(box,2.0)
 	
 	maskout = mask.process("testimage.cylinder",{'height':height,'radius':radius})
 	finalmask = maskout
 	if options.heightinner and options.radiusinner:
 		maskin = mask.process("testimage.cylinder",{'height':options.heightinner,'radius':options.radiusinner})
 		finalmask = maskout - maskin
-		
+	
+	if options.apix:
+		finalmask['apix_x']=options.apix
+		finalmask['apix_y']=options.apix
+		finalmask['apix_z']=options.apix
+
 	return finalmask
 	
 if __name__ == '__main__':

@@ -14,7 +14,9 @@ import threading
 import queue
 from sys import argv,exit
 
-def rotfncompete(jsd,avgs,fsp,fspn,a,sym,refs,shrinkrefs,maxtilt,wedgesigma,shrink,maxres,simthr2,verbose):
+#def rotfncompete(jsd,avgs,fsp,fspn,a,sym,refs,shrinkrefs,maxtilt,wedgesigma,shrink,maxres,simthr2,verbose):
+def rotfncompete(jsd,avgs,fsp,fspn,a,refs, shrinkrefs, options):
+	
 	"""Averaging thread. 
 	avgs are n existing Averagers, 
 	fsp,i is the particle being averaged
@@ -23,34 +25,42 @@ def rotfncompete(jsd,avgs,fsp,fspn,a,sym,refs,shrinkrefs,maxtilt,wedgesigma,shri
 	refs are the n alignment references for competitive averaging
 	maxtilt can optionally better enforce missing wedge exclusion
 	"""
+	
+	shrink=options.shrinkcompare
 	if shrink<2: shrink=0
 	b=EMData(fsp,fspn)
-	if maxres>0: b.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,maxres)})
-	if maxtilt<90.0 :
+	if options.maxres>0: b.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,options.maxres)})
+	if options.maxtilt<90.0 :
 		bf=b.do_fft()
-		bf.process_inplace("mask.wedgefill",{"thresh_sigma":0.0,"maxtilt":maxtilt})
+		bf.process_inplace("mask.wedgefill",{"thresh_sigma":0.0,"maxtilt":options.maxtilt})
 		b=bf.do_ift()
 	b.process_inplace("xform",{"transform":a})
 	if shrink : bs=b.process("math.meanshrink",{"n":shrink})
 	else: bs=b
 	xf = Transform()
 	xf.to_identity()
-	nsym=xf.get_nsym(sym)
+	nsym=xf.get_nsym(options.sym)
 	best=(1.0e50,None,None)
 	for r,ref in enumerate(shrinkrefs):
 		for i in range(nsym):
-			c=bs.process("xform",{"transform":xf.get_sym(sym,i)})
-			d=c.align("translational",ref)
-			score=d.cmp("fsc.tomo.auto",ref,{"sigmaimgval":wedgesigma,"sigmawithval":0.5})
+			c=bs.process("xform",{"transform":xf.get_sym(options.sym,i)})
+			if options.noali:
+				d=c
+			else:
+				d=c.align("translational",ref)
+			score=d.cmp("fsc.tomo.auto",ref,{"sigmaimgval":options.wedgesigma,"sigmawithval":0.5})
 			if score<best[0] : best=(score,r,d,i)
 	
 	if shrink:
-		c=b.process("xform",{"transform":xf.get_sym(sym,best[3])})
-		d=c.align("translational",refs[best[1]])
+		c=b.process("xform",{"transform":xf.get_sym(options.sym,best[3])})
+		if options.noali:
+			d=c
+		else:
+			d=c.align("translational",refs[best[1]])
 	else :
 		d=best[2]
 	
-	if best[0]<simthr2 : 
+	if best[0]<options.simthr2 : 
 		avgs[best[1]].add_image(d)
 		print("{} -> ref {} sym {}   {}".format(fspn,best[1],best[3],best[0]))
 	else: print("** {} -> ref {} sym {}   {}".format(fspn,best[1],best[3],best[0]))
@@ -87,6 +97,8 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	parser.add_argument("--sym",type=str,help="Symmetry of the input. Must be aligned in standard orientation to work properly.",default="c1")
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder containing current results (default = highest spt_XX)")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--noali", action="store_true", default=False ,help="Skip translational alignment.")
+
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -155,7 +167,8 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 		thrds=[threading.Thread(target=rotfncompete,args=(jsd,avgs,options.replace,eval(k)[1],angs[k]["xform.align3d"],options.sym,refs,shrinkrefs,options.maxtilt,options.wedgesigma,options.shrinkcompare,options.maxres,options.simthr2,options.verbose)) for i,k in enumerate(keys)]
 
 	else:
-		thrds=[threading.Thread(target=rotfncompete,args=(jsd,avgs,eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.sym,refs,shrinkrefs,options.maxtilt,options.wedgesigma,options.shrinkcompare,options.maxres,options.simthr2,options.verbose)) for i,k in enumerate(keys)]
+		#thrds=[threading.Thread(target=rotfncompete,args=(jsd,avgs,eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.sym,refs,shrinkrefs,options.maxtilt,options.wedgesigma,options.shrinkcompare,options.maxres,options.simthr2,options.verbose)) for i,k in enumerate(keys)]
+		thrds=[threading.Thread(target=rotfncompete,args=(jsd,avgs,eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],refs,shrinkrefs,options)) for i,k in enumerate(keys)]
 
 
 	print(len(thrds)," threads")

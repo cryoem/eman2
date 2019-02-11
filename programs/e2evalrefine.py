@@ -189,7 +189,7 @@ def main():
 	parser.add_argument("--includeprojs", default=False, action="store_true", help="If specified with --evalptclqual, projections will be written to disk for easy comparison.",guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='evalptcl[True]')
 	parser.add_argument("--iter", type=int, default=None, help="If a refine_XX folder is being used, this selects a particular refinement iteration. Otherwise the last complete iteration is used.")
 	parser.add_argument("--mask",type=str,help="Mask to be used to focus --evalptclqual and other options. May be useful for separating heterogeneous data.", default=None)
-	parser.add_argument("--sym",type=str,help="Symmetry to be used in searching adjacent unit cells", default="c1")
+	parser.add_argument("--sym",type=str,help="Symmetry to be used in searching adjacent unit cells, default from refine_xx parms", default=None)
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=9, col=0, rowspan=1, colspan=1, mode='evalptcl[4]')
 	#parser.add_argument("--parmcmp",  default=False, action="store_true",help="Compare parameters used in different refinement rounds")
 	#parser.add_argument("--parmpair",default=None,type=str,help="Specify iter,iter to compare the parameters used between 2 itertions.")
@@ -215,7 +215,8 @@ def main():
 		if options.iter==None:
 			try:
 				options.iter=int(jsparm["last_map"].split("_")[-1][:2])
-				options.sym=jsparm["sym"]
+				if options.sym==None :
+					options.sym=str(jsparm["sym"])
 			except:
 				print("Could not find a completed iteration in ",args[0])
 				sys.exit(1)
@@ -457,6 +458,14 @@ def main():
 
 		pf = "ptclfsc_{}_projections.hdf".format(rfnnum)
 
+		if options.sym==None or len(options.sym)==0 : options.sym="c1"
+		try:
+			sym=parsesym(options.sym).get_syms()
+			if options.verbose: print("Using symmetry: ",options.sym)
+		except:
+			print("Symmetry parsing error! ",options.sym)
+			sys.exit(1)
+			
 		#tfs = []
 
 		tlast=time()
@@ -497,7 +506,8 @@ def main():
 			t.join()
 	 
 		fout=open(ptclfsc,"w")
-		fout.write("# 100-30 it1; 30-15 it1; 15-8 it1; 8-4 it1; 100-30 it2; 30-15 it2; 15-8 it2; 8-4 it2; it12rmsd; (30-8)/(100-30) alt1; az1; cls1; alt2; az2; cls2; defocus\n")
+		fout.write("# 100-30 it1; 30-15 it1; 15-8 it1; 8-4 it1; 100-30 it2; 30-15 it2; 15-8 it2; 8-4 it2; it12rmsd; (30-8)/(100-30) alt1; az1; cls1; alt2; az2; cls2; defocus; angdiff\n")
+
 		# loop over all particles and print results
 		rmsds=[]
 		for j in range(nptcl[0]+nptcl[1]):
@@ -512,12 +522,14 @@ def main():
 				continue
 			jj=old_div(j,2)
 			eo=j%2
+			# This is the rotation to go from the first orientation to the second, ignoring phi, taking symmetry into account
+			adiff=angle_ab_sym(sym,r[4],r[5],r[12],r[13])
 			rmsd=sqrt((r[0]-r[8])**2+(r[1]-r[9])**2+(r[2]-r[10])**2+(r[3]-r[11])**2)
 			rmsds.append(rmsd)
 			if options.includeprojs:
-				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(r[0],r[1],r[2],r[3],r[8],r[9],r[10],r[11],rmsd,old_div((r[9]+r[10]),r[8]),r[4],r[5],r[6],r[12],r[13],r[14],r[15],jj,cptcl[eo],j,pf))
+				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(r[0],r[1],r[2],r[3],r[8],r[9],r[10],r[11],rmsd,old_div((r[9]+r[10]),r[8]),r[4],r[5],r[6],r[12],r[13],r[14],r[15],adiff,jj,cptcl[eo],j,pf))
 			else:
-				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(r[0],r[1],r[2],r[3],r[8],r[9],r[10],r[11],rmsd,old_div((r[9]+r[10]),r[8]),r[4],r[5],r[6],r[12],r[13],r[14],r[15],jj,cptcl[eo]))
+				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(r[0],r[1],r[2],r[3],r[8],r[9],r[10],r[11],rmsd,old_div((r[9]+r[10]),r[8]),r[4],r[5],r[6],r[12],r[13],r[14],r[15],adiff,jj,cptcl[eo]))
 
 		fout.close()
 
@@ -853,11 +865,12 @@ def main():
 				box=EMData(lastmap,0,True)["nx"]
 				targetres=jsparm["targetres"]
 				speed=jsparm["speed"]
+				bispec="bispec" if jsparm.getdefault("bispec",False) else " "
 				nptcl=EMUtil.get_image_count(str(jsparm["input"][0]))+EMUtil.get_image_count(str(jsparm["input"][1]))
 
-				print("{path}\t{nptcl} ptcls\t{niter} iter\t{cores} cores\t{h:02d}:{m:02d} walltime\t{cpuh:1.1f} CPU-h\t{cpuhpi:1.2f} CPU-h/it\t{bs} box\t{targ:1.1f} targetres\tspd={speed}".format(
+				print("{path}\t{nptcl} ptcls\t{niter} iter\t{cores} cores\t{h:02d}:{m:02d} walltime\t{cpuh:1.1f} CPU-h\t{cpuhpi:1.2f} CPU-h/it\t{bs} box\t{targ:1.1f} targetres\tspd={speed} {bispec}".format(
 					path=d,niter=lastiter,cores=cores,h=int((endtime-starttime)//3600),m=int(((endtime-starttime)%3600)//60),
-					cpuh=old_div(cores*(endtime-starttime),3600),cpuhpi=old_div(cores*(endtime-starttime),(3600*lastiter)),bs=box,targ=targetres,speed=speed,nptcl=nptcl))
+					cpuh=old_div(cores*(endtime-starttime),3600),cpuhpi=old_div(cores*(endtime-starttime),(3600*lastiter)),bs=box,targ=targetres,speed=speed,bispec=bispec,nptcl=nptcl))
 			except: 
 				if options.verbose: traceback.print_exc()
 				print("No timing for ",d)

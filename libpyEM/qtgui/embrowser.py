@@ -39,7 +39,7 @@ from builtins import object
 from EMAN2 import *
 from EMAN2jsondb import js_open_dict
 from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import Qt
+from PyQt4.QtCore import Qt, QTimer
 from PyQt4.QtGui import QAction,QTreeWidgetItem
 from .emapplication import EMApp
 from .emimage2d import *
@@ -48,7 +48,6 @@ from .empdbitem3d import *
 from .emplot2d import *
 from .emhist import *
 from .emplot3d import *
-from .expand_string import expand_string
 from libpyUtils2 import EMUtil
 from .matching import matches_pats
 from string import lower
@@ -3028,7 +3027,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 	cancel = QtCore.pyqtSignal()
 	module_closed = QtCore.pyqtSignal()
 
-	def __init__(self, parent = None, withmodal = False, multiselect = False, startpath = ".", setsmode = None) :
+	def __init__(self, parent = None, withmodal = False, multiselect = False, startpath = ".", setsmode = None, dirregex="") :
 		"""withmodal - if specified will have ok/cancel buttons, and provide a mechanism for a return value (not truly modal)
 		multiselect - if True, multiple files can be simultaneously selected
 		startpath - default "."
@@ -3120,7 +3119,8 @@ class EMBrowserWidget(QtGui.QWidget) :
 		self.wfilter.addItem(".*\.pdb")
 		self.wfilter.addItem("help")
 		self.wtoolhbl2.addWidget(self.wfilter, 5)
-
+		if dirregex!="":
+			self.wfilter.setEditText(dirregex)
 		# self.wspacet1 = QtGui.QSpacerItem(100, 10, QtGui.QSizePolicy.MinimumExpanding)
 		# self.wtoolhbl.addSpacerItem(self.wspacet1)
 
@@ -3141,10 +3141,10 @@ class EMBrowserWidget(QtGui.QWidget) :
 		# self.wbookmarks.setAutoFillBackground(True)
 		# self.wbookmarks.setBackgroundRole(QtGui.QPalette.Dark)
 		self.wbookmarks.setOrientation(2)
-		self.addBookmark("EMEN2", "emen2:")
-		self.wbookmarks.addSeparator()
-		self.addBookmark("SSH", "ssh:")
-		self.wbookmarks.addSeparator()
+		#self.addBookmark("EMEN2", "emen2:")
+		#self.wbookmarks.addSeparator()
+		#self.addBookmark("SSH", "ssh:")
+		#self.wbookmarks.addSeparator()
 		self.addBookmark("Root", "/")
 		self.addBookmark("Current", os.getcwd())
 		self.addBookmark("Home", e2gethome())
@@ -3574,7 +3574,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 			os.system(path[1:])
 			return
 
-		path = expand_string(path)
+		path = os.path.expandvars(path)
 
 		if path == "" :
 			path = "."
@@ -3676,7 +3676,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 
 #		print "Got action ", action.text(), action.data().toString()
 
-		self.setPath(str(action.data()))
+		self.setPath(action.data().toString())
 #		self.wtree.setSelectionModel(myQItemSelection(self.curmodel))
 
 	def closeEvent(self, event) :

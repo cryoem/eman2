@@ -2,9 +2,8 @@
 from __future__ import print_function
 
 #
-# Author: Steven Ludtke, 10/29/2008 (sludtke@bcm.edu)
-# Copyright (c) 2000-2006 Baylor College of Medicine
-#
+# Author: Pawel A. Penczek (pawel.a.penczek@uth.tmc.edu)
+# Copyright (c) 2000-2006 The University of Texas - Houston Medical School#
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
 # complete EMAN2 and SPARX software packages have some GPL dependencies,

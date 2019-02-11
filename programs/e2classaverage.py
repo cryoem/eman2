@@ -67,12 +67,14 @@ def main():
 	parser.add_argument("--output", type=str, help="The name of the output class-average stack", default=None)
 	parser.add_argument("--oneclass", type=int, help="Create only a single class-average. Specify the number.",default=None)
 	parser.add_argument("--classmx", type=str, help="The name of the classification matrix specifying how particles in 'input' should be grouped. If omitted, all particles will be averaged.", default=None)
+	parser.add_argument("--focused",type=str,help="Name of a reference projection file to read 1st iteration refine alignment references from.", default=None)
 	parser.add_argument("--ref", type=str, help="Reference image(s). Used as an initial alignment reference and for final orientation adjustment if present. Also used to assign euler angles to the generated classes. This is typically the projections that were used for classification.", default=None)
 	parser.add_argument("--storebad", action="store_true", help="Even if a class-average fails, write to the output. Forces 1->1 numbering in output",default=False)
 	parser.add_argument("--decayedge", action="store_true", help="Applies an edge decay to zero on the output class-averages. A very good idea if you plan on 3-D reconstruction.",default=False)
 	parser.add_argument("--resultmx",type=str,help="Specify an output image to store the result matrix. This contains 5 images where row is particle number. Rows in the first image contain the class numbers and in the second image consist of 1s or 0s indicating whether or not the particle was included in the class. The corresponding rows in the third, fourth and fifth images are the refined x, y and angle (respectively) used in the final alignment, these are updated and accurate, even if the particle was excluded from the class.", default=None)
 	parser.add_argument("--iter", type=int, help="The number of iterations to perform. Default is 1.", default=1)
 	parser.add_argument("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False)
+	parser.add_argument("--prectf",action="store_true",help="Apply particle CTF to each reference before alignment",default=False)
 	parser.add_argument("--align",type=str,help="This is the aligner used to align particles to the previous class average. Default is None.", default=None)
 	parser.add_argument("--aligncmp",type=str,help="The comparitor used for the --align aligner. Default is ccc.",default="ccc")
 	parser.add_argument("--ralign",type=str,help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner.", default=None)
@@ -156,6 +158,13 @@ def main():
 		if options.usefilt: pclist.append(options.usefilt)
 		etc.precache(pclist)
 
+	if options.prefilt and options.prectf :
+		print("ERROR: only one of prefilt and prectf can be specified")
+		sys.exit(1)
+	if options.prectf: options.prefilt=2
+	elif options.prefilt : options.prefilt=1
+	else : options.prefilt=0
+
 	# prepare tasks
 	tasks=[]
 	if ncls>1:
@@ -167,7 +176,7 @@ def main():
 			if options.resample : ptcls=[random.choice(ptcls) for i in ptcls]	# this implements bootstrap resampling of the class-average
 			if options.odd : ptcls=[i for i in ptcls if i%2==1]
 			if options.even: ptcls=[i for i in ptcls if i%2==0]
-			tasks.append(ClassAvTask(options.input,ptcls,options.usefilt,options.ref,options.iter,options.normproc,options.prefilt,
+			tasks.append(ClassAvTask(options.input,ptcls,options.usefilt,options.ref,options.focused,options.iter,options.normproc,options.prefilt,
 			  options.align,options.aligncmp,options.ralign,options.raligncmp,options.averager,options.cmp,options.keep,options.keepsig,
 			  options.automask,options.saveali,options.setsfref,options.verbose,cl,options.center))
 
@@ -176,7 +185,7 @@ def main():
 		if options.resample : ptcls=[random.choice(ptcls) for i in ptcls]
 		if options.odd : ptcls=[i for i in ptcls if i%2==1]
 		if options.even: ptcls=[i for i in ptcls if i%2==0]
-		tasks.append(ClassAvTask(options.input,list(range(nptcl)),options.usefilt,options.ref,options.iter,options.normproc,options.prefilt,
+		tasks.append(ClassAvTask(options.input,list(range(nptcl)),options.usefilt,options.ref,options.focused,options.iter,options.normproc,options.prefilt,
 			  options.align,options.aligncmp,options.ralign,options.raligncmp,options.averager,options.cmp,options.keep,options.keepsig,
 			  options.automask,options.saveali,options.setsfref,options.verbose,0,options.center))
 
@@ -318,12 +327,13 @@ def main():
 class ClassAvTask(JSTask):
 	"""This task will create a single task-average"""
 
-	def __init__(self,imagefile,imagenums,usefilt=None,ref=None,niter=1,normproc=("normalize.edgemean",{}),prefilt=0,align=("rotate_translate_flip",{}),
+	def __init__(self,imagefile,imagenums,usefilt=None,ref=None,focused=None,niter=1,normproc=("normalize.edgemean",{}),prefilt=0,align=("rotate_translate_flip",{}),
 		  aligncmp=("ccc",{}),ralign=None,raligncmp=None,averager=("mean",{}),scmp=("ccc",{}),keep=1.5,keepsig=1,automask=0,saveali=0,setsfref=0,verbose=0,n=0,center="xform.center"):
 		if usefilt==None : usefilt=imagefile
 		self.center=center
 		data={"images":["cache",imagefile,imagenums],"usefilt":["cache",usefilt,imagenums]}
 		if ref!=None : data["ref"]=["cache",ref,n]
+		if focused!=None : data["focused"]=["cache",focused,n]
 		JSTask.__init__(self,"ClassAv",data,{},"")
 
 		self.options={"niter":niter, "normproc":normproc, "prefilt":prefilt, "align":align, "aligncmp":aligncmp,
@@ -338,12 +348,15 @@ class ClassAvTask(JSTask):
 
 		try: ref=EMData(self.data["ref"][1],self.data["ref"][2])
 		except: ref=None
+		
+		try: focused=EMData(self.data["focused"][1],self.data["focused"][2])
+		except: focused=None
 
 #		print [self.data["images"][1]]+self.data["images"][2]
 
 		# make the class-average
 		try:
-			avg,ptcl_info=class_average([self.data["usefilt"][1]]+self.data["usefilt"][2],ref,options["niter"],options["normproc"],options["prefilt"],options["align"],
+			avg,ptcl_info=class_average([self.data["usefilt"][1]]+self.data["usefilt"][2],ref,focused,options["niter"],options["normproc"],options["prefilt"],options["align"],
 				options["aligncmp"],options["ralign"],options["raligncmp"],options["averager"],options["scmp"],options["keep"],options["keepsig"],
 				options["automask"],options["saveali"],options["verbose"],callback,self.center)
 		except KeyboardInterrupt: return None
@@ -371,7 +384,7 @@ class ClassAvTask(JSTask):
 			if options["verbose"]>0 : print("Final realign:",fxf)
 #			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,Transform(),options["averager"],options["normproc"],options["verbose"])
 #			avg.write_image("bdb:xf",-1)
-			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,fxf,ref,options["averager"],options["normproc"],options["setsfref"],options["verbose"])
+			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,fxf,ref,focused,options["averager"],options["normproc"],options["setsfref"],options["verbose"])
 #			avg.write_image("bdb:xf",-1)
 
 			#self.data["ref"].write_image("tst.hdf",-1)
@@ -395,7 +408,7 @@ class ClassAvTask(JSTask):
 				
 			if options["verbose"]>0 : print("Final center ({}): {}".format(self.center,fxf.get_trans_2d()))
 			avg1=avg
-			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,fxf,None,options["averager"],options["normproc"],options["setsfref"],options["verbose"])
+			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,fxf,None,focused,options["averager"],options["normproc"],options["setsfref"],options["verbose"])
 		try:
 			avg["class_ptcl_qual"]=avg1["class_ptcl_qual"]
 			avg["class_ptcl_qual_sigma"]=avg1["class_ptcl_qual_sigma"]
@@ -421,10 +434,14 @@ def get_image(images,n,normproc=("normalize.edgemean",{})):
 
 	return ret
 
-def align_one(ptcl,ref,prefilt,align,aligncmp,ralign,raligncmp):
+def align_one(ptcl,ref,prefilt,align,aligncmp,ralign,raligncmp,focused=None):
 	"""Performs the multiple steps of a single particle-alignment"""
 
-	if prefilt : ref=ref.process("filter.matchto",{"to":ptcl})
+	if prefilt==1 : ref=ref.process("filter.matchto",{"to":ptcl})
+	elif prefilt==2: 
+		ctf=ptcl["ctf"]
+		ref=ref.process("math.simulatectf",{"defocus":ctf.defocus,"voltage":ctf.voltage,"bfactor":ctf.bfactor,"apix":ptcl["apix_x"],"cs":ctf.cs,"ampcont":ctf.ampcont,"phaseflip":0})
+	if focused==None : focused=ref
 
 	# initial alignment
 	if align!=None :
@@ -436,11 +453,11 @@ def align_one(ptcl,ref,prefilt,align,aligncmp,ralign,raligncmp):
 	# refine alignment if requested
 	if ralign!=None:
 		ralign[1]["xform.align2d"] = ali.get_attr("xform.align2d")
-		ali=ptcl.align(ralign[0],ref,ralign[1],raligncmp[0],raligncmp[1])
+		ali=ptcl.align(ralign[0],focused,ralign[1],raligncmp[0],raligncmp[1])
 
 	return ali
 
-def class_average_withali(images,ptcl_info,xform,ref,averager=("mean",{}),normproc=("normalize.edgemean",{}),setsfref=0,verbose=0):
+def class_average_withali(images,ptcl_info,xform,ref,focused,averager=("mean",{}),normproc=("normalize.edgemean",{}),setsfref=0,verbose=0):
 	"""This will generate a final class-average, given a ptcl_info list as returned by class_average,
 	and a final transform to be applied to each of the relative transforms in ptcl_info. ptcl_info will
 	be modified in-place to contain the aggregate transformations, and the final aligned average will be returned"""
@@ -449,6 +466,7 @@ def class_average_withali(images,ptcl_info,xform,ref,averager=("mean",{}),normpr
 	elif isinstance(images[0],str) and isinstance(images[1],int) : nimg=len(images)-1
 	else : raise Exception("Bad images list")
 
+	if focused==None: focused=ref
 	incl=[]
 	excl=[]
 #	xforms=[]
@@ -495,7 +513,7 @@ def class_average_withali(images,ptcl_info,xform,ref,averager=("mean",{}),normpr
 
 	return avg
 
-def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),prefilt=0,align=("rotate_translate_flip",{}),
+def class_average(images,ref=None,focused=None,niter=1,normproc=("normalize.edgemean",{}),prefilt=0,align=("rotate_translate_flip",{}),
 		aligncmp=("ccc",{}),ralign=None,raligncmp=None,averager=("mean",{}),scmp=("ccc",{}),keep=1.5,keepsig=1,automask=0,saveali=0,verbose=0,callback=None,center="xform.center"):
 	"""Create a single class-average by iterative alignment and averaging.
 	images - may either be a list/tuple of images OR a tuple containing a filename followed by integer image numbers
@@ -516,6 +534,7 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 	"""
 
 	if verbose>2 : print("class_average(",images,ref,niter,normproc,prefilt,align,aligncmp,ralign,raligncmp,averager,scmp,keep,keepsig,automask,verbose,callback,center,")")
+	if focused==None: focused=ref
 
 	# nimg is the number of particles we have to align/average
 	if isinstance(images[0],EMData) : nimg=len(images)
@@ -639,7 +658,7 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 		for i in range(nimg):
 			if callback!=None and nimg%10==9 : callback(int((it+old_div(i,float(nimg)))*100/(niter+2.0)))
 			ptcl=get_image(images,i,normproc)					# get the particle to align
-			ali=align_one(ptcl,ref,prefilt,align,aligncmp,ralign,raligncmp)  # align to reference
+			ali=align_one(ptcl,ref,prefilt,align,aligncmp,ralign,raligncmp,focused)  # align to reference
 			sim=ali.cmp(scmp[0],ref,scmp[1])			# compare similarity to reference (may use a different cmp() than the aligner)
 			if saveali and it==niter : ali.write_image("aligned.hdf",-1)
 

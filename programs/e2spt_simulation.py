@@ -33,7 +33,6 @@ from __future__ import print_function
 from __future__ import division
 from past.utils import old_div
 from builtins import range
-from optparse import OptionParser
 from EMAN2 import *
 from EMAN2_utils import *
 import shutil
@@ -446,7 +445,7 @@ def randomizer(options, model, tag):
 			paltsside = preferredalt( options, mu=90, sigma=22.5, nptcls=options.nptcls ) 
 			palts = paltsside
 
-		if options.preferredside and options.preferedtop:
+		if options.preferredside and options.preferredtop:
 			ntop = int(round(old_div(options.nptcls,4.0)))
 			nbottom = ntop
 			nside = options.nptcls -ntop -nbottom  	
@@ -952,6 +951,8 @@ class SubtomoSimTask(JSTask):
 
 		#apix = ptcls[i]['apix_x']
 		apix = image['apix_x']
+		if options.apix:
+			apix = options.apix
 		
 		lower_bound = -1 * options.tiltrange
 		upper_bound = options.tiltrange

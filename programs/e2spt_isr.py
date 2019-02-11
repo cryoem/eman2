@@ -37,7 +37,6 @@ import os
 from EMAN2 import *
 from EMAN2_utils import *
 from sys import argv
-from optparse import OptionParser
 import sys
 import numpy as np
 import math

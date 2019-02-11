@@ -1539,10 +1539,18 @@ of these occasional errors"""
 
 				if region != None: ret.to_zero() # this has to occur in situations where the clip region goes outside the image
 				if "data_path" in r:
-					p,l=r["data_path"].split("*")
-					if p[0]=='/' or p[0]=='\\' or p[1]==':': ret.read_data(p,int(l),region,rnx,rny,rnz)		# absolute path
-					else :
-						ret.read_data(self.path+"/"+p,int(l),region,rnx,rny,rnz) 		# relative path
+					if r["data_path"].endswith('.mrcs'):
+						p=r["data_path"]
+						l=r["ptcl_source_coord_id"]
+						if p[0]=='/' or p[0]=='\\' or p[1]==':':
+							ret.read_image(p,int(l))		# absolute path
+						else:
+							ret.read_image(self.path+"/"+p,int(l)) 		# relative path
+					else:
+						p,l=r["data_path"].split("*")
+						if p[0]=='/' or p[0]=='\\' or p[1]==':': ret.read_data(p,int(l),region,rnx,rny,rnz)		# absolute path
+						else :
+							ret.read_data(self.path+"/"+p,int(l),region,rnx,rny,rnz) 		# relative path
 				else:
 					try: n=loads(self.bdb.get(fkey+dumps(key,-1)))	 # this is the index for this binary data item in the image-dimensions-specific binary data file
 					except: raise KeyError("Undefined data location key %s for %s"%(key,pkey+fkey))

@@ -128,16 +128,16 @@ class TomoEvalGUI(QtGui.QWidget):
 		self.wg_tltimage.set_scale(.2)
 		self.cur_tlt=None
 		
-		self.setspanel=QtGui.QListWidget(self)
+		self.setspanel=TomoListWidget(self)
 		self.gbl.addWidget(self.setspanel, 8,1,2,2)
-		self.itemflags=	Qt.ItemFlags(Qt.ItemIsEditable)|Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)
 		
-		self.wg_notes=QtGui.QTextEdit(self)
+		
+		self.wg_notes=QtGui.QLineEdit(self)
 		self.wg_notes.setText("Comments:")
 		#self.wg_notes.setStyleSheet("color: rgb(150, 150, 150);")
 		self.gbl.addWidget(self.wg_notes, 10,1,1,2)
 		
-		self.setspanel.itemChanged[QtGui.QListWidgetItem].connect(self.clickset)
+		#self.setspanel.itemClicked[QtGui.QListWidgetItem].connect(self.clickset)
 		self.wg_notes.textChanged.connect(self.noteupdate)
 		
 		self.wg_plot2d=EMPlot2DWidget()
@@ -150,6 +150,7 @@ class TomoEvalGUI(QtGui.QWidget):
 		#### getting information from json files
 		files=sorted([os.path.join(self.path,f) for f in os.listdir(self.path)])
 		ptclcls={}
+		infonames=[]
 		for i,name in enumerate(files):
 			info=info_name(base_name(name))
 			if os.path.isfile(info):
@@ -192,19 +193,28 @@ class TomoEvalGUI(QtGui.QWidget):
 				else:
 					dic["phase"]=[]
 					
-				if nbox>0 and "class_list" in js:
+				if (nbox>0) and ("class_list" in js):
 					cls=js["class_list"]
 					for k in list(cls.keys()):
 						vname=str(cls[k]["name"])
 						n=np.sum([b[-1]==int(k) for b in boxes])
-						
 						if n>0:
 							bxcls[vname]=n
+							if (info in infonames):
+								continue
 							if vname in ptclcls:
 								ptclcls[vname][1]+=n
 							else:
 								ptclcls[vname]=[1,n]
-				
+				if ("curves" in js) and len(js["curves"])>0:
+					dic["curves"]=np.array(js["curves"])
+					if "_curves_" in ptclcls:
+						ptclcls["_curves_"][1]+=len(dic["curves"])
+					else:
+						ptclcls["_curves_"]=[1,len(dic["curves"])]
+						
+				else:
+					dic["curves"]=[]
 				dic["basename"]= os.path.basename(name).split(".")[0] #base_name(name)
 				dic["e2basename"] = base_name(name)
 				dic["filename"]=name
@@ -212,28 +222,24 @@ class TomoEvalGUI(QtGui.QWidget):
 				dic["boxcls"]=bxcls
 				dic["id"]=len(self.imginfo)
 				self.imginfo.append(dic)
+				infonames.append(info)
 				js=None
+				
 		
 		self.ptclcls=ptclcls
 		
 		self.update_list()
 		
 		#### update particle type list
-		self.setspanel.clear()
-		for k in list(self.ptclcls.keys()):
-			v=self.ptclcls[k]
-			kname="    {}\t:  {}".format(k, v[1])
-			item=QtGui.QListWidgetItem(kname)
-			item.setFlags(self.itemflags)
-			self.setspanel.addItem(item)
-			item.setCheckState(Qt.Checked)
+		self.setspanel.update_list(self.ptclcls)
 	
 	def update_list(self):
 		#### update file list
+		
 		self.imglst.clear()
 		self.imglst.setRowCount(len(self.imginfo))
-		self.imglst.setColumnCount(4)
-		self.imglst.setHorizontalHeaderLabels(["ID", "file name", "#box", "loss"])
+		self.imglst.setColumnCount(5)
+		self.imglst.setHorizontalHeaderLabels(["ID", "file name", "#box", "loss", "defocus"])
 		for i,info in enumerate(self.imginfo):
 			#### use Qt.EditRole so we can sort them as numbers instead of strings
 			it=QtGui.QTableWidgetItem()
@@ -244,6 +250,7 @@ class TomoEvalGUI(QtGui.QWidget):
 			for kname in list(info["boxcls"].keys()):
 				if self.ptclcls[kname][0]==1:
 					nbox+=info["boxcls"][kname]
+			nbox+=len(info["curves"])
 			it=QtGui.QTableWidgetItem()
 			it.setData(Qt.EditRole, int(nbox))
 			self.imglst.setItem(i,2, it)
@@ -251,10 +258,20 @@ class TomoEvalGUI(QtGui.QWidget):
 				loss=-1
 			else: 
 				loss=np.round(np.mean(info["loss"]), 2)
+				
 			
 			it=QtGui.QTableWidgetItem()
 			it.setData(Qt.EditRole, float(loss))
 			self.imglst.setItem(i,3, it)
+			
+			if len(info["defocus"])==0:
+				df=-1
+			else: 
+				df=np.round(np.mean(info["defocus"]), 1)
+			it=QtGui.QTableWidgetItem()
+			it.setData(Qt.EditRole, float(df))
+			self.imglst.setItem(i,4, it)
+			
 		
 	def get_id_info(self):
 		#### utility function to get the info of current selected row.
@@ -318,20 +335,26 @@ class TomoEvalGUI(QtGui.QWidget):
 	
 	def runboxer(self):
 		idx, info=self.get_id_info()
-		#### not doing this via launch_childprocess so the boxer wont be killed when one kill the browser...
-		subprocess.Popen(["e2spt_boxer22.py",info["filename"]] )
+		modifiers = QtGui.QApplication.keyboardModifiers()
+		### do not use launch_childprocess so the gui wont be frozen when boxer is opened
+		if modifiers == QtCore.Qt.ShiftModifier:
+			subprocess.Popen("e2tomo_drawcurve.py {} --ppid {}".format(info["filename"], os.getpid()),shell=True)
+		else:
+			subprocess.Popen("e2spt_boxer22.py {} --ppid {}".format(info["filename"], os.getpid()),shell=True)
+		#launch_childprocess()
 
-	def clickset(self, item):
-		name=str(item.text())
-		k=name.split(':')[0].strip()
-		chk=int(item.checkState() == Qt.Checked)
-		if self.ptclcls[k][0]!=chk:
-			self.ptclcls[k][0]=chk
-			self.update_list()
+	#def clickset(self, item):
+		#name=str(item.text())
+		#print(name)
+		#k=name.split(':')[0].strip()
+		#chk=int(item.checkState() == Qt.Checked)
+		#if self.ptclcls[k][0]!=chk:
+			#self.ptclcls[k][0]=chk
+			#self.update_list()
 		
 		
 	def noteupdate(self):
-		notes=self.wg_notes.toPlainText()
+		notes=self.wg_notes.text()
 		idx, info=self.get_id_info()
 		if notes==info["notes"]:
 			return
@@ -359,6 +382,7 @@ class TomoEvalGUI(QtGui.QWidget):
 		self.bt_plotctf.setEnabled(len(info["defocus"])>0)
 		self.bt_plotloss.setEnabled(len(info["loss"])>0)
 		self.bt_plottpm.setEnabled(len(info["tlt_params"])>0)
+		self.setspanel.highlight(info["boxcls"])
 		
 		
 	def sortlst(self,col):
@@ -374,6 +398,102 @@ class TomoEvalGUI(QtGui.QWidget):
 		self.wg_thumbnail.close()
 		self.wg_2dimage.close()	
 		
+class TomoListWidget(QtGui.QListWidget):
+	def __init__(self, parent=None):
+		super(TomoListWidget, self).__init__(parent)
+		self.parent=parent
+		self.itemflags=Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)
+		self.itemlst=[]
+		self.lblen=10
+		#self.itemClicked.connect(self.on_item_clicked)
+		
+	def get_text(self, label, ni=0, curi=-1):
+		if curi<0:
+			txt="{i:<{l}}:{n:>6}".format(i=label, l=self.lblen, n=ni)
+		else:
+			txt="{i:<{l}}:{n:>6} : {c:>5}".format(i=label, l=self.lblen, n=ni, c=curi)
+		return txt
+		
+	def update_list(self, lst):
+		self.clear()
+		if len(lst.keys())>0:
+			self.lblen=max([len(l) for l in lst.keys()])+3
+		else:
+			self.lblen=0
+		self.itemlst=[]
+		for k in list(lst.keys()):
+			ni=lst[k][1]
+			self.itemlst.append([k, ni])
+			#print(txt)
+			txt=self.get_text(k, ni)
+			item=QtGui.QListWidgetItem(txt)
+			item.setFlags(self.itemflags)
+			item.setCheckState(Qt.Checked)
+			try: item.setFont(QtGui.QFont("Monospace"))
+			except:pass
+			self.addItem(item)
+			#v=self.ptclcls[k]
+			
+			#self.setspanel.add_item_number(k, v[1])
+		
+	
+	def highlight(self, dic):
+		lst=dic.keys()
+		for i,key in enumerate(self.itemlst):
+			if key[0] in lst:
+				self.item(i).setText(self.get_text(key[0], key[1], dic[key[0]]))
+				self.item(i).setTextColor(QtGui.QColor("blue"))
+			else:
+				self.item(i).setText(self.get_text(key[0], key[1]))
+				self.item(i).setTextColor(QtGui.QColor("black"))
+
+		
+	
+	def mousePressEvent(self, event):
+		self._mouse_button = event.buttons()
+		item=self.itemAt(event.pos())
+		self.setCurrentItem(item)
+		
+		#print(item.text(), event.button())
+		
+		if event.button()==1:
+			if item==None:
+				for i in range(self.count()):
+					self.item(i).setCheckState(Qt.Checked)
+			else:
+				if item.checkState()==Qt.Checked:
+					item.setCheckState(Qt.Unchecked)
+				else:
+					item.setCheckState(Qt.Checked)
+			#return
+		
+		elif event.button()==2:
+			for i in range(self.count()):
+				self.item(i).setCheckState(Qt.Unchecked)
+			if item!=None:
+				item.setCheckState(Qt.Checked)
+		
+		
+		for i,key in enumerate(self.itemlst):
+			#txt=str(self.item(i).text().split(":")[0]).strip()
+			txt=key[0]
+			self.parent.ptclcls[txt][0]=(self.item(i).checkState()==Qt.Checked)
+			
+			
+		self.parent.update_list()
+		#print(self.currentItem(),event)
+		#print(item.text(), self._mouse_button)
+		#super(TomoListWidget, self).mousePressEvent(event)
+		
+		
+	def mouseReleaseEvent(self, event):
+		#print("aaa")
+		return
+
+	#def on_item_clicked(self, item):
+		#print(item.text(), self._mouse_button)
+
+
 	
 def run(cmd):
 	print(cmd)

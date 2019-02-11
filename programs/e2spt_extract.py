@@ -10,6 +10,8 @@ from EMAN2 import *
 import numpy as np
 import queue
 import threading
+from EMAN2_utils import *
+
 
 
 def main():
@@ -17,9 +19,9 @@ def main():
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_pos_argument(name="tomograms",help="Specify tomograms from which you wish to extract boxed particles.", default="", guitype='filebox', browser="EMTomoBoxesTable(withmodal=True,multiselect=True)", row=0, col=0,rowspan=1, colspan=2, mode="extract")
-	parser.add_argument("--boxsz", type=int,help="box size in binned tomogram", default=-1, guitype='intbox',row=2, col=0,rowspan=1, colspan=1, mode="extract")
+	parser.add_argument("--boxsz_unbin", type=int,help="box size in unbinned tomogram", default=-1, guitype='intbox',row=2, col=0,rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--label", type=str,help="Only extract particle with this name. Leave blank to extract all particles.", default=None, guitype='strbox',row=2, col=1, rowspan=1, colspan=1, mode="extract")
-	parser.add_argument("--tag", type=str,help="Tag of output particles. Same as label by default.", default="", guitype='strbox',row=6, col=0, rowspan=1, colspan=1, mode="extract")
+	parser.add_argument("--newlabel", type=str,help="Label of output particles. Same as original particle label by default.", default="", guitype='strbox',row=6, col=0, rowspan=1, colspan=1, mode="extract")
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=3, col=0, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=4, col=1,rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--maxtilt", type=int,help="max tilt", default=100, guitype='intbox',row=4, col=0, rowspan=1, colspan=1, mode="extract")
@@ -28,6 +30,11 @@ def main():
 	parser.add_argument("--wiener", action="store_true", default=False ,help="wiener filter the particles using ctf information..", guitype='boolbox',row=6, col=1, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--alltomograms", action="store_true", default=False ,help="use all tomograms.", guitype='boolbox',row=1, col=1, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--dotest", action="store_true", default=False ,help="only make 1 batch of subtomograms for testing")
+	parser.add_argument("--curves", action="store_true", default=False ,help="extract particles from saved curves")
+	parser.add_argument("--curves_overlap", type=float, help="fraction of overlap when generating particle along curves. default is 0.5",default=0.5)
+
+	parser.add_argument("--shrink", type=int, help="Shrinking factor for output particles. Default is 1 (no shrink)",default=1)
+
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -35,11 +42,17 @@ def main():
 	if options.alltomograms:
 		fld="tomograms/"
 		args=[fld+f for f in os.listdir(fld) if f.endswith(".hdf")]
+		### do not count a tomogram twice when multiple versions exist
+		uq, uid=np.unique([base_name(a) for a in args], return_index=True)
+		args=[args[i] for i in uid]
+		#print(args)
+	
 		
 	if len(args)==0:
 		print("No input. Exit.")
 		return
-	
+
+	options.boxsz=options.boxsz_unbin // int(options.shrink)
 	if len(args)==1:
 		print("Reading from {}...".format(args[0]))
 	else:
@@ -49,6 +62,8 @@ def main():
 		opt=opt.replace("--alltomograms","")
 		for a in args:
 			run("{} {} {}".format(cmd[0], a, opt))
+			
+		print("Finished.")
 		return
 	
 	pfile=args[0]
@@ -56,6 +71,7 @@ def main():
 	#### reading alignment info...
 	js=js_open_dict(info_name(pfile))
 	ttparams=np.array(js["tlt_params"])
+	ttparams[:,:2]/=options.shrink
 	
 	if options.noctf==False and "defocus" in js:
 		#### read ctf info when exist
@@ -73,7 +89,8 @@ def main():
 	ptcl=EMData(pfile, 0, True)
 	img=EMData(tfile,0, True)
 	apix_ptcl=ptcl["apix_x"]
-	apix_tlt=img["apix_x"]
+	apix_tlt=img["apix_x"] * float(options.shrink)
+	
 	try:
 		zshift=ptcl["zshift"]#/2
 	except:
@@ -82,7 +99,7 @@ def main():
 	yt=0
 	#options.ytilt=ttparams[np.argmin(abs(ttparams[:,3]-yt)),3]
 	options.ytilt=0
-	scale=old_div(apix_ptcl,apix_tlt)
+	scale=apix_ptcl/apix_tlt
 
 	print("Scaling factor: {:.1f}, y-tilt: {:.1f}, z-shift: {:d}.".format(scale, options.ytilt, int(zshift)))
 	
@@ -95,7 +112,53 @@ def main():
 		print("Reading particle location from a tomogram...")
 		js=js_open_dict(info_name(pfile))
 		towrite=[]
-		if "class_list" in js and "boxes_3d" in js:
+		if options.curves:
+			print("Generating particles along curves...")
+			overlap=options.curves_overlap
+			if overlap>=1 or overlap<0:
+				print("Overlap has to be in [0,1)")
+				return
+			
+			if js.has_key("curves") and len(js["curves"])>0:
+				pts=np.array(js["curves"]).copy()
+				js.close()
+				
+				if "apix_unbin" in js:
+					pts[:,:3]/=options.shrink
+				else:
+					pts[:,:3]-=[e["nx"]//2, e["ny"]//2, e["nz"]//2]
+					pts[:,:3]*=scale
+					pts[:,2]-=zshift
+				
+				lab="curve"
+				if options.shrink>1:
+					lab+="_bin{:d}".format(options.shrink)
+				outname=str(base_name(pfile)+"__"+lab+".hdf")
+				
+				sz=int(options.boxsz//2)
+				
+				
+				bxs=[]
+				drs=[]
+				for li in np.unique(pts[:,3]):
+					pt=pts[pts[:,3]==li][:,:3].copy()
+					pt=pt[np.append(True, np.linalg.norm(np.diff(pt, axis=0), axis=1)>0.1)]
+					ln=np.linalg.norm(pt[-1]-pt[0])
+					#     print np.round(ln)//2
+					if len(pt)<2: continue
+					ipt=interp_points(pt, npt=int(np.round(ln/options.boxsz/(1-overlap))))
+					
+					if len(ipt)<4: continue
+					bxs.append(ipt[1:-1])
+					drs.append(ipt[2:]-ipt[:-2])
+				
+				bxs=np.vstack(bxs)
+				drs=np.vstack(drs)
+				bxs=np.hstack([bxs,drs])
+				
+				towrite.append((bxs, outname, sz))
+		
+		elif "class_list" in js and "boxes_3d" in js:
 			clslst=js["class_list"]
 			boxes=js["boxes_3d"]
 			for ky in list(clslst.keys()):
@@ -105,19 +168,32 @@ def main():
 						continue
 						
 				bxs=np.array([[b[0], b[1], b[2]] for b in boxes if b[5]==int(ky)], dtype=float)
-				bxs-=[old_div(e["nx"],2), old_div(e["ny"],2), old_div(e["nz"],2)]
-				bxs*=scale
-				bxs[:,2]-=zshift
-				if options.tag=="":
+				
+				if "apix_unbin" in js:
+					bxs/=options.shrink
+					if options.boxsz<0:
+						sz=int(val["boxsize"])//2
+					else:
+						sz=int(options.boxsz//2)
+				else:
+					bxs-=[e["nx"]//2, e["ny"]//2, e["nz"]//2]
+					bxs*=scale
+					bxs[:,2]-=zshift
+					if options.boxsz<0:
+						sz=int(val["boxsize"])*scale//2
+					else:
+						sz=int(options.boxsz//2)
+						
+					
+				if options.newlabel=="":
 					lab=val["name"]
 				else:
-					lab=options.tag
+					lab=options.newlabel
 					
+				if options.shrink>1:
+					lab+="_bin{:d}".format(options.shrink)
 				outname=str(base_name(pfile)+"__"+lab+".hdf")
-				if options.boxsz<0:
-					sz=int(val["boxsize"])*scale//2
-				else:
-					sz=int(np.round(options.boxsz/2.*scale))
+				
 				towrite.append((bxs, outname, sz))
 				print("{} : {} boxes, unbinned box size {}".format(val["name"], len(bxs), int(sz*2))) 
 		
@@ -134,6 +210,8 @@ def main():
 	
 		sfx=pfile[pfile.find("__"):]
 		for i in range(2,10): sfx=sfx.replace("_bin{:d}".format(i),"")
+		if options.shrink>1:
+			sfx+="_bin{:d}".format(options.shrink)
 		outname=base_name(pfile)+sfx
 		
 		
@@ -145,9 +223,9 @@ def main():
 		print("Reading {} particles".format(len(ptclpos)))
 		
 		if options.boxsz<0:
-			boxsz=int(old_div(ptcl["nx"],2)*scale)
+			boxsz=int(ptcl["nx"]//2*scale)
 		else:
-			boxsz=int(old_div(options.boxsz,2)*scale)
+			boxsz=int(options.boxsz//2*scale)
 		
 		
 		
@@ -162,7 +240,10 @@ def main():
 	else:
 		imgs=EMData.read_images(tfile)
 		
-	for m in imgs: m.process_inplace("normalize")
+	for m in imgs: 
+		if options.shrink>1:
+			m.process_inplace("math.fft.resample",{"n":options.shrink})
+		m.process_inplace("normalize")
 	ntlt=len(imgs)
 		
 	try: os.mkdir("particles3d")
@@ -204,6 +285,7 @@ def main():
 		
 		
 		thrds=[threading.Thread(target=make3d,args=(i)) for i in jobs]
+
 		thrtolaunch=0
 		tsleep=threading.active_count()
 		ndone=0
@@ -258,6 +340,14 @@ def make3d(jsd, ids, imgs, ttparams, ppos, options, ctfinfo=[]):
 	for pid in ids:
 		
 		pos=ppos[pid]
+		if len(pos)>3:
+			drs=pos[3:].copy()
+			pos=pos[:3].copy()
+			drs/=np.linalg.norm(drs)
+			drs=drs.tolist()
+		else:
+			drs=[0,0,1]
+
 		recon=Reconstructors.get("fourier", {"sym":'c1', "size":[p3d, p3d, p3d]})
 		recon.setup()
 		projs=[]
@@ -269,8 +359,8 @@ def make3d(jsd, ids, imgs, ttparams, ppos, options, ctfinfo=[]):
 
 			pxf=get_xf_pos(ttparams[nid], pos)
 
-			tx=old_div(m["nx"],2) +pxf[0]
-			ty=old_div(m["ny"],2) +pxf[1]
+			tx=m["nx"]//2 +pxf[0]
+			ty=m["ny"]//2 +pxf[1]
 
 			txint=int(tx)
 			tyint=int(ty)
@@ -278,7 +368,7 @@ def make3d(jsd, ids, imgs, ttparams, ppos, options, ctfinfo=[]):
 			txdf=tx-txint
 			tydf=ty-tyint
 
-			e=m.get_clip(Region(txint-old_div(pad,2), tyint-old_div(pad,2), pad, pad), fill=0)
+			e=m.get_clip(Region(txint-pad//2, tyint-pad//2, pad, pad), fill=0)
 
 			e.mult(-1)
 			e.process_inplace("normalize.edgemean")
@@ -338,6 +428,10 @@ def make3d(jsd, ids, imgs, ttparams, ppos, options, ctfinfo=[]):
 		threed["ptcl_source_coord"]=pos.tolist()
 		threed["file_twod"]=options.output2d
 		
+		tf_dir=Transform()
+		tf_dir.set_rotation(drs)
+		threed["xform.curve"]=tf_dir
+		#print(ids,projs)
 		jsd.put((pid, threed, projs))
 
 	return threed

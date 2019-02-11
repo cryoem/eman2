@@ -136,7 +136,7 @@ def avgvar_ctf(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use
 		var: Variance (in real space) calculated as follows, [1/(n-1)]*[sum_j { F[(H_j*(O_j - F^{-1}(H_j*tavg))^2]/SUM_CTF^2} where O_j is the j-th image in real space, F^{-1} denotes inverse fourier transform operator, and H_j is the CTF of the j-th image
 	
 	'''
-	
+
 	from utilities    import model_blank, pad
 	from alignment    import kbt
 	from fundamentals import fft, fftip, window2d
@@ -156,12 +156,10 @@ def avgvar_ctf(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use
 	ny = img.get_ysize()
 	nz = img.get_zsize()
 	if nz > 1:
-		print("images must be 2D for CTF correction.....exiting")
-		sys.exit()
+		ERROR("images must be 2D for CTF correction.....exiting","avgvar_ctf",1)
 
 	if img.get_attr_default('ctf_applied', 0) == 1:
-		print("data cannot be ctf-applied....exiting")
-		sys.exit()
+		ERROR("data cannot be ctf-applied....exiting","avgvar_ctf",1)
 
 	if mode == 'a':
 		from utilities import get_params2D
@@ -183,61 +181,55 @@ def avgvar_ctf(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use
 	ctf_2_sum = EMData(nx2, ny2, 1, False)
 	nima = 0
 	for i in range(i1, i2+1):
-		if not(use_odd) and i%2 == 1:
-			continue
-		if not(use_even) and i%2 == 0:
-			continue
+		if not(use_odd) and i%2 == 1: continue
+		if not(use_even) and i%2 == 0: continue
 		nima += 1
-		if inmem:
-			img = data[i].copy()
-		else:
-			img = get_im(data, i)
+		if inmem: img = data[i].copy()
+		else: img = get_im(data, i)
 
-		if (mode == 'a'):
+		ctf_params = img.get_attr("ctf")
+
+		if(mode == 'a'):
 			angle, sx, sy, mirror, scale = get_params2D(img)
 			img = rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
+			ctf_params.dfang += alpha
+			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 
 		img = pad(img, nx2, ny2, 1, background = "circumference")
-		ctf_params = img.get_attr("ctf")
 		fftip(img)
 		Util.add_img(ave, filt_ctf(img, ctf_params))
 		Util.add_img2(ctf_2_sum, ctf_img(nx2, ctf_params))
 
-	snr_img = EMData(nx2, ny2, 1, False)
-	fnx = snr_img.get_xsize()
-	fny = snr_img.get_ysize()
-	for i in range(fnx):
-		for j in range(fny):
-			snr_img.set_value_at(i,j, 1.0/snr)
-	Util.add_img(ctf_2_sum, snr_img)
+	ctf_2_sum += 1.0/snr
 	Util.div_filter(ave, ctf_2_sum)
 
 	# calculate variance in real space
 	#totv = model_blank(nx2, ny2, nz)
 	tvar = model_blank(nx, ny, nz)
 	for i in range(i1, i2+1):
-		if not(use_odd) and i%2 == 1:
-			continue
-		if not(use_even) and i%2 == 0:
-			continue
-		if inmem:
-			img = data[i].copy()
-		else:
-			img = get_im(data, i)
+		if not(use_odd) and i%2 == 1: continue
+		if not(use_even) and i%2 == 0: continue
+		if inmem: img = data[i].copy()
+		else: img = get_im(data, i)
+
+		ctf_params = img.get_attr("ctf")
 
 		if (mode == 'a'):
 			angle, sx, sy, mirror, scale = get_params2D(img)
 			img = rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
+			ctf_params.dfang += alpha
+			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 
 		img = pad(img, nx2, ny2, 1, background = "circumference")
 		fftip(img)
-		ctf_params = img.get_attr("ctf")
-		img = filt_ctf(img-filt_ctf(ave, ctf_params, dopa), ctf_params, dopa)
-		Util.div_filter(img, ctf_2_sum)
+		#img = filt_ctf(img-filt_ctf(ave, ctf_params, dopa), ctf_params, dopa)
+		img = img-filt_ctf(ave, ctf_params, dopa)
+		#Util.div_filter(img, ctf_2_sum)
 		img = window2d(fft(img),nx,ny)
 		#Util.add_img(totv, img)
 		Util.add_img2(tvar, img)
-	Util.mul_scalar(tvar, float(nima)*nima/(nima-1)) # the strange factor is due to the fact that division by ctf^2 is equivalent to division by nima
+	#Util.mul_scalar(tvar, float(nima)*nima/(nima-1)) # the strange factor is due to the fact that division by ctf^2 is equivalent to division by nima
+	Util.mul_scalar(tvar, 1.0/float(nima))
 	return  window2d(fft(ave),nx,ny) , tvar#,(tvar - totv*totv/nima), tvar, totv,tavg
 
 def add_oe_series(data, ali_params="xform.align2d"):
@@ -282,19 +274,21 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, a
 		if ctf_2_sum:  get_ctf2 = False
 		else:          get_ctf2 = True
 		if get_ctf2: ctf_2_sum = EMData(nx, ny, 1, False)
+		ctf_params = data[i].get_attr("ctf")
 		for i in range(n):
 			if mode == "a":
 				alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
 				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 				if mask:  Util.mul_img(ima, mask)
 				fftip(ima)
+				ctf_params.dfang += alpha
+				if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 				#  Here we have a possible problem: varf works only if CTF is applied after rot/shift
 				#    while calculation of average (and in general principle) CTF should be applied before rot/shift
 				#    here we use the first possibility
 			else:
 				if  mask:   ima = fft(Util.muln_img(data[i], mask))
 				else:       ima = fft(data[i])
-			ctf_params = data[i].get_attr("ctf")
 			ima_filt = filt_ctf(ima, ctf_params, dopad=False)
 			if(i%2 == 0):  Util.add_img(ave1, ima_filt)
 			else:          Util.add_img(ave2, ima_filt)
@@ -362,16 +356,18 @@ def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum
 		if ctf_2_sum:  get_ctf2 = False
 		else:          get_ctf2 = True
 		if get_ctf2: ctf_2_sum = EMData(nx, ny, 1, False)
+		ctf_params = data[i].get_attr("ctf")
 		for i in range(n):
 			if mode == "a":
 				alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
 				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 				if mask:  Util.mul_img(ima, mask)
 				fftip(ima)
+				ctf_params.dfang += alpha
+				if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 			else:
 				if  mask:   ima = fft(Util.muln_img(data[i], mask))
 				else:       ima = fft(data[i])
-			ctf_params = data[i].get_attr("ctf")
 			ima_filt = filt_ctf(ima, ctf_params, dopad=False)
 			if(i%2 == 0):   Util.add_img(ave1, ima_filt)
 			else:           Util.add_img(ave2, ima_filt)
@@ -431,6 +427,7 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None, ctf_eo_sum = False, 
 	from utilities    import    model_blank, get_params2D, same_ctf
 	from fundamentals import    rot_shift2D, fft
 	from copy import deepcopy
+	if CTF: ERROR("DEBUG_TEST","sum_oe",0)
 	n      = len(data)
 	if return_params: params_list = [None]*n
 	if CTF:
@@ -450,7 +447,7 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None, ctf_eo_sum = False, 
 				myctf = deepcopy(current_ctf)
 				ctt = ctf_img(origin_size, myctf)
 			else:
-				if not same_ctf(current_ctf, myctf):       
+				if not same_ctf(current_ctf, myctf):
 					myctf = deepcopy(current_ctf)
 					ctt   = ctf_img(origin_size, myctf)
 			if mode == "a":
@@ -578,8 +575,8 @@ def ave_series(data, pave = True, mask = None):
 	for i in range(n):
 		alpha, sx, sy, mirror, scale = get_params2D(data[i])
 		temp = rot_shift2D(data[i], alpha, sx, sy, mirror)
-		if mask: Util.mul_img(temp, mask)
 		Util.add_img(ave, temp)
+	if mask: Util.mul_img(ave, mask)
 	if pave:  Util.mul_scalar(ave, 1.0/float(n))
 	return ave
 
@@ -598,8 +595,8 @@ def ave_series_ctf(data, ctf2, mask = None):
 	for i in range(n):
 		alpha, sx, sy, mirror, scale = get_params2D(data[i])
 		temp = rot_shift2D(data[i], alpha, sx, sy, mirror)
-		if mask: Util.mul_img(temp, mask)
 		Util.add_img(ave, temp)
+	if mask: Util.mul_img(ave, mask)
 
 	return filt_table(ave, ctf2)
 
@@ -690,7 +687,6 @@ def ave_oe_series_d(data):
 		if i%2 == 0: Util.add_img(ave1, data[i])
 		else:        Util.add_img(ave2, data[i])
 	return ave1/(n//2+(n%2)), ave2/(n//2)
-
 
 def ave_oe_series(stack):
 	"""
@@ -928,6 +924,8 @@ def add_series_class_mem(data, assign, kc):
 
 	return ave, var, nclass
 
+'''
+#  Not used anywhere.
 def add_series_class_ctf(images, ctf1, ctf2, snr, assign, kc):
 	""" Calculate average and variance files for each group in an image series
 		taking into account CTF information
@@ -1010,6 +1008,7 @@ def add_series_class_ctf(images, ctf1, ctf2, snr, assign, kc):
 		ave[k] = fft(ave[k])
 
 	return fft(tota), totv, ave, var, nclass
+'''
 	
 def aves(stack, mode="a", i1 = 0, i2 = 0):
 	"""
@@ -1090,7 +1089,7 @@ def aves_wiener(input_stack, mode="a", SNR=1.0, interpolation_method="linear"):
 	from  fundamentals	import fft, rot_shift2D
 	from  morphology	import ctf_img
 	from  filter		import filt_ctf
-	from  utilities		import pad, get_params2D, get_im
+	from  utilities		import pad, get_params2D, get_im, model_blank
 	from  EMAN2			import EMAN2Ctf
 	from  math 	   import sqrt
 	
@@ -1099,32 +1098,27 @@ def aves_wiener(input_stack, mode="a", SNR=1.0, interpolation_method="linear"):
 	ima = get_im(input_stack, 0)
 	nx = ima.get_xsize()
 	ny = ima.get_xsize()
-	if(interpolation_method=="fourier"):  npad = 2
-	else:  npad = 1
 
-	if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "faves_wiener", 1)
+	if ima.get_attr_default('ctf_applied', -2) > 0:	ERROR("data cannot be ctf-applied", "aves_wiener", 1)
 
-	nx2 = nx*npad
-	ny2 = ny*npad
-	ave       = EMData(nx2, ny2, 1, False)
-	ctf_2_sum = EMData(nx2, ny2, 1, False)
+	ave       = model_blank(nx,ny)
+	ctf_2_sum = EMData(nx, ny, 1, False)
 	snrsqrt = sqrt(SNR)
 
 	for i in range(n):
 		ima = get_im(input_stack, i)
 		ctf_params = ima.get_attr("ctf")
-		ctf_rot = EMAN2Ctf()
-		ctf_rot.copy_from(ctf_params)
+		oc = filt_ctf(ima, ctf_params, dopad=False)
 		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
-			ima = rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
-			ctf_rot.dfang += alpha
-		oc = filt_ctf(fft(pad(ima, nx2, ny2, background = 0.0)), ctf_params, dopad=False)
+			oc = rot_shift2D(oc, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
+			ctf_params.dfang += alpha
+			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 		Util.mul_scalar(oc, SNR)
 		Util.add_img(ave, oc)
-		Util.add_img2(ctf_2_sum, snrsqrt*ctf_img(nx2, ctf_rot, ny = ny2, nz = 1))
+		Util.add_img2(ctf_2_sum, snrsqrt*ctf_img(nx, ctf_params, ny = ny, nz = 1))
 	ctf_2_sum += 1.0
-	Util.div_filter(ave, ctf_2_sum)
+	ave = Util.divn_filter(fft(ave), ctf_2_sum)  # result in Fourier space
 	# variance
 	var = EMData(nx,ny)
 	var.to_zero()
@@ -1134,12 +1128,19 @@ def aves_wiener(input_stack, mode="a", SNR=1.0, interpolation_method="linear"):
 		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
 			ima = rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
+			ctf_params.dfang += alpha
+			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
+		'''
 		oc = filt_ctf(ave, ctf_params, dopad=False)
-		Util.sub_img(ima, Util.window(fft(oc),nx,ny,1,0,0,0))
-		Util.add_img2(var, ima)
-	ave = Util.window(fft(ave),nx,ny,1,0,0,0)
-	Util.mul_scalar(var, 1.0/(n-1))
-	return ave, var
+		Util.sub_img(ima, Util.window(fft(oc),nx,ny,1,0,0,0))  # no windowing necessary?
+		'''
+		#  Subtract in Fourier space, multiply again by the ctf, divide by the ctf^2, fft, square in real space
+		ima = Util.divn_filter(filt_ctf(Util.subn_img(fft(ima), filt_ctf(ave, ctf_params, dopad=False)), ctf_params, dopad=False), ctf_2_sum)
+		Util.mul_scalar(ima, SNR)
+		Util.add_img2(var, fft(ima))
+	#ave = Util.window(fft(ave),nx,ny,1,0,0,0)
+	#Util.mul_scalar(var, 1.0/(n-1))
+	return fft(ave), var
 
 def aves_adw(input_stack, mode="a", SNR=1.0, Ng = -1, interpolation_method="linear"):
 	"""
@@ -1152,13 +1153,13 @@ def aves_adw(input_stack, mode="a", SNR=1.0, Ng = -1, interpolation_method="line
 	from  filter 	   import filt_ctf, filt_table
 	from  utilities    import pad, get_params2D, get_im
 	from  math 	   import sqrt
-	
+	ERROR("This function was disabled as it does not treat astigmatism properly","aves_adw",1)
 	if type(input_stack) == type(""):	n = EMUtil.get_image_count(input_stack)
 	else:  n = len(input_stack)
 	ima = get_im(input_stack, 0)
 	nx  = ima.get_xsize()
 
-	if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "aves_wiener", 1)
+	if ima.get_attr_default('ctf_applied', -2) > 0:	ERROR("data cannot be ctf-applied", "aves_wiener", 1)
 
 	ctf_abs_sum = EMData(nx, nx, 1, False)
 	ctf_2_sum = EMData(nx, nx, 1, False)
@@ -1176,6 +1177,7 @@ def aves_adw(input_stack, mode="a", SNR=1.0, Ng = -1, interpolation_method="line
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
 			ima = rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
 			ctf_rot.dfang += alpha
+			if mirror == 1:  ctf_rot.dfang = 270.0-ctf_rot.dfang
 
 		oc = filt_ctf(fft(ima), ctf_params, dopad=False)
 		Util.add_img(Ave, oc)
@@ -1272,11 +1274,11 @@ def ssnr2d(data, mask = None, mode=""):
 
 	return rssnr, rsumsq, rvar, ssnr, sumsq, var
 
-def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
-	'''
+def ssnr2d_ctf(data, mask = None, mode="", dopa=False):
+	"""
 	Calculate ssnr and variance in Fourier space for 2D images including CTF information
 	If mode = "a" apply alignment parameters
-	'''
+	"""
 	from fundamentals import fft, rot_shift2D, rot_avg_table, fftip
 	from morphology   import ctf_img, threshold
 	from filter       import filt_ctf
@@ -1316,12 +1318,14 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			ctf_params.dfang += alpha
+			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 		if mask:  Util.mul_img(ima, mask)
 		if  dopa:  ima = pad(ima, nx2, ny2, 1, background = "circumference")
 		fftip(ima)
 		Util.add_img(sumsq, filt_ctf(ima, ctf_params, dopa))
 		Util.add_img2(ctf_2_sum, ctf_img(nx2, ctf_params))
-	print("   NEW ")
+	#print("   NEW ")
 
 	ave = Util.divn_filter(sumsq, ctf_2_sum)
 
@@ -1336,21 +1340,26 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			ctf_params.dfang += alpha
+			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 		if mask:  Util.mul_img(ima, mask)
 		if dopa:  ima = pad(ima, nx2, ny2, 1, background = "circumference")
 		fftip(ima)
-		"""
+
 		ima = ima-filt_ctf(ave, ctf_params, dopa)
 		Util.add_img2(var, ima)
-		"""
-		ima = filt_ctf(ima-filt_ctf(ave, ctf_params, dopa), ctf_params, dopa)
+
+		#ima = filt_ctf(ima-filt_ctf(ave, ctf_params, dopa), ctf_params, dopa)
 		#Util.div_filter(ima, ctf_2_sum)
-		Util.add_img2(var, ima)
+		#Util.add_img2(var, ima)
+
+	return  ave,var
 
 	"""
 	Util.mul_scalar(var, 1.0/float(n-1))
 	Util.mul_img(ave, ave)
 	ave *= n
+	"""
 	"""
 	Util.mul_img(sumsq, sumsq)
 	#sumsq  = fft(window2d(fft(sumsq),nx,ny))
@@ -1402,12 +1411,14 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 		else:              ERROR("ssnr2d","rvar negative",1)
 		rssnr.append(qt)
 	return rssnr, rave, rvar, ssnr, sumsq, ave, tvar
+	"""
 
+'''
 def ssnr2d_ctf_OLD(data, mask = None, mode=""):
-	'''
+	"""
 	Calculate ssnr and variance in Fourier space for 2D images including CTF information
 	If mode = "a" apply alignment parameters
-	'''
+	"""
 	from fundamentals import fft, fftip, rot_shift2D, rot_avg_table
 	from morphology   import ctf_img, threshold
 	from filter       import filt_ctf
@@ -1445,6 +1456,8 @@ def ssnr2d_ctf_OLD(data, mask = None, mode=""):
 		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			ctf_params.dfang += alpha
+			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 		if mask:  Util.mul_img(ima, mask)
 		fftip(ima)
 		oc = filt_ctf(ima, ctf_params)
@@ -1469,12 +1482,13 @@ def ssnr2d_ctf_OLD(data, mask = None, mode=""):
 		else:              ERROR("ssnr2d","rvar negative",1)
 		rssnr.append(qt)
 	return rssnr, rsumsq, rvar, ssnr, sumsq, var
+'''
 
 def varf(data, mask = None, mode="a"):
-	'''
+	"""
 	Calculate variance in Fourier space for 2D or 3D images, (no CTF correction)
 	If mode = "a" apply alignment parameters
-	'''
+	"""
 	from fundamentals import fftip, rot_shift2D
 	from utilities    import get_params2D
 	import  types
@@ -1569,6 +1583,8 @@ def varfctf(data, mask = None, mode="a", dopad = True):
 		if(mode == "a"):
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			ctf_params.dfang += alpha
+			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 		if(mask): Util.mul_img(ima, mask)
 		if dopad:  ima = pad(ima, nx2, ny2, nz2, background = "circumference")
 		fftip(ima)
@@ -1617,18 +1633,17 @@ def varf2d(data, ave, mask = None, mode="a"):
 
 	var = EMData(nx, ny, nz, False)
 
-	defocus = -1.0
 	for i in range(n):
 		ima = get_im(data, i)
-		ctf = ima.get_attr("ctf")
+		ctf_params = ima.get_attr("ctf")
 		if(mode == "a"):
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			ctf_params.dfang += alpha
+			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 		if(mask): Util.mul_img(ima, mask)
-		if(defocus != ctf.defocus):
-			oc = filt_ctf(ave, ctf, dopad=True)
-			defocus = ctf.defocus
-			#print i, "  changed  ctf  ",defocus,Util.infomask(oc, None, True)
+		oc = filt_ctf(ave, ctf_params, dopad=True)
+		#print i, "  changed  ctf  ",defocus,Util.infomask(oc, None, True)
 		Util.add_img2(var, fft(Util.subn_img(ima, oc)))
 
 	Util.mul_scalar(var, 1.0/float(n-1))
@@ -1665,18 +1680,17 @@ def varf2d_MPI(myid, data, ave, mask = None, mode = "a", CTF = False, main_node 
 		from morphology   import ctf_img
 		if data[0].get_attr_default('ctf_applied', 1) == 1:
 			ERROR("data cannot be ctf-applied", "add_ave_varf_MPI", 1)
-		defocus = -1.0
 		for i in range(n):
-			ctf = data[i].get_attr("ctf")
+			ctf_params = data[i].get_attr("ctf")
 			if(mode == "a"):
 				alpha, sx, sy, mirror, scale = get_params2D(data[i])
 				ima = rot_shift2D(data[i], alpha, sx, sy, mirror)
+				ctf_params.dfang += alpha
+				if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 			else:
 				ima = data[i].copy()
 			if(mask): Util.mul_img(ima, mask)
-			if(defocus != ctf.defocus):
-				oc = filt_ctf(ave, ctf, dopad=True)
-				defocus = ctf.defocus
+			oc = filt_ctf(ave, ctf_params, dopad=True)
 			Util.add_img2(var, fft(Util.subn_img(ima, oc)))
 	else:
 		for i in range(n):
@@ -9047,11 +9061,12 @@ def table_stat(X):
 	"""
 	  Basic statistics of numbers stored in a list: average, variance, minimum, maximum
 	"""
+	N = len(X)
+	if(N == 1):  return  X[0], 0.0, X[0], X[0]
 	av = X[0]
 	va = X[0]*X[0]
 	mi = X[0]
 	ma = X[0]
-	N = len(X)
 	for i in range(1,N):
 		av += X[i]
 		va += X[i]*X[i]

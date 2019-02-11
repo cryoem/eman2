@@ -82,10 +82,10 @@ class ValSlider(QtGui.QWidget):
 	emit valueChanged(float)
 	"""
 	enableChanged = QtCore.pyqtSignal(int)
-	valueChanged = QtCore.pyqtSignal(float)
-	textChanged = QtCore.pyqtSignal(float)
-	sliderReleased = QtCore.pyqtSignal(float)
-	sliderPressed = QtCore.pyqtSignal(float)
+	valueChanged = QtCore.pyqtSignal(object)
+	textChanged = QtCore.pyqtSignal(object)
+	sliderReleased = QtCore.pyqtSignal(object)
+	sliderPressed = QtCore.pyqtSignal(object)
 
 	def __init__(self, parent=None, rng=None, label=None, value=0,labelwidth=30,showenable=-1,rounding=3):
 		#if not parent: raise Exception,"ValSliders must have parents"
@@ -301,8 +301,8 @@ class ValBox(QtGui.QWidget):
 	so for virtually all purposes it could be used as a drop-in replacement.
 	"""
 	enableChanged = QtCore.pyqtSignal(int)
-	valueChanged = QtCore.pyqtSignal(float)
-	textChanged = QtCore.pyqtSignal()
+	valueChanged = QtCore.pyqtSignal(object)
+	textChanged = QtCore.pyqtSignal(object)
 
 	def __init__(self, parent=None, rng=None, label=None, value=0,labelwidth=30,showenable=-1):
 		#if not parent: raise Exception,"ValSliders must have parents"
@@ -878,17 +878,7 @@ class EMQTColorWidget(QtGui.QWidget):
 
 		if e.buttons() != QtCore.Qt.LeftButton:
 			return
-		self._dragdrop(e)
 
-		
-	def _dragdrop(self, e):
-		mimeData = QtCore.QMimeData()
-		mimeData.setColorData(self.color)
-		drag = QtGui.QDrag(self)
-		drag.setMimeData(mimeData)
-		drag.setHotSpot(e.pos() - self.rect().topLeft())
-		dropAction = drag.exec_(QtCore.Qt.MoveAction)
-		
 	def mousePressEvent(self, event):
 		if event.buttons() != QtCore.Qt.RightButton:
 			self.inicolor = self.color
@@ -896,8 +886,6 @@ class EMQTColorWidget(QtGui.QWidget):
 			self.colrodialog.currentColorChanged[QColor].connect(self._on_colorchange)
 			self.colrodialog.colorSelected[QColor].connect(self._on_colorselect)
 			self.colrodialog.canceled.connect(self._on_cancel)
-		else:
-			self._dragdrop(event)
 			
 	def _on_colorchange(self, color):
 		if color.isValid():

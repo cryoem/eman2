@@ -68,37 +68,23 @@ def get_cmd_line():
 		cmd_line += arg + '  '
 	cmd_line = 'Shell line command: ' + cmd_line
 	return cmd_line
+# ----------------------------------------------------------------------------------------
+# Create relative path of path p2 to p1
+# ----------------------------------------------------------------------------------------
+def makerelpath(p1,p2):
+	"""Takes a pair of paths /a/b/c/d and /a/b/e/f/g and returns a relative path to b from a, ../../e/f/g"""
+	
+	p1s=[i for i in p1.split("/") if len(i)>0]
+	p2s=[i for i in p2.split("/") if len(i)>0]
 
-# ----------------------------------------------------------------------------------------
-# Modified version of table_stat in statistics
-# ----------------------------------------------------------------------------------------
-def mrk_table_stat(X):
-	"""
-	  Basic statistics of numbers stored in a list: average, variance, minimum, maximum
-	"""
-	N = len(X)
-	assert N > 0
+	for dv in range(min(len(p1s),len(p2s))):
+		if p1s[dv]!=p2s[dv] : break
+	else: dv+=1
+
+	p1s=p1s[dv:]
+	p2s=p2s[dv:]
 	
-	av = X[0]
-	va = X[0]*X[0]
-	mi = X[0]
-	ma = X[0]
-	
-	for i in range(1, N):
-		av += X[i]
-		va += X[i]*X[i]
-		mi = min(mi, X[i])
-		ma = max(ma, X[i])
-	
-	avg = av/N
-	var = 0.0
-	if N - 1 > 0:
-		var = (va - av*av/N)/float(N - 1)
-	sd = 0.0
-	if var > 0.0:
-		sd = sqrt(var)
-	
-	return  avg, sd, mi, ma
+	return "../"*len(p1s)+"/".join(p2s)
 
 # ========================================================================================
 # Main function
@@ -110,15 +96,15 @@ def main():
 		arglist.append( arg )
 
 	progname = os.path.basename( arglist[0] )
-	usage = progname + ' input_star_file output_directory --relion_project_dir=DIR_PATH --star_section=SECTION_STRING --outputs_root=ROOT_NAME_STRING --box_size=BOX_SIZE --create_stack --cs_save_as_hdf'
+	usage = progname + ' input_star_file output_directory --relion_project_dir=DIR_PATH --star_section=SECTION_STRING --outputs_root=ROOT_NAME_STRING --box_size=BOX_SIZE --do_not_create_stack'
 	parser = OptionParser(usage, version=SPARXVERSION)
 
 	parser.add_option('--relion_project_dir', type='string',         default=None,      help='RELION project directory: Path to RELION project directory associated with the RELION STAR file. By default, the program assume the current directory is the RELION project directory. (default none)')
 	parser.add_option('--star_section',       type='string',         default='data_',   help='Section title in STAR file: The section title in the RELION star file where the data should be extracted. (default data_)')
 	parser.add_option('--outputs_root',       type='string',         default='sphire',  help='Root name of outputs: Specify the root name of all outputs. It cannot be empty string or only white spaces. (default sphire)')
 	parser.add_option('--box_size',           type=int,              default=0,         help='Box size: Box size for particle extraction. It also controls the saved coordinates file format. If the given value is > 0, store the eman1 format. coordinate file. The coordinates of eman1 format is particle box corner associated with this box size. The coordinates of sphire format is particle center. By default, use sphire format. (default 0)')
-	parser.add_option('--create_stack',       action='store_true',   default=False,     help='Create virtual stacks: Create per-micrograph virtual stacks of particle images in BDB format. By default, the program does not generate the stack of particle images because it takes a long time and the file size is large. (default False)')
-	parser.add_option('--cs_save_as_hdf',     action='store_true',   default=False,     help='Save stack as HDF file: Save a stack file in HDF file format instead of BDB format. In this case, the stack file will contain all particle images in the input RELION STAR file. Effective only with --create_stack. (default False)')
+	parser.add_option('--do_not_create_stack',       action='store_true',   default=False,     help='Create virtual stacks: Create per-micrograph virtual stacks without the actual particle meta information in BDB format. By default, the program does generate the stack of particle meta information (default False)')
+	parser.add_option('--negative_stain',       action='store_true',   default=False,     help='Create negative stain CTF entry (default False)')
 	
 	(options,args) = parser.parse_args( arglist[1:] )
 
@@ -143,9 +129,8 @@ def main():
 	str_relion_start_section    = options.star_section
 	outputs_root                = options.outputs_root.strip()
 	box_size                    = options.box_size
-	is_enable_create_stack      = options.create_stack
-	cs_save_as_hdf              = options.cs_save_as_hdf
-	
+	is_enable_create_stack      = bool(not options.do_not_create_stack)
+
 	if (not os.path.exists(file_path_relion_star)):
 		print(( 'ERROR!!! Input RELION STAR file ({}) is not found.'.format(file_path_relion_star)))
 		sys.exit(-1)
@@ -431,8 +416,7 @@ def main():
 						sphire_cter_entry[idx_cter_astig_ang] -= 180
 					while sphire_cter_entry[idx_cter_astig_ang] < 0:
 						sphire_cter_entry[idx_cter_astig_ang] += 180
-					assert sphire_cter_entry[idx_cter_astig_ang] < 180 and sphire_cter_entry[idx_cter_astig_ang] >= 0, '# Logical Error: The range of astigmatism angle must be 0-180 at this point of code.'
-					
+	
 					relion_const_ac = float(tokens_line[relion_dict['_rlnAmplitudeContrast'][idx_col] - 1])
 					sphire_cter_entry[idx_cter_const_ac] = 100 * relion_const_ac  # convert to %
 					
@@ -442,7 +426,7 @@ def main():
 					else: 
 						sphire_cter_entry[idx_cter_phase_shift] = 0.0
 					
-					sphire_const_ac_phase_shift = ampcont2angle(sphire_cter_entry[idx_cter_const_ac])  # must pass amplitude constrast in [%]
+					sphire_const_ac_phase_shift = ampcont2angle(sphire_cter_entry[idx_cter_const_ac])  # must pass amplitude contrast in [%]
 					sphire_total_phase_shift = sphire_cter_entry[idx_cter_phase_shift] + sphire_const_ac_phase_shift
 					sphire_cter_entry[idx_cter_total_ac] = angle2ampcont(sphire_total_phase_shift)
 					
@@ -452,7 +436,7 @@ def main():
 					relion_det_pix_size = float(tokens_line[relion_dict['_rlnDetectorPixelSize'][idx_col] - 1])
 					relion_mag = float(tokens_line[relion_dict['_rlnMagnification'][idx_col] - 1])
 					sphire_cter_entry[idx_cter_apix] = 10000 * relion_det_pix_size / relion_mag # convert um to A
-					
+
 					##### Store CTER specific parameters ##### 
 					sphire_cter_entry[idx_cter_bfactor]      = 0.0    # RELION does not output B-Factor, so set it zero always
 					sphire_cter_entry[idx_cter_sd_def]       = 0.0
@@ -474,7 +458,7 @@ def main():
 					if relion_dict['_rlnCtfFigureOfMerit'][idx_col] >= 0:
 						sphire_cter_entry[idx_cter_reserved] = float(tokens_line[relion_dict['_rlnCtfFigureOfMerit'][idx_col] - 1])
 					else:
-						parx_cter_entry[idx_cter_reserved]  = 0.0
+						sphire_cter_entry[idx_cter_reserved]  = 0.0
 					
 					sphire_cter_entry[idx_cter_mic_name]     = adjusted_relion_micrograph_name
 					assert len(sphire_cter_entry) == n_idx_cter, '# Logical Error: The length of sphiret CTER entry %d must be always %d at this point of code.' % (len(sphire_cter_entry), n_idx_cter)
@@ -482,7 +466,7 @@ def main():
 					if micrograph_dirname not in sphire_cter_dict:
 						sphire_cter_dict[micrograph_dirname] = {}
 					assert micrograph_dirname in sphire_cter_dict
-					
+
 					if micrograph_basename not in sphire_cter_dict[micrograph_dirname]:
 						sphire_cter_dict[micrograph_dirname][micrograph_basename] = [sphire_cter_entry]
 					else:
@@ -494,7 +478,33 @@ def main():
 						sphire_cter_dict[micrograph_dirname][micrograph_basename].append(sphire_cter_entry)
 					
 					i_sphire_stack_ctf += 1
-					
+				elif options.negative_stain:
+					relion_det_pix_size = float(tokens_line[relion_dict['_rlnDetectorPixelSize'][idx_col] - 1])
+					relion_mag = float(tokens_line[relion_dict['_rlnMagnification'][idx_col] - 1])
+					sphire_cter_entry = [None] * n_idx_cter
+					sphire_cter_entry[idx_cter_def]          = 0.0
+					sphire_cter_entry[idx_cter_cs]           = 0.0
+					sphire_cter_entry[idx_cter_vol]          = 300.0
+					sphire_cter_entry[idx_cter_apix] = 10000 * relion_det_pix_size / relion_mag # convert um to A
+					sphire_cter_entry[idx_cter_bfactor]      = 0.0
+					sphire_cter_entry[idx_cter_total_ac]     = 100.0
+					sphire_cter_entry[idx_cter_astig_amp]    = 0.0
+					sphire_cter_entry[idx_cter_astig_ang]    = 0.0
+					sphire_cter_entry[idx_cter_sd_def]       = 0.0
+					sphire_cter_entry[idx_cter_sd_total_ac]  = 0.0
+					sphire_cter_entry[idx_cter_sd_astig_amp] = 0.0
+					sphire_cter_entry[idx_cter_sd_astig_ang] = 0.0
+					sphire_cter_entry[idx_cter_cv_def]       = 0.0
+					sphire_cter_entry[idx_cter_cv_astig_amp] = 0.0
+					sphire_cter_entry[idx_cter_error_def]    = 0.5/sphire_cter_entry[idx_cter_apix] # Set to Nyquist frequency
+					sphire_cter_entry[idx_cter_error_astig]  = 0.5/sphire_cter_entry[idx_cter_apix] # Set to Nyquist frequency
+					sphire_cter_entry[idx_cter_error_ctf]    = 0.5/sphire_cter_entry[idx_cter_apix] # Set to Nyquist frequency
+					sphire_cter_entry[idx_cter_max_freq]     = 0.5/sphire_cter_entry[idx_cter_apix] # Set to Nyquist frequency
+					sphire_cter_entry[idx_cter_reserved]     = 0.0
+					sphire_cter_entry[idx_cter_const_ac]     = 0.0
+					sphire_cter_entry[idx_cter_phase_shift]  = 0.0
+					sphire_cter_entry[idx_cter_mic_name]     = ""
+
 				if relion_category_dict['window'][idx_is_category_found]:
 					relion_particle_source = tokens_line[relion_dict['_rlnImageName'][idx_col] - 1]
 					tokens_particle_source = relion_particle_source.split('@')
@@ -641,7 +651,7 @@ def main():
 						
 						if relion_category_dict['helical'][idx_is_category_found]:
 							sphire_header['filament'] = '{0}{1:05d}'.format(adjusted_relion_micrograph_name, sphire_filament_id)
-						if relion_category_dict['ctf'][idx_is_category_found]:
+						if relion_category_dict['ctf'][idx_is_category_found] or options.negative_stain:
 							sphire_cter_entry_list = []
 							for idx_sphire_ctf in range(n_idx_sphire_ctf):
 								sphire_cter_entry_list.append(sphire_cter_entry[idx_sphire_ctf])
@@ -753,7 +763,8 @@ def main():
 		for micrograph_dirname in sorted(sphire_micrographs_dict):
 			dir_path_sphire_micrographs = os.path.join(dir_path_work, micrograph_dirname)
 			if not os.path.exists(dir_path_sphire_micrographs):
-				os.mkdir(dir_path_sphire_micrographs)
+				#Markus 05.06.18 -- os.mkdir(dir_path_sphire_micrographs)
+				os.makedirs(dir_path_sphire_micrographs)
 			
 			file_path_sphire_micrographs = os.path.join(dir_path_sphire_micrographs, file_name_sphire_micrographs)
 			file_sphire_micrographs = open(file_path_sphire_micrographs,'w+')
@@ -765,7 +776,8 @@ def main():
 		for micrograph_dirname in sorted(sphire_cter_dict):
 			dir_path_sphire_cter_partres = os.path.join(dir_path_work, micrograph_dirname)
 			if not os.path.exists(dir_path_sphire_cter_partres):
-				os.mkdir(dir_path_sphire_cter_partres)
+				#Markus 05.06.18 -- os.mkdir(dir_path_sphire_micrographs)
+				os.makedirs(dir_path_sphire_cter_partres)
 			
 			micrograph_extension = os.path.splitext(micrograph_basename)[1]
 			file_path_sphire_cter_partres = os.path.join(dir_path_sphire_cter_partres, file_name_sphire_cter_partres)
@@ -782,63 +794,41 @@ def main():
 				
 				sphire_cter_stats = sphire_cter_dict[micrograph_dirname][micrograph_basename][0]
 				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_def])
-				sphire_cter_stats[idx_cter_def] = avg
-				sphire_cter_stats[idx_cter_sd_def] = sd
-				if avg != 0.0:
-					sphire_cter_stats[idx_cter_cv_def] = sd / avg * 100 # use percentage
+				sphire_cter_stats[idx_cter_def], sd, _,_ = table_stat(sphire_cter_table[idx_cter_def])
+				sphire_cter_stats[idx_cter_sd_def] = sqrt(max(0.0,sd))
+				if sphire_cter_stats[idx_cter_def] != 0.0:
+					sphire_cter_stats[idx_cter_cv_def] = sd / sphire_cter_stats[idx_cter_def] * 100 # use percentage
+				# I removed a very awkward code which as far as I can tell was meant to assure that
+				#   all values on this list are identical.  I replaced it by proper python				
+				assert(len(set(sphire_cter_table[idx_cter_cs])) == 1)
+				assert(len(set(sphire_cter_table[idx_cter_vol])) == 1)
+				assert(len(set(sphire_cter_table[idx_cter_apix])) == 1)
+				assert(len(set(sphire_cter_table[idx_cter_bfactor])) == 1)
+
+				sphire_cter_stats[idx_cter_total_ac], sd, _,_ = table_stat(sphire_cter_table[idx_cter_total_ac])
+				sphire_cter_stats[idx_cter_sd_total_ac] = sqrt(max(0.0,sd))
 				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_cs])
-				sphire_cter_stats[idx_cter_cs] = avg
-				assert (sd <= 1.0e-7)
+				sphire_cter_stats[idx_cter_astig_amp] , sd, _,_ = table_stat(sphire_cter_table[idx_cter_astig_amp])
+				sphire_cter_stats[idx_cter_sd_astig_amp] = sqrt(max(0.0,sd))
+				if sphire_cter_stats[idx_cter_astig_amp] != 0.0:
+					sphire_cter_stats[idx_cter_cv_astig_amp] = sd / sphire_cter_stats[idx_cter_astig_amp] * 100 # use percentage
+
+				# What followed was wrong, one cannot compute average angles this way PAP   01/28/2019
+				sphire_cter_stats[idx_cter_astig_ang], sphire_cter_stats[idx_cter_sd_astig_ang] = angle_ave(sphire_cter_table[idx_cter_astig_ang])
 				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_vol])
-				sphire_cter_stats[idx_cter_vol] = avg
-				if sd > 1.0e-7:
-					print ('sphire_cter_table[idx_cter_vol]', sphire_cter_table[idx_cter_vol])
-					print ('avg, sd, min, max', avg, sd, min, max)
-				assert (sd <= 1.0e-7)
+				sphire_cter_stats[idx_cter_max_freq], _, _, _ = table_stat(sphire_cter_table[idx_cter_max_freq])
 				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_apix])
-				sphire_cter_stats[idx_cter_apix] = avg
-				assert (sd <= 1.0e-7)
+				sphire_cter_stats[idx_cter_reserved], _, _, _ = table_stat(sphire_cter_table[idx_cter_reserved])
 				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_bfactor])
-				sphire_cter_stats[idx_cter_bfactor] = avg
-				assert (sd <= 1.0e-7)
+				sphire_cter_stats[idx_cter_const_ac], _, _, _ = table_stat(sphire_cter_table[idx_cter_const_ac])
 				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_total_ac])
-				sphire_cter_stats[idx_cter_total_ac] = avg
-				sphire_cter_stats[idx_cter_sd_total_ac] = sd
-				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_astig_amp])
-				sphire_cter_stats[idx_cter_astig_amp] = avg
-				sphire_cter_stats[idx_cter_sd_astig_amp] = sd
-				if avg != 0.0:
-					sphire_cter_stats[idx_cter_cv_astig_amp] = sd / avg * 100 # use percentage
-				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_astig_ang])
-				if sd > 0.0: sd = sqrt(sd)
-				sphire_cter_stats[idx_cter_astig_ang] = avg
-				sphire_cter_stats[idx_cter_sd_astig_ang] = sd
-				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_max_freq])
-				sphire_cter_stats[idx_cter_max_freq] = avg
-				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_reserved])
-				sphire_cter_stats[idx_cter_reserved] = avg
-				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_const_ac])
-				sphire_cter_stats[idx_cter_const_ac] = avg
-				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_phase_shift])
-				sphire_cter_stats[idx_cter_phase_shift] = avg
+				sphire_cter_stats[idx_cter_phase_shift], _, _, _ = table_stat(sphire_cter_table[idx_cter_phase_shift])
 				
 				# Save statistics of CTF parameters for each micrograph
 				for idx_cter in range(n_idx_cter - 1):
-					file_sphire_cter_partres.write('  %12.5g' % sphire_cter_entry[idx_cter])
+					file_sphire_cter_partres.write('  %13.6f' % sphire_cter_entry[idx_cter])
 				file_sphire_cter_partres.write('  %s\n' % sphire_cter_entry[idx_cter_mic_name])  # At the end of line, write micrograph name which is string type!
-			
+
 			file_sphire_cter_partres.close()
 		
 		# Write box coordinate to files (doing here to avoid repeating open/close files in loop)
@@ -866,9 +856,11 @@ def main():
 							eman1_coordinate_x = sphire_coordinates[idx_ptcl_source_coord_x] - box_size//2
 							eman1_coordinate_y = sphire_coordinates[idx_ptcl_source_coord_y] - box_size//2
 							eman1_dummy = -1 # For 5th column of EMAN1 boxer format
-							file_coordinates.write('%6d %6d %6d %6d %6d\n' % (eman1_coordinate_x, eman1_coordinate_y, box_size, box_size, eman1_dummy))
+							# in star file they are floats, so they have to be properly rounded,  PAP
+							file_coordinates.write('%6d %6d %6d %6d %6d\n' % (int(round(eman1_coordinate_x)), int(round(eman1_coordinate_y)), box_size, box_size, eman1_dummy))
 						else:
-							file_coordinates.write('%6d %6d\n' % (sphire_coordinates[idx_ptcl_source_coord_x], sphire_coordinates[idx_ptcl_source_coord_y]))
+							# in star file they are floats, so they have to be properly rounded,  PAP
+							file_coordinates.write('%6d %6d\n' % (int(round(sphire_coordinates[idx_ptcl_source_coord_x])), int(round(sphire_coordinates[idx_ptcl_source_coord_y]))))
 				else:
 					assert relion_category_dict['helical'][idx_is_category_found] == True, '# Logical Error: helical category must be found always at this point of code.'
 					file_coordinates.write('#micrograph: %s\n'%(micrograph_basename))
@@ -977,24 +969,25 @@ def main():
 						for i_sphire_rebox_entry in range(n_sphire_rebox_entry):
 							line = ""
 							line += " {:6d}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_id])          # idx_params_mic_coord_id
-							line += " {:6d}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_x])           # idx_params_mic_coord_x
-							line += " {:6d}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_y])           # idx_params_mic_coord_y
-							line += " {:15.5f}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_resample_ratio]) # idx_params_mic_resample_ratio
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_def])                           # idx_params_ctf_defocus
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_cs])                            # idx_params_ctf_cs
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_vol])                           # idx_params_ctf_voltage
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_apix])                          # idx_params_ctf_apix
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_bfactor])                       # idx_params_ctf_bfactor
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_total_ac])                      # idx_params_ctf_ampcont
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_astig_amp])                     # idx_params_ctf_dfdiff
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_astig_ang])                     # idx_params_ctf_dfang
-							line += " {:15.5f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['phi'])                               # idx_params_proj_phi
-							line += " {:15.5f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['theta'])                             # idx_params_proj_theta
-							line += " {:15.5f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['psi'])                               # idx_params_proj_psi
-							line += " {:15.5f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['tx'])                                # idx_params_proj_sx
-							line += " {:15.5f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['ty'])                                # idx_params_proj_sy
-							line += " {:15.5f}".format(dummy_particle_defocus_error)                                                  # idx_params_defocus_error
-							line += " {:15.5f}".format(dummy_particle_resample_ratio)                                                 # idx_params_resample_ratio
+							# in star file they are floats, so they have to be properly rounded,  PAP
+							line += " {:6d}".format(int(round(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_x])))           # idx_params_mic_coord_x
+							line += " {:6d}".format(int(round(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_y])))           # idx_params_mic_coord_y
+							line += " {:13.6f}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_resample_ratio]) # idx_params_mic_resample_ratio
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_def])                           # idx_params_ctf_defocus
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_cs])                            # idx_params_ctf_cs
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_vol])                           # idx_params_ctf_voltage
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_apix])                          # idx_params_ctf_apix
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_bfactor])                       # idx_params_ctf_bfactor
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_total_ac])                      # idx_params_ctf_ampcont
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_astig_amp])                     # idx_params_ctf_dfdiff
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_astig_ang])                     # idx_params_ctf_dfang
+							line += " {:13.6f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['phi'])                               # idx_params_proj_phi
+							line += " {:13.6f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['theta'])                             # idx_params_proj_theta
+							line += " {:13.6f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['psi'])                               # idx_params_proj_psi
+							line += " {:13.6f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['tx'])                                # idx_params_proj_sx
+							line += " {:13.6f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['ty'])                                # idx_params_proj_sy
+							line += " {:13.6f}".format(dummy_particle_defocus_error)                                                  # idx_params_defocus_error
+							line += " {:15.6f}".format(dummy_particle_resample_ratio)                                                 # idx_params_resample_ratio
 							line += " {:6d}".format(sphire_chunk_id_list[i_sphire_rebox_entry])                                       # idx_params_chunk_id NOT SUPPORTED YET (Toshio Moriya 2018/07/10)
 							line += " \n"
 							
@@ -1005,12 +998,12 @@ def main():
 				# assert relion_category_dict['window'][idx_is_category_found]
 				# Write rebox parameters to files (doing here to avoid repeating open/close files in loop)
 				print('# ')
-				print('# Particle coodinates are not found! Skipping tos save SPHIRE rebox files ...')
+				print('# Particle coodinates are not found! Skipping save SPHIRE rebox files ...')
 		else:
 			# assert relion_category_dict['helical'][idx_is_category_found]:
 			print('# ')
 			print('# For helical reconstruction, SPHIRE rebox files are not supported yet ...')
-			print('# Skipping tos save SPHIRE rebox files ...')
+			print('# Skipping save SPHIRE rebox files ...')
 		
 		if is_enable_create_stack:
 			assert relion_category_dict['window'][idx_is_category_found], 'MRK_DEBUG'
@@ -1021,22 +1014,19 @@ def main():
 			for micrograph_dirname in sorted(sphire_header_dict):
 				print('# ')
 				print('# Processing {} directory ...'.format(micrograph_dirname))
-				
-				if not cs_save_as_hdf:
-					dir_path_local_bdb_stacks = os.path.join(dir_path_work, micrograph_dirname, dir_name_local_stacks)
-					if not os.path.exists(dir_path_local_bdb_stacks):
-						os.mkdir(dir_path_local_bdb_stacks)
-				else:
-					file_path_hdf_stack = os.path.join(dir_path_work, micrograph_dirname, '{}_stack.hdf'.format(outputs_root))
-				
+
+				dir_path_local_bdb_stacks = os.path.join(dir_path_work, micrograph_dirname, dir_name_local_stacks)
+				if not os.path.exists(dir_path_local_bdb_stacks):
+					os.mkdir(dir_path_local_bdb_stacks)
+
 				for i_micrograph, micrograph_basename in enumerate(sorted(sphire_header_dict[micrograph_dirname])):
 					if i_micrograph % 100 == 0:
 						print('# Processing micrographs from {:5d} to {:5d} in {} directory...'.format(i_micrograph, i_micrograph + 100 - 1, micrograph_dirname))
 					
-					if not cs_save_as_hdf:
-						micrograph_baseroot = os.path.splitext(micrograph_basename)[0]
-						file_path_local_bdb_stack = 'bdb:{}#{}_ptcls'.format(dir_path_local_bdb_stacks, micrograph_baseroot)
-					
+					micrograph_baseroot = os.path.splitext(micrograph_basename)[0]
+					file_path_local_bdb_stack = 'bdb:{}#{}_ptcls'.format(dir_path_local_bdb_stacks, micrograph_baseroot)
+					local_bdb_stack = db_open_dict(file_path_local_bdb_stack)
+
 					for sphire_header_id, sphire_header in enumerate(sphire_header_dict[micrograph_dirname][micrograph_basename]):
 						# Copy this particle image from local stack to new global stack
 						# First read image
@@ -1046,68 +1036,62 @@ def main():
 						n_img_relion_local_stack = EMUtil.get_image_count(relion_local_stack_path)
 						assert sphire_local_particle_id < n_img_relion_local_stack, '# Logical Error: The local particle ID must not exceed the number of images in the assocaited local particle stack.'
 						img_particle = get_im(relion_local_stack_path, sphire_local_particle_id)
+						img_particles_dict = img_particle.get_attr_dict()
 						
 						# NOTE: 2015/10/19 Toshio Moriya
 						# Store the extracted information into the image header
-						img_particle.set_attr('ptcl_source_relion', sphire_header['ptcl_source_relion'])
-						img_particle.set_attr('ptcl_source_image', sphire_header['ptcl_source_image'])
-						img_particle.set_attr('ptcl_source_coord', sphire_header['ptcl_source_coord']) # No conversion is necessary from RELION to SPHIRE foramts
-						img_particle.set_attr('ptcl_source_coord_id', sphire_header['ptcl_source_coord_id'])
-						img_particle.set_attr('data_n', sphire_header['data_n'])  # NOTE: Toshio Moriya 2017/11/20: same as ptcl_source_coord_id but the other program uses this header entry key...
-						img_particle.set_attr('resample_ratio', sphire_header['resample_ratio'])
+						img_particles_dict['ptcl_source_relion'] = sphire_header['ptcl_source_relion']
+						img_particles_dict['ptcl_source_image'] = sphire_header['ptcl_source_image']
+						img_particles_dict['ptcl_source_coord'] = sphire_header['ptcl_source_coord'] # No conversion is necessary from RELION to SPHIRE formats
+						img_particles_dict['ptcl_source_coord_id'] = sphire_header['ptcl_source_coord_id']
+						img_particles_dict['data_n'] = sphire_header['data_n']  # NOTE: Toshio Moriya 2017/11/20: same as ptcl_source_coord_id but the other program uses this header entry key...
+						img_particles_dict['data_path'] = makerelpath(dir_path_local_bdb_stacks + '/EMAN2DB', relion_local_stack_path)  # NOTE: Markus Stabrin 2018/09/17: Link to existing mrcs stack
+						img_particles_dict['resample_ratio'] = sphire_header['resample_ratio']
 						# 
 						# NOTE: 2017/12/05 Toshio Moriya 
 						# Add header entries so that it consistent with sxwindow.py (refer note in sxwindow.py about why these are set to 1.0[A])
 						# 
-						img_particle.set_attr('apix_x', sphire_header['apix_x'])
-						img_particle.set_attr('apix_y', sphire_header['apix_y'])
-						img_particle.set_attr('apix_z', sphire_header['apix_z'])
+						img_particles_dict['apix_x'] = sphire_header['apix_x']
+						img_particles_dict['apix_y'] = sphire_header['apix_y']
+						img_particles_dict['apix_z'] = sphire_header['apix_z']
 						
 						if relion_category_dict['helical'][idx_is_category_found] == True:
-							img_particle.set_attr('filament', sphire_header['filament'])
-						if relion_category_dict['ctf'][idx_is_category_found] == True:
-							img_particle.set_attr('ctf', sphire_header['ctf'])
-							img_particle.set_attr('ctf_applied', sphire_header['ctf_applied'])
-							img_particle.set_attr('ptcl_source_apix', sphire_header['ptcl_source_apix']) # Store the original pixel size
+							img_particles_dict['filament'] = sphire_header['filament']
+						if relion_category_dict['ctf'][idx_is_category_found] == True or options.negative_stain:
+							img_particles_dict['ctf'] = sphire_header['ctf']
+							img_particles_dict['ctf_applied'] = sphire_header['ctf_applied']
+							img_particles_dict['ptcl_source_apix'] = sphire_header['ptcl_source_apix'] # Store the original pixel size
 						if relion_category_dict['proj3d'][idx_is_category_found] == True:
 							set_params_proj(img_particle, sphire_header['xform.projection'])
+							img_particles_dict['xform.projection'] = img_particle.get_attr('xform.projection')
 							# Add relion specific header entries
-							img_particle.set_attr('relion_max_prob_dist', sphire_header['relion_max_prob_dist'])
-							img_particle.set_attr('relion_norm_correct', sphire_header['relion_norm_correct'])
+							img_particles_dict['relion_max_prob_dist'] = sphire_header['relion_max_prob_dist']
+							img_particles_dict['relion_norm_correct'] = sphire_header['relion_norm_correct']
 						if relion_category_dict['chunk'][idx_is_category_found] == True:
-							img_particle.set_attr('chunk_id', sphire_header['chunk_id'])
-						
-						if not cs_save_as_hdf:
-							# Write the particle image to local stack file
-							img_particle.write_image(file_path_local_bdb_stack, sphire_header_id)
-						else:
-							# assert cs_save_as_hdf
-							img_particle.write_image(file_path_hdf_stack, sphire_header['i_sphire_stack_particle_img'])
+							img_particles_dict['chunk_id'] = sphire_header['chunk_id']
+
+						# Write the particle image to local stack file
+						local_bdb_stack[sphire_header_id] = img_particles_dict
+					db_close_dict(file_path_local_bdb_stack)
+
+				# # NOTE: Toshio Moriya 2018/07/09
+				# # Unfortunately, the following method does not work maybe because of synchronization problem of subprocess...
+				# file_path_sphire_mic_dir_stack = 'bdb:{}#{}_stack'.format(os.path.join(dir_path_work, micrograph_dirname), outputs_root)
+				# e2bdb_command = 'e2bdb.py  {}  --makevstack={}'.format(dir_path_local_bdb_stacks, file_path_sphire_mic_dir_stack)
+				# print('# ')
+				# print('# Putting local stacks together to a virtual stack...')
+				# print('#  {}'.format(e2bdb_command))
+				# # cmdexecute(e2bdb_command, printing_on_success = False)
+				# cmdexecute(e2bdb_command)
+				# 
+				# assert db_check_dict(file_path_sphire_mic_dir_stack, readonly=True), '# Logical Error: Output BDB stack in output directory should exist at this point of code.'
+				# assert i_sphire_stack_particle_img == EMUtil.get_image_count(file_path_sphire_mic_dir_stack), '# The numbers of particles should match always at this point of code'
 				
-				if not cs_save_as_hdf:
-					# # NOTE: Toshio Moriya 2018/07/09
-					# # Unfortunately, the following method does not work maybe because of synchronization problem of subprocess...
-					# file_path_sphire_mic_dir_stack = 'bdb:{}#{}_stack'.format(os.path.join(dir_path_work, micrograph_dirname), outputs_root)
-					# e2bdb_command = 'e2bdb.py  {}  --makevstack={}'.format(dir_path_local_bdb_stacks, file_path_sphire_mic_dir_stack)
-					# print('# ')
-					# print('# Putting local stacks together to a virtual stack...')
-					# print('#  {}'.format(e2bdb_command))
-					# # cmdexecute(e2bdb_command, printing_on_success = False)
-					# cmdexecute(e2bdb_command)
-					# 
-					# assert db_check_dict(file_path_sphire_mic_dir_stack, readonly=True), '# Logical Error: Output BDB stack in output directory should exist at this point of code.'
-					# assert i_sphire_stack_particle_img == EMUtil.get_image_count(file_path_sphire_mic_dir_stack), '# The numbers of particles should match always at this point of code'
-					
-					file_path_sphire_mic_dir_stack = 'bdb:{}#{}_stack'.format(os.path.join(dir_path_work, micrograph_dirname), outputs_root)
-					e2bdb_command = 'e2bdb.py  {}  --makevstack={}'.format(dir_path_local_bdb_stacks, file_path_sphire_mic_dir_stack)
-					print('# ')
-					print('# Please execute the following command line to create single virtual stack by combining all local stacks in {} directory'.format(micrograph_dirname))
-					print('#   {}'.format(e2bdb_command))
-				else:
-					# assert cs_save_as_hdf
-					# Do nothing
-					assert os.path.exists(file_path_hdf_stack), '# The SPHIRE stack must exist at this point of code.'
-					# assert i_sphire_stack_particle_img == EMUtil.get_image_count(file_path_hdf_stack), '# The numbers of particles should match always at this point of code' 
+				file_path_sphire_mic_dir_stack = 'bdb:{}#{}_stack'.format(dir_path_local_bdb_stacks, outputs_root)
+				e2bdb_command = 'e2bdb.py  {}  --makevstack={}'.format(dir_path_local_bdb_stacks, file_path_sphire_mic_dir_stack)
+				print('# ')
+				print('# Please execute the following command line to create single virtual stack by combining all local stacks in {} directory'.format(micrograph_dirname))
+				print('#   {}'.format(e2bdb_command))
 			
 			# # NOTE: Toshio Moriya 2018/07/10
 			# # Unfortunately, the following method does not work maybe because of synchronization problem of subprocess...

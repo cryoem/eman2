@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
 #
-# Author: Pawel A.Penczek and Edward H. Egelman 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
+# Author: Pawel A.Penczek 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
-# Copyright (c) 2008-Forever The University of Virginia
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -32,31 +31,77 @@ from __future__ import print_function
 #
 #
 from builtins import range
-import	global_def
-from	global_def import *
-from	EMAN2 import *
-from	sparx import *
-from	global_def import SPARX_MPI_TAG_UNIVERSAL
+import EMAN2_cppwrap
+import filter
+import fundamentals
+import global_def
+import morphology
+import mpi
+import optparse
+import numpy
+import os
+import statistics
+import sys
+import utilities
 
 #Transforms the local resolution file from frequency units to angstroms.
-def makeAngRes(freqvol, nx, ny, nz, pxSize):
+def makeAngRes(freqvol, nx, ny, nz, pxSize, freq_to_real=True):
 	if (pxSize == 1.0):
 		print("Using a value of 1 for the pixel size. Are you sure this is correct?")
 
-	outAngResVol = model_blank(nx,ny,nz)
-	for x in range(nx):
-		for y in range(ny):
-			for z in range(nz):
-				#All voxels to apix/ absolute Resolution. If 0 then leave as it is.
-				qt = freqvol.get_value_at(x,y,z)
-				if(qt > 0.0): outAngResVol.set_value_at_fast(x,y,z, pxSize/qt )
+	outAngResVol = utilities.model_blank(nx,ny,nz)
+	data_in = freqvol.get_3dview()
+	data_out = outAngResVol.get_3dview()
+
+	if freq_to_real:
+		mask = data_in > 0.0
+		data_out[mask] = pxSize / data_in[mask]
+	else:
+		mask = data_in >= 2 * pxSize
+		data_out[mask] = pxSize / data_in[mask]
 
 	return outAngResVol
 
+
+def output_volume(freqvol, resolut, apix, outvol, fsc, out_ang_res, nx, ny, nz, res_overall):
+	outvol_ang = os.path.splitext(outvol)[0] + "_ang.hdf"
+	outvol_shifted = os.path.splitext(outvol)[0] + "_shift.hdf"
+	outvol_shifted_ang = os.path.splitext(outvol_shifted)[0] + "_ang.hdf"
+
+	freqvol.write_image(outvol)
+	if(out_ang_res):
+		outAngResVol = makeAngRes(freqvol, nx, ny, nz, apix)
+		outAngResVol.write_image(outvol_ang)
+
+	if res_overall !=-1.0:
+		for ifreq in range(len(resolut)):
+			if resolut[ifreq][0] > res_overall:
+				 break
+		for jfreq in range(ifreq, len(resolut)):
+			resolut[jfreq][1] = 0.0	
+
+		data_freqvol = freqvol.get_3dview()
+		mask = data_freqvol != 0
+		percentile_25 = numpy.percentile(data_freqvol[mask], 25)
+		percentile_75 = numpy.percentile(data_freqvol[mask], 75)
+		iqr = percentile_75 - percentile_25
+		mask_low_pass = data_freqvol > percentile_75 + 1.5*iqr
+		mask_high_pass = data_freqvol < percentile_25 - 1.5*iqr
+		mean_real = 1 / float(numpy.mean(data_freqvol[mask & mask_low_pass & mask_high_pass]))
+		overall_res_real = 1 / float(res_overall)
+		#mean_ang = options.apix / float(EMAN2_cppwrap.Util.infomask(freqvol, m, True)[0])
+
+		volume_out_real = makeAngRes(freqvol, nx, ny, nz, 1)
+		volume_out_real += (overall_res_real - mean_real)
+		volume_out = makeAngRes(volume_out_real, nx, ny, nz, 1, False)
+		volume_out.write_image(outvol_shifted)
+		if out_ang_res:
+			outAngResVol = makeAngRes(freqvol, nx, ny, nz, apix)
+			outAngResVol.write_image(outvol_shifted_ang)
+
+	if(fsc != None): utilities.write_text_row(resolut, fsc)
+
 def main():
-	import os
-	import sys
-	from optparse import OptionParser
 	arglist = []
 	for arg in sys.argv:
 		arglist.append( arg )
@@ -65,7 +110,7 @@ def main():
 
 	Compute local resolution in real space within area outlined by the maskfile and within regions wn x wn x wn
 	"""
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	
 	parser.add_option("--wn",           type="int",           default=7,      help="Size of window within which local real-space FSC is computed. (default 7)")
 	parser.add_option("--step",         type="float",         default= 1.0,   help="Shell step in Fourier size in pixels. (default 1.0)")   
@@ -84,19 +129,15 @@ def main():
 		sys.exit()
 
 	if global_def.CACHE_DISABLE:
-		from utilities import disable_bdb_cache
-		disable_bdb_cache()
+		utilities.disable_bdb_cache()
 
 	res_overall = options.res_overall
 
 	if options.MPI:
-		from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-		from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv, mpi_send, mpi_recv
-		from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT
-		sys.argv = mpi_init(len(sys.argv),sys.argv)		
+		sys.argv = mpi.mpi_init(len(sys.argv),sys.argv)		
 
-		number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
-		myid = mpi_comm_rank(MPI_COMM_WORLD)
+		number_of_proc = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
+		myid = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
 		main_node = 0
 		global_def.MPI = True
 		cutoff = options.cutoff
@@ -105,8 +146,8 @@ def main():
 
 		if(myid == main_node):
 			#print sys.argv
-			vi = get_im(sys.argv[1])
-			ui = get_im(sys.argv[2])
+			vi = utilities.get_im(sys.argv[1])
+			ui = utilities.get_im(sys.argv[2])
 			
 			nx = vi.get_xsize()
 			ny = vi.get_ysize()
@@ -117,126 +158,96 @@ def main():
 
 		global_def.BATCH = True
 
-		dis = bcast_list_to_all(dis, myid, source_node = main_node)
+		dis = utilities.bcast_list_to_all(dis, myid, source_node = main_node)
 
 		if(myid != main_node):
 			nx = int(dis[0])
 			ny = int(dis[1])
 			nz = int(dis[2])
 
-			vi = model_blank(nx,ny,nz)
-			ui = model_blank(nx,ny,nz)
+			vi = utilities.model_blank(nx,ny,nz)
+			ui = utilities.model_blank(nx,ny,nz)
 
 
 		if len(args) == 3:
-			m = model_circle((min(nx,ny,nz)-nk)//2,nx,ny,nz)
+			m = utilities.model_circle((min(nx,ny,nz)-nk)//2,nx,ny,nz)
 			outvol = args[2]
 		
 		elif len(args) == 4:
 			if(myid == main_node):
-				m = binarize(get_im(args[2]), 0.5)
+				m = morphology.binarize(utilities.get_im(args[2]), 0.5)
 			else:
-				m = model_blank(nx, ny, nz)
+				m = utilities.model_blank(nx, ny, nz)
 			outvol = args[3]
-		bcast_EMData_to_all(m, myid, main_node)
+		utilities.bcast_EMData_to_all(m, myid, main_node)
 
-		from statistics import locres
-		"""
-		res_overall = 0.5
-		if myid ==main_node:
-			fsc_curve = fsc(vi, ui)
-			for ifreq in xrange(len(fsc_curve[0])-1, -1, -1):
-				if fsc_curve[1][ifreq] > options.cutoff:
-					res_overall = fsc_curve[0][ifreq]
-					break
-		res_overall = bcast_number_to_all(res_overall, main_node)
-		"""
-		freqvol, resolut = locres(vi, ui, m, nk, cutoff, options.step, myid, main_node, number_of_proc)
+		"""Multiline Comment0"""
+		freqvol, resolut = statistics.locres(vi, ui, m, nk, cutoff, options.step, myid, main_node, number_of_proc)
+
 		if(myid == 0):
-			if res_overall !=-1.0:
-				freqvol += (res_overall- Util.infomask(freqvol, m, True)[0])
-				for ifreq in range(len(resolut)):
-					if resolut[ifreq][0] >res_overall:
-						 break
-				for jfreq in range(ifreq, len(resolut)):
-					resolut[jfreq][1] = 0.0	
-			freqvol.write_image(outvol)
-			
-			if(options.out_ang_res):
-				outAngResVolName = os.path.splitext(outvol)[0] + "_ang.hdf"
-				outAngResVol = makeAngRes(freqvol, nx, ny, nz, options.apix)
-				outAngResVol.write_image(outAngResVolName)
-
-			if(options.fsc != None): write_text_row(resolut, options.fsc)
-		from mpi import mpi_finalize
-		mpi_finalize()
+			# Remove outliers based on the Interquartile range
+			output_volume(freqvol, resolut, options.apix, outvol, options.fsc, options.out_ang_res, nx, ny, nz, res_overall)
+		mpi.mpi_finalize()
 
 	else:
 		cutoff = options.cutoff
-		vi = get_im(args[0])
-		ui = get_im(args[1])
+		vi = utilities.get_im(args[0])
+		ui = utilities.get_im(args[1])
 
 		nn = vi.get_xsize()
 		nk = int(options.wn)
 	
 		if len(args) == 3:
-			m = model_circle((nn-nk)//2,nn,nn,nn)
+			m = utilities.model_circle((nn-nk)//2,nn,nn,nn)
 			outvol = args[2]
 		
 		elif len(args) == 4:
-			m = binarize(get_im(args[2]), 0.5)
+			m = morphology.binarize(utilities.get_im(args[2]), 0.5)
 			outvol = args[3]
 
-		mc = model_blank(nn,nn,nn,1.0)-m
+		mc = utilities.model_blank(nn,nn,nn,1.0)-m
 
-		vf = fft(vi)
-		uf = fft(ui)
-		"""		
-		res_overall = 0.5
-		fsc_curve = fsc(vi, ui)
-		for ifreq in xrange(len(fsc_curve[0])-1, -1, -1):
-			if fsc_curve[1][ifreq] > options.cutoff:
-				res_overall = fsc_curve[0][ifreq]
-				break
-		"""		
+		vf = fundamentals.fft(vi)
+		uf = fundamentals.fft(ui)
+		"""Multiline Comment1"""
 		lp = int(nn/2/options.step+0.5)
 		step = 0.5/lp
 
-		freqvol = model_blank(nn,nn,nn)
+		freqvol = utilities.model_blank(nn,nn,nn)
 		resolut = []
 		for i in range(1,lp):
 			fl = step*i
 			fh = fl+step
 			#print(lp,i,step,fl,fh)
-			v = fft(filt_tophatb( vf, fl, fh))
-			u = fft(filt_tophatb( uf, fl, fh))
-			tmp1 = Util.muln_img(v,v)
-			tmp2 = Util.muln_img(u,u)
+			v = fundamentals.fft(filter.filt_tophatb( vf, fl, fh))
+			u = fundamentals.fft(filter.filt_tophatb( uf, fl, fh))
+			tmp1 = EMAN2_cppwrap.Util.muln_img(v,v)
+			tmp2 = EMAN2_cppwrap.Util.muln_img(u,u)
 
-			do = Util.infomask(square_root(threshold(Util.muln_img(tmp1,tmp2))),m,True)[0]
+			do = EMAN2_cppwrap.Util.infomask(morphology.square_root(morphology.threshold(EMAN2_cppwrap.Util.muln_img(tmp1,tmp2))),m,True)[0]
 
 
-			tmp3 = Util.muln_img(u,v)
-			dp = Util.infomask(tmp3,m,True)[0]
+			tmp3 = EMAN2_cppwrap.Util.muln_img(u,v)
+			dp = EMAN2_cppwrap.Util.infomask(tmp3,m,True)[0]
 			resolut.append([i,(fl+fh)/2.0, dp/do])
 
-			tmp1 = Util.box_convolution(tmp1, nk)
-			tmp2 = Util.box_convolution(tmp2, nk)
-			tmp3 = Util.box_convolution(tmp3, nk)
+			tmp1 = EMAN2_cppwrap.Util.box_convolution(tmp1, nk)
+			tmp2 = EMAN2_cppwrap.Util.box_convolution(tmp2, nk)
+			tmp3 = EMAN2_cppwrap.Util.box_convolution(tmp3, nk)
 
-			Util.mul_img(tmp1,tmp2)
+			EMAN2_cppwrap.Util.mul_img(tmp1,tmp2)
 
-			tmp1 = square_root(threshold(tmp1))
+			tmp1 = morphology.square_root(morphology.threshold(tmp1))
 
-			Util.mul_img(tmp1,m)
-			Util.add_img(tmp1,mc)
+			EMAN2_cppwrap.Util.mul_img(tmp1,m)
+			EMAN2_cppwrap.Util.add_img(tmp1,mc)
 
-			Util.mul_img(tmp3,m)
-			Util.add_img(tmp3,mc)
+			EMAN2_cppwrap.Util.mul_img(tmp3,m)
+			EMAN2_cppwrap.Util.add_img(tmp3,mc)
 
-			Util.div_img(tmp3,tmp1)
+			EMAN2_cppwrap.Util.div_img(tmp3,tmp1)
 
-			Util.mul_img(tmp3,m)
+			EMAN2_cppwrap.Util.mul_img(tmp3,m)
 			freq=(fl+fh)/2.0
 			bailout = True
 			for x in range(nn):
@@ -251,21 +262,8 @@ def main():
 									bailout = False
 			if(bailout):  break
 		#print(len(resolut))
-		if res_overall !=-1.0:
-			freqvol += (res_overall- Util.infomask(freqvol, m, True)[0])
-			for ifreq in range(len(resolut)):
-				if resolut[ifreq][1] >res_overall:
-					 break
-			for jfreq in range(ifreq, len(resolut)):
-				resolut[jfreq][2] = 0.0	
-		freqvol.write_image(outvol)
-		
-		if(options.out_ang_res):			
-			outAngResVolName = os.path.splitext(outvol)[0] + "_ang.hdf"
-			outAngResVol = makeAngRes(freqvol, nn, nn, nn, options.apix)
-			outAngResVol.write_image(outAngResVolName)
-
-		if(options.fsc != None): write_text_row(resolut, options.fsc)
+		# remove outliers
+		output_volume(freqvol, resolut, options.apix, outvol, options.fsc, options.out_ang_res, nx, ny, nz, res_overall)
 
 if __name__ == "__main__":
 	main()

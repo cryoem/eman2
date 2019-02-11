@@ -1049,7 +1049,10 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		# --------------------------------------------------------------------------------
 		mic_baseroot = mic_baseroot_pattern.replace("*", mic_id_substr)
 		local_stack_path  = "bdb:%s#" % mpi_proc_dir + mic_baseroot + "_ptcls"
-		
+		local_mrcs_name = mic_baseroot + "_ptcls.mrcs"
+		local_mrcs_path = os.path.join(mpi_proc_dir, local_mrcs_name)
+
+		local_bdb_stack = db_open_dict(local_stack_path)
 		# --------------------------------------------------------------------------------
 		# Prepare coordinates loop variables
 		# --------------------------------------------------------------------------------
@@ -1057,11 +1060,13 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		ny = mic_img.get_ysize()
 		x0 = nx//2
 		y0 = ny//2
-		
-		local_particle_id = 0 # can be different from coordinates_id
+
 		coords_reject_out_of_boundary_messages = []
-		
+
 		# Loop through coordinates
+		coords_accepted = []
+		idx_info = 0
+		idx_id = 1
 		for coords_id in range(len(coords_list)):
 			# Get coordinates
 			x = int(coords_list[coords_id][0])
@@ -1077,59 +1082,83 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			
 			# Window a particle at this coordinates
 			if( (0 <= x - box_half) and ( x + box_half <= nx ) and (0 <= y - box_half) and ( y + box_half <= ny ) ):
-				particle_img = Util.window(mic_img, box_size, box_size, 1, x-x0, y-y0)
+				coords_accepted.append([None, None])
+				coords_accepted[-1][idx_info] = [mic_img, box_size, box_size, 1, x-x0, y-y0]
+				coords_accepted[-1][idx_id] = coords_id
 			else:
 				coords_reject_out_of_boundary_messages.append("coordinates ID = %04d: x = %4d, y = %4d, box_size = %4d " % (coords_id, x, y, box_size))
 				# print("MRK_DEBUG: coords_reject_out_of_boundary_messages[-1] := %s" % coords_reject_out_of_boundary_messages[-1])
 				continue
-			
-			# Normalize this particle image
-			particle_img = ramp(particle_img)
-			particle_stats = Util.infomask(particle_img, mask2d, False) # particle_stats[0:mean, 1:SD, 2:min, 3:max]
-			particle_img -= particle_stats[0]
-			try:
-				particle_img /= particle_stats[1]
-			except ZeroDivisionError:
-				print("The standard deviation of the particle image associated with %dth coordinates entry in micrograph %s for %s is zero unexpectedly. Skipping..." % (coords_id, mic_path, mic_basename))
-				continue
-			
-			# Set header entries (attributes) of this particle image
-			# 
-			# NOTE: 2015/04/09 Toshio Moriya
-			# ptcl_source_image might be redundant information...
-			# Consider re-organizing header entries...
-			# 
-			particle_img.set_attr("ptcl_source_image", mic_path)
-			particle_img.set_attr("ptcl_source_coord", [int(coords_list[coords_id][0]), int(coords_list[coords_id][1])])
-			particle_img.set_attr("ptcl_source_coord_id", coords_id)
-			particle_img.set_attr('data_n', coords_id)  # NOTE: Toshio Moriya 2017/11/20: same as ptcl_source_coord_id but the other program uses this header entry key...
-			particle_img.set_attr("resample_ratio", resample_ratio)
-			# 
-			# NOTE: 2015/04/13 Toshio Moriya 
-			# Pawel Comment: Micrograph is not supposed to have CTF header info.
-			# So, let's assume it does not exist & ignore its presence.
-			# assert (not particle_img.has_ctff())
-			# 
-			# NOTE: 2015/04/13 Toshio Moriya 
-			# Note that resample() "correctly" updates pixel size of CTF header info if it exists
-			# 
-			# NOTE: 2015/04/13 Toshio Moriya
-			# apix_* attributes are updated by resample() only when resample_ratio != 1.0
-			# Let's make sure header info is consistent by setting apix_* = 1.0 
-			# regardless of options, so it is not passed down the processing line
-			# 
-			particle_img.set_attr("apix_x", 1.0) # particle_img.set_attr("apix_x", resampled_pixel_size)
-			particle_img.set_attr("apix_y", 1.0) # particle_img.set_attr("apix_y", resampled_pixel_size)
-			particle_img.set_attr("apix_z", 1.0) # particle_img.set_attr("apix_z", resampled_pixel_size)
-			particle_img.set_attr("ptcl_source_apix", src_pixel_size) # Store the original pixel size
-			particle_img.set_attr("ctf",ctf_obj)
-			particle_img.set_attr("ctf_applied", 0)
-			
-			# Write the particle image to local stack file
-			# print("MRK_DEBUG: local_stack_path, local_particle_id", local_stack_path, local_particle_id)
-			particle_img.write_image(local_stack_path, local_particle_id)
-			local_particle_id += 1
-		
+
+		local_particle_id = 0 # can be different from coordinates_id
+		if len(coords_accepted) > 0:
+			local_mrcs = EMData(box_size, box_size, len(coords_accepted))
+			local_mrcs.set_attr("apix_x", 1.0) # particle_img.set_attr("apix_x", resampled_pixel_size)
+			local_mrcs.set_attr("apix_y", 1.0) # particle_img.set_attr("apix_y", resampled_pixel_size)
+			local_mrcs.set_attr("apix_z", 1.0) # particle_img.set_attr("apix_z", resampled_pixel_size)
+			local_mrcs.set_attr("ptcl_source_apix", src_pixel_size) # Store the original pixel size
+			for coords_id, entry in enumerate(coords_accepted):
+				original_id = entry[idx_id]
+				particle_img = Util.window(*entry[idx_info])
+				# Normalize this particle image
+				particle_img = ramp(particle_img)
+				particle_stats = Util.infomask(particle_img, mask2d, False) # particle_stats[0:mean, 1:SD, 2:min, 3:max]
+				particle_img -= particle_stats[0]
+				try:
+					particle_img /= particle_stats[1]
+				except ZeroDivisionError:
+					print("The standard deviation of the particle image associated with %dth coordinates entry in micrograph %s for %s is zero unexpectedly. Skipping..." % (coords_id, mic_path, mic_basename))
+					continue
+				
+				# Set header entries (attributes) of this particle image
+				# 
+				# NOTE: 2015/04/09 Toshio Moriya
+				# ptcl_source_image might be redundant information...
+				# Consider re-organizing header entries...
+				# 
+				particle_img_dict = particle_img.get_attr_dict()
+				particle_img_dict["ptcl_source_image"] = mic_path
+				particle_img_dict["ptcl_source_coord"] = [int(coords_list[original_id][0]), int(coords_list[original_id][1])]
+				particle_img_dict["ptcl_source_coord_id"] = coords_id
+				particle_img_dict["ptcl_source_box_id"] = original_id
+				particle_img_dict['data_n'] = coords_id  # NOTE: Toshio Moriya 2017/11/20: same as ptcl_source_coord_id but the other program uses this header entry key...
+				particle_img_dict["data_path"] = '../' + local_mrcs_name
+				particle_img_dict["resample_ratio"] = resample_ratio
+
+				particle_img_dict["nx"] = box_size
+				particle_img_dict["ny"] = box_size
+				particle_img_dict["nz"] = 1
+				# 
+				# NOTE: 2015/04/13 Toshio Moriya 
+				# Pawel Comment: Micrograph is not supposed to have CTF header info.
+				# So, let's assume it does not exist & ignore its presence.
+				# assert (not particle_img.has_ctff())
+				# 
+				# NOTE: 2015/04/13 Toshio Moriya 
+				# Note that resample() "correctly" updates pixel size of CTF header info if it exists
+				# 
+				# NOTE: 2015/04/13 Toshio Moriya
+				# apix_* attributes are updated by resample() only when resample_ratio != 1.0
+				# Let's make sure header info is consistent by setting apix_* = 1.0 
+				# regardless of options, so it is not passed down the processing line
+				# 
+				particle_img_dict["apix_x"] = 1.0 # particle_img.set_attr("apix_x", resampled_pixel_size)
+				particle_img_dict["apix_y"] = 1.0 # particle_img.set_attr("apix_y", resampled_pixel_size)
+				particle_img_dict["apix_z"] = 1.0 # particle_img.set_attr("apix_z", resampled_pixel_size)
+				particle_img_dict["ptcl_source_apix"] = src_pixel_size # Store the original pixel size
+				particle_img_dict["ctf"] =ctf_obj
+				particle_img_dict["ctf_applied"] = 0
+				
+				# Write the particle image to local stack file
+				# print("MRK_DEBUG: local_stack_path, local_particle_id", local_stack_path, local_particle_id)
+
+				local_bdb_stack[local_particle_id] = particle_img_dict
+				local_mrcs.insert_clip(particle_img, (0, 0, local_particle_id))
+				#particle_img.write_image(local_stack_path, local_particle_id) # NOTE: Insert slice instead of write the image
+				local_particle_id += 1
+
+			local_mrcs.write_image(local_mrcs_path)
+
 		# Save the message list of rejected coordinates because of out-of-boundary
 		# print("MRK_DEBUG: len(coords_reject_out_of_boundary_messages) := %d" % len(coords_reject_out_of_boundary_messages))
 		if len(coords_reject_out_of_boundary_messages) > 0:
@@ -1168,7 +1197,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		# Release the data base of local stack from this process
 		# so that the subprocess can access to the data base
 		db_close_dict(local_stack_path)
-	
+
 	# ------------------------------------------------------------------------------------
 	# Print out CTF limit information
 	# ------------------------------------------------------------------------------------

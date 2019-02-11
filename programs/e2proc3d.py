@@ -149,7 +149,7 @@ def main():
 	parser.add_option("--tophalf", action="store_true", help="The output only keeps the top half map")	
 	parser.add_option("--trans", metavar="dx,dy,dz", type="string", action="append", help="Translate map by dx,dy,dz ")
 
-	parser.add_option("--unstacking", action="store_true", help="Process a stack of 3D images, then output a a series of numbered single image files", default=False)
+	parser.add_option("--unstacking", action="store_true", help="Process a stack of 3D images, then output as a series of numbered single image files", default=False)
 
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 

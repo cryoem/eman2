@@ -1,7 +1,8 @@
 #! /usr/bin/env python
 from __future__ import print_function
 #
-# Copyright (C) 2016  Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
+# Author 2016  Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
+# Copyright (C) 2019 Max planck institute for molecular physiology, Dortmund
 #
 
 # source code in this file under either license. However, note that the
@@ -34,6 +35,7 @@ import subprocess
 import global_def
 from global_def import SPARXVERSION, ERROR
 from optparse import OptionParser, SUPPRESS_HELP
+from utilities import create_summovie_command
 
 
 def main():
@@ -443,96 +445,6 @@ def run_summovie(
     with open('{0}/summovie_micrographs.txt'.format(opt['output_dir']), 'w') as f:
         for entry in sorted(micrograph_list):
             f.write('{0}\n'.format(entry))
-
-
-def create_summovie_command(
-        temp_name,
-        micrograph_name,
-        shift_name,
-        frc_name,
-        opt
-        ):
-
-    # Handle first and last case events
-    if opt['first'] == 0:
-        ERROR(
-            'SumMovie indexing starts with 1.\n' +
-            '0 is not a valid entry for --first', 'sxsummovie.py', 1
-            )
-    elif opt['first'] < 0:
-        first = opt['nr_frames'] + opt['first'] + 1
-    else:
-        first = opt['first']
-
-    if opt['last'] == 0:
-        ERROR(
-            'SumMovie indexing starts with 1.\n' +
-            '0 is not a valid entry for --last', 'sxsummovie.py', 1
-            )
-    elif opt['last'] < 0:
-        last = opt['nr_frames'] + opt['last'] + 1
-    else:
-        last = opt['last']
-
-    if first > last:
-        ERROR(
-            'First option musst be smaller equals last option!\n' + 
-            'first: {0}; last: {1}'.format(first, last), 'sxsummovie.py', 1
-            )
-
-    if opt['nr_frames'] < last or last <= 0:
-        ERROR(
-            '--last option {0} is out of range:\n'.format(last) + 
-            'min: 1; max {0}'.format(
-            opt['nr_frames']
-            ), 'sxsummovie.py', 1
-            )
-
-    if opt['nr_frames'] < first or first <= 0:
-        ERROR(
-            '--first option {0} is out of range:\n'.format(first) + 
-            'min: 1; max {0}'.format(
-            opt['nr_frames']
-            ), 'sxsummovie.py', 1
-            )
-
-    # Command list
-    summovie_command = []
-
-    # Input file
-    summovie_command.append('{0}'.format(temp_name))
-    # Number of frames
-    summovie_command.append('{0}'.format(opt['nr_frames']))
-    # Sum file
-    summovie_command.append(micrograph_name)
-    # Shift file
-    summovie_command.append(shift_name)
-    # FRC file
-    summovie_command.append(frc_name),
-    # First frame
-    summovie_command.append('{0}'.format(first))
-    # Last frame
-    summovie_command.append('{0}'.format(last))
-    # Pixel size
-    summovie_command.append('{0}'.format(opt['pixel_size']))
-    # Dose correction
-    if not opt['apply_dose_filter']:
-        summovie_command.append('NO')
-    else:
-        summovie_command.append('YES')
-        # Exposure per frame
-        summovie_command.append('{0}'.format(opt['exposure_per_frame']))
-        # Acceleration voltage
-        summovie_command.append('{0}'.format(opt['voltage']))
-        # Pre exposure
-        summovie_command.append('{0}'.format(opt['pre_exposure']))
-        # Restore noise power
-        if opt['dont_restore_noise']:
-            summovie_command.append('NO')
-        else:
-            summovie_command.append('YES')
-
-    return summovie_command
 
 
 if __name__ == '__main__':

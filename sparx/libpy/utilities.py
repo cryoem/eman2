@@ -613,6 +613,8 @@ def compose_transform2(alpha1, sx1, sy1, scale1, alpha2, sx2, sy2, scale2):
 		Here  if v's are vectors:   vnew = T2*T1 vold
 		     with T1 described by alpha1, sx1, scale1 etc.
 
+	  Combined parameters correspond to image first transformed by set 1 followed by set 2.
+
 	    Usage: compose_transform2(alpha1,sx1,sy1,scale1,alpha2,sx2,sy2,scale2)
 	       angles in degrees
 	"""
@@ -628,6 +630,8 @@ def compose_transform2m(alpha1=0.0, sx1=0., sy1=0.0, mirror1=0, scale1=1.0, alph
 	"""Print the composition of two transformations  T2*T1
 		Here  if v's are vectors:   vnew = T2*T1 vold
 		     with T1 described by alpha1, sx1, scale1 etc.
+
+	  Combined parameters correspond to image first transformed by set 1 followed by set 2.
 
 	    Usage: compose_transform2(alpha1,sx1,sy1,mirror1,scale1,alpha2,sx2,sy2,mirror2,scale2)
 	       angles in degrees
@@ -657,12 +661,20 @@ def compose_transform3(phi1,theta1,psi1,sx1,sy1,sz1,scale1,phi2,theta2,psi2,sx2,
 
 def combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2):
 	"""
-	  Combine 2D alignent parameters including mirror: tt = t2*t1
+	  Combine 2D alignment parameters including mirror: Tnew = T2*T1
+	  Combined parameters correspond to image first transformed by set 1 followed by set 2.
 	"""
 
 	t1 = Transform({"type":"2D","alpha":alpha1,"tx":sx1,"ty":sy1,"mirror":mirror1,"scale":1.0})
 	t2 = Transform({"type":"2D","alpha":alpha2,"tx":sx2,"ty":sy2,"mirror":mirror2,"scale":1.0})
 	tt = t2*t1
+	"""
+	t1.printme()
+	print(" ")
+	t2.printme()
+	print(" ")
+	tt.printme()
+	"""
 	d = tt.get_params("2D")
 	return d[ "alpha" ], d[ "tx" ], d[ "ty" ], int(d[ "mirror" ]+0.1)
 
@@ -1251,36 +1263,6 @@ def info(image, mask=None, Comment=""):
 	print("avg = %g, std dev = %g, min = %g, max = %g" % (mean, sigma, imin, imax))
 	return mean, sigma, imin, imax, nx, ny, nz
 
-def image_decimate(img, decimation=2, fit_to_fft=1,frequency_low=0, frequency_high=0):
-	from filter import filt_btwl
-	from fundamentals import smallprime, window2d
-	from utilities import get_image
-	"""
-		Window image to FFT-friendly size, apply Butterworth low pass filter,
-		and decimate 2D image
-	"""
-	if type(img)     == str :	img=get_image(img)
-	if decimation    <= 1   :  	ERROR("Improper decimation ratio", "image_decimation", 1)
-	if frequency_low <= 0   :
-		frequency_low  = .5/decimation- .05
-		if frequency_low <= 0: ERROR("Butterworth passband frequency is too low", "image_decimation", 1)
-		frequency_high = .5/decimation+ .05
-	if fit_to_fft :
-		nx_d = (img.get_xsize())/int(decimation)
-		ny_d = (img.get_ysize())/int(decimation)
-		nx_fft_d = smallprime(int(nx_d))
-		ny_fft_d = smallprime(int(ny_d))
-		nx_fft_m = nx_fft_d*int(decimation)
-		ny_fft_m = ny_fft_d*int(decimation)
-		e   = window2d(img, nx_fft_m, ny_fft_m, "l")
-		e1  = filt_btwl(e, frequency_low, frequency_high)
-		img = Util.decimate(e1, int(decimation), int(decimation), 1)
-	else:
-
-		e1  = filt_btwl(img, frequency_low, frequency_high)
-		img = Util.decimate(e1, int(decimation), int(decimation), 1)
-	return  img
-
 #### -----M--------
 def model_circle(r, nx, ny, nz=1):
 	"""
@@ -1768,14 +1750,15 @@ def read_spider_doc(fnam):
 			line = inf.readline()
 	return data
 
-def chooseformat(t):
-    ee = "%12.5f"%t
-    if(len(ee)>12):  return "e"
-    df1 = float(ee)
-    df2 = float("%12.4e"%t)
-    if(abs(t-df1) <= abs(t-df2)):  ouo = "f"
-    else: ouo = "e"
-    return ouo
+def chooseformat(t, form_float = "  %12.5f"):
+	from string import  replace, strip, split, atoi
+	e_form = replace(form_float,"f","e")
+	ee = strip(form_float)%t
+	if(len(ee)>atoi(split( strip(form_float),"." )[0][1:] )):  return e_form
+	df1 = float(ee)
+	df2 = float(strip(e_form)%t)
+	if(abs(t-df1) <= abs(t-df2)):  return form_float
+	else: return e_form
 
 def read_text_row(fnam, format="", skip=";"):
 	"""
@@ -1821,7 +1804,7 @@ def read_text_row(fnam, format="", skip=";"):
 	return data
 
 
-def write_text_row(data, file_name):
+def write_text_row(data, file_name, form_float = "  %14.6f", form_int = "  %12d"):
 	"""
 	   Write to an ASCII file a list of lists containing floats.
 
@@ -1831,6 +1814,8 @@ def write_text_row(data, file_name):
 		 If only one list is given, the file will contain one line
 	"""
 	import types
+	from string import find
+
 	outf = open(file_name, "w")
 	if (type(data[0]) == list):
 		# It is a list of lists
@@ -1838,11 +1823,11 @@ def write_text_row(data, file_name):
 			for j in range(len(data[i])):
 				tpt = data[i][j]
 				qtp = type(tpt)
-				if qtp == int:		outf.write("  %12d"%tpt)
+				if qtp == int:		outf.write(form_int%tpt)
 				elif qtp == float:
-					frmt = chooseformat(tpt)
-					if( frmt == "f" ):			outf.write("  %12.5f"%tpt)
-					else:						outf.write("  %12.5e"%tpt)
+					frmt = chooseformat(tpt, form_float)
+					if( find(frmt,"e") < 0 ):	outf.write(frmt%tpt)
+					else:						outf.write(frmt%tpt)
 				else:                   		outf.write("  %s"%tpt)
 			outf.write("\n")
 	else:
@@ -1850,11 +1835,11 @@ def write_text_row(data, file_name):
 		for j in range(len(data)):
 			tpt = data[j]
 			qtp = type(tpt)
-			if qtp == int :			outf.write("  %12d\n"%tpt)
+			if qtp == int :			outf.write(form_int%tpt+"\n")
 			elif qtp == float:
-				frmt = chooseformat(tpt)
-				if( frmt == "f" ):				outf.write("  %12.5f\n"%tpt)
-				else:							outf.write("  %12.5e\n"%tpt)
+				frmt = chooseformat(tpt, form_float)
+				if( find(frmt,"e") < 0 ):		outf.write(frmt%tpt+"\n")
+				else:							outf.write(frmt%tpt+"\n")
 			else:								outf.write("  %s\n"%tpt)
 	outf.flush()
 	outf.close()
@@ -1894,7 +1879,7 @@ def read_text_file(file_name, ncol = 0):
 		line = inf.readline()
 	return data
 
-def write_text_file(data, file_name):
+def write_text_file(data, file_name, form_float = "  %14.6f", form_int = "  %12d"):
 	"""
 	   Write to an ASCII file a list of lists containing floats.
 
@@ -1903,6 +1888,7 @@ def write_text_file(data, file_name):
 	         First list will be written as a first column, second as a second, and so on...
 		 If only one list is given, the file will contain one column
 	"""
+	from string import find
 
 	if data == []:
 		outf = open(file_name, "w")
@@ -1917,23 +1903,23 @@ def write_text_file(data, file_name):
 			for j in range(len(data)):
 				tpt = data[j][i]
 				qtp = type(tpt)
-				if qtp == int:			outf.write("  %12d"%tpt)
+				if qtp == int:			outf.write(form_int%tpt)
 				elif qtp == float:
-					frmt = chooseformat(tpt)
-					if( frmt == "f" ):				outf.write("  %12.5f"%tpt)
-					else:							outf.write("  %12.5e"%tpt)
-				else:                   			outf.write("  %s"%tpt)
+					frmt = chooseformat(tpt, form_float)
+					if( find(frmt,"e") < 0 ):	outf.write(frmt%tpt)
+					else:						outf.write(frmt%tpt)
+				else:                   		outf.write("  %s"%tpt)
 			outf.write("\n")
 	else:
 		# Single list
 		for j in range(len(data)):
 			tpt = data[j]
 			qtp = type(tpt)
-			if qtp == int :			outf.write("  %12d\n"%tpt)
+			if qtp == int :			outf.write(form_int%tpt+"\n")
 			elif qtp == float:
-				frmt = chooseformat(tpt)
-				if( frmt == "f" ):				outf.write("  %12.5f\n"%tpt)
-				else:							outf.write("  %12.5e\n"%tpt)
+				frmt = chooseformat(tpt, form_float)
+				if( find(frmt,"e") < 0 ):		outf.write(frmt%tpt+"\n")
+				else:							outf.write(frmt%tpt+"\n")
 			else:                   			outf.write("  %s\n"%tpt)
 	outf.close()
 
@@ -3272,6 +3258,11 @@ def memory_usage():
 """
 
 def circumference( img, inner = -1, outer = -1):
+	"""
+	Compute average within a shell between inner and outer radius
+	Subtract this shell average from the image
+	Multiply image by a spherical mask with inner radius
+	"""
 	nx = img.get_xsize()
 	ny = img.get_ysize()
 	nz = img.get_zsize()
@@ -3284,8 +3275,8 @@ def circumference( img, inner = -1, outer = -1):
 
 	[mean_a,sigma,imin,imax] = Util.infomask(img, model_circle(outer, nx, ny, nz) - inner_sphere, True)
 	inner_rest   = model_blank(nx, ny, nz, 1.0) - inner_sphere
-	Util.mul_img(inner_sphere, img)
-	return Util.addn_img(inner_sphere, Util.mult_scalar(inner_rest, mean_a ) )
+	return Util.muln_img(inner_sphere, img-mean_a)
+	#return Util.addn_img(inner_sphere, Util.mult_scalar(inner_rest, mean_a ) )
 
 def copy_attr( pin, name, pot ):
 	pot.set_attr( name, pin.get_attr(name) )
@@ -3341,12 +3332,13 @@ def file_type(name):
 	if(len(name)>4):
 		if(name[:4] == "bdb:"): return "bdb"
 		elif(name[-4:-3] == "."):  return name[-3:]
+		elif(name[-5:] == ".mrcs"):  return "mrcs"
 	ERROR("Unacceptable file format","file_type",1)
 
 def get_params2D(ima, xform = "xform.align2d"):
 	"""
 	  retrieve 2D alignment parameters from the header
-	  alpha tx ty mirror scale
+	  alpha, tx, ty, mirror, scale
 	"""
 	d = Util.get_transform_params(ima, xform, "2D")
 	return d["alpha"],d["tx"],d["ty"],d["mirror"],d["scale"]
@@ -3354,7 +3346,7 @@ def get_params2D(ima, xform = "xform.align2d"):
 def set_params2D(ima, p, xform = "xform.align2d"):
 	"""
 	  set 2D alignment parameters in the header
-	  alpha tx ty mirror scale
+	  p = [alpha, tx, ty, mirror, scale]
 	"""
 	t = Transform({"type":"2D","alpha":p[0],"tx":p[1],"ty":p[2],"mirror":p[3],"scale":p[4]})
 	ima.set_attr(xform, t)
@@ -3362,7 +3354,7 @@ def set_params2D(ima, p, xform = "xform.align2d"):
 def get_params3D(ima, xform = "xform.align3d"):
 	"""
 	  retrieve 3D alignment parameters from the header
-	  phi  theta  psi  tx  ty  tz mirror scale
+	  phi,theta, psi, tx, ty, tz, mirror,scale
 	"""
 	d = Util.get_transform_params(ima, xform, "spider")
 	return  d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"],d["mirror"],d["scale"]
@@ -3370,7 +3362,7 @@ def get_params3D(ima, xform = "xform.align3d"):
 def set_params3D(ima, p, xform = "xform.align3d"):
 	"""
 	  set 3D alignment parameters in the header
-	  phi  theta  psi  tx  ty  tz mirror scale
+	  p = [phi,theta, psi, tx, ty, tz, mirror,scale]
 	"""
 	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2],"tx":p[3],"ty":p[4],"tz":p[5],"mirror":p[6],"scale":p[7]})
 	ima.set_attr(xform, t)
@@ -3378,7 +3370,7 @@ def set_params3D(ima, p, xform = "xform.align3d"):
 def get_params_proj(ima, xform = "xform.projection"):
 	"""
 	  retrieve projection alignment parameters from the header
-	  phi  theta  psi  s2x  s2y
+	  phi, theta, psi, s2x, s2y
 	"""
 	d = Util.get_transform_params(ima, xform, "spider")
 	return  d["phi"],d["theta"],d["psi"],-d["tx"],-d["ty"]
@@ -3386,7 +3378,7 @@ def get_params_proj(ima, xform = "xform.projection"):
 def set_params_proj(ima, p, xform = "xform.projection"):
 	"""
 	  set projection alignment parameters in the header
-	  phi  theta  psi  s2x  s2y
+	  p = [phi, theta, psi, s2x, s2y]
 	"""
 	from EMAN2 import Vec2f
 	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2]})
@@ -3398,7 +3390,7 @@ def get_ctf(ima):
 	"""
 	  recover numerical values of CTF parameters from EMAN2 CTF object stored in a header of the input image
 	  order of returned parameters:
-        [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle]
+        defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle
 	"""
 	from EMAN2 import EMAN2Ctf
 	ctf_params = ima.get_attr("ctf")
@@ -3414,7 +3406,7 @@ def generate_ctf(p):
 	"""
 	  generate EMAN2 CTF object using values of CTF parameters given in the list p
 	  order of parameters:
-        [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle]
+        p = [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle]
 	    [ microns, mm, kV, Angstroms, A^2, microns, microns, radians]
 	"""
 	from EMAN2 import EMAN2Ctf
@@ -3443,7 +3435,7 @@ def set_ctf(ima, p):
 	"""
 	  set EMAN2 CTF object in the header of input image using values of CTF parameters given in the list p
 	  order of parameters:
-        [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle]
+        p = [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle]
 	"""
 	from utilities import generate_ctf
 	ima.set_attr( "ctf", generate_ctf( p ) )
@@ -4850,8 +4842,25 @@ def findall(value, L, start=0):
 			i = L.index(value, i)
 			positions.append(i)
 		except:
-			pass
+			break
 	return positions
+
+"""
+def findall(val, lo):
+	'''
+	  Find all occurrences of val in list lo
+	  Returns a list of indices of val in lo.
+	'''
+	u = []
+	i = -1
+	while( i < len(lo)-1):
+		try:
+			i = lo.index(val,i+1)
+			u.append(i)
+		except:
+			i += 1
+	return  u
+"""
 
 def assignments_to_groups(assignments, n = -1):
 	#  convert a list of assignments of images to groups to list of lists of image numbers within groups
@@ -4878,23 +4887,6 @@ def groups_assignments(groups, n = -1):
 		for l in q:
 			assignments[l] = i
 	return assignments
-
-"""
-def findall(val, lo):
-	'''
-	  Find all occurrences of val in list lo
-	  Returns a list of indices of val in lo.
-	'''
-	u = []
-	i = -1
-	while( i < len(lo)-1):
-		try:
-			i = lo.index(val,i+1)
-			u.append(i)
-		except:
-			i += 1
-	return  u
-"""
 
 # parameters: list of integers, number of processors
 def chunks_distribution(chunks, procs):
@@ -5294,7 +5286,7 @@ def get_dist(c1, c2):
 def eliminate_moons(my_volume, moon_elimination_params):
 	"""
 	moon_elimination_params[0] - mass in KDa
-	moon_elimination_params[1] - resolution in px/A
+	moon_elimination_params[1] - pixel size in A
 	"""
 
 	from morphology import binarize
@@ -5326,7 +5318,7 @@ def combinations_of_n_taken_by_k(n, k):
 
 def cmdexecute(cmd, printing_on_success = True):
 	from   time import localtime, strftime
-	import subprocess
+	#import subprocess  I do not know why this is not used. PAP
 	import os
 	#outcome = subprocess.call(cmd, shell=True)
 	outcome = os.system(cmd)
@@ -5383,23 +5375,28 @@ def if_error_then_all_processes_exit_program(error_status):
 
 	# if "OMPI_COMM_WORLD_SIZE" not in os.environ:
 	if len({"OMPI_COMM_WORLD_SIZE", "PMI_RANK", "PMI_ID", "SLURM_PROCID", "LAMRANK", "MPI_RANKID", "MP_CHILD", "MP_CHILD", "MP_CHILD"}.intersection(set(os.environ))) == 0:
-		def mpi_comm_rank(n): return 0
-		def mpi_bcast(*largs):
+		def my_mpi_comm_rank(n): return 0
+		def my_mpi_bcast(*largs):
 			return [largs[0]]
-		def mpi_finalize():
+		def my_mpi_finalize():
 			return None
-		MPI_INT, MPI_COMM_WORLD = 0, 0
+		MY_MPI_INT, MY_MPI_COMM_WORLD = 0, 0
 	else:
 		from mpi import mpi_comm_rank, mpi_bcast, mpi_finalize, MPI_INT, MPI_COMM_WORLD
+		my_mpi_comm_rank = mpi_comm_rank
+		my_mpi_bcast = mpi_bcast
+		my_mpi_finalize = mpi_finalize
+		MY_MPI_INT = MPI_INT
+		MY_MPI_COMM_WORLD = MPI_COMM_WORLD
 
-	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	myid = my_mpi_comm_rank(MY_MPI_COMM_WORLD)
 	if error_status != None and error_status != 0:
 		error_status_info = error_status
 		error_status = 1
 	else:
 		error_status = 0
 
-	error_status = mpi_bcast(error_status, 1, MPI_INT, 0, MPI_COMM_WORLD)
+	error_status = my_mpi_bcast(error_status, 1, MPI_INT, 0, MY_MPI_COMM_WORLD)
 	error_status = int(error_status[0])
 
 	if error_status > 0:
@@ -5413,7 +5410,7 @@ def if_error_then_all_processes_exit_program(error_status):
 					print_msg("** Location: %s\n"%(frameinfo.filename + ":" + str(frameinfo.lineno)))
 					print_msg("***********************************\n")
 		sys.stdout.flush()
-		mpi_finalize()
+		my_mpi_finalize()
 		exit() # sys.exit(1)
 
 def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift = False):
@@ -6976,7 +6973,7 @@ def split_a_group(workdir,list_of_a_group,Tracker):
 	from random import shuffle
 	from mpi import MPI_COMM_WORLD, mpi_barrier
 	from utilities import get_shrink_data_huang
-	from reconstructions import recons3d_4nn_ctf_MPI
+	from reconstruction import recons3d_4nn_ctf_MPI
 	from filter import filt_tanl
 	from applications import mref_ali3d_EQ_Kmeans
 	################
@@ -7240,4 +7237,95 @@ def convert_to_float(value):
 	"""
 	from struct import unpack
 	return unpack("!f", hex(value)[2:].zfill(8).decode('hex'))[0]
+
+
+def create_summovie_command(
+        temp_name,
+        micrograph_name,
+        shift_name,
+        frc_name,
+        opt
+        ):
+
+    # Handle first and last case events
+    if opt['first'] == 0:
+        ERROR(
+            'SumMovie indexing starts with 1.\n' +
+            '0 is not a valid entry for --first', 'sxsummovie.py', 1
+            )
+    elif opt['first'] < 0:
+        first = opt['nr_frames'] + opt['first'] + 1
+    else:
+        first = opt['first']
+
+    if opt['last'] == 0:
+        ERROR(
+            'SumMovie indexing starts with 1.\n' +
+            '0 is not a valid entry for --last', 'sxsummovie.py', 1
+            )
+    elif opt['last'] < 0:
+        last = opt['nr_frames'] + opt['last'] + 1
+    else:
+        last = opt['last']
+
+    if first > last:
+        ERROR(
+            'First option musst be smaller equals last option!\n' + 
+            'first: {0}; last: {1}'.format(first, last), 'sxsummovie.py', 1
+            )
+
+    if opt['nr_frames'] < last or last <= 0:
+        ERROR(
+            '--last option {0} is out of range:\n'.format(last) + 
+            'min: 1; max {0}'.format(
+            opt['nr_frames']
+            ), 'sxsummovie.py', 1
+            )
+
+    if opt['nr_frames'] < first or first <= 0:
+        ERROR(
+            '--first option {0} is out of range:\n'.format(first) + 
+            'min: 1; max {0}'.format(
+            opt['nr_frames']
+            ), 'sxsummovie.py', 1
+            )
+
+    # Command list
+    summovie_command = []
+
+    # Input file
+    summovie_command.append('{0}'.format(temp_name))
+    # Number of frames
+    summovie_command.append('{0}'.format(opt['nr_frames']))
+    # Sum file
+    summovie_command.append(micrograph_name)
+    # Shift file
+    summovie_command.append(shift_name)
+    # FRC file
+    summovie_command.append(frc_name),
+    # First frame
+    summovie_command.append('{0}'.format(first))
+    # Last frame
+    summovie_command.append('{0}'.format(last))
+    # Pixel size
+    summovie_command.append('{0}'.format(opt['pixel_size']))
+    # Dose correction
+    if not opt['apply_dose_filter']:
+        summovie_command.append('NO')
+    else:
+        summovie_command.append('YES')
+        # Exposure per frame
+        summovie_command.append('{0}'.format(opt['exposure_per_frame']))
+        # Acceleration voltage
+        summovie_command.append('{0}'.format(opt['voltage']))
+        # Pre exposure
+        summovie_command.append('{0}'.format(opt['pre_exposure']))
+        # Restore noise power
+        if opt['dont_restore_noise']:
+            summovie_command.append('NO')
+        else:
+            summovie_command.append('YES')
+
+    return summovie_command
+
 

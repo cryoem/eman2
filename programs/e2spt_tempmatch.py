@@ -99,7 +99,7 @@ def main():
 		cbin=ccc.process("math.maxshrink", {"n":2})
 		msk=cbin.copy()
 		msk.to_one()
-		msk.process_inplace("mask.cylinder",{"outer_radius":128-8, "phirange":360})
+		#msk.process_inplace("mask.cylinder",{"outer_radius":128-8, "phirange":360})
 		msk.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.03})
 		cbin.mult(msk)
 		#cbin.write_image("tmp0.hdf")
@@ -140,15 +140,25 @@ def main():
 			kid=0
 		
 		if options.label:
-			clst[str(kid)]={"boxsize":sz*2, "name":options.label}
+			clst[str(kid)]={"boxsize":sz*2*nbin, "name":options.label}
 		else:
-			clst[str(kid)]={"boxsize":sz*2, "name":base_name(tmpname)}
+			clst[str(kid)]={"boxsize":sz*2*nbin, "name":base_name(tmpname)}
 		js["class_list"]=clst
 		if "boxes_3d" in js:
 			bxs=js["boxes_3d"]
 		else:
 			bxs=[]
-		bxs.extend([[p[2], p[1],p[0], 'tm', scr[i] ,kid] for i,p in enumerate(pts[:n]*4)])
+			
+		e=img
+		if "apix_unbin" in js:
+			apix_unbin=js["apix_unbin"]
+			apix=e["apix_x"]
+			shp=np.array([e["nz"], e["ny"], e["nx"]])
+			box=(pts*2-shp/2)*apix/apix_unbin
+			bxs.extend([[p[2], p[1],p[0], 'tm', scr[i] ,kid] for i,p in enumerate(box[:n])])
+			
+		else:
+			bxs.extend([[p[2], p[1],p[0], 'tm', scr[i] ,kid] for i,p in enumerate(pts[:n]*4)])
 		js['boxes_3d']=bxs
 		js.close()
 

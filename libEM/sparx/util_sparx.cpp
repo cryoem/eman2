@@ -6610,11 +6610,9 @@ complex<float> Util::extractpoint2(int nx, int ny, float nuxnew, float nuynew, E
 		nuxnew *= -1;
 		nuynew *= -1;
 	}
-	if (nuynew >= nhalf-0.5)  {
-		nuynew -= nxreal;
-	} else if (nuynew < -nhalf-0.5) {
-		nuynew += nxreal;
-	}
+	if (nuynew >= nhalf-0.5)       nuynew -= nxreal;
+	else if (nuynew < -nhalf-0.5)  nuynew += nxreal;
+
 
 	// put (xnew,ynew) on a grid.  The indices will be wrong for
 	// the Fourier elements in the image, but the grid sizing will
@@ -8559,7 +8557,7 @@ void Util::Applyws(EMData* circp, vector<int> numr, vector<float> wr)
 }
 
 void Util::prb3p(double *b, float *pos) {
-	//  three points 1D parabola fit,  call this function for random searchea
+	//  three points 1D parabola fit,  call this function for random searches
 	double  c2,c3;
 	c3 = b[0] - 2.0f*b[1] +b[1];
 	if( fabs(c3) > 1.0e-6 ) *pos =  max( min ( static_cast<float>(2*(b[0]-b[2])/c3), 1.0f), -1.0f);
@@ -12412,18 +12410,18 @@ void Util::cyclicshift(EMData *image, Dict params) {
 	// x-reverses
 	if (mx != 0) {
 		for (int iz = 0; iz < nz; iz++)
-	               for (int iy = 0; iy < ny; iy++) {
+			for (int iy = 0; iy < ny; iy++) {
 				// reverses for column iy
-	        		size_t offset = nx*iy + (size_t)nx*ny*iz; // starting location for column iy in slice iz
+				size_t offset = nx*iy + (size_t)nx*ny*iz; // starting location for column iy in slice iz
 				reverse(&data[offset],&data[offset+mx]);
 				reverse(&data[offset+mx],&data[offset+nx]);
 				reverse(&data[offset],&data[offset+nx]);
-	        	}
+			}
 	}
 	// y-reverses
 	if (my != 0) {
 		for (int iz = 0; iz < nz; iz++) {
-	        	size_t offset = (size_t)nx*ny*iz;
+			size_t offset = (size_t)nx*ny*iz;
 			colreverse(&data[offset], &data[offset + my*nx], nx);
 			colreverse(&data[offset + my*nx], &data[offset + ny*nx], nx);
 			colreverse(&data[offset], &data[offset + ny*nx], nx);
@@ -12607,7 +12605,6 @@ float Util::hist_comp_freq(float PA,float PB,size_t size_img, int hist_len, EMDa
 	return static_cast<float>(freq_hist);
 }
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#define    QUADPI      		        3.141592653589793238462643383279502884197
 #define    DGR_TO_RAD    		QUADPI/180
 #define    DM(I)         		DM	    [I-1]
 #define    SS(I)         		SS	    [I-1]
@@ -12652,7 +12649,6 @@ Dict Util::CANG(float PHI,float THETA,float PSI)
 }
 #undef SS
 #undef DM
-#undef QUADPI
 #undef DGR_TO_RAD
 //-----------------------------------------------------------------------------------------------------------------------
 struct t_BPCQ_line{
@@ -24452,6 +24448,24 @@ EMData* Util::shrinkfvol(EMData* img, int npad)
 #undef out_ptr
 #undef w_ptr
 
+void Util::divclreal(EMData* img1, EMData* img2, float cutoff)
+{
+	ENTERFUNC;
+	size_t nx=img2->get_xsize(),ny=img2->get_ysize(),nz=img2->get_zsize();
+	float *img1_ptr  = img1->get_data();
+	float *img2_ptr  = img2->get_data();
+
+	for( size_t i = 0; i<(nx*ny*nz); i++) {
+		float value  = img2_ptr[i];
+		if(value < cutoff) value = 0.0; 
+		else               value = 1./value;
+		img1_ptr[2*i]   *= value;
+		img1_ptr[2*i+1] *= value;
+	}
+
+	img1->update();
+	EXITFUNC;
+}
 
 EMData* Util::mulreal(EMData* img1, EMData* img2)
 {
@@ -25151,26 +25165,29 @@ void Util::div_filter(EMData* img, EMData* img1)
 }
 
 
-EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
+EMData*  Util::unroll1dpw( int onx, int ny, const vector<float>& bckgnoise )
 {
 	ENTERFUNC;
 
-	int nx = ny/2 + 1;
+	int nx = onx/2 + 1;
+	int ny2 = ny/2 + 1;
 
 	int nb = bckgnoise.size();
 	EMData* power = new EMData();
 	power->set_size(nx,ny);
 	power->to_zero();
+	float xfac = 1.0/float(onx*onx);
+	float yfac = 1.0/float(ny*ny);
 
     float* data = power->get_data();
 
 	//float rmax = nyp2 + 0.5;
 	for ( int iy = 0; iy < ny; iy++) {
-		int jy = (iy<nx) ? iy : iy-ny;
-		float argy = float(jy*jy);
+		int jy = (iy<ny2) ? iy : iy-ny;
+		float argy = float(jy*jy)*yfac;
 		for ( int ix = 0; ix < nx; ix++) {
-			float argx = argy + ix*ix;
-			int rf = (int)(sqrt( argx) + 0.5f );
+			float argx = argy + ix*ix*xfac;
+			int rf = (int)( onx*sqrt(argx) + 0.5f );
 			if( rf < nx )  data[ix+iy*nx] = bckgnoise[rf];///2.0;  // 2 on account of x^2/(2*s^2)
 		}
 	}
@@ -25191,7 +25208,7 @@ EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
 	}
 	*/
 	data[0] = 0.0f;
-	for ( size_t iy = nx; iy < ny; iy++) data[iy*nx] = 0.0f;
+	for ( size_t iy = ny2; iy < ny; iy++) data[iy*nx] = 0.0f;
 
 	power->update();
 	EXITFUNC;
@@ -25199,30 +25216,33 @@ EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
 }
 
 
-EMData*  Util::unrollmask( int ny )
+EMData*  Util::unrollmask( int onx, int ny )
 {
 	ENTERFUNC;
 
-	int nx = ny/2 + 1;
+	int nx = onx/2 + 1;
+	int ny2 = ny/2 + 1;
 
 	EMData* power = new EMData();
 	power->set_size(nx,ny);
 	power->to_zero();
+	float xfac = 1.0/float(onx*onx);
+	float yfac = 1.0/float(ny*ny);
 
 	float* data = power->get_data();
 
 	for ( int iy = 0; iy < ny; iy++) {
-		int jy = (iy<nx) ? iy : iy-ny;
-		float argy = float(jy*jy);
+		int jy = (iy<ny2) ? iy : iy-ny;
+		float argy = float(jy*jy)*yfac;
 		for ( int ix = 0; ix < nx; ix++) {
-			float argx = argy + ix*ix;
-			int rf = (int)(sqrt( argx) + 0.5f );
-			if( rf < nx )  data[ix+iy*nx] = 1.0f;///2.0;  // 2 on account of x^2/(2*s^2)
+			float argx = argy + ix*ix*xfac;
+			int rf = (int)( onx*sqrt(argx) + 0.5f );
+			if( rf < nx )  data[ix+iy*nx] = 1.0f;
 		}
 	}
 
 	data[0] = 0.0f;
-	for ( size_t iy = nx; iy < ny; iy++) data[iy*nx] = 0.0f;
+	for ( size_t iy = ny2; iy < ny; iy++) data[iy*nx] = 0.0f;
 
 	power->update();
 	EXITFUNC;
@@ -25232,7 +25252,8 @@ EMData*  Util::unrollmask( int ny )
 vector<float> Util::rotavg_fourier(EMData* img)
 {
 	//  Computes both rotational power spectrum and cumulative rotational power spectrum
-	int nx, ny, nz, nyp2, lsd;
+	//  Correct to make it work for rectangular images and for 3D PAP 02/03/2019
+	int nx, ny, nz, nyp2, nzp2, lsd;
 	bool iodd;
 	int cmpx = img->is_complex();
 	EMData *fimg;
@@ -25244,11 +25265,13 @@ vector<float> Util::rotavg_fourier(EMData* img)
 		if (iodd)  nx += 1;
 		lsd = (nx + 2 - nx%2)/2;
 		nyp2 = ny/2;
+		nzp2 = nz/2;
 		img->set_attr("is_complex", false);
 		fint = img->get_data();
 	} else {
 		nx=img->get_xsize(), ny=img->get_ysize(), nz=img->get_zsize();
 		nyp2 = ny/2;
+		nzp2 = nz/2;
 		lsd = (nx + 2 - nx%2)/2;
 		fimg = img->do_fft();
 		fimg->set_attr("is_complex", false);
@@ -25258,26 +25281,32 @@ vector<float> Util::rotavg_fourier(EMData* img)
 	for (int i=0; i<2*lsd; i++)  rotav[i] = 0.0f;
 	vector<float> count(lsd);
 	for (int i=0; i<lsd; i++)  count[i] = 0.0f;
+	float qx = 1.0/float(nx)/float(nx);
+	float qy = 1.0/float(ny)/float(ny);
+	float qz = 1.0/float(nz)/float(nz);
 
-	float argy, argx;
-	for ( int iy = 1; iy <= ny; iy++) {
-		int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = float(jy*jy);
-		for ( int ix = 1; ix <= lsd; ix++) {
-			int jx=ix-1;
-			if(! ((jx == 0) && (jy <= 0)) ) {
-				argx = argy + float(jx*jx);
-				float rf = sqrt( argx );
-				int  ir = int(rf);
-				if( ir < lsd-1) {
-					float frac = rf - float(ir);
-					float qres = 1.0f - frac;
-					int ioff = 2*(jx+(iy-1)*lsd);
-					float temp = fint[ioff]*fint[ioff] + fint[ioff+1]*fint[ioff+1];
-					//cout<<"  jx  "<<jx<<"  jy  "<<jy<<"  ir  "<<ir<<"  "<<ioff<<"  temp  "<<temp<<endl;
-					rotav[ir]   += temp*qres;
-					rotav[ir+1] += temp*frac;
-					count[ir]   += qres;
-					count[ir+1] += frac;
+	float argz, argy, argx;
+	for ( int iz = 1; iz <= nz; iz++) {
+		int jz=iz-1; if (jz>nzp2) jz=jz-nz; argz = float(jz*jz*qz);
+		for ( int iy = 1; iy <= ny; iy++) {
+			int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = argz + float(jy*jy*qy);
+			for ( int ix = 1; ix <= lsd; ix++) {
+				int jx=ix-1;
+				if(! ((jx == 0) && (jy <= 0)) ) {
+					argx = argy + float(jx*jx*qx);
+					float rf = sqrt( argx/qx );
+					int  ir = int(rf);
+					if( ir < lsd-1) {
+						float frac = rf - float(ir);
+						float qres = 1.0f - frac;
+						int ioff = 2*(jx+((iy-1)+(iz-1)*ny)*lsd);
+						float temp = fint[ioff]*fint[ioff] + fint[ioff+1]*fint[ioff+1];
+						//cout<<"  jx  "<<jx<<"  jy  "<<jy<<"  jz  "<<jz<<"  ir  "<<ir<<"  "<<ioff<<"  temp  "<<temp<<endl;
+						rotav[ir]   += temp*qres;
+						rotav[ir+1] += temp*frac;
+						count[ir]   += qres;
+						count[ir+1] += frac;
+					}
 				}
 			}
 		}
@@ -25850,6 +25879,64 @@ vector<int> Util::cast_coarse_into_fine_sampling(const vector<vector<float> >& c
 	}
 	return ltable;
 }
+
+
+vector<float> Util::shift_gradients( EMData* avg, EMData* img, EMData* wght, float sx, float sy)
+{
+	//  Weighting image is supposed to be squared.
+	ENTERFUNC;
+
+	if(!avg->is_complex())  throw ImageFormatException("First input image has to be complex");
+	if(!img->is_complex())  throw ImageFormatException("Second input image has to be complex");
+	if(wght->is_complex())  throw ImageFormatException("Weighting image has to be real");
+	if(avg->is_fftodd())  throw ImageFormatException("Input Fourier image should originate from real x even-sized image");
+
+	int nx=avg->get_xsize(), ny=avg->get_ysize();
+	
+	//cout<<"  "<< nx <<"  "<<ny<<endl;
+	float tnx = nx-2;
+    int nyp2 = ny/2;
+	if (nx/2 != wght->get_xsize())  throw NullPointerException("incorrect image size");
+
+    float* avg_p  = avg->get_data();
+    float* img_p = img->get_data();
+    float* wght_p = wght->get_data();
+
+	double gradx = 0.0;
+	double grady = 0.0;
+	unsigned int lwg = 0;
+	for ( int iy = 0; iy < ny; iy++) {
+		int jy;
+		if (iy>nyp2) jy=iy-ny;
+		else  jy = iy;
+		for ( int ix = 0; ix < nx; ix+=2) {
+			int ioff = ix+iy*nx;
+			if(wght_p[lwg] > 0.0 ) {
+				float argx = TWOPI*sx*(ix/2)/tnx;
+				float argy = TWOPI*sy*jy/((float)ny);
+				float arg = argx+argy;
+				double scs = cos(arg);
+				double sss = sin(arg);
+				//  First we shift input image
+				double img_real = img_p[ioff]*scs   + img_p[ioff+1]*sss;
+				double img_imag = img_p[ioff+1]*scs - img_p[ioff]*sss;
+				double prod = (avg_p[ioff]*img_imag - avg_p[ioff]*img_real)*scs*wght_p[lwg];
+
+				gradx += prod*argx;
+				grady += prod*argy;
+//cout<<" UUU   "<< ir <<"  "<<data[ioff]*data[ioff]+data[ioff+1]*data[ioff+1]<<"  "<<dctfs[roff]*dproj[ioff]*dctfs[roff]*dproj[ioff]+dctfs[roff]*dproj[ioff+1]*dctfs[roff]*dproj[ioff+1]<<endl;
+			}
+			lwg++;
+		}
+	}
+
+	vector<float> retvals;
+	retvals.push_back((float)gradx);
+	retvals.push_back((float)grady);
+    return retvals;
+	EXITFUNC;
+}
+
 
 
 #define img_ptr(i,j,k)  img_ptr[2*(i-1)+((j-1)+((k-1)*ny))*(size_t)nxo]
@@ -29524,11 +29611,56 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 	return ccc;
 }
 
+void Util::init_threads(int nthreads) {
+#ifdef USE_FFTW3
+	EMfft::initialize_plan_cache();
+	fftwf_init_threads();
+	fftwf_plan_with_nthreads(nthreads);
+#endif
+}
+
+void Util::cleanup_threads() {
+#ifdef USE_FFTW3
+	fftwf_cleanup_threads();
+	EMfft::initialize_plan_cache();
+#endif
+}
 
 void Util::version()
 {
+	cout <<"   Source modification date: 02/03/2019" <<  endl;
+/*
+This is test program for threaded FFT  as of 11/20/2018 PAP
+        int nthreads = 16;
+        int i;
+        int nx,ny,nz;
+        nx=ny=nz=384*2;
+        int forward = 1;
+        int rank = 3;
+        int dims[3];
+        dims[0] = nz;
+        dims[1] = ny;
+        dims[2] = nx;
+        size_t sizein = nx*ny*nz;
+        size_t sizeou = (nx+2)*ny*nz;
 
-	cout <<"   Source modification date: August 2018 release " <<  endl;
+        float *real_data = fftwf_alloc_real(sizein);
+        float *complex_data = fftwf_alloc_real(sizeou);
+
+        for( i = 0; i<sizein; i++ )  real_data[i]=1.1;
+
+        fftwf_plan plan;
+        fftwf_init_threads();
+        fftwf_plan_with_nthreads(nthreads);
+        if( forward == 1 )  plan = fftwf_plan_dft_r2c(rank, dims + (3 - rank), real_data, (fftwf_complex *) complex_data, FFTW_ESTIMATE);
+        else plan = fftwf_plan_dft_c2r(rank, dims + (3 - rank), (fftwf_complex *) complex_data, real_data, FFTW_ESTIMATE);
+
+
+        fftwf_execute(plan);
+        fftwf_destroy_plan(plan);
+
+	fftwf_cleanup_threads();
+*/
 }
 
 
@@ -30143,7 +30275,6 @@ EMData* Util::ctf2_rimg(int nx, int ny, int nz, float dz, float ps, float voltag
 }
 #undef ctf_img1_ptr
 	
-#define		quadpi	 	 	3.141592653589793238462643383279502884197 
 /***
 EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg, float s)
 {  
@@ -30209,7 +30340,7 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 						s1 +=(*img)(ix,iy,iz);
 					}
 					if ( r>=radius && r<radius_p) {
-						float temp = (0.5+0.5*cos(quadpi*(radius_p-r)/cosine_width));
+						float temp = (0.5+0.5*cos(QUADPI*(radius_p-r)/cosine_width));
 						u += temp;
 						s1 += (*img)(ix,iy,iz)*temp;
 					}
@@ -30230,7 +30361,7 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 					float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
 					if (r>=radius_p)  (*cmasked) (ix,iy,iz) = s1;
 					if (r>=radius && r<radius_p) {
-						float temp = (0.5 + 0.5*cos(quadpi*(radius_p-r)/cosine_width));
+						float temp = (0.5 + 0.5*cos(QUADPI*(radius_p-r)/cosine_width));
 						(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz)+temp*(s1-(*img)(ix,iy,iz));
 					}
 					if (r<radius) (*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
@@ -30283,8 +30414,7 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 				int ty=tz+(iy-cy)*(iy-cy);				
 				for (int ix =0; ix<nx; ix++) {
 					float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
-					if (r>=radius_p)
-						cmasked_ptr(ix,iy,iz) = bckg_ptr(ix,iy,iz);
+					if (r>=radius_p) cmasked_ptr(ix,iy,iz) = bckg_ptr(ix,iy,iz);
 					if (r>=radius && r<radius_p) {
 						float temp = (0.5+0.5*cos(pi*(radius_p-r)/cosine_width));
 						cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz)+temp*(bckg_ptr(ix,iy,iz)-img_ptr(ix,iy,iz));
@@ -30293,36 +30423,31 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 				}
 			}
 		}
-	} else 
-	{
-	  if (s==999999.)
-	  
-	  {
-		float u =0.0f;
-		s1 =0.0f;
-	  	for (int iz=0; iz<nz; iz++) {
-			int tz =(iz-cz)*(iz-cz);
-			for (int iy=0; iy<ny; iy++) {
-				int ty=tz+(iy-cy)*(iy-cy);
-				for (int ix=0; ix<nx; ix++) {
-					float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
-					if (r>=radius_p) {	
-						u +=1.0f;
-						s1 +=img_ptr(ix,iy,iz);
+	} else {
+		if (s==999999.) {
+			float u =0.0f;
+			s1 =0.0f;
+			for (int iz=0; iz<nz; iz++) {
+				int tz =(iz-cz)*(iz-cz);
+				for (int iy=0; iy<ny; iy++) {
+					int ty=tz+(iy-cy)*(iy-cy);
+					for (int ix=0; ix<nx; ix++) {
+						float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
+						if (r>=radius_p) {	
+							u +=1.0f;
+							s1 +=img_ptr(ix,iy,iz);
+						}
+						if ( r>=radius && r<radius_p) {
+							float temp = (0.5+0.5*cos(QUADPI*(radius_p-r)/cosine_width));
+							u += temp;
+							s1 += img_ptr(ix,iy,iz)*temp;
+						}
+						if (r<radius) cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz);
 					}
-					if ( r>=radius && r<radius_p) {
-						float temp = (0.5+0.5*cos(quadpi*(radius_p-r)/cosine_width));
-						u += temp;
-						s1 += img_ptr(ix,iy,iz)*temp;
-					}
-					if (r<radius) cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz);
 				}
-			  }
-		   }
-		 s1 /= u;
-	   }
-	else
-		s1=s;
+			}
+			s1 /= u;
+		} else s1=s;
 
 		for (int iz=0; iz<nz; iz++) {
 			int tz =(iz-cz)*(iz-cz);
@@ -30332,13 +30457,14 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 					float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
 					if (r>=radius_p)  cmasked_ptr (ix,iy,iz) = s1;
 					if (r>=radius && r<radius_p) {
-						float temp = (0.5 + 0.5*cos(quadpi*(radius_p-r)/cosine_width));
-						cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz)+temp*(s1-img_ptr(ix,iy,iz)); }
+						float temp = (0.5 + 0.5*cos(QUADPI*(radius_p-r)/cosine_width));
+						cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz)+temp*(s1-img_ptr(ix,iy,iz));
+					}
 					if (r<radius) cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz);
 				}
 			}
-		}//iz
-	}//else
+		}
+	}
 	cmasked->update();
 	EXITFUNC;
 	return cmasked;
@@ -30347,159 +30473,67 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 #undef cmasked_ptr
 #undef bckg_ptr
 
-#undef quadpi
-
-#define		quadpi	 3.141592653589793238462643383279502884197
 #define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*(size_t)nx]
 #define smask_ptr(i,j,k) smask_ptr[i+(j+(k*ny))*(size_t)nx]
-#define tmpimg_ptr(i,j,k) tmpimg_ptr[i+(j+(k*ny))*(size_t)nx]
-EMData* Util::adaptive_mask(EMData* img, float threshold, float surface_dilation_ini, float cosine_width)
-{  
+EMData* Util::soft_edge(EMData* img, int edge_width, string mode)
+{
+//  mode is either "C" for cosine or "G" for Gaussian
 	ENTERFUNC;
 
-	if (!img) {
-		throw NullPointerException("NULL input image");
-	}
-	int img_dim = img->get_ndim();
-	if (img_dim<3)
-	throw ImageDimensionException(" surface_mask is only applicable to 3-D volume");
+	if (!img)  throw NullPointerException("NULL input image");
+
+	int ntab = 100;
+	vector<float> tabf(ntab+1);
+	if( mode == "C" ) {
+		for(int iz=0; iz<ntab+1; iz++) tabf[iz] = 0.5 + 0.5 * cos(QUADPI * (float)(iz)/ntab);
+	}  else if( mode == "G" ) {
+		float Q = -4.605170185988091f;
+		for(int iz=0; iz<ntab+1; iz++) tabf[iz] = exp(Q*(float)(iz)/ntab*(float)(iz)/ntab);
+	}  else  throw InvalidCallException("Mode has to be with C (cosine edge) or G (Gaussian edge)");
+
    	int nx = img->get_xsize(), ny = img->get_ysize(), nz = img->get_zsize();
-	EMData* smask = new EMData();
-	smask->set_size(nx,ny,nz);
-	smask  ->to_zero();
-	EMData* tmpimg = new EMData();
-	tmpimg ->set_size(nx,ny,nz);
-	tmpimg ->to_zero();
-	float *img_ptr    = img->get_data();
-	float *smask_ptr  = smask->get_data();
-	float *tmpimg_ptr = tmpimg->get_data();
+
+	EMData* smask = img->copy();
+	float* img_ptr = img->get_data();
+	float* smask_ptr = smask->get_data();
+	
+	int edge_width2 = edge_width * edge_width;
+	int edge_width3;
+	if( nz > 1) edge_width3 = edge_width2 * edge_width;
+	else edge_width3 = edge_width2;
 	for (int iz=0; iz<nz; iz++) {
-				for (int iy=0; iy<ny; iy++) {
-					for (int ix=0; ix<nx; ix++) {
-						if (img_ptr(ix,iy,iz) > threshold){	
-							smask_ptr(ix,iy,iz)=  1.0;
-							tmpimg_ptr(ix,iy,iz)= 1.0; }
-						else {
-								smask_ptr(ix,iy,iz)=  0.0;
-								tmpimg_ptr(ix,iy,iz)= 0.0;}
-				      }
-			   }				
-	  }
-	if (surface_dilation_ini > 0. || surface_dilation_ini < 0.) 
-	{
-		int surface_dilation = abs(ceil(surface_dilation_ini));
-		//std:cout<<" surface_dilation starts"<<surface_dilation<<std::endl;
-		float  surface_dilation_ini2 = surface_dilation_ini*surface_dilation_ini;
-		if (surface_dilation_ini > 0.)
-		{
-			for (int iz=0; iz<nz; iz++) {
-				for (int iy=0; iy<ny; iy++) {
-					for (int ix=0; ix<nx; ix++) {
-						if (tmpimg_ptr(ix,iy,iz) < 0.001) {
-									bool already_done = false;
-									for (int kp = iz - surface_dilation; kp <= iz + surface_dilation; kp++) {
-										for (int ip = iy - surface_dilation; ip <= iy + surface_dilation; ip++) {
-											for (int jp = ix - surface_dilation; jp <= ix + surface_dilation; jp++) {
-												if ((kp>=0 && kp <nz) && (ip>=0 && ip <ny) && (jp>=0 && jp<nx)){											  								   
-															if (tmpimg_ptr(jp,ip,kp) > 0.999) {
-																float r2 = (float)( (kp-iz)*(kp-iz)+(ip-iy)*(ip-iy)+(jp-ix)*(jp-ix));
-																if (r2<surface_dilation_ini2){
-																		smask_ptr(ix, iy, iz) = 1.;
-																		already_done = true; }
-															      }
-													}
-												   if (already_done) break;  
-											  }
-											   if (already_done) break;		
-										 }
-										 if (already_done) break;
-									  } // kp
-									
-								   }//if 
-								
-								 } // ix	
-						    }//iy
-					}//iz							   
-				}
-		else {
-			for (int iz=0; iz<nz; iz++) {
-				for (int iy=0; iy<ny; iy++) {
-					for (int ix=0; ix<nx; ix++) {
-						if (tmpimg_ptr(ix,iy,iz) > 0.999) {
-								bool already_done = false;
-								for (int kp = iz - surface_dilation; kp <= iz + surface_dilation; kp++) {
-									for (int ip = iy - surface_dilation; ip <= iy + surface_dilation; ip++) {
-										for (int jp = ix - surface_dilation; jp <= ix + surface_dilation; jp++) {
-											if ((kp>=0 && kp <nz) && (ip>=0 && ip <ny) && (jp>=0 && jp<nx)) {										   
-												if (tmpimg_ptr(jp,ip,kp) < 0.001){
-													float r2 = (float)( (kp-iz)*(kp-iz) + (ip-iy)*(ip-iy)+ (jp-ix)*(jp-ix) );
-													if (r2<surface_dilation_ini2) {
-															smask_ptr(ix,iy,iz) = 0.0;
-															already_done = true;
-														 }
-											  	    }
-											}	
-											if (already_done) break;  
+		for (int iy=0; iy<ny; iy++) {
+			for (int ix=0; ix<nx; ix++) {
+				if(img_ptr(ix, iy, iz) < 0.5) {
+					int min_r2 = edge_width3;
+					for (int kp = iz - edge_width ; kp <= iz + edge_width ; kp++)  {
+						if(kp>=0 && kp <nz) {
+							int ztmp = (kp-iz)*(kp-iz);
+							for (int ip = iy - edge_width ; ip <= iy + edge_width ; ip++)  {
+								if(ip>=0 && ip <ny) {
+									int ytmp = ztmp + (ip-iy)*(ip-iy);
+									for (int jp = ix - edge_width ; jp <= ix + edge_width ; jp++)  {
+										if(jp>=0 && jp<nx)  {
+											if(img_ptr(jp,ip,kp) >= 0.5)  min_r2 = Util::get_min(min_r2, ytmp + (jp-ix)*(jp-ix));
+										}
 									}
-									if (already_done) break;		
 								}
-							if (already_done) break;
-							}			
-						}//if	
+							}
+						}
 					}
-				}						   
+					if(min_r2 < edge_width2) smask_ptr(ix, iy, iz) = tabf[(int)(sqrt((float)(min_r2)/edge_width2)*ntab+0.5f)];
+					//0.5 + 0.5 * cos(QUADPI * sqrt((float)min_r2)/edge_width);								
+				}
 			}
 		}
 	}
-			if (cosine_width > 0.0) {
-		       // std::cout<<" make the edge   "<<std::endl;
-				for (int iz=0; iz<nz; iz++) {
-					for (int iy=0; iy<ny; iy++) {
-						for (int ix=0; ix<nx; ix++) {
-								tmpimg_ptr(ix,iy,iz)= smask_ptr(ix,iy,iz);
-							} 
-						}
-					}
-			
-				int icosine_width   = abs(ceil(cosine_width));
-				float cosine_width2 = cosine_width*cosine_width;
-				//std::cout<<" make softmask  "<<icosine_width<<std::endl;	
-				for (int iz=0; iz<nz; iz++) {
-				  //  std::cout<<"  slice "<<iz<<std::endl;
-					for (int iy=0; iy<ny; iy++) {
-						for (int ix=0; ix<nx; ix++) {
-							if (tmpimg_ptr(ix, iy, iz) < 0.001) {
-								float min_r2 = 9999.;
-								for (int kp = iz - icosine_width ; kp <= iz + icosine_width ; kp++){
-									for (int ip = iy - icosine_width ; ip <= iy + icosine_width ; ip++){
-										for (int jp = ix - icosine_width ; jp <= ix + icosine_width ; jp++){
-											if ((kp>=0 && kp <nz) && (ip>=0 && ip <ny) && (jp>=0 && jp<nx)){										   
-												if (tmpimg_ptr(jp,ip,kp) > 0.999) {
-													float r2 = (float)((kp-iz)*(kp-iz) + (ip-iy)*(ip-iy)+ (jp-ix)*(jp-ix));
-													if (r2<min_r2)
-													   min_r2 = r2;
-													}
-												}
-											}
-										}
-									}
-									if   (min_r2 < cosine_width2) {								   
-										 smask_ptr(ix, iy, iz) = 0.5 + 0.5 * cos(quadpi * sqrt(min_r2)/cosine_width);}									
-									}//if
-							   }//ix
-						   }//iy
-					  }//iz					
-				}//if
 
- 	delete tmpimg;
 	smask->update();
 	EXITFUNC;
 	return smask;
 }
-#undef quadpi
 #undef img_ptr
 #undef smask_ptr
-#undef tmpimg_ptr
 /*
 #define  cent(i)     out[i+N]
 #define  assign(i)   out[i]
@@ -30972,6 +31006,51 @@ EMData* Util::get_slice(EMData *vol, int dim, int index) {
 	}
 
 	return slice;
+}
+
+void Util::put_slice(EMData *vol, EMData *slice, int dim, int index) {
+
+	int nx = vol->get_xsize();
+	int ny = vol->get_ysize();
+	int nz = vol->get_zsize();
+	float *vol_data = vol->get_data();
+	float *slice_data = slice->get_data();
+	int new_nx = slice->get_xsize();
+	int new_ny = slice->get_ysize();
+
+	if (nz == 1)
+		throw ImageDimensionException("Error: Input must be a 3-D object");
+	if ((dim < 1) || (dim > 3))
+		throw ImageDimensionException("Error: dim must be 1 (x-dimension), 2 (y-dimension) or 3 (z-dimension)");
+	if (((dim == 1) && (index < 0 || index > nx-1)) ||
+	  ((dim == 1) && (index < 0 || index > nx-1)) ||
+	  ((dim == 1) && (index < 0 || index > nx-1)))
+		throw ImageDimensionException("Error: index exceeds the size of the 3-D object");
+
+	if (dim == 1) {
+		if(new_nx != ny || new_ny != nz) throw ImageDimensionException("Error: dimensions of slice different from dimensions of volume");
+	} else if (dim == 2) {
+		if(new_nx != nx || new_ny != nz) throw ImageDimensionException("Error: dimensions of slice different from dimensions of volume");
+	} else {
+		if(new_nx != nx || new_ny != ny) throw ImageDimensionException("Error: dimensions of slice different from dimensions of volume");
+	}
+
+	if (dim == 1) {
+		for (int x=0; x<new_nx; x++)
+			for (int y=0; y<new_ny; y++)
+				vol_data[(y*ny+x)*nx+index] = slice_data[y*new_nx+x];
+	} else if (dim == 2) {
+		for (int x=0; x<new_nx; x++)
+			for (int y=0; y<new_ny; y++)
+				vol_data[(y*ny+index)*nx+x] = slice_data[y*new_nx+x];
+	} else {
+		for (int x=0; x<new_nx; x++)
+			for (int y=0; y<new_ny; y++)
+				vol_data[((size_t)index*ny+y)*nx+x] = slice_data[y*new_nx+x];
+	}
+
+	vol->update();
+	EXITFUNC;
 }
 
 void Util::image_mutation(EMData *img, float mutation_rate) {
@@ -32523,29 +32602,38 @@ std::vector<int> Util::max_clique(std::vector<int> edges)
 
 
 float Util::innerproduct(EMData* img, EMData* img1, EMData* mask)
-{
+{ // I just realized the in case of Fourier space unless mask cuts out Friedel parts,
+  //  the outcome will be incorrect.  Such mask is created using function Util.unrollmask or Utill.unroll1dpw
 	ENTERFUNC;
-	// ONLY FOR COMPLEX DATA
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	size_t size = (size_t)nx*ny*nz;
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
-	float ip = 0.0f;
+	double ip = 0.0;
 	if (mask == NULL) {
-		for (size_t i=0;i<size;++i) ip += img_ptr[i]*img1_ptr[i];
+		for (size_t i=0;i<size;++i) ip += img_ptr[i]*(double)img1_ptr[i];
 	} else {
 		float *pmask = mask->get_data();
-		for (size_t i=0;i<size/2;++i) {
+		// Here for real data, meaning mask has the size of images
+		int tnx=mask->get_xsize(),tny=mask->get_ysize(),tnz=mask->get_zsize();
+		size_t mask_size = (size_t)tnx*tny*tnz;
+		if( mask_size == size ) {
+			for (size_t i=0;i<size;++i) ip += img_ptr[i]*(double)img1_ptr[i]*pmask[i];
+		} else if(mask_size == size/2) {
+			// ONLY FOR COMPLEX DATA
+			for (size_t i=0;i<size/2;++i) {
 
-			//if( pmask[i] > 0.5f)  {
-			int lol = i*2;
-			//	ip += img_ptr[lol]*img1_ptr[lol]+img_ptr[lol+1]*img1_ptr[lol+1];
-			ip += (img_ptr[lol]*img1_ptr[lol]+img_ptr[lol+1]*img1_ptr[lol+1])*pmask[i];
-			//}
-		}
+				//if( pmask[i] > 0.5f)  {
+				int lol = i*2;
+				//	ip += img_ptr[lol]*img1_ptr[lol]+img_ptr[lol+1]*img1_ptr[lol+1];
+				ip += (img_ptr[lol]*(double)img1_ptr[lol]+img_ptr[lol+1]*(double)img1_ptr[lol+1])*pmask[i];
+				//}
+			}
+		} else throw ImageDimensionException("The dimension of the image does not match the dimension of the mask!");
 	}
-	return ip;
+	float sp = (float)ip;
+	return sp;
 }
 
 float Util::innerproduct_np(std::string numpy_address, EMData* img1, EMData* mask)
@@ -33586,7 +33674,6 @@ inline float rnd_unif(float a, float b)
         return a + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(b-a)));
 }
 
-#define		quadpi	 	 	3.141592653589793238462643383279502884197
 EMData* Util::randomizephasesafter( EMData* img, float res) 
 {
 	ENTERFUNC;
@@ -33613,22 +33700,18 @@ EMData* Util::randomizephasesafter( EMData* img, float res)
 			iy = j;  if(j>ny2) iy=j - ny;
 			for ( i=0; i<nx2; i++) {
 				ix=i;
-				if(float(ix*ix+iy*iy+iz*iz)>res2) 
-				{
+				if(float(ix*ix+iy*iy+iz*iz)>res2)  {
 					float amp           = (*img)(2*i, j, k)*(*img)(2*i, j, k)+(*img)(2*i+1, j, k)*(*img)(2*i+1, j, k);
 					amp                 = sqrt(amp);
-					float twopi         = 2.*quadpi;
-    				float phase         = rnd_unif(0., twopi);
+    				float phase         = rnd_unif(0., TWOPI);
 					(*rimg) (i*2,j,k)   = amp * cos(phase);
 					(*rimg) (i*2+1,j,k) = amp * sin(phase);	
-					}
-			  else
-			  		{
-						(*rimg) (i*2,j,k) =(*img) (i*2,j,k);
-						(*rimg) (i*2+1,j,k) =(*img) (i*2+1,j,k);
-			  	 	}
-			  	}
+				}  else  {
+					(*rimg) (i*2,j,k) =(*img) (i*2,j,k);
+					(*rimg) (i*2+1,j,k) =(*img) (i*2+1,j,k);
+				}
 			}
+		}
 	}
 	rimg->set_ri(true);
 	if(ny%2==0) rimg->set_fftodd(false); else rimg->set_fftodd(true);
@@ -33636,7 +33719,7 @@ EMData* Util::randomizephasesafter( EMData* img, float res)
 	EXITFUNC;
 	return rimg;
 }
-#undef	quadpi
+
 void Util::iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 	ENTERFUNC;
 	/* Exception Handle */

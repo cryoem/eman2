@@ -202,6 +202,7 @@ def idfft2(v,u,amp,phase,nx=256,ny=256,dtype=np.float32,usedegrees=False):
 	vvyy = np.multiply(vv.ravel()[:,np.newaxis],yy.ravel()[np.newaxis,:])
 	return np.sum(np.real(AA*np.exp(2*np.pi*1j*(uuxx+vvyy)+pp)).reshape(len(u),nx,ny),axis=0)
 
+
 def make_path(suffix):
 	### make a suffix_xx folder and return the folder name
 	for i in range(100):
@@ -224,10 +225,8 @@ def makepath(options, stem='e2dir'):
 	when the same programs are run in the same parent directory
 	Author: Jesus Montoya, jgalaz@gmail.com
 	"""
-
 	if not options.path:
 		if options.verbose:
-
 			print("\n(EMAN2_utils)(makepath), stem={}".format(stem))
 	
 	elif options.path:
@@ -253,21 +252,35 @@ def detectThreads(options):
 	c:If parallelism isn't set, parallelize automatically unless disabled
 	Author: Jesus Montoya, jgalaz@gmail.com
 	"""
-	if options.parallel != 'None' and options.parallel != 'none' and options.parallel != 'NONE':
-		
-		if 'mpi' not in options.parallel:
-			import multiprocessing
-			nparallel = multiprocessing.cpu_count()
-			options.parallel = 'thread:' + str(nparallel)
-			print("\nfound cores n={}".format(nparallel))
-			print("setting --parallel={}".format(options.parallel))
-		else:
-			print("\n(EMAN2_utils)(detectThreads) nothing to do; mpi paralellism specified; options.parallel={}".format(otpions.parallel)) 
+	import multiprocessing
+	nparallel = multiprocessing.cpu_count()
+
+	try:	
+		if options.parallel and options.parallel != 'None' and options.parallel != 'none' and options.parallel != 'NONE':
+			if 'mpi' not in options.parallel:
+
+				options.parallel = 'thread:' + str(nparallel)
+				print("\nfound cores n={}".format(nparallel))
+				print("setting --parallel={}".format(options.parallel))
+			else:
+				print("\n(EMAN2_utils)(detectThreads) nothing to do; mpi paralellism specified; options.parallel={}".format(otpions.parallel)) 
 	
-	elif options.parallel == 'None' or options.parallel == 'none':
-		options.parallel = None
-		print("\n(EMAN2_utils)(detectThreads) WARNING: parallelism disabled, options.parallel={}".format(options.parallel) )
-	
+		elif not options.parallel or options.parallel == 'None' or options.parallel == 'none':
+			options.parallel = None
+			print("\n(EMAN2_utils)(detectThreads) WARNING: parallelism disabled, options.parallel={}".format(options.parallel) )
+	except:
+		try:
+			if options.threads and options.threads != 'None' and options.threads != 'none' and options.threads != 'NONE':
+				
+				options.threads = 'thread:' + str(nparallel)
+				print("\nfound cores n={}".format(nparallel))
+				print("setting --parallel={}".format(options.parallel))
+			elif not options.threads or options.threads == 'None' or options.threads == 'none':
+				options.parallel = None
+				print("\n(EMAN2_utils)(detectThreads) WARNING: parallelism disabled, options.parallel={}".format(options.parallel) ) 
+		except:
+			print("\n(EMAN2_utils)(detectThreads) WARNING: No parallelism option detected, neither --parallel nor --threads.")
+
 	return options
 
 
@@ -381,9 +394,10 @@ def clip2d( img, size, center=None ):
 	return imgclip
 
 
-def textwriter(data,options,name,invert=0,xvals=None):
+def textwriter(data,options,name,invert=0,xvals=None,onlydata=False):
 	"""
-	writes a list of values into a double column text file with rows of the form index,value. E.g., 0 10.0, 1 21.2, 1 -18.2,..., N valueN
+	writes a list of values into a double column text file with rows of the form: "index value"
+	E.g., 0 10.0 (first row), 1 21.2 (second row), 1 -18.2,..., N valueN
 	This aims to make a file from which 'data' can be easily plotted with any other program
 	Author: Jesus Montoya, jgalaz@gmail.com
 	"""
@@ -408,11 +422,23 @@ def textwriter(data,options,name,invert=0,xvals=None):
 			line2write = str(i) + '\t' + str(val) + '\n'
 			if xvals:
 				line2write = str(xvals[i]) + '\t' + str(val) + '\n'
+			elif onlydata:
+				line2write = str(val) + '\n'
 
 			#print "THe line to write is"
-			lines.append(line2write)
+			if line2write.replace('\n','').replace(' ','') != '':
+				lines.append(line2write)
 		
-		f.writelines(lines)
+
+		#remove empty lines that somehow creep into files
+		print('\n\n\n(EMAN2_utils)(textwriter) REMOVING EMPTY LINES')
+		newlines=[]
+		for line in lines:
+			newline = line.replace('\n','').replace(' ','')
+			if newline:
+				newlines.append(newline+'\n')
+
+		f.writelines(newlines)
 	#f.close()
 
 	return
@@ -430,8 +456,8 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 			ret[i]=None
 			continue
 		if prefilt :
-			msk=r.process("threshold.notzero")					# mask from the projection
-			r[0]=r[0].process("filter.matchto",{"to":target})
+			msk=r[0].process("threshold.notzero")					# mask from the projection
+			r[0].process_inplace("filter.matchto",{"to":target})
 			r[0].mult(msk)											# remask after filtering
 
 #		print "Final: ",target["source_n"],",",r[0]["source_n"]
