@@ -65,6 +65,25 @@ argparser.add_argument(
     nargs="+",
     help="Specifiy which gpu(s) should be used. Multiple GPUs are separated by a whitespace")
 
+argparser.add_argument(
+    '--filament_mode',
+    default=False,
+    type=bool,
+    help="Specifiy if filament mode should be used")
+
+argparser.add_argument(
+    '--filament_width',
+    default=100,
+    type=bool,
+    help="Spezify the width of the filament in pixel")
+
+argparser.add_argument(
+    '--min_box_per_filament',
+    default=6,
+    type=bool,
+    help="Minimum number of boxes per filament")
+
+
 def main():
     # Read arguments
     args = argparser.parse_args()
@@ -75,6 +94,10 @@ def main():
     output_dir = args.output_dir
     confidence_threshold = args.confidence_threshold
 
+    do_filament_mode = args.filament_mode
+    filament_width = args.filament_width
+    min_box_per_filament = args.min_box_per_filament
+
     if type(args.gpu) is list:
         str_gpus = [str(entry) for entry in args.gpu]
     else:
@@ -83,12 +106,22 @@ def main():
     arg_gpu = ' '.join(str_gpus)
 
     # Run the training
+    complete_command = ['cryolo_predict.py']
     config_argument = "-c=" + str(config_path)
+    complete_command.append(config_argument)
     weights_argument = "-w=" + str(model_path)
+    complete_command.append(weights_argument)
     input_argument = "-i=" + str(target_dir)
+    complete_command.append(input_argument)
     output_argument = "-o=" + str(output_dir)
+    complete_command.append(output_argument)
     thresh_argument = "-t=" + str(confidence_threshold)
+    complete_command.append(thresh_argument)
     gpu_argument = "-g=" + arg_gpu
+    if do_filament_mode:
+        complete_command.append("--filament_mode")
+        complete_command.append("-fw="+str(filament_width))
+        complete_command.append("-mn=" + str(min_box_per_filament))
     subprocess.check_call(['cryolo_predict.py', config_argument, weights_argument, input_argument, output_argument,thresh_argument,gpu_argument])
 
 if __name__ == "__main__":
