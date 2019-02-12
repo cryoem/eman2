@@ -376,12 +376,7 @@ def e2getinstalldir() :
 	else:
 		rel_path = '../../Library/'
 	
-	url=os.path.abspath(os.path.join(this_file_dirname, rel_path))
-	
-	if(sys.platform == 'win32'):
-		url=url.replace("\\","/")
-	
-	return url
+	return os.path.abspath(os.path.join(this_file_dirname, rel_path))
 
 def numbered_path(prefix,makenew):
 	"""Finds the next numbered path to use for a given prefix. ie- prefix='refine' if refine_01/EMAN2DB
