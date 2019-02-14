@@ -950,6 +950,13 @@ Dict Transform::get_rotation(const string& euler_type) const
 		      n2 = (matrix[2][0]-matrix[0][2])/2.0/sinomega ;
 		      n3 = (matrix[0][1]-matrix[1][0])/2.0/sinomega ;
 		}
+		
+		
+		if (sinOover2==1) {// This will also mean sinomega=0, omega =pi, 
+		      n1 = sqrt((matrix[0][0]+1)/2.0)   ;
+		      n2 = sqrt((matrix[1][1]+1)/2.0)   ;
+		      n3 = sqrt((matrix[2][2]+1)/2.0)   ;
+		}
 //	        printf("traceR=%lf,OneMinusCosomega=%lf,sinOover2=%lf,cosOover2=%lf,sinomega=%lf,cosomega=%lf,n3=%lf \n",traceR,1-cosomega,sinOover2,cosOover2,sinomega,cosomega,n3);
 
 		
