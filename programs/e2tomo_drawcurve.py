@@ -284,19 +284,19 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		self.gbl.addWidget(self.lb_lines, 0,0,1,2)
 		
 		
-		self.bt_showimg=QtGui.QPushButton("Show tomogram")
+		self.bt_showimg=QtWidgets.QPushButton("Show tomogram")
 		self.bt_showimg.setToolTip("Show tomogram window")
 		self.gbl.addWidget(self.bt_showimg, 1,0,1,2)
 		
-		self.bt_savepdb=QtGui.QPushButton("Save PDB")
+		self.bt_savepdb=QtWidgets.QPushButton("Save PDB")
 		self.bt_savepdb.setToolTip("Save curves as PDB")
 		self.gbl.addWidget(self.bt_savepdb, 2,0,1,2)
 		
-		self.bt_clear=QtGui.QPushButton("Clear")
+		self.bt_clear=QtWidgets.QPushButton("Clear")
 		self.bt_clear.setToolTip("Clear all points")
 		self.gbl.addWidget(self.bt_clear, 3,0,1,2)
 		
-		self.bt_interp=QtGui.QPushButton("Interpolate")
+		self.bt_interp=QtWidgets.QPushButton("Interpolate")
 		self.bt_interp.setToolTip("Interpolate points")
 		self.gbl.addWidget(self.bt_interp, 4,0,1,1)
 		
