@@ -435,9 +435,9 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		return
 
 	def clear_points(self):
-		choice = QtGui.QMessageBox.question(self, 'Clear points', 
-			'Clear all points in the tomogram?', QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-		if choice == QtGui.QMessageBox.Yes:
+		choice = QtWidgets.QMessageBox.question(self, 'Clear points', 
+			'Clear all points in the tomogram?', QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+		if choice == QtWidgets.QMessageBox.Yes:
 			self.contour.points=[]
 		
 		self.imgview.shapechange=1
