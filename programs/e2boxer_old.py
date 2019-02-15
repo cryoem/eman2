@@ -625,7 +625,7 @@ class SwarmPanel(object):
 			vbl.addLayout(hbl_bb)
 
 
-			hbl_bc = QtGui.QHBoxLayout()
+			hbl_bc = QtWidgets.QHBoxLayout()
 			self.go_through=QtGui.QPushButton("Go Through")
 			self.go_through.setToolTip("Go through the rest images")
 			hbl_bc.addWidget(self.go_through)
