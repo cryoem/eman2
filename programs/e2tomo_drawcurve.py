@@ -300,7 +300,7 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		self.bt_interp.setToolTip("Interpolate points")
 		self.gbl.addWidget(self.bt_interp, 4,0,1,1)
 		
-		self.tx_interp=QtGui.QLineEdit(self)
+		self.tx_interp=QtWidgets.QLineEdit(self)
 		self.tx_interp.setText("20")
 		self.gbl.addWidget(self.tx_interp, 4,1,1,1)
 		
