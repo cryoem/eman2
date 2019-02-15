@@ -20,7 +20,8 @@ from ..libpy import sparx_pixel_error as fu
 
 from .sparx_lib import sparx_pixel_error as oldfu
 
-class MyTestCase(unittest.TestCase):
+
+class Test_lib_pixel_error_compare(unittest.TestCase):
 
     def test_pixel_error_2D_true_should_return_equal_objects(self):
         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/pixel_error.pixel_error_2D")

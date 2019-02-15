@@ -339,7 +339,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(return_new, return_old)
 
 
-    def test_cter_pep_true_should_return_equal_object(self):
+    def test_cter_pap_true_should_return_equal_object(self):
         defocus = 1
         cs = 2
         voltage = 300

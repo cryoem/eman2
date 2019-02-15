@@ -1,5 +1,6 @@
  EMAN2 libs
 lib/
+sphire/tests/pickle files/*
 libpy*.dylib
 .eman2settings
 .browsercache.json
