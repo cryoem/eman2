@@ -336,7 +336,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 	
 	def runboxer(self):
 		idx, info=self.get_id_info()
-		modifiers = QtGui.QApplication.keyboardModifiers()
+		modifiers = QtWidgets.QApplication.keyboardModifiers()
 		### do not use launch_childprocess so the gui wont be frozen when boxer is opened
 		if modifiers == QtCore.Qt.ShiftModifier:
 			subprocess.Popen("e2tomo_drawcurve.py {} --ppid {}".format(info["filename"], os.getpid()),shell=True)
