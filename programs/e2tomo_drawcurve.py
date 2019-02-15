@@ -279,7 +279,7 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		
 		
 		
-		self.lb_lines=QtGui.QLabel("")
+		self.lb_lines=QtWidgets.QLabel("")
 		self.lb_lines.setWordWrap(True)
 		self.gbl.addWidget(self.lb_lines, 0,0,1,2)
 		
