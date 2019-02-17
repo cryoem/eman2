@@ -29628,7 +29628,56 @@ void Util::cleanup_threads() {
 
 void Util::version()
 {
-	cout <<"   Source modification date: 02/03/2019" <<  endl;
+	cout <<"   Source modification date: 02/16/2019" <<  endl;
+
+/*
+This is test program for testing FFT speed 02/16/2019 PAP
+
+from time import time
+nx = 3810
+d=model_blank(nx,nx,1,1.1)
+at=time()
+for i in range(20):  o=fft(d)
+print(time()-at)
+
+at=time()
+for i in range(20):  Util.version()
+print(time()-at)
+
+
+        //int nthreads = 16;
+        int i;
+        int nx,ny,nz;
+        nx=ny=3810;
+        nz=1;
+        int forward = 1;
+        int rank = 2;
+        int dims[3];
+        dims[0] = nz;
+        dims[1] = ny;
+        dims[2] = nx;
+        size_t sizein = nx*ny*nz;
+        size_t sizeou = (nx+2)*ny*nz;
+
+        float *real_data = fftwf_alloc_real(sizein);
+        float *complex_data = fftwf_alloc_real(sizeou);
+
+        for( i = 0; i<sizein; i++ )  real_data[i]=1.1;
+
+        fftwf_plan plan;
+        //fftwf_init_threads();
+        //fftwf_plan_with_nthreads(nthreads);
+        if( forward == 1 )  plan = fftwf_plan_dft_r2c(rank, dims + (3 - rank), real_data, (fftwf_complex *) complex_data, FFTW_ESTIMATE);
+        else plan = fftwf_plan_dft_c2r(rank, dims + (3 - rank), (fftwf_complex *) complex_data, real_data, FFTW_ESTIMATE);
+
+
+        fftwf_execute(plan);
+        fftwf_destroy_plan(plan);
+
+	//fftwf_cleanup_threads();
+*/
+
+
 /*
 This is test program for threaded FFT  as of 11/20/2018 PAP
         int nthreads = 16;
