@@ -3321,27 +3321,41 @@ def compute_rand_index_mpi(inassign1, inassign2):
 				nomin += wrap_mpi_recv(iproc, MPI_COMM_WORLD)
 	nomin = bcast_number_to_all(nomin,  Blockdata["main_node"], MPI_COMM_WORLD)
 	return float(nomin)/num_all_pairs
-	
+
 def isin(element, test_elements, assume_unique=False, invert=False):
-    import numpy as np
-    element = np.asarray(element)
-    return np.in1d(element, test_elements, assume_unique=assume_unique, \
-        invert=invert).reshape(element.shape)
+	import numpy as np
+	element = np.asarray(element)
+	return np.in1d(element, test_elements, assume_unique=assume_unique, \
+		invert=invert).reshape(element.shape)
 
 def split_partition_into_ordered_clusters_split_ucluster(partition, input_row_wise = True):
 	# group particles  by their cluster ids; take the last one as unaccounted group
 	import numpy as np
-	clusters   = []
-	if input_row_wise: partition = np.array(partition, dtype=np.int32).transpose()
+	clusters = []
+	if input_row_wise:
+		partition = np.array(partition, dtype=np.int32).transpose()
+	else:
+		partition = np.array(partition)
 	group_id = np.sort(np.unique(partition[0]))
-	if group_id.shape[0] >1: 
+	if group_id.shape[0] > 1: 
 		for icluster in range(group_id.shape[0]):
-			if icluster <group_id.shape[0] -1: clusters.append((np.sort(partition[1][isin(partition[0],\
-			     group_id[icluster])])).tolist())
-			else:  ucluster =(np.sort(partition[1][isin(partition[0], group_id[icluster])])).tolist()
-		return clusters, ucluster
-	else: return [partition[1].tolist()], []
-                           
+			cluster = np.sort(
+					partition[1][
+						isin(
+							partition[0],
+							group_id[icluster]
+							)
+						]
+					).tolist()
+			if icluster < group_id.shape[0] - 1:
+				clusters.append(cluster)
+			else:
+				ucluster = cluster
+	else:
+		clusters = [partition[1].tolist()]
+		ucluster = []
+	return clusters, ucluster
+
 def split_partition_into_ordered_clusters(partition, input_is_row_wise = True):
 	# partition column 0 cluster  IDs
 	# partition column 1 particle IDs
