@@ -34,8 +34,10 @@ from builtins import range
 from EMAN2 import *
 from sparx import *
 from global_def import SPARX_MPI_TAG_UNIVERSAL
+
 import	global_def
-from	global_def 	import *
+from global_def import sxprint, ERROR
+
 from	optparse 	import OptionParser
 from	EMAN2 		import EMUtil
 import	os
@@ -141,7 +143,7 @@ def main():
 				try:	
 					number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 					if( number_of_proc > 1 ):
-						ERROR("Cannot use more than one CPU for symmetry preparation","sx3dvariability",1)
+						ERROR( "Cannot use more than one CPU for symmetry preparation" )
 				except:
 					pass
 			except:
@@ -161,7 +163,7 @@ def main():
 		instack = args[0]
 		sym = options.sym.lower()
 		if( sym == "c1" ):
-			ERROR("There is no need to symmetrize stack for C1 symmetry","sx3dvariability",1)
+			ERROR( "There is no need to symmetrize stack for C1 symmetry" )
 		
 		line =""
 		for a in sys.argv:
@@ -205,7 +207,7 @@ def main():
 		delete_bdb("bdb:" + current_output_dir + "/"+"sdata")
 		#junk = cmdexecute("e2bdb.py . --makevstack=bdb:sdata --filt=Q")
 		sdata = "bdb:"+current_output_dir+"/"+"sdata"
-		print(sdata)
+		sxprint(sdata)
 		junk = cmdexecute("e2bdb.py   " + current_output_dir +"  --makevstack="+sdata +" --filt=Q")
 		#junk = cmdexecute("ls  EMAN2DB/sdata*")
 		#a = get_im("bdb:sdata")
@@ -237,9 +239,10 @@ def main():
 		
 		if len(args) == 1: stack = args[0]
 		else:
-			print(( "usage: " + usage))
-			print(( "Please run '" + progname + " -h' for detailed options"))
-			return 1
+			sxprint( "Usage: " + usage )
+			sxprint( "Please run \'" + progname + " -h\' for detailed options" )
+			ERROR( "Invalid number of parameters used. Please see usage information above." )
+			return
 
 		t0 = time()	
 		# obsolete flags
@@ -251,28 +254,28 @@ def main():
 		options.squ  = 0.0
 
 		if options.fl > 0.0 and options.aa == 0.0:
-			ERROR("Fall off has to be given for the low-pass filter", "sx3dvariability", 1, myid)
+			ERROR( "Fall off has to be given for the low-pass filter", myid=myid )
 			
 		#if options.VAR and options.SND:
-		#	ERROR("Only one of var and SND can be set!", "sx3dvariability", myid)
+		#	ERROR( "Only one of var and SND can be set!",myid=myid )
 			
 		if options.VAR and (options.ave2D or options.ave3D or options.var2D): 
-			ERROR("When VAR is set, the program cannot output ave2D, ave3D or var2D", "sx3dvariability", 1, myid)
+			ERROR( "When VAR is set, the program cannot output ave2D, ave3D or var2D", myid=myid )
 			
 		#if options.SND and (options.ave2D or options.ave3D):
-		#	ERROR("When SND is set, the program cannot output ave2D or ave3D", "sx3dvariability", 1, myid)
+		#	ERROR( "When SND is set, the program cannot output ave2D or ave3D", myid=myid )
 		
 		#if options.nvec > 0 :
-		#	ERROR("PCA option not implemented", "sx3dvariability", 1, myid)
+		#	ERROR( "PCA option not implemented", myid=myid )
 			
 		#if options.nvec > 0 and options.ave3D == None:
-		#	ERROR("When doing PCA analysis, one must set ave3D", "sx3dvariability", 1, myid)
+		#	ERROR( "When doing PCA analysis, one must set ave3D", myid=myid )
 		
 		if current_decimate>1.0 or current_decimate<0.0:
-			ERROR("Decimate rate should be a value between 0.0 and 1.0", "sx3dvariability", 1, myid)
+			ERROR( "Decimate rate should be a value between 0.0 and 1.0", myid=myid )
 		
 		if current_window < 0.0:
-			ERROR("Target window size should be always larger than zero", "sx3dvariability", 1, myid)
+			ERROR( "Target window size should be always larger than zero", myid=myid )
 			
 		if myid == main_node:
 			img  = get_image(stack, 0)
@@ -280,7 +283,8 @@ def main():
 			ny   = img.get_ysize()
 			if(min(nx, ny) < current_window):   keepgoing = 0
 		keepgoing = bcast_number_to_all(keepgoing, main_node, MPI_COMM_WORLD)
-		if keepgoing == 0: ERROR("The target window size cannot be larger than the size of decimated image", "sx3dvariability", 1, myid)
+		if keepgoing == 0: 
+			ERROR( "The target window size cannot be larger than the size of decimated image", myid=myid )
 
 		import string
 		options.sym = options.sym.lower()
@@ -340,13 +344,13 @@ def main():
 				try:
 					i = imgdata.get_attr("variabilitysymmetry").lower()
 					if(i != options.sym):
-						ERROR("The symmetry provided does not agree with the symmetry of the input stack", "sx3dvariability", 1, myid)
+						ERROR( "The symmetry provided does not agree with the symmetry of the input stack", myid=myid )
 				except:
-					ERROR("Input stack is not prepared for symmetry, please follow instructions", "sx3dvariability", 1, myid)
+					ERROR( "Input stack is not prepared for symmetry, please follow instructions", myid=myid )
 				from utilities import get_symt
 				i = len(get_symt(options.sym))
 				if((nima/i)*i != nima):
-					ERROR("The length of the input stack is incorrect for symmetry processing", "sx3dvariability", 1, myid)
+					ERROR( "The length of the input stack is incorrect for symmetry processing", myid=myid )
 				symbaselen = nima/i
 			else:  symbaselen = nima
 		else:
@@ -361,7 +365,7 @@ def main():
 		nnxo    = bcast_number_to_all(nnxo)
 		nnyo    = bcast_number_to_all(nnyo)
 		if current_window > max(nx, ny):
-			ERROR("Window size is larger than the original image size", "sx3dvariability", 1)
+			ERROR( "Window size is larger than the original image size" )
 		
 		if current_decimate == 1.:
 			if current_window !=0:
@@ -843,5 +847,6 @@ def main():
 		global_def.BATCH = False
 
 if __name__=="__main__":
+	global_def.print_timestamp( "Start" )
 	main()
-
+	global_def.print_timestamp( "Finish" )

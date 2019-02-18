@@ -31,6 +31,8 @@ import argparse
 import os
 
 import global_def
+from global_def import sxprint, ERROR
+
 import utilities
 import morphology
 import filter as sparx_filter
@@ -327,36 +329,21 @@ def sanity_checks(command_args, input_vol):
 				)
 			):
 		if not command_args.override:
-			global_def.ERROR(
-				'sxmask',
-				'Output mask already exists! Please provide the override option if you want to override the existing mask.',
-				1
-				)
+			ERROR( "Output mask already exists! Please provide the override option if you want to override the existing mask." )
 
 	if command_args.second_mask_shape in ('cylinder', 'sphere'):
 		nx = input_vol.get_xsize()
 		ny = input_vol.get_ysize()
 		nz = input_vol.get_zsize()
-		if command_args.s_radius > nx // 2 or \
-				command_args.s_radius > ny // 2:
-			global_def.ERROR(
-				'sxmask',
-				'Provided radius is larger than input image dimensions!',
-				1
-				)
+		if command_args.s_radius > nx // 2 or command_args.s_radius > ny // 2:
+			ERROR( "Provided radius is larger than input image dimensions!" )
 
 	if command_args.second_mask_shape is not None:
 		nx = input_vol.get_xsize()
 		ny = input_vol.get_ysize()
 		nz = input_vol.get_zsize()
-		if command_args.s_nx > nx or \
-				command_args.s_ny > ny or \
-				command_args.s_nz > nz:
-			global_def.ERROR(
-				'sxmask',
-				'Provided s_nx, s_ny, s_nz mask dimension is larger than input image dimensions!',
-				1
-				)
+		if command_args.s_nx > nx or command_args.s_ny > ny or command_args.s_nz > nz:
+			ERROR( "Provided s_nx, s_ny, s_nz mask dimension is larger than input image dimensions!" )
 
 
 def main():
@@ -373,7 +360,7 @@ def main():
 	command_args = parse_command_line()
 
 	# Import volume
-	print('Import volume.')
+	sxprint('Import volume.')
 	input_vol = utilities.get_im(command_args.input_volume)
 
 	# Sanity checks
@@ -382,14 +369,14 @@ def main():
 	try:
 		os.makedirs(command_args.output_dir)
 	except OSError:
-		print('Output directory already exists. No need to create it.')
+		sxprint('Output directory already exists. No need to create it.')
 	else:
-		print('Created output directory.')
+		sxprint('Created output directory.')
 	output_prefix = os.path.join(command_args.output_dir, command_args.prefix)
 
 	# Filter volume if specified
 	if command_args.low_pass_filter_resolution is not None:
-		print('Filter volume to {0}A.'.format(command_args.low_pass_filter_resolution))
+		sxprint('Filter volume to {0}A.'.format(command_args.low_pass_filter_resolution))
 		input_vol = sparx_filter.filt_tanl(
 			input_vol,
 			command_args.pixel_size / command_args.low_pass_filter_resolution,
@@ -397,10 +384,10 @@ def main():
 			)
 		input_vol.write_image(output_prefix + '_filtered_volume.hdf')
 	else:
-		print('Skip filter volume.')
+		sxprint('Skip filter volume.')
 
 	# Create a mask based on the filtered volume
-	print('Create mask')
+	sxprint('Create mask')
 	density_threshold = -9999.0
 	nsigma = 1.0
 	if command_args.mol_mass:
@@ -476,7 +463,7 @@ def main():
 		s_mask = utilities.pad(s_mask, nx, ny, nz, 0)
 
 	if s_mask is not None:
-		print('Create second mask')
+		sxprint('Create second mask')
 
 		if command_args.s_edge_type == 'cosine':
 			mode = 'C'
@@ -507,7 +494,9 @@ def main():
 
 
 if __name__ == '__main__':
+	global_def.print_timestamp( "Start" )
 	global_def.BATCH = True
 	main()
 	global_def.BATCH = False
-	print('Done!')
+	sxprint('Done!')
+	global_def.print_timestamp( "Finish" )

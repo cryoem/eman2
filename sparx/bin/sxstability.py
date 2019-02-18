@@ -36,9 +36,11 @@ from __future__ import print_function
 from builtins import range
 import os
 import global_def
+from global_def import sxprint, ERROR
 from   global_def     import *
 from   optparse       import OptionParser
 import sys
+
 def main():
 	from utilities import get_input_from_string
 	progname = os.path.basename(sys.argv[0])
@@ -57,10 +59,14 @@ def main():
 	parser.add_option("--verbose",      action="store_true",     default=False,       help="print individual pixel error (default = False)")
 	parser.add_option("--stables",		action="store_true",	 default=False,	      help="output the stable particles number in file (default = False)")
 	parser.add_option("--method",		type="string"      ,	 default=" ",	      help="SHC (standard method is default when flag is ommitted)")
+	
 	(options, args) = parser.parse_args()
+	
 	if len(args) != 1 and len(args) != 2:
-    		print("usage: " + usage)
-    		print("Please run '" + progname + " -h' for detailed options")
+    		sxprint("Usage: " + usage)
+    		sxprint("Please run \'" + progname + " -h\' for detailed options")
+    		ERROR( "Invalid number of parameters used. Please see usage information above." )
+    		return
 	else:
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
@@ -72,10 +78,14 @@ def main():
 
 		global_def.BATCH = True
 
-		xrng        = get_input_from_string(options.xr)
-		if  options.yr == "-1":  yrng = xrng
-		else          :  yrng = get_input_from_string(options.yr)
-		step        = get_input_from_string(options.ts)
+		xrng = get_input_from_string(options.xr)
+
+		if  options.yr == "-1":
+			yrng = xrng
+		else:
+			yrng = get_input_from_string(options.yr)
+		
+		step = get_input_from_string(options.ts)
 
 		class_data = EMData.read_images(args[0])
 
@@ -145,8 +155,8 @@ def main():
 		"""
 
 		stable_set, mir_stab_rate, pix_err = multi_align_stability(all_ali_params, 0.0, 10000.0, options.thld_err, options.verbose, 2*ou+1)
-		print("%4s %20s %20s %20s %30s %6.2f"%("", "Size of set", "Size of stable set", "Mirror stab rate", "Pixel error prior to pruning the set above threshold of",options.thld_err))
-		print("Average stat: %10d %20d %20.2f   %15.2f"%( len(class_data), len(stable_set), mir_stab_rate, pix_err))
+		sxprint("%4s %20s %20s %20s %30s %6.2f"%("", "Size of set", "Size of stable set", "Mirror stab rate", "Pixel error prior to pruning the set above threshold of",options.thld_err))
+		sxprint("Average stat: %10d %20d %20.2f   %15.2f"%( len(class_data), len(stable_set), mir_stab_rate, pix_err))
 		if( len(stable_set) > 0):
 			if options.stables:
 				stab_mem = [[0,0.0,0] for j in range(len(stable_set))]
@@ -161,10 +171,10 @@ def main():
 			from fundamentals import rot_shift2D
 			avet.to_zero()
 			l = -1
-			print("average parameters:  angle, x-shift, y-shift, mirror")
+			sxprint("average parameters:  angle, x-shift, y-shift, mirror")
 			for j in stable_set_id:
 				l += 1
-				print(" %4d  %4d  %12.2f %12.2f %12.2f        %1d"%(l,j, stable_set[l][2][0], stable_set[l][2][1], stable_set[l][2][2], int(stable_set[l][2][3])))
+				sxprint(" %4d  %4d  %12.2f %12.2f %12.2f        %1d"%(l,j, stable_set[l][2][0], stable_set[l][2][1], stable_set[l][2][2], int(stable_set[l][2][3])))
 				avet += rot_shift2D(class_data[j], stable_set[l][2][0], stable_set[l][2][1], stable_set[l][2][2], stable_set[l][2][3] )
 			avet /= (l+1)
 			avet.set_attr('members', stable_set_id)
@@ -172,9 +182,9 @@ def main():
 			avet.set_attr('pixerr', particle_pixerr)
 			avet.write_image(args[1])
 
-
-
 		global_def.BATCH = False
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

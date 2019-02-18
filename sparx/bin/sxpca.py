@@ -33,6 +33,7 @@ from __future__ import print_function
 
 from builtins import range
 import global_def
+from global_def import sxprint, ERROR
 from global_def import *
 from optparse import OptionParser
 from EMAN2_cppwrap import *
@@ -60,8 +61,8 @@ def main():
 	output_stack = args[-1]
 
 	if options.nvec is None:
-		print("Error: number of components is not given")
-		sys.exit(-2) 
+		ERROR( "Error: number of components is not given" )
+		return
 
 	isRoot = True
 	if options.MPI:
@@ -87,4 +88,6 @@ def main():
 
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

@@ -19,17 +19,14 @@ from __future__ import print_function
 
 from builtins import range
 from builtins import object
-# from PyQt4.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QString, QThreadPool, QTimer
-# from PyQt4 import QtCore, QtGui
-# from PyQt4.QtGui import QDialog, QGridLayout, QTreeWidget, QMessageBox, QFontMetrics
 
-# from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-# from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 import os
 import os.path
 import json
 import sys
 import numpy as np
+
+import global_def
 
 import matplotlib
 matplotlib.use('AGG')
@@ -41,6 +38,7 @@ try:
     from PyQt4.QtGui import QDialog, QGridLayout, QTreeWidget, QMessageBox, QFontMetrics, QMainWindow, QApplication, QWidget, QDesktopWidget, QAction, QFileDialog, QTreeWidgetItem,QVBoxLayout
     from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
     from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
+
 except ImportError:
     from PyQt5 import QtCore, QtGui, QtWidgets
     from PyQt5.QtGui import  QFontMetrics
@@ -48,8 +46,6 @@ except ImportError:
     from PyQt5.QtWidgets import QDialog, QGridLayout, QTreeWidget, QMessageBox, QMainWindow, QApplication, QWidget, QDesktopWidget, QAction, QFileDialog, QTreeWidgetItem,QVBoxLayout
     from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
     from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-
-
 
 
 class DriverFileReader(QObject):
@@ -579,4 +575,6 @@ def run(args=None):
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
+    global_def.print_timestamp( "Start" )
     run()
+    global_def.print_timestamp( "Finish" )

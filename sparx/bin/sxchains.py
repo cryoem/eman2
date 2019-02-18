@@ -34,6 +34,8 @@ from __future__ import print_function
 
 from builtins import range
 import	global_def
+from global_def import sxprint, ERROR
+
 from	global_def 	import *
 from	EMAN2 		import EMUtil, parsemodopt, EMAN2Ctf
 from    EMAN2jsondb import js_open_dict
@@ -41,6 +43,15 @@ from    EMAN2jsondb import js_open_dict
 from	utilities 	import *
 from    statistics import mono
 import  os
+
+import sys
+import math
+import random
+import pyemtbx.options
+import time
+from   random   import random, seed, randint
+from   optparse import OptionParser
+
 
 """
 	Traveling salesman problem solved using Simulated Annealing.
@@ -198,16 +209,6 @@ def pca(cov):
 
 
 def main():
-	import sys
-	import os
-	import math
-	import random
-	import pyemtbx.options
-	import time
-	from   random   import random, seed, randint
-	from   optparse import OptionParser
-	from global_def import ERROR
-
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """ [options] <inputfile> <outputfile>
 
@@ -259,8 +260,9 @@ def main():
 	if options.dd:
 		nargs = len(args)
 		if nargs != 3:
-			print("must provide name of input and two output files!")
+			ERROR( "Must provide name of input and two output files!" )
 			return
+
 		stack = args[0]
 		new_stack = args[1]
 
@@ -289,17 +291,18 @@ def main():
 
 		order = tsp(lccc)
 		if(len(order) != lend):
-			print(" problem with data length")
-			from sys import exit
-			exit()
-		print("Total sum of cccs :",TotalDistance(order, lccc))
-		print("ordering :",order)
-		for i in range(lend):  get_im(stack, order[i]).write_image( new_stack, i )
+			ERROR( "Problem with data length" )
+			return
+
+		sxprint("Total sum of cccs :",TotalDistance(order, lccc))
+		sxprint("ordering :",order)
+		for i in range(lend):  
+			get_im(stack, order[i]).write_image( new_stack, i )
 
 	elif options.align:
 		nargs = len(args)
 		if nargs != 3:
-			print("must provide name of input and two output files!")
+			ERROR( "Must provide name of input and two output files!" )
 			return
 
 		from utilities import get_params2D, model_circle
@@ -313,7 +316,8 @@ def main():
 		
 		d = EMData.read_images(stack)
 		if(len(d)<6):
-			ERROR("Chains requires at least six images in the input stack to be executed", "sxchains.py", 1)
+			ERROR( "Chains requires at least six images in the input stack to be executed" )
+			return
 
 		"""
 		# will align anyway
@@ -397,18 +401,18 @@ def main():
 			T = lccc[mono(indc[-1], lsnake[-1][0])][1]
 			if( indc[-1] > lsnake[-1][0]):  T = T.inverse()
 			lsnake.append([indc[-1], T, lccc[mono(indc[-1], lsnake[-1][0])][0]])
-			print(" initial image and lsum  ",m,lsum)
+			sxprint(" initial image and lsum  ",m,lsum)
 			#print lsnake
 			if(lsum > maxsum):
 				maxsum = lsum
 				init = m
 				snake = [lsnake[i] for i in range(lend)]
-		print("  Initial image selected : ",init,maxsum,"    ",TotalDistance([snake[m][0] for m in range(lend)], lccc))
+		sxprint("  Initial image selected : ",init,maxsum,"    ",TotalDistance([snake[m][0] for m in range(lend)], lccc))
 		#for q in snake: print q
 
 		from copy import deepcopy
 		trans=deepcopy([snake[i][1] for i in range(len(snake))])
-		print([snake[i][0] for i in range(len(snake))])
+		sxprint([snake[i][0] for i in range(len(snake))])
 		"""
 		for m in xrange(lend):
 			prms = trans[m].get_params("2D")
@@ -427,15 +431,15 @@ def main():
 
 		order = tsp(lccc)
 		if(len(order) != lend):
-			print(" problem with data length")
-			from sys import exit
-			exit()
-		print(TotalDistance(order, lccc))
-		print(order)
+			ERROR( "Problem with data length" )
+			return
+
+		sxprint(TotalDistance(order, lccc))
+		sxprint(order)
 		ibeg = order.index(init)
 		order = [order[(i+ibeg)%lend] for i in range(lend)]
-		print(TotalDistance(order, lccc))
-		print(order)
+		sxprint(TotalDistance(order, lccc))
+		sxprint(order)
 
 
 		snake = [tdummy]
@@ -572,7 +576,7 @@ def main():
 	else:
 		nargs = len(args)
 		if nargs != 2:
-			print("must provide name of input and output file!")
+			ERROR( "Must provide name of input and output file!" )
 			return
 		
 		from utilities import get_params2D, model_circle
@@ -586,7 +590,7 @@ def main():
 		
 		d = EMData.read_images(stack)
 		try:
-			print("Using 2D alignment parameters from header.")
+			sxprint("Using 2D alignment parameters from header.")
 			ttt = d[0].get_attr('xform.params2d')
 			for i in range(len(d)):
 				alpha, sx, sy, mirror, scale = get_params2D(d[i])
@@ -603,7 +607,7 @@ def main():
 		init = options.initial
 		
 		if init > -1 :
-			print("      initial image: %d" % init)
+			sxprint("      initial image: %d" % init)
 			temp = d[init].copy()
 			temp.write_image(new_stack, 0)
 			del d[init]
@@ -616,17 +620,17 @@ def main():
 						if cuc > maxcit:
 								maxcit = cuc
 								qi = i
-				# 	print k, maxcit
+				# 	sxprint k, maxcit
 				lsum += maxcit
 				temp = d[qi].copy()
 				del d[qi]
 				temp.write_image(new_stack, k)
 				k += 1
-			print(lsum)
+			sxprint(lsum)
 			d[0].write_image(new_stack, k)
 		else:			
 			if options.circular :
-				print("Using options.circular, no alignment")
+				sxprint("Using options.circular, no alignment")
 				#  figure the "best circular" starting image
 				maxsum = -1.023
 				for m in range(len(d)):
@@ -671,12 +675,12 @@ def main():
 						maxsum = lsum
 						init = m
 						snake = [lsnake[i] for i in range(len(d))]
-				print("  Initial image selected : ",init,maxsum)
-				print(lsnake)
+				sxprint("  Initial image selected : ",init,maxsum)
+				sxprint(lsnake)
 				for m in range(len(d)):  d[snake[m]].write_image(new_stack, m)
 			else:
 				#  figure the "best" starting image
-				print("Straight chain, no alignment")
+				sxprint("Straight chain, no alignment")
 				maxsum = -1.023
 				for m in range(len(d)):
 					indc = list(range(len(d)))
@@ -697,16 +701,18 @@ def main():
 						del indc[indc.index(qi)]
 
 					lsnake.append(indc[-1])
-					#print  " initial image and lsum  ",m,lsum
-					#print lsnake
+					#sxprint  " initial image and lsum  ",m,lsum
+					#sxprint lsnake
 					if(lsum > maxsum):
 						maxsum = lsum
 						init = m
 						snake = [lsnake[i] for i in range(len(d))]
-				print("  Initial image selected : ",init,maxsum)
-				print(lsnake)
+				sxprint("  Initial image selected : ",init,maxsum)
+				sxprint(lsnake)
 				for m in range(len(d)):  d[snake[m]].write_image(new_stack, m)
 		
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

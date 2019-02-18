@@ -34,9 +34,12 @@ from __future__ import print_function
 
 import os
 import global_def
+from global_def import sxprint, ERROR
+
 from global_def import *
 from optparse import OptionParser
 import sys
+
 def main():
 	arglist = []
 	for arg in sys.argv:
@@ -58,10 +61,14 @@ def main():
 	parser.add_option("--rand_seed", type="int", default=1000, help=" random seed of initial (set to 1000)" )
 	parser.add_option("--MPI", action="store_true", default=False,     help="  whether to use MPI version ")
 	parser.add_option("--EQ", action="store_true", default=False,     help="  equal version ")
+
 	(options, args) = parser.parse_args(arglist[1:])
+	
 	if len(args) < 3 or len(args) > 4:
-    		print("usage: " + usage)
-    		print("Please run '" + progname + " -h' for detailed options")
+    		sxprint( "Usage: " + usage )
+    		sxprint( "Please run '" + progname + " -h' for detailed options" )
+    		ERROR( "Invalid number of parameters used. Please see usage information above." )
+    		return
 	else:
 	
 		if len(args) == 3:
@@ -93,4 +100,6 @@ def main():
 
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

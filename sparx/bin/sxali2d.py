@@ -35,9 +35,11 @@ from __future__ import print_function
 
 import os
 import global_def
-from   global_def     import *
-from   user_functions import *
-from   optparse       import OptionParser
+from global_def import sxprint
+
+from global_def     import *
+from user_functions import *
+from optparse       import OptionParser
 import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -72,20 +74,26 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if len(args) < 2 or len(args) > 3:
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
+		sxprint( "Usage: " + usage )
+		sxprint( "Please run \'" + progname + " -h\' for detailed options" )
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
+
 	elif(options.rotational):
 		from applications import ali2d_rotationaltop
 		global_def.BATCH = True
 		ali2d_rotationaltop(args[1], args[0], options.randomize, options.orient, options.ir, options.ou, options.rs, options.psi_max, options.mode, options.maxit)
 	else:
-		if args[1] == 'None': outdir = None
-		else:		          outdir = args[1]
+		if args[1] == 'None': 
+			outdir = None
+		else:		          
+			outdir = args[1]
 
-		if len(args) == 2: mask = None
-		else:              mask = args[2]
+		if len(args) == 2: 
+			mask = None
+		else:              
+			mask = args[2]
 		
-
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
@@ -115,7 +123,7 @@ def main():
 			from utilities       import bcast_number_to_all
 			outcome  = bcast_number_to_all(outcome, source_node = main_node)
 			if(outcome == 1):
-				ERROR('Output directory exists, please change the name and restart the program', "ali2d_MPI", 1, myid)
+				global_def.ERROR( "Output directory exists, please change the name and restart the program", myid=myid )
 
 			dummy = ali2d_base(args[0], outdir, mask, options.ir, options.ou, options.rs, options.xr, options.yr, \
 				options.ts, options.nomirror, options.dst, \
@@ -124,7 +132,7 @@ def main():
 				number_of_proc = number_of_proc, myid = myid, main_node = main_node, mpi_comm = MPI_COMM_WORLD,\
 				write_headers = True)
 		else:
-			print(" Non-MPI is no more in use, try MPI option, please.")
+			sxprint( " Non-MPI is no more in use, try MPI option, please." )
 			"""
 			from applications import ali2d
 			ali2d(args[0], outdir, mask, options.ir, options.ou, options.rs, options.xr, options.yr, \
@@ -140,4 +148,6 @@ def main():
 			mpi_finalize()
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

@@ -31,14 +31,17 @@ from __future__ import print_function
 #
 #
 
+import os
+import sys
+from optparse import OptionParser
+from global_def import SPARXVERSION, ERROR
+
+import global_def
+from global_def import sxprint, ERROR
 
 from builtins import range
+
 def main():
-	import os
-	import sys
-	from optparse import OptionParser
-	from global_def import SPARXVERSION, ERROR
-	import global_def
 	arglist = []
 	for arg in sys.argv:
 		arglist.append( arg )
@@ -85,19 +88,26 @@ def main():
 	
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
-		print("usage: " + usage + "\n")
-		print("Please run '" + progname + " -h' for detailed options")
+		sxprint( "Usage: " + usage )
+		sxprint( "Please run \'" + progname + " -h\' for detailed options" )
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
 	else:
 		global_def.BATCH = True
 		# Convert input arguments in the units/format as expected by ihrsr_MPI in applications.
 		if options.apix < 0:
-			ERROR("Please specify pixel size apix","sxheliconlocal",1)
-		if options.dp < 0 or options.dphi < 0:
-			ERROR("Please specify helical symmetry parameters dp and dphi","sxheliconlocal",1)
-		if options.an <= 0 :
-			ERROR("Angular search range (an) has to be given.  Only local searches are permitted.","sxheliconlocal",1)
+			ERROR( "Please specify pixel size apix","sxheliconlocal" )
+			return
 
-		print(" This code is under development, some instabilities are possible 12/28/2014")
+		if options.dp < 0 or options.dphi < 0:
+			ERROR( "Please specify helical symmetry parameters dp and dphi","sxheliconlocal" )
+			return
+		
+		if options.an <= 0 :
+			ERROR( "Angular search range (an) has to be given.  Only local searches are permitted." )
+			return
+
+		sxprint(" This code is under development, some instabilities are possible 12/28/2014")
 
 		rminp = int((float(options.rmin)/options.apix) + 0.5)
 		rmaxp = int((float(options.rmax)/options.apix) + 0.5)
@@ -154,4 +164,6 @@ def main():
 		mpi_finalize()
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

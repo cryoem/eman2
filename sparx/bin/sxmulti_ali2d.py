@@ -35,10 +35,12 @@ from __future__ import print_function
 
 import os
 import global_def
+from global_def import sxprint, ERROR
 from   global_def     import *
 from   user_functions import *
 from   optparse       import OptionParser
 import sys
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range --ts=translation_step --dst=delta --center=center --maxit=max_iteration --CTF --snr=SNR --Fourvar=Fourier_variance --Ng=group_number --Function=user_function_name --CUDA --GPUID --MPI"
@@ -61,16 +63,25 @@ def main():
 	parser.add_option("--CUDA",     action="store_true", default=False,   help="use CUDA program")
 	parser.add_option("--GPUID",    type="string",    default="",         help="ID of GPUs available")
 	parser.add_option("--MPI",      action="store_true", default=False,   help="use MPI version ")
-	(options, args) = parser.parse_args()
-	if len(args) < 2 or len(args) > 3:
-    		print("usage: " + usage)
-    		print("Please run '" + progname + " -h' for detailed options")
-	else:
-		if args[1] == 'None': outdir = None
-		else:		      outdir = args[1]
 
-		if len(args) == 2: mask = None
-		else:              mask = args[2]
+	(options, args) = parser.parse_args()
+	
+	if len(args) < 2 or len(args) > 3:
+    		sxprint( "Usage: " + usage )
+    		sxprint( "Please run '" + progname + " -h' for detailed options" )
+    		ERROR( "Invalid number of parameters used. Please see usage information above." )
+    		return
+
+	else:
+		if args[1] == 'None':
+			outdir = None
+		else:
+			outdir = args[1]
+
+		if len(args) == 2:
+			mask = None
+		else:
+			mask = args[2]
 		
 		from development import multi_ali2d
 
@@ -92,4 +103,6 @@ def main():
 			mpi_finalize()
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

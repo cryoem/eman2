@@ -10,12 +10,16 @@ import  os
 import  sys
 import  types
 import  global_def
+from    global_def import sxprint, ERROR
+
 from    global_def import *
 from    optparse   import OptionParser
 from    sparx      import *
 from    EMAN2      import *
 from    numpy      import array
 from    logger     import Logger, BaseLogger_Files
+
+import mpi
 
 from mpi   	import  *
 from math  	import  *
@@ -30,6 +34,13 @@ import json
 from   sys 	import exit
 from   time import localtime, strftime, sleep
 global Tracker, Blockdata
+
+from optparse   import OptionParser
+from global_def import SPARXVERSION
+from EMAN2      import EMData
+from logger     import Logger, BaseLogger_Files
+import sys, os, time
+
 
 # ----------------------------------------------------------------------------
 def compute_average(mlist, radius, CTF):
@@ -119,13 +130,7 @@ def apply_enhancement(avg, B_start, pixel_size, user_defined_Bfactor):
 	return filt_gaussinv(fft(avg), sqrt(2./global_b)), global_b
 
 def main():
-	from optparse   import OptionParser
-	from global_def import SPARXVERSION
-	from EMAN2      import EMData
-	from logger     import Logger, BaseLogger_Files
-	import sys, os, time
 	global Tracker, Blockdata
-	from global_def import ERROR
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " --output_dir=output_dir  --isac_dir=output_dir_of_isac "
 	parser = OptionParser(usage,version=SPARXVERSION)
@@ -207,7 +212,9 @@ def main():
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			if not os.path.exists(options.pw_adjustment): checking_flag = 1
 		checking_flag = bcast_number_to_all(checking_flag, Blockdata["main_node"], MPI_COMM_WORLD)
-		if checking_flag ==1: ERROR("User provided power spectrum does not exist", "sxcompute_isac_avg.py", 1, Blockdata["myid"])
+		
+		if checking_flag ==1: 
+			ERROR( "User provided power spectrum does not exist", myid=Blockdata["myid"] )
 	
 	Tracker                                   = {}
 	Constants		                          = {}
@@ -245,13 +252,13 @@ def main():
 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		msg = "Postprocessing ISAC 2D averages starts"
-		print(line, "Postprocessing ISAC 2D averages starts")
+		sxprint(line, "Postprocessing ISAC 2D averages starts")
 		if not masterdir:
 			timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
 			masterdir ="sharpen_"+Tracker["constants"]["isac_dir"]
 			os.mkdir(masterdir)
 		else:
-			if os.path.exists(masterdir): print("%s already exists"%masterdir)
+			if os.path.exists(masterdir): sxprint("%s already exists"%masterdir)
 			else: os.mkdir(masterdir)
 		subdir_path = os.path.join(masterdir, "ali2d_local_params_avg")
 		if not os.path.exists(subdir_path): os.mkdir(subdir_path)
@@ -267,13 +274,13 @@ def main():
 	log_main.prefix = Tracker["constants"]["masterdir"]+"/"
 
 	while not os.path.exists(Tracker["constants"]["masterdir"]):
-		print("Node ", Blockdata["myid"], "  waiting...", Tracker["constants"]["masterdir"])
+		sxprint("Node ", Blockdata["myid"], "  waiting...", Tracker["constants"]["masterdir"])
 		sleep(1)
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		init_dict = {}
-		print(Tracker["constants"]["isac_dir"])
+		sxprint(Tracker["constants"]["isac_dir"])
 		Tracker["directory"] = os.path.join(Tracker["constants"]["isac_dir"], "2dalignment")
 		core = read_text_row(os.path.join(Tracker["directory"], "initial2Dparams.txt"))
 		for im in range(len(core)): init_dict[im]  = core[im]
@@ -284,29 +291,31 @@ def main():
 	do_ctf = True
 	if options.noctf: do_ctf = False 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		if do_ctf: print("CTF correction is on")
-		else:      print("CTF correction is off")
-		if options.local_alignment: print("local refinement is on")
-		else:                       print("local refinement is off")
-		if B_enhance: print("Bfactor is to be applied on averages")
-		elif adjust_to_given_pw2: print("PW of averages is adjusted to a given 1D PW curve")
-		elif adjust_to_analytic_model: print("PW of averages is adjusted to analytical model")
-		else: print("PW of averages is not adjusted")
+		if do_ctf: sxprint("CTF correction is on")
+		else:      sxprint("CTF correction is off")
+		if options.local_alignment: sxprint("local refinement is on")
+		else:                       sxprint("local refinement is off")
+		if B_enhance: sxprint("Bfactor is to be applied on averages")
+		elif adjust_to_given_pw2: sxprint("PW of averages is adjusted to a given 1D PW curve")
+		elif adjust_to_analytic_model: sxprint("PW of averages is adjusted to analytical model")
+		else: sxprint("PW of averages is not adjusted")
 		#Tracker["constants"]["orgstack"] = "bdb:"+ os.path.join(Tracker["constants"]["isac_dir"],"../","sparx_stack")
 		image = get_im(Tracker["constants"]["orgstack"], 0)
 		Tracker["constants"]["nnxo"] = image.get_xsize()
 		if Tracker["constants"]["pixel_size"] == -1.0:
-			print("Pixel size value is not provided by user. extracting it from ctf header entry of the original stack.")
+			sxprint("Pixel size value is not provided by user. extracting it from ctf header entry of the original stack.")
 			try:
 				ctf_params = image.get_attr("ctf")
 				Tracker["constants"]["pixel_size"] = ctf_params.apix
 			except: 
-				ERROR("Pixel size could not be extracted from the original stack.", "sxcompute_isac_avg.py", 1, Blockdata["myid"]) # action=1 - fatal error, exit
+				ERROR( "Pixel size could not be extracted from the original stack.", myid=Blockdata["myid"] )
 		## Now fill in low-pass filter
 			
 		isac_shrink_path = os.path.join(Tracker["constants"]["isac_dir"], "README_shrink_ratio.txt")
+		
 		if not os.path.exists(isac_shrink_path):
-			ERROR("%s does not exist in the specified ISAC run output directory"%(isac_shrink_path), "sxcompute_isac_avg.py", 1, Blockdata["myid"]) # action=1 - fatal error, exit
+			ERROR( "%s does not exist in the specified ISAC run output directory"%(isac_shrink_path), myid=Blockdata["myid"] )
+
 		isac_shrink_file = open(isac_shrink_path, "r")
 		isac_shrink_lines = isac_shrink_file.readlines()
 		isac_shrink_ratio = float(isac_shrink_lines[5])  # 6th line: shrink ratio (= [target particle radius]/[particle radius]) used in the ISAC run
@@ -336,7 +345,7 @@ def main():
 	ptl_list    = []
 	memlist     = []
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		print("Number of averages computed in this run is %d"%navg)
+		sxprint("Number of averages computed in this run is %d"%navg)
 		for iavg in range(navg):
 			params_of_this_average = []
 			image   = get_im(os.path.join(Tracker["constants"]["isac_dir"], "class_averages.hdf"), iavg)
@@ -348,7 +357,7 @@ def main():
 				P = combine_params2( init_dict[abs_id][0], init_dict[abs_id][1], init_dict[abs_id][2], init_dict[abs_id][3], \
 				parameters[abs_id][0], parameters[abs_id][1]/Tracker["ini_shrink"], parameters[abs_id][2]/Tracker["ini_shrink"], parameters[abs_id][3])
 				if parameters[abs_id][3] ==-1: 
-					print("WARNING: Image #{0} is an unaccounted particle with invalid 2D alignment parameters and should not be the member of any classes. Please check the consitency of input dataset.".format(abs_id)) # How to check what is wrong about mirror = -1 (Toshio 2018/01/11)
+					sxprint("WARNING: Image #{0} is an unaccounted particle with invalid 2D alignment parameters and should not be the member of any classes. Please check the consitency of input dataset.".format(abs_id)) # How to check what is wrong about mirror = -1 (Toshio 2018/01/11)
 				params_of_this_average.append([P[0], P[1], P[2], P[3], 1.0])
 				ptl_list.append(abs_id)
 			params_dict[iavg] = params_of_this_average
@@ -394,8 +403,8 @@ def main():
 		
 		data_list  = [ None for im in range(navg)]
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			if B_enhance: print("Avg ID   B-factor  FH1(Res before ali) FH2(Res after ali)")	
-			else: print("Avg ID   FH1(Res before ali)  FH2(Res after ali)")	
+			if B_enhance: sxprint("Avg ID   B-factor  FH1(Res before ali) FH2(Res after ali)")	
+			else: sxprint("Avg ID   FH1(Res before ali)  FH2(Res after ali)")	
 		for iavg in range(image_start,image_end):
 			mlist = EMData.read_images(Tracker["constants"]["orgstack"], list_dict[iavg])
 			for im in range(len(mlist)):
@@ -425,17 +434,17 @@ def main():
 			
 			if B_enhance:
 				new_avg, gb = apply_enhancement(new_avg, Tracker["constants"]["B_start"], Tracker["constants"]["pixel_size"], Tracker["constants"]["Bfactor"])
-				print("  %6d      %6.3f  %4.3f  %4.3f"%(iavg, gb, FH1, FH2))
+				sxprint("  %6d      %6.3f  %4.3f  %4.3f"%(iavg, gb, FH1, FH2))
 				
 			elif adjust_to_given_pw2: 
 				roo = read_text_file( Tracker["constants"]["modelpw"], -1)
 				roo = roo[0] # always on the first column
 				new_avg = adjust_pw_to_model(new_avg, Tracker["constants"]["pixel_size"], roo)
-				print("  %6d      %4.3f  %4.3f  "%(iavg, FH1, FH2))
+				sxprint("  %6d      %4.3f  %4.3f  "%(iavg, FH1, FH2))
 				
 			elif adjust_to_analytic_model:
 				new_avg = adjust_pw_to_model(new_avg, Tracker["constants"]["pixel_size"], None)
-				print("  %6d      %4.3f  %4.3f   "%(iavg, FH1, FH2))
+				sxprint("  %6d      %4.3f  %4.3f   "%(iavg, FH1, FH2))
 
 			elif no_adjustment: pass
 			
@@ -455,7 +464,7 @@ def main():
 			new_avg.set_attr("members",   list_dict[iavg])
 			new_avg.set_attr("n_objects", len(list_dict[iavg]))
 			slist[iavg]    = new_avg
-			print(strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>",  "Refined average %7d"%iavg)
+			sxprint(strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>",  "Refined average %7d"%iavg)
 			
 		## send to main node to write
 		mpi_barrier(MPI_COMM_WORLD)
@@ -523,8 +532,10 @@ def main():
 		cmd = "{} {}".format("rm -rf", os.path.join(Tracker["constants"]["masterdir"], "junk.hdf") )
 		junk = cmdexecute(cmd)
 		
-	from mpi import mpi_finalize
-	mpi_finalize()
-	exit()
+	mpi.mpi_finalize()
+	return
+
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

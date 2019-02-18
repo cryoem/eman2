@@ -31,14 +31,17 @@ from __future__ import print_function
 #
 #
 
+import os
+import sys
+from optparse import OptionParser
+from global_def import SPARXVERSION
+
+import global_def
+from global_def import sxprint, ERROR
 
 from builtins import range
+
 def main():
-	import os
-	import sys
-	from optparse import OptionParser
-	from global_def import SPARXVERSION
-	import global_def
 	arglist = []
 	for arg in sys.argv:
 		arglist.append( arg )
@@ -86,13 +89,15 @@ def main():
 
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1 or len(args) > 5:
-		print("usage: " + usage + "\n")
-		print("Please run '" + progname + " -h' for detailed options")
+		sxprint("usage: " + usage + "\n")
+		sxprint("Please run '" + progname + " -h' for detailed options")
+		ERROR( "Invalid number of parameters used. please see usage information above." )
+		return
 	else:
 		# Convert input arguments in the units/format as expected by ihrsr_MPI in applications.
 		if options.apix < 0:
-			print("Please enter pixel size")
-			sys.exit()
+			ERROR( "Please enter pixel size" )
+			return
 
 		rminp = int((float(options.rmin)/options.apix) + 0.5)
 		rmaxp = int((float(options.rmax)/options.apix) + 0.5)
@@ -138,4 +143,6 @@ def main():
 			mpi_finalize()
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )
