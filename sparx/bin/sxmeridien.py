@@ -91,8 +91,6 @@ fp1=fft(Util.mulnclreal(p2,mask))
 Util.innerproduct(p2,p2,m)/(nx*nx/2) = Util.innerproduct(fp1,fp1,None)
 """
 
-
-
 from EMAN2 	import *
 from sparx 	import *
 from EMAN2  import EMNumPy
