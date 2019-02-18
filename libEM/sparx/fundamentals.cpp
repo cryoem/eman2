@@ -396,7 +396,7 @@ Output: 1-2-3D real image with the result
 			}
 		} else {
 			// If the center flag is false, then just do basic multiplication
-			// Here I aterd the method of complex calculation. This method is much faster than the previous one.
+			// Here I altered the method of complex calculation. This method is much faster than the previous one.
 			switch (ptype) {
 				case AUTOCORRELATION:
 					for (int iz = 1; iz <= nzp; iz++) {
