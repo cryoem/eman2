@@ -9378,12 +9378,12 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			for kproc in range(Blockdata["no_of_processes_per_group"]):
 				if( kproc == 0 ):
 					fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,Blockdata["myid"],Tracker["mainiteration"])),'w')
-					json.dump(newparamstructure[procid], fout)
+					json.dump(newparamstructure[procid], fout, indent=4)
 					fout.close()
 				else:
 					dummy = wrap_mpi_recv(kproc, Blockdata["shared_comm"])
 					fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,(Blockdata["color"]*Blockdata["no_of_processes_per_group"] + kproc),Tracker["mainiteration"])),'w')
-					json.dump(dummy, fout)
+					json.dump(dummy, fout, indent=4)
 					fout.close()
 					del dummy
 		else:
@@ -9500,7 +9500,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		if  Blockdata["bckgnoise"] :
 			Blockdata["bckgnoise"] = "computed"
 		fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"]),'w')
-		json.dump(Tracker, fout)
+		json.dump(Tracker, fout, indent=4)
 		fout.close()
 	Tracker["previousoutputdir"] = Tracker["directory"]
 	return # parameters are all passed by Tracker
@@ -9951,7 +9951,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				with open(os.path.join(Tracker["constants"]["masterdir"], \
 					"main%03d"%Tracker["mainiteration"], \
 						"Tracker_%03d.json"%Tracker["mainiteration"]),'w') as fout:
-					json.dump(Tracker, fout)
+					json.dump(Tracker, fout, indent=4)
 				fout.close()
 
 
@@ -10078,7 +10078,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 						print("The iteration that contains the best resolution is %d"%Tracker["constants"]["best"])
 						if Tracker["constants"]["best"] ==2:  print("No resolution improvement in refinement ")
 						fout = open(os.path.join(masterdir,"Tracker_final.json"),'w')
-						json.dump(Tracker, fout)
+						json.dump(Tracker, fout, indent=4)
 						fout.close()
 					mpi_barrier(MPI_COMM_WORLD)
 					
@@ -10430,7 +10430,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				with open(os.path.join(initdir,"Tracker_%03d.json"%Tracker["mainiteration"]),'w') as fout:
-					json.dump(Tracker, fout)
+					json.dump(Tracker, fout, indent=4)
 				fout.close()
 
 		else:# simple restart, at least main000 is completed. Otherwise no need restart
@@ -10560,7 +10560,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 							print("No resolution improvement in refinement ")
 						
 						with open(os.path.join(masterdir,"Tracker_final.json"),'w') as fout:
-							json.dump(Tracker, fout)
+							json.dump(Tracker, fout, indent=4)
 						fout.close()
 					mpi_barrier(MPI_COMM_WORLD)
 					
