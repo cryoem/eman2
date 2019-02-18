@@ -679,7 +679,7 @@ class PMSymWidget(PMBaseWidget):
 		label = QtWidgets.QLabel(name)
 		label.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight)
 		self.combobox = PMComboBox()
-		self.symnumbox = PMIntEntryWidget("Symmetry Number", 0, mode, lrange=0)
+		self.symnumbox = PMIntEntryWidget("Sym Number", 0, mode, lrange=0)
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.combobox, 0, 1)
 		gridbox.addWidget(self.symnumbox, 0, 2, 1, 2)

@@ -128,28 +128,18 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		self.wg_tltimage.set_scale(.2)
 		self.cur_tlt=None
 		
-<<<<<<< HEAD
-		self.setspanel=QtWidgets.QListWidget(self)
-=======
+#		self.setspanel=QtWidgets.QListWidget(self)
 		self.setspanel=TomoListWidget(self)
->>>>>>> 451f15a4779b918b9a7c959edebd5901d5aa6a31
 		self.gbl.addWidget(self.setspanel, 8,1,2,2)
 		
-<<<<<<< HEAD
-		self.wg_notes=QtWidgets.QTextEdit(self)
-=======
-		
+#		self.wg_notes=QtWidgets.QTextEdit(self)
 		self.wg_notes=QtWidgets.QLineEdit(self)
->>>>>>> 451f15a4779b918b9a7c959edebd5901d5aa6a31
+
 		self.wg_notes.setText("Comments:")
 		#self.wg_notes.setStyleSheet("color: rgb(150, 150, 150);")
 		self.gbl.addWidget(self.wg_notes, 10,1,1,2)
 		
-<<<<<<< HEAD
-		self.setspanel.itemChanged[QtWidgets.QListWidgetItem].connect(self.clickset)
-=======
-		#self.setspanel.itemClicked[QtWidgets.QListWidgetItem].connect(self.clickset)
->>>>>>> 451f15a4779b918b9a7c959edebd5901d5aa6a31
+		#self.setspanel.itemClicked[QtGui.QListWidgetItem].connect(self.clickset)
 		self.wg_notes.textChanged.connect(self.noteupdate)
 		
 		self.wg_plot2d=EMPlot2DWidget()
@@ -218,7 +208,16 @@ class TomoEvalGUI(QtWidgets.QWidget):
 								ptclcls[vname][1]+=n
 							else:
 								ptclcls[vname]=[1,n]
-				
+				if ("curves" in js) and len(js["curves"])>0:
+					dic["curves"]=np.array(js["curves"])
+					bxcls["_curves_"]=len(dic["curves"])
+					if "_curves_" in ptclcls:
+						ptclcls["_curves_"][1]+=len(dic["curves"])
+					else:
+						ptclcls["_curves_"]=[1,len(dic["curves"])]
+						
+				else:
+					dic["curves"]=[]
 				dic["basename"]= os.path.basename(name).split(".")[0] #base_name(name)
 				dic["e2basename"] = base_name(name)
 				dic["filename"]=name
@@ -235,18 +234,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		self.update_list()
 		
 		#### update particle type list
-<<<<<<< HEAD
-		self.setspanel.clear()
-		for k in list(self.ptclcls.keys()):
-			v=self.ptclcls[k]
-			kname="    {}\t:  {}".format(k, v[1])
-			item=QtWidgets.QListWidgetItem(kname)
-			item.setFlags(self.itemflags)
-			self.setspanel.addItem(item)
-			item.setCheckState(Qt.Checked)
-=======
 		self.setspanel.update_list(self.ptclcls)
->>>>>>> 451f15a4779b918b9a7c959edebd5901d5aa6a31
 	
 	def update_list(self):
 		#### update file list
@@ -265,6 +253,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 			for kname in list(info["boxcls"].keys()):
 				if self.ptclcls[kname][0]==1:
 					nbox+=info["boxcls"][kname]
+			nbox+=len(info["curves"])
 			it=QtWidgets.QTableWidgetItem()
 			it.setData(Qt.EditRole, int(nbox))
 			self.imglst.setItem(i,2, it)
@@ -349,8 +338,12 @@ class TomoEvalGUI(QtWidgets.QWidget):
 	
 	def runboxer(self):
 		idx, info=self.get_id_info()
+		modifiers = QtWidgets.QApplication.keyboardModifiers()
 		### do not use launch_childprocess so the gui wont be frozen when boxer is opened
-		subprocess.Popen("e2spt_boxer22.py {} --ppid {}".format(info["filename"], os.getpid()),shell=True)
+		if modifiers == QtCore.Qt.ShiftModifier:
+			subprocess.Popen("e2tomo_drawcurve.py {} --ppid {}".format(info["filename"], os.getpid()),shell=True)
+		else:
+			subprocess.Popen("e2spt_boxer22.py {} --ppid {}".format(info["filename"], os.getpid()),shell=True)
 		#launch_childprocess()
 
 	#def clickset(self, item):

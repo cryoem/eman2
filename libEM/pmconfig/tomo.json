@@ -123,6 +123,11 @@
     "ICON": "tomo_spt",
     "CHILDREN":[
       {
+        "PROGRAM": "e2spt_tomoctf.py",
+        "NAME": "CTF correction",
+        "CHILDREN": []
+      },
+      {
         "MODE": "box3d",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_boxer22",
         "PROGRAM": "e2spt_boxer22.py",
@@ -133,11 +138,6 @@
         "MODE": "boxing",
         "PROGRAM": "e2spt_tempmatch.py",
         "NAME": "Reference-based boxing",
-        "CHILDREN": []
-      },
-      {
-        "PROGRAM": "e2spt_tomoctf.py",
-        "NAME": "CTF correction",
         "CHILDREN": []
       },
       {

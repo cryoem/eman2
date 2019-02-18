@@ -1,7 +1,7 @@
 ~~NOTOC~~
 
 ===== sxpipe isac_substack =====
-ISAC2 Stack Subset: Create virtual subset stack consisting from ISAC2 accounted particles by retrieving particle numbers associated with the ISAC2 or Beautifier class averages. The command also saves a list text file containing the retrieved original image numbers and 2D alingment parameters. In addition, it stores the 2D alingment parameters to stack header.
+ISAC2 Stack Subset: Create a virtual subset stack consisting of particles acounted for by ISAC2 by retrieving particle numbers associated with the ISAC2 or Beautifier class averages. The command also saves a selection file containing the retrieved original image numbers and 2D alignment parameters. In addition, it stores the 2D alignment parameters to the stack header.
 
 \\
 ===== Usage =====

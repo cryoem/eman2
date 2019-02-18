@@ -767,7 +767,7 @@ void depad_corner();
  *
  *  @param[in] do_norm If true then perform normalization.
  *  @param[in] npad   Amount of zero-padding to use (defaults to 2 if do_pad is true).
- *  @param valtype
+ *  @param valtype  If 0 pad with zeroes otherwise pad with circumferences (computed internally)
  *
  *  @return [normalized,] [zero-padded,] [ft-extended] input image.
  */

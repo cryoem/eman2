@@ -24,7 +24,7 @@ def main():
 	#parser.add_argument("--gaussz", type=float,help="Extra gauss filter at z direction", default=-1, guitype='floatbox',row=4, col=2,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--mass", type=float,help="mass", default=500.0, guitype='floatbox',row=5, col=0,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--tarres", type=float,help="target resolution", default=10, guitype='floatbox',row=5, col=1,rowspan=1, colspan=1, mode="model")
+	#parser.add_argument("--tarres", type=float,help="target resolution", default=10, guitype='floatbox',row=5, col=1,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--localfilter", action="store_true", default=False ,help="use tophat local", guitype='boolbox',row=5, col=2,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--goldstandard", type=int,help="initial resolution for gold standard refinement", default=-1, guitype='intbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
@@ -44,6 +44,7 @@ def main():
 	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=9, col=0,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--path", type=str,help="Specify name of refinement folder. Default is spt_XX.", default=None)#, guitype='strbox', row=10, col=0,rowspan=1, colspan=3, mode="model")
+	parser.add_argument("--wtori",type=float,help="Weight for using the prior orientation in the particle header. default is -1, i.e. not used.",default=-1)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 
@@ -82,7 +83,7 @@ def main():
 			ref="{}/model_input.hdf".format(options.path)
 		
 	
-	curres=options.tarres
+	curres=40.
 	for itr in range(1,options.niter+1):
 		
 		#### generate alignment command first
@@ -92,8 +93,8 @@ def main():
 		if options.goldcontinue or (options.goldstandard>0 and itr>1):
 			gd=" --goldcontinue".format(options.goldstandard)
 			
-		curres=0
-		cmd="e2spt_align.py {} {} --threads {} --path {} --iter {} --sym {} --maxres {} {} ".format(ptcls, ref,  options.threads, options.path, itr, options.sym, curres, gd)
+		#curres=0
+		cmd="e2spt_align.py {} {} --threads {} --path {} --iter {} --sym {} --wtori {} {}".format(ptcls, ref,  options.threads, options.path, itr, options.sym, options.wtori, gd)
 		
 		#### in case e2spt_align get segfault....
 		ret=1
@@ -140,14 +141,16 @@ def main():
 			#s+=" --m3dpostprocess filter.lowpass.gaussz:cutoff_freq={}".format(options.gaussz)
 			
 		os.system("rm {}/mask*.hdf {}/*unmasked.hdf".format(options.path, options.path))
-		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --mass {} --restarget {} --threads {} --sym {} {} {} ".format(os.path.join(options.path, "threed_{:02d}_even.hdf".format(itr)), os.path.join(options.path, "threed_{:02d}_odd.hdf".format(itr)), os.path.join(options.path, "threed_{:02d}.hdf".format(itr)), itr, options.mass, options.tarres, options.threads, options.sym, msk, s)
+		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --mass {} --restarget {} --threads {} --sym {} {} {} ".format(os.path.join(options.path, "threed_{:02d}_even.hdf".format(itr)), os.path.join(options.path, "threed_{:02d}_odd.hdf".format(itr)), os.path.join(options.path, "threed_{:02d}.hdf".format(itr)), itr, options.mass, curres, options.threads, options.sym, msk, s)
 		run(ppcmd)
 		
 		ref=os.path.join(options.path, "threed_{:02d}.hdf".format(itr))
 		fsc=np.loadtxt(os.path.join(options.path, "fsc_masked_{:02d}.txt".format(itr)))
 		rs=1./fsc[fsc[:,1]<0.3, 0][0]
 		print("Resolution (FSC<0.3) is ~{:.1f} A".format(rs))
-		curres=rs*.5
+		curres=rs
+		if curres>40.:
+			curres=40
 		
 		# if options.tltrefine:# and itr%2==0:
 			

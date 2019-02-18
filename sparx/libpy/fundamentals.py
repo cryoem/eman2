@@ -497,7 +497,7 @@ def image_decimate(img, decimation=2, fit_to_fft = True, frequency_low=0, freque
 		and decimate image by integer factor
 	"""
 	from filter       import filt_btwl
-	from fundamentals import smallprime, window2d
+	from fundamentals import smallprime
 	from utilities    import get_image
 	if type(img)     == str:	img=get_image(img)
 	nz       = img.get_zsize()
@@ -686,14 +686,15 @@ def prepf(image, npad = 2):
 		Output
 			imageft: Fourier space image prepared for Fourier interpolation rotation/shift
 	"""
-	nxreal = image.get_xsize()
-	cimage = image.copy()
+	
+	cimage = Util.pad(image,2*(image.get_xsize()),2*(image.get_ysize()),1,0,0,0,"0.0")
 	cimage.set_attr("npad",npad)
 	cimage.div_sinc(1)
-	cimage = cimage.norm_pad(False, npad)
-	fftip(cimage)
+	cimage = cimage.norm_pad(False, 1)
+	cimage.do_fft_inplace()
 	cimage.center_origin_fft()
 	cimage.fft_shuffle()
+	cimage.set_attr_dict({"npad":npad,"prepf":1})
 	return cimage
 
 def prepi(image, RetReal = True):
@@ -860,78 +861,87 @@ def rops(e):
 	"""Rotational average of the power spectrum.
 	   Returns a 1-D image containing a rotational average
 	   of the periodogram of image e.
+		Input image can be real or Fourier, can be rectangular
+		output length mapped onto x-dimension length
 	"""
-	from EMAN2 import periodogram
-	ps = periodogram(e)
-	return ps.rotavg()
+	from utilities import model_blank
+	table = Util.rotavg_fourier(img)
+	table = table[:len(table)//2]
+	scale = (img.get_xsize() - 2*img.is_complex())*img.get_ysize()*img.get_zsize()
+	scale = 4.0/scale/scale
+	for i in range(len(table)): table[i] *= scale
+	if lng:
+		from math import log10
+		for ir in range(1,nr): table[ir] = log10(table[ir])
+		table[0] = table[1]
+	ps = model_blank(len(table))
+	for i in range(len(table)): ps[i] = table[i]
+	return ps
 
-def rops_textfile(e, filename, helpful_string="", lng = False):
+def rops_textfile(e, filename, lng = False):
 	"""Rotational average of the periodogram stored as a text file.
 	   Saves a text file (suitable for gnuplot) of the rotational average 
 	   of the periodogram of image e.
+		Input image can be real or Fourier, can be rectangular
+		output length mapped onto x-dimension length
 	"""
-	from EMAN2 import periodogram
-	out = open(filename, "w")
-	if helpful_string != "": out.write("#Rotational average: %s\n" % (helpful_string))
-	ps = periodogram(e)
-	f = ps.rotavg()
-	nr = f.get_xsize()
-	table = [0.0]*nr
-	for ir in range(nr): table[ir] = f.get_value_at(ir)
+	from utilities import write_text_file
+	table = Util.rotavg_fourier(img)
+	table = table[:len(table)//2]
+	scale = (img.get_xsize() - 2*img.is_complex())*img.get_ysize()*img.get_zsize()
+	scale = 4.0/scale/scale
+	for i in range(len(table)): table[i] *= scale
 	if lng:
-		from math import log
-		for ir in range(1,nr): table[ir] = log(table[ir])
+		from math import log10
+		for ir in range(1,nr): table[ir] = log10(table[ir])
 		table[0] = table[1]
-	for ir in range(nr): out.write("%d\t%12.5g\n" % (ir, table[ir]))
-	out.close()
+	write_text_file([list(range(nr)),table], filename)
 	
 def rops_table(img, lng = False):
 
 	""" 
 		Calculate 1D rotationally averaged 
 		power spectrum and save it in list
+		Input image can be real or Fourier, can be rectangular
+		output length mapped onto x-dimension length
 	"""
-	from EMAN2 import periodogram
-	e = periodogram(img)
-	ro = e.rotavg()
-	nr = ro.get_xsize()
-	table = [0.0]*nr
-	for ir in range(nr): table[ir] = ro.get_value_at(ir)
+	table = Util.rotavg_fourier(img)
+	table = table[:len(table)//2]
+	scale = (img.get_xsize() - 2*img.is_complex())*img.get_ysize()*img.get_zsize()
+	scale = 4.0/scale/scale
+	for i in range(len(table)): table[i] *= scale
 	if lng:
 		from math import log10
 		for ir in range(1,nr): table[ir] = log10(table[ir])
 		table[0] = table[1]
 	return table
 
+'''
+It is not used anywhere, so I commented it out  02/03/2019 PAP
 def rops_dir(indir, output_dir = "1dpw2_dir"):
 	"""
 		Calculate 1D rotationally averaged power spectra from
 		image stack listed in a directory
 	"""
-	from EMAN2 import periodogram
+	from utilities import get_im, write_text_file
 	import os
 	flist = os.listdir(indir)
-	print(flist)
 	if os.path.exists(output_dir) is False: os.mkdir(output_dir)
 	for i, v in enumerate(flist):
 		(filename, filextension) = os.path.splitext(v)
 		nima = EMUtil.get_image_count(os.path.join(indir,v))
-		print(nima)
 		for im in range(nima):
-			e = EMData()
-			file_name = os.path.join(indir,v)
-			e.read_image(file_name, im)
-			tmp1 = periodogram(e)
-			tmp  = tmp1.rotavg()
+			e = get_im(os.path.join(indir,v), im)
+			temp = Util.rotavg_fourier(img)
+			temp = table[:len(temp)//2]
 			if im == 0:
-				sum_ima  = model_blank(tmp.get_xsize())
-				sum_ima += tmp
-			else :  sum_ima += tmp
-		table = []
-		nr = sum_ima.get_xsize()
-		for ir in range(nr):  table.append([sum_ima.get_value_at(ir)])
-		drop_spider_doc(os.path.join(output_dir, "1dpw2_"+filename+".txt"), table)
-
+				table= temp[:]
+				scale = (img.get_xsize() - 2*img.is_complex())*img.get_ysize()*img.get_zsize()
+				scale = 4.0/scale/scale
+			else :  for i in range(len(table)): table[i] += temp[i]
+		for i in range(len(table)): table[i] *= scale/nima
+		write_text_file(table, os.path.join(output_dir, "1dpw2_"+filename+".txt"))
+'''
 
 def rotshift2dg(image, ang, dx, dy, kb, scale = 1.0):
 	"""Rotate and shift an image using gridding
@@ -955,6 +965,7 @@ def rotshift2dg(image, ang, dx, dy, kb, scale = 1.0):
 	# gridding rotation
 	return o.rot_scale_conv(radians(ang), dx, dy, kb, scale)
 
+'''
 def gridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
 	"""
 		Rotate and shift an image using gridding in Fourier space.
@@ -996,6 +1007,63 @@ def gridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
 	image1 = fft(image1)
 	image1 = image1.window_center(nx)
 	Util.cyclicshift(image1,{"dx":isx,"dy":isy,"dz":0})
+	return image1
+'''
+
+def gridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
+	"""
+		Rotate and shift an image using gridding in Fourier space.
+	"""
+	from EMAN2 import Processor
+	from fundamentals import fftip, fft
+	from utilities import compose_transform2
+
+	nx = image.get_xsize()
+	if( (ang != 0.0) or (scale != 1.0) ):
+		image1 = image.copy()  # This step is needed, otherwise image will be changed outside the function
+		# prepare 
+		npad = 2
+		N = nx*npad
+		K = 6
+		alpha = 1.75
+		r = nx/2
+		v = K/2.0/N
+		kb = Util.KaiserBessel(alpha, K, r, v, N)
+
+		# invert shifts
+		_, tsx, tsy, _ = compose_transform2(0.,sx,sy,1,-ang,0,0,1)
+		# split shift into integer and fractional parts
+		isx = int(tsx)
+		fsx = tsx - isx
+		isy = int(tsy)
+		fsy = tsy - isy
+		# shift image to the center
+		Util.cyclicshift(image1,{"dx":isx,"dy":isy,"dz":0})
+		# bring back fractional shifts
+		_, tsx, tsy, _ = compose_transform2(0.,fsx,fsy,1,ang,0,0,1)
+		# divide out gridding weights
+		image1.divkbsinh(kb)
+		# pad and center image, then FFT
+		image1 = image1.norm_pad(False, npad)
+		fftip(image1)
+		# Put the origin of the (real-space) image at the center
+		image1.center_origin_fft()
+		# gridding rotation
+		image1 = image1.fouriergridrot2d(ang, scale, kb)
+		if( (fsx != 0.0) or (fsy != 0.0) ):
+			params = {"filter_type" : Processor.fourier_filter_types.SHIFT,	"x_shift" : float(tsx), "y_shift" : float(tsy), "z_shift" : 0.0 }
+			image1 = Processor.EMFourierFilter(image1, params)
+		# put the origin back in the corner
+		image1.center_origin_fft()
+		# undo FFT and remove padding (window)
+		image1 = fft(image1)
+		image1 = image1.window_center(nx)
+	else:
+		if( (sx != 0.0) or (sy != 0.0) ):
+			params = {"filter_type" : Processor.fourier_filter_types.SHIFT,	"x_shift" : float(sx), "y_shift" : float(sy), "z_shift" : 0.0 }
+			image1 = Processor.EMFourierFilter(image, params)
+		else: return image
+		
 	return image1
 
 
@@ -1085,6 +1153,8 @@ def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, i
 		if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
 		return img
 	elif(use_method == "fourier"):
+		if img.is_complex() :
+			if img.get_attr_default("prepf",0) != 1:  ERROR("Incorrect input image Fourier format","rot_shift2D fourier method",1)
 		img = img.fourier_rotate_shift2d(angle, sx, sy, 2)
 		if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
 		return img
@@ -1180,11 +1250,12 @@ def rtshgkb(image, angle, sx, sy, kb, scale = 1.0):
 	return image.rot_scale_conv_new(radians(angle), sx, sy, kb, scale)
 	
 def smallprime(arbit_num, numprime=3):
-	primelist = [2,3,5,7,11,13,17,19,23]
+	primelist = [2,3,5,7,11,13,17,19,23,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97]
+	lip = min(numprime,len(primelist))
 	for i in range(1, arbit_num+1):
 		x62 = arbit_num-i+1
 		for k in range(1,arbit_num+1): # fake loop try to divide the arbit_num
-			for j in range(0,numprime):
+			for j in range(0,lip):
 				x71 = primelist[j]*int(x62/primelist[j])
 				if(x71 == x62):
 					x62 = x62/primelist[j]
@@ -1327,7 +1398,9 @@ def window2d(img, isize_x, isize_y, opt="c", ix=0, iy=0):
 		Three ways of windowing out a portion of an image:
 		1. "c" Get the central part: "c" ( default setting )
 		2. "l" Get clip starts from the top left corner
-		3. "a" Get clip with arbitrary point (ix, iy) as the image center point ( nx//2,ny//2 corresponds to image center )
+		3. "a" Get clip with arbitrary point (ix, iy) used as the input image center point 
+				in case 1, 0,0 corresponds to image center
+				in case 2, nx//2,ny//2 corresponds to image center
 	"""
 	lx = img.get_xsize()
 	ly = img.get_ysize()
@@ -1921,6 +1994,16 @@ class symclass(object):
 							elif(phi>=360.0/self.nsym+360.0/self.nsym/2 and phi<720.0/self.nsym):
 								phi = 720.0/self.nsym-phi+360.0/self.nsym
 								psi = (360.0-psi)%360.0
+					else:
+						if(theta>90.0):
+							mat = rotmatrix(phi,theta,psi)
+							for l in range(self.nsym):
+								p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
+								#print(p1,p2,p3)
+								if(self.is_in_subunit(p1, p2, 1)):
+									phi=p1; theta=p2; psi=p3
+									#print("  FOUND ")
+									break
 
 			redang.append([phi, theta, psi])
 
@@ -1998,6 +2081,17 @@ class symclass(object):
 						elif(phi>=360.0/self.nsym+360.0/self.nsym/2 and phi<720.0/self.nsym):
 							phi = 720.0/self.nsym-phi+360.0/self.nsym
 							psi = 360.0 - psi
+				else:
+					if(theta>90.0):
+						mat = rotmatrix(phi,theta,psi)
+						for l in range(self.nsym):
+							p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
+							#print(p1,p2,p3)
+							if(self.is_in_subunit(p1, p2, 1)):
+								phi=p1; theta=p2; psi=p3
+								#print("  FOUND ")
+								break
+						
 
 		return phi, theta, psi
 

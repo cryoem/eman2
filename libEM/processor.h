@@ -5102,6 +5102,71 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 
 		static const string NAME;
 	};
+
+	/** Mask out (or in) peaks in Fourier space based on the average amplitude at each spatial frequency
+	 */
+	class FFTConeProcessor:public Processor
+	{
+	  public:
+		void process_inplace(EMData * image);
+
+		string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new FFTConeProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Sets a cone to zero in Fourier space around the +-Z axis to (somewhat) emulate the missing cone in an RCT experiment. Angles are measured using X/Y/Z expressed as a fraction of Nyquist, for sensible results on non-cubic images";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("angle", EMObject::FLOAT, "Angular range in degrees from the Z axis to zero. (default 15)");
+			d.put("rmin", EMObject::FLOAT, "Radius in Fourier pixels at which to start zeroing. This permits some very low resolution to be preserved. (default 1)");
+			return d;
+		}
+
+		static const string NAME;
+	};
+
+	/** Mask out (or in) peaks in Fourier space based on the average amplitude at each spatial frequency
+	 */
+	class FFTWedgeProcessor:public Processor
+	{
+	  public:
+		void process_inplace(EMData * image);
+
+		string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new FFTWedgeProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Sets a wedge to zero in Fourier space around the +-Z axis along X as a tilt axis to (somewhat) emulate the missing wedge in a tomography experiment. For example, anglemin=-30, anglemax=30 to roughly emulate at -60 to +60 tilt series";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("anglemin", EMObject::FLOAT, "Minimum angle (degrees) in Y-Z plane to zero (default -30)");
+			d.put("anglemax", EMObject::FLOAT, "Maximum angle (degrees) in Y-Z plane to zero (default 30)");
+			d.put("rmin", EMObject::FLOAT, "Radius in Fourier pixels at which to start zeroing. This permits some very low resolution to be preserved. (default 1)");
+			return d;
+		}
+
+		static const string NAME;
+	};
 	
 	
 	/** Fill missing wedge with information from another image

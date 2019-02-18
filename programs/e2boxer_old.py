@@ -201,7 +201,7 @@ e2boxer.py ????.mrc --boxsize=256
 
 
 		# this is an example of how to add your own custom tools:
-		module.add_tool(SwarmTool,particle_diameter=options.boxsize)
+		module.add_tool(SwarmTool,particle_diameter=options.boxsize,module=module)
 
 		#Make the Swarm Tool the default
 		swarm_tool_instance = SwarmTool(object)
@@ -625,6 +625,12 @@ class SwarmPanel(object):
 			vbl.addLayout(hbl_bb)
 
 
+			hbl_bc = QtWidgets.QHBoxLayout()
+			self.go_through=QtWidgets.QPushButton("Go Through")
+			self.go_through.setToolTip("Go through the rest images")
+			hbl_bc.addWidget(self.go_through)
+			vbl.addLayout(hbl_bc)
+ 
 			self.ptcl_diam_edit.editingFinished.connect(self.new_ptcl_diam)
 			self.update_template.clicked[bool].connect(self.update_template_checked)
 			self.auto_update.clicked[bool].connect(self.auto_update_checked)
@@ -640,6 +646,8 @@ class SwarmPanel(object):
 			self.proximity_thr.sliderReleased.connect(self.proximity_threshold_release)
 			self.proximity_thr.textChanged.connect(self.proximity_threshold_text_changed)
 			self.enable_overlap_removal.clicked[bool].connect(self.enable_overlap_removal_clicked)
+			
+			self.go_through.clicked[bool].connect(self.go_through_clicked)
 		return self.widget
 
 	def update_states(self,swarm_boxer):
@@ -787,6 +795,14 @@ class SwarmPanel(object):
 
 	def step_forward_clicked(self,val):
 		self.target().step_forward()
+
+	def go_through_clicked(self,val):                                    
+		module = self.target().module                                    
+		for idx in xrange(module.current_idx+1, len(module.file_names)):  
+			module.set_current_file_by_idx(idx)                          
+			try:                                                          
+				module.get_2d_window().updateGL()                        
+			except: pass #window is closed                                
 
 	def enable_step_back(self,val,total=None):
 		self.step_back.setEnabled(val)
@@ -1763,8 +1779,9 @@ class SwarmTool(SwarmBoxer,EMBoxingTool):
 	A class that knows how to handle mouse erase events for a GUIBox
 	'''
 
-	def __init__(self,target,particle_diameter=128):
+	def __init__(self,target,particle_diameter=128,module=None):
 		SwarmBoxer.__init__(self,particle_diameter)
+		self.module = module
 		self.target = weakref.ref(target)
 		self.panel_object = SwarmPanel(self,self.particle_diameter)
 		self.current_file = None # the name of the file that is being studied in the main viewer

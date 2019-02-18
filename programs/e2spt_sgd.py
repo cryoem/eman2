@@ -56,6 +56,8 @@ def main():
 	parser.add_argument("--nbatch", type=int,help="Number of batches per iteration", default=10,guitype='intbox',row=10, col=1,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--applysym", action="store_true", default=False ,help="apply symmetry", guitype='boolbox',row=11, col=0,rowspan=1, colspan=1, mode="model")
+	
+	parser.add_argument("--writemovie", action="store_true", default=False ,help="write all temporary files as a stack")
 	parser.add_argument("--shrink", type=int,help="Shrink factor for particles", default=1,guitype='intbox',row=11, col=1,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--path", type=str,help="path of output", default=None)
@@ -185,6 +187,8 @@ def main():
 
 			#ref.write_image(tmpout,-1)
 			ref0.write_image(os.path.join(path,"output.hdf"))
+			if options.writemovie:
+				ref0.write_image(os.path.join(path,"output_all.hdf"), -1)
 			sys.stdout.write('#')
 			sys.stdout.flush()
 

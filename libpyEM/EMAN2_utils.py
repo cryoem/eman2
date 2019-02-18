@@ -426,9 +426,19 @@ def textwriter(data,options,name,invert=0,xvals=None,onlydata=False):
 				line2write = str(val) + '\n'
 
 			#print "THe line to write is"
-			lines.append(line2write)
+			if line2write.replace('\n','').replace(' ','') != '':
+				lines.append(line2write)
 		
-		f.writelines(lines)
+
+		#remove empty lines that somehow creep into files
+		print('\n\n\n(EMAN2_utils)(textwriter) REMOVING EMPTY LINES')
+		newlines=[]
+		for line in lines:
+			newline = line.replace('\n','').replace(' ','')
+			if newline:
+				newlines.append(newline+'\n')
+
+		f.writelines(newlines)
 	#f.close()
 
 	return

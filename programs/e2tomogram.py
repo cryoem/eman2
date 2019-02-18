@@ -16,7 +16,7 @@ from sklearn.decomposition import PCA
 
 def main():
 	
-	usage="""WARNING: This is an experimental program that may or may not work..
+	usage="""
 	This program takes unaligned tilt series, performs alignment, and generate a tomogram.
 	
 	Usage:
@@ -204,7 +204,7 @@ def main():
 		for i,m in enumerate(imgs_1k):
 			m.write_image(inppath, i)
 		
-	loss0=[] ### this is used to exclude bad tilt. in case the user ask 0 iterations..
+	loss0=np.zeros(num) ### this is used to exclude bad tilt. in case the user ask 0 iterations..
 	if options.load:
 		#### loading parameters from json file
 		jsname=info_name(options.inputname)
@@ -631,7 +631,7 @@ def make_tile(args):
 		
 	
 	threed=recon.finish(True)
-	threed.write_image("tmp3d00.hdf", -1)
+	#threed.write_image("tmp3d00.hdf", -1)
 	threed.clip_inplace(Region((pad-sz)//2, (pad-sz)//2, (pad-outz)//2, sz, sz, outz))
 	threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.filterto})
 	#threed.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
@@ -728,6 +728,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	x,y=np.indices((sz,sz),dtype=float)/sz-.5
 	#f=.25-(x**2+y**2)/2 + ((abs(x)-0.5)**2+(abs(y)-0.5)**2)/2
 	f=1+np.exp(-(x**2+y**2)/0.1) - np.exp(-((abs(x)-0.5)**2+(abs(y)-0.5)**2)/0.1)
+	f+=1.5
 	f3=np.repeat(f[None, :,:], outz, axis=0)
 	msk=from_numpy(f3).copy()
 	#####
