@@ -292,19 +292,23 @@ class EMDrawWindow(QtGui.QMainWindow):
 		self.bt_savepdb.setToolTip("Save curves as PDB")
 		self.gbl.addWidget(self.bt_savepdb, 2,0,1,2)
 		
+		self.bt_clear=QtGui.QPushButton("Clear")
+		self.bt_clear.setToolTip("Clear all points")
+		self.gbl.addWidget(self.bt_clear, 3,0,1,2)
+		
 		self.bt_interp=QtGui.QPushButton("Interpolate")
 		self.bt_interp.setToolTip("Interpolate points")
-		self.gbl.addWidget(self.bt_interp, 3,0,1,1)
+		self.gbl.addWidget(self.bt_interp, 4,0,1,1)
 		
 		self.tx_interp=QtGui.QLineEdit(self)
 		self.tx_interp.setText("20")
-		self.gbl.addWidget(self.tx_interp, 3,1,1,1)
-		
+		self.gbl.addWidget(self.tx_interp, 4,1,1,1)
 		
 		
 		self.bt_showimg.clicked[bool].connect(self.show_tomo)
 		self.bt_savepdb.clicked[bool].connect(self.save_pdb)
 		self.bt_interp.clicked[bool].connect(self.interp_points)
+		self.bt_clear.clicked[bool].connect(self.clear_points)
 
 		#self.gbl.addWidget(self.imgview,0,0)
 		self.options=options
@@ -322,7 +326,8 @@ class EMDrawWindow(QtGui.QMainWindow):
 
 		
 		pts=[]
-		self.apix_scale=0
+		self.apix_scale=1
+		self.tomocenter=np.zeros(3)
 		if options.load:
 			pts=np.loadtxt(options.load).tolist()
 		else:
@@ -332,6 +337,8 @@ class EMDrawWindow(QtGui.QMainWindow):
 				apix_unbin=js["apix_unbin"]
 				self.apix_scale=apix_cur/apix_unbin
 				self.tomocenter= np.array([self.data["nx"],self.data["ny"],self.data["nz"]])/2
+			
+				
 			if js.has_key("curves") and len(js["curves"])>0:
 				pts=np.array(js["curves"]).copy()
 				pts[:,:3]=pts[:,:3]/self.apix_scale + self.tomocenter
@@ -426,10 +433,19 @@ class EMDrawWindow(QtGui.QMainWindow):
 		
 	def key_press(self, event):
 		return
-		#if event.key()==Qt.Key_Shift:
-			#self.contour.next_slice()
-			#self.imgview.shapechange=1
-			#self.imgview.updateGL()
+
+	def clear_points(self):
+		choice = QtGui.QMessageBox.question(self, 'Clear points', 
+			'Clear all points in the tomogram?', QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+		if choice == QtGui.QMessageBox.Yes:
+			self.contour.points=[]
+		
+		self.imgview.shapechange=1
+		self.imgview.updateGL()
+		self.update_label()
+		self.save_points()
+		
+		return
 
 	def on_mouseup(self, event):
 		x,y=self.imgview.scr_to_img((event.x(),event.y()))

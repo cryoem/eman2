@@ -67,7 +67,7 @@ def main():
 		m.process_inplace("math.fft.resample",{'n':mbin})
 		m.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
 		m.process_inplace('normalize')
-		sz=good_boxsize(m["nx"])
+		sz=m["nx"]
 		if options.dthr<0:
 			options.dthr=sz/np.sqrt(2)
 
@@ -131,6 +131,7 @@ def main():
 		print("Found {} particles".format(len(pts)))
 		js=js_open_dict(info_name(imgname))
 		n=min(options.nptcl, len(pts))
+		
 		if "class_list" in js:
 			clst=js['class_list']
 			try: kid=max([int(k) for k in list(clst.keys())])+1
@@ -139,11 +140,6 @@ def main():
 			clst={}
 			kid=0
 		
-		if options.label:
-			clst[str(kid)]={"boxsize":sz*2*nbin, "name":options.label}
-		else:
-			clst[str(kid)]={"boxsize":sz*2*nbin, "name":base_name(tmpname)}
-		js["class_list"]=clst
 		if "boxes_3d" in js:
 			bxs=js["boxes_3d"]
 		else:
@@ -154,12 +150,22 @@ def main():
 			apix_unbin=js["apix_unbin"]
 			apix=e["apix_x"]
 			shp=np.array([e["nz"], e["ny"], e["nx"]])
+			boxsz=int(np.round(sz*nbin*apix/apix_unbin))
 			box=(pts*2-shp/2)*apix/apix_unbin
 			bxs.extend([[p[2], p[1],p[0], 'tm', scr[i] ,kid] for i,p in enumerate(box[:n])])
 			
 		else:
 			bxs.extend([[p[2], p[1],p[0], 'tm', scr[i] ,kid] for i,p in enumerate(pts[:n]*4)])
+			boxsz=sz*nbin
+			
 		js['boxes_3d']=bxs
+		
+		if options.label:
+			clst[str(kid)]={"boxsize":boxsz, "name":options.label}
+		else:
+			clst[str(kid)]={"boxsize":boxsz, "name":base_name(tmpname)}
+			
+		js["class_list"]=clst
 		js.close()
 
 	E2end(logid)

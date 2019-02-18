@@ -66,7 +66,8 @@ class SptEvalGUI(QtGui.QWidget):
 		self.dp_folder=QtGui.QComboBox()
 		self.dp_folder.setToolTip("Folder suffix")
 		self.gbl.addWidget(self.dp_folder, 0,1,1,1)
-		sfxlst=["spt", "sptsgd"]
+		sfxlst=["spt", "sptsgd", "subtlt"]
+		self.paramfile={"spt":"spt", "sptsgd":"spt", "subtlt":"subtlt"}
 		for i in sfxlst:
 			self.dp_folder.addItem(i)
 		self.dp_folder.currentIndexChanged[int].connect(self.set_sfx)
@@ -104,6 +105,7 @@ class SptEvalGUI(QtGui.QWidget):
 		self.setspanel=TomoListWidget(self)
 		self.gbl.addWidget(self.setspanel, 5,1,5,2)
 		self.itemflags=	Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)
+		
 		
 		#self.wg_notes=QtGui.QTextEdit(self)
 		#self.gbl.addWidget(self.wg_notes, 10,1,1,2)
@@ -161,14 +163,14 @@ class SptEvalGUI(QtGui.QWidget):
 		#foldersfx=["spt"]
 		
 		#for sfx in foldersfx:
-		sfx=self.dp_folder.currentText()
+		sfx=str(self.dp_folder.currentText())
 		#print(sfx)
 			
 		flds=[f for f in os.listdir('.') if (os.path.isdir(f) and f.startswith("{}_".format(sfx)))]
 		flds=sorted(flds)
 		for f in flds:
 			dic={"ID":int(f[len(sfx)+1:])}
-			jsfile="{}/0_spt_params.json".format(f)
+			jsfile="{}/0_{}_params.json".format(f, self.paramfile[sfx])
 			if not os.path.isfile(jsfile):
 				continue
 			

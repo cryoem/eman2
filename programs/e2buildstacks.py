@@ -61,6 +61,7 @@ def main():
 	parser.add_pos_argument(name="tilt_images",help="List of images to be stacked. Input order will determine the order of images in output tiltseries.", default="", guitype='filebox', browser="EMTiltsTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=3, nosharedb=True,mode="tomo")
 	parser.add_argument("--output",type=str,help="Name of the output stack to build (Extension will be .hdf unless specified). Note, all tiltseries will be stored in the 'tiltseries' directory.", default=None, guitype='strbox',row=2, col=0, rowspan=1, colspan=1, mode="default,tomo")
 	parser.add_argument("--tilts",action="store_true",default=False,help="Write results to 'tiltseries' directory in current project.", guitype='boolbox',row=4, col=0, rowspan=1, colspan=1,mode="tomo[True]")
+	parser.add_argument("--guess",action="store_true",default=False,help="Guess the order of images of a tilt series from file names", guitype='boolbox',row=4, col=1, rowspan=1, colspan=1,mode="tomo[False]")
 	#parser.add_argument("--rawtlt",type=str,help="Name of tilt angles text file.\nNote, angles must correspond to stack file names in alphabetical/numerical order.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",row=3, col=0, rowspan=1, colspan=1, mode="tomo")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higner number means higher level of verboseness",default=1)
@@ -68,11 +69,57 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if options.output==None:
-		print("--output is required (output file)")
-		sys.exit(1)
+		if not options.guess:
+			print("--output is required (output file)")
+			sys.exit(1)
 
 	if options.tilts:
 
+
+		if options.guess:
+			lst=[]
+			for a in args:
+				ag=os.path.basename(a)
+				l=[]
+				s0=""
+				p=[0]
+				a=ag.replace(".", "_")
+				for i,c in enumerate(a[:-1]):
+					if c.isdigit() or (s0=="" and c=='-' and a[i+1].isdigit()):
+						s0+=c
+					elif len(s0)>0:
+						l.append(float(s0))
+						p.append(i)
+						s0=""
+				lst.append(l)
+			
+			try:
+				lst=np.array(lst)
+			except:
+				print("number in file names do not match.. something may be wrong..")
+				return
+			
+		
+			print('{} files, {} digit sections'.format(len(args),len(lst[0])))
+			dt=[]
+			for i in range(len(lst[0])):
+				mn,mx=np.min(lst[:,i]), np.max(lst[:,i])
+				print("{}: range from {} to {}".format(i, mn, mx))
+				dt.append(abs(mn+60)+abs(mx-60))
+			
+			ic=np.argmin(dt)
+			print("guess column {} is for tilt angles...".format(ic))
+				
+		
+			aid=np.argsort(lst[:,ic])
+			args=[args[a] for a in aid]
+			
+			if options.output==None:
+				a=os.path.basename(args[0])
+				options.output=a[:p[ic]]+".hdf"
+				print("writing output to {}".format(options.output))
+
+			
 		stdir = os.path.join(".","tiltseries")
 		if not os.access(stdir, os.R_OK):
 			os.mkdir(stdir)
@@ -88,6 +135,7 @@ def main():
 			print("Please move, rename, or remove this file to generate an alternate version with this program.")
 			sys.exit(1)
 
+		
 		# if options.rawtlt:
 		# 	try:
 		# 		angles = np.loadtxt(options.rawtlt)

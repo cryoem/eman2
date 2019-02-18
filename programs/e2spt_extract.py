@@ -33,7 +33,7 @@ def main():
 	parser.add_argument("--curves", action="store_true", default=False ,help="extract particles from saved curves")
 	parser.add_argument("--curves_overlap", type=float, help="fraction of overlap when generating particle along curves. default is 0.5",default=0.5)
 
-	parser.add_argument("--shrink", type=int, help="Shrinking factor for output particles. Default is 1 (no shrink)",default=1)
+	parser.add_argument("--shrink", type=int, help="Shrinking factor for output particles. Default is 1 (no shrink)",default=1, guitype='intbox',row=8, col=0, rowspan=1, colspan=1, mode="extract")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	(options, args) = parser.parse_args()
@@ -58,7 +58,7 @@ def main():
 	else:
 		print("Processing {} files in sequence..".format(len(args)))
 		cmd=sys.argv
-		opt=' '.join([s for s in cmd if s.startswith("-")])
+		opt=' '.join([s for s in cmd[1:] if s not in args])
 		opt=opt.replace("--alltomograms","")
 		for a in args:
 			run("{} {} {}".format(cmd[0], a, opt))
@@ -414,10 +414,11 @@ def make3d(jsd, ids, imgs, ttparams, ppos, options, ctfinfo=[]):
 			e["tilt_id"]=nid
 			e["file_threed"]=options.output
 			e["ptcl_source_coord_3d"]=pos.tolist()
+			e.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.45})
 			projs.append(e)
 			
 			sz=e["nx"]
-			e0=e.get_clip(Region(old_div((sz-p3d),2),old_div((sz-p3d),2),p3d,p3d))
+			e0=e.get_clip(Region((sz-p3d)//2,(sz-p3d)//2,p3d,p3d))
 			trans=Transform({"type":"2d", "tx":-txdf, "ty":-tydf})
 			e1=recon.preprocess_slice(e0, trans)
 			recon.insert_slice(e1,xform,1)

@@ -208,6 +208,7 @@ class TomoEvalGUI(QtGui.QWidget):
 								ptclcls[vname]=[1,n]
 				if ("curves" in js) and len(js["curves"])>0:
 					dic["curves"]=np.array(js["curves"])
+					bxcls["_curves_"]=len(dic["curves"])
 					if "_curves_" in ptclcls:
 						ptclcls["_curves_"][1]+=len(dic["curves"])
 					else:

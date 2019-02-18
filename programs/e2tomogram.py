@@ -16,7 +16,7 @@ from sklearn.decomposition import PCA
 
 def main():
 	
-	usage="""WARNING: This is an experimental program that may or may not work..
+	usage="""
 	This program takes unaligned tilt series, performs alignment, and generate a tomogram.
 	
 	Usage:
