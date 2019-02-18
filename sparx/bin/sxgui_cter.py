@@ -47,7 +47,7 @@ import numpy as np
 import traceback
 
 import global_def
-from global_def import sxprint, ERROR
+from global_def import ERROR
 
 try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL

@@ -36,7 +36,7 @@ import glob
 import numpy
 
 import global_def
-from global_def import sxprint, ERROR
+from global_def import ERROR
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -1044,7 +1044,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                     else:
                         self._fill_gui(inputlist=list(listOfShiftFiles))
             else:
-                sxprint( 'Error: {0} not found! Try again'.format(inputfile) )
+                print( 'Error: {0} not found! Try again'.format(inputfile) )
 
     def _check_list_or_file(self, data):
         """Check if the input name is a file or a list of files"""
@@ -1745,7 +1745,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         messageBox.setText('Do drift calculations...')
         messageBox.setStandardButtons(QtGui.QMessageBox().NoButton)
         messageBox.show()
-        sxprint('Do drift calculations...')
+        print('Do drift calculations...')
 
         # Clear the list widget and load the shift files as list
         if inputfile is not None:
@@ -1763,7 +1763,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 listSplit = strSuffix.split('/')[-1].split('*')
             if len(listSplit) != 2:
                 self.arrMicNumber = numpy.arange(len(self.listFile))
-                sxprint((
+                print((
                     'Warning: Could not identify micrograph serial number.\n' +
                     'X-axis of the plots do not represent' +
                     'the serial micrograph number.'
@@ -1779,7 +1779,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                     except:
                         self.arrMicNumber = numpy.arange(len(self.listFile))
                         varBreak = True
-                        sxprint((
+                        print((
                             'Warning: Could not identify micrograph serial number.\n' +
                             'X-axis of the plots do not represent' +
                             'the serial micrograph number.'
@@ -1810,7 +1810,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             return None
         elif len(self.listFile) <= 5:
             self.varAnalyzeOne = True
-            sxprint((
+            print((
                 '\nWarning: !!!! Only few shift files selected, ' +
                 'so plots of all micrographs could not work as expected. !!!!\n'
                 ))
@@ -1820,7 +1820,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
         if len(self.arrMicNumber) != len(self.listFile):
             self.arrMicNumber = numpy.arange(len(self.listFile))
-            sxprint((
+            print((
                 'Warning: Files were corrupt, lost track of micrograph serial number.\n' +
                 'X-axis of the plots do not represent' +
                 'the serial micrograph number.'
@@ -1853,7 +1853,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             self._enable_all()
 
             # Go use the GUI
-            sxprint('Done')
+            print('Done')
         messageBox.hide()
 
     def _refresh_gui(self):
@@ -1992,11 +1992,11 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                     # Transpose the array
                     arrCoord = numpy.transpose(arrCoord)
             except ValueError:
-                sxprint(('Warning: File corrupt, skip:', file))
+                print(('Warning: File corrupt, skip:', file))
                 continue
 
             if len(arrCoord) != self.intFrames:
-                sxprint(('Warning: File does not have {0} Frames, skip:'.format(self.intFrames), file))
+                print(('Warning: File does not have {0} Frames, skip:'.format(self.intFrames), file))
                 continue
 
             # Get the micrograph name
@@ -2026,11 +2026,11 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                     # Transpose the array
                     arrCoord = numpy.transpose(arrCoord)
             except ValueError:
-                sxprint(('Warning: File corrupt, skip:', file))
+                print(('Warning: File corrupt, skip:', file))
                 continue
 
             if len(arrCoord) != self.intFrames:
-                sxprint(('Warning: File does not have {0} Frames, skip:'.format(self.intFrames), file))
+                print(('Warning: File does not have {0} Frames, skip:'.format(self.intFrames), file))
                 continue
 
             # Get the micrograph name
@@ -2391,7 +2391,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             messageBox.setText('Do drift calculations...')
             messageBox.setStandardButtons(QtGui.QMessageBox().NoButton)
             messageBox.show()
-            sxprint('Do drift calculations...')
+            print('Do drift calculations...')
 
             # Set all criterions to False
             for key in self.dictThresh:
@@ -2408,7 +2408,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             self._invert_selection()
             # Use the GUI!
             messageBox.hide()
-            sxprint('Done')
+            print('Done')
 
         else:
             self.leFrameStart.setText('{:d}'.format(intOldFirst))
@@ -3549,7 +3549,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                         listOfShiftFiles = list(listOfShiftFiles)
                     self._fill_gui(inputlist=listOfShiftFiles)
         else:
-            sxprint('Error: Input is no valid list')
+            print('Error: Input is no valid list')
 
     def _load_from_pattern(self):
         """Load files from pattern"""
@@ -3790,7 +3790,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         except TypeError:
             arrThresh, arrGeneral = self._load_settings_old_v2(strLoadName=strLoadName)
         except IndexError:
-            sxprint('Detected old settings file! Save the settings now again to convert it to the latest version.')
+            print('Detected old settings file! Save the settings now again to convert it to the latest version.')
             arrThresh, arrGeneral = self._load_settings_old_v1(strLoadName=strLoadName)
 
         # Refresh everything
@@ -4037,7 +4037,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         # Check if there are less than 5
         if len(self.arrMicNumber) <= 5:
             self.varAnalyzeOne = True
-            sxprint((
+            print((
                 '\nWarning: !!!! Only few shift files selected, ' +
                 'so plots of all micrographs could not work as expected. !!!!\n'
                 ))
@@ -4225,7 +4225,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         # Check if there are less than 5
         if len(self.arrMicNumber) <= 5:
             self.varAnalyzeOne = True
-            sxprint((
+            print((
                 '\nWarning: !!!! Only few shift files selected, ' +
                 'so plots of all micrographs could not work as expected. !!!!\n'
                 ))
@@ -4398,7 +4398,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             dtype=None
             ))
 
-        sxprint((
+        print((
             'Warning: Could not identify micrograph serial number due to an old settings file.\n' +
             'X-axis of the plots do not represent' +
             'the serial micrograph number.'
@@ -4552,7 +4552,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         # Ignore the incomming event when pressing the "X" and
         # quit the application instead
         event.ignore()
-        sxprint('Bye Bye!')
+        print('Bye Bye!')
         QtCore.QCoreApplication.instance().quit()
 
 
@@ -4560,7 +4560,7 @@ def _main():
     app = QtGui.QApplication(sys.argv)
 
     if len(sys.argv) > 3:
-        sxprint(
+        print(
             'Too many arguments!\n'
             'Please start the GUI without argument or use \n'
             'quote marks around the wildcard "example-*_shift.txt".\n'
