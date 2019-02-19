@@ -723,6 +723,54 @@ The basic design of EMAN Processors: <br>\
 
 			static const string NAME;
 	};
+
+	/**
+	 * This processor filters an image to improve the visibility of particles. The resulting images are primarily useful for visualization rather than processing.
+	 * A/pix must be set correctly for it to work.
+	 *@author Steve Ludtke
+	 *@date 2019/02/09
+	 */
+	class EnhanceProcessor : public Processor
+	{
+		public:
+			EnhanceProcessor() {}
+
+			string get_name() const
+			{
+				return NAME;
+			}
+
+			virtual void process_inplace(EMData *image);
+			
+			virtual EMData* process(const EMData* const image);
+			
+			static Processor *NEW()
+			{
+				return new EnhanceProcessor();
+			}
+
+			string get_desc() const
+			{
+				return "Visual enhancement filter useful for localizing particles. Results not designed for reconstruction.";
+			}
+
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+// 				d.put("kx", EMObject::INT, "Kx location of the slice in Fourier pixels");
+// 				d.put("ky", EMObject::INT, "Ky location of the slice in Fourier pixels");
+// 				d.put("jkx", EMObject::INT, "Jx+Kx location of the slice in Fourier pixels");
+// 				d.put("jky", EMObject::INT, "Jy+Ky location of the slice in Fourier pixels");
+// 				d.put("k", EMObject::FLOAT, "Radius of slice in Fourier pixels, integrates over angle.");
+// 				d.put("rfp", EMObject::INT, "Returns a non square 2-D image containing rotational invariants organized such that X=azimuth. Used for rotational alignment.");
+// 				d.put("fp", EMObject::INT, "Returns a non-square 2-D image containing n rotationally integrated planes. R&T invariant.");
+// 				d.put("ffp", EMObject::INT, "Returns a 3-D volume containing n rotationally integrated planes. R&T invariant. This is normally further processed with CTF info to produce fp equivalent.");
+// 				d.put("size", EMObject::INT, "If specified, will determine the size (x/y) of the real-space bispectrum image. If not set, a size is selected automatically");
+				return d;
+			}
+
+			static const string NAME;
+	};
 	
 	/**
 	 * This processor will take a mask and extract the values inside the mask as a new 1-D image
