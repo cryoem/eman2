@@ -61,8 +61,7 @@ def run(cmd):
 	
 def main():
 	
-	usage=""" !!! Experimental program....
-	Cleaned and modified version of e2spt_boxer.py. Allow multiple type of features in one tomogram and save metadata in the new EMAN2 tomogram framework.
+	usage="""e2spt_boxer now supports multiple simultaneous features
 	
 	[prog] <tomogram>
 	
@@ -311,7 +310,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 			
 			
 		clr=QtGui.QColor
-		self.setcolors=[clr("blue"),clr("green"),clr("red"),clr("cyan"),clr("purple"),clr("orange"), clr("yellow"),clr("hotpink"),clr("gold")]
+		self.setcolors=[QtGui.QBrush(clr("blue")),QtGui.QBrush(clr("green")),QtGui.QBrush(clr("red")),QtGui.QBrush(clr("cyan")),QtGui.QBrush(clr("purple")),QtGui.QBrush(clr("orange")), QtGui.QBrush(clr("yellow")),QtGui.QBrush(clr("hotpink")),QtGui.QBrush(clr("gold"))]
 		self.sets_visible={}
 				
 		if "boxes_3d" in info:
@@ -820,7 +819,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		bs2=self.get_boxsize(box[5])//2
 
 		
-		color=self.setcolors[box[5]%len(self.setcolors)].getRgbF()
+		color=self.setcolors[box[5]%len(self.setcolors)].color().getRgbF()
 		if self.options.mode=="3D":
 			self.xyview.add_shape(n,EMShape(["circle",color[0],color[1],color[2],box[0],box[1],bs2,2]))
 			self.xzview.add_shape(n,EMShape(["circle",color[0],color[1],color[2],box[0],box[2],bs2,2]))
@@ -1441,8 +1440,11 @@ class EMTomoSetsPanel(QtWidgets.QWidget):
 
 	def delete_set(self,unused):
 		selections = self.setlist.selectedItems()
+		if len(selections)==0 : return
 		names=[str(i.text()) for i in selections]
-		cancel=QtWidgets.QMessageBox.warning(self, "Delete set", "Are you sure to delete {}? This will remove all particles in that class".format(names[0]), "Yes", "No")
+		cancel=QtWidgets.QMessageBox.question(self, "Delete set", "Are you sure to delete {}? This will remove all particles in that class".format(names[0]),QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+		if cancel==QtWidgets.QMessageBox.Yes : cancel=1
+		else: cancel=0
 		if not cancel:
 			self.target().delete_set(names[0])
 		self.update_sets()
@@ -1489,7 +1491,7 @@ class EMTomoSetsPanel(QtWidgets.QWidget):
 			kname="{:02d} :: {}".format(int(k), self.target().sets[k])
 			item=QtWidgets.QListWidgetItem(kname)
 			item.setFlags(self.itemflags)
-			item.setTextColor(self.target().setcolors[i%len(self.target().setcolors)])
+			item.setForeground(self.target().setcolors[i%len(self.target().setcolors)])
 			self.setlist.addItem(item)
 			if k in viskeys : item.setCheckState(Qt.Checked)
 			else : item.setCheckState(Qt.Unchecked)

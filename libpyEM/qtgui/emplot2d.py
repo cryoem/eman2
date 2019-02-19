@@ -99,14 +99,14 @@ linetypes=["-","--",":","-."]
 symtypes=["o","s","+","2","1"]
 colortypes=["k","b","r","g","y","c","m","gray"]
 qt_color_map = {}
-qt_color_map["k"] = QtGui.QColor(0,0,0)
-qt_color_map["b"] = QtGui.QColor(0,0,255)
-qt_color_map["r"] = QtGui.QColor(255,0,0)
-qt_color_map["g"] = QtGui.QColor(0,255,0)
-qt_color_map["y"] = QtGui.QColor(255,255,0)
-qt_color_map["c"] = QtGui.QColor(0,255,255)
-qt_color_map["m"] = QtGui.QColor(255,0,255)
-qt_color_map["gray"] = QtGui.QColor(127,127,127)
+qt_color_map["k"] = QtGui.QBrush(QtGui.QColor(0,0,0))
+qt_color_map["b"] = QtGui.QBrush(QtGui.QColor(0,0,255))
+qt_color_map["r"] = QtGui.QBrush(QtGui.QColor(255,0,0))
+qt_color_map["g"] = QtGui.QBrush(QtGui.QColor(0,255,0))
+qt_color_map["y"] = QtGui.QBrush(QtGui.QColor(255,255,0))
+qt_color_map["c"] = QtGui.QBrush(QtGui.QColor(0,255,255))
+qt_color_map["m"] = QtGui.QBrush(QtGui.QColor(255,0,255))
+qt_color_map["gray"] = QtGui.QBrush(QtGui.QColor(127,127,127))
 
 class EMPlot2DWidget(EMGLWidget):
 	"""A QT widget for drawing 2-D plots using matplotlib
@@ -2939,7 +2939,7 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 		for i,j in enumerate(keys) :
 			a = QtWidgets.QListWidgetItem(j)
 			a.setFlags(flags)
-			try: a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
+			try: a.setForeground(qt_color_map[colortypes[parms[j][0]]])
 			except:
 				print("Color error")
 				print(list(sorted(parms.keys())))
