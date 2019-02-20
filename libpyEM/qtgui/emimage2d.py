@@ -221,6 +221,8 @@ class EMImage2DWidget(EMGLWidget):
 
 	def resizeGL(self, width, height):
 		if width == 0 or height == 0: return # this is okay, nothing needs to be drawn
+		width = width // self.devicePixelRatio()
+		height = height // self.devicePixelRatio()
 		side = min(width, height)
 		GL.glViewport(0,0,width,height)
 
