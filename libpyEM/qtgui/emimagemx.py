@@ -337,6 +337,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def resizeGL(self, width, height):
 		if width <= 0 or height <= 0: return
+		width = width // self.devicePixelRatio()
+		height = height // self.devicePixelRatio()
+		
 		GL.glViewport(0,0,width,height)
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
