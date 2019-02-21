@@ -1828,8 +1828,8 @@ void EMData::insert_clip(const EMData * const block, const IntPoint &origin) {
 	}
 #endif
 */
-	float *src = block->get_data() + zd0 * src_secsize + yd0 * nx1 + xd0;
-	float *dst = get_data() + z0 * dst_secsize + y0 * nx + x0;
+	float *src = block->get_data() + (size_t)zd0 * (size_t)src_secsize + (size_t)yd0 * (size_t)nx1 + (size_t)xd0;
+	float *dst = get_data() + (size_t)z0 * (size_t)dst_secsize + (size_t)y0 * (size_t)nx + (size_t)x0;
 	
 	size_t src_gap = src_secsize - (y1-y0) * nx1;
 	size_t dst_gap = dst_secsize - (y1-y0) * nx;
