@@ -1769,37 +1769,37 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 
 
 void EMData::insert_clip(const EMData * const block, const IntPoint &origin) {
-	size_t nx1 = (size_t)block->get_xsize();
-	size_t ny1 = (size_t)block->get_ysize();
-	size_t nz1 = (size_t)block->get_zsize();
+	int nx1 = block->get_xsize();
+	int ny1 = block->get_ysize();
+	int nz1 = block->get_zsize();
 
 	Region area(origin[0], origin[1], origin[2],nx1, ny1, nz1);
 
 	//make sure the block fits in EMData 
-	size_t x0 = (size_t) area.origin[0];
+	int x0 = (int) area.origin[0];
 	x0 = x0 < 0 ? 0 : x0;
 
-	size_t y0 = (size_t) area.origin[1];
+	int y0 = (int) area.origin[1];
 	y0 = y0 < 0 ? 0 : y0;
 
-	size_t z0 = (size_t) area.origin[2];
+	int z0 = (int) area.origin[2];
 	z0 = z0 < 0 ? 0 : z0;
 
-	size_t x1 = (size_t) (area.origin[0] + area.size[0]);
+	int x1 = (int) (area.origin[0] + area.size[0]);
 	x1 = x1 > nx ? nx : x1;
 
-	size_t y1 = (size_t) (area.origin[1] + area.size[1]);
+	int y1 = (int) (area.origin[1] + area.size[1]);
 	y1 = y1 > ny ? ny : y1;
 
-	size_t z1 = (size_t) (area.origin[2] + area.size[2]);
+	int z1 = (int) (area.origin[2] + area.size[2]);
 	z1 = z1 > nz ? nz : z1;
 	if (z1 <= 0) {
 		z1 = 1;
 	}
 
-	size_t xd0 = (size_t) (area.origin[0] < 0 ? -area.origin[0] : 0);
-	size_t yd0 = (size_t) (area.origin[1] < 0 ? -area.origin[1] : 0);
-	size_t zd0 = (size_t) (area.origin[2] < 0 ? -area.origin[2] : 0);
+	int xd0 = (int) (area.origin[0] < 0 ? -area.origin[0] : 0);
+	int yd0 = (int) (area.origin[1] < 0 ? -area.origin[1] : 0);
+	int zd0 = (int) (area.origin[2] < 0 ? -area.origin[2] : 0);
 
 	if (x1 < x0 || y1 < y0 || z1 < z0) return; // out of bounds, this is fine, nothing happens
 
@@ -1828,8 +1828,8 @@ void EMData::insert_clip(const EMData * const block, const IntPoint &origin) {
 	}
 #endif
 */
-	float *src = block->get_data() + zd0 * src_secsize + yd0 * nx1 + xd0;
-	float *dst = get_data() + z0 * dst_secsize + y0 * nx + x0;
+	float *src = block->get_data() + (size_t)zd0 * (size_t)src_secsize + (size_t)yd0 * (size_t)nx1 + (size_t)xd0;
+	float *dst = get_data() + (size_t)z0 * (size_t)dst_secsize + (size_t)y0 * (size_t)nx + (size_t)x0;
 	
 	size_t src_gap = src_secsize - (y1-y0) * nx1;
 	size_t dst_gap = dst_secsize - (y1-y0) * nx;
