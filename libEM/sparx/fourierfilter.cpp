@@ -541,16 +541,55 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			}
 			break;
 		case SHIFT:
+			if(ndim == 1) {
+				//1D
+				for ( ix = 1; ix <= lsd2; ix++) {
+					jx=ix-1;
+					fp->cmplx(ix,1,1) *= exp(-float(twopi)*iimag*(xshift*jx/nx));
+				}
+			} else if(ndim == 2) {
+				//2D
+				vector< std::complex<float> > ex(lsd2);
+				for ( ix = 0; ix <= lsd2-1; ix++) ex[ix] = exp(-float(twopi)*iimag*(xshift*ix/nx));
+				for ( iy = 1; iy <= nyp; iy++) {
+					jy=iy-1; if (jy>nyp2) jy=jy-nyp;
+					complex<float>  ey = exp(-float(twopi)*iimag*(yshift*jy/ny));
+					for ( ix = 1; ix <= lsd2; ix++) {
+						fp->cmplx(ix,iy,1) *= ex[ix-1]*ey;
+					}
+				}
+			} else {
+				// 3D
+				vector< std::complex<float> > ex(lsd2);
+				for ( ix = 0; ix <= lsd2-1; ix++) ex[ix] = exp(-float(twopi)*iimag*(xshift*ix/nx));
+				vector< std::complex<float> > ey(nyp);
+				for ( iy = 1; iy <= nyp; iy++) {
+					jy=iy-1; if (jy>nyp2) jy=jy-nyp;
+					ey[iy-1] = exp(-float(twopi)*iimag*(yshift*jy/ny));
+				}
+				for ( iz = 1; iz <= nzp; iz++) {
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp;
+					complex<float>  ez = exp(-float(twopi)*iimag*(zshift*jz/nz));
+					for ( iy = 1; iy <= nyp; iy++) {
+						complex<float>  te = ey[iy-1]*ez;
+						for ( ix = 1; ix <= lsd2; ix++) {
+							fp->cmplx(ix,iy,iz) *= ex[ix-1]*te;
+						}
+					}
+				}
+			}
+/*
 			for ( iz = 1; iz <= nzp; iz++) {
 				jz=iz-1; if (jz>nzp2) jz=jz-nzp;
 				for ( iy = 1; iy <= nyp; iy++) {
 					jy=iy-1; if (jy>nyp2) jy=jy-nyp;
 					for ( ix = 1; ix <= lsd2; ix++) {
 						jx=ix-1;
-						fp->cmplx(ix,iy,iz) *= 	exp(-float(twopi)*iimag*(xshift*jx/nx + yshift*jy/ny+ zshift*jz/nz));
+						fp->cmplx(ix,iy,iz) *= exp(-float(twopi)*iimag*(xshift*jx/nx + yshift*jy/ny+ zshift*jz/nz));
 					}
 				}
 			}
+*/
 			break;
 		case TANH_LOW_PASS:
 			for ( iz = 1; iz <= nzp; iz++) {

@@ -872,7 +872,7 @@ def rops(e):
 	for i in range(len(table)): table[i] *= scale
 	if lng:
 		from math import log10
-		for ir in range(1,nr): table[ir] = log10(table[ir])
+		for ir in range(1,len(table)): table[ir] = log10(table[ir])
 		table[0] = table[1]
 	ps = model_blank(len(table))
 	for i in range(len(table)): ps[i] = table[i]
@@ -893,7 +893,7 @@ def rops_textfile(e, filename, lng = False):
 	for i in range(len(table)): table[i] *= scale
 	if lng:
 		from math import log10
-		for ir in range(1,nr): table[ir] = log10(table[ir])
+		for ir in range(1,len(table)): table[ir] = log10(table[ir])
 		table[0] = table[1]
 	write_text_file([list(range(nr)),table], filename)
 	
@@ -912,7 +912,7 @@ def rops_table(img, lng = False):
 	for i in range(len(table)): table[i] *= scale
 	if lng:
 		from math import log10
-		for ir in range(1,nr): table[ir] = log10(table[ir])
+		for ir in range(1,len(table)): table[ir] = log10(table[ir])
 		table[0] = table[1]
 	return table
 
