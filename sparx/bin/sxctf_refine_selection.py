@@ -38,6 +38,7 @@ import numpy as np
 import EMAN2db
 import EMAN2
 import sxctf_refine
+import global_def
 
 ARGPARSER = argparse.ArgumentParser(
     description="Error assessment for CTF refinement",
@@ -123,7 +124,7 @@ def _main_():
             local_bdb_stack[num_particles_relevant - 1] = particle_header
 
     EMAN2db.db_close_dict(local_bdb_stack)
-    print("Particles updated/extracted", num_particles_relevant)
+    global_def.sxprint("Particles updated/extracted", num_particles_relevant)
 
 
 if __name__ == "__main__":

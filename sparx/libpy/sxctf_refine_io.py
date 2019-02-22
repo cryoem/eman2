@@ -40,6 +40,7 @@ import EMAN2
 import EMAN2db
 import utilities
 from projection import prep_vol
+import global_def
 
 
 def read_meridien_data(meridien_path):
@@ -97,7 +98,7 @@ def write_virtual_bdb_stack(
     :param number_of_particles: Number of particles to write.
     :return: None
     """
-    print("Write results to virtual stack...")
+    global_def.sxprint("Write results to virtual stack...")
 
     if number_of_particles is None:
         number_of_particles = EMAN2.EMUtil.get_image_count(origin_stack_path)
@@ -111,7 +112,7 @@ def write_virtual_bdb_stack(
 
         local_bdb_stack[particle_index] = particle_header
     EMAN2db.db_close_dict(local_bdb_stack)
-    print("Write results to virtual stack done")
+    global_def.sxprint("Write results to virtual stack done")
 
 
 def read_meridien_params(path):

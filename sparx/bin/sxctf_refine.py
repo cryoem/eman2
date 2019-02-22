@@ -474,7 +474,7 @@ def refine_set(particle_indices):
 
         import traceback
 
-        print(
+        global_def.sxprint(
             "Exception happend for particles in range ",
             np.min(particle_indices),
             "-",
@@ -731,7 +731,7 @@ def _main_():
     global HALF_MAP_ASSIGNEMENTS
 
     args = CHILD_ARGPARSER.parse_args()
-    print(args)
+
     meridien_path = args.meridien_path
 
     if meridien_path is not None:
@@ -797,7 +797,7 @@ def _main_():
             number_of_particles_to_read=number_of_particles_to_read,
         )
 
-    print("####Start refinement####")
+    global_def.sxprint("####Start refinement####")
     start = time.time()
 
     # for chunk in particle_chunks:
@@ -825,7 +825,7 @@ def _main_():
     #####################################################################
 
     end = time.time()
-    print("Time for ", number_of_particles, " Particles:", end - start)
+    global_def.sxprint("Time for ", number_of_particles, " Particles:", end - start)
 
     # Ouput results
     refined_ctfs_as_list, refinement_results_per_micrograph = merge_ctf_refinement_results(
@@ -839,7 +839,7 @@ def _main_():
         number_of_particles=number_of_particles,
     )
 
-    print("Write statistics...")
+    global_def.sxprint("Write statistics...")
     # WRITE STATISTICS
     if not os.path.exists(output_stats_path):
         os.makedirs(output_stats_path)
@@ -852,7 +852,7 @@ def _main_():
         refinement_results_per_micrograph
     )
     # Save particle plots
-    print("Write images...")
+    global_def.sxprint("Write images...")
     path_output_img = os.path.join(output_stats_path, "img/")
     if not os.path.exists(path_output_img):
         os.makedirs(path_output_img)
@@ -864,7 +864,7 @@ def _main_():
         min_max_ratio=min_max_ratio,
     )
 
-    print("Write other...")
+    global_def.sxprint("Write other...")
     refinement_results_matrix = get_refinement_results_matrix(
         refinement_results_per_micrograph
     )
@@ -880,7 +880,7 @@ def _main_():
         fmt=["%d", "%f", "%f", "%f"],
     )
 
-    print("Done")
+    global_def.sxprint("Done")
 
 
 if __name__ == "__main__":
