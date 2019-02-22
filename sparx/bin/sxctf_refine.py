@@ -884,4 +884,7 @@ def _main_():
 
 
 if __name__ == "__main__":
+    global_def.print_timestamp("Start")
     _main_()
+    global_def.print_timestamp("Finish")
+
