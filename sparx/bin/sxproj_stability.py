@@ -353,7 +353,7 @@ def main():
 					l += 1
 					avet += rot_shift2D(class_data[j], stable_set[l][2][0], stable_set[l][2][1], stable_set[l][2][2], stable_set[l][2][3] )
 					if options.grouping == "GRP":
-						phi, theta, psi, sxs, sys = get_params_proj(class_data[j])
+						phi, theta, psi, sxs, sy_s = get_params_proj(class_data[j])
 						if( theta > 90.0):
 							phi = (phi+540.0)%360.0
 							theta = 180.0 - theta
