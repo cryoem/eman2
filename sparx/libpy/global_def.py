@@ -120,7 +120,7 @@ IS_LOGFILE_OPEN = False
 # sxprint log (sxprint logging can be disabled by setting this to "")
 SXPRINT_LOG_PATH = ""
 try:
-	init_func = re.search( "(?=/|^)(.*).py", sys._getframe(len(inspect.stack())-1).f_code.co_filename ).group(1)
+	init_func = re.search( "([^/]*).py", sys._getframe(len(inspect.stack())-1).f_code.co_filename ).group(1)
 except AttributeError:
 	init_func = 'none'
 
@@ -177,15 +177,13 @@ def sxprint( *args, **kwargs ):
 
 	# print to user defined file
 	if "filename" in kwargs:
-		f = open( kwargs["filename"], "a+" )
-		f.write( m + "\n" )
-		f.close()
+		with open( kwargs["filename"], "a+" ) as f:
+			f.write( m + "\n" )
 
 	# print to default SPHIRE execution log
 	if SXPRINT_LOG != "":
-		f = open( SXPRINT_LOG, "a+" )
-		f.write( m + "\n" )
-		f.close()
+		with open( SXPRINT_LOG, "a+" ) as f:
+			f.write( m + "\n" )
 
 
 def ERROR( message, where="", action=1, myid=0 ):
