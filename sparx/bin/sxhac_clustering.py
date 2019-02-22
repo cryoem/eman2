@@ -30,14 +30,15 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
-#
-
 
 import os
 import global_def
+from global_def import sxprint, ERROR
+
 from   global_def import *
 from   optparse import OptionParser
 import sys
+
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
@@ -52,14 +53,19 @@ def main():
 	
 	(options, args) = parser.parse_args()
 	if len(args) < 2 or len(args) > 3:
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
+		sxprint( "Usage: " + usage )
+		sxprint( "Please run '" + progname + " -h' for detailed options" )
+		ERROR( "Invalid number of parameters. Please see usage information above." )
+		return
+
 	elif options.link not in chk_link:
-		sys.stderr.write('ERROR: Kind of linkage unknown.\n\n')
-		sys.exit()
+		ERROR( "Kind of linkage unknown" )
+		return
+
 	elif options.dist not in chk_dist:
-		sys.stderr.write('ERROR: Kind of distance unknown.\n\n')
-		sys.exit()
+		ERROR( "Kind of distance unknown" )
+		return
+
 	else:
 		if len(args) == 2: maskname = None
 		else:              maskname = args[2]
@@ -73,4 +79,6 @@ def main():
 		global_def.BATCH = False
 
 if __name__ == "__main__":
-	        main()
+	global_def.print_timestamp( "Start" )
+	main()
+	global_def.print_timestamp( "Finish" )

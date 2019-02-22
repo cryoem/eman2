@@ -34,10 +34,13 @@ from __future__ import print_function
 
 
 import global_def
+from   global_def import sxprint, ERROR
+
 from global_def 	import *
 from optparse 		import OptionParser
 import sys
 import os
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " tifdir <micdir> --inx=tif --foc=f --ext=spi --cst=1 pixel_size=2 --sca_a=1 --sca_b=1 --step=63.5 --mag=40 --MPI"
@@ -52,10 +55,15 @@ def main():
 	parser.add_option("--step",       type = "float",  default=63.5,  help =" scan step size of scanner or CCD camera ")
 	parser.add_option("--mag",        type = "float",  default=40,    help =" magnification at which the images are taken ")		
 	parser.add_option("--MPI", action="store_true", default=False,     help="  whether using MPI version ")
+
 	(options, args) = parser.parse_args()    	
+
 	if len(args) < 1:
-		print("usage: "      + usage)
-		print("Please run '" + progname + " -h' for detailed options")
+		sxprint( "Usage: " + usage )
+		sxprint( "Please run \'" + progname + " -h\' for detailed options" )
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
+
 	else:
 	
 		if len(args) == 1: 
@@ -84,4 +92,6 @@ def main():
 
 
 if __name__ == "__main__":
-	        main()
+	global_def.print_timestamp( "Start" )
+	main()
+	global_def.print_timestamp( "Finish" )

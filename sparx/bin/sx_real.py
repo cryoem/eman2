@@ -38,6 +38,7 @@ from __future__ import print_function
 import EMAN2
 from EMAN2 import *
 
+from global_def import sxprint
 
 
 GUIUSE=True
@@ -68,8 +69,10 @@ except:
 
 from sparx import *
 import global_def
+
 if GUIUSE:
-	print("Welcome to the interactive SPARX-GUI Python interface, provided by ipython")
+	sxprint( "Welcome to the interactive SPARX-GUI Python interface, provided by ipython" )
 else:
-	print("Welcome to the interactive SPARX-NoGUI Python interface, provided by ipython")
-print("  ",global_def.SPARXVERSION)
+	sxprint( "Welcome to the interactive SPARX-NoGUI Python interface, provided by ipython" )
+
+sxprint( "  ", global_def.SPARXVERSION )

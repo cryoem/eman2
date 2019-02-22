@@ -36,6 +36,7 @@ from future import standard_library
 standard_library.install_aliases()
 import os
 import global_def
+from global_def import sxprint, ERROR
 from   global_def import *
 from   optparse import OptionParser
 import sys, configparser
@@ -61,10 +62,12 @@ def main():
 	parser.add_option("--MPI", action="store_true", default=False, help="  whether to use MPI version ")
 
 	(options, args) = parser.parse_args()
+
 	if len(args) < 3 or len(args) > 4:
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
-		sys.exit()
+		sxprint( "Usage: " + usage )
+		sxprint( "Please run \'" + progname + " -h\' for detailed options" )
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
 	
 	if len(args) == 4:	mask = args[3]
 	else:	mask = None
@@ -89,4 +92,6 @@ def main():
 
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

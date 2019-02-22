@@ -33,17 +33,26 @@ from __future__ import print_function
 
 from builtins import range
 import global_def
+from global_def import sxprint, ERROR
+
 from   global_def import *
 
 from   optparse import OptionParser
 
+from EMAN2  import newfile_store
+from utilities import get_im
+from time import time
+import os
+
+import sys
+
 def genbuf( prjfile, bufprefix, beg, end, CTF, npad, verbose = 0 ):
-	from EMAN2  import newfile_store
-	from utilities import get_im
-	from time import time
-	import os
-	if(verbose == 1):  finfo=open( os.path.join(outdir, "progress.txt"), "w" )
-	else:              finfo = None
+	
+	if(verbose == 1):  
+		finfo=open( os.path.join(outdir, "progress.txt"), "w" )
+	else:
+		finfo = None
+	
 	start_time = time()
 	istore = newfile_store( bufprefix, npad, CTF )
 	for i in range( beg, end ):
@@ -54,10 +63,6 @@ def genbuf( prjfile, bufprefix, beg, end, CTF, npad, verbose = 0 ):
 			finfo.flush()
 
 def main():
-
-	import sys
-	import os
-
 	arglist = []
 	for arg in sys.argv:
 		arglist.append( arg )
@@ -72,8 +77,10 @@ def main():
 	(options, args) = parser.parse_args( arglist[1:] )
 
 	if( len(args) != 2):
-		print("usage: " + usage)
-		return None
+		sxprint( "Usage: " + usage )
+		sxprint( "Please run \'" + progname + " -h\' for detailed options" )
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
 
 	prjfile = args[0]
 
@@ -87,4 +94,6 @@ def main():
 
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

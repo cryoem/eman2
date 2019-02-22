@@ -35,6 +35,8 @@ from __future__ import print_function
 
 import os
 import global_def
+from global_def import sxprint
+
 from   global_def import *
 from   optparse import OptionParser
 import sys
@@ -56,8 +58,11 @@ def main():
 	parser.add_option("--filament"        , action = "store_true", default=False, help="Calculate stack of averages according to filament membership")
 	(options, args) = parser.parse_args()
 	if len(args) < 1 or len(args) > 2:
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
+		sxprint( "Usage: " + usage )
+		sxprint( "Please run \'" + progname + " -h\' for detailed options" )
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
+		
 	else: 
 		if len(args) == 1: 
 			name_output = None
@@ -87,4 +92,6 @@ def main():
 			global_def.BATCH = False
 
 if __name__ == "__main__":
-	        main()
+	global_def.print_timestamp( "Start" )
+	main()
+	global_def.print_timestamp( "Finish" )

@@ -35,23 +35,26 @@ from __future__ import print_function
 
 import os
 import global_def
+from global_def import sxprint, ERROR
+
 from   global_def import *
 from   optparse import OptionParser
 import sys
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + """ 2Dprojections plot_output
-
-Read projection angles from 2Dprojections file or from a text file and write a 2D image file
-containing their distribution on a hemisphere."""
+	usage = progname + "2Dprojections plot_output Read projection angles from 2Dprojections file or from a text file and write a 2D image file containing their distribution on a hemisphere."
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--wnx",       type="int",  default=256,             help="plot image size (default = 256)")
 
 	(options, args) = parser.parse_args()
+
 	if len(args) != 2:
-		print("usage: " + usage)
-		print("Please run '" + progname + """ -h' for detailed options""")
+		sxprint("Usage: " + usage)
+		sxprint("Please run \'" + progname + " -h\' for detailed options")
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
+
 	else:
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
@@ -62,4 +65,6 @@ containing their distribution on a hemisphere."""
 		global_def.BATCH = False
 
 if __name__ == "__main__":
-	        main()
+	global_def.print_timestamp( "Start" )
+	main()
+	global_def.print_timestamp( "Finish" )

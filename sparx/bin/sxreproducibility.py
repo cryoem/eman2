@@ -34,18 +34,21 @@ from __future__ import print_function
 from builtins import range
 import os
 import global_def
-from   global_def     import *
-from   optparse       import OptionParser
+from global_def import sxprint
+from   global_def import *
+from   optparse   import OptionParser
 import sys
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " averages1 averages2 --th_grp"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--T",           type="int",     default=0,        help=" Threshold for matching")
-	parser.add_option("--J",           type="int",     default=50,       help=" J")
-	parser.add_option("--max_branching",         type="int",     default=40,        help=" maximum branching")
-	parser.add_option("--verbose",     action="store_true",     default=False,        help=" Threshold for matching")
-	parser.add_option("--timing",      action="store_true",     default=False,        help=" Get the timing")
+	parser.add_option( "--T",             type="int",          default=0,     help=" Threshold for matching" )
+	parser.add_option( "--J",             type="int",          default=50,    help=" J" )
+	parser.add_option( "--max_branching", type="int",     	  default=40,     help=" maximum branching" )
+	parser.add_option( "--verbose",       action="store_true", default=False, help=" Threshold for matching" )
+	parser.add_option( "--timing",        action="store_true", default=False, help=" Get the timing" )
+
 	(options, args) = parser.parse_args()
 
 	if global_def.CACHE_DISABLE:
@@ -81,40 +84,43 @@ def main():
 	MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_bbenum(Parts, T=options.T, J=options.J, max_branching=options.max_branching, stmult=0.1, branchfunc=2)
 
 	if options.verbose:
-		print(MATCH)
-		print(STB_PART)
-		print(CT_s)
-		print(CT_t)
-		print(ST)
-		print(st)
-		print(" ")
+		sxprint(MATCH)
+		sxprint(STB_PART)
+		sxprint(CT_s)
+		sxprint(CT_t)
+		sxprint(ST)
+		sxprint(st)
+		sxprint(" ")
 
 	for i in range(len(MATCH)):
 		u = MATCH[i][0]  # u is the group in question in partition 1
 		assert len(STB_PART[u]) == CT_s[u]
-		print("Group ", end=' ') 
+		sxprint("Group ", end=' ') 
 		for r in range(R):
-			print("%3d "%(MATCH[i][r]), end=' ')
-		print(" matches:   group size = ", end=' ')
+			sxprint("%3d "%(MATCH[i][r]), end=' ')
+		sxprint(" matches:   group size = ", end=' ')
 		for r in range(R):
-			print(" %3d"%len(Parts[r][MATCH[i][r]]), end=' ') 
-		print("     matched size = %3d"%(CT_s[u]), end=' ')
+			sxprint(" %3d"%len(Parts[r][MATCH[i][r]]), end=' ') 
+		sxprint("     matched size = %3d"%(CT_s[u]), end=' ')
 		if options.verbose:
-			print("   matched group = %s"%(STB_PART[u]))
-		else: print("")
+			sxprint("   matched group = %s"%(STB_PART[u]))
+		else: 
+			sxprint("")
 
-	print("\nNumber of averages = ", end=' ')
+	sxprint("\nNumber of averages = ", end=' ')
 	for r in range(R):
-		print("%3d"%(avg[r]), end=' ')
-	print("\nTotal number of particles = ", end=' ')
+		sxprint("%3d"%(avg[r]), end=' ')
+	sxprint("\nTotal number of particles = ", end=' ')
 	for r in range(R):
-		print("%3d"%(mem[r]), end=' ') 
-	print("     number of matched particles = %5d"%(sum(CT_s)))
+		sxprint("%3d"%(mem[r]), end=' ') 
+	sxprint("     number of matched particles = %5d"%(sum(CT_s)))
 
 	if options.timing:
-		print("Elapsed time = ", time() - time1)
+		sxprint("Elapsed time = ", time() - time1)
 
 	global_def.BATCH = False
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

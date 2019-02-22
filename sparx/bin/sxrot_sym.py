@@ -34,9 +34,11 @@ from __future__ import print_function
 
 import os
 import global_def
+from global_def import sxprint, ERROR
 from global_def import *
 from optparse import OptionParser
 import sys
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " input_filename output_filename --sym=Symmetry group --phi --theta --psi=The 3 Eulerian angles in degrees --r=Radius of mask --phirange --thetarange --psirange=A search scale for each angle --ftol --xtol = convergence criterion the function and angles values"
@@ -51,11 +53,15 @@ def main():
 	parser.add_option("--psirange",   type='float',default=20.0,help=" The search scale for psi angle...default=20")
 	parser.add_option("--ftol",       type='float',default=1.e-4,help=" convergence criterion on the function values...default = 1.e-4")
 	parser.add_option("--xtol",       type='float',default=1.e-4,help=" convergence criterion on the variable values...default = 1.e-4")
-	(options, args) = parser.parse_args()    	
+	
+	(options, args) = parser.parse_args()
+	
 	if len(args) != 2:
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
-		exit(1)
+		sxprint("Usage: " + usage)
+		sxprint("Please run \'" + progname + " -h\' for detailed options")
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
+	
 	else:
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
@@ -66,4 +72,6 @@ def main():
 		global_def.BATCH = False
 	
 if __name__ == "__main__":
-	        main()
+	global_def.print_timestamp( "Start" )
+	main()
+	global_def.print_timestamp( "Finish" )

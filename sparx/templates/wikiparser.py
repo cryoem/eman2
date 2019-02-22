@@ -236,6 +236,17 @@ def construct_keyword_dict():
 	#keyword_dict["--symmetry"]                    = SXkeyword_map(2, "sym")                 # --symmetry
 	#keyword_dict["--max_occupy"]                  = SXkeyword_map(2, "int")                 # --max_occupy
 
+	#Added keywords for crYOLO
+	keyword_dict["--input_size"] = SXkeyword_map(0, "int")
+	keyword_dict["training_dir"] = SXkeyword_map(2, "dir")
+	keyword_dict["annot_dir"] = SXkeyword_map(2, "dir")
+	keyword_dict["valid_image_dir"] = SXkeyword_map(2, "dir")
+	keyword_dict["valid_annot_dir"] = SXkeyword_map(2, "dir")
+	keyword_dict["target_dir"] = SXkeyword_map(2, "dir")
+	keyword_dict["config_path"] = SXkeyword_map(2, "params_any_json")  # --import=INPUT_PARAMS_PATH
+	keyword_dict["model_path"] = SXkeyword_map(2, "params_any_h5")
+	keyword_dict["box_dir"] = SXkeyword_map(2, "dir")
+
 	# NOTE: 2018/02/06 Toshio Moriya
 	# Low-pass filter fall-off width does not make sense to convert to resolution [A] directly. 
 	# It might make more sense to compute Angstrom range from the given cutoff, falloff width, and pixel size
@@ -1867,7 +1878,7 @@ def add_sxcmd_subconfig_sort3d_depth_shared_sorting(token_edit_list):
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("swap_ratio"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("override"); token_edit_list.append(token_edit)
-	
+
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("depth_order"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("stop_mgskmeans_percentage"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("nsmear"); token_edit_list.append(token_edit)
@@ -1882,7 +1893,7 @@ def add_sxcmd_subconfig_sort3d_depth_shared_sorting(token_edit_list):
 	#token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("not_freeze_groups"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("compute_on_the_fly"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("check_smearing"); token_edit_list.append(token_edit)
-	
+
 
 ### # NOTE: 2018/01/08 Toshio Moriya
 ### # post-refiner embedded sort3d_depth is removed recently.
@@ -2284,15 +2295,18 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer_old.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_boxer_old(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/window.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_window_makevstack()))
+	sxcmd_config_list.append(SXcmd_config("../doc/cryolo_predict.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_alt"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_boxer(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_restacking.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/rewindow.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/cryolo_train.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/cryolo_boxmanager.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable=False))
 	sxcmd_config_list.append(SXcmd_config("../doc/batch.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
 
 	# --------------------------------------------------------------------------------
@@ -2441,6 +2455,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_changesize()))
 	sxcmd_config_list.append(SXcmd_config("../doc/e2proc3d.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_window()))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_angular_distribution.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/cryolo_boxmanager.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable=False))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_balance_angles()))
 ###	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_single_vol()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_single_vols()))

@@ -15,6 +15,10 @@ RECIPES_DIR=$(cd $(dirname $0)/../recipes && pwd -P)
 numpy_version=${1//.}
 
 CONDA_BLD=$(conda info --root)/conda-bld
+if [[ ! -d ${CONDA_BLD} ]]
+then
+    CONDA_BLD=$(dirname ${CONDA_EXE})/../conda-bld
+fi
 
 conda install fftw-mpi --yes --force-reinstall --override-channels -c file://${CONDA_BLD}
 conda install pydusa=1.15=np${numpy_version}* --force-reinstall --yes -c file://${CONDA_BLD} --override-channels

@@ -33,6 +33,7 @@ from __future__ import print_function
 
 from builtins import range
 import global_def
+from global_def import sxprint, ERROR
 from   global_def import *
 
 from   optparse import OptionParser
@@ -56,8 +57,9 @@ def main():
 	(options, args) = parser.parse_args( arglist[1:] )
 
 	if( len(args) != 2):
-		print("usage: " + usage)
-		return None
+		sxprint("Usage: " + usage)
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
 
 	from math import sqrt
 	nimage = EMUtil.get_image_count( args[0] )
@@ -78,4 +80,6 @@ def main():
 
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )
