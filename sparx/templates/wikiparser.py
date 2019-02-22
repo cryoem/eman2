@@ -236,6 +236,15 @@ def construct_keyword_dict():
 	#keyword_dict["--symmetry"]                    = SXkeyword_map(2, "sym")                 # --symmetry
 	#keyword_dict["--max_occupy"]                  = SXkeyword_map(2, "int")                 # --max_occupy
 
+	# Added keywords for ctf refine
+	keyword_dict["inputstack"] = SXkeyword_map(2, "dir")
+	keyword_dict["outstack"] = SXkeyword_map(2, "dir")
+	keyword_dict["output_directory"] = SXkeyword_map(2, "dir")
+	keyword_dict["refinement_dir"] = SXkeyword_map(2, "dir")
+	keyword_dict["--range"] = SXkeyword_map(2, "float")
+	keyword_dict["--delta"] = SXkeyword_map(2, "float")
+	keyword_dict["--resolution"] = SXkeyword_map(2, "float")
+	keyword_dict["--number_part"] = SXkeyword_map(2, "int")
 	# NOTE: 2018/02/06 Toshio Moriya
 	# Low-pass filter fall-off width does not make sense to convert to resolution [A] directly. 
 	# It might make more sense to compute Angstrom range from the given cutoff, falloff width, and pixel size
@@ -2105,7 +2114,6 @@ def build_config_list_MoinMoinWiki():
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/pipe_organize_micrographs.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_window"
 
@@ -2276,6 +2284,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/batch.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/gui_ctfrefine.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable=False))
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_window"
@@ -2363,6 +2372,9 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_angular_distribution.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_balance_angles()))
 	sxcmd_config_list.append(SXcmd_config("../doc/batch.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
+	sxcmd_config_list.append(
+		SXcmd_config("../doc/gui_ctfrefine.txt", "DokuWiki", sxcmd_category, sxcmd_role,
+					 is_submittable=False))
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_sort3d"
