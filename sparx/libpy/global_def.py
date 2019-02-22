@@ -38,10 +38,12 @@ import sys
 import time
 import inspect
 
-import mpi
-
 from EMAN2  import Util, EMData, EMUtil, Transform
+from EMAN2_meta import DATESTAMP
+
 from random import seed
+
+import mpi
 
 # set global random seed
 rand_seed = Util.get_randnum_seed()
@@ -82,8 +84,6 @@ CACHE_DISABLE = False
 
 
 #________________________________________ System settings: please do not change
-
-from EMAN2_meta import DATESTAMP
 
 global SPARXVERSION
 SPARXVERSION = "SPHIRE v1.2 [rc6] (GitHub: " + DATESTAMP + ")"
