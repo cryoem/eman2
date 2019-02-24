@@ -66,7 +66,7 @@ def parse_args():
 	group_expert = parser.add_argument_group('Expert options')
 	group_expert.add_argument('--min_shift_initial', default=2.0, help='Minimum shift for initial search (A)')
 	group_expert.add_argument('--outer_radius', default=20.0, help='Outer radius shift limit (A)')
-	group_expert.add_argument('--b_factor', default=1500, help='B-factor to apply to images (A^2)')
+	group_expert.add_argument('--b_factor', default=1500.0, help='B-factor to apply to images (A^2)')
 	group_expert.add_argument('--half_width_vert', default=1, help='Half-width of vertical Fourier mask')
 	group_expert.add_argument('--half_width_hor', default=1, help='Half-width of horizontal Fourier mask')
 	group_expert.add_argument('--termination', default=1, help='Termination shift threshold (A)')

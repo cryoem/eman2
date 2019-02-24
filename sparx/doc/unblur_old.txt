@@ -111,7 +111,7 @@ sparx/bin/sxunblur_old.py
 
 \\
 ==== See also ====
-[[pipeline:movie:sxgui_unblur_old|sxgui_unblur_old]]
+[[pipeline:movie:sxgui_unblur|sxgui_unblur]]
 
 \\
 ==== Maturity ====
