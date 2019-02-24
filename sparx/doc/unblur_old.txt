@@ -1,7 +1,7 @@
 ~~NOTOC~~
 
 ===== sxunblur_old =====
-Micrograph Movie Alignment: Align frames of micrograph movies with [[http://grigoriefflab.janelia.org/unblur|Unblur & Summovie]].
+Unblur 1.0.2 (Pre cisTEM): Align frames of micrograph movies with [[http://grigoriefflab.janelia.org/unblur|Unblur & Summovie]].
 
 \\
 ===== Usage =====
