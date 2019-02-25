@@ -1,0 +1,75 @@
+~~NOTOC~~
+
+===== sxctf_refine meridien =====
+CTF refine: Refine the defocus per particle
+
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sxrefinectf.py meridien path_to_input_stack path_to_output_stack output_directory refinement_dir  --mask=path_to_mask --range=defocus_range --delta=defocus_delta --resolution=nominal_resolution --pixelsize=pixelsize --number_particles=number_part
+
+\\
+===== Typical usage =====
+
+Before doing defocus refinement, you should have reached ~4 angstrom.
+sxctf_refine.py exists only in non-MPI version.
+
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; path_to_input_stack : Input stack path  : Path to input stack. (default none)
+  ; path_to_output_stack : Output stack : Path to output stack. (default required)
+  ; output_directory : Output directory : Folder to write statistics etc. (default none)
+  ; refinement_dir : Meridien directory : Path to Merdien directory.  (default required)
+  ; %%--%%mask : Path to mask : Path to mask used. (default none)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%range : Defocus serach range [default 0.15] : Search range around the current defocus value. (default 0.15)
+  ; %%--%%delta : Defocus search delta [default 0.0025] : Finest search delta. (default 0.0025)
+  ; %%--%%resolution : Nominal resolution [Angstrom] : Nominal resolution of the reconstruction. (default None)
+  ; %%--%%pixelsize : Pixelsize [Angstrom] : Pixelsize in Angstrom. (default None) : %%--%%resolution!=None
+  ; %%--%%number_part : Number of particles : Number of particles to process. Mainly for debugging. (default none)
+
+\\
+===== Output =====
+It will write a virtual stack with updated defocus information in the header. Furthermore it
+creates plot for error in the your output directory
+
+\\
+=== List of Output Files ===
+- A virtual stack with updated header information
+In your output dir:
+- particle_results.txt: list with PARTICLE_ID,ERROR,NEW_DEFOCUS,SIGNIFICANCE
+- error_cdf.png: Plot of the error distribution
+- img folder: One image per micrograph containing defocus maps and error maps
+
+
+\\
+==== Method ====
+-
+
+\\
+==== Developer Notes ====
+=== 2019/02/21 Thorsten Wagner ===
+  * Initial creation of the document
+
+\\
+==== Reference ====
+-
+
+\\
+==== Author / Maintainer ====
+Thorsten Wagner
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sparx/bin/sxctf_refine.py
