@@ -72,4 +72,4 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxctf_refine_wrp.py
+sparx/bin/sxctf_refine.py
