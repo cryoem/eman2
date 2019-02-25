@@ -3214,6 +3214,10 @@ def simctf2_pap(dz, data):
 	#print  data
 	#print dz, data[4], data[5], data[6], 0.0, data[7], data[3], data[8]
 	pc = ctf_rimg(data[2], sparx_utilities.generate_ctf([dz, data[4], data[5], data[6], 0.0, data[7], data[3], data[8]]), sign=0)
+
+	print(pc.get_3dview())
+	print(numpy.shape(pc.get_3dview()))
+
 	bcc = pc.cmp("dot", data[0], {"mask":data[1], "negative":0, "normalize":1})
 	#print " simctf2   ",amp,-bcc
 	return  -bcc

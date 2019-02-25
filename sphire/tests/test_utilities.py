@@ -557,6 +557,7 @@ class Test_lib_utilities_compare(unittest.TestCase):
             argum = pickle.load(rb)
 
         print(argum[0])
+        print(argum)
 
         (ima,) = argum[0]
 
@@ -785,26 +786,26 @@ class Test_lib_utilities_compare(unittest.TestCase):
        commented,  will uncomment it once everything is done 
     """
     """  Test works with sym = "c1 but fails with sym = "c5"  """
-    # def test_angular_occupancy_true_should_return_equal_objects(self):
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.angular_occupancy")
-    #     with open(filepath, 'rb') as rb:
-    #         argum = pickle.load(rb)
-    #
-    #     # print(argum[0])
-    #
-    #
-    #     (params, angstep, sym, method) = argum[0]
-    #
-    #     print("params = ", params)
-    #     print("angstep = ", angstep)
-    #     print("sym = ", sym)
-    #     print("method = ", method)
-    #
-    #     return_new = fu.angular_occupancy(params, angstep)
-    #
-    #     return_old = oldfu.angular_occupancy(params, angstep)
-    #
-    #     self.assertEqual(return_new, return_old)
+    def test_angular_occupancy_true_should_return_equal_objects(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.angular_occupancy")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        # print(argum[0])
+
+
+        (params, angstep, sym, method) = argum[0]
+
+        print("params = ", params)
+        print("angstep = ", angstep)
+        print("sym = ", sym)
+        print("method = ", method)
+
+        return_new = fu.angular_occupancy(params, angstep, sym, method)
+
+        return_old = oldfu.angular_occupancy(params, angstep, sym, method)
+
+        self.assertEqual(return_new, return_old)
 
 
     def test_get_pixel_size_true_should_return_equal_objects(self):

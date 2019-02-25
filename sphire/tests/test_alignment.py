@@ -17,7 +17,10 @@ print(ABSOLUTE_PATH)
 from ..libpy import sparx_alignment as fu
 from .sparx_lib import sparx_alignment as oldfu
 from ..libpy import sparx_utilities as ut
+from .sparx_lib import sparx_fundamentals
+from .sparx_lib import sparx_morphology as morp
 
+import EMAN2_cppwrap
 
 def get_data(num,dim = 10):
     data_list = []
@@ -93,7 +96,8 @@ class Test_lib_alignment_compare(unittest.TestCase):
         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ringwe")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
-            (numr) = argum[0][0]
+
+        (numr) = argum[0][0]
 
         return_new = fu.ringwe(numr)
         return_old = oldfu.ringwe(numr)
@@ -106,7 +110,8 @@ class Test_lib_alignment_compare(unittest.TestCase):
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
             print(argum)
-            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = argum[0]
+
+        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = argum[0]
 
         return_new = fu.ornq(image,crefim,xrng,yrng,step,mode,numr,cnx,cny)
         return_old = fu.ornq(image,crefim,xrng,yrng,step,mode,numr,cnx,cny)
@@ -116,44 +121,58 @@ class Test_lib_alignment_compare(unittest.TestCase):
         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ormq")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
-            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = argum[0]
+
+        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = argum[0]
 
         return_new = fu.ormq(image,crefim,xrng,yrng,step,mode,numr,cnx,cny,delta)
         return_old = fu.ormq(image,crefim,xrng,yrng,step,mode,numr,cnx,cny,delta)
 
         self.assertEqual(return_new, return_old)
 
+
+    """This function does not seem to be use anywhere so I wont be creating a unit test for this function"""
     # def test_ormq_fast_true_should_return_equal_object(self):
     #
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq")
+    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ormq")
     #     with open(filepath, 'rb') as rb:
-    #         argum = pickle.load(rb)
-    #         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = argum[0]
+    #         arguma= pickle.load(rb)
     #
-    #     return_new = fu.ormq_fast(image, crefim, xrng[0], yrng[0], step, numr, mode)
-    #     return_old = fu.ormq_fast(image, crefim, xrng[0], yrng[0], step, numr, mode)
+    #     (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = arguma[0]
+    #
+    #
+    #
+    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ali2d_single_iter")
+    #     with open(filepath, 'rb') as rb:
+    #         argumb = pickle.load(rb)
+    #
+    #     (dataa, numra, wra, csa, tavga, cnxa, cnya, xrnga, yrnga, stepa) = argumb[0]
+    #     dataa = copy.deepcopy(argumb[0][0])
+    #
+    #
+    #
+    #     return_new = fu.ormq_fast(dataa, crefim, xrnga, yrnga, stepa, numra, mode)
+    #     return_old = fu.ormq_fast(dataa, crefim, xrnga, yrnga, stepa, numra, mode)
     #
     #     self.assertTrue(return_new, return_old)
 
 
-    # def test_prepref_true_should_return_equal_object(self):
-    # dont know what should be maskfile
-    #     a,b,c = get_data(3)
-    #     data = [a,b,c]
-    #     maskfile = b
-    #     mode   = 'f'
-    #     numr = [int(entry) for entry in numpy.arange(0, 20).tolist()]
-    #     cnx  = 2
-    #     cny  = 2
-    #     maxrangex = 5
-    #     maxrangey = 5
-    #     step = 3
-    #
-    #
-    #     return_new = fu.prepref(data,maskfile,cnx,cny,numr,mode,maxrangex,maxrangey,step)
-    #     return_old = fu.prepref(data,maskfile,cnx,cny,numr,mode,maxrangex,maxrangey,step)
-    #
-    #     self.assertEqual(return_new, return_old)
+    def test_prepref_true_should_return_equal_object(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ali2d_single_iter")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        (data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = argum[0]
+
+        mode   = 'f'
+        maxrangex = 4
+        maxrangey = 4
+        maskfile = None
+
+        return_new = fu.prepref(data,maskfile,cnx,cny,numr,mode,maxrangex,maxrangey,step)
+        return_old = oldfu.prepref(data,maskfile,cnx,cny,numr,mode,maxrangex,maxrangey,step)
+
+
+        self.assertTrue(return_old,return_new)
 
 
     # def test_prepare_refrings_true_should_return_equal_object(self):
@@ -171,6 +190,55 @@ class Test_lib_alignment_compare(unittest.TestCase):
     #     # return_old = oldfu.prepare_refrings(volft,kb)
     #     #
     #     # self.assertEqual(return_old,return_new)
+
+
+    def test_proj_ali_incore_true_should_return_equal_object(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.shc")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        print(argum)
+        print(len(argum[0]))
+        print(argum[0][4])
+
+        (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = argum[0]
+
+        return_new = fu.proj_ali_incore(data, refrings, numr, xrng, yrng, step)
+
+        return_old = oldfu.proj_ali_incore(data, refrings, numr, xrng, yrng, step)
+
+        self.assertTrue(return_old, return_new)
+
+    """ Core dump issue    """
+    def test_proj_ali_incore_local_true_should_return_equal_object(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.shc")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = argum[0]
+
+        print(argum)
+
+        an = -1.0
+        xrng = 2.0
+        yrng = 2.0
+        nsym =1
+        symangles = []
+
+        for k in range(len(refrings)):
+            # for i in range(nsym):
+            symangles.append([0.0, 0.0, 1 * 360. / nsym])
+
+        list_of_ref_ang_new = fu.generate_list_of_reference_angles_for_search(symangles, 'c1')
+        list_of_ref_ang_old = oldfu.generate_list_of_reference_angles_for_search(symangles, 'c1')
+
+
+        return_new = fu.proj_ali_incore_local(data, refrings, list_of_ref_ang_new, numr, xrng, yrng, step, an)
+
+        return_old = oldfu.proj_ali_incore_local(data, refrings, list_of_ref_ang_old, numr, xrng, yrng, step, an)
+
+        self.assertTrue(return_old, return_new)
+
 
     def test_ali_vol_func_true_should_return_equal_object(self):
         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ali_vol_func")
@@ -190,8 +258,9 @@ class Test_lib_alignment_compare(unittest.TestCase):
         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.align2d_scf")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
-            (image,refim, xrng, yrng) = argum[0]
-            (ou) = argum[1]['ou']
+
+        (image,refim, xrng, yrng) = argum[0]
+        (ou) = argum[1]['ou']
 
         return_new = fu.align2d(image,refim)
         return_old = oldfu.align2d(image,refim)
@@ -203,11 +272,35 @@ class Test_lib_alignment_compare(unittest.TestCase):
         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.align2d_scf")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
-            (image,refim, xrng, yrng) = argum[0]
-            (ou) = argum[1]['ou']
+
+        (image,refim, xrng, yrng) = argum[0]
+        (ou) = argum[1]['ou']
 
         return_new = fu.align2d_scf(image,refim,xrng,yrng, ou)
         return_old = oldfu.align2d_scf(image,refim,xrng,yrng, ou)
+
+        self.assertEqual(return_old, return_new)
+
+
+    def test_multalign2d_scf_true_should_return_equal_object(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ali2d_single_iter")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+            # print(argum[0])
+
+        (dataa, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = argum[0]
+
+        dataa = copy.deepcopy(argum[0][0])
+
+        mode = "F"
+        ou = 174
+
+        cimage = EMAN2_cppwrap.Util.Polar2Dm(tavg, float(cnx), float(cny), numr, mode)
+        frotim = [sparx_fundamentals.fft(tavg)]
+
+
+        return_new = fu.multalign2d_scf(dataa[0],[cimage],frotim, numr, xrng,yrng, ou)
+        return_old = oldfu.multalign2d_scf(dataa[0],[cimage],frotim, numr, xrng,yrng, ou)
 
         self.assertEqual(return_old, return_new)
 
@@ -261,6 +354,7 @@ class Test_lib_alignment_compare(unittest.TestCase):
 
         return_new = fu.generate_list_of_reference_angles_for_search(symangles , 'c5')
         return_old = oldfu.generate_list_of_reference_angles_for_search(symangles, 'c5')
+
 
         self.assertEqual(return_old, return_new)
 

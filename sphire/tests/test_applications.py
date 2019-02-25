@@ -45,21 +45,33 @@ class Test_lib_applications_compare(unittest.TestCase):
     #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.ali2d_base")
     #     with open(filepath, 'rb') as rb:
     #         argum = pickle.load(rb)
-    #         print(argum[0])
-    #         print(argum[1])
     #
     #     (stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, nomirror, dst, center, maxit, CTF, snr,
     #      Fourvar, user_func_name, random_method, log, number_of_proc, myid, main_node, mpi_comm) = argum[0]
     #
     #     outdirnew = os.path.join(ABSOLUTE_PATH, outdir+'AA')
-    #     print(outdirnew)
-    #     print(outdir)
-    #     # if os.path.isdir(os.path.join(ABSOLUTE_PATH , 'Class2D')):
-    #     #     os.mkdir(ABSOLUTE_PATH + '/Class2D'+ '/2ddalignment')
     #
     #     number_of_proc = 1
-    #     myid = 82
+    #     myid = 12
     #     main_node = 0
+    #
+    #
+    #     import sparx_utilities
+    #     import EMAN2_cppwrap
+    #     import EMAN2db
+    #
+    #     stack = "bdb:Class2D/EMAN2DB/stack"
+    #
+    #     """  Test face  """
+    #     ftp = sparx_utilities.file_type(stack)
+    #
+    #     print(ftp)
+    #
+    #
+    #     dummy = EMAN2db.db_open_dict(stack, True)
+    #     nima = EMAN2_cppwrap.EMUtil.get_image_count(stack)
+    #     print(nima)
+    #
     #
     #     return_new = fu.ali2d_MPI(stack, outdirnew, maskfile=maskfile, ir=ir, ou=ou, rs=rs, xr=xr, yr=yr, \
     #                                ts=ts, nomirror=nomirror, dst=dst, center=center, maxit=maxit, CTF=True, snr=snr, \
@@ -82,17 +94,11 @@ class Test_lib_applications_compare(unittest.TestCase):
         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.ali2d_base")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
-            print(argum[0])
-            print(argum[1])
 
         (stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, nomirror, dst, center, maxit, CTF, snr,
          Fourvar, user_func_name, random_method, log ,number_of_proc, myid, main_node, mpi_comm) = argum[0]
 
         outdirnew = os.path.join(ABSOLUTE_PATH, outdir+'B')
-        print(outdirnew)
-        print(outdir)
-        # if os.path.isdir(os.path.join(ABSOLUTE_PATH , 'Class2D')):
-        #     os.mkdir(ABSOLUTE_PATH + '/Class2D'+ '/2ddalignment')
 
         number_of_proc = 1
         myid = 0

@@ -1923,7 +1923,7 @@ def angular_occupancy(params, angstep = 15., sym= "c1", method='S'):
 	for i,q in enumerate(params):
 		l = nearest_fang(seaf,q[0],q[1])
 		l = l/lseaf
-		if(l>=leah):  l = l-leah
+		if(l>=leah):  l = l%leah
 		occupancy[l].append(i)
 	#for i,q in enumerate(occupancy):
 	#	if q:

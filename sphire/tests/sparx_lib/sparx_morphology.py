@@ -1406,7 +1406,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				"""
 				bamp = 0.7
 				bang = 37.0
-				
+			
 				data = [qse, mask, wn, bamp, Cs, voltage, pixel_size, wgh, bang]
 				astdata = [crefim, numr, wn, bdef, Cs, voltage, Pixel_size, wgh, bang]
 				print " VALUE AT THE BEGGINING OF while LOOP  ",bdef,bamp,bang,simctf2(bdef, data),fastigmatism3(bamp,astdata,mask)

@@ -39,6 +39,17 @@ def get_data_3d(num, dim=10):
 
     return data_list
 
+
+def get_data_3d_special(num, dim=10):
+    data_list = []
+    for i in range(num):
+        a = e2cpp.EMData(1, dim,dim)
+        data_a = a.get_3dview()
+        data_a[...] = numpy.arange(1 * dim * dim, dtype=numpy.float32).reshape(dim, dim, dim) + i
+        data_list.append(a)
+
+    return data_list
+
 def get_data_gauss_noise():
     dim = 10
     return ut.model_gauss_noise(0.25 , dim,dim,dim)
@@ -259,13 +270,13 @@ class MyTestCase(unittest.TestCase):
 
         self.assertTrue(return_new, return_old)
 
-    def test_adaptive_mask_true_should_return_equal_object(self):
-        image, = get_data_3d(1)
-
-        return_new = fu.adaptive_mask(image)
-        return_old = oldfu.adaptive_mask(image)
-
-        self.assertTrue(return_new, return_old)
+    # def test_adaptive_mask_true_should_return_equal_object(self):
+    #     image, = get_data_3d(1)
+    #
+    #     return_new = fu.adaptive_mask(image)
+    #     return_old = oldfu.adaptive_mask(image)
+    #
+    #     self.assertTrue(return_new, return_old)
 
 
     def test_cosinemask_true_should_return_equal_object(self):
@@ -319,11 +330,11 @@ class MyTestCase(unittest.TestCase):
         image1, = get_data(1, 256)
 
         micrograph_image = ft.filt_ctf(image1,ctf)
-        micrograph_image.write_image('sphire/tests/files/cter_mrk/image.mrc')
+        micrograph_image.write_image('cter_mrk/image.mrc')
         selection_list = 'image.mrc'
 
-        input_image_path = os.path.join(ABSOLUTE_PATH, "files/cter_mrk/image*.mrc")
-        output_directory = os.path.join(ABSOLUTE_PATH, "files/cter_mrk/results")
+        input_image_path = os.path.join(ABSOLUTE_PATH, "cter_mrk/image*.mrc")
+        output_directory = os.path.join(ABSOLUTE_PATH, "cter_mrk/results")
         if os.path.isdir(output_directory):
             shutil.rmtree(output_directory)
 
@@ -353,11 +364,11 @@ class MyTestCase(unittest.TestCase):
         image1, = get_data(1, 256)
 
         micrograph_image = ft.filt_ctf(image1,ctf)
-        micrograph_image.write_image('sphire/tests/files/cter_mrk/image.mrc')
+        micrograph_image.write_image('cter_mrk/image.mrc')
         selection_list = 'image.mrc'
 
-        input_image_path = os.path.join(ABSOLUTE_PATH, "files/cter_mrk/image*.mrc")
-        output_directory = os.path.join(ABSOLUTE_PATH, "files/cter_mrk/results")
+        input_image_path = os.path.join(ABSOLUTE_PATH, "cter_mrk/image*.mrc")
+        output_directory = os.path.join(ABSOLUTE_PATH, "cter_mrk/results")
         if os.path.isdir(output_directory):
             shutil.rmtree(output_directory)
 
@@ -543,9 +554,12 @@ class MyTestCase(unittest.TestCase):
 
 
     def test_fastigmatism3_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.ornq")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq")
         with open(filepath, 'rb') as rb:
-            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi) = pickle.load(rb)
+            argum = pickle.load(rb)
+            print(argum)
+
+        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = argum[0]
         amp = 4
         defocus = 0
         Cs = 2
@@ -563,9 +577,12 @@ class MyTestCase(unittest.TestCase):
 
 
     def test_fastigmatism3_pap_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.ornq")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq")
         with open(filepath, 'rb') as rb:
-            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi) = pickle.load(rb)
+            argum = pickle.load(rb)
+            print(argum)
+
+        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = argum[0]
         amp = 4
         defocus = 0
         Cs = 2
@@ -583,55 +600,67 @@ class MyTestCase(unittest.TestCase):
 
 
     def test_simctf2_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.ornq")
-        with open(filepath, 'rb') as rb:
-            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi) = pickle.load(rb)
 
-        amp = 4
-        defocus = 0.0
-        Cs = 2
-        voltage = 300
-        pixel_size = 1.09
-        amp_contrast = 0.1
-        bfactor = 0.0
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.generate_ctf")
+        with open(filepath, 'rb') as rb:
+            arguma = pickle.load(rb)
+
+        defocus = arguma[0][0][0]
+        cs = arguma[0][0][1]
+        voltage = arguma[0][0][2]
+        pixel_size = arguma[0][0][3]
+        bfactor = arguma[0][0][4]
+        amp_contrast = arguma[0][0][5]
+        dfdiff = arguma[0][0][6]
+        dfang = arguma[0][0][7]
         nx = 352
 
-        print(numpy.shape(crefim.get_3dview()))
-        print(numpy.shape(image.get_3dview()))
+        dz = defocus
 
-        data = [image, image, nx, defocus, Cs, voltage, pixel_size, bfactor, amp_contrast, 0.0]
+        image1, = get_data(1, nx)
 
-        return_new = fu.simctf2(0.0,data)
-        return_old = oldfu.simctf2(0.0,data)
+        data = [image1, image1, nx,  dfdiff, cs, voltage, pixel_size, amp_contrast ,dfang ]
+
+        return_new = fu.simctf2(dz,data)
+
+        return_old = oldfu.simctf2(dz,data)
 
         self.assertTrue(return_new, return_old)
 
 
-
     def test_simctf2_pap_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.ornq")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.generate_ctf")
         with open(filepath, 'rb') as rb:
-            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi) = pickle.load(rb)
+            arguma = pickle.load(rb)
 
-        amp = 4
-        defocus = 0.0
-        Cs = 2
-        voltage = 300
-        pixel_size = 1.09
-        amp_contrast = 0.1
-        bfactor = 0.0
+        defocus = arguma[0][0][0]
+        cs = arguma[0][0][1]
+        voltage = arguma[0][0][2]
+        pixel_size = arguma[0][0][3]
+        bfactor = arguma[0][0][4]
+        amp_contrast = arguma[0][0][5]
+        dfdiff = arguma[0][0][6]
+        dfang = arguma[0][0][7]
         nx = 352
-        data = [image, image, nx, defocus, Cs, voltage, pixel_size, bfactor, amp_contrast,0.0]
 
-        return_new = fu.simctf2_pap(0.0,data)
-        return_old = oldfu.simctf2_pap(0.0,data)
+        dz = defocus
+
+        image1, = get_data(1, nx)
+
+        data = [image1, image1, nx,  dfdiff, cs, voltage, pixel_size, amp_contrast ,dfang ]
+
+        return_new = fu.simctf2_pap(dz,data)
+        return_old = oldfu.simctf2_pap(dz,data)
 
         self.assertTrue(return_new, return_old)
 
     def test_fupw_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.ornq")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq")
         with open(filepath, 'rb') as rb:
-            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi) = pickle.load(rb)
+            argum = pickle.load(rb)
+            print(argum)
+
+        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = argum[0]
         amp = 4
         defocus = 0
         Cs = 2
@@ -650,9 +679,12 @@ class MyTestCase(unittest.TestCase):
         self.assertTrue(return_new, return_old)
 
     def test_fupw_pap_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.ornq")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq")
         with open(filepath, 'rb') as rb:
-            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi) = pickle.load(rb)
+            argum = pickle.load(rb)
+            print(argum)
+
+        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = argum[0]
         amp = 4
         defocus = 0
         Cs = 2
@@ -689,11 +721,11 @@ class MyTestCase(unittest.TestCase):
         image1, = get_data(1, 256)
 
         micrograph_image = ft.filt_ctf(image1,ctf)
-        micrograph_image.write_image('sphire/tests/files/cter_mrk/image.mrc')
+        micrograph_image.write_image('cter_mrk/image.mrc')
         selection_list = 'image.mrc'
 
-        input_image_path = os.path.join(ABSOLUTE_PATH, "files/cter_mrk/image*.mrc")
-        output_directory = os.path.join(ABSOLUTE_PATH, "files/cter_mrk/results")
+        input_image_path = os.path.join(ABSOLUTE_PATH, "cter_mrk/image*.mrc")
+        output_directory = os.path.join(ABSOLUTE_PATH, "cter_mrk/results")
         if os.path.isdir(output_directory):
             shutil.rmtree(output_directory)
 
@@ -750,9 +782,13 @@ class MyTestCase(unittest.TestCase):
             self.assertTrue(return_new, return_old)
 
     def test_fupw_vpp_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.ornq")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq")
         with open(filepath, 'rb') as rb:
-            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi) = pickle.load(rb)
+            argum = pickle.load(rb)
+            print(argum)
+
+        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = argum[0]
+
         amp = 4
         defocus = 0
         Cs = 2
@@ -772,9 +808,13 @@ class MyTestCase(unittest.TestCase):
         self.assertTrue(return_new, return_old)
 
     def test_fastigmatism3_vpp_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.ornq")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq")
         with open(filepath, 'rb') as rb:
-            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi) = pickle.load(rb)
+            argum = pickle.load(rb)
+            print(argum)
+
+        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = argum[0]
+
         amp = 4
         defocus = 0
         Cs = 2
@@ -795,12 +835,15 @@ class MyTestCase(unittest.TestCase):
 
 
     def test_ornq_vpp_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.ornq")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq")
         with open(filepath, 'rb') as rb:
-            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi) = pickle.load(rb)
+            argum = pickle.load(rb)
+            print(argum)
 
-        return_new = fu.ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi)
-        return_old = oldfu.ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi)
+        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = argum[0]
+
+        return_new = fu.ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
+        return_old = oldfu.ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
 
         self.assertTrue(return_new, return_old)
 

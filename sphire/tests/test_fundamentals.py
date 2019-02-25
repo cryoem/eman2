@@ -249,14 +249,14 @@ class TestSymClassInitC(unittest.TestCase):
     def test_c1_should_return_correct_brackets(self):
         nsym = 1
         fubrackets =  fu.symclass('c1').brackets == [
-            [360./nsym, 90.0, 360./nsym, 90.0],
-            [360./nsym, 180.0, 360./nsym, 180.0]
-            ]
+            [ old_div(360., nsym), 90.0, old_div(360., nsym), 90.0],
+            [ old_div(360., nsym), 180.0, old_div(360., nsym), 180.0]
+                    ]
 
         oldfubrackets =  oldfu.symclass('c1').brackets == [
-            [360./nsym, 90.0, 360./nsym, 90.0],
-            [360./nsym, 180.0, 360./nsym, 180.0]
-            ]
+            [ old_div(360., nsym), 90.0, old_div(360., nsym), 90.0],
+            [ old_div(360., nsym), 180.0, old_div(360., nsym), 180.0]
+                    ]
 
         self.assertEqual(fubrackets , oldfubrackets)
 
@@ -264,14 +264,14 @@ class TestSymClassInitC(unittest.TestCase):
     def test_c5_should_return_correct_brackets(self):
         nsym = 1
         fubrackets =  fu.symclass('c5').brackets == [
-            [360./nsym, 90.0, 360./nsym, 90.0],
-            [360./nsym, 180.0, 360./nsym, 180.0]
-            ]
+            [ old_div(360., nsym), 90.0, old_div(360., nsym), 90.0],
+            [ old_div(360., nsym), 180.0, old_div(360., nsym), 180.0]
+                    ]
 
         oldfubrackets =  oldfu.symclass('c5').brackets == [
-            [360./nsym, 90.0, 360./nsym, 90.0],
-            [360./nsym, 180.0, 360./nsym, 180.0]
-            ]
+            [ old_div(360., nsym), 90.0, old_div(360., nsym), 90.0],
+            [ old_div(360., nsym), 180.0, old_div(360., nsym), 180.0]
+                    ]
 
         self.assertEqual(fubrackets , oldfubrackets)
 
@@ -279,7 +279,7 @@ class TestSymClassInitC(unittest.TestCase):
         nsym = 1
         symangles = []
         for i in range(nsym):
-            symangles.append([0.0, 0.0, i * 360. / nsym])
+            symangles.append([0.0, 0.0, i * old_div(360., nsym)])
 
         self.assertEqual(fu.symclass('c1').symangles, symangles)
         self.assertEqual(oldfu.symclass('c1').symangles, symangles)
@@ -288,7 +288,7 @@ class TestSymClassInitC(unittest.TestCase):
         nsym = 5
         symangles = []
         for i in range(nsym):
-            symangles.append([0.0, 0.0, i * 360. / nsym])
+            symangles.append([0.0, 0.0, i * old_div(360., nsym)])
 
         self.assertEqual(fu.symclass('c5').symangles, symangles)
         self.assertEqual(oldfu.symclass('c5').symangles, symangles)
@@ -756,7 +756,7 @@ class TestSymClassSymmetryRelated(unittest.TestCase):
     def my_method(self, angles, sym, symatrix):
         if( sym[0] == "c" or sym[0] == "d" ):
             temp = e2cpp.Util.symmetry_neighbors(angles, sym)
-            nt = len(temp)//3
+            nt = old_div(len(temp), 3)
             return [[temp[l*3],temp[l*3+1],0.0] for l in range(nt) ]
         #  Note symmetry neighbors below refer to the particular order
         #   in which this class generates symmetry matrices
