@@ -71,7 +71,7 @@ def soft_edge(img, length, mode='c', do_approx=False):
 	"""
 	if isinstance(img, EMAN2_cppwrap.EMData):
 		img_data = EMAN2_cppwrap.EMNumPy.em2numpy(img)
-		return_object = EMAN2_cppwrap.EMData(*img_data.shape)
+		return_object = EMAN2_cppwrap.EMData(*img_data.shape[::-1])
 		return_data = EMAN2_cppwrap.EMNumPy.em2numpy(return_object)
 		out_eman = True
 	else:

@@ -38,6 +38,9 @@ from   EMAN2 import *
 from   sparx import *
 import os
 import global_def
+from   global_def import sxprint, ERROR
+
+
 from   global_def import *
 from   optparse import OptionParser
 import sys
@@ -290,7 +293,7 @@ def average_trans(params):
 				nas[0] += n1
 				nas[1] += n2
 				nas[2] += n3
-				print(qnom, n1,n2,n3,nas)
+				sxprint(qnom, n1,n2,n3,nas)
 			#  To get the correct pixer phi angle has to be taken from the above!!
 
 		nom = sqrt(nas[0]**2 + nas[1]**2 + nas[2]**2)
@@ -397,7 +400,7 @@ def main():
 					break
 			if isame: thesame += 1
 		qt = float(thesame)/nn
-		print("Proportion of the same orientations ",qt)
+		sxprint("Proportion of the same orientations ",qt)
 		write_text_file([qt], os.path.join(outdir,howmanythesame) )
 
 	#########     PHASE 3
@@ -476,7 +479,7 @@ def main():
 						nas[0] += n1
 						nas[1] += n2
 						nas[2] += n3
-						print(qnom, n1,n2,n3,nas)
+						sxprint(qnom, n1,n2,n3,nas)
 					#  To get the correct pixer phi angle has to be taken from the above!!
 					pixer[q[0][0]][j] = max_3D_pixel_error(fifi[0], fifi[1], r=radius)
 
@@ -503,12 +506,13 @@ def main():
 				if(pixer[q][k] > thresherr):  perr[q][k] = False
 				if  perr[q][k]: tgood += 1
 			if(tgood < 4):
-				print("  No good images within the pixel error threshold specified")
-				exit()
-		print(" tgood ", tgood)
+				ERROR( "No good images within the pixel error threshold specified" )
+				return
+
+		sxprint(" tgood ", tgood)
 		hi = hist_list([pixer[q][k] for q in blocks for k in range(chunklengths[q])  ],16)
 		for i in range(len(hi[0])):
-			print("%4d   %12.3f    %12.0f "%(i,hi[0][i],hi[1][i]))
+			sxprint("%4d   %12.3f    %12.0f "%(i,hi[0][i],hi[1][i]))
 		#  Finished, store average orientation params and table of good images
 
 
@@ -657,11 +661,11 @@ def main():
 								n2=t2
 								n3=t3
 							#if(k == 2):
-							#	print '  t1,t2,t3 ',fifi[i][0]+j*qsym,fifi[i][1],t1,t2,t3,nom,qnom
+							#	sxprint '  t1,t2,t3 ',fifi[i][0]+j*qsym,fifi[i][1],t1,t2,t3,nom,qnom
 						nas[0] += n1
 						nas[1] += n2
 						nas[2] += n3
-						print(qnom, n1,n2,n3,nas)
+						sxprint(qnom, n1,n2,n3,nas)
 					#  To get the correct pixer phi angle has to be taken from the above!!
 
 				nom = sqrt(nas[0]**2 + nas[1]**2 + nas[2]**2)
@@ -674,7 +678,7 @@ def main():
 					if(sym>1 and ntheta>90.0):  nphi   = (degrees(atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
 					else:                       nphi   =  degrees(atan2( nas[1], nas[0] ))%qsym
 
-				#print   "FIFI     %4d     %7.2f     %7.2f    %7.2f    %7.2f     %7.2f     %7.2f    %7.2f    %7.2f"%(k,fifi[0][0],fifi[0][1],fifi[1][0],fifi[1][1],fifi[2][0],fifi[2][1],nphi,ntheta)
+				#sxprint   "FIFI     %4d     %7.2f     %7.2f    %7.2f    %7.2f     %7.2f     %7.2f    %7.2f    %7.2f"%(k,fifi[0][0],fifi[0][1],fifi[1][0],fifi[1][1],fifi[2][0],fifi[2][1],nphi,ntheta)
 				twod = average2dtransform([params[ii][j][2:] for ii in range(ll)])
 				avgtrans[j] = [nphi, ntheta, twod[0], twod[1], twod[2]]
 
@@ -682,7 +686,7 @@ def main():
 			rescued = []
 			rejects = []
 			for j in range(nn):
-				#print  chr(65+jj),j,perr[j][0],[[params[m][j][i] for i in xrange(2)] for m in xrange(ll)]
+				#sxprint  chr(65+jj),j,perr[j][0],[[params[m][j][i] for i in xrange(2)] for m in xrange(ll)]
 				if( perr[j][0] <= thresherr ):  rescued.append([newbad[j],j])
 				else:							rejects.append([newbad[j],j])
 			if( len(rescued) == 0 ):    write_text_row([-1,-1],  os.path.join(outdir,"rescued%01d.txt"%jj))
@@ -696,9 +700,9 @@ def main():
 				for ii in range(ll):  write_text_row([params[ii][rejects[k][1]] for k in range(len(rejects))]  ,  os.path.join(outdir,"params-rejects%01d%01d.txt"%(jj,ii)))
 
 			hi = hist_list([perr[j][0]  for j in range(nn)  ], 16)
-			print("Pixel errors for BAD GROUP  ",chr(65+jj))
+			sxprint("Pixel errors for BAD GROUP  ",chr(65+jj))
 			for ii in range(len(hi[0])):
-				print("%4d   %12.3f    %12.0f "%(ii,hi[0][ii],hi[1][ii]))
+				sxprint("%4d   %12.3f    %12.0f "%(ii,hi[0][ii],hi[1][ii]))
 
 	elif options.phase == 5 and len(args) == 1:
 		#  This version is for meridien refinement.  There are simply three full sets of params.
@@ -748,11 +752,11 @@ def main():
 								n2=t2
 								n3=t3
 							#if(k == 2):
-							#	print '  t1,t2,t3 ',fifi[i][0]+j*qsym,fifi[i][1],t1,t2,t3,nom,qnom
+							#	sxprint '  t1,t2,t3 ',fifi[i][0]+j*qsym,fifi[i][1],t1,t2,t3,nom,qnom
 						nas[0] += n1
 						nas[1] += n2
 						nas[2] += n3
-						print(qnom, n1,n2,n3,nas)
+						sxprint(qnom, n1,n2,n3,nas)
 					#  To get the correct pixer phi angle has to be taken from the above!!
 
 				nom = sqrt(nas[0]**2 + nas[1]**2 + nas[2]**2)
@@ -765,7 +769,7 @@ def main():
 					if(sym>1 and ntheta>90.0):  nphi   = (degrees(atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
 					else:                       nphi   =  degrees(atan2( nas[1], nas[0] ))%qsym
 
-				#print   "FIFI     %4d     %7.2f     %7.2f    %7.2f    %7.2f     %7.2f     %7.2f    %7.2f    %7.2f"%(k,fifi[0][0],fifi[0][1],fifi[1][0],fifi[1][1],fifi[2][0],fifi[2][1],nphi,ntheta)
+				#sxprint   "FIFI     %4d     %7.2f     %7.2f    %7.2f    %7.2f     %7.2f     %7.2f    %7.2f    %7.2f"%(k,fifi[0][0],fifi[0][1],fifi[1][0],fifi[1][1],fifi[2][0],fifi[2][1],nphi,ntheta)
 				twod = average2dtransform([params[ii][j][2:] for ii in range(ll)])
 				avgtrans[j] = [nphi, ntheta, twod[0], twod[1], twod[2]]
 
@@ -774,7 +778,7 @@ def main():
 			rescued = []
 			rejects = []
 			for j in range(nn):
-				#print  chr(65+jj),j,perr[j][0],[[params[m][j][i] for i in xrange(2)] for m in xrange(ll)]
+				#sxprint  chr(65+jj),j,perr[j][0],[[params[m][j][i] for i in xrange(2)] for m in xrange(ll)]
 				if( perr[j][0] <= thresherr ):  rescued.append([newbad[j],j])
 				else:							rejects.append([newbad[j],j])
 			if( len(rescued) == 0 ):    write_text_row([-1,-1],  os.path.join(outdir,"rescued%01d.txt"%jj))
@@ -788,14 +792,14 @@ def main():
 				for ii in range(ll):  write_text_row([params[ii][rejects[k][1]] for k in range(len(rejects))]  ,  os.path.join(outdir,"params-rejects%01d%01d.txt"%(jj,ii)))
 
 			hi = hist_list([perr[j][0]  for j in range(nn)  ], 16)
-			print("Pixel errors for BAD GROUP  ",chr(65+jj))
+			sxprint("Pixel errors for BAD GROUP  ",chr(65+jj))
 			for ii in range(len(hi[0])):
-				print("%4d   %12.3f    %12.0f "%(ii,hi[0][ii],hi[1][ii]))
+				sxprint("%4d   %12.3f    %12.0f "%(ii,hi[0][ii],hi[1][ii]))
 
 
 	else:
-		print("Usage: ")
-		print("""
+		sxprint("Usage: ")
+		sxprint("""
 		Phase 1:   sxconsistency.py  --phase=1  bdb:data  outdir
 			output files are:
 			  in directory outdir: lili0.txt to lili5.txt contain indices of images in resampled six groups
@@ -833,9 +837,12 @@ def main():
 			  rejects*.txt - four files with indices of rejected images from badchunk.
 			  					There are two columns: [number in original bdb:chunk, number in bdb:newbad] 
 		""")
-		print("Please run '" + progname + " -h' for detailed options")
+		sxprint("Please run '" + progname + " -h' for detailed options")
 
 	global_def.BATCH = False
 
 
-main()
+if __name__=="__main__":
+	global_def.print_timestamp( "Start" )
+	main()
+	global_def.print_timestamp( "Finish" )

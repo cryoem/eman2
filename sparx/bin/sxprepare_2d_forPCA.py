@@ -34,6 +34,7 @@ from __future__ import print_function
 
 import os
 import global_def
+from global_def import sxprint, ERROR
 from   global_def import *
 from   optparse import OptionParser
 import sys
@@ -43,10 +44,15 @@ def main():
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--avg", action="store_true", default=True, help="  Subtract averages computed within corners of individual images, default False")
 	parser.add_option("--CTF", action="store_true", default=False, help="  Consider CTF correction during the alignment, dafault False")
+
 	(options, args) = parser.parse_args()    	
+	
 	if len(args) != 3:
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
+		sxprint("Usage: " + usage)
+		sxprint("Please run \'" + progname + " -h\' for detailed options")
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
+		
 	else:
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
@@ -57,4 +63,6 @@ def main():
 		global_def.BATCH = False
 	
 if __name__ == "__main__":
-	        main()
+	global_def.print_timestamp( "Start" )
+	main()
+	global_def.print_timestamp( "Finish" )

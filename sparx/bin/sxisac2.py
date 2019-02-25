@@ -36,6 +36,7 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import range
 import	global_def
+from global_def import sxprint, ERROR
 from	global_def import *
 
 from	EMAN2 import *
@@ -64,6 +65,16 @@ import numpy as np
 
 global Blockdata
 
+from global_def   import ERROR, EMData, Transform
+from pixel_error  import multi_align_stability
+from utilities    import model_blank, write_text_file, get_params2D
+from utilities    import gather_EMData, bcast_EMData_to_all, send_EMData, recv_EMData
+from mpi          import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, MPI_FLOAT, MPI_INT
+from mpi          import mpi_bcast, mpi_barrier, mpi_send, mpi_recv, mpi_comm_split
+from random       import randint, seed
+from time         import localtime, strftime
+from applications import within_group_refinement
+import os
 
 mpi_init(0, [])
 
@@ -163,7 +174,7 @@ def delay(myid, tt):
 
 	for j in range(50):
 		for i  in range(1000000): q = i+float(i)**2.1234
-	if myid == 0 :  print(tt)
+	if myid == 0 :  sxprint(tt)
 	#sleep(100)
 	#mpi_finalize()
 	#exit()
@@ -184,16 +195,6 @@ def checkitem(item, mpi_comm = -1):
 def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, init_iter, main_iter, iter_reali, \
 			  match_first, max_round, match_second, stab_ali, thld_err, indep_run, thld_grp, img_per_grp, \
 			  generation, candidatesexist = False, random_seed=None, new = False):
-	from global_def   import ERROR, EMData, Transform
-	from pixel_error  import multi_align_stability
-	from utilities    import model_blank, write_text_file, get_params2D
-	from utilities    import gather_EMData, bcast_EMData_to_all, send_EMData, recv_EMData
-	from mpi          import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, MPI_FLOAT, MPI_INT
-	from mpi          import mpi_bcast, mpi_barrier, mpi_send, mpi_recv, mpi_comm_split
-	from random       import randint, seed
-	from time         import localtime, strftime
-	from applications import within_group_refinement
-	import os
 
 	global Blockdata
 
@@ -213,11 +214,11 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
 	#mpi_barrier(MPI_COMM_WORLD)
 
 	if generation == 0:
-		ERROR("Generation should begin from 1, please reset it and restart the program", "iter_isac", 1, myid)
+		ERROR( "Generation should begin from 1, please reset it and restart the program", myid=myid )
 	mpi_barrier(MPI_COMM_WORLD)
 	ali_params_dir = "ali_params_generation_%d"%generation
 	if os.path.exists(ali_params_dir):  
-		ERROR('Output directory %s for alignment parameters exists, please either change its name or delete it and restart the program'%ali_params_dir, "iter_isac", 1, myid)
+		ERROR( "Output directory %s for alignment parameters exists, please either change its name or delete it and restart the program" % ali_params_dir, myid=myid )
 	mpi_barrier(MPI_COMM_WORLD)
 
 	
@@ -251,8 +252,8 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
 	K = ndata/img_per_grp
 
 	if myid == main_node:
-		print("     We will process:  %d current images divided equally between %d groups"%(ndata, K))
-		print("*************************************************************************************")
+		sxprint("     We will process:  %d current images divided equally between %d groups"%(ndata, K))
+		sxprint("*************************************************************************************")
 
 	# Generate random averages for each group
 	if key == group_main_node:
@@ -321,9 +322,9 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
 		for i,im in enumerate(data):
 			alpha, sx, sy, mirror, scale = get_params2D(im)
 			all_ali_params[i] = [alpha, sx, sy, mirror]
-		print("****************************************************************************************************")
-		print("*         Generation finished                 "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"                            *")
-		print("****************************************************************************************************")
+		sxprint("****************************************************************************************************")
+		sxprint("*         Generation finished                 "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"                            *")
+		sxprint("****************************************************************************************************")
 		return refi, all_ali_params
 	else:  return [], []
 
@@ -372,7 +373,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 
 	if type(stack) == type(""):
 		#read all data
-		print("  SHOULD NOT BE HERE")
+		sxprint("  SHOULD NOT BE HERE")
 		sys.exit()
 		alldata = EMData.read_images(stack)
 	else:
@@ -435,7 +436,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 	terminate = 0
 	while( (main_iter < max_iter) and (terminate == 0) ):
 		Iter += 1
-		if my_abs_id == main_node: print("Iteration within isac_MPI Iter =>", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start,"   ",strftime("%a, %d %b %Y %H:%M:%S", localtime()))
+		if my_abs_id == main_node: sxprint("Iteration within isac_MPI Iter =>", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start,"   ",strftime("%a, %d %b %Y %H:%M:%S", localtime()))
 		mashi = cnx-ou-2
 		for j in range(numref):
 			refi[j].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1}) # normalize reference images to N(0,1)
@@ -773,7 +774,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 					j = agreement - previous_agreement
 					if( (agreement>0.5) and (j > 0.0) and (j < 0.05) ): terminate = 1
 					previous_agreement = agreement
-					print(">>>  Assignment agreement with previous iteration  %5.1f"%(agreement*100),"   ",strftime("%a, %d %b %Y %H:%M:%S", localtime()))
+					sxprint(">>>  Assignment agreement with previous iteration  %5.1f"%(agreement*100),"   ",strftime("%a, %d %b %Y %H:%M:%S", localtime()))
 				terminate = bcast_number_to_all(terminate, source_node = main_node)
 
 
@@ -785,9 +786,9 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 					from statistics   import hist_list
 					lhist = 12
 					region, histo = hist_list(gpixer, lhist)
-					print("\n=== Histogram of average within-class pixel errors prior to class pruning ===")
-					for lhx in range(lhist):  print("     %10.3f     %7d"%(region[lhx], histo[lhx]))
-					print("=============================================================================\n")
+					sxprint("\n=== Histogram of average within-class pixel errors prior to class pruning ===")
+					for lhx in range(lhist):  sxprint("     %10.3f     %7d"%(region[lhx], histo[lhx]))
+					sxprint("=============================================================================\n")
 				del gpixer
 
 
@@ -808,9 +809,9 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 		i = [refi[j].get_attr("n_objects") for j in range(numref)]
 		lhist = max(12, numref/2)
 		region, histo = hist_list(i, lhist)
-		print("\n=== Histogram of group sizes ================================================")
-		for lhx in range(lhist):  print("     %10.1f     %7d"%(region[lhx], histo[lhx]))
-		print("=============================================================================\n")
+		sxprint("\n=== Histogram of group sizes ================================================")
+		for lhx in range(lhist):  sxprint("     %10.1f     %7d"%(region[lhx], histo[lhx]))
+		sxprint("=============================================================================\n")
 	mpi_barrier(comm)
 
 	return refi
@@ -902,8 +903,8 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 	max_round = 0
 	dummy_main_iter = 0
 	if( Blockdata["myid"] == 0 ):
-		print("*************************************************************************************")
-		print("     Main iteration: %3d,  Generation: %3d. "%(main_iter,generation_iter)+"   "+strftime("%a, %d %b %Y %H:%M:%S", localtime()))
+		sxprint("*************************************************************************************")
+		sxprint("     Main iteration: %3d,  Generation: %3d. "%(main_iter,generation_iter)+"   "+strftime("%a, %d %b %Y %H:%M:%S", localtime()))
 
 	ave, all_params = iter_isac_pap(alldata, options.ir, target_radius, options.rs, target_xr, target_yr, options.ts, options.maxit, False, 1.0,\
 		options.dst, options.FL, options.FH, options.FF, options.init_iter, dummy_main_iter, options.iter_reali, match_first, \
@@ -991,7 +992,7 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 					junk = cmdexecute(cmd)
 					cmd = "{} {}".format("touch", os.path.join(Blockdata["masterdir"], "finished"))
 					junk = cmdexecute(cmd)
-					print("*         There are no more images to form averages, program finishes     "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"     *")
+					sxprint("*         There are no more images to form averages, program finishes     "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"     *")
 				else:
 					#  Will have to increase main, which means putting all bad left as new good, 
 					keepdoing_main = True
@@ -1073,12 +1074,15 @@ def main(args):
 	(options, args) = parser.parse_args(args)
 
 	if len(args) > 2:
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
-		sys.exit()
+		sxprint("usage: " + usage)
+		sxprint("Please run '" + progname + " -h' for detailed options")
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
+
 	elif( len(args) == 2):
 		Blockdata["stack"] 	= args[0]
 		Blockdata["masterdir"] = args[1]
+	
 	elif( len(args) == 1):
 		Blockdata["stack"] 	= args[0]
 		Blockdata["masterdir"] = ""
@@ -1124,42 +1128,43 @@ def main(args):
 	Blockdata["stack_ali2d"] = "bdb:" + os.path.join(Blockdata["masterdir"], "stack_ali2d" )
 	
 	if(myid == main_node):
-		print("****************************************************************************************************")
-		print("*                                                                                                  *")
-		print("* ISAC (Iterative Stable Alignment and Clustering)   "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"                     *")
-		print("* By Zhengfan Yang, Jia Fang, Francisco Asturias and Pawel A. Penczek                              *")
-		print("*                                                                                                  *")
-		print('* REFERENCE: Z. Yang, J. Fang, J. Chittuluru, F. J. Asturias and P. A. Penczek, "Iterative Stable  *')
-		print('*            Alignment and Clustering of 2D Transmission Electron Microscope Images",              *') 
-		print('*            Structure 20, 237-247, February 8, 2012.                                              *')
-		print("*                                                                                                  *")
-		print("* Last updated: 05/30/2017 PAP                                                                     *")
-		print("****************************************************************************************************")
+		sxprint("****************************************************************************************************")
+		sxprint("*                                                                                                  *")
+		sxprint("* ISAC (Iterative Stable Alignment and Clustering)   "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"                     *")
+		sxprint("* By Zhengfan Yang, Jia Fang, Francisco Asturias and Pawel A. Penczek                              *")
+		sxprint("*                                                                                                  *")
+		sxprint('* REFERENCE: Z. Yang, J. Fang, J. Chittuluru, F. J. Asturias and P. A. Penczek, "Iterative Stable  *')
+		sxprint('*            Alignment and Clustering of 2D Transmission Electron Microscope Images",              *') 
+		sxprint('*            Structure 20, 237-247, February 8, 2012.                                              *')
+		sxprint("*                                                                                                  *")
+		sxprint("* Last updated: 05/30/2017 PAP                                                                     *")
+		sxprint("****************************************************************************************************")
 		Util.version()
-		print("****************************************************************************************************")
+		sxprint("****************************************************************************************************")
 		sys.stdout.flush()
 
 		i = "  "
 		for a in sys.argv:
 			i +=a+"  "
-		print("* shell line command: ")
-		print(i)
-		print("*                                                                                                  *")
-		print("* Master directory: %s"%Blockdata["masterdir"])
-		print("****************************************************************************************************")
+		sxprint("* shell line command: ")
+		sxprint(i)
+		sxprint("*                                                                                                  *")
+		sxprint("* Master directory: %s"%Blockdata["masterdir"])
+		sxprint("****************************************************************************************************")
 	mpi_barrier(MPI_COMM_WORLD)
 
 	# Making sure all required options appeared.
 	for required_option in required_option_list:
 		if not options.__dict__[required_option]:
-			print("\n ==%s== mandatory option is missing.\n"%required_option)
-			print("Please run '" + progname + " -h' for detailed options")
+			sxprint("\n ==%s== mandatory option is missing.\n"%required_option)
+			sxprint("Please run '" + progname + " -h' for detailed options")
 			return 1
 
 
 	create_zero_group()
 
-	if options.CTF and options.VPP: ERROR("Options CTF and VPP cannot be used together", "isac2", 1, myid)
+	if options.CTF and options.VPP: 
+		ERROR( "Options CTF and VPP cannot be used together", myid=myid )
 
 	#  former options
 	indep_run = 0
@@ -1188,7 +1193,8 @@ def main(args):
 	target_radius  = options.target_radius
 	target_nx  = options.target_nx
 	center_method  = options.center_method
-	if(radi < 1):  ERROR("Particle radius has to be provided!","sxisac",1,myid)
+	if(radi < 1):  
+		ERROR( "Particle radius has to be provided!", myid=myid )
 
 	target_xr = options.xr
 	target_nx += target_xr - 1 # subtract one, which is default
@@ -1269,7 +1275,8 @@ def main(args):
 			# nx = int(nx*shrink_ratio + 0.5)
 
 			txrm = (nx - 2*(target_radius+1))//2
-			if(txrm < 0):  			ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "sxisac",1, myid)
+			if(txrm < 0):
+				ERROR( "Radius of the structure larger than the window data size permits %d"%(radi), myid=myid )
 			if(txrm/nxrsteps>0):
 				tss = ""
 				txr = ""
@@ -1284,7 +1291,7 @@ def main(args):
 			
 			# section ali2d_base
 
-			if(Blockdata["myid"] == 0): print("* 2D alignment   "+strftime("%a, %d %b %Y %H:%M:%S", localtime()))
+			if(Blockdata["myid"] == 0): sxprint("* 2D alignment   "+strftime("%a, %d %b %Y %H:%M:%S", localtime()))
 			params2d = ali2d_base(original_images, init2dir, None, 1, target_radius, 1, txr, txr, tss, \
 				False, 90.0, center_method, 14, options.CTF, 1.0, False, \
 				"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False)
@@ -1306,9 +1313,9 @@ def main(args):
 		tmp = wrap_mpi_gatherv(tmp, main_node, MPI_COMM_WORLD)
 		if( myid == main_node ):		
 			if options.skip_prealignment:
-				print("=========================================")
-				print("There is no alignment step, '%s' params are set to zero for later use."%os.path.join(init2dir, "initial2Dparams.txt"))
-				print("=========================================")
+				sxprint("=========================================")
+				sxprint("There is no alignment step, '%s' params are set to zero for later use."%os.path.join(init2dir, "initial2Dparams.txt"))
+				sxprint("=========================================")
 			write_text_row(tmp,os.path.join(init2dir, "initial2Dparams.txt"))
 		del tmp
 		mpi_barrier(MPI_COMM_WORLD)
@@ -1489,14 +1496,14 @@ def main(args):
 			the following file: README_shrink_ratio.txt
 			"""%(shrink_ratio, radi)
 			fp.write(output_text); fp.flush() ;fp.close()
-			print(output_text)
+			sxprint(output_text)
 			junk = cmdexecute("sxheader.py  --consecutive  --params=originalid   %s"%Blockdata["stack_ali2d"])
 
 
 			fp = open(os.path.join(init2dir, "Finished_initial_2d_alignment.txt"), "w"); fp.flush() ;fp.close()
 	else:
 		if( Blockdata["myid"] == Blockdata["main_node"] ):
-			print("Skipping 2D alignment since it was already done!")
+			sxprint("Skipping 2D alignment since it was already done!")
 
 	error = 0
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
@@ -1535,8 +1542,10 @@ def main(args):
 				junk = cmdexecute(cmd)
 
 	error = bcast_number_to_all(error, source_node = Blockdata["main_node"])
-	if(error == 1):  ERROR("isac2", "The restart value is greater than -1, but the ISAC directory does not exist for continuation. Please choose a restart value of -1 to start a fresh run.")
-	elif(error == 2):  ERROR("isac2","Cannot restart from unfinished main iteration  %d. To automatically detect the latest ISAC directory for continuation please choose a restart value of 0."%main_iter)
+	if(error == 1):  
+		ERROR( "The restart value is greater than -1, but the ISAC directory does not exist for continuation. Please choose a restart value of -1 to start a fresh run." )
+	elif(error == 2):  
+		ERROR( "Cannot restart from unfinished main iteration  %d. To automatically detect the latest ISAC directory for continuation please choose a restart value of 0." % main_iter )
 
 	mpi_barrier(MPI_COMM_WORLD)
 
@@ -1605,7 +1614,7 @@ def main(args):
 							cmd = "{} {}".format("mkdir", os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter ))
 							junk = cmdexecute(cmd)
 						mpi_barrier(MPI_COMM_WORLD)
-						#print  "  WILLCALL  ",Blockdata["myid"]
+						#sxprint  "  WILLCALL  ",Blockdata["myid"]
 						#mpi_finalize()
 						#exit()
 						# DO THIS GENERATION
@@ -1635,12 +1644,12 @@ def main(args):
 			cmd = "{} {}".format("rm -rf", os.path.join(Blockdata["masterdir"], "junk.hdf") )
 			junk = cmdexecute(cmd)
 		else:
-			print(" ISAC could not find any stable class averaging, terminating...")
+			sxprint(" ISAC could not find any stable class averaging, terminating...")
 
 	mpi_finalize()
-	exit()
+	return
 
 if __name__=="__main__":
+	global_def.print_timestamp( "Start" )
 	main(sys.argv[1:])
-
-
+	global_def.print_timestamp( "Finish" )

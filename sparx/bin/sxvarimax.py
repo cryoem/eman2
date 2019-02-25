@@ -33,6 +33,7 @@ from __future__ import print_function
 
 from builtins import range
 import global_def
+from global_def import sxprint, ERROR
 from global_def import *
 from optparse import OptionParser
 
@@ -47,22 +48,23 @@ def main():
     parser.add_option("--rad",     type="int", default=-1, help="radius of mask")
     parser.add_option("--verbose", type="int", default=0,  help="verbose level (0|1)")
 
-
     (options, args) = parser.parse_args()
 
-    
-
     if len(args) < 4:
-        print("usage: " + usage)
-        print("Please run '" + progname + " -h' for details")
+        sxprint("Usage: " + usage)
+        sxprint("Please run \'" + progname + " -h\' for details")
+        ERROR( "Invalid number of parameters used. Please see usage information above." )
+        return
     else:
         from string import atoi
         input_stack  = args[0]
         imgstart     = atoi( args[1] )
         imgend       = atoi( args[2] ) +1
         output_stack = args[3]
-        if(len(args) == 5):  mask = args[4]
-        else:               mask = None
+        if(len(args) == 5): 
+            mask = args[4]
+        else:
+            mask = None
 
     if global_def.CACHE_DISABLE:
         from utilities import disable_bdb_cache
@@ -73,4 +75,6 @@ def main():
     global_def.BATCH = False
 
 if __name__ == "__main__":
-	main()     
+    global_def.print_timestamp( "Start" )
+    main()
+    global_def.print_timestamp( "Finish" ) 

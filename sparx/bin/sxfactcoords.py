@@ -2,6 +2,8 @@
 from __future__ import print_function
 
 import global_def
+from global_def import sxprint, ERROR
+
 from global_def import *
 from optparse import OptionParser
 from EMAN2_cppwrap import *
@@ -24,8 +26,11 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if( len(args) < 4 ):
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for details")
+		sxprint( "Usage: " + usage )
+		sxprint( "Please run \'" + progname + " -h\' for detailed options" )
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
+
 	else:
 		stacks = args[0:-3]
 		avgvol = args[-3]
@@ -33,17 +38,20 @@ def main():
 		output = args[-1]
 		
 		if options.rad < 0:
-			print("Error: mask radius is not given")
-			sys.exit(-1)
+			ERROR( "Mask radius is not given" )
+			return
+
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
+
 		if options.MPI:
 			from mpi import mpi_init
 			sys.argv = mpi_init(len(sys.argv), sys.argv)
 
 		from utilities import get_im
 		global_def.BATCH = True
+		
 		if( get_im( stacks[0]).get_zsize() == 1 and get_im( eigvol).get_zsize() > 1):
 			from applications import factcoords_prj
 			factcoords_prj(stacks, avgvol, eigvol, output, options.rad, options.neigvol, options.fl, options.aa, options.CTF, options.MPI)
@@ -54,4 +62,6 @@ def main():
 		
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

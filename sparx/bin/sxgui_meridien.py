@@ -19,25 +19,41 @@ from __future__ import print_function
 
 from builtins import range
 from builtins import object
-from PyQt4.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QString, QThreadPool, QTimer
-from PyQt4 import QtCore, QtGui
-from PyQt4.QtGui import QDialog, QGridLayout, QTreeWidget, QMessageBox, QFontMetrics
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
+
 import os
 import os.path
 import json
 import sys
 import numpy as np
 
+import global_def
+
+import matplotlib
+matplotlib.use('AGG')
+import matplotlib.pyplot as plt
+
+try:
+    from PyQt4.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QString, QThreadPool, QTimer
+    from PyQt4 import QtCore, QtGui
+    from PyQt4.QtGui import QDialog, QGridLayout, QTreeWidget, QMessageBox, QFontMetrics, QMainWindow, QApplication, QWidget, QDesktopWidget, QAction, QFileDialog, QTreeWidgetItem,QVBoxLayout
+    from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+    from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
+
+except ImportError:
+    from PyQt5 import QtCore, QtGui, QtWidgets
+    from PyQt5.QtGui import  QFontMetrics
+    from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QThreadPool, QTimer
+    from PyQt5.QtWidgets import QDialog, QGridLayout, QTreeWidget, QMessageBox, QMainWindow, QApplication, QWidget, QDesktopWidget, QAction, QFileDialog, QTreeWidgetItem,QVBoxLayout
+    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+    from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+
 
 class DriverFileReader(QObject):
 
-    sig_readfsc = pyqtSignal(object)
+    sig_readfsc = pyqtSignal(list)
     sig_readfolders = pyqtSignal(str)
-    sig_sendfolders = pyqtSignal(object)
-    sig_sendfsc = pyqtSignal(object,object,object,object)
+    sig_sendfolders = pyqtSignal(str)
+    sig_sendfsc = pyqtSignal(list, list, list, list)
 
 
     def __init__(self):
@@ -45,7 +61,7 @@ class DriverFileReader(QObject):
         self.sig_readfsc.connect(self.handle_read_fsc_triggered)
         self.sig_readfolders.connect(self.handle_read_refinement_folders)
 
-    @pyqtSlot(str)
+    @pyqtSlot(list)
     def handle_read_fsc_triggered(self, paths):
         """
         Slot for reading fsc triggered
@@ -114,13 +130,6 @@ class DriverFileReader(QObject):
 
 
 
-
-
-
-
-
-
-
 class FSCPlot(QDialog):
 
 
@@ -137,7 +146,7 @@ class FSCPlot(QDialog):
         self.toolbar = NavigationToolbar(self.canvas, self)
 
         # set the layout
-        layout = QtGui.QVBoxLayout()
+        layout = QVBoxLayout()
         layout.addWidget(self.toolbar)
         layout.addWidget(self.canvas)
         self.setLayout(layout)
@@ -225,7 +234,7 @@ class ResolutionOverviewPlot(QDialog):
         self.toolbar = NavigationToolbar(self.canvas, self)
 
         # set the layout
-        layout = QtGui.QVBoxLayout()
+        layout = QVBoxLayout()
         layout.addWidget(self.toolbar)
         layout.addWidget(self.canvas)
         self.setLayout(layout)
@@ -320,7 +329,7 @@ class TrackerFileReader(object):
 
 
 
-class MainWindow(QtGui.QMainWindow):
+class MainWindow(QMainWindow):
 
     sig_update_tree = pyqtSignal(object, object, object)
     sig_show_overview_plot = pyqtSignal()
@@ -329,11 +338,11 @@ class MainWindow(QtGui.QMainWindow):
         super(MainWindow, self).__init__(parent)
         self.font = font
         self.setWindowTitle("Meridien")
-        central_widget = QtGui.QWidget(self)
+        central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
 
         #Center on screen
-        resolution = QtGui.QDesktopWidget().screenGeometry()
+        resolution = QDesktopWidget().screenGeometry()
         self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
                   (resolution.height() / 2) - (self.frameSize().height() / 2))
 
@@ -341,12 +350,12 @@ class MainWindow(QtGui.QMainWindow):
         Setting up menu bar
         """
 
-        close_action = QtGui.QAction('Close', self)
+        close_action = QAction('Close', self)
         close_action.setShortcut("Ctrl+Q")
         close_action.setStatusTip('Leave the app')
         close_action.triggered.connect(lambda: self.close())
 
-        open_refinement_folder = QtGui.QAction('Open Refinement Folder', self)
+        open_refinement_folder = QAction('Open Refinement Folder', self)
         open_refinement_folder.triggered.connect(self.open_refinement_folder)
 
         self.mainMenu = self.menuBar()
@@ -355,10 +364,10 @@ class MainWindow(QtGui.QMainWindow):
         self.fileMenu.addAction(close_action)
         self.refinement_folder = ""
 
-        create_new_fsc_plot = QtGui.QAction('&New FSC plot', self)
+        create_new_fsc_plot = QAction('&New FSC plot', self)
         create_new_fsc_plot.triggered.connect(self.event_ontriggered_show_fsc_plot)
 
-        create_new_overview_plot = QtGui.QAction('&New resolution overview plot', self)
+        create_new_overview_plot = QAction('&New resolution overview plot', self)
         create_new_overview_plot.triggered.connect(self.event_show_resolution_overview_plot)
         self.plotMenu = self.mainMenu.addMenu('&Plot')
         self.plotMenu.addAction(create_new_fsc_plot)
@@ -421,7 +430,7 @@ class MainWindow(QtGui.QMainWindow):
             msg.setWindowTitle("Update")
             msg.exec_()
 
-    @pyqtSlot(object, object, object, object)
+    @pyqtSlot(list, list, list, list)
     def show_dialog_fsc(self, *args):
         """
         Shows fsc plot
@@ -494,7 +503,7 @@ class MainWindow(QtGui.QMainWindow):
         Let the user choose the refinement folder and adds it to the RefinementFolder-Tree
         :return: none
         """
-        self.refinement_folder = str(QtGui.QFileDialog.getExistingDirectory(self, "Select Refinement Directory"))
+        self.refinement_folder = str(QFileDialog.getExistingDirectory(self, "Select Refinement Directory"))
         if self.refinement_folder == "":
             return
         if self.refinement_folder in self.root_items_path_dictionary:
@@ -514,8 +523,8 @@ class MainWindow(QtGui.QMainWindow):
             #for i in reversed(range(self.root.childCount())):
             #    self.root.removeChild(self.root.child(i))
             name = os.path.basename(path)
-            qname = QString(name)
-            root = QtGui.QTreeWidgetItem([str(path)])
+            # qname = QString(name)
+            root = QTreeWidgetItem([str(path)])
             self.root_items_path_dictionary[str(path)] = root
             self.tree.addTopLevelItem(root)
             fm = QFontMetrics(self.font)
@@ -536,7 +545,7 @@ class MainWindow(QtGui.QMainWindow):
             thr.quit()
             thr.wait()
 
-    @pyqtSlot(object)
+    @pyqtSlot(str)
     def fill_tree(self, path_to_refinement_folder):
         '''
         Reads all runs in path_to_refinement_folder and add them as child to the corresponding root element in the tree
@@ -547,7 +556,7 @@ class MainWindow(QtGui.QMainWindow):
         root.setCheckState(0,QtCore.Qt.Unchecked)
         main_dicts = DriverFileReader.read_refinement_folders(path_to_refinement_folder)
         for dictionary in main_dicts:
-            next_item = QtGui.QTreeWidgetItem([dictionary])
+            next_item = QTreeWidgetItem([dictionary])
             next_item.setCheckState(0, QtCore.Qt.Unchecked)
             root.addChild(next_item)
 
@@ -560,10 +569,12 @@ class MainWindow(QtGui.QMainWindow):
 
 
 def run(args=None):
-    app = QtGui.QApplication(sys.argv)
+    app = QApplication(sys.argv)
 
     gui = MainWindow(app.font())
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
+    global_def.print_timestamp( "Start" )
     run()
+    global_def.print_timestamp( "Finish" )

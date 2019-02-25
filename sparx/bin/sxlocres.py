@@ -44,10 +44,12 @@ import statistics
 import sys
 import utilities
 
+from global_def import sxprint, ERROR
+
 #Transforms the local resolution file from frequency units to angstroms.
 def makeAngRes(freqvol, nx, ny, nz, pxSize, freq_to_real=True):
 	if (pxSize == 1.0):
-		print("Using a value of 1 for the pixel size. Are you sure this is correct?")
+		sxprint("Using a value of 1 for the pixel size. Are you sure this is correct?")
 
 	outAngResVol = utilities.model_blank(nx,ny,nz)
 	data_in = freqvol.get_3dview()
@@ -125,8 +127,9 @@ def main():
 	(options, args) = parser.parse_args(arglist[1:])
 
 	if len(args) <3 or len(args) > 4:
-		print("See usage " + usage)
-		sys.exit()
+		sxprint("Usage: " + usage)
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
 
 	if global_def.CACHE_DISABLE:
 		utilities.disable_bdb_cache()
@@ -266,4 +269,6 @@ def main():
 		output_volume(freqvol, resolut, options.apix, outvol, options.fsc, options.out_ang_res, nx, ny, nz, res_overall)
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

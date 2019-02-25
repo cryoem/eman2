@@ -32,11 +32,13 @@ from __future__ import print_function
 #
 #
 import global_def
+from global_def import sxprint, ERROR
 from   global_def import *
 import sys
 from   optparse import OptionParser
 import os
 from   utilities import get_image
+
 def main():
 
 	arglist = []
@@ -57,17 +59,19 @@ def main():
 	parser.add_option("--verbose", type="int",          default=0,     help="verbose level: 0 no, 1 yes" )
 	(options,args) = parser.parse_args(arglist[1:])     
 
-
 	if len(args) != 3 and len(args) != 4:
-		print(usage)
-		sys.exit(-1)
+		sxprint("Usage: " + usage)
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
 
 	prj_stack = args[0]
 	vol_stack = args[1]
 	fsc_curve = args[2]
 
-	if len(args) == 3: mask = None
-	else:              mask = get_image( args[3] )
+	if len(args) == 3: 
+		mask = None
+	else:
+		mask = get_image( args[3] )
 
 	if options.MPI:
 		from mpi import mpi_init
@@ -78,8 +82,8 @@ def main():
 		disable_bdb_cache()
 
 	if(options.list and options.group > -1):
-		ERROR("options group and list cannot be used together","recon3d_n",1)
-		sys.exit()
+		ERROR( "Options group and list cannot be used together" )
+		return
 
 	from applications import recons3d_f
 
@@ -93,4 +97,6 @@ def main():
 
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

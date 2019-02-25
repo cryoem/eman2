@@ -37,6 +37,8 @@ from __future__ import print_function
 from builtins import range
 import os
 import global_def
+from global_def import sxprint, ERROR
+
 from   global_def     import *
 from   user_functions import *
 from   optparse       import OptionParser
@@ -104,26 +106,34 @@ def main():
 	
 	(options, args) = parser.parse_args()
 	if len(args) > 3:
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
+		sxprint( "usage: " + usage )
+		sxprint( "Please run '" + progname + " -h' for detailed options" )
+		ERROR( "Invalid number of parameters. Please see usage information above." )
+		return
+
 	else:
 		if options.generate_script:
 			generate_runscript(options.filename, options.seg_ny, options.ptcl_dist, options.fract)
 
 		if options.generate_micrograph:
 			if options.apix <= 0:
-				print("Please enter pixel size.")
-				sys.exit()
+				ERROR( "Please enter pixel size." )
+				return
+
 			generate_helimic(args[0], args[1], options.apix, options.CTF, options.Cs, options.voltage, options.ac, options.nonoise, options.rand_seed)
 
 		if options.generate_noisycyl:
+
 			from utilities import model_cylinder, model_gauss_noise
 			outvol = args[0]
 			boxdims = options.boxsize.split(',')
+
 			if len(boxdims) < 1 or len(boxdims) > 3:
-				print("Enter box size as string containing x , y, z dimensions (separated by comma) in pixels. E.g.: --boxsize='100,100,200'")
-				sys.exit()
+				ERROR( "Enter box size as string containing x , y, z dimensions (separated by comma) in pixels. E.g.: --boxsize=\'100,100,200\'" )
+				return
+			
 			nx= int(boxdims[0])
+			
 			if len(boxdims) == 1:
 				ny = nx
 				nz = nx
@@ -138,10 +148,13 @@ def main():
 			from utilities import model_blank, pad
 			outvol = args[0]
 			maskdims = options.masksize.split(',')
+
 			if len(maskdims) < 1 or len(maskdims) > 2:
-				print("Enter box size as string containing x , y dimensions (separated by comma) in pixels. E.g.: --boxsize='200,200'")
-				sys.exit()
+				ERROR( "Enter box size as string containing x , y dimensions (separated by comma) in pixels. E.g.: --boxsize=\'200,200\'" )
+				return
+			
 			nx= int(maskdims[0])
+			
 			if len(maskdims) == 1:
 				ny = nx
 			else:
@@ -176,7 +189,10 @@ def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, a
 	from filter	     import filt_gaussl, filt_ctf
 	from EMAN2 	     import EMAN2Ctf
 	
-	if os.path.exists(outdir):   ERROR('Output directory exists, please change the name and restart the program', "sxhelical_demo", 1)
+	if os.path.exists(outdir):
+		ERROR( "Output directory exists, please change the name and restart the program" )
+		return
+
 	os.mkdir(outdir)
 	seed(rand_seed)
 	Util.set_randnum_seed(rand_seed)
@@ -224,17 +240,17 @@ def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, a
 def generate_runscript(filename, seg_ny, ptcl_dst, fract):
 
 	if ptcl_dst < 15:
-		print("Distance in pixels between adjacent segments should be at least one rise!")
-		sys.exit()
+		ERROR( "Distance in pixels between adjacent segments should be at least one rise!" )
+		return
 	
-	print("Generating run script with the following parameters: \n")
-	print("y-dimension of segment used for refinement: %d"%seg_ny)
-	print("Distance in pixels between adjacent segments: %d"%ptcl_dst)
-	print("Fraction of structure used for applying helical symmetry: %.2f"%fract)
+	sxprint("Generating run script with the following parameters: \n")
+	sxprint("y-dimension of segment used for refinement: %d"%seg_ny)
+	sxprint("Distance in pixels between adjacent segments: %d"%ptcl_dst)
+	sxprint("Fraction of structure used for applying helical symmetry: %.2f"%fract)
 	
 	if os.path.exists(filename):
-		print("The file %s already exists. Either remove it or rename it..."%filename)
-		sys.exit()
+		ERROR( "File "+filename+" already exists. Please either remove or rename the file" )
+		return
 		
 	f = open(filename, 'w')
 	f.write('#!/bin/csh\n')
@@ -345,4 +361,6 @@ def generate_runscript(filename, seg_ny, ptcl_dst, fract):
 	#f.write('mpirun -np 3 sxhelicon_utils.py result_local/volf0011.hdf outsymsearch --symsearch --dp=27.6 --dphi=166.715 --apix=1.84 --fract=%.2f --rmin=0 --rmax=64.0 --datasym=datasym.txt --dp_step=0.92 --ndp=10 --dphi_step=1.0 --ndphi=10 --MPI\n'%(fract))
 	
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

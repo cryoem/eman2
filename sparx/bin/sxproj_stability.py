@@ -54,16 +54,26 @@ the pixel error would be 99999.99. For the simplicity of the program, there are 
 stack. If indeed only one stack is desired, one could use sxcpy.py to concatenate all 
 stacks into one stack.
 '''
+
+import	global_def
+from global_def import sxprint, ERROR, SPARX_MPI_TAG_UNIVERSAL
 from	global_def 	import *
-from global_def import SPARX_MPI_TAG_UNIVERSAL
+
+from	optparse 	import OptionParser
+from	EMAN2 		import EMUtil
+import	os
+import	sys
+from time import time
+
+from mpi          import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
+from mpi          import mpi_barrier, mpi_send, mpi_recv, mpi_bcast, MPI_INT, mpi_finalize, MPI_FLOAT
+from applications import MPI_start_end, within_group_refinement, ali2d_ras
+from pixel_error  import multi_align_stability
+from utilities    import send_EMData, recv_EMData
+from utilities    import get_image, bcast_number_to_all, set_params2D, get_params2D
+from utilities    import group_proj_by_phitheta, model_circle, get_input_from_string
 
 def main():
-	import	global_def
-	from	optparse 	import OptionParser
-	from	EMAN2 		import EMUtil
-	import	os
-	import	sys
-	from time import time
 
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " proj_stack output_averages --MPI"
@@ -86,13 +96,6 @@ def main():
 
 	(options,args) = parser.parse_args()
 	
-	from mpi          import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
-	from mpi          import mpi_barrier, mpi_send, mpi_recv, mpi_bcast, MPI_INT, mpi_finalize, MPI_FLOAT
-	from applications import MPI_start_end, within_group_refinement, ali2d_ras
-	from pixel_error  import multi_align_stability
-	from utilities    import send_EMData, recv_EMData
-	from utilities    import get_image, bcast_number_to_all, set_params2D, get_params2D
-	from utilities    import group_proj_by_phitheta, model_circle, get_input_from_string
 
 	sys.argv = mpi_init(len(sys.argv), sys.argv)
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
@@ -103,31 +106,30 @@ def main():
 		stack  = args[0]
 		outdir = args[1]
 	else:
-		ERROR("incomplete list of arguments", "sxproj_stability", 1, myid=myid)
-		exit()
+		global_def.ERROR( "Incomplete list of arguments", "sxproj_stability.main", 1, myid=myid )
+		return
 	if not options.MPI:
-		ERROR("Non-MPI not supported!", "sxproj_stability", myid=myid)
-		exit()		 
+		global_def.ERROR( "Non-MPI not supported!", "sxproj_stability.main", 1, myid=myid )
+		return		 
 
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache
 		disable_bdb_cache()
 	global_def.BATCH = True
 
-	#if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "sxproj_stability", 1, myid)
-	#mpi_barrier(MPI_COMM_WORLD)
-
-	
 	img_per_grp = options.img_per_group
 	radius = options.radius
 	ite = options.iter
 	num_ali = options.num_ali
 	thld_err = options.thld_err
 
-	xrng        = get_input_from_string(options.xr)
-	if  options.yr == "-1":  yrng = xrng
-	else          :  yrng = get_input_from_string(options.yr)
-	step        = get_input_from_string(options.ts)
+	xrng = get_input_from_string(options.xr)
+	if  options.yr == "-1":
+		yrng = xrng
+	else:
+		yrng = get_input_from_string(options.yr)
+
+	step = get_input_from_string(options.ts)
 
 
 	if myid == main_node:
@@ -148,7 +150,7 @@ def main():
 	st = time()
 	if options.grouping == "GRP":
 		if myid == main_node:
-			print("  A  ",myid,"  ",time()-st)
+			sxprint("  A  ",myid,"  ",time()-st)
 			proj_attr = EMUtil.get_all_attributes(stack, "xform.projection")
 			proj_params = []
 			for i in range(nima):
@@ -169,7 +171,7 @@ def main():
 
 			proj_list_all, angle_list, mirror_list = group_proj_by_phitheta(proj_params, img_per_grp=img_per_grp)
 			del proj_params
-			print("  B  number of groups  ",myid,"  ",len(proj_list_all),time()-st)
+			sxprint("  B  number of groups  ",myid,"  ",len(proj_list_all),time()-st)
 		mpi_barrier(MPI_COMM_WORLD)
 
 		# Number of groups, actually there could be one or two more groups, since the size of the remaining group varies
@@ -192,7 +194,7 @@ def main():
 				proj_list.append(list(map(int, temp)))
 				del temp
 			mpi_barrier(MPI_COMM_WORLD)
-		print("  C  ",myid,"  ",time()-st)
+		sxprint("  C  ",myid,"  ",time()-st)
 		if myid == main_node:
 			# Assign the remaining groups to main_node
 			for i in range(n_grp, len(proj_list_all)):
@@ -202,7 +204,11 @@ def main():
 
 	#   Compute stability per projection projection direction, equal number assigned, thus overlaps
 	elif options.grouping == "GEV":
-		if options.delta == -1.0: ERROR("Angular step for reference projections is required for GEV method","sxproj_stability",1)
+
+		if options.delta == -1.0: 
+			ERROR( "Angular step for reference projections is required for GEV method" )
+			return
+
 		from utilities import even_angles, nearestk_to_refdir, getvec
 		refproj = even_angles(options.delta)
 		img_begin, img_end = MPI_start_end(len(refproj), number_of_proc, myid)
@@ -215,7 +221,7 @@ def main():
 			ref_ang[i*2]   = refprojdir[0][0]
 			ref_ang[i*2+1] = refprojdir[0][1]+i*0.1
 
-		print("  A  ",myid,"  ",time()-st)
+		sxprint("  A  ",myid,"  ",time()-st)
 		proj_attr = EMUtil.get_all_attributes(stack, "xform.projection")
 		#  the solution below is very slow, do not use it unless there is a problem with the i/O
 		"""
@@ -224,48 +230,46 @@ def main():
 				proj_attr = EMUtil.get_all_attributes(stack, "xform.projection")
 			mpi_barrier(MPI_COMM_WORLD)
 		"""
-		print("  B  ",myid,"  ",time()-st)
+		sxprint("  B  ",myid,"  ",time()-st)
 
 		proj_ang = [0.0]*(nima*2)
 		for i in range(nima):
 			dp = proj_attr[i].get_params("spider")
 			proj_ang[i*2]   = dp["phi"]
 			proj_ang[i*2+1] = dp["theta"]
-		print("  C  ",myid,"  ",time()-st)
+		sxprint("  C  ",myid,"  ",time()-st)
 		asi = Util.nearestk_to_refdir(proj_ang, ref_ang, img_per_grp)
 		del proj_ang, ref_ang
 		proj_list = []
 		for i in range(len(refprojdir)):
 			proj_list.append(asi[i*img_per_grp:(i+1)*img_per_grp])
 		del asi
-		print("  D  ",myid,"  ",time()-st)
+		sxprint("  D  ",myid,"  ",time()-st)
 		#from sys import exit
 		#exit()
 
 
 	#   Compute stability per projection
 	elif options.grouping == "PPR":
-		print("  A  ",myid,"  ",time()-st)
+		sxprint("  A  ",myid,"  ",time()-st)
 		proj_attr = EMUtil.get_all_attributes(stack, "xform.projection")
-		print("  B  ",myid,"  ",time()-st)
+		sxprint("  B  ",myid,"  ",time()-st)
 		proj_params = []
 		for i in range(nima):
 			dp = proj_attr[i].get_params("spider")
 			phi, theta, psi, s2x, s2y = dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]
 			proj_params.append([phi, theta, psi, s2x, s2y])
 		img_begin, img_end = MPI_start_end(nima, number_of_proc, myid)
-		print("  C  ",myid,"  ",time()-st)
+		sxprint("  C  ",myid,"  ",time()-st)
 		from utilities import nearest_proj
 		proj_list, mirror_list = nearest_proj(proj_params, img_per_grp, list(range(img_begin, img_begin+1)))#range(img_begin, img_end))
 		refprojdir = proj_params[img_begin: img_end]
 		del proj_params, mirror_list
-		print("  D  ",myid,"  ",time()-st)
-	else:  ERROR("Incorrect projection grouping option","sxproj_stability",1)
-	"""
-	from utilities import write_text_file
-	for i in xrange(len(proj_list)):
-		write_text_file(proj_list[i],"projlist%06d_%04d"%(i,myid))
-	"""
+		sxprint("  D  ",myid,"  ",time()-st)
+
+	else:  
+		ERROR( "Incorrect projection grouping option" )
+		return
 
 	###########################################################################################################
 	# Begin stability test
@@ -279,7 +283,7 @@ def main():
 	aveList = [model_blank(nx,ny)]*len(proj_list)
 	if options.grouping == "GRP":  refprojdir = [[0.0,0.0,-1.0]]*len(proj_list)
 	for i in range(len(proj_list)):
-		print("  E  ",myid,"  ",time()-st)
+		sxprint("  E  ",myid,"  ",time()-st)
 		class_data = EMData.read_images(stack, proj_list[i])
 		#print "  R  ",myid,"  ",time()-st
 		if options.CTF :
@@ -349,7 +353,7 @@ def main():
 					l += 1
 					avet += rot_shift2D(class_data[j], stable_set[l][2][0], stable_set[l][2][1], stable_set[l][2][2], stable_set[l][2][3] )
 					if options.grouping == "GRP":
-						phi, theta, psi, sxs, sys = get_params_proj(class_data[j])
+						phi, theta, psi, sxs, sy_s = get_params_proj(class_data[j])
 						if( theta > 90.0):
 							phi = (phi+540.0)%360.0
 							theta = 180.0 - theta
@@ -377,7 +381,7 @@ def main():
 			aveList[i].set_attr('refprojdir',refprojdir[i])
 			aveList[i].set_attr('pixerr', pix_err)
 		else:
-			print(" empty group ",i, refprojdir[i])
+			sxprint(" empty group ",i, refprojdir[i])
 			aveList[i].set_attr('members',[-1])
 			aveList[i].set_attr('refprojdir',refprojdir[i])
 			aveList[i].set_attr('pixerr', [99999.])
@@ -423,8 +427,9 @@ def main():
 
 	global_def.BATCH = False
 	mpi_barrier(MPI_COMM_WORLD)
-	from mpi import mpi_finalize
 	mpi_finalize()
 
 if __name__=="__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

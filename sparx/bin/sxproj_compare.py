@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 import os
+import sys
+
 import EMAN2
 import EMAN2_cppwrap
-#from EMAN2 import EMUtil, EMArgumentParser, EMANVERSION
+
 from applications import header, project3d
 from utilities import get_im, write_header, model_circle, read_text_row
 from statistics import ccc
@@ -10,6 +12,9 @@ from fundamentals import rops_table, fft
 from projection import prep_vol, prgl
 from math import sqrt
 from filter import filt_table
+
+import global_def
+from global_def import sxprint, ERROR
 
 # TO DO:
 #	resize the class-averages and re-projections if they have different sizes?
@@ -38,7 +43,7 @@ sxproj_compare.py <input_imgs> <input_volume> --display
 def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, prjmethod='trilinear', displayYN=False, 
 			 projstack='proj.hdf', outangles='angles.txt', outstack='comp-proj-reproj.hdf', normstack='comp-proj-reproj-norm.hdf'):
 	
-	print("\n%s, Modified 2018-12-07\n" % __file__)
+	sxprint("\n%s, Modified 2018-12-07\n" % __file__)
 	
 	# Check if inputs exist
 	check(classavgstack)
@@ -47,7 +52,7 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 	# Create directory if it doesn't exist
 	if not os.path.isdir(outdir):
 		os.makedirs(outdir)  # os.mkdir() can only operate one directory deep
-		print("mkdir -p %s" % outdir)
+		sxprint("mkdir -p %s" % outdir)
 
 	# Expand path for outputs
 	projstack = os.path.join(outdir, projstack)
@@ -69,7 +74,7 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 		if os.path.exists(newclasses):
 			renamefile = newclasses + '.bak'
 			os.rename(newclasses, renamefile)
-			print("mv %s %s" % (newclasses, renamefile))
+			sxprint("mv %s %s" % (newclasses, renamefile))
 		
 		cmd7="e2proc2d.py %s %s --list=%s" % (classavgstack, newclasses, selectdoc)
 		print cmd7
@@ -89,8 +94,8 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 		cmd1 = "sxheader.py %s --params=xform.projection --export=%s" % (classavgstack, outangles) 
 		print cmd1
 	except RuntimeError:
-		print("\nERROR!! No projection angles found in class-average stack header!\n")
-		print('Usage:', USAGE)
+		sxprint('Usage:', USAGE)
+		ERROR( "No projection angles found in class-average stack header!" )
 		exit()
 	
 	#cmd2="sxproject3d.py %s %s --angles=%s" % (recon, projstack, outangles)
@@ -106,8 +111,8 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 	elif prjmethod=='nn':
 		method_num = 0
 	else:
-		print("\nERROR!! Valid projection methods are: trilinear (default), gridding, and nn (nearest neighbor).")
-		print('Usage:', USAGE)
+		sxprint('Usage:', USAGE)
+		ERROR( "Valid projection methods are: trilinear (default), gridding, and nn (nearest neighbor)" )
 		exit()
 	
 	#project3d(recon, stack=projstack, listagls=outangles)
@@ -149,7 +154,7 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 		result.append(cccoeff)
 	del outangles
 	meanccc = sum(result)/nimg1
-	print("Average CCC is %s" % meanccc)
+	sxprint("Average CCC is %s" % meanccc)
 
 	nimg2 = EMAN2_cppwrap.EMUtil.get_image_count(outstack)
 	
@@ -165,7 +170,7 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 	# e2proc2d appends to existing files, so delete existing output
 	if os.path.exists(normstack):
 		os.remove(normstack)
-		print("rm %s" % normstack)
+		sxprint("rm %s" % normstack)
 		
 
 
@@ -181,15 +186,16 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 		print cmd8
 		os.system(cmd8)
 	
-	print("Done!")
+	sxprint("Done!")
 	
 def check(file):
 	if not os.path.exists(file):
-		print("ERROR!! %s doesn't exist!\n" % file)
-		exit()
-
+		ERROR( "File \'"+file+"\' does not exist" )
+		sys.exit()
 	
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
+
 	# Command-line arguments
 	parser = EMAN2_cppwrap.EMArgumentParser(usage=USAGE,version=EMAN2.EMANVERSION)
 	parser.add_argument('classavgs', help='Input class averages')
@@ -213,3 +219,6 @@ if __name__ == "__main__":
 
 	runcheck(options.classavgs, options.vol3d, outdir, 
 		  inangles=options.angles, selectdoc=options.select, prjmethod=options.prjmethod, displayYN=options.display)
+
+	global_def.print_timestamp( "Finish" )
+	

@@ -31,13 +31,14 @@ from __future__ import print_function
 #
 #
 
+import os
+import sys
+from optparse import OptionParser
+from global_def import SPARXVERSION
+import global_def
+from global_def import sxprint, ERROR
 
 def main():
-	import os
-	import sys
-	from optparse import OptionParser
-	from global_def import SPARXVERSION
-	import global_def
 	arglist = []
 	for arg in sys.argv:
 		arglist.append( arg )
@@ -74,19 +75,21 @@ def main():
 	parser.add_option("--nopsisearch",        action="store_true",   default=False,               help="Block searching for in-plane angle (default False)")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
-		print("usage: " + usage + "\n")
-		print("Please run '" + progname + " -h' for detailed options")
+		sxprint( "Usage: " + usage )
+		sxprint( "Please run \'" + progname + " -h\' for detailed options" )
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
 	else:
 		
 		# Convert input arguments in the units/format as expected by ihrsr_MPI in applications.
 		if options.apix < 0:
-			print("Please enter pixel size")
-			sys.exit()
+			ERROR( "Please enter pixel size" )
+			return
 		
 		if len(options.symdoc) < 1:
 			if options.dp < 0 or options.dphi < 0:
-				print("Enter helical symmetry parameters either using --symdoc or --dp and --dphi")
-				sys.exit()
+				ERROR( "Enter helical symmetry parameters either using --symdoc or --dp and --dphi" )
+				return
 			
 		if options.dp < 0 or options.dphi < 0:
 			# read helical symmetry parameters from symdoc
@@ -109,23 +112,26 @@ def main():
 		if( options.ystep <= 0.0 ):  ystep = 1.0
 		else:                        ystep = options.ystep/options.apix
 		if( dp/2.0 < ywobble):
-			ERROR('ywobble has to be smaller than dp/2.', 'sxhelicon')
-			sys.exit()
+			ERROR( "ywobble has to be smaller than dp/2" )
+			return
 
 		try:
 			from mpi import mpi_init, mpi_finalize
 			sys.argv = mpi_init(len(sys.argv), sys.argv)
 		except:
-			ERROR('This program has only MPI version.  Please install MPI library.', 'sxhelicon')
-			sys.exit()
+			ERROR( "This program has only MPI version.  Please install MPI library." )
+			return
 
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 
 
-		if len(args) < 4:  mask = None
-		else:              mask = args[3]
+		if len(args) < 4:
+			mask = None
+		else:
+			mask = args[3]
+
 		from applications import ehelix_MPI
 		global_def.BATCH = True
 		ehelix_MPI(args[0], args[1], args[2], options.seg_ny, options.delta, options.phiwobble, options.psi_max,\
@@ -138,4 +144,6 @@ def main():
 		mpi_finalize()
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

@@ -35,9 +35,12 @@ from __future__ import print_function
 
 import os
 import global_def
+from global_def import sxprint, ERROR
+
 from   global_def import *
 from   optparse import OptionParser
 import sys
+
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
@@ -58,19 +61,22 @@ def main():
 	parser.add_option("--MPI",            action="store_true", default=False,     help="Use MPI version ")	
 	(options, args) = parser.parse_args()
 	if len(args) < 2 or len(args) > 3:
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
+		sxprint("usage: " + usage)
+		sxprint("Please run '" + progname + " -h' for detailed options")
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
 	else:
 		if len(args) == 2: mask = None
 		else:              mask = args[2]
 
 		if options.K < 2:
-			sys.stderr.write('ERROR: K must be > 1 group\n\n')
-			sys.exit()
+			ERROR( "K must be > 1 group" )
+			return
 
 		if options.nb_part < 2:
-			sys.stderr.write('ERROR: nb_part must be > 1 partition\n\n')
-			sys.exit()
+			ERROR( "nb_part must be > 1 partition" )
+			return
+
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
@@ -98,5 +104,9 @@ def main():
 		if options.MPI:
 			from mpi import mpi_finalize
 			mpi_finalize()
+
+
 if __name__ == "__main__":
-	        main()
+	global_def.print_timestamp( "Start" )
+	main()
+	global_def.print_timestamp( "Finish" )

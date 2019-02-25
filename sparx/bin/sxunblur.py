@@ -33,6 +33,7 @@ import numpy
 import time
 import subprocess
 import global_def
+from global_def import sxprint, ERROR
 from global_def import SPARXVERSION, ERROR
 from optparse import OptionParser, SUPPRESS_HELP
 from utilities import create_summovie_command
@@ -135,7 +136,9 @@ def main():
 
     # If there arent enough arguments, stop the script
     if len(args) != 3:
-        ERROR("see usage " + usage, 1)
+        sxprint("Usage: " + usage)
+        ERROR( "Invalid number of parameters used. Please see usage information above." )
+        return
 
     # Convert the realtive parts to absolute ones
     unblur_path = path.realpath(args[0]) # unblur_path
@@ -144,33 +147,25 @@ def main():
 
     # If the unblur executable file does not exists, stop the script
     if not path.exists(unblur_path):
-        ERROR(
-            'Unblur directory does not exist, please change' +
-            ' the name and restart the program.', 'sxunblur.py', 1
-            )
+        ERROR( "Unblur directory does not exist, please change the name and restart the program" )
+        return
 
     # If the output directory exists, stop the script
     if path.exists(output_dir):
-        ERROR(
-            'Output directory exists, please change' +
-            ' the name and restart the program.', 'sxunblur.py', 1
-            )
+        ERROR( "Output directory exists, please change the name and restart the program" )
+        return
 
     # If the input file does not exists, stop the script
     file_list = glob(input_image)
 
     if not file_list:
-        ERROR(
-            'Input file does not exist, please change' +
-            ' the name and restart the program.', 'sxunblur.py', 1
-            )
+        ERROR( "Input file does not exist, please change the name and restart the program" )
+        return
 
     # If the skip_dose_filter option is false, the summovie path is necessary
     if not options.skip_dose_filter and not path.exists(options.summovie_path):
-        ERROR(
-            'Path to the SumMovie executable is necessary when dose weighting is performed.',
-            'sxunblur.py', 1
-            )
+        ERROR( "Path to the SumMovie executable is necessary when dose weighting is performed" )
+        return
 
 
     # Output paths
@@ -234,7 +229,7 @@ def main():
             remove(entry)
         rmdir(temp_path)
 
-    print('All Done!')
+    sxprint('All Done!')
 
     global_def.BATCH = False
 
@@ -267,7 +262,7 @@ def run_unblur(
         try:
             set_selection = genfromtxt(mic_list, dtype=None)
         except TypeError:
-            ERROR('no entrys in list file {0}'.format(mic_list), 'sxunblur.py', 1)
+            ERROR('no entrys in list file {0}'.format(mic_list))
         # List of files which are in pattern and list
         file_list = [
                 entry for entry in file_list \
@@ -276,10 +271,7 @@ def run_unblur(
                 ]
         # If no match is there abort
         if len(file_list) == 0:
-            ERROR(
-                'no files in {0} matched the file pattern:\n'.format(mic_list), 'sxunblur.py',
-                1
-                )
+            ERROR( 'no files in {0} matched the file pattern:\n'.format(mic_list), 1)
     # Get the number of files
     nr_files = len(file_list)
 
@@ -296,7 +288,7 @@ def run_unblur(
         input_suffix = inputfile.split('/')[-1].split('.')[-1]
         # First output to introduce the programm
         if index == 0:
-            print(
+            sxprint(
                     'Progress: 0.0%;  Time: --h:--m:--s/--h:--m:--s;  Unblur started!'
                 )
 
@@ -523,7 +515,7 @@ def run_unblur(
                 # Remove temp file
                 remove(temp_name)
             else:
-                print(('Error with file:\n{0}'.format(inputfile)))
+                sxprint(('Error with file:\n{0}'.format(inputfile)))
 
         # Check if SumMovie and UnBlur finished cleanly
         with open(log_name, 'r') as r:
@@ -536,22 +528,14 @@ def run_unblur(
                     clean_unblur = True
 
         if clean_unblur:
-            print('UnBlur finished cleanly.')
+            sxprint('UnBlur finished cleanly.')
         else:
-            ERROR(
-                'unblur error. check the logfile for more information: {0}'.format(
-                    log_name
-                    ), 'sxunblur.py', 0
-                )
+            ERROR( 'unblur error. check the logfile for more information: {0}'.format(log_name), action=0)
 
         if clean_summovie:
-            print('SumMovie finished cleanly.')
+            sxprint('SumMovie finished cleanly.')
         else:
-            ERROR(
-                'summovie error. check the logfile for more information: {0}'.format(
-                    log_name
-                    ), 'sxunblur.py', 0
-                )
+            ERROR('summovie error. check the logfile for more information: {0}'.format(log_name), action=0 )
 
         time_list.append(time.time() - t1)
 
@@ -574,7 +558,7 @@ def run_unblur(
                 current_time_h*3600 -
                 current_time_m*60
                 )
-        print((
+        sxprint((
             'Progress: {0:.2f}%;  Time: {1:.0f}h:{2:.0f}m:{3:.0f}s/{4:.0f}h:{5:.0f}m:{6:.0f}s;  Micrograph done:{7}'.format(
                 percent,
                 current_time_h,
@@ -679,4 +663,6 @@ def create_unblur_command(
 
 
 if __name__ == '__main__':
+    global_def.print_timestamp( "Start" )
     main()
+    global_def.print_timestamp( "Finish" )

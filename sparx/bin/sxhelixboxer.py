@@ -39,6 +39,9 @@ from math import *
 import sys
 import os
 
+import global_def
+from global_def import sxprint, ERROR
+
 try:
 	from PyQt4 import QtGui, QtCore
 	from eman2_gui.emapplication import EMApp, get_application
@@ -125,13 +128,19 @@ def main():
 	# Window filaments 
 	if options.window:
 		if len(args) < 1:
-			print("Must specify name of output directory where intermediate files are to be deposited.")
+			ERROR( "Must specify name of output directory where intermediate files are to be deposited." )
 			return
+
 		outdir = args[0]
 		tdir = options.topdir
-		if len(tdir) < 1:  tdir = None
-		if options.importctf:  cterr = [options.defocuserror/100.0, options.astigmatismerror]
-		else:                  cterr = None
+
+		if len(tdir) < 1:
+			tdir = None
+		if options.importctf:  
+			cterr = [options.defocuserror/100.0, options.astigmatismerror]
+		else:
+			cterr = None
+
 		options.outstacknameall = "bdb:data"  # this was disabled, to be removed later PAP
 		windowallmic(options.dirid, options.micid, options.micsuffix, outdir, pixel_size=options.apix, boxsize=options.boxsize, minseg=options.minseg,\
 				outstacknameall=options.outstacknameall, hcoords_dir = options.hcoords_dir, hcoords_suffix = options.hcoords_suffix, ptcl_dst=options.ptcl_dst, \
@@ -189,11 +198,13 @@ def main():
 				db_save_particles(micrograph_filepath, options.ptcl_images, px_dst, px_length, px_width, not options.ptcl_not_rotated, options.ptcl_norm_edge_mean, options.gridding, options.ptcl_images_stack_mode)
 				
 			E2end(logid)
+
 		elif len(args) == 0:
-			print('You must specify a micrograph file or use the "--gui" option.')
+			ERROR( "You must specify a micrograph file or use the \'--gui\' option." )
 			return
+
 		elif len(args) > 1:
-			print('Multiple micrographs can only be specified with the "--gui" option')
+			ERROR( "Multiple micrographs can only be specified with the \'--gui\' option" )
 			return
 
 def counterGen():
@@ -2255,4 +2266,6 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 					#iseg += 1
 		h+=1			
 if __name__ == '__main__':
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

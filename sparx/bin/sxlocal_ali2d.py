@@ -35,9 +35,12 @@ from __future__ import print_function
 
 import os
 import global_def
+from global_def import sxprint, ERROR
+
 from global_def import *
 from optparse import OptionParser
 import sys
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack outdir <maskfile> --ou=outer_radius --br=brackets --center=center_type --eps=epsilon --maxit=max_iter --CTF --snr=SNR --function=user_function_name"
@@ -52,8 +55,11 @@ def main():
 	parser.add_option("--function", type="string", default="ref_ali2d", help="  name of the reference preparation function")
 	(options, args) = parser.parse_args()
 	if len(args) < 2 or len(args) >3:
-    		print("usage: " + usage)
-    		print("Please run '" + progname + " -h' for detailed options")
+		sxprint( "Usage: " + usage )
+		sxprint( "Please run '" + progname + " -h' for detailed options" )
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
+		
 	else:
 		if len(args) == 2:
 			mask = None
@@ -69,5 +75,8 @@ def main():
 		global_def.BATCH = True	
 		local_ali2d(args[0], args[1], mask, options.ou, options.br, options.center, options.eps, options.maxit, options.CTF, options.snr, options.function)
 		global_def.BATCH = False	
+
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

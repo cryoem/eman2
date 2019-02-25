@@ -36,6 +36,7 @@ from __future__ import print_function
 from builtins import range
 import os
 import global_def
+from global_def import sxprint, ERROR
 from   global_def     import *
 from   user_functions import *
 from   optparse       import OptionParser
@@ -120,10 +121,15 @@ def main():
 	parser.add_option("--scale",   action="store_true",  default=False,   help="whether to scale all particles to (0, 1) ")
 	parser.add_option("--number",  action="store_true",  default=False,   help="whether to show particle number on the particle")	
 	parser.add_option("--begin_zero", action="store_true",  default=False,   help="whether to use zero as the starting point")	
+	
 	(options, args) = parser.parse_args()
+
 	if len(args) != 2:
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
+		sxprint( "Usage: " + usage )
+		sxprint( "Please run '" + progname + " -h' for detailed options" )
+		RROR( "Invalid number of parameters used. Please see usage information above." )
+		return
+
 	else:
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
@@ -135,4 +141,6 @@ def main():
 
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

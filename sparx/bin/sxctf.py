@@ -37,6 +37,9 @@ from __future__ import print_function
 from builtins import range
 from builtins import object
 import global_def
+from global_def import sxprint, ERROR
+
+
 from global_def import *
 
 from EMAN2 import *
@@ -103,7 +106,7 @@ images far from focus."""
 	if options.auto_fit:
 		if options.voltage==0 : parser.error("Please specify voltage")
 		if options.cs==0 : parser.error("Please specify Cs")
-	if options.apix==0 : print("Using A/pix from header")
+	if options.apix==0 : sxprint("Using A/pix from header")
 		
 	debug=options.debug
 
@@ -138,8 +141,8 @@ images far from focus."""
 			incr=[0.2]*len(img_sets)
 			simp=Simplex(env_cmp,scales,incr)
 			scales=simp.minimize(maxiters=1000)[0]
-	#		print scales
-			print(" ")
+	#		sxprint scales
+			sxprint(" ")
 
 		# apply the final rescaling
 		envelope=[]
@@ -164,13 +167,15 @@ images far from focus."""
 		img_sets = get_gui_arg_img_sets(options.filenames)
 		if len(img_sets) == 0:
 			E2end(logid)
-			sys.exit(1)
+			ERROR( "img_sets == 0" )
+			return
+
 		app=EMApp()
 		gui=GUIctf(app,img_sets)
 		gui.show_guis()
 		app.exec_()
 
-		print("done execution")
+		sxprint("done execution")
 
 	### Process input files
 	#if debug : print "Phase flipping / Wiener filtration"
@@ -188,11 +193,12 @@ def get_gui_arg_img_sets(filenames):
 	img_sets = []
 	if db_check_dict("bdb:e2ctf.parms"):
 		db_parms=db_open_dict("bdb:e2ctf.parms",ro=True)
-	else: return img_sets
+	else: 
+		return img_sets
 	for file in filenames:
 		name = base_name(file)
 		if name not in db_parms:
-			print("error, you must first run auto fit before running the gui - there are no parameters for",name)
+			ERROR( "You must first run auto fit before running the gui - there are no parameters for \'"+name+"\'" )
 			return []
 		img_set = db_parms[name]
 		ctf=EMAN2Ctf()
@@ -212,7 +218,7 @@ def write_e2ctf_output(options):
 		db_parms=db_open_dict("bdb:e2ctf.parms")
 		for i,filename in enumerate(options.filenames):
 			name=base_name(filename)
-			if debug: print("Processing ",filename)
+			if debug: sxprint("Processing ",filename)
 
 			if options.phaseflip: phaseout="bdb:particles#"+name+"_ctf_flip"
 			else: phaseout=None
@@ -228,9 +234,9 @@ def write_e2ctf_output(options):
 			#if options.wiener: wienerout=name+"_ctf_wiener.hed"
 			#else : wienerout=None
 			
-			if phaseout : print("Phase image out: ",phaseout,"\t", end=' ')
-			if wienerout : print("Wiener image out: ",wienerout, end=' ')
-			print("")
+			if phaseout : sxprint("Phase image out: ",phaseout,"\t", end=' ')
+			if wienerout : sxprint("Wiener image out: ",wienerout, end=' ')
+			sxprint("")
 			ctf=EMAN2Ctf()
 			ctf.from_string(db_parms[name][0])
 			process_stack(filename,phaseout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert)
@@ -249,7 +255,7 @@ def pspec_and_ctf_fit(options,debug=False):
 		name=base_name(filename)
 
 		# compute the power spectra
-		if debug : print("Processing ",filename)
+		if debug : sxprint("Processing ",filename)
 		apix=options.apix
 		if apix<=0 : apix=EMData(filename,0,1)["apix_x"] 
 		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp)
@@ -259,7 +265,7 @@ def pspec_and_ctf_fit(options,debug=False):
 		Util.save_data(0,ds,bg_1d,"ctf.bgb4.txt")
 
 		# Fit the CTF parameters
-		if debug : print("Fit CTF")
+		if debug : sxprint("Fit CTF")
 		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp)
 		db_parms[name]=[ctf.to_string(),im_1d,bg_1d,im_2d,bg_2d]
 
@@ -348,9 +354,9 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 			if not lctf or not lctf.equal(ctf):
 				wienerim=fft1.copy()
 				ctf.compute_2d_complex(wienerim,Ctf.CtfType.CTF_WIENER_FILTER)
-#				print wienerim.get_attr_dict()
+#				sxprint wienerim.get_attr_dict()
 #				display(wienerim)
-#				print ctf.to_string()
+#				sxprint ctf.to_string()
 #				plot(ctf.background)
 #				plot(ctf.snr)
 #				plot(ctf.compute_1d(ys,Ctf.CtfType.CTF_WIENER_FILTER))
@@ -362,10 +368,10 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 			out.process("normalize.edgemean")
 			try: out.write_image(wiener,i)
 			except: 
-				print(wiener,i)
+				sxprint(wiener,i)
 				try: out.write_image(wiener,i)
 				except: 
-					print("!!! ",wiener,i)
+					sxprint("!!! ",wiener,i)
 					out.write_image("error.hed",-1)
 		lctf=ctf
 
@@ -434,7 +440,7 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 		ratio1=mask1.get_attr("square_sum")/(ys*ys)	#/1.035
 		ratio2=mask2.get_attr("square_sum")/(ys*ys)
 		masks[(ys,radius)]=(mask1,ratio1,mask2,ratio2)
-		print("  RATIOS  ", ratio1, ratio2,"    ",radius)
+		sxprint("  RATIOS  ", ratio1, ratio2,"    ",radius)
 		#mask1.write_image("mask1.hdf",0)
 		#mask2.write_image("mask2.hdf",0)
 	pav1 = model_blank(ys2,ys2)
@@ -459,14 +465,14 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 		Util.add_img(pav1, pp)
 		Util.add_img2(pva1, pp)
 		imf=im1.do_fft()
-		#print_col(imf,0)
+		#sxprint_col(imf,0)
 		imf.ri2inten()
 		#info(imf)
 		imf.set_complex(0)
-		#print_col(imf,0)
+		#sxprint_col(imf,0)
 		#imf.write_image("imf.hdf",0)
 		#pop = periodogram(im1)
-		#print_col(pop,90)
+		#sxprint_col(pop,90)
 		#pop.write_image("pop.hdf",0)
 		if i==0: av1=imf
 		else: av1+=imf
@@ -641,7 +647,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	ctf.from_dict({"defocus":1.0,"voltage":voltage,"bfactor":0.0,"cs":cs,"ampcont":ac,"apix":apix,"dsbg":ds,"background":bg_1d})
 	
 	sf = sfact([i*ds for i in range(ys)], "ribosome","nono")
-	#print "  SF ",sf
+	#sxprint "  SF ",sf
 	
 	if debug: dfout=open("ctf.df.txt","w")
 	dfbest1=(0,-1.0e20)
@@ -713,7 +719,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 				for xx in range(last[0],cur[0]):
 					w=(xx-last[0])/float(cur[0]-last[0])
 					bg_1d[xx]=bg2[xx]*(cur[1]*w+last[1]*(1.0-w))
-#					print xx,"\t",(cur[1]*w+last[1]*(1.0-w)) #,"\t",cur[1],last[1]
+#					sxprint xx,"\t",(cur[1]*w+last[1]*(1.0-w)) #,"\t",cur[1],last[1]
 				last=cur
 		# cover the area from the last zero crossing to the end of the curve
 		for xx in range(last[0],len(bg2)):
@@ -748,7 +754,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	best=(0,0)
 	s0=int(.05/ds)+1
 	s1=min(int(0.14/ds),len(bg_1d)-1)
-	print("  FREQ RANGE",s0,s1)
+	sxprint("  FREQ RANGE",s0,s1)
 	for b in range(1,len(bfs)-1):
 		ctf.bfactor=bfs[b]
 		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
@@ -795,18 +801,18 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 
 		if best[0]==0 or er<best[0] :
 			best=(er,ctf.bfactor)
-			print("  BEST  ",best)
+			sxprint("  BEST  ",best)
 			#for s in xrange(s0,len(bg_1d)-1):
-			#	print  s,cc[s],im_1d[s]-bg_1d[s],sfact(ds*s)
+			#	sxprint  s,cc[s],im_1d[s]-bg_1d[s],sfact(ds*s)
 	#for i in xrange(3*len(cc)):
-	#	print  ds*i,"   ",sfact(ds*i)
+	#	sxprint  ds*i,"   ",sfact(ds*i)
 
-#		print bfs[b],best
+#		sxprint bfs[b],best
 
 
 	ctf.bfactor=best[1]
 
-	if 1 : print("Best DF = %1.3f   B-factor = %1.0f"%(dfbest[0],ctf.bfactor))
+	if 1 : sxprint("Best DF = %1.3f   B-factor = %1.0f"%(dfbest[0],ctf.bfactor))
 
 
 	return ctf
@@ -831,13 +837,13 @@ try:
 	from PyQt4.QtCore import Qt
 	from eman2_gui.valslider import ValSlider
 except:
-	print("Warning: PyQt4 must be installed to use the --gui option")
+	sxprint("Warning: PyQt4 must be installed to use the --gui option")
 	class dummy(object):
 		pass
 	class QWidget(object):
 		"A dummy class for use when Qt not installed"
 		def __init__(self,parent):
-			print("Qt4 has not been loaded")
+			sxprint("Qt4 has not been loaded")
 	QtGui=dummy()
 	QtGui.QWidget=QWidget
 
@@ -849,13 +855,13 @@ class GUIctf(QtGui.QWidget):
 		try:
 			from eman2_gui.emimage2d import EMImage2DWidget
 		except:
-			print("Cannot import EMAN image GUI objects (EMImage2DWidget)")
-			sys.exit(1)
+			ERROR( "Cannot import EMAN image GUI objects (EMImage2DWidget)" )
+			return
 		try: 
 			from eman2_gui.emplot2d import EMPlot2DWidget
 		except:
-			print("Cannot import EMAN plot GUI objects (is matplotlib installed?)")
-			sys.exit(1)
+			ERROR( "Cannot import EMAN plot GUI objects (is matplotlib installed?)" )
+			return
 		
 		self.app = weakref.ref(application)
 		
@@ -988,7 +994,7 @@ class GUIctf(QtGui.QWidget):
 		
 		db_parms=db_open_dict("bdb:e2ctf.parms")
 		if name not in db_parms:
-			print("error, ctf parameters do not exist for:",name)
+			sxprint( "error, ctf parameters do not exist for:", name )
 #			
 		
 		data.extend(db_parms[name])
@@ -1089,7 +1095,7 @@ class GUIctf(QtGui.QWidget):
 			self.guiplot.set_data((s,inten[:len(s)]),"single",True)
 			all=[0 for i in inten]
 			for st in self.data:
-				print(st)
+				sxprint(st)
 				inten=[fabs(i) for i in st[1].compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)]
 				for i in range(len(all)): all[i]+=inten[i]
 			self.guiplot.set_data((s,all[:len(s)]),"total")
@@ -1160,4 +1166,6 @@ class GUIctf(QtGui.QWidget):
 
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

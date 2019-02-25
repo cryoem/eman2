@@ -33,7 +33,10 @@ from __future__ import print_function
 
 
 import os
+
 import global_def
+from global_def import sxprint
+
 from global_def import *
 from optparse import OptionParser
 import sys
@@ -53,9 +56,11 @@ def main():
 		disable_bdb_cache()
 
 	if len(args) != 2:
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
-		exit(1)
+		sxprint( "Usage: " + usage )
+		sxprint( "Please run \'" + progname + " -h\' for detailed options" )
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
+		
 	elif(options.ang_scale != None and options.shift_scale != None and options.mag_scale != None):
 		from applications  import ali_vol_scale
 		global_def.BATCH = True
@@ -83,4 +88,6 @@ def main():
 		global_def.BATCH = False
 		
 if __name__ == "__main__":
-		main()
+	global_def.print_timestamp( "Start" )
+	main()
+	global_def.print_timestamp( "Finish" )

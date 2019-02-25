@@ -32,12 +32,15 @@ from __future__ import print_function
 #
 
 import global_def
+from global_def import sxprint, ERROR
+
 from   global_def     import *
 
+import os
+import sys
+from optparse    import OptionParser
+
 def main():
-	import os
-	import sys
-	from optparse    import OptionParser
 
 	arglist = []
 	for arg in sys.argv:
@@ -55,17 +58,21 @@ def main():
 	(options,args) = parser.parse_args( arglist[1:] )
      
 	if len(args)<1 or len(args)>3:
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
-		sys.exit(-1)
-
+		sxprint("usage: " + usage)
+		sxprint("Please run '" + progname + " -h' for detailed options")
+		ERROR( "Invalid number of parameters. Please see usage information above" )
+		return
 
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache
 		disable_bdb_cache()
+
 	from applications import imgstat
+
 	global_def.BATCH = True
 	imgstat( args, options.ccc, options.fsc, options.inf, options.rad )
 
 if __name__=="__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )
