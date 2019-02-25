@@ -41,10 +41,6 @@ import sxctf_refine
 import global_def
 
 
-
-ERROR = 1
-DR_RATIO = 3
-
 def setup_argparser():
     argparser = argparse.ArgumentParser(
         description="Error assessment for CTF refinement",
@@ -79,9 +75,9 @@ def setup_argparser():
     return argparser
 
 
-
 def _main_():
     argparser = setup_argparser()
+
     args = argparser.parse_args()
 
     path_to_resultsfile = args.resultsfile
@@ -91,10 +87,12 @@ def _main_():
     path_output = args.output
     path_stack = args.stack
     field = args.field
+    field_index_error = 1
+    field_index_dr_ratio = 3
     if field == "ERROR":
-        field = ERROR
+        field = field_index_error
     elif field == "DR_RATIO":
-        field = DR_RATIO
+        field = field_index_dr_ratio
 
     # Read in error file
     results = np.loadtxt(path_to_resultsfile, delimiter=",")
