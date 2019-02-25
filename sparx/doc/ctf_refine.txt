@@ -14,7 +14,8 @@ Usage in command line
 \\
 ===== Typical usage =====
 
-Before doing defocus refinement, you should have reached 4 angstrom
+Before doing defocus refinement, you should have reached ~4 angstrom.
+sxctf_refine.py exists only in non-MPI version.
 
 
 \\
