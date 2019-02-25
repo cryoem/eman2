@@ -47,7 +47,7 @@ def setup_argparser():
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
-    argparser.add_argument("-r", "--resultsfile", help="Path to your error file")
+    argparser.add_argument("-r", "--resultsfile", help="Path to your results file")
     argparser.add_argument(
         "-m", "--mode", default="UPDATE", choices=["EXTRACT", "UPDATE"], help="Mode"
     )
@@ -59,14 +59,14 @@ def setup_argparser():
         "--lower_then",
         type=float,
         default=0.1,
-        help="Select particles with errors lower than this threshold",
+        help="Select particles with field values lower than this threshold",
     )
     argparser.add_argument(
         "-gt",
         "--greater_then",
         type=float,
         default=0,
-        help="Select particles with errors greater than this threshold",
+        help="Select particles with field values greater than this threshold",
     )
     argparser.add_argument("-o", "--output", required=True, help="Path output bdb stack")
     argparser.add_argument(
