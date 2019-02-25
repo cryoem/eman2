@@ -53,103 +53,7 @@ import global_def
 from projection import prgl
 
 
-EXAMPLE_TEXT_MERIDIEN = """Example:
 
-sxrefinectf.py -sxm /path/to/meridien/refinement/folder/ -s bdb:/path/to/stack/STACKNAME 
-              -o bdb:/your/output/path/bdb_file_name -os /statistics/out/path/ 
-              -m /pth/adp_mask/mask.hdf -r 0.2 -d 0.01 -res 2.2 -apix 1.07
-
-"""
-
-EXAMPLE_TEXT_MANUAL = """Example:
-
-sxrefinectf.py -v1 /path/to/volume/vol_0_unfil_XXX.hdf -v2 /path/to/volume/vol_0_unfil_XXX.hdf 
-            -c /path/to/meridien/mainXXX/chunk_0_XXX.txt -s bdb:/path/to/stack/STACKNAME 
-            -p /path/to/merdien/refinement/final_params_XXX.txt -o bdb:/your/output/path/bdb_file_name 
-            -os /statistics/out/path/ -m /pth/adp_mask/mask.hdf -r 0.2 -d 0.01 -res 2.2 -apix 1.07
-
-"""
-
-ARGPARSER = argparse.ArgumentParser(
-    description="Refine your CTF",
-    formatter_class=argparse.RawDescriptionHelpFormatter,
-    add_help=False,
-)
-
-
-ARGPARSER.add_argument("inputstack", help="Path to your particle stack")
-
-ARGPARSER.add_argument("outstack", help="bdb file path to new virtual stack")
-
-ARGPARSER.add_argument("outdirstats", help="Directory to write the statistics into")
-
-ARGPARSER.add_argument(
-    "-r", "--range", default=0.15, type=float, help="Defocus search range (in microns)"
-)
-
-ARGPARSER.add_argument(
-    "-d", "--delta", default=0.0025, type=float, help="Defocus step size (in microns)"
-)
-
-ARGPARSER.add_argument(
-    "-res", "--resolution", type=float, help="Nominal resolution (in angstrom)"
-)
-
-ARGPARSER.add_argument(
-    "-apix", "--pixelsize", type=float, help="Pixel size (in angstrom)"
-)
-
-ARGPARSER.add_argument("-m", "--mask", help="Path to adaptive mask for the volume")
-
-ARGPARSER.add_argument(
-    "-num",
-    "--number_particles",
-    type=int,
-    help="Number of particles to process. Option is mainly used " "for debugging.",
-)
-
-CHILD_ARGPARSER = argparse.ArgumentParser(
-    description="Refine your CTF",
-    formatter_class=argparse.RawDescriptionHelpFormatter,
-    add_help=True,
-)
-
-
-SUBPARSERS = CHILD_ARGPARSER.add_subparsers(
-    help="You can either run it from meridien or specify everything manually"
-)
-PARSER_MERIDIEN = SUBPARSERS.add_parser(
-    "meridien",
-    help="Run it by specifing meridien folder",
-    parents=[ARGPARSER],
-    epilog=EXAMPLE_TEXT_MERIDIEN,
-    formatter_class=argparse.RawDescriptionHelpFormatter,
-)
-PARSER_MANUAL = SUBPARSERS.add_parser(
-    "manual",
-    help="Run it by specifing parameters manually",
-    parents=[ARGPARSER],
-    epilog=EXAMPLE_TEXT_MANUAL,
-    formatter_class=argparse.RawDescriptionHelpFormatter,
-)
-
-
-PARSER_MANUAL.add_argument("volume", help="Path to your first half map")
-
-PARSER_MANUAL.add_argument(
-    "-v2",
-    "--volume2",
-    help="Path to your second half map. Only necessary if chunk file is available",
-)
-
-# TODO: Use both chunks might be necessay in the future.
-PARSER_MANUAL.add_argument("-c", "--chunk", help="Path to one of the chunk files")
-
-
-PARSER_MANUAL.add_argument("-p", "--params", help="Path to your params file")
-
-
-PARSER_MERIDIEN.add_argument("meridien_path", help="Path to meridien refinement folder")
 
 
 def create_ctf_list(current_ctf, def_search_range, def_step_size):
@@ -715,8 +619,107 @@ def merge_ctf_refinement_results(refinement_results):
             )
     return refined_ctfs_as_list, refinement_results_per_micrograph
 
+def setup_argparser():
+
+    example_txt_meridien = """Example:
+
+    sxrefinectf.py -sxm /path/to/meridien/refinement/folder/ -s bdb:/path/to/stack/STACKNAME 
+                  -o bdb:/your/output/path/bdb_file_name -os /statistics/out/path/ 
+                  -m /pth/adp_mask/mask.hdf -r 0.2 -d 0.01 -res 2.2 -apix 1.07
+
+    """
+
+    example_txt_manual = """Example:
+
+    sxrefinectf.py -v1 /path/to/volume/vol_0_unfil_XXX.hdf -v2 /path/to/volume/vol_0_unfil_XXX.hdf 
+                -c /path/to/meridien/mainXXX/chunk_0_XXX.txt -s bdb:/path/to/stack/STACKNAME 
+                -p /path/to/merdien/refinement/final_params_XXX.txt -o bdb:/your/output/path/bdb_file_name 
+                -os /statistics/out/path/ -m /pth/adp_mask/mask.hdf -r 0.2 -d 0.01 -res 2.2 -apix 1.07
+
+    """
+
+    argparser = argparse.ArgumentParser(
+        description="Refine your CTF",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        add_help=False,
+    )
+
+    argparser.add_argument("inputstack", help="Path to your particle stack")
+
+    argparser.add_argument("outstack", help="bdb file path to new virtual stack")
+
+    argparser.add_argument("outdirstats", help="Directory to write the statistics into")
+
+    argparser.add_argument(
+        "-r", "--range", default=0.15, type=float, help="Defocus search range (in microns)"
+    )
+
+    argparser.add_argument(
+        "-d", "--delta", default=0.0025, type=float, help="Defocus step size (in microns)"
+    )
+
+    argparser.add_argument(
+        "-res", "--resolution", type=float, help="Nominal resolution (in angstrom)"
+    )
+
+    argparser.add_argument(
+        "-apix", "--pixelsize", type=float, help="Pixel size (in angstrom)"
+    )
+
+    argparser.add_argument("-m", "--mask", help="Path to adaptive mask for the volume")
+
+    argparser.add_argument(
+        "-num",
+        "--number_particles",
+        type=int,
+        help="Number of particles to process. Option is mainly used " "for debugging.",
+    )
+
+    child_argparser = argparse.ArgumentParser(
+        description="Refine your CTF",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        add_help=True,
+    )
+
+    subparsers = child_argparser.add_subparsers(
+        help="You can either run it from meridien or specify everything manually"
+    )
+    parser_meridien = subparsers.add_parser(
+        "meridien",
+        help="Run it by specifing meridien folder",
+        parents=[argparser],
+        epilog=example_txt_meridien,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser_manual = subparsers.add_parser(
+        "manual",
+        help="Run it by specifing parameters manually",
+        parents=[argparser],
+        epilog=example_txt_manual,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    parser_manual.add_argument("volume", help="Path to your first half map")
+
+    parser_manual.add_argument(
+        "-v2",
+        "--volume2",
+        help="Path to your second half map. Only necessary if chunk file is available",
+    )
+
+    # TODO: Use both chunks might be necessay in the future.
+    parser_manual.add_argument("-c", "--chunk", help="Path to one of the chunk files")
+
+    parser_manual.add_argument("-p", "--params", help="Path to your params file")
+
+    parser_meridien.add_argument("meridien_path", help="Path to meridien refinement folder")
+
+    return argparser, child_argparser
+
 
 def _main_():
+
+    _, child_argparser = setup_argparser()
     # These global variables are kind of ugly, but are necessary in python2. Will be removed in
     # python 3.
     global STACK_FILE_PATH
@@ -730,7 +733,7 @@ def _main_():
     global PIXEL_SIZE
     global HALF_MAP_ASSIGNEMENTS
 
-    args = CHILD_ARGPARSER.parse_args()
+    args = child_argparser.parse_args()
 
     meridien_path = args.meridien_path
 
