@@ -40,43 +40,49 @@ import EMAN2
 import sxctf_refine
 import global_def
 
-ARGPARSER = argparse.ArgumentParser(
-    description="Error assessment for CTF refinement",
-    formatter_class=argparse.RawDescriptionHelpFormatter,
-)
 
-ARGPARSER.add_argument("-r", "--resultsfile", help="Path to your error file")
-ARGPARSER.add_argument(
-    "-m", "--mode", default="UPDATE", choices=["EXTRACT", "UPDATE"], help="Mode"
-)
-ARGPARSER.add_argument(
-    "-f", "--field", default="ERROR", choices=["ERROR", "DR_RATIO"], help="Mode"
-)
-ARGPARSER.add_argument(
-    "-lt",
-    "--lower_then",
-    type=float,
-    default=0.1,
-    help="Select particles with errors lower than this threshold",
-)
-ARGPARSER.add_argument(
-    "-gt",
-    "--greater_then",
-    type=float,
-    default=0,
-    help="Select particles with errors greater than this threshold",
-)
-ARGPARSER.add_argument("-o", "--output", required=True, help="Path output bdb stack")
-ARGPARSER.add_argument(
-    "-s", "--stack", required=True, help="Path to original bdb stack"
-)
 
 ERROR = 1
 DR_RATIO = 3
 
+def setup_argparser():
+    argparser = argparse.ArgumentParser(
+        description="Error assessment for CTF refinement",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    argparser.add_argument("-r", "--resultsfile", help="Path to your error file")
+    argparser.add_argument(
+        "-m", "--mode", default="UPDATE", choices=["EXTRACT", "UPDATE"], help="Mode"
+    )
+    argparser.add_argument(
+        "-f", "--field", default="ERROR", choices=["ERROR", "DR_RATIO"], help="Mode"
+    )
+    argparser.add_argument(
+        "-lt",
+        "--lower_then",
+        type=float,
+        default=0.1,
+        help="Select particles with errors lower than this threshold",
+    )
+    argparser.add_argument(
+        "-gt",
+        "--greater_then",
+        type=float,
+        default=0,
+        help="Select particles with errors greater than this threshold",
+    )
+    argparser.add_argument("-o", "--output", required=True, help="Path output bdb stack")
+    argparser.add_argument(
+        "-s", "--stack", required=True, help="Path to original bdb stack"
+    )
+    return argparser
+
+
 
 def _main_():
-    args = ARGPARSER.parse_args()
+    argparser = setup_argparser()
+    args = argparser.parse_args()
 
     path_to_resultsfile = args.resultsfile
     mode = args.mode
