@@ -35,6 +35,9 @@ from builtins import range
 from builtins import object
 from global_def import *
 from functools import reduce
+import EMAN2
+import numpy as np
+
 
 def params_2D_3D(alpha, sx, sy, mirror):
 	"""
@@ -1305,6 +1308,28 @@ def model_cylinder(radius, nx, ny, nz):
 	e.set_size(nx, ny, nz)
 	e.process_inplace("testimage.cylinder", {"radius":radius})
 	return  e
+
+def model_rotated_rectangle2D(radius_long,radius_short,nx,ny,angle=90):
+	"""
+
+	:param radius_long: Radius long axis
+	:param radius_short: Radius short axis
+	:param nx: Mask size x-dim
+	:param ny: Mask size y-dim
+	:param angle: Rotation angle in degree
+	:return:
+	"""
+	from scipy import ndimage
+	mask = np.zeros((nx,ny))
+
+	mask[
+		(nx//2-radius_short):(nx//2+radius_short),
+		(ny//2-radius_long):(ny//2+radius_long)
+		] = 1.0
+	mask = ndimage.rotate(mask,angle,reshape=False)
+	mask = EMAN2.EMNumPy.numpy2em(mask)
+	return mask
+
 
 def model_gauss_noise(sigma, nx, ny=1, nz=1):
 	"""
