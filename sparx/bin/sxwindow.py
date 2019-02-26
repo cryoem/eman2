@@ -79,6 +79,9 @@ def read_spider_coords_file(coords_path):
 		coords_list[i] = [coords_list[i][2], coords_list[i][3]]
 	return coords_list
 
+def read_cryolo_coords_file(coords_path):
+	pass
+
 def read_cryolo_helical_segmented_coords_file(coords_path):
 	split_indicis = []
 	index_first_helix = -1
@@ -320,7 +323,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				error_status = ("File specified by selection_list option does not exists. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 				break
 		
-		if error_status is None and options.coordinates_format.lower() not in ["sphire", "eman1", "eman2", "spider"]:
+		if error_status is None and options.coordinates_format.lower() not in ["sphire", "eman1", "eman2", "spider","cryolo_helical_segmented"]:
 			error_status = ("Invalid option value: --coordinates_format=%s. Please run %s -h for help." % (options.coordinates_format, program_name), getframeinfo(currentframe()))
 			break
 		
@@ -1176,6 +1179,18 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				particle_img_dict["ptcl_source_coord"] = [int(coords_list[original_id][0]), int(coords_list[original_id][1])]
 				particle_img_dict["ptcl_source_coord_id"] = coords_id
 				particle_img_dict["ptcl_source_box_id"] = original_id
+				try:
+					particle_img_dict["filament_id"] = coords_list[original_id][2]
+				except IndexError:
+					pass
+				try:
+					particle_img_dict["segment_id"] = coords_list[original_id][3]
+				except IndexError:
+					pass
+				try:
+					particle_img_dict["segment_angle"] = coords_list[original_id][4]
+				except IndexError:
+					pass
 				particle_img_dict['data_n'] = coords_id  # NOTE: Toshio Moriya 2017/11/20: same as ptcl_source_coord_id but the other program uses this header entry key...
 				particle_img_dict["data_path"] = '../' + local_mrcs_name
 				particle_img_dict["resample_ratio"] = resample_ratio
