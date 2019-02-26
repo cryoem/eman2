@@ -80,7 +80,7 @@ def compute_search_params(acc_trans, shifter, old_range):
 	return new_range, step
 
 
-def ai_spa( Tracker, fff, anger, shifter, chout = False):
+def ai_spa( Tracker, fff, anger, shifter, do_local, chout = False):
 	"""
 	chout - if true, one can print, call the program with, chout = (Blockdata["myid"] == Blockdata["main_node"])
 	fff (fsc), anger, shifter are coming from the previous iteration
@@ -100,136 +100,7 @@ def ai_spa( Tracker, fff, anger, shifter, chout = False):
 	"""
 
 	keepgoing = 1
-
-	if(Tracker["mainiteration"] == 1):
-		Tracker["state"] = "INITIAL"
-
-		inc = Tracker["currentres"]
-		if Tracker["large_at_Nyquist"]:	inc += int(0.25 * Tracker["constants"]["nnxo"]/2 +0.5)
-		else:							inc += Tracker["nxstep"]
-		Tracker["nxinit"] = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
-		Tracker["local"]  = False
-		Tracker["changed_delta"] = False
-		#  Do not use CTF during first iteration
-		#Tracker["applyctf"]    = False
-		#Tracker["constants"]["best"] = Tracker["mainiteration"]
-	else:
-		if( Tracker["mainiteration"] == 2 ):  Tracker["state"] = "PRIMARY"
-		l05 = -1
-		l01 = -1
-		for i in range(len(fff)):
-			if(fff[i] < 0.5):
-				l05 = i-1
-				break
-		for i in range(l05+1, len(fff)):
-			if(fff[i] < 0.143):
-				l01 = i-1
-				break
-		l01 = max(l01,-1)
-
-		if( chout ): global_def.sxprint("  AI: TR[nxstep], TR[currentres], TR[fsc143], l05, l01, fff[Tracker[nxinit]//2-1]:",Tracker["nxstep"],Tracker["currentres"],Tracker["fsc143"], l05, l01,fff[Tracker["nxinit"]//2-1])
-		Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
-		if(Tracker["state"] == "FINAL" or Tracker["state"] == "RESTRICTED"): Tracker["large_at_Nyquist"] = (fff[Tracker["nxinit"]//2] > 0.1 or fff[Tracker["nxinit"]//2-1] > 0.2)
-		else:   Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2-1] > 0.2
-
-		if( Tracker["mainiteration"] == 2 ):  
-			maxres     = Tracker["constants"]["inires"]
-			maxres_143 = l01
-		else:                                 
-			maxres     = max(l05, 5)  #  5 is minimum resolution of the map, could be set by the user
-			maxres_143 = l01
-		try:    bestres_143 = Tracker["bestres_143"]
-		except: Tracker["bestres_143"] = maxres_143
-		if (maxres >= Tracker["bestres"]) and (maxres_143 >=Tracker["bestres_143"]):
-			Tracker["bestres"]				= maxres
-			Tracker["bestres_143"]          = maxres_143
-			Tracker["constants"]["best"] 	= max(Tracker["mainiteration"]-1, 3)#
-
-		if( maxres > Tracker["currentres"]):
-			Tracker["no_improvement"] 		= 0
-			Tracker["no_params_changes"] 	= 0
-		else:    Tracker["no_improvement"] += 1
-
-		Tracker["currentres"] = maxres
-		Tracker["fsc143"]     = maxres_143
-
-		params_changes = anger >= 1.03*Tracker["anger"] and shifter >= 1.03*Tracker["shifter"]
-
-		#  figure changes in params
-		if( chout ):  global_def.sxprint("  Incoming  parameters  %10.3f  %10.3f  %10.3f  %10.3f   %s"%(Tracker["anger"],anger,Tracker["shifter"],shifter,params_changes))
-		if( params_changes ):	Tracker["no_params_changes"] += 1
-		else:					Tracker["no_params_changes"]  = 0
-
-		if( anger < Tracker["anger"] ):			Tracker["anger"]   = anger
-		if( shifter < Tracker["shifter"] ):		Tracker["shifter"] = shifter
-
-		inc = Tracker["currentres"]
-		if Tracker["large_at_Nyquist"]:	
-			inc += int(0.25 * Tracker["constants"]["nnxo"]/2 +0.5)
-			slim = int(Tracker["nxinit"]*1.09)
-			tmp = min(max(2*inc,slim+slim%2), Tracker["constants"]["nnxo"] )
-		else:
-			inc += Tracker["nxstep"]
-			tmp = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
-
-		if( chout ): global_def.sxprint("  IN AI: nxstep, large at Nyq, outcoming current res, adjusted current, inc, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
-
-		Tracker["nxinit"] = tmp
-		Tracker["changed_delta"] = False
-		#  decide angular step and translations
-		if((Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) and (Tracker["no_params_changes"]>=Tracker["constants"]["limit_changes"]) and (not Tracker["large_at_Nyquist"])):
-			if( Tracker["delta"] < 0.75*Tracker["acc_rot"] ):#<<<----it might cause converge issues when shake is 0.0
-				keepgoing = 0
-				if chout:
-					global_def.sxprint("Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
-			else:
-				step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
-				if( chout ):   global_def.sxprint("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
-				Tracker["xr"] = step_range
-				Tracker["ts"] = step
-				Tracker["delta"] /= 2.0
-				Tracker["changed_delta"] = True
-				if( Tracker["delta"] <= 3.75/2.0 ):  #  MOVE DOWN TO RESTRICTED
-					Tracker["an"]		= 6*Tracker["delta"]
-					if( Tracker["delta"] <= numpy.degrees(numpy.arctan(0.25/Tracker["constants"]["radius"])) ): Tracker["state"] = "FINAL"
-					else:	Tracker["state"] = "RESTRICTED"
-				else:
-					Tracker["an"] = -1
-					if( Tracker["state"] == "PRIMARY" ):  Tracker["state"] = "EXHAUSTIVE"
-				if( chout ): global_def.sxprint("  IN AI there was reset due to no changes, adjust stuff  ",Tracker["no_improvement"],Tracker["no_params_changes"],Tracker["delta"],Tracker["xr"],Tracker["ts"], Tracker["state"])
-				# check convergence before reset
-				if( (Tracker["state"] == "FINAL") and (Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) ):
-					keepgoing = 0
-					if chout:
-						global_def.sxprint("Convergence criterion B is reached (angular step delta smaller than the limit imposed by the structure radius)")
-				Tracker["no_improvement"]		= 0
-				Tracker["no_params_changes"]	= 0
-				Tracker["anger"]				= 1.0e23
-				Tracker["shifter"]				= 1.0e23
 	Tracker["keepfirst"] = -1
-	return keepgoing
-
-
-def ai_spa_continuation(Tracker, fff, anger = -1.0, shifter = -1.0, chout = False):
-	"""
-	#  chout - if true, one can sxprint, call the program with, chout = (Blockdata["myid"] == Blockdata["main_node"])
-	#  fff (fsc), anger, shifter are coming from the previous iteration
-	#  
-	#  Possibilities we will consider:
-	#    1.  resolution improved: keep going with current settings.
-	#    2.  resolution stalled and no pwadjust: turn on pwadjust
-	#    3.  resolution stalled and pwadjust: move to the next phase
-	#    4.  resolution decreased: back off and move to the next phase
-	#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
-	
-	###  checkconvergence  merged in AI  02/16/2017
-	# when the following conditions are all true
-	#1. has_fine_enough_angular_sampling  True  #   Current sampling are fine enough
-	#2. nr_iter_wo_resol_gain >= MAX_NR_ITER_WO_RESOL_GAIN # 
-	#3. nr_iter_wo_large_hidden_variable_changes >= MAX_NR_ITER_WO_LARGE_HIDDEN_VARIABLE_CHANGES
-	"""
-
-	keepgoing = 1
 
 	l05 = -1
 	l01 = -1
@@ -242,15 +113,27 @@ def ai_spa_continuation(Tracker, fff, anger = -1.0, shifter = -1.0, chout = Fals
 			l01 = i-1
 			break
 	l01 = max(l01,-1)
+	ai_string = "  AI: Tracker[nxstep], TR[currentres], Tracker[fsc143], l05, l01, fff[Tracker[nxinit]//2-1]:",Tracker["nxstep"],Tracker["currentres"],Tracker["fsc143"], l05, l01,fff[Tracker["nxinit"]//2-1]
 
-	if( chout ): global_def.sxprint("  AI: Tracker[nxstep], TR[currentres], Tracker[fsc143], l05, l01, fff[Tracker[nxinit]//2-1]:",Tracker["nxstep"],Tracker["currentres"],Tracker["fsc143"], l05, l01,fff[Tracker["nxinit"]//2-1])
+	if Tracker["mainiteration"] == 1 and not do_local:
+		Tracker["state"] = "INITIAL"
 
+		inc = Tracker["currentres"]
+		if Tracker["large_at_Nyquist"]:
+			inc += int(0.25 * Tracker["constants"]["nnxo"]/2 + 0.5)
+		else:
+			inc += Tracker["nxstep"]
+		Tracker["nxinit"] = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
+		Tracker["local"]  = False
+		Tracker["changed_delta"] = False
 
-	if(Tracker["mainiteration"] == 1):
-		Tracker["state"]		= "PRIMARY"
+	elif Tracker["mainiteration"] == 1 and do_local:
+		if chout:
+			global_def.sxprint(ai_string)
+		Tracker["state"]		= "PRIMARY LOCAL"
 		Tracker["currentres"]	= l05
 		Tracker["fsc143"]		= l01
-		Tracker["large_at_Nyquist"] = (fff[Tracker["nxinit"]//2] > 0.1 or fff[Tracker["nxinit"]//2-1] > 0.2)
+		Tracker["large_at_Nyquist"] = bool(fff[Tracker["nxinit"]//2] > 0.1 or fff[Tracker["nxinit"]//2-1] > 0.2)
 		Tracker["nxinit"]	= min(2*Tracker["fsc143"], Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
 		Tracker["local"]	= True
 		Tracker["an"]		= 6*Tracker["delta"]
@@ -260,41 +143,74 @@ def ai_spa_continuation(Tracker, fff, anger = -1.0, shifter = -1.0, chout = Fals
 		Tracker["shifter"]				= 1.0e23
 		Tracker["constants"]["best"] = Tracker["mainiteration"]
 		if chout:
-			global_def.sxprint( "ITERATION  #%2d. Resolution achieved       : %3d/%3d pixels, %5.2fA/%5.2fA."%\
-				(Tracker["mainiteration"], \
-				Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
-				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"])))
+			global_def.sxprint( "ITERATION  #%2d. Resolution achieved       : %3d/%3d pixels, %5.2fA/%5.2fA." % (
+				Tracker["mainiteration"],
+				Tracker["currentres"],
+				Tracker["fsc143"],
+				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]),
+				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]))
+				)
+
 	else:
-		if(Tracker["mainiteration"] > 3):  Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
-		if(Tracker["state"] == "FINAL" or Tracker["state"] == "RESTRICTED"): Tracker["large_at_Nyquist"] = (fff[Tracker["nxinit"]//2] > 0.1 or fff[Tracker["nxinit"]//2-1] > 0.2)
-		else:   Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2-1] > 0.2
+		if chout:
+			global_def.sxprint(ai_string)
 
-		maxres     = max(l05, 5)
-		maxres_143 = l01
-		try:    bestres_143 = Tracker["bestres_143"]
-		except: Tracker["bestres_143"] = maxres_143
-		if( maxres >= Tracker["bestres"]) and  (maxres_143 >= Tracker["bestres_143"]):
+		if Tracker["mainiteration"] == 2 and not do_local:
+			Tracker["state"] = "PRIMARY"
+
+		if Tracker["mainiteration"] > 3 or not do_local:
+			Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
+
+		if(Tracker["state"] == "FINAL" or Tracker["state"] == "RESTRICTED"):
+			Tracker["large_at_Nyquist"] = bool(fff[Tracker["nxinit"]//2] > 0.1 or fff[Tracker["nxinit"]//2-1] > 0.2)
+		else:
+			Tracker["large_at_Nyquist"] = bool(fff[Tracker["nxinit"]//2-1] > 0.2)
+
+		if Tracker["mainiteration"] == 2 and not do_local:
+			maxres = Tracker["constants"]["inires"]
+			maxres_143 = l01
+		else:
+			maxres = max(l05, 5)  #  5 is minimum resolution of the map, could be set by the user
+			maxres_143 = l01
+
+		try:
+			bestres_143 = Tracker["bestres_143"]
+		except:
+			Tracker["bestres_143"] = maxres_143
+
+		if maxres >= Tracker["bestres"] and maxres_143 >=Tracker["bestres_143"]:
 			Tracker["bestres"]				= maxres
-			Tracker["bestres_143"]			= maxres_143
-			Tracker["constants"]["best"] 	= max(Tracker["mainiteration"]-1, 3)
+			Tracker["bestres_143"]          = maxres_143
+			Tracker["constants"]["best"] 	= max(Tracker["mainiteration"]-1, 3)#
 
-		if( maxres > Tracker["currentres"]):
+		if maxres > Tracker["currentres"]:
 			Tracker["no_improvement"] 		= 0
 			Tracker["no_params_changes"] 	= 0
-		else:    Tracker["no_improvement"] += 1
+		else:
+			Tracker["no_improvement"] += 1
 
 		Tracker["currentres"] = maxres
 		Tracker["fsc143"]     = maxres_143
 
-		params_changes = anger >= 1.03*Tracker["anger"] and shifter >= 1.03*Tracker["shifter"]
+		params_changes = bool(anger >= 1.03*Tracker["anger"] and shifter >= 1.03*Tracker["shifter"])
 
 		#  figure changes in params
-		if( chout ):  global_def.sxprint("  Incoming  parameters  %10.3f  %10.3f  %10.3f  %10.3f   %s"%(Tracker["anger"],anger,Tracker["shifter"],shifter,params_changes))
-		if( params_changes ):	Tracker["no_params_changes"] += 1
-		else:					Tracker["no_params_changes"]  = 0
+		if chout:
+			global_def.sxprint("  Incoming  parameters  {0:10.3f}  {1:10.3f}  {2:10.3f}  {3:10.3f}   {4}".format(
+				Tracker["anger"],
+				anger,
+				Tracker["shifter"],
+				shifter,params_changes
+				))
+		if params_changes:
+			Tracker["no_params_changes"] += 1
+		else:
+			Tracker["no_params_changes"]  = 0
 
-		if( anger < Tracker["anger"] ):			Tracker["anger"]   = anger
-		if( shifter < Tracker["shifter"] ):		Tracker["shifter"] = shifter
+		if anger < Tracker["anger"]:
+			Tracker["anger"]   = anger
+		if shifter < Tracker["shifter"]:
+			Tracker["shifter"] = shifter
 
 		inc = Tracker["currentres"]
 		if Tracker["large_at_Nyquist"]:	
@@ -305,33 +221,39 @@ def ai_spa_continuation(Tracker, fff, anger = -1.0, shifter = -1.0, chout = Fals
 			inc += Tracker["nxstep"]
 			tmp = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
 
-		if( chout ): global_def.sxprint("  IN AI: nxstep, large at Nyq, outcoming current res, adjusted current, inc, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
+		if chout:
+			global_def.sxprint("  IN AI: nxstep, large at Nyq, outcoming current res, adjusted current, inc, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
 
-		Tracker["nxinit"]        = tmp
+		Tracker["nxinit"] = tmp
 		Tracker["changed_delta"] = False
 		#  decide angular step and translations
-		if((Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) and (Tracker["no_params_changes"]>=Tracker["constants"]["limit_changes"]) and (not Tracker["large_at_Nyquist"])):
+		if Tracker["no_improvement"] >= Tracker["constants"]["limit_improvement"] and Tracker["no_params_changes"] >= Tracker["constants"]["limit_changes"] and not Tracker["large_at_Nyquist"]:
 			if( Tracker["delta"] < 0.75*Tracker["acc_rot"] ):#<<<----it might cause converge issues when shake is 0.0
 				keepgoing = 0
 				if chout:
 					global_def.sxprint("Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
 			else:
 				step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
-				if( chout ):   global_def.sxprint("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
+				if chout):
+					global_def.sxprint("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
 				Tracker["xr"] = step_range
 				Tracker["ts"] = step
 				Tracker["delta"] /= 2.0
 				Tracker["changed_delta"] = True
-				if( Tracker["delta"] <= 3.75/2.0 or True):  #  MOVE DOWN TO RESTRICTED
+				if Tracker["delta"] <= 3.75/2.0 or do_local:  #  MOVE DOWN TO RESTRICTED
 					Tracker["an"]		= 6*Tracker["delta"]
-					if( Tracker["delta"] <= numpy.degrees(numpy.arctan(0.25/Tracker["constants"]["radius"])) ): Tracker["state"] = "FINAL"
-					else:	Tracker["state"] = "RESTRICTED"
+					if Tracker["delta"] <= numpy.degrees(numpy.arctan(0.25/Tracker["constants"]["radius"])):
+						Tracker["state"] = "FINAL"
+					else:
+						Tracker["state"] = "RESTRICTED"
 				else:
 					Tracker["an"] = -1
-					if( Tracker["state"] == "PRIMARY" ):  Tracker["state"] = "EXHAUSTIVE"
-				if( chout ): global_def.sxprint("  IN AI there was reset due to no changes, adjust stuff  ",Tracker["no_improvement"],Tracker["no_params_changes"],Tracker["delta"],Tracker["xr"],Tracker["ts"], Tracker["state"])
+					if Tracker["state"] == "PRIMARY":
+						Tracker["state"] = "EXHAUSTIVE"
+				if chout:
+					global_def.sxprint("  IN AI there was reset due to no changes, adjust stuff  ",Tracker["no_improvement"],Tracker["no_params_changes"],Tracker["delta"],Tracker["xr"],Tracker["ts"], Tracker["state"])
 				# check convergence before reset
-				if( (Tracker["state"] == "FINAL") and (Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) ):
+				if Tracker["state"] == "FINAL" and Tracker["no_improvement"] >= Tracker["constants"]["limit_improvement"]:
 					keepgoing = 0
 					if chout:
 						global_def.sxprint("Convergence criterion B is reached (angular step delta smaller than the limit imposed by the structure radius)")
@@ -339,5 +261,4 @@ def ai_spa_continuation(Tracker, fff, anger = -1.0, shifter = -1.0, chout = Fals
 				Tracker["no_params_changes"]	= 0
 				Tracker["anger"]				= 1.0e23
 				Tracker["shifter"]				= 1.0e23
-	Tracker["keepfirst"] = -1
 	return keepgoing
