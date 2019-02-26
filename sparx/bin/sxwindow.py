@@ -36,6 +36,7 @@ from optparse import OptionParser, SUPPRESS_HELP
 import glob
 import json
 import shutil
+import numpy as np
 
 from EMAN2 import *
 from EMAN2db import *
@@ -78,23 +79,48 @@ def read_spider_coords_file(coords_path):
 		coords_list[i] = [coords_list[i][2], coords_list[i][3]]
 	return coords_list
 
+def read_cryolo_helical_segmented_coords_file(coords_path):
+	split_indicis = []
+	index_first_helix = -1
+
+	with open(coords_path, "r") as csvfile:
+		for index, row in enumerate(csvfile.readlines()):
+			if row.startswith("#helix"):
+				if index_first_helix == -1:
+					index_first_helix = index
+				else:
+					split_indicis.append(
+						index - index_first_helix - (len(split_indicis) + 1)
+					)
+
+	filament_name = '{0}_{{0}}'.format(os.path.basename(coords_path))
+	coords_list = []
+	coordinates = np.atleast_2d(np.genfromtxt(coords_path))
+	coord_filaments = np.split(coordinates, split_indicis)
+	for filament_id, filament in enumerate(coord_filaments):
+		for coords in filament:
+			coords_list.append([float(coords[0]), float(coords[1]),filament_name.format(filament_id)])
+	return coords_list
+
 # ========================================================================================
 #  Helper functions
 # ========================================================================================
-# ----------------------------------------------------------------------------------------
-#  Generate command line
-# ----------------------------------------------------------------------------------------
 def get_cmd_line():
+	"""
+	Generate command line
+	:return: Returns command line
+	"""
 	cmd_line = ""
 	for arg in sys.argv:
 		cmd_line += arg + "  "
 	cmd_line = "Shell line command: " + cmd_line
 	return cmd_line
 
-# ----------------------------------------------------------------------------------------
-# Get suffix of current time stamp
-# ----------------------------------------------------------------------------------------
+
 def get_time_stamp_suffix():
+	"""
+	:return: Returns suffix of current time stamp
+	"""
 	from time import strftime, localtime
 	time_stamp_suffix = strftime("%Y%m%d_%H%M%S", localtime())
 	return time_stamp_suffix
@@ -849,10 +875,14 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		read_coords_file = read_sphire_coords_file
 	elif coords_format == "eman1":
 		read_coords_file = read_eman1_coords_file
+	elif coords_format == "cryolo":
+		read_coords_file = read_cryolo_coords_file
 	elif coords_format == "eman2":
 		read_coords_file = read_eman2_coords_file
 	elif coords_format == "spider":
 		read_coords_file = read_spider_coords_file
+	elif coords_format == "cryolo_helical_segmented":
+		read_coords_file = read_cryolo_helical_segmented_coords_file
 	else: 
 		assert (False) # Unreachable code
 	assert (read_coords_file != None)
