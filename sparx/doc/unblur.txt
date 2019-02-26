@@ -8,7 +8,7 @@ Unblur cisTEM: Align frames of micrograph movies with [[https://cistem.org/|Unbl
 
 Usage in command line
 
-  sxunblur.py  unblur_path  input_micrograph_pattern  output_directory   --selection_file=SELECTION_FILE  --overwrite  --pixel_size=PIXEL_SIZE   --bin_factor=BIN_FACTOR  --skip_dose_adjustment --additional_dose_unadjusted  --voltage=VOLTAGE  --exposure_per_frame=EXPOSURE  --pre_exposure=EXPOSURE   --min_shift_initial=MIN_SHIFT_INITIAL  --outer_radius=OUTER_RADIUS  --b_factor=B_FACTOR  --half_width_vert=HALF_WIDTH_VERT  --half_width_hor=HALF_WIDTH_HOR  --termination=TERMINATION  --max_iterations=MAX_ITERATIONS  --dont_restore_noise_power  --gain_file=GAIN_FILE  --first_frame=FIRST_FRAME  --last_frame=LAST_FRAME  --distortion_angle=DISTORTION_ANGLE  --major_scale=MAJOR_SCALE  --minor_scale=MINOR_SCALE
+  sxunblur.py  unblur_path  input_micrograph_pattern  output_directory   --selection_file=SELECTION_FILE  --pixel_size=PIXEL_SIZE   --bin_factor=BIN_FACTOR  --skip_dose_adjustment --additional_dose_unadjusted  --voltage=VOLTAGE  --exposure_per_frame=EXPOSURE  --pre_exposure=EXPOSURE   --min_shift_initial=MIN_SHIFT_INITIAL  --outer_radius=OUTER_RADIUS  --b_factor=B_FACTOR  --half_width_vert=HALF_WIDTH_VERT  --half_width_hor=HALF_WIDTH_HOR  --termination=TERMINATION  --max_iterations=MAX_ITERATIONS  --dont_restore_noise_power  --gain_file=GAIN_FILE  --first_frame=FIRST_FRAME  --last_frame=LAST_FRAME  --distortion_angle=DISTORTION_ANGLE  --major_scale=MAJOR_SCALE  --minor_scale=MINOR_SCALE
 
 \\
 ===== Typical usage =====
@@ -26,7 +26,7 @@ sxunblur.py  path/to/unblur  'Movies/*' unblur_out_dir  --pixel_size=1.14  --vol
 
 Run unblur without dose adjustment
 
-sxunblur.py  path/to/unblur  'Movies/*' unblur_out_dir  --pixel_size=1.14  --skip_dose_filter
+sxunblur.py  path/to/unblur  'Movies/*' unblur_out_dir  --pixel_size=1.14  --skip_dose_adjustment
 
 Run unblur without dose adjustment and in addition with dose adjustment
 
@@ -44,16 +44,16 @@ sxunblur.py  path/to/unblur  'Movies/*' unblur_out_dir  --pixel_size=1.14  --vol
   ; %%--%%pixel_size : Pixel size [A]: The pixel size of input micrographs. (default 1.0)
   ; %%--%%bin_factor : Bin factor : Output bin factor. (default required float)
 
-  ; %%--%%voltage : Microscope voltage [kV]: The acceleration voltage of microscope used for imaging. (default 300.0) : %%--%%skip_dose_filter==True
-  ; %%--%%exposure_per_frame : Per frame exposure [e/A^2]: The electron dose per frame in e/A^2. (default 1.0) : %%--%%skip_dose_filter==True
-  ; %%--%%pre_exposure : Pre-exposure [e/A^2]: The electron does in e/A^2 used for exposure prior to imaging. (default 0.0) : %%--%%skip_dose_filter==True
-  ; %%--%%additional_dose_unadjusted : Create unadjusted sums in addition: Run unblur twice to also create dose unadjusted sums. (default False) ; %%--%%skip_dose_filter==True
+  ; %%--%%voltage : Microscope voltage [kV]: The acceleration voltage of microscope used for imaging. (default 300.0) : %%--%%skip_dose_adjustment==True
+  ; %%--%%exposure_per_frame : Per frame exposure [e/A^2]: The electron dose per frame in e/A^2. (default 1.0) : %%--%%skip_dose_adjustment==True
+  ; %%--%%pre_exposure : Pre-exposure [e/A^2]: The electron does in e/A^2 used for exposure prior to imaging. (default 0.0) : %%--%%skip_dose_adjustment==True
+  ; %%--%%additional_dose_unadjusted : Create unadjusted sums in addition: Run unblur twice to also create dose unadjusted sums. (default False) ; %%--%%skip_dose_adjustment==True
   ; %%--%%gain_file : Gain file : Gain file in case of gain uncorrected movies. (default none)
 
 
 \\
 === Advanced Parameters ===
-  ; %%--%%skip_dose_filter : Apply dose filter: Indicate if dose filter should be applied or not. By default, apply dose filter. (default False question reversed in GUI)
+  ; %%--%%skip_dose_adjustment : Apply dose filter: Indicate if dose filter should be applied or not. By default, apply dose filter. (default False question reversed in GUI)
 
   ; %%--%%min_shift_initial : Minimum shift for initial search [A]: Minimum shift for initial search [A] (default 2.0)
   ; %%--%%outer_radius : Outer radius shift limit [A]: Outer radius shift limit (default 20.0)
