@@ -2,7 +2,7 @@
 from __future__ import print_function
 from __future__ import division
 #
-# Author 2016  Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
+# Author 2019  Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
 # Copyright (C) 2019 Max planck institute for molecular physiology, Dortmund
 #
 
@@ -40,6 +40,15 @@ import mpi
 
 
 def parse_args():
+	"""
+	Parse command line arguments.
+
+	Arguments:
+	None
+
+	Returns:
+	dictionary of command line arguments
+	"""
 
 	parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
@@ -98,6 +107,16 @@ def parse_args():
 
 
 def sanity_checks(args, myid):
+	"""
+	Check if the command line arguments are valid.
+
+	Arguments:
+	args - Command line arguments as dictionary
+	myid - MPI id
+
+	Returns:
+	None
+	"""
 
 	if args['gain_file'] is not None:
 		if not os.path.isfile(args['gain_file']):
@@ -117,6 +136,16 @@ def sanity_checks(args, myid):
 
 
 def load_file_names_by_pattern(pattern, selection_file):
+	"""
+	
+
+	Arguments:
+	args - Command line arguments as dictionary
+	myid - MPI id
+
+	Returns:
+	None
+	"""
 	file_names_raw = sorted(glob.glob(pattern))
 	global_def.sxprint('Found {0} movie files based on the provided pattern.'.format(len(file_names_raw)))
 
@@ -166,6 +195,38 @@ def create_unblur_command(
 		major_scale,
 		minor_scale,
 		):
+	"""
+	Create the unblur command based on the information given.
+
+	Arguments:
+	input_stack,
+	output_name,
+	pixel_size,
+	bin_factor,
+	do_filter,
+	kv,
+	exp,
+	pre_exp,
+	do_expert,
+	min_shift,
+	outer_radius,
+	b_factor,
+	half_width_vert,
+	half_width_hor,
+	termination,
+	max_iterations,
+	restore_power,
+	gain_file,
+	first_frame,
+	last_frame,
+	correct_mag,
+	dist_angle,
+	major_scale,
+	minor_scale,
+
+	Returns:
+	The unblur command as string
+	"""
 
 	# Command list
 	unblur_command = []
@@ -219,6 +280,15 @@ def create_unblur_command(
 
 
 def main(args):
+	"""
+	Main function
+
+	Arguments:
+	args - Arguments as dictionary
+
+	Returns:
+	None
+	"""
 
 	mpi.mpi_init(0, [])
 	main_mpi_proc = 0
