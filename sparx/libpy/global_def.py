@@ -33,6 +33,7 @@ Suite 330, Boston, MA  02111-1307 USA
 #--------------------------------------------------------------------[ header ]
 
 # import
+import os
 import re
 import sys
 import time
@@ -118,13 +119,20 @@ LOGFILE_HANDLE  = 0
 IS_LOGFILE_OPEN = False
 
 # sxprint log (sxprint logging can be disabled by setting this to "")
-SXPRINT_LOG_PATH = ""
+SXPRINT_LOG_PATH = "SPHIRE_LOG_HISTORY"
+try:
+	os.makedirs(SXPRINT_LOG_PATH)
+except OSError:
+	pass
 try:
 	init_func = re.search( "([^/]*).py", sys._getframe(len(inspect.stack())-1).f_code.co_filename ).group(1)
 except AttributeError:
 	init_func = 'none'
 
-SXPRINT_LOG = SXPRINT_LOG_PATH + get_timestamp(file_format=True) + "_" + init_func + ".log"
+SXPRINT_LOG = os.path.join(
+	SXPRINT_LOG_PATH,
+	get_timestamp(file_format=True) + "_" + init_func + ".log"
+	)
 
 
 #------------------------------------------------------------[ util functions ]
@@ -170,7 +178,7 @@ def sxprint( *args, **kwargs ):
 	"""
 	t = get_timestamp()
 	f = sys._getframe(1).f_code.co_name
-	m = t + " " + f + " => " + "".join(map(str, args))
+	m = t + " " + f + " => " + "; ".join(map(str, args))
 	
 	print( m ) # for Python 3: print( m, **kwargs )
 	sys.stdout.flush()
@@ -184,6 +192,7 @@ def sxprint( *args, **kwargs ):
 	if SXPRINT_LOG != "":
 		with open( SXPRINT_LOG, "a+" ) as f:
 			f.write( m + "\n" )
+	return m
 
 
 def ERROR( message, where="", action=1, myid=0 ):
