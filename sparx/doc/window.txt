@@ -8,7 +8,7 @@ Particle Extraction: Window particles from micrographs using the particle coordi
 
 Usage in command line
 
-  sxwindow.py  input_micrograph_pattern  input_coordinates_pattern  input_ctf_params_source  output_directory  --selection_list=SELECTION_TEXT_FILE  --coordinates_format=FORMAT_NAME  --box_size=SIZE  --skip_invert  --limit_ctf  --astigmatism_error=ERROR_THRESHOLD  --resample_ratio=RATIO  --check_consistency
+  sxwindow.py  input_micrograph_pattern  input_coordinates_pattern  input_ctf_params_source  output_directory  --selection_list=SELECTION_TEXT_FILE  --coordinates_format=FORMAT_NAME  --box_size=SIZE  --skip_invert  --limit_ctf  --astigmatism_error=ERROR_THRESHOLD  --resample_ratio=RATIO  --check_consistency ---filament_width=FILAMENT_WIDTH
 
 \\
 ===== Typical usage =====
@@ -54,7 +54,7 @@ There are several modes to run the program:
   ; %%--%%astigmatism_error : Astigmatism error limit [Degrees]: Set astigmatism to zero for all micrographs where the angular error computed by sxcter is larger than the desired value. This has no effects when the CTER CTF File is not specified by the CTF paramters source argument. (default 360.0)
   ; %%--%%resample_ratio : Image size reduction factor (<1): Use a value between 0.0 and 1.0 (excluding 0.0). The new pixel size will be automatically recalculated and stored in CTF paramers when resample_ratio < 1.0 is used. (default 1.0)
   ; %%--%%check_consistency : Check consistency of inputs: Create a text file containing the list of inconsistent Micrograph ID entries (i.e. inconsist_mic_list_file.txt). (default False)
-
+  ; %%--%%filament_width : Filament width : Filament width for the creation of the rectangular mask. When -1 is selected it uses one third of the box size. (default -1)
 \\
 ===== Output =====
 Inside the output directory, the program will write a local bdb stack image for each micrograph. The files are named micrograph name with "_ptcls" suffix. For example, ''particles/EMAN2DB/mic0_ptcls.bdb'' or ''bdb:particles#mic0_ptcls'' 
