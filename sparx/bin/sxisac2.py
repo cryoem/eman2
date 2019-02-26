@@ -74,6 +74,9 @@ from mpi          import mpi_bcast, mpi_barrier, mpi_send, mpi_recv, mpi_comm_sp
 from random       import randint, seed
 from time         import localtime, strftime
 from applications import within_group_refinement
+
+import morphology
+
 import os
 
 mpi_init(0, [])
@@ -391,9 +394,16 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 
 	if maskfile:
 		import  types
-		if type(maskfile) is bytes:  mask = get_image(maskfile)
-		else: mask = maskfile
-	else : mask = model_circle(last_ring, nx, nx)
+		if type(maskfile) is bytes:  
+			mask = get_image(maskfile)
+		else: 
+			mask = maskfile
+	else: 
+		mask = model_circle(last_ring, nx, nx)  # (mask_radius, img_size_x, img_size_y)
+		mask_size = 8
+		mask_size = mask_size if (last_ring+mask_size <= nx/2) else nx/2-last_ring  # adjust mask_size if it spills out of the image range
+		mask = morphology.soft_edge( mask, mask_size )
+
 	if type(refim) == type(""):
 		refi = EMData.read_images(refim)
 	else:
