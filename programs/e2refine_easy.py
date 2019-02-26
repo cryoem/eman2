@@ -391,6 +391,7 @@ then this map have initial model bias, and resolution evaluation may be unrealia
 			else:
 				run("e2proc3d.py {model} {path}/threed_00_even.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}".format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix))
 				run("e2proc3d.py {model} {path}/threed_00_odd.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}" .format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix))
+				run("e2proc3d.py {path}/threed_00_even.hdf {path}/fsc_unmasked_00.txt --calcfsc {path}/threed_00_odd.hdf".format(path=options.path))
 				append_html("""<p>Randomizing the Fourier phases of <i>{model}</i> at resolutions higher than {res:1.1f} &Aring;. If the final achieved resolution is not at least ~{resb:1.1f} &Aring;, then the
 gold standard resolution assessment is not valid, and you need to re-refine, starting with a lower resolution target.</p>
 <p>Input particles are from <i>{infile}</i></p>""".format(model=options.model,infile=options.input,res=randomres,resb=randomres*0.9))
