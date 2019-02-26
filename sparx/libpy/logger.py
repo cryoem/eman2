@@ -11,7 +11,7 @@ from global_def import sxprint
 class BaseLogger_Print(object):
     
     def logLine(self, prefix, line, *args, **kwargs):
-        print(line)
+        sxprint(line)
 
 
 class BaseLogger_Files(object):
@@ -20,6 +20,7 @@ class BaseLogger_Files(object):
         fstr = open(prefix + file_name, 'a+')
         fstr.write(line + "\n")
         fstr.close()
+        sxprint(line)
 
 
 class Logger(object):
