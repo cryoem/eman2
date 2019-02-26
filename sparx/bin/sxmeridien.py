@@ -98,6 +98,7 @@ from logger import Logger, BaseLogger_Files
 import global_def
 from global_def import sxprint, ERROR
 
+import user_functions
 from global_def import *
 
 from mpi   	import  *
@@ -202,268 +203,6 @@ def create_zero_group():
 #  create_subgroup()
 #if( Blockdata["subgroup_myid"] > -1 ): mpi_comm_free(Blockdata["subgroup_comm"])
 
-def AI( fff, anger, shifter, chout = False):
-	global Tracker, Blockdata
-	#  chout - if true, one can print, call the program with, chout = (Blockdata["myid"] == Blockdata["main_node"])
-	#  fff (fsc), anger, shifter are coming from the previous iteration
-	#  
-	#  Possibilities we will consider:
-	#    1.  resolution improved: keep going with current settings.
-	#    2.  resolution stalled and no pwadjust: turn on pwadjust
-	#    3.  resolution stalled and pwadjust: move to the next phase
-	#    4.  resolution decreased: back off and move to the next phase
-	#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
-	from sys import exit
-	
-	###  checkconvergence  merged in AI  02/16/2017
-	# when the following conditions are all true
-	#1. has_fine_enough_angular_sampling  True  #   Current sampling are fine enough
-	#2. nr_iter_wo_resol_gain >= MAX_NR_ITER_WO_RESOL_GAIN # 
-	#3. nr_iter_wo_large_hidden_variable_changes >= MAX_NR_ITER_WO_LARGE_HIDDEN_VARIABLE_CHANGES
-
-	keepgoing = 1
-	if(Blockdata["myid"] == Blockdata["main_node"]): line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-
-	if(Tracker["mainiteration"] == 1):
-		Tracker["state"] = "INITIAL"
-
-		inc = Tracker["currentres"]
-		if Tracker["large_at_Nyquist"]:	inc += int(0.25 * Tracker["constants"]["nnxo"]/2 +0.5)
-		else:							inc += Tracker["nxstep"]
-		Tracker["nxinit"] = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
-		Tracker["local"]  = False
-		Tracker["changed_delta"] = False
-		#  Do not use CTF during first iteration
-		#Tracker["applyctf"]    = False
-		#Tracker["constants"]["best"] = Tracker["mainiteration"]
-	else:
-		if( Tracker["mainiteration"] == 2 ):  Tracker["state"] = "PRIMARY"
-		l05 = -1
-		l01 = -1
-		for i in range(len(fff)):
-			if(fff[i] < 0.5):
-				l05 = i-1
-				break
-		for i in range(l05+1, len(fff)):
-			if(fff[i] < 0.143):
-				l01 = i-1
-				break
-		l01 = max(l01,-1)
-
-		if( chout ): sxprint("  AI: TR[nxstep], TR[currentres], TR[fsc143], l05, l01, fff[Tracker[nxinit]//2-1]:",Tracker["nxstep"],Tracker["currentres"],Tracker["fsc143"], l05, l01,fff[Tracker["nxinit"]//2-1])
-		Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
-		if(Tracker["state"] == "FINAL" or Tracker["state"] == "RESTRICTED"): Tracker["large_at_Nyquist"] = (fff[Tracker["nxinit"]//2] > 0.1 or fff[Tracker["nxinit"]//2-1] > 0.2)
-		else:   Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2-1] > 0.2
-
-		if( Tracker["mainiteration"] == 2 ):  
-			maxres     = Tracker["constants"]["inires"]
-			maxres_143 = l01
-		else:                                 
-			maxres     = max(l05, 5)  #  5 is minimum resolution of the map, could be set by the user
-			maxres_143 = l01
-		try:    bestres_143 = Tracker["bestres_143"]
-		except: Tracker["bestres_143"] = maxres_143
-		if (maxres >= Tracker["bestres"]) and (maxres_143 >=Tracker["bestres_143"]):
-			Tracker["bestres"]				= maxres
-			Tracker["bestres_143"]          = maxres_143
-			Tracker["constants"]["best"] 	= max(Tracker["mainiteration"]-1, 3)#
-
-		if( maxres > Tracker["currentres"]):
-			Tracker["no_improvement"] 		= 0
-			Tracker["no_params_changes"] 	= 0
-		else:    Tracker["no_improvement"] += 1
-
-		Tracker["currentres"] = maxres
-		Tracker["fsc143"]     = maxres_143
-
-		params_changes = anger >= 1.03*Tracker["anger"] and shifter >= 1.03*Tracker["shifter"]
-
-		#  figure changes in params
-		if( chout ):  sxprint("  Incoming  parameters  %10.3f  %10.3f  %10.3f  %10.3f   %s"%(Tracker["anger"],anger,Tracker["shifter"],shifter,params_changes))
-		if( params_changes ):	Tracker["no_params_changes"] += 1
-		else:					Tracker["no_params_changes"]  = 0
-
-		if( anger < Tracker["anger"] ):			Tracker["anger"]   = anger
-		if( shifter < Tracker["shifter"] ):		Tracker["shifter"] = shifter
-
-		inc = Tracker["currentres"]
-		if Tracker["large_at_Nyquist"]:	
-			inc += int(0.25 * Tracker["constants"]["nnxo"]/2 +0.5)
-			slim = int(Tracker["nxinit"]*1.09)
-			tmp = min(max(2*inc,slim+slim%2), Tracker["constants"]["nnxo"] )
-		else:
-			inc += Tracker["nxstep"]
-			tmp = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
-
-		if( chout ): sxprint("  IN AI: nxstep, large at Nyq, outcoming current res, adjusted current, inc, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
-
-		Tracker["nxinit"] = tmp
-		Tracker["changed_delta"] = False
-		#  decide angular step and translations
-		if((Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) and (Tracker["no_params_changes"]>=Tracker["constants"]["limit_changes"]) and (not Tracker["large_at_Nyquist"])):
-			if( Tracker["delta"] < 0.75*Tracker["acc_rot"] ):#<<<----it might cause converge issues when shake is 0.0
-				keepgoing = 0
-				if(Blockdata["myid"] == Blockdata["main_node"]):
-					sxprint(line,"Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
-			else:
-				step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
-				if( chout ):   sxprint("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
-				Tracker["xr"] = step_range
-				Tracker["ts"] = step
-				Tracker["delta"] /= 2.0
-				Tracker["changed_delta"] = True
-				if( Tracker["delta"] <= 3.75/2.0 ):  #  MOVE DOWN TO RESTRICTED
-					Tracker["an"]		= 6*Tracker["delta"]
-					if( Tracker["delta"] <= degrees(atan(0.25/Tracker["constants"]["radius"])) ): Tracker["state"] = "FINAL"
-					else:	Tracker["state"] = "RESTRICTED"
-				else:
-					Tracker["an"] = -1
-					if( Tracker["state"] == "PRIMARY" ):  Tracker["state"] = "EXHAUSTIVE"
-				if( chout ): sxprint("  IN AI there was reset due to no changes, adjust stuff  ",Tracker["no_improvement"],Tracker["no_params_changes"],Tracker["delta"],Tracker["xr"],Tracker["ts"], Tracker["state"])
-				# check convergence before reset
-				if( (Tracker["state"] == "FINAL") and (Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) ):
-					keepgoing = 0
-					if(Blockdata["myid"] == Blockdata["main_node"]):
-						sxprint(line,"Convergence criterion B is reached (angular step delta smaller than the limit imposed by the structure radius)")
-				Tracker["no_improvement"]		= 0
-				Tracker["no_params_changes"]	= 0
-				Tracker["anger"]				= 1.0e23
-				Tracker["shifter"]				= 1.0e23
-	Tracker["keepfirst"] = -1
-	return keepgoing
-	
-def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
-	global Tracker, Blockdata
-	#  chout - if true, one can sxprint, call the program with, chout = (Blockdata["myid"] == Blockdata["main_node"])
-	#  fff (fsc), anger, shifter are coming from the previous iteration
-	#  
-	#  Possibilities we will consider:
-	#    1.  resolution improved: keep going with current settings.
-	#    2.  resolution stalled and no pwadjust: turn on pwadjust
-	#    3.  resolution stalled and pwadjust: move to the next phase
-	#    4.  resolution decreased: back off and move to the next phase
-	#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
-	from sys import exit
-	
-	###  checkconvergence  merged in AI  02/16/2017
-	# when the following conditions are all true
-	#1. has_fine_enough_angular_sampling  True  #   Current sampling are fine enough
-	#2. nr_iter_wo_resol_gain >= MAX_NR_ITER_WO_RESOL_GAIN # 
-	#3. nr_iter_wo_large_hidden_variable_changes >= MAX_NR_ITER_WO_LARGE_HIDDEN_VARIABLE_CHANGES
-
-	keepgoing = 1
-
-	l05 = -1
-	l01 = -1
-	for i in range(len(fff)):
-		if(fff[i] < 0.5):
-			l05 = i-1
-			break
-	for i in range(l05+1, len(fff)):
-		if(fff[i] < 0.143):
-			l01 = i-1
-			break
-	l01 = max(l01,-1)
-
-	if( chout ): sxprint("  AI: Tracker[nxstep], TR[currentres], Tracker[fsc143], l05, l01, fff[Tracker[nxinit]//2-1]:",Tracker["nxstep"],Tracker["currentres"],Tracker["fsc143"], l05, l01,fff[Tracker["nxinit"]//2-1])
-	if(Blockdata["myid"] == Blockdata["main_node"]): line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-
-
-	if(Tracker["mainiteration"] == 1):
-		Tracker["state"]		= "PRIMARY"
-		Tracker["currentres"]	= l05
-		Tracker["fsc143"]		= l01
-		Tracker["large_at_Nyquist"] = (fff[Tracker["nxinit"]//2] > 0.1 or fff[Tracker["nxinit"]//2-1] > 0.2)
-		Tracker["nxinit"]	= min(2*Tracker["fsc143"], Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
-		Tracker["local"]	= True
-		Tracker["an"]		= 6*Tracker["delta"]
-		Tracker["no_improvement"] 		= 0
-		Tracker["no_params_changes"] 	= 0
-		Tracker["anger"]				= 1.0e23
-		Tracker["shifter"]				= 1.0e23
-		Tracker["constants"]["best"] = Tracker["mainiteration"]
-		if( Blockdata["myid"] == Blockdata["main_node"] ):
-			sxprint(line, "ITERATION  #%2d. Resolution achieved       : %3d/%3d pixels, %5.2fA/%5.2fA."%\
-				(Tracker["mainiteration"], \
-				Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
-				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"])))
-	else:
-		if(Tracker["mainiteration"] > 3):  Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
-		if(Tracker["state"] == "FINAL" or Tracker["state"] == "RESTRICTED"): Tracker["large_at_Nyquist"] = (fff[Tracker["nxinit"]//2] > 0.1 or fff[Tracker["nxinit"]//2-1] > 0.2)
-		else:   Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2-1] > 0.2
-
-		maxres     = max(l05, 5)
-		maxres_143 = l01
-		try:    bestres_143 = Tracker["bestres_143"]
-		except: Tracker["bestres_143"] = maxres_143
-		if( maxres >= Tracker["bestres"]) and  (maxres_143 >= Tracker["bestres_143"]):
-			Tracker["bestres"]				= maxres
-			Tracker["bestres_143"]			= maxres_143
-			Tracker["constants"]["best"] 	= max(Tracker["mainiteration"]-1, 3)
-
-		if( maxres > Tracker["currentres"]):
-			Tracker["no_improvement"] 		= 0
-			Tracker["no_params_changes"] 	= 0
-		else:    Tracker["no_improvement"] += 1
-
-		Tracker["currentres"] = maxres
-		Tracker["fsc143"]     = maxres_143
-
-		params_changes = anger >= 1.03*Tracker["anger"] and shifter >= 1.03*Tracker["shifter"]
-
-		#  figure changes in params
-		if( chout ):  sxprint("  Incoming  parameters  %10.3f  %10.3f  %10.3f  %10.3f   %s"%(Tracker["anger"],anger,Tracker["shifter"],shifter,params_changes))
-		if( params_changes ):	Tracker["no_params_changes"] += 1
-		else:					Tracker["no_params_changes"]  = 0
-
-		if( anger < Tracker["anger"] ):			Tracker["anger"]   = anger
-		if( shifter < Tracker["shifter"] ):		Tracker["shifter"] = shifter
-
-		inc = Tracker["currentres"]
-		if Tracker["large_at_Nyquist"]:	
-			inc += int(0.25 * Tracker["constants"]["nnxo"]/2 +0.5)
-			slim = int(Tracker["nxinit"]*1.09)
-			tmp = min(max(2*inc,slim+slim%2), Tracker["constants"]["nnxo"] )
-		else:
-			inc += Tracker["nxstep"]
-			tmp = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
-
-		if( chout ): sxprint("  IN AI: nxstep, large at Nyq, outcoming current res, adjusted current, inc, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
-
-		Tracker["nxinit"]        = tmp
-		Tracker["changed_delta"] = False
-		#  decide angular step and translations
-		if((Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) and (Tracker["no_params_changes"]>=Tracker["constants"]["limit_changes"]) and (not Tracker["large_at_Nyquist"])):
-			if( Tracker["delta"] < 0.75*Tracker["acc_rot"] ):#<<<----it might cause converge issues when shake is 0.0
-				keepgoing = 0
-				if(Blockdata["myid"] == Blockdata["main_node"]):
-					sxprint(line,"Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
-			else:
-				step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
-				if( chout ):   sxprint("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
-				Tracker["xr"] = step_range
-				Tracker["ts"] = step
-				Tracker["delta"] /= 2.0
-				Tracker["changed_delta"] = True
-				if( Tracker["delta"] <= 3.75/2.0 or True):  #  MOVE DOWN TO RESTRICTED
-					Tracker["an"]		= 6*Tracker["delta"]
-					if( Tracker["delta"] <= degrees(atan(0.25/Tracker["constants"]["radius"])) ): Tracker["state"] = "FINAL"
-					else:	Tracker["state"] = "RESTRICTED"
-				else:
-					Tracker["an"] = -1
-					if( Tracker["state"] == "PRIMARY" ):  Tracker["state"] = "EXHAUSTIVE"
-				if( chout ): sxprint("  IN AI there was reset due to no changes, adjust stuff  ",Tracker["no_improvement"],Tracker["no_params_changes"],Tracker["delta"],Tracker["xr"],Tracker["ts"], Tracker["state"])
-				# check convergence before reset
-				if( (Tracker["state"] == "FINAL") and (Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) ):
-					keepgoing = 0
-					if(Blockdata["myid"] == Blockdata["main_node"]):
-						sxprint(line,"Convergence criterion B is reached (angular step delta smaller than the limit imposed by the structure radius)")
-				Tracker["no_improvement"]		= 0
-				Tracker["no_params_changes"]	= 0
-				Tracker["anger"]				= 1.0e23
-				Tracker["shifter"]				= 1.0e23
-	Tracker["keepfirst"] = -1
-	return keepgoing
 
 def params_changes( params, oldparams ):
 	#  Indexes contain list of images processed - sorted integers, subset of the full range.
@@ -8864,8 +8603,10 @@ def init_Tracker_mpi(option_initvol = None):
 	Tracker["previousoutputdir"] 	= ""
 	Tracker["mainiteration"]     	= 0
 	Tracker["nima_per_chunk"]    	= [0,0]
-	try:    user_func = Tracker["constants"]["user_func"]
-	except: Tracker["constants"]["user_func"] = "do_volume_mask"
+	try:    user_func = Tracker["constants"]["user_func_volume"]
+	except: Tracker["constants"]["user_func_volume"] = "do_volume_mask"
+	try:    user_func = Tracker["constants"]["user_func_ai"]
+	except: Tracker["constants"]["user_func_ai"] = "ai_spa"
 	return
 
 def update_memory_estimation():
@@ -9016,7 +8757,6 @@ def compare_bckgnoise(bckgnoise1, bckgnoise2):
 	
 def rec3d_make_maps(compute_fsc = True, regularized = True):
 	global Tracker, Blockdata
-	import user_functions
 	
 	# final reconstruction: compute_fsc = False; regularized = False
 	# tempdir is removed in the end of the function
@@ -9117,7 +8857,7 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 							tvol0 = filt_table(tvol0, cfsc)
 							if( Blockdata["no_of_groups"] > 1 ):  del cfsc
 
-						user_func = user_functions.factory[Tracker["constants"]["user_func"]]
+						user_func = user_functions.factory[Tracker["constants"]["user_func_volume"]]
 						#ref_data = [tvol0, Tracker, mainiteration]
 						ref_data = [tvol0, Tracker, Tracker["mainiteration"]]
 						#--  #--  memory_check(Blockdata["myid"],"first node, after masking")
@@ -9149,7 +8889,7 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 								elif( i > Tracker["constants"]["inires"]+1 ):  cfsc[i]  = 0.0
 							tvol1 = filt_table(tvol1, cfsc)
 							del cfsc
-						user_func = user_functions.factory[Tracker["constants"]["user_func"]]
+						user_func = user_functions.factory[Tracker["constants"]["user_func_volume"]]
 						#ref_data = [tvol1, Tracker, mainiteration]
 						ref_data = [tvol1, Tracker, Tracker["mainiteration"]]
 						#--  #--  memory_check(Blockdata["myid"],"first node, after masking")
@@ -9524,7 +9264,6 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 def main():
 
 	from utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
-	import user_functions
 	from applications  import MPI_start_end
 	from optparse      import OptionParser
 	from global_def    import SPARXVERSION
@@ -9583,6 +9322,7 @@ def main():
 		parser.add_option("--inires",		       		type="float",	     	default= 25.,		         	help="Resolution of the initial_volume volume (default 25A)")
 		parser.add_option("--mask3D",		        	type="string",	      	default= None,		          	help="3D mask file (default a sphere with radius (nx/2)-1)")
 		parser.add_option("--function",					type="string",          default= "do_volume_mask",		help="Vame of the reference preparation function (default do_volume_mask)")
+		parser.add_option("--function_ai",					type="string",          default= "ai_spa",		help="Name of the internal heuristic function (default ai_spa)")
 		parser.add_option("--symmetry",					type="string",        	default= 'c1',		     		help="Point-group symmetry of the refined structure (default c1)")
 		parser.add_option("--skip_prealignment",		action="store_true", 	default= False,		         	help="Skip 2-D pre-alignment step: to be used if images are already centered. (default False)")
 		parser.add_option("--initialshifts",         	action="store_true",  	default= False,	         		help="Use orientation parameters in the input file header to jumpstart the procedure. (default False)")
@@ -9694,7 +9434,8 @@ def main():
 			Constants["limit_improvement"] 			= 1
 			Constants["limit_changes"]     			= 1  # reduce delta by half if both limits are reached simultaneously
 			Constants["states"]            			= ["INITIAL", "PRIMARY", "EXHAUSTIVE", "RESTRICTED", "LOCAL", "FINAL"]# will add two states, CONINUATION_INITIAL, CONINUATION_PRIMARY
-			Constants["user_func"]					= options.function
+			Constants["user_func_volume"]					= options.function
+			Constants["user_func_ai"]					= options.function_ai
 			Constants["hardmask"]          			=  True #options.hardmask
 			Constants["ccfpercentage"]     			= options.ccfpercentage/100.
 			Constants["expthreshold"]      			= -10
@@ -10059,7 +9800,8 @@ def main():
 					anger   = bcast_number_to_all(anger,   source_node = Blockdata["main_node"])
 					shifter = bcast_number_to_all(shifter, source_node = Blockdata["main_node"])
 
-				keepgoing = AI( fff, anger, shifter, Blockdata["myid"] == Blockdata["main_node"])
+				func_ai = user_functions.factory[Tracker["constants"]["user_func_ai"]]
+				keepgoing = user_func(Tracker, fff, anger, shifter, Blockdata['myid'] == Blockdata['main_node'])
 
 				if keepgoing == 1: # not converged
 					if Blockdata["myid"] == Blockdata["main_node"]:
@@ -10129,7 +9871,8 @@ def main():
 		parser.add_option("--ts",      		       		type="float",        	default= 1.,		         	help="Step size of the translation search in both directions, search is within a circle of radius xr on a grid with steps ts, (default 1), can be fractional")
 		parser.add_option("--inires",		       		type="float",	     	default= -1.,		         	help="Resolution of the initial_volume volume (default 25A)")
 		parser.add_option("--mask3D",		        	type="string",	      	default= None,		          	help="3D mask file (default a sphere with radius (nx/2)-1)")
-		parser.add_option("--function",					type="string",          default= "do_volume_mask",		help="Vame of the reference preparation function (default do_volume_mask)")
+		parser.add_option("--function",					type="string",          default= "do_volume_mask",		help="Name of the reference preparation function (default do_volume_mask)")
+		parser.add_option("--function_ai",					type="string",          default= "ai_spa_continue",		help="Name of the internal heuristic function (default ai_spa_continue)")
 		parser.add_option("--symmetry",					type="string",        	default= 'c1',		     		help="Point-group symmetry of the refined structure (default c1)")
 		parser.add_option("--delta",					type="float",			default= 3.75,		     		help="Initial angular sampling step (default 7.5)")
 		parser.add_option("--an",	           		    type="float", 	     	default= -1.,                	help="Angular neighborhood for local search")
@@ -10239,7 +9982,8 @@ def main():
 			Constants["limit_improvement"] 			= 1
 			Constants["limit_changes"]     			= 1  # reduce delta by half if both limits are reached simultaneously
 			Constants["states"]            			= ["PRIMARY", "RESTRICTED", "FINAL"]
-			Constants["user_func"]					= options.function
+			Constants["user_func_volume"]					= options.function
+			Constants["user_func_ai"]					= options.function_ai
 			Constants["hardmask"]          			=  True #options.hardmask
 			Constants["ccfpercentage"]     			= options.ccfpercentage/100.
 			Constants["expthreshold"]      			= -10
@@ -10562,7 +10306,8 @@ def main():
 				anger   = bcast_number_to_all(anger,                source_node = Blockdata["main_node"])
 				shifter = bcast_number_to_all(shifter,              source_node = Blockdata["main_node"])
 
-				keepgoing = AI_continuation( fff, anger, shifter, Blockdata["myid"] == Blockdata["main_node"])
+				func_ai = user_functions.factory[Tracker["constants"]["user_func_ai"]]
+				keepgoing = user_func(Tracker, fff, anger, shifter, Blockdata['myid'] == Blockdata['main_node'])
 
 				if keepgoing == 1: # not converged
 					if Blockdata["myid"] == Blockdata["main_node"]:
