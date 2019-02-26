@@ -1320,13 +1320,20 @@ def model_rotated_rectangle2D(radius_long,radius_short,nx,ny,angle=90):
 	:return:
 	"""
 	from scipy import ndimage
-	mask = np.zeros((nx,ny))
+	sizex = nx
+	sizey = ny
+	if (radius_long*2)>nx or (radius_long*2)>ny:
+		sizex = radius_long*2
+		sizey = radius_long*2
 
+
+	mask = np.zeros((sizex,sizey))
 	mask[
-		(nx//2-radius_short):(nx//2+radius_short),
-		(ny//2-radius_long):(ny//2+radius_long)
+		(sizex//2-radius_short):(sizex//2+radius_short),
+		(sizey//2-radius_long):(sizey//2+radius_long)
 		] = 1.0
 	mask = ndimage.rotate(mask,angle,reshape=False)
+	mask = mask[(sizex//2-nx//2):(sizex//2+nx//2),(sizey//2-ny//2):(sizey//2+ny//2)]
 	mask = EMAN2.EMNumPy.numpy2em(mask)
 	return mask
 
