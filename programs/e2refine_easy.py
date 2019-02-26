@@ -175,7 +175,8 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--tophat", type=str, default=None,help = "'local' or 'global'. Instead of imposing a final Wiener filter, use a tophat filter (global similar to Relion). local determines local resolution and filters. danger of feature exaggeration", guitype='strbox', row=11, col=0, rowspan=1, colspan=1, mode="refinement['None']")
 	parser.add_argument("--nogoldfinal", action="store_true", default=False,help = "If selected, the final iteration will turn off gold-standard behavior and both halves will be refined from the same model. Normally used with --tophat=local.")
 	parser.add_argument("--treeclassify",default=False, action="store_true", help="Classify using a binary tree.")
-	parser.add_argument("--m3dold", action="store_true", default=False,help = "Use the traditional e2make3d program instead of the new e2make3dpar program",guitype='boolbox', row=11, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--norandomphase", action="store_true", default=False,help = "Suppress independent phase randomization of input map. Only appropriate if input map has been preprocessed in some suitable fashion.",guitype='boolbox', row=11, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--m3dold", action="store_true", default=False,help = "Use the traditional e2make3d program instead of the new e2make3dpar program",guitype='boolbox', row=12, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--iter", dest = "iter", type = int, default=6, help = "The total number of refinement iterations to perform. Default=auto", guitype='intbox', row=10, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--mass", default=0, type=float,help="The ~mass of the particle in kilodaltons, used to run normalize.bymass. Due to resolution effects, not always the true mass.", guitype='floatbox', row=12, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getMass()']")
 	parser.add_header(name="optional", help='Just a visual separation', title="Optional:", row=14, col=0, rowspan=1, colspan=3, mode="refinement")
@@ -381,9 +382,16 @@ used, browse to the 0_refine_parms.json file in the refinement directory. You ca
 			elif options.targetres>12 : randomres=options.targetres*1.5
 			else : randomres=options.targetres*2.0
 
-			run("e2proc3d.py {model} {path}/threed_00_even.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}".format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix))
-			run("e2proc3d.py {model} {path}/threed_00_odd.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}" .format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix))
-			append_html("""<p>Randomizing the Fourier phases of <i>{model}</i> at resolutions higher than {res:1.1f} &Aring;. If the final achieved resolution is not at least ~{resb:1.1f} &Aring;, then the
+			if options.norandomphase :
+				run("e2proc3d.py {model} {path}/threed_00_even.hdf  --apix={apix}".format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix))
+				run("e2proc3d.py {model} {path}/threed_00_odd.hdf  --apix={apix}" .format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix))
+				append_html("""<p>No phase randomization or other prefilter applied to <i>{model}</i> at user request. If input model was not already preprocessed in some appropriate way,
+then this map have initial model bias, and resolution evaluation may be unrealiable.</p>
+<p>Input particles are from <i>{infile}</i></p>""".format(model=options.model,infile=options.input,res=randomres,resb=randomres*0.9))
+			else:
+				run("e2proc3d.py {model} {path}/threed_00_even.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}".format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix))
+				run("e2proc3d.py {model} {path}/threed_00_odd.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}" .format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix))
+				append_html("""<p>Randomizing the Fourier phases of <i>{model}</i> at resolutions higher than {res:1.1f} &Aring;. If the final achieved resolution is not at least ~{resb:1.1f} &Aring;, then the
 gold standard resolution assessment is not valid, and you need to re-refine, starting with a lower resolution target.</p>
 <p>Input particles are from <i>{infile}</i></p>""".format(model=options.model,infile=options.input,res=randomres,resb=randomres*0.9))
 			# input gets modified below, we need to do this first
