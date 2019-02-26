@@ -44,7 +44,7 @@ from EMAN2_meta import DATESTAMP
 
 from random import seed
 
-import mpi
+import mpi  # NOTE: put this import _after_ the EMAN2 imports
 
 # set global random seed
 rand_seed = Util.get_randnum_seed()
