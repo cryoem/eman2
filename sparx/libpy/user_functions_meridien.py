@@ -191,7 +191,7 @@ def ai_spa( Tracker, fff, anger, shifter, chout = False):
 				Tracker["changed_delta"] = True
 				if( Tracker["delta"] <= 3.75/2.0 ):  #  MOVE DOWN TO RESTRICTED
 					Tracker["an"]		= 6*Tracker["delta"]
-					if( Tracker["delta"] <= numpy.degrees(numpy.atan(0.25/Tracker["constants"]["radius"])) ): Tracker["state"] = "FINAL"
+					if( Tracker["delta"] <= numpy.degrees(numpy.arctan(0.25/Tracker["constants"]["radius"])) ): Tracker["state"] = "FINAL"
 					else:	Tracker["state"] = "RESTRICTED"
 				else:
 					Tracker["an"] = -1
@@ -324,7 +324,7 @@ def ai_spa_continuation(Tracker, fff, anger = -1.0, shifter = -1.0, chout = Fals
 				Tracker["changed_delta"] = True
 				if( Tracker["delta"] <= 3.75/2.0 or True):  #  MOVE DOWN TO RESTRICTED
 					Tracker["an"]		= 6*Tracker["delta"]
-					if( Tracker["delta"] <= numpy.degrees(numpy.atan(0.25/Tracker["constants"]["radius"])) ): Tracker["state"] = "FINAL"
+					if( Tracker["delta"] <= numpy.degrees(numpy.arctan(0.25/Tracker["constants"]["radius"])) ): Tracker["state"] = "FINAL"
 					else:	Tracker["state"] = "RESTRICTED"
 				else:
 					Tracker["an"] = -1
