@@ -79,9 +79,6 @@ def read_spider_coords_file(coords_path):
 		coords_list[i] = [coords_list[i][2], coords_list[i][3]]
 	return coords_list
 
-def read_cryolo_coords_file(coords_path):
-	pass
-
 def read_cryolo_helical_segmented_coords_file(coords_path):
 	split_indicis = []
 	index_first_helix = -1
@@ -324,7 +321,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				error_status = ("File specified by selection_list option does not exists. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 				break
 		
-		if error_status is None and options.coordinates_format.lower() not in ["sphire", "eman1", "eman2", "spider","cryolo_helical_segmented"]:
+		if error_status is None and options.coordinates_format.lower() not in ["sphire", "eman1", "eman2", "spider","cryolo","cryolo_helical_segmented"]:
 			error_status = ("Invalid option value: --coordinates_format=%s. Please run %s -h for help." % (options.coordinates_format, program_name), getframeinfo(currentframe()))
 			break
 		
@@ -905,7 +902,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	elif coords_format == "eman1":
 		read_coords_file = read_eman1_coords_file
 	elif coords_format == "cryolo":
-		read_coords_file = read_cryolo_coords_file
+		read_coords_file = read_eman1_coords_file
 	elif coords_format == "eman2":
 		read_coords_file = read_eman2_coords_file
 	elif coords_format == "spider":
