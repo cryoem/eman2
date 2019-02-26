@@ -365,6 +365,7 @@ used, browse to the 0_refine_parms.json file in the refinement directory. You ca
 			olddb = js_open_dict(options.startfrom+"/0_refine_parms.json")
 			run("e2proc3d.py {oldeven} {path}/threed_00_even.hdf".format(oldeven=olddb["last_even"],path=options.path))
 			run("e2proc3d.py {oldodd} {path}/threed_00_odd.hdf".format(  oldodd =olddb["last_odd"] ,path=options.path))
+			run("e2proc3d.py {path}/threed_00_even.hdf {path}/fsc_unmasked_00.txt --calcfsc {path}/threed_00_odd.hdf".format(path=options.path))
 			if options.input==None: options.input=(str(olddb["input"][0]),str(olddb["input"][1]))
 			else:
 				options.input=image_eosplit(options.input)
