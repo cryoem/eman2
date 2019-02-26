@@ -192,6 +192,7 @@ def sxprint( *args, **kwargs ):
 	if SXPRINT_LOG != "":
 		with open( SXPRINT_LOG, "a+" ) as f:
 			f.write( m + "\n" )
+	return m
 
 
 def ERROR( message, where="", action=1, myid=0 ):
