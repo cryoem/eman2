@@ -5396,7 +5396,7 @@ def if_error_then_all_processes_exit_program(error_status):
 	else:
 		error_status = 0
 
-	error_status = my_mpi_bcast(error_status, 1, MPI_INT, 0, MY_MPI_COMM_WORLD)
+	error_status = my_mpi_bcast(error_status, 1, MY_MPI_INT, 0, MY_MPI_COMM_WORLD)
 	error_status = int(error_status[0])
 
 	if error_status > 0:
