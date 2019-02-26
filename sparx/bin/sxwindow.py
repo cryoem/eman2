@@ -128,7 +128,7 @@ def estimate_angle(coords_a, coords_b):
 	"""
 	delta_x = coords_b[0]-coords_a[0]
 	delta_y = coords_b[1]-coords_a[1]
-	angle = np.arctan2(delta_y,delta_x) * 180 / np.pi
+	angle = -1*np.arctan2(delta_y,delta_x) * 180 / np.pi
 
 	return angle
 
@@ -217,7 +217,8 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	parser.add_option("--astigmatism_error",   type="float",         default=360.0,     help="Astigmatism error limit [Degrees]: Set astigmatism to zero for all micrographs where the angular error computed by sxcter is larger than the desired value. This has no effects when the CTER partres file is not specified by the CTF paramters source argument. (default 360.0)")
 	parser.add_option("--resample_ratio",      type="float",         default=1.0,       help="Ratio between new and original pixel size: Use a value between 0.0 and 1.0 (excluding 0.0). The new pixel size will be automatically recalculated and stored in CTF paramers when resample_ratio < 1.0 is used. (default 1.0)")
 	parser.add_option("--check_consistency",   action="store_true",  default=False,     help="Check consistency of dataset: Create a text file containing the list of Micrograph ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info_TIMESTAMP.txt). (default False)")
-	
+	parser.add_option("--filament_width",            type="int",           default=-1,       help="Filament width [Pixels]: Filament width for the creation of the rectangular mask. Default is one third of the box size. (default -1)")
+
 	(options, args) = parser.parse_args(sys.argv[1:])
 	
 	# ====================================================================================
@@ -891,13 +892,14 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	# Prepare variables related to options
 	box_size = options.box_size
 	box_half = box_size // 2
-	mask2d = model_circle(box_size//2, box_size, box_size) # Create circular 2D mask to Util.infomask of particle images
+
 	resample_ratio = options.resample_ratio
 	
 	# Prepare the function for reading coordinates files with the specified format.
 	# This way, the following switch statement is unnecessary inside of the coordinates loop.
 	coords_format = options.coordinates_format.lower()
 	read_coords_file = None
+
 	if coords_format == "sphire":
 		read_coords_file = read_sphire_coords_file
 	elif coords_format == "eman1":
@@ -913,7 +915,13 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	else: 
 		assert (False) # Unreachable code
 	assert (read_coords_file != None)
-	
+	is_filament = False
+	if read_coords_file != read_cryolo_helical_segmented_coords_file:
+		mask2d = model_circle(box_size // 2, box_size, box_size)  # Create circular 2D mask to Util.infomask of particle images
+	else:
+		is_filament = True
+
+
 	# Preapre variables related to CTF limit option
 	abs_ctf_limit_histogram = []  # compute the histogram for micrographs cut of by cter_entry limit.
 			
@@ -1156,8 +1164,20 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			local_mrcs.set_attr("apix_z", 1.0) # particle_img.set_attr("apix_z", resampled_pixel_size)
 			local_mrcs.set_attr("ptcl_source_apix", src_pixel_size) # Store the original pixel size
 			for coords_id, entry in enumerate(coords_accepted):
+
 				original_id = entry[idx_id]
 				particle_img = Util.window(*entry[idx_info])
+
+				if is_filament:
+					long_axis_radius = np.int(np.sqrt(2*box_size**2))//2
+					if options.filament_width != -1:
+						short_axis_radius = options.filament_width//2
+					else:
+						short_axis_radius = box_size // 6
+					mask2d = model_rotated_rectangle2D(long_axis_radius, short_axis_radius, box_size,
+													   box_size, coords_list[coords_id][4])
+
+
 				# Normalize this particle image
 				particle_img = ramp(particle_img)
 				particle_stats = Util.infomask(particle_img, mask2d, False) # particle_stats[0:mean, 1:SD, 2:min, 3:max]
