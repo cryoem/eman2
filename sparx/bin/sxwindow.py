@@ -98,13 +98,37 @@ def read_cryolo_helical_segmented_coords_file(coords_path):
 	coordinates = np.atleast_2d(np.genfromtxt(coords_path))
 	coord_filaments = np.split(coordinates, split_indicis)
 	for filament_id, filament in enumerate(coord_filaments):
-		for coords in filament:
-			coords_list.append([float(coords[0]), float(coords[1]),filament_name.format(filament_id)])
+		curr_filaments_coords = []
+
+		for segment_id, coords in enumerate(filament):
+			if segment_id == 0 and len(filament)>1:
+				angle = estimate_angle(coords,filament[segment_id+1])
+			elif segment_id == (len(filament)-1):
+				angle = estimate_angle(coords, filament[segment_id - 1])
+			else:
+				angle = estimate_angle(filament[segment_id - 1],filament[segment_id + 1])
+			curr_filaments_coords.append([float(coords[0]), float(coords[1]),filament_name.format(filament_id), segment_id, angle])
+
+		coords_list.extend(curr_filaments_coords)
 	return coords_list
 
 # ========================================================================================
 #  Helper functions
 # ========================================================================================
+
+def estimate_angle(coords_a, coords_b):
+	"""
+	Estimates the angle given by a line between two  boxes.
+	:param coords_a: First coordinate pair
+	:param coords_b: Second coordinate pair
+	:return: Angle from positive x axis twoards the positiv y axis.
+	"""
+	delta_x = coords_b[0]-coords_a[0]
+	delta_y = coords_b[1]-coords_a[1]
+	angle = np.arctan2(delta_y,delta_x) * 180 / np.pi
+
+	return angle
+
 def get_cmd_line():
 	"""
 	Generate command line
