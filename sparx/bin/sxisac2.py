@@ -1299,7 +1299,6 @@ def main(args):
 		params = read_text_row(os.path.join(init2dir, "initial2Dparams.txt"))
 		params = params[image_start:image_end]
 
-		# create circular mask with soft edge
 		mask = spx.model_circle(radi, nx, nx)
 		if options.VPP:
 			if myid == 0:  rpw = read_text_file(os.path.join(Blockdata["masterdir"], "rpw.txt"))
