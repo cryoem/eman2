@@ -80,37 +80,41 @@ def read_spider_coords_file(coords_path):
 	return coords_list
 
 def read_cryolo_helical_segmented_coords_file(coords_path):
-	split_indicis = []
-	index_first_helix = -1
+    try:
+        split_indicis = []
+        index_first_helix = -1
 
-	with open(coords_path, "r") as csvfile:
-		for index, row in enumerate(csvfile.readlines()):
-			if row.startswith("#helix"):
-				if index_first_helix == -1:
-					index_first_helix = index
-				else:
-					split_indicis.append(
-						index - index_first_helix - (len(split_indicis) + 1)
-					)
+        with open(coords_path, "r") as csvfile:
+            for index, row in enumerate(csvfile.readlines()):
+                if row.startswith("#helix"):
+                    if index_first_helix == -1:
+                        index_first_helix = index
+                    else:
+                        split_indicis.append(
+                            index - index_first_helix - (len(split_indicis) + 1)
+                        )
+		if index_first_helix == -1:
+			return []
+        filament_name = '{0}_{{0}}'.format(os.path.basename(coords_path))
+        coords_list = []
+        coordinates = np.atleast_2d(np.genfromtxt(coords_path))
+        coord_filaments = np.split(coordinates, split_indicis)
+        for filament_id, filament in enumerate(coord_filaments):
+            curr_filaments_coords = []
 
-	filament_name = '{0}_{{0}}'.format(os.path.basename(coords_path))
-	coords_list = []
-	coordinates = np.atleast_2d(np.genfromtxt(coords_path))
-	coord_filaments = np.split(coordinates, split_indicis)
-	for filament_id, filament in enumerate(coord_filaments):
-		curr_filaments_coords = []
+            for segment_id, coords in enumerate(filament):
+                if segment_id == 0 and len(filament)>1:
+                    angle = estimate_angle(coords,filament[segment_id+1])
+                elif segment_id == (len(filament)-1):
+                    angle = estimate_angle(coords, filament[segment_id - 1])
+                else:
+                    angle = estimate_angle(filament[segment_id - 1],filament[segment_id + 1])
+                curr_filaments_coords.append([float(coords[0]), float(coords[1]),filament_name.format(filament_id), segment_id, angle])
 
-		for segment_id, coords in enumerate(filament):
-			if segment_id == 0 and len(filament)>1:
-				angle = estimate_angle(coords,filament[segment_id+1])
-			elif segment_id == (len(filament)-1):
-				angle = estimate_angle(coords, filament[segment_id - 1])
-			else:
-				angle = estimate_angle(filament[segment_id - 1],filament[segment_id + 1])
-			curr_filaments_coords.append([float(coords[0]), float(coords[1]),filament_name.format(filament_id), segment_id, angle])
-
-		coords_list.extend(curr_filaments_coords)
-	return coords_list
+            coords_list.extend(curr_filaments_coords)
+        return coords_list
+    except:
+        return []
 
 # ========================================================================================
 #  Helper functions
