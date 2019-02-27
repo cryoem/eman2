@@ -262,6 +262,7 @@ const string TestImageCylinder::NAME = "testimage.cylinder";
 const string TestImageDisc::NAME = "testimage.disc";
 const string CCDNormProcessor::NAME = "filter.ccdnorm";
 const string WaveletProcessor::NAME = "basis.wavelet";
+const string EnhanceProcessor::NAME = "filter.enhance";
 const string TomoTiltEdgeMaskProcessor::NAME = "tomo.tiltedgemask";
 const string TomoTiltAngleWeightProcessor::NAME = "tomo.tiltangleweight";
 const string FFTProcessor::NAME = "basis.fft";
@@ -574,6 +575,7 @@ template <> Factory < Processor >::Factory()
 	force_add<SHIFTProcessor>();
 
 //	force_add<WaveletProcessor>();
+	force_add<EnhanceProcessor>();
 	force_add<FFTProcessor>();
 	force_add<RadialProcessor>();
 
@@ -9909,6 +9911,30 @@ void CCDNormProcessor::process_inplace(EMData * image)
 	  }
 
 }
+
+EMData* EnhanceProcessor::process(const EMData * const image)
+{
+	int nx=image->get_xsize();
+	EMData * result = image->process("filter.highpass.gauss",Dict("cutoff_freq",0.01f));
+	result->process_inplace("mask.decayedge2d",Dict("width",nx/8));
+	result->add(-float(result->get_attr("minimum")));
+	result->process_inplace("filter.lowpass.tophat",Dict("cutoff_freq",0.05));
+	result->process_inplace("math.squared");
+	result->process_inplace("filter.lowpass.gauss",Dict("cutoff_freq",10.0f/(nx*(float)image->get_attr("apix_x"))));
+	result->process_inplace("normalize.edgemean");
+	
+	return result;
+}
+
+void EnhanceProcessor::process_inplace(EMData * image)
+{
+	// slightly inefficient, but best we can easily do
+	EMData *tmp = process(image);
+	memcpy(image->get_data(),tmp->get_data(),image->get_size()*sizeof(float));
+	delete tmp;
+	return;
+}
+
 
 void WaveletProcessor::process_inplace(EMData *image)
 {
