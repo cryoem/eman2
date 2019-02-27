@@ -80,6 +80,14 @@ def read_spider_coords_file(coords_path):
 	return coords_list
 
 def read_cryolo_helical_segmented_coords_file(coords_path):
+	"""
+	Reads segmented helical coordinates as writtin by crYOLO and sxhelixboxer.
+	Furthermore it add the filament id, segment id and estimates the angle of the segment at
+	each position.
+
+	:param coords_path: Path to the coordinate file
+	:return: list with entries [x,y,filamend_id,segment_id,angle_of_segment]
+	"""
 	try:
 		split_indicis = []
 		index_first_helix = -1

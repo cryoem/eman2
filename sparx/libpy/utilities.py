@@ -1311,13 +1311,13 @@ def model_cylinder(radius, nx, ny, nz):
 
 def model_rotated_rectangle2D(radius_long,radius_short,nx,ny,angle=90):
 	"""
-
+	Creates a rectangular mask
 	:param radius_long: Radius long axis
 	:param radius_short: Radius short axis
 	:param nx: Mask size x-dim
 	:param ny: Mask size y-dim
 	:param angle: Rotation angle in degree
-	:return:
+	:return: rotated rectangular mask
 	"""
 	from scipy import ndimage
 	sizex = nx
