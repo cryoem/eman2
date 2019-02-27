@@ -79,6 +79,8 @@ import morphology
 
 import os
 
+#-----------------------------------------------------------------------[ mpi ]
+
 mpi_init(0, [])
 
 Blockdata = {}
@@ -108,8 +110,6 @@ DIR_DELIM = os.sep
 
 disp_unit = np.dtype("f4").itemsize
 
-
-
 def create_zero_group():
 	# select a subset of myids to be in subdivision
 	if( Blockdata["myid_on_node"] == 0 ): submyids = [Blockdata["myid"]]
@@ -135,54 +135,6 @@ def create_zero_group():
 	mpi_barrier(MPI_COMM_WORLD)
 	return
 
-
-'''
-def create_subgroup_within_group(mpi_comm):
-	# select a subset of myids to be in subdivision
-	if( Blockdata["Ykey"]%Blockdata["no_of_processes_per_group"] == 0): submyids = [Blockdata["Ykey"]]
-	else:  submyids = []
-
-	#if( Blockdata["Ykey"]%Blockdata["no_of_processes_per_group"] == 0):  print "  A  ",Blockdata["myid"],submyids
-
-	submyids = wrap_mpi_gatherv(submyids, 0, mpi_comm)
-	submyids = wrap_mpi_bcast(submyids, 0, mpi_comm)
-	#if( Blockdata["Ykey"] == 0 ): print   "  B  ",submyids
-	world_group = mpi_comm_group(mpi_comm)
-	subgroup = mpi_group_incl(world_group,len(submyids),submyids)
-	#print   " XXX world group  ",Blockdata["myid"],Blockdata["Ykey"],world_group,subgroup
-	Blockdata["subgroup_comm"] = mpi_comm_create(mpi_comm, subgroup)
-	mpi_barrier(mpi_comm)
-	#print   " ZZZ subgroup  ",Blockdata["myid"],Blockdata["Ykey"],world_group,subgroup,Blockdata["subgroup_comm"]
-
-	Blockdata["subgroup_size"] = -1
-	Blockdata["subgroup_myid"] = -1
-	if (MPI_COMM_NULL != Blockdata["subgroup_comm"]):
-		#print "  YYY  ",Blockdata["myid"],Blockdata["Ykey"]
-		Blockdata["subgroup_size"] = mpi_comm_size(Blockdata["subgroup_comm"])
-		Blockdata["subgroup_myid"] = mpi_comm_rank(Blockdata["subgroup_comm"])
-	#else:  print "  UUU  ",Blockdata["myid"],Blockdata["Ykey"]
-	#  "nodes" are zero COUs on subgroups that do indep_run of independent runs.
-	#print "  FFF  ",Blockdata["myid"],Blockdata["Ykey"],Blockdata["subgroup_myid"],Blockdata["subgroup_size"]
-	mpi_barrier(mpi_comm)
-	return
-
-'''
-
-
-
-def delay(myid, tt):
-	from sys import exit
-	from time import sleep
-	from mpi import mpi_finalize
-
-	for j in range(50):
-		for i  in range(1000000): q = i+float(i)**2.1234
-	if myid == 0 :  sxprint(tt)
-	#sleep(100)
-	#mpi_finalize()
-	#exit()
-
-
 def checkitem(item, mpi_comm = -1):
 	global Blockdata
 	if mpi_comm == -1:  mpi_comm = MPI_COMM_WORLD
@@ -194,6 +146,24 @@ def checkitem(item, mpi_comm = -1):
 	isthere = bcast_number_to_all(isthere, source_node = Blockdata["main_node"], mpi_comm = mpi_comm)
 	mpi_barrier(mpi_comm)
 	return isthere
+
+#-------------------------------------------------------------------[ utility ]
+
+def create_smooth_mask( radius, img_dim, size=8 ):
+	"""
+	Utility function to create a circular mask with a smooth edge. The produced
+	mask assumes square images and only takes a single image dimension as input
+
+	Args:
+		radius (integer): Radius of the mask.
+		img_dim (integer): x/y image dimension for the mask.
+		size (integer): Length of the soft edge in pixels.
+	"""
+	mask = model_circle( radius, img_dim, img_dim )
+	size = size if (radius+size <= img_dim/2) else img_dim/2-radius
+	return morphology.soft_edge( mask, size )
+
+#----------------------------------------------------------------------[ ISAC ]
 
 def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, init_iter, main_iter, iter_reali, \
 			  match_first, max_round, match_second, stab_ali, thld_err, indep_run, thld_grp, img_per_grp, \
@@ -398,11 +368,8 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 			mask = get_image(maskfile)
 		else: 
 			mask = maskfile
-	else: 
-		mask = model_circle(last_ring, nx, nx)  # (mask_radius, img_size_x, img_size_y)
-		mask_size = 8
-		mask_size = mask_size if (last_ring+mask_size <= nx/2) else nx/2-last_ring  # adjust mask_size if it spills out of the image range
-		mask = morphology.soft_edge( mask, mask_size )
+	else:
+		mask = create_smooth_mask( last_ring, nx )
 
 	if type(refim) == type(""):
 		refi = EMData.read_images(refim)
@@ -1349,14 +1316,15 @@ def main(args):
 		params = read_text_row(os.path.join(init2dir, "initial2Dparams.txt"))
 		params = params[image_start:image_end]
 
+		# create circular mask with soft edge
+		mask = create_smooth_mask( radi, nx )
 
-		msk = model_circle(radi, nx, nx)
 		if options.VPP:
 			if myid == 0:  rpw = read_text_file(os.path.join(Blockdata["masterdir"], "rpw.txt"))
 			else:  rpw = [0.0]
 			rpw = bcast_list_to_all(rpw, myid, source_node = main_node, mpi_comm = MPI_COMM_WORLD)
 		for im in range(nima):
-			st = Util.infomask(aligned_images[im], msk, False)
+			st = Util.infomask(aligned_images[im], mask, False)
 			aligned_images[im] -= st[0]
 			if options.CTF:
 				aligned_images[im] = filt_ctf(aligned_images[im], aligned_images[im].get_attr("ctf"), binary = True)
@@ -1365,7 +1333,7 @@ def main(args):
 		if options.VPP: del rpw
 		if(shrink_ratio < 1.0):
 			if    newx > target_nx  :
-				msk = model_circle(target_radius, target_nx, target_nx)
+				mask = create_smooth_mask( target_radius, target_nx )
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
@@ -1374,75 +1342,75 @@ def main(args):
 					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
 					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
 					aligned_images[im] = Util.window(aligned_images[im], target_nx, target_nx, 1)
-					p = Util.infomask(aligned_images[im], msk, False)
+					p = Util.infomask(aligned_images[im], mask, False)
 					aligned_images[im] -= p[0]
-					p = Util.infomask(aligned_images[im], msk, True)
+					p = Util.infomask(aligned_images[im], mask, True)
 					aligned_images[im] /= p[1]
 			elif  newx == target_nx :
-				msk = model_circle(target_radius, target_nx, target_nx)
+				mask = create_smooth_mask( target_radius, target_nx )
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
 					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
 					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
 					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
-					p = Util.infomask(aligned_images[im], msk, False)
+					p = Util.infomask(aligned_images[im], mask, False)
 					aligned_images[im] -= p[0]
-					p = Util.infomask(aligned_images[im], msk, True)
+					p = Util.infomask(aligned_images[im], mask, True)
 					aligned_images[im] /= p[1]
 			elif  newx < target_nx  :	
-				msk = model_circle(newx//2-2, newx,  newx)
+				mask = create_smooth_mask( newx//2-2, newx )
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
 					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
 					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
 					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
-					p = Util.infomask(aligned_images[im], msk, False)
+					p = Util.infomask(aligned_images[im], mask, False)
 					aligned_images[im] -= p[0]
-					p = Util.infomask(aligned_images[im], msk, True)
+					p = Util.infomask(aligned_images[im], mask, True)
 					aligned_images[im] /= p[1]
 					aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
 		elif(shrink_ratio == 1.0):
 			if    newx > target_nx  :
-				msk = model_circle(target_radius, target_nx, target_nx)
+				mask = create_smooth_mask( target_radius, target_nx )
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
 					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
 					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
 					aligned_images[im] = Util.window(aligned_images[im], target_nx, target_nx, 1)
-					p = Util.infomask(aligned_images[im], msk, False)
+					p = Util.infomask(aligned_images[im], mask, False)
 					aligned_images[im] -= p[0]
-					p = Util.infomask(aligned_images[im], msk, True)
+					p = Util.infomask(aligned_images[im], mask, True)
 					aligned_images[im] /= p[1]
 			elif  newx == target_nx :
-				msk = model_circle(target_radius, target_nx, target_nx)
+				mask = create_smooth_mask( target_radius, target_nx )
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
 					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
 					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
-					p = Util.infomask(aligned_images[im], msk, False)
+					p = Util.infomask(aligned_images[im], mask, False)
 					aligned_images[im] -= p[0]
-					p = Util.infomask(aligned_images[im], msk, True)
+					p = Util.infomask(aligned_images[im], mask, True)
 					aligned_images[im] /= p[1]
 			elif  newx < target_nx  :			
-				msk = model_circle(newx//2-2, newx,  newx)
+				mask = create_smooth_mask( newx//2-2, newx )
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
 					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
 					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
 					#aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
-					p = Util.infomask(aligned_images[im], msk, False)
+					p = Util.infomask(aligned_images[im], mask, False)
 					aligned_images[im] -= p[0]
-					p = Util.infomask(aligned_images[im], msk, True)
+					p = Util.infomask(aligned_images[im], mask, True)
 					aligned_images[im] /= p[1]
 					aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
 		elif(shrink_ratio > 1.0):
 			if    newx > target_nx  :
-				msk = model_circle(target_radius, target_nx, target_nx)
+				mask = create_smooth_mask( target_radius, target_nx )
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
@@ -1450,36 +1418,36 @@ def main(args):
 					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
 					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
 					aligned_images[im] = Util.window(aligned_images[im], target_nx, target_nx, 1)
-					p = Util.infomask(aligned_images[im], msk, False)
+					p = Util.infomask(aligned_images[im], mask, False)
 					aligned_images[im] -= p[0]
-					p = Util.infomask(aligned_images[im], msk, True)
+					p = Util.infomask(aligned_images[im], mask, True)
 					aligned_images[im] /= p[1]
 			elif  newx == target_nx :
-				msk = model_circle(target_radius, target_nx, target_nx)
+				mask = create_smooth_mask( target_radius, target_nx )
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
 					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
 					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
 					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
-					p = Util.infomask(aligned_images[im], msk, False)
+					p = Util.infomask(aligned_images[im], mask, False)
 					aligned_images[im] -= p[0]
-					p = Util.infomask(aligned_images[im], msk, True)
+					p = Util.infomask(aligned_images[im], mask, True)
 					aligned_images[im] /= p[1]
 			elif  newx < target_nx  :
-				msk = model_circle(newx//2-2, newx,  newx)
+				mask = create_smooth_mask( newx//2-2, newx )
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
 					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
 					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
 					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
-					p = Util.infomask(aligned_images[im], msk, False)
+					p = Util.infomask(aligned_images[im], mask, False)
 					aligned_images[im] -= p[0]
-					p = Util.infomask(aligned_images[im], msk, True)
+					p = Util.infomask(aligned_images[im], mask, True)
 					aligned_images[im] /= p[1]
 					aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
-		del msk
+		del mask
 	
 		gather_compacted_EMData_to_root(Blockdata["total_nima"], aligned_images, myid)
 		#Blockdata["total_nima"] = bcast_number_to_all(Blockdata["total_nima"], source_node = main_node)
