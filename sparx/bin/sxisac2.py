@@ -45,6 +45,7 @@ from	logger import Logger, BaseLogger_Files
 import	global_def
 
 from utilities import send_string_to_all, program_state_stack
+import utilities as util
 from applications import  ali2d_base
 
 from isac import *
@@ -74,8 +75,6 @@ from mpi          import mpi_bcast, mpi_barrier, mpi_send, mpi_recv, mpi_comm_sp
 from random       import randint, seed
 from time         import localtime, strftime
 from applications import within_group_refinement
-
-import morphology
 
 import os
 
@@ -146,22 +145,6 @@ def checkitem(item, mpi_comm = -1):
 	isthere = bcast_number_to_all(isthere, source_node = Blockdata["main_node"], mpi_comm = mpi_comm)
 	mpi_barrier(mpi_comm)
 	return isthere
-
-#-------------------------------------------------------------------[ utility ]
-
-def create_smooth_mask( radius, img_dim, size=8 ):
-	"""
-	Utility function to create a circular mask with a smooth edge. The produced
-	mask assumes square images and only takes a single image dimension as input
-
-	Args:
-		radius (integer): Radius of the mask.
-		img_dim (integer): x/y image dimension for the mask.
-		size (integer): Length of the soft edge in pixels.
-	"""
-	mask = model_circle( radius, img_dim, img_dim )
-	size = size if (radius+size <= img_dim/2) else img_dim/2-radius
-	return morphology.soft_edge( mask, size )
 
 #----------------------------------------------------------------------[ ISAC ]
 
@@ -369,7 +352,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 		else: 
 			mask = maskfile
 	else:
-		mask = create_smooth_mask( last_ring, nx )
+		mask = model_circle(last_ring, nx, nx)
 
 	if type(refim) == type(""):
 		refi = EMData.read_images(refim)
@@ -1269,7 +1252,7 @@ def main(args):
 			# section ali2d_base
 
 			if(Blockdata["myid"] == 0): sxprint("* 2D alignment   "+strftime("%a, %d %b %Y %H:%M:%S", localtime()))
-			params2d = ali2d_base(original_images, init2dir, None, 1, target_radius, 1, txr, txr, tss, \
+			params2d = ali2d_base(original_images, init2dir, util.create_smooth_mask(target_radius,nx), 1, target_radius, 1, txr, txr, tss, \
 				False, 90.0, center_method, 14, options.CTF, 1.0, False, \
 				"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False)
 
@@ -1317,8 +1300,7 @@ def main(args):
 		params = params[image_start:image_end]
 
 		# create circular mask with soft edge
-		mask = create_smooth_mask( radi, nx )
-
+		mask = spx.model_circle(radi, nx, nx)
 		if options.VPP:
 			if myid == 0:  rpw = read_text_file(os.path.join(Blockdata["masterdir"], "rpw.txt"))
 			else:  rpw = [0.0]
@@ -1333,7 +1315,7 @@ def main(args):
 		if options.VPP: del rpw
 		if(shrink_ratio < 1.0):
 			if    newx > target_nx  :
-				mask = create_smooth_mask( target_radius, target_nx )
+				mask = spx.model_circle(target_radius, target_nx, target_nx)
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
@@ -1347,7 +1329,7 @@ def main(args):
 					p = Util.infomask(aligned_images[im], mask, True)
 					aligned_images[im] /= p[1]
 			elif  newx == target_nx :
-				mask = create_smooth_mask( target_radius, target_nx )
+				mask = spx.model_circle(target_radius, target_nx, target_nx)
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
@@ -1359,7 +1341,7 @@ def main(args):
 					p = Util.infomask(aligned_images[im], mask, True)
 					aligned_images[im] /= p[1]
 			elif  newx < target_nx  :	
-				mask = create_smooth_mask( newx//2-2, newx )
+				mask = spx.model_circle(newx//2-2, newx,  newx)
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
@@ -1373,7 +1355,7 @@ def main(args):
 					aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
 		elif(shrink_ratio == 1.0):
 			if    newx > target_nx  :
-				mask = create_smooth_mask( target_radius, target_nx )
+				mask = spx.model_circle(target_radius, target_nx, target_nx)
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
@@ -1385,7 +1367,7 @@ def main(args):
 					p = Util.infomask(aligned_images[im], mask, True)
 					aligned_images[im] /= p[1]
 			elif  newx == target_nx :
-				mask = create_smooth_mask( target_radius, target_nx )
+				mask = spx.model_circle(target_radius, target_nx, target_nx)
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
@@ -1396,7 +1378,7 @@ def main(args):
 					p = Util.infomask(aligned_images[im], mask, True)
 					aligned_images[im] /= p[1]
 			elif  newx < target_nx  :			
-				mask = create_smooth_mask( newx//2-2, newx )
+				mask = spx.model_circle(newx//2-2, newx,  newx)
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
@@ -1410,7 +1392,7 @@ def main(args):
 					aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
 		elif(shrink_ratio > 1.0):
 			if    newx > target_nx  :
-				mask = create_smooth_mask( target_radius, target_nx )
+				mask = spx.model_circle(target_radius, target_nx, target_nx)
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
@@ -1423,7 +1405,7 @@ def main(args):
 					p = Util.infomask(aligned_images[im], mask, True)
 					aligned_images[im] /= p[1]
 			elif  newx == target_nx :
-				mask = create_smooth_mask( target_radius, target_nx )
+				mask = spx.model_circle(target_radius, target_nx, target_nx)
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
@@ -1435,7 +1417,7 @@ def main(args):
 					p = Util.infomask(aligned_images[im], mask, True)
 					aligned_images[im] /= p[1]
 			elif  newx < target_nx  :
-				mask = create_smooth_mask( newx//2-2, newx )
+				mask = spx.model_circle(newx//2-2, newx,  newx)
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])

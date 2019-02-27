@@ -36,6 +36,8 @@ from builtins import object
 from global_def import *
 from functools import reduce
 
+import morphology
+
 def params_2D_3D(alpha, sx, sy, mirror):
 	"""
 		Convert 2D alignment parameters (alpha, sx, sy, mirror) into
@@ -700,6 +702,20 @@ def inverse_transform3(phi, theta=0.0, psi=0.0, tx=0.0, ty=0.0, tz=0.0, mirror =
 	d = d.inverse()
 	d = d.get_params("spider")
 	return  d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"],int(d["mirror"]+0.1),d["scale"]
+
+def create_smooth_mask( radius, img_dim, size=8 ):
+	"""
+	Utility function to create a circular mask with a smooth edge. The produced
+	mask assumes square images and only takes a single image dimension as input
+
+	Args:
+		radius (integer): Radius of the mask.
+		img_dim (integer): x/y image dimension for the mask.
+		size (integer): Length of the soft edge in pixels.
+	"""
+	mask = model_circle( radius, img_dim, img_dim )
+	size = size if (radius+size <= img_dim/2) else img_dim/2-radius
+	return morphology.soft_edge( mask, size )
 
 def create_spider_doc(fname,spiderdoc):
 	"""Convert a text file that is composed of columns of numbers into spider doc file
