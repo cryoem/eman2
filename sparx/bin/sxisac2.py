@@ -1252,7 +1252,7 @@ def main(args):
 			# section ali2d_base
 
 			if(Blockdata["myid"] == 0): sxprint("* 2D alignment   "+strftime("%a, %d %b %Y %H:%M:%S", localtime()))
-			params2d = ali2d_base(original_images, init2dir, util.create_smooth_mask(target_radius,nx), 1, target_radius, 1, txr, txr, tss, \
+			params2d = ali2d_base(original_images, init2dir, None, 1, target_radius, 1, txr, txr, tss, \
 				False, 90.0, center_method, 14, options.CTF, 1.0, False, \
 				"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False)
 

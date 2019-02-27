@@ -40,6 +40,7 @@ from functools import reduce
 import EMAN2
 import numpy as np
 
+import scipy
 
 import morphology
 
@@ -1674,7 +1675,6 @@ def model_rotated_rectangle2D(radius_long, radius_short, nx, ny, angle=90):
 	:param angle: Rotation angle in degree
 	:return: rotated rectangular mask
 	"""
-	from scipy import ndimage
 
 	sizex = nx
 	sizey = ny
@@ -1687,7 +1687,8 @@ def model_rotated_rectangle2D(radius_long, radius_short, nx, ny, angle=90):
 		(sizex // 2 - radius_short) : (sizex // 2 + radius_short),
 		(sizey // 2 - radius_long) : (sizey // 2 + radius_long),
 	] = 1.0
-	mask = ndimage.rotate(mask, angle, reshape=False)
+	
+	mask = scipy.ndimage.rotate(mask, angle, reshape=False)
 	mask = mask[
 		(sizex // 2 - nx // 2) : (sizex // 2 + nx // 2),
 		(sizey // 2 - ny // 2) : (sizey // 2 + ny // 2),
