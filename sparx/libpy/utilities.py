@@ -1,5 +1,6 @@
 #
 from __future__ import print_function
+
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
 #
@@ -30,11 +31,15 @@ from __future__ import print_function
 #
 
 from future import standard_library
+
 standard_library.install_aliases()
 from builtins import range
 from builtins import object
 from global_def import *
 from functools import reduce
+import EMAN2
+import numpy as np
+
 
 import morphology
 
@@ -48,12 +53,13 @@ def params_2D_3D(alpha, sx, sy, mirror):
 	theta = 0
 	alphan, s2x, s2y, scalen = compose_transform2(0, sx, sy, 1, -alpha, 0, 0, 1)
 	if mirror > 0:
-		phi   = (540.0 + phi)%360.0
-		theta = 180.0  - theta
-		psi   = (540.0 - psi + alphan)%360.0
+		phi = (540.0 + phi) % 360.0
+		theta = 180.0 - theta
+		psi = (540.0 - psi + alphan) % 360.0
 	else:
-		psi   = (psi   + alphan)%360.0
+		psi = (psi + alphan) % 360.0
 	return phi, theta, psi, s2x, s2y
+
 
 def params_3D_2D(phi, theta, psi, s2x, s2y):
 	"""
@@ -62,11 +68,16 @@ def params_3D_2D(phi, theta, psi, s2x, s2y):
 	"""
 	if theta > 90.0:
 		mirror = 1
-		alpha, sx, sy, scalen = compose_transform2(0, s2x, s2y, 1.0, 540.0-psi, 0, 0, 1.0)
+		alpha, sx, sy, scalen = compose_transform2(
+			0, s2x, s2y, 1.0, 540.0 - psi, 0, 0, 1.0
+		)
 	else:
 		mirror = 0
-		alpha, sx, sy, scalen = compose_transform2(0, s2x, s2y, 1.0, 360.0-psi, 0, 0, 1.0)
-	return  alpha, sx, sy, mirror
+		alpha, sx, sy, scalen = compose_transform2(
+			0, s2x, s2y, 1.0, 360.0 - psi, 0, 0, 1.0
+		)
+	return alpha, sx, sy, mirror
+
 
 # Amoeba uses the simplex method of Nelder and Mead to maximize a
 # function of 1 or more variables.
@@ -86,8 +97,10 @@ def params_3D_2D(phi, theta, psi, s2x, s2y):
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-def amoeba(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data=None):
-	'''Use the simplex method to maximize a function of 1 or more variables.
+def amoeba(
+	var, scale, func, ftolerance=1.0e-4, xtolerance=1.0e-4, itmax=500, data=None
+):
+	"""Use the simplex method to maximize a function of 1 or more variables.
 
 	   Input:
 		  var = the initial guess, a list with one element for each variable
@@ -108,10 +121,10 @@ def amoeba(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data
 		  iterations = the number of iterations used.
 
 	   - Setting itmax to zero disables the itmax check and the routine will run
-	     until convergence, even if it takes forever.
+		 until convergence, even if it takes forever.
 	   - Setting ftolerance or xtolerance to 0.0 turns that convergence criterion
-	     off.  But do not set both ftolerance and xtolerance to zero or the routine
-	     will exit immediately without finding the maximum.
+		 off.  But do not set both ftolerance and xtolerance to zero or the routine
+		 will exit immediately without finding the maximum.
 	   - To check for convergence, check if (iterations < itmax).
 
 	   The function should be defined like func(var,data) where
@@ -119,9 +132,9 @@ def amoeba(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data
 
 	   Example:
 
-	       import amoeba
-	       def afunc(var,data=None): return 1.0-var[0]*var[0]-var[1]*var[1]
-	       print amoeba.amoeba([0.25,0.25],[0.5,0.5],afunc)
+		   import amoeba
+		   def afunc(var,data=None): return 1.0-var[0]*var[0]-var[1]*var[1]
+		   print amoeba.amoeba([0.25,0.25],[0.5,0.5],afunc)
 
 	   Version 1.0 2005-March-28 T. Metcalf
 		   1.1 2005-March-29 T. Metcalf - Use scale in simsize calculation.
@@ -130,96 +143,104 @@ def amoeba(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data
 						  convergence.
 		   1.2 2005-April-03 T. Metcalf - When contracting, contract the whole
 						  simplex.
-	   '''
+	   """
 
-	nvar = len(var)       # number of variables in the minimization
-	nsimplex = nvar + 1   # number of vertices in the simplex
+	nvar = len(var)  # number of variables in the minimization
+	nsimplex = nvar + 1  # number of vertices in the simplex
 
 	# first set up the simplex
 
-	simplex = [0]*(nvar+1)  # set the initial simplex
+	simplex = [0] * (nvar + 1)  # set the initial simplex
 	simplex[0] = var[:]
 	for i in range(nvar):
-		simplex[i+1] = var[:]
-		simplex[i+1][i] += scale[i]
+		simplex[i + 1] = var[:]
+		simplex[i + 1][i] += scale[i]
 
 	fvalue = []
 	for i in range(nsimplex):  # set the function values for the simplex
-		fvalue.append(func(simplex[i],data=data))
+		fvalue.append(func(simplex[i], data=data))
 
-	# Ooze the simplex to the maximum
+		# Ooze the simplex to the maximum
 
 	iteration = 0
 
 	while 1:
 		# find the index of the best and worst vertices in the simplex
 		ssworst = 0
-		ssbest  = 0
+		ssbest = 0
 		for i in range(nsimplex):
 			if fvalue[i] > fvalue[ssbest]:
 				ssbest = i
 			if fvalue[i] < fvalue[ssworst]:
 				ssworst = i
 
-		# get the average of the nsimplex-1 best vertices in the simplex
-		pavg = [0.0]*nvar
+				# get the average of the nsimplex-1 best vertices in the simplex
+		pavg = [0.0] * nvar
 		for i in range(nsimplex):
 			if i != ssworst:
-				for j in range(nvar): pavg[j] += simplex[i][j]
-		for j in range(nvar): pavg[j] = pavg[j]/nvar # nvar is nsimplex-1
+				for j in range(nvar):
+					pavg[j] += simplex[i][j]
+		for j in range(nvar):
+			pavg[j] = pavg[j] / nvar  # nvar is nsimplex-1
 		simscale = 0.0
 		for i in range(nvar):
-			simscale += abs(pavg[i]-simplex[ssworst][i])/scale[i]
-		simscale = simscale/nvar
+			simscale += abs(pavg[i] - simplex[ssworst][i]) / scale[i]
+		simscale = simscale / nvar
 
 		# find the range of the function values
-		fscale = (abs(fvalue[ssbest])+abs(fvalue[ssworst]))/2.0
+		fscale = (abs(fvalue[ssbest]) + abs(fvalue[ssworst])) / 2.0
 		if fscale != 0.0:
-			frange = abs(fvalue[ssbest]-fvalue[ssworst])/fscale
+			frange = abs(fvalue[ssbest] - fvalue[ssworst]) / fscale
 		else:
 			frange = 0.0  # all the fvalues are zero in this case
 
-		# have we converged?
-		if (((ftolerance <= 0.0 or frange < ftolerance) and    # converged to maximum
-		 (xtolerance <= 0.0 or simscale < xtolerance)) or  # simplex contracted enough
-		 (itmax and iteration >= itmax)):	     # ran out of iterations
-			return simplex[ssbest],fvalue[ssbest],iteration
+			# have we converged?
+		if (
+			(ftolerance <= 0.0 or frange < ftolerance)
+			and (xtolerance <= 0.0 or simscale < xtolerance)  # converged to maximum
+		) or (  # simplex contracted enough
+			itmax and iteration >= itmax
+		):  # ran out of iterations
+			return simplex[ssbest], fvalue[ssbest], iteration
 
-		# reflect the worst vertex
-		pnew = [0.0]*nvar
+			# reflect the worst vertex
+		pnew = [0.0] * nvar
 		for i in range(nvar):
-			pnew[i] = 2.0*pavg[i] - simplex[ssworst][i]
-		fnew = func(pnew,data=data)
+			pnew[i] = 2.0 * pavg[i] - simplex[ssworst][i]
+		fnew = func(pnew, data=data)
 		if fnew <= fvalue[ssworst]:
 			# the new vertex is worse than the worst so shrink
 			# the simplex.
 			for i in range(nsimplex):
 				if i != ssbest and i != ssworst:
 					for j in range(nvar):
-						simplex[i][j] = 0.5*simplex[ssbest][j] + 0.5*simplex[i][j]
-					fvalue[i] = func(simplex[i],data=data)
+						simplex[i][j] = 0.5 * simplex[ssbest][j] + 0.5 * simplex[i][j]
+					fvalue[i] = func(simplex[i], data=data)
 			for j in range(nvar):
-				pnew[j] = 0.5*simplex[ssbest][j] + 0.5*simplex[ssworst][j]
-			fnew = func(pnew,data=data)
+				pnew[j] = 0.5 * simplex[ssbest][j] + 0.5 * simplex[ssworst][j]
+			fnew = func(pnew, data=data)
 		elif fnew >= fvalue[ssbest]:
 			# the new vertex is better than the best so expand
 			# the simplex.
-			pnew2 = [0.0]*nvar
+			pnew2 = [0.0] * nvar
 			for i in range(nvar):
-				pnew2[i] = 3.0*pavg[i] - 2.0*simplex[ssworst][i]
-			fnew2 = func(pnew2,data=data)
+				pnew2[i] = 3.0 * pavg[i] - 2.0 * simplex[ssworst][i]
+			fnew2 = func(pnew2, data=data)
 			if fnew2 > fnew:
 				# accept the new vertex in the simplexe
 				pnew = pnew2
 				fnew = fnew2
-		# replace the worst vertex with the new vertex
+				# replace the worst vertex with the new vertex
 		for i in range(nvar):
 			simplex[ssworst][i] = pnew[i]
 		fvalue[ssworst] = fnew
 		iteration += 1
-		#print "Iteration:",iteration,"  ",ssbest,"  ",fvalue[ssbest]
+		# print "Iteration:",iteration,"  ",ssbest,"  ",fvalue[ssbest]
 
-def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data=None):
+
+def amoeba_multi_level(
+	var, scale, func, ftolerance=1.0e-4, xtolerance=1.0e-4, itmax=500, data=None
+):
 	"""
 	Commented by Zhengfan Yang on 05/01/07
 
@@ -228,101 +249,106 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 	amoeba refinement because otherwise, upper level refinement will lose the information
 	of lower level refinement.
 	"""
-	#print " ENTER AMOEBA MULTI LEVEL"
+	# print " ENTER AMOEBA MULTI LEVEL"
 	from mpi import mpi_comm_rank, MPI_COMM_WORLD
-	
-	nvar = len(var)       # number of variables in the minimization
-	nsimplex = nvar + 1   # number of vertices in the simplex
+
+	nvar = len(var)  # number of variables in the minimization
+	nsimplex = nvar + 1  # number of vertices in the simplex
 
 	# first set up the simplex
 
-	simplex = [0]*(nvar+1)  # set the initial simplex
+	simplex = [0] * (nvar + 1)  # set the initial simplex
 	simplex[0] = var[:]
 	for i in range(nvar):
-		simplex[i+1] = var[:]
-		simplex[i+1][i] += scale[i]
+		simplex[i + 1] = var[:]
+		simplex[i + 1][i] += scale[i]
 
 	fvalue = []
 	for i in range(nsimplex):  # set the function values for the simplex
 		result, passout = func(simplex[i], data=data)
-		#print  " amoeba setting ",i,simplex[i],result, passout
+		# print  " amoeba setting ",i,simplex[i],result, passout
 		fvalue.append([result, passout])
 
-	# Ooze the simplex to the maximum
+		# Ooze the simplex to the maximum
 
 	iteration = 0
 
 	while 1:
 		# find the index of the best and worst vertices in the simplex
 		ssworst = 0
-		ssbest  = 0
+		ssbest = 0
 		for i in range(nsimplex):
 			if fvalue[i][0] > fvalue[ssbest][0]:
 				ssbest = i
 			if fvalue[i][0] < fvalue[ssworst][0]:
 				ssworst = i
 
-		# get the average of the nsimplex-1 best vertices in the simplex
-		pavg = [0.0]*nvar
+				# get the average of the nsimplex-1 best vertices in the simplex
+		pavg = [0.0] * nvar
 		for i in range(nsimplex):
 			if i != ssworst:
-				for j in range(nvar): pavg[j] += simplex[i][j]
-		for j in range(nvar): pavg[j] = pavg[j]/nvar # nvar is nsimplex-1
+				for j in range(nvar):
+					pavg[j] += simplex[i][j]
+		for j in range(nvar):
+			pavg[j] = pavg[j] / nvar  # nvar is nsimplex-1
 		simscale = 0.0
 		for i in range(nvar):
-			simscale += abs(pavg[i]-simplex[ssworst][i])/scale[i]
-		simscale = simscale/nvar
+			simscale += abs(pavg[i] - simplex[ssworst][i]) / scale[i]
+		simscale = simscale / nvar
 
 		# find the range of the function values
-		fscale = (abs(fvalue[ssbest][0])+abs(fvalue[ssworst][0]))/2.0
+		fscale = (abs(fvalue[ssbest][0]) + abs(fvalue[ssworst][0])) / 2.0
 		if fscale != 0.0:
-			frange = abs(fvalue[ssbest][0]-fvalue[ssworst][0])/fscale
+			frange = abs(fvalue[ssbest][0] - fvalue[ssworst][0]) / fscale
 		else:
 			frange = 0.0  # all the fvalues are zero in this case
 
-		# have we converged?
-		if (((ftolerance <= 0.0 or frange < ftolerance) and    # converged to maximum
-		(xtolerance <= 0.0 or simscale < xtolerance)) or  # simplex contracted enough
-		(itmax and iteration >= itmax)):	     # ran out of iterations
-			return simplex[ssbest],fvalue[ssbest][0],iteration,fvalue[ssbest][1]
+			# have we converged?
+		if (
+			(ftolerance <= 0.0 or frange < ftolerance)
+			and (xtolerance <= 0.0 or simscale < xtolerance)  # converged to maximum
+		) or (  # simplex contracted enough
+			itmax and iteration >= itmax
+		):  # ran out of iterations
+			return simplex[ssbest], fvalue[ssbest][0], iteration, fvalue[ssbest][1]
 
-		# reflect the worst vertex
-		pnew = [0.0]*nvar
+			# reflect the worst vertex
+		pnew = [0.0] * nvar
 		for i in range(nvar):
-			pnew[i] = 2.0*pavg[i] - simplex[ssworst][i]
-		fnew = func(pnew,data=data)
+			pnew[i] = 2.0 * pavg[i] - simplex[ssworst][i]
+		fnew = func(pnew, data=data)
 		if fnew[0] <= fvalue[ssworst][0]:
 			# the new vertex is worse than the worst so shrink
 			# the simplex.
 			for i in range(nsimplex):
 				if i != ssbest and i != ssworst:
 					for j in range(nvar):
-						simplex[i][j] = 0.5*simplex[ssbest][j] + 0.5*simplex[i][j]
-					fvalue[i]  = func(simplex[i],data=data)
-				#### <--------->
+						simplex[i][j] = 0.5 * simplex[ssbest][j] + 0.5 * simplex[i][j]
+					fvalue[i] = func(simplex[i], data=data)
+					#### <--------->
 			for j in range(nvar):
-				pnew[j] = 0.5*simplex[ssbest][j] + 0.5*simplex[ssworst][j]
+				pnew[j] = 0.5 * simplex[ssbest][j] + 0.5 * simplex[ssworst][j]
 			fnew = func(pnew, data=data)
 		elif fnew[0] >= fvalue[ssbest][0]:
 			# the new vertex is better than the best so expand
 			# the simplex.
-			pnew2 = [0.0]*nvar
+			pnew2 = [0.0] * nvar
 			for i in range(nvar):
-				pnew2[i] = 3.0*pavg[i] - 2.0*simplex[ssworst][i]
-			fnew2 = func(pnew2,data=data)
+				pnew2[i] = 3.0 * pavg[i] - 2.0 * simplex[ssworst][i]
+			fnew2 = func(pnew2, data=data)
 			if fnew2[0] > fnew[0]:
 				# accept the new vertex in the simplexe
 				pnew = pnew2
 				fnew = fnew2
-		# replace the worst vertex with the new vertex
+				# replace the worst vertex with the new vertex
 		for i in range(nvar):
 			simplex[ssworst][i] = pnew[i]
 		fvalue[ssworst] = fnew
 		iteration += 1
 
-
 		# if mpi_comm_rank(MPI_COMM_WORLD) == 7:
 		# 	print "Iteration:",iteration,"  ",ssbest,"  ", simplex[ssbest], "  ",fvalue[ssbest]
+
 
 '''
 def golden(func, args=(), brack=None, tol=1.e-4, full_output=0):
@@ -397,54 +423,54 @@ def bracketing(func, xa=0.0, xb=1.0, args=(), grow_limit=110.0, maxiter=1000):
 	fa = apply(func, (xa,)+args)
 	fb = apply(func, (xb,)+args)
 	if (fa < fb):			   # Switch so fa > fb
-	    dum = xa; xa = xb; xb = dum
-	    dum = fa; fa = fb; fb = dum
+		dum = xa; xa = xb; xb = dum
+		dum = fa; fa = fb; fb = dum
 	xc = xb + _gold*(xb-xa)
 	fc = apply(func, (xc,)+args)
 	funcalls = 3
 	iter = 0
 	while (fc < fb):
-	    tmp1 = (xb - xa)*(fb-fc)
-	    tmp2 = (xb - xc)*(fb-fa)
-	    val = tmp2-tmp1
-	    if abs(val) < _verysmall_num:
+		tmp1 = (xb - xa)*(fb-fc)
+		tmp2 = (xb - xc)*(fb-fa)
+		val = tmp2-tmp1
+		if abs(val) < _verysmall_num:
 		denom = 2.0*_verysmall_num
-	    else:
+		else:
 		denom = 2.0*val
-	    w = xb - ((xb-xc)*tmp2-(xb-xa)*tmp1)/denom
-	    wlim = xb + grow_limit*(xc-xb)
-	    if iter > maxiter:
+		w = xb - ((xb-xc)*tmp2-(xb-xa)*tmp1)/denom
+		wlim = xb + grow_limit*(xc-xb)
+		if iter > maxiter:
 		raise RuntimeError, "Too many iterations."
-	    iter += 1
-	    if (w-xc)*(xb-w) > 0.0:
+		iter += 1
+		if (w-xc)*(xb-w) > 0.0:
 		fw = apply(func, (w,)+args)
 		funcalls += 1
 		if (fw < fc):
-		    xa = xb; xb=w; fa=fb; fb=fw
-		    return xa, xb, xc, fa, fb, fc, funcalls
+			xa = xb; xb=w; fa=fb; fb=fw
+			return xa, xb, xc, fa, fb, fc, funcalls
 		elif (fw > fb):
-		    xc = w; fc=fw
-		    return xa, xb, xc, fa, fb, fc, funcalls
+			xc = w; fc=fw
+			return xa, xb, xc, fa, fb, fc, funcalls
 		w = xc + _gold*(xc-xb)
 		fw = apply(func, (w,)+args)
 		funcalls += 1
-	    elif (w-wlim)*(wlim-xc) >= 0.0:
+		elif (w-wlim)*(wlim-xc) >= 0.0:
 		w = wlim
 		fw = apply(func, (w,)+args)
 		funcalls += 1
-	    elif (w-wlim)*(xc-w) > 0.0:
+		elif (w-wlim)*(xc-w) > 0.0:
 		fw = apply(func, (w,)+args)
 		funcalls += 1
 		if (fw < fc):
-		    xb=xc; xc=w; w=xc+_gold*(xc-xb)
-		    fb=fc; fc=fw; fw=apply(func, (w,)+args)
-		    funcalls += 1
-	    else:
+			xb=xc; xc=w; w=xc+_gold*(xc-xb)
+			fb=fc; fc=fw; fw=apply(func, (w,)+args)
+			funcalls += 1
+		else:
 		w = xc + _gold*(xc-xb)
 		fw = apply(func, (w,)+args)
 		funcalls += 1
-	    xa=xb; xb=xc; xc=w
-	    fa=fb; fb=fc; fc=fw
+		xa=xb; xb=xc; xc=w
+		fa=fb; fb=fc; fc=fw
 	return xa, xb, xc, fa, fb, fc, funcalls
 '''
 
@@ -452,21 +478,43 @@ def bracketing(func, xa=0.0, xb=1.0, args=(), grow_limit=110.0, maxiter=1000):
 def ce_fit(inp_image, ref_image, mask_image):
 	""" Fit the histogram of the input image under mask with the reference image.
 
-	     Usage : ce_fit(inp_image,ref_image,mask_image):
-	    	 A and B, number of iterations and the chi-square
+		 Usage : ce_fit(inp_image,ref_image,mask_image):
+			 A and B, number of iterations and the chi-square
 	"""
 	hist_res = Util.histc(ref_image, inp_image, mask_image)
 	args = hist_res["args"]
 	scale = hist_res["scale"]
-	data = [hist_res['data'], inp_image, hist_res["ref_freq_bin"], mask_image, int(hist_res['size_img']), hist_res['hist_len']]
-	res = amoeba(args, scale, hist_func, 1.e-4, 1.e-4, 500, data)
-	resu = ["Final Parameter [A,B]:", res[0], "Final Chi-square :", -1*res[1], "Number of Iteration :", res[2]]
-	corrected_image = inp_image*res[0][0] + res[0][1]
-	result = [resu,"Corrected Image :",corrected_image]
+	data = [
+		hist_res["data"],
+		inp_image,
+		hist_res["ref_freq_bin"],
+		mask_image,
+		int(hist_res["size_img"]),
+		hist_res["hist_len"],
+	]
+	res = amoeba(args, scale, hist_func, 1.0e-4, 1.0e-4, 500, data)
+	resu = [
+		"Final Parameter [A,B]:",
+		res[0],
+		"Final Chi-square :",
+		-1 * res[1],
+		"Number of Iteration :",
+		res[2],
+	]
+	corrected_image = inp_image * res[0][0] + res[0][1]
+	result = [resu, "Corrected Image :", corrected_image]
 	del data[:], args[:], scale[:]
 	return result
 
-def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gauss_radius_inner = 2, Gauss_radius_outter = 7, self_defined_reference = None):
+
+def center_2D(
+	image_to_be_centered,
+	center_method=1,
+	searching_range=-1,
+	Gauss_radius_inner=2,
+	Gauss_radius_outter=7,
+	self_defined_reference=None,
+):
 	"""
 		Put an input image into image center (nx/2, ny/2) using method :
 		1. phase_cog
@@ -475,177 +523,261 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 		4. cross-correlate with reference image provided by user
 		5. cross-correlate with self-rotated average
 		7. binarize at ave+sigma and cross-correlate with a circle
-	        The function will return centered_image, and shifts
+			The function will return centered_image, and shifts
 	"""
-	from   utilities    import peak_search
-	from   fundamentals import fshift
+	from utilities import peak_search
+	from fundamentals import fshift
 	import types
-	if type(image_to_be_centered) == bytes: image_to_be_centered = get_im(image_to_be_centered)
-	if    center_method == 0 :  return  image_to_be_centered,0.,0.
-	elif  center_method == 1 :
+
+	if type(image_to_be_centered) == bytes:
+		image_to_be_centered = get_im(image_to_be_centered)
+	if center_method == 0:
+		return image_to_be_centered, 0.0, 0.0
+	elif center_method == 1:
 		cs = image_to_be_centered.phase_cog()
-		if searching_range > 0 :
-			if(abs(cs[0]) > searching_range):  cs[0]=0.0
-			if(abs(cs[1]) > searching_range):  cs[1]=0.0
+		if searching_range > 0:
+			if abs(cs[0]) > searching_range:
+				cs[0] = 0.0
+			if abs(cs[1]) > searching_range:
+				cs[1] = 0.0
 		return fshift(image_to_be_centered, -cs[0], -cs[1]), cs[0], cs[1]
 
 	elif center_method == 7:
 		from fundamentals import ccf, cyclic_shift
-		from morphology   import binarize
-		from utilities    import model_blank
-		from EMAN2        import rsconvolution
-		p = Util.infomask(image_to_be_centered,None,True)
-		cc = binarize(rsconvolution(binarize(image_to_be_centered,p[0]+p[1]),model_blank(5,5,1,1.0/(5.0*5.0))),0.5)
+		from morphology import binarize
+		from utilities import model_blank
+		from EMAN2 import rsconvolution
+
+		p = Util.infomask(image_to_be_centered, None, True)
+		cc = binarize(
+			rsconvolution(
+				binarize(image_to_be_centered, p[0] + p[1]),
+				model_blank(5, 5, 1, 1.0 / (5.0 * 5.0)),
+			),
+			0.5,
+		)
 		c = ccf(cc, self_defined_reference)
-		p = Util.infomask(c,None,True)[3]
+		p = Util.infomask(c, None, True)[3]
 		nx = c.get_xsize()
-		ny = c .get_ysize()
-		cx = nx//2
-		cy = ny//2
+		ny = c.get_ysize()
+		cx = nx // 2
+		cy = ny // 2
 		n = 0
-		x=0
-		y=0
+		x = 0
+		y = 0
 		for i in range(nx):
 			for j in range(ny):
-				if c.get_value_at(i,j) == p :
-					x+=(i-cx)
-					y+=(j-cy)
-					n+=1
-		shiftx = x/n
-		shifty = y/n
-		if searching_range > 0 :
-			if(abs(shiftx) > searching_range):  shiftx=0
-			if(abs(shifty) > searching_range):  shifty=0
+				if c.get_value_at(i, j) == p:
+					x += i - cx
+					y += j - cy
+					n += 1
+		shiftx = x / n
+		shifty = y / n
+		if searching_range > 0:
+			if abs(shiftx) > searching_range:
+				shiftx = 0
+			if abs(shifty) > searching_range:
+				shifty = 0
 		return cyclic_shift(image_to_be_centered, -shiftx, -shifty), shiftx, shifty
 
 	elif center_method == 5:
-		from fundamentals import rot_avg_image,ccf
+		from fundamentals import rot_avg_image, ccf
 		from math import sqrt
+
 		not_centered = True
 		tmp_image = image_to_be_centered.copy()
 		shiftx = 0
 		shifty = 0
-		while (not_centered):
+		while not_centered:
 			reference = rot_avg_image(tmp_image)
 			ccmap = ccf(tmp_image, reference)
-			if searching_range > 0:  ccmap = Util.window(ccmap, searching_range, searching_range, 1, 0, 0, 0)
-			peak  = peak_search(ccmap)
+			if searching_range > 0:
+				ccmap = Util.window(ccmap, searching_range, searching_range, 1, 0, 0, 0)
+			peak = peak_search(ccmap)
 			centered_image = fshift(tmp_image, -peak[0][4], -peak[0][5])
-			if sqrt(peak[0][4]**2 + peak[0][5]**2) < 1. : not_centered = False
-			else : tmp_image = centered_image.copy()
+			if sqrt(peak[0][4] ** 2 + peak[0][5] ** 2) < 1.0:
+				not_centered = False
+			else:
+				tmp_image = centered_image.copy()
 			shiftx += peak[0][4]
 			shifty += peak[0][5]
 		return centered_image, shiftx, shifty
 
 	elif center_method == 6:
 		from morphology import threshold_to_minval
+
 		nx = image_to_be_centered.get_xsize()
 		ny = image_to_be_centered.get_ysize()
-		r = nx//2-2
+		r = nx // 2 - 2
 		mask = model_circle(r, nx, ny)
 		[mean, sigma, xmin, xmax] = Util.infomask(image_to_be_centered, mask, True)
-		new_image = threshold_to_minval(image_to_be_centered, mean+sigma)
+		new_image = threshold_to_minval(image_to_be_centered, mean + sigma)
 		cs = new_image.phase_cog()
-		if searching_range > 0 :
-			if(abs(cs[0]) > searching_range):  cs[0]=0.0
-			if(abs(cs[1]) > searching_range):  cs[1]=0.0
+		if searching_range > 0:
+			if abs(cs[0]) > searching_range:
+				cs[0] = 0.0
+			if abs(cs[1]) > searching_range:
+				cs[1] = 0.0
 		return fshift(image_to_be_centered, -cs[0], -cs[1]), cs[0], cs[1]
 
-	else :
+	else:
 		nx = image_to_be_centered.get_xsize()
 		ny = image_to_be_centered.get_ysize()
 		from fundamentals import ccf
-		if center_method == 2 :
-			reference = model_gauss(Gauss_radius_inner, nx, ny)
-		if center_method == 3 :
-			do1 = model_gauss(Gauss_radius_outter, nx, ny)
-			do2 = model_gauss(Gauss_radius_inner,  nx, ny)
-			s = Util.infomask(do1, None, True)
-			do1/= s[3]
-			s = Util.infomask(do2, None, True)
-			do2/=s[3]
-			reference = do1 - do2
-		if center_method == 4:	reference = self_defined_reference
-		ccmap = ccf(image_to_be_centered, reference)
-		if searching_range > 1: ccmap = Util.window(ccmap, searching_range, searching_range, 1, 0, 0, 0)
-		peak  = peak_search(ccmap)
-		return fshift(image_to_be_centered, -peak[0][4], -peak[0][5]), peak[0][4], peak[0][5]
 
-def common_line_in3D(phiA,thetaA,phiB,thetaB):
+		if center_method == 2:
+			reference = model_gauss(Gauss_radius_inner, nx, ny)
+		if center_method == 3:
+			do1 = model_gauss(Gauss_radius_outter, nx, ny)
+			do2 = model_gauss(Gauss_radius_inner, nx, ny)
+			s = Util.infomask(do1, None, True)
+			do1 /= s[3]
+			s = Util.infomask(do2, None, True)
+			do2 /= s[3]
+			reference = do1 - do2
+		if center_method == 4:
+			reference = self_defined_reference
+		ccmap = ccf(image_to_be_centered, reference)
+		if searching_range > 1:
+			ccmap = Util.window(ccmap, searching_range, searching_range, 1, 0, 0, 0)
+		peak = peak_search(ccmap)
+		return (
+			fshift(image_to_be_centered, -peak[0][4], -peak[0][5]),
+			peak[0][4],
+			peak[0][5],
+		)
+
+
+def common_line_in3D(phiA, thetaA, phiB, thetaB):
 	"""Find the position of the commone line in 3D
-           Formula is   (RB^T zhat)   cross  (RA^T zhat)
+		   Formula is   (RB^T zhat)   cross  (RA^T zhat)
 	   Returns phi, theta of the common line in degrees. theta always < 90
 	   Notice you don't need to enter psi's; they are irrelevant
 	"""
 
 	from math import pi, sqrt, cos, sin, asin, atan2
 
-	piOver=pi/180.0;
-	ph1 = phiA*piOver;
-	th1 = thetaA*piOver;
-	ph2 = phiB*piOver;
-	th2 = thetaB*piOver;
+	piOver = pi / 180.0
+	ph1 = phiA * piOver
+	th1 = thetaA * piOver
+	ph2 = phiB * piOver
+	th2 = thetaB * piOver
 
-	#nx = cos(thetaBR)*sin(thetaAR)*sin(phiAR) - cos(thetaAR)*sin(thetaBR)*sin(phiBR) ;
-	#ny = cos(thetaAR)*sin(thetaBR)*cos(phiBR) - cos(thetaBR)*sin(thetaAR)*cos(phiAR) ;
-	#nz = sin(thetaAR)*sin(thetaBR)*sin(phiAR-phiBR);
+	# nx = cos(thetaBR)*sin(thetaAR)*sin(phiAR) - cos(thetaAR)*sin(thetaBR)*sin(phiBR) ;
+	# ny = cos(thetaAR)*sin(thetaBR)*cos(phiBR) - cos(thetaBR)*sin(thetaAR)*cos(phiAR) ;
+	# nz = sin(thetaAR)*sin(thetaBR)*sin(phiAR-phiBR);
 
+	nx = sin(th1) * cos(ph1) * sin(ph2) - sin(th2) * sin(ph1) * cos(ph2)
+	ny = sin(th1) * cos(th2) * cos(ph1) * cos(ph2) - cos(th1) * sin(th2) * cos(
+		ph1
+	) * cos(ph2)
+	nz = cos(th2) * sin(ph1) * cos(ph2) - cos(th1) * cos(ph1) * sin(ph2)
 
-	nx = sin(th1)*cos(ph1)*sin(ph2)-sin(th2)*sin(ph1)*cos(ph2)
-	ny = sin(th1)*cos(th2)*cos(ph1)*cos(ph2)-cos(th1)*sin(th2)*cos(ph1)*cos(ph2)
-	nz = cos(th2)*sin(ph1)*cos(ph2)-cos(th1)*cos(ph1)*sin(ph2)
-
-	norm = nx*nx + ny*ny + nz*nz
+	norm = nx * nx + ny * ny + nz * nz
 
 	if norm < 1e-5:
-		#print 'phiA,thetaA,phiB,thetaB:', phiA, thetaA, phiB, thetaB
+		# print 'phiA,thetaA,phiB,thetaB:', phiA, thetaA, phiB, thetaB
 		return 0.0, 0.0
 
-	if nz<0: nx=-nx; ny=-ny; nz=-nz;
+	if nz < 0:
+		nx = -nx
+		ny = -ny
+		nz = -nz
 
-	#thetaCom = asin(nz/sqrt(norm))
-	phiCom    = asin(nz/sqrt(norm))
-	#phiCom   = atan2(ny,nx)
-	thetaCom  = atan2(ny, nx)
+	# thetaCom = asin(nz/sqrt(norm))
+	phiCom = asin(nz / sqrt(norm))
+	# phiCom   = atan2(ny,nx)
+	thetaCom = atan2(ny, nx)
 
-	return phiCom*180.0/pi , thetaCom*180.0/pi
+	return phiCom * 180.0 / pi, thetaCom * 180.0 / pi
+
 
 def compose_transform2(alpha1, sx1, sy1, scale1, alpha2, sx2, sy2, scale2):
 	"""Print the composition of two transformations  T2*T1
 		Here  if v's are vectors:   vnew = T2*T1 vold
-		     with T1 described by alpha1, sx1, scale1 etc.
+			 with T1 described by alpha1, sx1, scale1 etc.
 
 	  Combined parameters correspond to image first transformed by set 1 followed by set 2.
 
-	    Usage: compose_transform2(alpha1,sx1,sy1,scale1,alpha2,sx2,sy2,scale2)
-	       angles in degrees
+		Usage: compose_transform2(alpha1,sx1,sy1,scale1,alpha2,sx2,sy2,scale2)
+		   angles in degrees
 	"""
 
-	t1 = Transform({"type":"2D","alpha":alpha1,"tx":sx1,"ty":sy1,"mirror":0,"scale":scale1})
-	t2 = Transform({"type":"2D","alpha":alpha2,"tx":sx2,"ty":sy2,"mirror":0,"scale":scale2})
-	tt = t2*t1
+	t1 = Transform(
+		{
+			"type": "2D",
+			"alpha": alpha1,
+			"tx": sx1,
+			"ty": sy1,
+			"mirror": 0,
+			"scale": scale1,
+		}
+	)
+	t2 = Transform(
+		{
+			"type": "2D",
+			"alpha": alpha2,
+			"tx": sx2,
+			"ty": sy2,
+			"mirror": 0,
+			"scale": scale2,
+		}
+	)
+	tt = t2 * t1
 	d = tt.get_params("2D")
-	return d[ "alpha" ], d[ "tx" ], d[ "ty" ], d[ "scale" ]
+	return d["alpha"], d["tx"], d["ty"], d["scale"]
 
 
-def compose_transform2m(alpha1=0.0, sx1=0., sy1=0.0, mirror1=0, scale1=1.0, alpha2=0.0, sx2=0.0, sy2=0.0, mirror2=0, scale2=1.0):
+def compose_transform2m(
+	alpha1=0.0,
+	sx1=0.0,
+	sy1=0.0,
+	mirror1=0,
+	scale1=1.0,
+	alpha2=0.0,
+	sx2=0.0,
+	sy2=0.0,
+	mirror2=0,
+	scale2=1.0,
+):
 	"""Print the composition of two transformations  T2*T1
 		Here  if v's are vectors:   vnew = T2*T1 vold
-		     with T1 described by alpha1, sx1, scale1 etc.
+			 with T1 described by alpha1, sx1, scale1 etc.
 
 	  Combined parameters correspond to image first transformed by set 1 followed by set 2.
 
-	    Usage: compose_transform2(alpha1,sx1,sy1,mirror1,scale1,alpha2,sx2,sy2,mirror2,scale2)
-	       angles in degrees
+		Usage: compose_transform2(alpha1,sx1,sy1,mirror1,scale1,alpha2,sx2,sy2,mirror2,scale2)
+		   angles in degrees
 	"""
 
-	t1 = Transform({"type":"2D","alpha":alpha1,"tx":sx1,"ty":sy1,"mirror":mirror1,"scale":scale1})
-	t2 = Transform({"type":"2D","alpha":alpha2,"tx":sx2,"ty":sy2,"mirror":mirror2,"scale":scale2})
-	tt = t2*t1
+	t1 = Transform(
+		{
+			"type": "2D",
+			"alpha": alpha1,
+			"tx": sx1,
+			"ty": sy1,
+			"mirror": mirror1,
+			"scale": scale1,
+		}
+	)
+	t2 = Transform(
+		{
+			"type": "2D",
+			"alpha": alpha2,
+			"tx": sx2,
+			"ty": sy2,
+			"mirror": mirror2,
+			"scale": scale2,
+		}
+	)
+	tt = t2 * t1
 	d = tt.get_params("2D")
-	return d[ "alpha" ], d[ "tx" ], d[ "ty" ], int(d[ "mirror" ]+0.1), d[ "scale" ]
+	return d["alpha"], d["tx"], d["ty"], int(d["mirror"] + 0.1), d["scale"]
 
-def compose_transform3(phi1,theta1,psi1,sx1,sy1,sz1,scale1,phi2,theta2,psi2,sx2,sy2,sz2,scale2):
+
+def compose_transform3(
+	phi1, theta1, psi1, sx1, sy1, sz1, scale1, phi2, theta2, psi2, sx2, sy2, sz2, scale2
+):
 	"""
 	  Compute the composition of two transformations  T2*T1
 		Here  if v's are vectors:	vnew = T2*T1 vold
@@ -655,11 +787,36 @@ def compose_transform3(phi1,theta1,psi1,sx1,sy1,sz1,scale1,phi2,theta2,psi2,sx2,
 		   angles in degrees
 	"""
 
-	R1 = Transform({"type":"spider","phi":float(phi1),"theta":float(theta1),"psi":float(psi1),"tx":float(sx1),"ty":float(sy1),"tz":float(sz1),"mirror":0,"scale":float(scale1)})
-	R2 = Transform({"type":"spider","phi":float(phi2),"theta":float(theta2),"psi":float(psi2),"tx":float(sx2),"ty":float(sy2),"tz":float(sz2),"mirror":0,"scale":float(scale2)})
-	Rcomp=R2*R1
+	R1 = Transform(
+		{
+			"type": "spider",
+			"phi": float(phi1),
+			"theta": float(theta1),
+			"psi": float(psi1),
+			"tx": float(sx1),
+			"ty": float(sy1),
+			"tz": float(sz1),
+			"mirror": 0,
+			"scale": float(scale1),
+		}
+	)
+	R2 = Transform(
+		{
+			"type": "spider",
+			"phi": float(phi2),
+			"theta": float(theta2),
+			"psi": float(psi2),
+			"tx": float(sx2),
+			"ty": float(sy2),
+			"tz": float(sz2),
+			"mirror": 0,
+			"scale": float(scale2),
+		}
+	)
+	Rcomp = R2 * R1
 	d = Rcomp.get_params("spider")
-	return d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"],d["scale"]
+	return d["phi"], d["theta"], d["psi"], d["tx"], d["ty"], d["tz"], d["scale"]
+
 
 def combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2):
 	"""
@@ -667,9 +824,27 @@ def combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2):
 	  Combined parameters correspond to image first transformed by set 1 followed by set 2.
 	"""
 
-	t1 = Transform({"type":"2D","alpha":alpha1,"tx":sx1,"ty":sy1,"mirror":mirror1,"scale":1.0})
-	t2 = Transform({"type":"2D","alpha":alpha2,"tx":sx2,"ty":sy2,"mirror":mirror2,"scale":1.0})
-	tt = t2*t1
+	t1 = Transform(
+		{
+			"type": "2D",
+			"alpha": alpha1,
+			"tx": sx1,
+			"ty": sy1,
+			"mirror": mirror1,
+			"scale": 1.0,
+		}
+	)
+	t2 = Transform(
+		{
+			"type": "2D",
+			"alpha": alpha2,
+			"tx": sx2,
+			"ty": sy2,
+			"mirror": mirror2,
+			"scale": 1.0,
+		}
+	)
+	tt = t2 * t1
 	"""
 	t1.printme()
 	print(" ")
@@ -678,30 +853,65 @@ def combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2):
 	tt.printme()
 	"""
 	d = tt.get_params("2D")
-	return d[ "alpha" ], d[ "tx" ], d[ "ty" ], int(d[ "mirror" ]+0.1)
+	return d["alpha"], d["tx"], d["ty"], int(d["mirror"] + 0.1)
 
-def inverse_transform2(alpha, tx = 0.0, ty = 0.0, mirror = 0):
+
+def inverse_transform2(alpha, tx=0.0, ty=0.0, mirror=0):
 	"""Returns the inverse of the 2d rot and trans matrix
 
-	    Usage: nalpha, ntx, nty, mirror = inverse_transform2(alpha,tx,ty,mirror)
+		Usage: nalpha, ntx, nty, mirror = inverse_transform2(alpha,tx,ty,mirror)
 	"""
 
-	t = Transform({"type":"2D","alpha":alpha,"tx":tx,"ty":ty,"mirror":mirror,"scale":1.0})
+	t = Transform(
+		{
+			"type": "2D",
+			"alpha": alpha,
+			"tx": tx,
+			"ty": ty,
+			"mirror": mirror,
+			"scale": 1.0,
+		}
+	)
 	t = t.inverse()
 	t = t.get_params("2D")
-	return t[ "alpha" ], t[ "tx" ], t[ "ty" ], int(t[ "mirror" ]+0.1)
+	return t["alpha"], t["tx"], t["ty"], int(t["mirror"] + 0.1)
 
-def inverse_transform3(phi, theta=0.0, psi=0.0, tx=0.0, ty=0.0, tz=0.0, mirror = 0, scale=1.0):
+
+def inverse_transform3(
+	phi, theta=0.0, psi=0.0, tx=0.0, ty=0.0, tz=0.0, mirror=0, scale=1.0
+):
 	"""Returns the inverse of the 3d rot and trans matrix
 
-	    Usage: nphi,ntheta,npsi,ntx,nty,ntz,nmirror,nscale = inverse_transform3(phi,theta,psi,tx,ty,tz,mirror,scale)
-	       angles in degrees
+		Usage: nphi,ntheta,npsi,ntx,nty,ntz,nmirror,nscale = inverse_transform3(phi,theta,psi,tx,ty,tz,mirror,scale)
+		   angles in degrees
 	"""
 
-	d = Transform({'type': 'spider', 'phi': phi, 'theta': theta, 'psi': psi, 'tx': tx, 'ty': ty, 'tz': tz, "mirror":mirror,"scale":scale})
+	d = Transform(
+		{
+			"type": "spider",
+			"phi": phi,
+			"theta": theta,
+			"psi": psi,
+			"tx": tx,
+			"ty": ty,
+			"tz": tz,
+			"mirror": mirror,
+			"scale": scale,
+		}
+	)
 	d = d.inverse()
 	d = d.get_params("spider")
-	return  d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"],int(d["mirror"]+0.1),d["scale"]
+	return (
+		d["phi"],
+		d["theta"],
+		d["psi"],
+		d["tx"],
+		d["ty"],
+		d["tz"],
+		int(d["mirror"] + 0.1),
+		d["scale"],
+	)
+
 
 def create_smooth_mask( radius, img_dim, size=8 ):
 	"""
@@ -717,21 +927,24 @@ def create_smooth_mask( radius, img_dim, size=8 ):
 	size = size if (radius+size <= img_dim/2) else img_dim/2-radius
 	return morphology.soft_edge( mask, size )
 
-def create_spider_doc(fname,spiderdoc):
+
+def create_spider_doc(fname, spiderdoc):
 	"""Convert a text file that is composed of columns of numbers into spider doc file
 	"""
-	from string import atoi,atof
-	infile = open(fname,"r")
-	lines  = infile.readlines()
+	from string import atoi, atof
+
+	infile = open(fname, "r")
+	lines = infile.readlines()
 	infile.close()
-	nmc  = len(lines[0].split())
-	table=[]
+	nmc = len(lines[0].split())
+	table = []
 	for line in lines:
 		data = line.split()
-	for i in range(0,nmc):
+	for i in range(0, nmc):
 		data[i] = atof(data[i])
 		table.append(data)
-	drop_spider_doc(spiderdoc ,table)
+	drop_spider_doc(spiderdoc, table)
+
 
 def drop_image(imagename, destination, itype="h"):
 	"""Write an image to the disk.
@@ -742,44 +955,52 @@ def drop_image(imagename, destination, itype="h"):
 	"""
 
 	if type(destination) == type(""):
-		if(itype == "h"):    imgtype = EMUtil.ImageType.IMAGE_HDF
-		elif(itype == "s"):  imgtype = EMUtil.ImageType.IMAGE_SINGLE_SPIDER
-		else:  ERROR("unknown image type","drop_image",1)
+		if itype == "h":
+			imgtype = EMUtil.ImageType.IMAGE_HDF
+		elif itype == "s":
+			imgtype = EMUtil.ImageType.IMAGE_SINGLE_SPIDER
+		else:
+			ERROR("unknown image type", "drop_image", 1)
 		imagename.write_image(destination, 0, imgtype)
 	else:
-		ERROR("destination is not a file name","drop_image",1)
+		ERROR("destination is not a file name", "drop_image", 1)
+
 
 def drop_png_image(im, trg):
 	"""Write an image with the proper png save
 	Usage: drop_png_image(name_of_existing_image, 'path/to/image.png')
 	"""
 
-	if trg[-4:] != '.png':
-		ERROR('destination name must be png extension', 'drop_png_image', 1)
+	if trg[-4:] != ".png":
+		ERROR("destination name must be png extension", "drop_png_image", 1)
 
 	if isinstance(trg, str):
-		im['render_min'] = im['minimum']
-		im['render_max'] = im['maximum']
+		im["render_min"] = im["minimum"]
+		im["render_max"] = im["maximum"]
 		im.write_image(trg, 0)
 	else:
-		ERROR('destination is not a file name', 'drop_png_image', 1)
+		ERROR("destination is not a file name", "drop_png_image", 1)
 
-def drop_spider_doc(filename, data, comment = None):
+
+def drop_spider_doc(filename, data, comment=None):
 	"""Create a spider-compatible "Doc" file.
 
 	   filename: name of the Doc file
 	   data: List of lists, with the inner list being a list of floats
-	         and is written as a line into the doc file.
+			 and is written as a line into the doc file.
 	"""
 	outf = open(filename, "w")
 	from datetime import datetime
+
 	outf.write(" ;   %s   %s   %s\n" % (datetime.now().ctime(), filename, comment))
 	count = 1  # start key from 1; otherwise, it is confusing...
 	for dat in data:
 		try:
 			nvals = len(dat)
-			if nvals <= 5: datstrings = ["%5d %d" % (count, nvals)]
-			else         : datstrings = ["%6d %d" % (count, nvals)]
+			if nvals <= 5:
+				datstrings = ["%5d %d" % (count, nvals)]
+			else:
+				datstrings = ["%6d %d" % (count, nvals)]
 			for num in dat:
 				datstrings.append("%12.5g" % (num))
 		except TypeError:
@@ -790,119 +1011,159 @@ def drop_spider_doc(filename, data, comment = None):
 		count += 1
 	outf.close()
 
+
 def dump_row(input, fname, ix=0, iz=0):
 	"""Output the data in slice iz, row ix of an image to standard out.
 
 	Usage: dump_row(image, ix, iz)
 	   or
-	       dump_row("path/to/image", ix, iz)
+		   dump_row("path/to/image", ix, iz)
 	"""
 	fout = open(fname, "w")
-	image=get_image(input)
+	image = get_image(input)
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
 	fout.write("# z = %d slice, x = %d row)\n" % (iz, ix))
 	line = []
 	for iy in range(ny):
-		fout.write("%d\t%12.5g\n" % (iy, image.get_value_at(ix,iy,iz)))
+		fout.write("%d\t%12.5g\n" % (iy, image.get_value_at(ix, iy, iz)))
 	fout.close()
 
-def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
-				method = 'S', phiEqpsi = "Minus", symmetry='c1', ant = 0.0):
+
+def even_angles(
+	delta=15.0,
+	theta1=0.0,
+	theta2=90.0,
+	phi1=0.0,
+	phi2=359.99,
+	method="S",
+	phiEqpsi="Minus",
+	symmetry="c1",
+	ant=0.0,
+):
 	"""Create a list of Euler angles suitable for projections.
 	   method is either 'S' - for Saff algorithm
-	               or   'P' - for Penczek '94 algorithm
-			         'S' assumes phi1<phi2 and phi2-phi1>> delta ;
+				   or   'P' - for Penczek '94 algorithm
+					 'S' assumes phi1<phi2 and phi2-phi1>> delta ;
 	   symmetry  - if this is set to point-group symmetry (cn or dn) or helical symmetry with point-group symmetry (scn or sdn), \
-	                 it will yield angles from the asymmetric unit, not the specified range;
+					 it will yield angles from the asymmetric unit, not the specified range;
 	   ant - neighborhood for local searches.  I believe the fastest way to deal with it in case of point-group symmetry
-		        it to generate cushion projections within an/2 of the border of unique zone
+				it to generate cushion projections within an/2 of the border of unique zone
 	"""
 
-	from math      import pi, sqrt, cos, acos, tan, sin
+	from math import pi, sqrt, cos, acos, tan, sin
 	from utilities import even_angles_cd
-	from string    import lower,split
+	from string import lower, split
+
 	angles = []
 	symmetryLower = symmetry.lower()
 	symmetry_string = split(symmetry)[0]
-	if(symmetry_string[0]  == "c"):
-		if(phi2 == 359.99):
-			angles = even_angles_cd(delta, theta1, theta2, phi1-ant, phi2/int(symmetry_string[1:])+ant, method, phiEqpsi)
+	if symmetry_string[0] == "c":
+		if phi2 == 359.99:
+			angles = even_angles_cd(
+				delta,
+				theta1,
+				theta2,
+				phi1 - ant,
+				phi2 / int(symmetry_string[1:]) + ant,
+				method,
+				phiEqpsi,
+			)
 		else:
-			angles = even_angles_cd(delta, theta1, theta2, phi1-ant, phi2+ant, method, phiEqpsi)
-		if(int(symmetry_string[1:]) > 1):
-			if( int(symmetry_string[1:])%2 ==0):
-				qt = 360.0/int(symmetry_string[1:])
+			angles = even_angles_cd(
+				delta, theta1, theta2, phi1 - ant, phi2 + ant, method, phiEqpsi
+			)
+		if int(symmetry_string[1:]) > 1:
+			if int(symmetry_string[1:]) % 2 == 0:
+				qt = 360.0 / int(symmetry_string[1:])
 			else:
-				qt = 180.0/int(symmetry_string[1:])
+				qt = 180.0 / int(symmetry_string[1:])
 			n = len(angles)
 			for i in range(n):
-				t = n-i-1
-				if(angles[t][1] == 90.0):
-					if(angles[t][0] >= qt+ant):  del angles[t]
-	elif(symmetry_string[0]  == "d"):
-		if(phi2 == 359.99):
-			angles = even_angles_cd(delta, theta1, theta2, phi1, 360.0/int(symmetry_string[1:]), method, phiEqpsi)
+				t = n - i - 1
+				if angles[t][1] == 90.0:
+					if angles[t][0] >= qt + ant:
+						del angles[t]
+	elif symmetry_string[0] == "d":
+		if phi2 == 359.99:
+			angles = even_angles_cd(
+				delta,
+				theta1,
+				theta2,
+				phi1,
+				360.0 / int(symmetry_string[1:]),
+				method,
+				phiEqpsi,
+			)
 		else:
 			angles = even_angles_cd(delta, theta1, theta2, phi1, phi2, method, phiEqpsi)
 		n = len(angles)
-		badb = 360.0/int(symmetry_string[1:])/4 + ant
-		bade = 2*badb -ant
-		bbdb = badb + 360.0/int(symmetry_string[1:])/2 + ant
-		bbde = bbdb + 360.0/int(symmetry_string[1:])/4 - ant
+		badb = 360.0 / int(symmetry_string[1:]) / 4 + ant
+		bade = 2 * badb - ant
+		bbdb = badb + 360.0 / int(symmetry_string[1:]) / 2 + ant
+		bbde = bbdb + 360.0 / int(symmetry_string[1:]) / 4 - ant
 		for i in range(n):
-			t = n-i-1
+			t = n - i - 1
 			qt = angles[t][0]
-			if((qt>=badb and qt<bade) or (qt>=bbdb and qt<bbde)):  del angles[t]
+			if (qt >= badb and qt < bade) or (qt >= bbdb and qt < bbde):
+				del angles[t]
 
-		if (int(symmetry_string[1:])%2 == 0):
-			qt = 360.0/2/int(symmetry_string[1:])
+		if int(symmetry_string[1:]) % 2 == 0:
+			qt = 360.0 / 2 / int(symmetry_string[1:])
 		else:
-			qt = 180.0/2/int(symmetry_string[1:])
+			qt = 180.0 / 2 / int(symmetry_string[1:])
 		n = len(angles)
 		for i in range(n):
-			t = n-i-1
-			if(angles[t][1] == 90.0):
-				if(angles[t][0] >= qt + ant ):  del angles[t]
-	elif(symmetry_string[0]  == "s"):
+			t = n - i - 1
+			if angles[t][1] == 90.0:
+				if angles[t][0] >= qt + ant:
+					del angles[t]
+	elif symmetry_string[0] == "s":
 
-		#if symetry is "s", deltphi=delta, theata intial=theta1, theta end=90, delttheta=theta2
+		# if symetry is "s", deltphi=delta, theata intial=theta1, theta end=90, delttheta=theta2
 		# for helical, theta1 cannot be 0.0
 		if theta1 > 90.0:
-			ERROR('theta1 must be less than 90.0 for helical symmetry', 'even_angles', 1)
-		if theta1 == 0.0: theta1 =90.0
-		theta_number = int((90.0 - theta1)/theta2)
-		#for helical, symmetry = s or scn
+			ERROR(
+				"theta1 must be less than 90.0 for helical symmetry", "even_angles", 1
+			)
+		if theta1 == 0.0:
+			theta1 = 90.0
+		theta_number = int((90.0 - theta1) / theta2)
+		# for helical, symmetry = s or scn
 		cn = int(symmetry_string[2:])
-		for j in range(theta_number,-1, -1):
+		for j in range(theta_number, -1, -1):
 
-			if( j == 0):
-				if (symmetry_string[1] =="c"):
-					if cn%2 == 0:
-						k=int(359.99/cn/delta)
+			if j == 0:
+				if symmetry_string[1] == "c":
+					if cn % 2 == 0:
+						k = int(359.99 / cn / delta)
 					else:
-						k=int(359.99/2/cn/delta)
-				elif (symmetry_string[1] =="d"):
-					if cn%2 == 0:
-						k=int(359.99/2/cn/delta)
+						k = int(359.99 / 2 / cn / delta)
+				elif symmetry_string[1] == "d":
+					if cn % 2 == 0:
+						k = int(359.99 / 2 / cn / delta)
 					else:
-						k=int(359.99/4/cn/delta)
+						k = int(359.99 / 4 / cn / delta)
 				else:
-					ERROR("For helical strucutre, we only support scn and sdn symmetry","even_angles",1)
+					ERROR(
+						"For helical strucutre, we only support scn and sdn symmetry",
+						"even_angles",
+						1,
+					)
 
 			else:
-				if (symmetry_string[1] =="c"):
-					k=int(359.99/cn/delta)
-				elif (symmetry_string[1] =="d"):
-					k=int(359.99/2/cn/delta)
+				if symmetry_string[1] == "c":
+					k = int(359.99 / cn / delta)
+				elif symmetry_string[1] == "d":
+					k = int(359.99 / 2 / cn / delta)
 
-			for i in range(k+1):
-					angles.append([i*delta,90.0-j*theta2,90.0])
+			for i in range(k + 1):
+				angles.append([i * delta, 90.0 - j * theta2, 90.0])
 
 	else:
-		ERROR("even_angles","Symmetry not supported: "+symmetry_string,0)
-	'''
+		ERROR("even_angles", "Symmetry not supported: " + symmetry_string, 0)
+	"""
 	elif(symmetry_string[0]  == "o"):
 		from EMAN2 import parsesym
 		if(method.lower() == "s"):  met = "saff"
@@ -1014,44 +1275,52 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 		#		yVec = [sin(piOver * angles[k][1])* sin(piOver * angles[k][0]) for k in range(Count) ]
 		#		zVec = [cos(piOver *  angles[k][1]) for k in range(Count) ]
 		#		pylab.plot(yVec,zVec,'.'); pylab.show()
-		'''
-
+		"""
 
 	return angles
 
-def even_angles_cd(delta, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method = 'P', phiEQpsi='Minus'):
+
+def even_angles_cd(
+	delta, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method="P", phiEQpsi="Minus"
+):
 	"""Create a list of Euler angles suitable for projections.
 	   method is either 'S' - for Saff algorithm
-	                  or   'P' - for Penczek '94 algorithm
+					  or   'P' - for Penczek '94 algorithm
 			  'S' assumes phi1<phi2 and phi2-phi1>> delta ;
 	   phiEQpsi  - set this to 'Minus', if you want psi=-phi;
 	"""
 	from math import pi, sqrt, cos, acos
+
 	angles = []
-	if (method == 'P'):
+	if method == "P":
 		temp = Util.even_angles(delta, theta1, theta2, phi1, phi2)
-		#		                                              phi, theta, psi
-		for i in range(len(temp)/3): angles.append([temp[3*i],temp[3*i+1],temp[3*i+2]]);
-	else:              #elif (method == 'S'):
-		Deltaz  = cos(theta2*pi/180.0)-cos(theta1*pi/180.0)
-		s       = delta*pi/180.0
-		NFactor = 3.6/s
-		wedgeFactor = abs(Deltaz*(phi2-phi1)/720.0)
-		NumPoints   = int(NFactor*NFactor*wedgeFactor)
+		# 		                                              phi, theta, psi
+		for i in range(len(temp) / 3):
+			angles.append([temp[3 * i], temp[3 * i + 1], temp[3 * i + 2]])
+	else:  # elif (method == 'S'):
+		Deltaz = cos(theta2 * pi / 180.0) - cos(theta1 * pi / 180.0)
+		s = delta * pi / 180.0
+		NFactor = 3.6 / s
+		wedgeFactor = abs(Deltaz * (phi2 - phi1) / 720.0)
+		NumPoints = int(NFactor * NFactor * wedgeFactor)
 		angles.append([phi1, theta1, 0.0])
-		z1 = cos(theta1*pi/180.0); 	phi=phi1            # initialize loop
-		for k in range(1,(NumPoints-1)):
-			z=z1 + Deltaz*k/(NumPoints-1)
-			r= sqrt(1-z*z)
-			phi = phi1+(phi + delta/r -phi1)%(abs(phi2-phi1))
-			#[k, phi,180*acos(z)/pi, 0]
-			angles.append([phi, 180*acos(z)/pi, 0.0])
-		#angles.append([p2,t2,0])  # This is incorrect, as the last angle is really the border, not the element we need. PAP 01/15/07
-	if (phiEQpsi == 'Minus'):
-		for k in range(len(angles)): angles[k][2] = (720.0 - angles[k][0])%360.0
-	if( theta2 == 180.0 or (theta2 >180. and delta == 180.0)):  angles.append( [0.0, 180.0, 0.0] )
+		z1 = cos(theta1 * pi / 180.0)
+		phi = phi1  # initialize loop
+		for k in range(1, (NumPoints - 1)):
+			z = z1 + Deltaz * k / (NumPoints - 1)
+			r = sqrt(1 - z * z)
+			phi = phi1 + (phi + delta / r - phi1) % (abs(phi2 - phi1))
+			# [k, phi,180*acos(z)/pi, 0]
+			angles.append([phi, 180 * acos(z) / pi, 0.0])
+			# angles.append([p2,t2,0])  # This is incorrect, as the last angle is really the border, not the element we need. PAP 01/15/07
+	if phiEQpsi == "Minus":
+		for k in range(len(angles)):
+			angles[k][2] = (720.0 - angles[k][0]) % 360.0
+	if theta2 == 180.0 or (theta2 > 180.0 and delta == 180.0):
+		angles.append([0.0, 180.0, 0.0])
 
 	return angles
+
 
 def eigen_images_get(stack, eigenstack, mask, num, avg):
 	"""
@@ -1061,70 +1330,78 @@ def eigen_images_get(stack, eigenstack, mask, num, avg):
 
 	from utilities import get_image
 
-	a = Analyzers.get('pca_large')
+	a = Analyzers.get("pca_large")
 	e = EMData()
-	if(avg == 1): s = EMData()
+	if avg == 1:
+		s = EMData()
 	nima = EMUtil.get_image_count(stack)
 	for im in range(nima):
-		e.read_image(stack,im)
+		e.read_image(stack, im)
 		e *= mask
 		a.insert_image(e)
-		if( avg==1):
-			if(im==0): s  = a
-			else:      s += a
-	if(avg == 1): a -= s/nima
+		if avg == 1:
+			if im == 0:
+				s = a
+			else:
+				s += a
+	if avg == 1:
+		a -= s / nima
 	eigenimg = a.analyze()
-	if(num>= EMUtil.get_image_count(eigenimg)):
-		num=EMUtil.get_image_count(eigenimg)
-	for  i in range(num): eigenimg.write_image(eigenstack,i)
+	if num >= EMUtil.get_image_count(eigenimg):
+		num = EMUtil.get_image_count(eigenimg)
+	for i in range(num):
+		eigenimg.write_image(eigenstack, i)
 
-def find_inplane_to_match(phiA,thetaA,phiB,thetaB,psiA=0,psiB=0):
+
+def find_inplane_to_match(phiA, thetaA, phiB, thetaB, psiA=0, psiB=0):
 	"""Find the z rotation such that
-	    ZA  RA is as close as possible to RB
-	        this maximizes trace of ( RB^T ZA RA) = trace(ZA RA RB^T)
+		ZA  RA is as close as possible to RB
+			this maximizes trace of ( RB^T ZA RA) = trace(ZA RA RB^T)
 	"""
-	#from math import pi, sqrt, cos, acos, sin
+	# from math import pi, sqrt, cos, acos, sin
 
-	RA   = Transform({'type': 'spider', 'phi': phiA, 'theta': thetaA, 'psi': psiA})
-	RB   = Transform({'type': 'spider', 'phi': phiB, 'theta': thetaB, 'psi': psiB})
-	RBT  = RB.transpose()
+	RA = Transform({"type": "spider", "phi": phiA, "theta": thetaA, "psi": psiA})
+	RB = Transform({"type": "spider", "phi": phiB, "theta": thetaB, "psi": psiB})
+	RBT = RB.transpose()
 	RABT = RA * RBT
 
-	RABTeuler = RABT.get_rotation('spider')
-	RABTphi   = RABTeuler['phi']
-	RABTtheta = RABTeuler['theta']
-	RABTpsi   = RABTeuler['psi']
+	RABTeuler = RABT.get_rotation("spider")
+	RABTphi = RABTeuler["phi"]
+	RABTtheta = RABTeuler["theta"]
+	RABTpsi = RABTeuler["psi"]
 
-	#deg_to_rad = pi/180.0
-	#thetaAR = thetaA*deg_to_rad
-	#thetaBR = thetaB*deg_to_rad
-	#phiAR   = phiA*deg_to_rad
-	#phiBR   = phiB *deg_to_rad
+	# deg_to_rad = pi/180.0
+	# thetaAR = thetaA*deg_to_rad
+	# thetaBR = thetaB*deg_to_rad
+	# phiAR   = phiA*deg_to_rad
+	# phiBR   = phiB *deg_to_rad
 
-	#d12=cos(thetaAR)*cos(thetaBR) + sin(thetaAR)*sin(thetaBR)*cos(phiAR-phiBR)
-	return (-RABTpsi-RABTphi),RABTtheta #  180.0*acos(d12)/pi;
+	# d12=cos(thetaAR)*cos(thetaBR) + sin(thetaAR)*sin(thetaBR)*cos(phiAR-phiBR)
+	return (-RABTpsi - RABTphi), RABTtheta  #  180.0*acos(d12)/pi;
+
 
 def find(vv, cmp_str, n):
-	jFoundVec= [];
+	jFoundVec = []
 	for jFound in range(len(vv)):
-		if (cmp_str=='lt'):
-			if (vv[jFound]<n):
-				jFoundVec.append(jFound);
-		if (cmp_str=='le'):
-			if (vv[jFound]<=n):
-				jFoundVec.append(jFound);
-		if (cmp_str=='eq'):
-			if (vv[jFound]==n):
-				jFoundVec.append(jFound);
-		if (cmp_str=='ge'):
-			if (vv[jFound]>=n):
-				jFoundVec.append(jFound);
-		if (cmp_str=='gt'):
-			if (vv[jFound]>n):
-				jFoundVec.append(jFound);
-	return jFoundVec;
+		if cmp_str == "lt":
+			if vv[jFound] < n:
+				jFoundVec.append(jFound)
+		if cmp_str == "le":
+			if vv[jFound] <= n:
+				jFoundVec.append(jFound)
+		if cmp_str == "eq":
+			if vv[jFound] == n:
+				jFoundVec.append(jFound)
+		if cmp_str == "ge":
+			if vv[jFound] >= n:
+				jFoundVec.append(jFound)
+		if cmp_str == "gt":
+			if vv[jFound] > n:
+				jFoundVec.append(jFound)
+	return jFoundVec
 
-def gauss_edge(sharp_edge_image, kernel_size = 7, gauss_standard_dev =3):
+
+def gauss_edge(sharp_edge_image, kernel_size=7, gauss_standard_dev=3):
 	"""
 		smooth sharp_edge_image with Gaussian function
 		1. The sharp-edge image is convoluted with a gassian kernel
@@ -1132,35 +1409,42 @@ def gauss_edge(sharp_edge_image, kernel_size = 7, gauss_standard_dev =3):
 	"""
 	from utilities import model_gauss
 	from EMAN2 import rsconvolution
+
 	nz = sharp_edge_image.get_ndim()
-	if(nz == 3):   kern = model_gauss(gauss_standard_dev, kernel_size , kernel_size, kernel_size)
-	elif(nz == 2):  kern = model_gauss(gauss_standard_dev, kernel_size , kernel_size)
-	else:          kern = model_gauss(gauss_standard_dev, kernel_size)
+	if nz == 3:
+		kern = model_gauss(gauss_standard_dev, kernel_size, kernel_size, kernel_size)
+	elif nz == 2:
+		kern = model_gauss(gauss_standard_dev, kernel_size, kernel_size)
+	else:
+		kern = model_gauss(gauss_standard_dev, kernel_size)
 	aves = Util.infomask(kern, None, False)
 	nx = kern.get_xsize()
 	ny = kern.get_ysize()
 	nz = kern.get_zsize()
 
-	kern /= (aves[0]*nx*ny*nz)
-	return  rsconvolution(sharp_edge_image, kern)
+	kern /= aves[0] * nx * ny * nz
+	return rsconvolution(sharp_edge_image, kern)
 
-def get_image(imagename, nx = 0, ny = 1, nz = 1, im = 0):
+
+def get_image(imagename, nx=0, ny=1, nz=1, im=0):
 	"""Read an image from the disk or assign existing object to the output.
 
 	Usage: myimage = readImage("path/to/image")
 	or     myimage = readImage(name_of_existing_image)
 	"""
 	if type(imagename) == type(""):
-	    e = EMData()
-	    e.read_image(imagename, im)
+		e = EMData()
+		e.read_image(imagename, im)
 	elif not imagename:
-	    e = EMData()
-	    if (nx > 0): e.set_size(nx, ny, nz)
+		e = EMData()
+		if nx > 0:
+			e.set_size(nx, ny, nz)
 	else:
-	    e = imagename
+		e = imagename
 	return e
 
-def get_im(stackname, im = 0):
+
+def get_im(stackname, im=0):
 	"""Read an image from the disk stack, or return im's image from the list of images
 
 	Usage: myimage = get_im("path/to/stack", im)
@@ -1169,9 +1453,10 @@ def get_im(stackname, im = 0):
 	if type(stackname) == type(""):
 		e = EMData()
 		e.read_image(stackname, im)
-		return  e
+		return e
 	else:
-		return  stackname[im].copy()
+		return stackname[im].copy()
+
 
 def get_image_data(img):
 	"""
@@ -1181,26 +1466,34 @@ def get_image_data(img):
 		as well (and vice versa).
 	"""
 	from EMAN2 import EMNumPy
+
 	return EMNumPy.em2numpy(img)
+
 
 def get_sym(symmetry):
 	"""
 	get a list of point-group symmetry angles, symmetry="c3"
 	"""
 	from fundamentals import symclass
+
 	scl = symclass(symmetry)
 	return scl.symangles
+
 
 def get_symt(symmetry):
 	"""
 	get a list of point-group symmetry transformations, symmetry="c3"
 	"""
 	from fundamentals import symclass
+
 	scl = symclass(symmetry)
 	trans = []
 	for q in scl.symangles:
-		trans.append(Transform({"type":"spider","phi":q[0],"theta":q[1],"psi":q[2]}))
+		trans.append(
+			Transform({"type": "spider", "phi": q[0], "theta": q[1], "psi": q[2]})
+		)
 	return trans
+
 
 def get_textimage(fname):
 	"""
@@ -1211,7 +1504,8 @@ def get_textimage(fname):
 		and val is the floating point value of that point.  All points
 		not explicitly listed are set to zero.
 	"""
-	from string import atoi,atof
+	from string import atoi, atof
+
 	infile = open(fname)
 	lines = infile.readlines()
 	infile.close()
@@ -1228,47 +1522,65 @@ def get_textimage(fname):
 		iy = atoi(data[1])
 		iz = atoi(data[2])
 		val = atof(data[3])
-		e[ix,iy,iz] = val
+		e[ix, iy, iz] = val
 	return e
+
 
 def get_input_from_string(str_input):
 	"""
 		Extract input numbers from a given string
 	"""
 	from re import split
-	qq = split(" |,",str_input)
-	for i in range(len(qq)-1, -1, -1):
-		if(qq[i] == ""):  del qq[i]
+
+	qq = split(" |,", str_input)
+	for i in range(len(qq) - 1, -1, -1):
+		if qq[i] == "":
+			del qq[i]
 	o = []
 	for i in range(len(qq)):
-		if(qq[i].find(".") >= 0):  o.append(float(qq[i]))
-		else:  o.append(int(qq[i]))
+		if qq[i].find(".") >= 0:
+			o.append(float(qq[i]))
+		else:
+			o.append(int(qq[i]))
 	return o
 
+
 def hist_func(args, data):
-	#Util.hist_comp_freq(float PA,float PB,int size_img, int hist_len, float *img_ptr, float *ref_freq_bin, float *mask_ptr, float ref_h_diff, float ref_h_min)
-	return Util.hist_comp_freq(args[0],args[1],data[4],data[5],data[1],data[2],data[3],data[0][0],data[0][1])
+	# Util.hist_comp_freq(float PA,float PB,int size_img, int hist_len, float *img_ptr, float *ref_freq_bin, float *mask_ptr, float ref_h_diff, float ref_h_min)
+	return Util.hist_comp_freq(
+		args[0],
+		args[1],
+		data[4],
+		data[5],
+		data[1],
+		data[2],
+		data[3],
+		data[0][0],
+		data[0][1],
+	)
+
 
 def info(image, mask=None, Comment=""):
 	"""Calculate and print the descriptive statistics of an image.
 
 	Usage: [mean, sigma, xmin, xmax, nx, ny, nz =] info(image object)
-	       or
-	       [mean, sigma, xmin, xmax, nx, ny, nz =] info("path/image")
+		   or
+		   [mean, sigma, xmin, xmax, nx, ny, nz =] info("path/image")
 
 	Purpose: calculate basic statistical characteristics of an image.
 	"""
-	if(Comment):  print(" ***  ", Comment)
+	if Comment:
+		print(" ***  ", Comment)
 	e = get_image(image)
 	[mean, sigma, imin, imax] = Util.infomask(e, mask, True)
 	nx = e.get_xsize()
 	ny = e.get_ysize()
 	nz = e.get_zsize()
-	if (e.is_complex()):
+	if e.is_complex():
 		s = ""
 		if e.is_shuffled():
 			s = " (shuffled)"
-		if (e.is_fftodd()):
+		if e.is_fftodd():
 			print("Complex odd image%s: nx = %i, ny = %i, nz = %i" % (s, nx, ny, nz))
 		else:
 			print("Complex even image%s: nx = %i, ny = %i, nz = %i" % (s, nx, ny, nz))
@@ -1279,6 +1591,7 @@ def info(image, mask=None, Comment=""):
 	print("avg = %g, std dev = %g, min = %g, max = %g" % (mean, sigma, imin, imax))
 	return mean, sigma, imin, imax, nx, ny, nz
 
+
 #### -----M--------
 def model_circle(r, nx, ny, nz=1):
 	"""
@@ -1286,8 +1599,9 @@ def model_circle(r, nx, ny, nz=1):
 	"""
 	e = EMData()
 	e.set_size(nx, ny, nz)
-	e.process_inplace("testimage.circlesphere", {"radius":r, "fill":1})
+	e.process_inplace("testimage.circlesphere", {"radius": r, "fill": 1})
 	return e
+
 
 def model_square(d, nx, ny, nz=1):
 	"""
@@ -1295,23 +1609,50 @@ def model_square(d, nx, ny, nz=1):
 	"""
 	e = EMData()
 	e.set_size(nx, ny, nz)
-	e.process_inplace("testimage.squarecube", {"edge_length":d, "fill":1})
+	e.process_inplace("testimage.squarecube", {"edge_length": d, "fill": 1})
 	return e
 
-def model_gauss(xsigma, nx, ny=1, nz=1, ysigma=None, zsigma=None, xcenter=None, ycenter=None, zcenter=None):
+
+def model_gauss(
+	xsigma,
+	nx,
+	ny=1,
+	nz=1,
+	ysigma=None,
+	zsigma=None,
+	xcenter=None,
+	ycenter=None,
+	zcenter=None,
+):
 	"""
 	Create an image of a Gaussian function with standard deviation "xsigma,ysigma,zsigma"
 	 and centered at (xcenter,ycenter,zcenter), by default the center is image center.
 	"""
 	e = EMData()
 	e.set_size(nx, ny, nz)
-	if( ysigma  == None ) : ysigma = xsigma
-	if( zsigma  == None ) : zsigma = xsigma
-	if( xcenter == None ) : xcenter = nx//2
-	if( ycenter == None ) : ycenter = ny//2
-	if( zcenter == None ) : zcenter = nz//2
-	e.process_inplace("testimage.puregaussian", {"x_sigma":xsigma,"y_sigma":ysigma,"z_sigma":zsigma,"x_center":xcenter,"y_center":ycenter,"z_center":zcenter} )
+	if ysigma == None:
+		ysigma = xsigma
+	if zsigma == None:
+		zsigma = xsigma
+	if xcenter == None:
+		xcenter = nx // 2
+	if ycenter == None:
+		ycenter = ny // 2
+	if zcenter == None:
+		zcenter = nz // 2
+	e.process_inplace(
+		"testimage.puregaussian",
+		{
+			"x_sigma": xsigma,
+			"y_sigma": ysigma,
+			"z_sigma": zsigma,
+			"x_center": xcenter,
+			"y_center": ycenter,
+			"z_center": zcenter,
+		},
+	)
 	return e
+
 
 def model_cylinder(radius, nx, ny, nz):
 	"""
@@ -1319,8 +1660,41 @@ def model_cylinder(radius, nx, ny, nz):
 	"""
 	e = EMData()
 	e.set_size(nx, ny, nz)
-	e.process_inplace("testimage.cylinder", {"radius":radius})
-	return  e
+	e.process_inplace("testimage.cylinder", {"radius": radius})
+	return e
+
+
+def model_rotated_rectangle2D(radius_long, radius_short, nx, ny, angle=90):
+	"""
+	Creates a rectangular mask
+	:param radius_long: Radius long axis
+	:param radius_short: Radius short axis
+	:param nx: Mask size x-dim
+	:param ny: Mask size y-dim
+	:param angle: Rotation angle in degree
+	:return: rotated rectangular mask
+	"""
+	from scipy import ndimage
+
+	sizex = nx
+	sizey = ny
+	if (radius_long * 2) > nx or (radius_long * 2) > ny:
+		sizex = radius_long * 2
+		sizey = radius_long * 2
+
+	mask = np.zeros((sizex, sizey))
+	mask[
+		(sizex // 2 - radius_short) : (sizex // 2 + radius_short),
+		(sizey // 2 - radius_long) : (sizey // 2 + radius_long),
+	] = 1.0
+	mask = ndimage.rotate(mask, angle, reshape=False)
+	mask = mask[
+		(sizex // 2 - nx // 2) : (sizex // 2 + nx // 2),
+		(sizey // 2 - ny // 2) : (sizey // 2 + ny // 2),
+	]
+	mask = EMAN2.EMNumPy.numpy2em(mask)
+	return mask
+
 
 def model_gauss_noise(sigma, nx, ny=1, nz=1):
 	"""
@@ -1329,26 +1703,33 @@ def model_gauss_noise(sigma, nx, ny=1, nz=1):
 	"""
 	e = EMData()
 	e.set_size(nx, ny, nz)
-	if(sigma == 0.0): e.to_zero()
-	else: e.process_inplace("testimage.noise.gauss", {"sigma":sigma})
+	if sigma == 0.0:
+		e.to_zero()
+	else:
+		e.process_inplace("testimage.noise.gauss", {"sigma": sigma})
 	return e
 
-def model_blank(nx, ny=1, nz=1, bckg = 0.0):
+
+def model_blank(nx, ny=1, nz=1, bckg=0.0):
 	"""
 	Create a blank image.
 	"""
 	e = EMData()
 	e.set_size(nx, ny, nz)
 	e.to_zero()
-	if( bckg != 0.0):  e+=bckg
+	if bckg != 0.0:
+		e += bckg
 	return e
+
 
 def set_seed(sde):
 	from random import seed
+
 	seed(int(sde))
 	e = EMData()
-	e.set_size(1,1,1)
-	e.process_inplace("testimage.noise.gauss", {"sigma":1.0, "seed":int(sde)})
+	e.set_size(1, 1, 1)
+	e.process_inplace("testimage.noise.gauss", {"sigma": 1.0, "seed": int(sde)})
+
 
 ###----P-------
 def parse_spider_fname(mystr, *fieldvals):
@@ -1391,32 +1772,37 @@ def parse_spider_fname(mystr, *fieldvals):
 		else:
 			# no '@' at all
 			return mystr
+
 	class Fieldloc(object):
 		"Helper class to store description of a field"
+
 		def __init__(self, begin, end):
 			self.begin = begin
 			self.end = end
+
 		def count(self):
 			"Size of the field (including braces)"
 			return self.end - self.begin + 1
+
 	def find_fields(mystr):
 		"Helper function to identify and validate fields in a string"
 		fields = []
 		loc = 0
 		while True:
-			begin = mystr.find('{', loc)
-			if begin == -1: break
-			end = mystr.find('}', begin)
+			begin = mystr.find("{", loc)
+			if begin == -1:
+				break
+			end = mystr.find("}", begin)
 			field = Fieldloc(begin, end)
 			# check validity
-			asterisks = mystr[begin+1:end]
+			asterisks = mystr[begin + 1 : end]
 			if asterisks.strip("*") != "":
-			    raise ValueError("Malformed {*...*} field: %s" % \
-				mystr[begin:end+1])
+				raise ValueError("Malformed {*...*} field: %s" % mystr[begin : end + 1])
 			fields.append(Fieldloc(begin, end))
 			loc = end
 		return fields
-	# remove leading whitespace
+		# remove leading whitespace
+
 	mystr.strip()
 	# remove stack character (if it exists)
 	mystr = rm_stack_char(mystr)
@@ -1424,13 +1810,15 @@ def parse_spider_fname(mystr, *fieldvals):
 	fields = find_fields(mystr)
 	if len(fields) != len(fieldvals):
 		# wrong number of fields?
-		raise ValueError("Number of field values provided differs from" \
-			"the number of {*...*} fields.")
+		raise ValueError(
+			"Number of field values provided differs from"
+			"the number of {*...*} fields."
+		)
 	newstrfrags = []
 	loc = 0
 	for i, field in enumerate(fields):
 		# text before the field
-		newstrfrags.append(mystr[loc:field.begin])
+		newstrfrags.append(mystr[loc : field.begin])
 		# replace the field with the field value
 		fieldsize = field.count() - 2
 		fielddesc = "%0" + str(fieldsize) + "d"
@@ -1439,45 +1827,100 @@ def parse_spider_fname(mystr, *fieldvals):
 	newstrfrags.append(mystr[loc:])
 	return "".join(newstrfrags)
 
-def peak_search(e, npeak = 1, invert = 1, print_screen = 0):
-	peaks    = e.peak_search(npeak, invert)
-	ndim     = peaks[0]
-	nlist    = int((len(peaks)-1)/((ndim+1)*2))
-	if(nlist > 0):
+
+def peak_search(e, npeak=1, invert=1, print_screen=0):
+	peaks = e.peak_search(npeak, invert)
+	ndim = peaks[0]
+	nlist = int((len(peaks) - 1) / ((ndim + 1) * 2))
+	if nlist > 0:
 		outpeaks = []
-		if(print_screen):
-			if  ndim == 1 :
-				print('%10s%10s%10s%10s%10s'%("Index  "," Peak_value","X   ",		     "Peak/P_max", "X-NX/2"))
+		if print_screen:
+			if ndim == 1:
+				print(
+					"%10s%10s%10s%10s%10s"
+					% ("Index  ", " Peak_value", "X   ", "Peak/P_max", "X-NX/2")
+				)
 				print_list_format(peaks[1:], 4)
-			elif ndim == 2 :
-				print('%10s%10s%10s%10s%10s%10s%10s'%("Index  ", "Peak_value","X   ","Y   ",	     "Peak/P_max", "X-NX/2", "Y-NY/2"))
+			elif ndim == 2:
+				print(
+					"%10s%10s%10s%10s%10s%10s%10s"
+					% (
+						"Index  ",
+						"Peak_value",
+						"X   ",
+						"Y   ",
+						"Peak/P_max",
+						"X-NX/2",
+						"Y-NY/2",
+					)
+				)
 				print_list_format(peaks[1:], 6)
-			elif ndim == 3 :
-				print('%10s%10s%10s%10s%10s%10s%10s%10s%10s'%("Index  ", "Peak_value","X   ","Y   ","Z   ", "Peak/P_max", "X-NX/2", "Y-NY/2", "Z-NZ/2"))
+			elif ndim == 3:
+				print(
+					"%10s%10s%10s%10s%10s%10s%10s%10s%10s"
+					% (
+						"Index  ",
+						"Peak_value",
+						"X   ",
+						"Y   ",
+						"Z   ",
+						"Peak/P_max",
+						"X-NX/2",
+						"Y-NY/2",
+						"Z-NZ/2",
+					)
+				)
 				print_list_format(peaks[1:], 8)
-			else:	ERROR("Image dimension extracted in peak_search is wrong", "Util.peak_search", 1)
+			else:
+				ERROR(
+					"Image dimension extracted in peak_search is wrong",
+					"Util.peak_search",
+					1,
+				)
 		for i in range(nlist):
-			k=int((ndim+1)*i*2)
-			if   ndim == 1 :  p=[peaks[k+1], peaks[k+2], peaks[k+3], peaks[k+4]]
-			elif ndim == 2 :  p=[peaks[k+1], peaks[k+2], peaks[k+3], peaks[k+4], peaks[k+5], peaks[k+6]]
-			elif ndim == 3 :  p=[peaks[k+1], peaks[k+2], peaks[k+3], peaks[k+4], peaks[k+5], peaks[k+6], peaks[k+7], peaks[k+8]]
+			k = int((ndim + 1) * i * 2)
+			if ndim == 1:
+				p = [peaks[k + 1], peaks[k + 2], peaks[k + 3], peaks[k + 4]]
+			elif ndim == 2:
+				p = [
+					peaks[k + 1],
+					peaks[k + 2],
+					peaks[k + 3],
+					peaks[k + 4],
+					peaks[k + 5],
+					peaks[k + 6],
+				]
+			elif ndim == 3:
+				p = [
+					peaks[k + 1],
+					peaks[k + 2],
+					peaks[k + 3],
+					peaks[k + 4],
+					peaks[k + 5],
+					peaks[k + 6],
+					peaks[k + 7],
+					peaks[k + 8],
+				]
 			outpeaks.append(p)
 	else:
 		ndim = e.get_ndim()
-		#ERROR("peak search fails to find any peaks, returns image center as a default peak position","peak_search",0)
-		if  ndim == 1 :
+		# ERROR("peak search fails to find any peaks, returns image center as a default peak position","peak_search",0)
+		if ndim == 1:
 			nx = e.get_xsize()
-			outpeaks = [[1.0, float(nx/2), 1.0, 0.0]]
-		elif ndim == 2 :
+			outpeaks = [[1.0, float(nx / 2), 1.0, 0.0]]
+		elif ndim == 2:
 			nx = e.get_xsize()
 			ny = e.get_ysize()
-			outpeaks = [[1.0, float(nx/2), float(ny/2), 1.0, 0.0, 0.0]]
-		elif ndim == 3 :
+			outpeaks = [[1.0, float(nx / 2), float(ny / 2), 1.0, 0.0, 0.0]]
+		elif ndim == 3:
 			nx = e.get_xsize()
 			ny = e.get_ysize()
 			nz = e.get_ysize()
-			outpeaks = [[1.0, float(nx/2), float(ny/2), float(nz/2), 1.0, 0.0, 0.0, 0.0]]
+			outpeaks = [
+				[1.0, float(nx / 2), float(ny / 2), float(nz / 2), 1.0, 0.0, 0.0, 0.0]
+			]
 	return outpeaks
+
 
 ####--------------------------------------------------------------------------------------------------#########
 def print_row(input, ix=0, iz=0):
@@ -1485,47 +1928,51 @@ def print_row(input, ix=0, iz=0):
 
 	Usage: print_row(image, ix, iz)
 	   or
-	       print_row("path/to/image", ix, iz)
+		   print_row("path/to/image", ix, iz)
 	"""
-	image=get_image(input)
+	image = get_image(input)
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
 	print("(z = %d slice, x = %d row)" % (iz, ix))
 	line = []
 	for iy in range(ny):
-		line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
-		if ((iy + 1) % 10 == 0): line.append("\n")
+		line.append("%12.5g  " % (image.get_value_at(ix, iy, iz)))
+		if (iy + 1) % 10 == 0:
+			line.append("\n")
 	line.append("\n")
 	print("".join(line))
+
 
 def print_col(input, iy=0, iz=0):
 	"""Print the data in slice iz, column iy of an image to standard out.
 
 	   Usage: print_col(image, iy, iz)
-	      or
+		  or
 		  print_col("path/to/image", iy, iz)
 	"""
-	image=get_image(input)
+	image = get_image(input)
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
 	print("(z = %d slice, y = %d col)" % (iz, iy))
 	line = []
 	for ix in range(nx):
-		line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
-		if ((ix + 1) % 10 == 0): line.append("\n")
+		line.append("%12.5g  " % (image.get_value_at(ix, iy, iz)))
+		if (ix + 1) % 10 == 0:
+			line.append("\n")
 	line.append("\n")
 	print("".join(line))
+
 
 def print_slice(input, iz=0):
 	"""Print the data in slice iz of an image to standard out.
 
 	Usage: print_image(image, int)
 	   or
-	       print_image("path/to/image", int)
+		   print_image("path/to/image", int)
 	"""
-	image=get_image(input)
+	image = get_image(input)
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
@@ -1535,24 +1982,27 @@ def print_slice(input, iz=0):
 		line.append("Row ")
 		line.append("%4i " % iy)
 		for ix in range(nx):
-			line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
-			if ((ix + 1) % 10 == 0):
+			line.append("%12.5g  " % (image.get_value_at(ix, iy, iz)))
+			if (ix + 1) % 10 == 0:
 				line.append("\n")
 				line.append("         ")
 		line.append("\n")
-		if(nx%5 != 0): line.append("\n")
+		if nx % 5 != 0:
+			line.append("\n")
 	print("".join(line))
+
 
 def print_image(input):
 	"""Print the data in an image to standard out.
 
 	Usage: print_image(image)
 	   or
-	       print_image("path/to/image")
+		   print_image("path/to/image")
 	"""
-	image=get_image(input)
+	image = get_image(input)
 	nz = image.get_zsize()
-	for iz in range(nz): print_slice(input, iz)
+	for iz in range(nz):
+		print_slice(input, iz)
 
 
 def print_image_col(input, ix=0, iz=0):
@@ -1560,131 +2010,141 @@ def print_image_col(input, ix=0, iz=0):
 
 	Usage: print_image_col(image, ix, iz)
 	   or
-	       print_image_col("path/to/image", ix, iz)
+		   print_image_col("path/to/image", ix, iz)
 	"""
-	image=get_image(input)
+	image = get_image(input)
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
 	print("(z = %d slice, x = %d row)" % (iz, ix))
 	line = []
 	for iy in range(ny):
-		line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
-		if ((iy + 1) % 10 == 0): line.append("\n")
+		line.append("%12.5g  " % (image.get_value_at(ix, iy, iz)))
+		if (iy + 1) % 10 == 0:
+			line.append("\n")
 	line.append("\n")
 	print("".join(line))
+
 
 def print_image_row(input, iy=0, iz=0):
 	"""Print the data in slice iz, column iy of an image to standard out.
 
 	   Usage: print_image_row(image, iy, iz)
-	      or
+		  or
 		  print_image_row("path/to/image", iy, iz)
 	"""
-	image=get_image(input)
+	image = get_image(input)
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
 	print("(z = %d slice, y = %d col)" % (iz, iy))
 	line = []
 	for ix in range(nx):
-		line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
-		if ((ix + 1) % 10 == 0): line.append("\n")
+		line.append("%12.5g  " % (image.get_value_at(ix, iy, iz)))
+		if (ix + 1) % 10 == 0:
+			line.append("\n")
 	line.append("\n")
 	print("".join(line))
+
 
 def print_image_slice(input, iz=0):
 	"""Print the data in slice iz of an image to standard out in a format that agrees with v2
 
 	Usage: print_image_slice(image, int)
 	   or
-	       print_image_slice("path/to/image", int)
+		   print_image_slice("path/to/image", int)
 	"""
-	image=get_image(input)
+	image = get_image(input)
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
 	print("(z = %d slice)" % (iz))
 	line = []
-	for iy in range(ny-1,-1,-1):
+	for iy in range(ny - 1, -1, -1):
 		line.append("Row ")
 		line.append("%4i " % iy)
 		for ix in range(nx):
-			line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
-			if ((ix + 1) % 5 == 0):
+			line.append("%12.5g  " % (image.get_value_at(ix, iy, iz)))
+			if (ix + 1) % 5 == 0:
 				line.append("\n   ")
 				line.append("      ")
 			line.append("\n")
-			if(nx%5 != 0): line.append("\n")
+			if nx % 5 != 0:
+				line.append("\n")
 	print("".join(line))
 
-def print_image_slice_3d(input, num=0,direction="z"):
+
+def print_image_slice_3d(input, num=0, direction="z"):
 	"""Print the data in slice iz of an image to standard out in a format that agrees with v2
 
 	Usage: print_image_slice(image, int)
 	   or
-	       print_image_slice("path/to/image", int)
+		   print_image_slice("path/to/image", int)
 	"""
-	#print "print slice at 3 directions"
-	image=get_image(input)
+	# print "print slice at 3 directions"
+	image = get_image(input)
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
-	if(direction=="x"):
-		#print "xxxxx"
-		ix=num
+	if direction == "x":
+		# print "xxxxx"
+		ix = num
 		print("(x = %d slice)" % (ix))
 		line = []
-		for iz in range(nz-1,-1,-1):
+		for iz in range(nz - 1, -1, -1):
 			line.append("Z ")
 			line.append("%4i " % iz)
 			for iy in range(ny):
-				line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
-				if ((iy + 1) % 5 == 0):
+				line.append("%12.5g  " % (image.get_value_at(ix, iy, iz)))
+				if (iy + 1) % 5 == 0:
 					line.append("\n   ")
 					line.append("      ")
 				line.append("\n")
-				if(ny%5 != 0): line.append("\n")
+				if ny % 5 != 0:
+					line.append("\n")
 		print("".join(line))
-	elif(direction=="y"):
-		#print "yyy"
-		iy=num
+	elif direction == "y":
+		# print "yyy"
+		iy = num
 		print("(y = %d slice)" % (iy))
 		line = []
-		for iz in range(nz-1,-1,-1):
+		for iz in range(nz - 1, -1, -1):
 			line.append("Z ")
 			line.append("%4i " % iz)
 			for ix in range(nx):
-				line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
-				if ((ix + 1) % 5 == 0):
+				line.append("%12.5g  " % (image.get_value_at(ix, iy, iz)))
+				if (ix + 1) % 5 == 0:
 					line.append("\n   ")
 					line.append("      ")
 				line.append("\n")
-				if(nx%5 != 0): line.append("\n")
+				if nx % 5 != 0:
+					line.append("\n")
 		print("".join(line))
 	else:
-		#print "zzzz"
-		iz=num
+		# print "zzzz"
+		iz = num
 		print("(z = %d slice)" % (iz))
 		line = []
-		for iy in range(ny-1,-1,-1):
+		for iy in range(ny - 1, -1, -1):
 			line.append("Row ")
 			line.append("%4i " % iy)
 			for ix in range(nx):
-				line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
-				if ((ix + 1) % 5 == 0):
+				line.append("%12.5g  " % (image.get_value_at(ix, iy, iz)))
+				if (ix + 1) % 5 == 0:
 					line.append("\n   ")
 					line.append("      ")
 				line.append("\n")
-				if(nx%5 != 0): line.append("\n")
+				if nx % 5 != 0:
+					line.append("\n")
 		print("".join(line))
 
 
-def print_list_format(m, narray = 0):
-	from string 	import split
-	from math 	import sqrt
+def print_list_format(m, narray=0):
+	from string import split
+	from math import sqrt
 	import string
 	import types
+
 	"""
 		Print formated elements in a list to screen
 		The screen output is in the form of narray*int(len(m)/narray)
@@ -1692,42 +2152,95 @@ def print_list_format(m, narray = 0):
 	"""
 	flist = []
 	for i in range(len(m)):
-		if   type(m[i])  is float: flist.append('%10.3g'%(m[i]))
-		elif type(m[i])  is int :  flist.append(  '%10d'%(m[i]))
-		else				   : flist.append(  '%10s'%(m[i]))
-	if(narray > len(m)):
+		if type(m[i]) is float:
+			flist.append("%10.3g" % (m[i]))
+		elif type(m[i]) is int:
+			flist.append("%10d" % (m[i]))
+		else:
+			flist.append("%10s" % (m[i]))
+	if narray > len(m):
 		narray = 0
-		ERROR("improper input narray number, use default value", "print_list_foramt",0)
-	if(narray == 0 ):
+		ERROR("improper input narray number, use default value", "print_list_foramt", 0)
+	if narray == 0:
 		num = int(sqrt(len(m)))
-		if( len(m) % num != 0): lnum = int(len(m)/num) + 1
-		else: 			lnum = int(len(m)/num)
+		if len(m) % num != 0:
+			lnum = int(len(m) / num) + 1
+		else:
+			lnum = int(len(m) / num)
 	else:
 		num = narray
-		if( len(m) % num == 0): lnum = int(len(m)/num)
-		else: 			lnum = int(len(m)/num) + 1
+		if len(m) % num == 0:
+			lnum = int(len(m) / num)
+		else:
+			lnum = int(len(m) / num) + 1
 	ncount = -1
-	plist  = []
+	plist = []
 	for i in range(lnum):
 		qlist = ""
 		for j in range(num):
 			ncount += 1
-			if ncount <= len(m) - 1: qlist=qlist+flist[ncount]
-			else:			 break
+			if ncount <= len(m) - 1:
+				qlist = qlist + flist[ncount]
+			else:
+				break
 		plist.append(qlist)
 	for i in range(lnum):
-		print('%6d '%(i+1),plist[i])
+		print("%6d " % (i + 1), plist[i])
 
-def pad(image_to_be_padded, new_nx, new_ny = 1,	new_nz = 1, background = "average", off_center_nx = 0, off_center_ny = 0, off_center_nz = 0):
+
+def pad(
+	image_to_be_padded,
+	new_nx,
+	new_ny=1,
+	new_nz=1,
+	background="average",
+	off_center_nx=0,
+	off_center_ny=0,
+	off_center_nz=0,
+):
 	import types
-	if type(background) != bytes: background = str(background)
-	if   background == "average"       :     image_padded = Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz, "average")
-	elif background == "circumference" :     image_padded = Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz, "circumference")
-	else:                                    image_padded = Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz,  background  )
-	return  image_padded
+
+	if type(background) != bytes:
+		background = str(background)
+	if background == "average":
+		image_padded = Util.pad(
+			image_to_be_padded,
+			new_nx,
+			new_ny,
+			new_nz,
+			off_center_nx,
+			off_center_ny,
+			off_center_nz,
+			"average",
+		)
+	elif background == "circumference":
+		image_padded = Util.pad(
+			image_to_be_padded,
+			new_nx,
+			new_ny,
+			new_nz,
+			off_center_nx,
+			off_center_ny,
+			off_center_nz,
+			"circumference",
+		)
+	else:
+		image_padded = Util.pad(
+			image_to_be_padded,
+			new_nx,
+			new_ny,
+			new_nz,
+			off_center_nx,
+			off_center_ny,
+			off_center_nz,
+			background,
+		)
+	return image_padded
+
 
 def read_spider_doc(fnam):
 	from string import atof, atoi
+
 	"""
 		spider doc file format:
 		key nrec record ...
@@ -1735,139 +2248,160 @@ def read_spider_doc(fnam):
 		6   2    12     ...(when key >99999)
 	"""
 	inf = open(fnam, "r")
-	comment_line=inf.readline() # assume there is only one comment line
+	comment_line = inf.readline()  # assume there is only one comment line
 	docf_in = []
-	data    = []
-	line    = inf.readline()
+	data = []
+	line = inf.readline()
 	while len(line) > 0:
-		line_data=[]
-		if(line[11:12]==" " and line[8:10] != " "):			# new data format
-			start= 13
-			end  = 15
-			#line_data.append(atoi(line[start:end]))		# 03/21/12 Anna: according to the previous version of this function this value was omitted
-			start= end+3
-			end  = start+6
+		line_data = []
+		if line[11:12] == " " and line[8:10] != " ":  # new data format
+			start = 13
+			end = 15
+			# line_data.append(atoi(line[start:end]))		# 03/21/12 Anna: according to the previous version of this function this value was omitted
+			start = end + 3
+			end = start + 6
 			line_data.append(atof(line[start:end]))
-			colNo = (len(line)-end)/12 - 1
+			colNo = (len(line) - end) / 12 - 1
 			for i in range(colNo):
-				start= end+6
-				end  = start+7
+				start = end + 6
+				end = start + 7
 				line_data.append(atof(line[start:end]))
 			data.append(line_data)
 			line = inf.readline()
-		else:												# old data format
-			if(line[5:6] == " "): ibeg = 6
-			else:  ibeg = 7
-			for irec in range(atoi(line[ibeg:ibeg+2])):
-			 	start= ibeg+2+irec*12
-			 	end  = ibeg+2+(irec+1)*12
-			 	line_data.append(atof(line[start:end]))
+		else:  # old data format
+			if line[5:6] == " ":
+				ibeg = 6
+			else:
+				ibeg = 7
+			for irec in range(atoi(line[ibeg : ibeg + 2])):
+				start = ibeg + 2 + irec * 12
+				end = ibeg + 2 + (irec + 1) * 12
+				line_data.append(atof(line[start:end]))
 			data.append(line_data)
 			line = inf.readline()
 	return data
 
-def chooseformat(t, form_float = "  %12.5f"):
-	from string import  replace, strip, split, atoi
-	e_form = replace(form_float,"f","e")
-	ee = strip(form_float)%t
-	if(len(ee)>atoi(split( strip(form_float),"." )[0][1:] )):  return e_form
+
+def chooseformat(t, form_float="  %12.5f"):
+	from string import replace, strip, split, atoi
+
+	e_form = replace(form_float, "f", "e")
+	ee = strip(form_float) % t
+	if len(ee) > atoi(split(strip(form_float), ".")[0][1:]):
+		return e_form
 	df1 = float(ee)
-	df2 = float(strip(e_form)%t)
-	if(abs(t-df1) <= abs(t-df2)):  return form_float
-	else: return e_form
+	df2 = float(strip(e_form) % t)
+	if abs(t - df1) <= abs(t - df2):
+		return form_float
+	else:
+		return e_form
+
 
 def read_text_row(fnam, format="", skip=";"):
 	"""
-	 	Read a column-listed txt file.
+		Read a column-listed txt file.
 		INPUT: filename: name of the Doc file
-	 	OUTPUT:
-	    	nc : number of entries in each lines (number of columns)
-	    	len(data)/nc : number of lines (rows)
-	    	data: List of numbers from the doc file
- 	"""
+		OUTPUT:
+			nc : number of entries in each lines (number of columns)
+			len(data)/nc : number of lines (rows)
+			data: List of numbers from the doc file
+	"""
 	from string import split
 
-	inf  = open(fnam, "r")
+	inf = open(fnam, "r")
 	strg = inf.readline()
-	x    = []
+	x = []
 	data = []
-	while (len(strg) > 0):
+	while len(strg) > 0:
 		com_line = False
 		for j in range(len(strg)):
-			if(strg[j] == skip):	com_line = True
+			if strg[j] == skip:
+				com_line = True
 		if com_line == False:
-			word=split(strg)
-			if format == "s" :
+			word = split(strg)
+			if format == "s":
 				key = int(word[1])
 				if key != len(word) - 2:
 					del word
 					word = []
-					word.append(strg[0 : 5])
-					word.append(strg[6 : 7])
+					word.append(strg[0:5])
+					word.append(strg[6:7])
 					for k in range(key):
-						k_start = 7       + k*13
-						k_stop  = k_start + 13
-						word.append(strg[k_start : k_stop])
-			line=[]
+						k_start = 7 + k * 13
+						k_stop = k_start + 13
+						word.append(strg[k_start:k_stop])
+			line = []
 			for i in range(len(word)):
-				try:  line.append(int(word[i]))
+				try:
+					line.append(int(word[i]))
 				except:
-					try:  	line.append(float(word[i]))
-					except:	line.append(word[i])
+					try:
+						line.append(float(word[i]))
+					except:
+						line.append(word[i])
 			data.append(line)
-		strg=inf.readline()
+		strg = inf.readline()
 	inf.close
 	return data
 
 
-def write_text_row(data, file_name, form_float = "  %14.6f", form_int = "  %12d"):
+def write_text_row(data, file_name, form_float="  %14.6f", form_int="  %12d"):
 	"""
 	   Write to an ASCII file a list of lists containing floats.
 
 	   filename: name of the text file
 	   data: List of lists, with the inner list being a list of floats, i.e., [ [first list], [second list], ...]
-	         First list will be written as a first line, second as a second, and so on...
+			 First list will be written as a first line, second as a second, and so on...
 		 If only one list is given, the file will contain one line
 	"""
 	import types
 	from string import find
 
 	outf = open(file_name, "w")
-	if (type(data[0]) == list):
+	if type(data[0]) == list:
 		# It is a list of lists
 		for i in range(len(data)):
 			for j in range(len(data[i])):
 				tpt = data[i][j]
 				qtp = type(tpt)
-				if qtp == int:		outf.write(form_int%tpt)
+				if qtp == int:
+					outf.write(form_int % tpt)
 				elif qtp == float:
 					frmt = chooseformat(tpt, form_float)
-					if( find(frmt,"e") < 0 ):	outf.write(frmt%tpt)
-					else:						outf.write(frmt%tpt)
-				else:                   		outf.write("  %s"%tpt)
+					if find(frmt, "e") < 0:
+						outf.write(frmt % tpt)
+					else:
+						outf.write(frmt % tpt)
+				else:
+					outf.write("  %s" % tpt)
 			outf.write("\n")
 	else:
 		# Single list
 		for j in range(len(data)):
 			tpt = data[j]
 			qtp = type(tpt)
-			if qtp == int :			outf.write(form_int%tpt+"\n")
+			if qtp == int:
+				outf.write(form_int % tpt + "\n")
 			elif qtp == float:
 				frmt = chooseformat(tpt, form_float)
-				if( find(frmt,"e") < 0 ):		outf.write(frmt%tpt+"\n")
-				else:							outf.write(frmt%tpt+"\n")
-			else:								outf.write("  %s\n"%tpt)
+				if find(frmt, "e") < 0:
+					outf.write(frmt % tpt + "\n")
+				else:
+					outf.write(frmt % tpt + "\n")
+			else:
+				outf.write("  %s\n" % tpt)
 	outf.flush()
 	outf.close()
 
 
-def read_text_file(file_name, ncol = 0):
+def read_text_file(file_name, ncol=0):
 	"""
 		Read data from text file, if ncol = -1, read all columns
 		if ncol >= 0, just read the (ncol)-th column.
 	"""
 
 	from string import split
+
 	inf = open(file_name, "r")
 	line = inf.readline()
 	data = []
@@ -1876,32 +2410,42 @@ def read_text_file(file_name, ncol = 0):
 			vdata = split(line)
 			if data == []:
 				for i in range(len(vdata)):
-					try:     data.append([int(vdata[i])])
+					try:
+						data.append([int(vdata[i])])
 					except:
-						try:  	 data.append([float(vdata[i])])
-						except:  data.append([vdata[i]])
+						try:
+							data.append([float(vdata[i])])
+						except:
+							data.append([vdata[i]])
 			else:
 				for i in range(len(vdata)):
-					try:  data[i].append(int(vdata[i]))
+					try:
+						data[i].append(int(vdata[i]))
 					except:
-						try:  data[i].append(float(vdata[i]))
-						except:  data[i].append(vdata[i])
+						try:
+							data[i].append(float(vdata[i]))
+						except:
+							data[i].append(vdata[i])
 		else:
 			vdata = split(line)[ncol]
-			try:     data.append(int(vdata))
+			try:
+				data.append(int(vdata))
 			except:
-				try:  	data.append(float(vdata))
-				except:  data.append(vdata)
+				try:
+					data.append(float(vdata))
+				except:
+					data.append(vdata)
 		line = inf.readline()
 	return data
 
-def write_text_file(data, file_name, form_float = "  %14.6f", form_int = "  %12d"):
+
+def write_text_file(data, file_name, form_float="  %14.6f", form_int="  %12d"):
 	"""
 	   Write to an ASCII file a list of lists containing floats.
 
 	   filename: name of the text file
 	   data: List of lists, with the inner list being a list of floats, i.e., [ [first list], [second list], ...]
-	         First list will be written as a first column, second as a second, and so on...
+			 First list will be written as a first column, second as a second, and so on...
 		 If only one list is given, the file will contain one column
 	"""
 	from string import find
@@ -1912,41 +2456,57 @@ def write_text_file(data, file_name, form_float = "  %14.6f", form_int = "  %12d
 		return
 
 	import types
+
 	outf = open(file_name, "w")
-	if (type(data[0]) == list):
+	if type(data[0]) == list:
 		# It is a list of lists
 		for i in range(len(data[0])):
 			for j in range(len(data)):
 				tpt = data[j][i]
 				qtp = type(tpt)
-				if qtp == int:			outf.write(form_int%tpt)
+				if qtp == int:
+					outf.write(form_int % tpt)
 				elif qtp == float:
 					frmt = chooseformat(tpt, form_float)
-					if( find(frmt,"e") < 0 ):	outf.write(frmt%tpt)
-					else:						outf.write(frmt%tpt)
-				else:                   		outf.write("  %s"%tpt)
+					if find(frmt, "e") < 0:
+						outf.write(frmt % tpt)
+					else:
+						outf.write(frmt % tpt)
+				else:
+					outf.write("  %s" % tpt)
 			outf.write("\n")
 	else:
 		# Single list
 		for j in range(len(data)):
 			tpt = data[j]
 			qtp = type(tpt)
-			if qtp == int :			outf.write(form_int%tpt+"\n")
+			if qtp == int:
+				outf.write(form_int % tpt + "\n")
 			elif qtp == float:
 				frmt = chooseformat(tpt, form_float)
-				if( find(frmt,"e") < 0 ):		outf.write(frmt%tpt+"\n")
-				else:							outf.write(frmt%tpt+"\n")
-			else:                   			outf.write("  %s\n"%tpt)
+				if find(frmt, "e") < 0:
+					outf.write(frmt % tpt + "\n")
+				else:
+					outf.write(frmt % tpt + "\n")
+			else:
+				outf.write("  %s\n" % tpt)
 	outf.close()
 
-def reconstitute_mask(image_mask_applied_file, new_mask_file, save_file_on_disk = True, saved_file_name = "image_in_reconstituted_mask.hdf"):
+
+def reconstitute_mask(
+	image_mask_applied_file,
+	new_mask_file,
+	save_file_on_disk=True,
+	saved_file_name="image_in_reconstituted_mask.hdf",
+):
 	import types
+
 	"""
 		Substitute masked area value with image average
 	"""
 	if type(image_mask_applied_file) == bytes:
 		nima = EMUtil.get_image_count(image_mask_applied_file)
-		if (nima > 1):
+		if nima > 1:
 			image_mask_applied = []
 			for ima in range(nima):
 				e = EMData()
@@ -1954,40 +2514,46 @@ def reconstitute_mask(image_mask_applied_file, new_mask_file, save_file_on_disk 
 				image_mask_applied.append(e)
 		else:
 			image_mask_applied = get_im(image_mask_applied_file)
-	elif  type(image_mask_applied_file) == list:
-		nima =  len( image_mask_applied )
+	elif type(image_mask_applied_file) == list:
+		nima = len(image_mask_applied)
 		image_mask_applied = image_mask_applied_file
 	if type(new_mask_file) == bytes:
-		new_mask = get_im( new_mask_file )
-	elif type(new_mask_file) == int or type( new_mask_file ) == types.floatType:
+		new_mask = get_im(new_mask_file)
+	elif type(new_mask_file) == int or type(new_mask_file) == types.floatType:
 		if nima > 1:
 			e = image_mask_applied[0]
 			nx = e.get_xsize()
 			ny = e.get_ysize()
 			nz = e.get_zsize()
-		else :
+		else:
 			nx = image_mask_applied.get_xsize()
 			ny = image_mask_applied.get_ysize()
 			nz = image_mask_applied.get_zsize()
 		new_mask = model_circle(new_mask_file, nx, ny, nz)
-	if  nima > 1:
+	if nima > 1:
 		image_in_reconstituted_mask = []
 		for i in range(nima):
 			tmp_image = Util.reconstitute_image_mask(image_mask_applied[i], new_mask)
-			image_in_reconstituted_mask.append (tmp_image)
-			if (save_file_on_disk ):  image_in_reconstituted_mask[i].write_image(saved_file_name, i)
-		if(not save_file_on_disk):  return  image_in_reconstituted_mask
-	else :
-		if(save_file_on_disk ):
-			image_in_reconstituted_mask = Util.reconstitute_image_mask(image_mask_applied, new_mask)
+			image_in_reconstituted_mask.append(tmp_image)
+			if save_file_on_disk:
+				image_in_reconstituted_mask[i].write_image(saved_file_name, i)
+		if not save_file_on_disk:
+			return image_in_reconstituted_mask
+	else:
+		if save_file_on_disk:
+			image_in_reconstituted_mask = Util.reconstitute_image_mask(
+				image_mask_applied, new_mask
+			)
 			image_in_reconstituted_mask.write_image(saved_file_name)
-		else:	return  Util.reconstitute_image_mask(image_mask_applied, new_mask)
+		else:
+			return Util.reconstitute_image_mask(image_mask_applied, new_mask)
+
 
 def rotate_about_center(alpha, cx, cy):
 	"""Rotate about a different center
 
-	    Usage: rotate_about_center(alpha,cx,cy):
-	       angles in degrees
+		Usage: rotate_about_center(alpha,cx,cy):
+		   angles in degrees
 	"""
 
 	cmp1 = compose_transform2(0, -cx, -cy, 1, alpha, 0, 0, 1)
@@ -1996,32 +2562,69 @@ def rotate_about_center(alpha, cx, cy):
 	#   return compalpha, comptrans.at(0),comptrans.at(1), compscale
 	return cmp2[0], cmp2[1], cmp2[2], cmp2[3]
 
+
 def rotate_shift_params(paramsin, transf):
 	# moved from sxprocess.py
-	if len(paramsin[0])>3 :
+	if len(paramsin[0]) > 3:
 		from EMAN2 import Vec2f
-		t = Transform({"type":"spider","phi":transf[0],"theta":transf[1],"psi":transf[2],"tx":transf[3],"ty":transf[4],"tz":transf[5],"mirror":0,"scale":1.0})
+
+		t = Transform(
+			{
+				"type": "spider",
+				"phi": transf[0],
+				"theta": transf[1],
+				"psi": transf[2],
+				"tx": transf[3],
+				"ty": transf[4],
+				"tz": transf[5],
+				"mirror": 0,
+				"scale": 1.0,
+			}
+		)
 		t = t.inverse()
 		cpar = []
 		for params in paramsin:
-			d = Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]})
+			d = Transform(
+				{
+					"type": "spider",
+					"phi": params[0],
+					"theta": params[1],
+					"psi": params[2],
+				}
+			)
 			d.set_trans(Vec2f(-params[3], -params[4]))
-			c = d*t
+			c = d * t
 			u = c.get_params("spider")
-			cpar.append([u["phi"],u["theta"],u["psi"],-u["tx"],-u["ty"]])
+			cpar.append([u["phi"], u["theta"], u["psi"], -u["tx"], -u["ty"]])
 	else:
-		t = Transform({"type":"spider","phi":transf[0],"theta":transf[1],"psi":transf[2]})
+		t = Transform(
+			{"type": "spider", "phi": transf[0], "theta": transf[1], "psi": transf[2]}
+		)
 		t = t.inverse()
 		cpar = []
 		for params in paramsin:
-			d = Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]})
-			c = d*t
+			d = Transform(
+				{
+					"type": "spider",
+					"phi": params[0],
+					"theta": params[1],
+					"psi": params[2],
+				}
+			)
+			c = d * t
 			u = c.get_params("spider")
-			cpar.append([u["phi"],u["theta"],u["psi"]])
-			#cpar.append([u["phi"],u["theta"],u["psi"],-u["tx"],-u["ty"]])
+			cpar.append([u["phi"], u["theta"], u["psi"]])
+			# cpar.append([u["phi"],u["theta"],u["psi"],-u["tx"],-u["ty"]])
 	return cpar
 
-def reshape_1d(input_object, length_current=0, length_interpolated=0, Pixel_size_current = 0., Pixel_size_interpolated = 0.):
+
+def reshape_1d(
+	input_object,
+	length_current=0,
+	length_interpolated=0,
+	Pixel_size_current=0.0,
+	Pixel_size_interpolated=0.0,
+):
 	"""
 		linearly interpolate a 1D power spectrum to required length with required Pixel size
 		input_object - a 1D list with a 1D curve to be interpolated
@@ -2033,34 +2636,41 @@ def reshape_1d(input_object, length_current=0, length_interpolated=0, Pixel_size
 	"""
 
 	interpolated = []
-	if length_current == 0: length_current = len(input_object)
+	if length_current == 0:
+		length_current = len(input_object)
 	lt = len(input_object) - 2
 	if length_interpolated == 0:
-		if( Pixel_size_interpolated != Pixel_size_current):
-			length_interpolated = int(length_current*Pixel_size_current/Pixel_size_interpolated + 0.5)
+		if Pixel_size_interpolated != Pixel_size_current:
+			length_interpolated = int(
+				length_current * Pixel_size_current / Pixel_size_interpolated + 0.5
+			)
 		else:
-			ERROR("Incorrect input parameters","reshape_1d",1)
+			ERROR("Incorrect input parameters", "reshape_1d", 1)
 			return []
 
-	if  Pixel_size_current == 0.:
-		Pixel_size_current = 1.
-		Pixel_size_interpolated = Pixel_size_current*float(length_current)/float(length_interpolated)
-	qt =Pixel_size_interpolated/Pixel_size_current
+	if Pixel_size_current == 0.0:
+		Pixel_size_current = 1.0
+		Pixel_size_interpolated = (
+			Pixel_size_current * float(length_current) / float(length_interpolated)
+		)
+	qt = Pixel_size_interpolated / Pixel_size_current
 
 	for i in range(length_interpolated):
-		xi = float(i)*qt
-		ix = min(int(xi),lt)
-		df = xi -ix
-		xval = input_object[ix] + df*(input_object[ix+1]-input_object[ix])
+		xi = float(i) * qt
+		ix = min(int(xi), lt)
+		df = xi - ix
+		xval = input_object[ix] + df * (input_object[ix + 1] - input_object[ix])
 		interpolated.append(xval)
 	return interpolated
+
 
 def estimate_3D_center(data):
 	from math import cos, sin, radians
 	from numpy import matrix
 	from numpy import linalg
 	import types
-	if(type(data[0]) is list):
+
+	if type(data[0]) is list:
 		ali_params = data
 	else:
 		ali_params = []
@@ -2073,22 +2683,46 @@ def estimate_3D_center(data):
 	b = []
 
 	for i in range(N):
-		phi_rad   = radians(ali_params[i][0])
+		phi_rad = radians(ali_params[i][0])
 		theta_rad = radians(ali_params[i][1])
-		psi_rad   = radians(ali_params[i][2])
-		A.append([cos(psi_rad)*cos(theta_rad)*cos(phi_rad)-sin(psi_rad)*sin(phi_rad),
-			cos(psi_rad)*cos(theta_rad)*sin(phi_rad)+sin(psi_rad)*cos(phi_rad), -cos(psi_rad)*sin(theta_rad), 1, 0])
-		A.append([-sin(psi_rad)*cos(theta_rad)*cos(phi_rad)-cos(psi_rad)*sin(phi_rad),
-			-sin(psi_rad)*cos(theta_rad)*sin(phi_rad)+cos(psi_rad)*cos(phi_rad), sin(psi_rad)*sin(theta_rad), 0, 1])
+		psi_rad = radians(ali_params[i][2])
+		A.append(
+			[
+				cos(psi_rad) * cos(theta_rad) * cos(phi_rad)
+				- sin(psi_rad) * sin(phi_rad),
+				cos(psi_rad) * cos(theta_rad) * sin(phi_rad)
+				+ sin(psi_rad) * cos(phi_rad),
+				-cos(psi_rad) * sin(theta_rad),
+				1,
+				0,
+			]
+		)
+		A.append(
+			[
+				-sin(psi_rad) * cos(theta_rad) * cos(phi_rad)
+				- cos(psi_rad) * sin(phi_rad),
+				-sin(psi_rad) * cos(theta_rad) * sin(phi_rad)
+				+ cos(psi_rad) * cos(phi_rad),
+				sin(psi_rad) * sin(theta_rad),
+				0,
+				1,
+			]
+		)
 		b.append([ali_params[i][3]])
 		b.append([ali_params[i][4]])
 
 	A_matrix = matrix(A)
 	b_matrix = matrix(b)
 
-	K = linalg.solve(A_matrix.T*A_matrix, A_matrix.T*b_matrix)
+	K = linalg.solve(A_matrix.T * A_matrix, A_matrix.T * b_matrix)
 
-	return float(K[0][0]), float(K[1][0]), float(K[2][0]), float(K[3][0]), float(K[4][0])
+	return (
+		float(K[0][0]),
+		float(K[1][0]),
+		float(K[2][0]),
+		float(K[3][0]),
+		float(K[4][0]),
+	)
 
 
 def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node, mpi_comm=None):
@@ -2114,40 +2748,74 @@ def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node, mpi_comm
 	if myid == main_node:
 		for proc in range(number_of_proc):
 			if proc != main_node:
-				image_start_proc, image_end_proc = MPI_start_end(nima, number_of_proc, proc)
-				n_params = (image_end_proc - image_start_proc)*5
+				image_start_proc, image_end_proc = MPI_start_end(
+					nima, number_of_proc, proc
+				)
+				n_params = (image_end_proc - image_start_proc) * 5
 				temp = mpi_recv(n_params, MPI_FLOAT, proc, proc, mpi_comm)
 				for nn in range(n_params):
 					ali_params_series.append(float(temp[nn]))
 
 		ali_params = []
-		N = len(ali_params_series)/5
+		N = len(ali_params_series) / 5
 		for im in range(N):
-			ali_params.append([ali_params_series[im*5], ali_params_series[im*5+1], ali_params_series[im*5+2], ali_params_series[im*5+3], ali_params_series[im*5+4]])
+			ali_params.append(
+				[
+					ali_params_series[im * 5],
+					ali_params_series[im * 5 + 1],
+					ali_params_series[im * 5 + 2],
+					ali_params_series[im * 5 + 3],
+					ali_params_series[im * 5 + 4],
+				]
+			)
 
 		A = []
 		b = []
 
 		for i in range(N):
-			phi_rad   = radians(ali_params[i][0])
+			phi_rad = radians(ali_params[i][0])
 			theta_rad = radians(ali_params[i][1])
-			psi_rad   = radians(ali_params[i][2])
-			A.append([cos(psi_rad)*cos(theta_rad)*cos(phi_rad)-sin(psi_rad)*sin(phi_rad),
-				cos(psi_rad)*cos(theta_rad)*sin(phi_rad)+sin(psi_rad)*cos(phi_rad), -cos(psi_rad)*sin(theta_rad), 1, 0])
-			A.append([-sin(psi_rad)*cos(theta_rad)*cos(phi_rad)-cos(psi_rad)*sin(phi_rad),
-				-sin(psi_rad)*cos(theta_rad)*sin(phi_rad)+cos(psi_rad)*cos(phi_rad), sin(psi_rad)*sin(theta_rad), 0, 1])
+			psi_rad = radians(ali_params[i][2])
+			A.append(
+				[
+					cos(psi_rad) * cos(theta_rad) * cos(phi_rad)
+					- sin(psi_rad) * sin(phi_rad),
+					cos(psi_rad) * cos(theta_rad) * sin(phi_rad)
+					+ sin(psi_rad) * cos(phi_rad),
+					-cos(psi_rad) * sin(theta_rad),
+					1,
+					0,
+				]
+			)
+			A.append(
+				[
+					-sin(psi_rad) * cos(theta_rad) * cos(phi_rad)
+					- cos(psi_rad) * sin(phi_rad),
+					-sin(psi_rad) * cos(theta_rad) * sin(phi_rad)
+					+ cos(psi_rad) * cos(phi_rad),
+					sin(psi_rad) * sin(theta_rad),
+					0,
+					1,
+				]
+			)
 			b.append([ali_params[i][3]])
 			b.append([ali_params[i][4]])
 
 		A_matrix = matrix(A)
 		b_matrix = matrix(b)
 
-		K = linalg.solve(A_matrix.T*A_matrix, A_matrix.T*b_matrix)
-		return float(K[0][0]), float(K[1][0]), float(K[2][0]), float(K[3][0]), float(K[4][0])
+		K = linalg.solve(A_matrix.T * A_matrix, A_matrix.T * b_matrix)
+		return (
+			float(K[0][0]),
+			float(K[1][0]),
+			float(K[2][0]),
+			float(K[3][0]),
+			float(K[4][0]),
+		)
 
 	else:
 		image_start_proc, image_end_proc = MPI_start_end(nima, number_of_proc, myid)
-		n_params = (image_end_proc - image_start_proc)*5
+		n_params = (image_end_proc - image_start_proc) * 5
 		mpi_send(ali_params_series, n_params, MPI_FLOAT, main_node, myid, mpi_comm)
 
 		return 0.0, 0.0, 0.0, 0.0, 0.0
@@ -2155,18 +2823,33 @@ def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node, mpi_comm
 
 def rotate_3D_shift(data, shift3d):
 
-	t = Transform({"type":"spider","phi":0.0,"theta":0.0,"psi":0.0,"tx":-shift3d[0],"ty":-shift3d[1],"tz":-shift3d[2],"mirror":0,"scale":1.0})
+	t = Transform(
+		{
+			"type": "spider",
+			"phi": 0.0,
+			"theta": 0.0,
+			"psi": 0.0,
+			"tx": -shift3d[0],
+			"ty": -shift3d[1],
+			"tz": -shift3d[2],
+			"mirror": 0,
+			"scale": 1.0,
+		}
+	)
 
 	for i in range(len(data)):
-		d = data[i].get_attr('xform.projection')
-		c = d*t
-		data[i].set_attr('xform.projection', c)
+		d = data[i].get_attr("xform.projection")
+		c = d * t
+		data[i].set_attr("xform.projection", c)
 
 
 def sym_vol(image, symmetry="c1"):
 	" Symmetrize a volume"
-	if(symmetry == "c1"):  return  image.copy()
-	else:                  return  image.symvol(symmetry)
+	if symmetry == "c1":
+		return image.copy()
+	else:
+		return image.symvol(symmetry)
+
 
 ##----------------------------------HDF headers related code --------------------------
 def set_arb_params(img, params, par_str):
@@ -2174,53 +2857,79 @@ def set_arb_params(img, params, par_str):
 	"""
 		filling arbitary headers
 	"""
-	for i in range(len(par_str)): img.set_attr_dict({par_str[i]:params[i]})
+	for i in range(len(par_str)):
+		img.set_attr_dict({par_str[i]: params[i]})
+
 
 def get_arb_params(img, par_str):
 
 	"""
 		reading arbitary headers
 	"""
-	params=[]
-	for i in range(len(par_str)): params.append(img.get_attr(par_str[i]))
+	params = []
+	for i in range(len(par_str)):
+		params.append(img.get_attr(par_str[i]))
 	return params
+
 
 ###------------------------------------------------------------------------------------------
 
+
 def start_time():
 	import time
+
 	start_time = time.time()
 	return start_time
 
+
 def finish_time(start_time):
 	import time
+
 	finish_time = time.time()
-	print(("Running time is"), finish_time-start_time)
+	print(("Running time is"), finish_time - start_time)
 	return finish_time
+
 
 def ttime():
 	import time
+
 	now = time.localtime(time.time())
 	return time.asctime(now)
+
 
 def running_time(start_time):
 	from utilities import print_msg
 	from time import time
+
 	time_run = int(time() - start_time)
-	time_h   = time_run / 3600
-	time_m   = (time_run % 3600) / 60
-	time_s   = (time_run % 3600) % 60
-	print_msg('\nRunning time is: %s h %s min %s s\n\n' % (str(time_h).rjust(2, '0'), str(time_m).rjust(2, '0'), str(time_s).rjust(2, '0')))
+	time_h = time_run / 3600
+	time_m = (time_run % 3600) / 60
+	time_s = (time_run % 3600) % 60
+	print_msg(
+		"\nRunning time is: %s h %s min %s s\n\n"
+		% (
+			str(time_h).rjust(2, "0"),
+			str(time_m).rjust(2, "0"),
+			str(time_s).rjust(2, "0"),
+		)
+	)
+
 
 def running_time_txt(start_time):
 	from time import time
-	time_run = int(time() - start_time)
-	time_h   = time_run / 3600
-	time_m   = (time_run % 3600) / 60
-	time_s   = (time_run % 3600) % 60
-	return 'Running time is: %s h %s min %s s' % (str(time_h).rjust(2, '0'), str(time_m).rjust(2, '0'), str(time_s).rjust(2, '0'))
 
-'''
+	time_run = int(time() - start_time)
+	time_h = time_run / 3600
+	time_m = (time_run % 3600) / 60
+	time_s = (time_run % 3600) % 60
+	return "Running time is: %s h %s min %s s" % (
+		str(time_h).rjust(2, "0"),
+		str(time_m).rjust(2, "0"),
+		str(time_s).rjust(2, "0"),
+	)
+
+
+"""
 def reduce_array_to_root(data, myid, main_node = 0, comm = -1):
 	from numpy import array, shape, reshape
 	from mpi import MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD, mpi_reduce, mpi_barrier
@@ -2229,41 +2938,52 @@ def reduce_array_to_root(data, myid, main_node = 0, comm = -1):
 	n = shape(data)
 	ntot = 1
 	for i in xrange(len(n)):  ntot *= n[i]
-        count = 500000
-        array1d = reshape(data, (ntot,))
-        ntime = (ntot-1) /count + 1
-        for i in xrange(ntime):
-        	block_begin = i*count
-        	block_end   = i*count + count
-        	if block_end > ntot: block_end = ntot
-        	block_size  = block_end - block_begin
-        	tmpsum = mpi_reduce(array1d[block_begin], block_size, MPI_FLOAT, MPI_SUM, main_node, comm)
+		count = 500000
+		array1d = reshape(data, (ntot,))
+		ntime = (ntot-1) /count + 1
+		for i in xrange(ntime):
+			block_begin = i*count
+			block_end   = i*count + count
+			if block_end > ntot: block_end = ntot
+			block_size  = block_end - block_begin
+			tmpsum = mpi_reduce(array1d[block_begin], block_size, MPI_FLOAT, MPI_SUM, main_node, comm)
 		mpi_barrier(comm)
-        	if myid == main_node:
-        		array1d[block_begin:block_end] = tmpsum[0:block_size]
-'''
+			if myid == main_node:
+				array1d[block_begin:block_end] = tmpsum[0:block_size]
+"""
 
-def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
+
+def reduce_EMData_to_root(data, myid, main_node=0, comm=-1):
 	from numpy import shape, reshape
-	from mpi   import mpi_reduce, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD, mpi_barrier
+	from mpi import mpi_reduce, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD, mpi_barrier
 
-	if comm == -1 or comm == None:  comm = MPI_COMM_WORLD
+	if comm == -1 or comm == None:
+		comm = MPI_COMM_WORLD
 
 	array = get_image_data(data)
-	n     = shape(array)
-	ntot  = 1
-	for i in n: ntot *= i
-	count = (75*4+2)*(75*4)**2
-	array1d = reshape( array, (ntot,))
-	ntime = (ntot-1) /count + 1
+	n = shape(array)
+	ntot = 1
+	for i in n:
+		ntot *= i
+	count = (75 * 4 + 2) * (75 * 4) ** 2
+	array1d = reshape(array, (ntot,))
+	ntime = (ntot - 1) / count + 1
 	for i in range(ntime):
-		block_begin = i*count
-		block_end   = min(block_begin + count, ntot)
-		block_size  = block_end - block_begin
-		tmpsum = mpi_reduce(array1d[block_begin:block_begin+block_size], block_size, MPI_FLOAT, MPI_SUM, main_node, comm)
+		block_begin = i * count
+		block_end = min(block_begin + count, ntot)
+		block_size = block_end - block_begin
+		tmpsum = mpi_reduce(
+			array1d[block_begin : block_begin + block_size],
+			block_size,
+			MPI_FLOAT,
+			MPI_SUM,
+			main_node,
+			comm,
+		)
 		mpi_barrier(comm)
 		if myid == main_node:
 			array1d[block_begin:block_end] = tmpsum[0:block_size]
+
 
 def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 
@@ -2284,15 +3004,18 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 	from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
 	from numpy import reshape
 
-	if comm == -1 or comm == None: comm = MPI_COMM_WORLD
+	if comm == -1 or comm == None:
+		comm = MPI_COMM_WORLD
 
 	num_ref = len(list_of_em_objects)
-	ncpu = mpi_comm_size(comm)	# Total number of processes, passed by --np option.
+	ncpu = mpi_comm_size(comm)  # Total number of processes, passed by --np option.
 
 	ref_start, ref_end = MPI_start_end(num_ref, ncpu, myid)
 
 	for first_myid_process_that_has_em_elements in range(ncpu):
-		sim_start, sim_ref_end = MPI_start_end(num_ref, ncpu, first_myid_process_that_has_em_elements)
+		sim_start, sim_ref_end = MPI_start_end(
+			num_ref, ncpu, first_myid_process_that_has_em_elements
+		)
 		if sim_start != sim_ref_end:
 			break
 	else:
@@ -2310,20 +3033,31 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 		nz = reference_em_object.get_zsize()
 
 		em_dict = reference_em_object.get_attr_dict()
-		dict_to_send = {"size_of_one_refring_assumed_common_to_all":size_of_one_refring_assumed_common_to_all, \
-						"em_dict":em_dict, "nx":nx, "ny":ny, "nz":nz}
+		dict_to_send = {
+			"size_of_one_refring_assumed_common_to_all": size_of_one_refring_assumed_common_to_all,
+			"em_dict": em_dict,
+			"nx": nx,
+			"ny": ny,
+			"nz": nz,
+		}
 	else:
 		dict_to_send = None
 
-	dict_received = wrap_mpi_bcast(dict_to_send, first_myid_process_that_has_em_elements, comm)
+	dict_received = wrap_mpi_bcast(
+		dict_to_send, first_myid_process_that_has_em_elements, comm
+	)
 
 	em_dict = dict_received["em_dict"]
 	nx = dict_received["nx"]
 	ny = dict_received["ny"]
 	nz = dict_received["nz"]
-	size_of_one_refring_assumed_common_to_all = dict_received["size_of_one_refring_assumed_common_to_all"]
+	size_of_one_refring_assumed_common_to_all = dict_received[
+		"size_of_one_refring_assumed_common_to_all"
+	]
 
-	if size_of_one_refring_assumed_common_to_all*(ref_end-ref_start) > (2**31-1):
+	if size_of_one_refring_assumed_common_to_all * (ref_end - ref_start) > (
+		2 ** 31 - 1
+	):
 		print("Sending refrings: size of data to broadcast is greater than 2GB")
 
 	for sender_id in range(ncpu):
@@ -2332,15 +3066,19 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 		if sender_id == myid:
 			if ref_start == ref_end:
 				continue
-			data = EMNumPy.em2numpy(list_of_em_objects[ref_start])  #array([], dtype = 'float32')
-			for i in range(ref_start+1,ref_end):
+			data = EMNumPy.em2numpy(
+				list_of_em_objects[ref_start]
+			)  # array([], dtype = 'float32')
+			for i in range(ref_start + 1, ref_end):
 				data = concatenate([data, EMNumPy.em2numpy(list_of_em_objects[i])])
 		else:
 			if sender_ref_start == sender_ref_end:
 				continue
-			data = array([], dtype = 'float32')
+			data = array([], dtype="float32")
 
-		sender_size_of_refrings = (sender_ref_end - sender_ref_start)*size_of_one_refring_assumed_common_to_all
+		sender_size_of_refrings = (
+			sender_ref_end - sender_ref_start
+		) * size_of_one_refring_assumed_common_to_all
 
 		# size_of_refrings = mpi_bcast(size_of_refrings, 1, MPI_INT, sender_id, comm)
 		data = mpi_bcast(data, sender_size_of_refrings, MPI_FLOAT, sender_id, comm)
@@ -2349,8 +3087,10 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 		if myid != sender_id:
 			for i in range(sender_ref_start, sender_ref_end):
 				offset_ring = sender_ref_start
-				start_p = (i-offset_ring)*size_of_one_refring_assumed_common_to_all
-				end_p   = (i+1-offset_ring)*size_of_one_refring_assumed_common_to_all
+				start_p = (i - offset_ring) * size_of_one_refring_assumed_common_to_all
+				end_p = (
+					i + 1 - offset_ring
+				) * size_of_one_refring_assumed_common_to_all
 				image_data = data[start_p:end_p]
 
 				if int(nz) != 1:
@@ -2361,6 +3101,7 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 				em_object = EMNumPy.numpy2em(image_data)
 				em_object.set_attr_dict(em_dict)
 				list_of_em_objects[i] = em_object
+
 
 def bcast_compacted_EMData_all_to_all___original(list_of_em_objects, myid, comm=-1):
 
@@ -2381,10 +3122,11 @@ def bcast_compacted_EMData_all_to_all___original(list_of_em_objects, myid, comm=
 	from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
 	from numpy import reshape
 
-	if comm == -1 or comm == None: comm = MPI_COMM_WORLD
+	if comm == -1 or comm == None:
+		comm = MPI_COMM_WORLD
 
 	num_ref = len(list_of_em_objects)
-	ncpu = mpi_comm_size(comm)	# Total number of processes, passed by --np option.
+	ncpu = mpi_comm_size(comm)  # Total number of processes, passed by --np option.
 
 	ref_start, ref_end = MPI_start_end(num_ref, ncpu, myid)
 
@@ -2401,9 +3143,9 @@ def bcast_compacted_EMData_all_to_all___original(list_of_em_objects, myid, comm=
 	apix_x = reference_em_object.get_attr("apix_x")
 	apix_y = reference_em_object.get_attr("apix_y")
 	apix_z = reference_em_object.get_attr("apix_z")
-	is_complex = reference_em_object.get_attr_default("is_complex",1)
-	is_fftpad = reference_em_object.get_attr_default("is_fftpad",1)
-	is_fftodd = reference_em_object.get_attr_default("is_fftodd", nz%2)
+	is_complex = reference_em_object.get_attr_default("is_complex", 1)
+	is_fftpad = reference_em_object.get_attr_default("is_fftpad", 1)
+	is_fftodd = reference_em_object.get_attr_default("is_fftodd", nz % 2)
 
 	data = EMNumPy.em2numpy(list_of_em_objects[ref_start])
 	size_of_one_refring_assumed_common_to_all = data.size
@@ -2412,19 +3154,25 @@ def bcast_compacted_EMData_all_to_all___original(list_of_em_objects, myid, comm=
 	# size_of_one_refring_assumed_common_to_all = 1
 	# for i in n: size_of_one_refring_assumed_common_to_all *= i
 
-	if size_of_one_refring_assumed_common_to_all*(ref_end-ref_start) > (2**31-1):
+	if size_of_one_refring_assumed_common_to_all * (ref_end - ref_start) > (
+		2 ** 31 - 1
+	):
 		print("Sending refrings: size of data to broadcast is greater than 2GB")
 
 	for sender_id in range(ncpu):
 		if sender_id == myid:
-			data = EMNumPy.em2numpy(list_of_em_objects[ref_start])  #array([], dtype = 'float32')
-			for i in range(ref_start+1,ref_end):
+			data = EMNumPy.em2numpy(
+				list_of_em_objects[ref_start]
+			)  # array([], dtype = 'float32')
+			for i in range(ref_start + 1, ref_end):
 				data = concatenate([data, EMNumPy.em2numpy(list_of_em_objects[i])])
 		else:
-			data = array([], dtype = 'float32')
+			data = array([], dtype="float32")
 
 		sender_ref_start, sender_ref_end = MPI_start_end(num_ref, ncpu, sender_id)
-		sender_size_of_refrings = (sender_ref_end - sender_ref_start)*size_of_one_refring_assumed_common_to_all
+		sender_size_of_refrings = (
+			sender_ref_end - sender_ref_start
+		) * size_of_one_refring_assumed_common_to_all
 
 		# size_of_refrings = mpi_bcast(size_of_refrings, 1, MPI_INT, sender_id, comm)
 		data = mpi_bcast(data, sender_size_of_refrings, MPI_FLOAT, sender_id, comm)
@@ -2433,8 +3181,10 @@ def bcast_compacted_EMData_all_to_all___original(list_of_em_objects, myid, comm=
 		if myid != sender_id:
 			for i in range(sender_ref_start, sender_ref_end):
 				offset_ring = sender_ref_start
-				start_p = (i-offset_ring)*size_of_one_refring_assumed_common_to_all
-				end_p   = (i+1-offset_ring)*size_of_one_refring_assumed_common_to_all
+				start_p = (i - offset_ring) * size_of_one_refring_assumed_common_to_all
+				end_p = (
+					i + 1 - offset_ring
+				) * size_of_one_refring_assumed_common_to_all
 				image_data = data[start_p:end_p]
 
 				if int(nz) != 1:
@@ -2446,22 +3196,29 @@ def bcast_compacted_EMData_all_to_all___original(list_of_em_objects, myid, comm=
 
 				# em_object.set_complex(is_complex)
 				em_object.set_ri(is_ri)
-				em_object.set_attr_dict({
-				"changecount":changecount,
-				"is_complex_x":is_complex_x,
-				"is_complex_ri":is_complex_ri,
-				"apix_x":apix_x,
-				"apix_y":apix_y,
-				"apix_z":apix_z,
-				'is_complex':is_complex,
-				'is_fftodd':is_fftodd,
-				'is_fftpad':is_fftpad})
+				em_object.set_attr_dict(
+					{
+						"changecount": changecount,
+						"is_complex_x": is_complex_x,
+						"is_complex_ri": is_complex_ri,
+						"apix_x": apix_x,
+						"apix_y": apix_y,
+						"apix_z": apix_z,
+						"is_complex": is_complex,
+						"is_fftodd": is_fftodd,
+						"is_fftpad": is_fftpad,
+					}
+				)
 
 				list_of_em_objects[i] = em_object
 
 
-
-def gather_compacted_EMData_to_root_with_header_info_for_each_image(number_of_all_em_objects_distributed_across_processes, list_of_em_objects_for_myid_process, myid, comm=-1):
+def gather_compacted_EMData_to_root_with_header_info_for_each_image(
+	number_of_all_em_objects_distributed_across_processes,
+	list_of_em_objects_for_myid_process,
+	myid,
+	comm=-1,
+):
 
 	"""
 
@@ -2481,11 +3238,14 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(number_of_al
 	from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
 	from numpy import reshape
 
-	if comm == -1 or comm == None: comm = MPI_COMM_WORLD
+	if comm == -1 or comm == None:
+		comm = MPI_COMM_WORLD
 
-	ncpu = mpi_comm_size(comm)	# Total number of processes, passed by --np option.
+	ncpu = mpi_comm_size(comm)  # Total number of processes, passed by --np option.
 
-	ref_start, ref_end = MPI_start_end(number_of_all_em_objects_distributed_across_processes, ncpu, myid)
+	ref_start, ref_end = MPI_start_end(
+		number_of_all_em_objects_distributed_across_processes, ncpu, myid
+	)
 	ref_end -= ref_start
 	ref_start = 0
 
@@ -2502,8 +3262,9 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(number_of_al
 		# sys.stdout.flush()
 		# sys.exit()
 	except:
-		raise ValueError("Could not convert em attribute dictionary to string s that gather_compacted_EMData_to_root_with_header_info_for_each_image can be used.")
-
+		raise ValueError(
+			"Could not convert em attribute dictionary to string s that gather_compacted_EMData_to_root_with_header_info_for_each_image can be used."
+		)
 
 	nx = reference_em_object.get_xsize()
 	ny = reference_em_object.get_ysize()
@@ -2528,37 +3289,67 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(number_of_al
 	# size_of_one_refring_assumed_common_to_all = 1
 	# for i in n: size_of_one_refring_assumed_common_to_all *= i
 
-	if size_of_one_refring_assumed_common_to_all*(ref_end-ref_start) > (2**31-1):
+	if size_of_one_refring_assumed_common_to_all * (ref_end - ref_start) > (
+		2 ** 31 - 1
+	):
 		print("Sending refrings: size of data to broadcast is greater than 2GB")
 
-	for sender_id in range(1,ncpu):
+	for sender_id in range(1, ncpu):
 		if sender_id == myid:
-			data = EMNumPy.em2numpy(list_of_em_objects_for_myid_process[ref_start])  #array([], dtype = 'float32')
-			str_to_send = str(list_of_em_objects_for_myid_process[ref_start].get_attr_dict())
-			em_dict_to_send_list = [list_of_em_objects_for_myid_process[ref_start].get_attr_dict()]
-			for i in range(ref_start+1,ref_end):
-				data = concatenate([data, EMNumPy.em2numpy(list_of_em_objects_for_myid_process[i])])
+			data = EMNumPy.em2numpy(
+				list_of_em_objects_for_myid_process[ref_start]
+			)  # array([], dtype = 'float32')
+			str_to_send = str(
+				list_of_em_objects_for_myid_process[ref_start].get_attr_dict()
+			)
+			em_dict_to_send_list = [
+				list_of_em_objects_for_myid_process[ref_start].get_attr_dict()
+			]
+			for i in range(ref_start + 1, ref_end):
+				data = concatenate(
+					[data, EMNumPy.em2numpy(list_of_em_objects_for_myid_process[i])]
+				)
 				# str_to_send += str(list_of_em_objects_for_myid_process[i].get_attr_dict())
-				em_dict_to_send_list.append(list_of_em_objects_for_myid_process[i].get_attr_dict())
+				em_dict_to_send_list.append(
+					list_of_em_objects_for_myid_process[i].get_attr_dict()
+				)
 
 		else:
-			data = array([], dtype = 'float32')
+			data = array([], dtype="float32")
 
-		sender_ref_start, sender_ref_end = MPI_start_end(number_of_all_em_objects_distributed_across_processes, ncpu, sender_id)
+		sender_ref_start, sender_ref_end = MPI_start_end(
+			number_of_all_em_objects_distributed_across_processes, ncpu, sender_id
+		)
 
-		sender_size_of_refrings = (sender_ref_end - sender_ref_start)*size_of_one_refring_assumed_common_to_all
+		sender_size_of_refrings = (
+			sender_ref_end - sender_ref_start
+		) * size_of_one_refring_assumed_common_to_all
 
 		from mpi import mpi_recv, mpi_send, mpi_barrier
+
 		if myid == 0:
 			# print "root, receiving from ", sender_id, "  sender_size_of_refrings = ", sender_size_of_refrings
 			str_to_receive = wrap_mpi_recv(sender_id)
 			em_dict_list = eval(str_to_receive)
 			# print "em_dict_list", em_dict_list
-			data = mpi_recv(sender_size_of_refrings, MPI_FLOAT, sender_id, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			data = mpi_recv(
+				sender_size_of_refrings,
+				MPI_FLOAT,
+				sender_id,
+				SPARX_MPI_TAG_UNIVERSAL,
+				MPI_COMM_WORLD,
+			)
 		elif sender_id == myid:
 			wrap_mpi_send(str(em_dict_to_send_list), 0)
 			# print "sender_id = ", sender_id, "sender_size_of_refrings = ", sender_size_of_refrings
-			mpi_send(data, sender_size_of_refrings, MPI_FLOAT, 0, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			mpi_send(
+				data,
+				sender_size_of_refrings,
+				MPI_FLOAT,
+				0,
+				SPARX_MPI_TAG_UNIVERSAL,
+				MPI_COMM_WORLD,
+			)
 
 		mpi_barrier(MPI_COMM_WORLD)
 
@@ -2566,8 +3357,10 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(number_of_al
 		if myid == 0:
 			for i in range(sender_ref_start, sender_ref_end):
 				offset_ring = sender_ref_start
-				start_p = (i-offset_ring)*size_of_one_refring_assumed_common_to_all
-				end_p   = (i+1-offset_ring)*size_of_one_refring_assumed_common_to_all
+				start_p = (i - offset_ring) * size_of_one_refring_assumed_common_to_all
+				end_p = (
+					i + 1 - offset_ring
+				) * size_of_one_refring_assumed_common_to_all
 				image_data = data[start_p:end_p]
 
 				if int(nz) != 1:
@@ -2596,7 +3389,13 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(number_of_al
 
 		mpi_barrier(MPI_COMM_WORLD)
 
-def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_processes, list_of_em_objects_for_myid_process, myid, comm=-1):
+
+def gather_compacted_EMData_to_root(
+	number_of_all_em_objects_distributed_across_processes,
+	list_of_em_objects_for_myid_process,
+	myid,
+	comm=-1,
+):
 
 	"""
 
@@ -2617,11 +3416,14 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 	from numpy import reshape
 	from mpi import mpi_recv, mpi_send, mpi_barrier
 
-	if comm == -1 or comm == None: comm = MPI_COMM_WORLD
+	if comm == -1 or comm == None:
+		comm = MPI_COMM_WORLD
 
-	ncpu = mpi_comm_size(comm)	# Total number of processes, passed by --np option.
+	ncpu = mpi_comm_size(comm)  # Total number of processes, passed by --np option.
 
-	ref_start, ref_end = MPI_start_end(number_of_all_em_objects_distributed_across_processes, ncpu, myid)
+	ref_start, ref_end = MPI_start_end(
+		number_of_all_em_objects_distributed_across_processes, ncpu, myid
+	)
 	ref_end -= ref_start
 	ref_start = 0
 	tag_for_send_receive = 123456
@@ -2639,9 +3441,9 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 	apix_x = reference_em_object.get_attr("apix_x")
 	apix_y = reference_em_object.get_attr("apix_y")
 	apix_z = reference_em_object.get_attr("apix_z")
-	is_complex = reference_em_object.get_attr_default("is_complex",1)
-	is_fftpad = reference_em_object.get_attr_default("is_fftpad",1)
-	is_fftodd = reference_em_object.get_attr_default("is_fftodd", nz%2)
+	is_complex = reference_em_object.get_attr_default("is_complex", 1)
+	is_fftpad = reference_em_object.get_attr_default("is_fftpad", 1)
+	is_fftodd = reference_em_object.get_attr_default("is_fftodd", nz % 2)
 
 	data = EMNumPy.em2numpy(list_of_em_objects_for_myid_process[ref_start])
 	size_of_one_refring_assumed_common_to_all = data.size
@@ -2650,27 +3452,50 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 	# size_of_one_refring_assumed_common_to_all = 1
 	# for i in n: size_of_one_refring_assumed_common_to_all *= i
 
-	if size_of_one_refring_assumed_common_to_all*(ref_end-ref_start) > (2**31-1):
+	if size_of_one_refring_assumed_common_to_all * (ref_end - ref_start) > (
+		2 ** 31 - 1
+	):
 		print("Sending refrings: size of data to broadcast is greater than 2GB")
 
-	for sender_id in range(1,ncpu):
+	for sender_id in range(1, ncpu):
 		if sender_id == myid:
-			data = EMNumPy.em2numpy(list_of_em_objects_for_myid_process[ref_start])  #array([], dtype = 'float32')
-			for i in range(ref_start+1,ref_end):
-				data = concatenate([data, EMNumPy.em2numpy(list_of_em_objects_for_myid_process[i])])
+			data = EMNumPy.em2numpy(
+				list_of_em_objects_for_myid_process[ref_start]
+			)  # array([], dtype = 'float32')
+			for i in range(ref_start + 1, ref_end):
+				data = concatenate(
+					[data, EMNumPy.em2numpy(list_of_em_objects_for_myid_process[i])]
+				)
 		else:
-			data = array([], dtype = 'float32')
+			data = array([], dtype="float32")
 
-		sender_ref_start, sender_ref_end = MPI_start_end(number_of_all_em_objects_distributed_across_processes, ncpu, sender_id)
+		sender_ref_start, sender_ref_end = MPI_start_end(
+			number_of_all_em_objects_distributed_across_processes, ncpu, sender_id
+		)
 
-		sender_size_of_refrings = (sender_ref_end - sender_ref_start)*size_of_one_refring_assumed_common_to_all
+		sender_size_of_refrings = (
+			sender_ref_end - sender_ref_start
+		) * size_of_one_refring_assumed_common_to_all
 
 		if myid == 0:
 			# print "root, receiving from ", sender_id, "  sender_size_of_refrings = ", sender_size_of_refrings
-			data = mpi_recv(sender_size_of_refrings,MPI_FLOAT, sender_id, tag_for_send_receive, MPI_COMM_WORLD)
+			data = mpi_recv(
+				sender_size_of_refrings,
+				MPI_FLOAT,
+				sender_id,
+				tag_for_send_receive,
+				MPI_COMM_WORLD,
+			)
 		elif sender_id == myid:
 			# print "sender_id = ", sender_id, "sender_size_of_refrings = ", sender_size_of_refrings
-			mpi_send(data, sender_size_of_refrings, MPI_FLOAT, 0, tag_for_send_receive, MPI_COMM_WORLD)
+			mpi_send(
+				data,
+				sender_size_of_refrings,
+				MPI_FLOAT,
+				0,
+				tag_for_send_receive,
+				MPI_COMM_WORLD,
+			)
 
 		mpi_barrier(MPI_COMM_WORLD)
 
@@ -2678,8 +3503,10 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 		if myid == 0:
 			for i in range(sender_ref_start, sender_ref_end):
 				offset_ring = sender_ref_start
-				start_p = (i-offset_ring)*size_of_one_refring_assumed_common_to_all
-				end_p   = (i+1-offset_ring)*size_of_one_refring_assumed_common_to_all
+				start_p = (i - offset_ring) * size_of_one_refring_assumed_common_to_all
+				end_p = (
+					i + 1 - offset_ring
+				) * size_of_one_refring_assumed_common_to_all
 				image_data = data[start_p:end_p]
 
 				if int(nz) != 1:
@@ -2691,16 +3518,19 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 
 				# em_object.set_complex(is_complex)
 				em_object.set_ri(is_ri)
-				em_object.set_attr_dict({
-				"changecount":changecount,
-				"is_complex_x":is_complex_x,
-				"is_complex_ri":is_complex_ri,
-				"apix_x":apix_x,
-				"apix_y":apix_y,
-				"apix_z":apix_z,
-				'is_complex':is_complex,
-				'is_fftodd':is_fftodd,
-				'is_fftpad':is_fftpad})
+				em_object.set_attr_dict(
+					{
+						"changecount": changecount,
+						"is_complex_x": is_complex_x,
+						"is_complex_ri": is_complex_ri,
+						"apix_x": apix_x,
+						"apix_y": apix_y,
+						"apix_z": apix_z,
+						"is_complex": is_complex,
+						"is_fftodd": is_fftodd,
+						"is_fftpad": is_fftpad,
+					}
+				)
 
 				# list_of_em_objects[i] = em_object
 				list_of_em_objects_for_myid_process.append(em_object)
@@ -2708,22 +3538,25 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 		mpi_barrier(MPI_COMM_WORLD)
 
 
-def bcast_EMData_to_all(tavg, myid, source_node = 0, comm = -1):
+def bcast_EMData_to_all(tavg, myid, source_node=0, comm=-1):
 	from EMAN2 import EMNumPy
 	from numpy import array, shape, reshape
-	from mpi   import mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
+	from mpi import mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
 
-	if comm == -1 or comm == None: comm = MPI_COMM_WORLD
+	if comm == -1 or comm == None:
+		comm = MPI_COMM_WORLD
 	tavg_data = EMNumPy.em2numpy(tavg)
 	n = shape(tavg_data)
 	ntot = 1
-	for i in n: ntot *= i
+	for i in n:
+		ntot *= i
 	tavg_tmp = mpi_bcast(tavg_data, ntot, MPI_FLOAT, source_node, comm)
-	if(myid != source_node):
-		tavg_data1d = reshape(tavg_data,(ntot,))
+	if myid != source_node:
+		tavg_data1d = reshape(tavg_data, (ntot,))
 		tavg_data1d[0:ntot] = tavg_tmp[0:ntot]
 
-'''
+
+"""
 def bcast_EMData_to_all(img, myid, main_node = 0, comm = -1):
 
 	# Comment by Zhengfan Yang on 01/05/10
@@ -2815,12 +3648,14 @@ def reduce_EMData_to_root(img, myid, main_node = 0, comm = -1):
 		return img
 	else:
 		return img
-'''
+"""
+
 
 def send_EMData(img, dst, tag, comm=-1):
 	from mpi import mpi_send, MPI_INT, MPI_FLOAT, MPI_COMM_WORLD
 
-	if comm == -1: comm = MPI_COMM_WORLD
+	if comm == -1:
+		comm = MPI_COMM_WORLD
 	img_head = []
 	img_head.append(img.get_xsize())
 	img_head.append(img.get_ysize())
@@ -2830,19 +3665,19 @@ def send_EMData(img, dst, tag, comm=-1):
 	img_head.append(img.get_attr("changecount"))
 	img_head.append(img.is_complex_x())
 	img_head.append(img.get_attr("is_complex_ri"))
-	img_head.append(int(img.get_attr("apix_x")*10000))
-	img_head.append(int(img.get_attr("apix_y")*10000))
-	img_head.append(int(img.get_attr("apix_z")*10000))
+	img_head.append(int(img.get_attr("apix_x") * 10000))
+	img_head.append(int(img.get_attr("apix_y") * 10000))
+	img_head.append(int(img.get_attr("apix_z") * 10000))
 
-	head_tag = 2*tag
+	head_tag = 2 * tag
 	mpi_send(img_head, 11, MPI_INT, dst, head_tag, comm)
 
 	img_data = get_image_data(img)
-	data_tag = 2*tag+1
-	ntot = img_head[0]*img_head[1]*img_head[2]
+	data_tag = 2 * tag + 1
+	ntot = img_head[0] * img_head[1] * img_head[2]
 	mpi_send(img_data, ntot, MPI_FLOAT, dst, data_tag, comm)
 
-	'''
+	"""
 	count = 100000
 	data1d = reshape(img_data, (ntot,))
 	ntime = (ntot-1) /count + 1
@@ -2851,19 +3686,20 @@ def send_EMData(img, dst, tag, comm=-1):
 		block_begin = i*count
 		block_end   = i*count + count
 		if block_end > ntot:
-		    block_end = ntot
+			block_end = ntot
 		block_size  = block_end - block_begin
 		mpi_send(data1d[block_begin], block_size, MPI_FLOAT, dst, data_tag*ntime+i, comm)
-	'''
+	"""
+
 
 def recv_EMData(src, tag, comm=-1):
 	from mpi import mpi_recv, MPI_INT, MPI_FLOAT, MPI_COMM_WORLD
 	from numpy import reshape
 	from EMAN2 import EMNumPy
 
-
-	if comm==-1: comm = MPI_COMM_WORLD
-	head_tag = 2*tag
+	if comm == -1:
+		comm = MPI_COMM_WORLD
+	head_tag = 2 * tag
 	img_head = mpi_recv(11, MPI_INT, src, head_tag, comm)
 
 	nx = int(img_head[0])
@@ -2872,8 +3708,8 @@ def recv_EMData(src, tag, comm=-1):
 	is_complex = int(img_head[3])
 	is_ri = int(img_head[4])
 
-	data_tag = 2*tag+1
-	ntot = nx*ny*nz
+	data_tag = 2 * tag + 1
+	ntot = nx * ny * nz
 
 	img_data = mpi_recv(ntot, MPI_FLOAT, src, data_tag, comm)
 	if nz != 1:
@@ -2886,10 +3722,19 @@ def recv_EMData(src, tag, comm=-1):
 	img = EMNumPy.numpy2em(img_data)
 	img.set_complex(is_complex)
 	img.set_ri(is_ri)
-	img.set_attr_dict({"changecount":int(img_head[5]),  "is_complex_x":int(img_head[6]),  "is_complex_ri":int(img_head[7]),  "apix_x":int(img_head[8])/10000.0,  "apix_y":int(img_head[9])/10000.0,  "apix_z":int(img_head[10])/10000.0})
+	img.set_attr_dict(
+		{
+			"changecount": int(img_head[5]),
+			"is_complex_x": int(img_head[6]),
+			"is_complex_ri": int(img_head[7]),
+			"apix_x": int(img_head[8]) / 10000.0,
+			"apix_y": int(img_head[9]) / 10000.0,
+			"apix_z": int(img_head[10]) / 10000.0,
+		}
+	)
 	return img
 
-	'''
+	"""
 	#construct a EMData by taking the ownership of numpy array, no memory copying  --Grant Tang
 	#recv_data_numeric = mpi_recv(ntot, MPI_FLOAT, src, data_tag, comm)
 	#recv_data_numpy = numpy.array(recv_data_numeric)
@@ -2906,7 +3751,7 @@ def recv_EMData(src, tag, comm=-1):
 
 	data1d = reshape( get_image_data(img), (ntot,) )
 	tmp_data = mpi_recv(ntot, MPI_FLOAT, src, data_tag, comm)
-        data1d[0:ntot] = tmp_data[0:ntot]
+		data1d[0:ntot] = tmp_data[0:ntot]
 
 
 	count = 100000
@@ -2916,13 +3761,14 @@ def recv_EMData(src, tag, comm=-1):
 		block_begin = i*count
 		block_end   = i*count + count
 		if block_end > ntot:
-		    block_end = ntot
+			block_end = ntot
 		block_size  = block_end - block_begin
 		tmp_data = mpi_recv(block_size, MPI_FLOAT, src, data_tag*ntime+i, comm)
 		data1d[block_begin:block_end] = tmp_data[0:block_size]
 
 	return img
-	'''
+	"""
+
 
 def gather_EMData(data, number_of_proc, myid, main_node):
 	"""
@@ -2934,79 +3780,120 @@ def gather_EMData(data, number_of_proc, myid, main_node):
 
 	l = len(data)
 	gathered_data = []
-	inc = 1   # A temp measure
+	inc = 1  # A temp measure
 	if myid == main_node:
-		for i in range(0, number_of_proc*inc, inc):
+		for i in range(0, number_of_proc * inc, inc):
 			if i == main_node:
 				for k in range(l):
 					gathered_data.append(data[k])
 			else:
 				for k in range(l):
-					im = recv_EMData(i, i*l+k)
-					mem_len = mpi_recv(1, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-					members = mpi_recv(int(mem_len[0]), MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+					im = recv_EMData(i, i * l + k)
+					mem_len = mpi_recv(
+						1, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD
+					)
+					members = mpi_recv(
+						int(mem_len[0]),
+						MPI_INT,
+						i,
+						SPARX_MPI_TAG_UNIVERSAL,
+						MPI_COMM_WORLD,
+					)
 					members = list(map(int, members))
-					im.set_attr('members', members)
+					im.set_attr("members", members)
 					gathered_data.append(im)
 	else:
 		for k in range(l):
-			send_EMData(data[k], main_node, myid*l+k)
-			mem = data[k].get_attr('members')
-			mpi_send(len(mem), 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-			mpi_send(mem, len(mem), MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			send_EMData(data[k], main_node, myid * l + k)
+			mem = data[k].get_attr("members")
+			mpi_send(
+				len(mem), 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD
+			)
+			mpi_send(
+				mem,
+				len(mem),
+				MPI_INT,
+				main_node,
+				SPARX_MPI_TAG_UNIVERSAL,
+				MPI_COMM_WORLD,
+			)
 	return gathered_data
 
-def send_string_to_all(str_to_send, source_node = 0):
+
+def send_string_to_all(str_to_send, source_node=0):
 	from mpi import MPI_COMM_WORLD, MPI_INT, MPI_CHAR, mpi_bcast, mpi_comm_rank
 
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
-	str_to_send_len  = len(str_to_send)*int(myid == source_node)
-	str_to_send_len = mpi_bcast(str_to_send_len,1,MPI_INT,source_node,MPI_COMM_WORLD)[0]
-	str_to_send = mpi_bcast(str_to_send,str_to_send_len,MPI_CHAR,source_node,MPI_COMM_WORLD)
+	str_to_send_len = len(str_to_send) * int(myid == source_node)
+	str_to_send_len = mpi_bcast(
+		str_to_send_len, 1, MPI_INT, source_node, MPI_COMM_WORLD
+	)[0]
+	str_to_send = mpi_bcast(
+		str_to_send, str_to_send_len, MPI_CHAR, source_node, MPI_COMM_WORLD
+	)
 	return "".join(str_to_send)
 
 
-def bcast_number_to_all(number_to_send, source_node = 0, mpi_comm = -1):
+def bcast_number_to_all(number_to_send, source_node=0, mpi_comm=-1):
 	"""
 		number_to_send has to be pre-defined in each node
 	"""
 	from mpi import mpi_bcast, MPI_INT, MPI_COMM_WORLD, MPI_FLOAT
 	import types
-	if mpi_comm == -1:  mpi_comm = MPI_COMM_WORLD
-	if    type(number_to_send) is int:
-		TMP = mpi_bcast(number_to_send, 1, MPI_INT,   source_node, mpi_comm)
+
+	if mpi_comm == -1:
+		mpi_comm = MPI_COMM_WORLD
+	if type(number_to_send) is int:
+		TMP = mpi_bcast(number_to_send, 1, MPI_INT, source_node, mpi_comm)
 		return int(TMP[0])
-	elif  type(number_to_send) is float:
+	elif type(number_to_send) is float:
 		TMP = mpi_bcast(number_to_send, 1, MPI_FLOAT, source_node, mpi_comm)
 		return float(TMP[0])
-	elif  type(number_to_send) is bool:
-		if number_to_send: number_to_send = 1
-		else: number_to_send = 0
+	elif type(number_to_send) is bool:
+		if number_to_send:
+			number_to_send = 1
+		else:
+			number_to_send = 0
 		TMP = mpi_bcast(number_to_send, 1, MPI_INT, source_node, mpi_comm)
-		if TMP == 1:  return True
-		else:         return False
+		if TMP == 1:
+			return True
+		else:
+			return False
 	else:
 		print(" ERROR in bcast_number_to_all")
 
-def bcast_list_to_all(list_to_send, myid, source_node = 0, mpi_comm = -1):
+
+def bcast_list_to_all(list_to_send, myid, source_node=0, mpi_comm=-1):
 	from mpi import mpi_bcast, MPI_COMM_WORLD, MPI_FLOAT, MPI_INT
-	import   types
-	if mpi_comm == -1:  mpi_comm = MPI_COMM_WORLD
-	if(myid == source_node):
+	import types
+
+	if mpi_comm == -1:
+		mpi_comm = MPI_COMM_WORLD
+	if myid == source_node:
 		n = len(list_to_send)
 		# we will also assume all elements on the list are of the same type
-		if( type(list_to_send[0]) == int ): tp = 0
-		elif( type(list_to_send[0]) == float ): tp = 1
-		else: tp = 2
+		if type(list_to_send[0]) == int:
+			tp = 0
+		elif type(list_to_send[0]) == float:
+			tp = 1
+		else:
+			tp = 2
 	else:
 		n = 0
 		tp = 0
-	n = bcast_number_to_all(n, source_node = source_node, mpi_comm = mpi_comm)
-	tp = bcast_number_to_all(tp, source_node = source_node, mpi_comm = mpi_comm)
-	if( tp == 2 ): 	ERROR("Only list of the same type numbers can be brodcasted","bcast_list_to_all",1, myid)
-	if(myid != source_node): list_to_send = [0]*n
+	n = bcast_number_to_all(n, source_node=source_node, mpi_comm=mpi_comm)
+	tp = bcast_number_to_all(tp, source_node=source_node, mpi_comm=mpi_comm)
+	if tp == 2:
+		ERROR(
+			"Only list of the same type numbers can be brodcasted",
+			"bcast_list_to_all",
+			1,
+			myid,
+		)
+	if myid != source_node:
+		list_to_send = [0] * n
 
-	if( tp == 0 ):
+	if tp == 0:
 		list_to_send = mpi_bcast(list_to_send, n, MPI_INT, source_node, mpi_comm)
 		return [int(n) for n in list_to_send]
 	else:
@@ -3014,16 +3901,19 @@ def bcast_list_to_all(list_to_send, myid, source_node = 0, mpi_comm = -1):
 		return [float(n) for n in list_to_send]
 
 
-def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, number_of_proc, comm = -1):
+def recv_attr_dict(
+	main_node, stack, data, list_params, image_start, image_end, number_of_proc, comm=-1
+):
 	import types
-	from  utilities import  get_arb_params, set_arb_params
-	from  mpi 	import mpi_recv
-	from  mpi 	import MPI_FLOAT, MPI_INT, MPI_COMM_WORLD
+	from utilities import get_arb_params, set_arb_params
+	from mpi import mpi_recv
+	from mpi import MPI_FLOAT, MPI_INT, MPI_COMM_WORLD
 
 	#   hdf version!
 	# This is done on the main node, so for images from the main node, simply write headers
 
-	if comm == -1:  comm = MPI_COMM_WORLD
+	if comm == -1:
+		comm = MPI_COMM_WORLD
 
 	TransType = type(Transform())
 	# prepare keys for float/int
@@ -3045,82 +3935,110 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 	for n in range(number_of_proc):
 		if n != main_node:
 			dis = mpi_recv(2, MPI_INT, n, SPARX_MPI_TAG_UNIVERSAL, comm)
-			value = mpi_recv(len_list*(dis[1]-dis[0]), MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, comm)
+			value = mpi_recv(
+				len_list * (dis[1] - dis[0]),
+				MPI_FLOAT,
+				n,
+				SPARX_MPI_TAG_UNIVERSAL,
+				comm,
+			)
 			ldis.append([dis[0], dis[1]])
 			headers.append(value)
-			del  dis
-	del  value
+			del dis
+	del value
 	for im in range(image_start, image_end):
-		data[im-image_start].write_image(stack, data[im-image_start].get_attr_default('ID', im), EMUtil.ImageType.IMAGE_HDF, True)
+		data[im - image_start].write_image(
+			stack,
+			data[im - image_start].get_attr_default("ID", im),
+			EMUtil.ImageType.IMAGE_HDF,
+			True,
+		)
 
 	for n in range(len(ldis)):
 		img_begin = ldis[n][0]
 		img_end = ldis[n][1]
 		for im in range(img_begin, img_end):
-			par_begin = (im-img_begin)*len_list
+			par_begin = (im - img_begin) * len_list
 			nvalue = []
 			header = headers[n]
 			ilis = 0
 			for il in range(len(list_params)):
-				if(ink[il] == 1):
-					nvalue.append(int(header[par_begin+ilis]))
+				if ink[il] == 1:
+					nvalue.append(int(header[par_begin + ilis]))
 					ilis += 1
-				elif ink[il]==0:
-					nvalue.append(float(header[par_begin+ilis]))
+				elif ink[il] == 0:
+					nvalue.append(float(header[par_begin + ilis]))
 					ilis += 1
 				else:
-					assert ink[il]==2
+					assert ink[il] == 2
 					t = Transform()
 					tmp = []
-					for iii in range(par_begin+ilis, par_begin+ilis+12):
+					for iii in range(par_begin + ilis, par_begin + ilis + 12):
 						tmp.append(float(header[iii]))
 					t.set_matrix(tmp)
 					ilis += 12
 					nvalue.append(t)
-			ISID = list_params.count('ID')
-			if(ISID == 0):
+			ISID = list_params.count("ID")
+			if ISID == 0:
 				imm = im
 			else:
-				imm = nvalue[list_params.index('ID')]
-			# read head, set params, and write it
+				imm = nvalue[list_params.index("ID")]
+				# read head, set params, and write it
 			dummy = EMData()
 			dummy.read_image(stack, imm, True)
 			set_arb_params(dummy, nvalue, list_params)
-			dummy.write_image(stack, dummy.get_attr_default('ID', im), EMUtil.ImageType.IMAGE_HDF, True)
+			dummy.write_image(
+				stack,
+				dummy.get_attr_default("ID", im),
+				EMUtil.ImageType.IMAGE_HDF,
+				True,
+			)
 
-def send_attr_dict(main_node, data, list_params, image_start, image_end, comm = -1):
+
+def send_attr_dict(main_node, data, list_params, image_start, image_end, comm=-1):
 	import types
 	from utilities import get_arb_params
-	from mpi 	   import mpi_send
-	from mpi 	   import MPI_FLOAT, MPI_INT, MPI_COMM_WORLD
+	from mpi import mpi_send
+	from mpi import MPI_FLOAT, MPI_INT, MPI_COMM_WORLD
 
 	#  This function is called from a node other than the main node
 
-	if comm == -1: comm = MPI_COMM_WORLD
+	if comm == -1:
+		comm = MPI_COMM_WORLD
 	TransType = type(Transform())
-	mpi_send([image_start, image_end], 2, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, comm)
+	mpi_send(
+		[image_start, image_end], 2, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, comm
+	)
 	nvalue = []
 	for im in range(image_start, image_end):
-		value = get_arb_params(data[im-image_start], list_params)
+		value = get_arb_params(data[im - image_start], list_params)
 		for il in range(len(value)):
-			if    type(value[il]) is int:  nvalue.append(float(value[il]))
-			elif  type(value[il]) is float: nvalue.append(value[il])
-			elif  type(value[il]) is TransType:
+			if type(value[il]) is int:
+				nvalue.append(float(value[il]))
+			elif type(value[il]) is float:
+				nvalue.append(value[il])
+			elif type(value[il]) is TransType:
 				m = value[il].get_matrix()
-				assert (len(m)==12)
-				for f in m: nvalue.append(f)
+				assert len(m) == 12
+				for f in m:
+					nvalue.append(f)
 	mpi_send(nvalue, len(nvalue), MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, comm)
 
-def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_end, number_of_proc, comm = -1):
+
+def recv_attr_dict_bdb(
+	main_node, stack, data, list_params, image_start, image_end, number_of_proc, comm=-1
+):
 	import types
-	from  utilities import  get_arb_params, set_arb_params
-	from  mpi 	import mpi_recv
-	from  mpi 	import MPI_FLOAT, MPI_INT, MPI_COMM_WORLD
+	from utilities import get_arb_params, set_arb_params
+	from mpi import mpi_recv
+	from mpi import MPI_FLOAT, MPI_INT, MPI_COMM_WORLD
 	from EMAN2db import db_open_dict
+
 	#  bdb version!
 	# This is done on the main node, so for images from the main node, simply write headers
 
-	if comm == -1: comm = MPI_COMM_WORLD
+	if comm == -1:
+		comm = MPI_COMM_WORLD
 
 	DB = db_open_dict(stack)
 	TransType = type(Transform())
@@ -3130,7 +4048,8 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 	len_list = 0
 	ISID = -1
 	for il in range(len(list_params)):
-		if(list_params[il] == 'ID'):  ISID = il
+		if list_params[il] == "ID":
+			ISID = il
 		if type(value[il]) is int:
 			ink.append(1)
 			len_list += 1
@@ -3147,116 +4066,154 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 			dis = mpi_recv(2, MPI_INT, n, SPARX_MPI_TAG_UNIVERSAL, comm)
 			img_begin = int(dis[0])
 			img_end = int(dis[1])
-			header = mpi_recv(len_list*(img_end-img_begin), MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, comm)
+			header = mpi_recv(
+				len_list * (img_end - img_begin),
+				MPI_FLOAT,
+				n,
+				SPARX_MPI_TAG_UNIVERSAL,
+				comm,
+			)
 			for im in range(img_begin, img_end):
-				par_begin = (im-img_begin)*len_list
+				par_begin = (im - img_begin) * len_list
 				nvalue = []
 				ilis = 0
 				for il in range(len(list_params)):
-					if(ink[il] == 1):
-						nvalue.append(int(header[par_begin+ilis]))
+					if ink[il] == 1:
+						nvalue.append(int(header[par_begin + ilis]))
 						ilis += 1
-					elif ink[il]==0:
-						nvalue.append(float(header[par_begin+ilis]))
+					elif ink[il] == 0:
+						nvalue.append(float(header[par_begin + ilis]))
 						ilis += 1
 					else:
-						assert ink[il]==2
+						assert ink[il] == 2
 						t = Transform()
 						tmp = []
-						for iii in range(par_begin+ilis, par_begin+ilis+12):
+						for iii in range(par_begin + ilis, par_begin + ilis + 12):
 							tmp.append(float(header[iii]))
 						t.set_matrix(tmp)
 						ilis += 12
 						nvalue.append(t)
-				if(ISID == -1):
+				if ISID == -1:
 					imm = im
 				else:
 					imm = nvalue[ISID]
 				for i in range(len(list_params)):
-					if(list_params[i] != "ID"):  DB.set_attr(imm, list_params[i], nvalue[i])
+					if list_params[i] != "ID":
+						DB.set_attr(imm, list_params[i], nvalue[i])
 		else:
 			for n in range(image_start, image_end):
-				ID = data[n-image_start].get_attr_default('ID', n)
+				ID = data[n - image_start].get_attr_default("ID", n)
 				for param in list_params:
-					if(param != "ID"):  DB.set_attr(ID, param, data[n-image_start].get_attr(param))
+					if param != "ID":
+						DB.set_attr(ID, param, data[n - image_start].get_attr(param))
 	DB.close()
+
 
 def check_attr(ima, num, params, default_value, action="Warning"):
 	from sys import exit
+
 	attr_list = ima.get_attr_dict()
 	if (params in attr_list) == False:
-		if action=="Warning":
-			print("WARNING: In image %i, cannot find attribute \'%s\' in the header, set it to the default value" %(num, params), default_value)
-			ima.set_attr_dict({params:default_value})
-		elif action=="Error":
-			print("ERROR:   In image %i, cannot find attribute \'%s\' in the header, the program has to terminate" %(num, params))
+		if action == "Warning":
+			print(
+				"WARNING: In image %i, cannot find attribute '%s' in the header, set it to the default value"
+				% (num, params),
+				default_value,
+			)
+			ima.set_attr_dict({params: default_value})
+		elif action == "Error":
+			print(
+				"ERROR:   In image %i, cannot find attribute '%s' in the header, the program has to terminate"
+				% (num, params)
+			)
 			exit()
 		return False
-	else: return True
+	else:
+		return True
+
 
 def print_begin_msg(program_name, onscreen=False):
 	from time import localtime, strftime
+
 	t = 100
-	stars = '*'*t
-	string = "Beginning of the program " + program_name + ": " + strftime("%a, %d %b %Y %H:%M:%S", localtime())
-	s = (t-len(string))/2
-	spacing = ' '*s
+	stars = "*" * t
+	string = (
+		"Beginning of the program "
+		+ program_name
+		+ ": "
+		+ strftime("%a, %d %b %Y %H:%M:%S", localtime())
+	)
+	s = (t - len(string)) / 2
+	spacing = " " * s
 	if onscreen:
 		print(stars)
-		print(spacing+string)
+		print(spacing + string)
 		print(stars)
 	else:
-		print_msg(stars+"\n")
-		print_msg(spacing+string+"\n")
-		print_msg(stars+"\n")
+		print_msg(stars + "\n")
+		print_msg(spacing + string + "\n")
+		print_msg(stars + "\n")
+
 
 def print_end_msg(program_name, onscreen=False):
 	from time import localtime, strftime
+
 	t = 100
-	stars = '*'*t
-	string = "End of the program " + program_name + ": " + strftime("%a, %d %b %Y %H:%M:%S", localtime())
-	s = (t-len(string))/2
-	spacing = ' '*s
+	stars = "*" * t
+	string = (
+		"End of the program "
+		+ program_name
+		+ ": "
+		+ strftime("%a, %d %b %Y %H:%M:%S", localtime())
+	)
+	s = (t - len(string)) / 2
+	spacing = " " * s
 	if onscreen:
 		print(stars)
-		print(spacing+string)
+		print(spacing + string)
 		print(stars)
 	else:
-		print_msg(stars+"\n")
-		print_msg(spacing+string+"\n")
-		print_msg(stars+"\n")
+		print_msg(stars + "\n")
+		print_msg(spacing + string + "\n")
+		print_msg(stars + "\n")
+
 
 def print_msg(msg):
 	import sys
 	import global_def
-	if (global_def.IS_LOGFILE_OPEN == False):
-		global_def.LOGFILE_HANDLE = open(global_def.LOGFILE,"w")
+
+	if global_def.IS_LOGFILE_OPEN == False:
+		global_def.LOGFILE_HANDLE = open(global_def.LOGFILE, "w")
 		global_def.IS_LOGFILE_OPEN = True
-	if (global_def.BATCH):
+	if global_def.BATCH:
 		global_def.LOGFILE_HANDLE.write(msg)
 	else:
 		sys.stdout.write(msg)
 		global_def.LOGFILE_HANDLE.write(msg)
 	global_def.LOGFILE_HANDLE.flush()
 
-def read_fsc( filename ):
+
+def read_fsc(filename):
 	from string import split, atof
-	f = open( filename, 'r' )
+
+	f = open(filename, "r")
 	fscc = None
 	line = f.readline()
 	while len(line) > 0:
-		items = split( line )
+		items = split(line)
 		if fscc is None:
-			fscc = [None]*len(items)
-			for i in range( len(items) ):
+			fscc = [None] * len(items)
+			for i in range(len(items)):
 				fscc[i] = []
 
-		for i in range( len(items) ) :
-			fscc[i].append( atof(items[i]) )
+		for i in range(len(items)):
+			fscc[i].append(atof(items[i]))
 
 		line = f.readline()
 
 	return fscc
+
+
 """
 #  This would not work on windows
 def memory_usage():
@@ -3273,7 +4230,8 @@ def memory_usage():
 		line = f.readline()
 """
 
-def circumference( img, inner = -1, outer = -1):
+
+def circumference(img, inner=-1, outer=-1):
 	"""
 	Compute average within a shell between inner and outer radius
 	Subtract this shell average from the image
@@ -3282,28 +4240,34 @@ def circumference( img, inner = -1, outer = -1):
 	nx = img.get_xsize()
 	ny = img.get_ysize()
 	nz = img.get_zsize()
-	if( inner == -1):
-		inner = nx//2 -2
-		if( outer <= inner ):  outer = inner + 1
+	if inner == -1:
+		inner = nx // 2 - 2
+		if outer <= inner:
+			outer = inner + 1
 	else:
-		if( outer <= inner ):  outer = inner + 1
+		if outer <= inner:
+			outer = inner + 1
 	inner_sphere = model_circle(inner, nx, ny, nz)
 
-	[mean_a,sigma,imin,imax] = Util.infomask(img, model_circle(outer, nx, ny, nz) - inner_sphere, True)
-	inner_rest   = model_blank(nx, ny, nz, 1.0) - inner_sphere
-	return Util.muln_img(inner_sphere, img-mean_a)
-	#return Util.addn_img(inner_sphere, Util.mult_scalar(inner_rest, mean_a ) )
+	[mean_a, sigma, imin, imax] = Util.infomask(
+		img, model_circle(outer, nx, ny, nz) - inner_sphere, True
+	)
+	inner_rest = model_blank(nx, ny, nz, 1.0) - inner_sphere
+	return Util.muln_img(inner_sphere, img - mean_a)
+	# return Util.addn_img(inner_sphere, Util.mult_scalar(inner_rest, mean_a ) )
 
-def copy_attr( pin, name, pot ):
-	pot.set_attr( name, pin.get_attr(name) )
+
+def copy_attr(pin, name, pot):
+	pot.set_attr(name, pin.get_attr(name))
 	pass
+
 
 def write_headers(filename, data, lima):
 	"""
 	  write headers from files in data into a disk file called filename.
 	  The filename has to be either hdf or bdb.
 	  lima - list with positions in the disk files into which headers will be written,
-	    i.e., header from data[k] will be written into file number lima[k]
+		i.e., header from data[k] will be written into file number lima[k]
 	  WARNING: this function will open and close DB library!
 	"""
 	from utilities import file_type
@@ -3316,20 +4280,21 @@ def write_headers(filename, data, lima):
 		for i in range(len(lima)):
 			DB.set_header(lima[i], data[i])
 		DB.close()
-		#for i in range(len(lima)):
-		#	data[i].write_image(filename, lima[i])
+		# for i in range(len(lima)):
+		# 	data[i].write_image(filename, lima[i])
 	elif ftp == "hdf":
 		for i in range(len(lima)):
 			data[i].write_image(filename, lima[i], EMUtil.ImageType.IMAGE_HDF, True)
 	else:
-		ERROR("Unacceptable file format","write_headers",1)
+		ERROR("Unacceptable file format", "write_headers", 1)
+
 
 def write_header(filename, data, lima):
 	"""
 	  write header from a single file data into a disk file called filename.
 	  The filename has to be either hdf or bdb.
 	  lima - position in the disk files into which header will be written,
-	    i.e., header from data will be written into file number lima
+		i.e., header from data will be written into file number lima
 	  WARNING: this function assums DB library is opened and will NOT close it!
 	"""
 	from utilities import file_type
@@ -3342,62 +4307,103 @@ def write_header(filename, data, lima):
 	elif ftp == "hdf":
 		data.write_image(filename, lima, EMUtil.ImageType.IMAGE_HDF, True)
 	else:
-		ERROR("Unacceptable file format","write_headers",1)
+		ERROR("Unacceptable file format", "write_headers", 1)
+
 
 def file_type(name):
-	if(len(name)>4):
-		if(name[:4] == "bdb:"): return "bdb"
-		elif(name[-4:-3] == "."):  return name[-3:]
-		elif(name[-5:] == ".mrcs"):  return "mrcs"
-	ERROR("Unacceptable file format","file_type",1)
+	if len(name) > 4:
+		if name[:4] == "bdb:":
+			return "bdb"
+		elif name[-4:-3] == ".":
+			return name[-3:]
+		elif name[-5:] == ".mrcs":
+			return "mrcs"
+	ERROR("Unacceptable file format", "file_type", 1)
 
-def get_params2D(ima, xform = "xform.align2d"):
+
+def get_params2D(ima, xform="xform.align2d"):
 	"""
 	  retrieve 2D alignment parameters from the header
 	  alpha, tx, ty, mirror, scale
 	"""
 	d = Util.get_transform_params(ima, xform, "2D")
-	return d["alpha"],d["tx"],d["ty"],d["mirror"],d["scale"]
+	return d["alpha"], d["tx"], d["ty"], d["mirror"], d["scale"]
 
-def set_params2D(ima, p, xform = "xform.align2d"):
+
+def set_params2D(ima, p, xform="xform.align2d"):
 	"""
 	  set 2D alignment parameters in the header
 	  p = [alpha, tx, ty, mirror, scale]
 	"""
-	t = Transform({"type":"2D","alpha":p[0],"tx":p[1],"ty":p[2],"mirror":p[3],"scale":p[4]})
+	t = Transform(
+		{
+			"type": "2D",
+			"alpha": p[0],
+			"tx": p[1],
+			"ty": p[2],
+			"mirror": p[3],
+			"scale": p[4],
+		}
+	)
 	ima.set_attr(xform, t)
 
-def get_params3D(ima, xform = "xform.align3d"):
+
+def get_params3D(ima, xform="xform.align3d"):
 	"""
 	  retrieve 3D alignment parameters from the header
 	  phi,theta, psi, tx, ty, tz, mirror,scale
 	"""
 	d = Util.get_transform_params(ima, xform, "spider")
-	return  d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"],d["mirror"],d["scale"]
+	return (
+		d["phi"],
+		d["theta"],
+		d["psi"],
+		d["tx"],
+		d["ty"],
+		d["tz"],
+		d["mirror"],
+		d["scale"],
+	)
 
-def set_params3D(ima, p, xform = "xform.align3d"):
+
+def set_params3D(ima, p, xform="xform.align3d"):
 	"""
 	  set 3D alignment parameters in the header
 	  p = [phi,theta, psi, tx, ty, tz, mirror,scale]
 	"""
-	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2],"tx":p[3],"ty":p[4],"tz":p[5],"mirror":p[6],"scale":p[7]})
+	t = Transform(
+		{
+			"type": "spider",
+			"phi": p[0],
+			"theta": p[1],
+			"psi": p[2],
+			"tx": p[3],
+			"ty": p[4],
+			"tz": p[5],
+			"mirror": p[6],
+			"scale": p[7],
+		}
+	)
 	ima.set_attr(xform, t)
 
-def get_params_proj(ima, xform = "xform.projection"):
+
+def get_params_proj(ima, xform="xform.projection"):
 	"""
 	  retrieve projection alignment parameters from the header
 	  phi, theta, psi, s2x, s2y
 	"""
 	d = Util.get_transform_params(ima, xform, "spider")
-	return  d["phi"],d["theta"],d["psi"],-d["tx"],-d["ty"]
+	return d["phi"], d["theta"], d["psi"], -d["tx"], -d["ty"]
 
-def set_params_proj(ima, p, xform = "xform.projection"):
+
+def set_params_proj(ima, p, xform="xform.projection"):
 	"""
 	  set projection alignment parameters in the header
 	  p = [phi, theta, psi, s2x, s2y]
 	"""
 	from EMAN2 import Vec2f
-	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2]})
+
+	t = Transform({"type": "spider", "phi": p[0], "theta": p[1], "psi": p[2]})
 	t.set_trans(Vec2f(-p[3], -p[4]))
 	ima.set_attr(xform, t)
 
@@ -3406,72 +4412,117 @@ def get_ctf(ima):
 	"""
 	  recover numerical values of CTF parameters from EMAN2 CTF object stored in a header of the input image
 	  order of returned parameters:
-        defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle
+		defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle
 	"""
 	from EMAN2 import EMAN2Ctf
-	ctf_params = ima.get_attr("ctf")
-	return ctf_params.defocus, ctf_params.cs, ctf_params.voltage, ctf_params.apix, ctf_params.bfactor, ctf_params.ampcont, ctf_params.dfdiff, ctf_params.dfang
 
-def same_ctf(c1,c2):
+	ctf_params = ima.get_attr("ctf")
+	return (
+		ctf_params.defocus,
+		ctf_params.cs,
+		ctf_params.voltage,
+		ctf_params.apix,
+		ctf_params.bfactor,
+		ctf_params.ampcont,
+		ctf_params.dfdiff,
+		ctf_params.dfang,
+	)
+
+
+def same_ctf(c1, c2):
 	"""
 	  Compare two CTF objects and return True if they are the same
 	"""
-	return c1.to_string()==c2.to_string()
+	return c1.to_string() == c2.to_string()
+
 
 def generate_ctf(p):
 	"""
 	  generate EMAN2 CTF object using values of CTF parameters given in the list p
 	  order of parameters:
-        p = [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle]
-	    [ microns, mm, kV, Angstroms, A^2, microns, microns, radians]
+		p = [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle]
+		[ microns, mm, kV, Angstroms, A^2, microns, microns, radians]
 	"""
 	from EMAN2 import EMAN2Ctf
 
-	defocus      = p[0]
-	cs           = p[1]
-	voltage      = p[2]
-	pixel_size   = p[3]
-	bfactor      = p[4]
+	defocus = p[0]
+	cs = p[1]
+	voltage = p[2]
+	pixel_size = p[3]
+	bfactor = p[4]
 	amp_contrast = p[5]
 
-	if defocus > 100:  # which means it is very likely in Angstrom, therefore we are using the old convention
+	if (
+		defocus > 100
+	):  # which means it is very likely in Angstrom, therefore we are using the old convention
 		defocus *= 1.0e-4
 
 	ctf = EMAN2Ctf()
-	if(len(p) == 6):
-		ctf.from_dict({"defocus":defocus, "cs":cs, "voltage":voltage, "apix":pixel_size, "bfactor":bfactor, "ampcont":amp_contrast})
-	elif(len(p) == 8):
-		ctf.from_dict({"defocus":defocus, "cs":cs, "voltage":voltage, "apix":pixel_size, "bfactor":bfactor, "ampcont":amp_contrast,'dfdiff':p[6],'dfang':p[7]})
+	if len(p) == 6:
+		ctf.from_dict(
+			{
+				"defocus": defocus,
+				"cs": cs,
+				"voltage": voltage,
+				"apix": pixel_size,
+				"bfactor": bfactor,
+				"ampcont": amp_contrast,
+			}
+		)
+	elif len(p) == 8:
+		ctf.from_dict(
+			{
+				"defocus": defocus,
+				"cs": cs,
+				"voltage": voltage,
+				"apix": pixel_size,
+				"bfactor": bfactor,
+				"ampcont": amp_contrast,
+				"dfdiff": p[6],
+				"dfang": p[7],
+			}
+		)
 	else:
-		ERROR("Incorrect number of entries on a list, cannot generate CTF","generate_ctf",0)
+		ERROR(
+			"Incorrect number of entries on a list, cannot generate CTF",
+			"generate_ctf",
+			0,
+		)
 		return None
 	return ctf
+
 
 def set_ctf(ima, p):
 	"""
 	  set EMAN2 CTF object in the header of input image using values of CTF parameters given in the list p
 	  order of parameters:
-        p = [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle]
+		p = [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle]
 	"""
 	from utilities import generate_ctf
-	ima.set_attr( "ctf", generate_ctf( p ) )
+
+	ima.set_attr("ctf", generate_ctf(p))
+
 
 def delete_bdb(name):
 	"""
 	  Delete bdb stack
 	"""
 	from EMAN2db import db_open_dict, db_remove_dict
+
 	a = db_open_dict(name)
 	db_remove_dict(name)
 
+
 def disable_bdb_cache():
 	import EMAN2db
+
 	EMAN2db.BDB_CACHE_DISABLE = True
+
 
 def enable_bdb_cache():
 	import EMAN2db
-	EMAN2db.BDB_CACHE_DISABLE = False
 
+	EMAN2db.BDB_CACHE_DISABLE = False
 
 
 ###############
@@ -3481,23 +4532,24 @@ def enable_bdb_cache():
 #    or a list of names, specifying the location of a user-defined
 #    function; this will have the form --function=/path/module/function
 
+
 def parse_user_function(opt_string):
 	# check if option string is a string and return None if not. this
 	# will cause the user function to be set to default value
 	# "ref_ali3d" in the ali functions....
-	if not(type(opt_string) is str):
+	if not (type(opt_string) is str):
 		return None
 
-	# check opt_string for format:
-	if (opt_string.startswith("[") and opt_string.endswith("]")):
+		# check opt_string for format:
+	if opt_string.startswith("[") and opt_string.endswith("]"):
 		# options string is [path,file,function]
 		opt_list = opt_string[1:-1].split(",")
-		if (2 == len(opt_list)):
+		if 2 == len(opt_list):
 			# options are [file,function]
-			return [opt_list[0],opt_list[1]]
-		elif (3 == len(opt_list)):
+			return [opt_list[0], opt_list[1]]
+		elif 3 == len(opt_list):
 			# options are [path,file,function]. note the order!
-			return [opt_list[1],opt_list[2],opt_list[0]]
+			return [opt_list[1], opt_list[2], opt_list[0]]
 		else:
 			# neither. assume this is an error and return default
 			return None
@@ -3510,12 +4562,15 @@ def parse_user_function(opt_string):
 ###############
 #  Angular functions
 
+
 def getang(n):
 	"""
 	get angle from a 2D normal vector
 	"""
 	from math import atan2, acos, degrees
-	return degrees(atan2(n[1],n[0]))%360.0, degrees(acos(n[2]))%360.0
+
+	return degrees(atan2(n[1], n[0])) % 360.0, degrees(acos(n[2])) % 360.0
+
 
 #  The other one is better written
 """
@@ -3527,8 +4582,9 @@ def getang3(p1,p2):
 	return lacos(n1[0]*n2[0]+n1[1]*n2[1]+n1[2]*n2[2])
 """
 
-def getvec( phi, tht ):
-	from math import radians,cos,sin
+
+def getvec(phi, tht):
+	from math import radians, cos, sin
 
 	if tht > 180.0:
 		tht -= 180.0
@@ -3537,41 +4593,47 @@ def getvec( phi, tht ):
 		tht = 180.0 - tht
 		phi += 180.0
 
-	assert tht <=90.0
+	assert tht <= 90.0
 
 	qt = radians(tht)
 	qp = radians(phi)
 	qs = sin(qt)
 
-	x = qs*cos(qp)
-	y = qs*sin(qp)
+	x = qs * cos(qp)
+	y = qs * sin(qp)
 	z = cos(qt)
 
-	return (x,y,z)
+	return (x, y, z)
 
-def getfvec( phi, tht ):
-	from math import radians,cos,sin
+
+def getfvec(phi, tht):
+	from math import radians, cos, sin
+
 	qt = radians(tht)
 	qp = radians(phi)
 	qs = sin(qt)
-	x = qs*cos(qp)
-	y = qs*sin(qp)
+	x = qs * cos(qp)
+	y = qs * sin(qp)
 	z = cos(qt)
 
-	return (x,y,z)
+	return (x, y, z)
 
-def nearest_fang( vecs, phi, tht ):
+
+def nearest_fang(vecs, phi, tht):
 	"""
 		vecs = [ [x0,y0,z0], [x1,y1,z1], ...]
 	"""
 	from utilities import getfvec
-	vec = getfvec( phi, tht )
-	return  Util.nearest_fang(vecs, vec[0],vec[1],vec[2])[0]
 
-def nearest_ang( vecs, phi, tht ) :
+	vec = getfvec(phi, tht)
+	return Util.nearest_fang(vecs, vec[0], vec[1], vec[2])[0]
+
+
+def nearest_ang(vecs, phi, tht):
 	from utilities import getvec
-	vec = getvec( phi, tht )
-	return  Util.nearest_ang(vecs, vec[0],vec[1],vec[2])
+
+	vec = getvec(phi, tht)
+	return Util.nearest_ang(vecs, vec[0], vec[1], vec[2])
 	"""
 	best_s = -1.0
 	best_i = -1
@@ -3584,6 +4646,8 @@ def nearest_ang( vecs, phi, tht ) :
 
 	return best_i
 	"""
+
+
 """
 Util.nearest_ang(vecs, vec[0],vec[1],vec[2])
 def closest_ang( vecs, vec) :
@@ -3600,7 +4664,7 @@ def closest_ang( vecs, vec) :
 """
 # This is in python, it is very slow, we keep it just for comparison, use Util.assign_projangles instead
 def assign_projangles_slow(projangles, refangles):
-	refnormal = [None]*len(refangles)
+	refnormal = [None] * len(refangles)
 	for i in range(len(refangles)):
 		refnormal[i] = getvec(refangles[i][0], refangles[i][1])
 	assignments = [[] for i in range(len(refangles))]
@@ -3610,160 +4674,195 @@ def assign_projangles_slow(projangles, refangles):
 	return assignments
 
 
-def nearest_many_full_k_projangles(reference_normals, angles, howmany = 1, sym_class=None):
-	# 
+def nearest_many_full_k_projangles(
+	reference_normals, angles, howmany=1, sym_class=None
+):
+	#
 	from utilities import getfvec, angles_to_normals
-	#refnormal = normals[:]
-	assignments = [-1]*len(angles)
-	if( sym_class.sym[:2] == "c1"):
-		for i,q in enumerate(angles):
-			ref = getfvec(q[0],q[1])
-			assignments[i] = Util.nearest_fang_select(reference_normals, ref[0],ref[1],ref[2], howmany)
+
+	# refnormal = normals[:]
+	assignments = [-1] * len(angles)
+	if sym_class.sym[:2] == "c1":
+		for i, q in enumerate(angles):
+			ref = getfvec(q[0], q[1])
+			assignments[i] = Util.nearest_fang_select(
+				reference_normals, ref[0], ref[1], ref[2], howmany
+			)
 	else:
-		for i,q in enumerate(angles):
+		for i, q in enumerate(angles):
 			ancordir = angles_to_normals(sym_class.symmetry_neighbors([q[:3]]))
-			assignments[i] = Util.nearest_fang_sym(ancordir, reference_normals, len(ancordir), howmany)
+			assignments[i] = Util.nearest_fang_sym(
+				ancordir, reference_normals, len(ancordir), howmany
+			)
 
 	return assignments
 
 
-def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
+def nearestk_projangles(projangles, whichone=0, howmany=1, sym="c1"):
 	# In both cases mirrored should be treated the same way as straight as they carry the same structural information
 	from utilities import getfvec, getvec
+
 	lookup = list(range(len(projangles)))
-	if( sym == "c1"):
+	if sym == "c1":
 		from utilities import getvec
-		refnormal = [None]*(len(projangles)*3)
+
+		refnormal = [None] * (len(projangles) * 3)
 		for i in range(len(projangles)):
 			ref = getvec(projangles[i][0], projangles[i][1])
 			for k in range(3):
-				refnormal[3*i+k] = ref[k]
-		# remove the reference projection from the list
-		ref = [0.0,0.0,0.0]
+				refnormal[3 * i + k] = ref[k]
+				# remove the reference projection from the list
+		ref = [0.0, 0.0, 0.0]
 		for k in range(3):
-			ref[k] = refnormal[3*whichone+k]
-		for k in range(3): del refnormal[3*whichone+2-k]
+			ref[k] = refnormal[3 * whichone + k]
+		for k in range(3):
+			del refnormal[3 * whichone + 2 - k]
 		del lookup[whichone]
-		assignments = [-1]*howmany
+		assignments = [-1] * howmany
 		for i in range(howmany):
-			k = Util.nearest_ang(refnormal, ref[0],ref[1],ref[2])
+			k = Util.nearest_ang(refnormal, ref[0], ref[1], ref[2])
 			assignments[i] = lookup[k]
-			for l in range(3): del refnormal[3*k+2-l]
+			for l in range(3):
+				del refnormal[3 * k + 2 - l]
 			del lookup[k]
 
-	elif( sym[:1] == "d" ):
+	elif sym[:1] == "d":
 		from utilities import get_symt, getvec
 		from EMAN2 import Transform
+
 		t = get_symt(sym)
-		phir = 360.0/int(sym[1:])
-		for i in range(len(t)):  t[i] = t[i].inverse()
-		a = Transform({"type":"spider","phi":projangles[whichone][0], "theta":projangles[whichone][1]})
+		phir = 360.0 / int(sym[1:])
+		for i in range(len(t)):
+			t[i] = t[i].inverse()
+		a = Transform(
+			{
+				"type": "spider",
+				"phi": projangles[whichone][0],
+				"theta": projangles[whichone][1],
+			}
+		)
 		for l in range(len(t)):
-			q = a*t[l]
+			q = a * t[l]
 			q = q.get_params("spider")
-			if(q["phi"]<phir and q["theta"] <= 90.0): break
+			if q["phi"] < phir and q["theta"] <= 90.0:
+				break
 		refvec = getfvec(q["phi"], q["theta"])
-		#print  "refvec   ",q["phi"], q["theta"]
+		# print  "refvec   ",q["phi"], q["theta"]
 
 		tempan = projangles[:]
 		del tempan[whichone], lookup[whichone]
-		assignments = [-1]*howmany
+		assignments = [-1] * howmany
 
 		for i in range(howmany):
 			best = -1
 			for j in range(len(tempan)):
-				nearest = -1.
-				a = Transform({"type":"spider","phi":tempan[j][0], "theta":tempan[j][1]})
+				nearest = -1.0
+				a = Transform(
+					{"type": "spider", "phi": tempan[j][0], "theta": tempan[j][1]}
+				)
 				for l in range(len(t)):
-					q = a*t[l]
+					q = a * t[l]
 					q = q.get_params("spider")
 					vecs = getfvec(q["phi"], q["theta"])
-					s = abs(vecs[0]*refvec[0] + vecs[1]*refvec[1] + vecs[2]*refvec[2])
-					if( s > nearest ):
+					s = abs(
+						vecs[0] * refvec[0] + vecs[1] * refvec[1] + vecs[2] * refvec[2]
+					)
+					if s > nearest:
 						nearest = s
-						#ttt = (q["phi"], q["theta"])
-				if( nearest > best ):
+						# ttt = (q["phi"], q["theta"])
+				if nearest > best:
 					best = nearest
 					best_j = j
-					#print  j,tempan[j][0], tempan[j][1],best,lookup[j],ttt
+					# print  j,tempan[j][0], tempan[j][1],best,lookup[j],ttt
 			assignments[i] = lookup[best_j]
 			del tempan[best_j], lookup[best_j]
 
-	elif( sym[:1] == "c" ):
+	elif sym[:1] == "c":
 		from utilities import get_symt, getvec
 		from EMAN2 import Transform
-		t = get_symt(sym)
-		#phir = 360.0/int(sym[1:])
 
-		tempan =  projangles[:]
+		t = get_symt(sym)
+		# phir = 360.0/int(sym[1:])
+
+		tempan = projangles[:]
 		del tempan[whichone], lookup[whichone]
-		assignments = [-1]*howmany
+		assignments = [-1] * howmany
 		refvec = getvec(projangles[whichone][0], projangles[whichone][1])
 
 		for i in range(howmany):
 			best = -1
 			for j in range(len(tempan)):
-				nearest = -1.
-				a = Transform({"type":"spider","phi":tempan[j][0], "theta":tempan[j][1]})
+				nearest = -1.0
+				a = Transform(
+					{"type": "spider", "phi": tempan[j][0], "theta": tempan[j][1]}
+				)
 				for l in range(len(t)):
-					q = a*t[l]
+					q = a * t[l]
 					q = q.get_params("spider")
 					vecs = getfvec(q["phi"], q["theta"])
-					s = abs(vecs[0]*refvec[0] + vecs[1]*refvec[1] + vecs[2]*refvec[2])
-					if( s > nearest ):
+					s = abs(
+						vecs[0] * refvec[0] + vecs[1] * refvec[1] + vecs[2] * refvec[2]
+					)
+					if s > nearest:
 						nearest = s
-						#ttt = (q["phi"], q["theta"])
-				if( nearest > best ):
+						# ttt = (q["phi"], q["theta"])
+				if nearest > best:
 					best = nearest
 					best_j = j
-					#print  j,tempan[j][0], tempan[j][1],best,lookup[j],ttt
+					# print  j,tempan[j][0], tempan[j][1],best,lookup[j],ttt
 			assignments[i] = lookup[best_j]
 			del tempan[best_j], lookup[best_j]
 
 	else:
-		print("  ERROR:  symmetry not supported  ",sym)
+		print("  ERROR:  symmetry not supported  ", sym)
 		assignments = []
 
-
 	return assignments
 
 
-def nearest_full_k_projangles(reference_ang, angles, howmany = 1, sym_class=None):
+def nearest_full_k_projangles(reference_ang, angles, howmany=1, sym_class=None):
 	# We assume angles can be on the list of normals
 	from utilities import getfvec, angles_to_normals
+
 	reference_normals = angles_to_normals(reference_ang)
 
-	if( sym_class == None or sym_class.sym[:2] == "c1"):
-		ref = getfvec(angles[0],angles[1])
-		assignments = Util.nearest_fang_select(reference_normals, ref[0],ref[1],ref[2], howmany)
+	if sym_class == None or sym_class.sym[:2] == "c1":
+		ref = getfvec(angles[0], angles[1])
+		assignments = Util.nearest_fang_select(
+			reference_normals, ref[0], ref[1], ref[2], howmany
+		)
 	else:
 		ancordir = angles_to_normals(sym_class.symmetry_neighbors([angles[:3]]))
-		assignments = Util.nearest_fang_sym(ancordir, reference_normals, len(ancordir), howmany)
+		assignments = Util.nearest_fang_sym(
+			ancordir, reference_normals, len(ancordir), howmany
+		)
 
 	return assignments
 
-def nearestk_to_refdir(refnormal, refdir, howmany = 1):
+
+def nearestk_to_refdir(refnormal, refdir, howmany=1):
 	lookup = list(range(len(refnormal)))
-	assignments = [-1]*howmany
+	assignments = [-1] * howmany
 	for i in range(howmany):
-		k = Util.nearest_ang(refnormal, refdir[0],refdir[1],refdir[2])
+		k = Util.nearest_ang(refnormal, refdir[0], refdir[1], refdir[2])
 		assignments[i] = lookup[k]
-		del refnormal[3*k+2], refnormal[3*k+1], refnormal[3*k+0], lookup[k]
+		del refnormal[3 * k + 2], refnormal[3 * k + 1], refnormal[3 * k + 0], lookup[k]
 	return assignments
 
 
-def nearestk_to_refdirs(refnormal, refdir, howmany = 1):
+def nearestk_to_refdirs(refnormal, refdir, howmany=1):
 	lookup = list(range(len(refnormal)))
 	assignments = []
 	for j in range(len(refdir)):
-		assignment = [-1]*howmany
+		assignment = [-1] * howmany
 		for i in range(howmany):
-			k = Util.nearest_ang(refnormal, refdir[j][0],refdir[j][1],refdir[j][2])
+			k = Util.nearest_ang(refnormal, refdir[j][0], refdir[j][1], refdir[j][2])
 			assignment[i] = lookup[k]
-			del refnormal[3*k+2], refnormal[3*k+1], refnormal[3*k+0], lookup[k]
+			del refnormal[3 * k + 2], refnormal[3 * k + 1], refnormal[
+				3 * k + 0
+			], lookup[k]
 		assignments.append(assignment)
 	return assignments
-
 
 
 """
@@ -3801,31 +4900,35 @@ def assign_projangles(projangles, refangles, return_asg = False):
 	return assignments
 """
 
-def assign_projangles(projangles, refangles, return_asg = False):
+
+def assign_projangles(projangles, refangles, return_asg=False):
 
 	nproj = len(projangles)
 	nref = len(refangles)
-	proj_ang = [0.0]*(nproj*2)
-	ref_ang = [0.0]*(nref*2)
+	proj_ang = [0.0] * (nproj * 2)
+	ref_ang = [0.0] * (nref * 2)
 	for i in range(nproj):
-		proj_ang[i*2] = projangles[i][0]
-		proj_ang[i*2+1] = projangles[i][1]
+		proj_ang[i * 2] = projangles[i][0]
+		proj_ang[i * 2 + 1] = projangles[i][1]
 	for i in range(nref):
-		ref_ang[i*2] = refangles[i][0]
-		ref_ang[i*2+1] = refangles[i][1]
+		ref_ang[i * 2] = refangles[i][0]
+		ref_ang[i * 2 + 1] = refangles[i][1]
 
 	asg = Util.assign_projangles(proj_ang, ref_ang)
-	if return_asg: return asg
+	if return_asg:
+		return asg
 	assignments = [[] for i in range(nref)]
 	for i in range(nproj):
 		assignments[asg[i]].append(i)
 
 	return assignments
 
-def assign_projangles_f(projangles, refangles, return_asg = False):
+
+def assign_projangles_f(projangles, refangles, return_asg=False):
 
 	asg = Util.assign_projangles_f(projangles, refangles)
-	if return_asg: return asg
+	if return_asg:
+		return asg
 	assignments = [[] for i in range(len(refangles))]
 	for i in range(len(projangles)):
 		assignments[asg[i]].append(i)
@@ -3835,7 +4938,7 @@ def assign_projangles_f(projangles, refangles, return_asg = False):
 
 def assign_projdirs_f(projdirs, refdirs, neighbors):
 	#  projdirs - data
-	#  refdirs  - templates, each template has neighbors related copies 
+	#  refdirs  - templates, each template has neighbors related copies
 	#  output - list of lists, ofr each of refdirs/neighbors there is a list of projdirs indexes that are closest to it
 	"""
 	qsti = [-1]*len(projdirs)
@@ -3852,113 +4955,149 @@ def assign_projdirs_f(projdirs, refdirs, neighbors):
 	"""
 	#  Create a list that for each projdirs contains an index of the closest refdirs/neighbors
 	qsti = Util.assign_projdirs_f(projdirs, refdirs, neighbors)
-	assignments = [[] for i in range(len(refdirs)/neighbors)]
+	assignments = [[] for i in range(len(refdirs) / neighbors)]
 	for i in range(len(projdirs)):
 		assignments[qsti[i]].append(i)
 
 	return assignments
 
 
-
-def cone_ang( projangles, phi, tht, ant, symmetry = 'c1'):
+def cone_ang(projangles, phi, tht, ant, symmetry="c1"):
 	from utilities import getvec, getfvec
 	from math import cos, pi, degrees, radians
 
 	cone = cos(radians(ant))
 	la = []
-	if( symmetry == 'c1' ):
-		vec = getfvec( phi, tht )
-		for i in range( len(projangles) ):
-			vecs = getvec( projangles[i][0], projangles[i][1] )
-			s = vecs[0]*vec[0] + vecs[1]*vec[1] + vecs[2]*vec[2]
+	if symmetry == "c1":
+		vec = getfvec(phi, tht)
+		for i in range(len(projangles)):
+			vecs = getvec(projangles[i][0], projangles[i][1])
+			s = vecs[0] * vec[0] + vecs[1] * vec[1] + vecs[2] * vec[2]
 			if s >= cone:
 				la.append(projangles[i])
-	elif( symmetry[:1] == "c" ):
+	elif symmetry[:1] == "c":
 		nsym = int(symmetry[1:])
-		qt = 360.0/nsym
-		dvec = 	[0.0]*nsym
+		qt = 360.0 / nsym
+		dvec = [0.0] * nsym
 		for nsm in range(nsym):
-			dvec[nsm] = getvec(phi+nsm*qt, tht)
-		for i in range( len(projangles) ):
-			vecs = getfvec( projangles[i][0], projangles[i][1] )
+			dvec[nsm] = getvec(phi + nsm * qt, tht)
+		for i in range(len(projangles)):
+			vecs = getfvec(projangles[i][0], projangles[i][1])
 			qt = -2.0
 			for nsm in range(nsym):
-				vc = dvec[nsm][0]*vecs[0] + dvec[nsm][1]*vecs[1] + dvec[nsm][2]*vecs[2]
-				if(vc > qt):  qt = vc
-			if(qt >= cone):
+				vc = (
+					dvec[nsm][0] * vecs[0]
+					+ dvec[nsm][1] * vecs[1]
+					+ dvec[nsm][2] * vecs[2]
+				)
+				if vc > qt:
+					qt = vc
+			if qt >= cone:
 				la.append(projangles[i])
-	elif( symmetry[:1] == "d" ):
+	elif symmetry[:1] == "d":
 		nsym = int(symmetry[1:])
-		qt = 360.0/nsym
-		dvec = 	[0.0]*2*nsym
+		qt = 360.0 / nsym
+		dvec = [0.0] * 2 * nsym
 		for nsm in range(nsym):
-			dvec[2*nsm] = getvec(phi+nsm*qt, tht)
-			dvec[2*nsm+1] = getvec(-(phi+nsm*qt), 180.0-tht)
-		for i in range( len(projangles) ):
-			vecs = getfvec( projangles[i][0], projangles[i][1] )
+			dvec[2 * nsm] = getvec(phi + nsm * qt, tht)
+			dvec[2 * nsm + 1] = getvec(-(phi + nsm * qt), 180.0 - tht)
+		for i in range(len(projangles)):
+			vecs = getfvec(projangles[i][0], projangles[i][1])
 			qt = -2.0
 			qk = -1
-			for nsm in range(2*nsym):
-				vc = dvec[nsm][0]*vecs[0] + dvec[nsm][1]*vecs[1] + dvec[nsm][2]*vecs[2]
-				if(vc > qt):
+			for nsm in range(2 * nsym):
+				vc = (
+					dvec[nsm][0] * vecs[0]
+					+ dvec[nsm][1] * vecs[1]
+					+ dvec[nsm][2] * vecs[2]
+				)
+				if vc > qt:
 					qt = vc
 					qk = nsm
-			if(qt >= cone):
-				if(qk<nsym):  la.append(projangles[i])
-				else:         la.append([projangles[i][0],projangles[i][1],(projangles[i][2]+180.0)%360.0])
-	
-	else:  print("Symmetry not supported ",symmetry)
+			if qt >= cone:
+				if qk < nsym:
+					la.append(projangles[i])
+				else:
+					la.append(
+						[
+							projangles[i][0],
+							projangles[i][1],
+							(projangles[i][2] + 180.0) % 360.0,
+						]
+					)
+
+	else:
+		print("Symmetry not supported ", symmetry)
 	return la
 
+
 #  Push to C.  PAP  11/25/2016
-def cone_ang_f( projangles, phi, tht, ant, symmetry = 'c1'):
+def cone_ang_f(projangles, phi, tht, ant, symmetry="c1"):
 	from utilities import getfvec
 	from math import cos, pi, degrees, radians
 
 	cone = cos(radians(ant))
 	la = []
-	if( symmetry == 'c1' ):
-		vec = getfvec( phi, tht )
-		for i in range( len(projangles) ):
-			vecs = getfvec( projangles[i][0], projangles[i][1] )
-			s = vecs[0]*vec[0] + vecs[1]*vec[1] + vecs[2]*vec[2]
+	if symmetry == "c1":
+		vec = getfvec(phi, tht)
+		for i in range(len(projangles)):
+			vecs = getfvec(projangles[i][0], projangles[i][1])
+			s = vecs[0] * vec[0] + vecs[1] * vec[1] + vecs[2] * vec[2]
 			if s >= cone:
 				la.append(projangles[i])
-	elif( symmetry[:1] == "c" ):
+	elif symmetry[:1] == "c":
 		nsym = int(symmetry[1:])
-		qt = 360.0/nsym
-		dvec = 	[0.0]*nsym
+		qt = 360.0 / nsym
+		dvec = [0.0] * nsym
 		for nsm in range(nsym):
-			dvec[nsm] = getfvec(phi+nsm*qt, tht)
-		for i in range( len(projangles) ):
-			vecs = getfvec( projangles[i][0], projangles[i][1] )
+			dvec[nsm] = getfvec(phi + nsm * qt, tht)
+		for i in range(len(projangles)):
+			vecs = getfvec(projangles[i][0], projangles[i][1])
 			qt = -2.0
 			for nsm in range(nsym):
-				vc = dvec[nsm][0]*vecs[0] + dvec[nsm][1]*vecs[1] + dvec[nsm][2]*vecs[2]
-				if(vc > qt):  qt = vc
-			if(qt >= cone):
+				vc = (
+					dvec[nsm][0] * vecs[0]
+					+ dvec[nsm][1] * vecs[1]
+					+ dvec[nsm][2] * vecs[2]
+				)
+				if vc > qt:
+					qt = vc
+			if qt >= cone:
 				la.append(projangles[i])
-	elif( symmetry[:1] == "d" ):
+	elif symmetry[:1] == "d":
 		nsym = int(symmetry[1:])
-		qt = 360.0/nsym
-		dvec = 	[0.0]*2*nsym
+		qt = 360.0 / nsym
+		dvec = [0.0] * 2 * nsym
 		for nsm in range(nsym):
-			dvec[2*nsm] = getfvec(phi+nsm*qt, tht)
-			dvec[2*nsm+1] = getfvec(-(phi+nsm*qt), 180.0-tht)
-		for i in range( len(projangles) ):
-			vecs = getfvec( projangles[i][0], projangles[i][1] )
+			dvec[2 * nsm] = getfvec(phi + nsm * qt, tht)
+			dvec[2 * nsm + 1] = getfvec(-(phi + nsm * qt), 180.0 - tht)
+		for i in range(len(projangles)):
+			vecs = getfvec(projangles[i][0], projangles[i][1])
 			qt = -2.0
 			qk = -1
-			for nsm in range(2*nsym):
-				vc = dvec[nsm][0]*vecs[0] + dvec[nsm][1]*vecs[1] + dvec[nsm][2]*vecs[2]
-				if(vc > qt):
+			for nsm in range(2 * nsym):
+				vc = (
+					dvec[nsm][0] * vecs[0]
+					+ dvec[nsm][1] * vecs[1]
+					+ dvec[nsm][2] * vecs[2]
+				)
+				if vc > qt:
 					qt = vc
 					qk = nsm
-			if(qt >= cone):
-				if(qk<nsym):  la.append(projangles[i])
-				else:         la.append([projangles[i][0],projangles[i][1],(projangles[i][2]+180.0)%360.0])
-	
-	else:  print("Symmetry not supported ",symmetry)
+			if qt >= cone:
+				if qk < nsym:
+					la.append(projangles[i])
+				else:
+					la.append(
+						[
+							projangles[i][0],
+							projangles[i][1],
+							(projangles[i][2] + 180.0) % 360.0,
+						]
+					)
+
+	else:
+		print("Symmetry not supported ", symmetry)
 
 	return la
 
@@ -4003,26 +5142,30 @@ def cone_ang_f_with_index( projangles, phi, tht, ant ):
 	return la, index
 """
 
-def cone_ang_with_index( projangles, phi, tht, ant ):
+
+def cone_ang_with_index(projangles, phi, tht, ant):
 	from utilities import getvec
 	from math import cos, pi, degrees, radians
+
 	# vec = getvec( phi, tht )
-	vec = getfvec( phi, tht )
+	vec = getfvec(phi, tht)
 
 	cone = cos(radians(ant))
 	la = []
 	index = []
-	for i in range( len(projangles) ):
+	for i in range(len(projangles)):
 		# vecs = getvec( projangles[i][0], projangles[i][1] )
-		vecs = getfvec( projangles[i][0], projangles[i][1] )
-		s = vecs[0]*vec[0] + vecs[1]*vec[1] + vecs[2]*vec[2]
+		vecs = getfvec(projangles[i][0], projangles[i][1])
+		s = vecs[0] * vec[0] + vecs[1] * vec[1] + vecs[2] * vec[2]
 		# if s >= cone:
 		if abs(s) >= cone:
 			la.append(projangles[i] + [i])
 			index.append(i)
 
 	return la, index
-'''
+
+
+"""
 def cone_vectors( normvectors, phi, tht, ant ):
 	from utilities import getvec
 	from math import cos, pi, degrees, radians
@@ -4036,12 +5179,14 @@ def cone_vectors( normvectors, phi, tht, ant ):
 			la.append(normvectors[i])
 
 	return la
-'''
+"""
 
 #  Wrappers for new angular functions
 def angles_to_normals(angles):
 	temp = Util.angles_to_normals(angles)
-	return [[temp[l*3+i] for i in range(3)] for l in range(len(angles)) ]
+	return [[temp[l * 3 + i] for i in range(3)] for l in range(len(angles))]
+
+
 """
 def symmetry_related(angles, symmetry):  # replace by s.symmetry_related
 	if( (symmetry[0] == "c") or (symmetry[0] == "d") ):
@@ -4068,29 +5213,30 @@ def symmetry_related_normals(angles, symmetry):
 	return neighbors
 """
 
-def angular_occupancy(params, angstep = 15., sym= "c1", method='S'):
+
+def angular_occupancy(params, angstep=15.0, sym="c1", method="S"):
 	from fundamentals import symclass
 	from utilities import nearest_fang, angles_to_normals
 
-	smc  = symclass(sym)
-	eah  = smc.even_angles(angstep, inc_mirror=0, method=method)
+	smc = symclass(sym)
+	eah = smc.even_angles(angstep, inc_mirror=0, method=method)
 
 	leah = len(eah)
 	u = []
 	for q in eah:
-		#print("q",q)
-		m = smc.symmetry_related([(180.0+q[0])%360.0,180.0-q[1],0.0])
-		#print("m",m)
+		# print("q",q)
+		m = smc.symmetry_related([(180.0 + q[0]) % 360.0, 180.0 - q[1], 0.0])
+		# print("m",m)
 		itst = len(u)
 		for c in m:
-			#print("c",c)
-			if smc.is_in_subunit(c[0],c[1],1) :
-				#print(" is in 1")
-				if not smc.is_in_subunit(c[0],c[1],0) :
-					#print("  outside")
+			# print("c",c)
+			if smc.is_in_subunit(c[0], c[1], 1):
+				# print(" is in 1")
+				if not smc.is_in_subunit(c[0], c[1], 0):
+					# print("  outside")
 					u.append(c)
 					break
-		if(len(u) != itst+1):
+		if len(u) != itst + 1:
 			u.append(q)  #  This is for exceptions that cannot be easily handled
 			"""
 			print(q)
@@ -4098,50 +5244,57 @@ def angular_occupancy(params, angstep = 15., sym= "c1", method='S'):
 			ERROR("balance angles","Fill up upper",1)
 			"""
 	seaf = []
-	for q in eah+u:  seaf += smc.symmetry_related(q)
+	for q in eah + u:
+		seaf += smc.symmetry_related(q)
 
-	lseaf = len(seaf)/(2*leah)
-	#print(lseaf)
-	#for i,q in enumerate(seaf):  print(" seaf  ",i,q)
-	#print(seaf)
+	lseaf = len(seaf) / (2 * leah)
+	# print(lseaf)
+	# for i,q in enumerate(seaf):  print(" seaf  ",i,q)
+	# print(seaf)
 	seaf = angles_to_normals(seaf)
 
 	occupancy = [[] for i in range(leah)]
 
-	for i,q in enumerate(params):
-		l = nearest_fang(seaf,q[0],q[1])
-		l = l/lseaf
-		if(l>=leah):  l = l-leah
+	for i, q in enumerate(params):
+		l = nearest_fang(seaf, q[0], q[1])
+		l = l / lseaf
+		if l >= leah:
+			l = l - leah
 		occupancy[l].append(i)
-	#for i,q in enumerate(occupancy):
-	#	if q:
-	#		print("  ",i,q,eah[i])
+		# for i,q in enumerate(occupancy):
+		# 	if q:
+		# 		print("  ",i,q,eah[i])
 	return occupancy, eah
 
 
-def angular_histogram(params, angstep = 15., sym= "c1", method='S'):
+def angular_histogram(params, angstep=15.0, sym="c1", method="S"):
 	occupancy, eah = angular_occupancy(params, angstep, sym, method)
-	return  [len(q) for q in occupancy], eah
+	return [len(q) for q in occupancy], eah
 
-def balance_angular_distribution(params, max_occupy = -1, angstep = 15., sym= "c1"):
+
+def balance_angular_distribution(params, max_occupy=-1, angstep=15.0, sym="c1"):
 	from fundamentals import symclass
-	occupancy,eah = angular_occupancy(params, angstep, sym, method='S')
 
-	if(max_occupy > 0):
+	occupancy, eah = angular_occupancy(params, angstep, sym, method="S")
+
+	if max_occupy > 0:
 		outo = []
 		from random import shuffle
-		for l,q in enumerate(occupancy):
+
+		for l, q in enumerate(occupancy):
 			shuffle(q)
 			q = q[:max_occupy]
 			outo += q
-			print("  %10d   %10d        %6.1f   %6.1f"%(l,len(q),eah[l][0],eah[l][1]))
-			#print(l,len(q),q)
+			print(
+				"  %10d   %10d        %6.1f   %6.1f" % (l, len(q), eah[l][0], eah[l][1])
+			)
+			# print(l,len(q),q)
 		outo.sort()
-		#write_text_file(outo,"select.txt")
+		# write_text_file(outo,"select.txt")
 		return outo
 	else:
-		#for l,q in enumerate(occupancy):
-		#	print("  %10d   %10d        %6.1f   %6.1f"%(l,len(q),eah[l][0],eah[l][1]))
+		# for l,q in enumerate(occupancy):
+		# 	print("  %10d   %10d        %6.1f   %6.1f"%(l,len(q),eah[l][0],eah[l][1]))
 		return occupancy
 
 
@@ -4149,14 +5302,16 @@ def symmetry_neighbors(angles, symmetry):
 	#  input is a list of lists  [[phi0,theta0,psi0],[phi1,theta1,psi1],...]
 	#  output is [[phi0,theta0,psi0],[phi0,theta0,psi0]_SYM1,...,[phi1,theta1,psi1],[phi1,theta1,psi1]_SYM1,...]
 	temp = Util.symmetry_neighbors(angles, symmetry)
-	nt = len(temp)/3
-	return [[temp[l*3+i] for i in range(3)] for l in range(nt) ]
+	nt = len(temp) / 3
+	return [[temp[l * 3 + i] for i in range(3)] for l in range(nt)]
 	#  We could make it a list of lists
-	#mt = len(angles)
-	#nt = len(temp)/mt/3
-	#return [[ [temp[m*3*nt+l*3+i] for i in xrange(3)] for l in xrange(nt)] for m in xrange(mt) ]
+	# mt = len(angles)
+	# nt = len(temp)/mt/3
+	# return [[ [temp[m*3*nt+l*3+i] for i in xrange(3)] for l in xrange(nt)] for m in xrange(mt) ]
 
-#def nearest_angular_direction(normals, vect, symmetry):
+
+# def nearest_angular_direction(normals, vect, symmetry):
+
 
 def rotation_between_anglesets(agls1, agls2):
 	"""
@@ -4165,25 +5320,25 @@ def rotation_between_anglesets(agls1, agls2):
 	  list corresponds to the k'th element on the second list.
 	  Input: two lists [[phi1, theta1, psi1], [phi2, theta2, psi2], ...].  Second list is considered reference.
 	  Output: overall rotation phi, theta, psi that has to be applied to the first list (agls1) so resulting
-	    angles will agree with the second list.
+		angles will agree with the second list.
 	  Note: all angles have to be in spider convention.
 	  For details see: Appendix in Penczek, P., Marko, M., Buttle, K. and Frank, J.:  Double-tilt electron tomography.  Ultramicroscopy 60:393-410, 1995.
 	"""
-	from math  import sin, cos, pi, sqrt, atan2, acos, atan, radians
+	from math import sin, cos, pi, sqrt, atan2, acos, atan, radians
 	from numpy import array, linalg, matrix
 	import types
 
 	def ori2xyz(ori):
-		if(type(ori) == list):
+		if type(ori) == list:
 			phi, theta, psi = ori[:3]
 		else:
 			# it has to be Transformation object
 			d = ori.get_params("spider")
-			phi   = d["phi"]
+			phi = d["phi"]
 			theta = d["theta"]
-			#psi   = d["psi"]
+			# psi   = d["psi"]
 
-		phi   = radians(phi)
+		phi = radians(phi)
 		theta = radians(theta)
 		sint = sin(theta)
 		x = sint * sin(phi)
@@ -4194,42 +5349,84 @@ def rotation_between_anglesets(agls1, agls2):
 
 	N = len(agls1)
 	if N != len(agls2):
-		ERROR('rotation_between_anglesets', 'Both lists must have the same length',1)
+		ERROR("rotation_between_anglesets", "Both lists must have the same length", 1)
 		return -1
 	if N < 2:
-		ERROR('rotation_between_anglesets',  'At least two orientations are required in each list',1)
+		ERROR(
+			"rotation_between_anglesets",
+			"At least two orientations are required in each list",
+			1,
+		)
 		return -1
 
 	U1 = [ori2xyz(q) for q in agls1]
 	U2 = [ori2xyz(q) for q in agls2]
 
 	# compute all Suv with uv = {xx, xy, xz, yx, ..., zz}
-	Suv   = [0] * 9
+	Suv = [0] * 9
 
 	nbori = len(U1)
 	for i in range(3):
 		for j in range(3):
 			for s in range(nbori):
-				Suv[j+3*i] += (U2[s][i] * U1[s][j])
+				Suv[j + 3 * i] += U2[s][i] * U1[s][j]
 
-	# create matrix N
-	N = array([[Suv[0]+Suv[4]+Suv[8], Suv[5]-Suv[7],    Suv[6]-Suv[2],                 Suv[1]-Suv[3]],
-		   [Suv[5]-Suv[7],        Suv[0]-Suv[4]-Suv[8], Suv[1]+Suv[3],                 Suv[6]+Suv[2]],
-		   [Suv[6]-Suv[2],        Suv[1]+Suv[3],        -Suv[0]+Suv[4]-Suv[8],         Suv[5]+Suv[7]],
-		   [Suv[1]-Suv[3],        Suv[6]+Suv[2],        Suv[5]+Suv[7],         -Suv[0]-Suv[4]+Suv[8]]])
+				# create matrix N
+	N = array(
+		[
+			[
+				Suv[0] + Suv[4] + Suv[8],
+				Suv[5] - Suv[7],
+				Suv[6] - Suv[2],
+				Suv[1] - Suv[3],
+			],
+			[
+				Suv[5] - Suv[7],
+				Suv[0] - Suv[4] - Suv[8],
+				Suv[1] + Suv[3],
+				Suv[6] + Suv[2],
+			],
+			[
+				Suv[6] - Suv[2],
+				Suv[1] + Suv[3],
+				-Suv[0] + Suv[4] - Suv[8],
+				Suv[5] + Suv[7],
+			],
+			[
+				Suv[1] - Suv[3],
+				Suv[6] + Suv[2],
+				Suv[5] + Suv[7],
+				-Suv[0] - Suv[4] + Suv[8],
+			],
+		]
+	)
 
 	# eigenvector corresponding to the most positive eigenvalue
 	val, vec = linalg.eig(N)
 	q0, qx, qy, qz = vec[:, val.argmax()]
 	# create quaternion Rot matrix
 	r = [
-		[q0*q0-qx*qx+qy*qy-qz*qz,         2*(qy*qx+q0*qz),          2*(qy*qz-q0*qx)],
-		[2*(qx*qy-q0*qz),                 q0*q0+qx*qx-qy*qy-qz*qz,  2*(qx*qz+q0*qy)],
-		[2*(qz*qy+q0*qx),                 2*(qz*qx-q0*qy),          q0*q0-qx*qx-qy*qy+qz*qz],
-		]
+		[
+			q0 * q0 - qx * qx + qy * qy - qz * qz,
+			2 * (qy * qx + q0 * qz),
+			2 * (qy * qz - q0 * qx),
+		],
+		[
+			2 * (qx * qy - q0 * qz),
+			q0 * q0 + qx * qx - qy * qy - qz * qz,
+			2 * (qx * qz + q0 * qy),
+		],
+		[
+			2 * (qz * qy + q0 * qx),
+			2 * (qz * qx - q0 * qy),
+			q0 * q0 - qx * qx - qy * qy + qz * qz,
+		],
+	]
 
 	from fundamentals import recmat
-	return  recmat(r)
+
+	return recmat(r)
+
 
 def angle_between_projections_directions(proj1, proj2):
 	"""
@@ -4239,13 +5436,16 @@ def angle_between_projections_directions(proj1, proj2):
 	"""
 	from math import sin, cos, acos, radians, degrees
 	from utilities import lacos
+
 	theta1 = radians(proj1[1])
 	theta2 = radians(proj2[1])
 	cp1cp2_sp1sp2 = cos(radians(proj1[0]) - radians(proj2[0]))
 	temp = sin(theta1) * sin(theta2) * cp1cp2_sp1sp2 + cos(theta1) * cos(theta2)
-	return lacos( temp )
+	return lacos(temp)
+
 
 getang3 = angle_between_projections_directions
+
 
 def angles_between_anglesets(angleset1, angleset2, indexes=None):
 	"""
@@ -4259,7 +5459,10 @@ def angles_between_anglesets(angleset1, angleset2, indexes=None):
 	  The third parameter (indexes) is optional and may be set to list of indexes. In that case only elements from given list are taken into account.
 	"""
 	from fundamentals import rotate_params
-	from utilities import rotation_between_anglesets, angle_between_projections_directions
+	from utilities import (
+		rotation_between_anglesets,
+		angle_between_projections_directions,
+	)
 
 	if indexes != None:
 		new_ang1 = []
@@ -4271,8 +5474,14 @@ def angles_between_anglesets(angleset1, angleset2, indexes=None):
 		angleset2 = new_ang2
 
 	rot = rotation_between_anglesets(angleset1, angleset2)
-	angleset1 = rotate_params([angleset1[i] for i in range(len(angleset1))],[-rot[2],-rot[1],-rot[0]])
-	return [angle_between_projections_directions(angleset1[i], angleset2[i]) for i in range(len(angleset1))]
+	angleset1 = rotate_params(
+		[angleset1[i] for i in range(len(angleset1))], [-rot[2], -rot[1], -rot[0]]
+	)
+	return [
+		angle_between_projections_directions(angleset1[i], angleset2[i])
+		for i in range(len(angleset1))
+	]
+
 
 """
 Not used and possibly incorrect
@@ -4317,6 +5526,7 @@ def average_angles(angles):
 	return r
 """
 
+
 def get_pixel_size(img):
 	"""
 	  Retrieve pixel size from the header.
@@ -4330,15 +5540,16 @@ def get_pixel_size(img):
 	else:
 		p2 = round(cc.apix, 3)
 	if p1 == -1.0 and p2 == -1.0:
-		#ERROR("Pixel size not set", "get_pixel_size", 0)
+		# ERROR("Pixel size not set", "get_pixel_size", 0)
 		return -1.0
 	elif p1 > -1.0 and p2 > -1.0:
-		#if abs(p1-p2) >= 0.001:
-		#	ERROR("Conflict between pixel size in attribute and in ctf object", "get_pixel_size", 0)
+		# if abs(p1-p2) >= 0.001:
+		# 	ERROR("Conflict between pixel size in attribute and in ctf object", "get_pixel_size", 0)
 		# pixel size is positive, so what follows omits -1 problem
 		return max(p1, p2)
 	else:
 		return max(p1, p2)
+
 
 def set_pixel_size(img, pixel_size):
 	"""
@@ -4350,20 +5561,23 @@ def set_pixel_size(img, pixel_size):
 	img.set_attr("apix_y", round(pixel_size, 3))
 	img.set_attr("apix_z", round(pixel_size, 3))
 	cc = img.get_attr_default("ctf", None)
-	if(cc):
+	if cc:
 		cc.apix = pixel_size
 		img.set_attr("ctf", cc)
 
-def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, verbose = False):
+
+def group_proj_by_phitheta_slow(
+	proj_ang, symmetry="c1", img_per_grp=100, verbose=False
+):
 	from time import time
 	from math import exp, pi
 
 	def get_ref_ang_list(delta, sym):
 		ref_ang = even_angles(delta, symmetry=sym)
-		ref_ang_list = [0.0]*(len(ref_ang)*2)
+		ref_ang_list = [0.0] * (len(ref_ang) * 2)
 		for i in range(len(ref_ang)):
-			ref_ang_list[2*i] = ref_ang[i][0]
-			ref_ang_list[2*i+1] = ref_ang[i][1]
+			ref_ang_list[2 * i] = ref_ang[i][0]
+			ref_ang_list[2 * i + 1] = ref_ang[i][1]
 		return ref_ang_list, len(ref_ang)
 
 	def ang_diff(v1, v2):
@@ -4371,31 +5585,39 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 		# The second return value is whether we need to mirror one of them (0 - no need, 1 - need)
 		from utilities import lacos
 
-		v = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
-		if v >= 0: return lacos(v), 0
-		else:      return lacos(-v), 1
+		v = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]
+		if v >= 0:
+			return lacos(v), 0
+		else:
+			return lacos(-v), 1
 
 	t0 = time()
 	proj_list = []
 	angles_list = []
 	N = len(proj_ang)
-	if len(proj_ang[0]) == 3:       # determine whether it has shifts provided, make the program more robust
+	if (
+		len(proj_ang[0]) == 3
+	):  # determine whether it has shifts provided, make the program more robust
 		for i in range(N):
 			proj_ang[i].append(i)
 			proj_ang[i].append(True)
-			vec = getfvec(proj_ang[i][0], proj_ang[i][1])     # pre-calculate the vector for each projection angles
+			vec = getfvec(
+				proj_ang[i][0], proj_ang[i][1]
+			)  # pre-calculate the vector for each projection angles
 			proj_ang[i].append(vec)
 	else:
 		for i in range(N):
 			proj_ang[i][3] = i
 			proj_ang[i][4] = True
-			vec = getfvec(proj_ang[i][0], proj_ang[i][1])     # pre-calculate the vector for each projection angles
+			vec = getfvec(
+				proj_ang[i][0], proj_ang[i][1]
+			)  # pre-calculate the vector for each projection angles
 			proj_ang[i].append(vec)
 
-	ref_ang_list1, nref1 = get_ref_ang_list(20.0, sym = symmetry)
-	ref_ang_list2, nref2 = get_ref_ang_list(10.0, sym = symmetry)
-	ref_ang_list3, nref3 = get_ref_ang_list(5.0, sym = symmetry)
-	ref_ang_list4, nref4 = get_ref_ang_list(2.5, sym = symmetry)
+	ref_ang_list1, nref1 = get_ref_ang_list(20.0, sym=symmetry)
+	ref_ang_list2, nref2 = get_ref_ang_list(10.0, sym=symmetry)
+	ref_ang_list3, nref3 = get_ref_ang_list(5.0, sym=symmetry)
+	ref_ang_list4, nref4 = get_ref_ang_list(2.5, sym=symmetry)
 
 	c = 100
 	L = max(100, img_per_grp)
@@ -4403,30 +5625,30 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 	# If we are, we are only going to read the table and avoid calculating the distance again.
 	previous_group = -1
 	previous_zone = 5
-	for grp in range(N/img_per_grp):
-		print(grp, end=' ')
-		N_remain = N-grp*img_per_grp
+	for grp in range(N / img_per_grp):
+		print(grp, end=" ")
+		N_remain = N - grp * img_per_grp
 		# The idea here is that if each group has more than 100 images in average,
 		# we consider it crowded enough to just consider the most crowded group.
-		if N_remain >= nref4*L:
+		if N_remain >= nref4 * L:
 			ref_ang_list = ref_ang_list4
 			nref = nref4
 			if previous_zone > 4:
 				previous_group = -1
 				previous_zone = 4
-		elif N_remain >= nref3*L:
+		elif N_remain >= nref3 * L:
 			ref_ang_list = ref_ang_list3
 			nref = nref3
 			if previous_zone > 3:
 				previous_group = -1
 				previous_zone = 3
-		elif N_remain >= nref2*L:
+		elif N_remain >= nref2 * L:
 			ref_ang_list = ref_ang_list2
 			nref = nref2
 			if previous_zone > 2:
 				previous_group = -1
 				previous_zone = 2
-		elif N_remain >= nref1*L:
+		elif N_remain >= nref1 * L:
 			ref_ang_list = ref_ang_list1
 			nref = nref1
 			if previous_zone > 1:
@@ -4440,29 +5662,29 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 		t1 = time()
 		v = []
 		index = []
-		if N_remain >= nref1*L:
+		if N_remain >= nref1 * L:
 			# In this case, assign all projection to groups and only consider the most crowded group.
-			proj_ang_list = [0.0]*(N_remain*2)
+			proj_ang_list = [0.0] * (N_remain * 2)
 			nn = 0
-			remain_index = [0]*N_remain
+			remain_index = [0] * N_remain
 			for i in range(N):
 				if proj_ang[i][4]:
-					proj_ang_list[nn*2] = proj_ang[i][0]
-					proj_ang_list[nn*2+1] = proj_ang[i][1]
+					proj_ang_list[nn * 2] = proj_ang[i][0]
+					proj_ang_list[nn * 2 + 1] = proj_ang[i][1]
 					remain_index[nn] = i
 					nn += 1
 			asg = Util.assign_projangles(proj_ang_list, ref_ang_list)
 			assignments = [[] for i in range(nref)]
 			for i in range(N_remain):
 				assignments[asg[i]].append(i)
-			# find the largest group and record the group size and group number
+				# find the largest group and record the group size and group number
 			max_group_size = 0
 			max_group = -1
 			for i in range(nref):
 				if len(assignments[i]) > max_group_size:
 					max_group_size = len(assignments[i])
 					max_group = i
-			print(max_group_size, max_group, previous_group, end=' ')
+			print(max_group_size, max_group, previous_group, end=" ")
 			for i in range(len(assignments[max_group])):
 				ind = remain_index[assignments[max_group][i]]
 				v.append(proj_ang[ind][5])
@@ -4480,17 +5702,18 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 		density = [[0.0, 0] for i in range(Nn)]
 		if max_group != previous_group:
 			diff_table = [[0.0 for i in range(Nn)] for j in range(Nn)]
-			for i in range(Nn-1):
-				for j in range(i+1, Nn):
+			for i in range(Nn - 1):
+				for j in range(i + 1, Nn):
 					diff = ang_diff(v[i], v[j])
-					q = exp(-c*(diff[0]/180.0*pi)**2)
+					q = exp(-c * (diff[0] / 180.0 * pi) ** 2)
 					diff_table[i][j] = q
 					diff_table[j][i] = q
 			diff_table_index = dict()
-			for i in range(Nn): diff_table_index[index[i]] = i
-			print(Nn, True, end=' ')
+			for i in range(Nn):
+				diff_table_index[index[i]] = i
+			print(Nn, True, end=" ")
 		else:
-			print(Nn, False, end=' ')
+			print(Nn, False, end=" ")
 
 		t21 = time()
 		for i in range(Nn):
@@ -4506,11 +5729,11 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 			diff = ang_diff(v[i], v[most_dense_point])
 			dang[i][0] = diff[0]
 			dang[i][1] = i
-		dang[most_dense_point][0] = -1.
+		dang[most_dense_point][0] = -1.0
 		dang.sort()
 
 		t4 = time()
-		members = [0]*img_per_grp
+		members = [0] * img_per_grp
 		for i in range(img_per_grp):
 			idd = index[dang[i][1]]
 			for j in range(len(diff_table)):
@@ -4520,26 +5743,29 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 			proj_ang[members[i]][4] = False
 		proj_list.append(members)
 		center_i = index[dang[0][1]]
-		angles_list.append([proj_ang[center_i][0], proj_ang[center_i][1], dang[img_per_grp-1][0]])
+		angles_list.append(
+			[proj_ang[center_i][0], proj_ang[center_i][1], dang[img_per_grp - 1][0]]
+		)
 		previous_group = max_group
-		print(t2-t1, t3-t2, t22-t21, t3-t22, t4-t3)
+		print(t2 - t1, t3 - t2, t22 - t21, t3 - t22, t4 - t3)
 
-	if N%img_per_grp*3 >= 2*img_per_grp:
+	if N % img_per_grp * 3 >= 2 * img_per_grp:
 		members = []
 		for i in range(N):
 			if proj_ang[i][4]:
 				members.append(i)
 		proj_list.append(members)
 		angles_list.append([proj_ang[members[0]][0], proj_ang[members[0]][1], 90.0])
-	elif N%img_per_grp != 0:
+	elif N % img_per_grp != 0:
 		for i in range(N):
 			if proj_ang[i][4]:
 				proj_list[-1].append(i)
-	print("Total time used = ", time()-t0)
+	print("Total time used = ", time() - t0)
 
 	return proj_list, angles_list
 
-def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, verbose = False):
+
+def group_proj_by_phitheta(proj_ang, symmetry="c1", img_per_grp=100, verbose=False):
 	from math import exp, pi
 
 	def ang_diff(v1, v2):
@@ -4547,29 +5773,30 @@ def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, verbose
 		# The second return value is whether we need to mirror one of them (0 - no need, 1 - need)
 		from utilities import lacos
 
-		v = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
-		if v >= 0: return lacos(v), 0
-		else:  return lacos(-v), 1
-
+		v = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]
+		if v >= 0:
+			return lacos(v), 0
+		else:
+			return lacos(-v), 1
 
 	def get_ref_ang_list(delta, sym):
 		ref_ang = even_angles(delta, symmetry=sym)
-		ref_ang_list = [0.0]*(len(ref_ang)*2)
+		ref_ang_list = [0.0] * (len(ref_ang) * 2)
 		for i in range(len(ref_ang)):
-			ref_ang_list[2*i] = ref_ang[i][0]
-			ref_ang_list[2*i+1] = ref_ang[i][1]
+			ref_ang_list[2 * i] = ref_ang[i][0]
+			ref_ang_list[2 * i + 1] = ref_ang[i][1]
 		return ref_ang_list, len(ref_ang)
 
 	N = len(proj_ang)
-	proj_ang_list = [0]*(N*2)
+	proj_ang_list = [0] * (N * 2)
 	for i in range(N):
-		proj_ang_list[i*2] = proj_ang[i][0]
-		proj_ang_list[i*2+1] = proj_ang[i][1]
+		proj_ang_list[i * 2] = proj_ang[i][0]
+		proj_ang_list[i * 2 + 1] = proj_ang[i][1]
 
-	ref_ang_list1, nref1 = get_ref_ang_list(20.0, sym = symmetry)
-	ref_ang_list2, nref2 = get_ref_ang_list(10.0, sym = symmetry)
-	ref_ang_list3, nref3 = get_ref_ang_list(5.0, sym = symmetry)
-	ref_ang_list4, nref4 = get_ref_ang_list(2.5, sym = symmetry)
+	ref_ang_list1, nref1 = get_ref_ang_list(20.0, sym=symmetry)
+	ref_ang_list2, nref2 = get_ref_ang_list(10.0, sym=symmetry)
+	ref_ang_list3, nref3 = get_ref_ang_list(5.0, sym=symmetry)
+	ref_ang_list4, nref4 = get_ref_ang_list(2.5, sym=symmetry)
 
 	ref_ang_list = []
 	ref_ang_list.extend(ref_ang_list1)
@@ -4583,52 +5810,62 @@ def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, verbose
 	proj_list = Util.group_proj_by_phitheta(proj_ang_list, ref_ang_list, img_per_grp)
 
 	proj_list2 = proj_list[:]
-	for i in range(len(proj_list2)): proj_list2[i] = abs(proj_list2[i])
+	for i in range(len(proj_list2)):
+		proj_list2[i] = abs(proj_list2[i])
 	proj_list2.sort()
 	assert N == len(proj_list2)
-	for i in range(N): assert i == proj_list2[i]
+	for i in range(N):
+		assert i == proj_list2[i]
 
-	Ng = N/img_per_grp
+	Ng = N / img_per_grp
 	proj_list_new = [[] for i in range(Ng)]
 	mirror_list = [[] for i in range(Ng)]
 	angles_list = []
 	for i in range(Ng):
 		for j in range(img_per_grp):
-			proj_list_new[i].append(abs(proj_list[i*img_per_grp+j]));
-			mirror_list[i].append(proj_list[i*img_per_grp+j] >= 0)
-		phi1 = proj_ang[proj_list_new[i][0]][0];
-		theta1 = proj_ang[proj_list_new[i][0]][1];
-		phi2 = proj_ang[proj_list_new[i][-1]][0];
-		theta2 = proj_ang[proj_list_new[i][-1]][1];
-		angles_list.append([phi1, theta1, ang_diff(getfvec(phi1, theta1), getfvec(phi2, theta2))[0]]);
+			proj_list_new[i].append(abs(proj_list[i * img_per_grp + j]))
+			mirror_list[i].append(proj_list[i * img_per_grp + j] >= 0)
+		phi1 = proj_ang[proj_list_new[i][0]][0]
+		theta1 = proj_ang[proj_list_new[i][0]][1]
+		phi2 = proj_ang[proj_list_new[i][-1]][0]
+		theta2 = proj_ang[proj_list_new[i][-1]][1]
+		angles_list.append(
+			[phi1, theta1, ang_diff(getfvec(phi1, theta1), getfvec(phi2, theta2))[0]]
+		)
 
-	if N%img_per_grp*3 >= 2*img_per_grp:
+	if N % img_per_grp * 3 >= 2 * img_per_grp:
 		proj_list_new.append([])
 		mirror_list.append([])
-		for i in range(Ng*img_per_grp, N):
-			proj_list_new[-1].append(abs(proj_list[i]));
+		for i in range(Ng * img_per_grp, N):
+			proj_list_new[-1].append(abs(proj_list[i]))
 			mirror_list[-1].append(proj_list[i] >= 0)
-		phi1 = proj_ang[proj_list_new[Ng][0]][0];
-		theta1 = proj_ang[proj_list_new[Ng][0]][1];
-		phi2 = proj_ang[proj_list_new[Ng][-1]][0];
-		theta2 = proj_ang[proj_list_new[Ng][-1]][1];
-		angles_list.append([phi1, theta1, ang_diff(getfvec(phi1, theta1), getfvec(phi2, theta2))[0]]);
-	elif N%img_per_grp != 0:
-		for i in range(Ng*img_per_grp, N):
+		phi1 = proj_ang[proj_list_new[Ng][0]][0]
+		theta1 = proj_ang[proj_list_new[Ng][0]][1]
+		phi2 = proj_ang[proj_list_new[Ng][-1]][0]
+		theta2 = proj_ang[proj_list_new[Ng][-1]][1]
+		angles_list.append(
+			[phi1, theta1, ang_diff(getfvec(phi1, theta1), getfvec(phi2, theta2))[0]]
+		)
+	elif N % img_per_grp != 0:
+		for i in range(Ng * img_per_grp, N):
 			proj_list_new[-1].append(abs(proj_list[i]))
 			mirror_list[-1].append(proj_list[i] >= 0)
 
 	return proj_list_new, angles_list, mirror_list
+
 
 def lacos(x):
 	"""
 		compute acos(x) in degrees after enforcing -1<=x<=1
 	"""
 	from math import degrees, acos
-	return  degrees(acos(max(-1.0,min(1.0,x))))
 
-def mulvec(v1,v2):
-	return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
+	return degrees(acos(max(-1.0, min(1.0, x))))
+
+
+def mulvec(v1, v2):
+	return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]
+
 
 def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	from utilities import getfvec
@@ -4643,27 +5880,32 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 		from math import acos, degrees
 		from utilities import lacos
 
-		v = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
-		if v >= 0: return lacos(v), 0
-		else:  return lacos(-v), 1
+		v = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]
+		if v >= 0:
+			return lacos(v), 0
+		else:
+			return lacos(-v), 1
 
 	def get_ref_ang_list(delta, sym):
 		ref_ang = even_angles(delta, symmetry=sym)
-		ref_ang_list = [0.0]*(len(ref_ang)*2)
+		ref_ang_list = [0.0] * (len(ref_ang) * 2)
 		for i in range(len(ref_ang)):
-			ref_ang_list[2*i] = ref_ang[i][0]
-			ref_ang_list[2*i+1] = ref_ang[i][1]
+			ref_ang_list[2 * i] = ref_ang[i][0]
+			ref_ang_list[2 * i + 1] = ref_ang[i][1]
 		return ref_ang_list, len(ref_ang)
 
 	def binary_search(a, x):
 		N = len(a)
 		begin = 0
-		end = N-1
+		end = N - 1
 		while begin <= end:
-			mid = (begin+end)/2
-			if a[mid] == x: return mid
-			if a[mid] < x: begin = mid+1
-			else: end = mid-1
+			mid = (begin + end) / 2
+			if a[mid] == x:
+				return mid
+			if a[mid] < x:
+				begin = mid + 1
+			else:
+				end = mid - 1
 		return -1
 
 	def binary_search_l(a, x):
@@ -4672,19 +5914,25 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 		N = len(a)
 		t = binary_search(a, x)
 		if t != -1:
-			while t-1 >= 0 and a[t-1] == a[t]: t -= 1
+			while t - 1 >= 0 and a[t - 1] == a[t]:
+				t -= 1
 			return t
 		else:
-			if x > a[N-1]: return -1;
-			if x < a[0]: return 0;
+			if x > a[N - 1]:
+				return -1
+			if x < a[0]:
+				return 0
 			begin = 0
-			end = N-2
+			end = N - 2
 			while end >= begin:
-				mid = (begin+end)/2
-				if x > a[mid] and x < a[mid+1]: break;
-				if x < a[mid]: end = mid-1
-				else: begin = mid+1
-			return mid+1
+				mid = (begin + end) / 2
+				if x > a[mid] and x < a[mid + 1]:
+					break
+				if x < a[mid]:
+					end = mid - 1
+				else:
+					begin = mid + 1
+			return mid + 1
 
 	def binary_search_r(a, x):
 		# This function returns an index i such that i is the largest number
@@ -4692,44 +5940,51 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 		N = len(a)
 		t = binary_search(a, x)
 		if t != -1:
-			while t+1 <= N-1 and a[t+1] == a[t]: t += 1
+			while t + 1 <= N - 1 and a[t + 1] == a[t]:
+				t += 1
 			return t
 		else:
-			if x > a[N-1]: return N-1;
-			if x < a[0]: return -1;
+			if x > a[N - 1]:
+				return N - 1
+			if x < a[0]:
+				return -1
 			begin = 0
-			end = N-2
+			end = N - 2
 			while end >= begin:
-				mid = (begin+end)/2
-				if x > a[mid] and x < a[mid+1]: break;
-				if x < a[mid]: end = mid-1
-				else: begin = mid+1
+				mid = (begin + end) / 2
+				if x > a[mid] and x < a[mid + 1]:
+					break
+				if x < a[mid]:
+					end = mid - 1
+				else:
+					begin = mid + 1
 			return mid
 
 	N = len(proj_ang)
-	if len(List) == 0: List = list(range(N))
+	if len(List) == 0:
+		List = list(range(N))
 	if N < img_per_grp:
 		print("Error: image per group larger than the number of particles!")
 		exit()
-	phi_list   = [[0.0, 0] for i in range(N)]
+	phi_list = [[0.0, 0] for i in range(N)]
 	theta_list = [[0.0, 0] for i in range(N)]
-	vec = [None]*N
+	vec = [None] * N
 	for i in range(N):
 		phi = proj_ang[i][0]
 		theta = proj_ang[i][1]
 		vec[i] = getfvec(phi, theta)
 		if theta > 90.0:
-			theta = 180.0-theta
-			phi  += 180.0
-		phi = phi%360.0
-		phi_list[i][0]   = phi
-		phi_list[i][1]   = i
+			theta = 180.0 - theta
+			phi += 180.0
+		phi = phi % 360.0
+		phi_list[i][0] = phi
+		phi_list[i][1] = i
 		theta_list[i][0] = theta
 		theta_list[i][1] = i
 	theta_list.sort()
 	phi_list.sort()
-	theta_list_l = [0.0]*N
-	phi_list_l = [0.0]*N
+	theta_list_l = [0.0] * N
+	phi_list_l = [0.0] * N
 	for i in range(N):
 		theta_list_l[i] = theta_list[i][0]
 		phi_list_l[i] = phi_list[i][0]
@@ -4737,96 +5992,104 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	g = [[360.0, 0, 0] for i in range(N)]
 	proj_list = []
 	mirror_list = []
-	neighbor   = [0]*img_per_grp
-	#neighbor2 = [0]*img_per_grp
-	dis        = [0.0]*img_per_grp
-	#dis2      = [0.0]*img_per_grp
-	mirror     = [0]*img_per_grp
+	neighbor = [0] * img_per_grp
+	# neighbor2 = [0]*img_per_grp
+	dis = [0.0] * img_per_grp
+	# dis2      = [0.0]*img_per_grp
+	mirror = [0] * img_per_grp
 	S = Set()
 	T = Set()
-	#tt1 = time()
+	# tt1 = time()
 	for i in range(len(List)):
 		k = List[i]
-		#print "\nCase #%3d: Testing projection %6d"%(i, k)
-		#t1 = time()
+		# print "\nCase #%3d: Testing projection %6d"%(i, k)
+		# t1 = time()
 		phi = proj_ang[k][0]
 		theta = proj_ang[k][1]
 		if theta > 90.0:
-			theta = 180.0-theta
+			theta = 180.0 - theta
 			phi += 180.0
-		phi = phi%360.0
+		phi = phi % 360.0
 		delta = 0.01
 		while True:
-			min_theta = max( 0.0, theta-delta)
-			max_theta = min(90.0, theta+delta)
+			min_theta = max(0.0, theta - delta)
+			max_theta = min(90.0, theta + delta)
 			if min_theta == 0.0:
 				min_phi = 0.0
 				max_phi = 360.0
 			else:
-				dphi = min(delta/(2*min_theta)*180.0, 180.0)
+				dphi = min(delta / (2 * min_theta) * 180.0, 180.0)
 				min_phi = phi - dphi
 				max_phi = phi + dphi
-				if min_phi < 0.0: min_phi += 360.0
-				if max_phi > 360.0: max_phi -= 360.0
-				if theta+delta > 90.0:
-					phi_mir = (phi+180.0)%360.0
+				if min_phi < 0.0:
+					min_phi += 360.0
+				if max_phi > 360.0:
+					max_phi -= 360.0
+				if theta + delta > 90.0:
+					phi_mir = (phi + 180.0) % 360.0
 					min_phi_mir = phi_mir - dphi
 					max_phi_mir = phi_mir + dphi
-					if min_phi_mir < 0.0: min_phi_mir += 360.0
-					if max_phi_mir > 360.0: max_phi_mir -= 360.0
+					if min_phi_mir < 0.0:
+						min_phi_mir += 360.0
+					if max_phi_mir > 360.0:
+						max_phi_mir -= 360.0
 
-			phi_left_bound    = binary_search_l(phi_list_l, min_phi)
-			phi_right_bound   = binary_search_r(phi_list_l, max_phi)
-			theta_left_bound  = binary_search_l(theta_list_l, min_theta)
+			phi_left_bound = binary_search_l(phi_list_l, min_phi)
+			phi_right_bound = binary_search_r(phi_list_l, max_phi)
+			theta_left_bound = binary_search_l(theta_list_l, min_theta)
 			theta_right_bound = binary_search_r(theta_list_l, max_theta)
-			if theta+delta > 90.0:
+			if theta + delta > 90.0:
 				phi_mir_left_bound = binary_search_l(phi_list_l, min_phi_mir)
 				phi_mir_right_bound = binary_search_r(phi_list_l, max_phi_mir)
-			#print delta
-			#print min_phi, max_phi, min_theta, max_theta
-			#print phi_left_bound, phi_right_bound, theta_left_bound, theta_right_bound
+				# print delta
+				# print min_phi, max_phi, min_theta, max_theta
+				# print phi_left_bound, phi_right_bound, theta_left_bound, theta_right_bound
 			if phi_left_bound < phi_right_bound:
-				for j in range(phi_left_bound, phi_right_bound+1):
+				for j in range(phi_left_bound, phi_right_bound + 1):
 					S.add(phi_list[j][1])
 			else:
-				for j in range(phi_right_bound+1):
+				for j in range(phi_right_bound + 1):
 					S.add(phi_list[j][1])
 				for j in range(phi_left_bound, N):
 					S.add(phi_list[j][1])
-			if theta+delta > 90.0:
+			if theta + delta > 90.0:
 				if phi_mir_left_bound < phi_mir_right_bound:
-					for j in range(phi_mir_left_bound, phi_mir_right_bound+1):
+					for j in range(phi_mir_left_bound, phi_mir_right_bound + 1):
 						S.add(phi_list[j][1])
 				else:
-					for j in range(phi_mir_right_bound+1):
+					for j in range(phi_mir_right_bound + 1):
 						S.add(phi_list[j][1])
 					for j in range(phi_mir_left_bound, N):
 						S.add(phi_list[j][1])
-			for j in range(theta_left_bound, theta_right_bound+1):
+			for j in range(theta_left_bound, theta_right_bound + 1):
 				T.add(theta_list[j][1])
 			v = list(T.intersection(S))
 			S.clear()
 			T.clear()
-			if len(v) >= min(1.5*img_per_grp, N): break
+			if len(v) >= min(1.5 * img_per_grp, N):
+				break
 			delta *= 2
 			del v
 
 		for j in range(len(v)):
 			d = ang_diff(vec[v[j]], vec[k])
 			g[j][0] = d[0]
-			if v[j] == k: g[j][0] = -1.  # To ensure the image itself is always included in the group
+			if v[j] == k:
+				g[j][
+					0
+				] = -1.0  # To ensure the image itself is always included in the group
 			g[j][1] = d[1]
 			g[j][2] = v[j]
-		g[:len(v)] = sorted(g[:len(v)])
+		g[: len(v)] = sorted(g[: len(v)])
 		for j in range(img_per_grp):
 			neighbor[j] = g[j][2]
 			dis[j] = g[j][0]
-			mirror[j] = (g[j][1] == 1)
+			mirror[j] = g[j][1] == 1
 		proj_list.append(neighbor[:])
 		mirror_list.append(mirror[:])
-		#t2 = time()
+		# t2 = time()
 
-		'''
+		"""
 		for j in xrange(N):
 			d = ang_diff(vec[j], vec[k])
 			g[j][0] = d[0]
@@ -4839,9 +6102,9 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 		t3 = time()
 		print "Members in common = %3d   extra delta = %6.3f   time1 = %5.2f   time2 = %5.2f"%(len(Set(neighbor).intersection(Set(neighbor2))),
 		dis[-1]-dis2[-1], t2-t1, t3-t2)
-		'''
-	#tt2 = time()
-	#print tt2-tt1
+		"""
+		# tt2 = time()
+		# print tt2-tt1
 	return proj_list, mirror_list
 
 
@@ -4852,7 +6115,7 @@ def findall(value, L, start=0):
 	positions = []
 	lL = len(L) - 1
 	i = start - 1
-	while( i < lL  ):
+	while i < lL:
 		i += 1
 		try:
 			i = L.index(value, i)
@@ -4860,6 +6123,7 @@ def findall(value, L, start=0):
 		except:
 			break
 	return positions
+
 
 """
 def findall(val, lo):
@@ -4878,31 +6142,38 @@ def findall(val, lo):
 	return  u
 """
 
-def assignments_to_groups(assignments, n = -1):
+
+def assignments_to_groups(assignments, n=-1):
 	#  convert a list of assignments of images to groups to list of lists of image numbers within groups
 	#  n can be maximum number of groups
-	if( n == -1 ): nmax = max(assignments)
-	else:  nmax = n
-	groups = [[] for i in range(nmax+1)]
-	for i,q in enumerate(assignments):  groups[q].append(i)
-	for q in range(len(groups)):  groups[q].sort()
+	if n == -1:
+		nmax = max(assignments)
+	else:
+		nmax = n
+	groups = [[] for i in range(nmax + 1)]
+	for i, q in enumerate(assignments):
+		groups[q].append(i)
+	for q in range(len(groups)):
+		groups[q].sort()
 	return groups
 
 
-def groups_assignments(groups, n = -1):
+def groups_assignments(groups, n=-1):
 	#  convert groups (a list of lists of image numbers within groups) into a list of assignments of images to groups
 	#  n can be maximum number of elements
-	if( n == -1 ): 
+	if n == -1:
 		nmax = -1
-		for q in range(len(groups)):  nmax = max(nmax,max(groups[q]))
+		for q in range(len(groups)):
+			nmax = max(nmax, max(groups[q]))
 	else:
 		nmax = n
-	assignments = [-1]*(nmax+1)
+	assignments = [-1] * (nmax + 1)
 
-	for i,q in enumerate(groups):
+	for i, q in enumerate(groups):
 		for l in q:
 			assignments[l] = i
 	return assignments
+
 
 # parameters: list of integers, number of processors
 def chunks_distribution(chunks, procs):
@@ -4918,8 +6189,8 @@ def chunks_distribution(chunks, procs):
 		results.append([])
 		heappush(heap, (0, p))
 
-	# main calculations
-	# following chunks are added to the least loaded processors
+		# main calculations
+		# following chunks are added to the least loaded processors
 	for c in chunks:
 		s, p = heappop(heap)
 		results[p].append(c)
@@ -4927,6 +6198,7 @@ def chunks_distribution(chunks, procs):
 		heappush(heap, (s, p))
 
 	return results
+
 
 """
 Iterators over sequence of images. They work for lists and stacks of images.
@@ -4944,7 +6216,8 @@ class iterImagesList(object):
 	images = []
 	imagesIndexes = []
 	position = -1
-	def __init__(self, list_of_images, list_of_indexes = None):
+
+	def __init__(self, list_of_images, list_of_indexes=None):
 		if list_of_indexes == None:
 			self.images = list_of_images[:]
 			self.imagesIndexes = list(range(len(self.images)))
@@ -4952,22 +6225,28 @@ class iterImagesList(object):
 			for i in list_of_indexes:
 				self.images.append(list_of_images[i])
 			self.imagesIndexes = list_of_indexes[:]
+
 	def iterNo(self):
 		return self.position
+
 	def imageIndex(self):
 		return self.imagesIndexes[self.position]
+
 	def image(self):
 		return self.images[self.position]
+
 	def goToNext(self):
 		if len(self.imagesIndexes) <= self.position:
 			return False
 		self.position += 1
-		return (self.position < len(self.imagesIndexes))
+		return self.position < len(self.imagesIndexes)
+
 	def goToPrev(self):
 		if 0 > self.position:
 			return False
 		self.position -= 1
-		return (self.position >= 0)
+		return self.position >= 0
+
 
 # ================ Iterator for stack of images
 class iterImagesStack(object):
@@ -4975,77 +6254,103 @@ class iterImagesStack(object):
 	currentImage = None
 	imagesIndexes = []
 	position = -1
-	def __init__(self, stack_name, list_of_indexes = None):
+
+	def __init__(self, stack_name, list_of_indexes=None):
 		if list_of_indexes == None:
 			self.imagesIndexes = list(range(EMUtil.get_image_count(stack_name)))
 		else:
 			self.imagesIndexes = list_of_indexes[:]
 		self.stackName = stack_name
+
 	def iterNo(self):
 		return self.position
+
 	def imageIndex(self):
 		return self.imagesIndexes[self.position]
+
 	def image(self):
 		if self.currentImage == None:
 			self.currentImage = EMData()
-			self.currentImage.read_image(self.stackName, self.imagesIndexes[self.position])
+			self.currentImage.read_image(
+				self.stackName, self.imagesIndexes[self.position]
+			)
 		return self.currentImage
+
 	def goToNext(self):
 		self.currentImage = None
 		if len(self.imagesIndexes) <= self.position:
 			return False
 		self.position += 1
-		return (self.position < len(self.imagesIndexes))
+		return self.position < len(self.imagesIndexes)
+
 	def goToPrev(self):
 		self.currentImage = None
 		if 0 > self.position:
 			return False
 		self.position -= 1
-		return (self.position >= 0)
+		return self.position >= 0
 
 
-from pickle import dumps,loads
-from zlib import compress,decompress
-from struct import pack,unpack
+from pickle import dumps, loads
+from zlib import compress, decompress
+from struct import pack, unpack
+
 
 def pack_message(data):
 	"""Convert data for transmission efficiently"""
 
-	if isinstance(data,str):
-		if len(data)>256 : return "C"+compress(data,1)
-		else : return "S"+data
-	else :
-		d2x=dumps(data,-1)
-		if len(d2x)>256 : return "Z"+compress(d2x,1)
-		else : return "O"+d2x
+	if isinstance(data, str):
+		if len(data) > 256:
+			return "C" + compress(data, 1)
+		else:
+			return "S" + data
+	else:
+		d2x = dumps(data, -1)
+		if len(d2x) > 256:
+			return "Z" + compress(d2x, 1)
+		else:
+			return "O" + d2x
 
 
 def unpack_message(msg):
 	"""Unpack a data payload prepared by pack_message"""
 
-	if msg[0]=="C" : return decompress((msg[1:]).tostring())
-	elif msg[0]=="S" : return (msg[1:]).tostring()
-	elif msg[0]=="Z" : return loads(decompress((msg[1:]).tostring()))
-	elif msg[0]=="O" : return loads((msg[1:]).tostring())
-	else :
-		print("ERROR: Invalid MPI message. Please contact developers. (%s)"%str(msg[:20]))
+	if msg[0] == "C":
+		return decompress((msg[1:]).tostring())
+	elif msg[0] == "S":
+		return (msg[1:]).tostring()
+	elif msg[0] == "Z":
+		return loads(decompress((msg[1:]).tostring()))
+	elif msg[0] == "O":
+		return loads((msg[1:]).tostring())
+	else:
+		print(
+			"ERROR: Invalid MPI message. Please contact developers. (%s)"
+			% str(msg[:20])
+		)
 		raise Exception("unpack_message")
 
 
 statistics_send_recv = dict()
 
-def update_tag(communicator, target_rank):   # TODO - it doesn't work when communicators are destroyed and recreated
+
+def update_tag(
+	communicator, target_rank
+):  # TODO - it doesn't work when communicators are destroyed and recreated
 	return 123456
 	global statistics_send_recv
 	if communicator not in statistics_send_recv:
 		from mpi import mpi_comm_size
+
 		statistics_send_recv[communicator] = [0] * mpi_comm_size(communicator)
 	statistics_send_recv[communicator][target_rank] += 1
 	return statistics_send_recv[communicator][target_rank]
 
+
 # ===================================== WRAPPER FOR MPI
 
-def wrap_mpi_send(data, destination, communicator = None):
+
+def wrap_mpi_send(data, destination, communicator=None):
 	from mpi import mpi_send, MPI_COMM_WORLD, MPI_CHAR
 
 	if communicator == None:
@@ -5053,27 +6358,29 @@ def wrap_mpi_send(data, destination, communicator = None):
 
 	msg = pack_message(data)
 	tag = update_tag(communicator, destination)
-	#from mpi import mpi_comm_rank
-	#print communicator, mpi_comm_rank(communicator), "send to", destination, tag
-	mpi_send(msg, len(msg), MPI_CHAR, destination, tag, communicator) # int MPI_Send( void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm )
+	# from mpi import mpi_comm_rank
+	# print communicator, mpi_comm_rank(communicator), "send to", destination, tag
+	mpi_send(
+		msg, len(msg), MPI_CHAR, destination, tag, communicator
+	)  # int MPI_Send( void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm )
 
 
-def wrap_mpi_recv(source, communicator = None):
+def wrap_mpi_recv(source, communicator=None):
 	from mpi import mpi_recv, MPI_COMM_WORLD, MPI_CHAR, mpi_probe, mpi_get_count
 
 	if communicator == None:
 		communicator = MPI_COMM_WORLD
 
 	tag = update_tag(communicator, source)
-	#from mpi import mpi_comm_rank
-	#print communicator, mpi_comm_rank(communicator), "recv from", source, tag
+	# from mpi import mpi_comm_rank
+	# print communicator, mpi_comm_rank(communicator), "recv from", source, tag
 	mpi_probe(source, tag, communicator)
 	n = mpi_get_count(MPI_CHAR)
 	msg = mpi_recv(n, MPI_CHAR, source, tag, communicator)
 	return unpack_message(msg)
 
 
-def wrap_mpi_bcast(data, root, communicator = None):
+def wrap_mpi_bcast(data, root, communicator=None):
 	from mpi import mpi_bcast, MPI_COMM_WORLD, mpi_comm_rank, MPI_CHAR
 
 	if communicator == None:
@@ -5083,19 +6390,23 @@ def wrap_mpi_bcast(data, root, communicator = None):
 
 	if rank == root:
 		msg = pack_message(data)
-		n = pack("I",len(msg))
+		n = pack("I", len(msg))
 	else:
 		msg = None
 		n = None
 
-	n = mpi_bcast(n, 4, MPI_CHAR, root, communicator)  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm )
-	n=unpack("I",n)[0]
-	msg = mpi_bcast(msg, n, MPI_CHAR, root, communicator)  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm )
+	n = mpi_bcast(
+		n, 4, MPI_CHAR, root, communicator
+	)  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm )
+	n = unpack("I", n)[0]
+	msg = mpi_bcast(
+		msg, n, MPI_CHAR, root, communicator
+	)  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm )
 	return unpack_message(msg)
 
 
 # data must be a python list (numpy array also should be implemented)
-def wrap_mpi_gatherv(data, root, communicator = None):
+def wrap_mpi_gatherv(data, root, communicator=None):
 	from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 
 	if communicator == None:
@@ -5121,78 +6432,95 @@ def wrap_mpi_gatherv(data, root, communicator = None):
 
 	return out_array
 
+
 # def rearrange_ranks_of_processors_to_fit_round_robin_assignment():
 def rearrange_ranks_of_processors(mode):
-	
+
 	import socket
 	import mpi
 	from inspect import currentframe, getframeinfo
-	
+
 	mpi.mpi_init(0, [])
-	
+
 	original_mpi_comm_world = mpi.MPI_COMM_WORLD
-	
+
 	hostname = socket.gethostname()
 	my_rank = mpi.mpi_comm_rank(original_mpi_comm_world)
 	mpi_size = mpi.mpi_comm_size(original_mpi_comm_world)
-	
 
 	host_names = [hostname]
 	host_names = wrap_mpi_gatherv(host_names, 0, original_mpi_comm_world)
 	host_names = wrap_mpi_bcast(host_names, 0, original_mpi_comm_world)
-	
-	hostname_with_rank = hostname + "  %04d"%my_rank
-	host_names_with_rank = [hostname_with_rank]
-	host_names_with_rank = wrap_mpi_gatherv(host_names_with_rank, 0, original_mpi_comm_world)
-	host_names_with_rank = wrap_mpi_bcast(host_names_with_rank, 0, original_mpi_comm_world)
 
-	procs_belonging_to_one_node = list(map(int, sorted([ a[-4:] for a in host_names_with_rank  if hostname in a])))
+	hostname_with_rank = hostname + "  %04d" % my_rank
+	host_names_with_rank = [hostname_with_rank]
+	host_names_with_rank = wrap_mpi_gatherv(
+		host_names_with_rank, 0, original_mpi_comm_world
+	)
+	host_names_with_rank = wrap_mpi_bcast(
+		host_names_with_rank, 0, original_mpi_comm_world
+	)
+
+	procs_belonging_to_one_node = list(
+		map(int, sorted([a[-4:] for a in host_names_with_rank if hostname in a]))
+	)
 	local_rank = procs_belonging_to_one_node.index(my_rank)
 
 	local_size = host_names.count(hostname)
-	
+
 	no_of_processes_per_group = local_size
-	no_of_groups = mpi_size/local_size
-	
+	no_of_groups = mpi_size / local_size
+
 	if my_rank == 0:
 		host_names = sorted(set(host_names))
 	host_names = wrap_mpi_bcast(host_names, 0, original_mpi_comm_world)
 	host_dict = {host_names[i]: i for i in range(len(host_names))}
-	
+
 	color = host_dict[hostname]
-	
+
 	error_status = None
 	if mode == "to fit round-robin assignment":
 		new_rank = local_rank * no_of_groups + color
 	elif mode == "to fit by-node assignment":
 		new_rank = local_rank + no_of_groups * color
 	else:
-		error_status = ("Invalid mode for function 'rearrange_ranks_of_processors': %s"%mode, getframeinfo(currentframe()))
+		error_status = (
+			"Invalid mode for function 'rearrange_ranks_of_processors': %s" % mode,
+			getframeinfo(currentframe()),
+		)
 	if_error_then_all_processes_exit_program(error_status)
-	
+
 	# mpi.MPI_COMM_WORLD = mpi.mpi_comm_split(original_mpi_comm_world, color=0, key = new_rank)
 	mpi.MPI_COMM_WORLD = mpi.mpi_comm_split(original_mpi_comm_world, 0, new_rank)
-	
+
 	return original_mpi_comm_world
 
-def get_colors_and_subsets(main_node, mpi_comm, my_rank, shared_comm, sh_my_rank, masters_from_groups_vs_everything_else_comm):
+
+def get_colors_and_subsets(
+	main_node,
+	mpi_comm,
+	my_rank,
+	shared_comm,
+	sh_my_rank,
+	masters_from_groups_vs_everything_else_comm,
+):
 	"""
 	It is assumed that this code or equivalent is ran before calling this function
 
 	mpi_init(0, [])
-	
+
 	mpi_comm = MPI_COMM_WORLD
 	main_node = 0
-	
+
 	my_rank = mpi_comm_rank(mpi_comm)
 	mpi_size = mpi_comm_size(mpi_comm)
-	
+
 	shared_comm = mpi_comm_split_type(mpi_comm, MPI_COMM_TYPE_SHARED,  0, MPI_INFO_NULL)
-	
+
 	sh_my_rank = mpi_comm_rank(shared_comm)
 	key = sh_my_rank
 	sh_mpi_size = mpi_comm_size(shared_comm)
-	
+
 	masters_from_groups_vs_everything_else_comm = mpi_comm_split(mpi_comm, sh_my_rank == main_node, my_rank)
 	"""
 
@@ -5205,24 +6533,26 @@ def get_colors_and_subsets(main_node, mpi_comm, my_rank, shared_comm, sh_my_rank
 	if sh_my_rank == main_node:
 		# executed only by masters from groups
 		group_infos = [my_rank, sh_my_ranks]
-		group_infos = wrap_mpi_gatherv(group_infos, main_node, masters_from_groups_vs_everything_else_comm)
+		group_infos = wrap_mpi_gatherv(
+			group_infos, main_node, masters_from_groups_vs_everything_else_comm
+		)
 
 	mpi_barrier(mpi_comm)
 
 	group_infos = wrap_mpi_bcast(group_infos, main_node, mpi_comm)
 
-	number_of_groups = len(group_infos)/2
+	number_of_groups = len(group_infos) / 2
 
 	for i in range(number_of_groups):
-		if my_rank in group_infos[2*i+1]:
-			color = i#group_infos[2*i]
+		if my_rank in group_infos[2 * i + 1]:
+			color = i  # group_infos[2*i]
 			break
 
 	number_of_processes_in_each_group = []
 	for i in range(number_of_groups):
-		number_of_processes_in_each_group.append(len(group_infos[2*i+1]))
+		number_of_processes_in_each_group.append(len(group_infos[2 * i + 1]))
 
-	balanced_processor_load_on_nodes = len(set(number_of_processes_in_each_group)) == 1 
+	balanced_processor_load_on_nodes = len(set(number_of_processes_in_each_group)) == 1
 
 	return color, number_of_groups, balanced_processor_load_on_nodes
 
@@ -5240,27 +6570,28 @@ def wrap_mpi_split_shared_memory(mpi_comm):
 	# local_rank = int(os.environ["OMPI_COMM_WORLD_LOCAL_RANK"])
 	# local_size = int(os.environ["OMPI_COMM_WORLD_LOCAL_SIZE"])
 
-
 	host_names = [hostname]
 	host_names = wrap_mpi_gatherv(host_names, 0, mpi_comm)
 	host_names = wrap_mpi_bcast(host_names, 0, mpi_comm)
 
-	hostname_with_rank = hostname + "  %04d"%my_rank
+	hostname_with_rank = hostname + "  %04d" % my_rank
 	host_names_with_rank = [hostname_with_rank]
 	host_names_with_rank = wrap_mpi_gatherv(host_names_with_rank, 0, mpi_comm)
 	host_names_with_rank = wrap_mpi_bcast(host_names_with_rank, 0, mpi_comm)
 
-	procs_belonging_to_one_node = list(map(int, sorted([ a[-4:] for a in host_names_with_rank  if hostname in a])))
+	procs_belonging_to_one_node = list(
+		map(int, sorted([a[-4:] for a in host_names_with_rank if hostname in a]))
+	)
 	local_rank = procs_belonging_to_one_node.index(my_rank)
 
 	local_size = host_names.count(hostname)
-	# local_rank = my_rank % local_size 
+	# local_rank = my_rank % local_size
 
 	no_of_processes_per_group = local_size
-	no_of_groups = mpi_size/local_size
+	no_of_groups = mpi_size / local_size
 
 	if my_rank == 0:
-			host_names = sorted(set(host_names))
+		host_names = sorted(set(host_names))
 	host_names = wrap_mpi_bcast(host_names, 0, mpi_comm)
 	host_dict = {host_names[i]: i for i in range(len(host_names))}
 
@@ -5271,7 +6602,7 @@ def wrap_mpi_split_shared_memory(mpi_comm):
 	# shared_comm = mpi_comm_split_shared(mpi_comm, 0, key)
 	shared_comm = mpi_comm_split(mpi_comm, color, key)
 
-	return shared_comm, color, key, no_of_processes_per_group, no_of_groups	
+	return shared_comm, color, key, no_of_processes_per_group, no_of_groups
 
 
 def wrap_mpi_split(comm, no_of_groups):
@@ -5283,6 +6614,7 @@ def wrap_mpi_split(comm, no_of_groups):
 
 	"""
 	from mpi import mpi_comm_size, mpi_comm_rank, mpi_comm_split
+
 	nproc = mpi_comm_size(comm)
 	myid = mpi_comm_rank(comm)
 
@@ -5291,11 +6623,12 @@ def wrap_mpi_split(comm, no_of_groups):
 	key = myid % no_of_proc_per_group
 
 	return mpi_comm_split(comm, color, key)
-	
+
 
 def get_dist(c1, c2):
 	from math import sqrt
-	d = sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2)
+
+	d = sqrt((c1[0] - c2[0]) ** 2 + (c1[1] - c2[1]) ** 2)
 	return d
 
 
@@ -5306,7 +6639,13 @@ def eliminate_moons(my_volume, moon_elimination_params):
 	"""
 
 	from morphology import binarize
-	histogram_threshold  =  my_volume.find_3d_threshold(moon_elimination_params[0], moon_elimination_params[1])*1.1
+
+	histogram_threshold = (
+		my_volume.find_3d_threshold(
+			moon_elimination_params[0], moon_elimination_params[1]
+		)
+		* 1.1
+	)
 	# clean11 88x88,  4.84 px/A 750 kDa
 
 	my_volume_binarized = binarize(my_volume, histogram_threshold)
@@ -5316,89 +6655,141 @@ def eliminate_moons(my_volume, moon_elimination_params):
 	volume_difference = my_volume_binarized - my_volume_binarized_with_no_moons
 	# volume_difference.write_image("volume_difference.hdf")
 
-	if volume_difference.get_value_at(volume_difference.calc_max_index()) == 0 and \
-		volume_difference.get_value_at(volume_difference.calc_min_index()) == 0:
+	if (
+		volume_difference.get_value_at(volume_difference.calc_max_index()) == 0
+		and volume_difference.get_value_at(volume_difference.calc_min_index()) == 0
+	):
 		return my_volume
 	else:
 		from utilities import gauss_edge
+
 		return gauss_edge(my_volume_binarized_with_no_moons) * my_volume
 
 		# from utilities   import model_blank
 		# # mask = model_blank(my_volume_binarized_with_no_moons.get_xsize(), my_volume_binarized_with_no_moons.get_ysize(), my_volume_binarized_with_no_moons.get_zsize())
 		# # mask.to_one()
-	# this is only in master
+		# this is only in master
+
 
 def combinations_of_n_taken_by_k(n, k):
 	from fractions import Fraction
-	return int(reduce(lambda x, y: x * y, (Fraction(n-i, i+1) for i in range(k)), 1))
 
-def cmdexecute(cmd, printing_on_success = True):
-	from   time import localtime, strftime
-	#import subprocess  I do not know why this is not used. PAP
+	return int(
+		reduce(lambda x, y: x * y, (Fraction(n - i, i + 1) for i in range(k)), 1)
+	)
+
+
+def cmdexecute(cmd, printing_on_success=True):
+	from time import localtime, strftime
+
+	# import subprocess  I do not know why this is not used. PAP
 	import os
-	#outcome = subprocess.call(cmd, shell=True)
+
+	# outcome = subprocess.call(cmd, shell=True)
 	outcome = os.system(cmd)
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	if(outcome != 0):
-		print(line,"ERROR!!   Command failed:  ", cmd, " return code of failed command: ", outcome)
+	if outcome != 0:
+		print(
+			line,
+			"ERROR!!   Command failed:  ",
+			cmd,
+			" return code of failed command: ",
+			outcome,
+		)
 		return 0
 	elif printing_on_success:
-		print(line,"Executed successfully: ",cmd)
+		print(line, "Executed successfully: ", cmd)
 		return 1
+
 
 def string_found_in_file(myregex, filename):
 	import re
+
 	pattern = re.compile(myregex)
 	for line in open(filename):
 		if re.findall(pattern, line) != []:
 			return True
 	return False
 
-def random_string(length_of_randomstring = 16):
+
+def random_string(length_of_randomstring=16):
 	import random
-	chars=list(map(chr, list(range(97, 123)))) # a..z
-	chars.extend(list(map(chr, list(range(65, 91))))) # A..Z
-	chars.extend(list(map(chr, list(range(48, 58))))) # 0..9
+
+	chars = list(map(chr, list(range(97, 123))))  # a..z
+	chars.extend(list(map(chr, list(range(65, 91)))))  # A..Z
+	chars.extend(list(map(chr, list(range(48, 58)))))  # 0..9
 	random_string = ""
 	for i in range(length_of_randomstring):
-		random_string += chars[random.randint(0,len(chars)-1)]
+		random_string += chars[random.randint(0, len(chars) - 1)]
 	return random_string
 
-def get_latest_directory_increment_value(directory_location, directory_name, start_value = 1, myformat = "%03d"):
+
+def get_latest_directory_increment_value(
+	directory_location, directory_name, start_value=1, myformat="%03d"
+):
 	import os
+
 	dir_count = start_value
-	while os.path.isdir(directory_location + directory_name + myformat%(dir_count)):
+	while os.path.isdir(directory_location + directory_name + myformat % (dir_count)):
 		dir_count += 1
 	if dir_count == start_value:
 		return start_value
 	return dir_count - 1
 
-def get_nonexistent_directory_increment_value(directory_location, directory_name, start_value = 1, myformat = "%03d"):
+
+def get_nonexistent_directory_increment_value(
+	directory_location, directory_name, start_value=1, myformat="%03d"
+):
 	import os
+
 	dir_count = start_value
-	while os.path.isdir(directory_location + directory_name + myformat%(dir_count)):
+	while os.path.isdir(directory_location + directory_name + myformat % (dir_count)):
 		dir_count += 1
 	return dir_count
 
+
 def print_with_time_info(msg):
 	from time import localtime, strftime
+
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>" + msg
 	print(line)
+
 
 def if_error_then_all_processes_exit_program(error_status):
 	import sys, os
 	from utilities import print_msg
 
 	# if "OMPI_COMM_WORLD_SIZE" not in os.environ:
-	if len({"OMPI_COMM_WORLD_SIZE", "PMI_RANK", "PMI_ID", "SLURM_PROCID", "LAMRANK", "MPI_RANKID", "MP_CHILD", "MP_CHILD", "MP_CHILD"}.intersection(set(os.environ))) == 0:
-		def my_mpi_comm_rank(n): return 0
+	if (
+		len(
+			{
+				"OMPI_COMM_WORLD_SIZE",
+				"PMI_RANK",
+				"PMI_ID",
+				"SLURM_PROCID",
+				"LAMRANK",
+				"MPI_RANKID",
+				"MP_CHILD",
+				"MP_CHILD",
+				"MP_CHILD",
+			}.intersection(set(os.environ))
+		)
+		== 0
+	):
+
+		def my_mpi_comm_rank(n):
+			return 0
+
 		def my_mpi_bcast(*largs):
 			return [largs[0]]
+
 		def my_mpi_finalize():
 			return None
+
 		MY_MPI_INT, MY_MPI_COMM_WORLD = 0, 0
 	else:
 		from mpi import mpi_comm_rank, mpi_bcast, mpi_finalize, MPI_INT, MPI_COMM_WORLD
+
 		my_mpi_comm_rank = mpi_comm_rank
 		my_mpi_bcast = mpi_bcast
 		my_mpi_finalize = mpi_finalize
@@ -5412,24 +6803,30 @@ def if_error_then_all_processes_exit_program(error_status):
 	else:
 		error_status = 0
 
-	error_status = my_mpi_bcast(error_status, 1, MPI_INT, 0, MY_MPI_COMM_WORLD)
+	error_status = my_mpi_bcast(error_status, 1, MY_MPI_INT, 0, MY_MPI_COMM_WORLD)
 	error_status = int(error_status[0])
 
 	if error_status > 0:
 		if myid == 0:
-			if type(error_status_info) == type((1,1)):
+			if type(error_status_info) == type((1, 1)):
 				if len(error_status_info) == 2:
 					frameinfo = error_status_info[1]
 					print_msg("***********************************\n")
-					print_msg("** Error: %s\n"%error_status_info[0])
+					print_msg("** Error: %s\n" % error_status_info[0])
 					print_msg("***********************************\n")
-					print_msg("** Location: %s\n"%(frameinfo.filename + ":" + str(frameinfo.lineno)))
+					print_msg(
+						"** Location: %s\n"
+						% (frameinfo.filename + ":" + str(frameinfo.lineno))
+					)
 					print_msg("***********************************\n")
 		sys.stdout.flush()
 		my_mpi_finalize()
-		exit() # sys.exit(1)
+		exit()  # sys.exit(1)
 
-def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift = False):
+
+def get_shrink_data_huang(
+	Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift=False
+):
 	# The function will read from stack a subset of images specified in partids
 	#   and assign to them parameters from partstack with optional CTF application and shifting of the data.
 	# So, the lengths of partids and partstack are the same.
@@ -5441,83 +6838,112 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 	from filter import filt_ctf
 	from applications import MPI_start_end
 
-	'''
+	"""
 	if( myid == main_node ):
 		print "  "
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print  line, "Reading data  onx: %3d, nx: %3d, CTF: %s, applyctf: %s, preshift: %s."%(Tracker["constants"]["nnxo"], nxinit, Tracker["constants"]["CTF"], Tracker["applyctf"], preshift)
 		print  "                       stack:      %s\n                       partids:     %s\n                       partstack: %s\n"%(Tracker["constants"]["stack"], partids, partstack)
-	'''
-	if( myid == main_node ): lpartids = read_text_file(partids)
-	else:  lpartids = 0
+	"""
+	if myid == main_node:
+		lpartids = read_text_file(partids)
+	else:
+		lpartids = 0
 	lpartids = wrap_mpi_bcast(lpartids, main_node)
 	ndata = len(lpartids)
-	if( myid == main_node ):  partstack = read_text_row(partstack)
-	else:  partstack = 0
+	if myid == main_node:
+		partstack = read_text_row(partstack)
+	else:
+		partstack = 0
 	partstack = wrap_mpi_bcast(partstack, main_node)
-	if( ndata < nproc):
-		if(myid<ndata):
+	if ndata < nproc:
+		if myid < ndata:
 			image_start = myid
-			image_end   = myid+1
+			image_end = myid + 1
 		else:
 			image_start = 0
-			image_end   = 1
+			image_end = 1
 	else:
 		image_start, image_end = MPI_start_end(ndata, nproc, myid)
-	lpartids  = lpartids[image_start:image_end]
-	#partstack = partstack[image_start:image_end]
+	lpartids = lpartids[image_start:image_end]
+	# partstack = partstack[image_start:image_end]
 	#  Preprocess the data
-	mask2D  = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+	mask2D = model_circle(
+		Tracker["constants"]["radius"],
+		Tracker["constants"]["nnxo"],
+		Tracker["constants"]["nnxo"],
+	)
 	nima = image_end - image_start
-	oldshifts = [[0.0,0.0]]#*nima
-	data = [None]*nima
-	shrinkage = nxinit/float(Tracker["constants"]["nnxo"])
-	radius = int(Tracker["constants"]["radius"] * shrinkage +0.5)
+	oldshifts = [[0.0, 0.0]]  # *nima
+	data = [None] * nima
+	shrinkage = nxinit / float(Tracker["constants"]["nnxo"])
+	radius = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
 	#  Note these are in Fortran notation for polar searches
-	#txm = float(nxinit-(nxinit//2+1) - radius -1)
-	#txl = float(2 + radius - nxinit//2+1)
-	txm = float(nxinit-(nxinit//2+1) - radius)
-	txl = float(radius - nxinit//2+1)
+	# txm = float(nxinit-(nxinit//2+1) - radius -1)
+	# txl = float(2 + radius - nxinit//2+1)
+	txm = float(nxinit - (nxinit // 2 + 1) - radius)
+	txl = float(radius - nxinit // 2 + 1)
 	for im in range(nima):
 		data[im] = get_im(Tracker["constants"]["stack"], lpartids[im])
-		if im ==0:
+		if im == 0:
 			if data[im].get_xsize() > Tracker["constants"]["nnxo"]:
-				window_particle =True
+				window_particle = True
 				from EMAN2 import Region
 			else:
-				window_particle =False
-		phi,theta,psi,sx,sy = partstack[lpartids[im]][0], partstack[lpartids[im]][1], partstack[lpartids[im]][2], partstack[lpartids[im]][3], partstack[lpartids[im]][4]
-		if( Tracker["constants"]["CTF"] and Tracker["applyctf"] ):
+				window_particle = False
+		phi, theta, psi, sx, sy = (
+			partstack[lpartids[im]][0],
+			partstack[lpartids[im]][1],
+			partstack[lpartids[im]][2],
+			partstack[lpartids[im]][3],
+			partstack[lpartids[im]][4],
+		)
+		if Tracker["constants"]["CTF"] and Tracker["applyctf"]:
 			ctf_params = data[im].get_attr("ctf")
 			st = Util.infomask(data[im], mask2D, False)
 			data[im] -= st[0]
 			data[im] = filt_ctf(data[im], ctf_params)
-			data[im].set_attr('ctf_applied', 1)
-		if preshift:# always true
+			data[im].set_attr("ctf_applied", 1)
+		if preshift:  # always true
 			data[im] = fshift(data[im], sx, sy)
-			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
+			set_params_proj(data[im], [phi, theta, psi, 0.0, 0.0])
 			sx = 0.0
 			sy = 0.0
 		if window_particle:
-			mx = data[im].get_xsize()//2-Tracker["constants"]["nnxo"]//2
-			my = data[im].get_ysize()//2-Tracker["constants"]["nnxo"]//2
-			data[im] = data[im].get_clip(Region(mx,my,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]))
-			data[im].set_attr('ctf_applied', 1)
-			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
-		#oldshifts[im] = [sx,sy]
-		#  resample will properly adjusts shifts and pixel size in ctf
+			mx = data[im].get_xsize() // 2 - Tracker["constants"]["nnxo"] // 2
+			my = data[im].get_ysize() // 2 - Tracker["constants"]["nnxo"] // 2
+			data[im] = data[im].get_clip(
+				Region(
+					mx, my, Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]
+				)
+			)
+			data[im].set_attr("ctf_applied", 1)
+			set_params_proj(data[im], [phi, theta, psi, 0.0, 0.0])
+			# oldshifts[im] = [sx,sy]
+			#  resample will properly adjusts shifts and pixel size in ctf
 		data[im] = resample(data[im], shrinkage)
 		#  We have to make sure the shifts are within correct range, shrinkage or not
-		set_params_proj(data[im],[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
+		set_params_proj(
+			data[im],
+			[
+				phi,
+				theta,
+				psi,
+				max(min(sx * shrinkage, txm), txl),
+				max(min(sy * shrinkage, txm), txl),
+			],
+		)
 		#  For local SHC set anchor
-		#if(nsoft == 1 and an[0] > -1):
+		# if(nsoft == 1 and an[0] > -1):
 		#  We will always set it to simplify the code
-		set_params_proj(data[im],[phi,theta,psi,0.0,0.0], "xform.anchor")
-		chunk_id_state = data[im].get_attr_default("chunk_id",None)
-		if chunk_id_state == None: data[im].set_attr("chunk_id",Tracker["chunk_dict"][ lpartids[im]])
-	assert( nxinit == data[0].get_xsize() )  #  Just to make sure.
-	#oldshifts = wrap_mpi_gatherv(oldshifts, main_node, MPI_COMM_WORLD)
+		set_params_proj(data[im], [phi, theta, psi, 0.0, 0.0], "xform.anchor")
+		chunk_id_state = data[im].get_attr_default("chunk_id", None)
+		if chunk_id_state == None:
+			data[im].set_attr("chunk_id", Tracker["chunk_dict"][lpartids[im]])
+	assert nxinit == data[0].get_xsize()  #  Just to make sure.
+	# oldshifts = wrap_mpi_gatherv(oldshifts, main_node, MPI_COMM_WORLD)
 	return data, oldshifts
+
 
 '''
 def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata = None, myid = 0, main_node = 0, nproc = 1, \
@@ -5677,6 +7103,8 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata = None, myid =
 	#oldshifts = wrap_mpi_gatherv(oldshifts, main_node, MPI_COMM_WORLD)
 	return data, oldshifts, original_data
 '''
+
+
 def getindexdata(stack, partids, partstack, myid, nproc):
 	# The function will read from stack a subset of images specified in partids
 	#   and assign to them parameters from partstack
@@ -5689,16 +7117,16 @@ def getindexdata(stack, partids, partstack, myid, nproc):
 	ndata = len(lpartids)
 	partstack = read_text_row(partstack)
 
-	if( ndata < nproc):
-		if(myid<ndata):
+	if ndata < nproc:
+		if myid < ndata:
 			image_start = myid
-			image_end   = myid+1
+			image_end = myid + 1
 		else:
 			image_start = 0
-			image_end   = 1
+			image_end = 1
 	else:
 		image_start, image_end = MPI_start_end(ndata, nproc, myid)
-	lpartids  = lpartids[image_start:image_end]
+	lpartids = lpartids[image_start:image_end]
 	partstack = partstack[image_start:image_end]
 	data = EMData.read_images(stack, lpartids)
 
@@ -5707,13 +7135,17 @@ def getindexdata(stack, partids, partstack, myid, nproc):
 	return data
 
 
-def store_value_of_simple_vars_in_json_file(filename, local_vars, exclude_list_of_vars = [], write_or_append = "w",
-	vars_that_will_show_only_size = []):
+def store_value_of_simple_vars_in_json_file(
+	filename,
+	local_vars,
+	exclude_list_of_vars=[],
+	write_or_append="w",
+	vars_that_will_show_only_size=[],
+):
 
 	import json, types, collections
 
-	allowed_types = [type(None), bool, int, int, float, complex,
-					 str, bytes]
+	allowed_types = [type(None), bool, int, int, float, complex, str, bytes]
 
 	local_vars_keys = list(local_vars.keys())
 
@@ -5724,20 +7156,29 @@ def store_value_of_simple_vars_in_json_file(filename, local_vars, exclude_list_o
 		elif type(local_vars[key]) in [list, tuple, type(set())]:
 			if len({type(i) for i in local_vars[key]} - set(allowed_types)) == 0:
 				if key in vars_that_will_show_only_size:
-					my_vars[key] = "%s with length: %d"%(str(type(local_vars[key])),len(local_vars[key]))
+					my_vars[key] = "%s with length: %d" % (
+						str(type(local_vars[key])),
+						len(local_vars[key]),
+					)
 				else:
-					if	type(local_vars[key]) == type(set()):
+					if type(local_vars[key]) == type(set()):
 						my_vars[key] = list(local_vars[key])
 					else:
 						my_vars[key] = local_vars[key]
 		elif type(local_vars[key]) == dict:
-			if len({type(local_vars[key][i]) for i in local_vars[key]} - set(allowed_types)) == 0:
-					my_vars[key] = local_vars[key]
+			if (
+				len(
+					{type(local_vars[key][i]) for i in local_vars[key]}
+					- set(allowed_types)
+				)
+				== 0
+			):
+				my_vars[key] = local_vars[key]
 
 	ordered_my_vars = collections.OrderedDict(sorted(my_vars.items()))
 
 	with open(filename, write_or_append) as fp:
-		json.dump(ordered_my_vars, fp, indent = 2)
+		json.dump(ordered_my_vars, fp, indent=2)
 	fp.close()
 
 
@@ -5748,28 +7189,46 @@ def print_program_start_information():
 	from socket import gethostname
 
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
-	mpi_size = mpi_comm_size(MPI_COMM_WORLD)	# Total number of processes, passed by --np option.
+	mpi_size = mpi_comm_size(
+		MPI_COMM_WORLD
+	)  # Total number of processes, passed by --np option.
 
-	if(myid == 0):
+	if myid == 0:
 		print("Location: " + os.getcwd())
 
-	print("MPI Rank: %03d/%03d "%(myid, mpi_size) + "Hostname: " + gethostname() +  " proc_id: " + str(os.getpid()))
-
+	print(
+		"MPI Rank: %03d/%03d " % (myid, mpi_size)
+		+ "Hostname: "
+		+ gethostname()
+		+ " proc_id: "
+		+ str(os.getpid())
+	)
 
 
 def store_program_state(filename, state, stack):
 	import json
+
 	with open(filename, "w") as fp:
-		json.dump(list(zip(stack, state)), fp, indent = 2)
+		json.dump(list(zip(stack, state)), fp, indent=2)
 	fp.close()
 
+
 def restore_program_stack_and_state(file_name_of_saved_state):
-	import json; f = open(file_name_of_saved_state, 'r')
-	saved_state_and_stack = json.load(f); f.close()
+	import json
+
+	f = open(file_name_of_saved_state, "r")
+	saved_state_and_stack = json.load(f)
+	f.close()
 	return list(zip(*saved_state_and_stack)[0]), list(zip(*saved_state_and_stack)[1])
 
 
-def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=None, last_call="", force_starting_execution = False):
+def program_state_stack(
+	full_current_state,
+	frameinfo,
+	file_name_of_saved_state=None,
+	last_call="",
+	force_starting_execution=False,
+):
 
 	"""
 
@@ -5819,15 +7278,19 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 	# if_error_then_all_processes_exit_program(error_status)
 
 	current_state = dict()
-	for var in program_state_stack.PROGRAM_STATE_VARIABLES & set(full_current_state) :
-		current_state[var] =  full_current_state[var]
+	for var in program_state_stack.PROGRAM_STATE_VARIABLES & set(full_current_state):
+		current_state[var] = full_current_state[var]
 
 	if "restart_location_title" in program_state_stack.__dict__:
 		# location_in_program = frameinfo.filename + "___" + program_state_stack.restart_location_title + "___" + last_call
-		location_in_program = frameinfo.filename + "___" + program_state_stack.restart_location_title
+		location_in_program = (
+			frameinfo.filename + "___" + program_state_stack.restart_location_title
+		)
 		del program_state_stack.restart_location_title
 	else:
-		location_in_program = frameinfo.filename + "___" + str(frameinfo.lineno) + "_" + last_call
+		location_in_program = (
+			frameinfo.filename + "___" + str(frameinfo.lineno) + "_" + last_call
+		)
 		# location_in_program = frameinfo.filename + "___" + last_call
 
 	current_state["location_in_program"] = location_in_program
@@ -5840,27 +7303,35 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 	while mpi_comm_rank(MPI_COMM_WORLD) == 0:
 		if "file_name_of_saved_state" not in program_state_stack.__dict__:
 			if type(file_name_of_saved_state) != type(""):
-				print("Must provide the file name of saved state as a string in the first call of the function!")
+				print(
+					"Must provide the file name of saved state as a string in the first call of the function!"
+				)
 				error_status = 1
 				break
 
-			program_state_stack.file_name_of_saved_state = os.getcwd() + os.sep + file_name_of_saved_state
+			program_state_stack.file_name_of_saved_state = (
+				os.getcwd() + os.sep + file_name_of_saved_state
+			)
 			program_state_stack.counter = 0
 			program_state_stack.track_stack = get_current_stack_info()
-			program_state_stack.track_state = [dict() for i in range(len(program_state_stack.track_stack))]
+			program_state_stack.track_state = [
+				dict() for i in range(len(program_state_stack.track_stack))
+			]
 			program_state_stack.track_state[-1] = current_state
 
 			file_name_of_saved_state_contains_information = False
-			if (os.path.exists(file_name_of_saved_state)):
+			if os.path.exists(file_name_of_saved_state):
 				statinfo = os.stat(file_name_of_saved_state)
 				file_name_of_saved_state_contains_information = statinfo.st_size > 0
 			if file_name_of_saved_state_contains_information:
-				program_state_stack.saved_stack, \
-				program_state_stack.saved_state = restore_program_stack_and_state(file_name_of_saved_state)
+				program_state_stack.saved_stack, program_state_stack.saved_state = restore_program_stack_and_state(
+					file_name_of_saved_state
+				)
 				program_state_stack.start_executing = START_EXECUTING_FALSE
 			else:
 				# check to see if file can be created
-				f = open(file_name_of_saved_state, "w"); f.close()
+				f = open(file_name_of_saved_state, "w")
+				f.close()
 				program_state_stack.start_executing = START_EXECUTING_TRUE
 		else:
 			program_state_stack.counter += 1
@@ -5869,10 +7340,13 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 			# 	error_status = 1
 			# 	break
 
-			if program_state_stack.start_executing == START_EXECUTING_ONLY_ONE_TIME_THEN_REVERT:
+			if (
+				program_state_stack.start_executing
+				== START_EXECUTING_ONLY_ONE_TIME_THEN_REVERT
+			):
 				program_state_stack.start_executing = START_EXECUTING_FALSE
 
-			# correct track_state to reflect track_stack
+				# correct track_state to reflect track_stack
 			for i in range(len(current_stack)):
 				if i < len(program_state_stack.track_state):
 					if program_state_stack.track_stack[i] != current_stack[i]:
@@ -5889,21 +7363,36 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 			# 	print range(len(current_stack), len(program_state_stack.track_state))
 
 			# delete additional elements in track_state so that size of track_state is the same as current_stack
-			program_state_stack.track_state[len(current_stack):len(program_state_stack.track_state)] = []
+			program_state_stack.track_state[
+				len(current_stack) : len(program_state_stack.track_state)
+			] = []
 
-			if program_state_stack.start_executing == START_EXECUTING_TRUE or last_call != "" or force_starting_execution:
-				store_program_state(program_state_stack.file_name_of_saved_state, program_state_stack.track_state, current_stack)
+			if (
+				program_state_stack.start_executing == START_EXECUTING_TRUE
+				or last_call != ""
+				or force_starting_execution
+			):
+				store_program_state(
+					program_state_stack.file_name_of_saved_state,
+					program_state_stack.track_state,
+					current_stack,
+				)
 				program_state_stack.start_executing = START_EXECUTING_TRUE
 			else:
 				if len(program_state_stack.saved_state) >= len(current_stack):
 					for i in range(len(program_state_stack.saved_state)):
 						if i < len(current_stack):
 							if program_state_stack.track_stack[i] == current_stack[i]:
-								if program_state_stack.track_state[i] == program_state_stack.saved_state[i]:
+								if (
+									program_state_stack.track_state[i]
+									== program_state_stack.saved_state[i]
+								):
 									continue
 							break
 						else:
-							program_state_stack.start_executing = START_EXECUTING_ONLY_ONE_TIME_THEN_REVERT
+							program_state_stack.start_executing = (
+								START_EXECUTING_ONLY_ONE_TIME_THEN_REVERT
+							)
 							# print "////////////////////////////"
 							# print "Entering function: ", location_in_program
 							# print "////////////////////////////"
@@ -5919,29 +7408,36 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 
 	if_error_then_all_processes_exit_program(error_status)
 
-	program_state_stack.start_executing = mpi_bcast(program_state_stack.start_executing, 1, MPI_INT, 0, MPI_COMM_WORLD)
+	program_state_stack.start_executing = mpi_bcast(
+		program_state_stack.start_executing, 1, MPI_INT, 0, MPI_COMM_WORLD
+	)
 	program_state_stack.start_executing = int(program_state_stack.start_executing[0])
 
 	# print "program_state_stack.start_executing ", program_state_stack.start_executing
 
 	return program_state_stack.start_executing
 
+
 def qw(s):
-	s = s.replace("\n"," ")
-	s = s.replace("\t"," ")
+	s = s.replace("\n", " ")
+	s = s.replace("\t", " ")
 	return tuple(s.split())
+
 
 def list_prod(list_whose_elements_are_going_to_be_multiplied):
 	import operator
+
 	return reduce(operator.mul, list_whose_elements_are_going_to_be_multiplied)
+
 
 def calculate_space_size(x_half_size, y_half_size, psi_half_size):
 	return [2 * x_half_size + 1, 2 * y_half_size + 1, 2 * psi_half_size + 1]
 
 
 def convert_json_fromunicode(data):
-	import  collections
+	import collections
 	import six
+
 	if isinstance(data, six.string_types):
 		return str(data)
 	elif isinstance(data, collections.Mapping):
@@ -5950,6 +7446,7 @@ def convert_json_fromunicode(data):
 		return type(data)(list(map(convert_json_fromunicode, data)))
 	else:
 		return data
+
 
 """
 def debug_mpi_barrier(comm):
@@ -5983,18 +7480,29 @@ def debug_mpi_bcast(newv, s, t, m, comm):
 	return rrr
 """
 
+
 def print_from_process(process_rank, message):
 	from mpi import MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_barrier
 	import os, sys
 	from socket import gethostname
 
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
-	mpi_size = mpi_comm_size(MPI_COMM_WORLD)	# Total number of processes, passed by --np option.
+	mpi_size = mpi_comm_size(
+		MPI_COMM_WORLD
+	)  # Total number of processes, passed by --np option.
 
-	if(myid == process_rank):
-		print("MPI Rank: %03d/%03d "%(myid, mpi_size) + "Hostname: " + gethostname() +  " proc_id: " + str(os.getpid()) +\
-			"message:::", message)
+	if myid == process_rank:
+		print(
+			"MPI Rank: %03d/%03d " % (myid, mpi_size)
+			+ "Hostname: "
+			+ gethostname()
+			+ " proc_id: "
+			+ str(os.getpid())
+			+ "message:::",
+			message,
+		)
 	sys.stdout.flush()
+
 
 def mpi_exit():
 	from mpi import mpi_finalize
@@ -6004,33 +7512,41 @@ def mpi_exit():
 	sys.stdout.flush()
 	sys.exit()
 
+
 ### from sort3d
 
-def get_attr_stack(data_stack,attr_string):
+
+def get_attr_stack(data_stack, attr_string):
 	attr_value_list = []
 	for idat in range(len(data_stack)):
 		attr_value = data_stack[idat].get_attr(attr_string)
 		attr_value_list.append(attr_value)
 	return attr_value_list
 
+
 def get_sorting_attr_stack(data_stack):
 	from utilities import get_params_proj
+
 	attr_value_list = []
 	for idat in range(len(data_stack)):
-		group                 = data_stack[idat].get_attr("group")
-		phi,theta,psi,s2x,s2y = get_params_proj(data_stack[idat],xform = "xform.projection")
+		group = data_stack[idat].get_attr("group")
+		phi, theta, psi, s2x, s2y = get_params_proj(
+			data_stack[idat], xform="xform.projection"
+		)
 		attr_value_list.append([group, phi, theta, psi, s2x, s2y])
 	return attr_value_list
 
-def get_sorting_params(Tracker,data):
+
+def get_sorting_params(Tracker, data):
 	from mpi import mpi_barrier, MPI_COMM_WORLD
-	from utilities import read_text_row,wrap_mpi_bcast,even_angles
+	from utilities import read_text_row, wrap_mpi_bcast, even_angles
 	from applications import MPI_start_end
-	myid      = Tracker["constants"]["myid"]
+
+	myid = Tracker["constants"]["myid"]
 	main_node = Tracker["constants"]["main_node"]
-	nproc     = Tracker["constants"]["nproc"]
-	ndata     = Tracker["total_stack"]
-	mpi_comm  = MPI_COMM_WORLD
+	nproc = Tracker["constants"]["nproc"]
+	ndata = Tracker["total_stack"]
+	mpi_comm = MPI_COMM_WORLD
 	if myid == main_node:
 		total_attr_value_list = []
 		for n in range(ndata):
@@ -6038,24 +7554,28 @@ def get_sorting_params(Tracker,data):
 	else:
 		total_attr_value_list = 0
 	for inode in range(nproc):
-		attr_value_list = get_attr_stack(data,"group")
-		attr_value_list = wrap_mpi_bcast(attr_value_list,inode)
+		attr_value_list = get_attr_stack(data, "group")
+		attr_value_list = wrap_mpi_bcast(attr_value_list, inode)
 		if myid == main_node:
-			image_start,image_end = MPI_start_end(ndata,nproc,inode)
-			total_attr_value_list = fill_in_mpi_list(total_attr_value_list,attr_value_list,image_start,image_end)
+			image_start, image_end = MPI_start_end(ndata, nproc, inode)
+			total_attr_value_list = fill_in_mpi_list(
+				total_attr_value_list, attr_value_list, image_start, image_end
+			)
 		mpi_barrier(MPI_COMM_WORLD)
-	total_attr_value_list = wrap_mpi_bcast(total_attr_value_list,main_node)
+	total_attr_value_list = wrap_mpi_bcast(total_attr_value_list, main_node)
 	return total_attr_value_list
 
-def get_sorting_params_refine(Tracker,data,ndata):
+
+def get_sorting_params_refine(Tracker, data, ndata):
 	from mpi import mpi_barrier, MPI_COMM_WORLD
-	from utilities import read_text_row,wrap_mpi_bcast,even_angles
+	from utilities import read_text_row, wrap_mpi_bcast, even_angles
 	from applications import MPI_start_end
-	myid       = Tracker["constants"]["myid"]
-	main_node  = Tracker["constants"]["main_node"]
-	nproc      = Tracker["constants"]["nproc"]
-	#ndata     = Tracker["total_stack"]
-	mpi_comm   = MPI_COMM_WORLD
+
+	myid = Tracker["constants"]["myid"]
+	main_node = Tracker["constants"]["main_node"]
+	nproc = Tracker["constants"]["nproc"]
+	# ndata     = Tracker["total_stack"]
+	mpi_comm = MPI_COMM_WORLD
 	if myid == main_node:
 		total_attr_value_list = []
 		for n in range(ndata):
@@ -6064,26 +7584,31 @@ def get_sorting_params_refine(Tracker,data,ndata):
 		total_attr_value_list = 0
 	for inode in range(nproc):
 		attr_value_list = get_sorting_attr_stack(data)
-		attr_value_list = wrap_mpi_bcast(attr_value_list,inode)
+		attr_value_list = wrap_mpi_bcast(attr_value_list, inode)
 		if myid == main_node:
-			image_start,image_end = MPI_start_end(ndata,nproc,inode)
-			total_attr_value_list = fill_in_mpi_list(total_attr_value_list, attr_value_list, image_start,image_end)
+			image_start, image_end = MPI_start_end(ndata, nproc, inode)
+			total_attr_value_list = fill_in_mpi_list(
+				total_attr_value_list, attr_value_list, image_start, image_end
+			)
 		mpi_barrier(MPI_COMM_WORLD)
 	total_attr_value_list = wrap_mpi_bcast(total_attr_value_list, main_node)
 	return total_attr_value_list
 
+
 def parsing_sorting_params(sorting_params_list):
-	group_list        = []
+	group_list = []
 	ali3d_params_list = []
 	for element in sorting_params_list:
 		group_list.append(element[0])
 		ali3d_params_list.append(element[1:])
 	return group_list, ali3d_params_list
 
-def fill_in_mpi_list(mpi_list,data_list,index_start,index_end):
+
+def fill_in_mpi_list(mpi_list, data_list, index_start, index_end):
 	for index in range(index_start, index_end):
-		mpi_list[index] = data_list[index-index_start]
+		mpi_list[index] = data_list[index - index_start]
 	return mpi_list
+
 
 def get_groups_from_partition(partition, initial_ID_list, number_of_groups):
 	# sort out Kmref results to individual groups that has initial IDs
@@ -6101,103 +7626,124 @@ def get_groups_from_partition(partition, initial_ID_list, number_of_groups):
 		res.append(class_one)
 	return res
 
-def remove_small_groups(class_list,minimum_number_of_objects_in_a_group):
-	new_class  = []
+
+def remove_small_groups(class_list, minimum_number_of_objects_in_a_group):
+	new_class = []
 	final_list = []
 	for one_class in class_list:
-		if len(one_class)>=minimum_number_of_objects_in_a_group:
+		if len(one_class) >= minimum_number_of_objects_in_a_group:
 			new_class.append(one_class)
 			for element in one_class:
 				final_list.append(element)
 	final_list.sort()
 	return final_list, new_class
+
 
 #### Used in the main programm
 
+
 def sample_down_1D_curve(nxinit, nnxo, pspcurv_nnxo_file):
-	shrinkage=float(nnxo)/float(nxinit)
+	shrinkage = float(nnxo) / float(nxinit)
 	curv_orgn = read_text_file(pspcurv_nnxo_file)
-	new_curv=int(1.5*len(curv_orgn))*[0.0]
+	new_curv = int(1.5 * len(curv_orgn)) * [0.0]
 	for index in range(len(curv_orgn)):
-		new_index = int(index/shrinkage)
-		fraction  = index/shrinkage-new_index
-		if fraction <=0:
-			new_curv[new_index] +=curv_orgn[index]
+		new_index = int(index / shrinkage)
+		fraction = index / shrinkage - new_index
+		if fraction <= 0:
+			new_curv[new_index] += curv_orgn[index]
 		else:
-			new_curv[new_index]  +=(1.-fraction)*curv_orgn[index]
-			new_curv[new_index+1] += fraction*curv_orgn[index]
+			new_curv[new_index] += (1.0 - fraction) * curv_orgn[index]
+			new_curv[new_index + 1] += fraction * curv_orgn[index]
 	return new_curv
+
 
 def get_initial_ID(part_list, full_ID_dict):
 	part_initial_id_list = []
-	#new_dict = {}
+	# new_dict = {}
 	for iptl in range(len(part_list)):
 		part_initial_id_list.append(full_ID_dict[part_list[iptl]])
-		#new_dict[iptl] = id
-	return part_initial_id_list#, new_dict
+		# new_dict[iptl] = id
+	return part_initial_id_list  # , new_dict
 
-def remove_small_groups(class_list,minimum_number_of_objects_in_a_group):
-	new_class  = []
+
+def remove_small_groups(class_list, minimum_number_of_objects_in_a_group):
+	new_class = []
 	final_list = []
 	for one_class in class_list:
-		if len(one_class)>=minimum_number_of_objects_in_a_group:
+		if len(one_class) >= minimum_number_of_objects_in_a_group:
 			new_class.append(one_class)
 			for element in one_class:
 				final_list.append(element)
 	final_list.sort()
 	return final_list, new_class
 
-def print_upper_triangular_matrix(data_table_dict,N_indep,log_main):
-		msg =""
-		for i in range(N_indep):
-			msg +="%7d"%i
-		log_main.add(msg)
-		for i in range(N_indep):
-			msg ="%5d "%i
-			for j in range(N_indep):
-				if i<j:
-					msg +="%5.2f "%data_table_dict[(i,j)]
-				else:
-					msg +="      "
-			log_main.add(msg)
 
-def print_a_line_with_timestamp(string_to_be_printed ):
+def print_upper_triangular_matrix(data_table_dict, N_indep, log_main):
+	msg = ""
+	for i in range(N_indep):
+		msg += "%7d" % i
+	log_main.add(msg)
+	for i in range(N_indep):
+		msg = "%5d " % i
+		for j in range(N_indep):
+			if i < j:
+				msg += "%5.2f " % data_table_dict[(i, j)]
+			else:
+				msg += "      "
+		log_main.add(msg)
+
+
+def print_a_line_with_timestamp(string_to_be_printed):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	print((line,string_to_be_printed))
+	print((line, string_to_be_printed))
 	return string_to_be_printed
 
-def convertasi(asig,K):
+
+def convertasi(asig, K):
 	from numpy import array
+
 	p = []
 	for k in range(K):
 		l = []
 		for i in range(len(asig)):
-			if( asig[i ]== k ): l.append(i)
-		l = array(l,"int32")
+			if asig[i] == k:
+				l.append(i)
+		l = array(l, "int32")
 		l.sort()
 		p.append(l)
 	return p
 
+
 def prepare_ptp(data_list, K):
 	num_of_pt = len(data_list)
-	ptp=[]
+	ptp = []
 	for ipt in range(num_of_pt):
 		ptp.append([])
 	for ipt in range(num_of_pt):
 		nc = len(data_list[ipt])
-		asig  =[-1]*nc
+		asig = [-1] * nc
 		for i in range(nc):
 			asig[i] = data_list[ipt][i]
 		ptp[ipt] = convertasi(asig, K)
 	return ptp
 
-def print_dict(dict,theme):
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print((line+theme))
-		spaces = "                           "
-		for key, value in sorted( dict.items() ):
-			if(key != "constants"):
-				print(("                    => "+key+spaces[len(key):]+":  "+str(value)))
+
+def print_dict(dict, theme):
+	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	print((line + theme))
+	spaces = "                           "
+	for key, value in sorted(dict.items()):
+		if key != "constants":
+			print(
+				(
+					"                    => "
+					+ key
+					+ spaces[len(key) :]
+					+ ":  "
+					+ str(value)
+				)
+			)
+
 
 def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 	# this function is single processor
@@ -6207,43 +7753,50 @@ def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 	from utilities import model_circle, get_im
 	from filter import fit_tanh1
 	import os
-	if(type(radi) == int):
-		if(mask_option is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
-		else:                     mask = get_im(mask_option)
-	else:  mask = radi
-	nfsc = fsc(vol[0]*mask,vol[1]*mask, 1.0,os.path.join(fscoutputdir,"fsc.txt") )
+
+	if type(radi) == int:
+		if mask_option is None:
+			mask = model_circle(radi, nnxo, nnxo, nnxo)
+		else:
+			mask = get_im(mask_option)
+	else:
+		mask = radi
+	nfsc = fsc(vol[0] * mask, vol[1] * mask, 1.0, os.path.join(fscoutputdir, "fsc.txt"))
 	currentres = -1.0
 	ns = len(nfsc[1])
 	#  This is actual resolution, as computed by 2*f/(1+f)
-	for i in range(1,ns-1):
-		if ( nfsc[1][i] < 0.333333333333333333333333):
-			currentres = nfsc[0][i-1]
+	for i in range(1, ns - 1):
+		if nfsc[1][i] < 0.333333333333333333333333:
+			currentres = nfsc[0][i - 1]
 			break
-		#if(currentres < 0.0):
-			#print("  Something wrong with the resolution, cannot continue")
-		currentres = nfsc[0][i-1]
+			# if(currentres < 0.0):
+			# print("  Something wrong with the resolution, cannot continue")
+		currentres = nfsc[0][i - 1]
 
 	""" this commented previously
 		lowpass = 0.5
 		ns = len(nfsc[1])
-        #  This is resolution used to filter half-volumes
-        for i in xrange(1,ns-1):
-                if ( nfsc[1][i] < 0.5 ):
-                        lowpass = nfsc[0][i-1]
-                        break
-        """
+		#  This is resolution used to filter half-volumes
+		for i in xrange(1,ns-1):
+				if ( nfsc[1][i] < 0.5 ):
+						lowpass = nfsc[0][i-1]
+						break
+		"""
 	lowpass, falloff = fit_tanh1(nfsc, 0.01)
-	return  round(lowpass,4), round(falloff,4), round(currentres,2)
+	return round(lowpass, 4), round(falloff, 4), round(currentres, 2)
+
 
 def partition_to_groups(alist, K):
-	res =[]
+	res = []
 	for igroup in range(K):
-		this_group =[]
+		this_group = []
 		for imeb in range(len(alist)):
-			if( alist[imeb] == igroup ):   this_group.append(imeb)
+			if alist[imeb] == igroup:
+				this_group.append(imeb)
 		this_group.sort()
 		res.append(this_group)
 	return res
+
 
 def partition_independent_runs(run_list, K):
 	indep_runs_groups = {}
@@ -6251,306 +7804,395 @@ def partition_independent_runs(run_list, K):
 		indep_runs_groups[indep] = partition_to_groups(run_list[indep], K)
 	return indep_runs_groups
 
-def get_outliers(total_number,plist):
-	tlist={}
-	for i in range(total_number):tlist[i]=i
-	for a in plist:   del tlist[a]
-	out =[]
-	for a in tlist:   out.append(a)
+
+def get_outliers(total_number, plist):
+	tlist = {}
+	for i in range(total_number):
+		tlist[i] = i
+	for a in plist:
+		del tlist[a]
+	out = []
+	for a in tlist:
+		out.append(a)
 	return out
 
+
 def merge_groups(stable_members_list):
-	alist=[]
+	alist = []
 	for i in range(len(stable_members_list)):
-		for j in range(len(stable_members_list[i])):alist.append(stable_members_list[i][j])
+		for j in range(len(stable_members_list[i])):
+			alist.append(stable_members_list[i][j])
 	return alist
 
-def save_alist(Tracker,name_of_the_text_file,alist):
+
+def save_alist(Tracker, name_of_the_text_file, alist):
 	from utilities import write_text_file
 	import os
-	log       =Tracker["constants"]["log_main"]
-	myid      =Tracker["constants"]["myid"]
-	main_node =Tracker["constants"]["main_node"]
-	dir_to_save_list =Tracker["this_dir"]
-	if myid==main_node:
-		file_name=os.path.join(dir_to_save_list,name_of_the_text_file)
+
+	log = Tracker["constants"]["log_main"]
+	myid = Tracker["constants"]["myid"]
+	main_node = Tracker["constants"]["main_node"]
+	dir_to_save_list = Tracker["this_dir"]
+	if myid == main_node:
+		file_name = os.path.join(dir_to_save_list, name_of_the_text_file)
 		write_text_file(alist, file_name)
+
 
 def margin_of_error(P, size_of_this_sampling):
 	# margin of an error, or radius of an error for a percentage
 	from math import sqrt
-	return sqrt(P*(1.-P)/size_of_this_sampling)
 
-def get_margin_of_error(this_group_of_data,Tracker):
-	ratio = margin_of_error(Tracker["P_chunk0"],len(this_group_of_data))
-	rate1, rate2, size_of_this_sampling = count_chunk_members(Tracker["chunk_dict"],this_group_of_data)
-	return abs(rate1-Tracker["P_chunk0"]),ratio,abs(rate2-Tracker["P_chunk1"]),ratio
+	return sqrt(P * (1.0 - P) / size_of_this_sampling)
+
+
+def get_margin_of_error(this_group_of_data, Tracker):
+	ratio = margin_of_error(Tracker["P_chunk0"], len(this_group_of_data))
+	rate1, rate2, size_of_this_sampling = count_chunk_members(
+		Tracker["chunk_dict"], this_group_of_data
+	)
+	return (
+		abs(rate1 - Tracker["P_chunk0"]),
+		ratio,
+		abs(rate2 - Tracker["P_chunk1"]),
+		ratio,
+	)
+
 
 def do_two_way_comparison(Tracker):
 	from mpi import mpi_barrier, MPI_COMM_WORLD
-	from utilities import read_text_file,write_text_file
+	from utilities import read_text_file, write_text_file
 	from statistics import k_means_match_clusters_asg_new
 	import os
+
 	######
-	myid              = Tracker["constants"]["myid"]
-	main_node         = Tracker["constants"]["main_node"]
-	log_main          = Tracker["constants"]["log_main"]
-	total_stack       = Tracker["this_total_stack"]
-	workdir           = Tracker["this_dir"]
-	number_of_groups  = Tracker["number_of_groups"]
+	myid = Tracker["constants"]["myid"]
+	main_node = Tracker["constants"]["main_node"]
+	log_main = Tracker["constants"]["log_main"]
+	total_stack = Tracker["this_total_stack"]
+	workdir = Tracker["this_dir"]
+	number_of_groups = Tracker["number_of_groups"]
 	######
-	if myid ==main_node:
-		msg="-------Two_way comparisons analysis of %3d independent runs of equal Kmeans-------"%Tracker["constants"]["indep_runs"]
+	if myid == main_node:
+		msg = (
+			"-------Two_way comparisons analysis of %3d independent runs of equal Kmeans-------"
+			% Tracker["constants"]["indep_runs"]
+		)
 		log_main.add(msg)
 	total_partition = []
-	if( Tracker["constants"]["indep_runs"]<2 ):
-		if myid ==main_node:
+	if Tracker["constants"]["indep_runs"] < 2:
+		if myid == main_node:
 			log_main.add(" Error! One single run cannot make two-way comparison")
 		from mpi import mpi_finalize
 		from sys import exit
+
 		mpi_finalize()
 		exit()
 	else:
-		for iter_indep in range(Tracker["constants"]["indep_runs"]):  total_partition.append(Tracker["partition_dict"][iter_indep])
+		for iter_indep in range(Tracker["constants"]["indep_runs"]):
+			total_partition.append(Tracker["partition_dict"][iter_indep])
 		### Two-way comparision is carried out on all nodes
 		ptp = prepare_ptp(total_partition, number_of_groups)
-		indep_runs_to_groups = partition_independent_runs(total_partition, number_of_groups)
+		indep_runs_to_groups = partition_independent_runs(
+			total_partition, number_of_groups
+		)
 		###### Check margin of error
-		if myid ==main_node:
-			log_main.add("--------------------------margin of error--------------------------------------------")
+		if myid == main_node:
+			log_main.add(
+				"--------------------------margin of error--------------------------------------------"
+			)
 		for indep in range(len(indep_runs_to_groups)):
 			for index_of_class in range(len(indep_runs_to_groups[indep])):
-				one_group_in_old_ID = get_initial_ID(indep_runs_to_groups[indep][index_of_class], Tracker["full_ID_dict"])
-				rate1, rate2, size_of_this_group = count_chunk_members(Tracker["chunk_dict"], one_group_in_old_ID)
+				one_group_in_old_ID = get_initial_ID(
+					indep_runs_to_groups[indep][index_of_class], Tracker["full_ID_dict"]
+				)
+				rate1, rate2, size_of_this_group = count_chunk_members(
+					Tracker["chunk_dict"], one_group_in_old_ID
+				)
 				error = margin_of_error(Tracker["P_chunk0"], size_of_this_group)
-				if myid ==main_node:
-					log_main.add(" margin of error for chunk0 is %f   %f    %d"%((Tracker["P_chunk0"]-error),(Tracker["P_chunk0"]+error),size_of_this_group))
-					log_main.add(" actual percentage is %f"%rate1)
-		if myid ==main_node:
-			log_main.add("------------------------------------------------------------------------------")
-		total_pop=0
+				if myid == main_node:
+					log_main.add(
+						" margin of error for chunk0 is %f   %f    %d"
+						% (
+							(Tracker["P_chunk0"] - error),
+							(Tracker["P_chunk0"] + error),
+							size_of_this_group,
+						)
+					)
+					log_main.add(" actual percentage is %f" % rate1)
+		if myid == main_node:
+			log_main.add(
+				"------------------------------------------------------------------------------"
+			)
+		total_pop = 0
 		two_ways_stable_member_list = {}
-		avg_two_ways                = 0.0
-		avg_two_ways_square         = 0.0
-		scores                      = {}
+		avg_two_ways = 0.0
+		avg_two_ways_square = 0.0
+		scores = {}
 		for iptp in range(len(ptp)):
 			for jptp in range(len(ptp)):
-				newindeces, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(ptp[iptp], ptp[jptp])
+				newindeces, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(
+					ptp[iptp], ptp[jptp]
+				)
 				tt = 0.0
-				if myid ==main_node and iptp<jptp:
-					aline="Two-way comparison between independent run %3d and %3d"%(iptp,jptp)
+				if myid == main_node and iptp < jptp:
+					aline = "Two-way comparison between independent run %3d and %3d" % (
+						iptp,
+						jptp,
+					)
 					log_main.add(aline)
 				for m in range(len(list_stable)):
-					tt +=len(list_stable[m])
-				if( (myid == main_node) and (iptp<jptp) ):
-					unaccounted = total_stack-tt
-					ratio_unaccounted  = 100.-tt/total_stack*100.
-					ratio_accounted    = tt/total_stack*100
-				rate = tt/total_stack*100.0
-				scores[(iptp,jptp)]    = rate
-				if iptp<jptp :
-					avg_two_ways 	    += rate
-					avg_two_ways_square += rate**2
+					tt += len(list_stable[m])
+				if (myid == main_node) and (iptp < jptp):
+					unaccounted = total_stack - tt
+					ratio_unaccounted = 100.0 - tt / total_stack * 100.0
+					ratio_accounted = tt / total_stack * 100
+				rate = tt / total_stack * 100.0
+				scores[(iptp, jptp)] = rate
+				if iptp < jptp:
+					avg_two_ways += rate
+					avg_two_ways_square += rate ** 2
 					total_pop += 1
-					new_list=[]
+					new_list = []
 					for any in list_stable:
 						any.tolist()
 						new_list.append(any)
-					two_ways_stable_member_list[(iptp,jptp)] = new_list[:]
+					two_ways_stable_member_list[(iptp, jptp)] = new_list[:]
 					del new_list
-		if myid ==main_node:
+		if myid == main_node:
 			log_main.add("two_way comparison is done!")
-		#### Score each independent run by pairwise summation
+			#### Score each independent run by pairwise summation
 		summed_scores = []
-		two_way_dict  = {}
+		two_way_dict = {}
 		for ipp in range(len(ptp)):
-			avg_scores =0.0
+			avg_scores = 0.0
 			for jpp in range(len(ptp)):
-				if ipp!=jpp:
-					avg_scores += scores[(ipp,jpp)]
-			avg_rate =avg_scores/(len(ptp)-1)
+				if ipp != jpp:
+					avg_scores += scores[(ipp, jpp)]
+			avg_rate = avg_scores / (len(ptp) - 1)
 			summed_scores.append(avg_rate)
-			two_way_dict[avg_rate] =ipp
-		#### Select two independent runs that have the first two highest scores
-		run1, run2,rate1,rate2 = select_two_runs(summed_scores,two_way_dict)
-		Tracker["two_way_stable_member"]      = two_ways_stable_member_list[(run1,run2)]
+			two_way_dict[avg_rate] = ipp
+			#### Select two independent runs that have the first two highest scores
+		run1, run2, rate1, rate2 = select_two_runs(summed_scores, two_way_dict)
+		Tracker["two_way_stable_member"] = two_ways_stable_member_list[(run1, run2)]
 		Tracker["pop_size_of_stable_members"] = 1
 		if myid == main_node:
 			log_main.add("Get outliers of the selected comparison")
-		####  Save both accounted ones and unaccounted ones
+			####  Save both accounted ones and unaccounted ones
 		if myid == main_node:
 			log_main.add("Save outliers")
 		stable_class_list = []
-		small_group_list  = []
-		if myid ==main_node:
-			log_main.add("------------------margin of error--------------------------------------------")
+		small_group_list = []
+		if myid == main_node:
+			log_main.add(
+				"------------------margin of error--------------------------------------------"
+			)
 		for istable in range(len(Tracker["two_way_stable_member"])):
-			new_one_class                    = get_initial_ID(Tracker["two_way_stable_member"][istable], Tracker["full_ID_dict"])
-			rate1, rate2, size_of_this_group = count_chunk_members(Tracker["chunk_dict"], new_one_class)
-			error=margin_of_error(Tracker["P_chunk0"],size_of_this_group)
-			if myid ==main_node:
-				log_main.add(" margin of error for chunk0 is %f    %f    %d"%((Tracker["P_chunk0"]-error),(Tracker["P_chunk0"]+error),size_of_this_group))
-				log_main.add(" actual percentage is %f"%rate1)
-			if( len(new_one_class)>= Tracker["constants"]["smallest_group"] ):  stable_class_list.append(new_one_class)
-			else:                                                               small_group_list.append(new_one_class)
-		if myid ==main_node:
-			log_main.add("----------------------------------------------------------------------------")
+			new_one_class = get_initial_ID(
+				Tracker["two_way_stable_member"][istable], Tracker["full_ID_dict"]
+			)
+			rate1, rate2, size_of_this_group = count_chunk_members(
+				Tracker["chunk_dict"], new_one_class
+			)
+			error = margin_of_error(Tracker["P_chunk0"], size_of_this_group)
+			if myid == main_node:
+				log_main.add(
+					" margin of error for chunk0 is %f    %f    %d"
+					% (
+						(Tracker["P_chunk0"] - error),
+						(Tracker["P_chunk0"] + error),
+						size_of_this_group,
+					)
+				)
+				log_main.add(" actual percentage is %f" % rate1)
+			if len(new_one_class) >= Tracker["constants"]["smallest_group"]:
+				stable_class_list.append(new_one_class)
+			else:
+				small_group_list.append(new_one_class)
+		if myid == main_node:
+			log_main.add(
+				"----------------------------------------------------------------------------"
+			)
 		accounted_list = merge_groups(stable_class_list)
-		Tracker["this_accounted_list"]   =  accounted_list
-		Tracker["two_way_stable_member"] =  stable_class_list
+		Tracker["this_accounted_list"] = accounted_list
+		Tracker["two_way_stable_member"] = stable_class_list
 		mpi_barrier(MPI_COMM_WORLD)
-		save_alist(Tracker,"Accounted.txt", accounted_list)
-		update_full_dict(accounted_list,Tracker)# Update full_ID_dict for Kmeans
+		save_alist(Tracker, "Accounted.txt", accounted_list)
+		update_full_dict(accounted_list, Tracker)  # Update full_ID_dict for Kmeans
 		mpi_barrier(MPI_COMM_WORLD)
-		Tracker["this_unaccounted_dir"]     = workdir
-		Tracker["this_unaccounted_text"]    = os.path.join(workdir,"Unaccounted.txt")
-		Tracker["this_accounted_text"]      = os.path.join(workdir,"Accounted.txt")
-		Tracker["ali3d_of_outliers"]        = os.path.join(workdir,"ali3d_params_of_outliers.txt")
-		Tracker["ali3d_of_accounted"]       = os.path.join(workdir,"ali3d_params_of_accounted.txt")
-		if myid==main_node:
-			log_main.add(" Selected indepedent runs      %5d and  %5d"%(run1,run2))
-			log_main.add(" Their pair-wise averaged rates are %5.2f  and %5.2f "%(rate1,rate2))
+		Tracker["this_unaccounted_dir"] = workdir
+		Tracker["this_unaccounted_text"] = os.path.join(workdir, "Unaccounted.txt")
+		Tracker["this_accounted_text"] = os.path.join(workdir, "Accounted.txt")
+		Tracker["ali3d_of_outliers"] = os.path.join(
+			workdir, "ali3d_params_of_outliers.txt"
+		)
+		Tracker["ali3d_of_accounted"] = os.path.join(
+			workdir, "ali3d_params_of_accounted.txt"
+		)
+		if myid == main_node:
+			log_main.add(" Selected indepedent runs      %5d and  %5d" % (run1, run2))
+			log_main.add(
+				" Their pair-wise averaged rates are %5.2f  and %5.2f " % (rate1, rate2)
+			)
 		from math import sqrt
-		avg_two_ways        = avg_two_ways/total_pop
-		two_ways_std        = sqrt(avg_two_ways_square/total_pop-avg_two_ways**2)
-		net_rate            = avg_two_ways-1./number_of_groups*100.
+
+		avg_two_ways = avg_two_ways / total_pop
+		two_ways_std = sqrt(avg_two_ways_square / total_pop - avg_two_ways ** 2)
+		net_rate = avg_two_ways - 1.0 / number_of_groups * 100.0
 		Tracker["net_rate"] = net_rate
 		if myid == main_node:
-			msg="average of two-way comparison  %5.3f"%avg_two_ways
+			msg = "average of two-way comparison  %5.3f" % avg_two_ways
 			log_main.add(msg)
-			msg="net rate of two-way comparison  %5.3f"%net_rate
+			msg = "net rate of two-way comparison  %5.3f" % net_rate
 			log_main.add(msg)
-			msg="std of two-way comparison %5.3f"%two_ways_std
+			msg = "std of two-way comparison %5.3f" % two_ways_std
 			log_main.add(msg)
-			msg ="Score table of two_way comparison when Kgroup =  %5d"%number_of_groups
+			msg = (
+				"Score table of two_way comparison when Kgroup =  %5d"
+				% number_of_groups
+			)
 			log_main.add(msg)
-			print_upper_triangular_matrix(scores,Tracker["constants"]["indep_runs"],log_main)
+			print_upper_triangular_matrix(
+				scores, Tracker["constants"]["indep_runs"], log_main
+			)
 		del two_ways_stable_member_list
-		Tracker["score_of_this_comparison"]=(avg_two_ways,two_ways_std,net_rate)
+		Tracker["score_of_this_comparison"] = (avg_two_ways, two_ways_std, net_rate)
 		mpi_barrier(MPI_COMM_WORLD)
 
-def select_two_runs(summed_scores,two_way_dict):
+
+def select_two_runs(summed_scores, two_way_dict):
 	summed_scores.sort()
 	rate1 = summed_scores[-1]
 	rate2 = None
-	for index in range(2,len(summed_scores)+1):
-		rate2 =summed_scores[-index]
-		if rate2 !=rate1:
+	for index in range(2, len(summed_scores) + 1):
+		rate2 = summed_scores[-index]
+		if rate2 != rate1:
 			break
 	if rate2 != None:
 		if rate1 != rate2:
-			tmp_run1= two_way_dict[rate1]
-			tmp_run2= two_way_dict[rate2]
-			run1 = min(tmp_run1,tmp_run2)
-			run2 = max(tmp_run1,tmp_run2)
+			tmp_run1 = two_way_dict[rate1]
+			tmp_run2 = two_way_dict[rate2]
+			run1 = min(tmp_run1, tmp_run2)
+			run2 = max(tmp_run1, tmp_run2)
 		else:
 			run1 = 0
 			run2 = 1
-			rate2=rate1
+			rate2 = rate1
 	else:
-		run1 =0
-		run2 =1
+		run1 = 0
+		run2 = 1
 		rate2 = rate1
 	return run1, run2, rate1, rate2
 
-def get_ali3d_params(ali3d_old_text_file,shuffled_list):
+
+def get_ali3d_params(ali3d_old_text_file, shuffled_list):
 	from utilities import read_text_row
+
 	ali3d_old = read_text_row(ali3d_old_text_file)
 	ali3d_new = []
 	for iptl in range(len(shuffled_list)):
 		ali3d_new.append(ali3d_old[shuffled_list[iptl]])
 	return ali3d_new
 
+
 def counting_projections(delta, ali3d_params, image_start):
-	from utilities import even_angles,angle_between_projections_directions
+	from utilities import even_angles, angle_between_projections_directions
+
 	sampled_directions = {}
-	angles=even_angles(delta,0,180)
+	angles = even_angles(delta, 0, 180)
 	for a in angles:
-		[phi0, theta0, psi0]=a
-		sampled_directions[(phi0,theta0)]=[]
+		[phi0, theta0, psi0] = a
+		sampled_directions[(phi0, theta0)] = []
 	from math import sqrt
+
 	for i in range(len(ali3d_params)):
 		[phi, theta, psi, s2x, s2y] = ali3d_params[i]
-		dis_min    = 9999.
-		this_phi   = 9999.
-		this_theta = 9999.
-		this_psi   = 9999.
-		prj1       =[phi,theta]
+		dis_min = 9999.0
+		this_phi = 9999.0
+		this_theta = 9999.0
+		this_psi = 9999.0
+		prj1 = [phi, theta]
 		for j in range(len(angles)):
 			[phi0, theta0, psi0] = angles[j]
-			prj2 =[phi0,theta0]
+			prj2 = [phi0, theta0]
 			dis = angle_between_projections_directions(prj1, prj2)
-			if dis<dis_min:
-				dis_min    =dis
-				this_phi   =phi0
-				this_theta =theta0
-				this_psi   =psi0
-		alist = sampled_directions[(this_phi,this_theta)]
-		alist.append(i+image_start)
-		sampled_directions[(this_phi,this_theta)]=alist
+			if dis < dis_min:
+				dis_min = dis
+				this_phi = phi0
+				this_theta = theta0
+				this_psi = psi0
+		alist = sampled_directions[(this_phi, this_theta)]
+		alist.append(i + image_start)
+		sampled_directions[(this_phi, this_theta)] = alist
 	return sampled_directions
 
+
 def unload_dict(dict_angles):
-	dlist =[]
+	dlist = []
 	for a in dict_angles:
-		tmp=[a[0],a[1]]
-		tmp_list=dict_angles[a]
+		tmp = [a[0], a[1]]
+		tmp_list = dict_angles[a]
 		for b in tmp_list:
 			tmp.append(b)
 		dlist.append(tmp)
 	return dlist
 
+
 def load_dict(dict_angle_main_node, unloaded_dict_angles):
 	for ang_proj in unloaded_dict_angles:
-		if len(ang_proj)>2:
-			for item in range(2,len(ang_proj)):
-				dict_angle_main_node[(ang_proj[0],ang_proj[1])].append(item)
+		if len(ang_proj) > 2:
+			for item in range(2, len(ang_proj)):
+				dict_angle_main_node[(ang_proj[0], ang_proj[1])].append(item)
 	return dict_angle_main_node
 
-def get_stat_proj(Tracker,delta,this_ali3d):
+
+def get_stat_proj(Tracker, delta, this_ali3d):
 	from mpi import mpi_barrier, MPI_COMM_WORLD
-	from utilities import read_text_row,wrap_mpi_bcast,even_angles
+	from utilities import read_text_row, wrap_mpi_bcast, even_angles
 	from applications import MPI_start_end
-	myid      = Tracker["constants"]["myid"]
+
+	myid = Tracker["constants"]["myid"]
 	main_node = Tracker["constants"]["main_node"]
-	nproc     = Tracker["constants"]["nproc"]
-	mpi_comm  = MPI_COMM_WORLD
-	if myid ==main_node:
-		ali3d_params=read_text_row(this_ali3d)
-		lpartids    = list(range(len(ali3d_params)))
+	nproc = Tracker["constants"]["nproc"]
+	mpi_comm = MPI_COMM_WORLD
+	if myid == main_node:
+		ali3d_params = read_text_row(this_ali3d)
+		lpartids = list(range(len(ali3d_params)))
 	else:
-		lpartids      = 0
-		ali3d_params  = 0
+		lpartids = 0
+		ali3d_params = 0
 	lpartids = wrap_mpi_bcast(lpartids, main_node)
 	ali3d_params = wrap_mpi_bcast(ali3d_params, main_node)
-	ndata=len(ali3d_params)
+	ndata = len(ali3d_params)
 	image_start, image_end = MPI_start_end(ndata, nproc, myid)
-	ali3d_params=ali3d_params[image_start:image_end]
-	sampled=counting_projections(delta,ali3d_params,image_start)
+	ali3d_params = ali3d_params[image_start:image_end]
+	sampled = counting_projections(delta, ali3d_params, image_start)
 	for inode in range(nproc):
-		if myid ==inode:
-			dlist=unload_dict(sampled)
+		if myid == inode:
+			dlist = unload_dict(sampled)
 		else:
-			dlist =0
-		dlist=wrap_mpi_bcast(dlist,inode)
-		if myid ==main_node and inode != main_node:
-			sampled=load_dict(sampled,dlist)
+			dlist = 0
+		dlist = wrap_mpi_bcast(dlist, inode)
+		if myid == main_node and inode != main_node:
+			sampled = load_dict(sampled, dlist)
 		mpi_barrier(MPI_COMM_WORLD)
 	return sampled
+
 
 def create_random_list(Tracker):
 	import copy
 	import random
 	from utilities import wrap_mpi_bcast
 
-	myid        = Tracker["constants"]["myid"]
-	main_node   = Tracker["constants"]["main_node"]
+	myid = Tracker["constants"]["myid"]
+	main_node = Tracker["constants"]["main_node"]
 	total_stack = Tracker["total_stack"]
 
-	if Tracker["constants"]["seed"] ==- 1: random.seed()
-	else:                                  random.seed(Tracker["constants"]["seed"])
+	if Tracker["constants"]["seed"] == -1:
+		random.seed()
+	else:
+		random.seed(Tracker["constants"]["seed"])
 
-	indep_list  = []
+	indep_list = []
 	for irandom in range(Tracker["constants"]["indep_runs"]):
 		ll = copy.copy(Tracker["this_data_list"])
 		random.shuffle(ll)
@@ -6558,13 +8200,15 @@ def create_random_list(Tracker):
 		indep_list.append(ll)
 	Tracker["this_indep_list"] = indep_list
 
-def get_number_of_groups(total_particles,number_of_images_per_group, round_off=.2):
-	number_of_groups=float(total_particles)/number_of_images_per_group
-	if number_of_groups - int(number_of_groups)<round_off:
+
+def get_number_of_groups(total_particles, number_of_images_per_group, round_off=0.2):
+	number_of_groups = float(total_particles) / number_of_images_per_group
+	if number_of_groups - int(number_of_groups) < round_off:
 		number_of_groups = int(number_of_groups)
 	else:
-		number_of_groups = int(number_of_groups)+1
+		number_of_groups = int(number_of_groups) + 1
 	return number_of_groups
+
 
 def recons_mref(Tracker):
 	from mpi import mpi_barrier, MPI_COMM_WORLD
@@ -6572,41 +8216,61 @@ def recons_mref(Tracker):
 	from time import sleep
 	from reconstruction import recons3d_4nn_ctf_MPI
 	from utilities import get_shrink_data_huang
-	myid             = Tracker["constants"]["myid"]
-	main_node        = Tracker["constants"]["main_node"]
-	nproc            = Tracker["constants"]["nproc"]
+
+	myid = Tracker["constants"]["myid"]
+	main_node = Tracker["constants"]["main_node"]
+	nproc = Tracker["constants"]["nproc"]
 	number_of_groups = Tracker["number_of_groups"]
-	particle_list    = Tracker["this_particle_list"]
-	nxinit           = Tracker["nxinit"]
-	partstack        = Tracker["constants"]["partstack"]
-	total_data       = len(particle_list)
+	particle_list = Tracker["this_particle_list"]
+	nxinit = Tracker["nxinit"]
+	partstack = Tracker["constants"]["partstack"]
+	total_data = len(particle_list)
 	ref_list = []
 	number_of_ref_class = []
 	for igrp in range(number_of_groups):
-		a_group_list = particle_list[(total_data*igrp)//number_of_groups:(total_data*(igrp+1))//number_of_groups]
+		a_group_list = particle_list[
+			(total_data * igrp)
+			// number_of_groups : (total_data * (igrp + 1))
+			// number_of_groups
+		]
 		a_group_list.sort()
 		Tracker["this_data_list"] = a_group_list
 		from utilities import write_text_file
-		particle_list_file = os.path.join(Tracker["this_dir"], "iclass%d.txt"%igrp)
-		if myid ==main_node:
-			write_text_file(Tracker["this_data_list"],particle_list_file)
+
+		particle_list_file = os.path.join(Tracker["this_dir"], "iclass%d.txt" % igrp)
+		if myid == main_node:
+			write_text_file(Tracker["this_data_list"], particle_list_file)
 		mpi_barrier(MPI_COMM_WORLD)
-		data, old_shifts =  get_shrink_data_huang(Tracker,nxinit,particle_list_file,partstack,myid,main_node,nproc,preshift=True)
-		#vol=reconstruct_3D(Tracker,data)
+		data, old_shifts = get_shrink_data_huang(
+			Tracker,
+			nxinit,
+			particle_list_file,
+			partstack,
+			myid,
+			main_node,
+			nproc,
+			preshift=True,
+		)
+		# vol=reconstruct_3D(Tracker,data)
 		mpi_barrier(MPI_COMM_WORLD)
-		vol = recons3d_4nn_ctf_MPI(myid=myid,prjlist=data,symmetry=Tracker["constants"]["sym"],finfo=None)
-		if myid ==main_node:
-			print("reconstructed %3d"%igrp)
+		vol = recons3d_4nn_ctf_MPI(
+			myid=myid, prjlist=data, symmetry=Tracker["constants"]["sym"], finfo=None
+		)
+		if myid == main_node:
+			print("reconstructed %3d" % igrp)
 		ref_list.append(vol)
 		number_of_ref_class.append(len(Tracker["this_data_list"]))
 	Tracker["number_of_ref_class"] = number_of_ref_class
 	return ref_list
 
-def apply_low_pass_filter(refvol,Tracker):
+
+def apply_low_pass_filter(refvol, Tracker):
 	from filter import filt_tanl
+
 	for iref in range(len(refvol)):
-		refvol[iref]=filt_tanl(refvol[iref],Tracker["low_pass_filter"],.1)
+		refvol[iref] = filt_tanl(refvol[iref], Tracker["low_pass_filter"], 0.1)
 	return refvol
+
 
 def get_groups_from_partition(partition, initial_ID_list, number_of_groups):
 	# sort out Kmref results to individual groups that has initial IDs
@@ -6624,91 +8288,112 @@ def get_groups_from_partition(partition, initial_ID_list, number_of_groups):
 		res.append(class_one)
 	return res
 
-def get_number_of_groups(total_particles,number_of_images_per_group):
+
+def get_number_of_groups(total_particles, number_of_images_per_group):
 	# soft partition groups
-	number_of_groups=float(total_particles)/number_of_images_per_group
-	if number_of_groups - int(number_of_groups)<.4:
+	number_of_groups = float(total_particles) / number_of_images_per_group
+	if number_of_groups - int(number_of_groups) < 0.4:
 		number_of_groups = int(number_of_groups)
 	else:
-		number_of_groups = int(number_of_groups)+1
+		number_of_groups = int(number_of_groups) + 1
 	return number_of_groups
 
-def get_complementary_elements(total_list,sub_data_list):
-	if len(total_list)<len(sub_data_list):
+
+def get_complementary_elements(total_list, sub_data_list):
+	if len(total_list) < len(sub_data_list):
 		print("Wrong input list!")
 		return []
 	else:
-		sub_data_dict     = {}
-		complementary     = []
-		for index in range(len(sub_data_list)):sub_data_dict[sub_data_list[index]]=index
+		sub_data_dict = {}
+		complementary = []
+		for index in range(len(sub_data_list)):
+			sub_data_dict[sub_data_list[index]] = index
 		for any in total_list:
-			if (any in sub_data_dict) is False:complementary.append(any)
+			if (any in sub_data_dict) is False:
+				complementary.append(any)
 		return complementary
 
+
 def get_complementary_elements_total(total_stack, data_list):
-	data_dict    ={}
-	complementary     = []
-	for index in range(len(data_list)):data_dict[data_list[index]]=index
+	data_dict = {}
+	complementary = []
+	for index in range(len(data_list)):
+		data_dict[data_list[index]] = index
 	for index in range(total_stack):
-		if (index in data_dict) is False:complementary.append(index)
+		if (index in data_dict) is False:
+			complementary.append(index)
 	return complementary
+
 
 def update_full_dict(leftover_list, Tracker):
 	full_dict = {}
 	for iptl in range(len(leftover_list)):
-		full_dict[iptl]     = leftover_list[iptl]
+		full_dict[iptl] = leftover_list[iptl]
 	Tracker["full_ID_dict"] = full_dict
+
 
 def count_chunk_members(chunk_dict, one_class):
 	N_chunk0 = 0
 	N_chunk1 = 0
 	for a in one_class:
-		if chunk_dict[a] == 0: N_chunk0 += 1
-		else:                  N_chunk1 += 1
+		if chunk_dict[a] == 0:
+			N_chunk0 += 1
+		else:
+			N_chunk1 += 1
 	n = len(one_class)
-	if n <=1:  return 0.0, 0.0, n
-	else: return  float(N_chunk0)/n, float(N_chunk1)/n, n
+	if n <= 1:
+		return 0.0, 0.0, n
+	else:
+		return float(N_chunk0) / n, float(N_chunk1) / n, n
+
 
 def get_two_chunks_from_stack(Tracker):
-	total_chunk = EMUtil.get_all_attributes(Tracker["orgstack"],"chunk_id")
+	total_chunk = EMUtil.get_all_attributes(Tracker["orgstack"], "chunk_id")
 	chunk_one = []
 	chunk_two = []
 	for index_of_total_chunk in range(len(total_chunk)):
-		if total_chunk[index_of_total_chunk]==0:chunk_one.append(index_of_total_chunk)
-		else:chunk_two.append(index_of_total_chunk)
+		if total_chunk[index_of_total_chunk] == 0:
+			chunk_one.append(index_of_total_chunk)
+		else:
+			chunk_two.append(index_of_total_chunk)
 	return chunk_one, chunk_two
 
-def set_filter_parameters_from_adjusted_fsc(n1,n2,Tracker):
-	fsc_cutoff   = 1.0/3.0
-	adjusted_fsc = adjust_fsc_down(Tracker["global_fsc"],n1,n2)
-	currentres   = -1.0
-	ns           = len(adjusted_fsc)
-	for i in range(1,ns-1):
+
+def set_filter_parameters_from_adjusted_fsc(n1, n2, Tracker):
+	fsc_cutoff = 1.0 / 3.0
+	adjusted_fsc = adjust_fsc_down(Tracker["global_fsc"], n1, n2)
+	currentres = -1.0
+	ns = len(adjusted_fsc)
+	for i in range(1, ns - 1):
 		if adjusted_fsc[1][i] < fsc_cutoff:
-			currentres = adjusted_fsc[0][i-1]
+			currentres = adjusted_fsc[0][i - 1]
 			break
-	lowpass, falloff    = fit_tanh1(adjusted_fsc, 0.01)
-	lowpass             = round(lowpass,4)
-	falloff             = min(.1,falloff)
-	falloff             = round(falloff,4)
-	currentres          = round(currentres,2)
-	Tracker["lowpass"]  = lowpass
-	Tracker["falloff"]  = falloff
+	lowpass, falloff = fit_tanh1(adjusted_fsc, 0.01)
+	lowpass = round(lowpass, 4)
+	falloff = min(0.1, falloff)
+	falloff = round(falloff, 4)
+	currentres = round(currentres, 2)
+	Tracker["lowpass"] = lowpass
+	Tracker["falloff"] = falloff
+
+
 ##### from RSORT
+
 
 def get_class_members(sort3d_dir):
 	import os
 	from utilities import read_text_file
+
 	maximum_generations = 100
-	maximum_groups      = 100
+	maximum_groups = 100
 	class_list = []
 	igen = 0
-	while( igen < maximum_generations ):
-		gendir = os.path.join(sort3d_dir, "generation%03d"%igen)
+	while igen < maximum_generations:
+		gendir = os.path.join(sort3d_dir, "generation%03d" % igen)
 		if os.path.exists(gendir):
 			igrp = 0
-			while( igrp < maximum_groups):
-				Class_file = os.path.join(gendir, "Kmref/Class%d.txt"%igrp)
+			while igrp < maximum_groups:
+				Class_file = os.path.join(gendir, "Kmref/Class%d.txt" % igrp)
 				if os.path.exists(Class_file):
 					class_one = read_text_file(Class_file)
 					class_list.append(class_one)
@@ -6720,26 +8405,31 @@ def get_class_members(sort3d_dir):
 			igen = maximum_generations
 	return class_list
 
-def remove_small_groups(class_list,minimum_number_of_objects_in_a_group):
-	new_class  = []
+
+def remove_small_groups(class_list, minimum_number_of_objects_in_a_group):
+	new_class = []
 	final_list = []
 	for one_class in class_list:
-		if len(one_class)>=minimum_number_of_objects_in_a_group:
+		if len(one_class) >= minimum_number_of_objects_in_a_group:
 			new_class.append(one_class)
 			for element in one_class:
 				final_list.append(element)
 	final_list.sort()
 	return final_list, new_class
 
-def get_number_of_groups(total_particles,number_of_images_per_group):
-	#minimum_number_of_members = 1000
-	number_of_groups   =  float(total_particles)/number_of_images_per_group
-	if number_of_groups - int(number_of_groups)<.4:number_of_groups = int(number_of_groups)
-	else:number_of_groups = int(number_of_groups)+1
+
+def get_number_of_groups(total_particles, number_of_images_per_group):
+	# minimum_number_of_members = 1000
+	number_of_groups = float(total_particles) / number_of_images_per_group
+	if number_of_groups - int(number_of_groups) < 0.4:
+		number_of_groups = int(number_of_groups)
+	else:
+		number_of_groups = int(number_of_groups) + 1
 	return number_of_groups
 
+
 def get_stable_members_from_two_runs(SORT3D_rootdirs, ad_hoc_number, log_main):
-	#SORT3D_rootdirs                       =sys.argv[1]
+	# SORT3D_rootdirs                       =sys.argv[1]
 	# ad_hoc_number would be a number larger than the id simply for handling two_way comparison of non-equal number of groups from two partitions.
 	########
 	from string import split
@@ -6747,146 +8437,187 @@ def get_stable_members_from_two_runs(SORT3D_rootdirs, ad_hoc_number, log_main):
 	from numpy import array
 
 	sort3d_rootdir_list = split(SORT3D_rootdirs)
-	dict1              = []
-	maximum_elements   = 0
+	dict1 = []
+	maximum_elements = 0
 	for index_sort3d in range(len(sort3d_rootdir_list)):
-		sort3d_dir       = sort3d_rootdir_list[index_sort3d]
-		all_groups       = get_class_members(sort3d_dir)
+		sort3d_dir = sort3d_rootdir_list[index_sort3d]
+		all_groups = get_class_members(sort3d_dir)
 		dict1.append(all_groups)
-		if maximum_elements <len(all_groups):
+		if maximum_elements < len(all_groups):
 			maximum_elements = len(all_groups)
 	TC = ad_hoc_number + 1
 	for indep in range(len(dict1)):
 		alist = dict1[indep]
-		while len(alist)<maximum_elements:
+		while len(alist) < maximum_elements:
 			alist.append([TC])
 			TC += 1
 		dict1[indep] = alist
 		TC += 1
-	for a in dict1:   log_main.add(len(a))
+	for a in dict1:
+		log_main.add(len(a))
 	dict = {}
 	for index_sort3d in range(len(sort3d_rootdir_list)):
-		sort3d_dir       = sort3d_rootdir_list[index_sort3d]
+		sort3d_dir = sort3d_rootdir_list[index_sort3d]
 		dict[sort3d_dir] = dict1[index_sort3d]
-	###### Conduct two-way comparison
-	for isort3d in range(0,1): #len(sort3d_rootdir_list)):
+		###### Conduct two-way comparison
+	for isort3d in range(0, 1):  # len(sort3d_rootdir_list)):
 		li = dict[sort3d_rootdir_list[isort3d]]
 		new_li = []
 		for ili in range(len(li)):
 			li[ili].sort()
-			t= array(li[ili],'int32')
+			t = array(li[ili], "int32")
 			new_li.append(t)
 		avg_list = {}
-		total    = {}
+		total = {}
 		for ii in range(len(li)):
-			avg_list[ii]=0.0
-			total[ii]=0.0
+			avg_list[ii] = 0.0
+			total[ii] = 0.0
 		for jsort3d in range(len(sort3d_rootdir_list)):
 			if isort3d != jsort3d:
 				new_lj = []
 				lj = dict[sort3d_rootdir_list[jsort3d]]
 				for a in lj:
-					log_main.add("the size is  %d"%len(a))
+					log_main.add("the size is  %d" % len(a))
 				for jlj in range(len(lj)):
 					lj[jlj].sort()
-					t= array(lj[jlj],'int32')
+					t = array(lj[jlj], "int32")
 					new_lj.append(t)
-				ptp=[new_li,new_lj]
-				newindeces, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(ptp[0],ptp[1])
-				log_main.add("*************************************************************")
+				ptp = [new_li, new_lj]
+				newindeces, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(
+					ptp[0], ptp[1]
+				)
+				log_main.add(
+					"*************************************************************"
+				)
 				log_main.add("the results of two P1 runs are: ")
 				for index in range(len(newindeces)):
-					log_main.add("  %d of %s matches  %d of %s"%(newindeces[index][0],sort3d_rootdir_list[isort3d],newindeces[index][1],sort3d_rootdir_list[jsort3d]))
+					log_main.add(
+						"  %d of %s matches  %d of %s"
+						% (
+							newindeces[index][0],
+							sort3d_rootdir_list[isort3d],
+							newindeces[index][1],
+							sort3d_rootdir_list[jsort3d],
+						)
+					)
 				for index in range(len(list_stable)):
-					log_main.add("%d   stable memebers"%len(list_stable[index]))
+					log_main.add("%d   stable memebers" % len(list_stable[index]))
 				new_stable = []
 				for ilist in range(len(list_stable)):
-					if len(list_stable[ilist])!= 0:
+					if len(list_stable[ilist]) != 0:
 						new_stable.append(list_stable[ilist])
 				for istable in range(len(new_stable)):
 					stable = new_stable[istable]
-					if len(stable)>0:
-						group_A =  li[newindeces[istable][0]]
-						group_B =  lj[newindeces[istable][1]]
-						log_main.add(" %d %d %d   "%(len(group_A),len(group_B),len(stable)))
+					if len(stable) > 0:
+						group_A = li[newindeces[istable][0]]
+						group_B = lj[newindeces[istable][1]]
+						log_main.add(
+							" %d %d %d   " % (len(group_A), len(group_B), len(stable))
+						)
 		return new_stable
 
-def two_way_comparison_single(partition_A, partition_B,Tracker):
+
+def two_way_comparison_single(partition_A, partition_B, Tracker):
 	###############
 	from statistics import k_means_match_clusters_asg_new
 	from utilities import count_chunk_members, margin_of_error
 	from numpy import array
-	#two_way_comparison_single
+
+	# two_way_comparison_single
 	total_stack = Tracker["constants"]["total_stack"]
-	log_main    = Tracker["constants"]["log_main"]
-	myid        = Tracker["constants"]["myid"]
-	main_node   = Tracker["constants"]["main_node"]
-	numpy32_A   = []
-	numpy32_B   = []
-	total_A     = 0
-	total_B     = 0
+	log_main = Tracker["constants"]["log_main"]
+	myid = Tracker["constants"]["myid"]
+	main_node = Tracker["constants"]["main_node"]
+	numpy32_A = []
+	numpy32_B = []
+	total_A = 0
+	total_B = 0
 	###--------------------------------------
 
 	if myid == main_node:
-		log_main.add(" the first run has number of particles %d"%len(partition_A))
-		log_main.add(" the second run has number of particles %d"%len(partition_B))
+		log_main.add(" the first run has number of particles %d" % len(partition_A))
+		log_main.add(" the second run has number of particles %d" % len(partition_B))
 	for A in partition_A:
-		total_A +=len(A)
+		total_A += len(A)
 	for B in partition_B:
-		total_B +=len(B)
+		total_B += len(B)
 	nc_zero = 1
 	if len(partition_A) < len(partition_B):
-		while len(partition_A) <len(partition_B):
-			partition_A.append([nc_zero+total_stack])
-			nc_zero +=1
+		while len(partition_A) < len(partition_B):
+			partition_A.append([nc_zero + total_stack])
+			nc_zero += 1
 	elif len(partition_A) > len(partition_B):
-		while len(partition_B) <len(partition_A):
-			partition_B.append([nc_zero+total_stack])
-			nc_zero +=1
+		while len(partition_B) < len(partition_A):
+			partition_B.append([nc_zero + total_stack])
+			nc_zero += 1
 	number_of_class = len(partition_A)
 	for index_of_class in range(number_of_class):
 		A = partition_A[index_of_class]
 		A.sort()
-		A= array(A,'int32')
+		A = array(A, "int32")
 		numpy32_A.append(A)
-		B= partition_B[index_of_class]
+		B = partition_B[index_of_class]
 		B.sort()
-		B = array(B,'int32')
+		B = array(B, "int32")
 		numpy32_B.append(B)
-		if myid ==main_node:
-			log_main.add("group %d  %d   %d"%(index_of_class,len(A), len(B)))
-	ptp    = [[],[]]
+		if myid == main_node:
+			log_main.add("group %d  %d   %d" % (index_of_class, len(A), len(B)))
+	ptp = [[], []]
 	ptp[0] = numpy32_A
 	ptp[1] = numpy32_B
-	newindexes, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(ptp[0],ptp[1])
+	newindexes, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(
+		ptp[0], ptp[1]
+	)
 	if myid == main_node:
-		log_main.add(" reproducible percentage of the first partition %f"%(nb_tot_objs/float(total_A)*100.))
-		log_main.add(" reproducible percentage of the second partition %f"%(nb_tot_objs/float(total_B)*100.))
+		log_main.add(
+			" reproducible percentage of the first partition %f"
+			% (nb_tot_objs / float(total_A) * 100.0)
+		)
+		log_main.add(
+			" reproducible percentage of the second partition %f"
+			% (nb_tot_objs / float(total_B) * 100.0)
+		)
 		for index in range(len(newindexes)):
-			log_main.add("%d of A match %d of B "%(newindexes[index][0],newindexes[index][1]))
+			log_main.add(
+				"%d of A match %d of B " % (newindexes[index][0], newindexes[index][1])
+			)
 		for index in range(len(list_stable)):
-			log_main.add("%d number of reproduced objects are found in group %d"%(len(list_stable[index]),index))
-		log_main.add(" %d number of objects are reproduced "%nb_tot_objs)
+			log_main.add(
+				"%d number of reproduced objects are found in group %d"
+				% (len(list_stable[index]), index)
+			)
+		log_main.add(" %d number of objects are reproduced " % nb_tot_objs)
 		log_main.add(" margin of error")
 	large_stable = []
 	for index_of_stable in range(len(list_stable)):
-		rate1,rate2,size_of_this_group = count_chunk_members(Tracker["chunk_dict"], list_stable[index_of_stable])
-		if size_of_this_group>=Tracker["constants"]["smallest_group"]:
-			error                          = margin_of_error(Tracker["P_chunk0"],size_of_this_group)
+		rate1, rate2, size_of_this_group = count_chunk_members(
+			Tracker["chunk_dict"], list_stable[index_of_stable]
+		)
+		if size_of_this_group >= Tracker["constants"]["smallest_group"]:
+			error = margin_of_error(Tracker["P_chunk0"], size_of_this_group)
 			if myid == main_node:
-				log_main.add(" chunk0  lower bound %f  upper bound  %f  for sample size  %d     group id %d"%((Tracker["P_chunk0"]- error),(Tracker["P_chunk0"]+error),size_of_this_group, index_of_stable))
-				log_main.add(" actual percentage is %f"%rate1)
+				log_main.add(
+					" chunk0  lower bound %f  upper bound  %f  for sample size  %d     group id %d"
+					% (
+						(Tracker["P_chunk0"] - error),
+						(Tracker["P_chunk0"] + error),
+						size_of_this_group,
+						index_of_stable,
+					)
+				)
+				log_main.add(" actual percentage is %f" % rate1)
 			large_stable.append(list_stable[index_of_stable])
 		else:
-			if myid==main_node:
-				log_main.add("%d  group is too small"%index_of_stable)
+			if myid == main_node:
+				log_main.add("%d  group is too small" % index_of_stable)
 	return large_stable
+
 
 def get_leftover_from_stable(stable_list, N_total, smallest_group):
 	tmp_dict = {}
 	for i in range(N_total):
 		tmp_dict[i] = i
-	new_stable      =[]
+	new_stable = []
 	for alist in stable_list:
 		if len(alist) > smallest_group:
 			for index_of_list in range(len(alist)):
@@ -6897,7 +8628,8 @@ def get_leftover_from_stable(stable_list, N_total, smallest_group):
 		leftover_list.append(one_element)
 	return leftover_list, new_stable
 
-def Kmeans_exhaustive_run(ref_vol_list,Tracker):
+
+def Kmeans_exhaustive_run(ref_vol_list, Tracker):
 	from applications import ali3d_mref_Kmeans_MPI
 	from utilities import write_text_file
 	from reconstruction import rec3D_two_chunks_MPI
@@ -6905,85 +8637,129 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 	from utilities import wrap_mpi_bcast
 	import os
 	from mpi import MPI_COMM_WORLD, mpi_barrier
+
 	# npad 2 ---------------------------------------
-	npad                  = 2
-	myid                  = Tracker["constants"]["myid"]
-	main_node             = Tracker["constants"]["main_node"]
-	log_main              = Tracker["constants"]["log_main"]
-	nproc                 = Tracker["constants"]["nproc"]
-	final_list_text_file  = Tracker["this_data_list_file"] ## id text file for get_shrink_data_huang
-	snr                   = 1.
-	Tracker["total_stack"]= len(Tracker["this_data_list"])
+	npad = 2
+	myid = Tracker["constants"]["myid"]
+	main_node = Tracker["constants"]["main_node"]
+	log_main = Tracker["constants"]["log_main"]
+	nproc = Tracker["constants"]["nproc"]
+	final_list_text_file = Tracker[
+		"this_data_list_file"
+	]  ## id text file for get_shrink_data_huang
+	snr = 1.0
+	Tracker["total_stack"] = len(Tracker["this_data_list"])
 	if myid == main_node:
 		log_main.add("start exhaustive Kmeans")
-		log_main.add("total data is %d"%len(Tracker["this_data_list"]))
-		log_main.add("final list file is "+final_list_text_file)
+		log_main.add("total data is %d" % len(Tracker["this_data_list"]))
+		log_main.add("final list file is " + final_list_text_file)
 	workdir = Tracker["this_dir"]
 	####----------------------------------------------
 	empty_group = 1
-	kmref       = 0
-	while empty_group ==1 and kmref<=5:## In case pctn of Kmeans jumps between 100% to 0%, stop the program
-		if myid ==main_node: log_main.add(" %d     Kmref run"%kmref)
-		outdir =os.path.join(workdir, "Kmref%d"%kmref)
-		empty_group, res_classes, data_list = ali3d_mref_Kmeans_MPI(ref_vol_list, outdir, final_list_text_file, Tracker)
-		kmref +=1
-		if empty_group ==1:
-			if myid ==main_node:
-				log_main.add("empty gorup appears, next round of Kmeans requires rebuilding reference volumes!")
-				log_main.add(" the number of classes for next round before cleaning is %d"%len(res_classes))
-			final_list   = []
-			new_class    = []
+	kmref = 0
+	while (
+		empty_group == 1 and kmref <= 5
+	):  ## In case pctn of Kmeans jumps between 100% to 0%, stop the program
+		if myid == main_node:
+			log_main.add(" %d     Kmref run" % kmref)
+		outdir = os.path.join(workdir, "Kmref%d" % kmref)
+		empty_group, res_classes, data_list = ali3d_mref_Kmeans_MPI(
+			ref_vol_list, outdir, final_list_text_file, Tracker
+		)
+		kmref += 1
+		if empty_group == 1:
+			if myid == main_node:
+				log_main.add(
+					"empty gorup appears, next round of Kmeans requires rebuilding reference volumes!"
+				)
+				log_main.add(
+					" the number of classes for next round before cleaning is %d"
+					% len(res_classes)
+				)
+			final_list = []
+			new_class = []
 			for a in res_classes:
-				if len(a)>=Tracker["constants"]["smallest_group"]:
+				if len(a) >= Tracker["constants"]["smallest_group"]:
 					for b in a:
 						final_list.append(b)
 					new_class.append(a)
 			final_list.sort()
 			### reset variables of Kmeans run
-			Tracker["total_stack"]    = len(final_list)
+			Tracker["total_stack"] = len(final_list)
 			Tracker["this_data_list"] = final_list
-			final_list_text_file      = os.path.join(workdir, "final_list%d.txt"%kmref)
+			final_list_text_file = os.path.join(workdir, "final_list%d.txt" % kmref)
 			if myid == main_node:
-				log_main.add("number of classes for next round is %d"%len(new_class))
+				log_main.add("number of classes for next round is %d" % len(new_class))
 				write_text_file(final_list, final_list_text_file)
 				number_of_ref_class = []
 				for igrp in range(len(new_class)):
-					write_text_file(new_class[igrp],os.path.join(workdir,"final_class%d.txt"%igrp))
+					write_text_file(
+						new_class[igrp],
+						os.path.join(workdir, "final_class%d.txt" % igrp),
+					)
 					number_of_ref_class.append(len(new_class[igrp]))
 			else:
 				number_of_ref_class = 0
-			number_of_ref_class = wrap_mpi_bcast(number_of_ref_class,main_node)
+			number_of_ref_class = wrap_mpi_bcast(number_of_ref_class, main_node)
 			mpi_barrier(MPI_COMM_WORLD)
 			ref_vol_list = []
-			if  Tracker["constants"]["mask3D"]: mask3D = get_shrink_3dmask(Tracker["constants"]["nxinit"],Tracker["constants"]["mask3D"])
-			else: mask3D = None
+			if Tracker["constants"]["mask3D"]:
+				mask3D = get_shrink_3dmask(
+					Tracker["constants"]["nxinit"], Tracker["constants"]["mask3D"]
+				)
+			else:
+				mask3D = None
 			Tracker["number_of_ref_class"] = number_of_ref_class
 			for igrp in range(len(new_class)):
-				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"],os.path.join(workdir,"final_class%d.txt"%igrp),Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
-				#volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo=None)
-				#volref = filt_tanl(volref, Tracker["low_pass_filter"],.1)
-				volref, fsc_kmref = rec3D_two_chunks_MPI(data,snr,Tracker["constants"]["sym"],mask3D,\
-			 os.path.join(outdir, "resolution_%02d_Kmref%04d"%(igrp,kmref)), myid, main_node, index=-1, npad=npad, finfo = None)
-				if myid !=main_node:
-					volref = model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
+				data, old_shifts = get_shrink_data_huang(
+					Tracker,
+					Tracker["nxinit"],
+					os.path.join(workdir, "final_class%d.txt" % igrp),
+					Tracker["constants"]["partstack"],
+					myid,
+					main_node,
+					nproc,
+					preshift=True,
+				)
+				# volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo=None)
+				# volref = filt_tanl(volref, Tracker["low_pass_filter"],.1)
+				volref, fsc_kmref = rec3D_two_chunks_MPI(
+					data,
+					snr,
+					Tracker["constants"]["sym"],
+					mask3D,
+					os.path.join(outdir, "resolution_%02d_Kmref%04d" % (igrp, kmref)),
+					myid,
+					main_node,
+					index=-1,
+					npad=npad,
+					finfo=None,
+				)
+				if myid != main_node:
+					volref = model_blank(
+						Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"]
+					)
 				bcast_EMData_to_all(volref, myid, main_node, MPI_COMM_WORLD)
 				ref_vol_list.append(volref)
 				mpi_barrier(MPI_COMM_WORLD)
 		else:
-			new_class    = []
+			new_class = []
 			for a in res_classes:
-				if len(a)>=Tracker["constants"]["smallest_group"]:new_class.append(a)
+				if len(a) >= Tracker["constants"]["smallest_group"]:
+					new_class.append(a)
 	if myid == main_node:
 		log_main.add("Exhaustive Kmeans finishes")
-		log_main.add(" %d groups are selected out"%len(new_class))
+		log_main.add(" %d groups are selected out" % len(new_class))
 	return new_class
 
-def print_a_line_with_timestamp(string_to_be_printed ):
+
+def print_a_line_with_timestamp(string_to_be_printed):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	print((line,string_to_be_printed))
+	print((line, string_to_be_printed))
 	return string_to_be_printed
 
-def split_a_group(workdir,list_of_a_group,Tracker):
+
+def split_a_group(workdir, list_of_a_group, Tracker):
 	### Using EQ-Kmeans and Kmeans to split a group
 	from utilities import wrap_mpi_bcast
 	from random import shuffle
@@ -6992,22 +8768,25 @@ def split_a_group(workdir,list_of_a_group,Tracker):
 	from reconstruction import recons3d_4nn_ctf_MPI
 	from filter import filt_tanl
 	from applications import mref_ali3d_EQ_Kmeans
+
 	################
-	myid        = Tracker["constants"]["myid"]
-	main_node   = Tracker["constants"]["main_node"]
-	nproc       = Tracker["constants"]["nproc"]
+	myid = Tracker["constants"]["myid"]
+	main_node = Tracker["constants"]["main_node"]
+	nproc = Tracker["constants"]["nproc"]
 	total_stack = len(list_of_a_group)
 	################
 	import copy
-	data_list [:] = list_of_a_group[:]
-	update_full_dict(data_list,Tracker)
-	this_particle_text_file = os.path.join(workdir,"full_class.txt")
-	if myid ==main_node: write_text_file(data_list,"full_class.txt")
+
+	data_list[:] = list_of_a_group[:]
+	update_full_dict(data_list, Tracker)
+	this_particle_text_file = os.path.join(workdir, "full_class.txt")
+	if myid == main_node:
+		write_text_file(data_list, "full_class.txt")
 	# Compute the resolution of leftover
 	if myid == main_node:
 		shuffle(data_list)
-		l1=data_list[0:total_stack//2]
-		l2=data_list[total_stack//2:]
+		l1 = data_list[0 : total_stack // 2]
+		l2 = data_list[total_stack // 2 :]
 		l1.sort()
 		l2.sort()
 	else:
@@ -7015,67 +8794,94 @@ def split_a_group(workdir,list_of_a_group,Tracker):
 		l2 = 0
 	l1 = wrap_mpi_bcast(l1, main_node)
 	l2 = wrap_mpi_bcast(l2, main_node)
-	llist =[l1,l2]
-	if myid ==main_node:
+	llist = [l1, l2]
+	if myid == main_node:
 		for index in range(2):
-			partids = os.path.join(workdir,"Class_%d.txt"%index)
-			write_text_file(llist[index],partids)
+			partids = os.path.join(workdir, "Class_%d.txt" % index)
+			write_text_file(llist[index], partids)
 	mpi_barrier(MPI_COMM_WORLD)
 	################ create references for EQ-Kmeans
 	ref_list = []
 	for index in range(2):
-		partids = os.path.join(workdir,"Class_%d.txt"%index)
+		partids = os.path.join(workdir, "Class_%d.txt" % index)
 		while not os.path.exists(partids):
-			#print  " my_id",myid
+			# print  " my_id",myid
 			sleep(2)
 		mpi_barrier(MPI_COMM_WORLD)
-		data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"],partids,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
-		vol = recons3d_4nn_ctf_MPI(myid=myid,prjlist = data,symmetry=Tracker["constants"]["sym"],finfo=None)
-		vol = filt_tanl(vol,Tracker["constants"]["low_pass_filter"],.1)
+		data, old_shifts = get_shrink_data_huang(
+			Tracker,
+			Tracker["constants"]["nxinit"],
+			partids,
+			Tracker["constants"]["partstack"],
+			myid,
+			main_node,
+			nproc,
+			preshift=True,
+		)
+		vol = recons3d_4nn_ctf_MPI(
+			myid=myid, prjlist=data, symmetry=Tracker["constants"]["sym"], finfo=None
+		)
+		vol = filt_tanl(vol, Tracker["constants"]["low_pass_filter"], 0.1)
 		ref_list.append(vol)
 	mpi_barrier(MPI_COMM_WORLD)
 	### EQ-Kmeans
-	outdir = os.path.join(workdir,"EQ-Kmeans")
-	mref_ali3d_EQ_Kmeans(ref_list,outdir,this_particle_text_file,Tracker)
-	res_EQ = partition_to_groups(Tracker["this_partition"],K=2)
+	outdir = os.path.join(workdir, "EQ-Kmeans")
+	mref_ali3d_EQ_Kmeans(ref_list, outdir, this_particle_text_file, Tracker)
+	res_EQ = partition_to_groups(Tracker["this_partition"], K=2)
 	new_class = []
 	for index in range(len(res_EQ)):
 		new_ID = get_initial_ID(res_EQ(index), Tracker["full_ID_dict"])
 		new_class.append(new_ID)
-		if myid ==main_node:
-			new_class_file = os.path.join(workdir,"new_class%d.txt"%index)
-			write_text_file(new_ID,new_class_file)
+		if myid == main_node:
+			new_class_file = os.path.join(workdir, "new_class%d.txt" % index)
+			write_text_file(new_ID, new_class_file)
 	mpi_barrier(MPI_COMM_WORLD)
 	############# create references for Kmeans
 	ref_list = []
 	for index in range(2):
-		partids = os.path.join(workdir,"new_class%d.txt"%index)
+		partids = os.path.join(workdir, "new_class%d.txt" % index)
 		while not os.path.exists(partids):
-			#print  " my_id",myid
+			# print  " my_id",myid
 			sleep(2)
 		mpi_barrier(MPI_COMM_WORLD)
-		data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"],partids,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
-		vol = recons3d_4nn_ctf_MPI(myid=myid,prjlist = data,symmetry=Tracker["constants"]["sym"],finfo=None)
-		vol = filt_tanl(vol,Tracker["constants"]["low_pass_filter"],.1)
+		data, old_shifts = get_shrink_data_huang(
+			Tracker,
+			Tracker["constants"]["nxinit"],
+			partids,
+			Tracker["constants"]["partstack"],
+			myid,
+			main_node,
+			nproc,
+			preshift=True,
+		)
+		vol = recons3d_4nn_ctf_MPI(
+			myid=myid, prjlist=data, symmetry=Tracker["constants"]["sym"], finfo=None
+		)
+		vol = filt_tanl(vol, Tracker["constants"]["low_pass_filter"], 0.1)
 		ref_list.append(vol)
 	mpi_barrier(MPI_COMM_WORLD)
 	#### Kmeans
 
+
 def search_lowpass(fsc):
-	fcutoff =.5
+	fcutoff = 0.5
 	for i in range(len(fsc[1])):
-		if fsc[1][i]<.5:
+		if fsc[1][i] < 0.5:
 			break
-	if i<len(fsc[1])-1:
-		fcutoff=fsc[0][i-1]
+	if i < len(fsc[1]) - 1:
+		fcutoff = fsc[0][i - 1]
 	else:
-		fcutoff=.5
-	fcutoff=min(.45,fcutoff)
+		fcutoff = 0.5
+	fcutoff = min(0.45, fcutoff)
 	return fcutoff
 
 
 def angular_distribution(inputfile, options, output):
-	ERROR("Code disabled, please use sxplot_projs_distrib.py instead","angular_distribution",1)
+	ERROR(
+		"Code disabled, please use sxplot_projs_distrib.py instead",
+		"angular_distribution",
+		1,
+	)
 	"""
 	import numpy
 
@@ -7207,20 +9013,23 @@ def angular_distribution(inputfile, options, output):
 	print(('All done! Saved output to: {0}'.format(output)))
 	"""
 
+
 #####---------------------------------------------------
 # used in new meridien
-def tabessel(nx, nnxo, nbel = 5000):
-	beltab = [0.0]*nbel
+def tabessel(nx, nnxo, nbel=5000):
+	beltab = [0.0] * nbel
 	radius = 1.9
 	alpha = 15
-	#order = 0
-	normk = Util.bessel0(0., radius, alpha)
+	# order = 0
+	normk = Util.bessel0(0.0, radius, alpha)
 	for i in range(nbel):
-		rr = i/float(nbel-1)/2.0
-		beltab[i] = Util.bessel0(rr, radius, alpha)/normk
+		rr = i / float(nbel - 1) / 2.0
+		beltab[i] = Util.bessel0(rr, radius, alpha) / normk
 	return beltab
 
+
 ####
+
 
 def split_chunks_bad(l, n):
 	"""
@@ -7228,7 +9037,7 @@ def split_chunks_bad(l, n):
 	   see  http://stackoverflow.com/questions/6855394/splitting-list-in-chunks-of-balanced-weight
 	"""
 	result = [[] for i in range(n)]
-	sums   = {i:0 for i in range(n)}
+	sums = {i: 0 for i in range(n)}
 	c = 0
 	for e in l:
 		for i in sums:
@@ -7240,7 +9049,8 @@ def split_chunks_bad(l, n):
 	for i in range(len(result)):
 		result[i].sort()
 	return result
-	
+
+
 def convert_to_float(value):
 	"""
 	When one wants to pass floats from C to python as integers, in C one would do
@@ -7252,96 +9062,93 @@ def convert_to_float(value):
 	return ival, and then in python covert it to float
 	"""
 	from struct import unpack
-	return unpack("!f", hex(value)[2:].zfill(8).decode('hex'))[0]
+
+	return unpack("!f", hex(value)[2:].zfill(8).decode("hex"))[0]
 
 
-def create_summovie_command(
-        temp_name,
-        micrograph_name,
-        shift_name,
-        frc_name,
-        opt
-        ):
+def create_summovie_command(temp_name, micrograph_name, shift_name, frc_name, opt):
 
-    # Handle first and last case events
-    if opt['first'] == 0:
-        ERROR(
-            'SumMovie indexing starts with 1.\n' +
-            '0 is not a valid entry for --first', 'sxsummovie.py', 1
-            )
-    elif opt['first'] < 0:
-        first = opt['nr_frames'] + opt['first'] + 1
-    else:
-        first = opt['first']
+	# Handle first and last case events
+	if opt["first"] == 0:
+		ERROR(
+			"SumMovie indexing starts with 1.\n" + "0 is not a valid entry for --first",
+			"sxsummovie.py",
+			1,
+		)
+	elif opt["first"] < 0:
+		first = opt["nr_frames"] + opt["first"] + 1
+	else:
+		first = opt["first"]
 
-    if opt['last'] == 0:
-        ERROR(
-            'SumMovie indexing starts with 1.\n' +
-            '0 is not a valid entry for --last', 'sxsummovie.py', 1
-            )
-    elif opt['last'] < 0:
-        last = opt['nr_frames'] + opt['last'] + 1
-    else:
-        last = opt['last']
+	if opt["last"] == 0:
+		ERROR(
+			"SumMovie indexing starts with 1.\n" + "0 is not a valid entry for --last",
+			"sxsummovie.py",
+			1,
+		)
+	elif opt["last"] < 0:
+		last = opt["nr_frames"] + opt["last"] + 1
+	else:
+		last = opt["last"]
 
-    if first > last:
-        ERROR(
-            'First option musst be smaller equals last option!\n' + 
-            'first: {0}; last: {1}'.format(first, last), 'sxsummovie.py', 1
-            )
+	if first > last:
+		ERROR(
+			"First option musst be smaller equals last option!\n"
+			+ "first: {0}; last: {1}".format(first, last),
+			"sxsummovie.py",
+			1,
+		)
 
-    if opt['nr_frames'] < last or last <= 0:
-        ERROR(
-            '--last option {0} is out of range:\n'.format(last) + 
-            'min: 1; max {0}'.format(
-            opt['nr_frames']
-            ), 'sxsummovie.py', 1
-            )
+	if opt["nr_frames"] < last or last <= 0:
+		ERROR(
+			"--last option {0} is out of range:\n".format(last)
+			+ "min: 1; max {0}".format(opt["nr_frames"]),
+			"sxsummovie.py",
+			1,
+		)
 
-    if opt['nr_frames'] < first or first <= 0:
-        ERROR(
-            '--first option {0} is out of range:\n'.format(first) + 
-            'min: 1; max {0}'.format(
-            opt['nr_frames']
-            ), 'sxsummovie.py', 1
-            )
+	if opt["nr_frames"] < first or first <= 0:
+		ERROR(
+			"--first option {0} is out of range:\n".format(first)
+			+ "min: 1; max {0}".format(opt["nr_frames"]),
+			"sxsummovie.py",
+			1,
+		)
 
-    # Command list
-    summovie_command = []
+	# Command list
+	summovie_command = []
 
-    # Input file
-    summovie_command.append('{0}'.format(temp_name))
-    # Number of frames
-    summovie_command.append('{0}'.format(opt['nr_frames']))
-    # Sum file
-    summovie_command.append(micrograph_name)
-    # Shift file
-    summovie_command.append(shift_name)
-    # FRC file
-    summovie_command.append(frc_name),
-    # First frame
-    summovie_command.append('{0}'.format(first))
-    # Last frame
-    summovie_command.append('{0}'.format(last))
-    # Pixel size
-    summovie_command.append('{0}'.format(opt['pixel_size']))
-    # Dose correction
-    if not opt['apply_dose_filter']:
-        summovie_command.append('NO')
-    else:
-        summovie_command.append('YES')
-        # Exposure per frame
-        summovie_command.append('{0}'.format(opt['exposure_per_frame']))
-        # Acceleration voltage
-        summovie_command.append('{0}'.format(opt['voltage']))
-        # Pre exposure
-        summovie_command.append('{0}'.format(opt['pre_exposure']))
-        # Restore noise power
-        if opt['dont_restore_noise']:
-            summovie_command.append('NO')
-        else:
-            summovie_command.append('YES')
+	# Input file
+	summovie_command.append("{0}".format(temp_name))
+	# Number of frames
+	summovie_command.append("{0}".format(opt["nr_frames"]))
+	# Sum file
+	summovie_command.append(micrograph_name)
+	# Shift file
+	summovie_command.append(shift_name)
+	# FRC file
+	summovie_command.append(frc_name),
+	# First frame
+	summovie_command.append("{0}".format(first))
+	# Last frame
+	summovie_command.append("{0}".format(last))
+	# Pixel size
+	summovie_command.append("{0}".format(opt["pixel_size"]))
+	# Dose correction
+	if not opt["apply_dose_filter"]:
+		summovie_command.append("NO")
+	else:
+		summovie_command.append("YES")
+		# Exposure per frame
+		summovie_command.append("{0}".format(opt["exposure_per_frame"]))
+		# Acceleration voltage
+		summovie_command.append("{0}".format(opt["voltage"]))
+		# Pre exposure
+		summovie_command.append("{0}".format(opt["pre_exposure"]))
+		# Restore noise power
+		if opt["dont_restore_noise"]:
+			summovie_command.append("NO")
+		else:
+			summovie_command.append("YES")
 
-    return summovie_command
-
-
+	return summovie_command

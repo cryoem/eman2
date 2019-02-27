@@ -1,7 +1,8 @@
 #! /usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
-# Author 2016  Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
+# Author 2019  Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
 # Copyright (C) 2019 Max planck institute for molecular physiology, Dortmund
 #
 
@@ -25,644 +26,414 @@ from __future__ import print_function
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 
-from sys import argv
-from os import mkdir, path, system, remove, rmdir
-from glob import glob
-from numpy import genfromtxt
-import numpy
-import time
+
+import os
+import glob
+import argparse
 import subprocess
+import time
+
 import global_def
-from global_def import sxprint, ERROR
-from global_def import SPARXVERSION, ERROR
-from optparse import OptionParser, SUPPRESS_HELP
-from utilities import create_summovie_command
+import applications
+import utilities
+import mpi
 
-def main():
 
-    # Parse the Options
-    progname = path.basename(argv[0])
-    usage = progname + """ unblur_path input_micrograph_pattern output_directory
-    --summovie_path
-    --selection_list
-    --nr_frames=nr_frames
-    --pixel_size=pixel_size
-    --voltage=voltage
-    --exposure_per_frame=exposure_per_frame
-    --pre_exposure=pre_exposure
-    --nr_threads
-    --save_frames
-    --skip_dose_filter
-    --expert_mode
-    --shift_initial=shift_initial
-    --shift_radius=shift_radius
-    --b_factor=b_factor
-    --fourier_vertical=fourier_vertical
-    --fourier_horizontal=fourier_horizontal
-    --shift_threshold=shift_threshold
-    --iterations=iterations
-    --dont_restore_noise
-    --verbose
+def parse_args():
+	"""
+	Parse command line arguments.
 
-    sxunblur exists only in non-MPI version.
+	Arguments:
+	None
 
-    Perform unblur and with dose filtering and summovie without dose filtering.
+	Returns:
+	dictionary of command line arguments
+	"""
 
-    sxunblur.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur
-    --summovie_path=~/my_app/summovie
-    --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0
-    --voltage=300.0 --pre_exposure=0.0 --nr_threads=1
-
-    Perform unblur with dose filtering and summovie without dose filtering with selection list.
-
-    sxunblur.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur
-    --summovie_path=~/my_app/summovie
-    --selection_list=selected_micrograph_file
-    --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0
-    --voltage=300.0 --pre_exposure=0.0 --nr_threads=1
-
-    Perform unblur without dose filtering.
-
-    sxunblur.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur
-    --nr_frames=25 --pixel_size=1.19 --skip_dose_filter --nr_threads=1
-
-    Perform unblur without dose filtering and save the frames.
-
-    sxunblur.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur
-    --nr_frames=25 --pixel_size=1.19 --skip_dose_filter --save_frames --nr_threads=1
-
-    Perform unblur with dose filtering and summovie without dose filtering with all options.
-
-    sxunblur.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur
-    --summovie_path=~/my_app/summovie
-    --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0
-    --voltage=300.0 --pre_exposure=0.0 --save_frames --expert_mode
-    --shift_initial=2.0 --shift_radius=200.0 --b_factor=1500.0
-    --fourier_vertical=1 --fourier_horizontal=1 --shift_threshold=0.1
-    --iterations=10 --verbose --nr_threads=1
-    """
-
-    parser = OptionParser(usage, version=SPARXVERSION)
-    parser.add_option('--summovie_path',      type='str',          default='',        help='summovie executable path (SPHIRE specific): Specify the file path of summovie executable. (default none)')
-    parser.add_option('--selection_list',     type='str',          default='',        help='Micrograph selecting list (SPHIRE specific): Specify a name of micrograph selection list text file. The file extension must be \'.txt\'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)')
-    parser.add_option('--nr_frames',          type='int',          default=3,         help='Number of movie frames: The number of movie frames in each input micrograph. (default 3)')
-    parser.add_option('--sum_suffix',         type='str',          default='_sum',    help=SUPPRESS_HELP)
-    parser.add_option('--shift_suffix',       type='str',          default='_shift',  help=SUPPRESS_HELP)
-    parser.add_option('--pixel_size',         type='float',        default=-1.0,      help='Pixel size [A]: The pixel size of input micrographs. (default required float)')
-    parser.add_option('--voltage',            type='float',        default=300.0,     help='Microscope voltage [kV]: The acceleration voltage of microscope used for imaging. (default 300.0)')
-    parser.add_option('--exposure_per_frame', type='float',        default=2.0,       help='Per frame exposure [e/A^2]: The electron dose per frame in e/A^2. (default 2.0)')
-    parser.add_option('--pre_exposure',       type='float',        default=0.0,       help='Pre-exposure [e/A^2]: The electron does in e/A^2 used for exposure prior to imaging .(default 0.0)')
-    parser.add_option('--nr_threads',         type='int',          default=1,         help='Number of threads: The number of threads unblur can use. The higher the faster, but it requires larger memory. (default 1)')
-    parser.add_option('--save_frames',        action='store_true', default=False,     help='Save aligned movie frames: Save aligned movie frames. This option slows down the process. (default False)')
-    parser.add_option('--frames_suffix',      type='string',       default='_frames', help=SUPPRESS_HELP)
-    parser.add_option('--skip_dose_filter',   action='store_true', default=False,     help='Skip dose filter step: With this option, voltage, exposure per frame, and pre exposure will be ignored. (default False)')
-    parser.add_option('--expert_mode',        action='store_true', default=False,     help='Use expert mode: Requires initial shift, shift radius, b-factor, fourier_vertical, fourier_horizontal, shift threshold, iterations, restore noise, and verbosity options. (default False)')
-    parser.add_option('--frc_suffix',         type='string',       default='_frc',    help=SUPPRESS_HELP)
-    parser.add_option('--shift_initial',      type='float',        default=2.0,       help='Minimum shift for initial search [A] (expert mode): Effective with unblur expert mode. (default 2.0)')
-    parser.add_option('--shift_radius',       type='float',        default=200.0,     help='Outer radius shift limit [A] (expert mode): Effective with unblur expert mode. (default 200.0)')
-    parser.add_option('--b_factor',           type='float',        default=1500.0,    help='Apply B-factor to images [A^2] (expert mode): Effective with unblur expert mode. (default 1500.0)')
-    parser.add_option('--fourier_vertical',   type='int',          default=1,         help='Vertical Fourier central mask size (expert mode): The half-width of central vertical line of Fourier mask. Effective with unblur expert mode. (default 1)')
-    parser.add_option('--fourier_horizontal', type='int',          default=1,         help='Horizontal Fourier central mask size (expert mode): The half-width of central horizontal line of Fourier mask. Effective with unblur expert mode. (default 1)')
-    parser.add_option('--shift_threshold',    type='float',        default=0.1,       help='Termination shift threshold (expert mode): Effective with unblur expert mode. (default 0.1)')
-    parser.add_option('--iterations',         type='int',          default=10,        help='Maximum iterations (expert mode): Effective with unblur expert mode. (default 10)')
-    parser.add_option('--dont_restore_noise', action='store_true', default=False,     help='Do not restore noise power (expert mode): Effective with unblur expert mode. (default False)')
-    parser.add_option('--verbose',            action='store_true', default=False,     help='Verbose (expert mode): Effective with unblur expert mode. (default False)')
-    parser.add_option('--unblur_ready',       action='store_true', default=False,     help=SUPPRESS_HELP)
-
-    # list of the options and the arguments
-    (options, args) = parser.parse_args(argv[1:])
-
-    global_def.BATCH = True
-
-    # If there arent enough arguments, stop the script
-    if len(args) != 3:
-        sxprint("Usage: " + usage)
-        ERROR( "Invalid number of parameters used. Please see usage information above." )
-        return
-
-    # Convert the realtive parts to absolute ones
-    unblur_path = path.realpath(args[0]) # unblur_path
-    input_image = path.realpath(args[1]) # input_micrograph_pattern
-    output_dir = path.realpath(args[2])  # output_directory
-
-    # If the unblur executable file does not exists, stop the script
-    if not path.exists(unblur_path):
-        ERROR( "Unblur directory does not exist, please change the name and restart the program" )
-        return
-
-    # If the output directory exists, stop the script
-    if path.exists(output_dir):
-        ERROR( "Output directory exists, please change the name and restart the program" )
-        return
-
-    # If the input file does not exists, stop the script
-    file_list = glob(input_image)
-
-    if not file_list:
-        ERROR( "Input file does not exist, please change the name and restart the program" )
-        return
-
-    # If the skip_dose_filter option is false, the summovie path is necessary
-    if not options.skip_dose_filter and not path.exists(options.summovie_path):
-        ERROR( "Path to the SumMovie executable is necessary when dose weighting is performed" )
-        return
-
-
-    # Output paths
-    corrected_path = '{:s}/corrsum_dose_filtered'.format(output_dir)
-    uncorrected_path = '{:s}/corrsum'.format(output_dir)
-    shift_path = '{:s}/shift'.format(output_dir)
-    frc_path = '{:s}/frc'.format(output_dir)
-    log_path = '{:s}/logfiles'.format(output_dir)
-    temp_path = '{0}/temp'.format(output_dir)
-
-    # Split the path of the image name at the "/" Characters.
-    # The last entry contains the micrograph name.
-    # Split the micrograph name at the wildcard character for the
-    # prefix and suffix.
-    input_split = input_image.split('/')
-    input_name = input_split[-1].split('*')
-
-    # Get the input directory
-    if len(input_split) != 1:
-        input_dir = input_image[:-len(input_split[-1])]
-    else:
-        input_dir = ''
-
-    # Create output directorys
-    if not path.exists(output_dir):
-        mkdir(output_dir)
-    if not path.exists(uncorrected_path):
-        mkdir(uncorrected_path)
-    if not path.exists(shift_path):
-        mkdir(shift_path)
-    if not path.exists(corrected_path):
-        if not options.skip_dose_filter:
-            mkdir(corrected_path)
-    if not path.exists(frc_path):
-        if options.expert_mode or not options.skip_dose_filter:
-            mkdir(frc_path)
-    if not path.exists(temp_path) and not options.unblur_ready:
-        mkdir(temp_path)
-    if not path.exists(log_path):
-        mkdir(log_path)
-
-    # Run unblur
-    run_unblur(
-        unblur_path=unblur_path,
-        input_image=input_image,
-        input_dir=input_dir,
-        output_dir=output_dir,
-        corrected_path=corrected_path,
-        uncorrected_path=uncorrected_path,
-        shift_path=shift_path,
-        frc_path=frc_path,
-        temp_path=temp_path,
-        log_path=log_path,
-        file_list=file_list,
-        options=options
-        )
-
-    if not options.unblur_ready:
-        # Remove temp folder
-        for entry in glob('{0}/*'.format(temp_path)):
-            remove(entry)
-        rmdir(temp_path)
-
-    sxprint('All Done!')
-
-    global_def.BATCH = False
-
-
-def run_unblur(
-        unblur_path,
-        input_image,
-        input_dir,
-        output_dir,
-        corrected_path,
-        uncorrected_path,
-        shift_path,
-        frc_path,
-        temp_path,
-        log_path,
-        file_list,
-        options
-        ):
-
-    # Lists to write the text files later
-    micrograph_list = []
-    shift_list = []
-    if options.save_frames:
-        frames_list = []
-
-    # If micrograph list is provided just process the images in the list
-    mic_list = options.selection_list
-    if mic_list:
-        # Import list file
-        try:
-            set_selection = genfromtxt(mic_list, dtype=None)
-        except TypeError:
-            ERROR('no entrys in list file {0}'.format(mic_list))
-        # List of files which are in pattern and list
-        file_list = [
-                entry for entry in file_list \
-                if entry[len(input_dir):] in set_selection and \
-                path.exists(entry)
-                ]
-        # If no match is there abort
-        if len(file_list) == 0:
-            ERROR( 'no files in {0} matched the file pattern:\n'.format(mic_list), 1)
-    # Get the number of files
-    nr_files = len(file_list)
-
-    # Timeing stuff
-    time_start = time.time()
-    time_list = []
-
-    # Loop over all files
-    for index, inputfile in enumerate(sorted(file_list)):
-
-        # Check, if there is an prefix and suffix.
-        # If there is more then one entry: the suffix is the last one.
-        # Otherwhise its just the one after the dot.
-        input_suffix = inputfile.split('/')[-1].split('.')[-1]
-        # First output to introduce the programm
-        if index == 0:
-            sxprint(
-                    'Progress: 0.0%;  Time: --h:--m:--s/--h:--m:--s;  Unblur started!'
-                )
-
-        # Time begin
-        t1 = time.time()
-
-        # Get the output names
-        file_name = inputfile[len(input_dir):-len(input_suffix) - 1]
-        if options.skip_dose_filter:
-            micrograph_name = '{0}/{1}{2}.mrc'.format(
-                    uncorrected_path, file_name, options.sum_suffix
-                    )
-            frames_name = '{0}/{1}{2}.mrc'.format(
-                    uncorrected_path, file_name, options.frames_suffix
-                    )
-            frc_name = '{0}/{1}{2}.txt'.format(
-                frc_path, file_name, options.frc_suffix
-                )
-        else:
-            micrograph_name = '{0}/{1}{2}.mrc'.format(
-                    corrected_path, file_name, options.sum_suffix
-                    )
-            frames_name = '{0}/{1}{2}.mrc'.format(
-                    corrected_path, file_name, options.frames_suffix
-                    )
-            micrograph_name_skip = '{0}/{1}{2}.mrc'.format(
-                    uncorrected_path, file_name, options.sum_suffix
-                    )
-            frames_name_skip = '{0}/{1}{2}.mrc'.format(
-                    uncorrected_path, file_name, options.frames_suffix
-                    )
-            frc_name = '{0}/{1}{2}.txt'.format(
-                frc_path, file_name, options.frc_suffix
-                )
-            frc_summovie_name = '{0}/{1}_summovie{2}.txt'.format(
-                frc_path, file_name, options.frc_suffix
-                )
-        shift_name = '{0}/{1}{2}.txt'.format(
-                shift_path, file_name, options.shift_suffix
-                )
-        if not options.unblur_ready:
-            temp_name = '{0}/{1}{2}.mrc'.format(
-                    temp_path, file_name, options.sum_suffix
-                    )
-        else:
-            temp_name = inputfile
-        log_name = '{0}/{1}.log'.format(
-                log_path, file_name
-                )
-        error_name = '{0}/{1}.err'.format(
-                log_path, file_name
-                )
-        # Append the names to the lists
-        micrograph_list.append('{0}{1}.mrc'.format(file_name, options.sum_suffix))
-        shift_list.append(shift_name)
-        if options.save_frames:
-            frames_list.append('{0}{1}.mrc'.format(file_name, options.frames_suffix))
-
-
-        # First build the unblur/summovie command
-        if not options.skip_dose_filter:
-            unblur_command = create_unblur_command(
-                temp_name,
-                micrograph_name,
-                shift_name,
-                frames_name,
-                frc_name,
-                options
-                )
-            # Options for the summovie command
-            options_summovie = {
-                'first': 1,
-                'last': -1,
-                'nr_frames': options.nr_frames,
-                'pixel_size': options.pixel_size,
-                'exposure_per_frame': options.exposure_per_frame,
-                'voltage': options.voltage,
-                'pre_exposure': options.pre_exposure,
-                'dont_restore_noise': options.dont_restore_noise,
-                'apply_dose_filter': False
-            }
-            summovie_command = create_summovie_command(
-                temp_name,
-                micrograph_name_skip,
-                shift_name,
-                frc_summovie_name,
-                options_summovie
-                )
-        else:
-            unblur_command = create_unblur_command(
-                temp_name,
-                micrograph_name,
-                shift_name,
-                frc_name,
-                frames_name,
-                options
-                )
-
-
-        # Export the number of threads
-        export_threads_command = []
-
-        # Export
-        export_threads_command.append('export')
-        # Nr of threads
-        export_threads_command.append('OMP_NUM_THREADS={0}'.format(
-            options.nr_threads
-            ))
-
-        if not options.unblur_ready:
-            # Do a e2proc3d.py
-            e2proc3d_command = []
-
-            # e2proc3d
-            e2proc3d_command.append('e2proc3d.py')
-            # inputfile
-            e2proc3d_command.append('{0}'.format(inputfile))
-            # outputfile
-            e2proc3d_command.append('{0}'.format(temp_name))
-
-
-        # Translate the command to single strings
-        if not options.unblur_ready:
-            e2proc3d_command = r' '.join(e2proc3d_command)
-        export_threads_command = r' '.join(export_threads_command)
-        unblur_command = '\n'.join(unblur_command)
-        if not options.skip_dose_filter:
-            summovie_command = '\n'.join(summovie_command)
-
-        # Build full command
-        if not options.unblur_ready:
-            if not options.skip_dose_filter:
-                full_command = r'{0}; {1}; echo "{2}" | {3}'.format(
-                        export_threads_command,
-                        e2proc3d_command,
-                        unblur_command,
-                        unblur_path
-                        )
-                full_command_summovie = r'{0}; echo "{1}" | {2}'.format(
-                        export_threads_command,
-                        summovie_command,
-                        options.summovie_path
-                        )
-            else:
-                full_command = r'{0}; {1}; echo "{2}" | {3}'.format(
-                        export_threads_command,
-                        e2proc3d_command,
-                        unblur_command,
-                        unblur_path
-                        )
-        else:
-            if not options.skip_dose_filter:
-                full_command = r'{0}; echo "{1}" | {2}'.format(
-                        export_threads_command,
-                        unblur_command,
-                        unblur_path
-                        )
-                full_command_summovie = r'{0}; echo "{1}" | {2}'.format(
-                        export_threads_command,
-                        summovie_command,
-                        options.summovie_path
-                        )
-            else:
-                full_command = r'{0}; echo "{1}" | {2}'.format(
-                        export_threads_command,
-                        unblur_command,
-                        unblur_path
-                        )
-
-        # Remove temp unblur files
-        temp_unblur_files = glob('.UnBlur*')
-        for entry in temp_unblur_files:
-            remove(entry)
-
-        # Remove temp summovie files
-        temp_summovie_files = glob('.SumMovie*')
-        for entry in temp_summovie_files:
-            remove(entry)
-
-        with open(log_name, 'w') as f:
-            with open(error_name, 'w') as e:
-                # Execute Command
-                if not options.skip_dose_filter:
-
-                    subprocess.Popen(
-                        [full_command], shell=True,
-                        stdout=f,
-                        stderr=e
-                        ).wait()
-
-                    # Remove temp unblur files
-                    temp_unblur_files = glob('.UnBlur*')
-                    for entry in temp_unblur_files:
-                        remove(entry)
-
-                    # Remove temp summovie files
-                    temp_summovie_files = glob('.SumMovie*')
-                    for entry in temp_summovie_files:
-                        remove(entry)
-
-                    subprocess.Popen(
-                        [full_command_summovie], shell=True,
-                        stdout=f,
-                        stderr=e
-                        ).wait()
-                else:
-                    subprocess.Popen(
-                        [full_command], shell=True,
-                        stdout=f,
-                        stderr=e
-                        ).wait()
-
-        # Remove temp unblur files
-        temp_unblur_files = glob('.UnBlur*')
-        for entry in temp_unblur_files:
-            remove(entry)
-        # Remove temp summovie files
-        temp_summovie_files = glob('.SumMovie*')
-        for entry in temp_summovie_files:
-            remove(entry)
-
-        if not options.unblur_ready:
-            if path.exists(temp_name):
-                # Remove temp file
-                remove(temp_name)
-            else:
-                sxprint(('Error with file:\n{0}'.format(inputfile)))
-
-        # Check if SumMovie and UnBlur finished cleanly
-        with open(log_name, 'r') as r:
-            clean_summovie = False
-            clean_unblur = False
-            for line in r:
-                if 'SumMovie finished cleanly.' in line:
-                    clean_summovie = True
-                if 'UnBlur finished cleanly.' in line:
-                    clean_unblur = True
-
-        if clean_unblur:
-            sxprint('UnBlur finished cleanly.')
-        else:
-            ERROR( 'unblur error. check the logfile for more information: {0}'.format(log_name), action=0)
-
-        if clean_summovie:
-            sxprint('SumMovie finished cleanly.')
-        else:
-            ERROR('summovie error. check the logfile for more information: {0}'.format(log_name), action=0 )
-
-        time_list.append(time.time() - t1)
-
-        # Do progress output
-        percent = round(100 * (index + 1) / float(nr_files), 2)
-        estimated_time = \
-            nr_files * sum(time_list) / float(len(time_list))
-        estimated_time_h = estimated_time // 3600
-        estimated_time_m = (estimated_time - estimated_time_h*3600) // 60
-        estimated_time_s = (
-                estimated_time -
-                estimated_time_h*3600 -
-                estimated_time_m*60
-                )
-        current_time = time.time() - time_start
-        current_time_h = current_time // 3600
-        current_time_m = (current_time - current_time_h*3600) // 60
-        current_time_s = (
-                current_time -
-                current_time_h*3600 -
-                current_time_m*60
-                )
-        sxprint((
-            'Progress: {0:.2f}%;  Time: {1:.0f}h:{2:.0f}m:{3:.0f}s/{4:.0f}h:{5:.0f}m:{6:.0f}s;  Micrograph done:{7}'.format(
-                percent,
-                current_time_h,
-                current_time_m,
-                current_time_s,
-                estimated_time_h,
-                estimated_time_m,
-                estimated_time_s,
-                file_name
-                )
-            ))
-
-
-    # Write micrograph and shift list
-    with open('{0}/unblur_micrographs.txt'.format(output_dir), 'w') as f:
-        for entry in sorted(micrograph_list):
-            f.write('{0}\n'.format(entry))
-
-    with open('{0}/unblur_shiftfiles.txt'.format(output_dir), 'w') as f:
-        for entry in sorted(shift_list):
-            f.write('{0}\n'.format(entry))
-
-    if options.save_frames:
-        with open('{0}/unblur_frames.txt'.format(output_dir), 'w') as f:
-            for entry in sorted(frames_list):
-                f.write('{0}\n'.format(entry))
+	parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+	# Mandatory arguments
+	parser.add_argument('unblur_path', help='Path to the unblur executable that is coming with cisTEM.')
+	parser.add_argument('input_micrograph_pattern', help='Pattern of the micrographs to process, the variable part of the name should be replaced by the wildcard symbol * e.g. Movies/prefix_*_suffix.mrcs')
+	parser.add_argument('output_directory', help='Output directory for the results')
+
+	# Optional arguments
+	parser.add_argument('--selection_file', default=None, help='Selection list for the micrographs.')
+	parser.add_argument('--overwrite', action='store_true', default=False, help='Do not check if the output directory already exists. Enabling this option can lead to data loss.')
+
+	group_general = parser.add_argument_group('General')
+	group_general.add_argument('--pixel_size', default=1.0, help='Pixel size of images (A)')
+	group_general.add_argument('--bin_factor', default=1.0, help='Output bin factor')
+
+	group_dose = parser.add_argument_group('Dose adjustment')
+	group_dose.add_argument('--skip_dose_adjustment', action='store_true', default=False, help='Do not apply exposure filter?')
+	group_dose.add_argument('--additional_dose_unadjusted', action='store_true', default=False, help='Run unblur twice to produce undoseweighted images.')
+	group_dose.add_argument('--voltage', default=300.0, help='Acceleration voltage (kV)')
+	group_dose.add_argument('--exposure_per_frame', default=1.0, help='Exposure per frame (e/A^2)')
+	group_dose.add_argument('--pre_exposure', default=0.0, help='Pre-exposure amount (e/A^2)')
+
+	group_expert = parser.add_argument_group('Expert options')
+	group_expert.add_argument('--min_shift_initial', default=2.0, help='Minimum shift for initial search (A)')
+	group_expert.add_argument('--outer_radius', default=20.0, help='Outer radius shift limit (A)')
+	group_expert.add_argument('--b_factor', default=1500.0, help='B-factor to apply to images (A^2)')
+	group_expert.add_argument('--half_width_vert', default=1, help='Half-width of vertical Fourier mask')
+	group_expert.add_argument('--half_width_hor', default=1, help='Half-width of horizontal Fourier mask')
+	group_expert.add_argument('--termination', default=1, help='Termination shift threshold (A)')
+	group_expert.add_argument('--max_iterations', default=20, help='Maximum number of iterations')
+	group_expert.add_argument('--dont_restore_noise_power', action='store_true', default=False, help='Do not Restore Noise Power?')
+	group_expert.add_argument('--gain_file', default=None, help='Gain image filename')
+	group_expert.add_argument('--first_frame', default=1, help='First frame to use for sum')
+	group_expert.add_argument('--last_frame', default=0, help='Last frame to use for sum (0 for last frame)')
+
+	group_mag = parser.add_argument_group('Magnification correction')
+	group_mag.add_argument('--distortion_angle', default=0.0, help='Distortion Angle (Degrees)')
+	group_mag.add_argument('--major_scale', default=1.0, help='Major Scale')
+	group_mag.add_argument('--minor_scale', default=1.0, help='Minor Scale')
+
+	args = vars(parser.parse_args())
+
+	check_groups = ('Expert options', 'Magnification correction')
+	for entry in check_groups:
+		args[entry] = False
+
+	for group in parser._action_groups:
+		if group.title in check_groups:
+			for argument in group._group_actions:
+				if argument.default != args[argument.dest]:
+					args[group.title] = True
+					break
+
+	return args
+
+
+def sanity_checks(args, myid):
+	"""
+	Check if the command line arguments are valid.
+
+	Arguments:
+	args - Command line arguments as dictionary
+	myid - MPI id
+
+	Returns:
+	None
+	"""
+
+	if args['gain_file'] is not None:
+		if not os.path.isfile(args['gain_file']):
+			global_def.ERROR('If the gain_file option is provided, the gain file must exist!', myid=myid)
+
+	if args['additional_dose_unadjusted'] and args['skip_dose_adjustment']:
+		global_def.ERROR('If the additional_dose_unadjusted option is provided, the skip_dose_adjustment cannot be provided as well!', myid=myid)
+
+	if args['selection_file'] is not None and not os.path.isfile(args.selection_file):
+		global_def.ERROR('If the selection_file option is provided, the specified file needs to exist!', myid=myid)
+
+	if not glob.glob(args['input_micrograph_pattern']):
+		global_def.ERROR('No files found with the specified pattern!: {0}'.format(args['input_micrograph_pattern']), myid=myid)
+
+	if os.path.exists(args['output_directory']) and not args['overwrite']:
+		global_def.ERROR('Output directory is not allowed to exist!', myid=myid)
+
+
+def load_file_names_by_pattern(pattern, selection_file):
+	"""
+	
+
+	Arguments:
+	args - Command line arguments as dictionary
+	myid - MPI id
+
+	Returns:
+	None
+	"""
+	file_names_raw = sorted(glob.glob(pattern))
+	global_def.sxprint('Found {0} movie files based on the provided pattern.'.format(len(file_names_raw)))
+
+	if selection_file is not None:
+		with open(selection_file, 'r') as read:
+			lines_raw = read.readlines()
+		global_def.sxprint('Found {0} file_names in the selection file.'.format(len(lines_raw)))
+
+		selection_list = [
+			os.path.basename(os.path.splitext(entry.strip())[0])
+			for entry in lines_raw
+			]
+		file_names = [
+			entry
+			for entry in input_frames_raw
+			if os.path.basename(os.path.splitext(entry)[0]) in selection_list
+			]
+		global_def.sxprint('Found {0} movie files after applying the selection file.'.format(len(file_names)))
+	else:
+		file_names = file_names_raw
+	return file_names
 
 
 def create_unblur_command(
-        temp_name,
-        micrograph_name,
-        shift_name,
-        frames_name,
-        frc_name,
-        options
-        ):
+		input_stack,
+		output_name,
+		pixel_size,
+		bin_factor,
+		do_filter,
+		kv,
+		exp,
+		pre_exp,
+		do_expert,
+		min_shift,
+		outer_radius,
+		b_factor,
+		half_width_vert,
+		half_width_hor,
+		termination,
+		max_iterations,
+		restore_power,
+		gain_file,
+		first_frame,
+		last_frame,
+		correct_mag,
+		dist_angle,
+		major_scale,
+		minor_scale,
+		):
+	"""
+	Create the unblur command based on the information given.
 
-    # Command list
-    unblur_command = []
+	Arguments:
+	input_stack,
+	output_name,
+	pixel_size,
+	bin_factor,
+	do_filter,
+	kv,
+	exp,
+	pre_exp,
+	do_expert,
+	min_shift,
+	outer_radius,
+	b_factor,
+	half_width_vert,
+	half_width_hor,
+	termination,
+	max_iterations,
+	restore_power,
+	gain_file,
+	first_frame,
+	last_frame,
+	correct_mag,
+	dist_angle,
+	major_scale,
+	minor_scale,
 
-    # Input file
-    unblur_command.append('{0}'.format(temp_name))
-    # Number of frames
-    unblur_command.append('{0}'.format(options.nr_frames))
-    # Sum file
-    unblur_command.append(micrograph_name)
-    # Shift file
-    unblur_command.append(shift_name)
-    # Pixel size
-    unblur_command.append('{0}'.format(options.pixel_size))
-    # Dose correction
-    if options.skip_dose_filter:
-        unblur_command.append('NO')
-    else:
-        unblur_command.append('YES')
-        # Exposure per frame
-        unblur_command.append('{0}'.format(options.exposure_per_frame))
-        # Acceleration voltage
-        unblur_command.append('{0}'.format(options.voltage))
-        # Pre exposure
-        unblur_command.append('{0}'.format(options.pre_exposure))
-    # Save frames
-    if not options.save_frames:
-        unblur_command.append('NO')
-    else:
-        unblur_command.append('YES')
-        # Frames output
-        unblur_command.append('{0}'.format(frames_name))
-    # Expert mode
-    if not options.expert_mode:
-        unblur_command.append('NO')
-    else:
-        unblur_command.append('YES')
-        # FRC file
-        unblur_command.append('{0}'.format(frc_name))
-        # Minimum shift for initial search
-        unblur_command.append('{0}'.format(options.shift_initial))
-        # Outer radius shift limit
-        unblur_command.append('{0}'.format(options.shift_radius))
-        # B-Factor to Apply
-        unblur_command.append('{0}'.format(options.b_factor))
-        # Half-width vertical
-        unblur_command.append('{0}'.format(options.fourier_vertical))
-        # Half-width horizontal
-        unblur_command.append('{0}'.format(options.fourier_horizontal))
-        # Termination shift threshold
-        unblur_command.append('{0}'.format(options.shift_threshold))
-        # Maximum iterations
-        unblur_command.append('{0}'.format(options.iterations))
-        # Restore noise power
-        if options.dont_restore_noise:
-            unblur_command.append('NO')
-        else:
-            unblur_command.append('YES')
-        # Verbose output
-        if options.verbose:
-            unblur_command.append('YES')
-        else:
-            unblur_command.append('NO')
+	Returns:
+	The unblur command as string
+	"""
 
-    return unblur_command
+	# Command list
+	unblur_command = []
+	unblur_command.append(input_stack)
+	unblur_command.append(output_name)
+	unblur_command.append(pixel_size)
+	unblur_command.append(bin_factor)
+
+	if do_filter:
+		unblur_command.append('yes')
+		unblur_command.append(kv)
+		unblur_command.append(exp)
+		unblur_command.append(pre_exp)
+	else:
+		unblur_command.append('no')
+
+	if do_expert:
+		unblur_command.append('yes')
+		unblur_command.append(min_shift)
+		unblur_command.append(outer_radius)
+		unblur_command.append(b_factor)
+		unblur_command.append(half_width_vert)
+		unblur_command.append(half_width_hor)
+		unblur_command.append(termination)
+		unblur_command.append(max_iterations)
+		if do_filter:
+			if restore_power:
+				unblur_command.append('yes')
+			else:
+				unblur_command.append('no')
+		if gain_file is None:
+			unblur_command.append('yes')
+		else:
+			unblur_command.append('no')
+			unblur_command.append(gain_file)
+		unblur_command.append(first_frame)
+		unblur_command.append(last_frame)
+
+	else:
+		unblur_command.append('no')
+
+	if correct_mag:
+		unblur_command.append('yes')
+		unblur_command.append(dist_angle)
+		unblur_command.append(major_scale)
+		unblur_command.append(minor_scale)
+	else:
+		unblur_command.append('no')
+
+	return '\n'.join([str(entry) for entry in unblur_command])
+
+
+def main(args):
+	"""
+	Main function
+
+	Arguments:
+	args - Arguments as dictionary
+
+	Returns:
+	None
+	"""
+
+	mpi.mpi_init(0, [])
+	main_mpi_proc = 0
+	my_mpi_proc_id = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
+	n_mpi_procs = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
+
+	# Import the file names
+	sanity_checks(args, my_mpi_proc_id)
+	if my_mpi_proc_id == main_mpi_proc:
+		if args['Expert options']:
+			global_def.sxprint('Expert option detected! The program will enable expert mode!')
+		if args['Magnification correction']:
+			global_def.sxprint('Magnification correction option detected! The program will enable magnification correction mode!')
+		file_names = load_file_names_by_pattern(
+			args['input_micrograph_pattern'],
+			args['selection_file']
+			)
+	else:
+		file_names = []
+
+	file_names = utilities.wrap_mpi_bcast(file_names, main_mpi_proc)
+
+	# Split the list indices by node
+	max_proc = min(n_mpi_procs, len(file_names))
+	if my_mpi_proc_id in list(range(max_proc)):
+		idx_start, idx_end = applications.MPI_start_end(len(file_names), max_proc, my_mpi_proc_id)
+	else:
+		idx_start = 0
+		idx_end = 0
+
+	nima = idx_end - idx_start
+	max_nima_list = utilities.wrap_mpi_gatherv([nima], main_mpi_proc, mpi.MPI_COMM_WORLD)
+	max_nima_list = utilities.wrap_mpi_bcast(max_nima_list, main_mpi_proc, mpi.MPI_COMM_WORLD)
+	max_nima = max(max_nima_list)
+	mpi_print_id = max_nima_list.index(max_nima)
+
+
+	start_unblur = time.time()
+	for idx, file_path in enumerate(file_names[idx_start:idx_end]):
+		if my_mpi_proc_id == mpi_print_id:
+			total_time = time.time() - start_unblur
+			if idx == 0:
+				average_time = 0
+			else:
+				average_time = total_time / float(idx)
+			global_def.sxprint('{0: 6.2f}% => Elapsed time: {1: 6.2f}min | Estimated total time: {2: 6.2f}min | Time per micrograph: {3: 5.2f}min/mic'.format(
+				100 * idx / float(max_nima),
+				total_time / float(60),
+				(max_nima) * average_time / float(60),
+				average_time / float(60),
+				))
+
+		file_name = os.path.basename(os.path.splitext(file_path)[0])
+		file_name_out = '{0}.mrc'.format(file_name)
+		file_name_log = '{0}.log'.format(file_name)
+		file_name_err = '{0}.err'.format(file_name)
+
+		output_dir_name = os.path.join(args['output_directory'], 'corrsum')
+		output_dir_name_log = os.path.join(args['output_directory'], 'corrsum_log')
+		output_dir_name_dw = os.path.join(args['output_directory'], 'corrsum_dw')
+		output_dir_name_dw_log = os.path.join(args['output_directory'], 'corrsum_dw_log')
+		if args['additional_dose_unadjusted']:
+			unblur_list = (
+				(True, output_dir_name_dw, output_dir_name_dw_log),
+				(False, output_dir_name, output_dir_name_log),
+				)
+		elif args['skip_dose_adjustment']:
+			unblur_list = (
+				(False, output_dir_name, output_dir_name_log),
+				)
+		else:
+			unblur_list = (
+				(True, output_dir_name_dw, output_dir_name_dw_log),
+				)
+
+		for dose_adjustment, dir_name, log_dir_name in unblur_list:
+			try:
+				os.makedirs(dir_name)
+			except OSError:
+				pass
+			try:
+				os.makedirs(log_dir_name)
+			except OSError:
+				pass
+			output_name = os.path.join(dir_name, file_name_out)
+			output_name_log = os.path.join(log_dir_name, file_name_log)
+			output_name_err = os.path.join(log_dir_name, file_name_err)
+			unblur_command = create_unblur_command(
+				file_path,
+				output_name,
+				args['pixel_size'],
+				args['bin_factor'],
+				dose_adjustment,
+				args['voltage'],
+				args['exposure_per_frame'],
+				args['pre_exposure'],
+				args['Expert options'],
+				args['min_shift_initial'],
+				args['outer_radius'],
+				args['b_factor'],
+				args['half_width_vert'],
+				args['half_width_hor'],
+				args['termination'],
+				args['max_iterations'],
+				bool(not args['dont_restore_noise_power']),
+				args['gain_file'],
+				args['first_frame'],
+				args['last_frame'],
+				args['Magnification correction'],
+				args['distortion_angle'],
+				args['major_scale'],
+				args['minor_scale'],
+				)
+
+			execute_command = r'echo "{0}" | {1}'.format(
+				unblur_command,
+				args['unblur_path']
+				)
+			with open(output_name_log, 'w') as log, open(output_name_err, 'w') as err:
+				start = time.time()
+				child = subprocess.Popen(execute_command, shell=True, stdout=log, stderr=err)
+				child.wait()
+				if child.returncode != 0:
+					global_def.sxprint('Process failed for image {0}.\nPlease make sure that the unblur path is correct\nand check the respective logfile.'.format(file_path))
+				log.write('Time => {0:.2f} for command: {1}'.format(time.time() - start, execute_command))
+
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+
+	if my_mpi_proc_id == mpi_print_id:
+		idx = idx + 1
+		total_time = time.time() - start_unblur
+		average_time = total_time / float(idx)
+		global_def.sxprint('{0: 6.2f}% => Elapsed time: {1: 6.2f}min | Estimated total time: {2: 6.2f}min | Time per micrograph: {3: 5.2f}min/mic'.format(
+			100 * idx / float(max_nima),
+			total_time / float(60),
+			(max_nima) * average_time / float(60),
+			average_time / float(60),
+			))
+
+	mpi.mpi_finalize()
 
 
 if __name__ == '__main__':
-    global_def.print_timestamp( "Start" )
-    main()
-    global_def.print_timestamp( "Finish" )
+	global_def.print_timestamp('Start')
+	global_def.BATCH = True
+	main(parse_args())
+	global_def.BATCH = False
+	global_def.print_timestamp('Finish')
