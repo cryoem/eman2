@@ -207,10 +207,10 @@ def normalize_particle_images( aligned_images, shrink_ratio, target_radius, targ
 			aligned_images[im] = Util.window( aligned_images[im], target_dim, target_dim, 1 )
 		# create custom masks for filament particle images
 		if filament_width != -1:
-			mask = util.model_rotated_rectangle2D( radius_long=int( np.sqrt(2*target_dim**2) )//2,       # long  edge of the rectangular mask
+			mask = util.model_rotated_rectangle2D( radius_long=int( np.sqrt(2*new_dim**2) )//2,       # long  edge of the rectangular mask
 												   radius_short=int( filament_width*shrink_ratio+0.5 ),  # short edge of the rectangular mask
-												   nx=target_dim, 
-												   ny=target_dim, 
+												   nx=new_dim, 
+												   ny=new_dim, 
 												   angle=aligned_images[im].get_attr("segment_angle") )
 		# normalize using mean of the data and variance of the noise
 		p = Util.infomask( aligned_images[im], mask, False )
@@ -1361,7 +1361,7 @@ def main(args):
 			write_text_row(tmp,os.path.join(init2dir, "initial2Dparams.txt"))
 		del tmp
 		mpi_barrier(MPI_COMM_WORLD)
-	
+		
 		#  We assume the target image size will be target_nx, radius will be 29, and xr = 1.  
 		#  Note images can be also padded, in which case shrink_ratio > 1.
 		shrink_ratio = float(target_radius)/float(radi)
@@ -1370,9 +1370,7 @@ def main(args):
 		nx = aligned_images[0].get_xsize()
 		nima = len(aligned_images)
 		newx = int(nx*shrink_ratio + 0.5)
-
-
-		
+	
 		while not os.path.exists(os.path.join(init2dir, "initial2Dparams.txt")):
 			import time
 			time.sleep(1)

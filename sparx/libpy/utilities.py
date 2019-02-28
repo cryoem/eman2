@@ -1685,7 +1685,7 @@ def model_rotated_rectangle2D(radius_long, radius_short, nx, ny, angle=90):
 	mask = np.zeros((sizex, sizey))
 	mask[
 		(sizex // 2 - radius_short) : (sizex // 2 + radius_short),
-		(sizey // 2 - radius_long) : (sizey // 2 + radius_long),
+		(sizey // 2 - radius_long)  : (sizey // 2 + radius_long),
 	] = 1.0
 	
 	mask = scipy.ndimage.rotate(mask, angle, reshape=False)
@@ -1693,7 +1693,16 @@ def model_rotated_rectangle2D(radius_long, radius_short, nx, ny, angle=90):
 		(sizex // 2 - nx // 2) : (sizex // 2 + nx // 2),
 		(sizey // 2 - ny // 2) : (sizey // 2 + ny // 2),
 	]
+
+	# the above will always create a mask of even dimensions
+	# so we need to expand it a bit in case of odd dimensions
+	if mask.shape[0] == nx-1 or mask.shape[1] == ny-1:
+		tmp = np.zeros( [nx,ny] )
+		tmp[ : mask.shape[0], : mask.shape[1] ] = mask
+		mask = tmp
+
 	mask = EMAN2.EMNumPy.numpy2em(mask)
+
 	return mask
 
 
@@ -3391,12 +3400,10 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(
 		mpi_barrier(MPI_COMM_WORLD)
 
 
-def gather_compacted_EMData_to_root(
-	number_of_all_em_objects_distributed_across_processes,
-	list_of_em_objects_for_myid_process,
-	myid,
-	comm=-1,
-):
+def gather_compacted_EMData_to_root( number_of_all_em_objects_distributed_across_processes,
+									 list_of_em_objects_for_myid_process,
+									 myid,
+									 comm=-1 ):
 
 	"""
 
@@ -3427,14 +3434,13 @@ def gather_compacted_EMData_to_root(
 	)
 	ref_end -= ref_start
 	ref_start = 0
-	tag_for_send_receive = 123456
+	tag_for_send_receive = 123456 # DEBUG: using the same tag for every message makes them a bit pointless
 
 	# used for copying the header
 	reference_em_object = list_of_em_objects_for_myid_process[ref_start]
 	nx = reference_em_object.get_xsize()
 	ny = reference_em_object.get_ysize()
 	nz = reference_em_object.get_zsize()
-	# is_complex = reference_em_object.is_complex()
 	is_ri = reference_em_object.is_ri()
 	changecount = reference_em_object.get_attr("changecount")
 	is_complex_x = reference_em_object.is_complex_x()
@@ -3443,71 +3449,53 @@ def gather_compacted_EMData_to_root(
 	apix_y = reference_em_object.get_attr("apix_y")
 	apix_z = reference_em_object.get_attr("apix_z")
 	is_complex = reference_em_object.get_attr_default("is_complex", 1)
-	is_fftpad = reference_em_object.get_attr_default("is_fftpad", 1)
-	is_fftodd = reference_em_object.get_attr_default("is_fftodd", nz % 2)
+	is_fftpad  = reference_em_object.get_attr_default("is_fftpad", 1)
+	is_fftodd  = reference_em_object.get_attr_default("is_fftodd", nz % 2)
 
 	data = EMNumPy.em2numpy(list_of_em_objects_for_myid_process[ref_start])
 	size_of_one_refring_assumed_common_to_all = data.size
 
-	# n = shape(data)
-	# size_of_one_refring_assumed_common_to_all = 1
-	# for i in n: size_of_one_refring_assumed_common_to_all *= i
-
-	if size_of_one_refring_assumed_common_to_all * (ref_end - ref_start) > (
-		2 ** 31 - 1
-	):
-		print("Sending refrings: size of data to broadcast is greater than 2GB")
+	if size_of_one_refring_assumed_common_to_all * (ref_end - ref_start) > (2**31 -1):
+		print("Sending refrings: size of data to transfer is greater than 2GB")
 
 	for sender_id in range(1, ncpu):
+
 		if sender_id == myid:
-			data = EMNumPy.em2numpy(
-				list_of_em_objects_for_myid_process[ref_start]
-			)  # array([], dtype = 'float32')
+			data = EMNumPy.em2numpy( list_of_em_objects_for_myid_process[ref_start] )
 			for i in range(ref_start + 1, ref_end):
-				data = concatenate(
-					[data, EMNumPy.em2numpy(list_of_em_objects_for_myid_process[i])]
-				)
+				data = concatenate( [data, EMNumPy.em2numpy(list_of_em_objects_for_myid_process[i])] )
 		else:
 			data = array([], dtype="float32")
 
-		sender_ref_start, sender_ref_end = MPI_start_end(
-			number_of_all_em_objects_distributed_across_processes, ncpu, sender_id
-		)
+		sender_ref_start, sender_ref_end = MPI_start_end( number_of_all_em_objects_distributed_across_processes, ncpu, sender_id )
+		sender_size_of_refrings = (sender_ref_end - sender_ref_start) * size_of_one_refring_assumed_common_to_all
 
-		sender_size_of_refrings = (
-			sender_ref_end - sender_ref_start
-		) * size_of_one_refring_assumed_common_to_all
-
+		# DEBUG: mpi transfer: root node receives, one of the other nodes sends
 		if myid == 0:
 			# print "root, receiving from ", sender_id, "  sender_size_of_refrings = ", sender_size_of_refrings
-			data = mpi_recv(
-				sender_size_of_refrings,
-				MPI_FLOAT,
-				sender_id,
-				tag_for_send_receive,
-				MPI_COMM_WORLD,
-			)
+			data = mpi_recv( sender_size_of_refrings,
+							 MPI_FLOAT,
+							 sender_id,
+							 tag_for_send_receive,
+							 MPI_COMM_WORLD )
+
 		elif sender_id == myid:
 			# print "sender_id = ", sender_id, "sender_size_of_refrings = ", sender_size_of_refrings
-			mpi_send(
-				data,
-				sender_size_of_refrings,
-				MPI_FLOAT,
-				0,
-				tag_for_send_receive,
-				MPI_COMM_WORLD,
-			)
+			mpi_send( data,
+					  sender_size_of_refrings,
+					  MPI_FLOAT,
+					  0,
+					  tag_for_send_receive,
+					  MPI_COMM_WORLD )
 
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi_barrier(MPI_COMM_WORLD) # DEBUG: this should neither be necessary (send/recv are blocking), not wanted (no need to sync master w/ workers)
 
-		# if myid != sender_id:
 		if myid == 0:
 			for i in range(sender_ref_start, sender_ref_end):
+
 				offset_ring = sender_ref_start
 				start_p = (i - offset_ring) * size_of_one_refring_assumed_common_to_all
-				end_p = (
-					i + 1 - offset_ring
-				) * size_of_one_refring_assumed_common_to_all
+				end_p = (i+1 - offset_ring) * size_of_one_refring_assumed_common_to_all
 				image_data = data[start_p:end_p]
 
 				if int(nz) != 1:
@@ -3517,26 +3505,34 @@ def gather_compacted_EMData_to_root(
 
 				em_object = EMNumPy.numpy2em(image_data)
 
-				# em_object.set_complex(is_complex)
 				em_object.set_ri(is_ri)
-				em_object.set_attr_dict(
-					{
-						"changecount": changecount,
-						"is_complex_x": is_complex_x,
-						"is_complex_ri": is_complex_ri,
-						"apix_x": apix_x,
-						"apix_y": apix_y,
-						"apix_z": apix_z,
-						"is_complex": is_complex,
-						"is_fftodd": is_fftodd,
-						"is_fftpad": is_fftpad,
-					}
-				)
+				em_object.set_attr_dict( { "changecount": changecount,
+										   "is_complex_x": is_complex_x,
+										   "is_complex_ri": is_complex_ri,
+										   "apix_x": apix_x,
+										   "apix_y": apix_y,
+										   "apix_z": apix_z,
+										   "is_complex": is_complex,
+										   "is_fftodd": is_fftodd,
+										   "is_fftpad": is_fftpad } )
 
-				# list_of_em_objects[i] = em_object
 				list_of_em_objects_for_myid_process.append(em_object)
 
 		mpi_barrier(MPI_COMM_WORLD)
+
+	"""
+	DEBUG NOTES:
+	! this functions seems to be taking way longer than it should
+	. The way this works right now means that most workers are waiting for someone else's transfer to
+	  finish.
+	- Nothing is queued, everything is hard-sync'd
+	- Tags would allow for buffering but the same tag is used for all communication which makes it pointless
+	- Just have the workers send everything and the master work through its receiving queue..?
+	  -> This way we only need to transfer once and that's it; master chews through a local buffer
+	  -> If there is a communications overlap/block, this might resolve it
+	- also, MPI_gather should just do what we need
+	- to spread the data to everyone, we can also use all_gather
+	"""
 
 
 def bcast_EMData_to_all(tavg, myid, source_node=0, comm=-1):
