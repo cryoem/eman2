@@ -8,7 +8,7 @@ crYOLO - predict: Prediction with crYOLO, a deep learning high accuracy particle
 
 Usage in command line
 
-  sxcryolo_predict config_file model_path target_dir output_dir --confidence_threshold=confidence_threshold --gpu=gpu
+  sxcryolo_predict.py config_path target_dir model_path output_dir --confidence_threshold=confidence_threshold --gpu=gpu --gpu=GPU_NUMBER --filament_mode --filament_width=FILAMENT_WIDTH --min_box_per_filament=MIN_BOX_PER_FILAMENT --box_distance=BOX_DISTANCE
 
 \\
 ===== Typical usage =====
@@ -18,7 +18,7 @@ for writing the box files. Optionally one can specify the confidence threshold a
 
 \\ __Prediction__:
 
-  sxcryolo_predict.py config_file target_dir model_path output_dir --confidence_threshold=0.3 --gpu=0
+  sxcryolo_predict.py config_path target_dir model_path output_dir --confidence_threshold=0.3 --gpu=0
 
 \
 
