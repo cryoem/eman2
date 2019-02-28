@@ -103,10 +103,14 @@ def parse_args():
 		help="Index file for the 3d params. Used to find the associated particle stack entry in the params file. In the meridien directories, this file is either called chunk or index. Requires --particle_stack. Requires --params_3d_file.",
 	)
 	parser.add_argument(
-		"--params_3d_chunk_files",
+		"--params_3d_chunk_file_0",
 		type=str,
-		nargs=2,
-		help="Chunk files for the 3d params. Used to extract the _rlnRandomSubset information. In the meridien directories, this file is called chunk. Requires --particle_stack. Requires --params_3d_file.",
+		help="First chunk files for the 3d params. Used to extract the _rlnRandomSubset information. In the meridien directories, this file is called chunk. Requires --particle_stack. Requires --params_3d_file.",
+	)
+	parser.add_argument(
+		"--params_3d_chunk_file_1",
+		type=str,
+		help="Second chunk file for the 3d params. Used to extract the _rlnRandomSubset information. In the meridien directories, this file is called chunk. Requires --particle_stack. Requires --params_3d_file.",
 	)
 	parser.add_argument(
 		"--list",
@@ -165,19 +169,18 @@ def main(args):
 		params_3d_data = import_params(args.params_3d_file, dim="3d")
 		output_dtype.extend(params_3d_data.dtype.descr)
 
-	if args.params_3d_chunk_files:
+	if args.params_3d_chunk_file_0 != None and args.params_3d_chunk_file_1 != None:
 		sxprint("Import params 3d chunk files")
 		params_3d_subset_data = np.empty(
 			params_3d_data.shape[0], dtype=[("_rlnRandomSubset", "<i8")]
 		)
 		params_3d_subset_data.fill(np.nan)
 		params_import = []
-		for idx, file_name in enumerate(args.params_3d_chunk_files):
+		for idx, file_name in enumerate([args.params_3d_chunk_file_0, args.params_3d_chunk_file_1 ]):
 			chunk_import = np.genfromtxt(file_name, int)
 			params_3d_subset_data["_rlnRandomSubset"][chunk_import] = idx
 			params_import.extend(chunk_import.tolist())
 		output_dtype.extend(params_3d_subset_data.dtype.descr)
-		params_3d_subset_data = params_3d_subset_data[params_import]
 		assert params_3d_subset_data.shape[0] == params_3d_data.shape[0]
 		assert np.unique(params_import).shape[0] == params_3d_data.shape[0]
 
