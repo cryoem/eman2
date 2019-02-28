@@ -154,6 +154,7 @@ def soft_edge(img, length, mode='c', do_approx=False):
 	combined_mask = numpy.maximum(img_data, outline)
 	if out_eman:
 		return_data[...] = combined_mask
+		return_object.update()
 	else:
 		return_object = combined_mask
 	return return_object

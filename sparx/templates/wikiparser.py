@@ -192,6 +192,11 @@ def construct_keyword_dict():
 	keyword_dict["params_file"]                      = SXkeyword_map(2, "params_any_txt")      # --import=INPUT_PARAMS_PATH
 	keyword_dict["--import"]                      = SXkeyword_map(2, "params_any_txt")      # --import=INPUT_PARAMS_PATH
 	keyword_dict["--export"]                      = SXkeyword_map(2, "params_any_txt")      # --export==OUTPUT_PARAMS_FILE
+	keyword_dict["--params_2d_file"]			  = SXkeyword_map(2, "params_any_txt")
+	keyword_dict["--params_3d_file"]			  = SXkeyword_map(2, "params_any_txt")
+	keyword_dict["--params_3d_index_file"]		  = SXkeyword_map(2, "params_any_txt")
+	keyword_dict["--params_3d_chunk_file_0"] 	  = SXkeyword_map(2, "params_any_txt")
+	keyword_dict["--params_3d_chunk_file_1"] 	  = SXkeyword_map(2, "params_any_txt")
 	keyword_dict["input_coordinates_pattern"]     = SXkeyword_map(2, "params_coords_any")   # input_coordinates_pattern
 	keyword_dict["input_rebox_pattern"]           = SXkeyword_map(2, "params_rebox_rbx")    # input_rebox_pattern
 	keyword_dict["input_ctf_params_source"]       = SXkeyword_map(2, "params_cter_txt")     # input_ctf_params_source
@@ -2257,6 +2262,8 @@ def build_config_list_MoinMoinWiki():
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/pdb2em.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/relion2sphire.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/sphire2relion.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_binary_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_changesize()))
@@ -2462,6 +2469,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/pdb2em.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/relion2sphire.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(		SXcmd_config("../doc/sphire2relion.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/proj_compare.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_moon_eliminator.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/mask.txt", "DokuWiki", sxcmd_category, sxcmd_role))
