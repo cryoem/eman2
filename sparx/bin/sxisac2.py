@@ -151,7 +151,7 @@ def checkitem(item, mpi_comm = -1):
 
 #-------------------------------------------------------------------[ utility ]
 
-def normalize_particle_images( aligned_images, shrink_ratio, target_radius, target_dim, align_params ):
+def normalize_particle_images( aligned_images, shrink_ratio, target_radius, target_dim, align_params, filament_width=-1, burn_helical_mask=True ):
 	"""
 	Function to normalize the images given in <aligned_images>. Note that the
 	normalization also includes the shrinking/re-scaling of the particle images.
@@ -165,20 +165,37 @@ def normalize_particle_images( aligned_images, shrink_ratio, target_radius, targ
 	internal image size used by ISAC.
 
 	Args:
-		aligned_images (EMData[]): List of EMData objects.
+		aligned_images (EMData[]): List of EMData objects holding image data.
+		
 		shrink_ratio (float): Ratio by which particles are to be re-scaled.
+		
 		target_radius (int): ISAC target radius.
+		
 		target_dim (int): ISAC target image size for processing (usually 76).
+		
 		align_params (list of lists): Contains (pre-)alignment parameters of 
 			which we apply the shifts.
+
+		filament_width (int): Filament width when processing helical data. When
+			a non-default value is provided this function assumes data to be
+			filament images in which case a rectangular mask of the given width
+			is applied to all particle images. [Default: -1]
+
+		burn_helical_mask (bool): Only relevant if filament_width is used. If 
+		    set to True the data will be multiplied with the mask to remove all
+			data/noise outside of the mask. If set to False the mask will be
+			used for the normalization but afterwards NOT multiplied with the
+			particle images. [Default: True]
 	"""
+
 	# particle image dimension after scaling/shrinking
 	new_dim = int( aligned_images[0].get_xsize()*shrink_ratio + 0.5 )
-	# create mask for particle images
-	if new_dim >= target_dim:
-		mask = util.model_circle( target_radius, target_dim, target_dim )
-	else:
-		mask = util.model_circle( new_dim//2-2, new_dim, new_dim )
+	# create re-usable mask for non-helical particle images
+	if filament_width == -1:
+		if new_dim >= target_dim:
+			mask = util.model_circle( target_radius, target_dim, target_dim )
+		else:
+			mask = util.model_circle( new_dim//2-2, new_dim, new_dim )
 	# normalize all given images
 	for im in range( len(aligned_images) ):
 		aligned_images[im] = fundamentals.rot_shift2D( aligned_images[im], 0, align_params[im][1], align_params[im][2], 0 )
@@ -188,11 +205,21 @@ def normalize_particle_images( aligned_images, shrink_ratio, target_radius, targ
 		# crop images if necessary
 		if new_dim > target_dim:
 			aligned_images[im] = Util.window( aligned_images[im], target_dim, target_dim, 1 )
+		# create custom masks for filament particle images
+		if filament_width != -1:
+			mask = util.model_rotated_rectangle2D( radius_long=int( np.sqrt(2*target_dim**2) )//2,       # long  edge of the rectangular mask
+												   radius_short=int( filament_width*shrink_ratio+0.5 ),  # short edge of the rectangular mask
+												   nx=target_dim, 
+												   ny=target_dim, 
+												   angle=aligned_images[im].get_attr("segment_angle") )
 		# normalize using mean of the data and variance of the noise
 		p = Util.infomask( aligned_images[im], mask, False )
 		aligned_images[im] -= p[0]
 		p = Util.infomask( aligned_images[im], mask, True )
 		aligned_images[im] /= p[1]
+		# optional: burn helical mask into particle images
+		if filament_width != -1 and burn_helical_mask:
+			aligned_images[im] *= mask
 		# pad images in case they have been shrunken below the target_dim
 		if new_dim < target_dim:
 			aligned_images[im] = pad( aligned_images[im], target_dim, target_dim, 1, 0.0 )
