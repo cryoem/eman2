@@ -281,6 +281,10 @@ def import_params(params_file, dim):
 			('shift_x', float),
 			('shift_y', float),
 			]
+	else:
+		global_def.ERROR(
+			"Dimension {0} not supported. Only '2d' and '3d' are supported.".format(dim),
+			"sxsphire2relion")
 
 	input_data = np.genfromtxt(params_file, dtype=dtype_import_list)
 
