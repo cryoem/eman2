@@ -35,32 +35,33 @@ from __future__ import print_function
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
-import	global_def
-from global_def import sxprint, ERROR
-from	global_def import *
 
-from	EMAN2 import *
-from	sparx import *
-from	logger import Logger, BaseLogger_Files
-import	global_def
+import global_def
+from global_def import sxprint, ERROR
+from global_def import *
+
+from   EMAN2  import *
+from   sparx  import *
+from   logger import Logger, BaseLogger_Files
+import global_def
 
 from utilities import send_string_to_all, program_state_stack
 import utilities as util
 from applications import  ali2d_base
 
 from isac import *
-
-from mpi   import  *
-from math  import  *
+from mpi  import *
+from math import *
 from time import *
-from	optparse import OptionParser, SUPPRESS_HELP
-import	configparser
-from inspect import currentframe, getframeinfo
 
-import	os
-import	sys
-import	random
-import  string
+from optparse import OptionParser, SUPPRESS_HELP
+from inspect import currentframe, getframeinfo
+import configparser
+
+import os
+import sys
+import random
+import string
 
 import numpy as np
 
@@ -150,7 +151,7 @@ def checkitem(item, mpi_comm = -1):
 
 #-------------------------------------------------------------------[ utility ]
 
-def normalize_particle_images( aligned_images, shrink_ratio, target_dim ):
+def normalize_particle_images( aligned_images, shrink_ratio, target_radius, target_dim, align_params ):
 	"""
 	Function to normalize the images given in <aligned_images>. Note that the
 	normalization also includes the shrinking/re-scaling of the particle images.
@@ -158,21 +159,29 @@ def normalize_particle_images( aligned_images, shrink_ratio, target_dim ):
 	inside a particle mask (signal) and dividing by the variance outsice of the
 	mask (noise).
 
+	NOTE: Images will first be shrunken/re-scaled in order to make the particle
+	radius match between what ISAC uses for processing and the actual data.
+	Afterwards the re-scaled image will be padded/cropped in order to match the
+	internal image size used by ISAC.
+
 	Args:
 		aligned_images (EMData[]): List of EMData objects.
 		shrink_ratio (float): Ratio by which particles are to be re-scaled.
+		target_radius (int): ISAC target radius.
 		target_dim (int): ISAC target image size for processing (usually 76).
+		align_params (list of lists): Contains (pre-)alignment parameters of 
+			which we apply the shifts.
 	"""
 	# particle image dimension after scaling/shrinking
 	new_dim = int( aligned_images[0].get_xsize()*shrink_ratio + 0.5 )
 	# create mask for particle images
 	if new_dim >= target_dim:
-		mask = spx.model_circle( target_radius, target_dim, target_dim )
+		mask = util.model_circle( target_radius, target_dim, target_dim )
 	else:
-		mask = spx.model_circle( new_dim//2-2, new_dim, new_dim )
+		mask = util.model_circle( new_dim//2-2, new_dim, new_dim )
 	# normalize all given images
 	for im in range( len(aligned_images) ):
-		aligned_images[im] = fundamentals.rot_shift2D( aligned_images[im], 0, params[im][1], params[im][2], 0 )
+		aligned_images[im] = fundamentals.rot_shift2D( aligned_images[im], 0, align_params[im][1], align_params[im][2], 0 )
 		# resample if necessary
 		if shrink_ratio != 1.0:
 			aligned_images[im] = fundamentals.resample( aligned_images[im], shrink_ratio )
@@ -1341,7 +1350,7 @@ def main(args):
 		params = read_text_row(os.path.join(init2dir, "initial2Dparams.txt"))
 		params = params[image_start:image_end]
 
-		mask = spx.model_circle(radi, nx, nx)
+		mask = util.model_circle(radi, nx, nx)
 		if options.VPP:
 			if myid == 0:  rpw = read_text_file(os.path.join(Blockdata["masterdir"], "rpw.txt"))
 			else:  rpw = [0.0]
@@ -1356,14 +1365,15 @@ def main(args):
 		if options.VPP: 
 			del rpw
 
-		# normalize all particle images after applying ctf correction
-		normalize_particle_images( aligned_images, shrink_ratio, target_nx )
+		# normalize all particle images after applying ctf correction (includes shrinking/re-scaling)
+		normalize_particle_images( aligned_images, shrink_ratio, target_radius, target_nx, params )
 
-		# gather normalized particles at the rood node
-		spx.gather_compacted_EMData_to_root(Blockdata["total_nima"], aligned_images, myid)
+		# gather normalized particles at the root node
+		util.gather_compacted_EMData_to_root(Blockdata["total_nima"], aligned_images, myid)
 
 		if( Blockdata["myid"] == main_node ):
-			for i in range(Blockdata["total_nima"]):  aligned_images[i].write_image(Blockdata["stack_ali2d"],i)
+			for i in range(Blockdata["total_nima"]):
+				aligned_images[i].write_image(Blockdata["stack_ali2d"],i)
 			del aligned_images
 			#  It has to be explicitly closed
 			from EMAN2db import db_open_dict
@@ -1387,8 +1397,8 @@ def main(args):
 			sxprint(output_text)
 			junk = cmdexecute("sxheader.py  --consecutive  --params=originalid   %s"%Blockdata["stack_ali2d"])
 
-
 			fp = open(os.path.join(init2dir, "Finished_initial_2d_alignment.txt"), "w"); fp.flush() ;fp.close()
+
 	else:
 		if( Blockdata["myid"] == Blockdata["main_node"] ):
 			sxprint("Skipping 2D alignment since it was already done!")
