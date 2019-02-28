@@ -1108,6 +1108,10 @@ def main(args):
 	##### XXXXXXXXXXXXXXXXXXXXXX option does not exist in docs XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 	parser.add_option("--skip_prealignment",     action="store_true",  default=False,      help="skip pre-alignment step: to be used if images are already centered. 2dalignment directory will still be generated but the parameters will be zero. (default False)")
 
+	parser.add_option( "--filament_width",        type="int",          default=-1,         help="When this is set to a non-default value helical data is assumed in which case particle images will be masked with a rectangular mask. (Default: -1)" )
+	parser.add_option( "--apply_helical_masking", type="bool",         default=True,       help="When processing helical data (see parameter \'--filament_width\') a rectangular mask is used to (a) normalize and (b) to actually mask the particle images. The latter can be disabled by setting this flag to False. (Default: True)" )
+
+
 	required_option_list = ['radius']
 	(options, args) = parser.parse_args(args)
 
@@ -1393,7 +1397,8 @@ def main(args):
 			del rpw
 
 		# normalize all particle images after applying ctf correction (includes shrinking/re-scaling)
-		normalize_particle_images( aligned_images, shrink_ratio, target_radius, target_nx, params )
+		normalize_particle_images( aligned_images, shrink_ratio, target_radius, target_nx, params, 
+			                       filament_width=options.filament_width, burn_helical_mask=options.apply_helical_masking )
 
 		# gather normalized particles at the root node
 		util.gather_compacted_EMData_to_root(Blockdata["total_nima"], aligned_images, myid)
