@@ -76,6 +76,8 @@ from random       import randint, seed
 from time         import localtime, strftime
 from applications import within_group_refinement
 
+import fundamentals
+
 import os
 
 #-----------------------------------------------------------------------[ mpi ]
@@ -145,6 +147,34 @@ def checkitem(item, mpi_comm = -1):
 	isthere = bcast_number_to_all(isthere, source_node = Blockdata["main_node"], mpi_comm = mpi_comm)
 	mpi_barrier(mpi_comm)
 	return isthere
+
+#-------------------------------------------------------------------[ utility ]
+
+def normalize_particle_images( aligned_images, shrink_ratio, target_dim ):
+	# particle image dimension after scaling/shrinking
+	new_dim = int( aligned_images[0].get_xsize()*shrink_ratio + 0.5 )
+	# create mask for particle images
+	if new_dim >= target_dim:
+		mask = spx.model_circle( target_radius, target_dim, target_dim )
+	else:
+		mask = spx.model_circle( new_dim//2-2, new_dim, new_dim )
+	# normalize all given images
+	for im in range( len(aligned_images) ):
+		aligned_images[im] = fundamentals.rot_shift2D( aligned_images[im], 0, params[im][1], params[im][2], 0 )
+		# resample if necessary
+		if shrink_ratio != 1.0:
+			aligned_images[im] = fundamentals.resample( aligned_images[im], shrink_ratio )
+		# crop images if necessary
+		if new_dim > target_dim:
+			aligned_images[im] = Util.window( aligned_images[im], target_dim, target_dim, 1 )
+		# normalize using mean of the data and variance of the noise
+		p = Util.infomask( aligned_images[im], mask, False )
+		aligned_images[im] -= p[0]
+		p = Util.infomask( aligned_images[im], mask, True )
+		aligned_images[im] /= p[1]
+		# pad images in case they have been shrunken below the target_dim
+		if new_dim < target_dim:
+			aligned_images[im] = pad( aligned_images[im], target_dim, target_dim, 1, 0.0 )
 
 #----------------------------------------------------------------------[ ISAC ]
 
@@ -1311,128 +1341,15 @@ def main(args):
 				aligned_images[im] = filt_ctf(aligned_images[im], aligned_images[im].get_attr("ctf"), binary = True)
 			elif options.VPP:
 				aligned_images[im] = fft(filt_table(filt_ctf(fft(aligned_images[im]), aligned_images[im].get_attr("ctf"), binary = True), rpw))
-		if options.VPP: del rpw
-		if(shrink_ratio < 1.0):
-			if    newx > target_nx  :
-				mask = spx.model_circle(target_radius, target_nx, target_nx)
-				for im in range(nima):
-					#  Here we should use only shifts
-					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					#aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
-					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
-					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
-					aligned_images[im] = Util.window(aligned_images[im], target_nx, target_nx, 1)
-					p = Util.infomask(aligned_images[im], mask, False)
-					aligned_images[im] -= p[0]
-					p = Util.infomask(aligned_images[im], mask, True)
-					aligned_images[im] /= p[1]
-			elif  newx == target_nx :
-				mask = spx.model_circle(target_radius, target_nx, target_nx)
-				for im in range(nima):
-					#  Here we should use only shifts
-					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
-					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
-					p = Util.infomask(aligned_images[im], mask, False)
-					aligned_images[im] -= p[0]
-					p = Util.infomask(aligned_images[im], mask, True)
-					aligned_images[im] /= p[1]
-			elif  newx < target_nx  :	
-				mask = spx.model_circle(newx//2-2, newx,  newx)
-				for im in range(nima):
-					#  Here we should use only shifts
-					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
-					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
-					p = Util.infomask(aligned_images[im], mask, False)
-					aligned_images[im] -= p[0]
-					p = Util.infomask(aligned_images[im], mask, True)
-					aligned_images[im] /= p[1]
-					aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
-		elif(shrink_ratio == 1.0):
-			if    newx > target_nx  :
-				mask = spx.model_circle(target_radius, target_nx, target_nx)
-				for im in range(nima):
-					#  Here we should use only shifts
-					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
-					aligned_images[im] = Util.window(aligned_images[im], target_nx, target_nx, 1)
-					p = Util.infomask(aligned_images[im], mask, False)
-					aligned_images[im] -= p[0]
-					p = Util.infomask(aligned_images[im], mask, True)
-					aligned_images[im] /= p[1]
-			elif  newx == target_nx :
-				mask = spx.model_circle(target_radius, target_nx, target_nx)
-				for im in range(nima):
-					#  Here we should use only shifts
-					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
-					p = Util.infomask(aligned_images[im], mask, False)
-					aligned_images[im] -= p[0]
-					p = Util.infomask(aligned_images[im], mask, True)
-					aligned_images[im] /= p[1]
-			elif  newx < target_nx  :			
-				mask = spx.model_circle(newx//2-2, newx,  newx)
-				for im in range(nima):
-					#  Here we should use only shifts
-					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
-					#aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
-					p = Util.infomask(aligned_images[im], mask, False)
-					aligned_images[im] -= p[0]
-					p = Util.infomask(aligned_images[im], mask, True)
-					aligned_images[im] /= p[1]
-					aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
-		elif(shrink_ratio > 1.0):
-			if    newx > target_nx  :
-				mask = spx.model_circle(target_radius, target_nx, target_nx)
-				for im in range(nima):
-					#  Here we should use only shifts
-					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
-					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
-					aligned_images[im] = Util.window(aligned_images[im], target_nx, target_nx, 1)
-					p = Util.infomask(aligned_images[im], mask, False)
-					aligned_images[im] -= p[0]
-					p = Util.infomask(aligned_images[im], mask, True)
-					aligned_images[im] /= p[1]
-			elif  newx == target_nx :
-				mask = spx.model_circle(target_radius, target_nx, target_nx)
-				for im in range(nima):
-					#  Here we should use only shifts
-					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
-					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
-					p = Util.infomask(aligned_images[im], mask, False)
-					aligned_images[im] -= p[0]
-					p = Util.infomask(aligned_images[im], mask, True)
-					aligned_images[im] /= p[1]
-			elif  newx < target_nx  :
-				mask = spx.model_circle(newx//2-2, newx,  newx)
-				for im in range(nima):
-					#  Here we should use only shifts
-					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
-					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
-					p = Util.infomask(aligned_images[im], mask, False)
-					aligned_images[im] -= p[0]
-					p = Util.infomask(aligned_images[im], mask, True)
-					aligned_images[im] /= p[1]
-					aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
-		del mask
-	
-		gather_compacted_EMData_to_root(Blockdata["total_nima"], aligned_images, myid)
-		#Blockdata["total_nima"] = bcast_number_to_all(Blockdata["total_nima"], source_node = main_node)
-	
+		if options.VPP: 
+			del rpw
+
+		# normalize all particle images after applying ctf correction
+		normalize_particle_images( aligned_images, shrink_ratio, target_nx )
+
+		# gather normalized particles at the rood node
+		spx.gather_compacted_EMData_to_root(Blockdata["total_nima"], aligned_images, myid)
+
 		if( Blockdata["myid"] == main_node ):
 			for i in range(Blockdata["total_nima"]):  aligned_images[i].write_image(Blockdata["stack_ali2d"],i)
 			del aligned_images
