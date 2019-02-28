@@ -151,7 +151,7 @@ def checkitem(item, mpi_comm = -1):
 
 #-------------------------------------------------------------------[ utility ]
 
-def normalize_particle_images( aligned_images, shrink_ratio, target_radius, target_dim, align_params, filament_width=-1, burn_helical_mask=True ):
+def normalize_particle_images( aligned_images, shrink_ratio, target_radius, target_dim, align_params, filament_width=-1, ignore_helical_mask=False ):
 	"""
 	Function to normalize the images given in <aligned_images>. Note that the
 	normalization also includes the shrinking/re-scaling of the particle images.
@@ -181,11 +181,11 @@ def normalize_particle_images( aligned_images, shrink_ratio, target_radius, targ
 			filament images in which case a rectangular mask of the given width
 			is applied to all particle images. [Default: -1]
 
-		burn_helical_mask (bool): Only relevant if filament_width is used. If 
-		    set to True the data will be multiplied with the mask to remove all
-			data/noise outside of the mask. If set to False the mask will be
-			used for the normalization but afterwards NOT multiplied with the
-			particle images. [Default: True]
+		ignore_helical_mask (bool): Only relevant if filament_width is used. If 
+		    set to False the data will be multiplied with the mask to remove all
+			data/noise outside of the mask. If set to True the mask will still
+			be used for the normalization but afterwards NOT multiplied with the
+			particle images. [Default: False]
 	"""
 
 	# particle image dimension after scaling/shrinking
@@ -218,7 +218,7 @@ def normalize_particle_images( aligned_images, shrink_ratio, target_radius, targ
 		p = Util.infomask( aligned_images[im], mask, True )
 		aligned_images[im] /= p[1]
 		# optional: burn helical mask into particle images
-		if filament_width != -1 and burn_helical_mask:
+		if filament_width != -1 and not ignore_helical_mask:
 			aligned_images[im] *= mask
 		# pad images in case they have been shrunken below the target_dim
 		if new_dim < target_dim:
@@ -1109,7 +1109,7 @@ def main(args):
 	parser.add_option("--skip_prealignment",     action="store_true",  default=False,      help="skip pre-alignment step: to be used if images are already centered. 2dalignment directory will still be generated but the parameters will be zero. (default False)")
 
 	parser.add_option( "--filament_width",        type="int",          default=-1,         help="When this is set to a non-default value helical data is assumed in which case particle images will be masked with a rectangular mask. (Default: -1)" )
-	parser.add_option( "--apply_helical_masking", type="bool",         default=True,       help="When processing helical data (see parameter \'--filament_width\') a rectangular mask is used to (a) normalize and (b) to actually mask the particle images. The latter can be disabled by setting this flag to False. (Default: True)" )
+	parser.add_option( "--filament_mask_ignore",  action="store_true", default=False,      help="Only relevant when parameter \'--filament_width\' is set. When set to False a rectangular mask is used to (a) normalize and (b) to mask the particle images. The latter can be disabled by setting this flag to True. (Default: False)" )
 
 
 	required_option_list = ['radius']
@@ -1398,7 +1398,7 @@ def main(args):
 
 		# normalize all particle images after applying ctf correction (includes shrinking/re-scaling)
 		normalize_particle_images( aligned_images, shrink_ratio, target_radius, target_nx, params, 
-			                       filament_width=options.filament_width, burn_helical_mask=options.apply_helical_masking )
+			                       filament_width=options.filament_width, ignore_helical_mask=options.filament_mask_ignore )
 
 		# gather normalized particles at the root node
 		util.gather_compacted_EMData_to_root(Blockdata["total_nima"], aligned_images, myid)
