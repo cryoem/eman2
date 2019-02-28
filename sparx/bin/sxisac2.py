@@ -151,6 +151,18 @@ def checkitem(item, mpi_comm = -1):
 #-------------------------------------------------------------------[ utility ]
 
 def normalize_particle_images( aligned_images, shrink_ratio, target_dim ):
+	"""
+	Function to normalize the images given in <aligned_images>. Note that the
+	normalization also includes the shrinking/re-scaling of the particle images.
+	The normalization itself is being done by substracting the mean of the data
+	inside a particle mask (signal) and dividing by the variance outsice of the
+	mask (noise).
+
+	Args:
+		aligned_images (EMData[]): List of EMData objects.
+		shrink_ratio (float): Ratio by which particles are to be re-scaled.
+		target_dim (int): ISAC target image size for processing (usually 76).
+	"""
 	# particle image dimension after scaling/shrinking
 	new_dim = int( aligned_images[0].get_xsize()*shrink_ratio + 0.5 )
 	# create mask for particle images
