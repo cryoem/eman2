@@ -383,7 +383,7 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		if len(pts)==0:
 			return
 		
-		filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save PDB', os.getcwd(), "(*.pdb)")
+		filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save PDB', os.getcwd(), "(*.pdb)")[0]
 		numpy2pdb(data=pts[:,:3], fname=filename, chainid=pts[:,3])
 	
 	def interp_points(self):
