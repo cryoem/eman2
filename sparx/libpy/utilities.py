@@ -40,7 +40,11 @@ from functools import reduce
 import EMAN2
 import numpy as np
 
-import scipy
+from pickle import dumps, loads
+from zlib import compress, decompress
+from struct import pack, unpack
+
+import scipy.ndimage
 
 import morphology
 
@@ -6286,11 +6290,6 @@ class iterImagesStack(object):
 			return False
 		self.position -= 1
 		return self.position >= 0
-
-
-from pickle import dumps, loads
-from zlib import compress, decompress
-from struct import pack, unpack
 
 
 def pack_message(data):
