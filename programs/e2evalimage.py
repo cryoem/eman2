@@ -48,13 +48,13 @@ from numpy import array,arange
 import traceback
 
 try:
-	from PyQt4 import QtCore, QtGui, QtOpenGL
-	from PyQt4.QtCore import Qt
-	from PyQt4.QtCore import QTimer
+	from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+	from PyQt5.QtCore import Qt
+	from PyQt5.QtCore import QTimer
 	from eman2_gui.emshape import *
 	from eman2_gui.valslider import *
 except:
-	print("Warning: PyQt4 must be installed")
+	print("Warning: PyQt5 must be installed")
 	sys.exit(1)
 
 
@@ -117,7 +117,7 @@ power spectrum in various ways."""
 
 
 
-class GUIEvalImage(QtGui.QWidget):
+class GUIEvalImage(QtWidgets.QWidget):
 	def __init__(self,images,voltage=None,apix=None,cs=None,ac=10.0,box=512,usefoldername=False,constbfactor=-1,fitastig=False,phaseplate=False):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
 		'data' is a list of (filename,ctf,im_1d,bg_1d,quality)
@@ -134,7 +134,7 @@ class GUIEvalImage(QtGui.QWidget):
 			print("Cannot import EMAN plot GUI objects (is matplotlib installed?)")
 			sys.exit(1)
 
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
 
 		self.nodir=not usefoldername
@@ -225,40 +225,40 @@ class GUIEvalImage(QtGui.QWidget):
 		self.wfft.mmode="app"
 
 		# This object is itself a widget we need to set up
-		self.gbl = QtGui.QGridLayout(self)
-		self.gbl.setMargin(8)
+		self.gbl = QtWidgets.QGridLayout(self)
+		self.gbl.setContentsMargins(8, 8, 8, 8)
 		self.gbl.setSpacing(6)
 
 		# plot list and plot mode combobox
 		self.setlist=e2ctf.MyListWidget(self)
-		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+		self.setlist.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		for i in images:
 			self.setlist.addItem(i)
 		self.gbl.addWidget(self.setlist,0,0,8,2)
 
-		self.lcalcmode=QtGui.QLabel("Region:",self)
+		self.lcalcmode=QtWidgets.QLabel("Region:",self)
 		self.gbl.addWidget(self.lcalcmode,10,0)
 
-		self.scalcmode=QtGui.QComboBox(self)
+		self.scalcmode=QtWidgets.QComboBox(self)
 		self.scalcmode.addItem("Single Region")
 		self.scalcmode.addItem("Tiled Boxes")
 		self.scalcmode.setCurrentIndex(1)
 		self.gbl.addWidget(self.scalcmode,10,1)
 
 
-		self.lcalcmode=QtGui.QLabel("2D FFT:",self)
+		self.lcalcmode=QtWidgets.QLabel("2D FFT:",self)
 		self.gbl.addWidget(self.lcalcmode,11,0)
 
-		self.s2dmode=QtGui.QComboBox(self)
+		self.s2dmode=QtWidgets.QComboBox(self)
 		self.s2dmode.addItem("Power Spectrum")
 		self.s2dmode.addItem("Bg Subtracted")
 		self.s2dmode.addItem("Background")
 		self.gbl.addWidget(self.s2dmode,11,1)
 
-		self.lcalcmode=QtGui.QLabel("Annotate:",self)
+		self.lcalcmode=QtWidgets.QLabel("Annotate:",self)
 		self.gbl.addWidget(self.lcalcmode,12,0)
 
-		self.s2danmode=QtGui.QComboBox(self)
+		self.s2danmode=QtWidgets.QComboBox(self)
 		self.s2danmode.addItem("Ctf Zeroes")
 		self.s2danmode.addItem("Resolution Ring")
 		self.s2danmode.addItem("2-D Xtal")
@@ -266,10 +266,10 @@ class GUIEvalImage(QtGui.QWidget):
 		self.gbl.addWidget(self.s2danmode,12,1)
 
 
-		self.lcalcmode=QtGui.QLabel("Plot:",self)
+		self.lcalcmode=QtWidgets.QLabel("Plot:",self)
 		self.gbl.addWidget(self.lcalcmode,13,0)
 
-		self.splotmode=QtGui.QComboBox(self)
+		self.splotmode=QtWidgets.QComboBox(self)
 		self.splotmode.addItem("Bgsub and Fit")
 		self.splotmode.addItem("Fg and Bg")
 		self.splotmode.addItem("Bgsub, 45 deg slices")
@@ -305,7 +305,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.squality.setIntonly(True)
 		self.gbl.addWidget(self.squality,6,2,1,3)
 
-		self.brefit=QtGui.QPushButton("Refit")
+		self.brefit=QtWidgets.QPushButton("Refit")
 		self.gbl.addWidget(self.brefit,7,2)
 
 		self.cbgadj=CheckBox(None,"CTF BG Adj",1)
@@ -344,13 +344,13 @@ class GUIEvalImage(QtGui.QWidget):
 		# this is just a spacer
 		self.gbl.setColumnStretch(3,2)
 
-		self.bbox=QtGui.QGroupBox("Project")
+		self.bbox=QtWidgets.QGroupBox("Project")
 		self.gbl.addWidget(self.bbox,10,4,4,1)
 
-		self.bvbl=QtGui.QVBoxLayout()
+		self.bvbl=QtWidgets.QVBoxLayout()
 		self.bbox.setLayout(self.bvbl)
 
-		self.bimport=QtGui.QPushButton("Import")
+		self.bimport=QtWidgets.QPushButton("Import")
 		self.bvbl.addWidget(self.bimport)
 
 		self.cinvert=CheckBox(None,"Invert")
@@ -429,7 +429,7 @@ class GUIEvalImage(QtGui.QWidget):
 
 
 	def closeEvent(self,event):
-#		QtGui.QWidget.closeEvent(self,event)
+#		QtWidgets.QWidget.closeEvent(self,event)
 		E2saveappwin("e2evalimage","main",self)
 		E2saveappwin("e2evalimage","image",self.wimage.qt_parent)
 		E2saveappwin("e2evalimage","fft",self.wfft.qt_parent)
@@ -437,8 +437,8 @@ class GUIEvalImage(QtGui.QWidget):
 
 		self.writeCurParm()
 		event.accept()
-		QtGui.qApp.exit(0)
-		#app=QtGui.qApp
+		QtWidgets.qApp.exit(0)
+		#app=QtWidgets.qApp
 		#if self.wimage != None:
 			#app.close_specific(self.wimage)
 			#self.wimage = None
@@ -640,7 +640,7 @@ class GUIEvalImage(QtGui.QWidget):
 			self.procthread.start()
 
 		if self.errors:
-			QtGui.QMessageBox.warning(None,"Error","The following processors encountered errors during processing of 1 or more images:"+"\n".join(self.errors))
+			QtWidgets.QMessageBox.warning(None,"Error","The following processors encountered errors during processing of 1 or more images:"+"\n".join(self.errors))
 			self.errors=None
 
 	def doRefit(self):
@@ -692,7 +692,7 @@ class GUIEvalImage(QtGui.QWidget):
 		if not os.access("micrographs",os.R_OK) :
 			try : os.mkdir("micrographs")
 			except:
-				QtGui.QMessageBox.warning(self,"Error !","Cannot create micrographs directory")
+				QtWidgets.QMessageBox.warning(self,"Error !","Cannot create micrographs directory")
 				return
 
 		#db=db_open_dict("bdb:micrographs#%s"%item)

@@ -43,8 +43,8 @@ import threading
 import time
 from sys import argv
 from EMAN2 import *
-from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import Qt
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import Qt
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emimagemx import EMImageMXWidget
@@ -114,12 +114,12 @@ def main():
 	
 	E2end(pid)
 
-class EMMotion(QtGui.QMainWindow):
+class EMMotion(QtWidgets.QMainWindow):
 	"""This is the main window for the EMMotion application"""
 	
 	def __init__(self,application,path=None,piter=None,threads=4):
 		"""application is an QApplication instance. ptclstack is the path to the file containing the particles to analyze. path is the path for ouput files""" 
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 
 		self.aliimg=None		# This is the unmasked alignment reference image
 		self.alisig=None		# This is the standard deviation of the alignment reference
@@ -152,17 +152,17 @@ class EMMotion(QtGui.QMainWindow):
 		#self.mwin_average=self.mwin.addAction("Averaging")
 
 
-		self.setCentralWidget(QtGui.QWidget())
-		self.gbl = QtGui.QGridLayout(self.centralWidget())
+		self.setCentralWidget(QtWidgets.QWidget())
+		self.gbl = QtWidgets.QGridLayout(self.centralWidget())
 		cen=self.centralWidget()
 		
 		######
 		# Folder parameters
-		self.vgb0=QtGui.QGroupBox("Particle Data")
+		self.vgb0=QtWidgets.QGroupBox("Particle Data")
 		self.gbl.addWidget(self.vgb0,0,0,1,4)
 		
-		self.gbl2=QtGui.QGridLayout(self.vgb0)
-		self.wlpath=QtGui.QLabel("Path: {}".format(self.path))
+		self.gbl2=QtWidgets.QGridLayout(self.vgb0)
+		self.wlpath=QtWidgets.QLabel("Path: {}".format(self.path))
 		self.gbl2.addWidget(self.wlpath,0,0)
 		self.gbl2.setColumnStretch(0,1)
 		
@@ -176,97 +176,97 @@ class EMMotion(QtGui.QMainWindow):
 		self.gbl2.addWidget(self.wvsnum,0,3)
 		self.gbl2.setColumnStretch(3,4)
 		
-		self.wlnptcl=QtGui.QLabel(" ")
+		self.wlnptcl=QtWidgets.QLabel(" ")
 		self.gbl2.addWidget(self.wlnptcl,0,5)
 		self.gbl2.setColumnStretch(5,2)
 		
-		self.wbdoavg=QtGui.QPushButton("Make Avg")
+		self.wbdoavg=QtWidgets.QPushButton("Make Avg")
 		self.gbl2.addWidget(self.wbdoavg,0,8)
 		
 		###### Alignment Mask
 		# widget for editing the alignment mask
-		self.wlalimaskdraw=QtGui.QLabel("<big><pre>Edit</pre></big>")
+		self.wlalimaskdraw=QtWidgets.QLabel("<big><pre>Edit</pre></big>")
 		self.wlalimaskdraw.setAlignment(Qt.AlignHCenter)
 		self.gbl.addWidget(self.wlalimaskdraw,2,1)
 		
-		self.wlalimaskdraw2=QtGui.QLabel("<big><pre>A\nl\ni\ng\nn</pre></big>")
+		self.wlalimaskdraw2=QtWidgets.QLabel("<big><pre>A\nl\ni\ng\nn</pre></big>")
 		self.gbl.addWidget(self.wlalimaskdraw2,3,0)
 		
 		self.w2dalimaskdraw=EMImage2DWidget()
 		self.gbl.addWidget(self.w2dalimaskdraw,3,1)
 		
 		# Buttons for controlling mask
-		self.hbl1=QtGui.QHBoxLayout()
+		self.hbl1=QtWidgets.QHBoxLayout()
 		self.gbl.addLayout(self.hbl1,4,1)
 		self.hbl1.addStretch(5)
 
-		self.wbdrawali=QtGui.QPushButton("Draw")
+		self.wbdrawali=QtWidgets.QPushButton("Draw")
 		self.hbl1.addWidget(self.wbdrawali)
 		self.wbdrawali.hide()						# this functionality won't work with the current widget
 
-		self.wbautoali=QtGui.QPushButton("Auto")
+		self.wbautoali=QtWidgets.QPushButton("Auto")
 		self.hbl1.addWidget(self.wbautoali)
 		
-		self.wbresetali=QtGui.QPushButton("Reset")
+		self.wbresetali=QtWidgets.QPushButton("Reset")
 		self.hbl1.addWidget(self.wbresetali)
 
 		self.hbl1.addStretch(5)
 
 		# Widget for setting alignment mask blur and base level
-		self.vbl1=QtGui.QVBoxLayout()
+		self.vbl1=QtWidgets.QVBoxLayout()
 		self.gbl.addLayout(self.vbl1,3,2)
 		self.vbl1.addStretch(5)
 		
-		self.wlalimaskblur=QtGui.QLabel("Blur")
+		self.wlalimaskblur=QtWidgets.QLabel("Blur")
 		self.vbl1.addWidget(self.wlalimaskblur)
 		
-		self.wsbalimaskblur=QtGui.QSpinBox()
+		self.wsbalimaskblur=QtWidgets.QSpinBox()
 		self.wsbalimaskblur.setRange(0,25)
 		self.vbl1.addWidget(self.wsbalimaskblur)
 		
 		self.vbl1.addSpacing(16)
 		
-		self.wlalimaskbase=QtGui.QLabel("Base")
+		self.wlalimaskbase=QtWidgets.QLabel("Base")
 		self.vbl1.addWidget(self.wlalimaskbase)
 		
-		self.wsbalimaskbase=QtGui.QSpinBox()
+		self.wsbalimaskbase=QtWidgets.QSpinBox()
 		self.wsbalimaskbase.setRange(0,100)
 		self.wsbalimaskbase.setValue(10)
 		self.vbl1.addWidget(self.wsbalimaskbase)
 		
 		self.vbl1.addSpacing(16)
 
-		self.wlalimaskrot=QtGui.QLabel("Rot")
+		self.wlalimaskrot=QtWidgets.QLabel("Rot")
 		self.vbl1.addWidget(self.wlalimaskrot)
 		
-		self.wsbalimaskrot=QtGui.QSpinBox()
+		self.wsbalimaskrot=QtWidgets.QSpinBox()
 		self.wsbalimaskrot.setRange(0,360)
 		self.wsbalimaskrot.setValue(0)
 		self.vbl1.addWidget(self.wsbalimaskrot)
 		
 		self.vbl1.addSpacing(16)
 		
-		self.wbaligo=QtGui.QPushButton(unichr(0x2192))
+		self.wbaligo=QtWidgets.QPushButton(unichr(0x2192))
 		self.vbl1.addWidget(self.wbaligo)
 
 		self.vbl1.addStretch(5)
 		
 		# widget for displaying the masked alignment reference
-		self.wlalimask=QtGui.QLabel("<big><pre>Reference</pre></big>")
+		self.wlalimask=QtWidgets.QLabel("<big><pre>Reference</pre></big>")
 		self.wlalimask.setAlignment(Qt.AlignHCenter)
 		self.gbl.addWidget(self.wlalimask,2,3)
 		
 		self.w2dalimask=EMImage2DWidget()
 		self.gbl.addWidget(self.w2dalimask,3,3)
 		
-		self.hbl1a=QtGui.QHBoxLayout()
+		self.hbl1a=QtWidgets.QHBoxLayout()
 		self.gbl.addLayout(self.hbl1a,4,3)
 		self.hbl1a.addStretch(5)
 		
-		self.wbrecalcref=QtGui.QPushButton("Realign")
+		self.wbrecalcref=QtWidgets.QPushButton("Realign")
 		self.hbl1a.addWidget(self.wbrecalcref)
 		
-		self.wbrrecalcref=QtGui.QPushButton("Rerefine")
+		self.wbrrecalcref=QtWidgets.QPushButton("Rerefine")
 		self.hbl1a.addWidget(self.wbrrecalcref)
 		
 		self.hbl1a.addStretch(5)
@@ -274,44 +274,44 @@ class EMMotion(QtGui.QMainWindow):
 
 		###### ROI Mask
 		# widget for editing the ROI mask
-		self.wlroimaskdraw=QtGui.QLabel("<big><pre>R\nO\nI</pre></big>")
+		self.wlroimaskdraw=QtWidgets.QLabel("<big><pre>R\nO\nI</pre></big>")
 		self.gbl.addWidget(self.wlroimaskdraw,6,0)
 		
 		self.w2droimaskdraw=EMImage2DWidget()
 		self.gbl.addWidget(self.w2droimaskdraw,6,1)
 
 		# Buttons for controlling mask
-		self.hbl2=QtGui.QHBoxLayout()
+		self.hbl2=QtWidgets.QHBoxLayout()
 		self.gbl.addLayout(self.hbl2,5,1)
 		self.hbl2.addStretch(5)
 		
-		self.wbdrawroi=QtGui.QPushButton("Draw")
+		self.wbdrawroi=QtWidgets.QPushButton("Draw")
 		self.hbl1.addWidget(self.wbdrawroi)
 		self.wbdrawroi.hide()							# this button won't work right for now
 
-		self.wbautoroi=QtGui.QPushButton("Auto")
+		self.wbautoroi=QtWidgets.QPushButton("Auto")
 		self.hbl2.addWidget(self.wbautoroi)
 		
-		self.wbresetroi=QtGui.QPushButton("Reset")
+		self.wbresetroi=QtWidgets.QPushButton("Reset")
 		self.hbl2.addWidget(self.wbresetroi)
 		
 		self.hbl2.addStretch(5)
 
 		# Widget for setting alignment mask blur and base level
-		self.vbl2=QtGui.QVBoxLayout()
+		self.vbl2=QtWidgets.QVBoxLayout()
 		self.gbl.addLayout(self.vbl2,6,2)
 		self.vbl2.addStretch(5)
 		
-		self.wlroimaskblur=QtGui.QLabel("Blur")
+		self.wlroimaskblur=QtWidgets.QLabel("Blur")
 		self.vbl2.addWidget(self.wlroimaskblur)
 		
-		self.wsbroimaskblur=QtGui.QSpinBox()
+		self.wsbroimaskblur=QtWidgets.QSpinBox()
 		self.wsbroimaskblur.setRange(0,25)
 		self.vbl2.addWidget(self.wsbroimaskblur)
 
 		self.vbl2.addSpacing(16)
 		
-		self.wbroigo=QtGui.QPushButton(unichr(0x2192))
+		self.wbroigo=QtWidgets.QPushButton(unichr(0x2192))
 		self.vbl2.addWidget(self.wbroigo)
 
 
@@ -321,26 +321,26 @@ class EMMotion(QtGui.QMainWindow):
 		
 		self.vbl2.addStretch(5)
 
-		self.wlarrow1=QtGui.QLabel(unichr(0x2192))
+		self.wlarrow1=QtWidgets.QLabel(unichr(0x2192))
 		self.gbl.addWidget(self.wlarrow1,4,4)
 
 		###### Results
 		# Widget showing lists of different result sets
-		self.vbl3=QtGui.QVBoxLayout()
+		self.vbl3=QtWidgets.QVBoxLayout()
 		self.gbl.addLayout(self.vbl3,3,6,5,1)
 		
-		self.wllistresult=QtGui.QLabel("Results")
+		self.wllistresult=QtWidgets.QLabel("Results")
 #		self.wllistresult.setAlignment(Qt.AlignHCenter)
 		self.vbl3.addWidget(self.wllistresult)
 		
-		self.wlistresult=QtGui.QListWidget()
+		self.wlistresult=QtWidgets.QListWidget()
 		self.vbl3.addWidget(self.wlistresult)
 
 		###### Parameters for processing
-		self.vgb1=QtGui.QGroupBox("Launch Job")
+		self.vgb1=QtWidgets.QGroupBox("Launch Job")
 		self.vbl3.addWidget(self.vgb1)
 		
-		self.vbl3a=QtGui.QVBoxLayout()
+		self.vbl3a=QtWidgets.QVBoxLayout()
 		self.vgb1.setLayout(self.vbl3a)
 		
 		self.wvbclasses=ValBox(None,(0,256),"# Classes",32)
@@ -368,12 +368,12 @@ class EMMotion(QtGui.QMainWindow):
 		self.wvbcores.setIntonly(True)
 		self.vbl3a.addWidget(self.wvbcores)
 		
-		self.wcbprocmode=QtGui.QComboBox()
+		self.wcbprocmode=QtWidgets.QComboBox()
 		self.wcbprocmode.addItem("PCA / k-means")
 		self.wcbprocmode.addItem("Average Density")
 		self.vbl3a.addWidget(self.wcbprocmode)
 		
-		self.wpbprogress=QtGui.QProgressBar()
+		self.wpbprogress=QtWidgets.QProgressBar()
 		self.wpbprogress.setEnabled(False)
 		self.wpbprogress.setMinimum(0)
 		self.wpbprogress.setMaximum(100)
@@ -381,37 +381,37 @@ class EMMotion(QtGui.QMainWindow):
 		self.vbl3a.addWidget(self.wpbprogress)
 		
 		# doubles as a cancel button
-		self.wbcompute=QtGui.QPushButton("Compute")
+		self.wbcompute=QtWidgets.QPushButton("Compute")
 		self.vbl3a.addWidget(self.wbcompute)
 
-		self.wlarrow2=QtGui.QLabel(unichr(0x2192))
+		self.wlarrow2=QtWidgets.QLabel(unichr(0x2192))
 		self.gbl.addWidget(self.wlarrow2,4,7)
 
 
 		###### Output widgets
 		# Class-averages
-		self.wlclasses=QtGui.QLabel("<big><pre>Classes</pre></big>")
+		self.wlclasses=QtWidgets.QLabel("<big><pre>Classes</pre></big>")
 		self.wlclasses.setAlignment(Qt.AlignHCenter)
 		self.gbl.addWidget(self.wlclasses,2,9)
 		
 		self.w2dclasses=EMImage2DWidget()
 		self.gbl.addWidget(self.w2dclasses,3,9)
 
-		self.wbshowptcl=QtGui.QPushButton(unichr(0x2193))
+		self.wbshowptcl=QtWidgets.QPushButton(unichr(0x2193))
 		self.gbl.addWidget(self.wbshowptcl,4,9)
 
 		self.w2dptcl=EMImage2DWidget()
 		self.gbl.addWidget(self.w2dptcl,6,9)
 		
 		## Buttons for controlling mask
-		#self.hbl1=QtGui.QHBoxLayout()
+		#self.hbl1=QtWidgets.QHBoxLayout()
 		#self.gbl.addLayout(self.hbl1,2,1)
 		#self.hbl1.addStretch(5)
 		
-		#self.wbautoali=QtGui.QPushButton("Auto")
+		#self.wbautoali=QtWidgets.QPushButton("Auto")
 		#self.hbl1.addWidget(self.wbautoali)
 		
-		#self.wbresetali=QtGui.QPushButton("Reset")
+		#self.wbresetali=QtWidgets.QPushButton("Reset")
 		#self.hbl1.addWidget(self.wbresetali)"bdb:%s"
 
 		#self.hbl1.addStretch(5)
@@ -528,7 +528,7 @@ class EMMotion(QtGui.QMainWindow):
 
 	def menuFileOpen(self,x):
 		if self.particles!=None:
-			QtGui.QMessageBox.warning(None,"Error","%s already contains a stack of particles. A new folder is required to start with a new stack of particles. Rerun without --path option."%self.path)
+			QtWidgets.QMessageBox.warning(None,"Error","%s already contains a stack of particles. A new folder is required to start with a new stack of particles. Rerun without --path option."%self.path)
 			return
 
 		self.dialog = embrowser.EMBrowserWidget(withmodal=True,multiselect=False)
@@ -548,9 +548,9 @@ class EMMotion(QtGui.QMainWindow):
 		## We don't want the user to overwhelm the system
 		#if sz*sz*4*n > 5.0e8 :
 			#nmax=5.0e8/(sz*sz*4)
-			#r=QtGui.QMessageBox.question(None,"Are you sure ?","WARNING: This full particle set will require %d+ gb memory to process. Select Yes to use only the first %d particles, No to use the entire stack, or Cancel to abort. You may also consider using e2proc2d.py --meanshrink= to produce a downsampled stack for processing."%(int(sz*sz*12*n/1.0e9+.5),nmax),QtGui.QMessageBox.Yes|QtGui.QMessageBox.No|QtGui.QMessageBox.Cancel)
-			#if r==QtGui.QMessageBox.Cancel : return
-			#if r==QtGui.QMessageBox.Yes : n=nmax
+			#r=QtWidgets.QMessageBox.question(None,"Are you sure ?","WARNING: This full particle set will require %d+ gb memory to process. Select Yes to use only the first %d particles, No to use the entire stack, or Cancel to abort. You may also consider using e2proc2d.py --meanshrink= to produce a downsampled stack for processing."%(int(sz*sz*12*n/1.0e9+.5),nmax),QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No|QtWidgets.QMessageBox.Cancel)
+			#if r==QtWidgets.QMessageBox.Cancel : return
+			#if r==QtWidgets.QMessageBox.Yes : n=nmax
 		
 		#task="e2proclst.py %s --create %s/particles.lst --range=0,%d,1"%(ptcl,self.path,n)
 		#print task
@@ -622,7 +622,7 @@ class EMMotion(QtGui.QMainWindow):
 		while 1:
 			time.sleep(0.2)
 			self.wpbprogress.setValue(int(old_div(lst.qsize()*100,maxl)))
-			QtGui.qApp.processEvents()
+			QtWidgets.qApp.processEvents()
 
 			# If any threads are alive, it breaks out of the inner loop, if none are alive, the else block breaks out of the outer loop
 			for t in thrs:
@@ -638,7 +638,7 @@ class EMMotion(QtGui.QMainWindow):
 
 		self.wpbprogress.setEnabled(True)
 		self.wpbprogress.reset()
-		QtGui.qApp.processEvents()
+		QtWidgets.qApp.processEvents()
 		nthr=int(self.wvbcores.getValue())		# number of threads to use for faster alignments
 
 		print("bs1")
@@ -911,7 +911,7 @@ class EMMotion(QtGui.QMainWindow):
 		
 		if mode==0 : self.doComputePCA()
 		elif mode==1 : self.doComputeAvD()
-		else : QtGui.QMessageBox.warning("Unknown mode %d"%mode)
+		else : QtWidgets.QMessageBox.warning("Unknown mode %d"%mode)
 		
 		return
 		

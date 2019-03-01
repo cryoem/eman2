@@ -52,8 +52,8 @@ class nothing(object):
 		return
 
 try: 
-	from PyQt4 import QtCore, QtGui
-	from PyQt4.QtCore import Qt
+	from PyQt5 import QtCore, QtGui, QtWidgets
+	from PyQt5.QtCore import Qt
 	from eman2_gui.emimage2d import EMImage2DWidget
 	from eman2_gui.emplot2d import EMPlot2DWidget
 	from eman2_gui.emimagemx import EMImageMXWidget
@@ -63,7 +63,7 @@ except:
 	QtGui=nothing()
 	QtCore=nothing()
 	QtCore.QObject=nothing()
-	QtGui.QWidget=nothing()
+	QtWidgets.QWidget=nothing()
 
 
 # ok, this is kind of bad style, but really don't want to have to drag this flag around through many objects
@@ -76,7 +76,7 @@ def load_micrograph(filename):
 	
 	n=EMUtil.get_image_count(filename)
 	if n==0 :
-		QtGui.QMessageBox.warning(None,"Error","The file {} contains no images".format(newfilename))
+		QtWidgets.QMessageBox.warning(None,"Error","The file {} contains no images".format(newfilename))
 		return
 	elif n==1 :
 		img=EMData(filename,0)		# single image
@@ -307,7 +307,7 @@ def main():
 	if options.gui :
 		if isinstance(QtGui,nothing) :
 			print("=====================================")
-			print("ERROR: GUI mode unavailable without PyQt4")
+			print("ERROR: GUI mode unavailable without PyQt5")
 			sys.exit(1)
 		from eman2_gui.emapplication import EMApp
 		app=EMApp()
@@ -747,11 +747,11 @@ class boxerConvNet(QtCore.QObject):
 	@staticmethod
 	def setup_gui(gridlay, boxerwindow=None):
 		boxerConvNet.boxerwindow=boxerwindow
-		boxerConvNet.bt_train=QtGui.QPushButton("Train")
+		boxerConvNet.bt_train=QtWidgets.QPushButton("Train")
 		boxerConvNet.bt_train.setToolTip("Train the network using references")
 		gridlay.addWidget(boxerConvNet.bt_train)
 		boxerConvNet.bt_train.clicked[bool].connect(boxerConvNet.do_training)
-		#boxerConvNet.ck_train=QtGui.QCheckBox("Train from scratch")
+		#boxerConvNet.ck_train=QtWidgets.QCheckBox("Train from scratch")
 		#gridlay.addWidget(boxerConvNet.ck_train)
 		
 		boxerConvNet.threshold=ValSlider(None,(0,5.0),"Threshold1",0.2,90)
@@ -1167,7 +1167,7 @@ aboxmodes = [ ("Local Search","auto_local",boxerLocal),
 	     ("NeuralNet", "auto_convnet", boxerConvNet)]
 boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "refbg":(0.7,0.7,0), "unknown":[.4,.1,.1], "auto_local":(.3,.1,.4), "auto_ref":(.1,.3,.4), "auto_gauss":(.4,.1,.4),  "auto_convnet":(.1,.5,.1)}
 
-class GUIBoxer(QtGui.QWidget):
+class GUIBoxer(QtWidgets.QWidget):
 	# Dictionary of autopickers
 	# to add a new one, provide name:(Qt_setup_function,picker_execution_function)
 	# Qt_setup_function(self,empty_grid_layout)
@@ -1178,7 +1178,7 @@ class GUIBoxer(QtGui.QWidget):
 		"""The 'new' e2boxer interface.
 		"""
 
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 #		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
 
 		self.boxcolors=boxcolors
@@ -1245,8 +1245,8 @@ class GUIBoxer(QtGui.QWidget):
 		self.wbgrefs.mx_mouseup.connect(self.bgrefmouseup)
 
 		# This object is itself a widget we need to set up
-		self.gbl = QtGui.QGridLayout(self)
-		self.gbl.setMargin(8)
+		self.gbl = QtWidgets.QGridLayout(self)
+		self.gbl.setContentsMargins(8, 8, 8, 8)
 		self.gbl.setSpacing(6)
 		self.gbl.setColumnStretch(0,2)
 		self.gbl.setColumnStretch(1,2)
@@ -1255,8 +1255,8 @@ class GUIBoxer(QtGui.QWidget):
 		self.gbl.setColumnStretch(4,1)
 
 		# Micrograph list
-		self.setlist=QtGui.QListWidget(self)
-		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+		self.setlist=QtWidgets.QListWidget(self)
+		self.setlist.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		for i in imagenames:
 			self.setlist.addItem(i)
 		self.gbl.addWidget(self.setlist,0,0,12,2)
@@ -1265,38 +1265,38 @@ class GUIBoxer(QtGui.QWidget):
 		
 		# Mouse Modes
 		self.mmode="manual"
-		self.boxmm=QtGui.QGroupBox("Mouse Mode",self)
+		self.boxmm=QtWidgets.QGroupBox("Mouse Mode",self)
 		self.boxmm.setFlat(False)
 		self.gbl.addWidget(self.boxmm,0,2,2,3)
 		
-		self.hbl0=QtGui.QHBoxLayout(self.boxmm)
+		self.hbl0=QtWidgets.QHBoxLayout(self.boxmm)
 		
-		self.bmmanual=QtGui.QPushButton("Manual")
+		self.bmmanual=QtWidgets.QPushButton("Manual")
 		self.bmmanual.setToolTip("Manual selection of particles. No impact on autoselection.")
 		self.bmmanual.setAutoExclusive(True)
 		self.bmmanual.setCheckable(True)
 		self.bmmanual.setChecked(True)
 		self.hbl0.addWidget(self.bmmanual)
 		
-		self.bmdel=QtGui.QPushButton("Delete")
+		self.bmdel=QtWidgets.QPushButton("Delete")
 		self.bmdel.setToolTip("Delete particles from any mode. Can also shift-click in other mouse modes.")
 		self.bmdel.setAutoExclusive(True)
 		self.bmdel.setCheckable(True)
 		self.hbl0.addWidget(self.bmdel)
 		
-		self.bmgref=QtGui.QPushButton("Good Refs")
+		self.bmgref=QtWidgets.QPushButton("Good Refs")
 		self.bmgref.setToolTip("Identify some good particles. Available to all autoboxers.")
 		self.bmgref.setAutoExclusive(True)
 		self.bmgref.setCheckable(True)
 		self.hbl0.addWidget(self.bmgref)
 
-		self.bmbref=QtGui.QPushButton("Bad Refs")
+		self.bmbref=QtWidgets.QPushButton("Bad Refs")
 		self.bmbref.setToolTip("Identify contamination which should not be selected as particles.")
 		self.bmbref.setAutoExclusive(True)
 		self.bmbref.setCheckable(True)
 		self.hbl0.addWidget(self.bmbref)
 
-		self.bmbgref=QtGui.QPushButton("Bkgnd Refs")
+		self.bmbgref=QtWidgets.QPushButton("Bkgnd Refs")
 		self.bmbgref.setToolTip("Identify background density which should not be selected as particles.")
 		self.bmbgref.setAutoExclusive(True)
 		self.bmbgref.setCheckable(True)
@@ -1308,13 +1308,13 @@ class GUIBoxer(QtGui.QWidget):
 		self.bmbref.clicked[bool].connect(self.setMouseBadRef)
 		self.bmbgref.clicked[bool].connect(self.setMouseBgRef)
 
-		self.bfilter=QtGui.QPushButton("Filter Disp.")
+		self.bfilter=QtWidgets.QPushButton("Filter Disp.")
 		self.bfilter.setToolTip("Filter micrograph (display only)")
 		self.bfilter.setCheckable(True)
 		self.gbl.addWidget(self.bfilter,0,5,1,1)
 		self.bfilter.clicked[bool].connect(self.filterToggle)
 
-		self.binvert=QtGui.QPushButton("Invert")
+		self.binvert=QtWidgets.QPushButton("Invert")
 		self.binvert.setToolTip("Invert Micrograph (also output)")
 		self.binvert.setCheckable(True)
 		self.binvert.setChecked(invert_on_read)		# in truly bad form, this is a global
@@ -1322,12 +1322,12 @@ class GUIBoxer(QtGui.QWidget):
 		self.binvert.clicked[bool].connect(self.invertToggle)
 
 		# Global parameters
-		self.boxparm=QtGui.QGroupBox("Parameters",self)
+		self.boxparm=QtWidgets.QGroupBox("Parameters",self)
 		self.boxparm.setFlat(False)
 		self.gbl.addWidget(self.boxparm,2,2,3,4)
 		
-		self.gbl1=QtGui.QGridLayout(self.boxparm)
-		self.gbl1.setMargin(8)
+		self.gbl1=QtWidgets.QGridLayout(self.boxparm)
+		self.gbl1.setContentsMargins(8, 8, 8, 8)
 		self.gbl1.setSpacing(6)
 		
 		self.vbbsize = ValBox(label="Box Size:",value=box)
@@ -1353,21 +1353,21 @@ class GUIBoxer(QtGui.QWidget):
 		self.gbl1.addWidget(self.vbthreads,1,3)
 
 		# Reference tools
-		self.reftools=QtGui.QGroupBox("Box Refs",self)
+		self.reftools=QtWidgets.QGroupBox("Box Refs",self)
 		self.boxparm.setFlat(False)
 		self.gbl.addWidget(self.reftools,5,2,2,2)
 		
-		self.hbl1=QtGui.QHBoxLayout(self.reftools)
+		self.hbl1=QtWidgets.QHBoxLayout(self.reftools)
 		
-		self.rtload3d=QtGui.QPushButton("From 3D")
+		self.rtload3d=QtWidgets.QPushButton("From 3D")
 		self.rtload3d.setToolTip("Load box refs from 3-D volume")
 		self.hbl1.addWidget(self.rtload3d)
 		
-		self.rtload2d=QtGui.QPushButton("From 2D")
+		self.rtload2d=QtWidgets.QPushButton("From 2D")
 		self.rtload2d.setToolTip("Load box refs from 2-D stack")
 		self.hbl1.addWidget(self.rtload2d)
 
-		self.rtclear=QtGui.QPushButton("Clear")
+		self.rtclear=QtWidgets.QPushButton("Clear")
 		self.rtclear.setToolTip("Clear all current good and bad refs")
 		self.hbl1.addWidget(self.rtclear)
 
@@ -1377,34 +1377,34 @@ class GUIBoxer(QtGui.QWidget):
 		
 		
 		# Autoboxing Tabs
-		self.autolbl = QtGui.QLabel("Autoboxing Methods:")
+		self.autolbl = QtWidgets.QLabel("Autoboxing Methods:")
 		self.gbl.addWidget(self.autolbl,7,2)
-		self.autotab = QtGui.QTabWidget()
+		self.autotab = QtWidgets.QTabWidget()
 		self.gbl.addWidget(self.autotab,8,2,5,4)
 		
 		# Individual tabs from Dictionary
 		self.abwid=[]
 		for name,bname,cls in aboxmodes:
-			w=QtGui.QWidget()
-			gl=QtGui.QGridLayout(w)
+			w=QtWidgets.QWidget()
+			gl=QtWidgets.QGridLayout(w)
 			self.abwid.append((w,gl))
 			cls.setup_gui(gl, self)
 			self.autotab.addTab(w,name)
 			
-		self.bbclear=QtGui.QPushButton("Clear Boxes")
+		self.bbclear=QtWidgets.QPushButton("Clear Boxes")
 		self.bbclear.setToolTip("Clear all boxes in current micrograph")
 		self.gbl.addWidget(self.bbclear,13,2)
 		self.bbclear.clicked[bool].connect(self.boxClear)
 
-		self.bcentera = QtGui.QPushButton("ACF Center All")
+		self.bcentera = QtWidgets.QPushButton("ACF Center All")
 		self.gbl.addWidget(self.bcentera,13,3)
 		self.bcentera.clicked[bool].connect(self.doCenterAll)
 		
-		self.bautoboxa = QtGui.QPushButton("Autobox All")
+		self.bautoboxa = QtWidgets.QPushButton("Autobox All")
 		self.gbl.addWidget(self.bautoboxa,13,4)
 		self.bautoboxa.clicked[bool].connect(self.doAutoBoxAll)
 		
-		self.bautobox = QtGui.QPushButton("Autobox")
+		self.bautobox = QtWidgets.QPushButton("Autobox")
 		self.gbl.addWidget(self.bautobox,13,5)
 		self.bautobox.clicked[bool].connect(self.doAutoBox)
 
@@ -1456,10 +1456,10 @@ class GUIBoxer(QtGui.QWidget):
 		self.mmode="refbg"
 
 	def reftoolLoad3D(self,x):
-		fsp=str(QtGui.QFileDialog.getOpenFileName(self, "Select 3-D Volume"))
+		fsp=str(QtWidgets.QFileDialog.getOpenFileName(self, "Select 3-D Volume")[0])
 		if fsp==None or len(fsp)<4 : return
 
-		symname=str(QtGui.QInputDialog.getText(None,"Symmetry","Please specify the symmetry of the map, or c1 for none")[0])
+		symname=str(QtWidgets.QInputDialog.getText(None,"Symmetry","Please specify the symmetry of the map, or c1 for none")[0])
 #		print symname
 		try:
 			sym = Symmetries.get(symname)
@@ -1467,7 +1467,7 @@ class GUIBoxer(QtGui.QWidget):
 			print("Error: Unknown symmetry")
 			return
 		orts=sym.gen_orientations("eman",{"delta":15,"inc_mirror":1})
-		prog=QtGui.QProgressDialog("Making Projections","Abort",0,len(orts))
+		prog=QtWidgets.QProgressDialog("Making Projections","Abort",0,len(orts))
 		prog.setWindowModality(Qt.WindowModal)
 		prog.setValue(0)
 		
@@ -1508,7 +1508,7 @@ class GUIBoxer(QtGui.QWidget):
 		self.goodrefchg=True
 		
 	def reftoolLoad2D(self,x):
-		fsp=str(QtGui.QFileDialog.getOpenFileName(self, "Select 2-D Stack"))
+		fsp=str(QtWidgets.QFileDialog.getOpenFileName(self, "Select 2-D Stack")[0])
 		if fsp==None or len(fsp)<4 : return
 		
 		refs=EMData.read_images(fsp)
@@ -1543,8 +1543,8 @@ class GUIBoxer(QtGui.QWidget):
 	
 		
 	def reftoolClear(self,x):
-		r=QtGui.QMessageBox.question(None,"Are you sure ?","WARNING: this will remove all good and bad box references. Are you sure?",QtGui.QMessageBox.Yes|QtGui.QMessageBox.Cancel)
-		if r==QtGui.QMessageBox.Cancel : return
+		r=QtWidgets.QMessageBox.question(None,"Are you sure ?","WARNING: this will remove all good and bad box references. Are you sure?",QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.Cancel)
+		if r==QtWidgets.QMessageBox.Cancel : return
 
 		self.goodrefs=[]
 		self.goodrefchg=True
@@ -1559,8 +1559,8 @@ class GUIBoxer(QtGui.QWidget):
 		self.wbgrefs.set_data(self.bgrefs)
 
 	def boxClear(self,x):
-		r=QtGui.QMessageBox.question(None,"Are you sure ?","WARNING: this will erase all box locations in the current micrograph. Are you sure?",QtGui.QMessageBox.Yes|QtGui.QMessageBox.Cancel)
-		if r==QtGui.QMessageBox.Cancel : return
+		r=QtWidgets.QMessageBox.question(None,"Are you sure ?","WARNING: this will erase all box locations in the current micrograph. Are you sure?",QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.Cancel)
+		if r==QtWidgets.QMessageBox.Cancel : return
 
 		self.boxes=[]
 		self.__updateBoxes()
@@ -1913,7 +1913,7 @@ class GUIBoxer(QtGui.QWidget):
 		name,bname,cls=aboxmodes[self.autotab.currentIndex()]
 		boxsize2=self.vbbsize.getValue()//2
 		
-		prog=QtGui.QProgressDialog("Autoboxing","Abort",0,len(self.filenames))
+		prog=QtWidgets.QProgressDialog("Autoboxing","Abort",0,len(self.filenames))
 		prog.setWindowModality(Qt.WindowModal)
 		prog.setValue(0)
 		prog.show()
@@ -1969,7 +1969,7 @@ class GUIBoxer(QtGui.QWidget):
 		name,bname,cls=aboxmodes[self.autotab.currentIndex()]
 		boxsize2=self.vbbsize.getValue()//2
 		
-		prog=QtGui.QProgressDialog("Recentering","Abort",0,len(self.filenames))
+		prog=QtWidgets.QProgressDialog("Recentering","Abort",0,len(self.filenames))
 		prog.setWindowModality(Qt.WindowModal)
 		prog.setValue(0)
 		prog.show()
@@ -2054,7 +2054,7 @@ class GUIBoxer(QtGui.QWidget):
 		print("Centering complete")
 		
 	def closeEvent(self,event):
-#		QtGui.QWidget.closeEvent(self,event)
+#		QtWidgets.QWidget.closeEvent(self,event)
 		self.save_boxes()
 		E2saveappwin("e2boxer21","main",self)
 		E2saveappwin("e2boxer21","image",self.wimage.qt_parent)
@@ -2065,8 +2065,8 @@ class GUIBoxer(QtGui.QWidget):
 
 		#self.writeCurParm()
 		event.accept()
-		QtGui.qApp.exit(0)
-		#app=QtGui.qApp			if b[2] not in ("refgood","refbad"):
+		QtWidgets.qApp.exit(0)
+		#app=QtWidgets.qApp			if b[2] not in ("refgood","refbad"):
 		#if self.wimage != None:
 			#app.close_specific(self.wimage)
 			#self.wimage = None
@@ -2253,7 +2253,7 @@ class GUIBoxer(QtGui.QWidget):
 			#self.procthread.start()
 
 		#if self.errors:
-			#QtGui.QMessageBox.warning(None,"Error","The following processors encountered errors during processing of 1 or more images:"+"\n".join(self.errors))
+			#QtWidgets.QMessageBox.warning(None,"Error","The following processors encountered errors during processing of 1 or more images:"+"\n".join(self.errors))
 			#self.errors=None
 
 	#def doRefit(self):
@@ -2292,7 +2292,7 @@ class GUIBoxer(QtGui.QWidget):
 		#if not os.access("micrographs",os.R_OK) :
 			#try : os.mkdir("micrographs")
 			#except:
-				#QtGui.QMessageBox.warning(self,"Error !","Cannot create micrographs directory")
+				#QtWidgets.QMessageBox.warning(self,"Error !","Cannot create micrographs directory")
 				#return
 
 		##db=db_open_dict("bdb:micrographs#%s"%item)
@@ -2662,19 +2662,19 @@ class GUIBoxer(QtGui.QWidget):
     #pageComboBox->addItem(tr("Page 3"));
     #connect(pageComboBox, SIGNAL(activated(int)),stackedWidget, SLOT(setCurrentIndex(int)));
 
-		#self.lboxmode=QtGui.QLabel("Mode:",self)
+		#self.lboxmode=QtWidgets.QLabel("Mode:",self)
 		#self.gbl.addWidget(self.lboxmode,10,0)
 
-		#self.sboxmode=QtGui.QComboBox(self)
+		#self.sboxmode=QtWidgets.QComboBox(self)
 		#self.sboxmode.addItem("Manual")
 		#self.sboxmode.addItem("Reference")
 		#self.sboxmode.setCurrentIndex(1)
 		#self.gbl.addWidget(self.sboxmode,10,1)
 
-		#self.lanmode=QtGui.QLabel("Annotate:",self)
+		#self.lanmode=QtWidgets.QLabel("Annotate:",self)
 		#self.gbl.addWidget(self.lanmode,12,0)
 
-		#self.sanmode=QtGui.QComboBox(self)
+		#self.sanmode=QtWidgets.QComboBox(self)
 		#self.sanmode.addItem("Box")
 		#self.sanmode.addItem("Box+dot")
 		#self.sanmode.addItem("Circle")
@@ -2689,13 +2689,13 @@ class GUIBoxer(QtGui.QWidget):
 
 		#self.gbl.addWidget(self.squality,6,2,1,3)
 
-		#self.brefit=QtGui.QPushButton("Autobox")
+		#self.brefit=QtWidgets.QPushButton("Autobox")
 		#self.gbl.addWidget(self.brefit,7,2)
 
-		#self.bclrauto=QtGui.QPushButton("Clear Auto")
+		#self.bclrauto=QtWidgets.QPushButton("Clear Auto")
 		#self.gbl.addWidget(self.bclrauto,7,3)
 
-		#self.bclrall=QtGui.QPushButton("Clear All")
+		#self.bclrall=QtWidgets.QPushButton("Clear All")
 		#self.gbl.addWidget(self.bclrall,7,4)
 
 		#self.sapix=ValBox(self,(0,500),"A/pix:",1.0,90)

@@ -79,29 +79,29 @@ A simple CTF simulation program.
 
 
 try:
-	from PyQt4 import QtCore, QtGui, QtOpenGL
-	from PyQt4.QtCore import Qt
+	from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+	from PyQt5.QtCore import Qt
 	from eman2_gui.emshape import *
 	from eman2_gui.valslider import ValSlider
 except:
-	print("Error: PyQt4 must be installed")
+	print("Error: PyQt5 must be installed")
 	sys.exit(1)
 
-class MyListWidget(QtGui.QListWidget):
+class MyListWidget(QtWidgets.QListWidget):
 	"""Exactly like a normal list widget but intercepts a few keyboard events"""
 	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
 
 	def keyPressEvent(self,event):
 
 		if event.key() in (Qt.Key_Up,Qt.Key_Down) :
-			QtGui.QListWidget.keyPressEvent(self,event)
+			QtWidgets.QListWidget.keyPressEvent(self,event)
 			return
 
 		self.keypress.emit(event)
 #		event.key()==Qt.Key_I
 
 
-class GUIctfsim(QtGui.QWidget):
+class GUIctfsim(QtWidgets.QWidget):
 	module_closed = QtCore.pyqtSignal()
 
 	def __init__(self,application,apix=1.0,voltage=300.0,cs=4.1,ac=10.0,samples=256,apply=None):
@@ -136,7 +136,7 @@ class GUIctfsim(QtGui.QWidget):
 			print("A/pix reset to ",self.df_apix)
 			self.applyim=EMImage2DWidget(application=self.app())
 
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
 
 		self.data=[]
@@ -156,18 +156,18 @@ class GUIctfsim(QtGui.QWidget):
 		self.guiim.mmode="app"
 
 		# This object is itself a widget we need to set up
-		self.hbl = QtGui.QHBoxLayout(self)
-		self.hbl.setMargin(0)
+		self.hbl = QtWidgets.QHBoxLayout(self)
+		self.hbl.setContentsMargins(0, 0, 0, 0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 
 		# plot list and plot mode combobox
-		self.vbl2 = QtGui.QVBoxLayout()
+		self.vbl2 = QtWidgets.QVBoxLayout()
 		self.setlist=MyListWidget(self)
-		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+		self.setlist.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		self.vbl2.addWidget(self.setlist)
 
-		self.splotmode=QtGui.QComboBox(self)
+		self.splotmode=QtWidgets.QComboBox(self)
 		self.splotmode.addItem("Amplitude")
 		self.splotmode.addItem("Intensity")
 		self.splotmode.addItem("Int w sum")
@@ -176,8 +176,8 @@ class GUIctfsim(QtGui.QWidget):
 		self.hbl.addLayout(self.vbl2)
 
 		# ValSliders for CTF parameters
-		self.vbl = QtGui.QVBoxLayout()
-		self.vbl.setMargin(0)
+		self.vbl = QtWidgets.QVBoxLayout()
+		self.vbl.setContentsMargins(0, 0, 0, 0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		self.hbl.addLayout(self.vbl)
@@ -185,7 +185,7 @@ class GUIctfsim(QtGui.QWidget):
 		#self.samp = ValSlider(self,(0,5.0),"Amp:",0)
 		#self.vbl.addWidget(self.samp)
 
-		self.imginfo=QtGui.QLabel("Info",self)
+		self.imginfo=QtWidgets.QLabel("Info",self)
 		self.vbl.addWidget(self.imginfo)
 
 		self.sdefocus=ValSlider(self,(0,5),"Defocus:",0,90)
@@ -220,8 +220,8 @@ class GUIctfsim(QtGui.QWidget):
 		self.vbl.addWidget(self.ssamples)
 
 
-		self.hbl_buttons = QtGui.QHBoxLayout()
-		self.newbut = QtGui.QPushButton("New")
+		self.hbl_buttons = QtWidgets.QHBoxLayout()
+		self.newbut = QtWidgets.QPushButton("New")
 		self.hbl_buttons.addWidget(self.newbut)
 		self.vbl.addLayout(self.hbl_buttons)
 
@@ -293,7 +293,7 @@ class GUIctfsim(QtGui.QWidget):
 		self.show()
 
 	def closeEvent(self,event):
-#		QtGui.QWidget.closeEvent(self,event)
+#		QtWidgets.QWidget.closeEvent(self,event)
 #		self.app.app.closeAllWindows()
 		E2saveappwin("e2ctf","main",self)
 

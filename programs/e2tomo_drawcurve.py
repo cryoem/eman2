@@ -10,8 +10,8 @@ import numpy as np
 import weakref
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt4 import QtGui, QtCore, QtOpenGL
-from PyQt4.QtCore import Qt
+from PyQt5 import QtGui, QtWidgets, QtCore, QtOpenGL
+from PyQt5.QtCore import Qt
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emshape import EMShape
@@ -269,38 +269,38 @@ class Contour(EMShape):
 		return
 
 
-class EMDrawWindow(QtGui.QMainWindow):
+class EMDrawWindow(QtWidgets.QMainWindow):
 
 	def __init__(self,application,options,datafile=None):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		self.imgview = EMImage2DWidget()
-		self.setCentralWidget(QtGui.QWidget())
-		self.gbl = QtGui.QGridLayout(self.centralWidget())
+		self.setCentralWidget(QtWidgets.QWidget())
+		self.gbl = QtWidgets.QGridLayout(self.centralWidget())
 		
 		
 		
-		self.lb_lines=QtGui.QLabel("")
+		self.lb_lines=QtWidgets.QLabel("")
 		self.lb_lines.setWordWrap(True)
 		self.gbl.addWidget(self.lb_lines, 0,0,1,2)
 		
 		
-		self.bt_showimg=QtGui.QPushButton("Show tomogram")
+		self.bt_showimg=QtWidgets.QPushButton("Show tomogram")
 		self.bt_showimg.setToolTip("Show tomogram window")
 		self.gbl.addWidget(self.bt_showimg, 1,0,1,2)
 		
-		self.bt_savepdb=QtGui.QPushButton("Save PDB")
+		self.bt_savepdb=QtWidgets.QPushButton("Save PDB")
 		self.bt_savepdb.setToolTip("Save curves as PDB")
 		self.gbl.addWidget(self.bt_savepdb, 2,0,1,2)
 		
-		self.bt_clear=QtGui.QPushButton("Clear")
+		self.bt_clear=QtWidgets.QPushButton("Clear")
 		self.bt_clear.setToolTip("Clear all points")
 		self.gbl.addWidget(self.bt_clear, 3,0,1,2)
 		
-		self.bt_interp=QtGui.QPushButton("Interpolate")
+		self.bt_interp=QtWidgets.QPushButton("Interpolate")
 		self.bt_interp.setToolTip("Interpolate points")
 		self.gbl.addWidget(self.bt_interp, 4,0,1,1)
 		
-		self.tx_interp=QtGui.QLineEdit(self)
+		self.tx_interp=QtWidgets.QLineEdit(self)
 		self.tx_interp.setText("20")
 		self.gbl.addWidget(self.tx_interp, 4,1,1,1)
 		
@@ -383,7 +383,7 @@ class EMDrawWindow(QtGui.QMainWindow):
 		if len(pts)==0:
 			return
 		
-		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save PDB', os.getcwd(), "(*.pdb)")
+		filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save PDB', os.getcwd(), "(*.pdb)")
 		numpy2pdb(data=pts[:,:3], fname=filename, chainid=pts[:,3])
 	
 	def interp_points(self):
@@ -435,9 +435,9 @@ class EMDrawWindow(QtGui.QMainWindow):
 		return
 
 	def clear_points(self):
-		choice = QtGui.QMessageBox.question(self, 'Clear points', 
-			'Clear all points in the tomogram?', QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-		if choice == QtGui.QMessageBox.Yes:
+		choice = QtWidgets.QMessageBox.question(self, 'Clear points', 
+			'Clear all points in the tomogram?', QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+		if choice == QtWidgets.QMessageBox.Yes:
 			self.contour.points=[]
 		
 		self.imgview.shapechange=1

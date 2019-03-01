@@ -52,7 +52,7 @@ from .valslider import ValSlider, EMLightControls, CameraControls, EMSpinWidget,
 from OpenGL import GL
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 import numpy as np
 
@@ -68,13 +68,13 @@ class EMDataItem3D(EMItem3D):
 		"""
 		Get Data Widget
 		"""
-		datawidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		node_name_data_label = QtGui.QLabel("Data Label")
-		attribdict["node_name"] = QtGui.QLineEdit()
-		data_path_label = QtGui.QLabel("Data Path")
-		attribdict["data_path"] = QtGui.QLineEdit()
-		browse_button = QtGui.QPushButton("Browse")
+		datawidget = QtWidgets.QWidget()
+		grid = QtWidgets.QGridLayout()
+		node_name_data_label = QtWidgets.QLabel("Data Label")
+		attribdict["node_name"] = QtWidgets.QLineEdit()
+		data_path_label = QtWidgets.QLabel("Data Path")
+		attribdict["data_path"] = QtWidgets.QLineEdit()
+		browse_button = QtWidgets.QPushButton("Browse")
 		grid.addWidget(node_name_data_label, 0, 0, 1, 2)
 		grid.addWidget(attribdict["node_name"], 0, 2, 1, 2)
 		grid.addWidget(data_path_label, 1, 0, 1, 2)
@@ -90,7 +90,7 @@ class EMDataItem3D(EMItem3D):
 
 	@staticmethod
 	def _on_browse():
-		filename = QtGui.QFileDialog.getOpenFileName(None, 'Get file', os.getcwd())
+		filename = QtWidgets.QFileDialog.getOpenFileName(None, 'Get file', os.getcwd())[0]
 		if filename:
 			EMDataItem3D.attribdict["data_path"].setText(filename)
 			name = os.path.basename(str(filename))
@@ -192,8 +192,8 @@ class EMDataItem3DInspector(EMItem3DInspector):
 	def addTabs(self):
 		""" Add a tab for each 'column' """
 
-		tabwidget = QtGui.QWidget()
-		gridbox = QtGui.QGridLayout()
+		tabwidget = QtWidgets.QWidget()
+		gridbox = QtWidgets.QGridLayout()
 		tabwidget.setLayout(gridbox)
 		self.addTab(tabwidget, "data")
 		# add data tab first, then basic
@@ -202,20 +202,20 @@ class EMDataItem3DInspector(EMItem3DInspector):
 
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
-		dataframe = QtGui.QFrame()
-		dataframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		dataframe = QtWidgets.QFrame()
+		dataframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		lfont = QtGui.QFont()
 		lfont.setBold(True)
-		datagridbox = QtGui.QGridLayout()
+		datagridbox = QtWidgets.QGridLayout()
 
-		self.data_checkbox= QtGui.QCheckBox("Display Bounding Box")
+		self.data_checkbox= QtWidgets.QCheckBox("Display Bounding Box")
 		datagridbox.addWidget(self.data_checkbox, 0, 0)
-		self.file_browse_button = QtGui.QPushButton("Set Data Source")
+		self.file_browse_button = QtWidgets.QPushButton("Set Data Source")
 		datagridbox.addWidget(self.file_browse_button, 1, 0)
 		dataframe.setLayout(datagridbox)
 		gridbox.addWidget(dataframe, 2, 0)
 
-		self.file_path_label = QtGui.QLabel()
+		self.file_path_label = QtWidgets.QLabel()
 		self.file_path_label.setAlignment(QtCore.Qt.AlignCenter)
 		self.file_path_label.setFont(lfont)
 		gridbox.addWidget(self.file_path_label, 3, 0)
@@ -228,7 +228,7 @@ class EMDataItem3DInspector(EMItem3DInspector):
 
 	def onFileBrowse(self):
 		#TODO: replace this with an EMAN2 browser window once we re-write it
-		file_path = QtGui.QFileDialog.getOpenFileName(self, "Open 3D Volume Map")
+		file_path = QtWidgets.QFileDialog.getOpenFileName(self, "Open 3D Volume Map")[0]
 		if file_path:
 			self.file_path_label.setText(file_path)
 			self.item3d().setData(file_path)
@@ -251,10 +251,10 @@ class EMSliceItem3D(EMItem3D):
 		"""
 		Get Slice Widget
 		"""
-		slicewidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		node_name_slice_label = QtGui.QLabel("Slice Name")
-		attribdict["node_name"] = QtGui.QLineEdit(str(EMSliceItem3D.name))
+		slicewidget = QtWidgets.QWidget()
+		grid = QtWidgets.QGridLayout()
+		node_name_slice_label = QtWidgets.QLabel("Slice Name")
+		attribdict["node_name"] = QtWidgets.QLineEdit(str(EMSliceItem3D.name))
 		grid.addWidget(node_name_slice_label, 0, 0, 1, 2)
 		grid.addWidget(attribdict["node_name"], 0, 2, 1, 2)
 		EMItem3D.get_transformlayout(grid, 2, attribdict)
@@ -524,8 +524,8 @@ class EMSliceInspector(EMInspectorControlShape):
 
 	def addTabs(self):
 		""" Add a tab for each 'column' """
-		tabwidget = QtGui.QWidget()
-		gridbox = QtGui.QGridLayout()
+		tabwidget = QtWidgets.QWidget()
+		gridbox = QtWidgets.QGridLayout()
 		tabwidget.setLayout(gridbox)
 		self.addTab(tabwidget, "slices")
 		# add slices tab first then basic tab
@@ -534,25 +534,25 @@ class EMSliceInspector(EMInspectorControlShape):
 
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
-		sliceframe = QtGui.QFrame()
-		sliceframe.setFrameShape(QtGui.QFrame.StyledPanel)
-		slice_grid_layout = QtGui.QGridLayout()
+		sliceframe = QtWidgets.QFrame()
+		sliceframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
+		slice_grid_layout = QtWidgets.QGridLayout()
 
-		self.constrained_group_box = QtGui.QGroupBox("Constrained Slices")
+		self.constrained_group_box = QtWidgets.QGroupBox("Constrained Slices")
 		self.constrained_group_box.setCheckable(True)
 		self.constrained_group_box.setChecked(False)
 
-		self.constrained_plane_combobox = QtGui.QComboBox()
+		self.constrained_plane_combobox = QtWidgets.QComboBox()
 		self.constrained_plane_combobox.addItems(["XY", "YZ", "ZX"])
 		self.constrained_slider = ValSlider(label="Trans:")
 
-		constrained_layout = QtGui.QVBoxLayout()
+		constrained_layout = QtWidgets.QVBoxLayout()
 		constrained_layout.addWidget(self.constrained_plane_combobox)
 		constrained_layout.addWidget(self.constrained_slider)
 		constrained_layout.addStretch()
 		self.constrained_group_box.setLayout(constrained_layout)
 
-		self.use_3d_texture_checkbox = QtGui.QCheckBox("Use 3D Texture")
+		self.use_3d_texture_checkbox = QtWidgets.QCheckBox("Use 3D Texture")
 		self.use_3d_texture_checkbox.setChecked(self.item3d().use_3d_texture)
 
 		self.brightness_slider = ValSlider(label="Bright:")
@@ -625,10 +625,10 @@ class EMVolumeItem3D(EMItem3D):
 		"""
 		Get Volume Widget
 		"""
-		volumewidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		node_name_volume_label = QtGui.QLabel("Volume Name")
-		attribdict["node_name"] = QtGui.QLineEdit(str(EMVolumeItem3D.name))
+		volumewidget = QtWidgets.QWidget()
+		grid = QtWidgets.QGridLayout()
+		node_name_volume_label = QtWidgets.QLabel("Volume Name")
+		attribdict["node_name"] = QtWidgets.QLineEdit(str(EMVolumeItem3D.name))
 		grid.addWidget(node_name_volume_label, 0, 0, 1, 2)
 		grid.addWidget(attribdict["node_name"], 0, 2, 1, 2)
 		EMItem3D.get_transformlayout(grid, 2, attribdict)
@@ -881,8 +881,8 @@ class EMVolumeInspector(EMInspectorControlShape):
 
 	def addTabs(self):
 		""" Add a tab for each 'column' """
-		tabwidget = QtGui.QWidget()
-		gridbox = QtGui.QGridLayout()
+		tabwidget = QtWidgets.QWidget()
+		gridbox = QtWidgets.QGridLayout()
 		tabwidget.setLayout(gridbox)
 		self.addTab(tabwidget, "volume")
 		# add volume tab then basic tab
@@ -894,18 +894,18 @@ class EMVolumeInspector(EMInspectorControlShape):
 		self.histogram_widget = ImgHistogram(self)
 		self.histogram_widget.setObjectName("hist")
 
-		volframe = QtGui.QFrame()
-		volframe.setFrameShape(QtGui.QFrame.StyledPanel)
-		vol_grid_layout = QtGui.QGridLayout()
+		volframe = QtWidgets.QFrame()
+		volframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
+		vol_grid_layout = QtWidgets.QGridLayout()
 
-		probeframe = QtGui.QFrame()
-		probeframe.setFrameShape(QtGui.QFrame.StyledPanel)
-		probelayout = QtGui.QGridLayout()
+		probeframe = QtWidgets.QFrame()
+		probeframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
+		probelayout = QtWidgets.QGridLayout()
 		probelayout.setAlignment(QtCore.Qt.AlignTop)
-		self.range = QtGui.QLabel("Range: %1.3f, %1.3f"%(self.item3d().minden,self.item3d().maxden))
-		self.level = QtGui.QLabel("Level: %1.3f"%self.item3d().isothr)
+		self.range = QtWidgets.QLabel("Range: %1.3f, %1.3f"%(self.item3d().minden,self.item3d().maxden))
+		self.level = QtWidgets.QLabel("Level: %1.3f"%self.item3d().isothr)
 		self.level.setFixedSize(100,40)
-		self.color = QtGui.QLabel("Color:")
+		self.color = QtWidgets.QLabel("Color:")
 		self.cappingcolor = EMQTColorWidget(parent=self)
 
 		probelayout.addWidget(self.range, 0, 0, 1, 1)
@@ -914,7 +914,7 @@ class EMVolumeInspector(EMInspectorControlShape):
 		probelayout.addWidget(self.cappingcolor, 0, 3, 1, 1)
 		probeframe.setLayout(probelayout)
 
-#		paramframe = QtGui.QFrame()
+#		paramframe = QtWidgets.QFrame()
 		self.brightness_slider = ValSlider(label="Bright:")
 		self.contrast_slider = ValSlider(label="Contr:")
 
@@ -1038,8 +1038,8 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 
 	def addTabs(self):
 		""" Add a tab for each 'column' """
-		tabwidget = QtGui.QWidget()
-		gridbox = QtGui.QGridLayout()
+		tabwidget = QtWidgets.QWidget()
+		gridbox = QtWidgets.QGridLayout()
 		tabwidget.setLayout(gridbox)
 		self.addTab(tabwidget, "isosurface")
 		# add isosurface tab first, then basic tab
@@ -1052,40 +1052,40 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		self.histogram_widget.setObjectName("hist")
 
 		# Perhaps we should allow the inspector control this?
-		isoframe = QtGui.QFrame()
-		isoframe.setFrameShape(QtGui.QFrame.StyledPanel)
-		isogridbox = QtGui.QGridLayout()
+		isoframe = QtWidgets.QFrame()
+		isoframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
+		isogridbox = QtWidgets.QGridLayout()
 
-		self.cullbackface = QtGui.QCheckBox("Cull Back Face Polygons")
+		self.cullbackface = QtWidgets.QCheckBox("Cull Back Face Polygons")
 		self.cullbackface.setChecked(True)
-		self.wireframe = QtGui.QCheckBox("Wireframe mode")
+		self.wireframe = QtWidgets.QCheckBox("Wireframe mode")
 		self.wireframe.setChecked(False)
 		self.thr = ValSlider(self,(0.0,4.0),"Threshold:")
 		self.thr.setObjectName("thr")
 		self.thr.setValue(self.item3d().isothr)
-		self.sampling_label = QtGui.QLabel("Sample Level:")
-		self.sampling_spinbox = QtGui.QSpinBox()
+		self.sampling_label = QtWidgets.QLabel("Sample Level:")
+		self.sampling_spinbox = QtWidgets.QSpinBox()
 		self.sampling_spinbox.setValue(1)
 
-		sampling_hbox_layout = QtGui.QHBoxLayout()
+		sampling_hbox_layout = QtWidgets.QHBoxLayout()
 		sampling_hbox_layout.addWidget(self.sampling_label)
 		sampling_hbox_layout.addWidget(self.sampling_spinbox)
 
 		# Color by radius frame
-		cbrframe = QtGui.QFrame()
-		cbrframe.setFrameShape(QtGui.QFrame.StyledPanel)
-		cbrlayout = QtGui.QGridLayout()
+		cbrframe = QtWidgets.QFrame()
+		cbrframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
+		cbrlayout = QtWidgets.QGridLayout()
 		cbrlayout.setAlignment(QtCore.Qt.AlignTop)
-		self.colorbyradius = QtGui.QCheckBox("Color By Radius")
+		self.colorbyradius = QtWidgets.QCheckBox("Color By Radius")
 		self.colorbyradius.setChecked(False)
 		self.innercolorscaling = EMSpinWidget(0.0, 1.0, rounding=0)
 		self.innercolorscaling.setMinimumWidth(120)
 		self.outercolorscaling = EMSpinWidget(0.0, 1.0, rounding=0)
 		self.outercolorscaling.setMinimumWidth(120)
 		cbrlayout.addWidget(self.colorbyradius, 0, 0, 1, 2)
-		cbrlabelinner = QtGui.QLabel("Inner Shell")
+		cbrlabelinner = QtWidgets.QLabel("Inner Shell")
 		cbrlabelinner.setAlignment(QtCore.Qt.AlignCenter)
-		cbrlabelouter = QtGui.QLabel("Outer Shell")
+		cbrlabelouter = QtWidgets.QLabel("Outer Shell")
 		cbrlabelouter.setAlignment(QtCore.Qt.AlignCenter)
 		cbrlayout.addWidget(cbrlabelinner, 1, 0, 1, 1)
 		cbrlayout.addWidget(cbrlabelouter, 1, 1, 1, 1)
@@ -1094,14 +1094,14 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		cbrframe.setLayout(cbrlayout)
 
 		# Color by map frame
-		cbmframe = QtGui.QFrame()
-		cbmframe.setFrameShape(QtGui.QFrame.StyledPanel)
-		cbmlayout = QtGui.QGridLayout()
+		cbmframe = QtWidgets.QFrame()
+		cbmframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
+		cbmlayout = QtWidgets.QGridLayout()
 		cbmlayout.setAlignment(QtCore.Qt.AlignTop)
-		self.colorbymap = QtGui.QCheckBox("Color By Map")
+		self.colorbymap = QtWidgets.QCheckBox("Color By Map")
 		self.colorbymap.setEnabled(False)
-		self.colormap = QtGui.QLineEdit("")
-		self.cmapbrowse = QtGui.QPushButton("Browse")
+		self.colormap = QtWidgets.QLineEdit("")
+		self.cmapbrowse = QtWidgets.QPushButton("Browse")
 		self.cmapmin = EMSpinWidget(0.0, 0.1, rounding=2)
 		self.cmapmax = EMSpinWidget(0.0, 0.1, rounding=2)
 		cbmlayout.addWidget(self.colorbymap, 0, 0, 1, 2)
@@ -1212,10 +1212,10 @@ class EMIsosurface(EMItem3D,EM3DModel):
 		"""
 		Get Isosurface Widget
 		"""
-		isosurfacewidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		node_name_data_label = QtGui.QLabel("Isosurface Name")
-		attribdict["node_name"] = QtGui.QLineEdit(str(EMIsosurface.name))
+		isosurfacewidget = QtWidgets.QWidget()
+		grid = QtWidgets.QGridLayout()
+		node_name_data_label = QtWidgets.QLabel("Isosurface Name")
+		attribdict["node_name"] = QtWidgets.QLineEdit(str(EMIsosurface.name))
 		grid.addWidget(node_name_data_label, 0, 0, 1, 2)
 		grid.addWidget(attribdict["node_name"], 0, 2, 1, 2)
 		EMItem3D.get_transformlayout(grid, 2, attribdict)

@@ -42,30 +42,30 @@ from past.utils import old_div
 from builtins import range
 from EMAN2db import db_check_dict
 import sys, math, weakref
-from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import Qt
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import Qt
 from .emselector import EMSelectorDialog	# This will be replaced by something more sensible in the future
 import re, os, glob
 from .embrowser import EMBrowserWidget
 from .empmtabwidgets import *
 from functools import reduce
 
-class PMComboBox(QtGui.QComboBox):
+class PMComboBox(QtWidgets.QComboBox):
 	""" Reimplment the QComboBox to remove wheel widget activation """
 	def __init__(self):
-		QtGui.QComboBox.__init__(self)
+		QtWidgets.QComboBox.__init__(self)
 
 	def wheelEvent(self, event):
 		""" Ignore wheelevents is not poped up """
 		event.ignore()
 
 
-class PMBaseWidget(QtGui.QWidget):
+class PMBaseWidget(QtWidgets.QWidget):
 	""" A base widget upon which all the other PM widgets are derived """
 	pmmessage = QtCore.pyqtSignal(str)
 
 	def __init__(self, name, mode="",returnNone=False):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 
 		self.postional = False
 		self.name = name
@@ -139,9 +139,9 @@ class PMIntEntryWidget(PMBaseWidget):
 		self.initdefault = initdefault
 		self.setPositional(postional)
 
-		gridbox = QtGui.QGridLayout()
-		label = QtGui.QLabel(name)
-		self.intbox = QtGui.QLineEdit()
+		gridbox = QtWidgets.QGridLayout()
+		label = QtWidgets.QLabel(name)
+		self.intbox = QtWidgets.QLineEdit()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.intbox, 0, 1)
 		self.setLayout(gridbox)
@@ -234,9 +234,9 @@ class PMFloatEntryWidget(PMBaseWidget):
 		self.initdefault = initdefault
 		self.setPositional(postional)
 
-		gridbox = QtGui.QGridLayout()
-		label = QtGui.QLabel(name)
-		self.floatbox = QtGui.QLineEdit()
+		gridbox = QtWidgets.QGridLayout()
+		label = QtWidgets.QLabel(name)
+		self.floatbox = QtWidgets.QLineEdit()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.floatbox, 0, 1)
 		self.setLayout(gridbox)
@@ -290,9 +290,9 @@ class PMStringEntryWidget(PMBaseWidget):
 		self.initdefault = initdefault
 		self.setPositional(postional)
 
-		gridbox = QtGui.QGridLayout()
-		label = QtGui.QLabel(name)
-		self.stringbox = QtGui.QLineEdit()
+		gridbox = QtWidgets.QGridLayout()
+		label = QtWidgets.QLabel(name)
+		self.stringbox = QtWidgets.QLineEdit()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.stringbox, 0, 1)
 		self.setLayout(gridbox)
@@ -322,8 +322,8 @@ class PMHeaderWidget(PMBaseWidget):
 	def __init__(self, name, header):
 		PMBaseWidget.__init__(self, name)
 
-		gridbox = QtGui.QGridLayout()
-		self.header = QtGui.QLabel()
+		gridbox = QtWidgets.QGridLayout()
+		self.header = QtWidgets.QLabel()
 		font = QtGui.QFont()
 		font.setBold(True)
 		self.header.setFont(font)
@@ -356,8 +356,8 @@ class PMBoolWidget(PMBaseWidget):
 		self.boolvalue = boolvalue
 		self.initdefault = initdefault
 
-		gridbox = QtGui.QGridLayout()
-		self.boolbox = QtGui.QCheckBox(name)
+		gridbox = QtWidgets.QGridLayout()
+		self.boolbox = QtWidgets.QCheckBox(name)
 		gridbox.addWidget(self.boolbox, 0, 0)
 		self.setLayout(gridbox)
 
@@ -397,12 +397,12 @@ class PMFileNameWidget(PMBaseWidget):
 		self.checkfileexist= checkfileexist
 		self.setPositional(postional)
 
-		gridbox = QtGui.QGridLayout()
-		label = QtGui.QLabel(name)
+		gridbox = QtWidgets.QGridLayout()
+		label = QtWidgets.QLabel(name)
 		self.browser = browser
-		self.filenamebox = QtGui.QLineEdit()
-		self.browsebutton = QtGui.QPushButton("Browse")
-		self.infolabel = QtGui.QLabel("Num Images: None")
+		self.filenamebox = QtWidgets.QLineEdit()
+		self.browsebutton = QtWidgets.QPushButton("Browse")
+		self.infolabel = QtWidgets.QLabel("Num Images: None")
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.filenamebox, 0, 1)
 		gridbox.addWidget(self.browsebutton, 0, 2)
@@ -518,8 +518,8 @@ class PMDirectoryWidget(PMBaseWidget):
 		self.initdefault = initdefault
 		self.setPositional(postional)
 
-		gridbox = QtGui.QGridLayout()
-		label = QtGui.QLabel(name)
+		gridbox = QtWidgets.QGridLayout()
+		label = QtWidgets.QLabel(name)
 		self.combobox = PMComboBox()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.combobox, 0, 1)
@@ -564,8 +564,8 @@ class PMComboWidget(PMBaseWidget):
 		self.datatype=datatype	# Must be int, float or str
 		self.setPositional(postional)
 
-		gridbox = QtGui.QGridLayout()
-		label = QtGui.QLabel(name)
+		gridbox = QtWidgets.QGridLayout()
+		label = QtWidgets.QLabel(name)
 		self.combobox = PMComboBox()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.combobox, 0, 1)
@@ -611,11 +611,11 @@ class PMComboParamsWidget(PMBaseWidget):
 		self.initdefault = initdefault
 		self.setPositional(postional)
 
-		gridbox = QtGui.QGridLayout()
-		label = QtGui.QLabel(name)
+		gridbox = QtWidgets.QGridLayout()
+		label = QtWidgets.QLabel(name)
 		self.combobox = PMComboBox()
-		plabel = QtGui.QLabel("params:")
-		self.params = QtGui.QLineEdit()
+		plabel = QtWidgets.QLabel("params:")
+		self.params = QtWidgets.QLineEdit()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.combobox, 0, 1)
 		gridbox.addWidget(plabel, 0, 2)
@@ -675,8 +675,8 @@ class PMSymWidget(PMBaseWidget):
 		PMBaseWidget.__init__(self, name, mode)
 		self.initdefault = initdefault
 
-		gridbox = QtGui.QGridLayout()
-		label = QtGui.QLabel(name)
+		gridbox = QtWidgets.QGridLayout()
+		label = QtWidgets.QLabel(name)
 		label.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight)
 		self.combobox = PMComboBox()
 		self.symnumbox = PMIntEntryWidget("Sym Number", 0, mode, lrange=0)
@@ -739,8 +739,8 @@ class PMAutoMask3DWidget(PMBaseWidget):
 		PMBaseWidget.__init__(self, name, mode)
 		self.initdefault = initdefault
 
-		gridbox = QtGui.QGridLayout()
-		self.automask3dbool = QtGui.QCheckBox("Auto Mask 3D")
+		gridbox = QtWidgets.QGridLayout()
+		self.automask3dbool = QtWidgets.QCheckBox("Auto Mask 3D")
 		self.params = []
 		self.params.append(PMFloatEntryWidget("Threshold", 0.8, mode))
 		self.params.append(PMIntEntryWidget("Radius", 30, mode))
@@ -808,10 +808,10 @@ class PMTableBase(PMBaseWidget):
 		self.setPositional(postional)
 		self.initdefault = initdefault
 
-		gridbox = QtGui.QGridLayout()
-		self.tablewidget = QtGui.QTableWidget()
+		gridbox = QtWidgets.QGridLayout()
+		self.tablewidget = QtWidgets.QTableWidget()
 		gridbox.addWidget(self.tablewidget, 0, 0)
-		self.tablewidget.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)	# Readonly table
+		self.tablewidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)	# Readonly table
 		self.setLayout(gridbox)
 
 	def updateTable(self):
@@ -841,10 +841,10 @@ class PMFSCTableWidget(PMTableBase):
 		# table stuff
 		self.tablewidget.setColumnCount(4)
 		self.tablewidget.setHorizontalHeaderLabels(["Refine", "# Iter", "Masked .143", "Unmasked .143"])
-		self.tablewidget.horizontalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
+		self.tablewidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
 		self.tablewidget.horizontalHeader().setHighlightSections(False)
-		self.tablewidget.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)	# select rows
-		self.tablewidget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)	# single selection
+		self.tablewidget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)	# select rows
+		self.tablewidget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)	# single selection
 
 		self.tablewidget.setRowCount(0)
 		self.patterns = ["refine","frealign","multi"]
@@ -901,14 +901,14 @@ class PMFSCTableWidget(PMTableBase):
 
 		for i, directory in enumerate(sorted(dirs)):
 			# load each directory
-			qwi_dirname = QtGui.QTableWidgetItem(str(directory))
+			qwi_dirname = QtWidgets.QTableWidgetItem(str(directory))
 			self.tablewidget.setItem(i, 0, qwi_dirname)
 
 			fscs=sorted([ii for ii in os.listdir(directory) if ii[:11]=="fsc_masked_"])
 			niter=len(fscs)
 			if "fsc_masked_00.txt" in fscs : niter-=1
 			
-			self.tablewidget.setItem(i, 1, QtGui.QTableWidgetItem(str(niter)))
+			self.tablewidget.setItem(i, 1, QtWidgets.QTableWidgetItem(str(niter)))
 			
 			try:
 				# We use a running average of 5 points to compute the threshold
@@ -918,9 +918,9 @@ class PMFSCTableWidget(PMTableBase):
 					v=old_div((xyd.get_y(ii-2)+xyd.get_y(ii-1)+xyd.get_y(ii)+xyd.get_y(ii+1)+xyd.get_y(ii+2)),5.0)
 					if v<0.143 : break
 				
-				self.tablewidget.setItem(i,2,QtGui.QTableWidgetItem("{:1.1f}".format(old_div(1.0,xyd.get_x(ii-1)))))
+				self.tablewidget.setItem(i,2,QtWidgets.QTableWidgetItem("{:1.1f}".format(old_div(1.0,xyd.get_x(ii-1)))))
 			except:
-				self.tablewidget.setItem(i,2,QtGui.QTableWidgetItem("?"))
+				self.tablewidget.setItem(i,2,QtWidgets.QTableWidgetItem("?"))
 
 			try:
 				# We use a running average of 5 points to compute the threshold
@@ -930,9 +930,9 @@ class PMFSCTableWidget(PMTableBase):
 					v=old_div((xyd.get_y(ii-2)+xyd.get_y(ii-1)+xyd.get_y(ii)+xyd.get_y(ii+1)+xyd.get_y(ii+2)),5.0)
 					if v<0.143 : break
 				
-				self.tablewidget.setItem(i,3,QtGui.QTableWidgetItem("{:1.1f}".format(old_div(1.0,xyd.get_x(ii-1)))))
+				self.tablewidget.setItem(i,3,QtWidgets.QTableWidgetItem("{:1.1f}".format(old_div(1.0,xyd.get_x(ii-1)))))
 			except:
-				self.tablewidget.setItem(i,3,QtGui.QTableWidgetItem("?"))
+				self.tablewidget.setItem(i,3,QtWidgets.QTableWidgetItem("?"))
 
 			
 

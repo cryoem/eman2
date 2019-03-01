@@ -97,7 +97,7 @@ app=None
 wins=[]
 def showstars(img,pa):
 	global app,wins
-	if not app : app = QtGui.QApplication(sys.argv)
+	if not app : app = QtWidgets.QApplication(sys.argv)
 	
 	w=EMImage(img)
 #	w.setWindowTitle("EMImage (%s)"%f)

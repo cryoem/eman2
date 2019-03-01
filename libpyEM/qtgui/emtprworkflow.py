@@ -36,6 +36,7 @@ from __future__ import absolute_import
 
 from builtins import range
 from builtins import object
+from PyQt5 import QtCore, QtWidgets
 from .emsprworkflow import *
 from .emform import *
 from .emsave import EMFileTypeValidator
@@ -257,7 +258,7 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 		
 		outnames = self.output_names(params)
 		
-		progress = QtGui.QProgressDialog("Processing files...", "Abort", 0, len(params["filenames"]),None)
+		progress = QtWidgets.QProgressDialog("Processing files...", "Abort", 0, len(params["filenames"]),None)
 		progress.show()
 	
 		i = 0
