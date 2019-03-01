@@ -28,36 +28,36 @@ import argparse
 from json import dump
 import subprocess
 
-
 argparser = argparse.ArgumentParser(
-    description='crYOLO boxmanager',
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+	description='crYOLO boxmanager',
+	formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 argparser.add_argument(
-    '--target_dir',
-    type=str,
-    help='Specifiy the path to your image directory.')
+	'--target_dir',
+	type=str,
+	help='Specifiy the path to your image directory.')
 
 argparser.add_argument(
-    '--box_dir',
-    type=str,
-    help='Specifiy the path to a box file directory.')
+	'--box_dir',
+	type=str,
+	help='Specifiy the path to a box file directory.')
+
 
 def main():
-    # Read arguments
-    args = argparser.parse_args()
+	# Read arguments
+	args = argparser.parse_args()
 
-    target_dir = args.target_dir
-    box_dir = args.box_dir
-    call = ['cryolo_boxmanager.py']
-    if target_dir:
-        input_argument = "-i=" + str(target_dir)
-        call.append(input_argument)
-        if box_dir:
-            box_argument = "-b=" + str(box_dir)
-            call.append(box_argument)
-    print(call)
-    subprocess.check_call(call)
+	target_dir = args.target_dir
+	box_dir = args.box_dir
+	call = ['cryolo_boxmanager.py']
+	if target_dir:
+		input_argument = "-i=" + str(target_dir)
+		call.append(input_argument)
+		if box_dir:
+			box_argument = "-b=" + str(box_dir)
+			call.append(box_argument)
+	print(call)
+	subprocess.check_call(call)
 
 
 if __name__ == "__main__":

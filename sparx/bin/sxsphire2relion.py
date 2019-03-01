@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-
+"""
+Convert particle stack and partres file to star file.
+"""
 # Author: Markus Stabrin 2018/09/28 (markus.stabrin@mpi-dortmund.mpg.de)
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -26,8 +28,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-# 
+#
 # ========================================================================================
+# pylint: disable=W0312
+# pylint: disable=C0330
 from __future__ import print_function, division
 
 import os
@@ -63,19 +67,62 @@ def parse_args():
 	Returns:
 	Parsed arguments
 	"""
-	parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-	parser.add_argument('output_dir', type=str, help='Output directory')
-	parser.add_argument('--output_name', type=str, default='sphire2relion.star', help='Output star file name')
-	parser.add_argument('--force', action='store_true', default=False, help='Overwrite existing star file.')
-	parser.add_argument('--partres_file', type=str, help='Partres file')
-	parser.add_argument('--particle_stack', type=str, help='Particle stack in bdb or hdf format')
-	parser.add_argument('--params_2d_file', type=str, help='2D alignment parameters. Requires --particle_stack. Cannot be used together with --params_3d_file.')
-	parser.add_argument('--params_3d_file', type=str, help='3D projection parameters. Requires --particle_stack. Cannot be used together with --params_2d_file.')
-	parser.add_argument('--params_3d_index_file', type=str, help='Index file for the 3d params. Used to find the associated particle stack entry in the params file. In the meridien directories, this file is either called chunk or index. Requires --particle_stack. Requires --params_3d_file.')
-	parser.add_argument('--params_3d_chunk_files', type=str, nargs=2, help='Chunk files for the 3d params. Used to extract the _rlnRandomSubset information. In the meridien directories, this file is called chunk. Requires --particle_stack. Requires --params_3d_file.')
-	parser.add_argument('--list', type=str, help='List of particles to include. Requires --particle_stack. Cannot be used together with --exlist.')
-	parser.add_argument('--exlist', type=str, help='List of particles to exclude. Requires --particle_stack. Cannot be used together with --list.')
-	return  parser.parse_args()
+	parser = argparse.ArgumentParser(
+		formatter_class=argparse.ArgumentDefaultsHelpFormatter
+	)
+	parser.add_argument("output_dir", type=str, help="Output directory")
+	parser.add_argument(
+		"--output_name",
+		type=str,
+		default="sphire2relion.star",
+		help="Output star file name",
+	)
+	parser.add_argument(
+		"--force",
+		action="store_true",
+		default=False,
+		help="Overwrite existing star file.",
+	)
+	parser.add_argument("--partres_file", type=str, help="Partres file")
+	parser.add_argument(
+		"--particle_stack", type=str, help="Particle stack in bdb or hdf format"
+	)
+	parser.add_argument(
+		"--params_2d_file",
+		type=str,
+		help="2D alignment parameters. Requires --particle_stack. Cannot be used together with --params_3d_file.",
+	)
+	parser.add_argument(
+		"--params_3d_file",
+		type=str,
+		help="3D projection parameters. Requires --particle_stack. Cannot be used together with --params_2d_file.",
+	)
+	parser.add_argument(
+		"--params_3d_index_file",
+		type=str,
+		help="Index file for the 3d params. Used to find the associated particle stack entry in the params file. In the meridien directories, this file is either called chunk or index. Requires --particle_stack. Requires --params_3d_file.",
+	)
+	parser.add_argument(
+		"--params_3d_chunk_file_0",
+		type=str,
+		help="First chunk files for the 3d params. Used to extract the _rlnRandomSubset information. In the meridien directories, this file is called chunk. Requires --particle_stack. Requires --params_3d_file.",
+	)
+	parser.add_argument(
+		"--params_3d_chunk_file_1",
+		type=str,
+		help="Second chunk file for the 3d params. Used to extract the _rlnRandomSubset information. In the meridien directories, this file is called chunk. Requires --particle_stack. Requires --params_3d_file.",
+	)
+	parser.add_argument(
+		"--list",
+		type=str,
+		help="List of particles to include. Requires --particle_stack. Cannot be used together with --exlist.",
+	)
+	parser.add_argument(
+		"--exlist",
+		type=str,
+		help="List of particles to exclude. Requires --particle_stack. Cannot be used together with --list.",
+	)
+	return parser.parse_args()
 
 
 def main(args):
@@ -101,41 +148,44 @@ def main(args):
 	params_3d_subset_data = None
 
 	if args.particle_stack:
-		sxprint('Import particle stack')
-		particle_data, create_stack = import_particle_stack(args.particle_stack, args.output_dir)
+		sxprint("Import particle stack")
+		particle_data, create_stack = import_particle_stack(
+			args.particle_stack, args.output_dir
+		)
 		output_dtype.extend(particle_data.dtype.descr)
 
 	if args.partres_file:
-		sxprint('Import partres file')
+		sxprint("Import partres file")
 		partres_data = import_partres_file(args.partres_file)
 		output_dtype.extend(partres_data.dtype.descr)
 
 	if args.params_2d_file:
-		sxprint('Import params 2d file')
-		params_2d_data = import_params(args.params_2d_file, dim='2d')
+		sxprint("Import params 2d file")
+		params_2d_data = import_params(args.params_2d_file, dim="2d")
 		output_dtype.extend(params_2d_data.dtype.descr)
 
 	if args.params_3d_file:
-		sxprint('Import params 3d file')
-		params_3d_data = import_params(args.params_3d_file, dim='3d')
+		sxprint("Import params 3d file")
+		params_3d_data = import_params(args.params_3d_file, dim="3d")
 		output_dtype.extend(params_3d_data.dtype.descr)
 
-	if args.params_3d_chunk_files:
-		sxprint('Import params 3d chunk files')
-		params_3d_subset_data = np.empty(params_3d_data.shape[0], dtype=[('_rlnRandomSubset', '<i8')])
+	if args.params_3d_chunk_file_0 != None and args.params_3d_chunk_file_1 != None:
+		sxprint("Import params 3d chunk files")
+		params_3d_subset_data = np.empty(
+			params_3d_data.shape[0], dtype=[("_rlnRandomSubset", "<i8")]
+		)
 		params_3d_subset_data.fill(np.nan)
 		params_import = []
-		for idx, file_name in enumerate(args.params_3d_chunk_files):
+		for idx, file_name in enumerate([args.params_3d_chunk_file_0, args.params_3d_chunk_file_1 ]):
 			chunk_import = np.genfromtxt(file_name, int)
-			params_3d_subset_data['_rlnRandomSubset'][chunk_import] = idx
+			params_3d_subset_data["_rlnRandomSubset"][chunk_import] = idx
 			params_import.extend(chunk_import.tolist())
 		output_dtype.extend(params_3d_subset_data.dtype.descr)
-		params_3d_subset_data = params_3d_subset_data[params_index_data]
 		assert params_3d_subset_data.shape[0] == params_3d_data.shape[0]
 		assert np.unique(params_import).shape[0] == params_3d_data.shape[0]
 
 	if args.params_3d_index_file:
-		sxprint('Import params 3d index')
+		sxprint("Import params 3d index")
 		params_index_data = np.genfromtxt(args.params_3d_index_file, dtype=int)
 		assert params_3d_data.shape[0] == params_index_data.shape[0]
 		assert np.unique(params_index_data).shape[0] == params_3d_data.shape[0]
@@ -146,10 +196,14 @@ def main(args):
 
 	mask_array = np.ones(particle_data.shape[0], dtype=np.bool)
 	if args.list or args.exlist:
-		sxprint('Import list/exlist information')
-		mask_array = create_particle_data_mask(args.list, args.exlist, particle_data.shape[0])
+		sxprint("Import list/exlist information")
+		mask_array = create_particle_data_mask(
+			args.list, args.exlist, particle_data.shape[0]
+		)
 
-	output_data = np.empty(params_index_data.shape[0], dtype=sorted(list(set(output_dtype))))
+	output_data = np.empty(
+		params_index_data.shape[0], dtype=sorted(list(set(output_dtype)))
+	)
 	particle_data_params = particle_data[params_index_data]
 	mask_array_params = mask_array[params_index_data]
 
@@ -158,7 +212,7 @@ def main(args):
 	array_list.append(params_3d_data)
 	array_list.append(params_3d_subset_data)
 
-	sxprint('Adjust header')
+	sxprint("Adjust header")
 	for array in array_list:
 		if array is not None:
 			for name in array.dtype.names:
@@ -166,34 +220,50 @@ def main(args):
 
 	if partres_data is not None:
 		for row in partres_data:
-			mask = output_data['_rlnMicrographName'] == row['_rlnMicrographName']
+			mask = output_data["_rlnMicrographName"] == row["_rlnMicrographName"]
 			for name in partres_data.dtype.names:
 				output_data[name][mask] = row[name]
 
 	final_output = output_data[mask_array_params]
 
-	sxprint('Write star file')
-	header = ['', 'data_', '', 'loop_']
-	header.extend(['{0} #{1}'.format(name, idx+1) for idx, name in enumerate(final_output.dtype.names)])
+	sxprint("Write star file")
+	header = ["", "data_", "", "loop_"]
+	header.extend(
+		[
+			"{0} #{1}".format(name, idx + 1)
+			for idx, name in enumerate(final_output.dtype.names)
+		]
+	)
 	dtype_dict = final_output.dtype.fields
 	fmt = []
 	for name in final_output.dtype.names:
-		max_length = len(max([str(entry).split('.')[0] for entry in final_output[name]], key=len)) + 2
-		if 'float' in str(dtype_dict[name][0]):
-			fmt.append('%{0}.6f'.format(max_length+7))
-		elif 'int' in str(dtype_dict[name][0]):
-			fmt.append('%{0}d'.format(max_length))
-		elif '|S' in str(dtype_dict[name][0]):
-			fmt.append('%{0}s'.format(max_length))
+		max_length = (
+			len(
+				max([str(entry).split(".")[0] for entry in final_output[name]], key=len)
+			)
+			+ 2
+		)
+		if "float" in str(dtype_dict[name][0]):
+			fmt.append("%{0}.6f".format(max_length + 7))
+		elif "int" in str(dtype_dict[name][0]):
+			fmt.append("%{0}d".format(max_length))
+		elif "|S" in str(dtype_dict[name][0]):
+			fmt.append("%{0}s".format(max_length))
 		else:
 			assert False
-	np.savetxt(output_file, final_output, fmt=' '.join(fmt), header='\n'.join(header), comments='')
+	np.savetxt(
+		output_file,
+		final_output,
+		fmt=" ".join(fmt),
+		header="\n".join(header),
+		comments="",
+	)
 
 	if create_stack:
-		sxprint('Create particle stacks')
+		sxprint("Create particle stacks")
 		create_particle_stack(args.particle_stack, args.output_dir, particle_data)
 
-	sxprint('Done!')
+	sxprint("Done!")
 	global_def.BATCH = False
 
 
@@ -209,14 +279,13 @@ def create_particle_stack(particle_stack, output_dir, particle_data):
 	Returns:
 	None
 	"""
-	sxprint('|_Get particle ID and particle names')
-	ptcl_ids = [int(entry.split('@')[0]) for entry in particle_data['_rlnImageName']]
-	ptcl_names = [entry.split('@')[1] for entry in particle_data['_rlnImageName']]
+	sxprint("|_Get particle ID and particle names")
+	ptcl_names = [entry.split("@")[1] for entry in particle_data["_rlnImageName"]]
 
-	sxprint('|_Write images')
+	sxprint("|_Write images")
 	for particle_idx in range(particle_data.shape[0]):
 		if particle_idx % 10000 == 0:
-			sxprint(particle_idx, ' of ', particle_data.shape[0])
+			sxprint(particle_idx, " of ", particle_data.shape[0])
 		emdata = EMAN2_cppwrap.EMData(particle_stack, particle_idx)
 
 		output_name = os.path.join(output_dir, ptcl_names[particle_idx])
@@ -265,44 +334,51 @@ def import_params(params_file, dim):
 	Returns:
 	parameter array
 	"""
-	if dim == '2d':
+	if dim == "2d":
 		dtype_import_list = [
-			('angle_psi', float),
-			('shift_x', float),
-			('shift_y', float),
-			('mirror', int),
-			]
-		sxprint('What happens with mirror?')
-	elif dim == '3d':
+			("angle_psi", float),
+			("shift_x", float),
+			("shift_y", float),
+			("mirror", int),
+		]
+		sxprint("What happens with mirror?")
+	elif dim == "3d":
 		dtype_import_list = [
-			('angle_rot', float),
-			('angle_theta', float),
-			('angle_psi', float),
-			('shift_x', float),
-			('shift_y', float),
-			]
+			("angle_rot", float),
+			("angle_theta", float),
+			("angle_psi", float),
+			("shift_x", float),
+			("shift_y", float),
+		]
+	else:
+		global_def.ERROR(
+			"Dimension {0} not supported. Only '2d' and '3d' are supported.".format(
+				dim
+			),
+			"sxsphire2relion",
+		)
 
 	input_data = np.genfromtxt(params_file, dtype=dtype_import_list)
 
 	dtype_output_list = [
-		('_rlnOriginX', float),
-		('_rlnOriginY', float),
-		('_rlnAngleRot', float),
-		('_rlnAngleTilt', float),
-		('_rlnAnglePsi', float),
-		]
+		("_rlnOriginX", float),
+		("_rlnOriginY", float),
+		("_rlnAngleRot", float),
+		("_rlnAngleTilt", float),
+		("_rlnAnglePsi", float),
+	]
 	params_array = np.empty(len(input_data), dtype=sorted(dtype_output_list))
 
-	params_array['_rlnOriginX'] = input_data['shift_x']
-	params_array['_rlnOriginY'] = input_data['shift_y']
-	params_array['_rlnAnglePsi'] = input_data['angle_psi']
+	params_array["_rlnOriginX"] = input_data["shift_x"]
+	params_array["_rlnOriginY"] = input_data["shift_y"]
+	params_array["_rlnAnglePsi"] = input_data["angle_psi"]
 
-	if dim == '2d':
-		params_array['_rlnAngleTilt'] = 0
-		params_array['_rlnAngleRot'] = 0
-	elif dim == '3d':
-		params_array['_rlnAngleTilt'] = input_data['angle_theta']
-		params_array['_rlnAngleRot'] = input_data['angle_rot']
+	if dim == "2d":
+		params_array["_rlnAngleTilt"] = 0
+		params_array["_rlnAngleRot"] = 0
+	elif dim == "3d":
+		params_array["_rlnAngleTilt"] = input_data["angle_theta"]
+		params_array["_rlnAngleRot"] = input_data["angle_rot"]
 
 	return params_array
 
@@ -317,54 +393,68 @@ def import_partres_file(partres_file):
 	Returns:
 	Array containing the ctf information.
 	"""
-	with open(partres_file, 'r') as r:
-		number_of_columns = len(r.readline().split())
+	with open(partres_file, "r") as partres_reader:
+		number_of_columns = len(partres_reader.readline().split())
 
 	if number_of_columns == 22:
 		columns = [0, 1, 2, 3, 6, 7, 17, 19, 20, 21]
 		dtype_import_list = [
-			('defocus', float),
-			('cs', float),
-			('voltage', float),
-			('pixel_size', float),
-			('astig_amp', float),
-			('astig_angle', float),
-			('max_resolution', float),
-			('amplitude_contrast', float),
-			('phase_shift', float),
-			('micrograph_name', '|S1000'),
-			]
+			("defocus", float),
+			("cs", float),
+			("voltage", float),
+			("pixel_size", float),
+			("astig_amp", float),
+			("astig_angle", float),
+			("max_resolution", float),
+			("amplitude_contrast", float),
+			("phase_shift", float),
+			("micrograph_name", "|S1000"),
+		]
 		dtype_output_list = [
-			('_rlnDefocusU', float),
-			('_rlnDefocusV', float),
-			('_rlnDefocusAngle', float),
-			('_rlnMicrographName', '|S1000'),
-			('_rlnDetectorPixelSize', float),
-			('_rlnMagnification', float),
-			('_rlnCtfMaxResolution', float),
-			('_rlnPhaseShift', float),
-			('_rlnAmplitudeContrast', float),
-			('_rlnSphericalAberration', float),
-			('_rlnVoltage', float),
-			]
+			("_rlnDefocusU", float),
+			("_rlnDefocusV", float),
+			("_rlnDefocusAngle", float),
+			("_rlnMicrographName", "|S1000"),
+			("_rlnDetectorPixelSize", float),
+			("_rlnMagnification", float),
+			("_rlnCtfMaxResolution", float),
+			("_rlnPhaseShift", float),
+			("_rlnAmplitudeContrast", float),
+			("_rlnSphericalAberration", float),
+			("_rlnVoltage", float),
+		]
 	else:
-		global_def.ERROR( "Number of columns in partres file not known: {0}".format(number_of_columns), "sxsphire2relion" )
+		global_def.ERROR(
+			"Number of columns in partres file not known: {0}".format(
+				number_of_columns
+			),
+			"sxsphire2relion",
+		)
 
 	assert len(columns) == len(dtype_import_list)
-	partres_import_array = np.genfromtxt(partres_file, dtype=dtype_import_list, usecols=columns)
+	partres_import_array = np.genfromtxt(
+		partres_file, dtype=dtype_import_list, usecols=columns
+	)
 	partres_array = np.empty(partres_import_array.shape[0], sorted(dtype_output_list))
 
-	partres_array['_rlnDefocusU'] = (20000 * partres_import_array['defocus'] - 10000 * partres_import_array['astig_amp']) / 2
-	partres_array['_rlnDefocusV'] = 20000 * partres_import_array['defocus'] - partres_array['_rlnDefocusU']
-	partres_array['_rlnDefocusAngle'] = 45 - partres_import_array['astig_angle']
-	partres_array['_rlnMicrographName'] = partres_import_array['micrograph_name']
-	partres_array['_rlnAmplitudeContrast'] = partres_import_array['amplitude_contrast'] / 100
-	partres_array['_rlnVoltage'] = partres_import_array['voltage']
-	partres_array['_rlnSphericalAberration'] = partres_import_array['cs']
-	partres_array['_rlnPhaseShift'] = partres_import_array['phase_shift']
-	partres_array['_rlnDetectorPixelSize'] = partres_import_array['pixel_size']
-	partres_array['_rlnMagnification'] = 10000
-	partres_array['_rlnCtfMaxResolution'] = 1 / partres_import_array['max_resolution']
+	partres_array["_rlnDefocusU"] = (
+		20000 * partres_import_array["defocus"]
+		- 10000 * partres_import_array["astig_amp"]
+	) / 2
+	partres_array["_rlnDefocusV"] = (
+		20000 * partres_import_array["defocus"] - partres_array["_rlnDefocusU"]
+	)
+	partres_array["_rlnDefocusAngle"] = 45 - partres_import_array["astig_angle"]
+	partres_array["_rlnMicrographName"] = partres_import_array["micrograph_name"]
+	partres_array["_rlnAmplitudeContrast"] = (
+		partres_import_array["amplitude_contrast"] / 100
+	)
+	partres_array["_rlnVoltage"] = partres_import_array["voltage"]
+	partres_array["_rlnSphericalAberration"] = partres_import_array["cs"]
+	partres_array["_rlnPhaseShift"] = partres_import_array["phase_shift"]
+	partres_array["_rlnDetectorPixelSize"] = partres_import_array["pixel_size"]
+	partres_array["_rlnMagnification"] = 10000
+	partres_array["_rlnCtfMaxResolution"] = 1 / partres_import_array["max_resolution"]
 
 	return partres_array
 
@@ -387,77 +477,74 @@ def sanity_checks(args):
 		args.params_3d_index_file,
 		args.list,
 		args.exlist,
-		]
+	]
 	stack_dependency_check = [
 		args.params_2d_file,
 		args.params_3d_file,
 		args.params_3d_index_file,
 		args.list,
 		args.exlist,
-		]
+	]
 
 	if not args.particle_stack and not args.partres_file:
-			global_def.ERROR(
-				'Particle_stack or partres_file option needs to be present!'.format(option),
-				'sxsphire2relion',
-				1
-				)
-
+		global_def.ERROR(
+			"Particle_stack or partres_file option needs to be present!",
+			"sxsphire2relion",
+			1,
+		)
 
 	for option in stack_dependency_check:
 		if option and not args.particle_stack:
 			global_def.ERROR(
-				'{0} requires particle stack option!'.format(option),
-				'sxsphire2relion',
-				1
-				)
+				"{0} requires particle stack option!".format(option),
+				"sxsphire2relion",
+				1,
+			)
 
-	for idx, option in enumerate(file_exists_check):
+	for option in file_exists_check:
 		if option:
-			if option.startswith('bdb:'):
-				if '#' in option:
-					raw_dirnames, basename = option.split('#')
+			if option.startswith("bdb:"):
+				if "#" in option:
+					raw_dirnames, basename = option.split("#")
 					dirnames = raw_dirnames[4:]
 				else:
 					dirnames = os.path.dirname(option[4:])
 					if not dirnames:
-						dirnames = '.'
+						dirnames = "."
 					basename = os.path.basename(option[4:])
-				option = '{0}/EMAN2DB/{1}.bdb'.format(dirnames,basename)
+				option = "{0}/EMAN2DB/{1}.bdb".format(dirnames, basename)
 			if not os.path.isfile(option):
 				global_def.ERROR(
-					'{0} stack must exist!'.format(option),
-					'sxsphire2relion',
-					1
-					)
+					"{0} stack must exist!".format(option), "sxsphire2relion", 1
+				)
 
 	if args.list and args.exlist:
 		global_def.ERROR(
-			'Arguments list and exlist cannot be used at the same time.',
-			'sxsphire2relion',
-			1
-			)
+			"Arguments list and exlist cannot be used at the same time.",
+			"sxsphire2relion",
+			1,
+		)
 
 	if args.params_2d_file and args.params_3d_file:
 		global_def.ERROR(
-			'Arguments params_2d_file and params_3d_file cannot be used at the same time.',
-			'sxsphire2relion',
-			1
-			)
+			"Arguments params_2d_file and params_3d_file cannot be used at the same time.",
+			"sxsphire2relion",
+			1,
+		)
 
 	if args.params_3d_index_file and not args.params_3d_file:
 		global_def.ERROR(
-			'Arguments params_3d_index_file requires params_3d_file to be set.',
-			'sxsphire2relion',
-			1
-			)
+			"Arguments params_3d_index_file requires params_3d_file to be set.",
+			"sxsphire2relion",
+			1,
+		)
 
 	if args.params_3d_chunk_files and not args.params_3d_file:
 		global_def.ERROR(
-			'Arguments params_3d_chunk_files requires params_3d_file to be set.',
-			'sxsphire2relion',
-			1
-			)
+			"Arguments params_3d_chunk_files requires params_3d_file to be set.",
+			"sxsphire2relion",
+			1,
+		)
 
 	try:
 		os.mkdir(args.output_dir)
@@ -469,10 +556,12 @@ def sanity_checks(args):
 		pass
 	elif os.path.exists(output_path) and not args.force:
 		global_def.ERROR(
-			'Output file {0} must not exist! Use the --force flag to overwrite existing files'.format(output_path),
-			'sxsphire2relion',
-			1
-			)
+			"Output file {0} must not exist! Use the --force flag to overwrite existing files".format(
+				output_path
+			),
+			"sxsphire2relion",
+			1,
+		)
 	else:
 		pass
 
@@ -491,63 +580,52 @@ def create_stack_dtype(particle_dict):
 	"""
 	original_name = {}
 	for key in particle_dict:
-		if key == 'ptcl_source_coord':
+		if key == "ptcl_source_coord":
 			original_name[key] = [
-				('_rlnCoordinateX', float),
-				('_rlnCoordinateY', float),
-				]
+				("_rlnCoordinateX", float),
+				("_rlnCoordinateY", float),
+			]
 
-		elif key == 'ptcl_source_apix':
+		elif key == "ptcl_source_apix":
 			original_name[key] = [
-				('_rlnDetectorPixelSize', float),
-				('_rlnMagnification', float)
-				]
+				("_rlnDetectorPixelSize", float),
+				("_rlnMagnification", float),
+			]
 
-		elif key == 'ptcl_source_image':
-			original_name[key] = [
-				('_rlnMicrographName', '|S1000'),
-				]
+		elif key == "ptcl_source_image":
+			original_name[key] = [("_rlnMicrographName", "|S1000")]
 
-		elif key == 'data_path':
-			original_name[key] = [
-				('_rlnImageName', '|S1000'),
-				]
+		elif key == "data_path":
+			original_name[key] = [("_rlnImageName", "|S1000")]
 
-		elif key == 'ptcl_source_coord_id':
-			original_name[key] = [
-				('ptcl_source_coord_id', int)
-				]
+		elif key == "ptcl_source_coord_id":
+			original_name[key] = [("ptcl_source_coord_id", int)]
 
-		elif key == 'filament':
-			original_name[key] = [
-				('_rlnHelicalTubeID', int)
-				]
+		elif key == "filament":
+			original_name[key] = [("_rlnHelicalTubeID", int)]
 
-		elif key == 'ctf':
+		elif key == "ctf":
 			original_name[key] = [
-				('_rlnDefocusU', float),
-				('_rlnDefocusV', float),
-				('_rlnDefocusAngle', float),
-				('_rlnAmplitudeContrast', float),
-				('_rlnVoltage', float),
-				('_rlnPhaseShift', float),
-				('_rlnSphericalAberration', float)
-				]
+				("_rlnDefocusU", float),
+				("_rlnDefocusV", float),
+				("_rlnDefocusAngle", float),
+				("_rlnAmplitudeContrast", float),
+				("_rlnVoltage", float),
+				("_rlnPhaseShift", float),
+				("_rlnSphericalAberration", float),
+			]
 
-		elif key == 'xform.align2d':
-			original_name[key] = [
-				('_rlnOriginX', float),
-				('_rlnOriginY', float)
-				]
+		elif key == "xform.align2d":
+			original_name[key] = [("_rlnOriginX", float), ("_rlnOriginY", float)]
 
-		elif key == 'xform.projection':
+		elif key == "xform.projection":
 			original_name[key] = [
-				('_rlnOriginX', float),
-				('_rlnOriginY', float),
-				('_rlnAngleRot', float),
-				('_rlnAngleTilt', float),
-				('_rlnAnglePsi', float)
-				]
+				("_rlnOriginX", float),
+				("_rlnOriginY", float),
+				("_rlnAngleRot", float),
+				("_rlnAngleTilt", float),
+				("_rlnAnglePsi", float),
+			]
 
 	dtype_list = []
 	for key in original_name:
@@ -568,83 +646,101 @@ def create_stack_array(dtype_list, header_dict, output_dir):
 	Returns:
 	Particle array
 	"""
-	final_dtype_list = [entry for entry in dtype_list if entry[0].startswith('_rln')]
+	final_dtype_list = [entry for entry in dtype_list if entry[0].startswith("_rln")]
 	particle_array = np.empty(len(header_dict.values()[0]), dtype=final_dtype_list)
 	create_stack = False
 
 	for key in header_dict:
-		if key == 'ptcl_source_coord':
+		if key == "ptcl_source_coord":
 			coord_x = [entry[0] for entry in header_dict[key]]
 			coord_y = [entry[1] for entry in header_dict[key]]
-			particle_array['_rlnCoordinateX'] = coord_x
-			particle_array['_rlnCoordinateY'] = coord_y
+			particle_array["_rlnCoordinateX"] = coord_x
+			particle_array["_rlnCoordinateY"] = coord_y
 
-		elif key == 'ptcl_source_apix':
-			particle_array['_rlnDetectorPixelSize'] = header_dict[key]
-			particle_array['_rlnMagnification'] = 10000
+		elif key == "ptcl_source_apix":
+			particle_array["_rlnDetectorPixelSize"] = header_dict[key]
+			particle_array["_rlnMagnification"] = 10000
 
-		elif key == 'filament':
-			data = [int(entry[-5:])+1 for entry in header_dict[key]]
-			particle_array['_rlnHelicalTubeID'] = data
+		elif key == "filament":
+			data = [int(entry[-5:]) + 1 for entry in header_dict[key]]
+			particle_array["_rlnHelicalTubeID"] = data
 
-		elif key == 'ctf':
+		elif key == "ctf":
 			dict_list = [entry.to_dict() for entry in header_dict[key]]
-			defocus = np.array([entry['defocus'] for entry in dict_list])
-			astigmatism_amp = np.array([entry['dfdiff'] for entry in dict_list])
-			particle_array['_rlnDefocusAngle'] = 45 - np.array([entry['dfang'] for entry in dict_list])
-			particle_array['_rlnAmplitudeContrast'] = np.array([entry['ampcont'] for entry in dict_list]) / 100
-			particle_array['_rlnVoltage'] = np.array([entry['voltage'] for entry in dict_list])
-			particle_array['_rlnSphericalAberration'] = np.array([entry['cs'] for entry in dict_list])
-			particle_array['_rlnDefocusU'] = (20000 * defocus - 10000 * astigmatism_amp) / 2
-			particle_array['_rlnDefocusV'] = 20000 * defocus - particle_array['_rlnDefocusU']
-			particle_array['_rlnPhaseShift'] = 0
+			defocus = np.array([entry["defocus"] for entry in dict_list])
+			astigmatism_amp = np.array([entry["dfdiff"] for entry in dict_list])
+			particle_array["_rlnDefocusAngle"] = 45 - np.array(
+				[entry["dfang"] for entry in dict_list]
+			)
+			particle_array["_rlnAmplitudeContrast"] = (
+				np.array([entry["ampcont"] for entry in dict_list]) / 100
+			)
+			particle_array["_rlnVoltage"] = np.array(
+				[entry["voltage"] for entry in dict_list]
+			)
+			particle_array["_rlnSphericalAberration"] = np.array(
+				[entry["cs"] for entry in dict_list]
+			)
+			particle_array["_rlnDefocusU"] = (
+				20000 * defocus - 10000 * astigmatism_amp
+			) / 2
+			particle_array["_rlnDefocusV"] = (
+				20000 * defocus - particle_array["_rlnDefocusU"]
+			)
+			particle_array["_rlnPhaseShift"] = 0
 
-		elif key == 'xform.projection' or key == 'xform.align2d':
-			dict_list = [entry.get_params('mrc') for entry in header_dict[key]]
-			particle_array['_rlnOriginX'] = np.array([entry['tx'] for entry in dict_list])
-			particle_array['_rlnOriginY'] = np.array([entry['ty'] for entry in dict_list])
-			particle_array['_rlnAngleRot'] = np.array([entry['phi'] for entry in dict_list])
-			particle_array['_rlnAngleTilt'] = np.array([entry['theta'] for entry in dict_list])
-			particle_array['_rlnAnglePsi'] = np.array([entry['omega'] for entry in dict_list])
+		elif key in ("xform.projection", "xform.align2d"):
+			dict_list = [entry.get_params("mrc") for entry in header_dict[key]]
+			particle_array["_rlnOriginX"] = np.array(
+				[entry["tx"] for entry in dict_list]
+			)
+			particle_array["_rlnOriginY"] = np.array(
+				[entry["ty"] for entry in dict_list]
+			)
+			particle_array["_rlnAngleRot"] = np.array(
+				[entry["phi"] for entry in dict_list]
+			)
+			particle_array["_rlnAngleTilt"] = np.array(
+				[entry["theta"] for entry in dict_list]
+			)
+			particle_array["_rlnAnglePsi"] = np.array(
+				[entry["omega"] for entry in dict_list]
+			)
 
-		elif key == 'data_path':
-			if header_dict['data_path'][0].endswith('.mrcs'):
+		elif key == "data_path":
+			if header_dict["data_path"][0].endswith(".mrcs"):
 				data = [
-					'{0:05d}@{1}'.format(entry1+1, os.path.relpath(entry2, output_dir))
-					for entry1, entry2 in
-					zip(
-						header_dict['ptcl_source_coord_id'],
-						header_dict['data_path']
-						)
-					]
-				particle_array['_rlnImageName'] = data
+					"{0:05d}@{1}".format(
+						entry1 + 1, os.path.relpath(entry2, output_dir)
+					)
+					for entry1, entry2 in zip(
+						header_dict["ptcl_source_coord_id"], header_dict["data_path"]
+					)
+				]
+				particle_array["_rlnImageName"] = data
 
 			else:
 				create_stack = True
-				for name in np.unique(header_dict['ptcl_source_image']):
-					mask = header_dict['ptcl_source_image'] == name
-					particle_array['_rlnImageName'][mask] = [
-						'{0:05d}@{1}s'.format(
-							entry+1,
+				for name in np.unique(header_dict["ptcl_source_image"]):
+					mask = header_dict["ptcl_source_image"] == name
+					particle_array["_rlnImageName"][mask] = [
+						"{0:05d}@{1}s".format(
+							entry + 1,
 							os.path.relpath(
 								os.path.join(
-									output_dir,
-									'Particles',
-									os.path.basename(name)
-									),
-								output_dir
-								)
-							)
-						for entry in
-						np.arange(np.sum(mask))
-						]
+									output_dir, "Particles", os.path.basename(name)
+								),
+								output_dir,
+							),
+						)
+						for entry in np.arange(np.sum(mask))
+					]
 
-		elif key == 'ptcl_source_image':
-			particle_array['_rlnMicrographName'] = [
-				entry if entry.startswith('/')
-				else os.path.relpath(entry, output_dir)
+		elif key == "ptcl_source_image":
+			particle_array["_rlnMicrographName"] = [
+				entry if entry.startswith("/") else os.path.relpath(entry, output_dir)
 				for entry in header_dict[key]
-				]
+			]
 
 	return particle_array, create_stack
 
@@ -660,24 +756,22 @@ def import_particle_stack(particle_stack, output_dir):
 	Particle array
 	"""
 	particle_header = EMAN2_cppwrap.EMData()
-	particle_header.read_image(
-		particle_stack,
-		0,
-		True
-		)
+	particle_header.read_image(particle_stack, 0, True)
 
 	dtype_list, name_list = create_stack_dtype(particle_header.get_attr_dict())
 
 	header_dict = {}
 	for name in name_list:
-		header_dict[name] = np.array(EMAN2_cppwrap.EMUtil.get_all_attributes(particle_stack, name))
+		header_dict[name] = np.array(
+			EMAN2_cppwrap.EMUtil.get_all_attributes(particle_stack, name)
+		)
 
 	stack_array, create_stack = create_stack_array(dtype_list, header_dict, output_dir)
 
 	return stack_array, create_stack
 
 
-if __name__ == '__main__':
-	global_def.print_timestamp( "Start" )
+if __name__ == "__main__":
+	global_def.print_timestamp("Start")
 	main(parse_args())
-	global_def.print_timestamp( "Finish" )
+	global_def.print_timestamp("Finish")
