@@ -75,73 +75,102 @@ from filter import filt_tanl as filter_tanl
 from pixel_error import multi_align_stability
 from EMAN2db import db_open_dict as E2_db_open_dict
 
-#-----------------------------------------------------------------------[ mpi ]
+#=================================================================[ mpi setup ]
 
 mpi.mpi_init(0, [])
+
+#----------------------------------------------------------[ Blockdata ]
+
+"""
+Blockdata holds all the administrative information about running ISAC. This
+includes:
+
+	Added in header:
+	- nproc: number of processes available to MPI (size of MPI_COMM_WORLD)
+	- myid: mpi id of this process
+	- main_node: mpi id of the mpi main process (traditionally node_0)
+	- shared_comm: communicator to other mpi nodes that share the same memory
+	- myid_on_node: mpi id of this process within shared_comms ie, the same node
+	- no_of_processes_per_group: number of processes in this process shared_comms group
+
+	Added in main():
+	- stack: path to particle images to be run through ISAC
+	- masterdir: path to ISAC master directory
+	- stack_ali2d: path to .bdb file holding the alignment parameters (this file exists only once)
+	- total_nima: total number of images in the stack (see above)
+	- 2dalignment: path to the results of the pre-alignment
+
+	Added in create_zero_group():
+	- subgroup_comm: mpi communicator for all processes with local/node mpi id zero
+	- subgroup_size: size of the zero group
+	- subgroup_myid: local process id within the zero group
+"""
 
 global Blockdata
 Blockdata = {}
 
-Blockdata["nproc"]              = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
-Blockdata["myid"]               = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
-Blockdata["main_node"]          = 0
-Blockdata["shared_comm"]		= mpi.mpi_comm_split_type(mpi.MPI_COMM_WORLD, mpi.MPI_COMM_TYPE_SHARED,  0, mpi.MPI_INFO_NULL)
-Blockdata["myid_on_node"]		= mpi.mpi_comm_rank(Blockdata["shared_comm"])
+Blockdata["nproc"]        = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
+Blockdata["myid"]         = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
+Blockdata["main_node"]    = 0
+Blockdata["shared_comm"]  = mpi.mpi_comm_split_type(mpi.MPI_COMM_WORLD, mpi.MPI_COMM_TYPE_SHARED, 0, mpi.MPI_INFO_NULL)
+Blockdata["myid_on_node"] = mpi.mpi_comm_rank(Blockdata["shared_comm"])
 Blockdata["no_of_processes_per_group"] = mpi.mpi_comm_size(Blockdata["shared_comm"])
-masters_from_groups_vs_everything_else_comm = mpi.mpi_comm_split(mpi.MPI_COMM_WORLD, Blockdata["main_node"] == Blockdata["myid_on_node"], Blockdata["myid_on_node"])
-Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = util.get_colors_and_subsets(Blockdata["main_node"], mpi.MPI_COMM_WORLD, Blockdata["myid"], \
-		Blockdata["shared_comm"], Blockdata["myid_on_node"], masters_from_groups_vs_everything_else_comm)
-# end of Blockdata
-#indep_run = 0
-#print "  MPI STUFF BY PAWEL ",Blockdata["myid"], indep_run, Blockdata["color"], Blockdata["myid_on_node"]
-global_def.BATCH = True
-global_def.MPI = True
 
+masters_from_groups_vs_everything_else_comm = ( mpi.mpi_comm_split(mpi.MPI_COMM_WORLD, Blockdata["main_node"] == Blockdata["myid_on_node"], Blockdata["myid_on_node"]) )
+Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = util.get_colors_and_subsets( Blockdata["main_node"], 
+																											  mpi.MPI_COMM_WORLD, Blockdata["myid"],
+																											  Blockdata["shared_comm"], 
+																											  Blockdata["myid_on_node"], 
+																											  masters_from_groups_vs_everything_else_comm )
+global_def.BATCH = True
+global_def.MPI   = True
 
 NAME_OF_JSON_STATE_FILE = "my_state.json"
 NAME_OF_ORIGINAL_IMAGE_INDEX = "originalid"
-NAME_OF_RUN_DIR = "run"
+NAME_OF_RUN_DIR  = "run"
 NAME_OF_MAIN_DIR = "generation_"
 DIR_DELIM = os.sep
 
-
-disp_unit = np.dtype("f4").itemsize
-
+# create an mpi subgroup containing all nodes whith local/node mpi id zero (?)
 def create_zero_group():
-	# select a subset of myids to be in subdivision
-	if( Blockdata["myid_on_node"] == 0 ): submyids = [Blockdata["myid"]]
-	else:  submyids = []
 
-	submyids = util.wrap_mpi_gatherv(submyids, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-	submyids = wrap_mpi_bcast(submyids, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-	#if( Blockdata["myid"] == Blockdata["main_node"] ): print(submyids)
-	world_group = mpi.mpi_comm_group(mpi.MPI_COMM_WORLD)
-	subgroup = mpi.mpi_group_incl(world_group,len(submyids),submyids)
-	#print(" XXX world group  ",Blockdata["myid"],world_group,subgroup)
-	Blockdata["subgroup_comm"] = mpi.mpi_comm_create(mpi.MPI_COMM_WORLD, subgroup)
-	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-	#print(" ZZZ subgroup  ",Blockdata["myid"],world_group,subgroup,subgroup_comm)
+	if( Blockdata["myid_on_node"] == 0 ): 
+		submyids = [ Blockdata["myid"] ]
+	else:  
+		submyids = []
+
+	submyids = util.wrap_mpi_gatherv( submyids, Blockdata["main_node"], mpi.MPI_COMM_WORLD )
+	submyids = util.wrap_mpi_bcast  ( submyids, Blockdata["main_node"], mpi.MPI_COMM_WORLD )
+	
+	world_group = mpi.mpi_comm_group( mpi.MPI_COMM_WORLD )
+	subgroup    = mpi.mpi_group_incl( world_group, len(submyids), submyids )
+	
+	Blockdata["subgroup_comm"] = mpi.mpi_comm_create( mpi.MPI_COMM_WORLD, subgroup )
+	mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 
 	Blockdata["subgroup_size"] = -1
 	Blockdata["subgroup_myid"] = -1
-	if (mpi.MPI_COMM_NULL != Blockdata["subgroup_comm"]):
-		Blockdata["subgroup_size"] = mpi.mpi_comm_size(Blockdata["subgroup_comm"])
-		Blockdata["subgroup_myid"] = mpi.mpi_comm_rank(Blockdata["subgroup_comm"])
-	#  "nodes" are zero nodes on subgroups on the two "node_volume" that compute backprojection
-	#Blockdata["nodes"] = [Blockdata["node_volume"][0]*Blockdata["ncpuspernode"], Blockdata["node_volume"][1]*Blockdata["ncpuspernode"]]
-	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+	
+	if( mpi.MPI_COMM_NULL != Blockdata["subgroup_comm"] ):
+		Blockdata["subgroup_size"] = mpi.mpi_comm_size( Blockdata["subgroup_comm"] )
+		Blockdata["subgroup_myid"] = mpi.mpi_comm_rank( Blockdata["subgroup_comm"] )
+	
+	mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 	return
 
-def checkitem(item, mpi_comm = -1):
+def checkitem( item, mpi_comm = -1 ):
 	global Blockdata
-	if mpi_comm == -1:  mpi_comm = mpi.MPI_COMM_WORLD
-	if(Blockdata["myid"] == Blockdata["main_node"]):
-		if(os.path.exists(item)): isthere = True
-		else: isthere = False
-	else: isthere = False
-	#print  "  checkitem0  ",Blockdata["myid"],isthere
-	isthere = bcast_number_to_all(isthere, source_node = Blockdata["main_node"], mpi_comm = mpi_comm)
-	mpi.mpi_barrier(mpi_comm)
+	if mpi_comm == -1:  
+		mpi_comm = mpi.MPI_COMM_WORLD
+	if( Blockdata["myid"] == Blockdata["main_node"] ):
+		if( os.path.exists(item) ): 
+			isthere = True
+		else: 
+			isthere = False
+	else: 
+		isthere = False
+	isthere = bcast_number_to_all( isthere, source_node=Blockdata["main_node"], mpi_comm=mpi_comm )
+	mpi.mpi_barrier( mpi_comm )
 	return isthere
 
 #-------------------------------------------------------------------[ utility ]
@@ -177,7 +206,7 @@ def normalize_particle_images( aligned_images, shrink_ratio, target_radius, targ
 			is applied to all particle images. [Default: -1]
 
 		ignore_helical_mask (bool): Only relevant if filament_width is used. If 
-		    set to False the data will be multiplied with the mask to remove all
+			set to False the data will be multiplied with the mask to remove all
 			data/noise outside of the mask. If set to True the mask will still
 			be used for the normalization but afterwards NOT multiplied with the
 			particle images. [Default: False]
@@ -221,12 +250,119 @@ def normalize_particle_images( aligned_images, shrink_ratio, target_radius, targ
 
 #----------------------------------------------------------------------[ ISAC ]
 
-def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, init_iter, main_iter, iter_reali, \
-			  match_first, max_round, match_second, stab_ali, thld_err, indep_run, thld_grp, img_per_grp, \
-			  generation, candidatesexist = False, random_seed=None, new = False):
+def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, init_iter, main_iter, iter_reali, match_first, max_round, match_second, stab_ali, thld_err, indep_run, thld_grp, img_per_grp, generation, candidatesexist = False, random_seed=None, new = False):
+	""" 
+	Core function to set up the next iteration of ISAC.
+
+	Args:
+		alldata (UNKNOWN TYPE): All image data [nima=len(alldata): no. of images]
+		
+		ir (int): Inner ring value (in pixels) of the resampling to polar 
+			coordinates.
+			[Default: 1]
+		
+		ou (int): Target particle radius used when ISAC processes the data.
+			Images will be scaled to conform to this value.
+			[Default: 29]
+
+		rs (int): Ring step in pixels used during the resampling of images to 
+			polar coordinates.
+			[Default: 1]
+		
+		xr (int): x-range of translational search during alignment. 
+			[Default: 1]
+		
+		yr (int): y-range of translational search during alignment. 
+			[Default: 1]
+		
+		ts (float): Search step size (in pixels) of translational search. (Not
+			entirely clear; used in refinement.)
+			[Default 1.0]
+		
+		maxit (int): Number of iterations for reference-free alignment. 
+			[Default: 30]
+		
+		CTF (bool): If set the data will be phase-flipped using CTF information 
+			included in image headers.
+			[Default: False][UNSUPPORTED]
+		
+		snr (float): Signal to noise ratio used if CTF parameter is True.
+			[Default: 1.0][UNSUPPORTED]
+		
+		dst (float): Discrete angle used during group alignment.
+			[Default: 90.0]
+		
+		FL (float): Frequency of the lowest stop band used in the tangent filter.
+			[Default: 0.2]
+		
+		FH (float): Frequency of the highest stop band used in the tangent filter.
+			[Default 0.45]
+		
+		FF (float): Fall-off value for the tangent filter. 
+			[Default 0.2]
+		
+		init_iter (int): Maximum number of Generation iterations performed for
+			a given subset. (Unclear what "subset" refers to.)
+			[Default: 7]
+		
+		main_iter (int): Number of the current main iteration.
+		
+		iter_reali (int): SAC stability check interval. Every iter_reali-th 
+			iteration of SAC stability checking is performed.
+			[Default: 1]
+		
+		match_first (int): Number of iterations to run 2-way matching during 
+			the first phase. (Unclear what "first hpase" refers to.)
+			[Default: 1][UNUSED]
+		
+		max_round (int): Maximum number of rounds generating candidate class 
+			averages during the first phase. (Unclear what first phase means.)
+			[Default: 20][UNUSED]
+		
+		match_second (int): Number of times to run 2-way (or 3-way) matching in
+			the second phase. (Unclear what "second phase" refers to.)
+			[Default: 5][UNUSED]
+		
+		stab_ali (int): Number of alignment iterations when checking stability.
+			[Default: 5]
+		
+		thld_err (float): Threshold of pixel error when checking stability.
+			Equals root mean square of distances between corresponding pixels
+			from set of found transformations and theirs average transformation; 
+			depends linearly on square of radius (parameter target_radius). 
+			Units are in pixels.
+			[Default: 0.7]
+		
+		indep_run (int): [Default: 0][UNUSED]
+
+		thld_grp (int): Minimum size of reproducible classes.
+			[Default 10/30][UNUSED]
+		
+		img_per_grp (int): Number of images per class (maximum group size, also
+			defines number of classes: K=(total number of images)/img_per_grp.
+			[Default: 200]
+		
+		generation (int): Number of iterations in the current generation.
+	
+		candidatesexist (bool): Candidate class averages already exist and can
+			be used.
+			[Default: False][UNUSED]
+		
+		random_seed (int): Set random seed manually for testing purposes.
+			[Default: None]
+		
+		new (bool): Flag to use "new code"; set to False and not used.
+
+	Returns:
+		refi (UNKNOWN TYPE): Refinement as returned by isac_MPI_pap()
+
+		all_ali_params (list): List containing 2D alignment parameters for all
+			images; entries formatted as [angle, sx, sy, mirror].
+	"""
+
+	#------------------------------------------------------[ mpi ]
 
 	global Blockdata
-
 
 	number_of_proc = Blockdata["nproc"]
 	myid = Blockdata["myid"]
@@ -237,10 +373,6 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
 	rnd.seed(random_seed)
 	rand2 = rnd.randint(1,1000111222)
 	rnd.seed(rand1 + rand2)
-
-	#if main_iter%iter_reali != 0:
-	#	ERROR("main_iter should be a multiple of iter_reali, please reset them and restart the program", "iter_isac", 1, myid)
-	#mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	if generation == 0:
 		ERROR( "Generation should begin from 1, please reset it and restart the program", myid=myid )
@@ -254,16 +386,16 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
 	if new: alimethod = "SHC"
 	else:   alimethod = ""
 
-	color = 0#Blockdata["Ycolor"]
-	key = Blockdata["myid"]#Blockdata["Ykey"]
-	group_comm = mpi.MPI_COMM_WORLD#Blockdata["Ygroup_comm"]
-	#print "  MPI STUFF BY YANG ",myid, indep_run, color, key
+	color = 0                        # Blockdata["Ycolor"]
+	key = Blockdata["myid"]          # Blockdata["Ykey"]
+	group_comm = mpi.MPI_COMM_WORLD  # Blockdata["Ygroup_comm"]
 	group_main_node = 0
 
-	nx = alldata[0].get_xsize()
-	ndata = len(alldata)
-	data = [None]*ndata
+	nx     = alldata[0].get_xsize()
+	ndata  = len(alldata)
+	data   = [None]*ndata
 	tdummy = E2.Transform({"type":"2D"})
+
 	for im in range(ndata):
 		# This is the absolute ID, the only time we use it is
 		# when setting the members of 4-way output. All other times, the id in 'members' is 
@@ -271,11 +403,6 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
 		alldata[im].set_attr_dict({"xform.align2d": tdummy, "ID": im})
 		data[im] = alldata[im]
 
-	#delay(myid, "HAVE ALL DATA")
-	#sleep(100)
-	#mpi_finalize()
-	#exit()
-		
 	avg_num = 0
 	Iter = 1
 	K = ndata/img_per_grp
@@ -284,24 +411,23 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
 		sxprint("     We will process:  %d current images divided equally between %d groups"%(ndata, K))
 		sxprint("*************************************************************************************")
 
-	# Generate random averages for each group
+	#------------------------------------------------------[ generate random averages for each group ]
+
 	if key == group_main_node:
 		refi = isac.generate_random_averages(data, K, 9023)
-		#refi = generate_random_averages(data, K, Iter)
-		#refi = generate_random_averages(data, K, -1)
-		###for j in xrange(len(refi)):  refi[j].write_image("refim_%d.hdf"%color, j)
 	else:
 		refi = [util.model_blank(nx, nx) for i in range(K)]
 
 	for i in range(K):
 		util.bcast_EMData_to_all(refi[i], key, group_main_node, group_comm)
 
-	#  create d[K*ndata] matrix 
-
+	# create d[K*ndata] matrix 
 	orgsize = K*ndata
 
-	if( Blockdata["myid_on_node"] == 0 ): size = orgsize
-	else:  size = 0
+	if( Blockdata["myid_on_node"] == 0 ): 
+		size = orgsize
+	else:  
+		size = 0
 
 	disp_unit = np.dtype("f4").itemsize
 
@@ -314,62 +440,129 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
 	d = d.reshape(orgsize)
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
-	# Generate inital averages
-	###if myid == main_node: print "	 Generating initial averages ",color,myid,time.localtime()[:5]
+	#------------------------------------------------------[ Generate inital averages ] 
+
 	refi = isac_MPI_pap(data, refi, d, maskfile=None, ir=ir, ou=ou, rs=rs, xrng=xr, yrng=yr, step=ts, 
 			maxit=maxit, isac_iter=init_iter, CTF=CTF, snr=snr, rand_seed=-1, color=color, comm=group_comm, 
 			stability=True, stab_ali=stab_ali, iter_reali=iter_reali, thld_err=thld_err,
 			FL=FL, FH=FH, FF=FF, dst=dst, method = alimethod)
 
 	mpi.mpi_win_free(win_sm)
+
 	del d
-	#mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-	#if myid == main_node:  print "  AFTER FIRST isac_MPI_pap"
 
-	## broadcast current_refim to all nodes
-	#for i in xrange(K):
-	#	util.bcast_EMData_to_all(current_refim[i], myid, main_node)
-	"""
-	if key == group_main_node:
-		all_ali_params = [None]*len(data)
-		for i,im in enumerate(data):
-			alpha, sx, sy, mirror, scale = util.get_params2D(im)
-			all_ali_params[i] = [alpha, sx, sy, mirror]
-		write_text_row(all_ali_params, "params.txt")
-		del all_ali_params
-
-		for i in xrange(K):
-			#  Each color has the same set of refim
-			refi[i].write_image("class_averages.hdf", i)
-	"""
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-	#mpi_finalize()
-	#exit()
 
 	if myid == main_node:
 		all_ali_params = [None]*len(data)
 		for i,im in enumerate(data):
 			alpha, sx, sy, mirror, scale = util.get_params2D(im)
 			all_ali_params[i] = [alpha, sx, sy, mirror]
+
 		sxprint("****************************************************************************************************")
 		sxprint("*         Generation finished                 "+time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())+"                            *")
 		sxprint("****************************************************************************************************")
+
 		return refi, all_ali_params
-	else:  return [], []
+	else:  
+		return [], []
 
-# stack - list of images (filename also accepted)
-# refim - list of reference images (filename also accepted)
-# maskfile - image with mask (filename also accepted)
-# CTF - not supported
-# snr - not supported
-# stability - when True stability checking is performed
-# stab_ali - used only when stability=True, 
-# iter_reali - used only when stability=True - for each iteration with index holds (index of iteration % iter_reali == 0) stability checking is performed
-def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yrng=0, step=1, 
-			 maxit=30, isac_iter=10, CTF=False, snr=1.0, rand_seed=-1, color=0, comm=-1, 
-			 stability=False, stab_ali=5, iter_reali=1, thld_err=1.732, FL=0.1, FH=0.3, FF=0.2, dst=90.0, method = ""):
-	
+def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yrng=0, step=1, maxit=30, isac_iter=10, CTF=False, snr=1.0, rand_seed=-1, color=0, comm=-1, stability=False, stab_ali=5, iter_reali=1, thld_err=1.732, FL=0.1, FH=0.3, FF=0.2, dst=90.0, method = ""):
+	"""
+	ISAC core function.
 
+	Args:
+		stack (UNKNOWN TYPE): list of images (filename also accepted)
+
+		refim (list OR filename): Class averages. (Providing a filename exits.)
+
+		d (numy.ndarray): Array holding pairwise distances between images.
+
+		maskfile (image OR filename): Image containing mask (filename also 
+			accepted).  
+
+		ir (int): Inner ring value (in pixels) of the resampling to polar 
+			coordinates.
+			[Default: 1]
+
+		ou (int): Target particle radius used when ISAC processes the data.
+			Images will be scaled to conform to this value.
+			[Default: 29]
+
+		rs (int): Ring step in pixels used during the resampling of images to
+			polar coordinates.
+			[Default: 1]
+
+		xrng (int): x-range of translational search during alignment. 
+			[Default: 0]
+		
+		yrng (int): y-range of translational search during alignment. 
+			[Default: 0]
+
+		step (float): Search step size (in pixels) of translational search. 
+			(Not entirely clear; used in refinement.)
+			[Default 1]
+
+		maxit (int): Number of iterations for reference-free alignment. 
+			[Default: 30]
+
+		isac_iter (UNKNOWN TYPE): Maximum number of Generation iterations 
+			performed for a given subset. (Unclear what "subset" refers to.)
+			[Default: 10]
+
+		CTF (bool): If set the data will be phase-flipped using CTF information
+			included in image headers.
+			[Default: False][UNSUPPORTED]
+
+		snr (float): Signal to noise ratio used if CTF parameter is True.
+			[Default: 1.0][UNSUPPORTED]
+
+		rand_seed (int): Set random seed manually for testing purposes.
+			[Default: -1]
+
+		color (mpi color): set to 0; unclear if this is still relevant.
+			[Defailt: 0]
+
+		comm (mpi communicator): set to MPI_COMM_WORLD (globally available; redundant parameter)
+			[Default: -1]
+
+		stability (bool): If True, ISAC performs stability testing.
+			[Default: True] 
+
+		stab_ali (bool): Used only when stability testing is performed.
+			[Default: 5]
+
+		inter_reali (UNKNOWN TYPE): Used only when stability=True. For each
+			iteration i: if (i % iter_reali == 0) stability check is performed.
+			[Default: 1]
+
+		thld_err (float): Threshold of pixel error when checking stability.
+			Equals root mean square of distances between corresponding pixels
+			from set of found transformations and theirs average transformation; 
+			depends linearly on square of radius (parameter target_radius). 
+			Units are in pixels.
+			[Default: 1.732]
+
+		FL (float): Frequency of the lowest stop band used in the tangent filter.
+			[Default: 0.1]
+		
+		FH (float): Frequency of the highest stop band used in the tangent filter.
+			[Default 0.3]
+		
+		FF (float): Fall-off value for the tangent filter. 
+			[Default 0.2]
+
+		dst (float): Discrete angle used during group alignment.
+			[Default: 90.0]
+
+		method (string): Stock method (SHC) for alignment.
+			[Default: ""]
+
+	Returns:
+		alldata (list): Class averages (format unclear).
+	"""
+
+	#------------------------------------------------------[ initialize mpi ]
 
 	global Blockdata
 
@@ -380,6 +573,8 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 	my_abs_id = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
 	main_node = 0
 
+	#------------------------------------------------------[ initialize ]
+	
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(isac_iter)
 
 	if type(stack) == type(""):
@@ -392,11 +587,11 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 	nx = alldata[0].get_xsize()
 	ny = alldata[0].get_ysize()
 
-	nima = len(alldata)
-	#  Explicitly force all parameters to be zero on input
-	for im in range(nima):  util.set_params2D(alldata[im], [0.,0.,0.,0, 1.0])
+	nima = len(alldata)  # no of images
 
-	#delay(myid," in isac_MPI_pap")
+	# set all parameters to be zero on input
+	for im in range( nima ):  
+		util.set_params2D( alldata[im], [0.,0.,0.,0, 1.0] )
 
 	image_start, image_end = apps.MPI_start_end(nima, number_of_proc, myid)
 
@@ -405,6 +600,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 			mask = util.get_image(maskfile)
 		else: 
 			mask = maskfile
+
 	else:
 		mask = model_circle(last_ring, nx, nx)
 
@@ -418,91 +614,99 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 		# refi = refim
 		refi = [None for i in range(len(refim))]
 		for i in range(len(refim)):  refi[i] = refim[i].copy()
-	numref = len(refi)
 
-	#  CTF stuff
-	#	if CTF:
-	#		ctf_params = ima.get_attr("ctf")
-	#		data_had_ctf = ima.get_attr("ctf_applied")
-	#		ctm = ctf_2(nx, ctf_params)
-	#		lctf = len(ctm)
+	numref = len(refi)
 
 	# IMAGES ARE SQUARES! center is in SPIDER convention
 	cnx = nx/2+1
 	cny = cnx
 
 	mode = "F"
-	#precalculate rings
+	
+	#------------------------------------------------------[ precalculate rings]
+
+	# calculates the necessary information for the 2D polar interpolation (finds the number of rings)
 	numr = align.Numrinit(first_ring, last_ring, rstep, mode)
+	# Calculate ring weights for rotational alignment
 	wr = align.ringwe(numr, mode)
 
-	if rand_seed > -1:      rnd.seed(rand_seed)
-	else:                   rnd.seed(rnd.randint(1,2000111222))
-	if myid != main_node:   rnd.jumpahead(17*myid + 12345)
+	if rand_seed > -1:
+		rnd.seed(rand_seed)
+	else:
+		rnd.seed(rnd.randint(1,2000111222))
+	if myid != main_node:
+		rnd.jumpahead(17*myid + 12345)
 
 	previous_agreement = 0.0
-	previous_members = [None]*numref
-	for j in range(numref):  previous_members[j] = set()
+	previous_members   = [None]*numref
+	for j in range(numref):
+		previous_members[j] = set()
 
 	fl = FL
 	Iter = -1
 	main_iter = 0
 	terminate = 0
 	while( (main_iter < max_iter) and (terminate == 0) ):
+
 		Iter += 1
-		if my_abs_id == main_node: sxprint("Iteration within isac_MPI Iter =>", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start,"   ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()))
+		if my_abs_id == main_node: 
+			sxprint("Iteration within isac_MPI Iter =>", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start,"   ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()))
 		mashi = cnx-ou-2
+		
 		for j in range(numref):
 			refi[j].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1}) # normalize reference images to N(0,1)
-			###if myid == main_node:
-			###	refi[j].write_image("refincoming%02d_round%02d.hdf"%(color, Iter), j)
-			cimage = E2.Util.Polar2Dm(refi[j] , cnx, cny, numr, mode)
-			E2.Util.Frngs(cimage, numr)
-			E2.Util.Applyws(cimage, numr, wr)
+			cimage = Util.Polar2Dm(refi[j] , cnx, cny, numr, mode) # converting reference images to polar cordinates 
+			Util.Frngs(cimage, numr) # Applying FFT on the reference images 
+			Util.Applyws(cimage, numr, wr) # apply weights to FTs of rings
 			refi[j] = cimage.copy()
-		#delay(myid, "after conversion of refi to polar")
 
 		#if CTF: ctf2 = [[[0.0]*lctf for k in xrange(2)] for j in xrange(numref)]
 		peak_list = [np.zeros(4*(image_end-image_start), dtype=np.float32) for i in range(numref)]
 		#  nima is the total number of images, not the one on this node, the latter is (image_end-image_start)
 		#    d matrix required by EQ-Kmeans can be huge!!  PAP 01/17/2015
 		#d = zeros(numref*nima, dtype=float32)
-		if( Blockdata["myid_on_node"] == 0 ): d.fill(0.0)
+		if( Blockdata["myid_on_node"] == 0 ): 
+			d.fill(0.0)
 
+		#--------------------------------------------------[ compute the 2D alignment  ]
 
-		# begin MPI section
-		##if my_abs_id == main_node: print "begin MPI section = ", time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()) + " =>", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, time.localtime()[0:5], myid
+		# loop through all images and compute alignment parameters for all references
 		for im in range(image_start, image_end):
-			alpha, sx, sy, mirror, scale = util.get_params2D(alldata[im])
+			alpha, sx, sy, mirror, scale = util.get_params2D(alldata[im])  # retrieves 2D alignment parameters
 			##  TEST WHETHER PARAMETERS ARE WITHIN RANGE
-			alphai, sxi, syi, scalei = util.inverse_transform2(alpha, sx, sy)
+			alphai, sxi, syi, scalei = util.inverse_transform2(alpha, sx, sy)  # returns the inverse  geometric transformof the 2d rot and trans matrix
 			# If shifts are outside of the permissible range, reset them
 			if(abs(sxi)>mashi or abs(syi)>mashi):
 				sxi = 0.0
 				syi = 0.0
-				util.set_params2D(alldata[im],[0.0,0.0,0.0,0,1.0])
+				util.set_params2D(alldata[im],[0.0,0.0,0.0,0,1.0])  # set 2D alignment parameters (img, alpha, tx, ty, mirror, scale)
 			# normalize
 			alldata[im].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
-			txrng = align.search_range(nx, ou, sxi, xrng, "ISAC2")
-			txrng = [txrng[1],txrng[0]]
-			tyrng = align.search_range(ny, ou, syi, yrng, "ISAC2")
+			txrng = search_range(nx, ou, sxi, xrng, "ISAC2")   # Find permissible ranges for translational searches by resampling into polar coordinates
+															   # nx-> image size; ou -> particle radius, sxi-> particle shift, xrng-> max search rng 
+			txrng = [txrng[1],txrng[0]]   # for positive and negative shifts
+			tyrng = search_range(ny, ou, syi, yrng, "ISAC2")
 			tyrng = [tyrng[1],tyrng[0]]
 
-			# align current image to references
-			temp = E2.Util.multiref_polar_ali_2d_peaklist(alldata[im], refi, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
+			#----------------------------------------------[ align current image to references]
+
+			# compute alignment parameters for single image with index <im> and all references <refi>
+			# NOTE: multiref_polar_ali_2d_peaklist includes conversion of image data into polar coordinates AND an FFT
+			temp = Util.multiref_polar_ali_2d_peaklist(alldata[im], refi, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
 			for iref in range(numref):
 				[alphan, sxn, syn, mn] = \
-				   util.combine_params2(0.0, -sxi, -syi, 0, temp[iref*5+1], temp[iref*5+2], temp[iref*5+3], int(temp[iref*5+4]))
+				   util.combine_params2(0.0, -sxi, -syi, 0, temp[iref*5+1], temp[iref*5+2], temp[iref*5+3], int(temp[iref*5+4]))  #  Combine 2D alignment parameters including mirror
 				peak_list[iref][(im-image_start)*4+0] = alphan
 				peak_list[iref][(im-image_start)*4+1] = sxn
 				peak_list[iref][(im-image_start)*4+2] = syn
 				peak_list[iref][(im-image_start)*4+3] = mn
-				d[iref*nima+im] = temp[iref*5]
+				d[iref*nima+im] = temp[iref*5] # grab a chunk of the peak list for parallel processing in the next step
 			del temp
 
 		del refi
-		##if my_abs_id == main_node: print "REDUCTION = ", time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()) + " =>", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, time.localtime()[0:5], myid
-		#delay(myid," d REDUCTION")
+
+		#--------------------------------------------------[ reduce the results of the correlation computation ]
+
 		if(Blockdata["subgroup_myid"] > -1 ):
 			# First check number of nodes, if only one, no reduction necessary.
 			if(Blockdata["no_of_groups"] > 1):
@@ -511,72 +715,86 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 				for j in range(numref):
 					dbuf = np.zeros(nima, dtype=np.float32)
 					np.copyto(dbuf,d[j*nima:(j+1)*nima])
-					dbuf = mpi.mpi_reduce(dbuf, nima, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, Blockdata["subgroup_comm"])  #  RETURNS numpy array
-					if( Blockdata["subgroup_myid"] == 0 ):  np.copyto(d[j*nima:(j+1)*nima],dbuf)
+
+					# reduce entries in section <dbuf> of the overall peak_list 
+					dbuf = mpi.mpi_reduce(dbuf, nima, MPI_FLOAT, MPI_SUM, main_node, Blockdata["subgroup_comm"])  #  RETURNS numpy array
+					if( Blockdata["subgroup_myid"] == 0 ):  
+						np.copyto(d[j*nima:(j+1)*nima],dbuf)
+
 				del dbuf
-				##print "  REDUCED  ",Blockdata["myid"], (time()-at)/60.
-			#d = mpi.mpi_reduce(d, numref*nima, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, Blockdata["subgroup_comm"])  #  RETURNS numpy array
-		#if myid != main_node:
-		#	del d
-		#mpi.mpi_barrier(comm) # to make sure that slaves freed the matrix d
-		#delay(myid," AFTER d REDUCTION")
-		##if my_abs_id == main_node: print "REDUCTION DONE = ", time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()) + " =>", Iter, "    main_iter = ", main_iter, "     len data = ", image_end-image_start, time.localtime()[0:5], myid
+
+		#--------------------------------------------------[ find alignment match ]
+
+
 		if myid == main_node:
-			#  PAP 03/20/2015  added cleaning of long lists...
-			id_list_long = E2.Util.assign_groups(str(d.__array_interface__['data'][0]), numref, nima) # string with memory address is passed as parameters
-			#del d
+			# find maximum in the peak list to determine highest subject/reference match
+			id_list_long = Util.assign_groups(str(d.__array_interface__['data'][0]), numref, nima) # string with memory address is passed as parameters
 			id_list = [[] for i in range(numref)]
-			maxasi = nima/numref
-			for i in range(maxasi*numref):   id_list[i/maxasi].append(id_list_long[i])
-			for i in range(nima%maxasi):     id_list[id_list_long[-1]].append(id_list_long[maxasi*numref+i])
-			for iref in range(numref):       id_list[iref].sort()
+			maxasi = nima/numref  # max. assignmenx
+
+			for i in range(maxasi*numref): id_list[i/maxasi].append(id_list_long[i])
+			for i in range(nima%maxasi):   id_list[id_list_long[-1]].append(id_list_long[maxasi*numref+i])
+			for iref in range(numref):     id_list[iref].sort()
+
 			del id_list_long
 
 			belongsto = [0]*nima
 			for iref in range(numref):
 				for im in id_list[iref]:
-					belongsto[im] = iref
+					belongsto[im] = iref # image <im> has highest match with reference <iref>
+			
 			del id_list
+
 		else:
 			belongsto = [0]*nima
+
+		# broadcast assignment result to all mpi nodes
 		mpi.mpi_barrier(comm)
 		belongsto = mpi.mpi_bcast(belongsto, nima, mpi.MPI_INT, main_node, comm)
 		belongsto = list(map(int, belongsto))
-		##if my_abs_id == main_node: print "Completed EQ-mref within isac_MPI = ", Iter, "	main_iter = ", main_iter , time.localtime()[0:5], color, myid
 
-		#  Compute partial averages
-		members = [0]*numref
+		#--------------------------------------------------[ update the averages / create new references ]
+
+		members = [0]*numref   # stores number of images assigned to each reference
 		sx_sum = [0.0]*numref
 		sy_sum = [0.0]*numref
-		refi = [util.model_blank(nx,ny) for j in range(numref)]
+		refi = [ util.model_blank(nx,ny) for j in range(numref) ]
+
 		for im in range(image_start, image_end):
+			
+			# get alignment parameters for the chosen matching reference        
 			matchref = belongsto[im]
 			alphan = float(peak_list[matchref][(im-image_start)*4+0])
-			sxn = float(peak_list[matchref][(im-image_start)*4+1])
-			syn = float(peak_list[matchref][(im-image_start)*4+2])
-			mn = int(peak_list[matchref][(im-image_start)*4+3])
+			sxn    = float(peak_list[matchref][(im-image_start)*4+1])
+			syn    = float(peak_list[matchref][(im-image_start)*4+2])
+			mn     =   int(peak_list[matchref][(im-image_start)*4+3])
+
 			if mn == 0: sx_sum[matchref] += sxn
-			else:	   sx_sum[matchref] -= sxn
+			else:       sx_sum[matchref] -= sxn
 			sy_sum[matchref] += syn
+
 			# apply current parameters and add to the average
-			E2.Util.add_img(refi[matchref], rot_shift2D(alldata[im], alphan, sxn, syn, mn))
-			#			if CTF:
-			#				ctm = ctf_2(nx, ctf_params)
-			#				for i in xrange(lctf):  ctf2[matchref][it][i] += ctm[i]
+			Util.add_img( refi[matchref], rot_shift2D(alldata[im], alphan, sxn, syn, mn) )
 			members[matchref] += 1
-		sx_sum = mpi.mpi_reduce(sx_sum, numref, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, comm)
-		sy_sum = mpi.mpi_reduce(sy_sum, numref, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, comm)
-		members = mpi.mpi_reduce(members, numref, mpi.MPI_INT, mpi.MPI_SUM, main_node, comm)
+		
+		#--------------------------------------------------[ broadcast  ]
+
+		# everyone computes their reduction and then broadcasts it back to the main_node
+		sx_sum  = mpi.mpi_reduce( sx_sum,  numref, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, comm )
+		sy_sum  = mpi.mpi_reduce( sy_sum,  numref, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, comm )
+		members = mpi.mpi_reduce( members, numref, mpi.MPI_INT,   mpi.MPI_SUM, main_node, comm )
+
 		if myid != main_node:
-			sx_sum = [0.0]*numref
-			sy_sum = [0.0]*numref
+			sx_sum  = [0.0]*numref
+			sy_sum  = [0.0]*numref
 			members = [0.0]*numref
-		sx_sum = mpi.mpi_bcast(sx_sum, numref, mpi.MPI_FLOAT, main_node, comm)
-		sy_sum = mpi.mpi_bcast(sy_sum, numref, mpi.MPI_FLOAT, main_node, comm)
-		members = mpi.mpi_bcast(members, numref, mpi.MPI_INT, main_node, comm)
-		sx_sum = list(map(float, sx_sum))
-		sy_sum = list(map(float, sy_sum))
-		members = list(map(int, members))
+
+		sx_sum  = mpi.mpi_bcast( sx_sum,  numref, mpi.MPI_FLOAT, main_node, comm )
+		sy_sum  = mpi.mpi_bcast( sy_sum,  numref, mpi.MPI_FLOAT, main_node, comm )
+		members = mpi.mpi_bcast( members, numref, mpi.MPI_INT,   main_node, comm )
+		sx_sum  = list( map(float, sx_sum) )
+		sy_sum  = list( map(float, sy_sum) )
+		members = list( map(int, members) )
 
 		for j in range(numref):
 			sx_sum[j] /= float(members[j])
@@ -585,71 +803,79 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 		for im in range(image_start, image_end):
 			matchref = belongsto[im]
 			alphan = float(peak_list[matchref][(im-image_start)*4+0])
-			sxn = float(peak_list[matchref][(im-image_start)*4+1])
-			syn = float(peak_list[matchref][(im-image_start)*4+2])
-			mn = int(peak_list[matchref][(im-image_start)*4+3])
+			sxn    = float(peak_list[matchref][(im-image_start)*4+1])
+			syn    = float(peak_list[matchref][(im-image_start)*4+2])
+			mn     =   int(peak_list[matchref][(im-image_start)*4+3])
+
 			if mn == 0:
-				util.set_params2D(alldata[im], [alphan, sxn-sx_sum[matchref], syn-sy_sum[matchref], mn, scale])
+				util.set_params2D(alldata[im], [alphan, sxn-sx_sum[matchref], syn-sy_sum[matchref], mn, scale])  # set 2D alignment parameters (img, alpha, tx, ty, mirror, scale)
 			else:
 				util.set_params2D(alldata[im], [alphan, sxn+sx_sum[matchref], syn-sy_sum[matchref], mn, scale])
 
 		del peak_list
 
+		#--------------------------------------------------[ ... we work till here (fabian & adnan)]
+
 		for j in range(numref):
 			util.reduce_EMData_to_root(refi[j], myid, main_node, comm)
+
 			if myid == main_node:
 				# Golden rule when to do within group refinement
-				E2.Util.mul_scalar(refi[j], 1.0/float(members[j]))
-				refi[j] = filter_tanl(refi[j], fl, FF)
+				Util.mul_scalar(refi[j], 1.0/float(members[j]))
+				refi[j] = filt_tanl(refi[j], fl, FF)
 				refi[j] = fshift(refi[j], -sx_sum[j], -sy_sum[j])
 				util.set_params2D(refi[j], [0.0, 0.0, 0.0, 0, 1.0])
 
 		if myid == main_node:
-			#  this is most likely meant to center them, if so, it works poorly, 
-			#      it has to be checked and probably a better method used PAP 01/17/2015
-			dummy = apps.within_group_refinement(refi, mask, True, first_ring, last_ring, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
+			# this is most likely meant to center them, if so, it works poorly,
+			# it has to be checked and probably a better method used PAP 01/17/2015
+			dummy = within_group_refinement(refi, mask, True, first_ring, last_ring, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
 			ref_ali_params = []
+
 			for j in range(numref):
 				alpha, sx, sy, mirror, scale = util.get_params2D(refi[j])
 				refi[j] = rot_shift2D(refi[j], alpha, sx, sy, mirror)
 				ref_ali_params.extend([alpha, sx, sy, mirror])
 		else:
 			ref_ali_params = [0.0]*(numref*4)
-		ref_ali_params = mpi.mpi_bcast(ref_ali_params, numref*4, mpi.MPI_FLOAT, main_node, comm)
-		ref_ali_params = list(map(float, ref_ali_params))
+
+		ref_ali_params = mpi.mpi_bcast( ref_ali_params, numref*4, mpi.MPI_FLOAT, main_node, comm )
+		ref_ali_params = list( map(float, ref_ali_params) )
 
 		for j in range(numref):
-			util.bcast_EMData_to_all(refi[j], myid, main_node, comm)
+			util.bcast_EMData_to_all( refi[j], myid, main_node, comm )
 
-		###if myid == main_node:
-		###	print  "  WRITING refaligned  for color:",color
-		###	for j in xrange(numref):
-		###		refi[j].write_image("refaligned%02d_round%02d.hdf"%(color, Iter), j)
-
-		# Compensate the centering to averages
+		#--------------------------------------------------[ Compensate the centering to averages ]
 		for im in range(image_start, image_end):
 			matchref = belongsto[im]
 			alpha, sx, sy, mirror, scale = util.get_params2D(alldata[im])
-			alphan, sxn, syn, mirrorn = util.combine_params2(alpha, sx, sy, mirror, ref_ali_params[matchref*4], ref_ali_params[matchref*4+1], \
-				ref_ali_params[matchref*4+2], int(ref_ali_params[matchref*4+3]))
-			util.set_params2D(alldata[im], [alphan, sxn, syn, int(mirrorn), 1.0])
+			alphan, sxn, syn, mirrorn = util.combine_params2(alpha, sx, sy, mirror, ref_ali_params[matchref*4+0], 
+																				   ref_ali_params[matchref*4+1],
+																				   ref_ali_params[matchref*4+2], 
+																				   int(ref_ali_params[matchref*4+3]))
+			util.set_params2D( alldata[im], [alphan, sxn, syn, int(mirrorn), 1.0] )
+
 
 		
 		fl += 0.05
-		##if my_abs_id == main_node: print "Increased fl .......", fl,time.localtime()[0:5]
+
 		if fl >= FH:
 			fl = FL
 			do_within_group = 1
-		else:  do_within_group = 0
+		else:  
+			do_within_group = 0
+
 		# Here stability does not need to be checked for each main iteration, it only needs to
 		# be done for every 'iter_reali' iterations. If one really wants it to be checked each time
 		# simple set iter_reali to 1, which is the default value right now.
 		check_stability = (stability and (main_iter%iter_reali==0))
 
-		if do_within_group == 1:
-			##if my_abs_id == main_node: print "Doing within group alignment .......", time.localtime()[0:5],color, main_iter
+		#--------------------------------------------------[ within group alignment ]
 
-			# Broadcast the alignment parameters to all nodes
+		if do_within_group == 1:
+
+			#----------------------------------------------[ Broadcast the alignment parameters to all nodes ]
+
 			for i in range(number_of_proc):
 				im_start, im_end = apps.MPI_start_end(nima, number_of_proc, i)
 				if myid == i:
@@ -803,78 +1029,101 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 					sxprint("=============================================================================\n")
 				del gpixer
 
-
-			###if myid == main_node:
-			###	print  "  WRITING refrealigned  for color:",color
-			###	for j in xrange(numref):
-			###		refi[j].write_image("refrealigned%02d_round%02d.hdf"%(color, Iter), j)
-			#if myid == main_node:  print "within group alignment done. ", time.localtime()[0:5]
-
-		# end of do_within_group
+		# end of within group alignment
 		mpi.mpi_barrier(comm)
 
 	if myid == main_node:
-		#i = [len(q) for q in id_list]
-		#for j in xrange(numref):
-		#	refi[j].set_attr_dict({'members': id_list[j], 'n_objects': i[j]})
-		#del id_list
 		i = [refi[j].get_attr("n_objects") for j in range(numref)]
 		lhist = max(12, numref/2)
 		region, histo = stats.hist_list(i, lhist)
 		sxprint("\n=== Histogram of group sizes ================================================")
 		for lhx in range(lhist):  sxprint("     %10.1f     %7d"%(region[lhx], histo[lhx]))
 		sxprint("=============================================================================\n")
+
 	mpi.mpi_barrier(comm)
 
 	return refi
 
-
 def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, target_radius, options):
+	"""
+	Perform one iteration of ISAC processing within current generation.
+
+	Args:
+		main_iter (int): Number of SAC main iterations, i.e., the number of 
+			runs of cluster alignment for stability evaluation in SAC.
+			[Default: 3]
+
+		generation_iter (int): Number of iterations in the current generation.
+
+		target_nx (int): Target particle image size. This is the actual image
+			size on which ISAC will process data. Images will be scaled 
+			according to target particle radius and pruned/padded to achieve
+			target_nx size. If xr > 0 (see below), the final image size for 
+			ISAC processing equals target_nx + xr -1.
+			[Default: 76]
+
+		target_xr (int): x-range of translational search during alignment. 
+			[Default: 1]
+
+		target_yr (int): y-range of translational search during alignment. 
+			[Default: 1]
+
+		target_radius (int): Target particle radius used when ISAC processes
+			the data. Images will be scaled to conform to this value.
+			[Default: 29]
+
+		options (options object): Provided by the Python OptionParser. This
+			structure contains all command line options (option "--value" is
+			accessed by options.value).
+
+	Returns:
+		keepdoing_main (bool): Indicates the main ISAC iteration should stop.
+
+		keepdoing_generation (bool): Indicates the iterations within this 
+			generation should stop.
+	"""
+
 	global Blockdata
 
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		plist = read_text_file(os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, \
-			"generation%03d"%(generation_iter-1), "to_process_next_%03d_%03d.txt"%(main_iter,generation_iter-1)))
+		plist = util.read_text_file( os.path.join(Blockdata["masterdir"], 
+												  "main%03d"%main_iter,
+												  "generation%03d"%(generation_iter-1), 
+												  "to_process_next_%03d_%03d.txt"%(main_iter,generation_iter-1)) )
 		nimastack = len(plist)
-		#print " ininimastack  ",nimastack
+
 	else:
 		plist = 0
 		nimastack = 0
+
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-	#print  " willbcast  ",Blockdata["myid"],nimastack,Blockdata["main_node"]
-	nimastack = bcast_number_to_all(nimastack, source_node = Blockdata["main_node"], mpi_comm=mpi.MPI_COMM_WORLD)
-	#if( Blockdata["myid"] == Blockdata["main_node"] ):  print  "  returned  ",nimastack
-	#print  " nimastack2  ",Blockdata["myid"],nimastack
+
+	nimastack = util.bcast_number_to_all(nimastack, source_node = Blockdata["main_node"], mpi_comm=mpi.MPI_COMM_WORLD)
+
 	# Bcast plist to all zero CPUs
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-	#mpi_finalize()
-	#exit()
+	
 	if(Blockdata["subgroup_myid"] > -1 ):
 		# First check number of nodes, if only one, no reduction necessary.
 		#print  "  subgroup_myid   ",Blockdata["subgroup_myid"],Blockdata["no_of_groups"],nimastack
-		if(Blockdata["no_of_groups"] > 1):			
+		if(Blockdata["no_of_groups"] > 1):          
 			plist = bcast_list_to_all(plist, Blockdata["subgroup_myid"], source_node = 0, mpi_comm = Blockdata["subgroup_comm"])
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-	#mpi_finalize()
-	#exit()
 
-	#delay( Blockdata["myid"],"  AFTER  ")
-	#mpi_finalize()
-	#exit()
 	# reserve buffers
 	disp_unit = np.dtype("f4").itemsize
 	size_of_one_image = target_nx*target_nx
 	orgsize = nimastack*size_of_one_image #  This is number of projections to be computed simultaneously times their size
 
-	if( Blockdata["myid_on_node"] == 0 ): size = orgsize
-	else:  size = 0
+	if( Blockdata["myid_on_node"] == 0 ): 
+		size = orgsize
+	else:  
+		size = 0
 
-	win_sm, base_ptr  = mpi.mpi_win_allocate_shared( size*disp_unit , disp_unit, mpi.MPI_INFO_NULL, Blockdata["shared_comm"])
+	win_sm, base_ptr = mpi.mpi_win_allocate_shared( size*disp_unit , disp_unit, mpi.MPI_INFO_NULL, Blockdata["shared_comm"])
 	size = orgsize
-
-	#if( Blockdata["myid_on_node"] == 0 ): print " LOHI ",Blockdata["myid"],nimastack,size_of_one_image,size,disp_unit,win_sm,base_ptr
 
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_ptr, = mpi.mpi_win_shared_query(win_sm, mpi.MPI_PROC_NULL)
@@ -884,36 +1133,35 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 
 	emnumpy2 = EMNumPy()
 	bigbuffer = emnumpy2.register_numpy_to_emdata(buffer)
+
 	if( Blockdata["myid_on_node"] == 0 ):
 		#  read data on process 0 of each node
 		#print "  READING DATA FIRST :",Blockdata["myid"],Blockdata["stack_ali2d"],len(plist)
 		for i in range(nimastack):
-			bigbuffer.insert_clip(get_im(Blockdata["stack_ali2d"],plist[i]),(0,0,i))
+			bigbuffer.insert_clip( get_im(Blockdata["stack_ali2d"],plist[i]),(0,0,i) )
 		del plist
-		#print "  ALL READ  ",Blockdata["myid"],Blockdata["myid_on_node"],target_nx
 
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-	#delay(Blockdata["myid"],"  ALL READ DONE")
-	alldata = [None]*nimastack
-	#img_buffer = [None]*nimastack
-	emnumpy3 = [None]*nimastack
+	alldata =  [None] * nimastack
+	emnumpy3 = [None] * nimastack
 
 	msk = util.model_blank(target_nx, target_nx,1,1)
 	for i in range(nimastack):
 		pointer_location = base_ptr + i*size_of_one_image*disp_unit
-		img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
-		img_buffer = img_buffer.reshape(target_nx, target_nx)
+		img_buffer  = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
+		img_buffer  = img_buffer.reshape(target_nx, target_nx)
 		emnumpy3[i] = EMNumPy()
-		alldata[i] = emnumpy3[i].register_numpy_to_emdata(img_buffer)
+		alldata[i]  = emnumpy3[i].register_numpy_to_emdata(img_buffer)
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
-	#  former options
-	indep_run = 0
-	match_first = 0
-	thld_grp = 0
+	# former options
+	indep_run    = 0
+	match_first  = 0
+	thld_grp     = 0
 	match_second = 0
-	max_round = 0
+	max_round    = 0
 	dummy_main_iter = 0
+
 	if( Blockdata["myid"] == 0 ):
 		sxprint("*************************************************************************************")
 		sxprint("     Main iteration: %3d,  Generation: %3d. "%(main_iter,generation_iter)+"   "+time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()))
@@ -958,6 +1206,7 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 				q.write_image(os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter,"good_class_averages_%03d_%03d.hdf"%(main_iter,generation_iter)),j)
 				q.write_image(os.path.join(Blockdata["masterdir"],"class_averages.hdf"),j+nave_exist)
 				j += 1
+
 				# We have to update all parameters table
 				for l,m in enumerate(members):
 					#  I had to remove it as in case of restart there will be conflicts
@@ -1032,98 +1281,108 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 
 	return keepdoing_main, keepdoing_generation
 
-def main(args):
-	progname = os.path.basename(sys.argv[0])
-	usage = ( progname + " stack_file  [output_directory] --radius=particle_radius --img_per_grp=img_per_grp --CTF <The remaining parameters are optional --ir=ir --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter" +
-			" --iter_reali=iter_reali --stab_ali=stab_ali --thld_err=thld_err"  +
-			" --rand_seed=rand_seed>" )
-	
-	parser = optparse.OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--radius",                type="int",           help="particle radius: there is no default, a sensible number has to be provided, units - pixels (default required int)")
-	parser.add_option("--target_radius",         type="int",           default=29,         help="target particle radius: actual particle radius on which isac will process data. Images will be shrinked/enlarged to achieve this radius (default 29)")
-	parser.add_option("--target_nx",             type="int",           default=76,         help="target particle image size: actual image size on which isac will process data. Images will be shrinked/enlarged according to target particle radius and then cut/padded to achieve target_nx size. When xr > 0, the final image size for isac processing is 'target_nx + xr - 1'  (default 76)")
-	parser.add_option("--img_per_grp",           type="int",           default=200,        help="number of images per class (maximum group size, also defines number of classes K=(total number of images)/img_per_grp (default 200)")
-	parser.add_option("--minimum_grp_size",      type="int",           default=60,         help="minimum size of class (default 60)")
-	parser.add_option("--CTF",                   action="store_true",  default=False,      help="apply phase-flip for CTF correction: if set the data will be phase-flipped using CTF information included in image headers (default False)")
-	parser.add_option("--VPP",                   action="store_true",  default=False,      help="Phase Plate data (default False)")
-	parser.add_option("--ir",                    type="int",           default=1,          help="inner ring: of the resampling to polar coordinates. units - pixels (default 1)")
-	parser.add_option("--rs",                    type="int",           default=1,          help="ring step: of the resampling to polar coordinates. units - pixels (default 1)")
-	parser.add_option("--xr",                    type="int",           default=1,          help="x range: of translational search. By default, set by the program. (default 1)")
-	parser.add_option("--yr",                    type="int",           default=-1,         help="y range: of translational search. By default, same as xr. (default -1)")
-	parser.add_option("--ts",                    type="float",         default=1.0,        help="search step: of translational search: units - pixels (default 1.0)")
-	parser.add_option("--maxit",                 type="int",           default=30,         help="number of iterations for reference-free alignment (default 30)")
-	#parser.add_option("--snr",            type="float",        default=1.0,     help="signal-to-noise ratio (only meaningful when CTF is enabled, currently not supported)")
-	parser.add_option("--center_method",         type="int",           default=-1,         help="method for centering: of global 2D average during initial prealignment of data (0 : no centering; -1 : average shift method; please see center_2D in utilities.py for methods 1-7) (default -1)")
-	parser.add_option("--dst",                   type="float",         default=90.0,       help="discrete angle used in within group alignment (default 90.0)")
-	parser.add_option("--FL",                    type="float",         default=0.2,        help="lowest stopband: frequency used in the tangent filter (default 0.2)")
-	parser.add_option("--FH",                    type="float",         default=0.45,        help="highest stopband: frequency used in the tangent filter (default 0.45)")
-	parser.add_option("--FF",                    type="float",         default=0.2,        help="fall-off of the tangent filter (default 0.2)")
-	parser.add_option("--init_iter",             type="int",           default=7,          help="Maximum number of Generation iterations performed for a given subset (default 7)")
-	#parser.add_option("--main_iter",             type="int",           default=3,          help="SAC main iterations: number of runs of ab-initio within-cluster alignment for stability evaluation in SAC (default 3)")
-	parser.add_option("--iter_reali",            type="int",           default=1,          help="SAC stability check interval: every iter_reali iterations of SAC stability checking is performed (default 1)")
-	#parser.add_option("--match_first",           type="int",           default=1,          help="number of iterations to run 2-way matching in the first phase: (default 1)")
-	#parser.add_option("--max_round",             type="int",           default=20,         help="maximum rounds: of generating candidate class averages in the first phase (default 20)")
-	#parser.add_option("--match_second",          type="int",           default=5,          help="number of iterations to run 2-way (or 3-way) matching in the second phase: (default 5)")
-	parser.add_option("--stab_ali",              type="int",           default=5,          help="number of alignments when checking stability (default 5)")
-	parser.add_option("--thld_err",              type="float",         default=0.7,        help="threshold of pixel error when checking stability: equals root mean square of distances between corresponding pixels from set of found transformations and theirs average transformation, depends linearly on square of radius (parameter target_radius). units - pixels. (default 0.7)")
-	#parser.add_option("--indep_run",             type="int",           default=1,          help="level of m-way matching for reproducibility tests: By default, perform full ISAC to 4-way matching. Value indep_run=2 will restrict ISAC to 2-way matching and 3 to 3-way matching.  Note the number of used MPI processes requested in mpirun must be a multiplicity of indep_run. (default 4)")
-	#parser.add_option("--thld_grp",              type="int",           default=30,         help="minimum size of reproducible class (default 10)")
-	#parser.add_option("--n_generations",         type="int",           default=10,         help="maximum number of generations: program stops when reaching this total number of generations: (default 10)")
-	#parser.add_option("--candidatesexist",action="store_true", default=False,   help="Candidate class averages exist use them (default False)")
-	parser.add_option("--rand_seed",             type="int",           help="random seed set before calculations: useful for testing purposes. By default, total randomness (type int)")
-	#parser.add_option("--new",                   action="store_true",  default=False,      help="use new code: (default False)")
-	#parser.add_option("--debug",                 action="store_true",  default=False,      help="debug info printout: (default False)")
+#================================================================[ parameters ]
 
-	# must be switched off in production
-	#parser.add_option("--use_latest_master_directory",action="store_true",  default=False,      help="use latest master directory: when active, the program looks for the latest directory that starts with the word 'master', so the user does not need to provide a directory name. (default False)")
-	
-	parser.add_option("--restart",       type="int",        default='-1',        help="0: restart ISAC2 after last completed main iteration (meaning there is file >finished< in it.  k: restart ISAC2 after k'th main iteration (It has to be completed, meaning there is file >finished< in it. Higer iterations will be removed.)  Default: no restart")
+def parse_parameters( prog_name, usage, args ):
 
-	##### XXXXXXXXXXXXXXXXXXXXXX option does not exist in docs XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-	parser.add_option("--skip_prealignment",     action="store_true",  default=False,      help="skip pre-alignment step: to be used if images are already centered. 2dalignment directory will still be generated but the parameters will be zero. (default False)")
+	prog_name = os.path.basename( prog_name )
+	parser = optparse.OptionParser( usage, version=SPARXVERSION )
+
+	# ISAC command line parameters (public)
+	parser.add_option( "--radius",           type="int",                         help="particle radius: there is no default, a sensible number has to be provided, units - pixels (default required int)" )
+	parser.add_option( "--target_radius",    type="int",          default=29,    help="target particle radius: actual particle radius on which isac will process data. Images will be shrinked/enlarged to achieve this radius (default 29)" )
+	parser.add_option( "--target_nx",        type="int",          default=76,    help="target particle image size: actual image size on which isac will process data. Images will be shrinked/enlarged according to target particle radius and then cut/padded to achieve target_nx size. When xr > 0, the final image size for isac processing is 'target_nx + xr - 1'  (default 76)" )
+	parser.add_option( "--img_per_grp",      type="int",          default=200,   help="number of images per class (maximum group size, also defines number of classes K=(total number of images)/img_per_grp (default 200)" )
+	parser.add_option( "--minimum_grp_size", type="int",          default=60,    help="minimum size of class (default 60)" )
+	parser.add_option( "--CTF",              action="store_true", default=False, help="apply phase-flip for CTF correction: if set the data will be phase-flipped using CTF information included in image headers (default False)" )
+	parser.add_option( "--VPP",              action="store_true", default=False, help="Phase Plate data (default False)" )
+	parser.add_option( "--ir",               type="int",          default=1,     help="inner ring: of the resampling to polar coordinates. units - pixels (default 1)" )
+	parser.add_option( "--rs",               type="int",          default=1,     help="ring step: of the resampling to polar coordinates. units - pixels (default 1)" )
+	parser.add_option( "--xr",               type="int",          default=1,     help="x range: of translational search. By default, set by the program. (default 1)" )
+	parser.add_option( "--yr",               type="int",          default=-1,    help="y range: of translational search. By default, same as xr. (default -1)" )
+	parser.add_option( "--ts",               type="float",        default=1.0,   help="search step: of translational search: units - pixels (default 1.0)" )
+	parser.add_option( "--maxit",            type="int",          default=30,    help="number of iterations for reference-free alignment (default 30)" )
+	parser.add_option( "--center_method",    type="int",          default=-1,    help="method for centering: of global 2D average during initial prealignment of data (0 : no centering; -1 : average shift method; please see center_2D in utilities.py for methods 1-7) (default -1)" )
+	parser.add_option( "--dst",              type="float",        default=90.0,  help="discrete angle used in within group alignment (default 90.0)" )
+	parser.add_option( "--FL",               type="float",        default=0.2,   help="lowest stopband: frequency used in the tangent filter (default 0.2)" )
+	parser.add_option( "--FH",               type="float",        default=0.45,  help="highest stopband: frequency used in the tangent filter (default 0.45)" )
+	parser.add_option( "--FF",               type="float",        default=0.2,   help="fall-off of the tangent filter (default 0.2)" )
+	parser.add_option( "--init_iter",        type="int",          default=7,     help="Maximum number of Generation iterations performed for a given subset (default 7)" )
+	parser.add_option( "--iter_reali",       type="int",          default=1,     help="SAC stability check interval: every iter_reali iterations of SAC stability checking is performed (default 1)" )
+	parser.add_option( "--stab_ali",         type="int",          default=5,     help="number of alignments when checking stability (default 5)" )
+	parser.add_option( "--thld_err",         type="float",        default=0.7,   help="threshold of pixel error when checking stability: equals root mean square of distances between corresponding pixels from set of found transformations and theirs average transformation, depends linearly on square of radius (parameter target_radius). units - pixels. (default 0.7)" )
+	parser.add_option( "--restart",          type="int",          default='-1',  help="0: restart ISAC2 after last completed main iteration (meaning there is file >finished< in it.  k: restart ISAC2 after k'th main iteration (It has to be completed, meaning there is file >finished< in it. Higer iterations will be removed.)  Default: no restart" )
+	parser.add_option( "--rand_seed",        type="int",                         help="random seed set before calculations: useful for testing purposes. By default, total randomness (type int)" )
+
+	# developer parameters (not listed in docs)
+	parser.add_option("--skip_prealignment", action="store_true", default=False, help="skip pre-alignment step: to be used if images are already centered. 2dalignment directory will still be generated but the parameters will be zero. (default False)")
 
 	parser.add_option( "--filament_width",        type="int",          default=-1,         help="When this is set to a non-default value helical data is assumed in which case particle images will be masked with a rectangular mask. (Default: -1)" )
 	parser.add_option( "--filament_mask_ignore",  action="store_true", default=False,      help="Only relevant when parameter \'--filament_width\' is set. When set to False a rectangular mask is used to (a) normalize and (b) to mask the particle images. The latter can be disabled by setting this flag to True. (Default: False)" )
 
+	return parser.parse_args(args)
 
-	required_option_list = ['radius']
-	(options, args) = parser.parse_args(args)
+def main(args):
 
+	#------------------------------------------------------[ command line parameters ]
+
+	usage = ( sys.argv[0] + " stack_file  [output_directory] --radius=particle_radius" 
+			  + " --img_per_grp=img_per_grp --CTF <The remaining parameters are" 
+			  + " optional --ir=ir --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit"
+			  + " --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter" 
+			  + " --iter_reali=iter_reali --stab_ali=stab_ali --thld_err=thld_err"
+			  + " --rand_seed=rand_seed>" )
+
+	options, args = parse_parameters( sys.argv[0], usage, args )  # NOTE: output <args> != input <args>
+
+	# after parsing, the only remaining args should be path to input & output folders
 	if len(args) > 2:
-		sxprint("usage: " + usage)
-		sxprint("Please run '" + progname + " -h' for detailed options")
-		ERROR( "Invalid number of parameters used. Please see usage information above." )
-		return
-
+		print("usage: " + usage)
+		print("Please run '" +  sys.argv[0] + " -h' for detailed options")
+		sys.exit()
 	elif( len(args) == 2):
-		Blockdata["stack"] 	= args[0]
+		Blockdata["stack"]  = args[0]
 		Blockdata["masterdir"] = args[1]
-	
 	elif( len(args) == 1):
-		Blockdata["stack"] 	= args[0]
+		Blockdata["stack"]  = args[0]
 		Blockdata["masterdir"] = ""
 
 	options.new = False
 	
+	# check required options
+	required_option_list = ['radius']
+
+	for required_option in required_option_list:
+		if not options.__dict__[required_option]:
+			print( "\n ==%s== mandatory option is missing.\n" % required_option )
+			print( "Please run '" +  sys.argv[0] + " -h' for detailed options" )
+			return 1
+	
+	# sanity check: make sure the minimum group size is smaller than the actual group size
+	if options.minimum_grp_size > options.img_per_grp:
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			print( "\nERROR! Minimum group size (" + str(options.minimum_grp_size) + ") is larger than the actual group size (" + str(options.img_per_grp) + "). Oh dear :(\n" )
+		return 1
+
+	# TODO: what does this do?
 	if global_def.CACHE_DISABLE:
 		util.disable_bdb_cache()
 	global_def.BATCH = True
 	
+	#------------------------------------------------------[ master directory setup ]
 
-
-	
+	# get mpi id values (NOTE: the code cannot decide which one of these to use)
 	main_node = Blockdata["main_node"]
-	myid = Blockdata["myid"]
+	myid  = Blockdata["myid"]
 	nproc = Blockdata["nproc"]
 
-
-	#  MASTER DIRECTORY
+	# main process creates the master directory
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		if( Blockdata["masterdir"] == ""):
-			timestring = time.strftime("_%d_%b_%Y_%H_%M_%S", time.localtime())
-			Blockdata["masterdir"] = "isac_directory"+timestring
+			timestring = time.strftime( "_%d_%b_%Y_%H_%M_%S", time.localtime() )
+			Blockdata["masterdir"] = "isac_directory" + timestring
 			li = len(Blockdata["masterdir"])
-			cmd = "{} {}".format("mkdir", Blockdata["masterdir"])
+			cmd = "{} {}".format( "mkdir", Blockdata["masterdir"] )
 			junk = cmdexecute(cmd)
 		else:
 			if not os.path.exists(Blockdata["masterdir"]):
@@ -1132,12 +1391,16 @@ def main(args):
 			li = 0
 	else:
 		li = 0
+
+	# main process broadcasts length of master directory string
 	li = mpi.mpi_bcast(li,1,mpi.MPI_INT,Blockdata["main_node"],mpi.MPI_COMM_WORLD)[0]
 
+	# main process broadcasts path to ISAC master directory
 	if( li > 0 ):
 		Blockdata["masterdir"] = mpi.mpi_bcast(Blockdata["masterdir"],li,MPI_CHAR,Blockdata["main_node"],mpi.MPI_COMM_WORLD)
 		Blockdata["masterdir"] = string.join(Blockdata["masterdir"],"")
 
+	# add stack_ali2d path to blockdata
 	Blockdata["stack_ali2d"] = "bdb:" + os.path.join(Blockdata["masterdir"], "stack_ali2d" )
 	
 	if(myid == main_node):
@@ -1166,65 +1429,51 @@ def main(args):
 		sxprint("****************************************************************************************************")
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
-	# Making sure all required options appeared.
-	for required_option in required_option_list:
-		if not options.__dict__[required_option]:
-			sxprint("\n ==%s== mandatory option is missing.\n"%required_option)
-			sxprint("Please run '" + progname + " -h' for detailed options")
-			return 1
-
+	#------------------------------------------------------[ zero group ]
 
 	create_zero_group()
 
+	#------------------------------------------------------[ gather image parameters ]
+	
 	if options.CTF and options.VPP: 
-		ERROR( "Options CTF and VPP cannot be used together", myid=myid )
+		ERROR("Options CTF and VPP cannot be used together", myid=myid)
 
-	#  former options
-	indep_run = 0
-	match_first = 0
+	# former options
+	indep_run    = 0
+	match_first  = 0
 	match_second = 0
-	max_round = 0
-	main_iter = 0
+	max_round    = 0
+	main_iter    = 0
 
-	#if options.indep_run < 2 or options.indep_run > 4:
-	#	ERROR("indep_run must equal 2, 3 or 4, please reset it and restart the program", "iter_isac", 1, myid)
-	#mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+	radi          = options.radius
+	target_radius = options.target_radius
+	target_nx     = options.target_nx  # dimension of particle images after downscaling
+	center_method = options.center_method
 
-	#if Blockdata["nproc"] % options.indep_run != 0:
-	#	ERROR("Number of MPI processes must be a multiplicity of indep_run, please reset it and restart the program", "iter_isac", 1, myid)
-	#mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-
-	#Blockdata["Ycolor"]	= Blockdata["myid"]/(Blockdata["nproc"]/options.indep_run)
-	#Blockdata["Ykey"]	= Blockdata["myid"]%(Blockdata["nproc"]/options.indep_run)
-	#Blockdata["Ygroup_comm"] = mpi.mpi_comm_split(mpi.MPI_COMM_WORLD, Blockdata["Ycolor"], Blockdata["Ykey"])
-	#Blockdata["nnodes_per_subgroup"] = Blockdata["nproc"]/(options.indep_run*Blockdata["no_of_processes_per_group"])
-
-	#print "  MPI STUFF BY_YANG ",Blockdata["myid"], options.indep_run, Blockdata["Ycolor"], Blockdata["Ykey"]#, Blockdata["Ymyid_on_node"]
-
-
-	radi  = options.radius
-	target_radius  = options.target_radius
-	target_nx  = options.target_nx
-	center_method  = options.center_method
-	if(radi < 1):  
+	if( radi < 1 ):
 		ERROR( "Particle radius has to be provided!", myid=myid )
 
-	target_xr = options.xr
+	target_xr  = options.xr
 	target_nx += target_xr - 1 # subtract one, which is default
 	
-	if (options.yr == -1): target_yr = options.xr
-	else: target_yr = options.yr
-
+	if (options.yr == -1):
+		target_yr = options.xr
+	else: 
+		target_yr = options.yr
 
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
-	# Initialization of stacks
-	if(myid == main_node): Blockdata["total_nima"] = EMUtil.get_image_count(Blockdata["stack"])
-	else: Blockdata["total_nima"] = 0
+	# get total number of images (nima) and broadcast
+	if(myid == main_node): 
+		Blockdata["total_nima"] = global_def.EMUtil.get_image_count(Blockdata["stack"])
+	else: 
+		Blockdata["total_nima"] = 0
 
 	Blockdata["total_nima"] = bcast_number_to_all(Blockdata["total_nima"], source_node = main_node)
 
 	nxrsteps = 4
+
+	#------------------------------------------------------[ initial 2D alignment (centering) ]
 
 	init2dir = os.path.join(Blockdata["masterdir"],"2dalignment")
 
@@ -1365,7 +1614,7 @@ def main(args):
 
 		# normalize all particle images after applying ctf correction (includes shrinking/re-scaling)
 		normalize_particle_images( aligned_images, shrink_ratio, target_radius, target_nx, params, 
-			                       filament_width=options.filament_width, ignore_helical_mask=options.filament_mask_ignore )
+								   filament_width=options.filament_width, ignore_helical_mask=options.filament_mask_ignore )
 
 		# gather normalized particles at the root node
 		util.gather_compacted_EMData_to_root(Blockdata["total_nima"], aligned_images, myid)
@@ -1401,13 +1650,20 @@ def main(args):
 		if( Blockdata["myid"] == Blockdata["main_node"] ):
 			sxprint("Skipping 2D alignment since it was already done!")
 
+	#------------------------------------------------------[ prepare ISAC loop to run from scratch or continue ]
+
 	error = 0
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
+
+		# fresh start
 		if( not os.path.exists( os.path.join(Blockdata["masterdir"], "main001", "generation000") ) ):
-			#  We do not create processed_images.txt selection file as it has to be initially empty
-			#  We do create all params filled with zeroes.
-			write_text_row([[0.0,0.0,0.0,-1] for i in range(Blockdata["total_nima"])], os.path.join(Blockdata["masterdir"], "all_parameters.txt") )
-			if(options.restart > -1): error=1
+			#  NOTE: we do not create processed_images.txt selection file as it has to be initially empty
+			#  we do, however, initialize all parameters with empty values
+			util.write_text_row( [[0.0,0.0,0.0,-1] for i in range(Blockdata["total_nima"])], os.path.join(Blockdata["masterdir"], "all_parameters.txt") )
+			if(options.restart > -1):
+				error = 1
+
+		# continue ISAC from a previous run
 		else:
 			if(options.restart == 0):
 				keepdoing_main = True
@@ -1416,26 +1672,33 @@ def main(args):
 					main_iter += 1
 					if( os.path.exists( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter ) ) ):
 						if( not  os.path.exists( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "finished" ) ) ):
-							cmd = "{} {}".format("rm -rf", os.path.join(Blockdata["masterdir"], "main%03d"%main_iter ))
+							cmd = "{} {}".format( "rm -rf", 
+												  os.path.join(Blockdata["masterdir"], "main%03d"%main_iter) )
 							junk = cmdexecute(cmd)
 							keepdoing_main = False
-					else: keepdoing_main = False
+					else: 
+						keepdoing_main = False
 
 			else:
 				main_iter = options.restart
-				if( not  os.path.exists( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "finished" ) ) ):  error = 2
+				if( not os.path.exists( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "finished")) ):
+					error = 2
 				else:
 					keepdoing_main = True
 					main_iter += 1
-					while(keepdoing_main):
-						if( os.path.exists( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter ) ) ):
-							cmd = "{} {}".format("rm -rf", os.path.join(Blockdata["masterdir"], "main%03d"%main_iter ))
-							junk = cmdexecute(cmd)
+					while( keepdoing_main ):
+						if( os.path.exists(os.path.join(Blockdata["masterdir"], "main%03d"%main_iter)) ):
+							cmd = "{} {}".format( "rm -rf", 
+												  os.path.join(Blockdata["masterdir"], "main%03d"%main_iter) )
+							junk = cmdexecute( cmd )
 							main_iter += 1
-						else: keepdoing_main = False
-			if( os.path.exists( os.path.join(Blockdata["masterdir"], "finished" ) ) ):				
-				cmd = "{} {}".format("rm -rf", os.path.join(Blockdata["masterdir"], "finished" ))
-				junk = cmdexecute(cmd)
+						else: 
+							keepdoing_main = False
+
+			if( os.path.exists(os.path.join(Blockdata["masterdir"], "finished")) ):
+				cmd = "{} {}".format( "rm -rf", 
+									  os.path.join(Blockdata["masterdir"], "finished") )
+				junk = cmdexecute( cmd )
 
 	error = bcast_number_to_all(error, source_node = Blockdata["main_node"])
 	if(error == 1):  
@@ -1445,102 +1708,122 @@ def main(args):
 
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
+	#------------------------------------------------------[ ISAC main loop ]
+	
 	keepdoing_main = True
 	main_iter = 0
 
 	while(keepdoing_main):
+
 		main_iter += 1
 		if( checkitem( os.path.join(Blockdata["masterdir"], "finished" ) ) ):
 			keepdoing_main = False
+		
 		else:
-			if( not checkitem( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter ) ) ):
+			if( not checkitem(os.path.join(Blockdata["masterdir"], "main%03d"%main_iter )) ):
 				#  CREATE masterdir
 				#  Create generation000 and put files in it
 				generation_iter = 0
-				if( Blockdata["myid"] == 0):
-					cmd = "{} {}".format("mkdir", os.path.join(Blockdata["masterdir"], "main%03d"%main_iter ))
+				if( Blockdata["myid"] == 0 ):
+					cmd = "{} {}".format( "mkdir", 
+										  os.path.join(Blockdata["masterdir"], "main%03d"%main_iter) )
 					junk = cmdexecute(cmd)
-					cmd = "{} {}".format("mkdir", os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter ))
+					cmd = "{} {}".format( "mkdir", 
+										  os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter) )
 					junk = cmdexecute(cmd)
-					if(main_iter>1):
+					if( main_iter > 1 ):
 						#  It may be restart from unfinished main, so replace files in master
-						cmd = "{} {} {} {}".format("cp -Rp", \
-						os.path.join(Blockdata["masterdir"], "main%03d"%(main_iter-1), "processed_images.txt" ), \
-						os.path.join(Blockdata["masterdir"], "main%03d"%(main_iter-1), "class_averages.hdf" ), \
-						os.path.join(Blockdata["masterdir"]) )
-						junk = cmdexecute(cmd)
-						junk = os.path.join(Blockdata["masterdir"], "main%03d"%(main_iter-1), "not_processed_images.txt" )
-						if( os.path.exists( junk ) ):
-							cmd = "{} {} {}".format("cp -Rp", \
-							junk, \
-							os.path.join(Blockdata["masterdir"]) )
-							junk = cmdexecute(cmd)
+						cmd = "{} {} {} {}".format( "cp -Rp",
+													os.path.join(Blockdata["masterdir"], "main%03d"%(main_iter-1), "processed_images.txt"),
+													os.path.join(Blockdata["masterdir"], "main%03d"%(main_iter-1), "class_averages.hdf"),
+													os.path.join(Blockdata["masterdir"]) )
+						junk = cmdexecute( cmd )
+						junk = os.path.join( Blockdata["masterdir"], "main%03d"%(main_iter-1), "not_processed_images.txt" )
+						if( os.path.exists(junk) ):
+							cmd = "{} {} {}".format( "cp -Rp", 
+													 junk, 
+													 os.path.join(Blockdata["masterdir"]) )
+							junk = cmdexecute( cmd )
 
-
-					if( os.path.exists( os.path.join(Blockdata["masterdir"], "not_processed_images.txt") ) ):
-						cmd = "{} {} {}".format("cp -Rp", os.path.join(Blockdata["masterdir"], "not_processed_images.txt" ), \
-						os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter, "to_process_next_%03d_%03d.txt"%(main_iter,generation_iter) ))
-						junk = cmdexecute(cmd)
+					if( os.path.exists( os.path.join(Blockdata["masterdir"], "not_processed_images.txt")) ):
+						cmd = "{} {} {}".format( "cp -Rp", 
+												 os.path.join(Blockdata["masterdir"], "not_processed_images.txt"),
+												 os.path.join(Blockdata["masterdir"], 
+															  "main%03d"%main_iter, 
+															  "generation%03d"%generation_iter, 
+															  "to_process_next_%03d_%03d.txt"%(main_iter,generation_iter)) )
+						junk = cmdexecute( cmd )
 					else:
-						util.write_text_file(list(range(Blockdata["total_nima"])),\
-						os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter, "to_process_next_%03d_%03d.txt"%(main_iter,generation_iter) ))
-				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+						util.write_text_file( list(range(Blockdata["total_nima"])),
+											 os.path.join(Blockdata["masterdir"], 
+														  "main%03d"%main_iter, 
+														  "generation%03d"%generation_iter, 
+														  "to_process_next_%03d_%03d.txt"%(main_iter,generation_iter)) )
+				mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 
-			if( not checkitem( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "finished") ) ):
+			if( not checkitem(os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "finished")) ):
 				keepdoing_generation = True
 				generation_iter = 0
 	
-				while(keepdoing_generation):
+				while( keepdoing_generation ):
 					generation_iter += 1
-					if checkitem( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter ) ) :
-						if checkitem( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter, "finished") ) :
+					if checkitem( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter) ):
+						if checkitem( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter, "finished") ):
 							okdo = False
 						else:
 							#  rm -f THIS GENERATION
-							if( Blockdata["myid"] == 0):
-								cmd = "{} {}".format("rm -rf", os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter ))
-								junk = cmdexecute(cmd)
-							mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+							if( Blockdata["myid"] == 0 ):
+								cmd = "{} {}".format( "rm -rf", 
+													  os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter) )
+								junk = cmdexecute( cmd )
+							mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 							okdo = True
 					else:
 						okdo = True
 
 					if okdo:
-						if( Blockdata["myid"] == 0):
-							cmd = "{} {}".format("mkdir", os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter ))
-							junk = cmdexecute(cmd)
-						mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-						#sxprint  "  WILLCALL  ",Blockdata["myid"]
-						#mpi_finalize()
-						#exit()
+						if( Blockdata["myid"] == 0 ):
+							cmd = "{} {}".format( "mkdir", 
+												  os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter) )
+							junk = cmdexecute( cmd )
+						mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
+
 						# DO THIS GENERATION
 						keepdoing_main, keepdoing_generation = do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, target_radius, options)
 						# Preserve results obtained so far
 						if( not keepdoing_generation ):
-							if( Blockdata["myid"] == 0):
-								cmd = "{} {} {} {}".format("cp -Rp", \
-								os.path.join(Blockdata["masterdir"], "processed_images.txt" ), \
-								os.path.join(Blockdata["masterdir"], "class_averages.hdf" ), \
-								os.path.join(Blockdata["masterdir"], "main%03d"%main_iter) )
-								junk = cmdexecute(cmd)
-								junk = os.path.join(Blockdata["masterdir"], "not_processed_images.txt" )
-								if( os.path.exists( junk ) ):
-									cmd = "{} {} {}".format("cp -Rp", \
-									junk, \
-									os.path.join(Blockdata["masterdir"], "main%03d"%main_iter) )
-									junk = cmdexecute(cmd)
+							if( Blockdata["myid"] == 0 ):
+								cmd = "{} {} {} {}".format( "cp -Rp",
+															os.path.join(Blockdata["masterdir"], "processed_images.txt"),
+															os.path.join(Blockdata["masterdir"], "class_averages.hdf"),
+															os.path.join(Blockdata["masterdir"], "main%03d"%main_iter) )
+								junk = cmdexecute( cmd )
+								junk = os.path.join( Blockdata["masterdir"], "not_processed_images.txt" )
+								if( os.path.exists(junk) ):
+									cmd = "{} {} {}".format( "cp -Rp",
+															 junk,
+															 os.path.join(Blockdata["masterdir"], "main%03d"%main_iter) )
+									junk = cmdexecute( cmd )
 
-	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-	if( Blockdata["myid"] == 0):
-		if(os.path.exists(os.path.join(Blockdata["masterdir"],"class_averages.hdf"))):
-			cmd = "{} {} {} {} {} {} {} {} {} {}".format("sxchains.py", os.path.join(Blockdata["masterdir"],"class_averages.hdf"),\
-			os.path.join(Blockdata["masterdir"],"junk.hdf"),os.path.join(Blockdata["masterdir"],"ordered_class_averages.hdf"),\
-			"--circular","--radius=%d"%target_radius , "--xr=%d"%(target_xr+1),"--yr=%d"%(target_yr+1),"--align", ">/dev/null")
-			junk = cmdexecute(cmd)
-			cmd = "{} {}".format("rm -rf", os.path.join(Blockdata["masterdir"], "junk.hdf") )
-			junk = cmdexecute(cmd)
+	mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
+	if( Blockdata["myid"] == 0 ):
+		if( os.path.exists(os.path.join(Blockdata["masterdir"],"class_averages.hdf")) ):
+			cmd = "{} {} {} {} {} {} {} {} {} {}".format( "sxchains.py", 
+														  os.path.join(Blockdata["masterdir"],"class_averages.hdf"),
+														  os.path.join(Blockdata["masterdir"],"junk.hdf"),
+														  os.path.join(Blockdata["masterdir"],"ordered_class_averages.hdf"),
+														  "--circular",
+														  "--radius=%d"%target_radius ,
+														  "--xr=%d"%(target_xr+1),
+														  "--yr=%d"%(target_yr+1),
+														  "--align", 
+														  ">/dev/null" )
+			junk = cmdexecute( cmd )
+			cmd = "{} {}".format( "rm -rf", 
+								  os.path.join(Blockdata["masterdir"], "junk.hdf") )
+			junk = cmdexecute( cmd )
 		else:
-			sxprint(" ISAC could not find any stable class averaging, terminating...")
+			print( "ISAC could not find any stable class averaging, terminating..." )
 
 	mpi.mpi_finalize()
 	return
