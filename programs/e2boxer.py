@@ -387,7 +387,7 @@ class boxerByRef(QtCore.QObject):
 	"""Simple reference-based cross-corrlation picker with exhaustive rotational search"""
 	@staticmethod
 	def setup_gui(gridlay,boxerwindow=None):
-		boxerByRef.threshold=ValSlider(None,(0.1,8),"Threshold",6.0,90)
+		boxerByRef.threshold=ValSlider(None,(0.1,8),"Threshold",1.5,90)
 		gridlay.addWidget(boxerByRef.threshold,0,0)
 	
 	@staticmethod
@@ -1165,7 +1165,8 @@ aboxmodes = [ ("Local Search","auto_local",boxerLocal),
 	     ("by Ref","auto_ref",boxerByRef), 
 #	     ("Gauss","auto_gauss",boxerGauss),
 	     ("NeuralNet", "auto_convnet", boxerConvNet)]
-boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "refbg":(0.7,0.7,0), "unknown":[.4,.1,.1], "auto_local":(.3,.1,.4), "auto_ref":(.1,.3,.4), "auto_gauss":(.4,.1,.4),  "auto_convnet":(.1,.5,.1)}
+#boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "refbg":(0.7,0.7,0), "unknown":[.4,.1,.1], "auto_local":(.3,.1,.4), "auto_ref":(.1,.3,.4), "auto_gauss":(.4,.1,.4),  "auto_convnet":(.1,.5,.1)}
+boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "refbg":(0.7,0.7,0), "unknown":[.4,.1,.1], "auto_local":(.3,.1,.4), "auto_ref":(.1,.3,.4), "auto_gauss":(.4,.4,.1),  "auto_convnet":(.3,.1,.4)}
 
 class GUIBoxer(QtWidgets.QWidget):
 	# Dictionary of autopickers
@@ -1868,8 +1869,11 @@ class GUIBoxer(QtWidgets.QWidget):
 		ptclsize=self.vbbpsize.getValue()
 		try: color=self.boxcolors[box[2]]
 		except: color=self.boxcolors["unknown"]
-		self.wimage.add_shape("box{}".format(i),EMShape(("rect",color[0],color[1],color[2],box[0]-boxsize//2,box[1]-boxsize//2,box[0]+boxsize//2,box[1]+boxsize//2,2)))
-		self.wimage.add_shape("cir{}".format(i),EMShape(("circle",color[0],color[1],color[2],box[0],box[1],old_div(ptclsize,2),1.5)))
+		#self.wimage.add_shape("box{}".format(i),EMShape(("rect",color[0],color[1],color[2],box[0]-boxsize//2,box[1]-boxsize//2,box[0]+boxsize//2,box[1]+boxsize//2,2)))
+		#self.wimage.add_shape("cir{}".format(i),EMShape(("circle",color[0],color[1],color[2],box[0],box[1],old_div(ptclsize,2),1.5)))
+		self.wimage.add_shape("box{}".format(i),EMShape(("rect",color[0],color[1],color[2],box[0]-boxsize//2,box[1]-boxsize//2,box[0]+boxsize//2,box[1]+boxsize//2,2.5)))
+		self.wimage.add_shape("cir{}".format(i),EMShape(("circle",color[0],color[1],color[2],box[0],box[1],old_div(ptclsize,2),2)))
+
 
 		boxim=self.micrograph.get_clip(Region(box[0]-boxsize//2,box[1]-boxsize//2,boxsize,boxsize))
 		boxim["ptcl_source_coord"]=(box[0],box[1])
@@ -1897,7 +1901,7 @@ class GUIBoxer(QtWidgets.QWidget):
 		boxes=[b for b in boxes if b[0]-boxsize2>=0 and b[1]-boxsize2>=0 and b[0]+boxsize2<self.micrograph["nx"] and b[1]+boxsize2<self.micrograph["ny"]]
 		
 		# if we got nothing, we just leave the current results alone
-		if len(boxes)==0 : return
+		#if len(boxes)==0 : return
 	
 		bname=boxes[0][2]
 

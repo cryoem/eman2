@@ -1284,7 +1284,7 @@ class EMImage2DWidget(EMGLWidget):
 			for k in list(self.shapes.keys()):
 				shape = self.shapes[k]
 				if not isinstance(shape,EMShape) : continue
-				glLineWidth(2)
+				glLineWidth(2*self.devicePixelRatio())
 				if shape.isanimated:
 					isanimated = True
 					alpha = shape.blend
@@ -1299,7 +1299,7 @@ class EMImage2DWidget(EMGLWidget):
 			except:pass
 			GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA);
 
-		glPointSize(2)
+		glPointSize(2*self.devicePixelRatio())
 		for k,s in list(self.shapes.items()):
 			### handle boxes for 3D images
 			if s.shape[0] == "ellipse":
@@ -1356,7 +1356,7 @@ class EMImage2DWidget(EMGLWidget):
 					p = s.shape
 					GL.glColor(*p[1:4])
 					v= (p[4],p[5])
-					GL.glLineWidth(p[7])
+					GL.glLineWidth(p[7]*self.devicePixelRatio())
 					GL.glTranslate(v[0],v[1],0)
 					GL.glScalef(p[6],p[6],1.0)
 					glCallList(self.circle_dl)
@@ -1368,7 +1368,7 @@ class EMImage2DWidget(EMGLWidget):
 					v= (p[4],p[5])
 					v2=(p[4]+1,p[5]+1)
 					sc=v2[0]-v[0]
-					GL.glLineWidth(p[9])
+					GL.glLineWidth(p[9]*self.devicePixelRatio())
 					GL.glTranslate(v[0],v[1],0)
 					GL.glScalef((v2[0]-v[0]),(v2[1]-v[1]),1.0)
 					GL.glRotatef(p[8],0,0,1.0)
