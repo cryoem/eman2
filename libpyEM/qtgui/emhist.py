@@ -1311,7 +1311,7 @@ class EMHistogramInspector(QtWidgets.QWidget):
 		for i,j in enumerate(keys) :
 			a = QtWidgets.QListWidgetItem(j)
 			a.setFlags(flags)
-			try: a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
+			try: a.setForeground(qt_color_map[colortypes[parms[j][0]]])
 			except:
 				print("Color error")
 				print(list(sorted(parms.keys())))

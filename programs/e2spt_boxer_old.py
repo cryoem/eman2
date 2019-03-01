@@ -1742,7 +1742,7 @@ class EMTomoSetsPanel(QtWidgets.QWidget):
 			kname="{:02d} :: {}".format(int(k), self.target().sets[k])
 			item=QtWidgets.QListWidgetItem(kname)
 			item.setFlags(self.itemflags)
-			item.setTextColor(self.target().setcolors[i%len(self.target().setcolors)])
+			item.setForeground(self.target().setcolors[i%len(self.target().setcolors)])
 			self.setlist.addItem(item)
 			if k in viskeys : item.setCheckState(Qt.Checked)
 			else : item.setCheckState(Qt.Unchecked)

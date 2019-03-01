@@ -443,10 +443,10 @@ class TomoListWidget(QtWidgets.QListWidget):
 		for i,key in enumerate(self.itemlst):
 			if key[0] in lst:
 				self.item(i).setText(self.get_text(key[0], key[1], dic[key[0]]))
-				self.item(i).setTextColor(QtGui.QColor("blue"))
+				self.item(i).setForeground(QtGui.QColor("blue"))
 			else:
 				self.item(i).setText(self.get_text(key[0], key[1]))
-				self.item(i).setTextColor(QtGui.QColor("black"))
+				self.item(i).setForeground(QtGui.QColor("black"))
 
 		
 	

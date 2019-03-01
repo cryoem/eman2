@@ -2690,7 +2690,7 @@ class EMMXSetsPanel(QtWidgets.QWidget):
 		for i,k in enumerate(keys):
 			item=QtWidgets.QListWidgetItem(k)
 			item.setFlags(self.itemflags)
-			item.setTextColor(self.target().setcolors[i%len(self.target().setcolors)])
+			item.setForeground(self.target().setcolors[i%len(self.target().setcolors)])
 			self.setlist.addItem(item)
 			if k in viskeys : item.setCheckState(Qt.Checked)
 			else : item.setCheckState(Qt.Unchecked)

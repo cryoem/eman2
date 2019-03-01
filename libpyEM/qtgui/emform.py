@@ -229,7 +229,7 @@ class EMParamTable(list):
 						# exluded items are displayed but they are not selectable
 						# this was originally added for e2boxer -the write output form needs to show which images are are excluded
 						item.setFlags(flag3)
-						item.setTextColor(QtGui.QColor(0,128,0))
+						item.setForeground(QtGui.QColor(0,128,0))
 						item.setToolTip("This item is excluded")
 					if param.defaultunits != None and len(param.defaultunits) > 0:
 						if choice in param.defaultunits:
@@ -458,7 +458,7 @@ class EMFileTable(QtWidgets.QTableWidget):
 			if self.icon != None: item = QtWidgets.QTableWidgetItem(self.icon,self.display_name(name))
 			else: item = QtWidgets.QTableWidgetItem(self.display_name(name))
 
-			if not file_exists(name):item.setTextColor(QtGui.QColor(0,128,0))
+			if not file_exists(name):item.setForeground(QtGui.QColor(0,128,0))
 				
 			if name not in self.exclusions :
 				item.setFlags(flag2|flag3)
@@ -467,7 +467,7 @@ class EMFileTable(QtWidgets.QTableWidget):
 				# exluded items are displayed but they are not selectable
 				# this was originally added for e2boxer -the write output form needs to show which images are are excluded
 				item.setFlags(flag3)
-				item.setTextColor(QtGui.QColor(0,128,0))
+				item.setForeground(QtGui.QColor(0,128,0))
 				item.setToolTip("This item is excluded")
 			
 			if name in self.default_selections:
