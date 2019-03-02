@@ -10414,8 +10414,8 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi(EMData* dataimage, EMData* c
 		float* circ1b = cimage->get_data();
 		//for (int ic = 0; ic < 6; ic++)  cout<<"  "<<circ1b[ic];
 		//cout<<endl;
-		for (int ic = 0; ic < n_coarse_ang; ic++) {
-			int offset = lencrefim*ic;
+		for (size_t ic = 0; ic < n_coarse_ang; ic++) {
+			size_t offset = lencrefim*ic;
 	//cout<<" offset "<<ic<<"  "<<offset<<"  "<<startpsi[ic]<<endl;
 			for (i=0; i<maxrin; i++)  q[i] = 0.0f;
 
@@ -10515,8 +10515,8 @@ vector<float> Util::multiref_Crosrng_msg_stack_stepsi_scores(EMData* dataimage, 
 		float* circ1b = cimage->get_data();
 		//for (int ic = 0; ic < 6; ic++)  cout<<"  "<<circ1b[ic];
 		//cout<<endl;
-		for (int ic = 0; ic < n_coarse_ang; ic++) {
-			int offset = lencrefim*ic;
+		for (size_t ic = 0; ic < n_coarse_ang; ic++) {
+			size_t offset = lencrefim*ic;
 	//cout<<" offset "<<ic<<"  "<<offset<<"  "<<startpsi[ic]<<endl;
 			for (i=0; i<maxrin; i++)  q[i] = 0.0f;
 
@@ -10812,10 +10812,10 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 		for (int iqc = 0; iqc < n_assignments_of_refangles_to_angles; iqc++) {
 			int ic = assignments_of_refangles_to_angles[iqc];
 			vector<int>::iterator it = std::find(assignments_of_refangles_to_cones.begin(), assignments_of_refangles_to_cones.end(), ic);
-			int lixi = std::distance(assignments_of_refangles_to_cones.begin(), it);
+			size_t lixi = std::distance(assignments_of_refangles_to_cones.begin(), it);
 
 			//if(lixi < 0)  cout<<"   PROBLEM"<<endl; 
-			int offset = lencrefim*lixi;
+			size_t offset = lencrefim*lixi;
 	//cout<<" offset "<<ic<<"  "<<offset<<"  "<<startpsi[ic]<<endl;
 			for (i=0; i<maxrin; i++)  q[i] = 0.0f;
 
@@ -10976,8 +10976,8 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 			}*/
 			//if(lixi < 0)  cout<<"   PROBLEM"<<endl; 
 		for (int ic = 0; ic < n_assignments_of_refangles_to_angles; ic++) {
-			int lixi = assignments_of_refangles_to_angles[ic];
-			int offset = lencrefim*lixi;
+			size_t lixi = assignments_of_refangles_to_angles[ic];
+			size_t offset = lencrefim*lixi;
 	//cout<<" offset "<<ic<<"  "<<offset<<"  "<<startpsi[ic]<<endl;
 			for (i=0; i<maxrin; i++)  q[i] = 0.0f;
 
@@ -29628,7 +29628,7 @@ void Util::cleanup_threads() {
 
 void Util::version()
 {
-	cout <<"   Source modification date: 02/16/2019" <<  endl;
+	cout <<"   Source modification date: 03/02/2019" <<  endl;
 
 /*
 This is test program for testing FFT speed 02/16/2019 PAP
