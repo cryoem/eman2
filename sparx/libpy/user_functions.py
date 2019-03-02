@@ -41,6 +41,8 @@ from builtins import object
 from global_def import *
 from EMAN2_cppwrap import *
 
+import user_functions_meridien
+
 ref_ali2d_counter = -1
 def ref_ali2d( ref_data ):
 	from utilities    import print_msg
@@ -957,27 +959,6 @@ def dovolume( ref_data ):
 
 	return  vol, cs
 
-def do_volume_mask(ref_data):
-	"""
-		1. - volume
-		2. - Tracker, see meridien
-		3. - current iteration number
-	"""
-	from EMAN2	import Util
-	from morphology import cosinemask
-	from utilities  import get_im
-
-	# Retrieve the function specific input arguments from ref_data
-	vol		= ref_data[0]
-	Tracker		= ref_data[1]
-	mainiteration	= ref_data[2]
-
-
-	if(Tracker["constants"]["mask3D"] == None):  vol = cosinemask(vol, radius = Tracker["constants"]["radius"])
-	else:  Util.mul_img(vol, get_im(Tracker["constants"]["mask3D"]))
-
-	return vol
-
 def do_volume_mrk02(ref_data):
 	"""
 		data - projections (scattered between cpus) or the volume.  If volume, just do the volume processing
@@ -1472,12 +1453,15 @@ class factory_class(object):
 		self.contents["steady"]             = steady
 		self.contents["dovolume"]           = dovolume	 
 		self.contents["temp_dovolume"]      = temp_dovolume
-		self.contents["do_volume_mask"]     = do_volume_mask
 		self.contents["do_volume_mrk02"]    = do_volume_mrk02	 
 		self.contents["do_volume_mrk03"]    = do_volume_mrk03
 		self.contents["do_volume_mrk04"]    = do_volume_mrk04
 		self.contents["do_volume_mrk05"]    = do_volume_mrk05
 		self.contents["constant"]           = constant	 
+
+		# User function used in meridien
+		self.contents["do_volume_mask"]     = user_functions_meridien.do_volume_mask
+		self.contents["ai_spa"]     = user_functions_meridien.ai_spa
 
 	def __getitem__(self,index):
 

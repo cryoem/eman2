@@ -98,6 +98,7 @@ from logger import Logger, BaseLogger_Files
 import global_def
 from global_def import sxprint, ERROR
 
+import user_functions
 from global_def import *
 
 from mpi   	import  *
@@ -202,268 +203,6 @@ def create_zero_group():
 #  create_subgroup()
 #if( Blockdata["subgroup_myid"] > -1 ): mpi_comm_free(Blockdata["subgroup_comm"])
 
-def AI( fff, anger, shifter, chout = False):
-	global Tracker, Blockdata
-	#  chout - if true, one can print, call the program with, chout = (Blockdata["myid"] == Blockdata["main_node"])
-	#  fff (fsc), anger, shifter are coming from the previous iteration
-	#  
-	#  Possibilities we will consider:
-	#    1.  resolution improved: keep going with current settings.
-	#    2.  resolution stalled and no pwadjust: turn on pwadjust
-	#    3.  resolution stalled and pwadjust: move to the next phase
-	#    4.  resolution decreased: back off and move to the next phase
-	#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
-	from sys import exit
-	
-	###  checkconvergence  merged in AI  02/16/2017
-	# when the following conditions are all true
-	#1. has_fine_enough_angular_sampling  True  #   Current sampling are fine enough
-	#2. nr_iter_wo_resol_gain >= MAX_NR_ITER_WO_RESOL_GAIN # 
-	#3. nr_iter_wo_large_hidden_variable_changes >= MAX_NR_ITER_WO_LARGE_HIDDEN_VARIABLE_CHANGES
-
-	keepgoing = 1
-	if(Blockdata["myid"] == Blockdata["main_node"]): line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-
-	if(Tracker["mainiteration"] == 1):
-		Tracker["state"] = "INITIAL"
-
-		inc = Tracker["currentres"]
-		if Tracker["large_at_Nyquist"]:	inc += int(0.25 * Tracker["constants"]["nnxo"]/2 +0.5)
-		else:							inc += Tracker["nxstep"]
-		Tracker["nxinit"] = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
-		Tracker["local"]  = False
-		Tracker["changed_delta"] = False
-		#  Do not use CTF during first iteration
-		#Tracker["applyctf"]    = False
-		#Tracker["constants"]["best"] = Tracker["mainiteration"]
-	else:
-		if( Tracker["mainiteration"] == 2 ):  Tracker["state"] = "PRIMARY"
-		l05 = -1
-		l01 = -1
-		for i in range(len(fff)):
-			if(fff[i] < 0.5):
-				l05 = i-1
-				break
-		for i in range(l05+1, len(fff)):
-			if(fff[i] < 0.143):
-				l01 = i-1
-				break
-		l01 = max(l01,-1)
-
-		if( chout ): sxprint("  AI: TR[nxstep], TR[currentres], TR[fsc143], l05, l01, fff[Tracker[nxinit]//2-1]:",Tracker["nxstep"],Tracker["currentres"],Tracker["fsc143"], l05, l01,fff[Tracker["nxinit"]//2-1])
-		Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
-		if(Tracker["state"] == "FINAL" or Tracker["state"] == "RESTRICTED"): Tracker["large_at_Nyquist"] = (fff[Tracker["nxinit"]//2] > 0.1 or fff[Tracker["nxinit"]//2-1] > 0.2)
-		else:   Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2-1] > 0.2
-
-		if( Tracker["mainiteration"] == 2 ):  
-			maxres     = Tracker["constants"]["inires"]
-			maxres_143 = l01
-		else:                                 
-			maxres     = max(l05, 5)  #  5 is minimum resolution of the map, could be set by the user
-			maxres_143 = l01
-		try:    bestres_143 = Tracker["bestres_143"]
-		except: Tracker["bestres_143"] = maxres_143
-		if (maxres >= Tracker["bestres"]) and (maxres_143 >=Tracker["bestres_143"]):
-			Tracker["bestres"]				= maxres
-			Tracker["bestres_143"]          = maxres_143
-			Tracker["constants"]["best"] 	= max(Tracker["mainiteration"]-1, 3)#
-
-		if( maxres > Tracker["currentres"]):
-			Tracker["no_improvement"] 		= 0
-			Tracker["no_params_changes"] 	= 0
-		else:    Tracker["no_improvement"] += 1
-
-		Tracker["currentres"] = maxres
-		Tracker["fsc143"]     = maxres_143
-
-		params_changes = anger >= 1.03*Tracker["anger"] and shifter >= 1.03*Tracker["shifter"]
-
-		#  figure changes in params
-		if( chout ):  sxprint("  Incoming  parameters  %10.3f  %10.3f  %10.3f  %10.3f   %s"%(Tracker["anger"],anger,Tracker["shifter"],shifter,params_changes))
-		if( params_changes ):	Tracker["no_params_changes"] += 1
-		else:					Tracker["no_params_changes"]  = 0
-
-		if( anger < Tracker["anger"] ):			Tracker["anger"]   = anger
-		if( shifter < Tracker["shifter"] ):		Tracker["shifter"] = shifter
-
-		inc = Tracker["currentres"]
-		if Tracker["large_at_Nyquist"]:	
-			inc += int(0.25 * Tracker["constants"]["nnxo"]/2 +0.5)
-			slim = int(Tracker["nxinit"]*1.09)
-			tmp = min(max(2*inc,slim+slim%2), Tracker["constants"]["nnxo"] )
-		else:
-			inc += Tracker["nxstep"]
-			tmp = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
-
-		if( chout ): sxprint("  IN AI: nxstep, large at Nyq, outcoming current res, adjusted current, inc, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
-
-		Tracker["nxinit"] = tmp
-		Tracker["changed_delta"] = False
-		#  decide angular step and translations
-		if((Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) and (Tracker["no_params_changes"]>=Tracker["constants"]["limit_changes"]) and (not Tracker["large_at_Nyquist"])):
-			if( Tracker["delta"] < 0.75*Tracker["acc_rot"] ):#<<<----it might cause converge issues when shake is 0.0
-				keepgoing = 0
-				if(Blockdata["myid"] == Blockdata["main_node"]):
-					sxprint(line,"Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
-			else:
-				step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
-				if( chout ):   sxprint("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
-				Tracker["xr"] = step_range
-				Tracker["ts"] = step
-				Tracker["delta"] /= 2.0
-				Tracker["changed_delta"] = True
-				if( Tracker["delta"] <= 3.75/2.0 ):  #  MOVE DOWN TO RESTRICTED
-					Tracker["an"]		= 6*Tracker["delta"]
-					if( Tracker["delta"] <= degrees(atan(0.25/Tracker["constants"]["radius"])) ): Tracker["state"] = "FINAL"
-					else:	Tracker["state"] = "RESTRICTED"
-				else:
-					Tracker["an"] = -1
-					if( Tracker["state"] == "PRIMARY" ):  Tracker["state"] = "EXHAUSTIVE"
-				if( chout ): sxprint("  IN AI there was reset due to no changes, adjust stuff  ",Tracker["no_improvement"],Tracker["no_params_changes"],Tracker["delta"],Tracker["xr"],Tracker["ts"], Tracker["state"])
-				# check convergence before reset
-				if( (Tracker["state"] == "FINAL") and (Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) ):
-					keepgoing = 0
-					if(Blockdata["myid"] == Blockdata["main_node"]):
-						sxprint(line,"Convergence criterion B is reached (angular step delta smaller than the limit imposed by the structure radius)")
-				Tracker["no_improvement"]		= 0
-				Tracker["no_params_changes"]	= 0
-				Tracker["anger"]				= 1.0e23
-				Tracker["shifter"]				= 1.0e23
-	Tracker["keepfirst"] = -1
-	return keepgoing
-	
-def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
-	global Tracker, Blockdata
-	#  chout - if true, one can sxprint, call the program with, chout = (Blockdata["myid"] == Blockdata["main_node"])
-	#  fff (fsc), anger, shifter are coming from the previous iteration
-	#  
-	#  Possibilities we will consider:
-	#    1.  resolution improved: keep going with current settings.
-	#    2.  resolution stalled and no pwadjust: turn on pwadjust
-	#    3.  resolution stalled and pwadjust: move to the next phase
-	#    4.  resolution decreased: back off and move to the next phase
-	#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
-	from sys import exit
-	
-	###  checkconvergence  merged in AI  02/16/2017
-	# when the following conditions are all true
-	#1. has_fine_enough_angular_sampling  True  #   Current sampling are fine enough
-	#2. nr_iter_wo_resol_gain >= MAX_NR_ITER_WO_RESOL_GAIN # 
-	#3. nr_iter_wo_large_hidden_variable_changes >= MAX_NR_ITER_WO_LARGE_HIDDEN_VARIABLE_CHANGES
-
-	keepgoing = 1
-
-	l05 = -1
-	l01 = -1
-	for i in range(len(fff)):
-		if(fff[i] < 0.5):
-			l05 = i-1
-			break
-	for i in range(l05+1, len(fff)):
-		if(fff[i] < 0.143):
-			l01 = i-1
-			break
-	l01 = max(l01,-1)
-
-	if( chout ): sxprint("  AI: Tracker[nxstep], TR[currentres], Tracker[fsc143], l05, l01, fff[Tracker[nxinit]//2-1]:",Tracker["nxstep"],Tracker["currentres"],Tracker["fsc143"], l05, l01,fff[Tracker["nxinit"]//2-1])
-	if(Blockdata["myid"] == Blockdata["main_node"]): line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-
-
-	if(Tracker["mainiteration"] == 1):
-		Tracker["state"]		= "PRIMARY"
-		Tracker["currentres"]	= l05
-		Tracker["fsc143"]		= l01
-		Tracker["large_at_Nyquist"] = (fff[Tracker["nxinit"]//2] > 0.1 or fff[Tracker["nxinit"]//2-1] > 0.2)
-		Tracker["nxinit"]	= min(2*Tracker["fsc143"], Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
-		Tracker["local"]	= True
-		Tracker["an"]		= 6*Tracker["delta"]
-		Tracker["no_improvement"] 		= 0
-		Tracker["no_params_changes"] 	= 0
-		Tracker["anger"]				= 1.0e23
-		Tracker["shifter"]				= 1.0e23
-		Tracker["constants"]["best"] = Tracker["mainiteration"]
-		if( Blockdata["myid"] == Blockdata["main_node"] ):
-			sxprint(line, "ITERATION  #%2d. Resolution achieved       : %3d/%3d pixels, %5.2fA/%5.2fA."%\
-				(Tracker["mainiteration"], \
-				Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
-				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"])))
-	else:
-		if(Tracker["mainiteration"] > 3):  Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
-		if(Tracker["state"] == "FINAL" or Tracker["state"] == "RESTRICTED"): Tracker["large_at_Nyquist"] = (fff[Tracker["nxinit"]//2] > 0.1 or fff[Tracker["nxinit"]//2-1] > 0.2)
-		else:   Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2-1] > 0.2
-
-		maxres     = max(l05, 5)
-		maxres_143 = l01
-		try:    bestres_143 = Tracker["bestres_143"]
-		except: Tracker["bestres_143"] = maxres_143
-		if( maxres >= Tracker["bestres"]) and  (maxres_143 >= Tracker["bestres_143"]):
-			Tracker["bestres"]				= maxres
-			Tracker["bestres_143"]			= maxres_143
-			Tracker["constants"]["best"] 	= max(Tracker["mainiteration"]-1, 3)
-
-		if( maxres > Tracker["currentres"]):
-			Tracker["no_improvement"] 		= 0
-			Tracker["no_params_changes"] 	= 0
-		else:    Tracker["no_improvement"] += 1
-
-		Tracker["currentres"] = maxres
-		Tracker["fsc143"]     = maxres_143
-
-		params_changes = anger >= 1.03*Tracker["anger"] and shifter >= 1.03*Tracker["shifter"]
-
-		#  figure changes in params
-		if( chout ):  sxprint("  Incoming  parameters  %10.3f  %10.3f  %10.3f  %10.3f   %s"%(Tracker["anger"],anger,Tracker["shifter"],shifter,params_changes))
-		if( params_changes ):	Tracker["no_params_changes"] += 1
-		else:					Tracker["no_params_changes"]  = 0
-
-		if( anger < Tracker["anger"] ):			Tracker["anger"]   = anger
-		if( shifter < Tracker["shifter"] ):		Tracker["shifter"] = shifter
-
-		inc = Tracker["currentres"]
-		if Tracker["large_at_Nyquist"]:	
-			inc += int(0.25 * Tracker["constants"]["nnxo"]/2 +0.5)
-			slim = int(Tracker["nxinit"]*1.09)
-			tmp = min(max(2*inc,slim+slim%2), Tracker["constants"]["nnxo"] )
-		else:
-			inc += Tracker["nxstep"]
-			tmp = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
-
-		if( chout ): sxprint("  IN AI: nxstep, large at Nyq, outcoming current res, adjusted current, inc, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
-
-		Tracker["nxinit"]        = tmp
-		Tracker["changed_delta"] = False
-		#  decide angular step and translations
-		if((Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) and (Tracker["no_params_changes"]>=Tracker["constants"]["limit_changes"]) and (not Tracker["large_at_Nyquist"])):
-			if( Tracker["delta"] < 0.75*Tracker["acc_rot"] ):#<<<----it might cause converge issues when shake is 0.0
-				keepgoing = 0
-				if(Blockdata["myid"] == Blockdata["main_node"]):
-					sxprint(line,"Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
-			else:
-				step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
-				if( chout ):   sxprint("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
-				Tracker["xr"] = step_range
-				Tracker["ts"] = step
-				Tracker["delta"] /= 2.0
-				Tracker["changed_delta"] = True
-				if( Tracker["delta"] <= 3.75/2.0 or True):  #  MOVE DOWN TO RESTRICTED
-					Tracker["an"]		= 6*Tracker["delta"]
-					if( Tracker["delta"] <= degrees(atan(0.25/Tracker["constants"]["radius"])) ): Tracker["state"] = "FINAL"
-					else:	Tracker["state"] = "RESTRICTED"
-				else:
-					Tracker["an"] = -1
-					if( Tracker["state"] == "PRIMARY" ):  Tracker["state"] = "EXHAUSTIVE"
-				if( chout ): sxprint("  IN AI there was reset due to no changes, adjust stuff  ",Tracker["no_improvement"],Tracker["no_params_changes"],Tracker["delta"],Tracker["xr"],Tracker["ts"], Tracker["state"])
-				# check convergence before reset
-				if( (Tracker["state"] == "FINAL") and (Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) ):
-					keepgoing = 0
-					if(Blockdata["myid"] == Blockdata["main_node"]):
-						sxprint(line,"Convergence criterion B is reached (angular step delta smaller than the limit imposed by the structure radius)")
-				Tracker["no_improvement"]		= 0
-				Tracker["no_params_changes"]	= 0
-				Tracker["anger"]				= 1.0e23
-				Tracker["shifter"]				= 1.0e23
-	Tracker["keepfirst"] = -1
-	return keepgoing
 
 def params_changes( params, oldparams ):
 	#  Indexes contain list of images processed - sorted integers, subset of the full range.
@@ -487,26 +226,14 @@ def params_changes( params, oldparams ):
 
 	return round(anger/n,5), round(sqrt(shifter/2/n),5)
 
-def compute_search_params(acc_trans, shifter, old_range):
-	# step refer to the fine sampled step; while the range remains
-	if(old_range == 0.0 and shifter != 0.0):  old_range = acc_trans
-	step   = min(1.5, 0.75*acc_trans)   #remove 2 
-	new_range  = min( 1.3*old_range, 5.0*shifter)
-	new_range  = max(new_range, 3.0*step) # change 1.5 to 3.0
-	if new_range > 8.0*step :   new_range /= 2.0 # change 4 to 8
-	if new_range > 8.0*step :   step   = new_range/8.0 # change 4 to 8
-	#  change 4. to 8. on account of the fact that we return actual shift which is then doubled for coarse search.
-	if(new_range == 0.0):  step = 0.5  # change 1.0 to 0.5
-	return new_range, step
-
-def assign_particles_to_groups(minimum_group_size = 10, asubset= None):
+def assign_particles_to_groups(minimum_group_size = 10, asubset= None, name_tag='ptcl_source_image'):
 	global Tracker, Blockdata
 	from random import shuffle
-	#  Input data does not have to be consecutive in terms of ptcl_source_image or defocus
+	#  Input data does not have to be consecutive in terms of ptcl_source_image/filament_id or defocus
 	#
 	if not asubset:
 		try:
-			stmp  = EMUtil.get_all_attributes(Tracker["constants"]["stack"], "ptcl_source_image")
+			stmp  = EMUtil.get_all_attributes(Tracker["constants"]["stack"], name_tag)
 			if Tracker["constants"]["CTF"]:
 				defstmp = EMUtil.get_all_attributes(Tracker["constants"]["stack"],"ctf")
 			else:
@@ -518,10 +245,10 @@ def assign_particles_to_groups(minimum_group_size = 10, asubset= None):
 				for i in range(len(stmp)):  stmp[i] = round(stmp[i].defocus, 4)
 				defstmp = stmp[:]
 			else:
-				ERROR( "Either ptcl_source_image or ctf has to be present in the header." )
+				ERROR( "Either ptcl_source_image/filament/filament_id or ctf has to be present in the header." )
 	else:
 		try:
-			stmp_junk = EMUtil.get_all_attributes(Tracker["constants"]["stack"], "ptcl_source_image")
+			stmp_junk = EMUtil.get_all_attributes(Tracker["constants"]["stack"], name_tag)
 			stmp = [None]*len(asubset)
 			for isub in range(len(asubset)): stmp[isub] = stmp_junk[asubset[isub]]
 			if Tracker["constants"]["CTF"]:
@@ -539,7 +266,7 @@ def assign_particles_to_groups(minimum_group_size = 10, asubset= None):
 					stmp[isub] = round(stmp[isub].defocus, 4)
 				defstmp[:] = stmp[:]
 			else:  
-				ERROR( "Either ptcl_source_image or ctf has to be present in the header." )
+				ERROR( "Either ptcl_source_image/filament/filament_id or ctf has to be present in the header." )
 	tt = [[stmp[i],i] for i in range(len(stmp))]
 	tt.sort()
 	tt.append([-1,-1])
@@ -993,7 +720,8 @@ def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 	
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		sxprint( "  " )
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(  line, "Processing data  onx: %3d, nx: %3d, CTF: %s, applymask: %s, preshift: %s."%(Tracker["constants"]["nnxo"], nxinit, Tracker["constants"]["CTF"], apply_mask, preshift) )
 	#  Preprocess the data
 	mask2D  	= model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
@@ -1343,7 +1071,8 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, smea
 			tvol.write_image(os.path.join(Tracker["directory"],    "tempdir", "tvol_%01d_%03d.hdf"%(procid,   Tracker["mainiteration"])))
 			tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 			trol.write_image(os.path.join(Tracker["directory"],    "tempdir", "trol_%01d_%03d.hdf"%(procid,   Tracker["mainiteration"])))
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			line = ''
 			sxprint(line,"Executed successfully backprojection for group ",procid)
 	else:
 		if myid == Blockdata["main_node"]:
@@ -1351,13 +1080,15 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, smea
 			tvol.write_image(os.path.join(   Tracker["directory"], "tempdir", "tvol_%01d_%03d.hdf"%(procid,   Tracker["mainiteration"])))
 			tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 			trol.write_image(os.path.join(   Tracker["directory"], "tempdir", "trol_%01d_%03d.hdf"%(procid,   Tracker["mainiteration"])))
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			line = ''
 			sxprint(line,"Executed successfully backprojection for group ",procid)
 	mpi_barrier(mpi_comm)
 	return  
 	
 def print_dict(dict,theme):
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	line = ''
 	sxprint(line,theme)
 	spaces = "                    "
 	exclude = ["constants", "maxit", "nodes", "yr", "shared_comm", "bckgnoise", "myid", "myid_on_node", "accumulatepw",\
@@ -1560,11 +1291,14 @@ def calculate_2d_params_for_centering(kwargs):
 			sxprint("=========================================")
 			return [[0, 0, 0, 0, 0] for i in range(number_of_images_in_stack)]
 		else:  return [0.0]
+
 	Finished_initial_2d_alignment = 1
 	if(Blockdata["myid"] == Blockdata["main_node"]): 
 		if( os.path.exists(os.path.join(init2dir, "Finished_initial_2d_alignment.txt")) ): Finished_initial_2d_alignment = 0
 	Finished_initial_2d_alignment = bcast_number_to_all(Finished_initial_2d_alignment, Blockdata["main_node"], MPI_COMM_WORLD)
 	if( Finished_initial_2d_alignment == 1 ):
+		if kwargs["radi"] < 1:
+			ERROR("Particle radius has to be provided!", myid=Blockdata["myid"])
 
 		if(Blockdata["myid"] == 0):
 			import subprocess
@@ -1647,27 +1381,6 @@ def calculate_2d_params_for_centering(kwargs):
 			return params2d
 		else:  return [0.0]
 
-'''
-def getangc5(p1,p2):
-	from utilities import getfvec
-	from math import acos, degrees
-	n1 = getfvec(p1[0],p1[1])
-	n2 = getfvec(p1[0]+72.,p1[1])
-	n3 = getfvec(p1[0]-72.,p1[1])
-	n4 = getfvec(p2[0],p2[1])
-	return degrees(min(acos(max(min((n1[0]*n4[0]+n1[1]*n4[1]+n1[2]*n4[2]),1.0),-1.0)),\
-	acos(max(min((n2[0]*n4[0]+n2[1]*n4[1]+n2[2]*n4[2]),1.0),-1.0)),acos(max(min((n3[0]*n4[0]+n3[1]*n4[1]+n3[2]*n4[2]),1.0),-1.0))))
-
-def difangc5(n4,p1):
-	from utilities import getfvec
-	from math import acos, degrees
-	n1 = getfvec(p1[0],p1[1])
-	n2 = getfvec(p1[0]+72.,p1[1])
-	n3 = getfvec(p1[0]-72.,p1[1])
-	#n4 = getfvec(p2[0],p2[1])
-	return degrees(min(acos(max(min((n1[0]*n4[0]+n1[1]*n4[1]+n1[2]*n4[2]),1.0),-1.0)),\
-	acos(max(min((n2[0]*n4[0]+n2[1]*n4[1]+n2[2]*n4[2]),1.0),-1.0)),acos(max(min((n3[0]*n4[0]+n3[1]*n4[1]+n3[2]*n4[2]),1.0),-1.0))))
-'''
 def Numrinit_local(first_ring, last_ring, skip=1, mode="F"):
 	"""This function calculates the necessary information for the 2D 
 	   polar interpolation. For each ring, three elements are recorded:
@@ -1701,520 +1414,6 @@ def Numrinit_local(first_ring, last_ring, skip=1, mode="F"):
 		lcirc += ip
 
 	return  numr
-
-'''
-def XNumrinit_local(first_ring, last_ring, skip=1, mode="F"):
-	"""This function calculates the necessary information for the 2D 
-	   polar interpolation. For each ring, three elements are recorded:
-	   numr[i*3]:  Radius of this ring
-	   numr[i*3+1]: Total number of samples of all inner rings+1
-	   		(Or, the beginning point of this ring)
-	   numr[i*3+2]: Number of samples of this ring. This number is an 
-	   		FFT-friendly power of the 2.
-			
-	   "F" means a full circle interpolation
-	   "H" means a half circle interpolation
-	"""
-	MAXFFT = 32768
-	from math import pi
-	skip = 1
-
-	if (mode == 'f' or mode == 'F'): dpi = 2*pi
-	else:                            dpi = pi
-	numr = []
-	lcirc = 1
-	for k in range(first_ring, last_ring+1, skip):
-		numr.append(k)
-		jp = int(dpi * k+0.5)
-		ip = 2**(log2(jp)+1)  # two times oversample each ring
-		if (k+skip <= last_ring and jp > ip+ip//2): ip=min(MAXFFT,2*ip)
-		if (k+skip  > last_ring and jp > ip+ip//5): ip=min(MAXFFT,2*ip)
-
-		numr.append(lcirc)
-		numr.append(ip)
-		lcirc += ip
-
-	return  numr
-'''
-
-def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D = None):
-	global Tracker, Blockdata
-	from projection 	import prgs,prgl
-	from fundamentals 	import fft
-	from utilities 		import wrap_mpi_gatherv
-	from math 			import sqrt
-	#  Input data has to be CTF-multiplied, preshifted
-	#  Output - newpar, see structure
-	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in range(Tracker["lentop"])]] for i in range(len(data))]
-	#    newpar = [[params],[],... len(data)]
-	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
-	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
-	#  Coding of orientations:
-	#    hash = ang*100000000 + lpsi*1000 + ishift
-	#    ishift = hash%1000
-	#    ipsi = (hash/1000)%100000
-	#    iang  = hash/100000000
-	#  To get best matching for particle #kl:
-	#     hash_best = newpar[kl][-1][0][0]
-	#     best_sim  = newpar[kl][-1][0][1]
-	#  To sort:
-	from operator 		import itemgetter#, attrgetter, methodcaller
-	from math 			import exp
-	
-	#   params.sort(key=itemgetter(2))
-	at = time()
-	if(Blockdata["myid"] == 0):  sxprint("  ENTERING Xali buffered exhaustive CCC  ")
-	npsi = int(360./Tracker["delta"])
-	nang = len(refang)
-	ndat = len(data)
-
-	ny = data[0][0].get_ysize()
-	mask = Util.unrollmask(ny,ny)
-	nxt = 2*(mask.get_xsize())
-
-	'''
-	if(Blockdata["myid"] <3):
-		for kl in range(0,ndat,ndat/2):
-			for m in range(0,len(data[kl]),len(data[kl])/3):  sxprint(" DNORM  ",Blockdata["myid"],kl,m, Util.innerproduct(data[kl][m],data[kl][m],mask))
-	'''
-
-	if Tracker["mainiteration"]>1 :
-		#first = True
-		if Tracker["constants"]["CTF"] :
-			for kl in range(ndat):
-				for im in range(len(shifts)):
-					Util.mulclreal(data[kl][im], ctfs[kl])
-		del ctfs
-		if bckgnoise:  #  This should be a flag to activate sharpening during refinement as bckgnoise is always present (for 3D later)
-			for kl in range(ndat):
-				temp = Util.unroll1dpw(ny,ny, bckgnoise[kl])
-				for im in range(len(shifts)):
-					Util.mulclreal(data[kl][im], temp)
-			del bckgnoise
-	#else:  first = False
-
-	disp_unit = np.dtype("f4").itemsize
-
-	#  REFVOL
-	if( Blockdata["myid_on_node"] == 0 ):
-		if( Blockdata["myid"] == Blockdata["main_node"] ):
-			odo = get_refvol( Tracker["nxpolar"] )
-			nxvol = odo.get_xsize()
-			nyvol = odo.get_ysize()
-			nzvol = odo.get_zsize()
-		else:
-			nxvol = 0
-			nyvol = 0
-			nzvol = 0
-
-		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-
-		if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = model_blank( nxvol,nyvol, nzvol)
-
-		bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
-
-		odo = prep_vol( odo, npad = 2, interpolation_method = 1 )
-		ndo = EMNumPy.em2numpy(odo)
-		nxvol = odo.get_xsize()
-		nyvol = odo.get_ysize()
-		nzvol = odo.get_zsize()
-		orgsizevol = nxvol*nyvol*nzvol
-		sizevol = orgsizevol
-	else:
-		orgsizevol = 0
-		sizevol = 0
-		nxvol = 0
-		nyvol = 0
-		nzvol = 0
-
-	orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-	nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-	nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-	nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
-
-	win_vol, base_vol  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
-	sizevol = orgsizevol
-	if( Blockdata["myid_on_node"] != 0 ):
-		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
-
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
-	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
-	if( Blockdata["myid_on_node"] == 0 ):
-		np.copyto(volbuf,ndo)
-		del odo,ndo
-
-
-	#volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
-	emnumpy1 = EMNumPy()
-	volprep = emnumpy1.register_numpy_to_emdata(volbuf)
-	volprep.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
-
-
-	#  BIG BUFFER
-	size_of_one_image = ny*nxt
-	lenbigbuf = min(Blockdata["no_of_processes_per_group"],nang)*npsi
-	orgsize = lenbigbuf*size_of_one_image #  This is number of projections to be computed simultaneously times their size
-
-	if( Blockdata["myid_on_node"] == 0 ): size = orgsize
-	else:  size = 0
-
-	win_sm, base_ptr  = mpi_win_allocate_shared( size*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
-	size = orgsize
-	if( Blockdata["myid_on_node"] != 0 ):
-		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
-
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
-	buffer = buffer.reshape(lenbigbuf, ny, nxt)
-	#ncbuf = lenbigbuf//2
-	
-	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
-
-	emnumpy2 = EMNumPy()
-	bigbuffer = emnumpy2.register_numpy_to_emdata(buffer)
-
-	emnumpy3 = EMNumPy()
-
-	#  end of setup
-
-	at = time()
-	#  Here we simply search for a max
-	newpar = [[i, [1.0], [[-1,-1.0e23]] ] for i in range(ndat)]
-
-	for i in range(nang):
-		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (i%(max(1,nang/5)) == 0) and (i>0)):
-			sxprint( "  Angle :%7d   %5d  %5.1f"%(i,ndat,float(i)/float(nang)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
-
-		if(i%Blockdata["no_of_processes_per_group"] == 0 ):  #  Time to fill up the buffer
-			for itemp in range(i, min(i+Blockdata["no_of_processes_per_group"], nang)):
-				if( itemp-i == Blockdata["myid_on_node"]):
-					for j in range(npsi):
-						psi = (refang[i][2] + j*Tracker["delta"])%360.0
-						###if kb3D:  rtemp = fft(prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
-						###else:     
-						temp = prgl(volprep,[ refang[itemp][0],refang[itemp][1],psi, 0.0,0.0], 1, False)
-						Util.mulclreal(temp, mask)
-						nrmref = sqrt(Util.innerproduct(temp, temp, None))
-						temp.set_attr("is_complex",0)
-						Util.mul_scalar(temp, 1.0/nrmref)
-						bigbuffer.insert_clip(temp,(0,0,(itemp-i)*npsi+j))
-	
-			mpi_barrier(Blockdata["shared_comm"])
-
-		iang = i*100000000
-		for j in range(npsi):
-			iangpsi = j*1000 + iang
-			psi = (refang[i][2] + j*Tracker["delta"])%360.0
-			#temp = Util.window(bigbuffer, nxt, ny, 1, 0, 0, -ncbuf + (i%Blockdata["no_of_processes_per_group"])*npsi + j)
-
-			#  Here we get an image from a buffer by assigning an address instead of copy.
-			pointer_location = base_ptr + ((i%Blockdata["no_of_processes_per_group"])*npsi + j)*size_of_one_image*disp_unit
-			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
-			img_buffer = img_buffer.reshape(ny, nxt)
-			#temp = EMNumPy.numpy2em(img_buffer)
-			temp = emnumpy3.register_numpy_to_emdata(img_buffer)
-			temp.set_attr("is_complex",1)
-
-			#temp *= (1000.0/nrmref)
-			#nrmref = 1000.
-			for kl,emimage in enumerate(data):
-				for im in range(len(shifts)):
-					peak = Util.innerproduct(temp, emimage[im], None)
-					if(peak>newpar[kl][2][0][1]):  newpar[kl][2] = [[im + iangpsi, peak]]
-
-	#print  " >>>  %4d   %12.3e       %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(best,simis[0],newpar[0][0],newpar[0][1],newpar[0][2],newpar[0][3],newpar[0][4])
-	###if Blockdata["myid"] == Blockdata["main_node"]:  print "  Finished :",time()-at
-	
-	#print("  SEARCHES DONE  ",Blockdata["myid"])
-
-	#mpi_barrier(MPI_COMM_WORLD)
-	mpi_win_free(win_vol)
-	mpi_win_free(win_sm)
-	emnumpy1.unregister_numpy_from_emdata()
-	emnumpy2.unregister_numpy_from_emdata()
-	emnumpy3.unregister_numpy_from_emdata()
-	del emnumpy1, emnumpy2, emnumpy3
-
-	mpi_barrier(Blockdata["shared_comm"])
-
-	#print("  NORMALIZATION DONE  ",Blockdata["myid"])
-	mpi_barrier(MPI_COMM_WORLD)
-	#print("  ALL DONE  ",Blockdata["myid"])
-	return newpar
-
-def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs = None, bckgnoise = None, kb3D = None):
-	global Tracker, Blockdata
-	from projection 	import prgs,prgl
-	from fundamentals 	import fft
-	from utilities 		import wrap_mpi_gatherv
-	from math 			import sqrt
-	#  Input data has to be CTF-multiplied, preshifted
-	#  Output - newpar, see structure
-	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in range(Tracker["lentop"])]] for i in range(len(data))]
-	#    newpar = [[params],[],... len(data)]
-	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
-	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
-	#  Coding of orientations:
-	#    hash = ang*100000000 + lpsi*1000 + ishift
-	#    ishift = hash%1000
-	#    ipsi = (hash/1000)%100000
-	#    iang  = hash/100000000
-	#  To get best matching for particle #kl:
-	#     hash_best = newpar[kl][-1][0][0]
-	#     best_sim  = newpar[kl][-1][0][1]
-	#  To sort:
-	from operator 		import itemgetter#, attrgetter, methodcaller
-	from math 			import exp
-	
-	#   params.sort(key=itemgetter(2))
-	at = time()
-	if(Blockdata["myid"] == 0):
-		sxprint_dict(Tracker,"PROJECTION MATCHING parameters of buffered exhaustive CCC")
-		write_text_row(coarse_angles,"coarse_angles.txt")
-
-	npsi = int(360./Tracker["delta"])
-	nang = len(refang)
-	ndat = len(data)
-
-	#  FINE SEARCH CONSTANTS
-	#  Fine grids are shifted by half-fine_step
-	nang = len(refang)
-	npsi = int(360./Tracker["delta"])
-	nshifts = len(shifts)
-	n_fine_shifts = 4
-
-	#  COARSE SEARCH CONSTANTS
-	n_coarse_ang = len(coarse_angles)
-	coarse_delta = 2*Tracker["delta"]
-	n_coarse_psi = int(360./coarse_delta)
-	n_coarse_shifts = len(coarse_shifts)
-
-	#  each data holds two lists: n_coarse_shifts of coarse shifted versions and then nhifts versions of Fine shifted images
-
-	ny = data[0][0].get_ysize()
-	mask = Util.unrollmask(ny,ny)
-	nxt = 2*(mask.get_xsize())
-
-	'''
-	if(Blockdata["myid"] <3):
-		for kl in range(0,ndat,ndat/2):
-			for m in range(0,len(data[kl]),len(data[kl])/3):  sxprint(" DNORM  ",Blockdata["myid"],kl,m, Util.innerproduct(data[kl][m],data[kl][m],mask))
-	'''
-
-	if Tracker["mainiteration"]>1 :
-		#first = True
-		if Tracker["constants"]["CTF"] :
-			for kl in range(ndat):
-				for im in range(n_coarse_shifts+nshifts):
-					Util.mulclreal(data[kl][im], ctfs[kl])
-		del ctfs
-		if bckgnoise:  #  This should be a flag to activate sharpening during refinement as bckgnoise is always present (for 3D later)
-			for kl in range(ndat):
-				temp = Util.unroll1dpw(ny,ny, bckgnoise[kl])
-				for im in range(n_coarse_shifts+nshifts):
-					Util.mulclreal(data[kl][im], temp)
-			del bckgnoise
-	#else:  first = False
-
-	disp_unit = np.dtype("f4").itemsize
-
-	#  REFVOL
-	if( Blockdata["myid_on_node"] == 0 ):
-		if( Blockdata["myid"] == Blockdata["main_node"] ):
-			odo = get_refvol( Tracker["nxpolar"] )
-			nxvol = odo.get_xsize()
-			nyvol = odo.get_ysize()
-			nzvol = odo.get_zsize()
-		else:
-			nxvol = 0
-			nyvol = 0
-			nzvol = 0
-
-		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-
-		if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = model_blank( nxvol,nyvol, nzvol)
-
-		bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
-
-		odo = prep_vol( odo, npad = 2, interpolation_method = 1 )
-		ndo = EMNumPy.em2numpy(odo)
-		nxvol = odo.get_xsize()
-		nyvol = odo.get_ysize()
-		nzvol = odo.get_zsize()
-		orgsizevol = nxvol*nyvol*nzvol
-		sizevol = orgsizevol
-	else:
-		orgsizevol = 0
-		sizevol = 0
-		nxvol = 0
-		nyvol = 0
-		nzvol = 0
-
-	orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-	nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-	nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-	nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
-
-	win_vol, base_vol  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
-	sizevol = orgsizevol
-	if( Blockdata["myid_on_node"] != 0 ):
-		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
-
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
-	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
-	if( Blockdata["myid_on_node"] == 0 ):
-		np.copyto(volbuf,ndo)
-		del odo,ndo
-
-
-	#volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
-	emnumpy1 = EMNumPy()
-	volprep = emnumpy1.register_numpy_to_emdata(volbuf)
-	volprep.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
-
-
-	#  BIG BUFFER
-	size_of_one_image = ny*nxt
-	#lenbigbuf = min(Blockdata["no_of_processes_per_group"],n_coarse_ang)*n_coarse_psi
-	lenbigbuf = nang*npsi
-	orgsize = lenbigbuf*size_of_one_image #  This is number of projections to be computed simultaneously times their size
-	if( Blockdata["myid"] == 0 ):  sxprint("  BIGBUFFER  ",float(orgsize)/1.e9,"GB")
-	if( Blockdata["myid_on_node"] == 0 ): size = orgsize
-	else:  size = 0
-
-	win_sm, base_ptr  = mpi_win_allocate_shared( size*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
-	size = orgsize
-	if( Blockdata["myid_on_node"] != 0 ):
-		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
-
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
-	buffer = buffer.reshape(lenbigbuf, ny, nxt)
-	#ncbuf = lenbigbuf//2
-	
-	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
-
-	emnumpy2 = EMNumPy()
-	bigbuffer = emnumpy2.register_numpy_to_emdata(buffer)
-
-	emnumpy3 = EMNumPy()
-
-	#  end of setup
-
-	at = time()
-	#  Here we simply search for a max
-	newpar = [[i, [1.0], [[-1,-1.0e23]] ] for i in range(ndat)]
-
-	for i in range(n_coarse_ang):
-		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (i%(max(1,n_coarse_ang/5)) == 0) and (i>0)):
-			sxprint( "  Angle :%7d   %5d  %5.1f"%(i,ndat,float(i)/float(n_coarse_ang)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
-
-		if(i%Blockdata["no_of_processes_per_group"] == 0 ):  #  Time to fill up the buffer
-			for itemp in range(i, min(i+Blockdata["no_of_processes_per_group"], n_coarse_ang)):
-				if( itemp-i == Blockdata["myid_on_node"]):
-					for j in range(n_coarse_psi):
-						psi = (coarse_angles[i][2] + j*coarse_delta)%360.0
-						###if kb3D:  rtemp = fft(prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
-						###else:
-						temp = prgl(volprep,[ coarse_angles[itemp][0],coarse_angles[itemp][1],psi, 0.0,0.0], 1, False)
-						Util.mulclreal(temp, mask)
-						nrmref = sqrt(Util.innerproduct(temp, temp, None))
-						temp.set_attr("is_complex",0)
-						Util.mul_scalar(temp, 1.0/nrmref)
-						bigbuffer.insert_clip(temp,(0,0,(itemp-i)*npsi+j))
-
-			mpi_barrier(Blockdata["shared_comm"])
-
-		iang = i*100000000
-		for j in range(n_coarse_psi):
-			iangpsi = j*1000 + iang
-			psi = (coarse_angles[i][2] + j*coarse_delta)%360.0
-			#temp = Util.window(bigbuffer, nxt, ny, 1, 0, 0, -ncbuf + (i%Blockdata["no_of_processes_per_group"])*npsi + j)
-
-			#  Here we get an image from a buffer by assigning an address instead of copy.
-			pointer_location = base_ptr + ((i%Blockdata["no_of_processes_per_group"])*n_coarse_psi + j)*size_of_one_image*disp_unit
-			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
-			img_buffer = img_buffer.reshape(ny, nxt)
-			#temp = EMNumPy.numpy2em(img_buffer)
-			temp = emnumpy3.register_numpy_to_emdata(img_buffer)
-			temp.set_attr("is_complex",1)
-
-			#temp *= (1000.0/nrmref)
-			#nrmref = 1000.
-			for kl,emimage in enumerate(data):
-				for im in range(n_coarse_shifts):
-					peak = Util.innerproduct(temp, emimage[im], None)
-					if(peak>newpar[kl][2][0][1]):  newpar[kl][2] = [[im + iangpsi, peak]]
-
-	#sxprint  " >>>  %4d   %12.3e       %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(best,simis[0],newpar[0][0],newpar[0][1],newpar[0][2],newpar[0][3],newpar[0][4])
-	###if Blockdata["myid"] == Blockdata["main_node"]:  sxprint "  Finished :",time()-at
-	if Blockdata["myid"] == Blockdata["main_node"]:   sxprint("  COARSE SEARCHES DONE  ","   %10.1fmin"%((time()-at)/60.))
-	at = time()
-	for itemp in range(0, min(Blockdata["no_of_processes_per_group"], nang)):
-		if( itemp == Blockdata["myid_on_node"]):
-			for j in range(npsi):
-				psi = (refang[i][2] + j*Tracker["delta"])%360.0
-				temp = prgl(volprep,[ refang[itemp][0],refang[itemp][1],psi, 0.0,0.0], 1, False)
-				Util.mulclreal(temp, mask)
-				nrmref = sqrt(Util.innerproduct(temp, temp, None))
-				temp.set_attr("is_complex",0)
-				Util.mul_scalar(temp, 1.0/nrmref)
-				bigbuffer.insert_clip(temp,(0,0,itemp*npsi+j))
-
-	mpi_barrier(Blockdata["shared_comm"])
-	if( Blockdata["myid"] == Blockdata["main_node"] ):   sxprint("  REFPROJ DONE  ","   %10.1fmin"%((time()-at)/60.))
-	at = time()
-
-	opar = []
-	Blockdata["angle_set"] = refang
-	#  Extract normals from rotation matrices
-	refdirs = angles_to_normals(refang)
-
-	for kl,emimage in enumerate(data):
-		hashparams = newpar[kl][2][0][0]
-		ipsiandiang	= hashparams/1000
-		oldiang = ipsiandiang/100000
-		ipsi = ipsiandiang%100000
-		ishift = hashparams%1000
-		tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
-		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, [coarse_angles[oldiang]], Tracker["delta"], howmany = 4)
-		opar.append([coarse_angles[oldiang][0],coarse_angles[oldiang][1],(coarse_angles[oldiang][2]+ipsi*coarse_delta)%360.0 , coarse_shifts[ishift][0],coarse_shifts[ishift][1]])
-		for i2 in range(4):
-			iang = ltabang[0][i2]
-			for i3 in range(2):  # psi
-				itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
-				itpsi = (itpsi + i3)%npsi
-				pointer_location = base_ptr + (iang*n_coarse_psi + itpsi)*size_of_one_image*disp_unit
-				img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
-				img_buffer = img_buffer.reshape(ny, nxt)
-				#temp = EMNumPy.numpy2em(img_buffer)
-				temp = emnumpy3.register_numpy_to_emdata(img_buffer)
-				temp.set_attr("is_complex",1)
-
-				newpar[kl][2][0][1] = -1.0e23
-				for i4 in range(len(tshifts)):
-					peak = Util.innerproduct(temp, emimage[im+n_coarse_shifts], None) # take now fine images
-					if(peak>newpar[kl][2][0][1]):  newpar[kl][2] = [[iang*100000000 + itpsi*1000 + tshifts[i4], peak]]
-
-	#mpi_barrier(MPI_COMM_WORLD)
-	mpi_win_free(win_vol)
-	mpi_win_free(win_sm)
-	emnumpy1.unregister_numpy_from_emdata()
-	emnumpy2.unregister_numpy_from_emdata()
-	emnumpy3.unregister_numpy_from_emdata()
-	del emnumpy1, emnumpy2, emnumpy3
-
-	mpi_barrier(Blockdata["shared_comm"])
-	if Blockdata["myid"] == Blockdata["main_node"]:   sxprint("  FINE SEARCH DONE  ","   %10.1fmin"%((time()-at)/60.))
-
-	#print("  NORMALIZATION DONE  ",Blockdata["myid"])
-	mpi_barrier(MPI_COMM_WORLD)
-	opar = wrap_mpi_gatherv(opar, Blockdata["main_node"], MPI_COMM_WORLD)
-	if( Blockdata["myid"] == Blockdata["main_node"] ):   write_text_row(opar,"opar.txt")
-	#print("  ALL DONE  ",Blockdata["myid"])
-	return newpar
 
 def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, original_data = None, oldparams = None, \
 					preshift = False, apply_mask = True, nonorm = False, applyctf = True):
@@ -2449,7 +1648,8 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		sxprint( "  " )
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift) )
 
 	#  Preprocess the data
@@ -2867,7 +2067,8 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		from math import sqrt
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 	"""
 	at = time()
@@ -3155,7 +2356,8 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		sxprint( "  " )
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift) )
 
 	#  Preprocess the data
@@ -3588,7 +2790,8 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		from math import sqrt
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
 	at = time()
@@ -3864,7 +3067,8 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		sxprint( "  " )
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift) )
 
 	#  Preprocess the data
@@ -4286,7 +3490,8 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		from math import sqrt
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
 	at = time()
@@ -4698,7 +3903,8 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		sxprint( "  " )
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,orgsize/1.0e9) )
 
 	#  Note these are in Fortran notation for polar searches
@@ -5337,7 +4543,8 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 		from math import sqrt
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
 	at = time()
@@ -5751,7 +4958,8 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		sxprint( "  " )
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,orgsize/1.0e9) )
 
 	#  Note these are in Fortran notation for polar searches
@@ -6370,7 +5578,8 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 		from math import sqrt
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
 	at = time()
@@ -6398,1001 +5607,6 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	#if( Blockdata["myid"] == Blockdata["main_node"] ):
 	#	sxprint( "  Projection matching finished : %10.1fmin"%((time()-at)/60.))
 	return newpar, norm_per_particle
-
-def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, original_data = None, oldparams = None, \
-					preshift = False, apply_mask = True, nonorm = False, applyctf = True):
-	global Tracker, Blockdata
-	from projection 	import prgs,prgl
-	from fundamentals 	import fft
-	from utilities 		import wrap_mpi_gatherv
-	from math 			import sqrt
-	#  Input data has to be CTF-multiplied, preshifted
-	#  Output - newpar, see structure
-	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in range(Tracker["lentop"])]] for i in range(len(data))]
-	#    newpar = [[params],[],... len(data)]
-	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
-	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
-	#  Coding of orientations:
-	#    hash = ang*100000000 + lpsi*1000 + ishift
-	#    ishift = hash%1000
-	#    ipsi = (hash/1000)%100000
-	#    iang  = hash/100000000
-	#  To get best matching for particle #kl:
-	#     hash_best = newpar[kl][-1][0][0]
-	#     best_sim  = newpar[kl][-1][0][1]
-	#  To sort:
-	#from operator 		import itemgetter#, attrgetter, methodcaller
-	#   params.sort(key=itemgetter(2))
-	#from fundamentals import resample
-	from utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
-	from fundamentals import fdecimate, fshift, fft
-	from filter       import filt_ctf, filt_table
-	from applications import MPI_start_end
-	from math         import sqrt
-
-	if(Blockdata["myid"] == Blockdata["main_node"]):
-		print_dict(Tracker,"PROJECTION MATCHING parameters of buffered local polar ccc")
-
-	at = time()
-	shrinkage = float(Tracker["nxpolar"])/float(Tracker["constants"]["nnxo"])
-	shrink = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
-	radius = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
-	mode = "F"
-	numr = Numrinit_local(1, radius, 1, mode)
-	wr = ringwe(numr, mode)
-	cnx = float(Tracker["nxpolar"]//2 + 1)
-
-	##if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  RADIUS IN POLAR  ",radius,numr[-1])
-	#  FINE SEARCH CONSTANTS
-	nang = len(refang)
-	ac_fine = cos(radians(Tracker["an"]))
-	npsi = int(360./Tracker["delta"])
-	mpsi = 2
-	c_fine_psi = mpsi//2
-	nshifts = len(shifts)
-	n_fine_shifts = 4
-
-	nima = len(original_data)
-	mask = Util.unrollmask(Tracker["nxinit"],Tracker["nxinit"])
-	for j in range(Tracker["nxinit"]//2,Tracker["nxinit"]):  mask[0,j]=1.0
-	mask2D = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-	reachpw = mask.get_xsize()  # The last element of accumulated pw is zero so for the full size nothing is added.
-
-	#  COARSE SEARCH CONSTANTS
-	n_coarse_ang = len(coarse_angles)
-	coarse_delta = 2*Tracker["delta"]
-	n_coarse_psi = int(360./coarse_delta)
-	###m_coarse_psi = int((2*2*Tracker["an"])/coarse_delta + 0.5) + 1
-	m_coarse_psi = int(Tracker["an"]/Tracker["delta"] + 0.5)
-	c_coarse_psi = m_coarse_psi//2
-	n_coarse_shifts = len(coarse_shifts)
-
-	coarse_shifts_shrank = [None]*n_coarse_shifts
-	for ib in range(n_coarse_shifts):
-		coarse_shifts_shrank[ib] = [coarse_shifts[ib][0]*shrinkage,coarse_shifts[ib][1]*shrinkage]
-
-	###if(Blockdata["myid"] == Blockdata["main_node"]): sxprint("   TRETR  ",Tracker["constants"]["nnxo"],Tracker["nxinit"],reachpw,n_coarse_ang,coarse_delta,n_coarse_psi,m_coarse_psi,c_coarse_psi,n_coarse_shifts)
-
-	#if(Blockdata["myid"] == Blockdata["main_node"]):
-	#	sxprint( original_data[0].get_attr("identifier") )
-	#	sxprint( original_data[1].get_attr("identifier") )
-	
-	disp_unit = np.dtype("f4").itemsize
-
-	#  REFVOL
-	if( Blockdata["myid_on_node"] == 0 ):
-		if( Blockdata["myid"] == Blockdata["main_node"] ):
-			odo = get_refvol( Tracker["nxpolar"] )
-			nxvol = odo.get_xsize()
-			nyvol = odo.get_ysize()
-			nzvol = odo.get_zsize()
-		else:
-			nxvol = 0
-			nyvol = 0
-			nzvol = 0
-
-		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-
-		if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = model_blank( nxvol,nyvol, nzvol)
-
-		bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
-
-		odo = prep_vol( odo, npad = 2, interpolation_method = 1 )
-		ndo = EMNumPy.em2numpy(odo)
-		nxvol = odo.get_xsize()
-		nyvol = odo.get_ysize()
-		nzvol = odo.get_zsize()
-		orgsizevol = nxvol*nyvol*nzvol
-		sizevol = orgsizevol
-	else:
-		orgsizevol = 0
-		sizevol = 0
-		nxvol = 0
-		nyvol = 0
-		nzvol = 0
-
-	orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-	nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-	nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-	nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
-
-	win_vol, base_vol  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
-	sizevol = orgsizevol
-	if( Blockdata["myid_on_node"] != 0 ):
-		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
-
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
-	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
-	if( Blockdata["myid_on_node"] == 0 ):
-		np.copyto(volbuf,ndo)
-		del odo,ndo
-
-	#volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
-	emnumpy1 = EMNumPy()
-	volprep = emnumpy1.register_numpy_to_emdata(volbuf)
-	volprep.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
-
-	if( Tracker["nxinit"] != Tracker["nxpolar"] ):
-		mpi_win_free(win_vol)
-		#  REFVOL FOR ML
-		if( Blockdata["myid_on_node"] == 0 ):
-			if( Blockdata["myid"] == Blockdata["main_node"] ):
-				odo = get_refvol( Tracker["nxpolar"] )
-				nxvol = odo.get_xsize()
-				nyvol = odo.get_ysize()
-				nzvol = odo.get_zsize()
-			else:
-				nxvol = 0
-				nyvol = 0
-				nzvol = 0
-
-			nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-
-			if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = model_blank( nxvol,nyvol, nzvol)
-
-			bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
-
-			odo = prep_vol( odo, npad = 2, interpolation_method = 1 )
-			ndo = EMNumPy.em2numpy(odo)
-			nxvol = odo.get_xsize()
-			nyvol = odo.get_ysize()
-			nzvol = odo.get_zsize()
-			orgsizevol = nxvol*nyvol*nzvol
-			sizevol = orgsizevol
-		else:
-			orgsizevol = 0
-			sizevol = 0
-			nxvol = 0
-			nyvol = 0
-			nzvol = 0
-
-		orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
-
-		win_volinit, base_volinit  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
-		sizevol = orgsizevol
-		if( Blockdata["myid_on_node"] != 0 ):
-			base_volinit, = mpi_win_shared_query(win_volinit, MPI_PROC_NULL)
-
-		volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
-		volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
-		if( Blockdata["myid_on_node"] == 0 ):
-			np.copyto(volbufinit,ndoinit)
-			del odo,ndoinit
-
-		#volinit = EMNumPy.assign_numpy_to_emdata(volbufinit)
-		emnumpy4 = EMNumPy()
-		volinit = emnumpy4.register_numpy_to_emdata(volbufinit)
-		volinit.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
-		if( Blockdata["myid_on_node"] == 0 ):  volinit.update()
-		mpi_barrier(Blockdata["shared_comm"])
-		###if( Blockdata["myid"] < 10 ):
-		###	sxprint(" VOLPREP  ",volinit[0],volinit[1],info(volinit))
-	else: volinit = volprep
-	#  End of replaced volprep
-
-    ### local search is plugged in from here
-	#  START CONES
-	#  This has to be systematically done per node
-	#
-	crefim = Util.Polar2Dm(model_blank(Tracker["nxpolar"],Tracker["nxpolar"]), cnx, cnx, numr, mode)
-	size_of_one_image = crefim.get_xsize()
-	#  We will assume half of the memory is available.  We will do it betteer later.
-	numberofrefs_inmem = int(Tracker["constants"]["memory_per_node"]/4/((size_of_one_image*disp_unit)/1.0e9))
-	####if( Blockdata["myid_on_node"] == 0  ):  sxprint( " MEMEST ", n_coarse_ang,numberofrefs_inmem)
-	#  number of references that will fit into one mode
-	normals_set = angles_to_normals(coarse_angles)
-	Blockdata["angle_set"] = coarse_angles
-	if( n_coarse_ang <= numberofrefs_inmem ):
-		number_of_cones = 1
-		numberofrefs_inmem = n_coarse_ang
-		assignments_to_cones = [list(range(len(oldparams)))]
-
-		assignments_of_refangles_to_cones = [[] for i in range(len(assignments_to_cones))]
-		assignments_of_refangles_to_angles = [[] for i in range(nima)]  # for each myid separately, these are angles on this myid
-
-		for i,q in enumerate(assignments_to_cones):
-			#  find assignments of refdirs to this cone within an of each angledirs, so we need symmetry neighbors set of refdirs.
-			###print( "in loop ", Blockdata["myid"],i,len(q))#,q
-
-			for m in q:
-				#print " m ",m,len(angles)
-
-				assignments_of_refangles_to_angles[m] = find_assignments_of_refangles_to_angles(normals_set, oldparams[m], Tracker["an"])
-				assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
-
-			assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
-			#print(  " assignments_of_refangles_to_cones on myid ",Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]) )
-			assignments_of_refangles_to_cones[i] = wrap_mpi_gatherv(assignments_of_refangles_to_cones[i], 0, Blockdata["shared_comm"])
-			doit = 1
-			if( Blockdata["myid_on_node"] == 0 ):
-				assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
-				#print(  " assignments_of_refangles_to_cones on zero ",i,len(assignments_of_refangles_to_cones[i]) )#,assignments_of_refangles_to_cones[i]
-
-		for i,q in enumerate(assignments_of_refangles_to_cones):
-			###if( Blockdata["myid_on_node"] == 0 ): sxprint( " which refangles belong to which cone",Blockdata["color"],Blockdata["myid"],i,len(q) )#,q
-			assignments_of_refangles_to_cones[i] = wrap_mpi_bcast(q, 0, Blockdata["shared_comm"])
-
-	else:
-
-		angledirs = angles_to_normals([u1[:3] for u1 in oldparams])
-
-		number_of_cones = max(2, int(n_coarse_ang/numberofrefs_inmem*1.5 + 0.5))
-		###if Blockdata["myid_on_node"] == 0:  sxprint( " LENGTHS  ",Blockdata["color"],nima,n_coarse_ang, numberofrefs_inmem,number_of_cones)
-		cont = True
-		while  cont :
-			#  Translate number of cones to cone_delta
-			cone_delta, number_of_cones = number_of_cones_to_delta(number_of_cones)
-			#  Generate cone_angles
-			##if Blockdata["myid"] == 0:  sxprint( "  WHILE  ",number_of_cones, cone_delta)
-			if(Blockdata["symclass"].sym[0] == "c"):
-				if( number_of_cones == 1 ):
-					cone_delta  = 180.1
-					cone_angles = [[0., 1.0, 0.]]
-				else:
-					cone_angles = Blockdata["symclass"].even_angles(cone_delta, theta1=1.0, theta2=89.0)
-					cone_angles += [[(q[0]+90.0)%360., 180.-q[1],0] for q in cone_angles]
-					cone_angles = Blockdata["symclass"].reduce_anglesets(cone_angles)
-			else:
-				cone_angles = Blockdata["symclass"].even_angles(cone_delta, theta1=1.0)
-
-			#if Blockdata["myid"] == 0:  sxprint(  "  number of cones ",number_of_cones,cone_delta, len(cone_angles))
-			assert(number_of_cones == len(cone_angles) )
-
-			conedirs = angles_to_normals(Blockdata["symclass"].symmetry_neighbors(cone_angles))
-			neighbors = len(conedirs)/len(cone_angles)  #  Symmetry related neighbors
-			#if Blockdata["myid"] == 0:  sxprint(  "  neighbors  ",Blockdata["myid"],neighbors, cone_angles)
-			#  assign data directions to cone_angles
-			assignments_to_cones = assign_projdirs_f(angledirs, conedirs, neighbors)
-			###print(  " assignments_to_cones ",Blockdata["myid"],len(assignments_to_cones),[len(q) for q in assignments_to_cones],assignments_to_cones[0])
-			#  the above should have length of refdirs and each should have indexes of data that belong to this cone
-			del conedirs
-			#print "assignments_to_cones ",assignments_to_cones
-			#  For each cone we have to find which refangles are needed to do the matching
-			assignments_of_refangles_to_cones = [[] for i in range(len(assignments_to_cones))]
-			assignments_of_refangles_to_angles = [[] for i in range(nima)]  # for each myid separately, these are angles on this myid
-
-
-			for i,q in enumerate(assignments_to_cones):
-				#  find assignments of refdirs to this cone within an of each angledirs, so we need symmetry neighbors set of refdirs.
-				#if Blockdata["myid"] == 0:  sxprint( "in loop ", Blockdata["myid"],i,len(q),q)
-
-				if(len(q) == 0):
-					# empty assignment, on a given CPU there are no images assigned to a given cone
-					assignments_of_refangles_to_cones[i] = [-1]
-				else:
-					for m in q:
-						#print " m ",m,len(angles)
-
-						assignments_of_refangles_to_angles[m] = find_assignments_of_refangles_to_angles(normals_set, oldparams[m], Tracker["an"])
-						#if Blockdata["myid"] == 0:  sxprint( "assignments_of_refangles_to_angles[m] ", Blockdata["color"],i,m,assignments_of_refangles_to_angles[m])
-						assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
-
-					#if( Blockdata["myid"] == 19 ):  sxprint(  " doit0 ",Blockdata["myid"], i,assignments_of_refangles_to_cones[i],q,assignments_to_cones)
-					assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
-				###if Blockdata["myid"] == 19:  sxprint(  " assignments_of_refangles_to_cones on myid ",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]), assignments_of_refangles_to_cones[i] )
-				assignments_of_refangles_to_cones[i] = wrap_mpi_gatherv(assignments_of_refangles_to_cones[i], 0, Blockdata["shared_comm"])
-				###if Blockdata["myid"] == 0:  sxprint(  " assignments_of_refangles_to_cones gatherv",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]) )
-				doit = 1
-				if( Blockdata["myid_on_node"] == 0 ):
-					assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i])-set([-1]))
-					###if( Blockdata["myid_on_node"] == 0 ):  sxprint(  " assignments_of_refangles_to_cones on zero ",i,len(assignments_of_refangles_to_cones[i]))
-					#  POSSIBLE PROBLEM - IT IS POSSIBLE FOR A GIVEN CONE TO HAVE NO REFANGLES AND THUS BE EMPTY
-					if( len(assignments_of_refangles_to_cones[i]) > numberofrefs_inmem ):
-						number_of_cones = int(number_of_cones*1.25)
-						#print(  " increased number_of_cones ",i,number_of_cones )
-						doit = 0
-				doit = bcast_number_to_all(doit, source_node = 0)
-				number_of_cones = bcast_number_to_all(number_of_cones, source_node = 0, mpi_comm = Blockdata["shared_comm"] )
-				###if( Blockdata["myid"] == 19 ):  sxprint(  " doit ",Blockdata["myid"], i,doit ,assignments_of_refangles_to_cones[i],assignments_to_cones)
-				if( doit == 0 ):  break
-
-			if( doit == 1 ):
-				cont = False
-
-
-		for i,q in enumerate(assignments_of_refangles_to_cones):
-			###if( Blockdata["myid_on_node"] == 0 ): sxprint( " which refangles belong to which cone IOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
-			assignments_of_refangles_to_cones[i] = wrap_mpi_bcast(q, 0, Blockdata["shared_comm"])
-			###if( Blockdata["myid_on_node"] == 0 ): sxprint( " which refangles belong to which cone XOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
-			#if( myid == 1 ):
-			#	print " which refangles belong to which cone",myid,i,len(assignments_of_refangles_to_cones[i])#,q
-
-	if( Blockdata["myid"] == 0  ):  sxprint( " number_of_cones: ",number_of_cones)
-	
-	#mpi_barrier(MPI_COMM_WORLD)
-	#mpi_finalize()
-	#exit()
-	
-	#  Maximum number of refangles assigned to angles (max number of references per image)
-	nlocal_angles = max( [ len(q) for q in assignments_of_refangles_to_angles] )
-	#  Most likely we have to delete some lists before proceeding
-	del normals_set
-	# We have to figure the maximum length of xod1, which is lang.  If there are no cones, it is an estimate.  If there are cones, we have list of assignments
-	#  For number of cones I use refang and an.  This should give approximately the same number as coarse angles and 2*an, which is what is actually used in searches
-	numberofrefs_inmem = max([len(q) for q in assignments_of_refangles_to_cones])
-
-	###for i,q in enumerate(assignments_of_refangles_to_cones):
-	###	sxprint( " which refangles belong to which cone OUT ",Blockdata["color"],Blockdata["myid_on_node"],Blockdata["myid"],i,numberofrefs_inmem,nlocal_angles,len(q))#,q
-
-	#  BIG BUFFER
-	lenbigbuf = numberofrefs_inmem  #MAXIMUM NUMBER OF REFERENCE IN ONE OF THE CONES
-	orgsize = lenbigbuf*size_of_one_image #  This is number of projections to be computed simultaneously times their size
-
-	if( Blockdata["myid_on_node"] == 0 ): size = orgsize
-	else:  size = 0
-
-	win_sm, base_ptr  = mpi_win_allocate_shared( size*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
-	size = orgsize
-	if( Blockdata["myid_on_node"] != 0 ):
-		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
-
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
-	buffer = buffer.reshape(lenbigbuf, size_of_one_image)
-	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
-
-	emnumpy2 = EMNumPy()
-	bigbuffer = emnumpy2.register_numpy_to_emdata(buffer)
-
-	#  end of CONES setup
-
-	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		sxprint( "  " )
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,orgsize/1.0e9) )
-
-	#  Note these are in Fortran notation for polar searches
-	txm    	= float(Tracker["nxpolar"]-(Tracker["nxpolar"]//2+1) - radius)
-	txl    	= float(radius - Tracker["nxpolar"]//2+1)
-
-	if Blockdata["bckgnoise"] :
-		oneover = []
-		nnx = Blockdata["bckgnoise"][0].get_xsize()
-		for i in range(len(Blockdata["bckgnoise"])):
-			temp = [0.0]*nnx
-			for k in range(nnx):
-				if( Blockdata["bckgnoise"][i].get_value_at(k) > 0.0):  temp[k] = 1.0/sqrt(Blockdata["bckgnoise"][i].get_value_at(k))
-			oneover.append(temp)
-		del temp
-
-	accumulatepw = [0.0]*nima
-	norm_per_particle = [0.0]*nima
-
-	##lxod1 = lang*len(list_of_coarse_shifts)*(int(2*Tracker["an"]/coarse_delta+0.5)+1)
-	newpar = [[i, [0.0], []] for i in range(nima)]
-
-	#  This is for auxiliary function searches.
-	Blockdata["angle_set"] = refang
-	#  Extract normals from rotation matrices
-	refdirs = angles_to_normals(refang)
-
-
-	#  We have to make sure the number of cones is the same on all nodes, this is due to the strange MPI problem
-	#   that forced me to insert overall barrier into iterations over cones
-	max_number_of_cones = number_of_cones
-	max_number_of_cones = mpi_reduce(max_number_of_cones, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD)
-	if Blockdata["myid"] == Blockdata["main_node"] :  max_number_of_cones = int(max_number_of_cones[0])
-	max_number_of_cones = mpi_bcast(max_number_of_cones, 1, MPI_INT, 0, MPI_COMM_WORLD)
-	max_number_of_cones = int(max_number_of_cones[0])
-
-
-
-	#if( Blockdata["myid_on_node"] == 0):
-	#	sxprint("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, nlocal_angles, n_coarse_psi, len(list_of_coarse_shifts), number_of_cones , max_number_of_cones ",nima, nang,npsi,nshifts,n_coarse_ang,nlocal_angles,n_coarse_psi, len(coarse_shifts),number_of_cones,max_number_of_cones)
-
-	##firsti = True
-	at = time()
-	##eat = 0.0
-	lima = 0  #  total counter of images
-	#  PROCESSING OF CONES
-	for icone in range(max_number_of_cones):
-		mpi_barrier(MPI_COMM_WORLD)
-		if( icone < number_of_cones ):  #  This is executed for individual number of cones, some nodes may have fewer.
-			nang_start, nang_end = MPI_start_end(len(assignments_of_refangles_to_cones[icone]), Blockdata["no_of_processes_per_group"], Blockdata["myid_on_node"])
-			#if(Blockdata["color"] == 1):
-			###print( " ZXZ11  ",Blockdata["color"],Blockdata["myid_on_node"],Blockdata["myid"],len(assignments_of_refangles_to_cones[icone]),nang_start, nang_end)
-
-			for i in range(nang_start, nang_end, 1):  # This will take care of no of process on a node less than nang.  Some loops will not be executed
-				ic = assignments_of_refangles_to_cones[icone][i]
-				temp = prgl(volprep,[ coarse_angles[ic][0],coarse_angles[ic][1],0.0, 0.0,0.0], 1, True)
-				crefim = Util.Polar2Dm(temp, cnx, cnx, numr, mode)
-				Util.Frngs(crefim, numr)
-				Util.Applyws(crefim, numr, wr)
-				bigbuffer.insert_clip(crefim,(0,i) )
-
-			mpi_barrier(Blockdata["shared_comm"])
-
-			#if(Blockdata["myid"] == Blockdata["main_node"]):
-			#	sxprint( "  Reference projections generated for cone %4d: %10.1fmin"%(icone,(time()-at)/60.))
-			###print("  TOPOP    ",Blockdata["myid"],MPI_COMM_WORLD,len(assignments_to_cones[icone]))
-			###mpi_finalize()
-			###exit()
-			###  <><><><><><><><>
-
-			#  Preprocess the data
-
-			#  We only process images in the current cone.  icnm is consecutive number, im the actual image number
-			#for icnm,im in enumerate(assignments_to_cones[icone]):
-			lenass = len(assignments_to_cones[icone])
-			###print("   ENTERING  ",Blockdata["myid"],icone,lenass)
-			for icnm in range(max(1,lenass)):  # I have to enter the loop even it there is no assignment
-				if( lenass == 0 ):
-					keepf = -1
-					###print("  FOUNDEMPTY  ",Blockdata["myid"],icone,icnm,len(assignments_to_cones[icone]),assignments_to_cones)
-				else:
-					#  PREPARE ONE IMAGE
-					im = assignments_to_cones[icone][icnm]
-
-					phi,theta,psi,sx,sy, wnorm = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4], oldparams[im][7]
-
-					#  CONTROLPRINTOUT   if( Blockdata["myid"] == Blockdata["main_node"] and icnm<5):  sxprint("\n\n  INPUT PARAMS  ",im,phi,theta,psi,sx,sy)
-					if preshift:
-						sx = int(round(sx))
-						sy = int(round(sy))
-						dataimage  = cyclic_shift(original_data[im],sx,sy)
-						#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
-						oldparams[im][3] = sx
-						oldparams[im][4] = sy
-						sx = 0.0
-						sy = 0.0
-					else:  dataimage = original_data[im].copy()
-
-
-					st = Util.infomask(dataimage, mask2D, False)
-					dataimage -= st[0]
-					dataimage /= st[1]
-					if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
-					#  Do bckgnoise if exists
-					if Blockdata["bckgnoise"]:
-						if apply_mask:
-							if Tracker["constants"]["hardmask"]:
-								dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"])
-							else:
-								bckg = model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
-								bckg.set_attr("is_complex",1)
-								bckg.set_attr("is_fftpad",1)
-								bckg = fft(filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
-								#  Normalize bckg noise in real space, only region actually used.
-								st = Util.infomask(bckg, mask2D, False)
-								bckg -= st[0]
-								bckg /= st[1]
-								dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
-					else:
-						#  if no bckgnoise, do simple masking instead
-						if apply_mask:  dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"] )
-
-					#  Apply varadj
-					if not nonorm:
-						Util.mul_scalar(dataimage, Tracker["avgvaradj"][procid]/wnorm)
-
-					###  FT
-					dataimage = fft(dataimage)
-					sig = Util.rotavg_fourier( dataimage )
-					accumulatepw[im] = sig[len(sig)//2:]+[0.0]
-
-					#  We have to make sure the shifts are within correct range, shrinkage or not
-					#set_params_proj(dataimage,[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
-					
-					if Blockdata["bckgnoise"]:
-						temp = Blockdata["bckgnoise"][dataimage.get_attr("particle_group")]
-						bckgn = Util.unroll1dpw(Tracker["nxinit"],Tracker["nxinit"], [temp[i] for i in range(temp.get_xsize())])
-					else:
-						bckgn = Util.unroll1dpw(Tracker["nxinit"],Tracker["nxinit"], [1.0]*600)
-					bckgnoise = bckgn.copy()
-					for j in range(Tracker["nxinit"]//2+1,Tracker["nxinit"]):  bckgn[0,j] = bckgn[0,Tracker["nxinit"]-j]
-
-					if Tracker["constants"]["CTF"] :
-						ctf_params = dataimage.get_attr("ctf")
-						ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
-						ctfa = ctf_img_real(Tracker["nxinit"], ctf_params)
-						ctfs = ctfa
-					##if( ( Blockdata["myid"] == Blockdata["main_node"])   and firsti ):
-					##	dataimage.set_attr("is_complex",0)
-					##	dataimage.write_image("dataimagefft.hdf")
-					##	dataimage.set_attr("is_complex",1)
-					dataml = fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False, False)
-					data = []
-					for iq in coarse_shifts:
-						xx = iq[0]*shrink
-						yy = iq[1]*shrink
-						dss = fshift(dataml, xx, yy)
-						dss.set_attr("is_complex",0)
-						data.append(dss)
-
-					#  This will get it to real space
-					#dataimage = fpol(Util.mulnclreal(Util.mulnclreal(fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False), Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
-					#  Here we can reuse dataml to save time.  It was not normalized, but it does not matter as dataimage is for POLAR.  PAP 08/06/2018
-					dataimage = fpol(Util.mulnclreal(Util.mulnclreal(dataml, Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
-
-					# Compute max number of angles on the fly
-					lang = len(assignments_of_refangles_to_angles[im])
-					###print("   BICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
-
-				if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (lima%(max(1,nima/5)) == 0) and (lima>0)):
-					sxprint( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
-					##print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin   %10.1fmin"%((time()-at)/60.,eat/60.0))
-				lima += 1
-
-				###print("  CONA1    ",Blockdata["myid"],lima)
-				if( lima == 1 and procid == 0):
-					###print("  CONA2    ",Blockdata["myid"])
-					if( lenass > 0):
-						###print("   CICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
-						keepfirst = lang*m_coarse_psi*n_coarse_shifts#150#lang*m_coarse_psi*len(coarse_shifts_shrank)  #500#min(200,nlocal_angles)#min(max(lxod1/25,200),lxod1)
-						###if( Blockdata["myid"] == 18 and lima<5):  sxprint(" START   nlocal_angles* m_coarse_psi*len(coarse_shifts_shrank",nlocal_angles,coarse_delta,len(coarse_shifts_shrank),keepfirst)
-						#if( Blockdata["myid"] == Blockdata["main_node"] ):  
-						lxod1 = Util.multiref_Crosrng_msg_stack_stepsi_local(dataimage, bigbuffer, \
-								coarse_shifts_shrank,\
-								assignments_of_refangles_to_angles[im], assignments_of_refangles_to_cones[icone],\
-								numr, [coarse_angles[i][2] for i in range(n_coarse_ang)], \
-								oldparams[im][2], c_coarse_psi, coarse_delta, cnx, keepfirst)
-
-						##'''
-						assert(len(lxod1)/3 == keepfirst)
-
-						xod1 = np.ndarray((keepfirst),dtype='f4',order="C")
-						#xod1.fill(1.0)
-						xod2 = np.ndarray((keepfirst),dtype='int',order="C")
-						for iq in range(keepfirst):
-							ioffset = 3*iq
-							#          ishift         iang                      ipsi
-							xod2[iq] = lxod1[ioffset] + lxod1[ioffset+1]*100000000 + lxod1[ioffset+2]*1000
-
-						##'''
-						#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-
-						#  Second step - find which coarse ones are significant
-
-						# DO NOT order by angular directions to save time on reprojections.
-
-						pre_ipsiandiang = -1
-						for iln in range(keepfirst):
-							#print("iln", iln)
-							hashparams	= int(xod2[iln])
-							ishift		= hashparams%1000
-							ipsiandiang	= hashparams/1000
-							if(ipsiandiang != pre_ipsiandiang):
-								pre_ipsiandiang = ipsiandiang
-								ipsi = ipsiandiang%100000
-								iang = ipsiandiang/100000
-								##junk = time()
-								temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
-								##eat += time()-junk
-								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
-								temp.set_attr("is_complex",0)
-								nrmref = sqrt(Util.innerproduct(temp, temp, None))
-							##junk = time()
-							#xod1[iln] = -Util.sqed(data[ishift], temp, ctfa, bckgnoise)
-							xod1[iln] = Util.innerproduct(data[ishift], temp, None)/nrmref
-							##eat += time()-junk
-							##xod2[iln] = hashparams
-
-						xod1 -= np.max(xod1)
-						lina = np.argwhere(xod1 > Tracker["constants"]["expthreshold"])
-						#print("JJJ, expthreshold", Tracker["constants"]["expthreshold"])
-						#print("LLL", xod1)
-						#if( Blockdata["myid"] == 0 ):  
-						###print("  STARTING1   ",Blockdata["myid"],np.max(xod1),np.min(xod1),len(lina),lina[-1])
-
-
-						lina = lina.reshape(lina.size)
-						
-						keepf = int(lina[-1]) + 1
-						#print("QQQQ, keepf", Blockdata["myid"], keepf)
-						xod1 = xod1[lina]
-						xod2 = xod2[lina]
-
-						###print("  STARTING2    ",Blockdata["myid"])
-
-						lina = np.argsort(xod1)
-						xod1 = xod1[lina[::-1]]  # This sorts in reverse order
-						xod2 = xod2[lina[::-1]]  # This sorts in reverse order
-						np.exp(xod1, out=xod1)
-						xod1 /= np.sum(xod1)
-						cumprob = 0.0
-						lit = len(xod1)
-						###print("  STARTING3    ",Blockdata["myid"],lit)
-						for j in range(len(xod1)):
-							cumprob += xod1[j]
-							if(cumprob > Tracker["constants"]["ccfpercentage"]):
-								lit = j+1
-								break
-
-
-						###print("  STARTING4    ",Blockdata["myid"],lit,keepf)
-					#  Turn into percentage of all possible
-					keepf = [int(float(keepf*100)/float(keepfirst))]
-					###mpi_barrier(MPI_COMM_WORLD)
-					###print("  STARTING5    ",Blockdata["myid"],keepf,MPI_COMM_WORLD)
-					mpi_barrier(MPI_COMM_WORLD)
-					keepf = wrap_mpi_gatherv(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
-					###print("  STARTING6    ",Blockdata["myid"],keepf)
-					if( Blockdata["myid"] == 0 ):
-						keepf = [junk for junk in keepf if junk >0]
-						if( len(keepf) <2 ):
-							keepf = 0
-						else:
-							keepf.sort()
-							keepf = keepf[int(len(keepf)*Blockdata["rkeepf"])]
-					else:  keepf = 0
-					###print("  STARTING7    ",Blockdata["myid"],keepf)
-					keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
-					if(keepf == 0):
-						ERROR( "Too few images to estimate keepfirst", myid=Blockdata["myid"] )
-						mpi_finalize()
-						return
-					###print("  STARTING8    ",Blockdata["myid"],keepf)
-					Tracker["keepfirst"] = int(keepf)
-					###if( Blockdata["myid"] == 0 ):  sxprint("  keepfirst first ",Tracker["keepfirst"])
-
-				else:
-					if(lenass>0):
-						###print("   DICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
-						###if( Blockdata["myid"] == 18 and lima<5):  sxprint(" START   nlocal_angles* m_coarse_psi*len(coarse_shifts_shrank",nlocal_angles,coarse_delta,len(coarse_shifts_shrank),Tracker["keepfirst"])
-						#if( Blockdata["myid"] == Blockdata["main_node"] ):
-						keepfirst = lang*m_coarse_psi*n_coarse_shifts
-						keepfirst = max(keepfirst*Tracker["keepfirst"]/100,min(keepfirst,3))
-						lxod1 = Util.multiref_Crosrng_msg_stack_stepsi_local(dataimage, bigbuffer, \
-								coarse_shifts_shrank,\
-								assignments_of_refangles_to_angles[im], assignments_of_refangles_to_cones[icone],\
-								numr, [coarse_angles[i][2] for i in range(n_coarse_ang)], \
-								oldparams[im][2], c_coarse_psi, coarse_delta, cnx, keepfirst)
-						#if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  ")
-						##'''
-						assert( keepfirst == len(lxod1)/3 )
-						xod1 = np.ndarray((keepfirst),dtype='f4',order="C")
-						#xod1.fill(1.0)
-						xod2 = np.ndarray((keepfirst),dtype='int',order="C")
-						for iq in range(keepfirst):
-							ioffset = 3*iq
-							#          ishift         iang                      ipsi
-							xod2[iq] = lxod1[ioffset] + lxod1[ioffset+1]*100000000 + lxod1[ioffset+2]*1000
-
-						##'''
-
-						#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-
-						#  Second step - find which coarse ones are significant
-
-						# order by angular directions to save time on reprojections.
-						ipsiandiang = xod2/1000
-						lina = np.argsort(ipsiandiang)
-						xod2 = xod2[lina]  # order does not matter
-
-						pre_ipsiandiang = -1
-						for iln in range(keepfirst):
-							hashparams	= int(xod2[iln])
-							ishift		= hashparams%1000
-							ipsiandiang	= hashparams/1000
-							if(ipsiandiang != pre_ipsiandiang):
-								pre_ipsiandiang = ipsiandiang
-								ipsi = ipsiandiang%100000
-								iang = ipsiandiang/100000
-								##junk = time()
-								temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
-								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
-								##eat += time()-junk
-								temp.set_attr("is_complex",0)
-							##junk = time()
-							peak = -Util.sqed(data[ishift], temp, ctfa, bckgnoise)
-							##eat += time()-junk
-							#  Note I replace ccc by eqdist
-							xod1[iln] = peak
-							##xod2[iln] = hashparams
-
-						lina = np.argsort(xod1)
-						xod1 = xod1[lina[::-1]]  # This sorts in reverse order
-						xod2 = xod2[lina[::-1]]  # This sorts in reverse order
-
-						xod1 -= xod1[0]
-
-						#if( Blockdata["myid"] == Blockdata["main_node"]):
-						#	#print("  PROJECT   ",im,lit,johi)#,cod2)
-						#	for iln in range(len(xod1)):  sxprint("  ROPE   ",iln,xod1[iln],xod2[iln])
-
-
-						lina = np.argwhere(xod1 > Tracker["constants"]["expthreshold"])
-						xod1 = xod1[lina]
-						xod2 = xod2[lina]
-						np.exp(xod1, out=xod1)
-						xod1 /= np.sum(xod1)
-						cumprob = 0.0
-						lit = len(xod1)
-						for j in range(len(xod1)):
-							cumprob += xod1[j]
-							if(cumprob > Tracker["constants"]["ccfpercentage"]):
-								lit = j+1
-								break
-
-						#  To here
-						###if( Blockdata["myid"] == 18 and lima<5):  sxprint("  SECOND KEPT  ",lit)
-						#if( lima<5):  sxprint("  SECOND KEPT  ",lit)
-
-
-				#mpi_barrier(MPI_COMM_WORLD)
-				#mpi_finalize()
-				#exit()
-				#for j in range(lit):
-				#	 newpar[kl][2].append([int(xod2[j]),float(xod1[j])])
-				if( lenass > 0):
-					###print("   EICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im)#,assignments_to_cones)
-
-					firstdirections = [[0.0,0.0] for iln in range(lit)]
-					firstshifts = [0]*lit
-					for iln in range(lit):
-						hashparams = int(xod2[iln])
-						ishift = hashparams%1000
-						ipsiandiang	= hashparams/1000
-						#ipsi = ipsiandiang%100000
-						iang = ipsiandiang/100000
-						#try:
-						firstdirections[iln] = [coarse_angles[iang][0], coarse_angles[iang][1], 0.0]
-						#except:
-						#	sxprint(" FAILED  ",Blockdata["myid"],Tracker["keepfirst"],iln,lima,lit,hashparams,iang,xod2[:lit],xod1[:lit])
-						#	mpi_finalize()
-						#	exit()
-						firstshifts[iln] = ishift
-						#  CONTROLPRINTOUT   if( Blockdata["myid"] == Blockdata["main_node"] and icnm<5):
-						#	ipsi = ipsiandiang%100000
-						#	ishift = hashparams%1000
-						#	###print("  SECONDPAR%04d  "%im,iln,hashparams, ipsi,iang,ishift)
-						#	sxprint(" SECONDPAR%04d  "%im,iln, refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, shifts[ishift])
-					###del xod2
-					###if( Blockdata["myid"] == 18 and lima<5):   sxprint("  SECOND KEPT  ",im,lit)#,len(xod2),xod2,firstdirections,firstshifts)
-					#mpi_barrier(MPI_COMM_WORLD)
-					#mpi_finalize()
-					#exit()
-
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  FIFI ",firstdirections)
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  GUGU ",firstshifts)
-					# Find neighbors, ltabang contains positions on refang list, no psis
-					###ltabang = nearest_many_full_k_projangles(refang, firstdirections, howmany = 5, sym=Tracker["constants"]["symmetry"])
-					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
-					###if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  ltabang ",ltabang)
-					##mpi_barrier(MPI_COMM_WORLD)
-					##mpi_finalize()
-					##exit()
-
-					# ltabang has length lit, which is the same as length as firshifts.  However, original xod2 is still available,
-					#   even though it is longer than lit.
-
-
-					###ltabshi = [shiftneighbors[iln] for iln in firstshifts]
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  HUHU ",ltabang)
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  OUOU ",ltabshi)
-
-					#  Prepare image for chi2.
-					#  We have to repeat everything from get shrink data, including shifts
-					#  The number of entries is lit=len(ltabang), each proj dir has 4 neighbors, so including itself there are 5,
-					#    there are 3 psis, and at most n_fine_shifts. 
-					#    Not not all shifts have to be populated. We may also have repeated triplets of angles, but each can have
-					#      different shifts.  If so, we have to remove duplicates from the entire set.
-					lcod1 = lit*4*2*n_fine_shifts
-
-					#cod2 = np.ndarray((lit,5,3,n_fine_shifts),dtype=int,order="C")
-					#cod2.fill(-1)  #  hashparams
-					cod2 = []
-					#lol = 0
-					for i1 in range(lit):
-						hashparams = int(xod2[i1])
-						ipsiandiang	= hashparams/1000
-						oldiang = ipsiandiang/100000
-						ipsi = ipsiandiang%100000
-						ishift = hashparams%1000
-						tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
-						#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint(" tshifts  ",i1,len(tshifts))
-						for i2 in range(4):
-							iang = ltabang[i1][i2]
-							for i3 in range(2):  # psi
-								itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
-								itpsi = (itpsi + i3)%npsi
-								for i4 in range(len(tshifts)):
-									cod2.append(iang*100000000 + itpsi*1000 + tshifts[i4])
-									#lol += 1
-									#if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  zibzi  ",i1,i2,i3,i4, lol)
-
-
-					del xod1, xod2
-
-					###if( Blockdata["myid"] == 18 and lima<5):   sxprint("  THIRD   ",len(cod2))#,cod2)
-					cod2 = list(set(cod2))
-					cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
-					cod1.sort()
-
-					lit = len(cod1)
-
-					cod2 = np.asarray([cod2[cod1[i][1]] for i in range(lit)])
-
-					cod1 = np.ndarray(lit,dtype='f4',order="C")
-					#cod1.fill(np.finfo(dtype='f4').min)
-					cod3 = np.ndarray(lit,dtype='f4',order="C")
-					#cod3.fill(0.0)  #  varadj
-
-					###if( Blockdata["myid"] == 18 and lima<5): sxprint("  THIRD   ",im,lit)#,cod2)
-
-					#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-					#  Third ML part.  Now the actual chi2 distances, we compute reprojections on the fly.
-					#  Make sure volprep has nxinit size
-					data = [None]*nshifts
-					johi = 0
-					iln = 0
-					prevdir = -1
-					while(iln<lit):
-						hashparams = cod2[iln]
-						#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  COD2   ",im,lit,iln,cod2[iln])
-						ipsiandiang	= hashparams/1000
-						if(ipsiandiang != prevdir):
-							prevdir = ipsiandiang
-							ipsi = ipsiandiang%100000
-							iang = ipsiandiang/100000
-							##junk = time()
-							temp = prgl(volinit,[ refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, 0.0,0.0], 1, False)
-							##eat += time()-junk
-							temp.set_attr("is_complex",0)
-							johi += 1
-						while( ipsiandiang == cod2[iln]/1000 ):
-							hashparams = cod2[iln]
-							ishift = hashparams%1000
-							if( data[ishift] == None ):
-								xx = shifts[ishift][0]*shrink
-								yy = shifts[ishift][1]*shrink
-								data[ishift] = fshift(dataml, xx, yy)
-								data[ishift].set_attr("is_complex",0)
-							##junk = time()
-							[peak,varadj] = Util.sqednorm(data[ishift], temp, ctfa, bckgnoise)
-							##eat += time()-junk
-							cod1[iln] = -peak
-							cod3[iln] = varadj
-							iln += 1
-							if(iln == lit  ):  break
-						#if( Blockdata["myid"] == Blockdata["main_node"]):
-						#	temp.write_image("temp.hdf")
-						#	data[iln].write_image("data.hdf")
-						#	ctfa.write_image("ctfa.hdf")
-						#	bckgnoise.write_image("bckgnoise.hdf")
-						#	exit()
-						###if( Blockdata["myid"] == Blockdata["main_node"] and iln%1000 ==0):  sxprint(" progress  ",iln,time()-at)
-					#if( Blockdata["myid"] == Blockdata["main_node"]):
-					#	sxprint("  PROJECT   ",im,lit,johi)#,cod2)
-					#	#for iln in range(lit):  sxprint("  ROPE   ",iln,cod1[iln],cod2[iln],cod3[iln])
-					del data
-					del dataml
-
-					lina = np.argsort(cod1)
-					cod1 = cod1[lina[::-1]]  # This sorts in reverse order
-					cod2 = cod2[lina[::-1]]  # This sorts in reverse order
-					cod3 = cod3[lina[::-1]]  # This sorts in reverse order
-					cod1 -= cod1[0]
-					lina = np.argwhere(cod1 > Tracker["constants"]["expthreshold"])
-					cod1 = cod1[lina]
-					cod2 = cod2[lina]
-					cod3 = cod3[lina]
-
-					###if( Blockdata["myid"] == Blockdata["main_node"]):
-					###for iui in range(len(lina)):
-					###	for iui in range(len(cod1)):
-					###		sxprint("  MLML  ",iui,cod1[iui],exp(cod1[iui]),cod2[iui],cod3[iui])
-
-					np.exp(cod1, out=cod1)
-					cod1 /= np.sum(cod1)
-					cumprob = 0.0
-					for j in range(len(cod1)):
-						cumprob += cod1[j]
-						if(cumprob > Tracker["constants"]["ccfpercentage"]):
-							lit = j+1
-							break
-
-					#  New norm is a sum of eq distances multiplied by their probabilities augmented by PW.
-					norm_per_particle[im] = np.sum(cod1[:lit]*cod3[:lit]) + accumulatepw[im][reachpw]
-					###print("   CNORMPERPARTICLE  ",Blockdata["myid"],im,norm_per_particle[im])
-
-					for iln in range(lit):
-						newpar[im][2].append([int(cod2[iln]), float(cod1[iln])])
-						#  CONTROLPRINTOUT   if( Blockdata["myid"] == Blockdata["main_node"] and icnm<5):
-						#	#print("  NEWPAR%04d  "%im,iln,newpar[im][2][-1])
-						#	hashparams = newpar[im][2][iln][0]
-						#	ipsiandiang	= hashparams/1000
-						#	ipsi = ipsiandiang%100000
-						#	iang = ipsiandiang/100000
-						#	ishift = hashparams%1000
-						#	#print("  NEWPAR%04d  "%im,iln,newpar[im][2][-1],hashparams,ipsi,iang,ishift)
-						#	sxprint(" NEWPAR%04d  "%im,iln,newpar[im][2][iln], refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, shifts[ishift])
-
-					###if( Blockdata["myid"] == 18 and lima<5):   sxprint("  FINALLY  ",im,lit)
-					del cod1, cod2, cod3, lina
-					###mpi_barrier(MPI_COMM_WORLD)
-					###mpi_finalize()
-					###exit()
-
-	"""
-	Number of images :     82     410   20.0%          1.3min          0.8min
-	Number of images :    164     410   40.0%          3.0min          1.8min
-	Number of images :    246     410   60.0%          5.7min          3.1min
-	Number of images :    328     410   80.0%          8.8min          4.4min
-	#  Projection and equdist take 50% time, so on the whole run of the program one could
-	#    reduce time from 311 to 233, (6h to 4h) if this time was totally eliminated.
-	"""
-	
-	#  END OF CONES
-	mpi_barrier(MPI_COMM_WORLD)
-	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		sxprint( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
-	at = time()
-	#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-	#  All images were processed, now to the additional calculations
-
-	###mpi_barrier(MPI_COMM_WORLD)
-	###mpi_finalize()
-	###exit()
-
-
-	# norm correction ---- calc the norm correction per particle
-	snormcorr = 0.0
-	for kl in range(nima):
-		###print("   NORMPERPARTICLE  ",Blockdata["myid"],kl,norm_per_particle[kl])
-		norm_per_particle[kl]	= sqrt(norm_per_particle[kl]*2.0)*oldparams[kl][7]/Tracker["avgvaradj"][procid]
-		snormcorr				+= norm_per_particle[kl]
-	Tracker["avgvaradj"][procid] = snormcorr
-	mpi_barrier(MPI_COMM_WORLD)
-	#  Compute avgvaradj
-	Tracker["avgvaradj"][procid] = mpi_reduce( Tracker["avgvaradj"][procid], 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD )
-	if(Blockdata["myid"] == Blockdata["main_node"]):
-		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
-	else:  Tracker["avgvaradj"][procid] = 0.0
-	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
-	mpi_barrier(MPI_COMM_WORLD)
-	
-	at = time()
-	mpi_barrier(Blockdata["shared_comm"])
-
-	###if Blockdata["myid"] == Blockdata["main_node"]:  print "  Finished :",time()-at
-	mpi_win_free(win_sm)
-	if( Tracker["nxinit"] != Tracker["nxpolar"] ):
-		mpi_win_free(win_volinit)
-		emnumpy4.unregister_numpy_from_emdata()
-		del emnumpy4
-	else:   mpi_win_free(win_vol)
-
-	mpi_barrier(Blockdata["shared_comm"])
-	emnumpy1.unregister_numpy_from_emdata()
-	emnumpy2.unregister_numpy_from_emdata()
-	del emnumpy1, emnumpy2
-
-	del volinit
-
-	mpi_barrier(Blockdata["shared_comm"])
-
-	#print("  NORMALIZATION DONE  ",Blockdata["myid"])
-	mpi_barrier(MPI_COMM_WORLD)
-	#if( Blockdata["myid"] == Blockdata["main_node"] ):
-	#	sxprint( "  Projection matching finished : %10.1fmin"%((time()-at)/60.))
-	return newpar, [1.0]*nima
 
 def cerrs(params, ctfs, particle_groups):
 	global Tracker, Blockdata
@@ -7508,7 +5722,8 @@ def cerrs(params, ctfs, particle_groups):
 	acc_trans /= n_trials
 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(line,"Estimated accuracy of angles = %6.2f degrees; and shifts = %5.1f pixels"%(acc_rot,acc_trans) )
 
 	Tracker["acc_rot"] = acc_rot
@@ -7522,7 +5737,8 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 		# load datastructure, read data, do two reconstructions(stepone, steptwo)
 		if final_iter ==-1: final_iter = Tracker["constants"]["best"]  
 		carryon = 1
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		if(Blockdata["subgroup_myid"] == Blockdata["main_node"]):
 			sxprint(line, "do_final_rec3d")
 			sxprint("Reconstruction uses solution of %d iteration"%final_iter)
@@ -7622,7 +5838,8 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 				norm_per_particle[procid].append(oldparams[procid][ipar][7])
 			oldparams[procid]      = []
 			original_data[procid]  = None
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			line = ''
 			if(Blockdata["subgroup_myid"] == Blockdata["nodes"][procid]):
 				sxprint(line, "3-D reconstruction of group %d"%procid)
 			###--------------------------------------------------------- Force 
@@ -7638,7 +5855,8 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 			mpi_barrier(Blockdata["subgroup_comm"])
 		mpi_barrier(Blockdata["subgroup_comm"])
 	mpi_barrier(MPI_COMM_WORLD)
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	line = ''
 	if Blockdata["myid"] == Blockdata["main_node"]: 
 		sxprint(line, "final rec3d_make_maps")
 	rec3d_make_maps(compute_fsc = False, regularized = False)
@@ -7731,1007 +5949,11 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 	do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, projdata, \
 	  do_final_iter, Blockdata["subgroup_comm"])
 	mpi_barrier(MPI_COMM_WORLD)
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	line = ''
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		sxprint(line, "Final reconstruction is successfully done")
 	return
-
-def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, original_data = None, oldparams = None, \
-					preshift = False, apply_mask = True, nonorm = False, applyctf = True):
-	global Tracker, Blockdata
-	global Tracker, Blockdata
-	from projection 	import prgs,prgl
-	from fundamentals 	import fft
-	from utilities 		import wrap_mpi_gatherv
-	from math 			import sqrt
-	#  Input data has to be CTF-multiplied, preshifted
-	#  Output - newpar, see structure
-	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in range(Tracker["lentop"])]] for i in range(len(data))]
-	#    newpar = [[params],[],... len(data)]
-	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
-	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
-	#  Coding of orientations:
-	#    hash = ang*100000000 + lpsi*1000 + ishift
-	#    ishift = hash%1000
-	#    ipsi = (hash/1000)%100000
-	#    iang  = hash/100000000
-	#  To get best matching for particle #kl:
-	#     hash_best = newpar[kl][-1][0][0]
-	#     best_sim  = newpar[kl][-1][0][1]
-	#  To sort:
-	from operator 		import itemgetter#, attrgetter, methodcaller
-	#   params.sort(key=itemgetter(2))
-	#from fundamentals import resample
-	from utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
-	from fundamentals import fdecimate, fshift, fft
-	from filter       import filt_ctf, filt_table
-	from applications import MPI_start_end
-	from math         import sqrt
-
-	if(Blockdata["myid"] == Blockdata["main_node"]):
-		print_dict(Tracker,"PROJECTION MATCHING parameters of buffered local polar")
-
-	at = time()
-	shrinkage = float(Tracker["nxpolar"])/float(Tracker["constants"]["nnxo"])
-	shrink = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
-	radius = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
-	mode = "F"
-	numr = Numrinit_local(1, radius, 1, mode)
-	wr = ringwe(numr, mode)
-	cnx = float(Tracker["nxpolar"]//2 + 1)
-
-	##if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  RADIUS IN POLAR  ",radius,numr[-1])
-	#  FINE SEARCH CONSTANTS
-	nang = len(refang)
-	ac_fine = cos(radians(Tracker["an"]))
-	npsi = int(360./Tracker["delta"])
-	mpsi = 2
-	c_fine_psi = mpsi//2
-	nshifts = len(shifts)
-	n_fine_shifts = 4
-
-	nima = len(original_data)
-	mask = Util.unrollmask(Tracker["nxinit"],Tracker["nxinit"])
-	for j in range(Tracker["nxinit"]//2,Tracker["nxinit"]):  mask[0,j]=1.0
-	mask2D = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-	reachpw = mask.get_xsize()  # The last element of accumulated pw is zero so for the full size nothing is added.
-
-	#  COARSE SEARCH CONSTANTS
-	n_coarse_ang = len(coarse_angles)
-	coarse_delta = 2*Tracker["delta"]
-	n_coarse_psi = int(360./coarse_delta)
-	###m_coarse_psi = int((2*2*Tracker["an"])/coarse_delta + 0.5) + 1
-	m_coarse_psi = int(Tracker["an"]/Tracker["delta"] + 0.5)
-	c_coarse_psi = m_coarse_psi//2
-	n_coarse_shifts = len(coarse_shifts)
-
-	coarse_shifts_shrank = [None]*n_coarse_shifts
-	for ib in range(n_coarse_shifts):
-		coarse_shifts_shrank[ib] = [coarse_shifts[ib][0]*shrinkage,coarse_shifts[ib][1]*shrinkage]
-
-	###if(Blockdata["myid"] == Blockdata["main_node"]): sxprint("   TRETR  ",Tracker["constants"]["nnxo"],Tracker["nxinit"],reachpw,n_coarse_ang,coarse_delta,n_coarse_psi,m_coarse_psi,c_coarse_psi,n_coarse_shifts)
-
-	#if(Blockdata["myid"] == Blockdata["main_node"]):
-	#	sxprint( original_data[0].get_attr("identifier") )
-	#	sxprint( original_data[1].get_attr("identifier") )
-
-	disp_unit = np.dtype("f4").itemsize
-
-	#  REFVOL
-	if( Blockdata["myid_on_node"] == 0 ):
-		if( Blockdata["myid"] == Blockdata["main_node"] ):
-			odo = get_refvol( Tracker["nxpolar"] )
-			nxvol = odo.get_xsize()
-			nyvol = odo.get_ysize()
-			nzvol = odo.get_zsize()
-		else:
-			nxvol = 0
-			nyvol = 0
-			nzvol = 0
-
-		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-
-		if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = model_blank( nxvol,nyvol, nzvol)
-
-		bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
-
-		odo = prep_vol( odo, npad = 2, interpolation_method = 1 )
-		ndo = EMNumPy.em2numpy(odo)
-		nxvol = odo.get_xsize()
-		nyvol = odo.get_ysize()
-		nzvol = odo.get_zsize()
-		orgsizevol = nxvol*nyvol*nzvol
-		sizevol = orgsizevol
-	else:
-		orgsizevol = 0
-		sizevol = 0
-		nxvol = 0
-		nyvol = 0
-		nzvol = 0
-
-	orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-	nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-	nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-	nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
-
-	win_vol, base_vol  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
-	sizevol = orgsizevol
-	if( Blockdata["myid_on_node"] != 0 ):
-		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
-
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
-	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
-	if( Blockdata["myid_on_node"] == 0 ):
-		np.copyto(volbuf,ndo)
-		del odo,ndo
-
-	#volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
-	emnumpy1 = EMNumPy()
-	volprep = emnumpy1.register_numpy_to_emdata(volbuf)
-	volprep.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
-
-	if( Tracker["nxinit"] != Tracker["nxpolar"] ):
-		mpi_win_free(win_vol)
-		#  REFVOL FOR ML
-		if( Blockdata["myid_on_node"] == 0 ):
-			if( Blockdata["myid"] == Blockdata["main_node"] ):
-				odo = get_refvol( Tracker["nxpolar"] )
-				nxvol = odo.get_xsize()
-				nyvol = odo.get_ysize()
-				nzvol = odo.get_zsize()
-			else:
-				nxvol = 0
-				nyvol = 0
-				nzvol = 0
-
-			nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-
-			if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = model_blank( nxvol,nyvol, nzvol)
-
-			bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
-
-			odo = prep_vol( odo, npad = 2, interpolation_method = 1 )
-			ndo = EMNumPy.em2numpy(odo)
-			nxvol = odo.get_xsize()
-			nyvol = odo.get_ysize()
-			nzvol = odo.get_zsize()
-			orgsizevol = nxvol*nyvol*nzvol
-			sizevol = orgsizevol
-		else:
-			orgsizevol = 0
-			sizevol = 0
-			nxvol = 0
-			nyvol = 0
-			nzvol = 0
-
-		orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
-
-		win_volinit, base_volinit  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
-		sizevol = orgsizevol
-		if( Blockdata["myid_on_node"] != 0 ):
-			base_volinit, = mpi_win_shared_query(win_volinit, MPI_PROC_NULL)
-
-		volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
-		volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
-		if( Blockdata["myid_on_node"] == 0 ):
-			np.copyto(volbufinit,ndoinit)
-			del odo,ndoinit
-
-		#volinit = EMNumPy.assign_numpy_to_emdata(volbufinit)
-		emnumpy4 = EMNumPy()
-		volinit = emnumpy4.register_numpy_to_emdata(volbufinit)
-		volinit.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
-		if( Blockdata["myid_on_node"] == 0 ):  volinit.update()
-		mpi_barrier(Blockdata["shared_comm"])
-		###if( Blockdata["myid"] < 10 ):
-		###	sxprint(" VOLPREP  ",volinit[0],volinit[1],info(volinit))
-	else:
-		volinit = volprep
-	#  End of replaced volprep
-
-    ### local search is plugged in from here
-	#  START CONES
-	#  This has to be systematically done per node
-	#
-	crefim = Util.Polar2Dm(model_blank(Tracker["nxpolar"],Tracker["nxpolar"]), cnx, cnx, numr, mode)
-	size_of_one_image = crefim.get_xsize()
-	#  We will assume half of the memory is available.  We will do it betteer later.
-	numberofrefs_inmem = int(Tracker["constants"]["memory_per_node"]/4/((size_of_one_image*disp_unit)/1.0e9))
-	####if( Blockdata["myid_on_node"] == 0  ):  sxprint( " MEMEST ", n_coarse_ang,numberofrefs_inmem)
-	#  number of references that will fit into one mode
-	normals_set = angles_to_normals(coarse_angles)
-	Blockdata["angle_set"] = coarse_angles
-	if( n_coarse_ang <= numberofrefs_inmem ):
-		number_of_cones = 1
-		numberofrefs_inmem = n_coarse_ang
-		assignments_to_cones = [list(range(len(oldparams)))]
-
-		assignments_of_refangles_to_cones = [[] for i in range(len(assignments_to_cones))]
-		assignments_of_refangles_to_angles = [[] for i in range(nima)]  # for each myid separately, these are angles on this myid
-
-		for i,q in enumerate(assignments_to_cones):
-			#  find assignments of refdirs to this cone within an of each angledirs, so we need symmetry neighbors set of refdirs.
-			###print( "in loop ", Blockdata["myid"],i,len(q))#,q
-
-			for m in q:
-				#print " m ",m,len(angles)
-
-				assignments_of_refangles_to_angles[m] = find_assignments_of_refangles_to_angles(normals_set, oldparams[m], Tracker["an"])
-				assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
-
-			assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
-			#print(  " assignments_of_refangles_to_cones on myid ",Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]) )
-			assignments_of_refangles_to_cones[i] = wrap_mpi_gatherv(assignments_of_refangles_to_cones[i], 0, Blockdata["shared_comm"])
-			doit = 1
-			if( Blockdata["myid_on_node"] == 0 ):
-				assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
-				#print(  " assignments_of_refangles_to_cones on zero ",i,len(assignments_of_refangles_to_cones[i]) )#,assignments_of_refangles_to_cones[i]
-
-		for i,q in enumerate(assignments_of_refangles_to_cones):
-			###if( Blockdata["myid_on_node"] == 0 ): sxprint( " which refangles belong to which cone",Blockdata["color"],Blockdata["myid"],i,len(q) )#,q
-			assignments_of_refangles_to_cones[i] = wrap_mpi_bcast(q, 0, Blockdata["shared_comm"])
-
-	else:
-
-		angledirs = angles_to_normals([u1[:3] for u1 in oldparams])
-
-		number_of_cones = max(2, int(n_coarse_ang/numberofrefs_inmem*1.5 + 0.5))
-		###if Blockdata["myid_on_node"] == 0:  sxprint( " LENGTHS  ",Blockdata["color"],nima,n_coarse_ang, numberofrefs_inmem,number_of_cones)
-		cont = True
-		while  cont :
-			#  Translate number of cones to cone_delta
-			cone_delta, number_of_cones = number_of_cones_to_delta(number_of_cones)
-			#  Generate cone_angles
-			##if Blockdata["myid"] == 0:  sxprint( "  WHILE  ",number_of_cones, cone_delta)
-			if(Blockdata["symclass"].sym[0] == "c"):
-				if( number_of_cones == 1 ):
-					cone_delta  = 180.1
-					cone_angles = [[0., 1.0, 0.]]
-				else:
-					cone_angles = Blockdata["symclass"].even_angles(cone_delta, theta1=1.0, theta2=89.0)
-					cone_angles += [[(q[0]+90.0)%360., 180.-q[1],0] for q in cone_angles]
-					cone_angles = Blockdata["symclass"].reduce_anglesets(cone_angles)
-			else:
-				cone_angles = Blockdata["symclass"].even_angles(cone_delta, theta1=1.0)
-
-			#if Blockdata["myid"] == 0:  sxprint(  "  number of cones ",number_of_cones,cone_delta, len(cone_angles))
-			assert(number_of_cones == len(cone_angles) )
-
-			conedirs = angles_to_normals(Blockdata["symclass"].symmetry_neighbors(cone_angles))
-			neighbors = len(conedirs)/len(cone_angles)  #  Symmetry related neighbors
-			#if Blockdata["myid"] == 0:  sxprint(  "  neighbors  ",Blockdata["myid"],neighbors, cone_angles)
-			#  assign data directions to cone_angles
-			assignments_to_cones = assign_projdirs_f(angledirs, conedirs, neighbors)
-			###print(  " assignments_to_cones ",Blockdata["myid"],len(assignments_to_cones),[len(q) for q in assignments_to_cones],assignments_to_cones[0])
-			#  the above should have length of refdirs and each should have indexes of data that belong to this cone
-			del conedirs
-			#print "assignments_to_cones ",assignments_to_cones
-			#  For each cone we have to find which refangles are needed to do the matching
-			assignments_of_refangles_to_cones = [[] for i in range(len(assignments_to_cones))]
-			assignments_of_refangles_to_angles = [[] for i in range(nima)]  # for each myid separately, these are angles on this myid
-
-
-			for i,q in enumerate(assignments_to_cones):
-				#  find assignments of refdirs to this cone within an of each angledirs, so we need symmetry neighbors set of refdirs.
-				#if Blockdata["myid"] == 0:  sxprint( "in loop ", Blockdata["myid"],i,len(q),q)
-
-				if(len(q) == 0):
-					# empty assignment, on a given CPU there are no images assigned to a given cone
-					assignments_of_refangles_to_cones[i] = [-1]
-				else:
-					for m in q:
-						#print " m ",m,len(angles)
-
-						assignments_of_refangles_to_angles[m] = find_assignments_of_refangles_to_angles(normals_set, oldparams[m], Tracker["an"])
-						#if Blockdata["myid"] == 0:  sxprint( "assignments_of_refangles_to_angles[m] ", Blockdata["color"],i,m,assignments_of_refangles_to_angles[m])
-						assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
-
-					#if( Blockdata["myid"] == 19 ):  sxprint(  " doit0 ",Blockdata["myid"], i,assignments_of_refangles_to_cones[i],q,assignments_to_cones)
-					assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
-				###if Blockdata["myid"] == 19:  sxprint(  " assignments_of_refangles_to_cones on myid ",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]), assignments_of_refangles_to_cones[i] )
-				assignments_of_refangles_to_cones[i] = wrap_mpi_gatherv(assignments_of_refangles_to_cones[i], 0, Blockdata["shared_comm"])
-				###if Blockdata["myid"] == 0:  sxprint(  " assignments_of_refangles_to_cones gatherv",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]) )
-				doit = 1
-				if( Blockdata["myid_on_node"] == 0 ):
-					assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i])-set([-1]))
-					###if( Blockdata["myid_on_node"] == 0 ):  sxprint(  " assignments_of_refangles_to_cones on zero ",i,len(assignments_of_refangles_to_cones[i]))
-					#  POSSIBLE PROBLEM - IT IS POSSIBLE FOR A GIVEN CONE TO HAVE NO REFANGLES AND THUS BE EMPTY
-					if( len(assignments_of_refangles_to_cones[i]) > numberofrefs_inmem ):
-						number_of_cones = int(number_of_cones*1.25)
-						#print(  " increased number_of_cones ",i,number_of_cones )
-						doit = 0
-				doit = bcast_number_to_all(doit, source_node = 0)
-				number_of_cones = bcast_number_to_all(number_of_cones, source_node = 0, mpi_comm = Blockdata["shared_comm"] )
-				###if( Blockdata["myid"] == 19 ):  sxprint(  " doit ",Blockdata["myid"], i,doit ,assignments_of_refangles_to_cones[i],assignments_to_cones)
-				if( doit == 0 ):  break
-
-			if( doit == 1 ):
-				cont = False
-
-
-		for i,q in enumerate(assignments_of_refangles_to_cones):
-			###if( Blockdata["myid_on_node"] == 0 ): sxprint( " which refangles belong to which cone IOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
-			assignments_of_refangles_to_cones[i] = wrap_mpi_bcast(q, 0, Blockdata["shared_comm"])
-			###if( Blockdata["myid_on_node"] == 0 ): sxprint( " which refangles belong to which cone XOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
-			#if( myid == 1 ):
-			#	print " which refangles belong to which cone",myid,i,len(assignments_of_refangles_to_cones[i])#,q
-
-	if( Blockdata["myid"] == 0  ):  sxprint( " number_of_cones: ",number_of_cones)
-	
-	#mpi_barrier(MPI_COMM_WORLD)
-	#mpi_finalize()
-	#exit()
-	
-	#  Maximum number of refangles assigned to angles (max number of references per image)
-	nlocal_angles = max( [ len(q) for q in assignments_of_refangles_to_angles] )
-	#  Most likely we have to delete some lists before proceeding
-	del normals_set
-	# We have to figure the maximum length of xod1, which is lang.  If there are no cones, it is an estimate.  If there are cones, we have list of assignments
-	#  For number of cones I use refang and an.  This should give approximately the same number as coarse angles and 2*an, which is what is actually used in searches
-	numberofrefs_inmem = max([len(q) for q in assignments_of_refangles_to_cones])
-
-	###for i,q in enumerate(assignments_of_refangles_to_cones):
-	###	sxprint( " which refangles belong to which cone OUT ",Blockdata["color"],Blockdata["myid_on_node"],Blockdata["myid"],i,numberofrefs_inmem,nlocal_angles,len(q))#,q
-
-	#  BIG BUFFER
-	lenbigbuf = numberofrefs_inmem  #MAXIMUM NUMBER OF REFERENCE IN ONE OF THE CONES
-	orgsize = lenbigbuf*size_of_one_image #  This is number of projections to be computed simultaneously times their size
-
-	if( Blockdata["myid_on_node"] == 0 ): size = orgsize
-	else:  size = 0
-
-	win_sm, base_ptr  = mpi_win_allocate_shared( size*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
-	size = orgsize
-	if( Blockdata["myid_on_node"] != 0 ):
-		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
-
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
-	buffer = buffer.reshape(lenbigbuf, size_of_one_image)
-	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
-
-	emnumpy2 = EMNumPy()
-	bigbuffer = emnumpy2.register_numpy_to_emdata(buffer)
-
-	#  end of CONES setup
-
-	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		sxprint( "  " )
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,orgsize/1.0e9) )
-
-	#  Note these are in Fortran notation for polar searches
-	txm    	= float(Tracker["nxpolar"]-(Tracker["nxpolar"]//2+1) - radius)
-	txl    	= float(radius - Tracker["nxpolar"]//2+1)
-
-	if Blockdata["bckgnoise"] :
-		oneover = []
-		nnx = Blockdata["bckgnoise"][0].get_xsize()
-		for i in range(len(Blockdata["bckgnoise"])):
-			temp = [0.0]*nnx
-			for k in range(nnx):
-				if( Blockdata["bckgnoise"][i].get_value_at(k) > 0.0):  temp[k] = 1.0/sqrt(Blockdata["bckgnoise"][i].get_value_at(k))
-			oneover.append(temp)
-		del temp
-
-	accumulatepw = [0.0]*nima
-	norm_per_particle = [0.0]*nima
-
-	##lxod1 = lang*len(list_of_coarse_shifts)*(int(2*Tracker["an"]/coarse_delta+0.5)+1)
-	newpar = [[i, [0.0], []] for i in range(nima)]
-
-	#  This is for auxiliary function searches.
-	Blockdata["angle_set"] = refang
-	#  Extract normals from rotation matrices
-	refdirs = angles_to_normals(refang)
-
-
-	#  We have to make sure the number of cones is the same on all nodes, this is due to the strange MPI problem
-	#   that forced me to insert overall barrier into iterations over cones
-	max_number_of_cones = number_of_cones
-	max_number_of_cones = mpi_reduce(max_number_of_cones, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD)
-	if Blockdata["myid"] == Blockdata["main_node"] :  max_number_of_cones = int(max_number_of_cones[0])
-	max_number_of_cones = mpi_bcast(max_number_of_cones, 1, MPI_INT, 0, MPI_COMM_WORLD)
-	max_number_of_cones = int(max_number_of_cones[0])
-
-
-
-	#if( Blockdata["myid_on_node"] == 0):
-	#	sxprint("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, nlocal_angles, n_coarse_psi, len(list_of_coarse_shifts), number_of_cones , max_number_of_cones ",nima, nang,npsi,nshifts,n_coarse_ang,nlocal_angles,n_coarse_psi, len(coarse_shifts),number_of_cones,max_number_of_cones)
-
-	##firsti = True
-	at = time()
-	##eat = 0.0
-	lima = 0  #  total counter of images
-	#  PROCESSING OF CONES
-	for icone in range(max_number_of_cones):
-		mpi_barrier(MPI_COMM_WORLD)
-		if( icone < number_of_cones ):  #  This is executed for individual number of cones, some nodes may have fewer.
-			nang_start, nang_end = MPI_start_end(len(assignments_of_refangles_to_cones[icone]), Blockdata["no_of_processes_per_group"], Blockdata["myid_on_node"])
-			#if(Blockdata["color"] == 1):
-			###print( " ZXZ11  ",Blockdata["color"],Blockdata["myid_on_node"],Blockdata["myid"],len(assignments_of_refangles_to_cones[icone]),nang_start, nang_end)
-
-			for i in range(nang_start, nang_end, 1):  # This will take care of no of process on a node less than nang.  Some loops will not be executed
-				ic = assignments_of_refangles_to_cones[icone][i]
-				temp = prgl(volprep,[ coarse_angles[ic][0],coarse_angles[ic][1],0.0, 0.0,0.0], 1, True)
-				crefim = Util.Polar2Dm(temp, cnx, cnx, numr, mode)
-				Util.Frngs(crefim, numr)
-				Util.Applyws(crefim, numr, wr)
-				bigbuffer.insert_clip(crefim,(0,i) )
-
-			mpi_barrier(Blockdata["shared_comm"])
-
-			#if(Blockdata["myid"] == Blockdata["main_node"]):
-			#	sxprint( "  Reference projections generated for cone %4d: %10.1fmin"%(icone,(time()-at)/60.))
-			###print("  TOPOP    ",Blockdata["myid"],MPI_COMM_WORLD,len(assignments_to_cones[icone]))
-			###mpi_finalize()
-			###exit()
-			###  <><><><><><><><>
-
-			#  Preprocess the data
-
-			#  We only process images in the current cone.  icnm is consecutive number, im the actual image number
-			#for icnm,im in enumerate(assignments_to_cones[icone]):
-			lenass = len(assignments_to_cones[icone])
-			###print("   ENTERING  ",Blockdata["myid"],icone,lenass)
-			for icnm in range(max(1,lenass)):  # I have to enter the loop even it there is no assignment
-				if( lenass == 0 ):
-					keepf = -1
-					###print("  FOUNDEMPTY  ",Blockdata["myid"],icone,icnm,len(assignments_to_cones[icone]),assignments_to_cones)
-				else:
-					#  PREPARE ONE IMAGE
-					im = assignments_to_cones[icone][icnm]
-
-					phi,theta,psi,sx,sy, wnorm = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4], oldparams[im][7]
-
-					#  CONTROLPRINTOUT   if( Blockdata["myid"] == Blockdata["main_node"] and icnm<5):  sxprint("\n\n  INPUT PARAMS  ",im,phi,theta,psi,sx,sy)
-					if preshift:
-						sx = int(round(sx))
-						sy = int(round(sy))
-						dataimage  = cyclic_shift(original_data[im],sx,sy)
-						#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
-						oldparams[im][3] = sx
-						oldparams[im][4] = sy
-						sx = 0.0
-						sy = 0.0
-					else:  dataimage = original_data[im].copy()
-
-
-					st = Util.infomask(dataimage, mask2D, False)
-					dataimage -= st[0]
-					dataimage /= st[1]
-					if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
-					#  Do bckgnoise if exists
-					if Blockdata["bckgnoise"]:
-						if apply_mask:
-							if Tracker["constants"]["hardmask"]:
-								dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"])
-							else:
-								bckg = model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
-								bckg.set_attr("is_complex",1)
-								bckg.set_attr("is_fftpad",1)
-								bckg = fft(filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
-								#  Normalize bckg noise in real space, only region actually used.
-								st = Util.infomask(bckg, mask2D, False)
-								bckg -= st[0]
-								bckg /= st[1]
-								dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
-					else:
-						#  if no bckgnoise, do simple masking instead
-						if apply_mask:  dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"] )
-
-					#  Apply varadj
-					if not nonorm:
-						Util.mul_scalar(dataimage, Tracker["avgvaradj"][procid]/wnorm)
-
-					###  FT
-					dataimage = fft(dataimage)
-					sig = Util.rotavg_fourier( dataimage )
-					accumulatepw[im] = sig[len(sig)//2:]+[0.0]
-
-					#  We have to make sure the shifts are within correct range, shrinkage or not
-					#set_params_proj(dataimage,[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
-					if Blockdata["bckgnoise"]:
-						temp = Blockdata["bckgnoise"][dataimage.get_attr("particle_group")]
-						bckgn = Util.unroll1dpw(Tracker["nxinit"],Tracker["nxinit"], [temp[i] for i in range(temp.get_xsize())])
-					else:
-						bckgn = Util.unroll1dpw(Tracker["nxinit"],Tracker["nxinit"], [1.0]*600)
-					bckgnoise = bckgn.copy()
-					for j in range(Tracker["nxinit"]//2+1,Tracker["nxinit"]):  bckgn[0,j] = bckgn[0,Tracker["nxinit"]-j]
-
-					if Tracker["constants"]["CTF"] :
-						ctf_params = dataimage.get_attr("ctf")
-						ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
-						ctfa = ctf_img_real(Tracker["nxinit"], ctf_params)
-						ctfs = ctfa
-					##if( ( Blockdata["myid"] == Blockdata["main_node"])   and firsti ):
-					##	dataimage.set_attr("is_complex",0)
-					##	dataimage.write_image("dataimagefft.hdf")
-					##	dataimage.set_attr("is_complex",1)
-					dataml = fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False, False)
-					data = []
-					for iq in coarse_shifts:
-						xx = iq[0]*shrink
-						yy = iq[1]*shrink
-						dss = fshift(dataml, xx, yy)
-						dss.set_attr("is_complex",0)
-						data.append(dss)
-
-					#  This will get it to real space
-					#dataimage = fpol(Util.mulnclreal(Util.mulnclreal(fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False), Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
-					#  Here we can reuse dataml to save time.  It was not normalized, but it does not matter as dataimage is for POLAR.  PAP 08/06/2018
-					dataimage = fpol(Util.mulnclreal(Util.mulnclreal(dataml, Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
-
-					# Compute max number of angles on the fly
-					lang = len(assignments_of_refangles_to_angles[im])
-					###print("   BICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
-
-				if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (lima%(max(1,nima/5)) == 0) and (lima>0)):
-					sxprint( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
-					##print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin   %10.1fmin"%((time()-at)/60.,eat/60.0))
-				lima += 1
-
-
-
-				###print("  CONA1    ",Blockdata["myid"],lima)
-				if( lima == 1 and procid == 0):
-					###print("  CONA2    ",Blockdata["myid"])
-					if( lenass > 0):
-						###print("   CICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
-						keepfirst = lang*m_coarse_psi*n_coarse_shifts#150#lang*m_coarse_psi*len(coarse_shifts_shrank)  #500#min(200,nlocal_angles)#min(max(lxod1/25,200),lxod1)
-						###if( Blockdata["myid"] == 18 and lima<5):  sxprint(" START   nlocal_angles* m_coarse_psi*len(coarse_shifts_shrank",nlocal_angles,coarse_delta,len(coarse_shifts_shrank),keepfirst)
-						#if( Blockdata["myid"] == Blockdata["main_node"] ):  
-						lxod1 = Util.multiref_Crosrng_msg_stack_stepsi_local(dataimage, bigbuffer, \
-								coarse_shifts_shrank,\
-								assignments_of_refangles_to_angles[im], assignments_of_refangles_to_cones[icone],\
-								numr, [coarse_angles[i][2] for i in range(n_coarse_ang)], \
-								oldparams[im][2], c_coarse_psi, coarse_delta, cnx, keepfirst)
-
-						##'''
-						assert(len(lxod1)/3 == keepfirst)
-
-						xod1 = np.ndarray((keepfirst),dtype='f4',order="C")
-						#xod1.fill(1.0)
-						xod2 = np.ndarray((keepfirst),dtype='int',order="C")
-						for iq in range(keepfirst):
-							ioffset = 3*iq
-							#          ishift         iang                      ipsi
-							xod2[iq] = lxod1[ioffset] + lxod1[ioffset+1]*100000000 + lxod1[ioffset+2]*1000
-
-						##'''
-						#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-
-						#  Second step - find which coarse ones are significant
-
-						# order by angular directions to save time on reprojections.
-
-						pre_ipsiandiang = -1
-						for iln in range(keepfirst):
-							#print("iln", iln)
-							hashparams	= int(xod2[iln])
-							ishift		= hashparams%1000
-							ipsiandiang	= hashparams/1000
-							if(ipsiandiang != pre_ipsiandiang):
-								pre_ipsiandiang = ipsiandiang
-								ipsi = ipsiandiang%100000
-								iang = ipsiandiang/100000
-								##junk = time()
-								temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
-								##eat += time()-junk
-								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
-								temp.set_attr("is_complex",0)
-								nrmref = sqrt(Util.innerproduct(temp, temp, None))
-							##junk = time()
-							#xod1[iln] = -Util.sqed(data[ishift], temp, ctfa, bckgnoise)
-							xod1[iln] = Util.innerproduct(data[ishift], temp, None)/nrmref
-							##eat += time()-junk
-							##xod2[iln] = hashparams
-
-						xod1 -= np.max(xod1)
-						lina = np.argwhere(xod1 > Tracker["constants"]["expthreshold"])
-						#print("JJJ, expthreshold", Tracker["constants"]["expthreshold"])
-						#print("LLL", xod1)
-						#if( Blockdata["myid"] == 0 ):  
-						###print("  STARTING1   ",Blockdata["myid"],np.max(xod1),np.min(xod1),len(lina),lina[-1])
-
-
-						lina = lina.reshape(lina.size)
-						
-						keepf = int(lina[-1]) + 1
-						#print("QQQQ, keepf", Blockdata["myid"], keepf)
-						xod1 = xod1[lina]
-						xod2 = xod2[lina]
-
-						###print("  STARTING2    ",Blockdata["myid"])
-
-						lina = np.argsort(xod1)
-						xod1 = xod1[lina[::-1]]  # This sorts in reverse order
-						xod2 = xod2[lina[::-1]]  # This sorts in reverse order
-						np.exp(xod1, out=xod1)
-						xod1 /= np.sum(xod1)
-						cumprob = 0.0
-						lit = len(xod1)
-						###print("  STARTING3    ",Blockdata["myid"],lit)
-						for j in range(len(xod1)):
-							cumprob += xod1[j]
-							if(cumprob > Tracker["constants"]["ccfpercentage"]):
-								lit = j+1
-								break
-
-
-						###print("  STARTING4    ",Blockdata["myid"],lit,keepf)
-					keepf = [keepf]
-					###mpi_barrier(MPI_COMM_WORLD)
-					###print("  STARTING5    ",Blockdata["myid"],keepf,MPI_COMM_WORLD)
-					mpi_barrier(MPI_COMM_WORLD)
-					keepf = wrap_mpi_gatherv(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
-					###print("  STARTING6    ",Blockdata["myid"],keepf)
-					if( Blockdata["myid"] == 0 ):
-						keepf = [junk for junk in keepf if junk >0]
-						if( len(keepf) <2 ):
-							keepf = 0
-						else:
-							keepf.sort()
-							keepf = keepf[int(len(keepf)*Blockdata["rkeepf"])]
-					else:  keepf = 0
-					###print("  STARTING7    ",Blockdata["myid"],keepf)
-					keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
-					if(keepf == 0):
-						ERROR( "Too few images to estimate keepfirst", myid=Blockdata["myid"] )
-						mpi_finalize()
-						return
-					###print("  STARTING8    ",Blockdata["myid"],keepf)
-					Tracker["keepfirst"] = int(keepf)
-					if( Blockdata["myid"] == 0 ):  sxprint("  keepfirst first ",Tracker["keepfirst"])
-
-				else:
-					if(lenass>0):
-						###print("   DICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
-						###if( Blockdata["myid"] == 18 and lima<5):  sxprint(" START   nlocal_angles* m_coarse_psi*len(coarse_shifts_shrank",nlocal_angles,coarse_delta,len(coarse_shifts_shrank),Tracker["keepfirst"])
-						#if( Blockdata["myid"] == Blockdata["main_node"] ):  
-						lxod1 = Util.multiref_Crosrng_msg_stack_stepsi_local(dataimage, bigbuffer, \
-								coarse_shifts_shrank,\
-								assignments_of_refangles_to_angles[im], assignments_of_refangles_to_cones[icone],\
-								numr, [coarse_angles[i][2] for i in range(n_coarse_ang)], \
-								oldparams[im][2], c_coarse_psi, coarse_delta, cnx, Tracker["keepfirst"])
-						#if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  ")
-						##'''
-
-						xod1 = np.ndarray((Tracker["keepfirst"]),dtype='f4',order="C")
-						#xod1.fill(1.0)
-						xod2 = np.ndarray((Tracker["keepfirst"]),dtype='int',order="C")
-						for iq in range(Tracker["keepfirst"]):
-							ioffset = 3*iq
-							#          ishift         iang                      ipsi
-							xod2[iq] = lxod1[ioffset] + lxod1[ioffset+1]*100000000 + lxod1[ioffset+2]*1000
-
-						##'''
-
-						#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-
-						#  Second step - find which coarse ones are significant
-
-						# order by angular directions to save time on reprojections.
-						ipsiandiang = xod2/1000
-						lina = np.argsort(ipsiandiang)
-						xod2 = xod2[lina]  # order does not matter
-
-						pre_ipsiandiang = -1
-						for iln in range(Tracker["keepfirst"]):
-							hashparams	= int(xod2[iln])
-							ishift		= hashparams%1000
-							ipsiandiang	= hashparams/1000
-							if(ipsiandiang != pre_ipsiandiang):
-								pre_ipsiandiang = ipsiandiang
-								ipsi = ipsiandiang%100000
-								iang = ipsiandiang/100000
-								##junk = time()
-								temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
-								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
-								##eat += time()-junk
-								temp.set_attr("is_complex",0)
-							##junk = time()
-							peak = -Util.sqed(data[ishift], temp, ctfa, bckgnoise)
-							##eat += time()-junk
-							#  Note I replace ccc by eqdist
-							xod1[iln] = peak
-							##xod2[iln] = hashparams
-
-						lina = np.argsort(xod1)
-						xod1 = xod1[lina[::-1]]  # This sorts in reverse order
-						xod2 = xod2[lina[::-1]]  # This sorts in reverse order
-
-						xod1 -= xod1[0]
-
-						#if( Blockdata["myid"] == Blockdata["main_node"]):
-						#	#print("  PROJECT   ",im,lit,johi)#,cod2)
-						#	for iln in range(len(xod1)):  sxprint("  ROPE   ",iln,xod1[iln],xod2[iln])
-
-
-						lina = np.argwhere(xod1 > Tracker["constants"]["expthreshold"])
-						xod1 = xod1[lina]
-						xod2 = xod2[lina]
-						np.exp(xod1, out=xod1)
-						xod1 /= np.sum(xod1)
-						cumprob = 0.0
-						lit = len(xod1)
-						for j in range(len(xod1)):
-							cumprob += xod1[j]
-							if(cumprob > Tracker["constants"]["ccfpercentage"]):
-								lit = j+1
-								break
-
-						#  To here
-						###if( Blockdata["myid"] == 18 and lima<5):  sxprint("  SECOND KEPT  ",lit)
-						#if( lima<5):  sxprint("  SECOND KEPT  ",lit)
-
-
-				#mpi_barrier(MPI_COMM_WORLD)
-				#mpi_finalize()
-				#exit()
-				#for j in range(lit):
-				#	 newpar[kl][2].append([int(xod2[j]),float(xod1[j])])
-				if( lenass > 0):
-					###print("   EICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im)#,assignments_to_cones)
-
-					firstdirections = [[0.0,0.0] for iln in range(lit)]
-					firstshifts = [0]*lit
-					for iln in range(lit):
-						hashparams = int(xod2[iln])
-						ishift = hashparams%1000
-						ipsiandiang	= hashparams/1000
-						#ipsi = ipsiandiang%100000
-						iang = ipsiandiang/100000
-						#try:
-						firstdirections[iln] = [coarse_angles[iang][0], coarse_angles[iang][1], 0.0]
-						#except:
-						#	sxprint(" FAILED  ",Blockdata["myid"],Tracker["keepfirst"],iln,lima,lit,hashparams,iang,xod2[:lit],xod1[:lit])
-						#	mpi_finalize()
-						#	exit()
-						firstshifts[iln] = ishift
-						#  CONTROLPRINTOUT   if( Blockdata["myid"] == Blockdata["main_node"] and icnm<5):
-						#	ipsi = ipsiandiang%100000
-						#	ishift = hashparams%1000
-						#	###print("  SECONDPAR%04d  "%im,iln,hashparams, ipsi,iang,ishift)
-						#	sxprint(" SECONDPAR%04d  "%im,iln, refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, shifts[ishift])
-					###del xod2
-					###if( Blockdata["myid"] == 18 and lima<5):   sxprint("  SECOND KEPT  ",im,lit)#,len(xod2),xod2,firstdirections,firstshifts)
-					#mpi_barrier(MPI_COMM_WORLD)
-					#mpi_finalize()
-					#exit()
-
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  FIFI ",firstdirections)
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  GUGU ",firstshifts)
-					# Find neighbors, ltabang contains positions on refang list, no psis
-					###ltabang = nearest_many_full_k_projangles(refang, firstdirections, howmany = 5, sym=Tracker["constants"]["symmetry"])
-					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
-					###if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  ltabang ",ltabang)
-					##mpi_barrier(MPI_COMM_WORLD)
-					##mpi_finalize()
-					##exit()
-
-					# ltabang has length lit, which is the same as length as firshifts.  However, original xod2 is still available,
-					#   even though it is longer than lit.
-
-
-					###ltabshi = [shiftneighbors[iln] for iln in firstshifts]
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  HUHU ",ltabang)
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  OUOU ",ltabshi)
-
-					#  Prepare image for chi2.
-					#  We have to repeat everything from get shrink data, including shifts
-					#  The number of entries is lit=len(ltabang), each proj dir has 4 neighbors, so including itself there are 5,
-					#    there are 3 psis, and at most n_fine_shifts. 
-					#    Not not all shifts have to be populated. We may also have repeated triplets of angles, but each can have
-					#      different shifts.  If so, we have to remove duplicates from the entire set.
-					lcod1 = lit*4*2*n_fine_shifts
-
-					#cod2 = np.ndarray((lit,5,3,n_fine_shifts),dtype=int,order="C")
-					#cod2.fill(-1)  #  hashparams
-					cod2 = []
-					#lol = 0
-					for i1 in range(lit):
-						hashparams = int(xod2[i1])
-						ipsiandiang	= hashparams/1000
-						oldiang = ipsiandiang/100000
-						ipsi = ipsiandiang%100000
-						ishift = hashparams%1000
-						tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
-						#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint(" tshifts  ",i1,len(tshifts))
-						for i2 in range(4):
-							iang = ltabang[i1][i2]
-							for i3 in range(2):  # psi
-								itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
-								itpsi = (itpsi + i3)%npsi
-								for i4 in range(len(tshifts)):
-									cod2.append(iang*100000000 + itpsi*1000 + tshifts[i4])
-									#lol += 1
-									#if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  zibzi  ",i1,i2,i3,i4, lol)
-
-
-					del xod1, xod2
-
-					###if( Blockdata["myid"] == 18 and lima<5):   sxprint("  THIRD   ",len(cod2))#,cod2)
-					cod2 = list(set(cod2))
-					cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
-					cod1.sort()
-
-					lit = len(cod1)
-
-					cod2 = np.asarray([cod2[cod1[i][1]] for i in range(lit)])
-
-					cod1 = np.ndarray(lit,dtype='f4',order="C")
-					#cod1.fill(np.finfo(dtype='f4').min)
-					cod3 = np.ndarray(lit,dtype='f4',order="C")
-					#cod3.fill(0.0)  #  varadj
-
-					###if( Blockdata["myid"] == 18 and lima<5): sxprint("  THIRD   ",im,lit)#,cod2)
-
-					#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-					#  Third ML part.  Now the actual chi2 distances, we compute reprojections on the fly.
-					#  Make sure volprep has nxinit size
-					data = [None]*nshifts
-					johi = 0
-					iln = 0
-					prevdir = -1
-					while(iln<lit):
-						hashparams = cod2[iln]
-						#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  COD2   ",im,lit,iln,cod2[iln])
-						ipsiandiang	= hashparams/1000
-						if(ipsiandiang != prevdir):
-							prevdir = ipsiandiang
-							ipsi = ipsiandiang%100000
-							iang = ipsiandiang/100000
-							##junk = time()
-							temp = prgl(volinit,[ refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, 0.0,0.0], 1, False)
-							##eat += time()-junk
-							temp.set_attr("is_complex",0)
-							johi += 1
-						while( ipsiandiang == cod2[iln]/1000 ):
-							hashparams = cod2[iln]
-							ishift = hashparams%1000
-							if( data[ishift] == None ):
-								xx = shifts[ishift][0]*shrink
-								yy = shifts[ishift][1]*shrink
-								data[ishift] = fshift(dataml, xx, yy)
-								data[ishift].set_attr("is_complex",0)
-							##junk = time()
-							[peak,varadj] = Util.sqednorm(data[ishift], temp, ctfa, bckgnoise)
-							##eat += time()-junk
-							cod1[iln] = -peak
-							cod3[iln] = varadj
-							iln += 1
-							if(iln == lit  ):  break
-						#if( Blockdata["myid"] == Blockdata["main_node"]):
-						#	temp.write_image("temp.hdf")
-						#	data[iln].write_image("data.hdf")
-						#	ctfa.write_image("ctfa.hdf")
-						#	bckgnoise.write_image("bckgnoise.hdf")
-						#	exit()
-						###if( Blockdata["myid"] == Blockdata["main_node"] and iln%1000 ==0):  sxprint(" progress  ",iln,time()-at)
-					#if( Blockdata["myid"] == Blockdata["main_node"]):
-					#	sxprint("  PROJECT   ",im,lit,johi)#,cod2)
-					#	#for iln in range(lit):  sxprint("  ROPE   ",iln,cod1[iln],cod2[iln],cod3[iln])
-					del data
-					del dataml
-
-					lina = np.argsort(cod1)
-					cod1 = cod1[lina[::-1]]  # This sorts in reverse order
-					cod2 = cod2[lina[::-1]]  # This sorts in reverse order
-					cod3 = cod3[lina[::-1]]  # This sorts in reverse order
-					cod1 -= cod1[0]
-					lina = np.argwhere(cod1 > Tracker["constants"]["expthreshold"])
-					cod1 = cod1[lina]
-					cod2 = cod2[lina]
-					cod3 = cod3[lina]
-
-					###if( Blockdata["myid"] == Blockdata["main_node"]):
-					###for iui in range(len(lina)):
-					###	for iui in range(len(cod1)):
-					###		sxprint("  MLML  ",iui,cod1[iui],exp(cod1[iui]),cod2[iui],cod3[iui])
-
-					np.exp(cod1, out=cod1)
-					cod1 /= np.sum(cod1)
-					cumprob = 0.0
-					for j in range(len(cod1)):
-						cumprob += cod1[j]
-						if(cumprob > Tracker["constants"]["ccfpercentage"]):
-							lit = j+1
-							break
-
-					#  New norm is a sum of eq distances multiplied by their probabilities augmented by PW.
-					norm_per_particle[im] = np.sum(cod1[:lit]*cod3[:lit]) + accumulatepw[im][reachpw]
-					###print("   CNORMPERPARTICLE  ",Blockdata["myid"],im,norm_per_particle[im])
-
-					for iln in range(lit):
-						newpar[im][2].append([int(cod2[iln]), float(cod1[iln])])
-						#  CONTROLPRINTOUT   if( Blockdata["myid"] == Blockdata["main_node"] and icnm<5):
-						#	#print("  NEWPAR%04d  "%im,iln,newpar[im][2][-1])
-						#	hashparams = newpar[im][2][iln][0]
-						#	ipsiandiang	= hashparams/1000
-						#	ipsi = ipsiandiang%100000
-						#	iang = ipsiandiang/100000
-						#	ishift = hashparams%1000
-						#	#print("  NEWPAR%04d  "%im,iln,newpar[im][2][-1],hashparams,ipsi,iang,ishift)
-						#	sxprint(" NEWPAR%04d  "%im,iln,newpar[im][2][iln], refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, shifts[ishift])
-
-					###if( Blockdata["myid"] == 18 and lima<5):   sxprint("  FINALLY  ",im,lit)
-					del cod1, cod2, cod3, lina
-					###mpi_barrier(MPI_COMM_WORLD)
-					###mpi_finalize()
-					###exit()
-
-	"""
-	Number of images :     82     410   20.0%          1.3min          0.8min
-	Number of images :    164     410   40.0%          3.0min          1.8min
-	Number of images :    246     410   60.0%          5.7min          3.1min
-	Number of images :    328     410   80.0%          8.8min          4.4min
-	#  Projection and equdist take 50% time, so on the whole run of the program one could
-	#    reduce time from 311 to 233, (6h to 4h) if this time was totally eliminated.
-	"""
-	
-	
-	
-	#  END OF CONES
-	mpi_barrier(MPI_COMM_WORLD)
-	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		sxprint( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
-	at = time()
-	#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-	#  All images were processed, now to the additional calculations
-
-	###mpi_barrier(MPI_COMM_WORLD)
-	###mpi_finalize()
-	###exit()
-
-
-	# norm correction ---- calc the norm correction per particle
-	snormcorr = 0.0
-	for kl in range(nima):
-		###print("   NORMPERPARTICLE  ",Blockdata["myid"],kl,norm_per_particle[kl])
-		norm_per_particle[kl]	= sqrt(norm_per_particle[kl]*2.0)*oldparams[kl][7]/Tracker["avgvaradj"][procid]
-		snormcorr				+= norm_per_particle[kl]
-	Tracker["avgvaradj"][procid] = snormcorr
-	mpi_barrier(MPI_COMM_WORLD)
-	#  Compute avgvaradj
-	Tracker["avgvaradj"][procid] = mpi_reduce( Tracker["avgvaradj"][procid], 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD )
-	if(Blockdata["myid"] == Blockdata["main_node"]):
-		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
-	else:  Tracker["avgvaradj"][procid] = 0.0
-	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
-	mpi_barrier(MPI_COMM_WORLD)
-	
-	at = time()
-	mpi_barrier(Blockdata["shared_comm"])
-
-	###if Blockdata["myid"] == Blockdata["main_node"]:  print "  Finished :",time()-at
-	mpi_win_free(win_sm)
-	if( Tracker["nxinit"] != Tracker["nxpolar"] ):
-		mpi_win_free(win_volinit)
-		emnumpy4.unregister_numpy_from_emdata()
-		del emnumpy4
-	else:   mpi_win_free(win_vol)
-
-	mpi_barrier(Blockdata["shared_comm"])
-	emnumpy1.unregister_numpy_from_emdata()
-	emnumpy2.unregister_numpy_from_emdata()
-	del emnumpy1, emnumpy2
-
-	del volinit
-
-	mpi_barrier(Blockdata["shared_comm"])
-
-	#print("  NORMALIZATION DONE  ",Blockdata["myid"])
-	mpi_barrier(MPI_COMM_WORLD)
-	#if( Blockdata["myid"] == Blockdata["main_node"] ):
-	#	sxprint( "  Projection matching finished : %10.1fmin"%((time()-at)/60.))
-	return newpar, [1.0]*nima
 
 def recons3d_trl_struct_MPI_nosmearing(myid, main_node, prjlist, parameters, CTF, upweighted, mpi_comm, target_size):
 	global Tracker, Blockdata
@@ -8806,11 +6028,13 @@ def rec3d_continuation_nosmearing(original_data, mpi_comm):
 
 	# Estimate initial resolution/image size
 	if(Blockdata["myid"] == Blockdata["nodes"][0]):
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(line,  "continuation: reconstruct initial reference")
 
 	for procid in range(2):
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		if(Blockdata["myid"] == Blockdata["nodes"][procid]): sxprint(line, "3-D reconstruction of group %d"%procid)
 		
 		do3d(procid, projdata[procid], oldparams[procid], None, None, None, Blockdata["myid"], smearing = False, mpi_comm = mpi_comm)
@@ -8819,7 +6043,8 @@ def rec3d_continuation_nosmearing(original_data, mpi_comm):
 		mpi_barrier(mpi_comm)
 
 	Tracker["maxfrad"] = Tracker["nxinit"]//2
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	line = ''
 	if Blockdata["myid"] == Blockdata["main_node"]: 
 		sxprint(line, "do3d_continuation_get_maps_mpi")
 	rec3d_make_maps(compute_fsc = True, regularized = True)
@@ -8827,47 +6052,6 @@ def rec3d_continuation_nosmearing(original_data, mpi_comm):
 	Tracker["directory"] = temp
 	return
 	
-def init_Tracker_mpi(option_initvol = None):
-	global Tracker, Blockdata
-	# reset
-	Tracker["mainiteration"]        = 0
-	## nosmearing rec3d and evaluate resolution
-
-	Tracker["previousoutputdir"]    =  None
-	Blockdata["accumulatepw"]       = [None, None]
-	Blockdata["bckgnoise"]          =  None
-	Tracker["currentres"]		    = -1
-	Tracker["fsc143"]			    = -1
-	Tracker["maxfrad"]           	= -1
-	Tracker["no_improvement"]    	= 0
-	Tracker["no_params_changes"] 	= 0
-	Tracker["large_at_Nyquist"]  	= False
-	Tracker["anger"]             	= 1.e23
-	Tracker["shifter"]           	= 1.e23
-	Tracker["pixercutoff"]       	= 2.0
-	Tracker["acc_rot"]           	= 0.0
-	Tracker["acc_trans"]			= 0.0
-	Tracker["avgvaradj"]			= [1.0,1.0]  # This has to be initialized to 1.0 !!
-	Tracker["mainiteration"]     	= 0
-	Tracker["lentop"]				= 2000
-	Tracker["nxstep"]		        = 0
-	try: nxinit = Tracker["nxinit"]
-	except: Tracker["nxinit"] = Tracker["constants"]["nnxo"]
-	Tracker["maxfrad"]              = Tracker["nxinit"]//2 #Tracker["constants"]["nnxo"]//2
-	Tracker["refvol"]               = option_initvol
-	Tracker["state"]                = "CONTINUATION_INITIAL"
-	Tracker["constants"]["best"]    = 0
-	Tracker["keepfirst"]            = -1
-	Tracker["bestres"]          	= -1
-	Tracker["bestres_143"]          = -1
-	Tracker["directory"]         	= ""
-	Tracker["previousoutputdir"] 	= ""
-	Tracker["mainiteration"]     	= 0
-	Tracker["nima_per_chunk"]    	= [0,0]
-	try:    user_func = Tracker["constants"]["user_func"]
-	except: Tracker["constants"]["user_func"] = "do_volume_mask"
-	return
-
 def update_memory_estimation():
 	global Tracker, Blockdata
 	if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -9016,7 +6200,6 @@ def compare_bckgnoise(bckgnoise1, bckgnoise2):
 	
 def rec3d_make_maps(compute_fsc = True, regularized = True):
 	global Tracker, Blockdata
-	import user_functions
 	
 	# final reconstruction: compute_fsc = False; regularized = False
 	# tempdir is removed in the end of the function
@@ -9117,7 +6300,7 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 							tvol0 = filt_table(tvol0, cfsc)
 							if( Blockdata["no_of_groups"] > 1 ):  del cfsc
 
-						user_func = user_functions.factory[Tracker["constants"]["user_func"]]
+						user_func = user_functions.factory[Tracker["constants"]["user_func_volume"]]
 						#ref_data = [tvol0, Tracker, mainiteration]
 						ref_data = [tvol0, Tracker, Tracker["mainiteration"]]
 						#--  #--  memory_check(Blockdata["myid"],"first node, after masking")
@@ -9149,7 +6332,7 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 								elif( i > Tracker["constants"]["inires"]+1 ):  cfsc[i]  = 0.0
 							tvol1 = filt_table(tvol1, cfsc)
 							del cfsc
-						user_func = user_functions.factory[Tracker["constants"]["user_func"]]
+						user_func = user_functions.factory[Tracker["constants"]["user_func_volume"]]
 						#ref_data = [tvol1, Tracker, mainiteration]
 						ref_data = [tvol1, Tracker, Tracker["mainiteration"]]
 						#--  #--  memory_check(Blockdata["myid"],"first node, after masking")
@@ -9296,42 +6479,30 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 
 		Tracker["nxpolar"] = Tracker["nxinit"]#min( 3*Tracker["nxinit"], Tracker["constants"]["nnxo"] )
 		#Tracker["nxpolar"] = min( 2*Tracker["nxinit"], Tracker["constants"]["nnxo"] )
-		if general_mode:
-			if( Tracker["state"] == "INITIAL" ):
-				newparamstructure[procid], norm_per_particle[procid] = \
-						ali3D_polar_ccc(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
-						preshift = True, apply_mask = True, nonorm = Tracker["constants"]["nonorm"], applyctf = False)
-			elif( Tracker["state"] == "PRIMARY" ):
-				newparamstructure[procid], norm_per_particle[procid] = \
-						ali3D_primary_polar(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
-						preshift = True, apply_mask = True, nonorm = Tracker["constants"]["nonorm"], applyctf = True)
-			elif( Tracker["state"] == "EXHAUSTIVE" ):
-				newparamstructure[procid], norm_per_particle[procid] = \
-						ali3D_polar(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
-						preshift = True, apply_mask = True, nonorm = Tracker["constants"]["nonorm"], applyctf = True)
-			elif( (Tracker["state"] == "RESTRICTED") or (Tracker["state"] == "FINAL") ):
-				newparamstructure[procid], norm_per_particle[procid] = \
-						ali3D_local_polar(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
-						preshift = True, apply_mask = True, nonorm = Tracker["constants"]["nonorm"], applyctf = True)
-			else:  
-				ERROR( "Incorrect state  %s" % Tracker["state"], myid=Blockdata["myid"] )
-			
-		elif continuation_mode:
-			if( (Tracker["state"] == "PRIMARY") ):
-				###print("   ",Blockdata["myid"],len(refang),len(rshifts),len(coarse_angles),len(coarse_shifts),len(original_data[procid]), len(oldparams[procid]))
-				###print("   ",Blockdata["myid"],original_data[0][0], oldparams[0][0])
-				newparamstructure[procid], norm_per_particle[procid] = \
-						ali3D_primary_local_polar(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
-						preshift = True, apply_mask = True, nonorm = Tracker["constants"]["nonorm"], applyctf = True)
-			elif( (Tracker["state"] == "RESTRICTED") or (Tracker["state"] == "FINAL") ):
-				###print("   ",Blockdata["myid"],len(refang),len(rshifts),len(coarse_angles),len(coarse_shifts),len(original_data[procid]), len(oldparams[procid]))
-				###print("   ",Blockdata["myid"],original_data[0][0], oldparams[0][0])
-				newparamstructure[procid], norm_per_particle[procid] = \
-						ali3D_local_polar(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
-						preshift = True, apply_mask = True, nonorm = Tracker["constants"]["nonorm"], applyctf = True)
-			else:  
-				ERROR( "Incorrect state  %s" % Tracker["state"], myid=Blockdata["myid"] )
-		else: pass
+		if( Tracker["state"] == "INITIAL" ):
+			newparamstructure[procid], norm_per_particle[procid] = \
+					ali3D_polar_ccc(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
+					preshift = True, apply_mask = True, nonorm = Tracker["constants"]["nonorm"], applyctf = False)
+		elif( Tracker["state"] == "PRIMARY" ):
+			newparamstructure[procid], norm_per_particle[procid] = \
+					ali3D_primary_polar(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
+					preshift = True, apply_mask = True, nonorm = Tracker["constants"]["nonorm"], applyctf = True)
+		elif( (Tracker["state"] == "PRIMARY LOCAL") ):
+			###print("   ",Blockdata["myid"],len(refang),len(rshifts),len(coarse_angles),len(coarse_shifts),len(original_data[procid]), len(oldparams[procid]))
+			###print("   ",Blockdata["myid"],original_data[0][0], oldparams[0][0])
+			newparamstructure[procid], norm_per_particle[procid] = \
+					ali3D_primary_local_polar(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
+					preshift = True, apply_mask = True, nonorm = Tracker["constants"]["nonorm"], applyctf = True)
+		elif( Tracker["state"] == "EXHAUSTIVE" ):
+			newparamstructure[procid], norm_per_particle[procid] = \
+					ali3D_polar(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
+					preshift = True, apply_mask = True, nonorm = Tracker["constants"]["nonorm"], applyctf = True)
+		elif( (Tracker["state"] == "RESTRICTED") or (Tracker["state"] == "FINAL") ):
+			newparamstructure[procid], norm_per_particle[procid] = \
+					ali3D_local_polar(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
+					preshift = True, apply_mask = True, nonorm = Tracker["constants"]["nonorm"], applyctf = True)
+		else:  
+			ERROR( "Incorrect state  %s" % Tracker["state"], myid=Blockdata["myid"] )
 
 
 		qt     = 1.0/Tracker["constants"]["nnxo"]/Tracker["constants"]["nnxo"]
@@ -9351,7 +6522,8 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		params = wrap_mpi_gatherv(params, Blockdata["main_node"], MPI_COMM_WORLD)
 		#  store params
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			line = ''
 			sxprint(line,"Executed successfully: ","Projection matching, state: %s, number of images:%7d"%(Tracker["state"],len(params)))
 			write_text_row(params, os.path.join(Tracker["directory"], "params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"])) )
 		del params
@@ -9496,7 +6668,8 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		anger, shifter = params_changes( read_text_row(os.path.join(Tracker["directory"],"params_%03d.txt"%(Tracker["mainiteration"]))), read_text_row(os.path.join(Tracker["previousoutputdir"],"params_%03d.txt"%(Tracker["mainiteration"]-1))) )
 		write_text_row( [[anger, shifter]], os.path.join(Tracker["directory"] ,"error_thresholds_%03d.txt"%(Tracker["mainiteration"])) )
 
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(line,"Average displacements for angular directions = %6.2f degrees; and shifts = %5.1f pixels"%(anger, shifter) )
 
 		#  Write current Trucker
@@ -9524,7 +6697,6 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 def main():
 
 	from utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
-	import user_functions
 	from applications  import MPI_start_end
 	from optparse      import OptionParser
 	from global_def    import SPARXVERSION
@@ -9561,6 +6733,7 @@ def main():
 	parser = OptionParser(usage, version=SPARXVERSION)
 	parser.add_option("--do_final",           type="int",			 	default= -1,  help="Do unfiltered odd and even volume 3-D reconstruction from an existing meridien refinement with optional specified iteration")
 	parser.add_option("--local_refinement",    action="store_true",  default= False,  help="Perform local refinement starting from user-provided orientation parameters")
+	parser.add_option("--memory_per_node",          type="float",           default= -1.0,                	help="User provided information about memory per node (NOT per CPU) [in GB] (default 2GB*(number of CPUs per node))")	
 
 	do_final_mode = False
 	for q in sys.argv[1:]:
@@ -9574,45 +6747,84 @@ def main():
 			do_continuation_mode = True
 			break
 
-	if((not do_final_mode) and (not do_continuation_mode)):
-		# case1: standard meridien run
-		# case2: restart mode of standard meridien run. Parameters can be altered in the restart run.
+	if not do_final_mode:
+
 		parser.add_option("--radius",      		   		type= "int",          	default= -1,			     	help="Outer radius [in pixels] of particles < int(nx/2)-1")
 		parser.add_option("--xr",      		       		type="float",         	default= 5.,		         	help="Range for translation search in both directions, search is +/xr (default 5), can be fractional")
 		parser.add_option("--ts",      		       		type="float",        	default= 1.,		         	help="Step size of the translation search in both directions, search is within a circle of radius xr on a grid with steps ts, (default 1), can be fractional")
-		parser.add_option("--inires",		       		type="float",	     	default= 25.,		         	help="Resolution of the initial_volume volume (default 25A)")
 		parser.add_option("--mask3D",		        	type="string",	      	default= None,		          	help="3D mask file (default a sphere with radius (nx/2)-1)")
-		parser.add_option("--function",					type="string",          default= "do_volume_mask",		help="Vame of the reference preparation function (default do_volume_mask)")
+		parser.add_option("--function",					type="string",          default= "do_volume_mask",		help="Name of the reference preparation function (default do_volume_mask)")
+		parser.add_option("--function_ai",				type="string",          default= "ai_spa",		help="Name of the internal heuristic function (default ai_spa)")
 		parser.add_option("--symmetry",					type="string",        	default= 'c1',		     		help="Point-group symmetry of the refined structure (default c1)")
-		parser.add_option("--skip_prealignment",		action="store_true", 	default= False,		         	help="Skip 2-D pre-alignment step: to be used if images are already centered. (default False)")
-		parser.add_option("--initialshifts",         	action="store_true",  	default= False,	         		help="Use orientation parameters in the input file header to jumpstart the procedure. (default False)")
-		parser.add_option("--center_method",			type="int",			 	default= -1,			     	help="Method for centering: of average during initial 2D prealignment of data (0 : no centering; -1 : average shift  method;  please see center_2D in utilities.py for methods 1-7) (default -1)")
-		parser.add_option("--target_radius", 			type="int",			 	default= 29,			     	help="Target particle radius for 2D prealignment. Images will be shrank/enlarged to this radius (default 29)")
-		parser.add_option("--delta",					type="float",			default= 7.5,		     		help="Initial angular sampling step (default 7.5)")
+		parser.add_option("--inires",		       		type="float",	     	default= 25,		         	help="Resolution of the initial_volume volume (default 25A)")
+		parser.add_option("--delta",					type="float",			default= 3.75,		     		help="Initial angular sampling step (default 7.5)")
 		parser.add_option("--an",	           		    type="float", 	     	default= -1.,                	help="Angular neighborhood for local search")
 		parser.add_option("--shake",	           		type="float", 	     	default= 0.5,                	help="Shake (0.5)")
 		parser.add_option("--small_memory",         	action="store_true",  	default= False,             	help="Data will not be kept in memory if small_memory is true. (default False)")
 		parser.add_option("--ccfpercentage",			type="float", 	      	default= 99.9,               	help="Percentage of the correlation peak area to be included, 0.0 corresponds to hard matching (default 99.9%)")
 		parser.add_option("--nonorm",               	action="store_true",  	default= False,              	help="Do not apply image norm correction. (default False)")
-		parser.add_option("--memory_per_node",          type="float",           default= -1.0,                	help="User provided information about memory per node (NOT per CPU) [in GB] (default 2GB*(number of CPUs per node))")	
-		(options, args) = parser.parse_args(sys.argv[1:])
+		parser.add_option("--group_by",               	type="str",  	default= 'ptcl_source_image',              	help="Group particles by header information. For helical refinement use filament or filament_id if present. (Default ptcl_source_image)")
+		if do_continuation_mode:
+			# case1: local meridien run using parameters stored in headers
+			# case2: restart mode of standard meridien run. Parameters can be altered in the restart run.
+			(options, args) = parser.parse_args(sys.argv[1:])
 
-		if( len(args) == 3 ):
-			volinit 	= args[2]
-			masterdir 	= args[1]
-			orgstack 	= args[0]
+			if( len(args) == 2 ):
+				masterdir 	= args[1]
+				orgstack 	= args[0]
+				volinit = ''
 
-		elif( len(args) == 2 ):
-			orgstack 	= args[0]
-			volinit 	= args[1]
-			masterdir = ""
+			elif( len(args) == 1 ):
+				masterdir = args[0]
+				volinit = ''
+				orgstack = ''
 
-		elif( len(args) == 1 ): masterdir = args[0]
+			else:
+				sxprint( "usage: " + usage)
+				sxprint( "Please run '" + progname + " -h' for detailed options")
+				ERROR( "Invalid number of parameters used. Please see usage information above.", myid=Blockdata['myid'])
+				return
+
+			if options.delta > 3.75:
+				ERROR( "Local searches requested, delta cannot be larger than 3.75.", myid=Blockdata["myid"] )
+				return
+
+			setattr(options, initialshifts, True)
+			setattr(options, skip_prealignment, True)
+
 		else:
-			sxprint( "usage: " + usage)
-			sxprint( "Please run '" + progname + " -h' for detailed options")
-			ERROR( "Invalid number of parameters used. Please see usage information above." )
-			return
+			# case1: standard meridien run
+			# case2: restart mode of standard meridien run. Parameters can be altered in the restart run.
+			parser.add_option("--skip_prealignment",		action="store_true", 	default= False,		         	help="Skip 2-D pre-alignment step: to be used if images are already centered. (default False)")
+			parser.add_option("--initialshifts",         	action="store_true",  	default= False,	         		help="Use orientation parameters in the input file header to jumpstart the procedure. (default False)")
+			parser.add_option("--center_method",			type="int",			 	default= -1,			     	help="Method for centering: of average during initial 2D prealignment of data (0 : no centering; -1 : average shift  method;  please see center_2D in utilities.py for methods 1-7) (default -1)")
+			parser.add_option("--target_radius", 			type="int",			 	default= 29,			     	help="Target particle radius for 2D prealignment. Images will be shrank/enlarged to this radius (default 29)")
+			(options, args) = parser.parse_args(sys.argv[1:])
+
+			if( len(args) == 3 ):
+				volinit 	= args[2]
+				masterdir 	= args[1]
+				orgstack 	= args[0]
+
+			elif( len(args) == 2 ):
+				orgstack 	= args[0]
+				volinit 	= args[1]
+				masterdir = ""
+
+			elif( len(args) == 1 ): masterdir = args[0]
+			else:
+				sxprint( "usage: " + usage)
+				sxprint( "Please run '" + progname + " -h' for detailed options")
+				ERROR( "Invalid number of parameters used. Please see usage information above.", myid=Blockdata['myid'])
+				return
+
+		if Blockdata["myid"]  == Blockdata["main_node"]:
+			line = ""
+			for a in sys.argv:
+				line +=a+"  "
+			sxprint(" shell line command ")
+			sxprint(line)
+
 
 		#  Check whether we are restarting the program, in the least main000 should exist, otherwise there is nothing to restart
 		keepgoing1   = 1
@@ -9644,23 +6856,9 @@ def main():
 		
 		# ------------------------------------------------------------------------------------
 		# Initialize MPI related variables
-		###  MPI SANITY CHECKES
-		if not balanced_processor_load_on_nodes:
-			ERROR( "Nodes do not have the same number of CPUs, please check configuration of the cluster.", myid=Blockdata["myid"] )
-			return
 
-		if Blockdata["myid"]  == Blockdata["main_node"]:
-			line = ""
-			for a in sys.argv:
-				line +=a+"  "
-			sxprint(" shell line command ")
-			sxprint(line)
 		# ------------------------------------------------------------------------------------
 		#  INPUT PARAMETERS
-		global_def.BATCH = True
-		global_def.MPI   = True
-		###  VARIOUS SANITY CHECKES <-----------------------
-		if( options.memory_per_node < 0.0 ): options.memory_per_node = 2.0*Blockdata["no_of_processes_per_group"]
 		#  For the time being we use all CPUs during refinement
 		Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
 		Blockdata["nsubset"]      = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
@@ -9693,16 +6891,17 @@ def main():
 			Constants["best"]              			= 3
 			Constants["limit_improvement"] 			= 1
 			Constants["limit_changes"]     			= 1  # reduce delta by half if both limits are reached simultaneously
-			Constants["states"]            			= ["INITIAL", "PRIMARY", "EXHAUSTIVE", "RESTRICTED", "LOCAL", "FINAL"]# will add two states, CONINUATION_INITIAL, CONINUATION_PRIMARY
-			Constants["user_func"]					= options.function
+			Constants["states"]            			= ["INITIAL", "PRIMARY", "EXHAUSTIVE", "RESTRICTED", "PRIMARY LOCAL", "FINAL"]# will add two states, CONINUATION_INITIAL, CONINUATION_PRIMARY
+			Constants["user_func_volume"]			= options.function
+			Constants["user_func_ai"]				= options.function_ai
 			Constants["hardmask"]          			=  True #options.hardmask
 			Constants["ccfpercentage"]     			= options.ccfpercentage/100.
 			Constants["expthreshold"]      			= -10
 			Constants["number_of_groups"]  			= -1 # number of defocus groups, to be set by assign_particles_to_groups
 			Constants["nonorm"]            			= options.nonorm
 			Constants["small_memory"]      			= options.small_memory
-			Constants["initialshifts"]			    = options.initialshifts
 			Constants["memory_per_node"] 			= options.memory_per_node
+			Constants["initialshifts"]			    = options.initialshifts
 
 
 			#
@@ -9748,13 +6947,56 @@ def main():
 			###<<<----state 
 			Tracker["bestres"]          	= 0
 			Tracker["bestres_143"]          = 0
+			Tracker["changed_delta"]        = False
 			Blockdata["bckgnoise"]          = None
 			Blockdata["accumulatepw"]       = [[],[]]
+
+			###  VARIOUS SANITY CHECKS <-----------------------
+			if options.memory_per_node < 0.0:
+				options.memory_per_node = 2.0 * Blockdata["no_of_processes_per_group"]
+
+			if options.initialshifts and not options.skip_prealignment:
+				ERROR('Initialshifts and skip_prealignment option provided. Enable skip_prealignment for further processing.', action=0, myid=Blockdata['myid'])
+				options.skip_prealignment = True
+
+			checking_flag = 1
+			if(Blockdata["myid"] == Blockdata["main_node"]):
+				if( Tracker["constants"]["mask3D"] and (not os.path.exists(Tracker["constants"]["mask3D"]))):
+					checking_flag = 0
+
+			checking_flag = bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
+			if checking_flag==0:
+				ERROR( "Mask3D file does  not exists ", myid=Blockdata["myid"] )
+				return
+			
+			if options.ts > 0:
+				if options.xr / options.ts < 1.0: 
+					ERROR( "Incorrect translational searching settings, search range cannot be smaller than translation step ", myid=Blockdata["myid"] )
+					return
+			else:
+				ERROR( "Incorrect translational searching settings, translational search range cannot be smaller equals 0", myid=Blockdata["myid"] )
+				return
+
+			if( 2*(Tracker["currentres"] + Tracker["nxstep"]) > Tracker["constants"]["nnxo"] ):
+				ERROR( "Image size less than what would follow from the initial resolution provided %d  %d  %d" % (Tracker["currentres"], Tracker["nxstep"], 2*(Tracker["currentres"] + Tracker["nxstep"])), myid=Blockdata["myid"] )
+				return
+
+			if(Tracker["constants"]["radius"]  < 1):
+				Tracker["constants"]["radius"]  = Tracker["constants"]["nnxo"]//2-2
+
+			elif((2*Tracker["constants"]["radius"] +2) > Tracker["constants"]["nnxo"]):
+				ERROR( "Particle radius set too large", myid=Blockdata["myid"] )
+				return
+
+			if not balanced_processor_load_on_nodes:
+				ERROR( "Nodes do not have the same number of CPUs, please check configuration of the cluster.", myid=Blockdata["myid"] )
+				return
 
 			# ------------------------------------------------------------------------------------
 			# Get the pixel size; if none, set to 1.0, and the original image size
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+				#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+				line = ''
 				sxprint(line,"INITIALIZATION OF MERIDIEN")
 				a = get_im(orgstack)
 				nnxo = a.get_xsize()
@@ -9790,42 +7032,16 @@ def main():
 			Tracker["constants"]["pixel_size"]   = pixel_size
 			Tracker["constants"]["fuse_freq"]    = fq
 			del fq, nnxo, pixel_size
-			# Resolution is always in full size image pixel units.
-			Tracker["constants"]["inires"] = int(Tracker["constants"]["nnxo"]*Tracker["constants"]["pixel_size"]/Tracker["constants"]["inires"] + 0.5)
-			Tracker["currentres"]          = Tracker["constants"]["inires"]
-			Tracker["fsc143"]              = Tracker["constants"]["inires"]
+			if(Tracker["constants"]["inires"]>0.0):
+				Tracker["constants"]["inires"] = int(
+					Tracker["constants"]["nnxo"] * 
+					Tracker["constants"]["pixel_size"] / Tracker["constants"]["inires"] +
+					0.5
+					)
+			Tracker["currentres"] = Tracker["constants"]["inires"]
+			Tracker["fsc143"]     = Tracker["constants"]["inires"]
 
-			checking_flag = 1
-			###  VARIOUS SANITY CHECKES
-			if options.initialshifts: options.skip_prealignment =True  # No prealignment if initial shifts are set
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				if( Tracker["constants"]["mask3D"] and (not os.path.exists(Tracker["constants"]["mask3D"]))):
-					checking_flag = 0
-			checking_flag = bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
 
-			if checking_flag==0:
-				ERROR( "Mask3D file does  not exists ", myid=Blockdata["myid"] )
-				return
-			
-			if( options.xr/options.ts<1.0 ): 
-				ERROR( "Incorrect translational searching settings, search range cannot be smaller than translation step ", myid=Blockdata["myid"] )
-				return
-
-			if( 2*(Tracker["currentres"] + Tracker["nxstep"]) > Tracker["constants"]["nnxo"] ):
-				ERROR( "Image size less than what would follow from the initial resolution provided %d  %d  %d" % (Tracker["currentres"], Tracker["nxstep"], 2*(Tracker["currentres"] + Tracker["nxstep"])), myid=Blockdata["myid"] )
-				return
-
-			if(Tracker["constants"]["radius"]  < 1):
-				Tracker["constants"]["radius"]  = Tracker["constants"]["nnxo"]//2-2
-
-			elif((2*Tracker["constants"]["radius"] +2) > Tracker["constants"]["nnxo"]):
-				ERROR( "Particle radius set too large", myid=Blockdata["myid"] )
-				return
-
-			###<-----end of sanity check <----------------------
-			###<<<----------------------------- parse program
-		
-			# ------------------------------------------------------------------------------------
 			#  MASTER DIRECTORY
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				if( masterdir == ""):
@@ -9849,9 +7065,10 @@ def main():
 				masterdir = string.join(masterdir,"")
 
 			Tracker["constants"]["masterdir"] = masterdir
+			initdir = os.path.join(Tracker["constants"]["masterdir"],"main000")
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				print_dict(Tracker["constants"], "Permanent settings of meridien")
-				print_dict(Blockdata, "MPI settings of meridien")
+				if os.path.exists(initdir): shutil.rmtree(initdir)
+				os.mkdir(initdir)
 
 			# Initialization of orgstack
 			Tracker["constants"]["stack"] = orgstack 
@@ -9860,30 +7077,18 @@ def main():
 			else:
 				total_stack = 0
 			total_stack = bcast_number_to_all(total_stack, source_node = Blockdata["main_node"])
-			# ------------------------------------------------------------------------------------
-			#  	Fresh start INITIALIZATION
-			initdir = os.path.join(Tracker["constants"]["masterdir"],"main000")
+
+			partids = os.path.join(initdir, "indexes_000.txt")
+			if( Blockdata["myid"] == Blockdata["main_node"] ):
+				write_text_file(list(range(total_stack)), partids)
+			mpi_barrier(MPI_COMM_WORLD)
 
 
-			partids   = os.path.join(initdir, "indexes_000.txt")
-			#### add prealignment like in isac
-
-			#########################################################################################################################
-			# prepare parameters to call calculate_2d_params_for_centering
-
-			radi = options.radius
-			target_radius = options.target_radius
-			# target_nx = options.target_nx
-			center_method = options.center_method
-			if (radi < 1):  
-				ERROR( "Particle radius was not provided! (2d prealignment)", myid=Blockdata["myid"] )
+			init2dir = os.path.join(Tracker["constants"]["masterdir"], "2dalignment")
+			if Blockdata['myid'] == Blockdata['main_node']:
+				sxprint('2D pre-alignment step')
 
 			nxrsteps = 4
-
-			init2dir = os.path.join(masterdir, "2dalignment")
-
-			##########################################################################################################################
-			# put all parameters in a dictionary
 			kwargs = dict()
 
 			kwargs["init2dir"]  							= init2dir
@@ -9892,11 +7097,11 @@ def main():
 			kwargs["number_of_images_in_stack"] 			= total_stack
 			kwargs["nproc"] 								= Blockdata["nproc"]
 
-			kwargs["target_radius"] 						= target_radius
+			kwargs["target_radius"] 						= options.target_radius
 			# kwargs["target_nx"] = target_nx
-			kwargs["radi"] 									= radi
+			kwargs["radi"] 									= options.radi
 
-			kwargs["center_method"] 						= center_method
+			kwargs["center_method"] 						= options.center_method
 
 			kwargs["nxrsteps"] 								= nxrsteps
 
@@ -9908,32 +7113,24 @@ def main():
 			kwargs["options_CTF"] 							= True
 
 			kwargs["mpi_comm"] 								= MPI_COMM_WORLD
-			#################################################################################################################################################################
-			if( (Blockdata["myid"] == Blockdata["main_node"]) and (not options.skip_prealignment )):
-				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				sxprint(line,"2D pre-alignment step")
-			## only the master has the parameters
 			params2d = calculate_2d_params_for_centering(kwargs)
 			del kwargs
-			if( (Blockdata["myid"] == Blockdata["main_node"]) and (not options.skip_prealignment )):
-				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				sxprint(line,"2D pre-alignment completed")
-
-			if( Blockdata["myid"] == Blockdata["main_node"] ):
-				os.mkdir(initdir)
-				write_text_file(list(range(total_stack)), partids)
-			mpi_barrier(MPI_COMM_WORLD)
+			if Blockdata['myid'] == Blockdata['main_node']:
+				sxprint('2D pre-alignment completed')
 
 			#  store params
 			partids = [None]*2
-			for procid in range(2):  partids[procid] = os.path.join(initdir,"chunk_%01d_000.txt"%procid)
+			for procid in range(2):
+				partids[procid] = os.path.join(initdir,"chunk_%01d_000.txt"%procid)
 			partstack = [None]*2
-			for procid in range(2):  partstack[procid] = os.path.join(initdir,"params-chunk_%01d_000.txt"%procid)
+			for procid in range(2):
+				partstack[procid] = os.path.join(initdir,"params-chunk_%01d_000.txt"%procid)
+
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				l1, l2 = assign_particles_to_groups(minimum_group_size = 10)
+				l1, l2 = assign_particles_to_groups(minimum_group_size = 10, name_tag=options.group_by)
 				write_text_file(l1,partids[0])
 				write_text_file(l2,partids[1])
-				if(options.initialshifts):
+				if options.initialshifts: # Always False for continue mode as initialised in the option parser
 					tp_list = EMUtil.get_all_attributes(Tracker["constants"]["stack"], "xform.projection")
 					for i in range(len(tp_list)):
 						dp = tp_list[i].get_params("spider")
@@ -9941,17 +7138,28 @@ def main():
 					write_text_row(tp_list, os.path.join(initdir,"params_000.txt"))
 					write_text_row([tp_list[i] for i in l1], partstack[0])
 					write_text_row([tp_list[i] for i in l2], partstack[1])
-					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-					sxprint(line,"Executed successfully: Imported initial parameters from the input stack")
 					del tp_list
-
+					sxprint('Executed successfully: Imported initial parameters from the input stack.')
 				else:
 					write_text_row([[0,0,0,params2d[i][1],params2d[i][2], 0.0, 1.0] for i in l1], partstack[0])
 					write_text_row([[0,0,0,params2d[i][1],params2d[i][2], 0.0, 1.0] for i in l2], partstack[1])
 					write_text_row([[0,0,0,params2d[i][1],params2d[i][2], 0.0, 1.0] for i in range(len(l1)+len(l2))], os.path.join(initdir,"params_000.txt"))
-
 				del l1, l2
 
+			Tracker["nima_per_chunk"][0] = bcast_number_to_all(Tracker["nima_per_chunk"][0], Blockdata["main_node"])
+			Tracker["nima_per_chunk"][1] = bcast_number_to_all(Tracker["nima_per_chunk"][1], Blockdata["main_node"])
+			Tracker["constants"]["number_of_groups"] = bcast_number_to_all(Tracker["constants"]["number_of_groups"], Blockdata["main_node"])
+			del params2d
+
+			if do_continuation_mode:
+				if( Tracker["constants"]["inires"] > 0 ):
+					Tracker["nxinit"] = min(2*Tracker["constants"]["inires"], Tracker["constants"]["nnxo"] )
+				else: 
+					Tracker["nxinit"] = Tracker["constants"]["nnxo"]
+					
+				rec3d_continuation_nosmearing(original_data, MPI_COMM_WORLD)
+
+			elif Blockdata['myid'] == Blockdata['main_node']:
 				# Create reference models for each particle group
 				if(Tracker["constants"]["mask3D"] == None):
 					viv = filt_table(cosinemask(get_im(volinit),radius = Tracker["constants"]["radius"]), [1.0]*Tracker["constants"]["inires"] + [0.5] + [0.0]*Tracker["constants"]["nnxo"])
@@ -9961,547 +7169,34 @@ def main():
 				for procid in range(2):
 					viv.write_image(os.path.join(initdir,"vol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 				del viv
-			else:
-				Tracker["nima_per_chunk"] = [0,0]
-			Tracker["nima_per_chunk"][0] = bcast_number_to_all(Tracker["nima_per_chunk"][0], Blockdata["main_node"])
-			Tracker["nima_per_chunk"][1] = bcast_number_to_all(Tracker["nima_per_chunk"][1], Blockdata["main_node"])
-			Tracker["constants"]["number_of_groups"] = bcast_number_to_all(Tracker["constants"]["number_of_groups"], Blockdata["main_node"])
-			del params2d
 
-			mainiteration 	= 0
-			Tracker["mainiteration"] = mainiteration
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				with open(os.path.join(Tracker["constants"]["masterdir"], \
 					"main%03d"%Tracker["mainiteration"], \
 						"Tracker_%03d.json"%Tracker["mainiteration"]),'w') as fout:
 					json.dump(Tracker, fout, indent=4)
-				fout.close()
 
-
-		else:# simple restart, at least main000 is completed. Otherwise no need restart
-		
+		else:
 			Blockdata["bckgnoise"] 		= None
 			Blockdata["accumulatepw"] 	= [[],[]]
 			initdir 			= os.path.join(masterdir,"main000")
 			keepchecking 		= 1
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				fout 	= open(os.path.join(initdir,"Tracker_000.json"),'r')
-				Tracker = convert_json_fromunicode(json.load(fout))
+				with open(os.path.join(initdir,"Tracker_000.json"),'r') as fout:
+					Tracker = convert_json_fromunicode(json.load(fout))
 				print_dict(Tracker["constants"], "Permanent settings of the original run recovered from main000")
-				fout.close()
 			else: Tracker = None
 			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 			mainiteration 	= 0
 			Tracker["mainiteration"] = mainiteration
+		mpi_barrier(MPI_COMM_WORLD)
 
-		Tracker["previousoutputdir"] = initdir
 
-		# ------------------------------------------------------------------------------------
-		#  MAIN ITERATION
 		projdata       = [[model_blank(1,1)], [model_blank(1,1)]]
 		oldparams      = [[],[]]
 		currentparams  = [[],[]]
 		original_data  = [None, None]
-		keepgoing = 1
-		while(keepgoing):
-			Tracker["previousoutputdir"] = os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
-			mainiteration += 1
-			Tracker["mainiteration"] = mainiteration
-			Tracker["directory"]     = os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
-			doit, keepchecking = checkstep(Tracker["directory"], keepchecking)
-			if( not doit ):			
-				li = True
-				doit2, keepchecking2 = checkstep(os.path.join(Tracker["directory"],"Tracker_%03d.json"%Tracker["mainiteration"]), li)
-				if doit2:
-					doit = True
-					if( Blockdata["myid"] == Blockdata["main_node"] ): shutil.rmtree(Tracker["directory"])
-					mpi_barrier(MPI_COMM_WORLD)
-			if doit :
-				if(Blockdata["myid"] == Blockdata["main_node"]):
-					with open(os.path.join(Tracker["previousoutputdir"], \
-					  "Tracker_%03d.json"%(Tracker["mainiteration"]-1)),'r') as fout:
-						Tracker = convert_json_fromunicode(json.load(fout))
-					fout.close()
-					#  It has to be repeated here as Tracker is from previous iteration, I see no other way.
-					Tracker["previousoutputdir"]	= os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
-					Tracker["mainiteration"]		= mainiteration
-					Tracker["directory"]			= os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
-				else: Tracker = None
-				Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
-				### 
-				if restart_mode:
-					update_tracker(sys.argv[1:])
-					update_memory_estimation()
-					restart_mode = False
 
-				# prepare names of input file names, they are in main directory,
-				#   log subdirectories contain outputs from specific refinements
-				partids = [None]*2
-				for procid in range(2):  partids[procid] = os.path.join(Tracker["previousoutputdir"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]-1))
-				partstack = [None]*2
-				for procid in range(2):  partstack[procid] = os.path.join(Tracker["previousoutputdir"],"params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]-1))
-
-				mpi_barrier(MPI_COMM_WORLD)
-
-				if(Tracker["mainiteration"] == 1):
-					fff = None
-					anger   = 1.0e9
-					shifter = 1.0e9
-				else:
-					if(Blockdata["myid"] == Blockdata["main_node"]):
-						fff = read_text_file(os.path.join(Tracker["previousoutputdir"],"driver_%03d.txt"%(Tracker["mainiteration"]-1)))
-						[anger, shifter] = read_text_row( os.path.join(Tracker["previousoutputdir"] ,"error_thresholds_%03d.txt"%(Tracker["mainiteration"]-1)) )[0]
-					else:
-						fff = []
-						anger   = 0.0
-						shifter = 0.0
-					fff = bcast_list_to_all(fff, Blockdata["myid"], source_node=Blockdata["main_node"])
-					anger   = bcast_number_to_all(anger,   source_node = Blockdata["main_node"])
-					shifter = bcast_number_to_all(shifter, source_node = Blockdata["main_node"])
-
-				keepgoing = AI( fff, anger, shifter, Blockdata["myid"] == Blockdata["main_node"])
-
-				if keepgoing == 1: # not converged
-					if Blockdata["myid"] == Blockdata["main_node"]:
-						if( Tracker["mainiteration"] > 1 ):
-							line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-							sxprint(line,"Resolution achieved in ITERATION  #%2d: %3d/%3d pixels, %5.2fA/%5.2fA."%
-								(Tracker["mainiteration"]-1, \
-								Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
-								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]) ) )
-						sxprint("\n\n\n\n")
-						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-						sxprint(line,"ITERATION  #%2d. Current state: %14s, nxinit: %3d, delta: %9.4f, xr: %9.4f, ts: %9.4f"%\
-							(Tracker["mainiteration"], Tracker["state"],Tracker["nxinit"], Tracker["delta"], Tracker["xr"], Tracker["ts"]  ))
-					#print("RACING  A ",Blockdata["myid"])
-					li = True
-					doit2, keepchecking2 = checkstep(Tracker["directory"], li)
-					if(Blockdata["myid"] == Blockdata["main_node"] and doit2):
-						cmd = "{} {}".format("mkdir", Tracker["directory"])
-						junk = cmdexecute(cmd)
-						cmd = "{} {}".format("mkdir", os.path.join(Tracker["directory"],"oldparamstructure"))
-						junk = cmdexecute(cmd)
-					if(not doit2):  
-						ERROR( "There was a gap in main directories, program cannot proceed", myid=Blockdata["myid"] )
-
-					mpi_barrier(MPI_COMM_WORLD)
-					
-					refinement_one_iteration(partids, partstack, original_data, oldparams, projdata, \
-					    general_mode =True, continuation_mode = False)
-					
-					#	sxprint("  MOVING  ON --------------------------------------------------------------------")
-				else: # converged, do final
-					if( Blockdata["subgroup_myid"] > -1 ): mpi_comm_free(Blockdata["subgroup_comm"])
-					if(Blockdata["myid"] == Blockdata["main_node"]):
-						sxprint(line,"Resolution achieved in ITERATION  #%2d: %3d/%3d pixels, %5.2fA/%5.2fA."%
-								(Tracker["mainiteration"]-1, \
-								Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
-								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]) ) )
-						sxprint("\n\n\n\n")
-
-						sxprint("The iteration that contains the best resolution is %d"%Tracker["constants"]["best"])
-						if Tracker["constants"]["best"] ==2:  sxprint("No resolution improvement in refinement ")
-						fout = open(os.path.join(masterdir,"Tracker_final.json"),'w')
-						json.dump(Tracker, fout, indent=4)
-						fout.close()
-					mpi_barrier(MPI_COMM_WORLD)
-					
-					newparamstructure 			= [[],[]]
-					projdata          			= [[model_blank(1,1)], [model_blank(1,1)]]
-					original_data     			= [None,None]
-					oldparams         			= [[],[]]
-					Blockdata["accumulatepw"]  	= [None, None]
-					#if Tracker["constants"]["memory_per_node"] <0.0: Tracker["constants"]["memory_per_node"] = 2.0*Blockdata["no_of_processes_per_group"]
-					recons3d_final(Tracker["constants"]["masterdir"], Tracker["constants"]["best"], Tracker["constants"]["memory_per_node"])
-
-			#  End of if doit
-		#   end of while
-		mpi_finalize()
-		return
-
-
-
-	elif( do_continuation_mode ):
-		# case1: local meridien run using parameters stored in headers
-		# case2: restart mode of standard meridien run. Parameters can be altered in the restart run.
-		parser.add_option("--radius",      		   		type= "int",          	default= -1,			     	help="Outer radius [in pixels] of particles < int(nx/2)-1")
-		parser.add_option("--xr",      		       		type="float",         	default= 5.,		         	help="Range for translation search in both directions, search is +/xr (default 5), can be fractional")
-		parser.add_option("--ts",      		       		type="float",        	default= 1.,		         	help="Step size of the translation search in both directions, search is within a circle of radius xr on a grid with steps ts, (default 1), can be fractional")
-		parser.add_option("--inires",		       		type="float",	     	default= -1.,		         	help="Resolution of the initial_volume volume (default 25A)")
-		parser.add_option("--mask3D",		        	type="string",	      	default= None,		          	help="3D mask file (default a sphere with radius (nx/2)-1)")
-		parser.add_option("--function",					type="string",          default= "do_volume_mask",		help="Vame of the reference preparation function (default do_volume_mask)")
-		parser.add_option("--symmetry",					type="string",        	default= 'c1',		     		help="Point-group symmetry of the refined structure (default c1)")
-		parser.add_option("--delta",					type="float",			default= 3.75,		     		help="Initial angular sampling step (default 7.5)")
-		parser.add_option("--an",	           		    type="float", 	     	default= -1.,                	help="Angular neighborhood for local search")
-		parser.add_option("--shake",	           		type="float", 	     	default= 0.5,                	help="Shake (0.5)")
-		parser.add_option("--small_memory",         	action="store_true",  	default= False,             	help="Data will not be kept in memory if small_memory is true. (default False)")
-		parser.add_option("--ccfpercentage",			type="float", 	      	default= 99.9,               	help="Percentage of the correlation peak area to be included, 0.0 corresponds to hard matching (default 99.9%)")
-		parser.add_option("--nonorm",               	action="store_true",  	default= False,              	help="Do not apply image norm correction. (default False)")
-		parser.add_option("--memory_per_node",          type="float",           default= -1.0,                	help="User provided information about memory per node (NOT per CPU) [in GB] (default 2GB*(number of CPUs per node))")	
-		(options, args) = parser.parse_args(sys.argv[1:])
-
-		if( len(args) == 2 ):
-			masterdir 	= args[1]
-			orgstack 	= args[0]
-
-		elif( len(args) == 1 ):
-			masterdir = args[0]
-
-		else:
-			sxprint( "usage: " + usage)
-			sxprint( "Please run '" + progname + " -h' for detailed options")
-			ERROR( "Invalid number of parameters used. Please see usage information above." )
-			return
-
-		#  Check whether we are restarting the program, in the least main000 should exist, otherwise there is nothing to restart
-		keepgoing1   = 1
-		keepgoing2   = 1
-		restart_flag = 0
-		if Blockdata["myid"]  == Blockdata["main_node"]:
-			if( os.path.exists(os.path.join(masterdir, "main000", "Tracker_000.json")) ):
-				if(len(args) > 1): keepgoing1 = 0
-				restart_flag = 1
-			else:
-				if(len(args) == 1): keepgoing2  = 0
-				restart_flag  = 0
-		restart_flag = bcast_number_to_all(restart_flag, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
-		keepgoing1   = bcast_number_to_all(keepgoing1,   source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
-		keepgoing2   = bcast_number_to_all(keepgoing2,   source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
-		
-		if keepgoing1== 0:
-			ERROR( "To restart, meridien requires only the name of existing refinement directory.", myid=Blockdata["myid"] )
-			return
-			
-		if keepgoing2 ==0:
-			ERROR( "To start, meridien requires at least the stack name and the name of reference structure", myid=Blockdata["myid"] )
-			return
-			
-		if restart_flag == 1: 
-			restart_mode = True
-		else: 
-			restart_mode = False
-		
-		# ------------------------------------------------------------------------------------
-		# Initialize MPI related variables
-		###  MPI SANITY CHECKES
-		if not balanced_processor_load_on_nodes: 
-			ERROR( "Nodes do not have the same number of CPUs, please check configuration of the cluster.", myid=Blockdata["myid"] )
-			return
-		
-		if Blockdata["myid"]  == Blockdata["main_node"]:
-			line = ""
-			for a in sys.argv:
-				line +=a+"  "
-			sxprint(" shell line command ")
-			sxprint(line)
-
-		# ------------------------------------------------------------------------------------
-		#  INPUT PARAMETERS
-		global_def.BATCH = True
-		global_def.MPI   = True
-		###  VARIOUS SANITY CHECKES <-----------------------
-		if( options.delta> 3.75 ):
-			ERROR( "Local searches requested, delta cannot be larger than 3.73.", myid=Blockdata["myid"] )
-			return
-
-		if( options.memory_per_node < 0.0 ): options.memory_per_node = 2.0*Blockdata["no_of_processes_per_group"]
-		#  For the time being we use all CPUs during refinement
-		Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
-		Blockdata["nsubset"]      = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
-		
-		create_subgroup()
-		create_zero_group()
-
-		Blockdata["rkeepf"] = 0.90
-
-		if not restart_mode: #<<<-------Fresh run
-			#  Constant settings of the project
-			Constants		       			        = {}
-			Constants["stack"]             			= args[0]
-			Constants["rs"]                			= 1
-			Constants["radius"]            			= options.radius
-			Constants["an"]                			= "-1"
-			Constants["maxit"]             			= 1
-			Constants["fuse_freq"]         			= 45  # Now in A, convert to absolute before using
-			sym                            			= options.symmetry
-			Constants["symmetry"]					= sym[0].lower() + sym[1:]
-			Constants["npad"]              			= 1
-			Constants["center"]            			= 0
-			Constants["shake"]             			= options.shake  #  move params every iteration
-			Constants["CTF"]               			= True # internally set
-			Constants["mask3D"]            			= options.mask3D
-			Constants["nnxo"]              			= -1
-			Constants["pixel_size"]        			= None # read from data
-			Constants["inires"]            			= options.inires  # Now in A, convert to absolute before using
-			#Constants["refvol"]            			= volinit
-			Constants["masterdir"]         			= masterdir
-			Constants["best"]              			= 3
-			Constants["limit_improvement"] 			= 1
-			Constants["limit_changes"]     			= 1  # reduce delta by half if both limits are reached simultaneously
-			Constants["states"]            			= ["PRIMARY", "RESTRICTED", "FINAL"]
-			Constants["user_func"]					= options.function
-			Constants["hardmask"]          			=  True #options.hardmask
-			Constants["ccfpercentage"]     			= options.ccfpercentage/100.
-			Constants["expthreshold"]      			= -10
-			Constants["number_of_groups"]  			= -1 # number of defocus groups, to be set by assign_particles_to_groups
-			Constants["nonorm"]            			= options.nonorm
-			Constants["small_memory"]      			= options.small_memory
-			Constants["memory_per_node"] 			= options.memory_per_node
-
-
-			#
-			#  The program will use three different meanings of x-size
-			#  nnxo         - original nx of the data, will not be changed
-			#  nxinit       - window size used by the program during given iteration, 
-			#                 will be increased in steps of 32 with the resolution
-			#
-			#  nxstep       - step by wich window size increases
-			#
-			# Initialize Tracker Dictionary with input options
-			Tracker = {}
-			Tracker["constants"]	= Constants
-			Tracker["maxit"]		= Tracker["constants"]["maxit"]
-
-			Tracker["xr"]			= options.xr
-			Tracker["yr"]			= options.xr  # Do not change!  I do not think it is used anywhere
-			Tracker["ts"]			= options.ts
-			Tracker["an"]			= "-1"
-			Tracker["delta"]		= options.delta  # How to decide it
-			Tracker["refvol"]		= None
-			Tracker["nxinit"]		= -1  # will be figured in first AI.
-			Tracker["nxstep"]		= 10
-			#  Resolution in pixels at 0.5 cutoff
-			Tracker["currentres"]		    = -1
-			Tracker["fsc143"]			    = -1
-			Tracker["maxfrad"]           	= -1
-			Tracker["no_improvement"]    	= 0
-			Tracker["no_params_changes"] 	= 0
-			Tracker["large_at_Nyquist"]  	= False
-			Tracker["anger"]             	= 1.e23
-			Tracker["shifter"]           	= 1.e23
-			Tracker["pixercutoff"]       	= 2.0
-			Tracker["directory"]         	= ""
-			Tracker["previousoutputdir"] 	= ""
-			Tracker["acc_rot"]           	= 0.0
-			Tracker["acc_trans"]			= 0.0
-			Tracker["avgvaradj"]			= [1.0,1.0]  # This has to be initialized to 1.0 !!
-			Tracker["mainiteration"]     	= 0
-			Tracker["lentop"]				= 2000
-			Tracker["state"]             	= Tracker["constants"]["states"][0]
-			Tracker["nima_per_chunk"]    	= [0,0]
-			###<<<----state 
-			Tracker["bestres"]          	= 0
-			Tracker["bestres_143"]          = 0
-			Blockdata["bckgnoise"]          = None
-			Blockdata["accumulatepw"]       = [[],[]]
-			Tracker["changed_delta"]        = False
-
-			# ------------------------------------------------------------------------------------
-			# Get the pixel size; if none, set to 1.0, and the original image size
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				sxprint(line,"INITIALIZATION OF LOCAL MERIDIEN")
-				a = get_im(orgstack)
-				nnxo = a.get_xsize()
-				if Tracker["constants"]["CTF"]:
-					i = a.get_attr('ctf')
-					pixel_size = i.apix
-					fq = int(pixel_size*nnxo/Tracker["constants"]["fuse_freq"] + 0.5)
-				else:
-					pixel_size = Tracker["constants"]["pixel_size"]
-					#  No pixel size, fusing computed as 5 Fourier pixels
-					fq = 5
-				del a
-			else:
-				nnxo = 0
-				fq = 0
-				pixel_size = 1.0
-			
-			#  Object to handle symmetries, for now only used by oct
-			from EMAN2 import parsesym
-			#Blockdata["parsesym"] = parsesym(Tracker["constants"]["symmetry"])
-			#  Initialize symmetry
-			Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
-
-			nnxo = bcast_number_to_all(nnxo, source_node = Blockdata["main_node"])
-			if( nnxo < 0 ):
-				ERROR( "Incorrect image size", myid=Blockdata["myid"] )
-				return
-
-			pixel_size = bcast_number_to_all(pixel_size, source_node = Blockdata["main_node"])
-			fq         = bcast_number_to_all(fq, source_node = Blockdata["main_node"])
-			Tracker["constants"]["nnxo"]         = nnxo
-			Tracker["constants"]["pixel_size"]   = pixel_size
-			Tracker["constants"]["fuse_freq"]    = fq
-			del fq, nnxo, pixel_size
-			# Resolution is always in full size image pixel units.
-			#HOHO
-			if(Tracker["constants"]["inires"]>0.0):
-				Tracker["constants"]["inires"] = int(Tracker["constants"]["nnxo"]*Tracker["constants"]["pixel_size"]/Tracker["constants"]["inires"] + 0.5)
-			Tracker["currentres"] = Tracker["constants"]["inires"]
-			Tracker["fsc143"]     = Tracker["constants"]["inires"]
-
-			checking_flag = 1
-			###  VARIOUS SANITY CHECKES
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				if( Tracker["constants"]["mask3D"] and (not os.path.exists(Tracker["constants"]["mask3D"]))):
-					checking_flag = 0
-			checking_flag = bcast_number_to_all(checking_flag, Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
-			if checking_flag==0:
-				ERROR( "mask3D file does  not exists", myid=Blockdata["myid"] )
-				return
-			
-			if( options.xr/options.ts<1.0 ): 
-				ERROR( "Incorrect translational searching settings, search range cannot be smaller than translation step ", myid=Blockdata["myid"] )
-				return
-
-			#HOHO
-			if( 2*(Tracker["currentres"] + Tracker["nxstep"]) > Tracker["constants"]["nnxo"] ):
-				ERROR( "Image size less than what would follow from the initial resolution provided %d  %d  %d"%(Tracker["currentres"],  Tracker["nxstep"], 2*(Tracker["currentres"] + Tracker["nxstep"])), myid=Blockdata["myid"])
-				return
-
-			if(Tracker["constants"]["radius"]  < 1):
-				Tracker["constants"]["radius"]  = Tracker["constants"]["nnxo"]//2-2
-
-			elif((2*Tracker["constants"]["radius"] +2) > Tracker["constants"]["nnxo"]):
-				ERROR( "Particle radius set too large", myid=Blockdata["myid"] )
-				return
-			###<-----end of sanity check <----------------------
-			###<<<----------------------------- parse program
-		
-			#  	Fresh start INITIALIZATION
-			# ------------------------------------------------------------------------------------
-			mainiteration = 0
-			Tracker["mainiteration"] = mainiteration
-
-			#  MASTER DIRECTORY
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				if( masterdir == ""):
-					timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
-					masterdir = "master"+timestring
-					li = len(masterdir)
-					os.mkdir(masterdir)
-					keepchecking = 0
-				else:
-					if not os.path.exists(masterdir): os.mkdir(masterdir)
-					li = 0
-					keepchecking = 1
-			else:
-				li = 0
-				keepchecking = 1
-
-			li = mpi_bcast(li, 1, MPI_INT, Blockdata["main_node"],MPI_COMM_WORLD)[0]
-
-			if( li > 0 ):
-				masterdir = mpi_bcast(masterdir,li,MPI_CHAR,Blockdata["main_node"],MPI_COMM_WORLD)
-				masterdir = string.join(masterdir,"")
-
-			Tracker["constants"]["masterdir"] = masterdir
-			initdir = os.path.join(Tracker["constants"]["masterdir"],"main000")
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				if os.path.exists(initdir): shutil.rmtree(initdir)
-				os.mkdir(initdir)
-
-
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				print_dict(Tracker["constants"], "Permanent settings of meridien")
-				print_dict(Blockdata, "MPI settings of meridien")
-
-			# Initialization of orgstack
-			Tracker["constants"]["stack"] = orgstack 
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				total_stack = EMUtil.get_image_count(Tracker["constants"]["stack"])
-			else:
-				total_stack = 0
-			total_stack = bcast_number_to_all(total_stack, source_node = Blockdata["main_node"])
-			
-			# ------------------------------------------------------------------------------------
-			partids   = os.path.join(initdir, "indexes_000.txt")
-			if( Blockdata["myid"] == Blockdata["main_node"] ):
-				write_text_file(list(range(total_stack)), partids)
-			mpi_barrier(MPI_COMM_WORLD)
-
-			#  store params
-			partids = [None]*2
-			for procid in range(2):
-				partids[procid] = os.path.join(initdir,"chunk_%01d_000.txt"%procid)
-			partstack = [None]*2
-			for procid in range(2):
-				partstack[procid] = os.path.join(initdir,"params-chunk_%01d_000.txt"%procid)
-				
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				l1, l2 = assign_particles_to_groups(minimum_group_size = 10)
-				write_text_file(l1,partids[0])
-				write_text_file(l2,partids[1])
-				tp_list = EMUtil.get_all_attributes(Tracker["constants"]["stack"], "xform.projection")
-				for i in range(len(tp_list)):
-					dp = tp_list[i].get_params("spider")
-					tp_list[i] = [dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"], 0.0, 1.0, 1.0]
-					
-				write_text_row(tp_list, os.path.join(initdir,"params_000.txt"))
-				write_text_row([tp_list[i] for i in l1], partstack[0])
-				write_text_row([tp_list[i] for i in l2], partstack[1])
-
-				del tp_list
-				del l1, l2
-			else:
-				Tracker["nima_per_chunk"] = [0,0]
-
-			Tracker["nima_per_chunk"][0]             = bcast_number_to_all(Tracker["nima_per_chunk"][0],             Blockdata["main_node"])
-			Tracker["nima_per_chunk"][1]             = bcast_number_to_all(Tracker["nima_per_chunk"][1],             Blockdata["main_node"])
-			Tracker["constants"]["number_of_groups"] = bcast_number_to_all(Tracker["constants"]["number_of_groups"], Blockdata["main_node"])
-
-			projdata       = [[model_blank(1,1)], [model_blank(1,1)]]
-			oldparams      = [[],[]]
-			currentparams  = [[],[]]
-			original_data  = [None, None]
-			#HOHO
-			if( Tracker["constants"]["inires"] > 0 ):
-				Tracker["nxinit"] = min(2*Tracker["constants"]["inires"], Tracker["constants"]["nnxo"] )
-			else: 
-				Tracker["nxinit"] = Tracker["constants"]["nnxo"]
-				
-			rec3d_continuation_nosmearing(original_data, MPI_COMM_WORLD)
-			
-			"""
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				fff = read_text_file(os.path.join(initdir,"driver_%03d.txt"%(Tracker["mainiteration"])))
-			else:
-				fff = []
-			fff = bcast_list_to_all(fff, Blockdata["myid"], source_node=Blockdata["main_node"])
-			keepgoing = AI_continuation(fff)
-			"""
-
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				with open(os.path.join(initdir,"Tracker_%03d.json"%Tracker["mainiteration"]),'w') as fout:
-					json.dump(Tracker, fout, indent=4)
-				fout.close()
-
-		else:# simple restart, at least main000 is completed. Otherwise no need restart
-
-			Blockdata["bckgnoise"] 		= None
-			Blockdata["accumulatepw"] 	= [[],[]]
-			projdata                    = [[model_blank(1,1)], [model_blank(1,1)]]
-			oldparams                   = [[],[]]
-			currentparams               = [[],[]]
-			original_data               = [None, None]
-			initdir 			        = os.path.join(masterdir,"main000")
-			keepchecking 		        = 1
-
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				with open(os.path.join(initdir,"Tracker_000.json"),'r') as fout:
-					Tracker = convert_json_fromunicode(json.load(fout))
-				fout.close()
-				print_dict(Tracker["constants"], "Permanent settings of the original run recovered from main000")
-			
-			else: 
-				Tracker = None
-
-			Tracker       = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
-			mainiteration = 0
-			Tracker["mainiteration"] = mainiteration
-		# ------------------------------------------------------------------------------------
-		#  MAIN ITERATION
 		keepgoing = 1
 		while(keepgoing):
 			Tracker["previousoutputdir"] = os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
@@ -10548,11 +7243,15 @@ def main():
 				mpi_barrier(MPI_COMM_WORLD)
 
 				if(Blockdata["myid"] == Blockdata["main_node"]):
-					fff = read_text_file(os.path.join(Tracker["previousoutputdir"],"driver_%03d.txt"%(Tracker["mainiteration"]-1)))
-					if(Tracker["mainiteration"] == 1):
+					if Tracker["mainiteration"] == 1:
+						if do_continuation_mode:
+							fff = read_text_file(os.path.join(Tracker["previousoutputdir"],"driver_%03d.txt"%(Tracker["mainiteration"]-1)))
+						else:
+							fff = None
 						anger   = 1.0e9
 						shifter = 1.0e9
-					else:				
+					else:
+						fff = read_text_file(os.path.join(Tracker["previousoutputdir"],"driver_%03d.txt"%(Tracker["mainiteration"]-1)))
 						[anger, shifter] = read_text_row( os.path.join(Tracker["previousoutputdir"] ,"error_thresholds_%03d.txt"%(Tracker["mainiteration"]-1)) )[0]
 				else:
 					fff = []
@@ -10562,18 +7261,21 @@ def main():
 				anger   = bcast_number_to_all(anger,                source_node = Blockdata["main_node"])
 				shifter = bcast_number_to_all(shifter,              source_node = Blockdata["main_node"])
 
-				keepgoing = AI_continuation( fff, anger, shifter, Blockdata["myid"] == Blockdata["main_node"])
+				func_ai = user_functions.factory[Tracker["constants"]["user_func_ai"]]
+				keepgoing = func_ai(Tracker, fff, anger, shifter, do_continuation_mode, Blockdata['myid'] == Blockdata['main_node'])
 
 				if keepgoing == 1: # not converged
 					if Blockdata["myid"] == Blockdata["main_node"]:
 						if(Tracker["mainiteration"] > 1):
-							line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+							#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+							line = ''
 							sxprint(line,"Resolution achieved in ITERATION  #%2d: %3d/%3d pixels, %5.2fA/%5.2fA."%
 								(Tracker["mainiteration"]-1, \
 								Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
 								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]) ) )
 						sxprint("\n\n\n\n")
-						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+						#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+						line = ''
 						sxprint(line,"ITERATION  #%2d. Current state: %14s, nxinit: %3d, delta: %9.4f, xr: %9.4f, ts: %9.4f"%\
 							(Tracker["mainiteration"], Tracker["state"],Tracker["nxinit"], Tracker["delta"], Tracker["xr"], Tracker["ts"]  ))
 					#print("RACING  A ",Blockdata["myid"])
@@ -10626,7 +7328,6 @@ def main():
 		return
 
 	elif do_final_mode: #  DO FINAL
-		parser.add_option("--memory_per_node",          type="float",           default= -1.0,		help="User provided information about memory per node (NOT per CPU) [in GB] (default 2GB*(number of CPUs per node))")
 		(options, args) = parser.parse_args(sys.argv[1:])
 		#global Tracker, Blockdata
 		#print( "  args  ",args)
@@ -10706,6 +7407,10 @@ def main():
 		return
 
 if __name__=="__main__":
+	global_def.BATCH = True
+	global_def.MPI   = True
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	global_def.BATCH = False
+	global_def.MPI   = False
