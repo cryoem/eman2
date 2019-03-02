@@ -7985,6 +7985,9 @@ def main():
 				if options.xr / options.ts < 1.0: 
 					ERROR( "Incorrect translational searching settings, search range cannot be smaller than translation step ", myid=Blockdata["myid"] )
 					return
+			else:
+				ERROR( "Incorrect translational searching settings, translational search range cannot be smaller equals 0", myid=Blockdata["myid"] )
+				return
 
 			if( 2*(Tracker["currentres"] + Tracker["nxstep"]) > Tracker["constants"]["nnxo"] ):
 				ERROR( "Image size less than what would follow from the initial resolution provided %d  %d  %d" % (Tracker["currentres"], Tracker["nxstep"], 2*(Tracker["currentres"] + Tracker["nxstep"])), myid=Blockdata["myid"] )
