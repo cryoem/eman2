@@ -7770,7 +7770,7 @@ def main():
 		parser.add_option("--function",					type="string",          default= "do_volume_mask",		help="Name of the reference preparation function (default do_volume_mask)")
 		parser.add_option("--function_ai",				type="string",          default= "ai_spa",		help="Name of the internal heuristic function (default ai_spa)")
 		parser.add_option("--symmetry",					type="string",        	default= 'c1',		     		help="Point-group symmetry of the refined structure (default c1)")
-		parser.add_option("--inires",		       		type="float",	     	default= -1.,		         	help="Resolution of the initial_volume volume (default 25A)")
+		parser.add_option("--inires",		       		type="float",	     	default= 25,		         	help="Resolution of the initial_volume volume (default 25A)")
 		parser.add_option("--delta",					type="float",			default= 3.75,		     		help="Initial angular sampling step (default 7.5)")
 		parser.add_option("--an",	           		    type="float", 	     	default= -1.,                	help="Angular neighborhood for local search")
 		parser.add_option("--shake",	           		type="float", 	     	default= 0.5,                	help="Shake (0.5)")
