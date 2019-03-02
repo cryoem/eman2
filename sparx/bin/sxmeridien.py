@@ -8147,6 +8147,7 @@ def main():
 					write_text_row([tp_list[i] for i in l1], partstack[0])
 					write_text_row([tp_list[i] for i in l2], partstack[1])
 					del tp_list
+					sxprint('Executed successfully: Imported initial parameters from the input stack.')
 				else:
 					write_text_row([[0,0,0,params2d[i][1],params2d[i][2], 0.0, 1.0] for i in l1], partstack[0])
 					write_text_row([[0,0,0,params2d[i][1],params2d[i][2], 0.0, 1.0] for i in l2], partstack[1])
