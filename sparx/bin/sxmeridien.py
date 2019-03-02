@@ -1287,11 +1287,14 @@ def calculate_2d_params_for_centering(kwargs):
 			sxprint("=========================================")
 			return [[0, 0, 0, 0, 0] for i in range(number_of_images_in_stack)]
 		else:  return [0.0]
+
 	Finished_initial_2d_alignment = 1
 	if(Blockdata["myid"] == Blockdata["main_node"]): 
 		if( os.path.exists(os.path.join(init2dir, "Finished_initial_2d_alignment.txt")) ): Finished_initial_2d_alignment = 0
 	Finished_initial_2d_alignment = bcast_number_to_all(Finished_initial_2d_alignment, Blockdata["main_node"], MPI_COMM_WORLD)
 	if( Finished_initial_2d_alignment == 1 ):
+		if kwargs["radi"] < 1:
+			ERROR("Particle radius has to be provided!", myid=Blockdata["myid"])
 
 		if(Blockdata["myid"] == 0):
 			import subprocess
@@ -8090,43 +8093,38 @@ def main():
 
 
 			init2dir = os.path.join(Tracker["constants"]["masterdir"], "2dalignment")
-			if not options.skip_prealignment: # Always False for continue mode as initialised in the option parser
-				if Blockdata['myid'] == Blockdata['main_node']:
-					sxprint('2D pre-alignment step')
-				if (options.radi < 1):
-					ERROR("Particle radius has to be provided for 2D alignment!", myid=Blockdata["myid"])
+			if Blockdata['myid'] == Blockdata['main_node']:
+				sxprint('2D pre-alignment step')
 
-				nxrsteps = 4
-				kwargs = dict()
+			nxrsteps = 4
+			kwargs = dict()
 
-				kwargs["init2dir"]  							= init2dir
-				kwargs["myid"]      							= Blockdata["myid"]
-				kwargs["main_node"] 							= Blockdata["main_node"]
-				kwargs["number_of_images_in_stack"] 			= total_stack
-				kwargs["nproc"] 								= Blockdata["nproc"]
+			kwargs["init2dir"]  							= init2dir
+			kwargs["myid"]      							= Blockdata["myid"]
+			kwargs["main_node"] 							= Blockdata["main_node"]
+			kwargs["number_of_images_in_stack"] 			= total_stack
+			kwargs["nproc"] 								= Blockdata["nproc"]
 
-				kwargs["target_radius"] 						= options.target_radius
-				# kwargs["target_nx"] = target_nx
-				kwargs["radi"] 									= options.radi
+			kwargs["target_radius"] 						= options.target_radius
+			# kwargs["target_nx"] = target_nx
+			kwargs["radi"] 									= options.radi
 
-				kwargs["center_method"] 						= options.center_method
+			kwargs["center_method"] 						= options.center_method
 
-				kwargs["nxrsteps"] 								= nxrsteps
+			kwargs["nxrsteps"] 								= nxrsteps
 
-				kwargs["command_line_provided_stack_filename"] 	= Tracker["constants"]["stack"]
+			kwargs["command_line_provided_stack_filename"] 	= Tracker["constants"]["stack"]
 
-				# kwargs["masterdir"] = masterdir
+			# kwargs["masterdir"] = masterdir
 
-				kwargs["options_skip_prealignment"] 			= options.skip_prealignment 
-				kwargs["options_CTF"] 							= True
+			kwargs["options_skip_prealignment"] 			= options.skip_prealignment 
+			kwargs["options_CTF"] 							= True
 
-				kwargs["mpi_comm"] 								= MPI_COMM_WORLD
-				params2d = calculate_2d_params_for_centering(kwargs)
-				del kwargs
-				if Blockdata['myid'] == Blockdata['main_node']:
-					sxprint('2D pre-alignment completed')
-			else:
-				params2d = None
+			kwargs["mpi_comm"] 								= MPI_COMM_WORLD
+			params2d = calculate_2d_params_for_centering(kwargs)
+			del kwargs
+			if Blockdata['myid'] == Blockdata['main_node']:
+				sxprint('2D pre-alignment completed')
 
 			#  store params
 			partids = [None]*2
