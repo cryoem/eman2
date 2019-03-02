@@ -10815,7 +10815,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 			int lixi = std::distance(assignments_of_refangles_to_cones.begin(), it);
 
 			//if(lixi < 0)  cout<<"   PROBLEM"<<endl; 
-			int offset = lencrefim*lixi;
+			size_t offset = (size_t)lencrefim*(size_t)lixi;
 	//cout<<" offset "<<ic<<"  "<<offset<<"  "<<startpsi[ic]<<endl;
 			for (i=0; i<maxrin; i++)  q[i] = 0.0f;
 
