@@ -807,6 +807,7 @@ def defocus_get(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_sto
 	del    Res_roo	
 	return defocus
 
+'''
 def defocus_gett(roo, voltage=300.0, Pixel_size=1.0, Cs=2.0, wgh=0.1, f_start=0.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None):
 	"""
 	
@@ -845,6 +846,7 @@ def defocus_gett(roo, voltage=300.0, Pixel_size=1.0, Cs=2.0, wgh=0.1, f_start=0.
 		from utilities import write_text_file
 		write_text_file([roo, Res_roo, Res_TE, ctf], "procpw.txt")
 	return defocus
+'''
 
 def defocus_get_Eudis(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_stop=-1, docf="a" ,skip="#", round_off=1, nr1=3, nr2=6):
 	"""
