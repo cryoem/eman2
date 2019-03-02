@@ -8251,11 +8251,15 @@ def main():
 				mpi_barrier(MPI_COMM_WORLD)
 
 				if(Blockdata["myid"] == Blockdata["main_node"]):
-					fff = read_text_file(os.path.join(Tracker["previousoutputdir"],"driver_%03d.txt"%(Tracker["mainiteration"]-1)))
-					if(Tracker["mainiteration"] == 1):
+					if Tracker["mainiteration"] == 1:
+						if do_continuation_mode:
+							fff = read_text_file(os.path.join(Tracker["previousoutputdir"],"driver_%03d.txt"%(Tracker["mainiteration"]-1)))
+						else:
+							fff = None
 						anger   = 1.0e9
 						shifter = 1.0e9
-					else:				
+					else:
+						fff = read_text_file(os.path.join(Tracker["previousoutputdir"],"driver_%03d.txt"%(Tracker["mainiteration"]-1)))
 						[anger, shifter] = read_text_row( os.path.join(Tracker["previousoutputdir"] ,"error_thresholds_%03d.txt"%(Tracker["mainiteration"]-1)) )[0]
 				else:
 					fff = []
@@ -8266,7 +8270,7 @@ def main():
 				shifter = bcast_number_to_all(shifter,              source_node = Blockdata["main_node"])
 
 				func_ai = user_functions.factory[Tracker["constants"]["user_func_ai"]]
-				keepgoing = user_func(Tracker, fff, anger, shifter, do_continuation_mode, Blockdata['myid'] == Blockdata['main_node'])
+				keepgoing = func_ai(Tracker, fff, anger, shifter, do_continuation_mode, Blockdata['myid'] == Blockdata['main_node'])
 
 				if keepgoing == 1: # not converged
 					if Blockdata["myid"] == Blockdata["main_node"]:
