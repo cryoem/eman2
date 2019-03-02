@@ -8163,12 +8163,6 @@ def main():
 			Tracker["constants"]["number_of_groups"] = bcast_number_to_all(Tracker["constants"]["number_of_groups"], Blockdata["main_node"])
 			del params2d
 
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				with open(os.path.join(Tracker["constants"]["masterdir"], \
-					"main%03d"%Tracker["mainiteration"], \
-						"Tracker_%03d.json"%Tracker["mainiteration"]),'w') as fout:
-					json.dump(Tracker, fout, indent=4)
-
 			if do_continuation_mode:
 				if( Tracker["constants"]["inires"] > 0 ):
 					Tracker["nxinit"] = min(2*Tracker["constants"]["inires"], Tracker["constants"]["nnxo"] )
@@ -8187,6 +8181,12 @@ def main():
 				for procid in range(2):
 					viv.write_image(os.path.join(initdir,"vol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 				del viv
+
+			if(Blockdata["myid"] == Blockdata["main_node"]):
+				with open(os.path.join(Tracker["constants"]["masterdir"], \
+					"main%03d"%Tracker["mainiteration"], \
+						"Tracker_%03d.json"%Tracker["mainiteration"]),'w') as fout:
+					json.dump(Tracker, fout, indent=4)
 
 		else:
 			Blockdata["bckgnoise"] 		= None
