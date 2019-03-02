@@ -6782,7 +6782,7 @@ def main():
 			else:
 				sxprint( "usage: " + usage)
 				sxprint( "Please run '" + progname + " -h' for detailed options")
-				ERROR( "Invalid number of parameters used. Please see usage information above." )
+				ERROR( "Invalid number of parameters used. Please see usage information above.", myid=Blockdata['myid'])
 				return
 
 			if options.delta > 3.75:
@@ -6815,7 +6815,7 @@ def main():
 			else:
 				sxprint( "usage: " + usage)
 				sxprint( "Please run '" + progname + " -h' for detailed options")
-				ERROR( "Invalid number of parameters used. Please see usage information above." )
+				ERROR( "Invalid number of parameters used. Please see usage information above.", myid=Blockdata['myid'])
 				return
 
 		if Blockdata["myid"]  == Blockdata["main_node"]:

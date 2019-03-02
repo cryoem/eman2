@@ -234,7 +234,7 @@ def ai_spa( Tracker, fff, anger, shifter, do_local, chout = False):
 					global_def.sxprint("Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
 			else:
 				step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
-				if chout):
+				if chout:
 					global_def.sxprint("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
 				Tracker["xr"] = step_range
 				Tracker["ts"] = step

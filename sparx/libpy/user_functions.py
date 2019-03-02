@@ -1462,7 +1462,6 @@ class factory_class(object):
 		# User function used in meridien
 		self.contents["do_volume_mask"]     = user_functions_meridien.do_volume_mask
 		self.contents["ai_spa"]     = user_functions_meridien.ai_spa
-		self.contents["ai_spa_continuation"]     = user_functions_meridien.ai_spa_continuation
 
 	def __getitem__(self,index):
 
