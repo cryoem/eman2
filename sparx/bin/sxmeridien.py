@@ -8089,9 +8089,14 @@ def main():
 			mpi_barrier(MPI_COMM_WORLD)
 
 
+			init2dir = os.path.join(Tracker["constants"]["masterdir"], "2dalignment")
 			if not options.skip_prealignment: # Always False for continue mode as initialised in the option parser
 				if Blockdata['myid'] == Blockdata['main_node']:
 					sxprint('2D pre-alignment step')
+				if (options.radi < 1):
+					ERROR("Particle radius has to be provided for 2D alignment!", myid=Blockdata["myid"])
+
+				nxrsteps = 4
 				kwargs = dict()
 
 				kwargs["init2dir"]  							= init2dir
@@ -8100,11 +8105,11 @@ def main():
 				kwargs["number_of_images_in_stack"] 			= total_stack
 				kwargs["nproc"] 								= Blockdata["nproc"]
 
-				kwargs["target_radius"] 						= target_radius
+				kwargs["target_radius"] 						= options.target_radius
 				# kwargs["target_nx"] = target_nx
-				kwargs["radi"] 									= radi
+				kwargs["radi"] 									= options.radi
 
-				kwargs["center_method"] 						= center_method
+				kwargs["center_method"] 						= options.center_method
 
 				kwargs["nxrsteps"] 								= nxrsteps
 
