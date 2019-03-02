@@ -720,7 +720,8 @@ def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 	
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		sxprint( "  " )
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(  line, "Processing data  onx: %3d, nx: %3d, CTF: %s, applymask: %s, preshift: %s."%(Tracker["constants"]["nnxo"], nxinit, Tracker["constants"]["CTF"], apply_mask, preshift) )
 	#  Preprocess the data
 	mask2D  	= model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
@@ -1070,7 +1071,8 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, smea
 			tvol.write_image(os.path.join(Tracker["directory"],    "tempdir", "tvol_%01d_%03d.hdf"%(procid,   Tracker["mainiteration"])))
 			tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 			trol.write_image(os.path.join(Tracker["directory"],    "tempdir", "trol_%01d_%03d.hdf"%(procid,   Tracker["mainiteration"])))
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			line = ''
 			sxprint(line,"Executed successfully backprojection for group ",procid)
 	else:
 		if myid == Blockdata["main_node"]:
@@ -1078,13 +1080,15 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, smea
 			tvol.write_image(os.path.join(   Tracker["directory"], "tempdir", "tvol_%01d_%03d.hdf"%(procid,   Tracker["mainiteration"])))
 			tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 			trol.write_image(os.path.join(   Tracker["directory"], "tempdir", "trol_%01d_%03d.hdf"%(procid,   Tracker["mainiteration"])))
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			line = ''
 			sxprint(line,"Executed successfully backprojection for group ",procid)
 	mpi_barrier(mpi_comm)
 	return  
 	
 def print_dict(dict,theme):
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	line = ''
 	sxprint(line,theme)
 	spaces = "                    "
 	exclude = ["constants", "maxit", "nodes", "yr", "shared_comm", "bckgnoise", "myid", "myid_on_node", "accumulatepw",\
@@ -1644,7 +1648,8 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		sxprint( "  " )
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift) )
 
 	#  Preprocess the data
@@ -2062,7 +2067,8 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		from math import sqrt
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 	"""
 	at = time()
@@ -2350,7 +2356,8 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		sxprint( "  " )
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift) )
 
 	#  Preprocess the data
@@ -2783,7 +2790,8 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		from math import sqrt
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
 	at = time()
@@ -3059,7 +3067,8 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		sxprint( "  " )
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift) )
 
 	#  Preprocess the data
@@ -3481,7 +3490,8 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		from math import sqrt
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
 	at = time()
@@ -3893,7 +3903,8 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		sxprint( "  " )
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,orgsize/1.0e9) )
 
 	#  Note these are in Fortran notation for polar searches
@@ -4532,7 +4543,8 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 		from math import sqrt
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
 	at = time()
@@ -4946,7 +4958,8 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		sxprint( "  " )
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,orgsize/1.0e9) )
 
 	#  Note these are in Fortran notation for polar searches
@@ -5565,7 +5578,8 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 		from math import sqrt
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
 	at = time()
@@ -5708,7 +5722,8 @@ def cerrs(params, ctfs, particle_groups):
 	acc_trans /= n_trials
 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(line,"Estimated accuracy of angles = %6.2f degrees; and shifts = %5.1f pixels"%(acc_rot,acc_trans) )
 
 	Tracker["acc_rot"] = acc_rot
@@ -5722,7 +5737,8 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 		# load datastructure, read data, do two reconstructions(stepone, steptwo)
 		if final_iter ==-1: final_iter = Tracker["constants"]["best"]  
 		carryon = 1
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		if(Blockdata["subgroup_myid"] == Blockdata["main_node"]):
 			sxprint(line, "do_final_rec3d")
 			sxprint("Reconstruction uses solution of %d iteration"%final_iter)
@@ -5822,7 +5838,8 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 				norm_per_particle[procid].append(oldparams[procid][ipar][7])
 			oldparams[procid]      = []
 			original_data[procid]  = None
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			line = ''
 			if(Blockdata["subgroup_myid"] == Blockdata["nodes"][procid]):
 				sxprint(line, "3-D reconstruction of group %d"%procid)
 			###--------------------------------------------------------- Force 
@@ -5838,7 +5855,8 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 			mpi_barrier(Blockdata["subgroup_comm"])
 		mpi_barrier(Blockdata["subgroup_comm"])
 	mpi_barrier(MPI_COMM_WORLD)
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	line = ''
 	if Blockdata["myid"] == Blockdata["main_node"]: 
 		sxprint(line, "final rec3d_make_maps")
 	rec3d_make_maps(compute_fsc = False, regularized = False)
@@ -5931,7 +5949,8 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 	do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, projdata, \
 	  do_final_iter, Blockdata["subgroup_comm"])
 	mpi_barrier(MPI_COMM_WORLD)
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	line = ''
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		sxprint(line, "Final reconstruction is successfully done")
 	return
@@ -6009,11 +6028,13 @@ def rec3d_continuation_nosmearing(original_data, mpi_comm):
 
 	# Estimate initial resolution/image size
 	if(Blockdata["myid"] == Blockdata["nodes"][0]):
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(line,  "continuation: reconstruct initial reference")
 
 	for procid in range(2):
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		if(Blockdata["myid"] == Blockdata["nodes"][procid]): sxprint(line, "3-D reconstruction of group %d"%procid)
 		
 		do3d(procid, projdata[procid], oldparams[procid], None, None, None, Blockdata["myid"], smearing = False, mpi_comm = mpi_comm)
@@ -6022,7 +6043,8 @@ def rec3d_continuation_nosmearing(original_data, mpi_comm):
 		mpi_barrier(mpi_comm)
 
 	Tracker["maxfrad"] = Tracker["nxinit"]//2
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	line = ''
 	if Blockdata["myid"] == Blockdata["main_node"]: 
 		sxprint(line, "do3d_continuation_get_maps_mpi")
 	rec3d_make_maps(compute_fsc = True, regularized = True)
@@ -6500,7 +6522,8 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		params = wrap_mpi_gatherv(params, Blockdata["main_node"], MPI_COMM_WORLD)
 		#  store params
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			line = ''
 			sxprint(line,"Executed successfully: ","Projection matching, state: %s, number of images:%7d"%(Tracker["state"],len(params)))
 			write_text_row(params, os.path.join(Tracker["directory"], "params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"])) )
 		del params
@@ -6645,7 +6668,8 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		anger, shifter = params_changes( read_text_row(os.path.join(Tracker["directory"],"params_%03d.txt"%(Tracker["mainiteration"]))), read_text_row(os.path.join(Tracker["previousoutputdir"],"params_%03d.txt"%(Tracker["mainiteration"]-1))) )
 		write_text_row( [[anger, shifter]], os.path.join(Tracker["directory"] ,"error_thresholds_%03d.txt"%(Tracker["mainiteration"])) )
 
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(line,"Average displacements for angular directions = %6.2f degrees; and shifts = %5.1f pixels"%(anger, shifter) )
 
 		#  Write current Trucker
@@ -6970,7 +6994,8 @@ def main():
 			# ------------------------------------------------------------------------------------
 			# Get the pixel size; if none, set to 1.0, and the original image size
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+				#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+				line = ''
 				sxprint(line,"INITIALIZATION OF MERIDIEN")
 				a = get_im(orgstack)
 				nnxo = a.get_xsize()
@@ -7241,13 +7266,15 @@ def main():
 				if keepgoing == 1: # not converged
 					if Blockdata["myid"] == Blockdata["main_node"]:
 						if(Tracker["mainiteration"] > 1):
-							line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+							#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+							line = ''
 							sxprint(line,"Resolution achieved in ITERATION  #%2d: %3d/%3d pixels, %5.2fA/%5.2fA."%
 								(Tracker["mainiteration"]-1, \
 								Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
 								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]) ) )
 						sxprint("\n\n\n\n")
-						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+						#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+						line = ''
 						sxprint(line,"ITERATION  #%2d. Current state: %14s, nxinit: %3d, delta: %9.4f, xr: %9.4f, ts: %9.4f"%\
 							(Tracker["mainiteration"], Tracker["state"],Tracker["nxinit"], Tracker["delta"], Tracker["xr"], Tracker["ts"]  ))
 					#print("RACING  A ",Blockdata["myid"])
