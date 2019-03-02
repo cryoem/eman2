@@ -7904,9 +7904,9 @@ def main():
 			Constants["best"]              			= 3
 			Constants["limit_improvement"] 			= 1
 			Constants["limit_changes"]     			= 1  # reduce delta by half if both limits are reached simultaneously
-			Constants["states"]            			= ["INITIAL", "PRIMARY", "EXHAUSTIVE", "RESTRICTED", "LOCAL", "FINAL"]# will add two states, CONINUATION_INITIAL, CONINUATION_PRIMARY
-			Constants["user_func_volume"]					= options.function
-			Constants["user_func_ai"]					= options.function_ai
+			Constants["states"]            			= ["INITIAL", "PRIMARY", "EXHAUSTIVE", "RESTRICTED", "PRIMARY LOCAL", "FINAL"]# will add two states, CONINUATION_INITIAL, CONINUATION_PRIMARY
+			Constants["user_func_volume"]			= options.function
+			Constants["user_func_ai"]				= options.function_ai
 			Constants["hardmask"]          			=  True #options.hardmask
 			Constants["ccfpercentage"]     			= options.ccfpercentage/100.
 			Constants["expthreshold"]      			= -10
