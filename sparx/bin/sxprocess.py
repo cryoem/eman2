@@ -550,6 +550,7 @@ def main():
 			return
 		from utilities import get_im, write_text_file
 		from fundamentals import rops_table
+		Util.init_threads(4)
 		d = get_im(args[0])
 		ndim = d.get_ndim()
 		if ndim ==3:
@@ -602,7 +603,7 @@ def main():
 			aa = 0.0
 
 		nimage = EMUtil.get_image_count( img_stack )
-
+		Util.init_threads(4)
 		for i in range(nimage):
 			img = fft(get_im(img_stack, i) )
 			rops_src = rops_table(img)
@@ -626,6 +627,7 @@ def main():
 		from utilities import write_text_file, get_im
 		from fundamentals import rops_table
 		from math import log10
+		Util.init_threads(4)
 		im = get_im(args[0])
 		ndim = im.get_ndim()
 		if(ndim == 1):
@@ -992,7 +994,7 @@ def main():
 			ERROR("too few inputs", " --combinemaps option", 1)
 		if options.pixel_size <= 0.0:
 			ERROR("set a valid value to pixel_size first! There is no default value for pixel_size", " --combinemaps option", 1)
-		
+		Util.init_threads(4)
 		input_path_list = []
 		suffix_patten = None
 		map1_basename_tokens = None
@@ -1030,6 +1032,7 @@ def main():
 		for a in sys.argv:
 			line +=" "+a
 		log_main.add(line)
+		Util.init_threads(4)
 		if e1.get_zsize() == 1:  # 2D case
 			log_main.add("-------->>> Settings given by all options <<<-------")
 			log_main.add("pixel_size        :"+str(options.pixel_size))
