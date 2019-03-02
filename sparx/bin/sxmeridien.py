@@ -7828,36 +7828,13 @@ def main():
 				ERROR( "Invalid number of parameters used. Please see usage information above." )
 				return
 
-		###  VARIOUS SANITY CHECKS <-----------------------
-		if options.memory_per_node < 0.0:
-			options.memory_per_node = 2.0 * Blockdata["no_of_processes_per_group"]
+		if Blockdata["myid"]  == Blockdata["main_node"]:
+			line = ""
+			for a in sys.argv:
+				line +=a+"  "
+			sxprint(" shell line command ")
+			sxprint(line)
 
-		if options.initialshifts:
-			options.skip_prealignment = True
-
-		checking_flag = 1
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			if( Tracker["constants"]["mask3D"] and (not os.path.exists(Tracker["constants"]["mask3D"]))):
-				checking_flag = 0
-		checking_flag = bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
-		if checking_flag==0:
-			ERROR( "Mask3D file does  not exists ", myid=Blockdata["myid"] )
-			return
-		
-		if( options.xr/options.ts<1.0 ): 
-			ERROR( "Incorrect translational searching settings, search range cannot be smaller than translation step ", myid=Blockdata["myid"] )
-			return
-
-		if( 2*(Tracker["currentres"] + Tracker["nxstep"]) > Tracker["constants"]["nnxo"] ):
-			ERROR( "Image size less than what would follow from the initial resolution provided %d  %d  %d" % (Tracker["currentres"], Tracker["nxstep"], 2*(Tracker["currentres"] + Tracker["nxstep"])), myid=Blockdata["myid"] )
-			return
-
-		if(Tracker["constants"]["radius"]  < 1):
-			Tracker["constants"]["radius"]  = Tracker["constants"]["nnxo"]//2-2
-
-		elif((2*Tracker["constants"]["radius"] +2) > Tracker["constants"]["nnxo"]):
-			ERROR( "Particle radius set too large", myid=Blockdata["myid"] )
-			return
 
 		#  Check whether we are restarting the program, in the least main000 should exist, otherwise there is nothing to restart
 		keepgoing1   = 1
@@ -7889,17 +7866,6 @@ def main():
 		
 		# ------------------------------------------------------------------------------------
 		# Initialize MPI related variables
-		###  MPI SANITY CHECKES
-		if not balanced_processor_load_on_nodes:
-			ERROR( "Nodes do not have the same number of CPUs, please check configuration of the cluster.", myid=Blockdata["myid"] )
-			return
-
-		if Blockdata["myid"]  == Blockdata["main_node"]:
-			line = ""
-			for a in sys.argv:
-				line +=a+"  "
-			sxprint(" shell line command ")
-			sxprint(line)
 
 		# ------------------------------------------------------------------------------------
 		#  INPUT PARAMETERS
@@ -7994,6 +7960,43 @@ def main():
 			Tracker["changed_delta"]        = False
 			Blockdata["bckgnoise"]          = None
 			Blockdata["accumulatepw"]       = [[],[]]
+
+			###  VARIOUS SANITY CHECKS <-----------------------
+			if options.memory_per_node < 0.0:
+				options.memory_per_node = 2.0 * Blockdata["no_of_processes_per_group"]
+
+			if options.initialshifts:
+				options.skip_prealignment = True
+
+			checking_flag = 1
+			if(Blockdata["myid"] == Blockdata["main_node"]):
+				if( Tracker["constants"]["mask3D"] and (not os.path.exists(Tracker["constants"]["mask3D"]))):
+					checking_flag = 0
+
+			checking_flag = bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
+			if checking_flag==0:
+				ERROR( "Mask3D file does  not exists ", myid=Blockdata["myid"] )
+				return
+			
+			if options.ts > 0:
+				if options.xr / options.ts < 1.0: 
+					ERROR( "Incorrect translational searching settings, search range cannot be smaller than translation step ", myid=Blockdata["myid"] )
+					return
+
+			if( 2*(Tracker["currentres"] + Tracker["nxstep"]) > Tracker["constants"]["nnxo"] ):
+				ERROR( "Image size less than what would follow from the initial resolution provided %d  %d  %d" % (Tracker["currentres"], Tracker["nxstep"], 2*(Tracker["currentres"] + Tracker["nxstep"])), myid=Blockdata["myid"] )
+				return
+
+			if(Tracker["constants"]["radius"]  < 1):
+				Tracker["constants"]["radius"]  = Tracker["constants"]["nnxo"]//2-2
+
+			elif((2*Tracker["constants"]["radius"] +2) > Tracker["constants"]["nnxo"]):
+				ERROR( "Particle radius set too large", myid=Blockdata["myid"] )
+				return
+
+			if not balanced_processor_load_on_nodes:
+				ERROR( "Nodes do not have the same number of CPUs, please check configuration of the cluster.", myid=Blockdata["myid"] )
+				return
 
 			# ------------------------------------------------------------------------------------
 			# Get the pixel size; if none, set to 1.0, and the original image size
