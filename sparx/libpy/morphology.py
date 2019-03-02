@@ -1034,6 +1034,7 @@ def defocus_guess1(Res_roo, Res_TE, volt, Cs, Pixel_size, ampcont=10.0, istart=0
 	defocus = int( defocus/round_off )*round_off
 	return defocus
 
+'''
 def defocus_get_fast(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1, round_off=100, dz_max0=50000, f_l0=30, f_h0=5, nr_1=5, nr_2=5, prefix="roo", docf="a",skip="#", micdir="no", print_screen="p"):
 	"""
 		Estimate defocus using user supplied 1D power spectrum area
@@ -1308,6 +1309,7 @@ def defocus_get_slow(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 			return res
 		if writetodoc[0] == "l": 	return res
 		if writetodoc[0] == "w":	out.close()
+'''
 
 def flcc(t, e):
 	"""
