@@ -7968,7 +7968,8 @@ def main():
 			if options.memory_per_node < 0.0:
 				options.memory_per_node = 2.0 * Blockdata["no_of_processes_per_group"]
 
-			if options.initialshifts:
+			if options.initialshifts and not options.skip_prealignment:
+				ERROR('Initialshifts and skip_prealignment option provided. Enable skip_prealignment for further processing.', action=0, myid=Blockdata['myid'])
 				options.skip_prealignment = True
 
 			checking_flag = 1
