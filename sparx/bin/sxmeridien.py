@@ -7241,24 +7241,24 @@ def main():
 
 				mpi_barrier(MPI_COMM_WORLD)
 
-				if(Blockdata["myid"] == Blockdata["main_node"]):
-					if Tracker["mainiteration"] == 1:
-						if do_continuation_mode:
-							fff = read_text_file(os.path.join(Tracker["previousoutputdir"],"driver_%03d.txt"%(Tracker["mainiteration"]-1)))
-						else:
-							fff = []
-						anger   = 1.0e9
-						shifter = 1.0e9
+				if Tracker["mainiteration"] == 1:
+					if do_continuation_mode:
+						fff = read_text_file(os.path.join(Tracker["previousoutputdir"],"driver_%03d.txt"%(Tracker["mainiteration"]-1)))
 					else:
+						fff = []
+					anger   = 1.0e9
+					shifter = 1.0e9
+				else:
+					if(Blockdata["myid"] == Blockdata["main_node"]):
 						fff = read_text_file(os.path.join(Tracker["previousoutputdir"],"driver_%03d.txt"%(Tracker["mainiteration"]-1)))
 						[anger, shifter] = read_text_row( os.path.join(Tracker["previousoutputdir"] ,"error_thresholds_%03d.txt"%(Tracker["mainiteration"]-1)) )[0]
-				else:
-					fff = []
-					anger   = 0.0
-					shifter = 0.0
-				fff     = bcast_list_to_all(fff, Blockdata["myid"], source_node = Blockdata["main_node"])
-				anger   = bcast_number_to_all(anger,                source_node = Blockdata["main_node"])
-				shifter = bcast_number_to_all(shifter,              source_node = Blockdata["main_node"])
+					else:
+						fff = []
+						anger   = 0.0
+						shifter = 0.0
+					fff     = bcast_list_to_all(fff, Blockdata["myid"], source_node = Blockdata["main_node"])
+					anger   = bcast_number_to_all(anger,                source_node = Blockdata["main_node"])
+					shifter = bcast_number_to_all(shifter,              source_node = Blockdata["main_node"])
 
 				func_ai = user_functions.factory[Tracker["constants"]["user_func_ai"]]
 				keepgoing = func_ai(Tracker, fff, anger, shifter, do_continuation_mode, Blockdata['myid'] == Blockdata['main_node'])
