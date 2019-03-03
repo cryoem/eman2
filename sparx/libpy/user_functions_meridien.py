@@ -113,7 +113,8 @@ def ai_spa( Tracker, fff, anger, shifter, do_local, chout = False):
 			l01 = i-1
 			break
 	l01 = max(l01,-1)
-	ai_string = "  AI: Tracker[nxstep], TR[currentres], Tracker[fsc143], l05, l01, fff[Tracker[nxinit]//2-1]:",Tracker["nxstep"],Tracker["currentres"],Tracker["fsc143"], l05, l01,fff[Tracker["nxinit"]//2-1]
+	if fff:
+		ai_string = "  AI: Tracker[nxstep], TR[currentres], Tracker[fsc143], l05, l01, fff[Tracker[nxinit]//2-1]:",Tracker["nxstep"],Tracker["currentres"],Tracker["fsc143"], l05, l01,fff[Tracker["nxinit"]//2-1]
 
 	if Tracker["mainiteration"] == 1 and not do_local:
 		Tracker["state"] = "INITIAL"
