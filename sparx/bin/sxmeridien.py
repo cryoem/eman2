@@ -6421,7 +6421,8 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 def refinement_one_iteration(partids, partstack, original_data, oldparams, projdata, continuation_mode = False):
 	global Tracker, Blockdata
 	#  READ DATA AND COMPUTE SIGMA2   ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-	sxprint('Import particle stack', myid=Blockdata['myid'])
+	if Blockdatat['myid'] == Blockdata['main_node']:
+		sxprint('Import particle stack')
 	for procid in range(2):
 		original_data[procid], oldparams[procid] = getindexdata(partids[procid], partstack[procid], \
 			os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_%01d.txt"%procid), \
@@ -7127,6 +7128,7 @@ def main():
 				partstack[procid] = os.path.join(initdir,"params-chunk_%01d_000.txt"%procid)
 
 			if(Blockdata["myid"] == Blockdata["main_node"]):
+				sxprint('Assign particles to groups')
 				l1, l2 = assign_particles_to_groups(minimum_group_size = 10, name_tag=options.group_by)
 				write_text_file(l1,partids[0])
 				write_text_file(l2,partids[1])
