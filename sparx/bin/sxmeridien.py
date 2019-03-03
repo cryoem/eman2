@@ -6421,6 +6421,7 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 def refinement_one_iteration(partids, partstack, original_data, oldparams, projdata, general_mode = True, continuation_mode = False):
 	global Tracker, Blockdata
 	#  READ DATA AND COMPUTE SIGMA2   ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+	sxprint('Import particle stack', myid=Blockdata['myid'])
 	for procid in range(2):
 		original_data[procid], oldparams[procid] = getindexdata(partids[procid], partstack[procid], \
 			os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_%01d.txt"%procid), \
@@ -7161,6 +7162,7 @@ def main():
 
 			elif Blockdata['myid'] == Blockdata['main_node']:
 				# Create reference models for each particle group
+				sxprint('Prepare reference volume')
 				if(Tracker["constants"]["mask3D"] == None):
 					viv = filt_table(cosinemask(get_im(volinit),radius = Tracker["constants"]["radius"]), [1.0]*Tracker["constants"]["inires"] + [0.5] + [0.0]*Tracker["constants"]["nnxo"])
 				else:
@@ -7169,6 +7171,7 @@ def main():
 				for procid in range(2):
 					viv.write_image(os.path.join(initdir,"vol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 				del viv
+				sxprint('Prepare reference volume: Done!')
 
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				with open(os.path.join(Tracker["constants"]["masterdir"], \
