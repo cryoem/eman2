@@ -6429,16 +6429,12 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			nproc = Blockdata["nproc"], myid = Blockdata["myid"], mpi_comm = MPI_COMM_WORLD)
 
 	mpi_barrier(MPI_COMM_WORLD)
-	
-	if continuation_mode:
-		dryrun = True
+
+	if Tracker["mainiteration"] == 1 and not continuation_mode:
+		dryrun = False
 	else:
-		if Tracker["mainiteration"] == 1:
-			dryrun = False
-		else:
-			dryrun = True
-	else: pass
- 		
+		dryrun = True
+
 	compute_sigma(original_data[0]+original_data[1], oldparams[0]+oldparams[1], len(oldparams[0]), dryrun, Blockdata["myid"])
 
 	#  REFINEMENT   ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
