@@ -7187,8 +7187,7 @@ def main():
 				print_dict(Tracker["constants"], "Permanent settings of the original run recovered from main000")
 			else: Tracker = None
 			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
-			mainiteration 	= 0
-			Tracker["mainiteration"] = mainiteration
+			Tracker["mainiteration"] = 0
 		mpi_barrier(MPI_COMM_WORLD)
 
 
@@ -7200,8 +7199,7 @@ def main():
 		keepgoing = 1
 		while(keepgoing):
 			Tracker["previousoutputdir"] = os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
-			mainiteration += 1
-			Tracker["mainiteration"] = mainiteration
+			Tracker["mainiteration"] += 1
 			Tracker["directory"]     = os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
 			doit, keepchecking       = checkstep(Tracker["directory"], keepchecking)
 			if( not doit ):			
@@ -7215,6 +7213,7 @@ def main():
 					mpi_barrier(MPI_COMM_WORLD)
 			if doit :
 				if(Blockdata["myid"] == Blockdata["main_node"]):
+					mainiteration = Tracker["mainiteration"]
 					with open(os.path.join(Tracker["previousoutputdir"], \
 					  "Tracker_%03d.json"%(Tracker["mainiteration"]-1)),'r') as fout:
 						Tracker = convert_json_fromunicode(json.load(fout))
