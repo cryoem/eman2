@@ -7246,7 +7246,7 @@ def main():
 						if do_continuation_mode:
 							fff = read_text_file(os.path.join(Tracker["previousoutputdir"],"driver_%03d.txt"%(Tracker["mainiteration"]-1)))
 						else:
-							fff = None
+							fff = []
 						anger   = 1.0e9
 						shifter = 1.0e9
 					else:
