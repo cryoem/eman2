@@ -6418,7 +6418,7 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 			mpi_barrier(MPI_COMM_WORLD)
 	return
 	
-def refinement_one_iteration(partids, partstack, original_data, oldparams, projdata, general_mode = True, continuation_mode = False):
+def refinement_one_iteration(partids, partstack, original_data, oldparams, projdata, continuation_mode = False):
 	global Tracker, Blockdata
 	#  READ DATA AND COMPUTE SIGMA2   ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	sxprint('Import particle stack', myid=Blockdata['myid'])
@@ -6430,10 +6430,13 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 
 	mpi_barrier(MPI_COMM_WORLD)
 	
-	if general_mode:
-		if( Tracker["mainiteration"] == 1 ):dryrun = False
-		else:								dryrun = True
-	elif continuation_mode: dryrun = True
+	if continuation_mode:
+		dryrun = True
+	else:
+		if Tracker["mainiteration"] == 1:
+			dryrun = False
+		else:
+			dryrun = True
 	else: pass
  		
 	compute_sigma(original_data[0]+original_data[1], oldparams[0]+oldparams[1], len(oldparams[0]), dryrun, Blockdata["myid"])
@@ -7293,8 +7296,7 @@ def main():
 					mpi_barrier(MPI_COMM_WORLD)
 
 					#  READ DATA AND COMPUTE SIGMA2   ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-					refinement_one_iteration(partids, partstack, original_data, oldparams, projdata, \
-					   general_mode = False, continuation_mode = True)
+					refinement_one_iteration(partids, partstack, original_data, oldparams, projdata, continuation_mode=do_continuation_mode)
 					#	sxprint("  MOVING  ON --------------------------------------------------------------------")
 				else: # converged, do final
 					if( Blockdata["subgroup_myid"] > -1 ):
