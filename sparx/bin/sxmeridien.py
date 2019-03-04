@@ -7172,7 +7172,6 @@ def main():
 				for procid in range(2):
 					viv.write_image(os.path.join(initdir,"vol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 				del viv
-				sxprint('Prepare reference volume: Done!')
 
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				with open(os.path.join(Tracker["constants"]["masterdir"], \
