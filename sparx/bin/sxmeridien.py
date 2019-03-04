@@ -6421,7 +6421,7 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 def refinement_one_iteration(partids, partstack, original_data, oldparams, projdata, continuation_mode = False):
 	global Tracker, Blockdata
 	#  READ DATA AND COMPUTE SIGMA2   ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-	if Blockdatat['myid'] == Blockdata['main_node']:
+	if Blockdata['myid'] == Blockdata['main_node']:
 		sxprint('Import particle stack')
 	for procid in range(2):
 		original_data[procid], oldparams[procid] = getindexdata(partids[procid], partstack[procid], \
