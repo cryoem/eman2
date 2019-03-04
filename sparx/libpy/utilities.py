@@ -3418,25 +3418,23 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(
 		mpi_barrier(MPI_COMM_WORLD)
 
 
-def gather_compacted_EMData_to_root( number_of_all_em_objects_distributed_across_processes, list_of_em_objects_for_myid_process, myid, comm=-1 ):
+def gather_compacted_EMData_to_root( number_of_all_em_objects_distributed_across_processes, list_of_em_objects_for_myid_process, mpi_rank, comm=-1 ):
 	"""
-	The assumption in <<gather_compacted_EMData_to_root>> is that each processor
-	calculates part of the list of elements and then each processor sends
-	its results to the root
-
-	Therefore, each processor has access to the header. If we assume that the
-	attributes of interest from the header are the same for all elements then
-	we can copy the header and no mpi message is necessary for the
-	header.
+	MPI_Gather that expects all data as a list of EMData objects. Data is transfered by
+	collecting all header information, transferring all data as numpy arrays, and re-
+	building the EMData objects in the root process.
 
 	Args:
-		number_of_all_em_objects_distributed_across_processes (<TYPE>): ..
+		number_of_all_em_objects_distributed_across_processes (integer): Total number of
+			EMData objects to gather across all processes.
 
-		list_of_em_objects_for_myid_process (<TYPE>): ..
+		list_of_em_objects_for_myid_process (EMData[]): List of EMData objects that this
+			process is tasked with transferring.
 
-		myid (<TYPE>): ..
+		mpi_rank (integer): MPI rank of this process. Process with rank 0 will be used as
+			the root process.
 
-		comm (<TYPE>): ..
+		comm: MPI communicator identifier; defaults to mpi.MPI_COMM_WORLD
 			[Default: -1]
 	"""
 
@@ -3444,9 +3442,9 @@ def gather_compacted_EMData_to_root( number_of_all_em_objects_distributed_across
 	if comm == -1 or comm == None:
 		comm = MPI_COMM_WORLD
 
-	num_proc = mpi_comm_size(comm)  # Total number of processes, passed by --np option. [Unclear what this option is]
+	mpi_size = mpi_comm_size(comm)  # Total number of processes, passed by --np option. [Unclear what this option is]
 
-	ref_start, ref_end = MPI_start_end( number_of_all_em_objects_distributed_across_processes, num_proc, myid )
+	ref_start, ref_end = MPI_start_end( number_of_all_em_objects_distributed_across_processes, mpi_size, mpi_rank )
 	ref_end  -= ref_start
 	ref_start = 0
 
@@ -3484,22 +3482,10 @@ def gather_compacted_EMData_to_root( number_of_all_em_objects_distributed_across
 	data = np.array( data )
 
 	# transfer: gather all data at the root process (myid==0)
-	for sender_id in range(1, num_proc):
-
-		# transfer/receive: root process blocks until data from process w/ rank <sender_id> has been received
-		if myid == 0:
-			# get transfer parameters of the sender
-			ref_start, ref_end = MPI_start_end( number_of_all_em_objects_distributed_across_processes, num_proc, sender_id )
-			transfer_size = (sender_ref_end - sender_ref_start) * size_of_one_refring_assumed_common_to_all
-			# start listening
-			data = mpi_recv( transfer_size,
-							 MPI_FLOAT,
-							 sender_id,
-							 tag_for_send_receive,
-							 MPI_COMM_WORLD )
+	for sender_id in range(1, mpi_size):
 
 		# transfer/send: sender process w/ rank <sender_id> blocks until data has been sent to root process
-		elif sender_id == myid:
+		if sender_id == mpi_rank:
 			mpi_send( data,
 					  transfer_size,
 					  MPI_FLOAT,
@@ -3507,13 +3493,28 @@ def gather_compacted_EMData_to_root( number_of_all_em_objects_distributed_across
 					  tag_for_send_receive,
 					  MPI_COMM_WORLD )
 
-		mpi_barrier(MPI_COMM_WORLD) # <--------------------------------------------------- this should be safe to remove
+		# transfer/receive: root process blocks until data from process w/ rank <sender_id> has been received
+		elif mpi_rank == 0:
+			
+			# get transfer parameters of the sender
+			ref_start, ref_end = MPI_start_end( number_of_all_em_objects_distributed_across_processes, mpi_size, sender_id )
+			transfer_size = (ref_end - ref_start) * size_of_one_refring_assumed_common_to_all
+			
+			# receive data
+			data = mpi_recv( transfer_size,
+							 MPI_FLOAT,
+							 sender_id,
+							 tag_for_send_receive,
+							 MPI_COMM_WORLD )
 
-		# after transfer: root process converts data back into EMObject instances
-		if myid == 0:
-			for i in range(ref_start, ref_end): # NOTE: this is still <ref_start> and <ref_end> from process <sender_id>
-				# create EMData object, set header, and add to final data pool
-				em_object = EMNumPy.numpy2em( data[i] )
+			if int(nz) != 1:
+				data = data.reshape( [(ref_end - ref_start), ny, nx] )
+			else:
+				data = data.reshape( [(ref_end - ref_start), nz, ny, nx] )
+
+			# collect received data in EMData objects
+			for x in data:
+				em_object = EMNumPy.numpy2em(x)
 				em_object.set_ri(is_ri)
 				em_object.set_attr_dict( { "changecount": changecount,
 										   "is_complex_x": is_complex_x,
@@ -3525,8 +3526,6 @@ def gather_compacted_EMData_to_root( number_of_all_em_objects_distributed_across
 										   "is_fftodd": is_fftodd,
 										   "is_fftpad": is_fftpad } )
 				list_of_em_objects_for_myid_process.append(em_object)
-
-		mpi_barrier(MPI_COMM_WORLD) # <--------------------------------------------------- this MIGHt be safe to remove
 
 
 def bcast_EMData_to_all(tavg, myid, source_node=0, comm=-1):
