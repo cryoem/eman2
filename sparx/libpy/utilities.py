@@ -3444,14 +3444,10 @@ def gather_compacted_EMData_to_root( number_of_all_em_objects_distributed_across
 
 	mpi_size = mpi_comm_size(comm)  # Total number of processes, passed by --np option. [Unclear what this option is]
 
-	ref_start, ref_end = MPI_start_end( number_of_all_em_objects_distributed_across_processes, mpi_size, mpi_rank )
-	ref_end  -= ref_start
-	ref_start = 0
-
 	tag_for_send_receive = 123456 # NOTE: we're using the same tag for all messages here, which is a bit pointless?
 
 	# get data header information
-	reference_em_object = list_of_em_objects_for_myid_process[ref_start]
+	reference_em_object = list_of_em_objects_for_myid_process[0]
 
 	nx = reference_em_object.get_xsize()
 	ny = reference_em_object.get_ysize()
@@ -3467,17 +3463,9 @@ def gather_compacted_EMData_to_root( number_of_all_em_objects_distributed_across
 	is_fftpad  = reference_em_object.get_attr_default("is_fftpad", 1)
 	is_fftodd  = reference_em_object.get_attr_default("is_fftodd", nz % 2)
 
-	# determine transfer size
-	data = EMNumPy.em2numpy(list_of_em_objects_for_myid_process[ref_start])
-	size_of_one_refring_assumed_common_to_all = data.size # not sure what "refring" refers to here
-	transfer_size = (ref_end - ref_start) * size_of_one_refring_assumed_common_to_all
-	
-	if size_of_one_refring_assumed_common_to_all * (ref_end - ref_start) > (2**31 -1):
-		print("Sending refrings: size of data to transfer is greater than 2GB")
-
 	# process data before transfer
-	data = [ EMNumPy.em2numpy(list_of_em_objects_for_myid_process[ref_start]) ]
-	for i in range( ref_start+1, ref_end ):
+	data = []
+	for i in range( len(list_of_em_objects_for_myid_process) ):
 		data.append( EMNumPy.em2numpy(list_of_em_objects_for_myid_process[i]) )
 	data = np.array( data )
 
@@ -3487,7 +3475,7 @@ def gather_compacted_EMData_to_root( number_of_all_em_objects_distributed_across
 		# transfer/send: sender process w/ rank <sender_id> blocks until data has been sent to root process
 		if sender_id == mpi_rank:
 			mpi_send( data,
-					  transfer_size,
+					  data.size,
 					  MPI_FLOAT,
 					  0,
 					  tag_for_send_receive,
@@ -3498,7 +3486,7 @@ def gather_compacted_EMData_to_root( number_of_all_em_objects_distributed_across
 			
 			# get transfer parameters of the sender
 			ref_start, ref_end = MPI_start_end( number_of_all_em_objects_distributed_across_processes, mpi_size, sender_id )
-			transfer_size = (ref_end - ref_start) * size_of_one_refring_assumed_common_to_all
+			transfer_size = (ref_end-ref_start) * data[0].size
 			
 			# receive data
 			data = mpi_recv( transfer_size,
@@ -3508,9 +3496,9 @@ def gather_compacted_EMData_to_root( number_of_all_em_objects_distributed_across
 							 MPI_COMM_WORLD )
 
 			if int(nz) != 1:
-				data = data.reshape( [(ref_end - ref_start), ny, nx] )
-			else:
 				data = data.reshape( [(ref_end - ref_start), nz, ny, nx] )
+			elif ny != 1:
+				data = data.reshape( [(ref_end - ref_start), ny, nx] )
 
 			# collect received data in EMData objects
 			for x in data:
