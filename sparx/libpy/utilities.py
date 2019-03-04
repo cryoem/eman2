@@ -1,52 +1,66 @@
 #
 from __future__ import print_function
 
-# Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
-# Copyright (c) 2000-2006 The University of Texas - Houston Medical School
-#
-# This software is issued under a joint BSD/GNU license. You may use the
-# source code in this file under either license. However, note that the
-# complete EMAN2 and SPARX software packages have some GPL dependencies,
-# so you are responsible for compliance with the licenses of these packages
-# if you opt to use BSD licensing. The warranty disclaimer below holds
-# in either instance.
-#
-# This complete copyright notice must be included in any revised version of the
-# source code. Additional authorship citations may be added, but existing
-# author citations must be preserved.
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-#
+"""
+Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
+Copyright (c) 2000-2006 The University of Texas - Houston Medical School
 
+This software is issued under a joint BSD/GNU license. You may use the source
+code in this file under either license. However, note that the complete EMAN2
+and SPARX software packages have some GPL dependencies, so you are responsible
+for compliance with the licenses of these packages if you opt to use BSD
+licensing. The warranty disclaimer below holds in either instance.
+
+This complete copyright notice must be included in any revised version of the
+source code. Additional authorship citations may be added, but existing author
+citations must be preserved.
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 59 Temple
+Place, Suite 330, Boston, MA  02111-1307 USA
+"""
+
+#------------------------------------------------[ import ]
+
+# compatibility
 from future import standard_library
-
 standard_library.install_aliases()
-from builtins import range
-from builtins import object
-from global_def import *
+
+# python natives
+from pickle    import dumps, loads
+from builtins  import range
+from builtins  import object
 from functools import reduce
-import EMAN2
+from struct    import pack, unpack
+
+# python commons
 import numpy as np
-
-from pickle import dumps, loads
-from zlib import compress, decompress
-from struct import pack, unpack
-
 import scipy.ndimage
+from zlib import compress, decompress
 
+# EMAN2 / sparx basics
+from global_def import *
+
+import EMAN2
+from EMAN2 import EMNumPy
+
+# EMAN2 / sparx modules
 import morphology
+
+# MPI imports (NOTE: import mpi after EMAN2)
+from applications import MPI_start_end
+from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
+from mpi import mpi_recv, mpi_send, mpi_barrier
+
 
 def params_2D_3D(alpha, sx, sy, mirror):
 	"""
@@ -3404,13 +3418,8 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(
 		mpi_barrier(MPI_COMM_WORLD)
 
 
-def gather_compacted_EMData_to_root( number_of_all_em_objects_distributed_across_processes,
-									 list_of_em_objects_for_myid_process,
-									 myid,
-									 comm=-1 ):
-
+def gather_compacted_EMData_to_root( number_of_all_em_objects_distributed_across_processes, list_of_em_objects_for_myid_process, myid, comm=-1 ):
 	"""
-
 	The assumption in <<gather_compacted_EMData_to_root>> is that each processor
 	calculates part of the list of elements and then each processor sends
 	its results to the root
@@ -3420,28 +3429,32 @@ def gather_compacted_EMData_to_root( number_of_all_em_objects_distributed_across
 	we can copy the header and no mpi message is necessary for the
 	header.
 
-	"""
-	from applications import MPI_start_end
-	from EMAN2 import EMNumPy
-	from numpy import concatenate, shape, array, split
-	from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
-	from numpy import reshape
-	from mpi import mpi_recv, mpi_send, mpi_barrier
+	Args:
+		number_of_all_em_objects_distributed_across_processes (<TYPE>): ..
 
+		list_of_em_objects_for_myid_process (<TYPE>): ..
+
+		myid (<TYPE>): ..
+
+		comm (<TYPE>): ..
+			[Default: -1]
+	"""
+
+	# mpi setup
 	if comm == -1 or comm == None:
 		comm = MPI_COMM_WORLD
 
-	ncpu = mpi_comm_size(comm)  # Total number of processes, passed by --np option.
+	num_proc = mpi_comm_size(comm)  # Total number of processes, passed by --np option. [Unclear what this option is]
 
-	ref_start, ref_end = MPI_start_end(
-		number_of_all_em_objects_distributed_across_processes, ncpu, myid
-	)
-	ref_end -= ref_start
+	ref_start, ref_end = MPI_start_end( number_of_all_em_objects_distributed_across_processes, num_proc, myid )
+	ref_end  -= ref_start
 	ref_start = 0
-	tag_for_send_receive = 123456 # DEBUG: using the same tag for every message makes them a bit pointless
 
-	# used for copying the header
+	tag_for_send_receive = 123456 # NOTE: we're using the same tag for all messages here, which is a bit pointless?
+
+	# get data header information
 	reference_em_object = list_of_em_objects_for_myid_process[ref_start]
+
 	nx = reference_em_object.get_xsize()
 	ny = reference_em_object.get_ysize()
 	nz = reference_em_object.get_zsize()
@@ -3456,59 +3469,51 @@ def gather_compacted_EMData_to_root( number_of_all_em_objects_distributed_across
 	is_fftpad  = reference_em_object.get_attr_default("is_fftpad", 1)
 	is_fftodd  = reference_em_object.get_attr_default("is_fftodd", nz % 2)
 
+	# determine transfer size
 	data = EMNumPy.em2numpy(list_of_em_objects_for_myid_process[ref_start])
-	size_of_one_refring_assumed_common_to_all = data.size
-
+	size_of_one_refring_assumed_common_to_all = data.size # not sure what "refring" refers to here
+	transfer_size = (ref_end - ref_start) * size_of_one_refring_assumed_common_to_all
+	
 	if size_of_one_refring_assumed_common_to_all * (ref_end - ref_start) > (2**31 -1):
 		print("Sending refrings: size of data to transfer is greater than 2GB")
 
-	for sender_id in range(1, ncpu):
+	# process data before transfer
+	data = [ EMNumPy.em2numpy(list_of_em_objects_for_myid_process[ref_start]) ]
+	for i in range( ref_start+1, ref_end ):
+		data.append( EMNumPy.em2numpy(list_of_em_objects_for_myid_process[i]) )
+	data = np.array( data )
 
-		if sender_id == myid:
-			data = EMNumPy.em2numpy( list_of_em_objects_for_myid_process[ref_start] )
-			for i in range(ref_start + 1, ref_end):
-				data = concatenate( [data, EMNumPy.em2numpy(list_of_em_objects_for_myid_process[i])] )
-		else:
-			data = array([], dtype="float32")
+	# transfer: gather all data at the root process (myid==0)
+	for sender_id in range(1, num_proc):
 
-		sender_ref_start, sender_ref_end = MPI_start_end( number_of_all_em_objects_distributed_across_processes, ncpu, sender_id )
-		sender_size_of_refrings = (sender_ref_end - sender_ref_start) * size_of_one_refring_assumed_common_to_all
-
-		# DEBUG: mpi transfer: root node receives, one of the other nodes sends
+		# transfer/receive: root process blocks until data from process w/ rank <sender_id> has been received
 		if myid == 0:
-			# print "root, receiving from ", sender_id, "  sender_size_of_refrings = ", sender_size_of_refrings
-			data = mpi_recv( sender_size_of_refrings,
+			# get transfer parameters of the sender
+			ref_start, ref_end = MPI_start_end( number_of_all_em_objects_distributed_across_processes, num_proc, sender_id )
+			transfer_size = (sender_ref_end - sender_ref_start) * size_of_one_refring_assumed_common_to_all
+			# start listening
+			data = mpi_recv( transfer_size,
 							 MPI_FLOAT,
 							 sender_id,
 							 tag_for_send_receive,
 							 MPI_COMM_WORLD )
 
+		# transfer/send: sender process w/ rank <sender_id> blocks until data has been sent to root process
 		elif sender_id == myid:
-			# print "sender_id = ", sender_id, "sender_size_of_refrings = ", sender_size_of_refrings
 			mpi_send( data,
-					  sender_size_of_refrings,
+					  transfer_size,
 					  MPI_FLOAT,
 					  0,
 					  tag_for_send_receive,
 					  MPI_COMM_WORLD )
 
-		mpi_barrier(MPI_COMM_WORLD) # DEBUG: this should neither be necessary (send/recv are blocking), not wanted (no need to sync master w/ workers)
+		mpi_barrier(MPI_COMM_WORLD) # <--------------------------------------------------- this should be safe to remove
 
+		# after transfer: root process converts data back into EMObject instances
 		if myid == 0:
-			for i in range(sender_ref_start, sender_ref_end):
-
-				offset_ring = sender_ref_start
-				start_p = (i - offset_ring) * size_of_one_refring_assumed_common_to_all
-				end_p = (i+1 - offset_ring) * size_of_one_refring_assumed_common_to_all
-				image_data = data[start_p:end_p]
-
-				if int(nz) != 1:
-					image_data = reshape(image_data, (nz, ny, nx))
-				elif ny != 1:
-					image_data = reshape(image_data, (ny, nx))
-
-				em_object = EMNumPy.numpy2em(image_data)
-
+			for i in range(ref_start, ref_end): # NOTE: this is still <ref_start> and <ref_end> from process <sender_id>
+				# create EMData object, set header, and add to final data pool
+				em_object = EMNumPy.numpy2em( data[i] )
 				em_object.set_ri(is_ri)
 				em_object.set_attr_dict( { "changecount": changecount,
 										   "is_complex_x": is_complex_x,
@@ -3519,24 +3524,9 @@ def gather_compacted_EMData_to_root( number_of_all_em_objects_distributed_across
 										   "is_complex": is_complex,
 										   "is_fftodd": is_fftodd,
 										   "is_fftpad": is_fftpad } )
-
 				list_of_em_objects_for_myid_process.append(em_object)
 
-		mpi_barrier(MPI_COMM_WORLD)
-
-	"""
-	DEBUG NOTES:
-	! this functions seems to be taking way longer than it should
-	. The way this works right now means that most workers are waiting for someone else's transfer to
-	  finish.
-	- Nothing is queued, everything is hard-sync'd
-	- Tags would allow for buffering but the same tag is used for all communication which makes it pointless
-	- Just have the workers send everything and the master work through its receiving queue..?
-	  -> This way we only need to transfer once and that's it; master chews through a local buffer
-	  -> If there is a communications overlap/block, this might resolve it
-	- also, MPI_gather should just do what we need
-	- to spread the data to everyone, we can also use all_gather
-	"""
+		mpi_barrier(MPI_COMM_WORLD) # <--------------------------------------------------- this MIGHt be safe to remove
 
 
 def bcast_EMData_to_all(tavg, myid, source_node=0, comm=-1):

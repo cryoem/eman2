@@ -1501,6 +1501,7 @@ def main(args):
 		image_start, image_end = apps.MPI_start_end(Blockdata["total_nima"], nproc, myid)
 
 		original_images = EMData.read_images(Blockdata["stack"], list(range(image_start,image_end)))
+		
 		if options.VPP:
 			ntp = len(rops_table(original_images[0]))
 			rpw = [0.0]*ntp
@@ -1515,8 +1516,10 @@ def main(args):
 				util.write_text_file(rpw,os.path.join(Blockdata["masterdir"], "rpw.txt"))
 			else:  rpw = []
 			rpw = bcast_list_to_all(rpw, myid, source_node=main_node, mpi_comm=mpi.MPI_COMM_WORLD)
-			for i in range(len(original_images)):  original_images[i] = filt_table(original_images[i], rpw)
+			for i in range(len(original_images)):
+				original_images[i] = filt_table(original_images[i], rpw)
 			del rpw
+
 		else:
 			if(myid == 0):
 				ntp = len(rops_table(original_images[0]))
@@ -1550,11 +1553,12 @@ def main(args):
 				tss = "1"
 				txr = "%d"%txrm
 			
-			# section ali2d_base
+			# perform the 2D alignment
+			if(Blockdata["myid"] == 0): 
+				sxprint( "* 2D alignment   " + time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()) )
 
-			if(Blockdata["myid"] == 0): sxprint("* 2D alignment   "+time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()))
-			params2d = apps.ali2d_base(original_images, init2dir, None, 1, target_radius, 1, txr, txr, tss, \
-				False, 90.0, center_method, 14, options.CTF, 1.0, False, \
+			params2d = apps.ali2d_base(original_images, init2dir, None, 1, target_radius, 1, txr, txr, tss,
+				False, 90.0, center_method, 14, options.CTF, 1.0, False,
 				"ref_ali2d", "", log2d, nproc, myid, main_node, mpi.MPI_COMM_WORLD, write_headers = False)
 
 			del original_images
@@ -1598,19 +1602,46 @@ def main(args):
 		params = params[image_start:image_end]
 
 		mask = util.model_circle(radi, nx, nx)
+
+		# for phase plate data: read a given rotational power spectrum (1D amplitude profile)
 		if options.VPP:
-			if myid == 0:  rpw = read_text_file(os.path.join(Blockdata["masterdir"], "rpw.txt"))
-			else:  rpw = [0.0]
+			if myid == 0:
+				rpw = read_text_file(os.path.join(Blockdata["masterdir"], "rpw.txt"))
+			else:  
+				rpw = [0.0]
 			rpw = bcast_list_to_all(rpw, myid, source_node = main_node, mpi_comm = mpi.MPI_COMM_WORLD)
+
+
+
+
+
+
+
+
+
+
+		# defocus value correction
 		for im in range(nima):
 			st = Util.infomask(aligned_images[im], mask, False)
 			aligned_images[im] -= st[0]
+			# for normal data: CTF correction
 			if options.CTF:
 				aligned_images[im] = filt_ctf(aligned_images[im], aligned_images[im].get_attr("ctf"), binary = True)
+			# for phase plate data we force images to match the rotational power spectrum
 			elif options.VPP:
 				aligned_images[im] = fft(filt_table(filt_ctf(fft(aligned_images[im]), aligned_images[im].get_attr("ctf"), binary = True), rpw))
-		if options.VPP: 
-			del rpw
+
+		if options.VPP: del rpw
+
+
+
+
+
+
+
+
+
+
 
 		# normalize all particle images after applying ctf correction (includes shrinking/re-scaling)
 		normalize_particle_images( aligned_images, shrink_ratio, target_radius, target_nx, params, 
