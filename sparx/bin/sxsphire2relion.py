@@ -539,7 +539,14 @@ def sanity_checks(args):
 			1,
 		)
 
-	if args.params_3d_chunk_files and not args.params_3d_file:
+	if args.params_3d_chunk_file_0 and not args.params_3d_file:
+		global_def.ERROR(
+			"Arguments params_3d_chunk_files requires params_3d_file to be set.",
+			"sxsphire2relion",
+			1,
+		)
+
+	if args.params_3d_chunk_file_1 and not args.params_3d_file:
 		global_def.ERROR(
 			"Arguments params_3d_chunk_files requires params_3d_file to be set.",
 			"sxsphire2relion",
