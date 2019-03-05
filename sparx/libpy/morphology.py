@@ -541,7 +541,7 @@ def ctf_2(nx, ctf):
 			nx: image size to which CTF will be applied.
 			ctf: ctf object created using generate_ctf
 		Output
-			a list of CTF2 values.
+			a list of CTF2^2 values.
 	"""
 	dict       = ctf.to_dict()
 	dz         = dict["defocus"]
@@ -551,7 +551,6 @@ def ctf_2(nx, ctf):
 	b_factor   = dict["bfactor"]
 	ampcont    = dict["ampcont"]
 
-	ctf_2  = []
 	scl    = 1.0/pixel_size/nx
 	length = int(1.7321*float(nx/2)) + 2
 	ctf_2 = [0.0]*length
