@@ -14123,23 +14123,6 @@ L640:
     return;
 }
 
-float Util::eval(char * images, EMData * img, vector<int> S, int N, int, int size)
-{
-	int j,d;
-	EMData * e = new EMData();
-	float *eptr, *imgptr;
-	imgptr = img->get_data();
-	float SSE = 0.f;
-	for (j = 0 ; j < N ; j++) {
-		e->read_image(images,S[j]);
-		eptr = e->get_data();
-		for (d = 0; d < size; d++) {
-			SSE += ((eptr[d] - imgptr[d])*(eptr[d] - imgptr[d]));}
-		}
-	delete e;
-	return SSE;
-}
-
 
 #define		mymax(x,y)		(((x)>(y))?(x):(y))
 #define 	mymin(x,y)		(((x)<(y))?(x):(y))
