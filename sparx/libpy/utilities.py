@@ -3444,7 +3444,7 @@ def gather_compacted_EMData_to_root( number_of_all_em_objects_distributed_across
 
 	mpi_size = mpi_comm_size(comm)  # Total number of processes, passed by --np option. [Unclear what this option is]
 
-	tag_for_send_receive = 123456 # NOTE: we're using the same tag for all messages here, which is a bit pointless?
+	tag_for_send_receive = 123456 # NOTE: we're using the same tag for all messages here, which seems a bit pointless?
 
 	# get data header information
 	reference_em_object = list_of_em_objects_for_myid_process[0]
@@ -3486,7 +3486,7 @@ def gather_compacted_EMData_to_root( number_of_all_em_objects_distributed_across
 			
 			# get transfer parameters of the sender
 			ref_start, ref_end = MPI_start_end( number_of_all_em_objects_distributed_across_processes, mpi_size, sender_id )
-			transfer_size = (ref_end-ref_start) * data[0].size
+			transfer_size = (ref_end - ref_start) * data[0].size # all data[i] have the same size
 			
 			# receive data
 			data = mpi_recv( transfer_size,
@@ -3501,8 +3501,8 @@ def gather_compacted_EMData_to_root( number_of_all_em_objects_distributed_across
 				data = data.reshape( [(ref_end - ref_start), ny, nx] )
 
 			# collect received data in EMData objects
-			for x in data:
-				em_object = EMNumPy.numpy2em(x)
+			for img_data in data:
+				em_object = EMNumPy.numpy2em(img_data)
 				em_object.set_ri(is_ri)
 				em_object.set_attr_dict( { "changecount": changecount,
 										   "is_complex_x": is_complex_x,

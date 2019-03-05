@@ -104,6 +104,8 @@ includes:
 	- subgroup_comm: mpi communicator for all processes with local/node mpi id zero
 	- subgroup_size: size of the zero group
 	- subgroup_myid: local process id within the zero group
+
+	NOTE: This list is probably not complete yet !
 """
 
 global Blockdata
@@ -220,8 +222,9 @@ def normalize_particle_images( aligned_images, shrink_ratio, target_radius, targ
 			mask = util.model_circle( target_radius, target_dim, target_dim )
 		else:
 			mask = util.model_circle( new_dim//2-2, new_dim, new_dim )
-	# normalize all given images
+	# pre-process all images
 	for im in range( len(aligned_images) ):
+		# apply any available alignment parameters
 		aligned_images[im] = fundamentals.rot_shift2D( aligned_images[im], 0, align_params[im][1], align_params[im][2], 0 )
 		# resample if necessary
 		if shrink_ratio != 1.0:
@@ -231,11 +234,9 @@ def normalize_particle_images( aligned_images, shrink_ratio, target_radius, targ
 			aligned_images[im] = E2.Util.window( aligned_images[im], target_dim, target_dim, 1 )
 		# create custom masks for filament particle images
 		if filament_width != -1:
-			mask = util.model_rotated_rectangle2D( radius_long=int( np.sqrt(2*new_dim**2) )//2,       # long  edge of the rectangular mask
+			mask = util.model_rotated_rectangle2D( radius_long=int( np.sqrt(2*new_dim**2) )//2,          # long  edge of the rectangular mask
 												   radius_short=int( filament_width*shrink_ratio+0.5 ),  # short edge of the rectangular mask
-												   nx=new_dim, 
-												   ny=new_dim, 
-												   angle=aligned_images[im].get_attr("segment_angle") )
+												   nx=new_dim, ny=new_dim, angle=aligned_images[im].get_attr("segment_angle") )
 		# normalize using mean of the data and variance of the noise
 		p = E2.Util.infomask( aligned_images[im], mask, False )
 		aligned_images[im] -= p[0]
@@ -1313,12 +1314,11 @@ def parse_parameters( prog_name, usage, args ):
 	parser.add_option( "--thld_err",         type="float",        default=0.7,   help="threshold of pixel error when checking stability: equals root mean square of distances between corresponding pixels from set of found transformations and theirs average transformation, depends linearly on square of radius (parameter target_radius). units - pixels. (default 0.7)" )
 	parser.add_option( "--restart",          type="int",          default='-1',  help="0: restart ISAC2 after last completed main iteration (meaning there is file >finished< in it.  k: restart ISAC2 after k'th main iteration (It has to be completed, meaning there is file >finished< in it. Higer iterations will be removed.)  Default: no restart" )
 	parser.add_option( "--rand_seed",        type="int",                         help="random seed set before calculations: useful for testing purposes. By default, total randomness (type int)" )
+	
+	parser.add_option( "--skip_prealignment",    action="store_true", default=False, help="skip pre-alignment step: to be used if images are already centered. 2dalignment directory will still be generated but the parameters will be zero. (default False)")
 
-	# developer parameters (not listed in docs)
-	parser.add_option("--skip_prealignment", action="store_true", default=False, help="skip pre-alignment step: to be used if images are already centered. 2dalignment directory will still be generated but the parameters will be zero. (default False)")
-
-	parser.add_option( "--filament_width",        type="int",          default=-1,         help="When this is set to a non-default value helical data is assumed in which case particle images will be masked with a rectangular mask. (Default: -1)" )
-	parser.add_option( "--filament_mask_ignore",  action="store_true", default=False,      help="Only relevant when parameter \'--filament_width\' is set. When set to False a rectangular mask is used to (a) normalize and (b) to mask the particle images. The latter can be disabled by setting this flag to True. (Default: False)" )
+	parser.add_option( "--filament_width",       type="int",          default=-1,    help="When this is set to a non-default value helical data is assumed in which case particle images will be masked with a rectangular mask. (Default: -1)" )
+	parser.add_option( "--filament_mask_ignore", action="store_true", default=False, help="Only relevant when parameter \'--filament_width\' is set. When set to False a rectangular mask is used to (a) normalize and (b) to mask the particle images. The latter can be disabled by setting this flag to True. (Default: False)" )
 
 	return parser.parse_args(args)
 
@@ -1601,7 +1601,7 @@ def main(args):
 		params = read_text_row(os.path.join(init2dir, "initial2Dparams.txt"))
 		params = params[image_start:image_end]
 
-		mask = util.model_circle(radi, nx, nx)
+		#--------------------------------------------------[ defocus value correction ]
 
 		# for phase plate data: read a given rotational power spectrum (1D amplitude profile)
 		if options.VPP:
@@ -1609,39 +1609,33 @@ def main(args):
 				rpw = read_text_file(os.path.join(Blockdata["masterdir"], "rpw.txt"))
 			else:  
 				rpw = [0.0]
-			rpw = bcast_list_to_all(rpw, myid, source_node = main_node, mpi_comm = mpi.MPI_COMM_WORLD)
+			rpw = bcast_list_to_all( rpw, myid, source_node=main_node, mpi_comm=mpi.MPI_COMM_WORLD )
 
+		# if we're not looking at filament images we create a circular mask that we can use for all particles
+		if filament_width == -1:
+			mask = util.model_circle(radi, nx, nx)
 
-
-
-
-
-
-
-
-
-		# defocus value correction
+		# defocus value correction for all images
 		for im in range(nima):
+			# create custom mask per particle in case we're processing filament images
+			if filament_width != -1:
+				mask = util.model_rotated_rectangle2D( radius_long=int(np.sqrt(2*nx**2))//2,    # use a length that will be guaranteed to cross the whole image
+													   radius_short=int( filament_width*1.5 ),  # use a conservative, slightly larger mask since filaments might not be aligned as well as they could be
+													   nx=nx, ny=nx, angle=aligned_images[im].get_attr("segment_angle") )
+			# substract mean of the within-mask area
 			st = Util.infomask(aligned_images[im], mask, False)
 			aligned_images[im] -= st[0]
 			# for normal data: CTF correction
 			if options.CTF:
 				aligned_images[im] = filt_ctf(aligned_images[im], aligned_images[im].get_attr("ctf"), binary = True)
-			# for phase plate data we force images to match the rotational power spectrum
+			# for phase plate data we force images to match the rotational power spectrum (provided to us from the outside)
 			elif options.VPP:
-				aligned_images[im] = fft(filt_table(filt_ctf(fft(aligned_images[im]), aligned_images[im].get_attr("ctf"), binary = True), rpw))
+				aligned_images[im] = fft( filt_table(filt_ctf(fft(aligned_images[im]), aligned_images[im].get_attr("ctf"), binary = True), rpw) )
 
-		if options.VPP: del rpw
+		if options.VPP: 
+			del rpw
 
-
-
-
-
-
-
-
-
-
+		#--------------------------------------------------[ shrinking / re-scaling ]
 
 		# normalize all particle images after applying ctf correction (includes shrinking/re-scaling)
 		normalize_particle_images( aligned_images, shrink_ratio, target_radius, target_nx, params, 
