@@ -175,7 +175,7 @@ def checkitem( item, mpi_comm = -1 ):
 	mpi.mpi_barrier( mpi_comm )
 	return isthere
 
-#-------------------------------------------------------------------[ utility ]
+#===================================================================[ utility ]
 
 def normalize_particle_images( aligned_images, shrink_ratio, target_radius, target_dim, align_params, filament_width=-1, ignore_helical_mask=False ):
 	"""
@@ -259,7 +259,7 @@ def normalize_particle_images( aligned_images, shrink_ratio, target_radius, targ
 			aligned_images[im] = util.pad( aligned_images[im], target_dim, target_dim, 1, 0.0 )
 
 
-#----------------------------------------------------------------------[ ISAC ]
+#======================================================================[ ISAC ]
 
 def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, init_iter, main_iter, iter_reali, match_first, max_round, match_second, stab_ali, thld_err, indep_run, thld_grp, img_per_grp, generation, candidatesexist = False, random_seed=None, new = False):
 	""" 
@@ -1292,7 +1292,7 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 
 	return keepdoing_main, keepdoing_generation
 
-#================================================================[ parameters ]
+#======================================================================[ main ]
 
 def parse_parameters( prog_name, usage, args ):
 
@@ -1378,10 +1378,10 @@ def main(args):
 	if global_def.CACHE_DISABLE:
 		util.disable_bdb_cache()
 	global_def.BATCH = True
-	
+
 	#------------------------------------------------------[ master directory setup ]
 
-	# get mpi id values (NOTE: the code cannot decide which one of these to use)
+	# get mpi id values (NOTE: these are not used consistently throughout the code)
 	main_node = Blockdata["main_node"]
 	myid  = Blockdata["myid"]
 	nproc = Blockdata["nproc"]
@@ -1482,6 +1482,65 @@ def main(args):
 	Blockdata["total_nima"] = bcast_number_to_all(Blockdata["total_nima"], source_node = main_node)
 
 	nxrsteps = 4
+
+	#------------------------------------------------------[ prepare ISAC loop to run from scratch or continue ]
+
+	error = 0
+	if( Blockdata["myid"] == Blockdata["main_node"] ):
+
+		# fresh start
+		if( not os.path.exists( os.path.join(Blockdata["masterdir"], "main001", "generation000") ) ):
+			#  NOTE: we do not create processed_images.txt selection file as it has to be initially empty
+			#  we do, however, initialize all parameters with empty values
+			util.write_text_row( [[0.0,0.0,0.0,-1] for i in range(Blockdata["total_nima"])], os.path.join(Blockdata["masterdir"], "all_parameters.txt") )
+			if(options.restart > -1):
+				error = 1
+
+		# continue ISAC from a previous run
+		else:
+
+			# restart ISAC from the last finished iteration
+			if(options.restart == 0):
+				keepdoing_main = True
+				main_iter = 0
+				# go through the main iteration folders and find the first not to contain the "finished" file, tehn start from there
+				while(keepdoing_main):
+					main_iter += 1
+					if( os.path.exists( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter ) ) ):
+						if( not  os.path.exists( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "finished" ) ) ):
+							cmdexecute( "{} {}".format("rm -rf", os.path.join(Blockdata["masterdir"], "main%03d"%main_iter)) )
+							keepdoing_main = False
+					else: 
+						keepdoing_main = False
+
+			# restart ISAC from a specfied iteration number
+			else:
+				main_iter = options.restart
+				if( not os.path.exists( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "finished")) ):
+					error = 2
+				else:
+					keepdoing_main = True
+					main_iter += 1
+					# when continuing from iteration <n> remove all existing directories for iterations <n+i>
+					while( keepdoing_main ):
+						if( os.path.exists(os.path.join(Blockdata["masterdir"], "main%03d"%main_iter)) ):
+							cmdexecute( "{} {}".format("rm -rf", os.path.join(Blockdata["masterdir"], "main%03d"%main_iter)) )
+							main_iter += 1
+						else: 
+							keepdoing_main = False
+
+			# if we're re-starting from an iteration folder containing the "finished" file, remove that file; we're just getting started!
+			if( os.path.exists(os.path.join(Blockdata["masterdir"], "finished")) ):
+				cmdexecute( "{} {}".format("rm -rf", os.path.join(Blockdata["masterdir"], "finished")) )
+
+	error = bcast_number_to_all(error, source_node = Blockdata["main_node"])
+	if(error == 1):  
+		ERROR( "Good Sir or Madam, for thine restart value %d there exists no ISAC directory for thine continuation. Please doth choose a restart value of -1 to start a fresh run or 0 to continue the iteration last completed." % options.restart )
+	elif(error == 2):  
+		ERROR( "Cannot restart from unfinished main iteration number %d. To automatically detect the latest ISAC directory for continuation please choose a restart value of 0." % main_iter )
+
+	# everyone waits for the root process to run the above checks
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	#------------------------------------------------------[ initial 2D alignment (centering) ]
 
@@ -1645,6 +1704,10 @@ def main(args):
 		if options.VPP: 
 			del rpw
 
+		# NOTE: the defocus value correction above is done with full-sized images, while
+		# the normalization below is done on the shrunken / re-scaled images. Because of
+		# this we cannot integrate the above into the normalization function below.
+
 		#--------------------------------------------------[ shrinking / re-scaling ]
 
 		# normalize all particle images after applying ctf correction (includes shrinking/re-scaling)
@@ -1684,64 +1747,6 @@ def main(args):
 	else:
 		if( Blockdata["myid"] == Blockdata["main_node"] ):
 			sxprint("Skipping 2D alignment since it was already done!")
-
-	#------------------------------------------------------[ prepare ISAC loop to run from scratch or continue ]
-
-	error = 0
-	if( Blockdata["myid"] == Blockdata["main_node"] ):
-
-		# fresh start
-		if( not os.path.exists( os.path.join(Blockdata["masterdir"], "main001", "generation000") ) ):
-			#  NOTE: we do not create processed_images.txt selection file as it has to be initially empty
-			#  we do, however, initialize all parameters with empty values
-			util.write_text_row( [[0.0,0.0,0.0,-1] for i in range(Blockdata["total_nima"])], os.path.join(Blockdata["masterdir"], "all_parameters.txt") )
-			if(options.restart > -1):
-				error = 1
-
-		# continue ISAC from a previous run
-		else:
-			if(options.restart == 0):
-				keepdoing_main = True
-				main_iter = 0
-				while(keepdoing_main):
-					main_iter += 1
-					if( os.path.exists( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter ) ) ):
-						if( not  os.path.exists( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "finished" ) ) ):
-							cmd = "{} {}".format( "rm -rf", 
-												  os.path.join(Blockdata["masterdir"], "main%03d"%main_iter) )
-							junk = cmdexecute(cmd)
-							keepdoing_main = False
-					else: 
-						keepdoing_main = False
-
-			else:
-				main_iter = options.restart
-				if( not os.path.exists( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "finished")) ):
-					error = 2
-				else:
-					keepdoing_main = True
-					main_iter += 1
-					while( keepdoing_main ):
-						if( os.path.exists(os.path.join(Blockdata["masterdir"], "main%03d"%main_iter)) ):
-							cmd = "{} {}".format( "rm -rf", 
-												  os.path.join(Blockdata["masterdir"], "main%03d"%main_iter) )
-							junk = cmdexecute( cmd )
-							main_iter += 1
-						else: 
-							keepdoing_main = False
-
-			if( os.path.exists(os.path.join(Blockdata["masterdir"], "finished")) ):
-				cmd = "{} {}".format( "rm -rf", 
-									  os.path.join(Blockdata["masterdir"], "finished") )
-				junk = cmdexecute( cmd )
-
-	error = bcast_number_to_all(error, source_node = Blockdata["main_node"])
-	if(error == 1):  
-		ERROR( "The restart value is greater than -1, but the ISAC directory does not exist for continuation. Please choose a restart value of -1 to start a fresh run." )
-	elif(error == 2):  
-		ERROR( "Cannot restart from unfinished main iteration  %d. To automatically detect the latest ISAC directory for continuation please choose a restart value of 0." % main_iter )
-
-	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	#------------------------------------------------------[ ISAC main loop ]
 	
