@@ -651,7 +651,7 @@ def main():
 						sphire_header['apix_z'] = 1.0
 						
 						if relion_category_dict['helical'][idx_is_category_found]:
-							sphire_header['filament'] = '{0}{1:05d}'.format(adjusted_relion_micrograph_name, sphire_filament_id)
+							sphire_header['filament_id'] = '{0}{1:05d}'.format(adjusted_relion_micrograph_name, sphire_filament_id)
 						if relion_category_dict['ctf'][idx_is_category_found] or options.negative_stain:
 							sphire_cter_entry_list = []
 							for idx_sphire_ctf in range(n_idx_sphire_ctf):
@@ -1059,7 +1059,7 @@ def main():
 						img_particles_dict['apix_z'] = sphire_header['apix_z']
 						
 						if relion_category_dict['helical'][idx_is_category_found] == True:
-							img_particles_dict['filament'] = sphire_header['filament']
+							img_particles_dict['filament_id'] = sphire_header['filament_id']
 						if relion_category_dict['ctf'][idx_is_category_found] == True or options.negative_stain:
 							img_particles_dict['ctf'] = sphire_header['ctf']
 							img_particles_dict['ctf_applied'] = sphire_header['ctf_applied']
