@@ -1205,7 +1205,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		if options.check_consistency:
 			# Create output directory
 			assert not os.path.exists(root_out_dir)
-			os.mkdir(root_out_dir)
+			os.makedirs(root_out_dir)
 
 			# Open the consistency check file
 			mic_consistency_check_info_path = os.path.join(
@@ -1419,7 +1419,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		# However, it is side-effect of the function, so we will explicitly make root output directory here.
 		#
 		if not os.path.exists(root_out_dir):
-			os.mkdir(root_out_dir)
+			os.makedirs(root_out_dir)
 		assert not os.path.exists(reject_out_of_boundary_dir), "MRK_DEBUG"
 		os.mkdir(reject_out_of_boundary_dir)
 

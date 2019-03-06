@@ -7049,10 +7049,10 @@ def main():
 					timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
 					masterdir = "master"+timestring
 					li = len(masterdir)
-					os.mkdir(masterdir)
+					os.makedirs(masterdir)
 					keepchecking = 0
 				else:
-					if not os.path.exists(masterdir): os.mkdir(masterdir)
+					if not os.path.exists(masterdir): os.makedirs(masterdir)
 					li = 0
 					keepchecking = 1
 			else:

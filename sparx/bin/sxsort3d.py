@@ -251,7 +251,7 @@ def main():
 				timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
 				masterdir ="master_sort3d"+timestring
 			li =len(masterdir)
-			cmd="{} {}".format("mkdir", masterdir)
+			cmd="{} {}".format("mkdir -p", masterdir)
 			os.system(cmd)
 		else:
 			li=0
