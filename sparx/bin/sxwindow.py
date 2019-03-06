@@ -111,7 +111,7 @@ def read_cryolo_helical_segmented_coords_file(coords_path):
 						)
 		if index_first_helix == -1:
 			return []
-		filament_name = "{0}_{{0}}".format(os.path.basename(coords_path))
+		filament_name = "{{0}}_{0:05d}"
 		coords_list = []
 		coordinates = np.atleast_2d(np.genfromtxt(coords_path))
 		coord_filaments = np.split(coordinates, split_indicis)
@@ -1712,7 +1712,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				particle_img_dict["ptcl_source_coord_id"] = coords_id
 				particle_img_dict["ptcl_source_box_id"] = original_id
 				try:
-					particle_img_dict["filament_id"] = coords_list[original_id][2]
+					particle_img_dict["filament_id"] = coords_list[original_id][2].format(mic_path)
 				except IndexError:
 					pass
 				try:
