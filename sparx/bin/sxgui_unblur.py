@@ -1937,6 +1937,7 @@ class SXDriftUnblur(QMainWindow, Ui_MSMainWidget):
         """Calculate the Drift"""
 
         # Check how many frames are there
+        arrCoord = []
         self.intFrames = 0
         input_typ = None
         for files in self.listFile:
@@ -1960,7 +1961,18 @@ class SXDriftUnblur(QMainWindow, Ui_MSMainWidget):
                             pass
                         self.intFrames = linenumber - 1
                     else:
-                        raise IOError
+                        lines = f.readlines()
+                        if "Unblur" not in lines[1]:
+                            raise IOError
+                        for line in lines:
+                            l=line.replace(",","").replace("=","").split()
+                            if len(l) == 4 and l[0]=="image":
+                                arrCoord.append( [ float(l[-2]),float(l[-1]) ] )
+                                #self.listCoordX.append(l[-2])
+                                #self.listCoordY.append(l[-1])
+                                self.intFrames+=1
+                        arrCoord = numpy.array(arrCoord)
+
                 break
             except IOError:
                 continue
@@ -2007,19 +2019,20 @@ class SXDriftUnblur(QMainWindow, Ui_MSMainWidget):
                     })
 
         validFiles = []
-        for file in self.listFile:
 
+        for file in self.listFile:
             # Import the data
-            try:
-                if input_typ == 'Unblur':
-                    arrCoord = numpy.genfromtxt(file, unpack=True)
-                elif input_typ == 'MotionCor2':
-                    arrCoord = numpy.genfromtxt(file, unpack=True)[1:]
-                    # Transpose the array
-                    arrCoord = numpy.transpose(arrCoord)
-            except ValueError:
-                print(('Warning: File corrupt, skip:', file))
-                continue
+            if numpy.array_equal(arrCoord, []):
+                try:
+                    if input_typ == 'Unblur':
+                        arrCoord = numpy.genfromtxt(file, unpack=True)
+                    elif input_typ == 'MotionCor2':
+                        arrCoord = numpy.genfromtxt(file, unpack=True)[1:]
+                        # Transpose the array
+                        arrCoord = numpy.transpose(arrCoord)
+                except ValueError:
+                    print(('Warning: File corrupt, skip:', file))
+                    continue
 
             if len(arrCoord) != self.intFrames:
                 print(('Warning: File does not have {0} Frames, skip:'.format(self.intFrames), file))
