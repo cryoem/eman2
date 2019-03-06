@@ -216,38 +216,48 @@ def normalize_particle_images( aligned_images, shrink_ratio, target_radius, targ
 
 	# particle image dimension after scaling/shrinking
 	new_dim = int( aligned_images[0].get_xsize()*shrink_ratio + 0.5 )
+	
 	# create re-usable mask for non-helical particle images
 	if filament_width == -1:
 		if new_dim >= target_dim:
 			mask = util.model_circle( target_radius, target_dim, target_dim )
 		else:
 			mask = util.model_circle( new_dim//2-2, new_dim, new_dim )
+	
 	# pre-process all images
 	for im in range( len(aligned_images) ):
+		
 		# apply any available alignment parameters
 		aligned_images[im] = fundamentals.rot_shift2D( aligned_images[im], 0, align_params[im][1], align_params[im][2], 0 )
+		
 		# resample if necessary
 		if shrink_ratio != 1.0:
 			aligned_images[im] = fundamentals.resample( aligned_images[im], shrink_ratio )
+		
 		# crop images if necessary
 		if new_dim > target_dim:
 			aligned_images[im] = E2.Util.window( aligned_images[im], target_dim, target_dim, 1 )
+		
 		# create custom masks for filament particle images
 		if filament_width != -1:
-			mask = util.model_rotated_rectangle2D( radius_long=int( np.sqrt(2*new_dim**2) )//2,          # long  edge of the rectangular mask
-												   radius_short=int( filament_width*shrink_ratio+0.5 ),  # short edge of the rectangular mask
-												   nx=new_dim, ny=new_dim, angle=aligned_images[im].get_attr("segment_angle") )
+			mask = util.model_rotated_rectangle2D( radius_long=int( np.sqrt(2*new_dim**2) )//2, # long  edge of the rectangular mask
+													  radius_short=int( filament_width*shrink_ratio+0.5 ), # short edge of the rectangular mask
+													  nx=new_dim, ny=new_dim, angle=aligned_images[im].get_attr("segment_angle") )
+
 		# normalize using mean of the data and variance of the noise
 		p = E2.Util.infomask( aligned_images[im], mask, False )
 		aligned_images[im] -= p[0]
 		p = E2.Util.infomask( aligned_images[im], mask, True )
 		aligned_images[im] /= p[1]
+		
 		# optional: burn helical mask into particle images
 		if filament_width != -1 and not ignore_helical_mask:
 			aligned_images[im] *= mask
+
 		# pad images in case they have been shrunken below the target_dim
 		if new_dim < target_dim:
 			aligned_images[im] = util.pad( aligned_images[im], target_dim, target_dim, 1, 0.0 )
+
 
 #----------------------------------------------------------------------[ ISAC ]
 
@@ -1612,15 +1622,15 @@ def main(args):
 			rpw = bcast_list_to_all( rpw, myid, source_node=main_node, mpi_comm=mpi.MPI_COMM_WORLD )
 
 		# if we're not looking at filament images we create a circular mask that we can use for all particles
-		if filament_width == -1:
+		if options.filament_width == -1:
 			mask = util.model_circle(radi, nx, nx)
 
 		# defocus value correction for all images
 		for im in range(nima):
 			# create custom mask per particle in case we're processing filament images
-			if filament_width != -1:
-				mask = util.model_rotated_rectangle2D( radius_long=int(np.sqrt(2*nx**2))//2,    # use a length that will be guaranteed to cross the whole image
-													   radius_short=int( filament_width*1.5 ),  # use a conservative, slightly larger mask since filaments might not be aligned as well as they could be
+			if options.filament_width != -1:
+				mask = util.model_rotated_rectangle2D( radius_long=int(np.sqrt(2*nx**2))//2, # use a length that will be guaranteed to cross the whole image
+													   radius_short=int( options.filament_width*1.5 ), # use a conservative, slightly larger mask since filaments might not be aligned as well as they could be
 													   nx=nx, ny=nx, angle=aligned_images[im].get_attr("segment_angle") )
 			# substract mean of the within-mask area
 			st = Util.infomask(aligned_images[im], mask, False)
