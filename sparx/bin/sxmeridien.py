@@ -6103,6 +6103,7 @@ def update_tracker(shell_line_command):
 	parser_no_default.add_option("--inires",		       		type="float")
 	parser_no_default.add_option("--mask3D",		         	type="string")
 	parser_no_default.add_option("--function",					type="string")
+	parser_no_default.add_option("--function_ai",				type="string")
 	parser_no_default.add_option("--symmetry",    	       		type="string")# rare to change sym; however, keep it an option.
 	parser_no_default.add_option("--delta",						type="float")
 	parser_no_default.add_option("--shake",	           			type="float")
@@ -6184,10 +6185,22 @@ def update_tracker(shell_line_command):
 	if  options_no_default_value.continuation_iter != None:
 		Tracker["constants"]["continuation_iter"] = options_no_default_value.continuation_iter
 	if  options_no_default_value.function != None:
-		Tracker["constants"]["function"] = options_no_default_value.function
+		Tracker["constants"]["user_func_volume"] = options_no_default_value.function
+	if  options_no_default_value.function_ai != None:
+		Tracker["constants"]["user_func_ai"] = options_no_default_value.function_ai
 	if  options_no_default_value.an!= None:
 		Tracker["constants"]["an"] = options_no_default_value.an
 		tempdict["an"] = Tracker["constants"]["an"]
+
+	# For backwards compatibility
+	try:
+			Tracker["constants"]["user_func_volume"]
+	except KeyError:
+			Tracker["constants"]["user_func_volume"] = "ai_spa"
+	try:
+			Tracker["constants"]["user_func_ai"]
+	except KeyError:
+			Tracker["constants"]["user_func_ai"] = "ai_spa"
 
 	if( (Blockdata["myid"] == Blockdata["main_node"])  and  (len(tempdict) > 0) ):
 		print_dict(tempdict, "Updated settings")
@@ -6775,8 +6788,8 @@ def main():
 		parser.add_option("--ccfpercentage",			type="float", 	      	default= 99.9,               	help="Percentage of the correlation peak area to be included, 0.0 corresponds to hard matching (default 99.9%)")
 		parser.add_option("--nonorm",               	action="store_true",  	default= False,              	help="Do not apply image norm correction. (default False)")
 		parser.add_option("--group_by",               	type="str",  	default= 'ptcl_source_image',              	help="Group particles by header information. For helical refinement use filament or filament_id if present. (Default ptcl_source_image)")
-		parser.add_option("--theta_min",               	type="float",  	default= '0',              	help="Lower limit for the out-of-plane rotation angle (Default 0)")
-		parser.add_option("--theta_max",               	type="float",  	default= '180',              	help="Upper limit for the out-of-plane rotation angle (Default 180)")
+		parser.add_option("--theta_min",               	type="float",  	default= -1,              	help="Lower limit for the out-of-plane rotation angle. Default is the full range based on the symmetry. (Default -1)")
+		parser.add_option("--theta_max",               	type="float",  	default= -1,              	help="Upper limit for the out-of-plane rotation angle.  Default is the full range based on the symmetry. (Default -1)")
 		parser.add_option("--even_angle_method",               	type="str",  	default='S',              	help="Even angle creation strategy. Choices: S, P, M. (Default S)")
 		if do_continuation_mode:
 			# case1: local meridien run using parameters stored in headers
