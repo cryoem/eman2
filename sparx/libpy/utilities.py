@@ -1708,17 +1708,12 @@ def model_rotated_rectangle2D(radius_long, radius_short, nx, ny, angle=90, retur
 	] = 1.0
 	
 	mask = scipy.ndimage.rotate(mask, angle, reshape=False)
-	mask = mask[
-		(sizex // 2 - nx // 2) : (sizex // 2 + nx // 2),
-		(sizey // 2 - ny // 2) : (sizey // 2 + ny // 2),
+	offx = 0 if nx%2 == 0 else 1 # add one column if nx is odd
+	offy = 0 if nx%2 == 0 else 1 # add one row if ny is odd
+	mask = mask[ # otherwise this only creates even-sized masks
+		(sizex // 2 - nx // 2) : (sizex // 2 + nx // 2)+offy,
+		(sizey // 2 - ny // 2) : (sizey // 2 + ny // 2)+offx,
 	]
-
-	# the above will always create a mask of even dimensions
-	# so we need to expand it a bit in case of odd dimensions
-	if mask.shape[0] == nx-1 or mask.shape[1] == ny-1:
-		tmp = np.zeros( [nx,ny] )
-		tmp[ : mask.shape[0], : mask.shape[1] ] = mask
-		mask = tmp
 
 	# eliminate round-off errors introduced by the rotation
 	mask[ mask <=0.9 ] = 0.0
