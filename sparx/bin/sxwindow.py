@@ -698,14 +698,14 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			"Found %d microgarphs in %s."
 			% (len(input_mic_path_list), os.path.dirname(mic_pattern))
 		)
-		if error_status is None and len(input_mic_path_list) == 0:
+		if error_status is None and not input_mic_path_list:
 			error_status = (
 				"No micrograph files are found in the directory specified by micrograph path pattern (%s). Please check input_micrograph_pattern argument. Run %s -h for help."
 				% (os.path.dirname(mic_pattern), program_name),
 				getframeinfo(currentframe()),
 			)
 			break
-		assert len(input_mic_path_list) > 0
+		assert input_mic_path_list
 
 		# Register micrograph id substrings to the global entry dictionary
 		for input_mic_path in input_mic_path_list:
@@ -721,7 +721,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				global_entry_dict[mic_id_substr] = {}
 			assert mic_id_substr in global_entry_dict
 			global_entry_dict[mic_id_substr][subkey_input_mic_path] = input_mic_path
-		assert len(global_entry_dict) > 0
+		assert global_entry_dict
 
 		# --------------------------------------------------------------------------------
 		# Register micrograph id substrings found in the selection list
@@ -775,7 +775,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 					"Processing a single micorgprah: %s..." % (options.selection_list)
 				)
 				selected_mic_path_list = [options.selection_list]
-			assert len(selected_mic_path_list) > 0
+			assert selected_mic_path_list
 
 			selected_mic_directory = os.path.dirname(selected_mic_path_list[0])
 			if selected_mic_directory != "":
@@ -784,7 +784,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 					% (selected_mic_directory)
 				)
 
-		assert len(selected_mic_path_list) > 0
+		assert selected_mic_path_list
 
 		# Register micrograph id substrings to the global entry dictionary
 		for selected_mic_path in selected_mic_path_list:
@@ -819,7 +819,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			global_entry_dict[mic_id_substr][
 				subkey_selected_mic_basename
 			] = selected_mic_basename
-		assert len(global_entry_dict) > 0
+		assert global_entry_dict
 
 		del selected_mic_path_list  # Do not need this anymore
 		del input_mic_path_list  # Do not need this anymore
@@ -838,14 +838,14 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			"Found %d coordinates files in %s directory."
 			% (len(coords_path_list), os.path.dirname(coords_pattern))
 		)
-		if error_status is None and len(coords_path_list) == 0:
+		if error_status is None and not coords_path_list:
 			error_status = (
 				"No coordinates files are found in the directory specified by coordinates file path pattern (%s). Please check input_coordinates_pattern argument. Run %s -h for help."
 				% (os.path.dirname(coords_pattern), program_name),
 				getframeinfo(currentframe()),
 			)
 			break
-		assert len(coords_path_list) > 0
+		assert coords_path_list
 
 		for coords_path in coords_path_list:
 			# Find tail index of coordinates id substring and extract the substring from the coordinates file path
@@ -859,7 +859,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				global_entry_dict[coords_id_substr] = {}
 			assert coords_id_substr in global_entry_dict
 			global_entry_dict[coords_id_substr][subkey_coords_path] = coords_path
-		assert len(global_entry_dict) > 0
+		assert global_entry_dict
 
 		del coords_path_list  # Do not need this anymore
 
@@ -878,14 +878,14 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				"Found %d CTER partres entries in %s."
 				% (len(cter_entry_list), ctf_params_src)
 			)
-			if error_status is None and len(cter_entry_list) == 0:
+			if error_status is None and not cter_entry_list:
 				error_status = (
 					"No CTER partres entries are found in %s. Please check input_ctf_params_source argument. Run %s -h for help."
 					% (ctf_params_src, program_name),
 					getframeinfo(currentframe()),
 				)
 				break
-			assert len(cter_entry_list) > 0
+			assert cter_entry_list
 
 			#
 			# NOTE: 2017/12/05 Toshio Moriya
@@ -965,7 +965,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 						global_entry_dict[mic_id_substr] = {}
 					assert mic_id_substr in global_entry_dict
 					global_entry_dict[mic_id_substr][subkey_cter_entry] = cter_entry
-				assert len(global_entry_dict) > 0
+				assert global_entry_dict
 				# For OLD CTER partres format (BEFORE 2017/12/05)
 			else:
 				assert len(cter_entry_list[0]) == n_idx_old_cter, "MKR_DEBUG"
@@ -1089,7 +1089,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 						global_entry_dict[mic_id_substr] = {}
 					assert mic_id_substr in global_entry_dict
 					global_entry_dict[mic_id_substr][subkey_cter_entry] = cter_entry
-				assert len(global_entry_dict) > 0
+				assert global_entry_dict
 
 			del cter_entry_list  # Do not need this anymore
 
@@ -1116,13 +1116,13 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		for mic_id_substr in global_entry_dict:
 			mic_id_entry = global_entry_dict[mic_id_substr]
 
-			warinnig_messages = []
+			warninig_messages = []
 			# selected micrograph basename must have been registed always .
 			if subkey_selected_mic_basename in mic_id_entry:
 				# Check if associated input micrograph exists
 				if not subkey_input_mic_path in mic_id_entry:
 					input_mic_path = mic_pattern.replace("*", mic_id_substr)
-					warinnig_messages.append(
+					warninig_messages.append(
 						"    associated input micrograph %s." % (input_mic_path)
 					)
 					no_input_mic_id_substr_list.append(mic_id_substr)
@@ -1130,7 +1130,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 					# Check if associated coordinate file exists
 				if not subkey_coords_path in mic_id_entry:
 					coords_path = coords_pattern.replace("*", mic_id_substr)
-					warinnig_messages.append(
+					warninig_messages.append(
 						"    associated coordinates file %s." % (coords_path)
 					)
 					no_coords_mic_id_substr_list.append(mic_id_substr)
@@ -1139,7 +1139,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 					# Check if associated CTER partres entry exists
 					if not subkey_cter_entry in mic_id_entry:
 						mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
-						warinnig_messages.append(
+						warninig_messages.append(
 							"    associated entry with %s in the CTER partres file %s."
 							% (mic_basename, ctf_params_src)
 						)
@@ -1187,12 +1187,12 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 						subkey_cter_entry
 					] = dummy_cter_entry
 
-				if len(warinnig_messages) > 0:
+				if warninig_messages:
 					sxprint(
 						"WARNING!!! Micrograph ID %s does not have:" % (mic_id_substr)
 					)
-					for warinnig_message in warinnig_messages:
-						sxprint(warinnig_message)
+					for warning_message in warninig_messages:
+						sxprint(warning_message)
 					sxprint("    Ignores this as an invalid entry.")
 				else:
 					# sxprint("MRK_DEBUG: adding mic_id_substr := ", mic_id_substr)
@@ -1261,7 +1261,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 					# All entry must have dummy cter entry
 					assert subkey_cter_entry in mic_id_entry
 
-				if len(consistency_messages) > 0:
+				if consistency_messages:
 					mic_consistency_check_info_file.write(
 						"Micrograph ID %s might have problems with consistency among the provided dataset:\n"
 						% (mic_id_substr)
@@ -1465,7 +1465,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		assert os.path.exists(coords_path)
 		assert read_coords_file != None
 		coords_list = read_coords_file(coords_path)
-		if len(coords_list) == 0:
+		if not coords_list:
 			sxprint(
 				"For %s, the associate coordinates file %s does not contain any entries. Skipping..."
 				% (mic_basename, coords_path)
@@ -1649,7 +1649,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				continue
 
 		local_particle_id = 0  # can be different from coordinates_id
-		if len(coords_accepted) > 0:
+		if coords_accepted:
 			local_mrcs = EMData(box_size, box_size, len(coords_accepted))
 			local_mrcs.set_attr(
 				"apix_x", 1.0
@@ -1775,7 +1775,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 
 			# Save the message list of rejected coordinates because of out-of-boundary
 			# sxprint("MRK_DEBUG: len(coords_reject_out_of_boundary_messages) := %d" % len(coords_reject_out_of_boundary_messages))
-		if len(coords_reject_out_of_boundary_messages) > 0:
+		if coords_reject_out_of_boundary_messages:
 			# Open file path to save the message list
 			#
 			# NOTE: 2017/12/12 Toshio Moriya
