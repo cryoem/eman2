@@ -148,7 +148,7 @@ def main():
 					pass
 			except:
 				pass
-		if not os.path.exists(current_output_dir): os.mkdir(current_output_dir)
+		if not os.path.exists(current_output_dir): os.makedirs(current_output_dir)
 		
 		#  Input
 		#instack = "Clean_NORM_CTF_start_wparams.hdf"
@@ -294,7 +294,7 @@ def main():
 		# global_def.BATCH = True
 		
 		if myid == main_node:
-			if not os.path.exists(current_output_dir): os.mkdir(current_output_dir)# Never delete output_dir in the program!
+			if not os.path.exists(current_output_dir): os.makedirs(current_output_dir)# Never delete output_dir in the program!
 	
 		img_per_grp = options.img_per_grp
 		#nvec        = options.nvec

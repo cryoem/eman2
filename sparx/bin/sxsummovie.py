@@ -26,6 +26,7 @@ from __future__ import print_function
 # GNU General Public License for more details.
 
 from sys import argv
+import os
 from os import mkdir, path, system, remove, rmdir
 from glob import glob
 from numpy import genfromtxt
@@ -158,9 +159,9 @@ def main():
 
     # Create output directorys
     if not path.exists(output_dir):
-        mkdir(output_dir)
+       os.makedirs(output_dir)
     if not path.exists(output_path):
-        mkdir(output_path)
+        os.makedirs(output_path)
     if not path.exists(frc_path):
         mkdir(frc_path)
     if not path.exists(temp_path) and not options.summovie_ready:

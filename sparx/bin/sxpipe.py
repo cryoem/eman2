@@ -193,7 +193,7 @@ def isac_substack(args):
 	# Create output directory
 	sxprint(" ")
 	print_progress("Creating output directory {}.".format(args.output_directory))
-	os.mkdir(args.output_directory)
+	os.makedirs(args.output_directory)
 	
 	# Extract the number of images in the input BDB stack
 	n_fullstack_img = EMUtil.get_image_count(args.input_bdb_stack_path)

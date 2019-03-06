@@ -267,7 +267,7 @@ def main():
 				li =len(masterdir)
 			else:
 				li = 0
-			cmd="{} {}".format("mkdir", masterdir)
+			cmd="{} {}".format("mkdir -p", masterdir)
 			os.system(cmd)			
 		else:
 			li=0

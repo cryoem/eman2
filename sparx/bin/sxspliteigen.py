@@ -65,18 +65,18 @@ def main():
 	nimage = EMUtil.get_image_count( args[0] )
 
 	for i in range(nimage) :
-	        data = EMData()
-	        data.read_image( args[0], i )
+			data = EMData()
+			data.read_image( args[0], i )
 
-	        eigval = data.get_attr_default( "eigval", 1.0 )
-	        Util.mul_scalar(data , sqrt(eigval) )
+			eigval = data.get_attr_default( "eigval", 1.0 )
+			Util.mul_scalar(data , sqrt(eigval) )
 
-	        fname = args[1] + ("%04d_pos.hdf" % (i+1) )
-	        data.write_image( fname )
+			fname = args[1] + ("%04d_pos.hdf" % (i+1) )
+			data.write_image( fname )
 
-	        fname = args[1] + ("%04d_neg.hdf" % (i+1) )
-	        Util.mul_scalar(data , -1 )
-	        data.write_image( fname )
+			fname = args[1] + ("%04d_neg.hdf" % (i+1) )
+			Util.mul_scalar(data , -1 )
+			data.write_image( fname )
 
 
 if __name__ == "__main__":
