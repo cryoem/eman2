@@ -1683,7 +1683,7 @@ def model_cylinder(radius, nx, ny, nz):
 	return e
 
 
-def model_rotated_rectangle2D(radius_long, radius_short, nx, ny, angle=90):
+def model_rotated_rectangle2D(radius_long, radius_short, nx, ny, angle=90, return_numpy=False):
 	"""
 	Creates a rectangular mask
 	:param radius_long: Radius long axis
@@ -1691,6 +1691,7 @@ def model_rotated_rectangle2D(radius_long, radius_short, nx, ny, angle=90):
 	:param nx: Mask size x-dim
 	:param ny: Mask size y-dim
 	:param angle: Rotation angle in degree
+	:param return_numpy: Return mask as numpy array instead of as EMObject. [Default: False]
 	:return: rotated rectangular mask
 	"""
 
@@ -1719,9 +1720,15 @@ def model_rotated_rectangle2D(radius_long, radius_short, nx, ny, angle=90):
 		tmp[ : mask.shape[0], : mask.shape[1] ] = mask
 		mask = tmp
 
-	mask = EMAN2.EMNumPy.numpy2em(mask)
+	# eliminate round-off errors introduced by the rotation
+	mask[ mask <=0.9 ] = 0.0
+	mask[ mask > 0.9 ] = 1.0 
 
-	return mask
+	# deliver the mask
+	if return_numpy:
+		return mask
+	else:
+		return EMAN2.EMNumPy.numpy2em(mask)
 
 
 def model_gauss_noise(sigma, nx, ny=1, nz=1):
