@@ -6193,14 +6193,25 @@ def update_tracker(shell_line_command):
 		tempdict["an"] = Tracker["constants"]["an"]
 
 	# For backwards compatibility
-	try:
-			Tracker["constants"]["user_func_volume"]
-	except KeyError:
-			Tracker["constants"]["user_func_volume"] = "do_volume_mask"
-	try:
-			Tracker["constants"]["user_func_ai"]
-	except KeyError:
-			Tracker["constants"]["user_func_ai"] = "ai_spa"
+	backwards_dict_constants = {
+		'user_func_volume': 'do_volume_mask',
+		'user_func_ai': 'ai_spa',
+		'even_angle_method': 'S',
+		}
+	backwards_dict = {
+		'theta_min': -1,
+		'theta_max': -1,
+		}
+	for key in backwards_dict_constants:
+		try:
+			Tracker["constants"][key]
+		except KeyError:
+			Tracker["constants"][key] = backwards_dict_constants[key]
+	for key in backwards_dict:
+		try:
+			Tracker[key]
+		except KeyError:
+			Tracker[key] = backwards_dict[key]
 
 	if( (Blockdata["myid"] == Blockdata["main_node"])  and  (len(tempdict) > 0) ):
 		print_dict(tempdict, "Updated settings")
@@ -6949,8 +6960,8 @@ def main():
 			Tracker["yr"]			= options.xr  # Do not change!  I do not think it is used anywhere
 			Tracker["ts"]			= options.ts
 			Tracker["an"]			= "-1"
-			Tracker["theta_min"]			= options.theta_min
-			Tracker["theta_max"]			= options.theta_max
+			Tracker["theta_min"]	= options.theta_min
+			Tracker["theta_max"]	= options.theta_max
 			Tracker["delta"]		= options.delta  # How to decide it
 			Tracker["refvol"]		= None
 			Tracker["nxinit"]		= -1  # will be figured in first AI.
