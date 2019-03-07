@@ -6,40 +6,51 @@
 #  
 from __future__ import print_function
 from builtins import range
-import  os
-import  sys
-import  types
-import  global_def
-from    global_def import sxprint, ERROR
 
-from    global_def import *
-from    optparse   import OptionParser
+import os
+import sys
+from   sys import exit
+import time
+from   time import localtime, strftime, sleep
+import types
+
+import global_def
+from global_def import sxprint, ERROR, SPARXVERSION
+from global_def import *
+
+from   optparse   import OptionParser
+
 from    sparx      import *
 from    EMAN2      import *
 from    numpy      import array
 from    logger     import Logger, BaseLogger_Files
 
 import mpi
+from mpi import *
 
-from mpi   	import  *
-from math  	import  *
+from math import *
+
 from random import *
 
-import os
-import sys
 import subprocess
-import time
 import string
+from   string import split, atoi, atof
+
 import json
-from   sys 	import exit
-from   time import localtime, strftime, sleep
-global Tracker, Blockdata
 
 from optparse   import OptionParser
-from global_def import SPARXVERSION
 from EMAN2      import EMData
 from logger     import Logger, BaseLogger_Files
-import sys, os, time
+
+from utilities 		import get_im, bcast_number_to_all, write_text_file,read_text_file,wrap_mpi_bcast, write_text_row
+from utilities 		import cmdexecute
+from filter			import filt_tanl
+import user_functions
+import json
+
+global Tracker, Blockdata
+
+mpi_init(0, [])
 
 
 # ----------------------------------------------------------------------------
@@ -171,16 +182,6 @@ def main():
 	elif options.pw_adjustment=='bfactor':            B_enhance                = True
 	else:                                             adjust_to_given_pw2      = True 
 
-	from utilities 		import get_im, bcast_number_to_all, write_text_file,read_text_file,wrap_mpi_bcast, write_text_row
-	from utilities 		import cmdexecute
-	from filter			import filt_tanl
-	from logger         import Logger,BaseLogger_Files
-	import user_functions
-	import string
-	from   string       import split, atoi, atof
-	import json
-
-	mpi_init(0, [])
 	nproc    = mpi_comm_size(MPI_COMM_WORLD)
 	myid     = mpi_comm_rank(MPI_COMM_WORLD)
 
@@ -532,10 +533,10 @@ def main():
 		cmd = "{} {}".format("rm -rf", os.path.join(Tracker["constants"]["masterdir"], "junk.hdf") )
 		junk = cmdexecute(cmd)
 		
-	mpi.mpi_finalize()
 	return
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	mpi.mpi_finalize()

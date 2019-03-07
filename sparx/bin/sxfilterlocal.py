@@ -44,6 +44,8 @@ from   EMAN2 import *
 from   sparx import *
 from global_def import SPARX_MPI_TAG_UNIVERSAL
 
+import mpi
+
 def main():
 	arglist = []
 	for arg in sys.argv:
@@ -71,13 +73,9 @@ def main():
 		disable_bdb_cache()
 
 	if options.MPI:
-		from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-		from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv, mpi_send, mpi_recv
-		from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT
-		sys.argv = mpi_init(len(sys.argv),sys.argv)		
-	
-		number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
-		myid = mpi_comm_rank(MPI_COMM_WORLD)
+		sys.argv = mpi.mpi_init(len(sys.argv),sys.argv)		
+		number_of_proc = mpi.mpi_comm_size(MPI_COMM_WORLD)
+		myid = mpi.mpi_comm_rank(MPI_COMM_WORLD)
 		main_node = 0
 
 		if(myid == main_node):
@@ -104,23 +102,24 @@ def main():
 			nz = int(dis[2])
 		radius  = bcast_number_to_all(radius, main_node)
 		if len(args) == 3:
-			if( radius == -1 ):  radius = min(nx,ny,nz)//2 -1
+			if( radius == -1 ):  
+				radius = min(nx,ny,nz)//2 -1
 			m = model_circle( radius ,nx,ny,nz)
 			outvol = args[2]
 
 		elif len(args) == 4:
-			if(myid == main_node): m = binarize(get_im(args[2]), 0.5)
-			else:  m = model_blank(nx,ny,nz)
+			if(myid == main_node): 
+				m = binarize(get_im(args[2]), 0.5)
+			else:  
+				m = model_blank(nx,ny,nz)
 			outvol = args[3]
 			bcast_EMData_to_all(m, myid, main_node)
 
 		from filter import filterlocal
 		filteredvol = filterlocal(ui, vi, m, options.falloff, myid, main_node, number_of_proc)
 
-		if(myid == 0):   filteredvol.write_image(outvol)
-
-		from mpi import mpi_finalize
-		mpi_finalize()
+		if(myid == 0):  
+			filteredvol.write_image(outvol)
 
 	else:
 		vi = get_im(args[0])
@@ -132,7 +131,8 @@ def main():
 
 		if len(args) == 3:
 			radius = options.radius
-			if( radius == -1 ):  radius = nn//2 -1
+			if( radius == -1 ):  
+				radius = nn//2 -1
 			m = model_circle( radius ,nn,nn,nn)
 			outvol = args[2]
 
@@ -170,3 +170,5 @@ if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	if "OMPI_COMM_WORLD_SIZE" in os.environ:
+		mpi.mpi_finalize()

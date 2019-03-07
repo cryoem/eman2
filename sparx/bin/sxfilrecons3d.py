@@ -37,7 +37,11 @@ from global_def import sxprint, ERROR
 
 from global_def import *
 from optparse import OptionParser
+
 import sys
+
+import mpi
+
 def main():
 	arglist = []
 	for arg in sys.argv:
@@ -68,8 +72,7 @@ def main():
 	
 	else:
 		if options.MPI:
-			from mpi import mpi_init, mpi_finalize
-			sys.argv = mpi_init(len(sys.argv), sys.argv)
+			sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
 		else:
 			ERROR( "There is only MPI version of sxfilrecons3d.py. See SPARX wiki page for downloading MyMPI details." )
 			return
@@ -85,9 +88,10 @@ def main():
 		
 		global_def.BATCH = False
 
-		if options.MPI:  mpi_finalize()
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	if "OMPI_COMM_WORLD_SIZE" in os.environ:
+		mpi.mpi_finalize()

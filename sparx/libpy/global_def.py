@@ -44,7 +44,7 @@ from EMAN2_meta import DATESTAMP
 
 from random import seed
 
-import mpi
+import mpi  # NOTE: put this import _after_ the EMAN2 imports
 
 # set global random seed
 rand_seed = Util.get_randnum_seed()
@@ -149,10 +149,16 @@ def print_timestamp( tag="" ):
 		>>>  print_timestamp( "Start" )
 		[Start] : 2019-02-07 11:29:37
 	"""
-	if tag != "": 
-		print( "["+tag+"] : ", end="" )
+	
+	try:
+		mpi_rank = int( os.environ['OMPI_COMM_WORLD_RANK'] )
+	except KeyError:
+		mpi_rank = 0
 
-	print( get_timestamp() )
+	if mpi_rank == 0:
+		if tag != "": 
+			print( "["+tag+"] : ", end="" )
+		print( get_timestamp() )
 
 
 def sxprint( *args, **kwargs ):

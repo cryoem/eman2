@@ -190,7 +190,6 @@ def main():
 		if(myid == 0):
 			# Remove outliers based on the Interquartile range
 			output_volume(freqvol, resolut, options.apix, outvol, options.fsc, options.out_ang_res, nx, ny, nz, res_overall)
-		mpi.mpi_finalize()
 
 	else:
 		cutoff = options.cutoff
@@ -272,3 +271,5 @@ if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	if "OMPI_COMM_WORLD_SIZE" in os.environ:
+		mpi.mpi_finalize()

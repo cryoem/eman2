@@ -41,6 +41,8 @@ from   global_def import *
 from   optparse import OptionParser
 import sys
 
+import mpi
+
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
@@ -83,8 +85,7 @@ def main():
 
 		global_def.BATCH = True
 		if options.MPI:
-			from mpi import mpi_init
-			sys.argv = mpi_init(len(sys.argv), sys.argv)
+			sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
 			'''if options.CUDA:
 				from  development import  k_means_stab_MPICUDA_stream_YANG
 				k_means_stab_MPICUDA_stream_YANG(args[0], args[1], mask, options.K, options.nb_part, options.F, options.T0, options.th_nobj, options.rand_seed, options.maxit)
@@ -101,12 +102,10 @@ def main():
 			k_means_stab_stream(args[0], args[1], mask, options.K, options.nb_part, 0.0, 0.0, options.th_nobj, options.rand_seed, "SSE", options.CTF, options.maxit)
 		global_def.BATCH = False
 
-		if options.MPI:
-			from mpi import mpi_finalize
-			mpi_finalize()
-
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	if "OMPI_COMM_WORLD_SIZE" in os.environ:
+		mpi.mpi_finalize()
