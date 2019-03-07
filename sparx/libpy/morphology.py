@@ -616,7 +616,7 @@ def ctf_1d_np(nx, ctf, sign = 1, doabs = False, istart = 0, istop=-1):
 	return ctf_1
 
 def reference_ctfs(nln = 1500, Cs = 0.0, volt = 300.0, Pixel_size = 1.0, ampcont = 10.0, \
-					low_def = 1000.0, high_def = 50000.0, low_fpix = 100, high_fpix = 600, ):
+					low_def = 1000.0, high_def = 50000.0, low_fpix = 100, high_fpix = 600):
 	import numpy as np
 
 	high_fpix = 600
