@@ -1937,7 +1937,6 @@ class SXDriftUnblur(QMainWindow, Ui_MSMainWidget):
         """Calculate the Drift"""
 
         # Check how many frames are there
-        arrCoord = []
         self.intFrames = 0
         input_typ = None
         for files in self.listFile:
@@ -1967,11 +1966,8 @@ class SXDriftUnblur(QMainWindow, Ui_MSMainWidget):
                         for line in lines:
                             l=line.replace(",","").replace("=","").split()
                             if len(l) == 4 and l[0]=="image":
-                                arrCoord.append( [ float(l[-2]),float(l[-1]) ] )
-                                #self.listCoordX.append(l[-2])
-                                #self.listCoordY.append(l[-1])
                                 self.intFrames+=1
-                        arrCoord = numpy.array(arrCoord)
+                        input_typ = 'Unblur_for_logFile'
 
                 break
             except IOError:
@@ -2020,19 +2016,33 @@ class SXDriftUnblur(QMainWindow, Ui_MSMainWidget):
 
         validFiles = []
 
+        """
+        In case of parsing a logfile (we have the new case input_typ = 'Unblur_for_logFile'), in order to avoid to open all the files twice I save all the important data in this dictionary:
+        key =file_name value = dict( key=input stack filename,  value list of coordinate as numpy array)
+        """
+        values_from_logFile = dict()
         for file in self.listFile:
+            arrCoord=[]             # I storage the data here for each case, in order to avoid to change the logic of the original code
             # Import the data
-            if numpy.array_equal(arrCoord, []):
-                try:
-                    if input_typ == 'Unblur':
-                        arrCoord = numpy.genfromtxt(file, unpack=True)
-                    elif input_typ == 'MotionCor2':
-                        arrCoord = numpy.genfromtxt(file, unpack=True)[1:]
-                        # Transpose the array
-                        arrCoord = numpy.transpose(arrCoord)
-                except ValueError:
-                    print(('Warning: File corrupt, skip:', file))
-                    continue
+            try:
+                if input_typ == 'Unblur':
+                    arrCoord = numpy.genfromtxt(file, unpack=True)
+                elif input_typ == 'Unblur_for_logFile':
+                    with open(file, 'r') as f:
+                        lines = f.readlines()
+                    for line in lines:
+                        l = line.replace(",", "").replace("=", "").split()
+                        if len(l) == 4 and l[0] == "image":
+                            arrCoord.append([float(l[-2]), float(l[-1])])
+                    input_stack_file_name = lines[8].split(':')[1].replace(" ", "").replace("\n", "")
+                    values_from_logFile.update({file: {input_stack_file_name: numpy.array(arrCoord)}})
+                elif input_typ == 'MotionCor2':
+                    arrCoord = numpy.genfromtxt(file, unpack=True)[1:]
+                    # Transpose the array
+                    arrCoord = numpy.transpose(arrCoord)
+            except ValueError:
+                print(('Warning: File corrupt, skip:', file))
+                continue
 
             if len(arrCoord) != self.intFrames:
                 print(('Warning: File does not have {0} Frames, skip:'.format(self.intFrames), file))
@@ -2060,6 +2070,8 @@ class SXDriftUnblur(QMainWindow, Ui_MSMainWidget):
             try:
                 if input_typ == 'Unblur':
                     arrCoord = numpy.genfromtxt(file, unpack=True)
+                elif input_typ == 'Unblur_for_logFile':
+                    arrCoord = values_from_logFile[file].values()[0]
                 elif input_typ == 'MotionCor2':
                     arrCoord = numpy.genfromtxt(file, unpack=True)[1:]
                     # Transpose the array
@@ -2074,9 +2086,11 @@ class SXDriftUnblur(QMainWindow, Ui_MSMainWidget):
 
             # Get the micrograph name
             try:
-                if input_typ == 'Unblur':
+                if input_typ == 'Unblur' :
                     with open(file, 'r') as f:
                         self.arrData[self.dMic][number] = f.readline().split()[-1]
+                if input_typ == 'Unblur_for_logFile':
+                    self.arrData[self.dMic][number] = values_from_logFile[file].keys()[0]
                 elif input_typ == 'MotionCor2':
                     self.arrData[self.dMic][number] = file.split('/')[-1].replace('0-Patch-Full.log', '').replace('0-Full.log', '')
             except IOError:
