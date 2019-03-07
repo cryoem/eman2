@@ -559,6 +559,87 @@ def ctf_2(nx, ctf):
 		ctf_2[i] = ctf_val*ctf_val
 	return ctf_2
 
+def ctf_2_np(nx, ctf, istart = 0, istop=-1):
+	"""
+		Generate a list of 1D CTF^2 values 
+		Input
+			nx: image size to which CTF will be applied.
+			ctf: ctf object created using generate_ctf
+		Output
+			a list of CTF2 values.
+	"""
+	import numpy as np
+	dict       = ctf.to_dict()
+	dz         = dict["defocus"]
+	cs         = dict["cs"]
+	voltage    = dict["voltage"]
+	pixel_size = dict["apix"]
+	b_factor   = dict["bfactor"]
+	ampcont    = dict["ampcont"]
+
+	scl    = 1.0/pixel_size/nx
+	if(istop == -1): length = int(1.7321*float(nx/2)) + 2
+	else: length = istop
+	ctf_2 = np.zeros(length-istart,np.float32)
+	for i in range(istart, length, 1): ctf_2[i-istart] = Util.tf(dz, i*scl, voltage, cs, ampcont, b_factor)
+	return np.multiply(ctf_2, ctf_2)
+
+def ctf_1d_np(nx, ctf, sign = 1, doabs = False, istart = 0, istop=-1):
+	"""
+		Generate a list of 1D CTF values 
+		Input
+			nx: image size to which CTF will be applied.
+			ctf: CTF object created using generate_ctf
+			sign: sign of the CTF.
+		Output
+			a list of CTF values.
+	"""
+	import numpy as np
+	dict = ctf.to_dict()
+	dz = dict["defocus"]
+	cs = dict["cs"]
+	voltage = dict["voltage"]
+	pixel_size = dict["apix"]
+	bfactor = dict["bfactor"]
+	ampcont = dict["ampcont"]
+
+
+	ctf_1 = []
+	scl    = 1./pixel_size/nx
+	if(istop == -1): length = int(1.7321*float(nx/2)) + 2
+	else: length = istop
+	ctf_1 = np.zeros(length-istart,np.float32)
+	if doabs:
+		for i in range(istart, length, 1): ctf_1[i] = abs(Util.tf(dz, i*scl, voltage, cs, ampcont, bfactor, sign))
+	else:
+		for i in range(istart, length, 1): ctf_1[i] = Util.tf(dz, i*scl, voltage, cs, ampcont, bfactor, sign)
+	return ctf_1
+
+def reference_ctfs(nln = 1500, Cs = 0.0, volt = 300.0, Pixel_size = 1.0, ampcont = 10.0, \
+					low_def = 1000.0, high_def = 50000.0, low_fpix = 100, high_fpix = 600, ):
+	import numpy as np
+
+	high_fpix = 600
+	low_fpix = 100
+
+	q = 50000.0
+	cc = np.sign(ctf_1d_np(nln, generate_ctf([q, Cs, volt, Pixel_size, 0.0, ampcont]),istop = high_fpix))
+	sc=[]
+	sc.append(ctf_2_np(nln, generate_ctf([q, Cs, volt, Pixel_size, 0.0, ampcont]),low_fpix,high_fpix))
+	defc = [high_def]
+	l=0
+	while(q>low_def):  # minimum defocus
+		q-=1.0
+		ct = generate_ctf([q, Cs, volt, Pixel_size, 0.0, ampcont])
+		nc = np.sign(ctf_1d_np(nln, ct, istop = high_fpix))
+		if(len(np.argwhere(cc-nc != 0.0)) > 2):  # integer parameter that determines how many differences we can tolerate
+			l+=1
+			sc.append(ctf_2_np(nln, ct, low_fpix, high_fpix))
+			defc.append(q)
+			cc = np.copy(nc)
+
+	sc = np.asarray(sc)
+	return sc
 
 def ctf_img(nx, ctf, sign = 1, ny = 0, nz = 1):
 	"""
