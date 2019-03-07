@@ -523,16 +523,16 @@ def calculate_result_ranges(refinement_results_per_micrograph):
         for mic_name in refinement_results_per_micrograph
     ]
     all_errors = list(itertools.chain(*all_errors))
-    max_error = np.max(all_errors)
-    min_error = np.min(all_errors)
+    max_error = np.percentile(all_errors,95)
+    min_error = np.percentile(all_errors,5)
 
     all_ratios = [
         refinement_results_per_micrograph[mic_name]["drratio"]
         for mic_name in refinement_results_per_micrograph
     ]
     all_ratios = list(itertools.chain(*all_ratios))
-    max_ratio = np.max(all_ratios)
-    min_ratio = np.min(all_ratios)
+    max_ratio = np.percentile(all_ratios,95)
+    min_ratio = np.percentile(all_ratios,5)
 
     return (min_error, max_error), (min_ratio, max_ratio)
 
