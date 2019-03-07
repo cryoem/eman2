@@ -847,6 +847,7 @@ def _main_():
     if not os.path.exists(output_stats_path):
         os.makedirs(output_stats_path)
 
+
     refinement_stats_per_micrograh = calc_statistics(refinement_results_per_micrograph)
     sxctf_refine_io.write_statistics(output_stats_path, refinement_stats_per_micrograh)
 

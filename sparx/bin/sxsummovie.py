@@ -160,8 +160,10 @@ def main():
     # Create output directorys
     if not path.exists(output_dir):
        os.makedirs(output_dir)
+       global_def.write_command(output_dir)
     if not path.exists(output_path):
         os.makedirs(output_path)
+        global_def.write_command(output_path)
     if not path.exists(frc_path):
         mkdir(frc_path)
     if not path.exists(temp_path) and not options.summovie_ready:
