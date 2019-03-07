@@ -1392,11 +1392,11 @@ def main(args):
 			timestring = time.strftime( "_%d_%b_%Y_%H_%M_%S", time.localtime() )
 			Blockdata["masterdir"] = "isac_directory" + timestring
 			li = len(Blockdata["masterdir"])
-			cmd = "{} {}".format( "mkdir", Blockdata["masterdir"] )
+			cmd = "{} {}".format("mkdir -p", Blockdata["masterdir"])
 			junk = cmdexecute(cmd)
 		else:
 			if not os.path.exists(Blockdata["masterdir"]):
-				cmd = "{} {}".format("mkdir", Blockdata["masterdir"])
+				cmd = "{} {}".format("mkdir -p", Blockdata["masterdir"])
 				junk = cmdexecute(cmd)
 			li = 0
 	else:

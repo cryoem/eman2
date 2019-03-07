@@ -1015,7 +1015,7 @@ def main():
 
 	elif options.combinemaps:
 		if options.output_dir !="./":
-			if not os.path.exists(options.output_dir): os.mkdir(options.output_dir)
+			if not os.path.exists(options.output_dir): os.makedirs(options.output_dir)
 		from logger import Logger,BaseLogger_Files
 		if os.path.exists(os.path.join(options.output_dir, "log.txt")): os.remove(os.path.join(options.output_dir, "log.txt"))
 		log_main=Logger(BaseLogger_Files())

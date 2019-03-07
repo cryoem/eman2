@@ -195,7 +195,7 @@ def main():
 	relion_category_dict['window']  = ['Particle Extraction',     True, ['_rlnImageName', '_rlnCoordinateX', '_rlnCoordinateY'], ['mic'], []]
 	relion_category_dict['proj3d']  = ['Alignment Parameters',    True, ['_rlnOriginX', '_rlnOriginY', '_rlnAngleRot', '_rlnAngleTilt', '_rlnAnglePsi', '_rlnMaxValueProbDistribution', '_rlnNormCorrection'], [], []]
 	relion_category_dict['chunk']   = ['Random Subset',           True, ['_rlnRandomSubset'], [], []]
-	relion_category_dict['helical'] = ['Helical Tube Extraction', True, ['_rlnHelicalTubeID', '_rlnAngleTiltPrior', '_rlnAnglePsiPrior', '_rlnHelicalTrackLength', '_rlnAnglePsiFlipRatio'], ['mic', 'window'], []]
+	relion_category_dict['helical'] = ['Helical Tube Extraction', True, ['_rlnHelicalTubeID', '_rlnHelicalTrackLength'], ['mic', 'window'], []]
 	
 	# SPHIRE params output files & directories related
 	file_name_sphire_micrographs    = '{}_micrographs.txt'.format(outputs_root)
@@ -254,7 +254,7 @@ def main():
 	# Create work directories
 	assert not os.path.exists(dir_path_work), '# Logical Error: The output directory should not exists at this point of code.'
 	sxprint('# Creating work dir...')
-	os.mkdir(dir_path_work)
+	os.makedirs(dir_path_work)
 	
 	# ------------------------------------------------------------------------------------
 	# STEP 2: Convert RELION parameters to SPHIRE format
@@ -645,13 +645,13 @@ def main():
 						sphire_header['ptcl_source_coord_id'] = sphire_local_particle_id
 						sphire_header['data_n'] = sphire_local_particle_id # NOTE: Toshio Moriya 2017/11/20: same as ptcl_source_coord_id but the other program uses this header entry key...
 						sphire_header['resample_ratio'] = 1.0
-						
 						sphire_header['apix_x'] = 1.0
 						sphire_header['apix_y'] = 1.0
 						sphire_header['apix_z'] = 1.0
 						
 						if relion_category_dict['helical'][idx_is_category_found]:
-							sphire_header['filament'] = '{0}{1:05d}'.format(adjusted_relion_micrograph_name, sphire_filament_id)
+							sphire_header['filament_id'] = '{0}{1:05d}'.format(adjusted_relion_micrograph_name, sphire_filament_id)
+							sphire_header['segment_id'] = sphire_local_particle_id
 						if relion_category_dict['ctf'][idx_is_category_found] or options.negative_stain:
 							sphire_cter_entry_list = []
 							for idx_sphire_ctf in range(n_idx_sphire_ctf):
@@ -1059,7 +1059,8 @@ def main():
 						img_particles_dict['apix_z'] = sphire_header['apix_z']
 						
 						if relion_category_dict['helical'][idx_is_category_found] == True:
-							img_particles_dict['filament'] = sphire_header['filament']
+							img_particles_dict['filament_id'] = sphire_header['filament_id']
+							img_particles_dict['segment_id'] = sphire_header['segment_id']
 						if relion_category_dict['ctf'][idx_is_category_found] == True or options.negative_stain:
 							img_particles_dict['ctf'] = sphire_header['ctf']
 							img_particles_dict['ctf_applied'] = sphire_header['ctf_applied']

@@ -129,7 +129,8 @@ def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_to
 		if list_of_independent_viper_run_indices_used_for_outlier_elimination[0] == EMPTY_VIPER_RUN_INDICES_LIST:
 			if no_of_viper_runs_analyzed_together > MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER:
 				error_status = 1
-				sxprint("RVIPER reached maximum number of VIPER runs analyzed together without finding a core set of stable projections for the current RVIPER iteration (%d)! Finishing."%rviper_iter)
+				sxprint("RVIPER reached maximum n"
+						"umber of VIPER runs analyzed together without finding a core set of stable projections for the current RVIPER iteration (%d)! Finishing."%rviper_iter)
 				cmd = "{} {}".format("mkdir ", masterdir + "MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER__Reached"); junk = cmdexecute(cmd)
 			else:
 				# No set of solutions has been found to make a selection for outlier elimination.
@@ -726,7 +727,7 @@ output_directory: directory name into which the output files will be written.  I
 			masterdir = "master"+timestring
 
 		if not os.path.exists(masterdir):
-			cmd = "{} {}".format("mkdir", masterdir)
+			cmd = "{} {}".format("mkdir -p", masterdir)
 			junk = cmdexecute(cmd)
 
 		if ':' in args[0]:

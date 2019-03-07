@@ -146,7 +146,7 @@ directory		output directory name: into which the results will be written (if it 
 		return
 
 	if mpi_rank == 0:
-		os.mkdir(outdir)
+		os.makedirs(outdir)
 
 	if outdir[-1] != "/":
 		outdir += "/"

@@ -142,12 +142,12 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 		mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 
 		if myid == 0:
-			os.mkdir(outdir)
+			os.makedirs(outdir)
 		mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 	else:
 		if os.path.exists(outdir):
 			ERROR('Output directory exists, please change the name and restart the program', "resample", 1,0)
-		os.mkdir(outdir)
+		os.makedirs(outdir)
 
 	if(verbose == 1):  finfo=open( os.path.join(outdir, "progress%04d.txt" % myid), "w" )
 	else:              finfo = None

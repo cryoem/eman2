@@ -539,7 +539,14 @@ def sanity_checks(args):
 			1,
 		)
 
-	if args.params_3d_chunk_files and not args.params_3d_file:
+	if args.params_3d_chunk_file_0 and not args.params_3d_file:
+		global_def.ERROR(
+			"Arguments params_3d_chunk_files requires params_3d_file to be set.",
+			"sxsphire2relion",
+			1,
+		)
+
+	if args.params_3d_chunk_file_1 and not args.params_3d_file:
 		global_def.ERROR(
 			"Arguments params_3d_chunk_files requires params_3d_file to be set.",
 			"sxsphire2relion",
@@ -601,7 +608,7 @@ def create_stack_dtype(particle_dict):
 		elif key == "ptcl_source_coord_id":
 			original_name[key] = [("ptcl_source_coord_id", int)]
 
-		elif key == "filament":
+		elif key == "filament_id":
 			original_name[key] = [("_rlnHelicalTubeID", int)]
 
 		elif key == "ctf":
@@ -661,7 +668,7 @@ def create_stack_array(dtype_list, header_dict, output_dir):
 			particle_array["_rlnDetectorPixelSize"] = header_dict[key]
 			particle_array["_rlnMagnification"] = 10000
 
-		elif key == "filament":
+		elif key == "filament_id":
 			data = [int(entry[-5:]) + 1 for entry in header_dict[key]]
 			particle_array["_rlnHelicalTubeID"] = data
 

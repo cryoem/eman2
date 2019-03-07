@@ -184,7 +184,7 @@ def sxprint( *args, **kwargs ):
 	"""
 	t = get_timestamp()
 	f = sys._getframe(1).f_code.co_name
-	m = t + " " + f + " => " + "; ".join(map(str, args))
+	m = t + " " + f + " => " + "  ".join(map(str, args))
 	
 	print( m ) # for Python 3: print( m, **kwargs )
 	sys.stdout.flush()

@@ -26,6 +26,7 @@ from __future__ import print_function
 # GNU General Public License for more details.
 
 from sys import argv
+import os
 from os import mkdir, path, system, remove, rmdir
 from glob import glob
 from numpy import genfromtxt
@@ -191,7 +192,7 @@ def main():
 
     # Create output directorys
     if not path.exists(output_dir):
-        mkdir(output_dir)
+        os.makedirs(output_dir)
     if not path.exists(uncorrected_path):
         mkdir(uncorrected_path)
     if not path.exists(shift_path):

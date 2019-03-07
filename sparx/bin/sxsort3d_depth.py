@@ -1345,9 +1345,9 @@ def create_masterdir():
 			if not masterdir:
 				timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
 				masterdir  ="sort3d"+timestring
-				os.mkdir(masterdir)
+				os.makedirs(masterdir)
 			else:
-				if not os.path.exists(masterdir): os.mkdir(masterdir)
+				if not os.path.exists(masterdir): os.makedirs(masterdir)
 			li =len(masterdir)
 		else:
 			li =len(masterdir)

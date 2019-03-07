@@ -728,7 +728,7 @@ For negative staining data, use --skip_invert.
 		if options.check_consistency:
 			# Create output directory
 			assert (not os.path.exists(root_out_dir))
-			os.mkdir(root_out_dir)
+			os.makekdirs(root_out_dir)
 			
 			# Open the consistency check file
 			mic_consistency_check_info_path = os.path.join(root_out_dir, "mic_consistency_check_info_%s.txt"%(get_time_stamp_suffix()))
