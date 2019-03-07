@@ -35,6 +35,7 @@ def calculate_priors(
         tracker,
         params_file=None,
         index_file=None,
+        has_class_id=False,        # to insert the 'class_id' in the dtype of the sphire stack array
         typ='sphire',
         tol_psi=30,
         tol_theta=15,
@@ -77,6 +78,7 @@ def calculate_priors(
     print('Prior calculation settings:')
     print('-> params_file:', params_file)
     print('-> index_file:', index_file)
+    print('-> has_class_id:', has_class_id)
     print('-> typ:', typ)
     print('-> tol_psi:', tol_psi)
     print('-> tol_theta:', tol_theta)
@@ -95,7 +97,7 @@ def calculate_priors(
     # Import the stack and get parameters
     if typ == 'sphire':
         prior_tracker = mhl.import_data_sphire(
-            tracker=tracker, index_file=index_file, params_file=params_file
+            tracker=tracker, index_file=index_file, params_file=params_file, has_ISAC_class_id=has_class_id
             )
     elif typ == 'relion':
         prior_tracker = mhl.import_data_relion(file_name=tracker)
@@ -181,7 +183,7 @@ if __name__ == '__main__':
         tol_filament=0.2,
         tol_std=1,
         tol_mean=30,
-        method='deg',
+        outlier_method='deg',
         prior_method='fit',
         plot=False,
         plot_lim=4,

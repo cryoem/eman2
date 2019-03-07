@@ -331,7 +331,6 @@ def calculate_prior_values_running(data_rotated, prior_array, window_size, insid
         plt.clf()
         fit_index += 1
 
-
     return True
 
 
@@ -405,65 +404,6 @@ def calculate_prior_values_fit(data_rotated, prior_array, inside_tol_idx, plot={
 def mark_as_outlier(array, is_outlier, force_outlier, inside_tol_idx, outside_tol_idx):
     """
     Mark particles as outliers
-
-    # Data is outlier and force
-    >>> data = np.array([(999,), (999,), (999,)], dtype=[('a', '<i8')])
-    >>> is_outlier=True
-    >>> force_outlier=True
-    >>> inside_tol_idx=np.array([1])
-    >>> outside_tol_idx=np.array([0, 2])
-    >>> mark_as_outlier(
-    ...     array=data['a'],
-    ...     is_outlier=is_outlier,
-    ...     force_outlier=force_outlier,
-    ...     inside_tol_idx=inside_tol_idx,
-    ...     outside_tol_idx=outside_tol_idx
-    ...     )
-    >>> print(data['a'])
-    [1 1 1]
-
-    # Data is outlier but no force
-    >>> data = np.array([(999,), (999,), (999,)], dtype=[('a', '<i8')])
-    >>> is_outlier=True
-    >>> force_outlier=False
-    >>> mark_as_outlier(
-    ...     array=data['a'],
-    ...     is_outlier=is_outlier,
-    ...     force_outlier=force_outlier,
-    ...     inside_tol_idx=inside_tol_idx,
-    ...     outside_tol_idx=outside_tol_idx
-    ...     )
-    >>> print(data['a'])
-    [1 1 1]
-
-    # Data is no outlier but force
-    >>> data = np.array([(999,), (999,), (999,)], dtype=[('a', '<i8')])
-    >>> is_outlier=False
-    >>> force_outlier=True
-    >>> mark_as_outlier(
-    ...     array=data['a'],
-    ...     is_outlier=is_outlier,
-    ...     force_outlier=force_outlier,
-    ...     inside_tol_idx=inside_tol_idx,
-    ...     outside_tol_idx=outside_tol_idx
-    ...     )
-    >>> print(data['a'])
-    [0 0 0]
-
-    # Data is no outlier and no force
-    >>> data = np.array([(999,), (999,), (999,)], dtype=[('a', '<i8')])
-    >>> is_outlier=False
-    >>> force_outlier=False
-    >>> mark_as_outlier(
-    ...     array=data['a'],
-    ...     is_outlier=is_outlier,
-    ...     force_outlier=force_outlier,
-    ...     inside_tol_idx=inside_tol_idx,
-    ...     outside_tol_idx=outside_tol_idx
-    ...     )
-    >>> print(data['a'])
-    [1 0 1]
-
     :array: Outlier array:
     :is_outlier: Variable, if the filament is an outlier:
     :force_outlier: Variable, if the particles are forced into the filament structure:
@@ -471,6 +411,7 @@ def mark_as_outlier(array, is_outlier, force_outlier, inside_tol_idx, outside_to
     :outside_tol_idx: Array of indices of outliers:
     :return: None, do in place:
     """
+
     if is_outlier:
         array.fill(1)
     elif force_outlier:
