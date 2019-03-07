@@ -36,7 +36,6 @@
 #pragma warning(disable:4819)
 #endif	//_WIN32
 
-#include <Python.h>
 #include "typeconverter.h"
 #include "emdata.h"
 
@@ -46,13 +45,6 @@ using namespace EMAN;
 
 python::numeric::array EMAN::make_numeric_array(const float *const data, vector<npy_intp> dims)
 {
-	size_t total = 1;
-	vector<npy_intp>::iterator iter = dims.begin();
-	while(iter != dims.end()){
-		total *= *iter;
-		++iter;
-	}
-
 	python::object obj(python::handle<>(PyArray_SimpleNewFromData(dims.size(),&dims[0],
 	                                                              NPY_FLOAT32, (char*)data)));
 
@@ -62,13 +54,6 @@ python::numeric::array EMAN::make_numeric_array(const float *const data, vector<
 python::numeric::array EMAN::make_numeric_complex_array(const std::complex<float> *const data,
                                                         vector<npy_intp> dims)
 {
-	size_t total = 1;
-	vector<npy_intp>::iterator iter = dims.begin();
-	while(iter != dims.end()){
-		total *= *iter;
-		++iter;
-	}
-
 	python::object obj(python::handle<>(PyArray_SimpleNewFromData(dims.size(),&dims[0],
 	                                                              NPY_CFLOAT, (char*)data)));
 
