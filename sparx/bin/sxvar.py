@@ -39,6 +39,8 @@ import global_def
 from global_def import sxprint, ERROR
 from global_def import *
 
+import mpi
+
 def main():
 	from   optparse       import OptionParser
 	progname = os.path.basename(sys.argv[0])
@@ -70,8 +72,7 @@ def main():
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 		if options.MPI:
-			from mpi import mpi_init
-			sys.argv = mpi_init( len(sys.argv), sys.argv )
+			sys.argv = mpi.mpi_init( len(sys.argv), sys.argv )
 
 
 			arglist = []
@@ -88,8 +89,6 @@ def main():
 				var_mpi( files, outdir, options.fl, options.aa, options.radccc, options.repair, options.pca, options.pcamask, options.pcanvec)
 
 			global_def.BATCH = False
-			from mpi import mpi_finalize
-			mpi_finalize()
 		else:
 			global_def.BATCH = True
 			ERROR( "Please use MPI version" )
@@ -102,3 +101,5 @@ if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	if "OMPI_COMM_WORLD_SIZE" in os.environ:
+		mpi.mpi_finalize()

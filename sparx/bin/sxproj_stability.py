@@ -65,6 +65,7 @@ import	os
 import	sys
 from time import time
 
+import mpi
 from mpi          import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 from mpi          import mpi_barrier, mpi_send, mpi_recv, mpi_bcast, MPI_INT, mpi_finalize, MPI_FLOAT
 from applications import MPI_start_end, within_group_refinement, ali2d_ras
@@ -97,9 +98,9 @@ def main():
 	(options,args) = parser.parse_args()
 	
 
-	sys.argv = mpi_init(len(sys.argv), sys.argv)
-	myid = mpi_comm_rank(MPI_COMM_WORLD)
-	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
+	sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
+	myid = mpi.mpi_comm_rank(MPI_COMM_WORLD)
+	number_of_proc = mpi.mpi_comm_size(MPI_COMM_WORLD)
 	main_node = 0
 
 	if len(args) == 2:
@@ -427,9 +428,9 @@ def main():
 
 	global_def.BATCH = False
 	mpi_barrier(MPI_COMM_WORLD)
-	mpi_finalize()
 
 if __name__=="__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	mpi.mpi_finalize()

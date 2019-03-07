@@ -1865,10 +1865,10 @@ def main(args):
 		else:
 			print( "ISAC could not find any stable class averaging, terminating..." )
 
-	mpi.mpi_finalize()
 	return
 
 if __name__=="__main__":
 	global_def.print_timestamp( "Start" )
 	main(sys.argv[1:])
 	global_def.print_timestamp( "Finish" )
+	mpi.mpi_finalize()

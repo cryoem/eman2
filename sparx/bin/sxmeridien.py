@@ -100,6 +100,7 @@ from global_def import sxprint, ERROR
 
 from global_def import *
 
+import mpi
 from mpi   	import  *
 from math  	import  *
 from random import *
@@ -119,7 +120,7 @@ global Tracker, Blockdata
 global  target_theta, refang
 
 
-mpi_init(0, [])
+mpi.mpi_init(0, [])
 Tracker   = {}
 Blockdata = {}
 #  MPI stuff
@@ -6025,7 +6026,6 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
 					if(keepf == 0):
 						ERROR( "Too few images to estimate keepfirst", myid=Blockdata["myid"] )
-						mpi_finalize()
 						return
 					###print("  STARTING8    ",Blockdata["myid"],keepf)
 					Tracker["keepfirst"] = int(keepf)
@@ -7045,7 +7045,6 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 					keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
 					if(keepf == 0):
 						ERROR( "Too few images to estimate keepfirst", myid=Blockdata["myid"] )
-						mpi_finalize()
 						return
 					###print("  STARTING8    ",Blockdata["myid"],keepf)
 					Tracker["keepfirst"] = int(keepf)
@@ -8384,7 +8383,6 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 					keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
 					if(keepf == 0):
 						ERROR( "Too few images to estimate keepfirst", myid=Blockdata["myid"] )
-						mpi_finalize()
 						return
 					###print("  STARTING8    ",Blockdata["myid"],keepf)
 					Tracker["keepfirst"] = int(keepf)
@@ -10116,7 +10114,6 @@ def main():
 
 			#  End of if doit
 		#   end of while
-		mpi_finalize()
 		return
 
 
@@ -10622,7 +10619,6 @@ def main():
 
 			#  End of if doit
 		#   end of while
-		mpi_finalize()
 		return
 
 	elif do_final_mode: #  DO FINAL
@@ -10699,7 +10695,6 @@ def main():
 	
 		Blockdata["accumulatepw"] = [[],[]]
 		recons3d_final(masterdir, options.do_final, options.memory_per_node, orgstack)
-		mpi_finalize()
 		return
 	else:
 		ERROR( "Incorrect input options", myid=Blockdata["myid"] )
@@ -10709,3 +10704,4 @@ if __name__=="__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	mpi.mpi_finalize()

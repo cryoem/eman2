@@ -40,6 +40,8 @@ from global_def import sxprint
 from   global_def import *
 from   optparse import OptionParser
 import sys
+
+
 def main():
 	
 	progname = os.path.basename(sys.argv[0])

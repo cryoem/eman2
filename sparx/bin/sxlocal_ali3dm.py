@@ -34,12 +34,15 @@ from __future__ import print_function
 
 
 import os
+
 import global_def
-from global_def import sxprint, ERROR
 from   global_def import *
+from   global_def import sxprint, ERROR
+
 from   optparse import OptionParser
 import sys
 
+import mpi
 
 def main():
 	arglist = []
@@ -79,8 +82,7 @@ def main():
 			mask = args[3]
 
 		if(options.MPI):
-			from mpi import mpi_init
-			sys.argv = mpi_init( len(sys.argv), sys.argv )
+			sys.argv = mpi.mpi_init( len(sys.argv), sys.argv )
 
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
@@ -99,3 +101,5 @@ if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	if "OMPI_COMM_WORLD_SIZE" in os.environ:
+		mpi.mpi_finalize()

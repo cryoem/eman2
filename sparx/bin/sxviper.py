@@ -11,7 +11,6 @@ from global_def import *
 
 from utilities import if_error_then_all_processes_exit_program, write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle, bcast_number_to_all
 from logger import Logger, BaseLogger_Files
-from mpi import mpi_init, mpi_finalize, MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_barrier
 import user_functions
 import sys
 import os
@@ -20,6 +19,8 @@ from optparse import OptionParser, SUPPRESS_HELP
 from global_def import SPARXVERSION
 from EMAN2 import EMData
 from multi_shc import multi_shc
+
+import mpi
 
 def main(args):
 
@@ -102,7 +103,7 @@ directory		output directory name: into which the results will be written (if it 
 		ERROR( "Invalid number of parameters used. Please see usage information above." )
 		return
 
-	mpi_init(0, [])
+	mpi.mpi_init(0, [])
 
 	log = Logger(BaseLogger_Files())
 
@@ -110,15 +111,15 @@ directory		output directory name: into which the results will be written (if it 
 	# the 'ou' variable is not changed to 'radius' in the 'sparx' program. This change is at interface level only for sxviper.
 	options.ou = options.radius 
 	runs_count = options.nruns
-	mpi_rank = mpi_comm_rank(MPI_COMM_WORLD)
-	mpi_size = mpi_comm_size(MPI_COMM_WORLD)	# Total number of processes, passed by --np option.
+	mpi_rank = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
+	mpi_size = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)	# Total number of processes, passed by --np option.
 	
 	if mpi_rank == 0:
 		all_projs = EMData.read_images(args[0])
 		subset = list(range(len(all_projs)))
 		# if mpi_size > len(all_projs):
 		# 	ERROR('Number of processes supplied by --np needs to be less than or equal to %d (total number of images) ' % len(all_projs), 'sxviper', 1)
-		# 	mpi_finalize()
+		# 	mpi.mpi_finalize()
 		# 	return
 	else:
 		all_projs = None
@@ -139,10 +140,9 @@ directory		output directory name: into which the results will be written (if it 
 
 
 
-	mpi_barrier(MPI_COMM_WORLD)
-	error = bcast_number_to_all(error, source_node = 0, mpi_comm = MPI_COMM_WORLD)
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+	error = bcast_number_to_all(error, source_node = 0, mpi_comm = mpi.MPI_COMM_WORLD)
 	if error == 1 :
-		mpi_finalize()
 		return
 
 	if mpi_rank == 0:
@@ -163,11 +163,11 @@ directory		output directory name: into which the results will be written (if it 
 	options.snr =  1.0
 	options.an  = -1.0
 	from multi_shc import multi_shc
-	out_params, out_vol, out_peaks = multi_shc(all_projs, subset, runs_count, options, mpi_comm=MPI_COMM_WORLD, log=log)
+	out_params, out_vol, out_peaks = multi_shc(all_projs, subset, runs_count, options, mpi_comm=mpi.MPI_COMM_WORLD, log=log)
 
-	mpi_finalize()
 
 if __name__=="__main__":
 	global_def.print_timestamp( "Start" )
 	main(sys.argv[1:])
 	global_def.print_timestamp( "Finish" )
+	mpi.mpi_finalize()

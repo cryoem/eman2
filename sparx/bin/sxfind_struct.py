@@ -39,7 +39,9 @@ from global_def import sxprint, ERROR
 
 from   global_def import *
 from   optparse   import OptionParser
+
 import sys
+import mpi
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -67,8 +69,8 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if len(args) != 2:
-		sxprint("usage: " + usage)
-		sxprint("Please run '" + progname + " -h' for detailed options")
+		sxprint( "usage: " + usage )
+		sxprint( "Please run '" + progname + " -h' for detailed options" )
 		ERROR( "Invalid number of parameters used. Please see usage information above." )
 
 	else:
@@ -93,8 +95,7 @@ def main():
 			global_def.BATCH = False
 
 		elif options.MPI:
-			from mpi import mpi_init
-			sys.argv = mpi_init(len(sys.argv),sys.argv)
+			sys.argv = mpi.mpi_init(len(sys.argv),sys.argv)
 
 			from applications import cml_find_structure_MPI2
 			global_def.BATCH = True
@@ -102,6 +103,7 @@ def main():
 				    options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, 
 				    weights, options.debug, options.trials)
 			global_def.BATCH = False
+			
 		else:
 			from applications import cml_find_structure_main
 			global_def.BATCH = True
@@ -109,13 +111,11 @@ def main():
 				    options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, 
 				    weights, options.debug, options.trials)
 			global_def.BATCH = False
-			if options.MPI:
-				from mpi import mpi_finalize
-				mpi_finalize()
-
 
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	if "OMPI_COMM_WORLD_SIZE" in os.environ:
+		mpi.mpi_finalize()
