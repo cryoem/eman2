@@ -42,6 +42,8 @@ from   numpy import *
 from   time import time
 from   optparse import OptionParser
 
+import mpi
+
 def resample_insert( bufprefix, fftvols, wgtvols, mults, CTF, npad, info=None):
 	from EMAN2 import  newfile_store
 	ostore = newfile_store( bufprefix, npad, CTF )
@@ -130,7 +132,6 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 	nprj = EMUtil.get_image_count( prjfile )
 
 	if MPI:
-		from mpi import mpi_barrier, MPI_COMM_WORLD
 
 		if myid == 0:
 			if os.path.exists(outdir):  nx = 1
@@ -138,11 +139,11 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 		else:  nx = 0
 		ny = bcast_number_to_all(nx, source_node = 0)
 		if ny == 1:  ERROR('Output directory exists, please change the name and restart the program', "resample", 1,myid)
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 
 		if myid == 0:
 			os.makedirs(outdir)
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 	else:
 		if os.path.exists(outdir):
 			ERROR('Output directory exists, please change the name and restart the program', "resample", 1,0)
@@ -181,8 +182,7 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 	#print "  READ ",myid
 	if  MPI:
 		#print " will bcast",myid
-		from mpi import mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
-		vct = mpi_bcast(vct,len(vct),MPI_FLOAT,0,MPI_COMM_WORLD)
+		vct = mpi.mpi_bcast( vct, len(vct), mpi.MPI_FLOAT, 0, mpi.MPI_COMM_WORLD )
 		from utilities import  bcast_list_to_all
 		tetprj = bcast_list_to_all(tetprj, myid, 0)
 	#print  "  reshape  ",myid
@@ -299,11 +299,11 @@ def main():
 	prjfile = args[0]
 
 	if options.MPI:
-		from mpi import mpi_barrier, mpi_comm_rank, mpi_comm_size, mpi_comm_split, MPI_COMM_WORLD
+		from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 		from mpi import mpi_init
-		sys.argv = mpi_init( len(sys.argv), sys.argv )
-		myid = mpi_comm_rank( MPI_COMM_WORLD )
-		ncpu = mpi_comm_size( MPI_COMM_WORLD )
+		sys.argv = mpi.mpi_init( len(sys.argv), sys.argv )
+		myid = mpi.mpi_comm_rank( mpi.MPI_COMM_WORLD )
+		ncpu = mpi.mpi_comm_size( mpi.MPI_COMM_WORLD )
 	else:
 		myid = 0
 		ncpu = 1
@@ -317,12 +317,11 @@ def main():
 	resample( prjfile, outdir, bufprefix, options.nbufvol, options.nvol, options.seedbase,\
 	           options.delta, options.d, options.snr, options.CTF, options.npad,\
 		   options.MPI, myid, ncpu, options.verbose )
-	if options.MPI:
-		from mpi import mpi_finalize
-		mpi_finalize()
 
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	if "OMPI_COMM_WORLD_SIZE" in os.environ:
+		mpi.mpi_finalize()

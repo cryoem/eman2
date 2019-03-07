@@ -55,6 +55,25 @@ import string
 from   sys import exit
 from   time import localtime, strftime
 
+
+
+from utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
+import user_functions
+from applications import MPI_start_end
+from optparse import OptionParser
+from global_def import SPARXVERSION
+from EMAN2 import EMData
+from multi_shc import multi_shc, do_volume
+from logger import Logger, BaseLogger_Files
+import sys
+import os
+import time
+import socket
+
+
+mpi_init(0, [])
+
+
 def subdict(d,u):
 	# substitute values in dictionary d by those given by dictionary u
 	for q in u:  d[q] = u[q]
@@ -291,19 +310,6 @@ def print_dict(dict,theme):
 
 def main():
 
-	from utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
-	import user_functions
-	from applications import MPI_start_end
-	from optparse import OptionParser
-	from global_def import SPARXVERSION
-	from EMAN2 import EMData
-	from multi_shc import multi_shc, do_volume
-	from logger import Logger, BaseLogger_Files
-	import sys
-	import os
-	import time
-	import socket
-
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack  [output_directory]  initial_volume  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood  --CTF  --fl --aa --ref_a=S --sym=c1"
 	parser = OptionParser(usage,version=SPARXVERSION)
@@ -367,10 +373,6 @@ def main():
 	ali3d_options.fl     = 0.4
 	ali3d_options.initfl = 0.4
 	ali3d_options.aa     = 0.1
-
-	mpi_init(0, [])
-
-
 
 	nproc     = mpi_comm_size(MPI_COMM_WORLD)
 	myid      = mpi_comm_rank(MPI_COMM_WORLD)
@@ -462,11 +464,9 @@ def main():
 
 	mpi_barrier(MPI_COMM_WORLD)
 
-	mpi_finalize()
-
 
 if __name__=="__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
-
+	mpi_finalize()

@@ -41,6 +41,8 @@ from global_def import sxprint, ERROR
 
 from builtins import range
 
+import mpi
+
 
 def main():
 	arglist = []
@@ -250,8 +252,7 @@ def main():
 		zstepp = int( (options.zstep/options.apix) + 0.5)
 
 		if options.MPI:
-			from mpi import mpi_init, mpi_finalize
-			sys.argv = mpi_init(len(sys.argv), sys.argv)
+			sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
 
 		if len(options.predict_helical) > 0:
 			
@@ -430,11 +431,10 @@ def main():
 			gendisks_MPI(args[0], mask3d, options.ref_nx, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, options.CTF, options.function, options.sym, options.gendisk, options.maxerror, options.new_pixel_size, options.match_pixel_rise)
 			global_def.BATCH = False
 		
-		if options.MPI:
-			from mpi import mpi_finalize
-			mpi_finalize()
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	if "OMPI_COMM_WORLD_SIZE" in os.environ:
+		mpi.mpi_finalize()

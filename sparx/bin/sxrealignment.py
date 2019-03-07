@@ -40,6 +40,8 @@ from   global_def     import *
 from   user_functions import *
 from   optparse       import OptionParser
 
+import mpi
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " out_averages outdir --ou=outer_radius --xr=x_range --ts=translation_step --maxit=max_iteration --CTF --snr=SNR --function=user_function_name --Fourvar --ali=kind_of_alignment --center=center_type"
@@ -78,8 +80,7 @@ def main():
 			disable_bdb_cache()
 
 		if options.MPI:
-			from mpi import mpi_init
-			sys.argv = mpi_init(len(sys.argv),sys.argv)
+			sys.argv = mpi.mpi_init(len(sys.argv),sys.argv)
 
 		global_def.BATCH = True
 		if options.old:
@@ -90,11 +91,10 @@ def main():
 			realignment(args[0], args[1], args[2], options.ou, options.xr, options.ts, options.maxit, options.function, options.snr, options.CTF, options.Fourvar, options.Ng, options.num_ali, options.err_th, options.K, options.dst, options.center, options.CUDA, options.GPUID, options.MPI)
 		global_def.BATCH = False
 		
-		if options.MPI:
-			from mpi import mpi_finalize
-			mpi_finalize()
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	if "OMPI_COMM_WORLD_SIZE" in os.environ:
+		mpi.mpi_finalize()

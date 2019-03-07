@@ -101,6 +101,7 @@ from global_def import sxprint, ERROR
 import user_functions
 from global_def import *
 
+import mpi
 from mpi   	import  *
 from math  	import  *
 from random import *
@@ -120,7 +121,7 @@ global Tracker, Blockdata
 global  target_theta, refang
 
 
-mpi_init(0, [])
+mpi.mpi_init(0, [])
 Tracker   = {}
 Blockdata = {}
 #  MPI stuff
@@ -5243,7 +5244,6 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
 					if(keepf == 0):
 						ERROR( "Too few images to estimate keepfirst", myid=Blockdata["myid"] )
-						mpi_finalize()
 						return
 					###print("  STARTING8    ",Blockdata["myid"],keepf)
 					Tracker["keepfirst"] = int(keepf)
@@ -6318,6 +6318,7 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 					if( Blockdata["myid_on_node"] == 0 ):
 						treg0 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_0_%03d.hdf"%(Tracker["mainiteration"])))
 					else:
+
 						tvol0    = model_blank(1)
 						tweight0 = model_blank(1)
 						treg0    = model_blank(1)
@@ -6367,6 +6368,7 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 							tvol1 = filt_table(tvol1, cfsc)
 							del cfsc
 						user_func = user_functions.factory[Tracker["constants"]["user_func_volume"]]
+
 						#ref_data = [tvol1, Tracker, mainiteration]
 						ref_data = [tvol1, Tracker, Tracker["mainiteration"]]
 						#--  #--  memory_check(Blockdata["myid"],"first node, after masking")
@@ -6387,6 +6389,7 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 					tweight1 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_1_%03d.hdf"%(Tracker["mainiteration"]))))
 					Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["constants"]["fuse_freq"])
 					treg  = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_%d_%03d.hdf"%((iproc, Tracker["mainiteration"]))))
+
 				else:
 					treg = model_blank(1)
 					if iproc ==0:
@@ -6770,11 +6773,13 @@ def main():
 	parser.add_option("--local_refinement",    action="store_true",  default= False,  help="Perform local refinement starting from user-provided orientation parameters")
 	parser.add_option("--memory_per_node",          type="float",           default= -1.0,                	help="User provided information about memory per node (NOT per CPU) [in GB] (default 2GB*(number of CPUs per node))")	
 
+
 	do_final_mode = False
 	for q in sys.argv[1:]:
 		if( q[:10] == "--do_final" ):
 			do_final_mode = True
 			break
+
 
 	do_continuation_mode = False
 	for q in sys.argv[1:]:
@@ -7365,7 +7370,6 @@ def main():
 
 			#  End of if doit
 		#   end of while
-		mpi_finalize()
 		return
 
 	elif do_final_mode: #  DO FINAL
@@ -7441,7 +7445,6 @@ def main():
 	
 		Blockdata["accumulatepw"] = [[],[]]
 		recons3d_final(masterdir, options.do_final, options.memory_per_node, orgstack)
-		mpi_finalize()
 		return
 	else:
 		ERROR( "Incorrect input options", myid=Blockdata["myid"] )
@@ -7455,3 +7458,4 @@ if __name__=="__main__":
 	global_def.print_timestamp( "Finish" )
 	global_def.BATCH = False
 	global_def.MPI   = False
+	mpi.mpi_finalize()

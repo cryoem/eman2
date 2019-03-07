@@ -51,6 +51,8 @@ import global_def
 from global_def import sxprint, ERROR
 from global_def import *
 
+import mpi
+
 # ========================================================================================
 # Define functions for reading coordinates files of different formats.
 # One of these will be used in main() through a first-class data type variable of Python
@@ -309,24 +311,13 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	# Set up MPI related variables
 	# ------------------------------------------------------------------------------------
 	# Detect if program is running under MPI
-	RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
+	RUNNING_UNDER_MPI = "Ompi.MPI_COMM_WORLD_SIZE" in os.environ
 
 	main_mpi_proc = 0
 	if RUNNING_UNDER_MPI:
-		from mpi import mpi_init
-		from mpi import (
-			MPI_COMM_WORLD,
-			mpi_comm_rank,
-			mpi_comm_size,
-			mpi_barrier,
-			mpi_reduce,
-			MPI_INT,
-			MPI_SUM,
-		)
-
-		mpi_init(0, [])
-		my_mpi_proc_id = mpi_comm_rank(MPI_COMM_WORLD)
-		n_mpi_procs = mpi_comm_size(MPI_COMM_WORLD)
+		mpi.mpi_init(0, [])
+		my_mpi_proc_id = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
+		n_mpi_procs = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
 	else:
 		my_mpi_proc_id = 0
 		n_mpi_procs = 1
@@ -1385,7 +1376,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	unsliced_valid_serial_id_list = valid_mic_id_substr_list
 	mpi_proc_dir = root_out_dir
 	if RUNNING_UNDER_MPI:
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		# All mpi processes should know global entry directory and valid micrograph id substring list
 		global_entry_dict = wrap_mpi_bcast(global_entry_dict, main_mpi_proc)
 		valid_mic_id_substr_list = wrap_mpi_bcast(
@@ -1424,8 +1415,8 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		os.mkdir(reject_out_of_boundary_dir)
 
 	if RUNNING_UNDER_MPI:
-		mpi_barrier(
-			MPI_COMM_WORLD
+		mpi.mpi_barrier(
+			mpi.MPI_COMM_WORLD
 		)  # all MPI processes should wait until the directory is created by main process
 		#
 		# NOTE: 2017/12/12 Toshio Moriya
@@ -1873,30 +1864,30 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				# Print out summary of processing
 				# ------------------------------------------------------------------------------------
 	if RUNNING_UNDER_MPI:
-		n_mic_process = mpi_reduce(
-			n_mic_process, 1, MPI_INT, MPI_SUM, main_mpi_proc, MPI_COMM_WORLD
+		n_mic_process = mpi.mpi_reduce(
+			n_mic_process, 1, mpi.MPI_INT, mpi.MPI_SUM, main_mpi_proc, mpi.MPI_COMM_WORLD
 		)
-		n_mic_reject_no_coords_entry = mpi_reduce(
+		n_mic_reject_no_coords_entry = mpi.mpi_reduce(
 			n_mic_reject_no_coords_entry,
 			1,
-			MPI_INT,
-			MPI_SUM,
+			mpi.MPI_INT,
+			mpi.MPI_SUM,
 			main_mpi_proc,
-			MPI_COMM_WORLD,
+			mpi.MPI_COMM_WORLD,
 		)
-		n_global_coords_detect = mpi_reduce(
-			n_global_coords_detect, 1, MPI_INT, MPI_SUM, main_mpi_proc, MPI_COMM_WORLD
+		n_global_coords_detect = mpi.mpi_reduce(
+			n_global_coords_detect, 1, mpi.MPI_INT, mpi.MPI_SUM, main_mpi_proc, mpi.MPI_COMM_WORLD
 		)
-		n_global_coords_process = mpi_reduce(
-			n_global_coords_process, 1, MPI_INT, MPI_SUM, main_mpi_proc, MPI_COMM_WORLD
+		n_global_coords_process = mpi.mpi_reduce(
+			n_global_coords_process, 1, mpi.MPI_INT, mpi.MPI_SUM, main_mpi_proc, mpi.MPI_COMM_WORLD
 		)
-		n_global_coords_reject_out_of_boundary = mpi_reduce(
+		n_global_coords_reject_out_of_boundary = mpi.mpi_reduce(
 			n_global_coords_reject_out_of_boundary,
 			1,
-			MPI_INT,
-			MPI_SUM,
+			mpi.MPI_INT,
+			mpi.MPI_SUM,
 			main_mpi_proc,
-			MPI_COMM_WORLD,
+			mpi.MPI_COMM_WORLD,
 		)
 
 		# Print out the summary of all micrographs
@@ -1939,7 +1930,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				shutil.rmtree(reject_out_of_boundary_dir, ignore_errors=True)
 
 	if RUNNING_UNDER_MPI:
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	if main_mpi_proc == my_mpi_proc_id:
 		# NOTE: Toshio Moriya 2016/10/27
@@ -1999,11 +1990,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	# Clean up MPI related variables
 	# ------------------------------------------------------------------------------------
 	if RUNNING_UNDER_MPI:
-		mpi_barrier(MPI_COMM_WORLD)
-		from mpi import mpi_finalize
-
-		mpi_finalize()
-
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	sys.stdout.flush()
 	return
 
@@ -2016,6 +2003,8 @@ if __name__ == "__main__":
 	global_def.print_timestamp("Start")
 	main()
 	global_def.print_timestamp("Finish")
+	if "OMPI_COMM_WORLD_SIZE" in os.environ:
+		mpi.mpi_finalize()
 
 # ========================================================================================
 #  END OF FILE

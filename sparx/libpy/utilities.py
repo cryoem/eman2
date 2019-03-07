@@ -1,44 +1,65 @@
 #
 from __future__ import print_function
 
-# Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
-# Copyright (c) 2000-2006 The University of Texas - Houston Medical School
-#
-# This software is issued under a joint BSD/GNU license. You may use the
-# source code in this file under either license. However, note that the
-# complete EMAN2 and SPARX software packages have some GPL dependencies,
-# so you are responsible for compliance with the licenses of these packages
-# if you opt to use BSD licensing. The warranty disclaimer below holds
-# in either instance.
-#
-# This complete copyright notice must be included in any revised version of the
-# source code. Additional authorship citations may be added, but existing
-# author citations must be preserved.
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-#
+"""
+Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
+Copyright (c) 2000-2006 The University of Texas - Houston Medical School
 
+This software is issued under a joint BSD/GNU license. You may use the source
+code in this file under either license. However, note that the complete EMAN2
+and SPARX software packages have some GPL dependencies, so you are responsible
+for compliance with the licenses of these packages if you opt to use BSD
+licensing. The warranty disclaimer below holds in either instance.
+
+This complete copyright notice must be included in any revised version of the
+source code. Additional authorship citations may be added, but existing author
+citations must be preserved.
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 59 Temple
+Place, Suite 330, Boston, MA  02111-1307 USA
+"""
+
+#------------------------------------------------[ import ]
+
+# compatibility
 from future import standard_library
-
 standard_library.install_aliases()
-from builtins import range
-from builtins import object
-from global_def import *
+
+# python natives
+from pickle    import dumps, loads
+from builtins  import range
+from builtins  import object
 from functools import reduce
-import EMAN2
+from struct    import pack, unpack
+
+# python commons
 import numpy as np
+import scipy.ndimage
+from zlib import compress, decompress
+
+# EMAN2 / sparx basics
+from global_def import *
+
+import EMAN2
+from EMAN2 import EMNumPy
+
+# EMAN2 / sparx modules
+import morphology
+
+# MPI imports (NOTE: import mpi after EMAN2)
+from applications import MPI_start_end
+from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
+from mpi import mpi_recv, mpi_send, mpi_barrier
 
 
 def params_2D_3D(alpha, sx, sy, mirror):
@@ -911,6 +932,21 @@ def inverse_transform3(
 	)
 
 
+def create_smooth_mask( radius, img_dim, size=8 ):
+	"""
+	Utility function to create a circular mask with a smooth edge. The produced
+	mask assumes square images and only takes a single image dimension as input
+
+	Args:
+		radius (integer): Radius of the mask.
+		img_dim (integer): x/y image dimension for the mask.
+		size (integer): Length of the soft edge in pixels.
+	"""
+	mask = model_circle( radius, img_dim, img_dim )
+	size = size if (radius+size <= img_dim/2) else img_dim/2-radius
+	return morphology.soft_edge( mask, size )
+
+
 def create_spider_doc(fname, spiderdoc):
 	"""Convert a text file that is composed of columns of numbers into spider doc file
 	"""
@@ -1647,7 +1683,7 @@ def model_cylinder(radius, nx, ny, nz):
 	return e
 
 
-def model_rotated_rectangle2D(radius_long, radius_short, nx, ny, angle=90):
+def model_rotated_rectangle2D(radius_long, radius_short, nx, ny, angle=90, return_numpy=False):
 	"""
 	Creates a rectangular mask
 	:param radius_long: Radius long axis
@@ -1655,9 +1691,9 @@ def model_rotated_rectangle2D(radius_long, radius_short, nx, ny, angle=90):
 	:param nx: Mask size x-dim
 	:param ny: Mask size y-dim
 	:param angle: Rotation angle in degree
+	:param return_numpy: Return mask as numpy array instead of as EMObject. [Default: False]
 	:return: rotated rectangular mask
 	"""
-	from scipy import ndimage
 
 	sizex = nx
 	sizey = ny
@@ -1668,15 +1704,26 @@ def model_rotated_rectangle2D(radius_long, radius_short, nx, ny, angle=90):
 	mask = np.zeros((sizex, sizey))
 	mask[
 		(sizex // 2 - radius_short) : (sizex // 2 + radius_short),
-		(sizey // 2 - radius_long) : (sizey // 2 + radius_long),
+		(sizey // 2 - radius_long)  : (sizey // 2 + radius_long),
 	] = 1.0
-	mask = ndimage.rotate(mask, angle, reshape=False)
-	mask = mask[
-		(sizex // 2 - nx // 2) : (sizex // 2 + nx // 2),
-		(sizey // 2 - ny // 2) : (sizey // 2 + ny // 2),
+	
+	mask = scipy.ndimage.rotate(mask, angle, reshape=False)
+	offx = 0 if nx%2 == 0 else 1 # add one column if nx is odd
+	offy = 0 if nx%2 == 0 else 1 # add one row if ny is odd
+	mask = mask[ # otherwise this only creates even-sized masks
+		(sizex // 2 - nx // 2) : (sizex // 2 + nx // 2)+offy,
+		(sizey // 2 - ny // 2) : (sizey // 2 + ny // 2)+offx,
 	]
-	mask = EMAN2.EMNumPy.numpy2em(mask)
-	return mask
+
+	# eliminate round-off errors introduced by the rotation
+	mask[ mask <=0.9 ] = 0.0
+	mask[ mask > 0.9 ] = 1.0 
+
+	# deliver the mask
+	if return_numpy:
+		return mask
+	else:
+		return EMAN2.EMNumPy.numpy2em(mask)
 
 
 def model_gauss_noise(sigma, nx, ny=1, nz=1):
@@ -3373,50 +3420,40 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(
 		mpi_barrier(MPI_COMM_WORLD)
 
 
-def gather_compacted_EMData_to_root(
-	number_of_all_em_objects_distributed_across_processes,
-	list_of_em_objects_for_myid_process,
-	myid,
-	comm=-1,
-):
+def gather_compacted_EMData_to_root( number_of_all_em_objects_distributed_across_processes, list_of_em_objects_for_myid_process, mpi_rank, comm=-1 ):
+	"""
+	MPI_Gather that expects all data as a list of EMData objects. Data is transfered by
+	collecting all header information, transferring all data as numpy arrays, and re-
+	building the EMData objects in the root process.
 
+	Args:
+		number_of_all_em_objects_distributed_across_processes (integer): Total number of
+			EMData objects to gather across all processes.
+
+		list_of_em_objects_for_myid_process (EMData[]): List of EMData objects that this
+			process is tasked with transferring.
+
+		mpi_rank (integer): MPI rank of this process. Process with rank 0 will be used as
+			the root process.
+
+		comm: MPI communicator identifier; defaults to mpi.MPI_COMM_WORLD
+			[Default: -1]
 	"""
 
-	The assumption in <<gather_compacted_EMData_to_root>> is that each processor
-	calculates part of the list of elements and then each processor sends
-	its results to the root
-
-	Therefore, each processor has access to the header. If we assume that the
-	attributes of interest from the header are the same for all elements then
-	we can copy the header and no mpi message is necessary for the
-	header.
-
-	"""
-	from applications import MPI_start_end
-	from EMAN2 import EMNumPy
-	from numpy import concatenate, shape, array, split
-	from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
-	from numpy import reshape
-	from mpi import mpi_recv, mpi_send, mpi_barrier
-
+	# mpi setup
 	if comm == -1 or comm == None:
 		comm = MPI_COMM_WORLD
 
-	ncpu = mpi_comm_size(comm)  # Total number of processes, passed by --np option.
+	mpi_size = mpi_comm_size(comm)  # Total number of processes, passed by --np option. [Unclear what this option is]
 
-	ref_start, ref_end = MPI_start_end(
-		number_of_all_em_objects_distributed_across_processes, ncpu, myid
-	)
-	ref_end -= ref_start
-	ref_start = 0
-	tag_for_send_receive = 123456
+	tag_for_send_receive = 123456 # NOTE: we're using the same tag for all messages here, which seems a bit pointless?
 
-	# used for copying the header
-	reference_em_object = list_of_em_objects_for_myid_process[ref_start]
+	# get data header information
+	reference_em_object = list_of_em_objects_for_myid_process[0]
+
 	nx = reference_em_object.get_xsize()
 	ny = reference_em_object.get_ysize()
 	nz = reference_em_object.get_zsize()
-	# is_complex = reference_em_object.is_complex()
 	is_ri = reference_em_object.is_ri()
 	changecount = reference_em_object.get_attr("changecount")
 	is_complex_x = reference_em_object.is_complex_x()
@@ -3425,100 +3462,60 @@ def gather_compacted_EMData_to_root(
 	apix_y = reference_em_object.get_attr("apix_y")
 	apix_z = reference_em_object.get_attr("apix_z")
 	is_complex = reference_em_object.get_attr_default("is_complex", 1)
-	is_fftpad = reference_em_object.get_attr_default("is_fftpad", 1)
-	is_fftodd = reference_em_object.get_attr_default("is_fftodd", nz % 2)
+	is_fftpad  = reference_em_object.get_attr_default("is_fftpad", 1)
+	is_fftodd  = reference_em_object.get_attr_default("is_fftodd", nz % 2)
 
-	data = EMNumPy.em2numpy(list_of_em_objects_for_myid_process[ref_start])
-	size_of_one_refring_assumed_common_to_all = data.size
+	# process data before transfer
+	data = []
+	for i in range( len(list_of_em_objects_for_myid_process) ):
+		data.append( EMNumPy.em2numpy(list_of_em_objects_for_myid_process[i]) )
+	data = np.array( data )
 
-	# n = shape(data)
-	# size_of_one_refring_assumed_common_to_all = 1
-	# for i in n: size_of_one_refring_assumed_common_to_all *= i
+	# transfer: gather all data at the root process (myid==0)
+	for sender_id in range(1, mpi_size):
 
-	if size_of_one_refring_assumed_common_to_all * (ref_end - ref_start) > (
-		2 ** 31 - 1
-	):
-		print("Sending refrings: size of data to broadcast is greater than 2GB")
+		# transfer/send: sender process w/ rank <sender_id> blocks until data has been sent to root process
+		if sender_id == mpi_rank:
+			mpi_send( data,
+					  data.size,
+					  MPI_FLOAT,
+					  0,
+					  tag_for_send_receive,
+					  MPI_COMM_WORLD )
 
-	for sender_id in range(1, ncpu):
-		if sender_id == myid:
-			data = EMNumPy.em2numpy(
-				list_of_em_objects_for_myid_process[ref_start]
-			)  # array([], dtype = 'float32')
-			for i in range(ref_start + 1, ref_end):
-				data = concatenate(
-					[data, EMNumPy.em2numpy(list_of_em_objects_for_myid_process[i])]
-				)
-		else:
-			data = array([], dtype="float32")
+		# transfer/receive: root process blocks until data from process w/ rank <sender_id> has been received
+		elif mpi_rank == 0:
+			
+			# get transfer parameters of the sender
+			ref_start, ref_end = MPI_start_end( number_of_all_em_objects_distributed_across_processes, mpi_size, sender_id )
+			transfer_size = (ref_end - ref_start) * data[0].size # all data[i] have the same size
+			
+			# receive data
+			data = mpi_recv( transfer_size,
+							 MPI_FLOAT,
+							 sender_id,
+							 tag_for_send_receive,
+							 MPI_COMM_WORLD )
 
-		sender_ref_start, sender_ref_end = MPI_start_end(
-			number_of_all_em_objects_distributed_across_processes, ncpu, sender_id
-		)
+			if int(nz) != 1:
+				data = data.reshape( [(ref_end - ref_start), nz, ny, nx] )
+			elif ny != 1:
+				data = data.reshape( [(ref_end - ref_start), ny, nx] )
 
-		sender_size_of_refrings = (
-			sender_ref_end - sender_ref_start
-		) * size_of_one_refring_assumed_common_to_all
-
-		if myid == 0:
-			# print "root, receiving from ", sender_id, "  sender_size_of_refrings = ", sender_size_of_refrings
-			data = mpi_recv(
-				sender_size_of_refrings,
-				MPI_FLOAT,
-				sender_id,
-				tag_for_send_receive,
-				MPI_COMM_WORLD,
-			)
-		elif sender_id == myid:
-			# print "sender_id = ", sender_id, "sender_size_of_refrings = ", sender_size_of_refrings
-			mpi_send(
-				data,
-				sender_size_of_refrings,
-				MPI_FLOAT,
-				0,
-				tag_for_send_receive,
-				MPI_COMM_WORLD,
-			)
-
-		mpi_barrier(MPI_COMM_WORLD)
-
-		# if myid != sender_id:
-		if myid == 0:
-			for i in range(sender_ref_start, sender_ref_end):
-				offset_ring = sender_ref_start
-				start_p = (i - offset_ring) * size_of_one_refring_assumed_common_to_all
-				end_p = (
-					i + 1 - offset_ring
-				) * size_of_one_refring_assumed_common_to_all
-				image_data = data[start_p:end_p]
-
-				if int(nz) != 1:
-					image_data = reshape(image_data, (nz, ny, nx))
-				elif ny != 1:
-					image_data = reshape(image_data, (ny, nx))
-
-				em_object = EMNumPy.numpy2em(image_data)
-
-				# em_object.set_complex(is_complex)
+			# collect received data in EMData objects
+			for img_data in data:
+				em_object = EMNumPy.numpy2em(img_data)
 				em_object.set_ri(is_ri)
-				em_object.set_attr_dict(
-					{
-						"changecount": changecount,
-						"is_complex_x": is_complex_x,
-						"is_complex_ri": is_complex_ri,
-						"apix_x": apix_x,
-						"apix_y": apix_y,
-						"apix_z": apix_z,
-						"is_complex": is_complex,
-						"is_fftodd": is_fftodd,
-						"is_fftpad": is_fftpad,
-					}
-				)
-
-				# list_of_em_objects[i] = em_object
+				em_object.set_attr_dict( { "changecount": changecount,
+										   "is_complex_x": is_complex_x,
+										   "is_complex_ri": is_complex_ri,
+										   "apix_x": apix_x,
+										   "apix_y": apix_y,
+										   "apix_z": apix_z,
+										   "is_complex": is_complex,
+										   "is_fftodd": is_fftodd,
+										   "is_fftpad": is_fftpad } )
 				list_of_em_objects_for_myid_process.append(em_object)
-
-		mpi_barrier(MPI_COMM_WORLD)
 
 
 def bcast_EMData_to_all(tavg, myid, source_node=0, comm=-1):
@@ -6272,11 +6269,6 @@ class iterImagesStack(object):
 			return False
 		self.position -= 1
 		return self.position >= 0
-
-
-from pickle import dumps, loads
-from zlib import compress, decompress
-from struct import pack, unpack
 
 
 def pack_message(data):

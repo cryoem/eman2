@@ -177,13 +177,13 @@ def isac_substack(args):
 		ERROR( "Output directory exists. Please change the name and restart the program.", where=subcommand_name)
 	
 	# Check error conditions of options
-	defalut_isac_class_avgs_path = os.path.join(args.input_run_dir, "ordered_class_averages.hdf")
+	default_isac_class_avgs_path = os.path.join(args.input_run_dir, "ordered_class_averages.hdf")
 	if args.isac_class_avgs_path != "": # User provided name
 		args.isac_class_avgs_path = args.isac_class_avgs_path.strip()
 		if not os.path.exists(args.isac_class_avgs_path):
 			ERROR( "The specifed ISAC class average stack file does not exist. Please check the file path and restart the program.", where=subcommand_name)
 	else: # Default name of ISAC or Beautifier
-		args.isac_class_avgs_path = defalut_isac_class_avgs_path
+		args.isac_class_avgs_path = default_isac_class_avgs_path
 		if not os.path.exists(args.isac_class_avgs_path):
 			ERROR( "ISAC or Beautifier run output directory does not contain the default ISAC class average stack file ({}). Please check the directory path or specify ISAC class average stack file, then restart the program.".format(args.isac_class_avgs_path), where=subcommand_name)
 	args.substack_basename = args.substack_basename.strip()
@@ -287,7 +287,7 @@ def isac_substack(args):
 	i_enum += 1; n_idx_header_align2d      = i_enum
 
 	# Define enumerators for indices of ISAC 2D alignment parameter
-	# Note: ISAC does not stores "scale" to output files
+	# Note: ISAC does not store "scale" to output files
 	i_enum = -1
 	i_enum += 1; idx_isac_align2d_alpha  = i_enum # 2D rotation (in-plane rotation)
 	i_enum += 1; idx_isac_align2d_tx     = i_enum # x-translation or x-shift
@@ -353,32 +353,52 @@ def isac_substack(args):
 			ERROR("The number of entries in {} is not consistent with {}. Please check the consistency of input datasets.".format(fullstack_shrunk_core_align2d_path, args.input_bdb_stack_path), where=subcommand_name) # action=1 - fatal error, exit
 		
 		
-		# For each entry (2D alignment parameters of particle image), register sxcaled back and combined 2D alignment parameters of this ISAC run to the lists
+
+
+
+
+
+		# collect 2D alignment parameters for all particle images accounted for by ISAC
 		sxprint(" ")
 		print_progress("Registering scaled back and combined 2D alignment parameters of this ISAC run...")
 		for fullstack_img_id in range(n_fullstack_img):
+			# alignment parameters as determined by the (optional) pre-alignment
 			prealign2d = fullstack_prealign2d_list[fullstack_img_id]
 			if len(prealign2d) != n_idx_isac_align2d:
 				ERROR("Invalid number of columns {} at entry #{} in {}. It should be {}. The parameter file might be corrupted. Please consider to rerun ISAC.".format(len(prealign2d), fullstack_img_id, fullstack_prealign2d_path, n_idx_isac_align2d), where=subcommand_name) # action=1 - fatal error, exit
+			# alignment parameters as determined by ISAC's clustering
 			shrunk_core_align2d = fullstack_shrunk_core_align2d_list[fullstack_img_id]
 			if len(shrunk_core_align2d) != n_idx_isac_align2d:
 				ERROR("Invalid number of columns {} at entry #{} in {}. It should be {}. The parameter file might be corrupted. Please consider to rerun ISAC.".format(len(shrunk_core_align2d), fullstack_img_id, fullstack_shrunk_core_align2d_path, n_idx_isac_align2d), where=subcommand_name) # action=1 - fatal error, exit
-			if shrunk_core_align2d[idx_isac_align2d_mirror] != -1: # An accounted particle
+			# collect all the accounted-for particles
+			if shrunk_core_align2d[idx_isac_align2d_mirror] != -1:
+				# alignment parameters as determined by the (optional) pre-alignment in ISAC
 				alpha1  = float(prealign2d[idx_isac_align2d_alpha])
 				sx1     = float(prealign2d[idx_isac_align2d_tx])
 				sy1     = float(prealign2d[idx_isac_align2d_ty])
 				mirror1 = int(prealign2d[idx_isac_align2d_mirror])
+				# alignment parameters as determined by ISAC itself (during clustering)
 				alpha2  = float(shrunk_core_align2d[idx_isac_align2d_alpha])
-				sx2     = float(shrunk_core_align2d[idx_isac_align2d_tx])/isac_shrink_ratio # Need to apply the shrink ratio to ISAC x-shift
-				sy2     = float(shrunk_core_align2d[idx_isac_align2d_ty])/isac_shrink_ratio # Need to apply the shrink ratio to ISAC y-shift
+				sx2     = float(shrunk_core_align2d[idx_isac_align2d_tx]) / isac_shrink_ratio  # re-scale the shift parameters reported by ISAC (which works on downscaled images)
+				sy2     = float(shrunk_core_align2d[idx_isac_align2d_ty]) / isac_shrink_ratio  # same here
 				mirror2 = int(shrunk_core_align2d[idx_isac_align2d_mirror])
-				isac_total_align2d = list(combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2)) # return value is tuple type but we want to list! 
-				
+				# final alignment parameters have to combine the pre-alignment parameters with the clustering alignment
+				isac_total_align2d = list(combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2))
+				# update the particle in the full stack and append it to our accounted-for stack
 				fullstack_total_align2d_list[fullstack_img_id] = isac_total_align2d
-				scale = 1.0 # because this 2D alignment parameters are scaled back!
-				accounted_total_align2d_list.append([fullstack_img_id, isac_total_align2d[idx_isac_align2d_alpha], isac_total_align2d[idx_isac_align2d_tx], isac_total_align2d[idx_isac_align2d_ty], isac_total_align2d[idx_isac_align2d_mirror], scale])
+				accounted_total_align2d_list.append( [fullstack_img_id, 
+													  isac_total_align2d[idx_isac_align2d_alpha], 
+													  isac_total_align2d[idx_isac_align2d_tx], 
+													  isac_total_align2d[idx_isac_align2d_ty], 
+													  isac_total_align2d[idx_isac_align2d_mirror], 
+													  1.0] )  # scale parameter is 1.0 because we just scaled properly above using the isac_shrink_ratio
 
 		
+
+
+
+
+
 		# Set the number of accounted images
 		n_accounted_img = len(accounted_total_align2d_list)
 		
@@ -402,6 +422,11 @@ def isac_substack(args):
 		if n_accounted_img > n_fullstack_img:
 			ERROR("The number of entries in {} is not consistent with {} (the number of accounted particles is larger than ones of particles in the original fullstack). Please check the consistency of input datasets.".format(accounted_local_total_align2d_path, args.input_bdb_stack_path), where=subcommand_name) # action=1 - fatal error, exit
 		
+
+
+
+
+
 		# For each entry (2D alignment parameters of accounted particle image), register 2D alignment parameters of this Beautifier run to the lists
 		sxprint(" ")
 		print_progress("Registering 2D alignment parameters of this Beautifier run...")
@@ -421,6 +446,11 @@ def isac_substack(args):
 			
 			fullstack_total_align2d_list[fullstack_img_id] = [alpha, sx, sy, mirror]
 			accounted_total_align2d_list.append([fullstack_img_id, alpha, sx, sy, mirror, scale])
+
+
+
+
+
 			
 		# Set subdirectory name for Beautifier run case.
 		# Use the corresponding subdirectory name corresponding to Beautifier output directory structure which stores the same information.
@@ -453,42 +483,53 @@ def isac_substack(args):
 	
 	# Check the number of default ISAC class averages in ISAC or Beautifier run
 	sxprint(" ")
-	print_progress("Checking the number of default ISAC class averages {} in ISAC or Beautifier run output directory...".format(defalut_isac_class_avgs_path))
+	print_progress("Checking the number of default ISAC class averages {} in ISAC or Beautifier run output directory...".format(default_isac_class_avgs_path))
 	n_default_class_avg = 0
-	if os.path.exists(defalut_isac_class_avgs_path):
-		n_default_class_avg = EMUtil.get_image_count(defalut_isac_class_avgs_path)
+	if os.path.exists(default_isac_class_avgs_path):
+		n_default_class_avg = EMUtil.get_image_count(default_isac_class_avgs_path)
 	else: 
 		print_progress("WARNING! The default ISAC class averages file does not exist.")
 	sxprint(" ")
-	print_progress("Detected {} default ISAC class averages in {}".format(n_default_class_avg, defalut_isac_class_avgs_path))
+	print_progress("Detected {} default ISAC class averages in {}".format(n_default_class_avg, default_isac_class_avgs_path))
 	
 	# Retrieve original fullstack particle IDs of members listed in ISAC class averages
 	sxprint(" ")
 	print_progress("Extracting original fullstack particle IDs of members listed in ISAC class averages...")
 	n_class_avg = EMUtil.get_image_count(args.isac_class_avgs_path)
+
 	sxprint(" ")
 	print_progress("Detected {} ISAC class averages in {}".format(n_class_avg, args.isac_class_avgs_path))
-	fullstack_img_id_list_of_isac_substack = []
+	
+	fullstack_img_id_list_of_isac_substack = [] # fill this with the id values of all the accounted-for particles
+	class_membership={} # dictionary where entry[i] contains class id value for particle i
+
 	for class_avg_id in range(n_class_avg):
-		fullstack_img_id_list_of_isac_class = []
 		fullstack_img_id_list_of_isac_class = get_im(args.isac_class_avgs_path, class_avg_id).get_attr("members")
 		fullstack_img_id_list_of_isac_class.sort()
 		total_align2d_list_of_isac_class = []
+
+		# go through all images that belong to ISAC class w/ id value <class_avg_id>
 		for fullstack_img_id in fullstack_img_id_list_of_isac_class:
 			total_align2d = fullstack_total_align2d_list[fullstack_img_id]
 			if total_align2d[idx_isac_align2d_mirror] == -1:
 				ERROR("The member with original fullstack particle ID {} listed in ISAC class averages {} has the invalid 2D alignment parameters for ISAC unaccounted particle. Please check the consistency of input datasets. Worse yet, the input datasets might be corrupted. In this case, please consider to rerun ISAC.".format(fullstack_img_id, args.isac_class_avgs_path), where=subcommand_name) # action=1 - fatal error, exit
 			scale = 1.0 # because this 2D alignment parameters are scaled back!
 			total_align2d_list_of_isac_class.append([total_align2d[idx_isac_align2d_alpha], total_align2d[idx_isac_align2d_tx], total_align2d[idx_isac_align2d_ty], total_align2d[idx_isac_align2d_mirror], scale])
+			class_membership[fullstack_img_id] = class_avg_id
 		align2d_avg_path = os.path.join(subdir_path, "%s_%03d.txt"%(align2d_avg_basename, class_avg_id))
 		write_text_row(total_align2d_list_of_isac_class, align2d_avg_path)
 		
 		# Append class particle ID list to substack particle ID list
 		fullstack_img_id_list_of_isac_substack += fullstack_img_id_list_of_isac_class
-		
+	
 	# Sort the substack particle id list
 	fullstack_img_id_list_of_isac_substack.sort()
 	
+	# create file with class membership information
+	class_membership = [ class_membership[img_id] for img_id in fullstack_img_id_list_of_isac_substack ]
+	class_membership_file_path = args.output_directory+"/particle_membership.txt"
+	write_text_file( class_membership, class_membership_file_path ) # NOTE: here we only write a single column; later we overwrite this file w/ two columns
+
 	n_isac_substack_img = len(fullstack_img_id_list_of_isac_substack)
 	sxprint(" ")
 	print_progress("Extracted {} ISAC class members from {}".format(n_isac_substack_img, args.isac_class_avgs_path))
@@ -522,7 +563,9 @@ def isac_substack(args):
 	sxprint(" ")
 	print_progress("Creating ISAC substack as a virtual stack...")
 	virtual_bdb_substack_path = "bdb:{}#{}".format(args.output_directory, args.substack_basename)
-	cmd_line = "e2bdb.py {} --makevstack={} --list={}".format(args.input_bdb_stack_path, virtual_bdb_substack_path, fullstack_img_id_path_of_isac_substack)
+	cmd_line = "e2bdb.py {} --makevstack={} --list={}".format( args.input_bdb_stack_path,  # source stack
+															   virtual_bdb_substack_path,  # target stack
+															   fullstack_img_id_path_of_isac_substack )  # indices to denote which images in the source stack to add to the target stack
 	status = cmdexecute(cmd_line)
 	if status == 0: 
 		ERROR("\"{}\" execution failed. Exiting...".format(cmd_line), where=subcommand_name) # action=1 - fatal error, exit
@@ -530,7 +573,9 @@ def isac_substack(args):
 	# Import the total 2D alignment parameters to xform.align2d
 	sxprint(" ")
 	print_progress("Importing the total 2D alignment parameters in the original scale to the header entry...")
-	cmd_line = "sxheader.py {} --import={} --params=xform.align2d".format(virtual_bdb_substack_path, isac_substack_total_header_align2d_path)
+	cmd_line = "sxheader.py {} --import={} --params={}".format( virtual_bdb_substack_path, # target stack
+																isac_substack_total_header_align2d_path, # import alignment parameters from .txt file
+																"xform.align2d") # perform the import on the alignment parameters
 	status = cmdexecute(cmd_line)
 	if status == 0: ERROR("\"{}\" execution failed. Exiting...".format(cmd_line), where=subcommand_name) # action=1 - fatal error, exit
 	
@@ -549,7 +594,21 @@ def isac_substack(args):
 	status = cmdexecute(cmd_line)
 	if status == 0: ERROR("\"{}\" execution failed. Exiting...".format(cmd_line), where=subcommand_name) # action=1 - fatal error, exit
 	
-	# Print summary of processing
+	# Export class id values
+	sxprint(" ")
+	print_progress("Importing class membership information (also found in file \'particle_membership.txt\')...")
+	cmd_line = "sxheader.py {} --import={} --params={}".format( virtual_bdb_substack_path, # target stack
+																class_membership_file_path, # import alignment parameters from .txt file
+																"ISAC_class_id") # perform the import on the alignment parameters
+	status = cmdexecute(cmd_line)
+	if status == 0: 
+		ERROR( "\'{}\' execution failed.".format(cmd_line) )
+
+	# now that class membership information has been added to the .bdb stack headers we overwrite the membership file to include the image id
+	class_membership = [ fullstack_img_id_list_of_isac_substack, class_membership ]
+	write_text_file( class_membership, class_membership_file_path )
+
+	# summary
 	sxprint(" ")
 	print_progress("Summary of processing...")
 	print_progress("  Particles in fullstack  : %6d"%(n_fullstack_img)) 

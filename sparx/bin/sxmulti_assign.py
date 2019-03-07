@@ -41,6 +41,8 @@ from   global_def import *
 from   optparse import OptionParser
 import sys, configparser
 
+import mpi
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " configure_file.cfg"
@@ -77,8 +79,7 @@ def main():
 		disable_bdb_cache()
 
 	if options.MPI:
-		from mpi import mpi_init
-		sys.argv = mpi_init(len(sys.argv),sys.argv)		
+		sys.argv = mpi.mpi_init(len(sys.argv),sys.argv)		
 		
 	from development import multi_assign
 	global_def.BATCH = True
@@ -86,12 +87,10 @@ def main():
 			options.CTF, options.CUDA, options.GPUID, options.SA, options.T, options.F, options.heads_up, options.MPI)
 	global_def.BATCH = False
 
-	if options.MPI:
-		from mpi import mpi_finalize
-		mpi_finalize()
-
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	if "OMPI_COMM_WORLD_SIZE" in os.environ:
+		mpi.mpi_finalize()

@@ -41,6 +41,8 @@ from global_def import sxprint, ERROR
 
 from builtins import range
 
+import mpi
+
 def main():
 	arglist = []
 	for arg in sys.argv:
@@ -133,8 +135,7 @@ def main():
 		for i in range(len(y_restrict)): y_restrict2 +=  str(float(y_restrict[i])/options.apix)+" "
 		y_restrict2 = y_restrict2[:-1]
 
-		from mpi import mpi_init, mpi_finalize
-		sys.argv = mpi_init(len(sys.argv), sys.argv)
+		sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
 
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
@@ -160,10 +161,9 @@ def main():
 			options.apix, options.debug, y_restrict2, options.searchit, options.slowIO)
 		global_def.BATCH = False
 	
-		from mpi import mpi_finalize
-		mpi_finalize()
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	mpi.mpi_finalize()
