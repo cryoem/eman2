@@ -6196,7 +6196,7 @@ def update_tracker(shell_line_command):
 	try:
 			Tracker["constants"]["user_func_volume"]
 	except KeyError:
-			Tracker["constants"]["user_func_volume"] = "ai_spa"
+			Tracker["constants"]["user_func_volume"] = "do_volume_mask"
 	try:
 			Tracker["constants"]["user_func_ai"]
 	except KeyError:
