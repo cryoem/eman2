@@ -80,7 +80,7 @@ def combine_and_order_filaments(prior_tracker):
         )
 
 
-def import_data_sphire(tracker, has_ISAC_class_id, params_file=None, index_file=None):
+def import_data_sphire(tracker, group_id, params_file=None, index_file=None):
     """
     Import the original stack information and create a tracker for the following calculations.
     :tracker: File name or dictionary - if dictionary it needs to contain the key stack or stack_prior:
@@ -92,13 +92,13 @@ def import_data_sphire(tracker, has_ISAC_class_id, params_file=None, index_file=
     prior_tracker = {}
     # Import the original stack for different input cases
     if isinstance(tracker, basestring):
-        original_stack = mhs.import_sphire_stack(stack_path=tracker, has_ISAC_class_id=has_ISAC_class_id)
+        original_stack = mhs.import_sphire_stack(stack_path=tracker, group_id=group_id)
     elif isinstance(tracker, dict):
         # Only load the stack if it is not already loaded
         if 'stack_prior' in tracker['constants']:
             original_stack = tracker['constants']['stack_prior']
         else:
-            original_stack = mhs.import_sphire_stack(stack_path=tracker['constants']['stack'], has_ISAC_class_id=has_ISAC_class_id)
+            original_stack = mhs.import_sphire_stack(stack_path=tracker['constants']['stack'], group_id=group_id)
     else:
         print('Unreachable code!')
         assert(False)
@@ -115,19 +115,26 @@ def import_data_sphire(tracker, has_ISAC_class_id, params_file=None, index_file=
     prior_tracker['order'] = 'source_n'
 
     prior_tracker['micrograph_id'] = 'ptcl_source_image'
-    if has_ISAC_class_id:
-        prior_tracker['ISAC_class_id'] = 'ISAC_class_id'
+    prior_tracker['data_n'] = 'data_n'
 
-    if "filament" and "data_n" in original_stack.dtype.names:
-        prior_tracker['filament_id'] = "filament"
+    prior_tracker[group_id] = group_id
+    if group_id in original_stack_dtype.names and 'filament' not in group_id:
         prior_tracker['segment_id'] = "data_n"
-    elif "filament_id" and "segment_id" and "data_n" in original_stack.dtype.names:
-        prior_tracker['filament_id'] = "filament_id"
+    elif "filament" in original_stack.dtype.names and \
+            "data_n" in original_stack.dtype.names and \
+            'filament' in group_id:
+        prior_tracker['segment_id'] = "data_n"
+    elif "filament_id" in original_stack.dtype.names and \
+            "segment_id" in original_stack.dtype.names and \
+            "data_n" in original_stack.dtype.names and \
+            'filament' in group_id:
         prior_tracker['segment_id'] = "segment_id"
     else:
         print ("ERROR: 'filament_id, segment_id and data_n' or 'filament and data_n' have to be present in the bdb header")
         print ("\t\t you should not be here because I prevent this kind of error in 'ms_helix_sphire.py' in the 'import_sphire_stack' function")
-        exit(-1)
+        exit(1)
+
+
 
     prior_tracker['angle_names'] = [
         ['theta', 'theta_prior', 'theta_rot'],
@@ -190,7 +197,7 @@ def import_data_relion(file_name):
     return prior_tracker
 
 
-def expand_and_order_array(prior_tracker):
+def expand_and_order_array(prior_tracker, group_id):
     """
     Create an array with all columns present and sort it:
     micrograph_id > filament_id > segment_id
@@ -223,7 +230,7 @@ def expand_and_order_array(prior_tracker):
 
     order = [
         prior_tracker['micrograph_id'],
-        prior_tracker['filament_id'],
+        prior_tracker[group_id],
         prior_tracker['segment_id']
         ]
     prior_tracker['array'] = np.sort(array_new, order=order)

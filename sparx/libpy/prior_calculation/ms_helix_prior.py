@@ -53,11 +53,11 @@ def wrapped_distribution(array):
     return mean_list, std_list
 
 
-def get_filaments(prior_tracker):
+def get_filaments(prior_tracker, group_id):
     """Calculate the size and members of each filament with numpy"""
     # Create a list of unique filament names with indices
     filament_names, inverse = np.unique(
-        prior_tracker['array'][prior_tracker['filament_id']],
+        prior_tracker['array'][prior_tracker[group_id]],
         return_inverse=True
         )
     # Loop through the indices and create subarrays

@@ -3,27 +3,45 @@ import numpy as np
 import shutil
 
 
-def import_sphire_stack(stack_path, has_ISAC_class_id):
+def import_sphire_stack(stack_path, group_id):
     """Import the necessary data from a bdb/hdf stack"""
-    dtype_list = [('ptcl_source_image', '|S200'), ('filament', '|S200'), ('data_n', '<i8')] if has_ISAC_class_id is False \
-        else [('ptcl_source_image', '|S200'), ('filament', '|S200'), ('data_n', '<i8'), ('ISAC_class_id', '<i8')]
+    dtype_list = [
+        ('ptcl_source_image', '|S200'),
+        ('filament', '|S200'),
+        ('filament_id', '|S200'),
+        ('segment_id', '<i8'),
+        ('data_n', '<i8'),
+        ('ISAC_class_id', '<i8')
+        ]
+    is_in_dtype = False
+    for entry in dtype_list:
+        if group_id == entry[0]:
+            is_in_dtype = True
+            break
+    if not is_in_dtype:
+        dtype_list.append((group_id, '|S200'))
 
     imported_data = []
     is_filament = True
-    for name, typ in dtype_list:
+    bad_idx = []
+    filament_count = 2
+    for idx, entry in enumerate(dtype_list):
         try:
-            data = sp.EMUtil.get_all_attributes(stack_path, name)
-            imported_data.append(data)
+            data = sp.EMUtil.get_all_attributes(stack_path, entry[0])
         except KeyError:
-            if name == 'filament':
-                dtype_list.extend([('filament_id', '|S200'),('segment_id', '<i8')])
-                is_filament = False
-            else:
-                print (" ERROR: the type '"+name+"' is not present")
-                exit(-1)
-
-    if is_filament is False:
-        dtype_list.remove(('filament', '|S200'))
+            bad_idx.append(idx)
+            if 'filament' in group_id:
+                filament_count -= 1
+                if filament_count == 0:
+                    print('Group_id', group_id, 'needs to be present in the stack header!')
+                    exit(1)
+            elif entry[0] == group_id:
+                print('Group_id', group_id, 'needs to be present in the stack header!')
+                exit(1)
+        else:
+            imported_data.append(data)
+    for idx in reversed(bad_idx):
+        del dtype_list[idx]
 
     data_array = np.empty(len(imported_data[0]), dtype=dtype_list)
 

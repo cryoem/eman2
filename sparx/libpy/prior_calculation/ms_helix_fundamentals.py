@@ -35,7 +35,7 @@ def calculate_priors(
         tracker,
         params_file=None,
         index_file=None,
-        has_class_id=False,        # to insert the 'class_id' in the dtype of the sphire stack array
+        group_id=False, # Name of the column to check | E.g. filament_id, ISAC_class_id
         typ='sphire',
         tol_psi=30,
         tol_theta=15,
@@ -78,7 +78,7 @@ def calculate_priors(
     print('Prior calculation settings:')
     print('-> params_file:', params_file)
     print('-> index_file:', index_file)
-    print('-> has_class_id:', has_class_id)
+    print('-> group_id:', group_id)
     print('-> typ:', typ)
     print('-> tol_psi:', tol_psi)
     print('-> tol_theta:', tol_theta)
@@ -97,7 +97,10 @@ def calculate_priors(
     # Import the stack and get parameters
     if typ == 'sphire':
         prior_tracker = mhl.import_data_sphire(
-            tracker=tracker, index_file=index_file, params_file=params_file, has_ISAC_class_id=has_class_id
+            tracker=tracker,
+            index_file=index_file,
+            params_file=params_file,
+            group_id=group_id,
             )
     elif typ == 'relion':
         prior_tracker = mhl.import_data_relion(file_name=tracker)
@@ -108,10 +111,10 @@ def calculate_priors(
         return None
 
     # Create one huge array and sort the array
-    prior_tracker = mhl.expand_and_order_array(prior_tracker=prior_tracker)
+    prior_tracker = mhl.expand_and_order_array(prior_tracker=prior_tracker, group_id=group_id)
 
     # Seperate each filament into an array
-    prior_tracker = mhp.get_filaments(prior_tracker=prior_tracker)
+    prior_tracker = mhp.get_filaments(prior_tracker=prior_tracker, group_id=group_id)
 
     # Add stuff to prior_tracker
     tolerance_list = [tol_theta, tol_psi]
