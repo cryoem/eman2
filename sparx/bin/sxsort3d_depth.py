@@ -79,7 +79,6 @@ global  Tracker, Blockdata
 import mpi
 
 
-
 mpi.mpi_init(0, [])
 nproc     = mpi.mpi_comm_size( mpi.MPI_COMM_WORLD )
 myid      = mpi.mpi_comm_rank( mpi.MPI_COMM_WORLD )
@@ -95,15 +94,15 @@ Blockdata["myid_on_node"]                   = mpi.mpi_comm_rank( Blockdata["shar
 Blockdata["no_of_processes_per_group"]      = mpi.mpi_comm_size( Blockdata["shared_comm"] )
 masters_from_groups_vs_everything_else_comm = mpi.mpi_comm_split( mpi.MPI_COMM_WORLD, 
 																  Blockdata["main_node"] == Blockdata["myid_on_node"], 
-																  Blockdata["myid_on_node"] )
+																  Blockdata["myid_on_node"],
 																  Blockdata["color"], 
 																  Blockdata["no_of_groups"], 
 																  balanced_processor_load_on_nodes = get_colors_and_subsets(Blockdata["main_node"], 
-																  mpi.MPI_COMM_WORLD, 
-																  Blockdata["myid"],
-																  Blockdata["shared_comm"], 
-																  Blockdata["myid_on_node"], 
-																  masters_from_groups_vs_everything_else_comm )
+																															mpi.MPI_COMM_WORLD, 
+																															Blockdata["myid"],
+																															Blockdata["shared_comm"], 
+																															Blockdata["myid_on_node"], 
+																															masters_from_groups_vs_everything_else_comm) )
 #  We need two nodes for processing of volumes
 if(Blockdata["no_of_groups"] > 1):
 	Blockdata["node_volume"] = [Blockdata["no_of_groups"]-2, Blockdata["no_of_groups"]-1]
@@ -3812,7 +3811,6 @@ def recons3d_4nnsorting_MPI(myid, main_node, prjlist, random_subset, CTF = True,
 	from fundamentals	import fft
 	from statistics	    import fsc
 	from EMAN2			import Reconstructors
-	from mpi			import mpi.MPI_COMM_WORLD, mpi.mpi_barrier
 	import types
 	import datetime
 	if mpi_comm == None: mpi_comm = mpi.MPI_COMM_WORLD
@@ -5040,7 +5038,6 @@ def recons3d_trl_struct_group_nofsc_shifted_data_partial_MPI(myid, main_node, np
 	from EMAN2        import Reconstructors
 	from filter	      import filt_table
 	from fundamentals import fshift
-	from mpi          import mpi.MPI_COMM_WORLD, mpi.mpi_barrier
 	import types
 	import datetime
 	if mpi_comm == None: mpi_comm = mpi.MPI_COMM_WORLD
@@ -5194,7 +5191,6 @@ def recons3d_trl_struct_group_nofsc_shifted_data_MPI(myid, main_node,\
 	from EMAN2        import Reconstructors
 	from filter	      import filt_table
 	from fundamentals import fshift
-	from mpi          import mpi.MPI_COMM_WORLD, mpi.mpi_barrier
 	import types
 	import datetime
 	if mpi_comm == None: mpi_comm = mpi.MPI_COMM_WORLD
@@ -5282,7 +5278,6 @@ def recons3d_trl_struct_group_MPI(myid, main_node, prjlist, random_subset, group
 	from EMAN2        import Reconstructors
 	from filter	      import filt_table
 	from fundamentals import fshift
-	from mpi          import mpi.MPI_COMM_WORLD, mpi.mpi_barrier
 	import types
 	import datetime
 	import copy
@@ -5521,7 +5516,6 @@ def recons3d_4nnsorting_group_fsc_MPI(myid, main_node, prjlist, fsc_half, random
 	from utilities      import reduce_EMData_to_root, random_string, get_im, findall, model_blank, info, get_params_proj
 	from EMAN2          import Reconstructors
 	from filter		    import filt_table
-	from mpi            import mpi.MPI_COMM_WORLD, mpi.mpi_barrier
 	from statistics     import fsc 
 	from reconstruction import insert_slices_pdf
 	from fundamentals   import fft
