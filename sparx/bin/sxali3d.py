@@ -40,6 +40,8 @@ from global_def import *
 from optparse import OptionParser
 import sys
 
+import mpi
+
 def main():
 
 	arglist = []
@@ -176,10 +178,10 @@ def main():
 				options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct)
 				global_def.BATCH = False
 
-		if options.MPI:
-			mpi_finalize()
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	if "OMPI_COMM_WORLD_SIZE" in os.environ:
+		mpi.mpi_finalize()

@@ -41,6 +41,8 @@ from global_def import *
 from optparse import OptionParser
 import sys
 
+import mpi
+
 def main():
 	arglist = []
 	i = 0
@@ -104,8 +106,7 @@ def main():
 		
 		global_def.BATCH = True
 		if options.MPI:
-			from mpi import mpi_init
-			sys.argv = mpi_init(len(sys.argv),sys.argv)
+			sys.argv = mpi.mpi_init(len(sys.argv),sys.argv)
 			if options.kmeans:
 				from applications import Kmref_ali3d_MPI
 				Kmref_ali3d_MPI(args[0], args[1], args[2], maskfile, options.focus, options.maxit, options.ir, options.ou, options.rs, \
@@ -135,12 +136,10 @@ def main():
 			options.function,  options.npad, options.debug, options.fourvar, options.stoprnct)
 		global_def.BATCH = False
 		
-		if options.MPI:
-			from mpi import mpi_finalize
-			mpi_finalize()
-
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	if "OMPI_COMM_WORLD_SIZE" in os.environ:
+		mpi.mpi_finalize()

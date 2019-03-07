@@ -17,7 +17,16 @@ from    numpy       import array
 from    logger      import Logger, BaseLogger_Files
 from    morphology  import 	get_shrink_3dmask
 
-	
+import mpi
+
+# utilities
+from utilities      import get_im,bcast_number_to_all,cmdexecute,write_text_file,read_text_file,wrap_mpi_bcast
+from applications   import recons3d_n_MPI, mref_ali3d_MPI, Kmref_ali3d_MPI
+from statistics     import k_means_match_clusters_asg_new,k_means_stab_bbenum
+from reconstruction import rec3D_MPI_noCTF,rec3D_two_chunks_MPI
+from applications   import mref_ali3d_EQ_Kmeans, ali3d_mref_Kmeans_MPI  
+
+
 def main():
 	from time import sleep
 	from logger import Logger, BaseLogger_Files
@@ -86,19 +95,14 @@ def main():
 		orgstack                        =args[0]
 		masterdir                       =args[1]
 		global_def.BATCH = True
+
 		#---initialize MPI related variables
-		from mpi import mpi_init, mpi_comm_size, MPI_COMM_WORLD, mpi_comm_rank,mpi_barrier,mpi_bcast, mpi_bcast, MPI_INT
-		sys.argv  = mpi_init(len(sys.argv),sys.argv)
-		nproc     = mpi_comm_size(MPI_COMM_WORLD)
-		myid      = mpi_comm_rank(MPI_COMM_WORLD)
-		mpi_comm  = MPI_COMM_WORLD
+		sys.argv  = mpi.mpi_init(len(sys.argv),sys.argv)
+		nproc     = mpi.mpi_comm_size( mpi.MPI_COMM_WORLD )
+		myid      = mpi.mpi_comm_rank( mpi.MPI_COMM_WORLD )
+		mpi_comm  = mpi.MPI_COMM_WORLD
 		main_node = 0
-		# import some utilities
-		from utilities import get_im,bcast_number_to_all,cmdexecute,write_text_file,read_text_file,wrap_mpi_bcast
-		from applications import recons3d_n_MPI, mref_ali3d_MPI, Kmref_ali3d_MPI
-		from statistics import k_means_match_clusters_asg_new,k_means_stab_bbenum
-		from reconstruction import rec3D_MPI_noCTF,rec3D_two_chunks_MPI
-		from applications import mref_ali3d_EQ_Kmeans, ali3d_mref_Kmeans_MPI  
+
 		# Create the main log file
 		from logger import Logger,BaseLogger_Files
 		if myid ==main_node:
@@ -238,7 +242,6 @@ def main():
 			pixel_size = 1.0
 		nnxo = bcast_number_to_all(nnxo, source_node = main_node)
 		if( nnxo < 0 ):
-			mpi_finalize()
 			return
 		pixel_size                           = bcast_number_to_all(pixel_size, source_node = main_node)
 		fq                                   = bcast_number_to_all(fq, source_node = main_node)
@@ -271,18 +274,18 @@ def main():
 			os.system(cmd)			
 		else:
 			li=0
-		li = mpi_bcast(li,1,MPI_INT,main_node,MPI_COMM_WORLD)[0]
+		li = mpi.mpi_bcast( li, 1, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD )[0]
 		if li>0:
-			masterdir = mpi_bcast(masterdir,li,MPI_CHAR,main_node,MPI_COMM_WORLD)
+			masterdir = mpi.mpi_bcast( masterdir, li,MPI_CHAR, main_node, mpi.MPI_COMM_WORLD )
 			masterdir = string.join(masterdir,"")
 		####--- masterdir done!
-		if myid ==main_node:
+		if myid == main_node:
 			print_dict(Tracker["constants"],"Permanent settings of 3-D sorting program")
 		from time import sleep
 		while not os.path.exists(masterdir):  # Be sure each proc is able to access the created dir
 				sxprint("Node ",myid,"  waiting...")
 				sleep(5)
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		######### create a vstack from input stack to the local stack in masterdir
 		# stack name set to default
 		Tracker["constants"]["stack"]          = "bdb:"+masterdir+"/rdata"
@@ -312,7 +315,7 @@ def main():
 				DB[i] = OB[i]
 			OB.close()
 			DB.close()
-	   	mpi_barrier(MPI_COMM_WORLD)
+	   	mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 	   	if myid==main_node:
 			params= []
 			for i in xrange(total_stack):
@@ -320,7 +323,7 @@ def main():
 				phi,theta,psi,s2x,s2y = get_params_proj(e)
 				params.append([phi,theta,psi,s2x,s2y])
 			write_text_row(params,Tracker["constants"]["ali3d"])
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 		"""
 		#Tracker["total_stack"]             = total_stack
 		Tracker["constants"]["total_stack"] = total_stack
@@ -397,7 +400,7 @@ def main():
 		###### Fill chunk ID into headers when calling get_shrink_data_huang
 		if myid ==main_node:
 			sxprint(" random odd and even assignment done  !")
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 		#------------------------------------------------------------------------------
 		Tracker["chunk_dict"] = {}
 		for element in chunk_one: Tracker["chunk_dict"][element] = 0
@@ -408,7 +411,7 @@ def main():
 		if myid == main_node:
 			write_text_file(chunk_one, os.path.join(masterdir,"chunk0.txt"))
 			write_text_file(chunk_two, os.path.join(masterdir,"chunk1.txt"))
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 		vols = []
 		for index in range(2):
 			data1,old_shifts1 = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"], os.path.join(masterdir,"chunk%d.txt"%index), Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
@@ -418,7 +421,7 @@ def main():
 				vol1.write_image(vol1_file_name)
 			
 			vols.append(vol1)
-			mpi_barrier(MPI_COMM_WORLD)
+			mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 		if myid ==main_node:
 			low_pass, falloff, currentres = get_resolution_mrk01(vols, Tracker["constants"]["radius"]*Tracker["shrinkage"], Tracker["constants"]["nxinit"], masterdir,Tracker["mask3D"])
 			if low_pass   > Tracker["constants"]["low_pass_filter"]: low_pass  = Tracker["constants"]["low_pass_filter"]
@@ -457,7 +460,7 @@ def main():
 			filt_tanl(get_im(os.path.join(masterdir, "vol0.hdf")), Tracker["low_pass_filter"], 0.1).write_image(os.path.join(masterdir, "volf0.hdf"))			
 			filt_tanl(get_im(os.path.join(masterdir, "vol1.hdf")), Tracker["low_pass_filter"], 0.1).write_image(os.path.join(masterdir, "volf1.hdf"))
 			sxprint(" random odd and even assignment done  !")
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 		## ---------------------------------------------------------------------------------------------########
 		## Stop program and output results when the leftover from two sort3d runs is not sufficient for a new run    		########
 		## ---------------------------------------------------  ---------------------------------------  ######
@@ -480,10 +483,8 @@ def main():
 					volref, fscc = rec3D_two_chunks_MPI(data, 1.0, Tracker["constants"]["sym"], mask3d,os.path.join(masterdir,"resolution_%02d.txt"%igrp), myid, main_node, index =-1, npad=2)
 				else: 
 					sxprint("Missing CTF flag!")
-					from mpi import mpi_finalize
-					mpi_finalize()
 					return
-				mpi_barrier(MPI_COMM_WORLD)
+				mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 
 				#nx_of_image=volref.get_xsize()
 				if Tracker["constants"]["PWadjustment"] :		Tracker["PWadjustment"] = Tracker["PW_dict"][Tracker["constants"]["nnxo"]]
@@ -509,9 +510,7 @@ def main():
 					cutoff = Tracker["constants"]["pixel_size"]/lowpass
 					log_main.add("%d vol low pass filer %f   %f  cut to  %f Angstrom"%(igrp,Tracker["lowpass"],Tracker["falloff"],cutoff))
 					volref.write_image(os.path.join(masterdir,"volf_final%d.hdf"%igrp))
-			mpi_barrier(MPI_COMM_WORLD)			
-			from mpi import mpi_finalize
-			mpi_finalize()
+			mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 			return
 		else: # Continue clustering on unaccounted ones that produced by two_way comparison of two previous runs
 			#########################################################################################################################
@@ -526,7 +525,7 @@ def main():
 			number_of_P2_runs    = 2  # Notice P2 start from two P1 runs
 			### input list_to_be_processed
 			import copy
-			mpi_barrier(MPI_COMM_WORLD)
+			mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 			for iter_P2_run in range(number_of_P2_runs): # two runs such that one can obtain reproducibility
 				list_to_be_processed = left_one_from_old_two_runs[:]#Tracker["this_unaccounted_list"][:]
 				Tracker["this_unaccounted_list"] = left_one_from_old_two_runs[:]
@@ -541,7 +540,7 @@ def main():
 					log_main.add("----------------P2 independent run %d--------------"%iter_P2_run)
 					log_main.add("user provided number_of_images_per_group %d"%Tracker["constants"]["number_of_images_per_group"])
 					sxprint("----------------P2 independent run %d--------------"%iter_P2_run)
-				mpi_barrier(MPI_COMM_WORLD)
+				mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 				#
 				#Tracker["number_of_groups"] = get_number_of_groups(total_stack,Tracker["constants"]["number_of_images_per_group"])
 				generation                  = 0
@@ -565,7 +564,7 @@ def main():
 						sxprint("---- generation         %5d"%generation)
 						#core=read_text_row(Tracker["constants"]["ali3d"],-1)
 						#write_text_row(core, os.path.join(workdir,"node%d.txt"%myid))
-					mpi_barrier(MPI_COMM_WORLD)
+					mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 					Tracker["this_data_list"]         = list_to_be_processed # leftover of P1 runs
 					Tracker["total_stack"]            = len(list_to_be_processed)
 					create_random_list(Tracker)
@@ -578,7 +577,7 @@ def main():
 						Tracker["this_particle_list"] = Tracker["this_indep_list"][indep_run]
 						ref_vol = recons_mref(Tracker)
 						if myid ==main_node:   log_main.add("independent run  %10d"%indep_run)
-						mpi_barrier(MPI_COMM_WORLD)
+						mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 						#this_particle_text_file =  # for get_shrink_data
 						if myid ==main_node:
 							write_text_file(list_to_be_processed, os.path.join(workdir, "independent_list_%03d.txt"%indep_run))
@@ -596,7 +595,7 @@ def main():
 							Tracker["this_data_list"]      = Tracker["two_way_stable_member"][igrp]
 							write_text_file(Tracker["this_data_list"], os.path.join(workdir,"stable_class%d.txt"%igrp))
 					Tracker["this_data_list_file"] = -1
-					mpi_barrier(MPI_COMM_WORLD)
+					mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 					###
 					number_of_ref_class = []
 					ref_vol_list = []
@@ -610,7 +609,7 @@ def main():
 						#ref_vol_list=apply_low_pass_filter(ref_vol_list,Tracker)
 						for iref in range(len(ref_vol_list)): ref_vol_list[iref].write_image(os.path.join(workdir,"vol_stable.hdf"),iref)
 						
-					mpi_barrier(MPI_COMM_WORLD)
+					mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 					################################
 					
 					Tracker["number_of_ref_class"]       = number_of_ref_class
@@ -623,7 +622,7 @@ def main():
 					if myid == main_node: write_text_file(Tracker["this_unaccounted_list"], Tracker["this_unaccounted_text"])
 					Tracker["number_of_groups"]          = len(res_classes)
 					### Update data
-					mpi_barrier(MPI_COMM_WORLD)
+					mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 					if myid == main_node:
 						number_of_ref_class=[]
 						log_main.add(" Compute volumes of original size")
@@ -637,7 +636,7 @@ def main():
 					
 					################################
 					
-					mpi_barrier(MPI_COMM_WORLD)
+					mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 					if myid ==main_node:
 						vol_list = []
 					for igrp in range(Tracker["number_of_groups"]):
@@ -648,7 +647,7 @@ def main():
 							vol_list.append(volref)
 							log_main.add(" vol   %d is done"%igrp)
 					Tracker["number_of_ref_class"] = number_of_ref_class
-					mpi_barrier(MPI_COMM_WORLD)
+					mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 					generation +=1
 					#################################
 					
@@ -666,7 +665,7 @@ def main():
 					del list_to_be_processed
 					list_to_be_processed             = copy.deepcopy(Tracker["this_unaccounted_list"]) 
 					Tracker["number_of_groups"]      = get_number_of_groups(len(list_to_be_processed),Tracker["constants"]["number_of_images_per_group"])
-					mpi_barrier(MPI_COMM_WORLD)
+					mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 					
 	#############################################################################################################################
 				### Reconstruct the unaccounted is only done once
@@ -699,14 +698,14 @@ def main():
 					log_main.add("total number %d"%len(final_list))
 				else:  final_list = 0
 				Tracker["number_of_groups"] = bcast_number_to_all(Tracker["number_of_groups"],source_node = main_node)
-				mpi_barrier(MPI_COMM_WORLD)
+				mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 				final_list = wrap_mpi_bcast(final_list, main_node)
 				workdir = os.path.join(P2_run_dir,"Exhaustive_Kmeans") # new workdir 
 				if myid==main_node:
 					os.mkdir(workdir)
 					write_text_file(final_list, os.path.join(workdir,"final_list.txt"))
 				else: new_stable1 = 0
-				mpi_barrier(MPI_COMM_WORLD)
+				mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 				## Create reference volumes
 		
 				if myid == main_node:
@@ -719,7 +718,7 @@ def main():
 				else:  number_of_ref_class= 0
 				number_of_ref_class = wrap_mpi_bcast(number_of_ref_class,main_node)
 		
-				mpi_barrier(MPI_COMM_WORLD)
+				mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 				ref_vol_list = []
 				for igrp in range(Tracker["number_of_groups"]):
 					if myid ==main_node : sxprint(" prepare reference %d"%igrp)
@@ -732,7 +731,7 @@ def main():
 					#volref = resample(volref,Tracker["shrinkage"])
 					bcast_EMData_to_all(volref, myid, main_node)
 					ref_vol_list.append(volref)
-				mpi_barrier(MPI_COMM_WORLD)
+				mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 				### -------variables used in Kmeans_exhaustive_run-----
 				Tracker["number_of_ref_class"] = number_of_ref_class
 				Tracker["this_data_list"]      = final_list
@@ -745,7 +744,7 @@ def main():
 					log_main.add(" the number of groups after exhaustive Kmeans is %d"%len(KE_group))
 					for ike in range(len(KE_group)):log_main.add(" group   %d   number of objects %d"%(ike,len(KE_group[ike])))
 					del new_stable1
-				mpi_barrier(MPI_COMM_WORLD)
+				mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 			if myid == main_node:   log_main.add("P2 runs are done, now start two-way comparision to exclude those that are not reproduced ")
 			reproduced_groups = two_way_comparison_single(P2_partitions[0],P2_partitions[1],Tracker)# Here partition IDs are original indexes.
 			###### ----------------Reconstruct reproduced groups------------------------#######
@@ -756,7 +755,7 @@ def main():
 					write_text_file(reproduced_groups[index_of_reproduced_groups],name_of_class_file)
 				log_main.add("-------start to reconstruct reproduced volumes individully to orignal size-----------")
 				
-			mpi_barrier(MPI_COMM_WORLD)
+			mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 			if Tracker["constants"]["mask3D"]: mask_3d = get_shrink_3dmask(Tracker["constants"]["nnxo"],Tracker["constants"]["mask3D"])
 			else:                              mask_3d = None
 			
@@ -768,10 +767,8 @@ def main():
 										os.path.join(masterdir,"resolution_%02d.txt"%igrp),myid,main_node,index =-1,npad =2,finfo=None)
 				else: 
 					sxprint("Missing CTF flag!")
-					from mpi import mpi_finalize
-					mpi_finalize()
 					return
-				mpi_barrier(MPI_COMM_WORLD)
+				mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 				fscc        = read_text_file(os.path.join(masterdir, "resolution_%02d.txt"%igrp),-1)
 				nx_of_image = volref.get_xsize()
 				if Tracker["constants"]["PWadjustment"]:	Tracker["PWadjustment"] = Tracker["PW_dict"][nx_of_image]
@@ -799,12 +796,11 @@ def main():
 					volref.write_image(os.path.join(masterdir,"volf_final%d.hdf"%igrp))
 		if myid==main_node:   log_main.add(" sxsort3d_P2 finishes. ")
 		# Finish program
-		mpi_barrier(MPI_COMM_WORLD)
-		from mpi import mpi_finalize
-		mpi_finalize()
+		mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 		return
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	mpi.mpi_finalize()

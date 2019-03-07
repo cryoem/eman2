@@ -428,8 +428,6 @@ def main(args):
 			average_time / float(60),
 			))
 
-	mpi.mpi_finalize()
-
 
 if __name__ == '__main__':
 	global_def.print_timestamp('Start')
@@ -437,3 +435,4 @@ if __name__ == '__main__':
 	main(parse_args())
 	global_def.BATCH = False
 	global_def.print_timestamp('Finish')
+	mpi.mpi_finalize()

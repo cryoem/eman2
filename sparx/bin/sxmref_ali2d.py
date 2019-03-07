@@ -40,6 +40,8 @@ from global_def import *
 from optparse import OptionParser
 import sys
 
+import mpi
+
 def main():
 	arglist = []
 	for arg in sys.argv:
@@ -81,8 +83,7 @@ def main():
 			disable_bdb_cache()
 		
 		if options.MPI:
-			from mpi import mpi_init
-			sys.argv = mpi_init(len(sys.argv), sys.argv)
+			sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
 
 		global_def.BATCH = True
 		if options.EQ:
@@ -94,12 +95,11 @@ def main():
 			from applications import mref_ali2d
 			mref_ali2d(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.CTF, options.snr, options.function, options.rand_seed, options.MPI)
 		global_def.BATCH = False
-		if options.MPI:
-			from mpi import mpi_finalize
-			mpi_finalize()
 
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	if "OMPI_COMM_WORLD_SIZE" in os.environ:
+		mpi.mpi_finalize()

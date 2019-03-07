@@ -41,6 +41,14 @@ from   global_def import *
 from   optparse import OptionParser
 import sys
 
+import mpi
+
+#
+#
+# NOTE: this does not invoke mpi.mpi_init(); the mpi version probably does not work b/c of that
+#
+#
+
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
@@ -91,11 +99,11 @@ def main():
 			     options.maxit, options.trials, options.crit, options.CTF, 0.0, 0.0, 
 			     options.MPI, False, options.debug, options.normalize, options.init_method)
 		global_def.BATCH = False
-		if options.MPI:
-			from mpi import mpi_finalize
-			mpi_finalize()
+
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	if "OMPI_COMM_WORLD_SIZE" in os.environ:
+		mpi.mpi_finalize()

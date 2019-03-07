@@ -43,6 +43,7 @@ from	EMAN2 		import EMUtil
 import	os
 import	sys
 from 	time		import	time
+import mpi
 from mpi import *
 
 """
@@ -839,14 +840,14 @@ def main():
 				log_main.add("Var3D reconstruction took %f12.1 [m]"%((time()-t6)/60.0))
 				log_main.add("Total computation time %f12.1 [m]"%((time()-t0)/60.0))
 				log_main.add("sx3dvariability finishes")
-		from mpi import mpi_finalize
-		mpi_finalize()
 		
-		if RUNNING_UNDER_MPI: global_def.MPI = False
-
+		if RUNNING_UNDER_MPI: 
+			global_def.MPI = False
+			
 		global_def.BATCH = False
 
 if __name__=="__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	mpi.mpi_finalize()
