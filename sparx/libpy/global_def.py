@@ -150,9 +150,12 @@ def print_timestamp( tag="" ):
 		[Start] : 2019-02-07 11:29:37
 	"""
 	
-	mpi_rank = -1 if not "OMPI_COMM_WORLD_SIZE" in os.environ else mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
+	try:
+		mpi_rank = int( os.environ['OMPI_COMM_WORLD_RANK'] )
+	except KeyError:
+		mpi_rank = 0
 
-	if mpi_rank < 1:
+	if mpi_rank == 0:
 		if tag != "": 
 			print( "["+tag+"] : ", end="" )
 		print( get_timestamp() )
