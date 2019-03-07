@@ -160,6 +160,14 @@ def print_timestamp( tag="" ):
 			print( "["+tag+"] : ", end="" )
 		print( get_timestamp() )
 
+def write_command(output_folder=None):
+
+	command = " ".join(sys.argv)
+	if output_folder:
+		with open(os.path.join(output_folder,'command.txt'), 'a') as the_command:
+			the_command.write(command)
+
+	sxprint(command)
 
 def sxprint( *args, **kwargs ):
 	"""
