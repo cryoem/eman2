@@ -1663,12 +1663,12 @@ class SXDriftUnblur(QMainWindow, Ui_MSMainWidget):
             strInputFile = str(PyQt4QFileDialog.getOpenFileName(
                 directory=os.getcwd(),
                 options=PyQt4QFileDialog.DontUseNativeDialog,
-                filter='Unblur (*.txt);;MotionCor2 (*.log);;All (*)'))
+                filter='cisTEM 1.0.0 (*.log);;Unblur (*.txt);;MotionCor2 (*.log);;All (*)'))
         except:
             strInputFile, not_in_use = PyQt5QFileDialog.getOpenFileName(
                 directory=os.getcwd(),
                 options=PyQt5QFileDialog.DontUseNativeDialog,
-                filter='Unblur (*.txt);;MotionCor2 (*.log);;All (*)')
+                filter='cisTEM 1.0.0 (*.log);;Unblur (*.txt);;MotionCor2 (*.log);;All (*)')
 
         # If the return value is not empty, fill the line edit
         if self.strInputDir != '':
