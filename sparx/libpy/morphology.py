@@ -617,6 +617,8 @@ def ctf_1d_np(nx, ctf, sign = 1, doabs = False, istart = 0, istop=-1):
 
 def reference_ctfs(nln = 1500, Cs = 0.0, volt = 300.0, Pixel_size = 1.0, ampcont = 10.0, \
 					low_def = 1000.0, high_def = 50000.0, low_fpix = 100, high_fpix = 600):
+	from utilities import generate_ctf
+	from morphology import ctf_1d_np, ctf_2_np
 	import numpy as np
 
 	high_fpix = 600
@@ -638,8 +640,7 @@ def reference_ctfs(nln = 1500, Cs = 0.0, volt = 300.0, Pixel_size = 1.0, ampcont
 			defc.append(q)
 			cc = np.copy(nc)
 
-	sc = np.asarray(sc)
-	return sc
+	return np.asarray(sc), defc
 
 def ctf_img(nx, ctf, sign = 1, ny = 0, nz = 1):
 	"""
