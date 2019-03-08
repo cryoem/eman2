@@ -1780,9 +1780,11 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 			#   Search all and compare with direct to figure what keepfirst might be
 			keepfirst = (n_coarse_ang *  n_coarse_psi)/10#keepfirst = (n_coarse_ang *  n_coarse_psi * n_coarse_shifts)/10
 
+			print(Blockdata['myid'], im, 'if start')
 			xod2 = np.asarray(Util.multiref_Crosrng_msg_stack_stepsi(dataimage, bigbuffer, \
 					coarse_shifts_shrank,\
 					numr, [coarse_angles[ic][2] for ic in range(n_coarse_ang)], coarse_delta, cnx, keepfirst))
+			print(Blockdata['myid'], im, 'if end')
 
 			assert(len(xod2) == keepfirst)
 
@@ -1847,9 +1849,11 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		else:
 			#Tracker["keepfirst"] = min(200,nang)#min(max(lxod1/25,200),lxod1)
 
+			print(Blockdata['myid'], im, 'else start')
 			xod2 = np.asarray(Util.multiref_Crosrng_msg_stack_stepsi(dataimage, bigbuffer, \
 					coarse_shifts_shrank,\
 					numr, [coarse_angles[ic][2] for ic in range(n_coarse_ang)], coarse_delta, cnx, Tracker["keepfirst"]))
+			print(Blockdata['myid'], im, 'else end')
 
 			xod1 = np.ndarray((Tracker["keepfirst"]),dtype='f4',order="C")
 
@@ -6832,8 +6836,8 @@ def main():
 				ERROR( "Local searches requested, delta cannot be larger than 3.75.", myid=Blockdata["myid"] )
 				return
 
-			setattr(options, initialshifts, True)
-			setattr(options, skip_prealignment, True)
+			setattr(options, 'initialshifts', True)
+			setattr(options, 'skip_prealignment', True)
 
 		else:
 			# case1: standard meridien run
@@ -7134,31 +7138,31 @@ def main():
 			if Blockdata['myid'] == Blockdata['main_node']:
 				sxprint('2D pre-alignment step')
 
-			nxrsteps = 4
 			kwargs = dict()
 
-			kwargs["init2dir"]  							= init2dir
-			kwargs["myid"]      							= Blockdata["myid"]
-			kwargs["main_node"] 							= Blockdata["main_node"]
-			kwargs["number_of_images_in_stack"] 			= total_stack
-			kwargs["nproc"] 								= Blockdata["nproc"]
+			if not options_skip_prealignment:i
+				kwargs["init2dir"]  							= init2dir
+				kwargs["myid"]      							= Blockdata["myid"]
+				kwargs["main_node"] 							= Blockdata["main_node"]
+				kwargs["number_of_images_in_stack"] 			= total_stack
+				kwargs["nproc"] 								= Blockdata["nproc"]
 
-			kwargs["target_radius"] 						= options.target_radius
-			# kwargs["target_nx"] = target_nx
-			kwargs["radi"] 									= options.radius
+				kwargs["target_radius"] 						= options.target_radius
+				# kwargs["target_nx"] = target_nx
+				kwargs["radi"] 									= options.radius
 
-			kwargs["center_method"] 						= options.center_method
+				kwargs["center_method"] 						= options.center_method
 
-			kwargs["nxrsteps"] 								= nxrsteps
+				kwargs["nxrsteps"] 								= 4
 
-			kwargs["command_line_provided_stack_filename"] 	= Tracker["constants"]["stack"]
+				kwargs["command_line_provided_stack_filename"] 	= Tracker["constants"]["stack"]
 
-			# kwargs["masterdir"] = masterdir
+				# kwargs["masterdir"] = masterdir
 
-			kwargs["options_skip_prealignment"] 			= options.skip_prealignment 
-			kwargs["options_CTF"] 							= True
+				kwargs["options_skip_prealignment"] 			= options.skip_prealignment 
+				kwargs["options_CTF"] 							= True
 
-			kwargs["mpi_comm"] 								= MPI_COMM_WORLD
+				kwargs["mpi_comm"] 								= MPI_COMM_WORLD
 			params2d = calculate_2d_params_for_centering(kwargs)
 			del kwargs
 			if Blockdata['myid'] == Blockdata['main_node']:
