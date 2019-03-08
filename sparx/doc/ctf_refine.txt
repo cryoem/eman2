@@ -9,7 +9,7 @@ CTF refine: Refine the defocus per particle
 
 Usage in command line
 
-  sxctf_refine.py meridien path_to_input_stack path_to_output_stack output_directory refinement_dir  --mask=path_to_mask --range=defocus_range --delta=defocus_delta --resolution=nominal_resolution --pixelsize=pixelsize --number_part=NUMBER_PARTICLES
+  sxctf_refine.py meridien path_to_input_stack output_directory output_stackname refinement_dir  --mask=path_to_mask --range=defocus_range --delta=defocus_delta --resolution=nominal_resolution --pixelsize=pixelsize --number_part=NUMBER_PARTICLES
 
 \\
 ===== Typical usage =====
@@ -22,8 +22,8 @@ sxctf_refine.py exists only in non-MPI version.
 ===== Input =====
 === Main Parameters ===
   ; path_to_input_stack : Input stack path  : Path to input stack. (default none)
-  ; path_to_output_stack : Output stack : Path to output stack. (default required)
-  ; output_directory : Output directory : Folder to write statistics etc. (default none)
+  ; output_directory : Output directory : Folder to output files etc. (default none)
+  ; output_stackname : Output stackname : Name to output stack (without bdb:). (default required)
   ; refinement_dir : Meridien directory : Path to Merdien directory.  (default required)
   ; %%--%%mask : Path to mask : Path to mask used. (default none)
 
@@ -43,10 +43,9 @@ creates plot for error in the your output directory
 \\
 === List of Output Files ===
 - A virtual stack with updated header information
-In your output dir:
 - particle_results.txt: list with PARTICLE_ID,ERROR,NEW_DEFOCUS,SIGNIFICANCE
 - error_cdf.png: Plot of the error distribution
-- img folder: One image per micrograph containing defocus maps and error maps
+- img folder: One image per micrograph containing defocus and error maps
 
 
 \\
