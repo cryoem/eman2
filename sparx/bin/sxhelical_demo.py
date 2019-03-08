@@ -362,5 +362,6 @@ def generate_runscript(filename, seg_ny, ptcl_dst, fract):
 	
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
+	global_def.write_command()
 	main()
 	global_def.print_timestamp( "Finish" )

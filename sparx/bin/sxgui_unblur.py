@@ -4663,5 +4663,6 @@ def _main():
 
 if __name__ == '__main__':
     global_def.print_timestamp( "Start" )
+    global_def.write_command()
     _main()
     global_def.print_timestamp( "Finish" )

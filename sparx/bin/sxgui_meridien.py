@@ -576,5 +576,6 @@ def run(args=None):
 
 if __name__ == '__main__':
     global_def.print_timestamp( "Start" )
+    global_def.write_command()
     run()
     global_def.print_timestamp( "Finish" )
