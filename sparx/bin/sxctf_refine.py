@@ -744,9 +744,7 @@ def _main_():
 		params_file_path = args.params
 		chunk_file_path = args.chunk
 		if volume2_file_path is None and chunk_file_path is not None:
-			import sys
-
-			sys.exit(
+			global_def.ERROR(
 				"If chunk file is specified, you need to specify a second volume (-v2)"
 			)
 
@@ -764,6 +762,7 @@ def _main_():
 		global_def.ERROR("Output folder already exists. Stop execution.")
 	else:
 		os.makedirs(output_folder)
+        global_def.write_command(output_folder)
 
 	output_virtual_stack_name = args.ouputstackname
 
