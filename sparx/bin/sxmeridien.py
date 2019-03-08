@@ -6012,7 +6012,7 @@ def recons3d_trl_struct_MPI_nosmearing(myid, main_node, prjlist, parameters, CTF
 	if myid == main_node: return fftvol, weight, refvol
 	else: return None, None, None
 
-def rec3d_continuation_nosmearing(original_data, mpi_comm):
+def rec3d_continuation_nosmearing(mpi_comm):
 	global Tracker, Blockdata
 	
 	original_data	= [None, None]
@@ -7209,7 +7209,7 @@ def main():
 				else: 
 					Tracker["nxinit"] = Tracker["constants"]["nnxo"]
 					
-				rec3d_continuation_nosmearing(original_data, MPI_COMM_WORLD)
+				rec3d_continuation_nosmearing(MPI_COMM_WORLD)
 
 			elif Blockdata['myid'] == Blockdata['main_node']:
 				# Create reference models for each particle group
