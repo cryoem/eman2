@@ -42,6 +42,9 @@ import sys
 
 import mpi
 
+mpi.mpi_init( 0, [] )
+
+
 def main():
 
 	arglist = []
@@ -96,9 +99,6 @@ def main():
 			mask = None
 		else:
 			mask = args[3]
-		if options.MPI:
-			from mpi import mpi_init, mpi_finalize
-			sys.argv = mpi_init(len(sys.argv), sys.argv)
 
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
@@ -183,5 +183,4 @@ if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
-	if "OMPI_COMM_WORLD_SIZE" in os.environ:
-		mpi.mpi_finalize()
+	mpi.mpi_finalize()

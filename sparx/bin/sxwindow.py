@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
-#
 # Author: Toshio Moriya 10/20/2016 (toshio.moriya@mpi-dortmund.mpg.de)
 # Author: T. Durmaz 08/29/2014 (tunay.durmaz@uth.tmc.edu)
 #
@@ -31,6 +29,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 
 from __future__ import print_function
+
 from builtins import range
 import os, sys
 from optparse import OptionParser, SUPPRESS_HELP
@@ -52,6 +51,9 @@ from global_def import sxprint, ERROR
 from global_def import *
 
 import mpi
+
+mpi.mpi_init( 0, [] )
+
 
 # ========================================================================================
 # Define functions for reading coordinates files of different formats.
@@ -315,9 +317,8 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 
 	main_mpi_proc = 0
 	if RUNNING_UNDER_MPI:
-		mpi.mpi_init(0, [])
 		my_mpi_proc_id = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
-		n_mpi_procs = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
+		n_mpi_procs    = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
 	else:
 		my_mpi_proc_id = 0
 		n_mpi_procs = 1
@@ -825,31 +826,29 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		coords_path_list = glob.glob(coords_pattern)
 
 		# Check error condition of coordinates file path list
-		sxprint(
-			"Found %d coordinates files in %s directory."
-			% (len(coords_path_list), os.path.dirname(coords_pattern))
-		)
+		sxprint( "Found %d coordinates files in %s directory." % (len(coords_path_list), os.path.dirname(coords_pattern)) )
+
 		if error_status is None and not coords_path_list:
-			error_status = (
-				"No coordinates files are found in the directory specified by coordinates file path pattern (%s). Please check input_coordinates_pattern argument. Run %s -h for help."
-				% (os.path.dirname(coords_pattern), program_name),
-				getframeinfo(currentframe()),
-			)
+			error_status = ( "No coordinates files are found in the directory specified by coordinates file path pattern (%s). Please check input_coordinates_pattern argument. Run %s -h for help."
+							 % (os.path.dirname(coords_pattern), program_name), getframeinfo(currentframe()) )
 			break
 		assert coords_path_list
 
 		for coords_path in coords_path_list:
+			
 			# Find tail index of coordinates id substring and extract the substring from the coordinates file path
 			coords_id_substr_tail_idx = coords_path.index(coords_pattern_tokens[1])
-			coords_id_substr = coords_path[
-				coords_id_substr_head_idx:coords_id_substr_tail_idx
-			]
+			coords_id_substr = coords_path[ coords_id_substr_head_idx : coords_id_substr_tail_idx ]
+
 			assert coords_path == coords_pattern.replace("*", coords_id_substr)
+			
 			if not coords_id_substr in global_entry_dict:
-				# sxprint("MRK_DEBUG: Added new coords_id_substr (%s) to global_entry_dict from coords_path_list " % (coords_id_substr))
 				global_entry_dict[coords_id_substr] = {}
+			
 			assert coords_id_substr in global_entry_dict
+			
 			global_entry_dict[coords_id_substr][subkey_coords_path] = coords_path
+
 		assert global_entry_dict
 
 		del coords_path_list  # Do not need this anymore
@@ -857,6 +856,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		# --------------------------------------------------------------------------------
 		# If necessary, register micrograph id substrings of CTER partres entries to the global entry dictionary
 		# --------------------------------------------------------------------------------
+
 		if use_real_ctf_params:
 			# This should be string for CTER partres (CTF parameter) file
 			sxprint(" ")
@@ -865,38 +865,22 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			cter_entry_list = read_text_row(ctf_params_src)
 
 			# Check error condition of CTER partres entry list
-			sxprint(
-				"Found %d CTER partres entries in %s."
-				% (len(cter_entry_list), ctf_params_src)
-			)
+			sxprint( "Found %d CTER partres entries in %s." % (len(cter_entry_list), ctf_params_src) )
+
 			if error_status is None and not cter_entry_list:
-				error_status = (
-					"No CTER partres entries are found in %s. Please check input_ctf_params_source argument. Run %s -h for help."
-					% (ctf_params_src, program_name),
-					getframeinfo(currentframe()),
-				)
+				error_status = ( "No CTER partres entries are found in %s. Please check input_ctf_params_source argument. Run %s -h for help."
+								 % (ctf_params_src, program_name), getframeinfo(currentframe()) )
 				break
+
 			assert cter_entry_list
 
-			#
 			# NOTE: 2017/12/05 Toshio Moriya
 			# The following code is to support the old format of CTER partres file. It should be removed near future
-			#
-			if (
-				error_status is None
-				and len(cter_entry_list[0]) != n_idx_cter
-				and len(cter_entry_list[0]) != n_idx_old_cter
-			):
-				error_status = (
-					"The number of columns (%d) has to be %d in %s."
-					% (len(cter_entry_list[0]), n_idx_cter, ctf_params_src),
-					getframeinfo(currentframe()),
-				)
+			if ( error_status is None and len(cter_entry_list[0]) != n_idx_cter and len(cter_entry_list[0]) != n_idx_old_cter ):
+				error_status = ( "The number of columns (%d) has to be %d in %s." % (len(cter_entry_list[0]), n_idx_cter, ctf_params_src), getframeinfo(currentframe()) )
 				break
-			assert (
-				len(cter_entry_list[0]) == n_idx_cter
-				or len(cter_entry_list[0]) == n_idx_old_cter
-			)
+
+			assert( len(cter_entry_list[0]) == n_idx_cter or len(cter_entry_list[0]) == n_idx_old_cter )
 
 			# For NEW CTER partres format (AFTER 2017/12/05)
 			if len(cter_entry_list[0]) == n_idx_cter:
@@ -1051,27 +1035,14 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 					):
 						error_status = (
 							"A micrograph name (%s) in the CTER partres file (%s) does not match with input micrograph basename pattern (%s) (The wild card replacement with '%s' resulted in '%s'). Please check the CTER partres file and correct input micrograph path pattern. Run %s -h for help."
-							% (
-								cter_mic_basename,
-								ctf_params_src,
-								mic_basename_pattern,
-								mic_id_substr,
-								mic_basename_pattern.replace("*", mic_id_substr),
-								program_name,
-							),
-							getframeinfo(currentframe()),
-						)
+							% (cter_mic_basename, ctf_params_src, mic_basename_pattern, mic_id_substr, mic_basename_pattern.replace("*", mic_id_substr), program_name),
+							getframeinfo(currentframe()) )
 						break
 
 					if cter_entry[idx_cter_sd_astig_ang] > options.astigmatism_error:
-						sxprint(
-							"    NOTE: Astigmatism angular SD of %s (%f degree) exceeds specified limit (%f degree). Resetting astigmatism parameters to zeros..."
-							% (
-								cter_mic_basename,
-								cter_entry[idx_cter_sd_astig_ang],
-								options.astigmatism_error,
-							)
-						)
+						sxprint( "    NOTE: Astigmatism angular SD of %s (%f degree) exceeds specified limit (%f degree). Resetting astigmatism parameters to zeros..."
+								 % (cter_mic_basename, cter_entry[idx_cter_sd_astig_ang], options.astigmatism_error) )
+
 						cter_entry[idx_cter_astig_amp] = 0.0
 						cter_entry[idx_cter_astig_ang] = 0.0
 
@@ -1186,13 +1157,9 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 						sxprint(warning_message)
 					sxprint("    Ignores this as an invalid entry.")
 				else:
-					# sxprint("MRK_DEBUG: adding mic_id_substr := ", mic_id_substr)
 					valid_mic_id_substr_list.append(mic_id_substr)
-					# else:
-					# 	assert (not subkey_selected_mic_basename in mic_id_entry)
-					# 	# This entry is not in the selection list. Do nothing
 
-					# Check the input dataset consistency and save the result to a text file, if necessary.
+		# Check the input dataset consistency and save the result to a text file, if necessary.
 		if options.check_consistency:
 			# Create output directory
 			assert not os.path.exists(root_out_dir)
@@ -1213,6 +1180,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				"# The consistency information about micrograph IDs that might have problmes with consistency among the provided dataset.\n"
 			)
 			mic_consistency_check_info_file.write("# \n")
+
 			# Loop over substring id list
 			for mic_id_substr in global_entry_dict:
 				mic_id_entry = global_entry_dict[mic_id_substr]
@@ -1221,100 +1189,91 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				# Check if associated input micrograph path exists
 				if not subkey_input_mic_path in mic_id_entry:
 					input_mic_path = mic_pattern.replace("*", mic_id_substr)
-					consistency_messages.append(
-						"    associated input micrograph %s." % (input_mic_path)
-					)
+					consistency_messages.append( "    associated input micrograph %s." % (input_mic_path) )
 
 					# Check if associated selected micrograph basename exists
 				if not subkey_selected_mic_basename in mic_id_entry:
 					input_mic_path = mic_pattern.replace("*", mic_id_substr)
-					consistency_messages.append(
-						"    associated selected micrograph %s." % (input_mic_path)
-					)
+					consistency_messages.append( "    associated selected micrograph %s." % (input_mic_path) )
 
 					# Check if associated coordinate file exists
 				if not subkey_coords_path in mic_id_entry:
 					coords_path = coords_pattern.replace("*", mic_id_substr)
-					consistency_messages.append(
-						"    associated coordinates file %s." % (coords_path)
-					)
+					consistency_messages.append( "    associated coordinates file %s." % (coords_path) )
 
 				if use_real_ctf_params:
 					# Check if associated CTER partres entry exists
 					if not subkey_cter_entry in mic_id_entry:
 						mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
-						consistency_messages.append(
-							"    associated entry with %s in the CTER partres file %s."
-							% (mic_basename, ctf_params_src)
-						)
+						consistency_messages.append( "    associated entry with %s in the CTER partres file %s." % (mic_basename, ctf_params_src) )
 				else:
 					assert not use_real_ctf_params
 					# All entry must have dummy cter entry
 					assert subkey_cter_entry in mic_id_entry
 
 				if consistency_messages:
-					mic_consistency_check_info_file.write(
-						"Micrograph ID %s might have problems with consistency among the provided dataset:\n"
-						% (mic_id_substr)
-					)
+					mic_consistency_check_info_file.write( "Micrograph ID %s might have problems with consistency among the provided dataset:\n" % (mic_id_substr) )
+
 					for consistency_message in consistency_messages:
 						mic_consistency_check_info_file.write(consistency_message)
 						mic_consistency_check_info_file.write("\n")
 
-						# Close the consistency check file, if necessary
+			# Close the consistency check file, if necessary
 			mic_consistency_check_info_file.flush()
 			mic_consistency_check_info_file.close()
 
-			# Since mic_id_substr is once stored as the key of global_entry_dict and extracted with the key order
-			# we need sort the valid_mic_id_substr_list here
-			# sxprint("MRK_DEBUG: before sort, valid_mic_id_substr_list := ", valid_mic_id_substr_list)
+		# Since mic_id_substr is once stored as the key of global_entry_dict and extracted with the key order
+		# we need sort the valid_mic_id_substr_list here
 		valid_mic_id_substr_list.sort()
-		# sxprint("MRK_DEBUG: after sort, valid_mic_id_substr_list := ", valid_mic_id_substr_list)
 
 		# --------------------------------------------------------------------------------
 		# Print out the summary of input consistency
 		# --------------------------------------------------------------------------------
 		sxprint(" ")
-		sxprint("Summary of dataset consistency check...")
-		sxprint("Detected                           : %6d" % (len(global_entry_dict)))
-		sxprint(
-			"Valid                              : %6d" % (len(valid_mic_id_substr_list))
-		)
-		sxprint(
-			"Rejected by no coordinates file    : %6d"
-			% (len(no_coords_mic_id_substr_list))
-		)
-		if use_real_ctf_params:
-			sxprint(
-				"Rejected by no CTER partres entry  : %6d"
-				% (len(no_cter_entry_mic_id_substr_list))
-			)
+		sxprint( "Summary of dataset consistency check...")
+		sxprint( "Detected                           : %6d" % (len(global_entry_dict)) )
+		sxprint( "Valid                              : %6d" % (len(valid_mic_id_substr_list)) )
+		sxprint( "Rejected by no coordinates file    : %6d" % (len(no_coords_mic_id_substr_list)) )
 
-			# --------------------------------------------------------------------------------
-			# Clean up variables related to tracking of invalid (rejected) micrographs
-			# --------------------------------------------------------------------------------
+		if use_real_ctf_params:
+			sxprint( "Rejected by no CTER partres entry  : %6d" % (len(no_cter_entry_mic_id_substr_list)) )
+
+		# --------------------------------------------------------------------------------
+		# Clean up variables related to tracking of invalid (rejected) micrographs
+		# --------------------------------------------------------------------------------
 		del no_input_mic_id_substr_list
 		del no_coords_mic_id_substr_list
 		del no_cter_entry_mic_id_substr_list
+
+
+
+
+
+
+
+
+
 
 		# --------------------------------------------------------------------------------
 		# Check MPI error condition
 		# --------------------------------------------------------------------------------
 		if error_status is None and len(valid_mic_id_substr_list) < n_mpi_procs:
-			error_status = (
-				"Number of MPI processes (%d) supplied by --np in mpirun cannot be greater than %d (number of valid micrographs that satisfy all criteria to be processed)."
-				% (n_mpi_procs, len(valid_mic_id_substr_list)),
-				getframeinfo(currentframe()),
-			)
+			error_status = ( "Number of MPI processes (%d) supplied by --np in mpirun cannot be greater than %d (number of valid micrographs that satisfy all criteria to be processed)." 
+							 % (n_mpi_procs, len(valid_mic_id_substr_list)), getframeinfo(currentframe()) )
 			break
-
 		break
-		#
-		# NOTE: Toshio Moriya 2016/10/24
-		# The following function takes care of the case when an if-statement uses break for occurence of an error.
-		# However, more elegant way is to use 'exception' statement of exception mechanism...
-		#
-	if_error_then_all_processes_exit_program(error_status)
+
+
+
+
+
+
+
+
+
+
+
+	if_error_then_all_processes_exit_program(error_status) # here three should just be thrown an exception
 
 	# ====================================================================================
 	# Obtain the list of micrograph id sustrings
@@ -1383,11 +1342,37 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			valid_mic_id_substr_list, main_mpi_proc
 		)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 		# Slice the list of valid micrograph id substrings for this mpi process
-		mic_start, mic_end = MPI_start_end(
-			len(valid_mic_id_substr_list), n_mpi_procs, my_mpi_proc_id
-		)
+		mic_start, mic_end = MPI_start_end( len(valid_mic_id_substr_list), n_mpi_procs, my_mpi_proc_id )
 		valid_mic_id_substr_list = valid_mic_id_substr_list[mic_start:mic_end]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 		# generate subdirectories user root_out_dir, one for each process
 		mpi_proc_dir = os.path.join(root_out_dir, "mpi_proc_%03d" % my_mpi_proc_id)
@@ -1632,11 +1617,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				]
 				coords_accepted[-1][idx_id] = coords_id
 			else:
-				coords_reject_out_of_boundary_messages.append(
-					"coordinates ID = %04d: x = %4d, y = %4d, box_size = %4d "
-					% (coords_id, x, y, box_size)
-				)
-				# sxprint("MRK_DEBUG: coords_reject_out_of_boundary_messages[-1] := %s" % coords_reject_out_of_boundary_messages[-1])
+				coords_reject_out_of_boundary_messages.append( "coordinates ID = %04d: x = %4d, y = %4d, box_size = %4d " % (coords_id, x, y, box_size) )
 				continue
 
 		local_particle_id = 0  # can be different from coordinates_id
@@ -2003,8 +1984,7 @@ if __name__ == "__main__":
 	global_def.print_timestamp("Start")
 	main()
 	global_def.print_timestamp("Finish")
-	if "OMPI_COMM_WORLD_SIZE" in os.environ:
-		mpi.mpi_finalize()
+	mpi.mpi_finalize()
 
 # ========================================================================================
 #  END OF FILE

@@ -43,6 +43,9 @@ import sys
 
 import mpi
 
+mpi.mpi_init( 0, [] )
+
+
 def main():
 	arglist = []
 	i = 0
@@ -106,13 +109,14 @@ def main():
 		
 		global_def.BATCH = True
 		if options.MPI:
-			sys.argv = mpi.mpi_init(len(sys.argv),sys.argv)
+
 			if options.kmeans:
 				from applications import Kmref_ali3d_MPI
 				Kmref_ali3d_MPI(args[0], args[1], args[2], maskfile, options.focus, options.maxit, options.ir, options.ou, options.rs, \
 				options.xr, options.yr, options.ts, options.delta, options.an, options.center, \
 				options.nassign, options.nrefine, options.CTF, options.snr, options.ref_a, options.sym, \
 				options.function,  options.npad, options.debug, options.fourvar, options.stoprnct, mpi_comm=None, log=None)
+
 			elif options.kmeans2:
 				if( options.nassign != 0):
 					sxprint("  Setting nassign to zero")
@@ -122,6 +126,7 @@ def main():
 				options.xr, options.yr, options.ts, options.delta, options.an, options.center, \
 				options.nassign, options.nrefine, options.CTF, options.snr, options.ref_a, options.sym, \
 				options.function,  options.npad, options.debug, options.fourvar, options.stoprnct, mpi_comm=None, log=None)
+
 			else:
 				from applications import mref_ali3d_MPI
 				mref_ali3d_MPI(args[0], args[1], args[2], maskfile, options.focus, options.maxit, options.ir, options.ou, options.rs, \
@@ -129,6 +134,7 @@ def main():
 				options.nassign, options.nrefine, options.CTF, options.snr, options.ref_a, options.sym, \
 				options.function,  options.npad, options.debug, options.fourvar, options.stoprnct, mpi_comm = None, log = None)
 		else:
+
 			from applications import mref_ali3d
 			mref_ali3d(args[0], args[1], args[2], maskfile, options.focus, options.maxit, options.ir, options.ou, options.rs, 
 			options.xr, options.yr, options.ts, options.delta, options.an, options.center,
@@ -141,5 +147,4 @@ if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
-	if "OMPI_COMM_WORLD_SIZE" in os.environ:
-		mpi.mpi_finalize()
+	mpi.mpi_finalize()

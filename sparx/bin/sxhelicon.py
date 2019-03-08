@@ -40,6 +40,9 @@ from global_def import sxprint, ERROR
 
 import mpi
 
+mpi.mpi_init( 0, [] )
+
+
 def main():
 	arglist = []
 	for arg in sys.argv:
@@ -117,16 +120,9 @@ def main():
 			ERROR( "ywobble has to be smaller than dp/2" )
 			return
 
-		try:
-			sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
-		except:
-			ERROR( "This program has only MPI version.  Please install MPI library." )
-			return
-
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
-
 
 		if len(args) < 4:
 			mask = None

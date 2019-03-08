@@ -63,6 +63,9 @@ from pixel_error  import ordersegments
 
 import mpi
 
+mpi.mpi_init( 0, [] )
+
+
 #
 # NOTE: there are still more imports strewn throughout the code below
 #
@@ -102,8 +105,6 @@ def main():
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 		
-		sys.argv = mpi.mpi_init(len(sys.argv),sys.argv)
-
 		global_def.BATCH = True
 		if options.oneDx:
 			helicalshiftali_MPI(args[0], mask, options.maxit, options.CTF, options.snr, options.Fourvar, options.search_rng)		

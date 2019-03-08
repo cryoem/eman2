@@ -45,6 +45,8 @@ from     utilities  import if_error_then_all_processes_exit_program
 from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, mpi_barrier, MPI_COMM_WORLD
 import mpi
 
+mpi.mpi_init( 0, [] )
+
 global_def.BATCH = True
 
 
@@ -131,9 +133,8 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 
 	main_mpi_proc = 0
 	if RUNNING_UNDER_MPI:
-		sys.argv = mpi_init(len(sys.argv), sys.argv)
-		my_mpi_proc_id = mpi_comm_rank(MPI_COMM_WORLD)
-		n_mpi_procs = mpi_comm_size(MPI_COMM_WORLD)
+		my_mpi_proc_id = mpi.mpi_comm_rank(MPI_COMM_WORLD)
+		n_mpi_procs    = mpi.mpi_comm_size(MPI_COMM_WORLD)
 		global_def.MPI = True
 
 	else:

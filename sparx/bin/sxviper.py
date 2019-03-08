@@ -22,6 +22,9 @@ from multi_shc import multi_shc
 
 import mpi
 
+mpi.mpi_init( 0, [] )
+
+
 def main(args):
 
 	progname = os.path.basename(sys.argv[0])
@@ -102,8 +105,6 @@ directory		output directory name: into which the results will be written (if it 
 		sxprint("Please run \'" + progname + " -h\' for detailed options" )
 		ERROR( "Invalid number of parameters used. Please see usage information above." )
 		return
-
-	mpi.mpi_init(0, [])
 
 	log = Logger(BaseLogger_Files())
 

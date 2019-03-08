@@ -120,8 +120,8 @@ from   time import localtime, strftime, sleep, time
 global Tracker, Blockdata
 global  target_theta, refang
 
-
 mpi.mpi_init(0, [])
+
 Tracker   = {}
 Blockdata = {}
 #  MPI stuff

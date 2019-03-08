@@ -46,6 +46,7 @@ from global_def import *
 from optparse import OptionParser
 import sys
 
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack_in  stack_out"

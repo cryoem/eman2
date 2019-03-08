@@ -74,6 +74,9 @@ from utilities    import send_EMData, recv_EMData
 from utilities    import get_image, bcast_number_to_all, set_params2D, get_params2D
 from utilities    import group_proj_by_phitheta, model_circle, get_input_from_string
 
+mpi.mpi_init( 0, [] )
+
+
 def main():
 
 	progname = os.path.basename(sys.argv[0])
@@ -97,8 +100,6 @@ def main():
 
 	(options,args) = parser.parse_args()
 	
-
-	sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
 	myid = mpi.mpi_comm_rank(MPI_COMM_WORLD)
 	number_of_proc = mpi.mpi_comm_size(MPI_COMM_WORLD)
 	main_node = 0

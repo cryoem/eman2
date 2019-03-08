@@ -43,6 +43,8 @@ import os
 
 import mpi
 
+mpi.mpi_init( 0, [] )
+
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -81,8 +83,7 @@ def main():
 			disable_bdb_cache()
 
 		if options.MPI:
-			sys.argv = mpi.mpi_init(len(sys.argv),sys.argv)
-			global mpi_rank
+			global mpi_rank # there is no global variable called mpi_rank (or any other, for that matter)
 			mpi_rank = mpi.mpi_comm_rank( mpi.MPI_COMM_WORLD )
 
 
@@ -96,5 +97,4 @@ if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
-	if "OMPI_COMM_WORLD_SIZE" in os.environ:
-		mpi.mpi_finalize()
+	mpi.mpi_finalize()

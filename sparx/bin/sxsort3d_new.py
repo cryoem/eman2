@@ -38,6 +38,7 @@ import mpi
 mpi_init(0, [])
 nproc     = mpi_comm_size(MPI_COMM_WORLD)
 myid      = mpi_comm_rank(MPI_COMM_WORLD)
+
 Blockdata = {}
 #  MPI stuff
 Blockdata["nproc"]              = nproc

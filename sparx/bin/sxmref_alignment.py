@@ -43,6 +43,9 @@ from   optparse       import OptionParser
 
 import mpi
 
+mpi.mpi_init( 0, [] )
+
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " out_averages outdir --ou=outer_radius --xr=x_range --ts=translation_step --maxit=max_iteration --CTF --snr=SNR --function=user_function_name --Fourvar --th_err=threshold_cutoff --ali=kind_of_alignment --center=center_type"
@@ -75,9 +78,6 @@ def main():
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 
-		if options.MPI:
-			sys.argv = mpi.mpi_init(len(sys.argv),sys.argv)		
-
 		global_def.BATCH = True
 		from development import mref_alignment
 		mref_alignment(args[0], args[1], args[2], options.ou, options.xr, options.ts, options.maxit, options.function, options.snr, options.CTF, 
@@ -89,5 +89,4 @@ if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
-	if "OMPI_COMM_WORLD_SIZE" in os.environ:
-		mpi.mpi_finalize()
+	mpi.mpi_finalize()

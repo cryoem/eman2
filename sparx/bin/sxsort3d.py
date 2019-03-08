@@ -21,6 +21,9 @@ from   logger     import Logger, BaseLogger_Files
 
 import mpi
 
+mpi.mpi_init( 0, [] )
+
+
 
 def main():
 	from logger import Logger, BaseLogger_Files
@@ -90,7 +93,6 @@ def main():
 		masterdir                       =args[1]
 		global_def.BATCH = True
 		#---initialize MPI related variables
-		sys.argv = mpi.mpi_init(len(sys.argv),sys.argv)
 		nproc    = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
 		myid     = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
 		mpi_comm = mpi.MPI_COMM_WORLD

@@ -41,6 +41,9 @@ from global_def import *
 
 import mpi
 
+mpi.mpi_init( 0, [] )
+
+
 def main():
 	from   optparse       import OptionParser
 	progname = os.path.basename(sys.argv[0])
@@ -71,9 +74,8 @@ def main():
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
-		if options.MPI:
-			sys.argv = mpi.mpi_init( len(sys.argv), sys.argv )
 
+		if options.MPI:
 
 			arglist = []
 			for arg in sys.argv:
@@ -101,5 +103,4 @@ if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
-	if "OMPI_COMM_WORLD_SIZE" in os.environ:
-		mpi.mpi_finalize()
+	mpi.mpi_finalize()

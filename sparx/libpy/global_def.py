@@ -42,6 +42,8 @@ import inspect
 from EMAN2  import Util, EMData, EMUtil, Transform
 from EMAN2_meta import DATESTAMP
 
+import utilities as util
+
 from random import seed
 
 import mpi  # NOTE: put this import _after_ the EMAN2 imports
@@ -86,15 +88,9 @@ CACHE_DISABLE = False
 
 #________________________________________ System settings: please do not change
 
-global SPARXVERSION
 SPARXVERSION = "SPHIRE v1.2 [rc6] (GitHub: " + DATESTAMP + ")"
-
-global SPARX_MPI_TAG_UNIVERSAL
 SPARX_MPI_TAG_UNIVERSAL = 123456
-
-global SPARX_DOCUMENTATION_WEBSITE
 SPARX_DOCUMENTATION_WEBSITE = "http://sparx-em.org/sparxwiki/"
-
 
 #-------------------------------------------------------------------[ logging ]
 
@@ -113,7 +109,6 @@ def get_timestamp( file_format=False ):
 		return time.strftime( "%Y-%m-%d %H:%M:%S", time.localtime() )
 
 # classic, user-exposed logfile (non-uniform use throughout sparx modules)
-global LOGFILE
 LOGFILE = "logfile_" + get_timestamp( file_format=True )
 LOGFILE_HANDLE  = 0
 IS_LOGFILE_OPEN = False
@@ -129,10 +124,8 @@ try:
 except AttributeError:
 	init_func = 'none'
 
-SXPRINT_LOG = os.path.join(
-	SXPRINT_LOG_PATH,
-	get_timestamp(file_format=True) + "_" + init_func + ".log"
-	)
+SXPRINT_LOG = os.path.join( SXPRINT_LOG_PATH, get_timestamp(file_format=True) + "_" + init_func + ".log" )
+SXPRINT_LOG_SYNC = False # denotes whether SXPRINT_LOG has been synchronized across mpi processes
 
 
 #------------------------------------------------------------[ util functions ]
@@ -140,6 +133,10 @@ SXPRINT_LOG = os.path.join(
 def print_timestamp( tag="" ):
 	"""
 	Utility function to print a generic time stamp plus an optional tag.
+
+	   NOTE: Using the tag "Start" will synchronize the SXPRINT_LOG path across
+	all mpi processes (if mpi is being used). Throughout SPHIRE, this tag is
+	being used before calling main() and after mpi_init() has been called.
 
 	Args:
 		tag (string): optional string that can be added to the time stamp to
@@ -150,13 +147,22 @@ def print_timestamp( tag="" ):
 		[Start] : 2019-02-07 11:29:37
 	"""
 	
+	# are we using mpi?
 	try:
 		mpi_rank = int( os.environ['OMPI_COMM_WORLD_RANK'] )
+
+		# printing the "Start"-tag will sync up the log file names so that all processes use the same logfile
+		if not SXPRINT_LOG_SYNC and "start" in tag.lower():
+			global SXPRINT_LOG, SXPRINT_LOG_SYNC
+			SXPRINT_LOG = util.send_string_to_all( SXPRINT_LOG, 0 )
+			SXPRINT_LOG_SYNC = True
+
+	# if there is no such thing as OMPI_COMM_WORLD_RANK, then we're not using mpi
 	except KeyError:
 		mpi_rank = 0
 
 	if mpi_rank == 0:
-		if tag != "": 
+		if tag != "":
 			print( "["+tag+"] : ", end="" )
 		print( get_timestamp() )
 
@@ -182,22 +188,21 @@ def sxprint( *args, **kwargs ):
 		>>> sxprint( "This is " + "a %s" % "test" + ".", filename="out.log" )
 		2019-02-07 13:36:50 <module> => This is a test.
 	"""
+
+	# prepend timestamp
 	t = get_timestamp()
 	f = sys._getframe(1).f_code.co_name
 	m = t + " " + f + " => " + "  ".join(map(str, args))
 	
+	# print message to stdout
 	print( m ) # for Python 3: print( m, **kwargs )
 	sys.stdout.flush()
 
-	# print to user defined file
-	if "filename" in kwargs:
-		with open( kwargs["filename"], "a+" ) as f:
-			f.write( m + "\n" )
+	# print message to SPHIRE execution log
+	with open( SXPRINT_LOG, "a+" ) as f:
+		f.write( m + "\n" )
 
-	# print to default SPHIRE execution log
-	if SXPRINT_LOG != "":
-		with open( SXPRINT_LOG, "a+" ) as f:
-			f.write( m + "\n" )
+	# return printed message
 	return m
 
 

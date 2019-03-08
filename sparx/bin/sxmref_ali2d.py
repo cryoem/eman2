@@ -42,6 +42,9 @@ import sys
 
 import mpi
 
+mpi.mpi_init( 0, [] )
+
+
 def main():
 	arglist = []
 	for arg in sys.argv:
@@ -82,9 +85,6 @@ def main():
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 		
-		if options.MPI:
-			sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
-
 		global_def.BATCH = True
 		if options.EQ:
 			from development import mrefeq_ali2df
@@ -101,5 +101,4 @@ if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
-	if "OMPI_COMM_WORLD_SIZE" in os.environ:
-		mpi.mpi_finalize()
+	mpi.mpi_finalize()

@@ -43,6 +43,8 @@ from builtins import range
 
 import mpi
 
+mpi.mpi_init( 0, [] )
+
 def main():
 	arglist = []
 	for arg in sys.argv:
@@ -125,9 +127,6 @@ def main():
 		for i in range(len(y_restrict)):
 			y_restrict2 += " "+str(float(y_restrict[i])/options.apix)
 
-		if options.MPI:
-			sys.argv = mpi.mpi_init( len(sys.argv), sys.argv )
-
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
@@ -144,5 +143,4 @@ if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
-	if "OMPI_COMM_WORLD_SIZE" in os.environ:
-		mpi.mpi_finalize()
+	mpi.mpi_finalize()

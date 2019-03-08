@@ -46,6 +46,8 @@ from global_def import SPARX_MPI_TAG_UNIVERSAL
 
 import mpi
 
+mpi.mpi_init( 0, [] )
+
 def main():
 	arglist = []
 	for arg in sys.argv:
@@ -73,7 +75,6 @@ def main():
 		disable_bdb_cache()
 
 	if options.MPI:
-		sys.argv = mpi.mpi_init(len(sys.argv),sys.argv)		
 		number_of_proc = mpi.mpi_comm_size(MPI_COMM_WORLD)
 		myid = mpi.mpi_comm_rank(MPI_COMM_WORLD)
 		main_node = 0
@@ -170,5 +171,4 @@ if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
-	if "OMPI_COMM_WORLD_SIZE" in os.environ:
-		mpi.mpi_finalize()
+	mpi.mpi_finalize()
