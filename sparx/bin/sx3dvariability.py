@@ -149,7 +149,9 @@ def main():
 					pass
 			except:
 				pass
-		if not os.path.exists(current_output_dir): os.makedirs(current_output_dir)
+		if not os.path.exists(current_output_dir):
+			os.makedirs(current_output_dir)
+			global_def.write_command(current_output_dir)
 		
 		#  Input
 		#instack = "Clean_NORM_CTF_start_wparams.hdf"

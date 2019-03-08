@@ -368,6 +368,7 @@ def main():
 
 	try:
 		os.makedirs(command_args.output_dir)
+		global_def.write_command(command_args.output_dir)
 	except OSError:
 		sxprint('Output directory already exists. No need to create it.')
 	else:
