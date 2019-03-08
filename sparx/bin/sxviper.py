@@ -148,6 +148,7 @@ directory		output directory name: into which the results will be written (if it 
 
 	if mpi_rank == 0:
 		os.makedirs(outdir)
+		global_def.write_command(outdir)
 
 	if outdir[-1] != "/":
 		outdir += "/"

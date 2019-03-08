@@ -145,13 +145,10 @@ def main():
 		if mpi.mpi_comm_size(MPI_COMM_WORLD) > 1:
 			ERROR( "Cannot use more than one CPU for symmetry preparation" )
 
-		if not os.path.exists(current_output_dir): os.makedirs(current_output_dir)
-		
-		#  Input
-		#instack = "Clean_NORM_CTF_start_wparams.hdf"
-		#instack = "bdb:data"
-		
-		
+		if not os.path.exists(current_output_dir):
+			os.makedirs(current_output_dir)
+			global_def.write_command(current_output_dir)
+				
 		from logger import Logger,BaseLogger_Files
 		if os.path.exists(os.path.join(current_output_dir, "log.txt")): os.remove(os.path.join(current_output_dir, "log.txt"))
 		log_main=Logger(BaseLogger_Files())

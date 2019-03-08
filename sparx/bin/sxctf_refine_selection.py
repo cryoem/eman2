@@ -42,96 +42,96 @@ import global_def
 
 
 def setup_argparser():
-    argparser = argparse.ArgumentParser(
-        description="Error assessment for CTF refinement",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
+	argparser = argparse.ArgumentParser(
+		description="Error assessment for CTF refinement",
+		formatter_class=argparse.RawDescriptionHelpFormatter,
+	)
 
-    argparser.add_argument("-r", "--resultsfile", help="Path to your results file")
-    argparser.add_argument(
-        "-m", "--mode", default="UPDATE", choices=["EXTRACT", "UPDATE"], help="Mode"
-    )
-    argparser.add_argument(
-        "-f", "--field", default="ERROR", choices=["ERROR", "DR_RATIO"], help="Mode"
-    )
-    argparser.add_argument(
-        "-lt",
-        "--lower_then",
-        type=float,
-        default=0.1,
-        help="Select particles with field values lower than this threshold",
-    )
-    argparser.add_argument(
-        "-gt",
-        "--greater_then",
-        type=float,
-        default=0,
-        help="Select particles with field values greater than this threshold",
-    )
-    argparser.add_argument("-o", "--output", required=True, help="Path output bdb stack")
-    argparser.add_argument(
-        "-s", "--stack", required=True, help="Path to original bdb stack"
-    )
-    return argparser
+	argparser.add_argument("-r", "--resultsfile", help="Path to your results file")
+	argparser.add_argument(
+		"-m", "--mode", default="UPDATE", choices=["EXTRACT", "UPDATE"], help="Mode"
+	)
+	argparser.add_argument(
+		"-f", "--field", default="ERROR", choices=["ERROR", "DR_RATIO"], help="Mode"
+	)
+	argparser.add_argument(
+		"-lt",
+		"--lower_then",
+		type=float,
+		default=0.1,
+		help="Select particles with field values lower than this threshold",
+	)
+	argparser.add_argument(
+		"-gt",
+		"--greater_then",
+		type=float,
+		default=0,
+		help="Select particles with field values greater than this threshold",
+	)
+	argparser.add_argument("-o", "--output", required=True, help="Path output bdb stack")
+	argparser.add_argument(
+		"-s", "--stack", required=True, help="Path to original bdb stack"
+	)
+	return argparser
 
 
 def _main_():
-    argparser = setup_argparser()
+	argparser = setup_argparser()
 
-    args = argparser.parse_args()
+	args = argparser.parse_args()
 
-    path_to_resultsfile = args.resultsfile
-    mode = args.mode
-    lower_then = args.lower_then
-    greater_then = args.greater_then
-    path_output = args.output
-    path_stack = args.stack
-    field = args.field
-    field_index_error = 1
-    field_index_dr_ratio = 3
-    if field == "ERROR":
-        field = field_index_error
-    elif field == "DR_RATIO":
-        field = field_index_dr_ratio
+	path_to_resultsfile = args.resultsfile
+	mode = args.mode
+	lower_then = args.lower_then
+	greater_then = args.greater_then
+	path_output = args.output
+	path_stack = args.stack
+	field = args.field
+	field_index_error = 1
+	field_index_dr_ratio = 3
+	if field == "ERROR":
+		field = field_index_error
+	elif field == "DR_RATIO":
+		field = field_index_dr_ratio
 
-    # Read in error file
-    results = np.loadtxt(path_to_resultsfile, delimiter=",")
+	# Read in error file
+	results = np.loadtxt(path_to_resultsfile, delimiter=",")
 
-    # Identify relevant particles
-    relevant_selection = [
-        a and b
-        for a, b in zip(
-            results[:, field] <= lower_then, results[:, field] >= greater_then
-        )
-    ]
+	# Identify relevant particles
+	relevant_selection = [
+		a and b
+		for a, b in zip(
+			results[:, field] <= lower_then, results[:, field] >= greater_then
+		)
+	]
 
-    # Write stack
-    number_of_particles = EMAN2.EMUtil.get_image_count(path_stack)
-    local_bdb_stack = EMAN2db.db_open_dict(path_output)
-    num_particles_relevant = 0
-    for particle_index in range(number_of_particles):
+	# Write stack
+	number_of_particles = EMAN2.EMUtil.get_image_count(path_stack)
+	local_bdb_stack = EMAN2db.db_open_dict(path_output)
+	num_particles_relevant = 0
+	for particle_index in range(number_of_particles):
 
-        particle = sxctf_refine.read_particle(
-            path_stack, particle_index, header_only=True
-        )
-        particle_header = particle.get_attr_dict()
+		particle = sxctf_refine.read_particle(
+			path_stack, particle_index, header_only=True
+		)
+		particle_header = particle.get_attr_dict()
 
-        if relevant_selection[particle_index]:
-            pctf = particle_header["ctf"]
-            pctf.defocus = results[particle_index, 2]
-            particle_header["ctf"] = pctf
-            num_particles_relevant = num_particles_relevant + 1
+		if relevant_selection[particle_index]:
+			pctf = particle_header["ctf"]
+			pctf.defocus = results[particle_index, 2]
+			particle_header["ctf"] = pctf
+			num_particles_relevant = num_particles_relevant + 1
 
-        if mode == "UPDATE":
-            local_bdb_stack[particle_index] = particle_header
-        elif mode == "EXTRACT" and relevant_selection[particle_index]:
-            local_bdb_stack[num_particles_relevant - 1] = particle_header
+		if mode == "UPDATE":
+			local_bdb_stack[particle_index] = particle_header
+		elif mode == "EXTRACT" and relevant_selection[particle_index]:
+			local_bdb_stack[num_particles_relevant - 1] = particle_header
 
-    EMAN2db.db_close_dict(local_bdb_stack)
-    global_def.sxprint("Particles updated/extracted", num_particles_relevant)
+	EMAN2db.db_close_dict(local_bdb_stack)
+	global_def.sxprint("Particles updated/extracted", num_particles_relevant)
 
 
 if __name__ == "__main__":
-    global_def.print_timestamp("Start")
-    _main_()
-    global_def.print_timestamp("Finish")
+	global_def.print_timestamp("Start")
+	_main_()
+	global_def.print_timestamp("Finish")

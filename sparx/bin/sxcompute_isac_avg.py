@@ -254,9 +254,12 @@ def main():
 			timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
 			masterdir ="sharpen_"+Tracker["constants"]["isac_dir"]
 			os.makedirs(masterdir)
+			global_def.write_command(masterdir)
 		else:
 			if os.path.exists(masterdir): sxprint("%s already exists"%masterdir)
-			else: os.makedirs(masterdir)
+			else:
+				os.makedirs(masterdir)
+				global_def.write_command(masterdir)
 		subdir_path = os.path.join(masterdir, "ali2d_local_params_avg")
 		if not os.path.exists(subdir_path): os.mkdir(subdir_path)
 		subdir_path = os.path.join(masterdir, "params_avg")

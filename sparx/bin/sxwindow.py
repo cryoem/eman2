@@ -313,7 +313,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	# Set up MPI related variables
 	# ------------------------------------------------------------------------------------
 	# Detect if program is running under MPI
-	RUNNING_UNDER_MPI = "Ompi.MPI_COMM_WORLD_SIZE" in os.environ
+	RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
 
 	main_mpi_proc = 0
 	if RUNNING_UNDER_MPI:
@@ -1164,7 +1164,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			# Create output directory
 			assert not os.path.exists(root_out_dir)
 			os.makedirs(root_out_dir)
-
+			global_def.write_command(root_out_dir)
 			# Open the consistency check file
 			mic_consistency_check_info_path = os.path.join(
 				root_out_dir,
@@ -1396,6 +1396,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		#
 		if not os.path.exists(root_out_dir):
 			os.makedirs(root_out_dir)
+			global_def.write_command(root_out_dir)
 		assert not os.path.exists(reject_out_of_boundary_dir), "MRK_DEBUG"
 		os.mkdir(reject_out_of_boundary_dir)
 
@@ -1982,6 +1983,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 
 if __name__ == "__main__":
 	global_def.print_timestamp("Start")
+	global_def.write_command()
 	main()
 	global_def.print_timestamp("Finish")
 	mpi.mpi_finalize()

@@ -193,6 +193,7 @@ def main():
     # Create output directorys
     if not path.exists(output_dir):
         os.makedirs(output_dir)
+        global_def.write_command(output_dir)
     if not path.exists(uncorrected_path):
         mkdir(uncorrected_path)
     if not path.exists(shift_path):
