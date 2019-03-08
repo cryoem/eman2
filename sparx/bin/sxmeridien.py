@@ -6838,6 +6838,8 @@ def main():
 
 			setattr(options, 'initialshifts', True)
 			setattr(options, 'skip_prealignment', True)
+			setattr(options, 'center_method', -1)
+			setattr(options, 'target_radius', 29)
 
 		else:
 			# case1: standard meridien run
@@ -7140,29 +7142,28 @@ def main():
 
 			kwargs = dict()
 
-			if not options_skip_prealignment:i
-				kwargs["init2dir"]  							= init2dir
-				kwargs["myid"]      							= Blockdata["myid"]
-				kwargs["main_node"] 							= Blockdata["main_node"]
-				kwargs["number_of_images_in_stack"] 			= total_stack
-				kwargs["nproc"] 								= Blockdata["nproc"]
+			kwargs["init2dir"]  							= init2dir
+			kwargs["myid"]      							= Blockdata["myid"]
+			kwargs["main_node"] 							= Blockdata["main_node"]
+			kwargs["number_of_images_in_stack"] 			= total_stack
+			kwargs["nproc"] 								= Blockdata["nproc"]
 
-				kwargs["target_radius"] 						= options.target_radius
-				# kwargs["target_nx"] = target_nx
-				kwargs["radi"] 									= options.radius
+			kwargs["target_radius"] 						= options.target_radius
+			# kwargs["target_nx"] = target_nx
+			kwargs["radi"] 									= options.radius
 
-				kwargs["center_method"] 						= options.center_method
+			kwargs["center_method"] 						= options.center_method
 
-				kwargs["nxrsteps"] 								= 4
+			kwargs["nxrsteps"] 								= 4
 
-				kwargs["command_line_provided_stack_filename"] 	= Tracker["constants"]["stack"]
+			kwargs["command_line_provided_stack_filename"] 	= Tracker["constants"]["stack"]
 
-				# kwargs["masterdir"] = masterdir
+			# kwargs["masterdir"] = masterdir
 
-				kwargs["options_skip_prealignment"] 			= options.skip_prealignment 
-				kwargs["options_CTF"] 							= True
+			kwargs["options_skip_prealignment"] 			= options.skip_prealignment 
+			kwargs["options_CTF"] 							= True
 
-				kwargs["mpi_comm"] 								= MPI_COMM_WORLD
+			kwargs["mpi_comm"] 								= MPI_COMM_WORLD
 			params2d = calculate_2d_params_for_centering(kwargs)
 			del kwargs
 			if Blockdata['myid'] == Blockdata['main_node']:
