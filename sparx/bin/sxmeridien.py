@@ -7182,11 +7182,11 @@ def main():
 				l1, l2 = assign_particles_to_groups(minimum_group_size = 10, name_tag=options.group_by)
 				write_text_file(l1,partids[0])
 				write_text_file(l2,partids[1])
-				if options.initialshifts: # Always False for continue mode as initialised in the option parser
+				if options.initialshifts: # Always True for continue mode as initialised in the option parser
 					tp_list = EMUtil.get_all_attributes(Tracker["constants"]["stack"], "xform.projection")
 					for i in range(len(tp_list)):
 						dp = tp_list[i].get_params("spider")
-						tp_list[i] = [dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"], 0.0, 1.0]
+						tp_list[i] = [dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"], 0.0, 1.0, 1.0]
 					write_text_row(tp_list, os.path.join(initdir,"params_000.txt"))
 					write_text_row([tp_list[i] for i in l1], partstack[0])
 					write_text_row([tp_list[i] for i in l2], partstack[1])
