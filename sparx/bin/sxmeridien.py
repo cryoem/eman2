@@ -1780,11 +1780,9 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 			#   Search all and compare with direct to figure what keepfirst might be
 			keepfirst = (n_coarse_ang *  n_coarse_psi)/10#keepfirst = (n_coarse_ang *  n_coarse_psi * n_coarse_shifts)/10
 
-			print(Blockdata['myid'], im, 'if start')
 			xod2 = np.asarray(Util.multiref_Crosrng_msg_stack_stepsi(dataimage, bigbuffer, \
 					coarse_shifts_shrank,\
 					numr, [coarse_angles[ic][2] for ic in range(n_coarse_ang)], coarse_delta, cnx, keepfirst))
-			print(Blockdata['myid'], im, 'if end')
 
 			assert(len(xod2) == keepfirst)
 
@@ -1849,11 +1847,9 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		else:
 			#Tracker["keepfirst"] = min(200,nang)#min(max(lxod1/25,200),lxod1)
 
-			print(Blockdata['myid'], im, 'else start')
 			xod2 = np.asarray(Util.multiref_Crosrng_msg_stack_stepsi(dataimage, bigbuffer, \
 					coarse_shifts_shrank,\
 					numr, [coarse_angles[ic][2] for ic in range(n_coarse_ang)], coarse_delta, cnx, Tracker["keepfirst"]))
-			print(Blockdata['myid'], im, 'else end')
 
 			xod1 = np.ndarray((Tracker["keepfirst"]),dtype='f4',order="C")
 
