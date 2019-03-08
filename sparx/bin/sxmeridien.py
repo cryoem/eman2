@@ -6326,7 +6326,7 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 					del tweight0, treg0
 					if( Blockdata["myid_on_node"] == 0 ):
 						#--  memory_check(Blockdata["myid"],"first node, before masking")
-						if( Tracker["mainiteration"] == 1 ):
+						if( Tracker["mainiteration"] == 1 and Tracker['constants']['inires'] != -1):
 							# At a first iteration truncate resolution at the initial resolution set by the user
 							for i in range(len(cfsc)):
 								if(  i < Tracker["constants"]["inires"]+1 ):  cfsc[i]   = 1.0
@@ -6359,7 +6359,7 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 					del tweight1, treg1
 					if( Blockdata["myid_on_node"] == 0 ):
 						#--  memory_check(Blockdata["myid"],"second node, before masking")
-						if( Tracker["mainiteration"] == 1 ):
+						if( Tracker["mainiteration"] == 1 and Tracker['constants']['inires'] != -1):
 							# At a first iteration truncate resolution at the initial resolution set by the user
 							for i in range(len(cfsc)):
 								if(  i < Tracker["constants"]["inires"]+1 ):   cfsc[i]  = 1.0
@@ -6796,7 +6796,7 @@ def main():
 		parser.add_option("--function",					type="string",          default= "do_volume_mask",		help="Name of the reference preparation function (default do_volume_mask)")
 		parser.add_option("--function_ai",				type="string",          default= "ai_spa",		help="Name of the internal heuristic function (default ai_spa)")
 		parser.add_option("--symmetry",					type="string",        	default= 'c1',		     		help="Point-group symmetry of the refined structure (default c1)")
-		parser.add_option("--inires",		       		type="float",	     	default= 25,		         	help="Resolution of the initial_volume volume (default 25A)")
+		parser.add_option("--inires",		       		type="float",	     	default= 25,		         	help="Resolution of the initial_volume volume. One can use -1 in local_refinement mode to filter to the resolution of the reconstructed volumes. (default 25A)")
 		parser.add_option("--delta",					type="float",			default= 3.75,		     		help="Initial angular sampling step (default 7.5)")
 		parser.add_option("--an",	           		    type="float", 	     	default= -1.,                	help="Angular neighborhood for local search")
 		parser.add_option("--shake",	           		type="float", 	     	default= 0.5,                	help="Shake (0.5)")
