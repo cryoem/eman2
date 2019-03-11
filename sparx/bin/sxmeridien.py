@@ -6716,11 +6716,11 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		projdata_outlier = []
 		newparams_outlier = []
 		norm_outlier = []
-		for entry in outlier_list:
+		for idx, entry in enumerate(outlier_list):
 			if entry == 0:
-				projdata_outlier.append(projdata[procid][entry])
-				newparams_outlier.append(newparamstructure[procid][entry])
-				norm_outlier.append(norm_per_particle[procid][entry])
+				projdata_outlier.append(projdata[procid][idx])
+				newparams_outlier.append(newparamstructure[procid][idx])
+				norm_outlier.append(norm_per_particle[procid][idx])
 		outliers[procid] = outlier_list
 
 		do3d(
@@ -6754,6 +6754,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			params = read_text_row(os.path.join(Tracker["directory"],"params-chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_row(os.path.join(Tracker["directory"],"params-chunk_1_%03d.txt"%(Tracker["mainiteration"])))
+			outlier_params = read_text_row(os.path.join(Tracker["directory"],"outlier-params-chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_row(os.path.join(Tracker["directory"],"outlier-params-chunk_1_%03d.txt"%(Tracker["mainiteration"])))
 			li     = read_text_file(os.path.join(Tracker["directory"],"chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_file(os.path.join(Tracker["directory"],"chunk_1_%03d.txt"%(Tracker["mainiteration"])))
 			ctfs   = EMUtil.get_all_attributes(Tracker["constants"]["stack"],'ctf')
 			ctfs   = [ctfs[i] for i in li]
@@ -6767,20 +6768,33 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			particle_groups = [particle_groups[i] for i in li]
 		else:
 			params = 0
+			outlier_params = 0
 			ctfs = 0
 			particle_groups = 0
 		params = wrap_mpi_bcast(params, Blockdata["main_node"])
 		ctfs   = wrap_mpi_bcast(ctfs,   Blockdata["main_node"])
 		particle_groups = wrap_mpi_bcast(particle_groups, Blockdata["main_node"])
+		outlier_params = wrap_mpi_bcast(outlier_params, Blockdata["main_node"])
 		#print(" A ",Blockdata["myid"] ,len(params),len(ctfs),len(particle_groups),len(params)/Blockdata["nproc"])
 		npart = len(params)/Blockdata["nproc"]
 		params = params[Blockdata["myid"]*npart:(Blockdata["myid"]+1)*npart]
+		outlier_params = outlier_params[Blockdata["myid"]*npart:(Blockdata["myid"]+1)*npart]
 		ctfs = [generate_ctf(ctfs[i]) for i in range(Blockdata["myid"]*npart,(Blockdata["myid"]+1)*npart)]
 		particle_groups = particle_groups[Blockdata["myid"]*npart:(Blockdata["myid"]+1)*npart]
 		Tracker["refvol"] = os.path.join(Tracker["directory"], "vol_0_%03d.hdf"%(Tracker["mainiteration"]))
 		#print(" B ",Blockdata["myid"] ,len(params),len(ctfs),len(particle_groups),npart)
-		cerrs(params, ctfs, particle_groups)
+		params_outlier = []
+		ctfs_outlier = []
+		groups_outlier = []
+		for idx, entry in enumerate(outlier_params):
+			if entry == 0:
+				params_outlier.append(params[idx])
+				ctfs.append(ctfs[idx])
+				groups_outlier.append(groups_outlier[idx])
+
+		cerrs(params_outlier, ctfs_outlier, groups_outlier)
 		del params, ctfs, particle_groups
+		del params_outlier, ctfs_outlier, groups_outlier
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			write_text_row( [[Tracker["acc_rot"], Tracker["acc_trans"]]], os.path.join(Tracker["directory"] ,"accuracy_%03d.txt"%(Tracker["mainiteration"])) )
 
@@ -6891,7 +6905,7 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 		sxprint(line,"Executed successfully: ", "Prior calculation")
 
 	# Calculate outliers
-	if(blockdata["myid"] == blockdata["nodes"][0] ):
+	if(blockdata["myid"] == blockdata["main_node"] ):
 		# Calculate priors
 		outliers, new_param, new_index = ms_helix_fundamentals.calculate_priors(
 			tracker=Tracker,
@@ -6927,14 +6941,14 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 		if Tracker['prior']['force_outlier']:
 			shutil.copy(params_file, '{0}_old'.format(params_file))
 			shutil.copy(new_params, params_file)
+
+		np.savetxt(outlier_file, outliers)
 	else:
 		# Dummy variable
 		outliers = 0
 
 	# Distribute outlier list to all processes
 	outliers = bcast_list_to_all(outliers, blockdata["myid"], blockdata["nodes"][0])
-
-	np.savetxt(outlier_file, outliers)
 
 	# Get the node specific outlier information
 	if Tracker['prior']['force_outlier'] is None:
