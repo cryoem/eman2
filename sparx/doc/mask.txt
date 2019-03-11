@@ -8,7 +8,7 @@ Masking : Mask creation tool for 2D or 3D masks.
 
 Usage in command line
 
-  sxmask.py  input_volume  output_directory  --prefix=PREFIX  --override  --low_pass_filter_resolution=LOW_PASS_FILTER_RESOLUTION  --low_pass_filter_falloff=LOW_PASS_FILTER_FALLOFF  --pixel_size=PIXEL_SIZE  --threshold=THRESHOLD --nsigma=NSIGMA  --mol_mass=MOL_MASS  --ndilation=NDILATION  --nerosion=NEROSION  --edge_width=EDGE_WIDTH  --edge_type=EDGE_TYPE  --do_old --allow_disconnected  --second_mask=SECOND_MASK  --second_mask_shape=SECOND_MASK_SHAPE  --s_radius=S_RADIUS  --s_nx=S_NX  --s_ny=S_NY  --s_nz=S_NZ  --s_threshold=THRESHOLD --s_nsigma=NSIGMA  --s_mol_mass=MOL_MASS  --s_ndilation=NDILATION  --s_nerosion=NEROSION  --s_edge_width=EDGE_WIDTH  --s_edge_type=EDGE_TYPE  --s_do_old  --s_allow_disconnected  --s_invert=S_INVERT
+  sxmask.py  input_volume  output_directory  --prefix=PREFIX  --overwrite  --low_pass_filter_resolution=LOW_PASS_FILTER_RESOLUTION  --low_pass_filter_falloff=LOW_PASS_FILTER_FALLOFF  --pixel_size=PIXEL_SIZE  --threshold=THRESHOLD --nsigma=NSIGMA  --mol_mass=MOL_MASS  --ndilation=NDILATION  --nerosion=NEROSION  --edge_width=EDGE_WIDTH  --edge_type=EDGE_TYPE  --do_old --allow_disconnected  --fill_mask --second_mask=SECOND_MASK  --second_mask_shape=SECOND_MASK_SHAPE  --s_radius=S_RADIUS  --s_nx=S_NX  --s_ny=S_NY  --s_nz=S_NZ  --s_threshold=THRESHOLD --s_nsigma=NSIGMA  --s_mol_mass=MOL_MASS  --s_ndilation=NDILATION  --s_nerosion=NEROSION  --s_edge_width=EDGE_WIDTH  --s_edge_type=EDGE_TYPE  --s_do_old  --s_allow_disconnected  --s_invert=S_INVERT
 
 \\
 ===== Typical usage =====
@@ -34,7 +34,7 @@ Create an adapted mask dilated by 2 pixel and a soft edge of 5 pixel using the b
   ; output_directory : Output directory : Output direcory path (default required string)
 
   ; %%--%%prefix : Output prefix : Prefix of the produced files (default sxmask)
-  ; %%--%%override : Override outputs : Override the output mask in case it exists already. (default False)
+  ; %%--%%overwrite : Overwrite outputs : Overwrite the output mask in case it exists already. (default False)
   ; %%--%%use_mol_mass : Use molecular mass : GUI OPTION ONLY - Define if one want to use the molecular mass option as a masking threshold. (default False) : %%--%%threshold==none %%--%%nsigma==none
   ; %%--%%mol_mass : Molecular mass [kDa]: The estimated molecular mass of the target particle in kilodalton. This is used to calculate the binarization threshold automatically. (default none) : %%--%%use_mol_mass==True
   ; %%--%%threshold : Binarization threshold: Defines the threshold used in the first step of the processing to generate a binary version of the input structure. If the value is lower-equal than the default, the option will be ignored and the threshold will be set according to nsigma method above. (default none) : %%--%%nsigma==none  %%--%%use_mol_mass==False
@@ -44,6 +44,7 @@ Create an adapted mask dilated by 2 pixel and a soft edge of 5 pixel using the b
   ; %%--%%edge_width : Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking. If the width is 0, a binary mask is returned. (default 5)
   ; %%--%%edge_type : Soft-edge type: The type of soft-edge. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gaussian\' for gaussian soft-edge. (default cosine) : %%--%%edge_width!=0
   ; %%--%%allow_disconnected : Allow disconnected regions : Allow disconnected region in the mask. (default False)
+  ; %%--%%fill_mask : Fill mask : Fills empty spaces inside a map. (default True question reversed in GUI)
 
 
 \\
@@ -69,6 +70,7 @@ Create an adapted mask dilated by 2 pixel and a soft edge of 5 pixel using the b
   ; %%--%%s_edge_type : Second - Soft-edge type: The type of soft-edge for the 3D mask. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gaussian\' for gaussian soft-edge. (default cosine) : %%--%%use_second_mask==True %%--%%s_edge_width!=0
   ; %%--%%s_do_old : Second - Old behaviour : Restore the old masking behaviour, which is a bit less smooth. (default False) : %%--%%use_second_mask==True %%--%%s_edge_width!=0
   ; %%--%%s_allow_disconnected : Second - Allow disconnected regions : Allow disconnected region in the mask. (default False) : %%--%%use_second_mask==True
+  ; %%--%%s_fill_mask : Second - Fill mask : Fills empty spaces inside a map. (default True question reversed in GUI)
   ; %%--%%s_invert : Second - Invert masking : If True, the mask will remove everything that is inside instead of leaving it. (default False) : %%--%%use_second_mask==True
 
 
