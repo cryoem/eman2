@@ -1533,7 +1533,7 @@ def adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_wi
 	mask = Util.soft_edge(mask, edge_width, mode)
 	return mask
 
-def adaptive_mask_scipy(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5, mode = "C", allow_disconnected=False, nerosion = 0, do_approx=False):
+def adaptive_mask_scipy(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5, mode = "C", allow_disconnected=False, nerosion = 0, do_approx=False, do_fill=False):
 	"""
 		Name
 			adaptive_mask - create a mask from a given image.
@@ -1544,7 +1544,11 @@ def adaptive_mask_scipy(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, e
 			mask: The mask will have values one, zero, with cosine smooth transition between two regions.
 	"""
 	from utilities  import model_circle
-	from morphology import binarize, dilation
+	from morphology import binarize, dilation, fill_cavities
+	import scipy.ndimage
+	from EMAN2 import EMNumPy
+	import numpy as np
+	
 	nx = vol.get_xsize()
 	ny = vol.get_ysize()
 	nz = vol.get_zsize()
@@ -1565,16 +1569,44 @@ def adaptive_mask_scipy(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, e
 		# new s1[3] is calculated nsigma corresponding to user-provided threshold
 
 	mask = binarize(vol, bin_threshold)
+	
 	if not allow_disconnected:
 		mask = Util.get_biggest_cluster(mask)
 	for i in range(ndilation):
 		mask = dilation(mask)
 	for i in range(nerosion):
 		mask = erosion(mask)
+	if do_fill: 
+		mask = fill_cavities(mask)
 	if edge_width > 0:
 		mask = soft_edge(mask, edge_width, mode, do_approx)
 	return mask
 
+def fill_cavities(img):
+	"""
+	Explanation
+	"""
+	import scipy.ndimage
+	import numpy as np
+
+	if isinstance(img, EMAN2_cppwrap.EMData):
+		img_data = EMAN2_cppwrap.EMNumPy.em2numpy(img)
+		return_object = EMAN2_cppwrap.EMData(*img_data.shape)  # makes an empty EMData object with the dimensions of the input
+		return_data = EMAN2_cppwrap.EMNumPy.em2numpy(return_object)  # NumPy wrapper around the above EMData object
+		out_eman = True
+	else:
+		img_data = img    
+		out_eman = False
+
+	filled_mask = scipy.ndimage.binary_fill_holes(img_data).astype(np.float32)
+
+	if out_eman:
+		return_data[...] = filled_mask
+	else:
+		return_object = filled_mask
+	
+	return return_object        
+   
 '''
 def adaptive_mask2D(img, nsigma = 1.0, ndilation = 3, kernel_size = 11, gauss_standard_dev =9):
 	"""

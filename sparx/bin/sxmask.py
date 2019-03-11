@@ -76,7 +76,7 @@ def parse_command_line():
 		help='Prefix for the produced files'
 		)
 	parser.add_argument(
-		'--override',
+		'--overwrite',
 		action='store_true',
 		help='Override existing files with the same output_dir/prefix combination.'
 		)
@@ -182,6 +182,13 @@ def parse_command_line():
 		action='store_true',
 		default=False,
 		help='Allow disconnected regions in the mask.'
+		)
+	group_mask.add_argument(
+		'--fill_mask',
+		'--fill',
+		action='store_true',
+		default=False,
+		help='Fill empty regions in the mask.'
 		)
 
 	group_second_mask = parser.add_argument_group(
@@ -328,8 +335,8 @@ def sanity_checks(command_args, input_vol):
 				command_args.prefix + '_mask.hdf'
 				)
 			):
-		if not command_args.override:
-			ERROR( "Output mask already exists! Please provide the override option if you want to override the existing mask." )
+		if not command_args.overwrite:
+			ERROR( "Output mask already exists! Please provide the overwrite option if you want to overwrite the existing mask." )
 
 	if command_args.second_mask_shape in ('cylinder', 'sphere'):
 		nx = input_vol.get_xsize()
@@ -416,6 +423,7 @@ def main():
 		allow_disconnected=command_args.allow_disconnected,
 		mode=mode,
 		do_approx=command_args.do_old,
+		do_fill=command_args.fill_mask
 		)
 
 	# Create a second mask based on the filtered volume
@@ -481,7 +489,8 @@ def main():
 			edge_width=command_args.s_edge_width,
 			allow_disconnected=command_args.s_allow_disconnected,
 			mode=mode,
-			do_approx=command_args.s_do_old
+			do_approx=command_args.s_do_old,
+			do_fill=command_args.fill_mask
 			)
 		if command_args.s_invert:
 			s_mask = 1 - s_mask
