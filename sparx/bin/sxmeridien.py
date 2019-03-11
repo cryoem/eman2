@@ -6672,16 +6672,16 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			index_file=chunk_file,
 			group_id=Tracker['constants']['group_id'],
 			typ='sphire',
-			tol_psi=30,
-			tol_theta=15,
-			tol_filament=0.2,
-			tol_std=1,
-			tol_mean=30,
-			outlier_method='deg',
-			prior_method='running',
-			force_outlier=False,
-			window_size=3,
-			remove_outlier=False,
+			tol_psi=Tracker['prior']['tol_psi'],
+			tol_theta=Tracker['prior']['tol_theat'],
+			tol_filament=Tracker['prior']['tol_filament'],
+			tol_std=Tracker['prior']['tol_std'],
+			tol_mean=Tracker['prior']['tol_mean'],
+			outlier_method=Tracker['prior']['outlier_method']
+			prior_method=Tracker['prior']['prior_method'],
+			force_outlier=Tracker['prior']['force_outlier'],
+			window_size=Tracker['prior']['window_size'],
+			remove_outlier=Tracker['prior']['remove_outlier'],
 			symclass=Blockdata['symclass'],
 			)
 
@@ -7046,6 +7046,18 @@ def main():
 				Constants['stack_prior_fmt'] = prior_stack_fmt(Constants['stack_prior'])
 				Constants['stack_prior_dtype'] = Constants['stack_prior'].dtype.descr
 
+			Prior = {}
+			Prior['tol_psi'] = 30
+			Prior['tol_theta'] = 15
+			Prior['tol_filament'] = 0.2
+			Prior['tol_std'] = 1
+			Prior['tol_mean'] = 30
+			Prior['outlier_method'] = 'deg'
+			Prior['prior_method'] = 'running'
+			Prior['force_outlier'] = False
+			Prior['remove_outlier'] = False
+			Prior['window_size'] = 3
+
 			#
 			#  The program will use three different meanings of x-size
 			#  nnxo         - original nx of the data, will not be changed
@@ -7057,6 +7069,7 @@ def main():
 			# Initialize Tracker Dictionary with input options
 			Tracker = {}
 			Tracker["constants"]	= Constants
+			Tracker["prior"]		= Prior
 			Tracker["maxit"]		= Tracker["constants"]["maxit"]
 		
 			Tracker["xr"]			= options.xr
@@ -7098,8 +7111,6 @@ def main():
 			old_tracker = copy.deepcopy(Tracker)
 			dump_tracker_to_json('test_tracker.json', Tracker)
 			Tracker = load_tracker_from_json('test_tracker.json')
-			print(Tracker == old_tracker)
-			exit(0)
 
 			# ------------------------------------------------------------------------------------
 			# Get the pixel size; if none, set to 1.0, and the original image size
