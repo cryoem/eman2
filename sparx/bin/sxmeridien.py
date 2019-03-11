@@ -1071,15 +1071,32 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, smea
 	"""
 	shrinkage = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
 	if smearing:
-		tvol, tweight, trol = recons3d_trl_struct_MPI(myid = myid, main_node = Blockdata["nodes"][procid], prjlist = data, \
-												paramstructure = newparams, refang = refang, rshifts_shrank = [[q[0]*shrinkage,q[1]*shrinkage] for q in rshifts], \
-												delta = Tracker["delta"], CTF = Tracker["constants"]["CTF"], upweighted = False, mpi_comm = mpi_comm, \
-												target_size = (2*Tracker["nxinit"]+3), avgnorm = Tracker["avgvaradj"][procid], norm_per_particle = norm_per_particle)
+		tvol, tweight, trol = recons3d_trl_struct_MPI(
+			myid=myid,
+			main_node=Blockdata["nodes"][procid],
+			prjlist=data,
+			paramstructure=newparams,
+			refang=refang,
+			rshifts_shrank=[[q[0]*shrinkage,q[1]*shrinkage] for q in rshifts],
+			delta=Tracker["delta"],
+			CTF=Tracker["constants"]["CTF"],
+			upweighted=False,
+			mpi_comm=mpi_comm,
+			target_size=(2*Tracker["nxinit"]+3),
+			avgnorm=Tracker["avgvaradj"][procid],
+			norm_per_particle=norm_per_particle
+			)
 	else:
-		tvol, tweight, trol = recons3d_trl_struct_MPI_nosmearing(myid = myid, main_node = Blockdata["nodes"][procid], prjlist = data, \
-											parameters = newparams, CTF = Tracker["constants"]["CTF"], upweighted = False, mpi_comm = mpi_comm, \
-											target_size = (2*Tracker["nxinit"]+3))
-											
+		tvol, tweight, trol = recons3d_trl_struct_MPI_nosmearing(
+			myid=myid,
+			main_node=Blockdata["nodes"][procid],
+			prjlist=data,
+			parameters=newparams,
+			CTF=Tracker["constants"]["CTF"],
+			upweighted=False,
+			mpi_comm=mpi_comm,
+			target_size=(2*Tracker["nxinit"]+3)
+			)
 	if(Blockdata["no_of_groups"] >1):
 		if myid == Blockdata["nodes"][procid]:
 			while not os.path.exists(os.path.join(Tracker["directory"],"tempdir")):  sleep(5)
@@ -6575,6 +6592,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		del params
 
 		projdata[procid] = []
+		im_idx = [[0, 0], [0, 0]]
 		if Tracker["constants"]["small_memory"]:
 			original_data[procid], oldparams[procid] = getindexdata(partids[procid], partstack[procid], \
 			os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_%01d.txt"%procid), \
@@ -6679,39 +6697,43 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		del pinids
 	mpi_barrier(MPI_COMM_WORLD)
 
+	outliers = [[], []]
 	for procid in range(2):
 		chunk_file = os.path.join(Tracker["directory"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
 		params_chunk_file = os.path.join(Tracker["directory"],"params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
-		ms_helix_fundamentals.calculate_priors(
+		outlier_file = os.path.join(Tracker["directory"],"outlier-params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
+		im_start, im_end = MPI_start_end(len(partstack[procid]), Blockdata['nproc'], Blockdata['myid'])
+		outlier_list = calculate_prior_values(
 			tracker=Tracker,
+			blockdata=Blockdata,
+			outlier_file=outlier_file,
 			params_file=params_chunk_file,
-			index_file=chunk_file,
-			group_id=Tracker['constants']['group_id'],
-			typ='sphire',
-			tol_psi=Tracker['prior']['tol_psi'],
-			tol_theta=Tracker['prior']['tol_theat'],
-			tol_filament=Tracker['prior']['tol_filament'],
-			tol_std=Tracker['prior']['tol_std'],
-			tol_mean=Tracker['prior']['tol_mean'],
-			outlier_method=Tracker['prior']['outlier_method']
-			prior_method=Tracker['prior']['prior_method'],
-			force_outlier=Tracker['prior']['force_outlier'],
-			window_size=Tracker['prior']['window_size'],
-			remove_outlier=Tracker['prior']['remove_outlier'],
-			symclass=Blockdata['symclass'],
+			chunk_file=chunk_file,
+			im_start=im_start,
+			im_end=im_end,
+			procid=procid
 			)
+		projdata_outlier = []
+		newparams_outlier = []
+		norm_outlier = []
+		for entry in outlier_list:
+			if entry == 0:
+				projdata_outlier.append(projdata[procid][entry])
+				newparams_outlier.append(newparamstructure[procid][entry])
+				norm_outlier.append(norm_per_particle[procid][entry])
+		outliers[procid] = outlier_list
 
-	do3d(
-		procid,
-		projdata[procid],
-		newparamstructure[procid],
-		refang,
-		rshifts,
-		norm_per_particle[procid],
-		Blockdata["myid"],
-		smearing = True,
-		mpi_comm = MPI_COMM_WORLD
-		)
+		do3d(
+			procid,
+			projdata_outlier,
+			newparams_outlier,
+			refang,
+			rshifts,
+			norm_outlier,
+			Blockdata["myid"],
+			smearing = True,
+			mpi_comm = MPI_COMM_WORLD,
+			)
 	rec3d_make_maps(compute_fsc = True, regularized = True)
 
 	if(Tracker["mainiteration"] == 1 ):
@@ -6855,6 +6877,72 @@ def get_image_statistics(image, mask, invert):
 			angle=image.get_attr('segment_angle'),
 			)
 	return Util.infomask(image, mask2D, invert)
+
+
+def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_file, im_start, im_end, procid):
+	"""Calculate the prior values and identify outliers"""
+
+	if not tracker['constants']['apply_prior']:
+		return None
+
+	# Print to screen
+	if(blockdata["myid"] == blockdata["main_node"]):
+		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		sxprint(line,"Executed successfully: ", "Prior calculation")
+
+	# Calculate outliers
+	if(blockdata["myid"] == blockdata["nodes"][0] ):
+		# Calculate priors
+		outliers, new_param, new_index = ms_helix_fundamentals.calculate_priors(
+			tracker=Tracker,
+			params_file=params_file,
+			index_file=chunk_file,
+			group_id=Tracker['constants']['group_id'],
+			typ='sphire',
+			tol_psi=Tracker['prior']['tol_psi'],
+			tol_theta=Tracker['prior']['tol_theat'],
+			tol_filament=Tracker['prior']['tol_filament'],
+			tol_std=Tracker['prior']['tol_std'],
+			tol_mean=Tracker['prior']['tol_mean'],
+			outlier_method=Tracker['prior']['outlier_method']
+			prior_method=Tracker['prior']['prior_method'],
+			force_outlier=Tracker['prior']['force_outlier'],
+			window_size=Tracker['prior']['window_size'],
+			remove_outlier=Tracker['prior']['remove_outlier'],
+			symclass=Blockdata['symclass'],
+			)
+
+		# Print to screen
+		nr_outliers = len(outliers[outliers == 1])
+		len_data = len(outliers)
+		no_outliers = len_data - nr_outliers
+		sxprint('---> Chunk {0}: Discarded {1}|{2:.1f}%; Kept {3}|{4:.1f}%; Nr. particles {5}'.format(
+			procid,
+			nr_outliers,
+			100*nr_outliers/float(len_data),
+			no_outliers,
+			100*no_outliers/float(len_data),
+			len_data
+			))
+		if Tracker['prior']['force_outlier']:
+			shutil.copy(params_file, '{0}_old'.format(params_file))
+			shutil.copy(new_params, params_file)
+	else:
+		# Dummy variable
+		outliers = 0
+
+	# Distribute outlier list to all processes
+	outliers = bcast_list_to_all(outliers, blockdata["myid"], blockdata["nodes"][0])
+
+	np.savetxt(outlier_file, outliers)
+
+	# Get the node specific outlier information
+	if Tracker['prior']['force_outlier'] is None:
+		outliers_node = [0] * (im_end - im_start)
+	else:
+		outliers_node = outliers[im_start:im_end]
+
+	return outliers_node
 
 
 def main():
