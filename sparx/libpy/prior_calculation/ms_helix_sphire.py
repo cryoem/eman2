@@ -51,13 +51,14 @@ def import_sphire_stack(stack_path, group_id):
     return data_array
 
 
-def import_sphire_params(input_file):
+def import_sphire_params(input_file, symclass):
     """Import the params and index file"""
 
     dtype_import = [('phi', '<f8'), ('theta', '<f8'), ('psi', '<f8'), ('shift_x', '<f8'), ('shift_y', '<f8'), ('err1', '<f8'), ('err2', '<f8'), ('norm', '<f8')]
     dtype = dtype_import + [('source_n', '<i8')]
 
     data_import = np.genfromtxt(input_file, dtype=dtype_import)
+    data_import = np.array(symclass.reduce_angleset(data_import, mirror=0))
 
     data = np.empty(len(data_import), dtype=dtype)
     data['source_n'] = np.arange(len(data))

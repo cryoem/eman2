@@ -102,6 +102,7 @@ def calculate_priors(
             index_file=index_file,
             params_file=params_file,
             group_id=group_id,
+            symclass=symclass,
             )
     elif typ == 'relion':
         prior_tracker = mhl.import_data_relion(file_name=tracker)

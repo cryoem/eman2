@@ -80,7 +80,7 @@ def combine_and_order_filaments(prior_tracker):
         )
 
 
-def import_data_sphire(tracker, group_id, params_file=None, index_file=None):
+def import_data_sphire(tracker, group_id, symclass, params_file=None, index_file=None):
     """
     Import the original stack information and create a tracker for the following calculations.
     :tracker: File name or dictionary - if dictionary it needs to contain the key stack or stack_prior:
@@ -104,7 +104,7 @@ def import_data_sphire(tracker, group_id, params_file=None, index_file=None):
         assert(False)
 
     # Import parameter and indices file and create a substack
-    parameter = mhs.import_sphire_params(params_file)
+    parameter = mhs.import_sphire_params(params_file, symclass=symclass)
     indices = mhs.import_sphire_index(index_file)
     substack = original_stack[indices['stack_idx']]
 
