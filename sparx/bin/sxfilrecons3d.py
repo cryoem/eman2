@@ -42,6 +42,9 @@ import sys
 
 import mpi
 
+mpi.mpi_init( 0, [] )
+
+
 def main():
 	arglist = []
 	for arg in sys.argv:
@@ -71,9 +74,7 @@ def main():
 		return
 	
 	else:
-		if options.MPI:
-			sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
-		else:
+		if not options.MPI:
 			ERROR( "There is only MPI version of sxfilrecons3d.py. See SPARX wiki page for downloading MyMPI details." )
 			return
 			
@@ -94,5 +95,4 @@ if __name__ == "__main__":
 	global_def.write_command()
 	main()
 	global_def.print_timestamp( "Finish" )
-	if "OMPI_COMM_WORLD_SIZE" in os.environ:
-		mpi.mpi_finalize()
+	mpi.mpi_finalize()

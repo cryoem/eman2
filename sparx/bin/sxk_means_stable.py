@@ -43,6 +43,9 @@ import sys
 
 import mpi
 
+mpi.mpi_init( 0, [] )
+
+
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
@@ -68,8 +71,10 @@ def main():
 		ERROR( "Invalid number of parameters used. Please see usage information above." )
 		return
 	else:
-		if len(args) == 2: mask = None
-		else:              mask = args[2]
+		if len(args) == 2:
+			mask = None
+		else:
+			mask = args[2]
 
 		if options.K < 2:
 			ERROR( "K must be > 1 group" )
@@ -85,19 +90,9 @@ def main():
 
 		global_def.BATCH = True
 		if options.MPI:
-			sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
-			'''if options.CUDA:
-				from  development import  k_means_stab_MPICUDA_stream_YANG
-				k_means_stab_MPICUDA_stream_YANG(args[0], args[1], mask, options.K, options.nb_part, options.F, options.T0, options.th_nobj, options.rand_seed, options.maxit)
-			else:'''
 			from  statistics import  k_means_stab_MPI_stream
 			k_means_stab_MPI_stream(args[0], args[1], mask, options.K, options.nb_part, 0.0, 0.0, options.th_nobj, options.rand_seed, "SSE", options.CTF, options.maxit)
 		else:
-			'''if options.CUDA:
-				from  development  import  k_means_stab_CUDA_stream
-				k_means_stab_CUDA_stream(args[0], args[1], mask, options.K, options.nb_part, options.F, options.T0, options.th_nobj, options.rand_seed, options.maxit)
-			else:'''
-			
 			from  statistics  import  k_means_stab_stream
 			k_means_stab_stream(args[0], args[1], mask, options.K, options.nb_part, 0.0, 0.0, options.th_nobj, options.rand_seed, "SSE", options.CTF, options.maxit)
 		global_def.BATCH = False
@@ -108,5 +103,4 @@ if __name__ == "__main__":
 	global_def.write_command()
 	main()
 	global_def.print_timestamp( "Finish" )
-	if "OMPI_COMM_WORLD_SIZE" in os.environ:
-		mpi.mpi_finalize()
+	mpi.mpi_finalize()

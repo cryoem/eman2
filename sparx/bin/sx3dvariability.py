@@ -43,8 +43,11 @@ from	EMAN2 		import EMUtil
 import	os
 import	sys
 from 	time		import	time
+
 import mpi
 from mpi import *
+
+mpi.mpi_init( 0, [] )
 
 """
 Instruction:
@@ -109,7 +112,7 @@ def main():
 
 	(options,args) = parser.parse_args()
 	#####
-	from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, mpi_recv, MPI_COMM_WORLD
+	from mpi import mpi_comm_rank, mpi_comm_size, mpi_recv, MPI_COMM_WORLD
 	from mpi import mpi_barrier, mpi_reduce, mpi_bcast, mpi_send, MPI_FLOAT, MPI_SUM, MPI_INT, MPI_MAX
 	#from mpi import *
 	from applications   import MPI_start_end
@@ -138,26 +141,14 @@ def main():
 	if options.output_dir =="./": current_output_dir = os.path.abspath(options.output_dir)
 	else: current_output_dir = options.output_dir
 	if options.symmetrize :
-		if RUNNING_UNDER_MPI:
-			try:
-				sys.argv = mpi_init(len(sys.argv), sys.argv)
-				try:	
-					number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
-					if( number_of_proc > 1 ):
-						ERROR( "Cannot use more than one CPU for symmetry preparation" )
-				except:
-					pass
-			except:
-				pass
+
+		if mpi.mpi_comm_size(MPI_COMM_WORLD) > 1:
+			ERROR( "Cannot use more than one CPU for symmetry preparation" )
+
 		if not os.path.exists(current_output_dir):
 			os.makedirs(current_output_dir)
 			global_def.write_command(current_output_dir)
-		
-		#  Input
-		#instack = "Clean_NORM_CTF_start_wparams.hdf"
-		#instack = "bdb:data"
-		
-		
+				
 		from logger import Logger,BaseLogger_Files
 		if os.path.exists(os.path.join(current_output_dir, "log.txt")): os.remove(os.path.join(current_output_dir, "log.txt"))
 		log_main=Logger(BaseLogger_Files())
@@ -222,7 +213,6 @@ def main():
 	else:
 
 		from fundamentals import window2d
-		sys.argv       = mpi_init(len(sys.argv), sys.argv)
 		myid           = mpi_comm_rank(MPI_COMM_WORLD)
 		number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 		main_node      = 0

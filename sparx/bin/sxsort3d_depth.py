@@ -78,7 +78,6 @@ global  Tracker, Blockdata
 
 import mpi
 
-
 mpi.mpi_init(0, [])
 nproc     = mpi.mpi_comm_size( mpi.MPI_COMM_WORLD )
 myid      = mpi.mpi_comm_rank( mpi.MPI_COMM_WORLD )

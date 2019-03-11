@@ -23,6 +23,9 @@ from EMAN2 import EMData
 
 import mpi
 
+mpi.mpi_init( 0, [] )
+
+
 
 MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER = 10
 # NORMALIZED_AREA_THRESHOLD_FOR_OUTLIER_DETECTION = 0.2
@@ -560,10 +563,9 @@ def get_already_processed_viper_runs(run_get_already_processed_viper_runs):
 def main():
 
 	main_node = 0
-	mpi.mpi_init(0, [])
-	mpi_comm = mpi.MPI_COMM_WORLD
-	myid = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
-	mpi_size = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)	# Total number of processes, passed by --np option.
+	mpi_comm  = mpi.MPI_COMM_WORLD
+	myid      = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
+	mpi_size  = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)	# Total number of processes, passed by --np option.
 
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack  [output_directory] --ir=inner_radius --radius=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood  --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1  --fl --aa --ref_a=S --sym=c1"

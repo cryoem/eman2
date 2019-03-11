@@ -44,6 +44,9 @@ from   optparse import OptionParser
 
 import mpi
 
+mpi.mpi_init( 0, [] )
+
+
 def resample_insert( bufprefix, fftvols, wgtvols, mults, CTF, npad, info=None):
 	from EMAN2 import  newfile_store
 	ostore = newfile_store( bufprefix, npad, CTF )
@@ -300,9 +303,6 @@ def main():
 	prjfile = args[0]
 
 	if options.MPI:
-		from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
-		from mpi import mpi_init
-		sys.argv = mpi.mpi_init( len(sys.argv), sys.argv )
 		myid = mpi.mpi_comm_rank( mpi.MPI_COMM_WORLD )
 		ncpu = mpi.mpi_comm_size( mpi.MPI_COMM_WORLD )
 	else:
@@ -324,5 +324,4 @@ if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
-	if "OMPI_COMM_WORLD_SIZE" in os.environ:
-		mpi.mpi_finalize()
+	mpi.mpi_finalize()

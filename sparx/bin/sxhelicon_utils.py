@@ -43,6 +43,8 @@ from builtins import range
 
 import mpi
 
+mpi.mpi_init( 0, [] )
+
 
 def main():
 	arglist = []
@@ -251,9 +253,6 @@ def main():
 		nearbyp = int( (options.nearby/options.apix) + 0.5)
 		zstepp = int( (options.zstep/options.apix) + 0.5)
 
-		if options.MPI:
-			sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
-
 		if len(options.predict_helical) > 0:
 			
 			if len(args) != 1:
@@ -437,5 +436,4 @@ if __name__ == "__main__":
 	global_def.write_command()
 	main()
 	global_def.print_timestamp( "Finish" )
-	if "OMPI_COMM_WORLD_SIZE" in os.environ:
-		mpi.mpi_finalize()
+	mpi.mpi_finalize()

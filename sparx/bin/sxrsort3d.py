@@ -19,6 +19,9 @@ from    morphology  import 	get_shrink_3dmask
 
 import mpi
 
+mpi.mpi_init( 0, [] )
+
+
 # utilities
 from utilities      import get_im,bcast_number_to_all,cmdexecute,write_text_file,read_text_file,wrap_mpi_bcast
 from applications   import recons3d_n_MPI, mref_ali3d_MPI, Kmref_ali3d_MPI
@@ -97,7 +100,6 @@ def main():
 		global_def.BATCH = True
 
 		#---initialize MPI related variables
-		sys.argv  = mpi.mpi_init(len(sys.argv),sys.argv)
 		nproc     = mpi.mpi_comm_size( mpi.MPI_COMM_WORLD )
 		myid      = mpi.mpi_comm_rank( mpi.MPI_COMM_WORLD )
 		mpi_comm  = mpi.MPI_COMM_WORLD

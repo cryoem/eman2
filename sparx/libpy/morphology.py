@@ -2235,13 +2235,11 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 							print(warinnig_message)
 						print("    Ignores this as an invalid entry.")
 					else:
-						# print("MRK_DEBUG: adding mic_id_substr := ", mic_id_substr)
 						valid_mic_id_substr_list.append(mic_id_substr)
-				# 	# This entry is not in the selection list. Do nothing
+				# otherwise: this entry is not in the selection list; do nothing
 			
 			# Check the input dataset consistency and save the result to a text file, if necessary.
 			if check_consistency:
-				# Create output directory
 				os.mkdir(output_directory)
 			
 				# Open the consistency check file
@@ -2291,14 +2289,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			print(("  Entries in selection list   : %6d" % (len(selected_mic_path_list))))
 			print(("  Rejected by no input        : %6d" % (len(no_input_mic_id_substr_list))))
 			print(("  Valid Entries               : %6d" % (len(valid_mic_id_substr_list))))
-			
-			# --------------------------------------------------------------------------------
-			# Check MPI error condition
-			# --------------------------------------------------------------------------------
-			if len(valid_mic_id_substr_list) < n_mpi_procs:
-				error_status = ("Number of MPI processes (%d) supplied by --np in mpirun cannot be greater than %d (number of valid s that satisfy all criteria to be processed). Run %s -h for help." % (n_mpi_procs, len(valid_mic_id_substr_list, program_name)), getframeinfo(currentframe()))
-				break
-			
+					
 			# --------------------------------------------------------------------------------
 			# Create input file path list
 			# --------------------------------------------------------------------------------
@@ -2329,11 +2320,8 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 		# --------------------------------------------------------------------------------
 		# Print all error messages and abort the process if necessary.
 		# --------------------------------------------------------------------------------
-		# NOTE: Toshio Moriya 2016/11/15
-		# The following function takes care of the case when an if-statement uses break for occurence of an error.
-		# However, more elegant way is to use 'exception' statement of exception mechanism...
-		# 
-		if_error_then_all_processes_exit_program(error_status)
+
+		if_error_then_all_processes_exit_program(error_status) # this should be throwing an exception
 		
 	else:
 		input_file_path_list.append(input_image_path)
@@ -2389,7 +2377,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 	# Set up loop variables depending on the cter mode
 	if stack == None:
 		if RUNNING_UNDER_MPI:
-			set_start, set_end = MPI_start_end(len(namics), n_mpi_procs, my_mpi_proc_id)
+			set_start, set_end = MPI_start_end( len(namics), n_mpi_procs, my_mpi_proc_id )
 		else:
 			set_start = 0
 			set_end = len(namics)
@@ -3346,14 +3334,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			print(("  Entries in selection list   : %6d" % (len(selected_mic_path_list))))
 			print(("  Rejected by no input        : %6d" % (len(no_input_mic_id_substr_list))))
 			print(("  Valid Entries               : %6d" % (len(valid_mic_id_substr_list))))
-			
-			# --------------------------------------------------------------------------------
-			# Check MPI error condition
-			# --------------------------------------------------------------------------------
-			if len(valid_mic_id_substr_list) < n_mpi_procs:
-				error_status = ("Number of MPI processes (%d) supplied by --np in mpirun cannot be greater than %d (number of valid s that satisfy all criteria to be processed). Run %s -h for help." % (n_mpi_procs, len(valid_mic_id_substr_list, program_name)), getframeinfo(currentframe()))
-				break
-			
+					
 			# --------------------------------------------------------------------------------
 			# Create input file path list
 			# --------------------------------------------------------------------------------
@@ -5733,14 +5714,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			print(("  Entries in selection list   : %6d" % (len(selected_mic_path_list))))
 			print(("  Rejected by no input        : %6d" % (len(no_input_mic_id_substr_list))))
 			print(("  Valid Entries               : %6d" % (len(valid_mic_id_substr_list))))
-			
-			# --------------------------------------------------------------------------------
-			# Check MPI error condition
-			# --------------------------------------------------------------------------------
-			if len(valid_mic_id_substr_list) < n_mpi_procs:
-				error_status = ("Number of MPI processes (%d) supplied by --np in mpirun cannot be greater than %d (number of valid s that satisfy all criteria to be processed). Run %s -h for help." % (n_mpi_procs, len(valid_mic_id_substr_list, program_name)), getframeinfo(currentframe()))
-				break
-			
+					
 			# --------------------------------------------------------------------------------
 			# Create input file path list
 			# --------------------------------------------------------------------------------

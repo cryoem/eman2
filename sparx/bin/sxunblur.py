@@ -38,6 +38,8 @@ import applications
 import utilities
 import mpi
 
+mpi.mpi_init( 0, [] )
+
 
 def parse_args():
 	"""
@@ -290,10 +292,9 @@ def main(args):
 	None
 	"""
 
-	mpi.mpi_init(0, [])
-	main_mpi_proc = 0
+	main_mpi_proc  = 0
 	my_mpi_proc_id = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
-	n_mpi_procs = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
+	n_mpi_procs    = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
 
 	# Import the file names
 	sanity_checks(args, my_mpi_proc_id)

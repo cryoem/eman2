@@ -43,6 +43,9 @@ from builtins import range
 
 import mpi
 
+mpi.mpi_init( 0, [] )
+
+
 def main():
 	arglist = []
 	for arg in sys.argv:
@@ -134,8 +137,6 @@ def main():
 		# now y_restrict has the same format as x search range .... has to change ihrsr accordingly
 		for i in range(len(y_restrict)): y_restrict2 +=  str(float(y_restrict[i])/options.apix)+" "
 		y_restrict2 = y_restrict2[:-1]
-
-		sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
 
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache

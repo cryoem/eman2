@@ -58,6 +58,7 @@ import morphology
 
 # MPI imports (NOTE: import mpi after EMAN2)
 from applications import MPI_start_end
+import mpi
 from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
 from mpi import mpi_recv, mpi_send, mpi_barrier
 
@@ -3801,16 +3802,12 @@ def gather_EMData(data, number_of_proc, myid, main_node):
 
 
 def send_string_to_all(str_to_send, source_node=0):
-	from mpi import MPI_COMM_WORLD, MPI_INT, MPI_CHAR, mpi_bcast, mpi_comm_rank
-
-	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	myid = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
+	
 	str_to_send_len = len(str_to_send) * int(myid == source_node)
-	str_to_send_len = mpi_bcast(
-		str_to_send_len, 1, MPI_INT, source_node, MPI_COMM_WORLD
-	)[0]
-	str_to_send = mpi_bcast(
-		str_to_send, str_to_send_len, MPI_CHAR, source_node, MPI_COMM_WORLD
-	)
+	str_to_send_len = mpi.mpi_bcast( str_to_send_len, 1, mpi.MPI_INT, source_node, mpi.MPI_COMM_WORLD )[0]
+	str_to_send     = mpi.mpi_bcast( str_to_send, str_to_send_len, mpi.MPI_CHAR, source_node, mpi.MPI_COMM_WORLD )
+
 	return "".join(str_to_send)
 
 
@@ -3818,23 +3815,22 @@ def bcast_number_to_all(number_to_send, source_node=0, mpi_comm=-1):
 	"""
 		number_to_send has to be pre-defined in each node
 	"""
-	from mpi import mpi_bcast, MPI_INT, MPI_COMM_WORLD, MPI_FLOAT
 	import types
 
 	if mpi_comm == -1:
-		mpi_comm = MPI_COMM_WORLD
+		mpi_comm = mpi.MPI_COMM_WORLD
 	if type(number_to_send) is int:
-		TMP = mpi_bcast(number_to_send, 1, MPI_INT, source_node, mpi_comm)
+		TMP = mpi.mpi_bcast(number_to_send, 1, mpi.MPI_INT, source_node, mpi_comm)
 		return int(TMP[0])
 	elif type(number_to_send) is float:
-		TMP = mpi_bcast(number_to_send, 1, MPI_FLOAT, source_node, mpi_comm)
+		TMP = mpi.mpi_bcast(number_to_send, 1, mpi.MPI_FLOAT, source_node, mpi_comm)
 		return float(TMP[0])
 	elif type(number_to_send) is bool:
 		if number_to_send:
 			number_to_send = 1
 		else:
 			number_to_send = 0
-		TMP = mpi_bcast(number_to_send, 1, MPI_INT, source_node, mpi_comm)
+		TMP = mpi.mpi_bcast(number_to_send, 1, mpi.MPI_INT, source_node, mpi_comm)
 		if TMP == 1:
 			return True
 		else:

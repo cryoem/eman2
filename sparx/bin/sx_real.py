@@ -38,8 +38,8 @@ from __future__ import print_function
 import EMAN2
 from EMAN2 import *
 
-
 GUIUSE=True
+
 try:
 	if get_platform()=="Linux" and os.getenv("DISPLAY")==None: raise Exception
 

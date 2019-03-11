@@ -44,6 +44,8 @@ import sys
 
 import mpi
 
+mpi.mpi_init( 0, [] )
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range --ts=translation_step --dst=delta --center=center --maxit=max_iteration --CTF --snr=SNR --Fourvar=Fourier_variance --Ng=group_number --Function=user_function_name --CUDA --GPUID --MPI"
@@ -104,8 +106,7 @@ def main():
 		global_def.BATCH = True
 		if  options.MPI:
 			from applications import ali2d_base
-			from mpi import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-			sys.argv = mpi_init(len(sys.argv),sys.argv)
+			from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 
 			number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 			myid = mpi_comm_rank(MPI_COMM_WORLD)
@@ -152,5 +153,4 @@ if __name__ == "__main__":
 	global_def.write_command()
 	main()
 	global_def.print_timestamp( "Finish" )
-	if "OMPI_COMM_WORLD_SIZE" in os.environ:
-		mpi.mpi_finalize()
+	mpi.mpi_finalize()
