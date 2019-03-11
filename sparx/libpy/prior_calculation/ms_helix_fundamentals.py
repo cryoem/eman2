@@ -33,6 +33,7 @@ import ms_helix_lib as mhl
 
 def calculate_priors(
         tracker,
+        symclass,
         params_file=None,
         index_file=None,
         group_id=False, # Name of the column to check | E.g. filament_id, ISAC_class_id

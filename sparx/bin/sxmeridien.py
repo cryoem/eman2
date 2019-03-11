@@ -116,6 +116,9 @@ import json
 from   sys 	import exit
 from   time import localtime, strftime, sleep, time
 
+import ms_helix_sphire
+import ms_helix_fundamentals
+
 global Tracker, Blockdata
 global  target_theta, refang
 
@@ -5816,10 +5819,17 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 
 			ptl_on_this_cpu = im_start
 			for iproc_index_old in range(istart_old_proc_id, iend_old_proc_id+1):
-				with open(os.path.join(final_dir,"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%\
-				  (procid,iproc_index_old,Tracker["mainiteration"])),'r') as fout:
-					oldparamstructure_on_old_cpu = convert_json_fromunicode(json.load(fout))
-				fout.close()
+				oldparamstructure_on_old_cpu = load_object_from_json(
+					os.path.join(
+						final_dir,
+						"oldparamstructure",
+						"oldparamstructure_%01d_%03d_%03d.json"%(
+							procid,
+							iproc_index_old,
+							Tracker["mainiteration"]
+							)
+						)
+					)
 				mlocal_id_on_old = ptl_on_this_cpu - plist[iproc_index_old][0]
 				while (mlocal_id_on_old<len(oldparamstructure_on_old_cpu)) and (ptl_on_this_cpu<im_end):
 					oldparamstructure[procid].append(oldparamstructure_on_old_cpu[mlocal_id_on_old])
@@ -5890,9 +5900,7 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 	if(do_final_iter_init ==0):
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			try:
-				fout    = open(os.path.join(masterdir, "Tracker_final.json"),'r')
-				Tracker = convert_json_fromunicode(json.load(fout))
-				fout.close()
+				Tracker = load_tracker_from_json(os.path.join(masterdir, "Tracker_final.json"))
 				sxprint("The best solution is %d  "%Tracker["constants"]["best"])
 				do_final_iter =  Tracker["constants"]["best"] # set the best as do_final iteration
 			except: carryon = 0
@@ -5910,9 +5918,7 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 	final_dir = os.path.join(masterdir, "main%03d"%do_final_iter)
 	if(Blockdata["myid"] == Blockdata["main_node"]): # check json file and load tracker
 		try:
-			with open(os.path.join(final_dir,"Tracker_%03d.json"%do_final_iter),'r') as fout:
-				Tracker = convert_json_fromunicode(json.load(fout))
-			fout.close()
+			Tracker = load_tracker_from_json(os.path.join(final_dir,"Tracker_%03d.json"%do_final_iter))
 		except: carryon = 0
 		if orgstack: Tracker["constants"]["stack"] = orgstack
 	else: Tracker = 0
@@ -6569,7 +6575,6 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		oldparams[procid] = []
 		if Tracker["constants"]["small_memory"]: original_data[procid]	= []
 
-		do3d(procid, projdata[procid], newparamstructure[procid], refang, rshifts, norm_per_particle[procid], Blockdata["myid"], smearing = True, mpi_comm = MPI_COMM_WORLD)
 		projdata[procid] = []
 		if Tracker["changed_delta"]:
 			Tracker["nxinit"] = org_nxinit
@@ -6577,14 +6582,34 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		if( Blockdata["myid_on_node"] == 0 ):
 			for kproc in range(Blockdata["no_of_processes_per_group"]):
 				if( kproc == 0 ):
-					fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,Blockdata["myid"],Tracker["mainiteration"])),'w')
-					json.dump(newparamstructure[procid], fout, indent=4)
-					fout.close()
+					dump_object_to_json(
+						os.path.join(
+							Tracker["constants"]["masterdir"],
+							"main%03d"%Tracker["mainiteration"],
+							"oldparamstructure",
+							"oldparamstructure_%01d_%03d_%03d.json"%(
+								procid,
+								Blockdata["myid"],
+								Tracker["mainiteration"]
+								)
+							),
+						newparamstructure[procid]
+						)
 				else:
 					dummy = wrap_mpi_recv(kproc, Blockdata["shared_comm"])
-					fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,(Blockdata["color"]*Blockdata["no_of_processes_per_group"] + kproc),Tracker["mainiteration"])),'w')
-					json.dump(dummy, fout, indent=4)
-					fout.close()
+					dump_object_to_json(
+						os.path.join(
+							Tracker["constants"]["masterdir"],
+							"main%03d"%Tracker["mainiteration"],
+							"oldparamstructure",
+							"oldparamstructure_%01d_%03d_%03d.json"%(
+								procid,
+								(Blockdata["color"]*Blockdata["no_of_processes_per_group"] + kproc),
+								Tracker["mainiteration"]
+								)
+							),
+						dummy
+						)
 					del dummy
 		else:
 			wrap_mpi_send(newparamstructure[procid], 0, Blockdata["shared_comm"])
@@ -6602,8 +6627,6 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 	if Tracker["changed_delta"]:
 		org_nxinit = Tracker["nxinit"]
 		Tracker["nxinit"] = Tracker["constants"]["nnxo"]
-	
-	rec3d_make_maps(compute_fsc = True, regularized = True)
 
 	if Tracker["changed_delta"]:
 		Tracker["nxinit"] = org_nxinit
@@ -6639,6 +6662,41 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		write_text_row( [pinids[i][1] for i in range(len(pinids))], os.path.join(Tracker["directory"] ,"params_%03d.txt"%(Tracker["mainiteration"])))
 		del pinids
 	mpi_barrier(MPI_COMM_WORLD)
+
+	for procid in range(2):
+		chunk_file = os.path.join(Tracker["directory"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
+		params_chunk_file = os.path.join(Tracker["directory"],"params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
+		ms_helix_fundamentals.calculate_priors(
+			tracker=Tracker,
+			params_file=params_chunk_file,
+			index_file=chunk_file,
+			group_id=Tracker['constants']['group_id'],
+			typ='sphire',
+			tol_psi=30,
+			tol_theta=15,
+			tol_filament=0.2,
+			tol_std=1,
+			tol_mean=30,
+			outlier_method='deg',
+			prior_method='running',
+			force_outlier=False,
+			window_size=3,
+			remove_outlier=False,
+			symclass=Blockdata['symclass'],
+			)
+
+	do3d(
+		procid,
+		projdata[procid],
+		newparamstructure[procid],
+		refang,
+		rshifts,
+		norm_per_particle[procid],
+		Blockdata["myid"],
+		smearing = True,
+		mpi_comm = MPI_COMM_WORLD
+		)
+	rec3d_make_maps(compute_fsc = True, regularized = True)
 
 	if(Tracker["mainiteration"] == 1 ):
 		acc_rot = acc_trans = 1.e23
@@ -6700,11 +6758,60 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 
 		if  Blockdata["bckgnoise"] :
 			Blockdata["bckgnoise"] = "computed"
-		fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"]),'w')
-		json.dump(Tracker, fout, indent=4)
-		fout.close()
+		dump_tracker_to_json(
+			os.path.join(
+				Tracker["constants"]["masterdir"],
+				"main%03d"%Tracker["mainiteration"],
+				"Tracker_%03d.json"%Tracker["mainiteration"]
+				),
+			Tracker
+			)
 	Tracker["previousoutputdir"] = Tracker["directory"]
+
 	return # parameters are all passed by Tracker
+
+
+def prior_stack_fmt(sphire_prior_stack):
+	fmt = []
+	for entry in sphire_prior_stack.dtype.names:
+		if isinstance(sphire_prior_stack[entry][0], basestring):
+			fmt.append('% {0}s'.format(np.max([len(str_entry) for str_entry in sphire_prior_stack[entry]])+3))
+		elif isinstance(sphire_prior_stack[entry][0], int):
+			fmt.append('% {0}d'.format(len(str(np.max(sphire_prior_stack[entry])))+3))
+		elif isinstance(sphire_prior_stack[entry][0], float):
+			fmt.append('% {0}.6f'.format(len(str(np.max(sphire_prior_stack[entry])))+3))
+		else:
+			print('UNKNOWN', entry, type(entry))
+	return ' '.join(fmt)
+
+
+def load_tracker_from_json(file_name):
+	tracker = load_object_from_json(file_name)
+	if tracker['constants']['stack_prior'] is not None:
+		tracker['constants']['stack_prior'] = np.genfromtxt(
+			tracker['constants']['stack_prior'],
+			dtype=tracker['constants']['stack_prior_dtype']
+			)
+	return tracker
+
+def load_object_from_json(file_name):
+	with open(file_name, 'r') as fin:
+		json_object = convert_json_fromunicode(json.load(fin))
+	return json_object
+
+def dump_tracker_to_json(file_name, tracker):
+	if tracker['constants']['stack_prior'] is not None:
+		np.savetxt(
+			os.path.join(tracker['constants']['masterdir'], 'stack_prior.txt'),
+			Tracker['constants']['stack_prior'],
+			fmt=Tracker['constants']['stack_prior_fmt']
+			)
+		tracker['constants']['stack_prior'] = os.path.join(tracker['constants']['masterdir'], 'stack_prior.txt')
+	dump_object_to_json(file_name, tracker)
+
+def dump_object_to_json(file_name, data_object):
+	with open(file_name, 'w') as fout:
+		json.dump(data_object, fout, indent=4)
 
 # 		
 # - "Tracker" (dictionary) object
@@ -6791,6 +6898,7 @@ def main():
 		parser.add_option("--theta_min",               	type="float",  	default= -1,              	help="Lower limit for the out-of-plane rotation angle. Default is the full range based on the symmetry. (Default -1)")
 		parser.add_option("--theta_max",               	type="float",  	default= -1,              	help="Upper limit for the out-of-plane rotation angle.  Default is the full range based on the symmetry. (Default -1)")
 		parser.add_option("--even_angle_method",               	type="str",  	default='S',              	help="Even angle creation strategy. Choices: S, P, M. (Default S)")
+		parser.add_option("--group_id",               	type="str",  	default=None,              	help="Group particles for outlier detection by header name. Useful ones are e.g. ISAC_class_id or filament_id (Default None)")
 		if do_continuation_mode:
 			# case1: local meridien run using parameters stored in headers
 			# case2: restart mode of standard meridien run. Parameters can be altered in the restart run.
@@ -6930,7 +7038,13 @@ def main():
 			Constants["memory_per_node"] 			= options.memory_per_node
 			Constants["initialshifts"]			    = options.initialshifts
 			Constants["even_angle_method"]			    = options.even_angle_method
-
+			Constants["group_id"]			    = options.group_id
+			if options.group_id is None:
+				Constants['stack_prior'] = None
+			else:
+				Constants['stack_prior'] = ms_helix_sphire.import_sphire_stack(args[0], options.group_id)
+				Constants['stack_prior_fmt'] = prior_stack_fmt(Constants['stack_prior'])
+				Constants['stack_prior_dtype'] = Constants['stack_prior'].dtype.descr
 
 			#
 			#  The program will use three different meanings of x-size
@@ -6980,6 +7094,12 @@ def main():
 			Tracker["changed_delta"]        = False
 			Blockdata["bckgnoise"]          = None
 			Blockdata["accumulatepw"]       = [[],[]]
+			import copy
+			old_tracker = copy.deepcopy(Tracker)
+			dump_tracker_to_json('test_tracker.json', Tracker)
+			Tracker = load_tracker_from_json('test_tracker.json')
+			print(Tracker == old_tracker)
+			exit(0)
 
 			# ------------------------------------------------------------------------------------
 			# Get the pixel size; if none, set to 1.0, and the original image size
@@ -7203,10 +7323,14 @@ def main():
 				del viv
 
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				with open(os.path.join(Tracker["constants"]["masterdir"], \
-					"main%03d"%Tracker["mainiteration"], \
-						"Tracker_%03d.json"%Tracker["mainiteration"]),'w') as fout:
-					json.dump(Tracker, fout, indent=4)
+				dump_tracker_to_json(
+					os.path.join(
+						Tracker["constants"]["masterdir"],
+						"main%03d"%Tracker["mainiteration"],
+						"Tracker_%03d.json"%Tracker["mainiteration"]
+						),
+					Tracker
+					)
 
 		else:
 			Blockdata["bckgnoise"] 		= None
@@ -7214,8 +7338,7 @@ def main():
 			initdir 			= os.path.join(masterdir,"main000")
 			keepchecking 		= 1
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				with open(os.path.join(initdir,"Tracker_000.json"),'r') as fout:
-					Tracker = convert_json_fromunicode(json.load(fout))
+				Tracker = load_tracker_from_json(os.path.join(initdir,"Tracker_000.json"))
 				print_dict(Tracker["constants"], "Permanent settings of the original run recovered from main000")
 			else: Tracker = None
 			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
@@ -7246,10 +7369,12 @@ def main():
 			if doit :
 				if(Blockdata["myid"] == Blockdata["main_node"]):
 					mainiteration = Tracker["mainiteration"]
-					with open(os.path.join(Tracker["previousoutputdir"], \
-					  "Tracker_%03d.json"%(Tracker["mainiteration"]-1)),'r') as fout:
-						Tracker = convert_json_fromunicode(json.load(fout))
-					fout.close()
+					Tracker = load_tracker_from_json(
+						os.path.join(
+							Tracker["previousoutputdir"],
+							"Tracker_%03d.json"%(Tracker["mainiteration"]-1)
+							)
+						)
 					#  It has to be repeated here as Tracker is from previous iteration, I see no other way.
 					Tracker["previousoutputdir"]	= os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
 					Tracker["mainiteration"]		= mainiteration
@@ -7339,9 +7464,10 @@ def main():
 						if Tracker["constants"]["best"] ==2:
 							sxprint("No resolution improvement in refinement ")
 						
-						with open(os.path.join(masterdir,"Tracker_final.json"),'w') as fout:
-							json.dump(Tracker, fout, indent=4)
-						fout.close()
+						dump_tracker_to_json(
+							os.path.join(masterdir,"Tracker_final.json"),
+							Tracker
+							)
 					mpi_barrier(MPI_COMM_WORLD)
 					
 					newparamstructure 			= [[],[]]
