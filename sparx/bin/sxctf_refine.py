@@ -41,6 +41,7 @@ import multiprocessing
 import os
 import itertools
 import numpy as np
+import sys
 
 from tqdm import tqdm
 from scipy import ndimage
@@ -445,7 +446,7 @@ def print_progress(refinement_result):
 	start_num_chunks = refinement_result._number_left
 	chunks_in_progress = start_num_chunks
 
-	with tqdm(total=start_num_chunks) as pbar:
+	with tqdm(total=start_num_chunks, file=sys.stdout) as pbar:
 		while True:
 			num_unprocessed_chunks = refinement_result._number_left
 			chunks_done = chunks_in_progress - num_unprocessed_chunks
@@ -762,7 +763,7 @@ def _main_():
 		global_def.ERROR("Output folder already exists. Stop execution.")
 	else:
 		os.makedirs(output_folder)
-        global_def.write_command(output_folder)
+		global_def.write_command(output_folder)
 
 	output_virtual_stack_name = args.ouputstackname
 
