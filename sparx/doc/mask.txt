@@ -70,6 +70,7 @@ Create an adapted mask dilated by 2 pixel and a soft edge of 5 pixel using the b
   ; %%--%%s_edge_type : Second - Soft-edge type: The type of soft-edge for the 3D mask. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gaussian\' for gaussian soft-edge. (default cosine) : %%--%%use_second_mask==True %%--%%s_edge_width!=0
   ; %%--%%s_do_old : Second - Old behaviour : Restore the old masking behaviour, which is a bit less smooth. (default False) : %%--%%use_second_mask==True %%--%%s_edge_width!=0
   ; %%--%%s_allow_disconnected : Second - Allow disconnected regions : Allow disconnected region in the mask. (default False) : %%--%%use_second_mask==True
+  ; %%--%%s_fill_mask : Second - Fill mask : Fills empty spaces inside a map. (default True question reversed in GUI)
   ; %%--%%s_invert : Second - Invert masking : If True, the mask will remove everything that is inside instead of leaving it. (default False) : %%--%%use_second_mask==True
 
 

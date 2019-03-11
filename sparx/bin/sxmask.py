@@ -316,6 +316,13 @@ def parse_command_line():
 		default=False,
 		help='Second mask: Allow disconnected regions in the mask.'
 		)
+	group_mask.add_argument(
+		'--s_fill_mask',
+		'--sfm',
+		action='store_true',
+		default=False,
+		help='Second mask: Fill empty regions in the mask.'
+		)
 	group_second_mask.add_argument(
 		'--s_invert',
 		'--sinv',
@@ -490,7 +497,7 @@ def main():
 			allow_disconnected=command_args.s_allow_disconnected,
 			mode=mode,
 			do_approx=command_args.s_do_old,
-			do_fill=command_args.fill_mask
+			do_fill=command_args.s_fill_mask
 			)
 		if command_args.s_invert:
 			s_mask = 1 - s_mask
