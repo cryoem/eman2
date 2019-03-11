@@ -152,8 +152,8 @@ def print_timestamp( tag="" ):
 		mpi_rank = int( os.environ['OMPI_COMM_WORLD_RANK'] )
 
 		# printing the "Start"-tag will sync up the log file names so that all processes use the same logfile
+		global SXPRINT_LOG, SXPRINT_LOG_SYNC
 		if not SXPRINT_LOG_SYNC and "start" in tag.lower():
-			global SXPRINT_LOG, SXPRINT_LOG_SYNC
 			SXPRINT_LOG = util.send_string_to_all( SXPRINT_LOG, 0 )
 			SXPRINT_LOG_SYNC = True
 

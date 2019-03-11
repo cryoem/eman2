@@ -447,7 +447,7 @@ def main():
 
 		elif no_adjustment: pass
 		
-		if Tracker["constants"]["low_pass_filter"] != -1.0:di
+		if Tracker["constants"]["low_pass_filter"] != -1.0:
 			if Tracker["constants"]["low_pass_filter"] == 0.0: low_pass_filter = FH1
 			elif Tracker["constants"]["low_pass_filter"] == 1.0: 
 				low_pass_filter = FH2
