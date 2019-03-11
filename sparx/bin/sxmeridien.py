@@ -7228,9 +7228,12 @@ def main():
 					masterdir = "master"+timestring
 					li = len(masterdir)
 					os.makedirs(masterdir)
+					global_def.write_command(masterdir)
 					keepchecking = 0
 				else:
-					if not os.path.exists(masterdir): os.makedirs(masterdir)
+					if not os.path.exists(masterdir):
+						os.makedirs(masterdir)
+						global_def.write_command(masterdir)
 					li = 0
 					keepchecking = 1
 			else:

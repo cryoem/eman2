@@ -271,6 +271,7 @@ def main():
 			else:
 				li = 0
 			cmd="{} {}".format("mkdir -p", masterdir)
+			global_def.write_command(masterdir)
 			os.system(cmd)			
 		else:
 			li=0

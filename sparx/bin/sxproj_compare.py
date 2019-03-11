@@ -52,6 +52,7 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 	# Create directory if it doesn't exist
 	if not os.path.isdir(outdir):
 		os.makedirs(outdir)  # os.mkdir() can only operate one directory deep
+		global_def.write_command(outdir)
 		sxprint("mkdir -p %s" % outdir)
 
 	# Expand path for outputs

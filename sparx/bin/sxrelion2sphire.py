@@ -255,6 +255,7 @@ def main():
 	assert not os.path.exists(dir_path_work), '# Logical Error: The output directory should not exists at this point of code.'
 	sxprint('# Creating work dir...')
 	os.makedirs(dir_path_work)
+	global_def.write_command(dir_path_work)
 	
 	# ------------------------------------------------------------------------------------
 	# STEP 2: Convert RELION parameters to SPHIRE format

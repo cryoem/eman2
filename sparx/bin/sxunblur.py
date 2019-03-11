@@ -367,6 +367,7 @@ def main(args):
 		for dose_adjustment, dir_name, log_dir_name in unblur_list:
 			try:
 				os.makedirs(dir_name)
+				global_def.write_command(dir_name)
 			except OSError:
 				pass
 			try:

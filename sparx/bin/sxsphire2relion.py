@@ -291,6 +291,7 @@ def create_particle_stack(particle_stack, output_dir, particle_data):
 		output_name = os.path.join(output_dir, ptcl_names[particle_idx])
 		try:
 			os.makedirs(os.path.dirname(output_name))
+			global_def.write_command(os.path.dirname(output_name))
 		except OSError:
 			pass
 		emdata.write_image(output_name, -1)

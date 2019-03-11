@@ -269,6 +269,7 @@ def main():
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
+	global_def.write_command()
 	main()
 	global_def.print_timestamp( "Finish" )
 	if "OMPI_COMM_WORLD_SIZE" in os.environ:
