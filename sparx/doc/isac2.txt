@@ -30,37 +30,39 @@ Note: CTF and VPP options cannot be used together.
 \\
 ===== Input =====
 === Main Parameters ===
-  ; stack_file : Input image stack: The images must to be square (//nx//=//ny//). The stack can be either in bdb or hdf format. (default required string)
-  ; output_directory : Output directory: The automatically-created output directory will contain results. If the directory already exists, results will be written there, possibly overwriting previous runs. (default required string)
+  ; stack_file : Input image stack: Images must to be square (//nx//=//ny//). The stack can be either in .bdb or in .hdf format. (default required string)
+  ; output_directory : Output directory: General ISAC output directory to store all results. If the directory already exists ISC will only run in continuation mode (see advanced parameter restart). (default required string)
 
-  ; %%--%%radius : Particle radius [Pixels]: Radius of the particle (pixels). There is no default value and so a sensible number has to be provided. (default required int)
-  ; %%--%%img_per_grp : Images per class: Number of images per class in an ideal situation. In practice, it defines the maximum size of the classes or the number of classes //K// = //N// / //img_per_grp//, where //N// is the total number of images in the input stack. (default 200)
-  ; %%--%%CTF : CTF phase flipping: Use for cryo datasets. If set, the data will be phase-flipped using CTF information included in the image headers. Cannot be used togehter with the VPP option. (default False) : %%--%%VPP==False
-  ; %%--%%VPP : Phase Plate data: Please use this option if the dataset is taken with Phase Plate. Cannot be used togehter with the CTF option. (default False) : %%--%%CTF==False
+  ; %%--%%radius : Particle radius [Pixels] : Radius of the particle in pixels. ISAC cannot offer a default here since the value will depend on the particle im question. (default required int)
+  ; %%--%%img_per_grp : Images per class: Ideally the number of images per. In practice this value determines the number of classes //K// = //N// / //img_per_grp//, where //N// is the total number of images in the input stack. (default 200)
+  ; %%--%%CTF : CTF phase flipping : Use for cryo datasets. If set to True the data will be phase-flipped using CTF information included in the image headers. Cannot be used together with the VPP option. (default False) : %%--%%VPP==False
+  ; %%--%%VPP : Phase Plate data : Use this option if the dataset is taken with phase plate. Cannot be used togehter with the CTF option. (default False) : %%--%%CTF==False
+  ; %%--%%filament_width : Filament width [Pixels]: When this is set to a non-default value ISAC assumes helical data in which case particle images will be subjected to rectangular masking of the given filament_width value. (default -1)
 
 \\
 === Advanced Parameters ===
-  ; %%--%%xr : Translation search range [Pixels]: The translational search range. Set by the program by default. (default 1)
-  ; %%--%%thld_err : Pixel error threshold [Pixels]: Used for checking stability. It is defined as the root mean square of distances between corresponding pixels from set of found transformations and theirs average transformation, depends linearly on square of radius (parameter //ou//). //units// - //pixels//. (default 0.7)
-  ; %%--%%target_radius : Target particle radius [Pixels]: Particle radius used by ISAC2 to process the data. The images will be resized to fit this radius (default 29)
-  ; %%--%%target_nx : Target particle image size [Pixels]: Image size used by ISAC2 to process the data. The images will be resized according to target particle radius and then cut/padded to achieve the target image size. When //xr// > 0, the final image size for ISAC2 processing is //target_nx// + //xr// - 1  (default 76)
-  ; %%--%%ir : Inner ring [Pixels]: Inner of the resampling to polar coordinates. (default 1)
-  ; %%--%%rs : Ring step [Pixels]: Step of the resampling to polar coordinates. (default 1)
-  ; %%--%%yr : Y search range [Pixels]: The translational search range in the y direction. Set as //xr// by default. (default -1)
-  ; %%--%%ts : Search step [Pixels]: Translational search step. (default 1.0)
-  ; %%--%%maxit : Reference-free alignment iterations: The number of iterations for reference-free alignment. (default 30)
-  ; %%--%%center_method : Centering method: Method to center global 2D average during the initial prealignment of the data (0: no centering; -1: average shift method; please see center_2D in utilities.py for methods 1-7). (default -1)
-  ; %%--%%dst : Discrete angle used for within-group alignment: Discrete angle used for within-group alignment. (default 90.0)
-  ; %%--%%FL : Lowest filter frequency [1/Pixel]: Lowest frequency used for the tangent filter. (default 0.2)
-  ; %%--%%FH : Highest filter frequency [1/Pixel]: Highest frequency used for the tangent filter. (default 0.45)
-  ; %%--%%FF : Tangent filter fall-off: The fall-off of the tangent filter. (default 0.2)
-  ; %%--%%init_iter : Maximum generations: Maximum number of generation iterations performed for a given subset. (default 7)
-  ; %%--%%iter_reali : SAC stability check interval: Defines every how many iterations the SAC stability checking is performed. (default 1)
-  ; %%--%%stab_ali : Number of alignments for stability check: The number of alignments when checking stability. (default 5)
-  ; %%--%%minimum_grp_size : Minimum size of reproducible class: Minimum size of reproducible class. (default 60)
+  ; %%--%%xr : Translation search range [Pixels] : The translational search range. Change with care; higher values will incur significantly higher processing costs. (default 1)
+  ; %%--%%thld_err : Pixel error threshold [Pixels]: Used as a threshold value when checking cluster stability. The pixel error is defined as the root mean square of distances between corresponding pixels from set of found transformations and their average transformation; it depends linearly on square of radius (parameter //ou//). //units// - //pixels//. (default 0.7)
+  ; %%--%%target_radius : Target particle radius [Pixels] : Particle radius used by ISAC2 to process the data. All particle images will be re-scaled to match their particle radius with this radius. (default 29)
+  ; %%--%%target_nx : Target particle image size [Pixels] : Image size used by ISAC2 to process the data. particle images will first be resized according to target particle radius (see above) and then cropped or padded to achieve the target image size. When //xr// > 0, the final image size for ISAC2 processing is //target_nx// + //xr// - 1  (default 76)
+  ; %%--%%ir : Inner ring [Pixels] : Radius of the inner-most ring when resampling images to polar coordinates. (default 1)
+  ; %%--%%rs : Ring step [Pixels] : Radius step size when resampling images to polar coordinates. (default 1)
+  ; %%--%%yr : Y search range [Pixels] : The translational search range in the y direction. Set to the value of //xr// by default. (default -1)
+  ; %%--%%ts : Search step [Pixels] : Translational search step. (default 1.0)
+  ; %%--%%maxit : Reference-free alignment iterations: The number of iterations for reference-free alignments. (default 30)
+  ; %%--%%center_method : Centering method : Method to center global 2D average during the initial prealignment of the data (0: no centering; -1: average shift method; please see center_2D in utilities.py for methods 1-7). (default -1)
+  ; %%--%%dst : Discrete angle used for within-group alignment : Discrete angle used for within-group alignment. (default 90.0)
+  ; %%--%%FL : Lowest filter frequency [1/Pixel] : Lowest frequency used for the tangent filter. (default 0.2)
+  ; %%--%%FH : Highest filter frequency [1/Pixel] : Highest frequency used for the tangent filter. (default 0.45)
+  ; %%--%%FF : Tangent filter fall-off : The fall-off of the tangent filter. (default 0.2)
+  ; %%--%%init_iter : Maximum generations : Maximum number of generation iterations performed for a given subset. (default 7)
+  ; %%--%%iter_reali : SAC stability check interval : Defines every how many iterations the SAC stability checking is performed. (default 1)
+  ; %%--%%stab_ali : Number of alignments for stability check : The number of alignment runs when checking stability. (default 5)
+  ; %%--%%minimum_grp_size : Minimum size of reproducible classes : Minimum size of reproducible classes. (default 60)
   ; %%--%%rand_seed : Seed: Random seed set before calculations. Useful for testing purposes. By default, ISAC2 sets a random seed number. (default none)
   ; %%--%%skip_prealignment : Do pre-alignment: Indicate if pre-alignment should be used or not. Do not use pre-alignment if images are already centered. The //2dalignment// directory will still be generated but the parameters will be zero. By default, do pre-alignment. (default False question reversed in GUI)
   ; %%--%%restart : Restart run: 0: Restart ISAC2 after the last completed main iteration (i.e. the directory must contain //finished// file); //k//: Restart ISAC2 after //k//-th main iteration, it has to be completed (i.e. the directory must contain //finished// file), and higer iterations will be removed; Default: Do not restart. (default -1)
+  ; %%--%%filament_mask_ignore : Ignore filament masking (filament use only): ONLY RELEVANT IF parameter filament_width is set to a non-default value. When processing helical particle images rectangular masking is used (A) to normalize and (B) to mask the actual particle images. The latter can be disabled by setting this flag to True. (default True question reversed in GUI)
 
 \\
 ===== Output =====
@@ -114,10 +116,10 @@ ISAC2 is very time- and memory-consuming.  For example, it may take 15 hours to 
   - Open in e2display.py file class_averages.hdf located in the main directory.
   - Delete averages whose member particles should not be included in the output. 
   - Save the selected subset under a new name,say select1.hdf
-  - Retrieve IDs of member particles and store them in a text file ohk.txt:
+  - Retrieve IDs of member particles and store them in a text file ok.txt:
     * $ sxprocess.py --isacselect class_averages.hdf ok.txt
   - Create a vritual stack containng selected particles:
-    * $ e2bdb.py bdb:data --makevstack:bdb:select1  --list=ohk.txt
+    * $ e2bdb.py bdb:data --makevstack:bdb:select1  --list=ok.txt
 
 The same steps can be performed on files containing candidate class averages.
 

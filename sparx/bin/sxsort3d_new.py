@@ -32,6 +32,8 @@ from   sys 	import exit
 from   time import localtime, strftime, sleep
 global Tracker, Blockdata
 
+import mpi
+
 # ------------------------------------------------------------------------------------
 mpi_init(0, [])
 nproc     = mpi_comm_size(MPI_COMM_WORLD)
@@ -3019,8 +3021,6 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
 	if import_from_sparx_refinement == 0:	
 		ERROR("The best solution is not found","get_input_from_sparx_ref3d", myid=Blockdata["myid"])
-		from mpi import mpi_finalize
-		mpi_finalize()
 		return
 	Tracker_refinement = wrap_mpi_bcast(Tracker_refinement, Blockdata["main_node"], communicator = MPI_COMM_WORLD)
 	# Check orgstack, set correct path
@@ -5553,9 +5553,8 @@ def main():
 				Tracker["output"].append(msg)
 			write_text_file(Tracker["output"], os.path.join(Tracker["constants"]["masterdir"], "final.txt"))
 		mpi_barrier(MPI_COMM_WORLD)
-		from mpi import mpi_finalize
-		mpi_finalize()
 		return
+
 	mpi_barrier(MPI_COMM_WORLD)
 	###<<<------- ++++++++++ sort3d starts here +++++++++++ ----------
 	for indep_sort3d in range(Tracker["total_sort3d_indepent_run"]):		
@@ -5821,11 +5820,10 @@ def main():
 		json.dump(Tracker, fout)
 		fout.close()
 	mpi_barrier(MPI_COMM_WORLD)
-	from mpi import mpi_finalize
-	mpi_finalize()
 	return
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	mpi_finalize()

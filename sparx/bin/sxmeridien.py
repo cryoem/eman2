@@ -101,6 +101,7 @@ from global_def import sxprint, ERROR
 import user_functions
 from global_def import *
 
+import mpi
 from mpi   	import  *
 from math  	import  *
 from random import *
@@ -123,7 +124,7 @@ global Tracker, Blockdata
 global  target_theta, refang
 
 
-mpi_init(0, [])
+mpi.mpi_init(0, [])
 Tracker   = {}
 Blockdata = {}
 #  MPI stuff
@@ -5246,7 +5247,6 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
 					if(keepf == 0):
 						ERROR( "Too few images to estimate keepfirst", myid=Blockdata["myid"] )
-						mpi_finalize()
 						return
 					###print("  STARTING8    ",Blockdata["myid"],keepf)
 					Tracker["keepfirst"] = int(keepf)
@@ -6014,7 +6014,7 @@ def recons3d_trl_struct_MPI_nosmearing(myid, main_node, prjlist, parameters, CTF
 	if myid == main_node: return fftvol, weight, refvol
 	else: return None, None, None
 
-def rec3d_continuation_nosmearing(original_data, mpi_comm):
+def rec3d_continuation_nosmearing(mpi_comm):
 	global Tracker, Blockdata
 	
 	original_data	= [None, None]
@@ -6199,14 +6199,25 @@ def update_tracker(shell_line_command):
 		tempdict["an"] = Tracker["constants"]["an"]
 
 	# For backwards compatibility
-	try:
-			Tracker["constants"]["user_func_volume"]
-	except KeyError:
-			Tracker["constants"]["user_func_volume"] = "do_volume_mask"
-	try:
-			Tracker["constants"]["user_func_ai"]
-	except KeyError:
-			Tracker["constants"]["user_func_ai"] = "ai_spa"
+	backwards_dict_constants = {
+		'user_func_volume': 'do_volume_mask',
+		'user_func_ai': 'ai_spa',
+		'even_angle_method': 'S',
+		}
+	backwards_dict = {
+		'theta_min': -1,
+		'theta_max': -1,
+		}
+	for key in backwards_dict_constants:
+		try:
+			Tracker["constants"][key]
+		except KeyError:
+			Tracker["constants"][key] = backwards_dict_constants[key]
+	for key in backwards_dict:
+		try:
+			Tracker[key]
+		except KeyError:
+			Tracker[key] = backwards_dict[key]
 
 	if( (Blockdata["myid"] == Blockdata["main_node"])  and  (len(tempdict) > 0) ):
 		print_dict(tempdict, "Updated settings")
@@ -6313,6 +6324,7 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 					if( Blockdata["myid_on_node"] == 0 ):
 						treg0 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_0_%03d.hdf"%(Tracker["mainiteration"])))
 					else:
+
 						tvol0    = model_blank(1)
 						tweight0 = model_blank(1)
 						treg0    = model_blank(1)
@@ -6320,7 +6332,7 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 					del tweight0, treg0
 					if( Blockdata["myid_on_node"] == 0 ):
 						#--  memory_check(Blockdata["myid"],"first node, before masking")
-						if( Tracker["mainiteration"] == 1 ):
+						if( Tracker["mainiteration"] == 1 and Tracker['constants']['inires'] != -1):
 							# At a first iteration truncate resolution at the initial resolution set by the user
 							for i in range(len(cfsc)):
 								if(  i < Tracker["constants"]["inires"]+1 ):  cfsc[i]   = 1.0
@@ -6353,7 +6365,7 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 					del tweight1, treg1
 					if( Blockdata["myid_on_node"] == 0 ):
 						#--  memory_check(Blockdata["myid"],"second node, before masking")
-						if( Tracker["mainiteration"] == 1 ):
+						if( Tracker["mainiteration"] == 1 and Tracker['constants']['inires'] != -1):
 							# At a first iteration truncate resolution at the initial resolution set by the user
 							for i in range(len(cfsc)):
 								if(  i < Tracker["constants"]["inires"]+1 ):   cfsc[i]  = 1.0
@@ -6362,6 +6374,7 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 							tvol1 = filt_table(tvol1, cfsc)
 							del cfsc
 						user_func = user_functions.factory[Tracker["constants"]["user_func_volume"]]
+
 						#ref_data = [tvol1, Tracker, mainiteration]
 						ref_data = [tvol1, Tracker, Tracker["mainiteration"]]
 						#--  #--  memory_check(Blockdata["myid"],"first node, after masking")
@@ -6382,6 +6395,7 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 					tweight1 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_1_%03d.hdf"%(Tracker["mainiteration"]))))
 					Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["constants"]["fuse_freq"])
 					treg  = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_%d_%03d.hdf"%((iproc, Tracker["mainiteration"]))))
+
 				else:
 					treg = model_blank(1)
 					if iproc ==0:
@@ -6866,11 +6880,13 @@ def main():
 	parser.add_option("--local_refinement",    action="store_true",  default= False,  help="Perform local refinement starting from user-provided orientation parameters")
 	parser.add_option("--memory_per_node",          type="float",           default= -1.0,                	help="User provided information about memory per node (NOT per CPU) [in GB] (default 2GB*(number of CPUs per node))")	
 
+
 	do_final_mode = False
 	for q in sys.argv[1:]:
 		if( q[:10] == "--do_final" ):
 			do_final_mode = True
 			break
+
 
 	do_continuation_mode = False
 	for q in sys.argv[1:]:
@@ -6887,7 +6903,7 @@ def main():
 		parser.add_option("--function",					type="string",          default= "do_volume_mask",		help="Name of the reference preparation function (default do_volume_mask)")
 		parser.add_option("--function_ai",				type="string",          default= "ai_spa",		help="Name of the internal heuristic function (default ai_spa)")
 		parser.add_option("--symmetry",					type="string",        	default= 'c1',		     		help="Point-group symmetry of the refined structure (default c1)")
-		parser.add_option("--inires",		       		type="float",	     	default= 25,		         	help="Resolution of the initial_volume volume (default 25A)")
+		parser.add_option("--inires",		       		type="float",	     	default= 25,		         	help="Resolution of the initial_volume volume. One can use -1 in local_refinement mode to filter to the resolution of the reconstructed volumes. (default 25A)")
 		parser.add_option("--delta",					type="float",			default= 3.75,		     		help="Initial angular sampling step (default 7.5)")
 		parser.add_option("--an",	           		    type="float", 	     	default= -1.,                	help="Angular neighborhood for local search")
 		parser.add_option("--shake",	           		type="float", 	     	default= 0.5,                	help="Shake (0.5)")
@@ -6924,8 +6940,10 @@ def main():
 				ERROR( "Local searches requested, delta cannot be larger than 3.75.", myid=Blockdata["myid"] )
 				return
 
-			setattr(options, initialshifts, True)
-			setattr(options, skip_prealignment, True)
+			setattr(options, 'initialshifts', True)
+			setattr(options, 'skip_prealignment', True)
+			setattr(options, 'center_method', -1)
+			setattr(options, 'target_radius', 29)
 
 		else:
 			# case1: standard meridien run
@@ -7076,8 +7094,8 @@ def main():
 			Tracker["yr"]			= options.xr  # Do not change!  I do not think it is used anywhere
 			Tracker["ts"]			= options.ts
 			Tracker["an"]			= "-1"
-			Tracker["theta_min"]			= options.theta_min
-			Tracker["theta_max"]			= options.theta_max
+			Tracker["theta_min"]	= options.theta_min
+			Tracker["theta_max"]	= options.theta_max
 			Tracker["delta"]		= options.delta  # How to decide it
 			Tracker["refvol"]		= None
 			Tracker["nxinit"]		= -1  # will be figured in first AI.
@@ -7249,7 +7267,6 @@ def main():
 			if Blockdata['myid'] == Blockdata['main_node']:
 				sxprint('2D pre-alignment step')
 
-			nxrsteps = 4
 			kwargs = dict()
 
 			kwargs["init2dir"]  							= init2dir
@@ -7264,7 +7281,7 @@ def main():
 
 			kwargs["center_method"] 						= options.center_method
 
-			kwargs["nxrsteps"] 								= nxrsteps
+			kwargs["nxrsteps"] 								= 4
 
 			kwargs["command_line_provided_stack_filename"] 	= Tracker["constants"]["stack"]
 
@@ -7292,11 +7309,11 @@ def main():
 				l1, l2 = assign_particles_to_groups(minimum_group_size = 10, name_tag=options.group_by)
 				write_text_file(l1,partids[0])
 				write_text_file(l2,partids[1])
-				if options.initialshifts: # Always False for continue mode as initialised in the option parser
+				if options.initialshifts: # Always True for continue mode as initialised in the option parser
 					tp_list = EMUtil.get_all_attributes(Tracker["constants"]["stack"], "xform.projection")
 					for i in range(len(tp_list)):
 						dp = tp_list[i].get_params("spider")
-						tp_list[i] = [dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"], 0.0, 1.0]
+						tp_list[i] = [dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"], 0.0, 1.0, 1.0]
 					write_text_row(tp_list, os.path.join(initdir,"params_000.txt"))
 					write_text_row([tp_list[i] for i in l1], partstack[0])
 					write_text_row([tp_list[i] for i in l2], partstack[1])
@@ -7319,7 +7336,7 @@ def main():
 				else: 
 					Tracker["nxinit"] = Tracker["constants"]["nnxo"]
 					
-				rec3d_continuation_nosmearing(original_data, MPI_COMM_WORLD)
+				rec3d_continuation_nosmearing(MPI_COMM_WORLD)
 
 			elif Blockdata['myid'] == Blockdata['main_node']:
 				# Create reference models for each particle group
@@ -7491,7 +7508,6 @@ def main():
 
 			#  End of if doit
 		#   end of while
-		mpi_finalize()
 		return
 
 	elif do_final_mode: #  DO FINAL
@@ -7567,7 +7583,6 @@ def main():
 	
 		Blockdata["accumulatepw"] = [[],[]]
 		recons3d_final(masterdir, options.do_final, options.memory_per_node, orgstack)
-		mpi_finalize()
 		return
 	else:
 		ERROR( "Incorrect input options", myid=Blockdata["myid"] )
@@ -7581,3 +7596,4 @@ if __name__=="__main__":
 	global_def.print_timestamp( "Finish" )
 	global_def.BATCH = False
 	global_def.MPI   = False
+	mpi.mpi_finalize()

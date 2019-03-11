@@ -39,7 +39,10 @@ from   global_def import sxprint, ERROR
 from global_def 	import *
 from optparse 		import OptionParser
 import sys
-import os
+import os 
+
+import mpi
+
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -78,20 +81,20 @@ def main():
 			disable_bdb_cache()
 
 		if options.MPI:
-			from mpi import mpi_init
-			sys.argv = mpi_init(len(sys.argv),sys.argv)		
+			sys.argv = mpi.mpi_init(len(sys.argv),sys.argv)
+			global mpi_rank
+			mpi_rank = mpi.mpi_comm_rank( mpi.MPI_COMM_WORLD )
+
 
 		global_def.BATCH = True
 
 		copyfromtif(args[0], outdir, options.inx, options.foc, options.ext, options.cst, options.pixel_size, options.sca_a, options.sca_b, options.step, options.mag, options.MPI)
 		global_def.BATCH = False
 		
-		if options.MPI:
-			from mpi import mpi_finalize
-			mpi_finalize()
-
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	if "OMPI_COMM_WORLD_SIZE" in os.environ:
+		mpi.mpi_finalize()

@@ -41,6 +41,8 @@ from   user_functions import *
 from   optparse       import OptionParser
 import sys
 
+import mpi
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range --ts=translation_step --dst=delta --center=center --maxit=max_iteration --CTF --snr=SNR --Fourvar=Fourier_variance --Ng=group_number --Function=user_function_name --CUDA --GPUID --MPI"
@@ -90,19 +92,17 @@ def main():
 			disable_bdb_cache()
 		
 		if options.MPI:
-			from mpi import mpi_init
-			sys.argv = mpi_init(len(sys.argv),sys.argv)
+			sys.argv = mpi.mpi_init(len(sys.argv),sys.argv)
 
 		global_def.BATCH = True
 		multi_ali2d(args[0], outdir, mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.dst, options.center, \
 			options.maxit, options.CTF, options.snr, options.Fourvar, options.Ng, options.num_ali, options.function, options.CUDA, options.GPUID, options.MPI)
 		global_def.BATCH = False
 
-		if options.MPI:
-			from mpi import mpi_finalize
-			mpi_finalize()
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	if "OMPI_COMM_WORLD_SIZE" in os.environ:
+		mpi.mpi_finalize()

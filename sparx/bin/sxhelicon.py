@@ -38,6 +38,8 @@ from global_def import SPARXVERSION
 import global_def
 from global_def import sxprint, ERROR
 
+import mpi
+
 def main():
 	arglist = []
 	for arg in sys.argv:
@@ -116,8 +118,7 @@ def main():
 			return
 
 		try:
-			from mpi import mpi_init, mpi_finalize
-			sys.argv = mpi_init(len(sys.argv), sys.argv)
+			sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
 		except:
 			ERROR( "This program has only MPI version.  Please install MPI library." )
 			return
@@ -140,10 +141,8 @@ def main():
 		global_def.BATCH = False
 
 
-		from mpi import mpi_finalize
-		mpi_finalize()
-
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	mpi.mpi_finalize()

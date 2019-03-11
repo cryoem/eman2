@@ -5,10 +5,8 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import range
 import global_def
-from global_def import sxprint, ERROR
+from global_def import sxprint, ERROR, SPARXVERSION
 from global_def import *
-from mpi import MPI_SUM, mpi_reduce, mpi_init, mpi_finalize, MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_barrier, \
-	mpi_comm_split, mpi_bcast, MPI_INT, MPI_CHAR, MPI_FLOAT
 
 from utilities import get_im, string_found_in_file, get_latest_directory_increment_value, store_value_of_simple_vars_in_json_file
 from utilities import cmdexecute, if_error_then_all_processes_exit_program
@@ -17,7 +15,13 @@ from multi_shc import find_common_subset, do_volume, multi_shc
 
 import string
 import os, sys
-#from debug_mpi import mpi_barrier, mpi_bcast 
+
+from logger import Logger, BaseLogger_Files
+import user_functions
+from optparse import OptionParser, SUPPRESS_HELP
+from EMAN2 import EMData
+
+import mpi
 
 
 MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER = 10
@@ -49,8 +53,8 @@ def calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination
 	all_n_minus_1_combinations_taken_k_minus_1_at_a_time = list(itertools.combinations(list(range(no_of_viper_runs_analyzed_together - 1)),
 																  no_of_viper_runs_analyzed_together_from_user_options - 1))
 
-	no_of_processors = mpi_comm_size(MPI_COMM_WORLD)
-	my_rank = mpi_comm_rank(MPI_COMM_WORLD)
+	no_of_processors = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
+	my_rank = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
 
 	for idx, tuple_of_projection_indices in enumerate(all_n_minus_1_combinations_taken_k_minus_1_at_a_time):
 		if (my_rank == idx % no_of_processors):
@@ -58,7 +62,7 @@ def calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination
 			criterion_measure[idx] = measure_for_outlier_criterion(criterion_name, masterdir, rviper_iter, list_of_viper_run_indices, symc)
 			plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_of_viper_run_indices, criterion_measure[idx], symc)
 
-	criterion_measure = mpi_reduce(criterion_measure, number_of_additional_combinations_for_this_viper_iteration, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD)
+	criterion_measure = mpi.mpi_reduce(criterion_measure, number_of_additional_combinations_for_this_viper_iteration, mpi.MPI_FLOAT, mpi.MPI_SUM, 0, mpi.MPI_COMM_WORLD)
 
 	if (my_rank == 0):
 		index_of_sorted_criterion_measure_list = [i[0] for i in sorted(enumerate(criterion_measure), reverse=False, key=lambda x: x[1])]
@@ -85,10 +89,10 @@ def calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination
 		import json; f = open(mainoutputdir + "list_of_viper_runs_included_in_outlier_elimination.json", 'w')
 		json.dump(list_of_viper_run_indices_for_the_current_rrr_viper_iteration[1:],f); f.close()
 
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		return list_of_viper_run_indices_for_the_current_rrr_viper_iteration
 
-	mpi_barrier(MPI_COMM_WORLD)
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	return [EMPTY_VIPER_RUN_INDICES_LIST]
 
@@ -107,9 +111,9 @@ def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_to
 			import json; f = open(mainoutputdir + "list_of_viper_runs_included_in_outlier_elimination.json", 'r')
 			list_of_independent_viper_run_indices_used_for_outlier_elimination  = json.load(f); f.close()
 			do_calculation = 0
-		do_calculation = mpi_bcast(do_calculation, 1, MPI_INT, 0, MPI_COMM_WORLD)[0]
+		do_calculation = mpi.mpi_bcast(do_calculation, 1, mpi.MPI_INT, 0, mpi.MPI_COMM_WORLD)[0]
 	else:
-		do_calculation = mpi_bcast(do_calculation, 1, MPI_INT, 0, MPI_COMM_WORLD)[0]
+		do_calculation = mpi.mpi_bcast(do_calculation, 1, mpi.MPI_INT, 0, mpi.MPI_COMM_WORLD)[0]
 
 	if do_calculation:
 		list_of_independent_viper_run_indices_used_for_outlier_elimination = calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination(no_of_viper_runs_analyzed_together,
@@ -147,7 +151,7 @@ def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_to
 
 	if_error_then_all_processes_exit_program(error_status)
 
-	no_of_viper_runs_analyzed_together_must_be_incremented = mpi_bcast(no_of_viper_runs_analyzed_together_must_be_incremented, 1, MPI_INT, 0, MPI_COMM_WORLD)[0]
+	no_of_viper_runs_analyzed_together_must_be_incremented = mpi.mpi_bcast(no_of_viper_runs_analyzed_together_must_be_incremented, 1, mpi.MPI_INT, 0, mpi.MPI_COMM_WORLD)[0]
 
 	return no_of_viper_runs_analyzed_together_must_be_incremented
 
@@ -413,7 +417,7 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 	# This function takes into account the case in which there are more processors than images
 
 	if mpi_comm == -1:
-		mpi_comm = MPI_COMM_WORLD
+		mpi_comm = mpi.MPI_COMM_WORLD
 
 	# some arguments are for debugging purposes
 
@@ -456,9 +460,9 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 	if (mpi_size > n_projs):
 		# if there are more processors than images
 		working = int(not(mpi_rank < n_projs))
-		mpi_subcomm = mpi_comm_split(mpi_comm, working,  mpi_rank - working*n_projs)
-		mpi_subsize = mpi_comm_size(mpi_subcomm)
-		mpi_subrank = mpi_comm_rank(mpi_subcomm)
+		mpi_subcomm = mpi.mpi_comm_split(mpi_comm, working,  mpi_rank - working*n_projs)
+		mpi_subsize = mpi.mpi_comm_size(mpi_subcomm)
+		mpi_subrank = mpi.mpi_comm_rank(mpi_subcomm)
 		if (mpi_rank < n_projs):
 
 			# for i in xrange(no_of_viper_runs_analyzed_together):
@@ -472,7 +476,7 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 					sxprint(line  + "Generated rec_ref_volume_run #%01d \n"%i)
 				del vol
 
-		mpi_barrier(mpi_comm)
+		mpi.mpi_barrier(mpi_comm)
 	else:
 		for idx, i in enumerate(list_of_independent_viper_run_indices_used_for_outlier_elimination):
 			projdata = getindexdata(bdb_stack_location + "_%03d"%(rviper_iter - 1), partids_file_name, partstack[idx], mpi_rank, mpi_size)
@@ -555,24 +559,11 @@ def get_already_processed_viper_runs(run_get_already_processed_viper_runs):
 
 def main():
 
-	from logger import Logger, BaseLogger_Files
-	import user_functions
-	from optparse import OptionParser, SUPPRESS_HELP
-	from global_def import SPARXVERSION
-	from EMAN2 import EMData
-
 	main_node = 0
-	mpi_init(0, [])
-	mpi_comm = MPI_COMM_WORLD
-	myid = mpi_comm_rank(MPI_COMM_WORLD)
-	mpi_size = mpi_comm_size(MPI_COMM_WORLD)	# Total number of processes, passed by --np option.
-
-	# mpi_barrier(mpi_comm)
-	# from mpi import mpi_finalize
-	# mpi_finalize()
-	# print "mpi finalize"
-	# from sys import exit
-	# exit()
+	mpi.mpi_init(0, [])
+	mpi_comm = mpi.MPI_COMM_WORLD
+	myid = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
+	mpi_size = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)	# Total number of processes, passed by --np option.
 
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack  [output_directory] --ir=inner_radius --radius=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood  --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1  --fl --aa --ref_a=S --sym=c1"
@@ -652,13 +643,13 @@ output_directory: directory name into which the output files will be written.  I
 			ERROR( "Invalid number of parameters used. Please see usage information above." )
 			return
 
-	mpi_barrier(MPI_COMM_WORLD)
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	if(myid == main_node):
 		sxprint("****************************************************************")
 		Util.version()
 		sxprint("****************************************************************")
 		sys.stdout.flush()
-	mpi_barrier(MPI_COMM_WORLD)
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	# this is just for benefiting from a user friendly parameter name
 	options.ou = options.radius 
@@ -773,28 +764,18 @@ output_directory: directory name into which the output files will be written.  I
 
 	# send masterdir to all processes
 	dir_len  = len(masterdir)*int(myid == main_node)
-	dir_len = mpi_bcast(dir_len,1,MPI_INT,0,MPI_COMM_WORLD)[0]
-	masterdir = mpi_bcast(masterdir,dir_len,MPI_CHAR,main_node,MPI_COMM_WORLD)
+	dir_len = mpi.mpi_bcast(dir_len,1,mpi.MPI_INT,0,mpi.MPI_COMM_WORLD)[0]
+	masterdir = mpi.mpi_bcast(masterdir,dir_len,mpi.MPI_CHAR,main_node,mpi.MPI_COMM_WORLD)
 	masterdir = string.join(masterdir,"")
 	if masterdir[-1] != DIR_DELIM:
 		masterdir += DIR_DELIM
 		
 	global_def.LOGFILE =  os.path.join(masterdir, global_def.LOGFILE)
-	#print_program_start_information()
-	
-
-	# mpi_barrier(mpi_comm)
-	# from mpi import mpi_finalize
-	# mpi_finalize()
-	# print "mpi finalize"
-	# from sys import exit
-	# exit()
-		
 	
 	# send bdb_stack_location to all processes
 	dir_len  = len(bdb_stack_location)*int(myid == main_node)
-	dir_len = mpi_bcast(dir_len,1,MPI_INT,0,MPI_COMM_WORLD)[0]
-	bdb_stack_location = mpi_bcast(bdb_stack_location,dir_len,MPI_CHAR,main_node,MPI_COMM_WORLD)
+	dir_len = mpi.mpi_bcast(dir_len,1,mpi.MPI_INT,0,mpi.MPI_COMM_WORLD)[0]
+	bdb_stack_location = mpi.mpi_bcast(bdb_stack_location,dir_len,mpi.MPI_CHAR,main_node,mpi.MPI_COMM_WORLD)
 	bdb_stack_location = string.join(bdb_stack_location,"")
 
 	iteration_start = get_latest_directory_increment_value(masterdir, "main")
@@ -854,21 +835,21 @@ output_directory: directory name into which the output files will be written.  I
 					cmd = "{} {}".format("rm -rf", independent_run_dir); junk = cmdexecute(cmd)
 					cmd = "{} {}".format("mkdir -p", independent_run_dir); junk = cmdexecute(cmd)
 
-				this_run_is_NOT_complete = mpi_bcast(this_run_is_NOT_complete,1,MPI_INT,main_node,MPI_COMM_WORLD)[0]
+				this_run_is_NOT_complete = mpi.mpi_bcast(this_run_is_NOT_complete,1,mpi.MPI_INT,main_node,mpi.MPI_COMM_WORLD)[0]
 				dir_len = len(independent_run_dir)
-				dir_len = mpi_bcast(dir_len,1,MPI_INT,main_node,MPI_COMM_WORLD)[0]
-				independent_run_dir = mpi_bcast(independent_run_dir,dir_len,MPI_CHAR,main_node,MPI_COMM_WORLD)
+				dir_len = mpi.mpi_bcast(dir_len,1,mpi.MPI_INT,main_node,mpi.MPI_COMM_WORLD)[0]
+				independent_run_dir = mpi.mpi_bcast(independent_run_dir,dir_len,mpi.MPI_CHAR,main_node,mpi.MPI_COMM_WORLD)
 				independent_run_dir = string.join(independent_run_dir,"")
 			else:
-				this_run_is_NOT_complete = mpi_bcast(this_run_is_NOT_complete,1,MPI_INT,main_node,MPI_COMM_WORLD)[0]
+				this_run_is_NOT_complete = mpi.mpi_bcast(this_run_is_NOT_complete,1,mpi.MPI_INT,main_node,mpi.MPI_COMM_WORLD)[0]
 				dir_len = 0
 				independent_run_dir = ""
-				dir_len = mpi_bcast(dir_len,1,MPI_INT,main_node,MPI_COMM_WORLD)[0]
-				independent_run_dir = mpi_bcast(independent_run_dir,dir_len,MPI_CHAR,main_node,MPI_COMM_WORLD)
+				dir_len = mpi.mpi_bcast(dir_len,1,mpi.MPI_INT,main_node,mpi.MPI_COMM_WORLD)[0]
+				independent_run_dir = mpi.mpi_bcast(independent_run_dir,dir_len,mpi.MPI_CHAR,main_node,mpi.MPI_COMM_WORLD)
 				independent_run_dir = string.join(independent_run_dir,"")
 
 			if this_run_is_NOT_complete:
-				mpi_barrier(MPI_COMM_WORLD)
+				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 				if independent_run_dir[-1] != DIR_DELIM:
 					independent_run_dir += DIR_DELIM
@@ -889,13 +870,6 @@ output_directory: directory name into which the output files will be written.  I
 					store_value_of_simple_vars_in_json_file(masterdir + 'program_state_stack.json', locals(), exclude_list_of_vars=["usage"], 
 						vars_that_will_show_only_size = ["subset"])
 					store_value_of_simple_vars_in_json_file(masterdir + 'program_state_stack.json', options.__dict__, write_or_append='a')
-
-				# mpi_barrier(mpi_comm)
-				# from mpi import mpi_finalize
-				# mpi_finalize()
-				# print "mpi finalize"
-				# from sys import exit
-				# exit()
 
 				out_params, out_vol, out_peaks = multi_shc(all_projs, subset, no_of_shc_runs_analyzed_together, options,
 				mpi_comm=mpi_comm, log=log, ref_vol=ref_vol)
@@ -927,16 +901,11 @@ output_directory: directory name into which the output files will be written.  I
 		
 			
 	# end of RVIPER loop
-
-	#mpi_finalize()
-	#sys.exit()
-
-	mpi_barrier(MPI_COMM_WORLD)
-	mpi_finalize()
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 
 if __name__=="__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
-
+	mpi.mpi_finalize()

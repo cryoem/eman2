@@ -36,12 +36,38 @@ from __future__ import print_function
 
 from builtins import range
 import os
-import global_def
-from global_def import sxprint, ERROR
-from   global_def     import *
-from   user_functions import *
-from   optparse       import OptionParser
 import sys
+from   time import time	
+from   math import sqrt, atan2, tan, pi
+
+import global_def
+from   global_def     import *
+from   global_def import sxprint, ERROR
+
+from user_functions import *
+from optparse       import OptionParser
+
+from applications import MPI_start_end
+from utilities    import model_circle, model_blank, get_image, peak_search, get_im, pad
+from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
+from utilities    import get_params2D, set_params2D, chunks_distribution
+from utilities    import print_msg, print_begin_msg, print_end_msg
+
+from statistics   import varf2d_MPI
+
+from fundamentals import fft, ccf, rot_shift3D, rot_shift2D, fshift
+
+from EMAN2	  	  import Processor
+
+from pixel_error  import ordersegments
+
+import mpi
+
+#
+# NOTE: there are still more imports strewn throughout the code below
+#
+
+
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -76,8 +102,7 @@ def main():
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 		
-		from mpi import mpi_init
-		sys.argv = mpi_init(len(sys.argv),sys.argv)
+		sys.argv = mpi.mpi_init(len(sys.argv),sys.argv)
 
 		global_def.BATCH = True
 		if options.oneDx:
@@ -86,27 +111,12 @@ def main():
 			shiftali_MPI(args[0], mask, options.maxit, options.CTF, options.snr, options.Fourvar, options.search_rng, options.oneDx, options.search_rng_y)
 		global_def.BATCH = False
 		
-		from mpi import mpi_finalize
-		mpi_finalize()
+		return
 
 def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=False, search_rng=-1, oneDx=False, search_rng_y=-1):  
-	from applications import MPI_start_end
-	from utilities    import model_circle, model_blank, get_image, peak_search, get_im
-	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
-	from statistics   import varf2d_MPI
-	from fundamentals import fft, ccf, rot_shift3D, rot_shift2D
-	from utilities    import get_params2D, set_params2D
-	from utilities    import print_msg, print_begin_msg, print_end_msg
-	import os
-	import sys
-	from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv
-	from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT
-	from EMAN2	  	  import Processor
-	from time         import time	
 	
-	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
-	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	number_of_proc = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
+	myid = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
 	main_node = 0
 		
 	ftp = file_type(stack)
@@ -169,7 +179,7 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 		for i in range(number_of_proc):
 			if myid == i:
 				data = EMData.read_images(stack, list_of_particles)
-			if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
+			if ftp == "bdb": mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 
 	for im in range(len(data)):
@@ -292,10 +302,10 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 				if (not(ishift_x[im] == 0.0)) or (not(ishift_y[im] == 0.0)):
 					not_zero = 1
 
-		sx_sum = mpi_reduce(sx_sum, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)  
+		sx_sum = mpi.mpi_reduce(sx_sum, 1, mpi.MPI_INT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)  
 
 		if not oneDx:
-			sy_sum = mpi_reduce(sy_sum, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+			sy_sum = mpi.mpi_reduce(sy_sum, 1, mpi.MPI_INT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)
 
 		if myid == main_node:
 			sx_sum_total = int(sx_sum[0])
@@ -320,7 +330,7 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 			shift_x[im] += p1_x
 			shift_y[im] += p1_y
 		# stop if all shifts are zero
-		not_zero = mpi_reduce(not_zero, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)  
+		not_zero = mpi.mpi_reduce(not_zero, 1, mpi.MPI_INT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)  
 		if myid == main_node:
 			not_zero_all = int(not_zero[0])
 		else:
@@ -344,7 +354,7 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 		data[im].set_attr("xform.align2d", tt)  
 
 	# write out headers and STOP, under MPI writing has to be done sequentially
-	mpi_barrier(MPI_COMM_WORLD)
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	par_str = ["xform.align2d", "ID"]
 	if myid == main_node:
 		from utilities import file_type
@@ -361,24 +371,9 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 
 		
 def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=False, search_rng=-1):
-	from applications import MPI_start_end
-	from utilities    import model_circle, model_blank, get_image, peak_search, get_im, pad
-	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
-	from statistics   import varf2d_MPI
-	from fundamentals import fft, ccf, rot_shift3D, rot_shift2D, fshift
-	from utilities    import get_params2D, set_params2D, chunks_distribution
-	from utilities    import print_msg, print_begin_msg, print_end_msg
-	import os
-	import sys
-	from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv
-	from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT
-	from time         import time	
-	from pixel_error  import ordersegments
-	from math         import sqrt, atan2, tan, pi
-	
-	nproc = mpi_comm_size(MPI_COMM_WORLD)
-	myid = mpi_comm_rank(MPI_COMM_WORLD)
+
+	nproc = mpi.mpi_comm_size( mpi.MPI_COMM_WORLD )
+	myid  = mpi.mpi_comm_rank( mpi.MPI_COMM_WORLD )
 	main_node = 0
 		
 	ftp = file_type(stack)
@@ -640,7 +635,7 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 			
 			
 		# #print myid,sx_sum,total_nfils
-		sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+		sx_sum = mpi.mpi_reduce(sx_sum, 1, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)
 		if myid == main_node:
 			sx_sum = float(sx_sum[0])/total_nfils
 			print_msg("Average shift  %6.2f\n"%(sx_sum))
@@ -666,7 +661,7 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 		tt = t1*init_params[im]
 		data[im].set_attr("xform.align2d", tt)
 	# write out headers and STOP, under MPI writing has to be done sequentially
-	mpi_barrier(MPI_COMM_WORLD)
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	par_str = ["xform.align2d", "ID"]
 	if myid == main_node:
 		from utilities import file_type
@@ -720,3 +715,4 @@ if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	mpi.mpi_finalize()

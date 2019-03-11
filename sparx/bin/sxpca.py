@@ -40,6 +40,7 @@ from EMAN2_cppwrap import *
 
 import os
 import sys
+import mpi
 
       
 def main():
@@ -66,28 +67,28 @@ def main():
 
 	isRoot = True
 	if options.MPI:
-		from mpi import mpi_init, mpi_comm_rank, MPI_COMM_WORLD
-		sys.argv = mpi_init( len(sys.argv), sys.argv )
-		isRoot = (mpi_comm_rank(MPI_COMM_WORLD) == 0)
+		sys.argv = mpi.mpi_init( len(sys.argv), sys.argv )
+		isRoot = ( mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD) == 0 )
 		
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache
 		disable_bdb_cache()
+
 	from applications import pca
 	global_def.BATCH = True
 	vecs = []
 	vecs = pca(input_stacks, options.subavg, options.rad, options.nvec, options.incore, options.shuffle, not(options.genbuf), options.mask, options.MPI)
+
 	if isRoot:
 		for i in range(len(vecs)):
 			vecs[i].write_image(output_stack, i)
 	
 	global_def.BATCH = False
-	if options.MPI:
-		from mpi import mpi_finalize
-		mpi_finalize()
 
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	if "OMPI_COMM_WORLD_SIZE" in os.environ:
+		mpi.mpi_finalize()

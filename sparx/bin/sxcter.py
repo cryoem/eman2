@@ -42,6 +42,9 @@ from     global_def import *
 from     inspect    import currentframe, getframeinfo
 from     utilities  import if_error_then_all_processes_exit_program
 
+from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, mpi_barrier, MPI_COMM_WORLD
+import mpi
+
 global_def.BATCH = True
 
 
@@ -128,8 +131,6 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 
 	main_mpi_proc = 0
 	if RUNNING_UNDER_MPI:
-		from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, mpi_barrier, MPI_COMM_WORLD
-
 		sys.argv = mpi_init(len(sys.argv), sys.argv)
 		my_mpi_proc_id = mpi_comm_rank(MPI_COMM_WORLD)
 		n_mpi_procs = mpi_comm_size(MPI_COMM_WORLD)
@@ -264,9 +265,7 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 	# Clean up MPI related variables
 	# ------------------------------------------------------------------------------------
 	if RUNNING_UNDER_MPI:
-		mpi_barrier(MPI_COMM_WORLD)
-		from mpi import mpi_finalize
-		mpi_finalize()
+		mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 
 	sys.stdout.flush()
 	return
@@ -275,3 +274,4 @@ if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	mpi.mpi_finalize()

@@ -41,6 +41,8 @@ from global_def import sxprint, ERROR
 
 from builtins import range
 
+import mpi
+
 def main():
 	arglist = []
 	for arg in sys.argv:
@@ -124,8 +126,7 @@ def main():
 			y_restrict2 += " "+str(float(y_restrict[i])/options.apix)
 
 		if options.MPI:
-			from mpi import mpi_init, mpi_finalize
-			sys.argv = mpi_init(len(sys.argv), sys.argv)
+			sys.argv = mpi.mpi_init( len(sys.argv), sys.argv )
 
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
@@ -138,11 +139,10 @@ def main():
 		ihrsr(args[0], args[1], args[2], mask, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, options.MPI, options.WRAP, y_restrict2) 
 		global_def.BATCH = False
 
-		if options.MPI:
-			from mpi import mpi_finalize
-			mpi_finalize()
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	if "OMPI_COMM_WORLD_SIZE" in os.environ:
+		mpi.mpi_finalize()

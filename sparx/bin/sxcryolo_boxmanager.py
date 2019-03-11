@@ -28,6 +28,8 @@ import argparse
 from json import dump
 import subprocess
 
+import global_def
+
 argparser = argparse.ArgumentParser(
 	description='crYOLO boxmanager',
 	formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -61,4 +63,6 @@ def main():
 
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

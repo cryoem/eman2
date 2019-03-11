@@ -11,6 +11,7 @@ from EMAN2_cppwrap import *
 import os
 import sys
 
+import mpi
       
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -46,8 +47,7 @@ def main():
 			disable_bdb_cache()
 
 		if options.MPI:
-			from mpi import mpi_init
-			sys.argv = mpi_init(len(sys.argv), sys.argv)
+			sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
 
 		from utilities import get_im
 		global_def.BATCH = True
@@ -65,3 +65,5 @@ if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
+	if "OMPI_COMM_WORLD_SIZE" in os.environ:
+		mpi.mpi_finalize()
