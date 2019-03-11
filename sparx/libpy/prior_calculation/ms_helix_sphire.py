@@ -58,7 +58,7 @@ def import_sphire_params(input_file, symclass):
     dtype = dtype_import + [('source_n', '<i8')]
 
     data_import = np.genfromtxt(input_file, dtype=dtype_import)
-    data_import = np.array(symclass.reduce_angleset(data_import, mirror=0))
+    data_import = np.array(symclass.reduce_angleset(data_import, inc_mirror=0))
 
     data = np.empty(len(data_import), dtype=dtype)
     data['source_n'] = np.arange(len(data))
