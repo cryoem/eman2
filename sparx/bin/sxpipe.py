@@ -2360,16 +2360,20 @@ def moon_eliminator(args):
 	
 	nyquist_res = args.pixel_size * 2
 	
-	if args.mol_mass is None:
-		ERROR("Molecular mass [kDa] is required. Please set a pasitive value larger than 0.0 to --mol_mass option.", where=subcommand_name) # action=1 - fatal error, exit
+	if args.mol_mass is None and args.use_density_threshold is None:
+		ERROR("Molecular mass [kDa] or density_threshold is required. Please set a pasitive value larger than 0.0 to --mol_mass option or --use_density_threshold option.", where=subcommand_name) # action=1 - fatal error, exit
+	elif args.mol_mass is not None and args.use_density_threshold is not None:
+		ERROR("You provided values for both --mol_mass and --use_density_threshold. --mol_mass is used and --use_density_threshold ignored.", where=subcommand_name , action=0)
+	elif args.mol_mass is None and args.use_density_threshold is not None:
+		if args.use_density_threshold <= 0.0:
+			ERROR(
+				"Invalid density threshold {}. Please set a pasitive value larger than 0.0 to --use_density_threshold option.".format(
+					args.use_density_threshold),
+				where=subcommand_name)  # action=1 - fatal error, exit
 	else:
 		if args.mol_mass <= 0.0:
 			ERROR("Invalid molecular mass {}[A]. Please set a pasitive value larger than 0.0 to --mol_mass option.".format(args.mol_mass), where=subcommand_name) # action=1 - fatal error, exit
-	
-	if args.use_density_threshold is not None:
-		if args.use_density_threshold <= 0.0:
-			ERROR("Invalid density threshold {}. Please set a pasitive value larger than 0.0 to --use_density_threshold option.".format(args.use_density_threshold), where=subcommand_name) # action=1 - fatal error, exit
-	
+
 	isac_shrink_path = None
 	if( not (type(args.resample_ratio) is float)):
 		
