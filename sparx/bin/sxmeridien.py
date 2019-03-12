@@ -1942,7 +1942,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		#exit()
 
 		# Find neighbors, ltabang contains positions on refang list, no psis
-		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
+		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
 
 		# ltabang has length lit, which is the same as length as firshifts.  However, original xod2 is still available,
 		#   even though it is longer than lit.
@@ -2648,7 +2648,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			firstshifts[iln] = ishift
 
 		# Find neighbors, ltabang contains positions on refang list, no psis
-		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
+		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
 
 		# ltabang has length lit, which is the same as length as firshifts.  However, original xod2 is still available,
 		#   even though it is longer than lit.
@@ -3361,7 +3361,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		#exit()
 
 		# Find neighbors, ltabang contains positions on refang list, no psis
-		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
+		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
 
 		# ltabang has length lit, which is the same as length as firshifts.  However, original xod2 is still available,
 		#   even though it is longer than lit.
@@ -4342,7 +4342,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  GUGU ",firstshifts)
 					# Find neighbors, ltabang contains positions on refang list, no psis
 					###ltabang = nearest_many_full_k_projangles(refang, firstdirections, howmany = 5, sym=Tracker["constants"]["symmetry"])
-					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
+					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
 					###if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  ltabang ",ltabang)
 					##mpi_barrier(MPI_COMM_WORLD)
 					##mpi_finalize()
@@ -5388,7 +5388,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  GUGU ",firstshifts)
 					# Find neighbors, ltabang contains positions on refang list, no psis
 					###ltabang = nearest_many_full_k_projangles(refang, firstdirections, howmany = 5, sym=Tracker["constants"]["symmetry"])
-					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
+					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
 					###if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  ltabang ",ltabang)
 					##mpi_barrier(MPI_COMM_WORLD)
 					##mpi_finalize()
@@ -7244,6 +7244,7 @@ def main():
 			Tracker["nxstep"]		= 10
 			#  Resolution in pixels at 0.5 cutoff
 			Tracker["currentres"]		    = -1
+			Tracker["howmany"]		        = 4
 			Tracker["fsc143"]			    = -1
 			Tracker["maxfrad"]           	= -1
 			Tracker["no_improvement"]    	= 0
