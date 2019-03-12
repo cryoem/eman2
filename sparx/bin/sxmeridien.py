@@ -584,7 +584,8 @@ def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi
 		for i in range(ndata):  # apply_shift; info_mask; norm consistent with get_shrink_data
 			indx = projdata[i].get_attr("particle_group")
 			phi,theta,psi,sx,sy = params[i][0],params[i][1],params[i][2],params[i][3],params[i][4]
-			stmp = cyclic_shift( projdata[i], int(round(sx)), int(round(sy)))
+			sx, sy = reduce_shifts(sx, sy, original_data[im])
+			stmp = cyclic_shift( projdata[i], sx, sy)
 			st = get_image_statistics(stmp, mask, False)
 			stmp -=st[0]
 			stmp /=st[1]
@@ -776,8 +777,7 @@ def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 				oldparams[im][3] = 0.0
 				oldparams[im][4] = 0.0
 			else:
-				sx = int(round(sx))
-				sy = int(round(sy))
+				sx, sy = reduce_shifts(sx, sy, original_data[im])
 				data[im]  = cyclic_shift(original_data[im],sx,sy)
 				#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
 				oldparams[im][3] = sx
@@ -1725,8 +1725,6 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 
 		if preshift:
 			sx, sy = reduce_shifts(sx, sy, original_data[im])
-			sx = int(round(sx))
-			sy = int(round(sy))
 			dataimage  = cyclic_shift(original_data[im],sx,sy)
 			#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
 			oldparams[im][3] = sx
@@ -2440,8 +2438,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		phi,theta,psi,sx,sy, wnorm = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4], oldparams[im][7]
 
 		if preshift:
-			sx = int(round(sx))
-			sy = int(round(sy))
+			sx, sy = reduce_shifts(sx, sy, original_data[im])
 			dataimage  = cyclic_shift(original_data[im],sx,sy)
 			#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
 			oldparams[im][3] = sx
@@ -3147,8 +3144,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		phi,theta,psi,sx,sy, wnorm = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4], oldparams[im][7]
 
 		if preshift:
-			sx = int(round(sx))
-			sy = int(round(sy))
+			sx, sy = reduce_shifts(sx, sy, original_data[im])
 			dataimage  = cyclic_shift(original_data[im],sx,sy)
 			#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
 			oldparams[im][3] = sx
@@ -4032,8 +4028,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 
 					#  CONTROLPRINTOUT   if( Blockdata["myid"] == Blockdata["main_node"] and icnm<5):  sxprint("\n\n  INPUT PARAMS  ",im,phi,theta,psi,sx,sy)
 					if preshift:
-						sx = int(round(sx))
-						sy = int(round(sy))
+						sx, sy = reduce_shifts(sx, sy, original_data[im])
 						dataimage  = cyclic_shift(original_data[im],sx,sy)
 						#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
 						oldparams[im][3] = sx
@@ -5081,8 +5076,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 					#  CONTROLPRINTOUT   if( Blockdata["myid"] == Blockdata["main_node"] and icnm<5):  sxprint("\n\n  INPUT PARAMS  ",im,phi,theta,psi,sx,sy)
 					if preshift:
-						sx = int(round(sx))
-						sy = int(round(sy))
+						sx, sy = reduce_shifts(sx, sy, original_data[im])
 						dataimage  = cyclic_shift(original_data[im],sx,sy)
 						#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
 						oldparams[im][3] = sx
@@ -6610,7 +6604,6 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		oldparams[procid] = []
 		if Tracker["constants"]["small_memory"]: original_data[procid]	= []
 
-		projdata[procid] = []
 		if Tracker["changed_delta"]:
 			Tracker["nxinit"] = org_nxinit
 
@@ -6735,6 +6728,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			smearing = True,
 			mpi_comm = MPI_COMM_WORLD,
 			)
+		projdata[procid] = []
 	rec3d_make_maps(compute_fsc = True, regularized = True)
 
 	if(Tracker["mainiteration"] == 1 ):
