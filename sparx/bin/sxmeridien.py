@@ -6967,7 +6967,7 @@ def reduce_shifts(sx, sy, img):
 		except AttributeError:
 			pass
 		else:
-			rise = Tracker['constants']['helical_rise']
+			rise = Tracker['constants']['helical_rise'] / float(Tracker['constant']['pixel_size'])
 			rise_half = rise / 2.0
 			point = np.array([sx, sy])
 			rot_point = np.dot(rot_matrix(rotation_angle), point.T)
@@ -7054,6 +7054,7 @@ def main():
 		parser.add_option("--even_angle_method",               	type="str",  	default='S',              	help="Even angle creation strategy. Choices: S, P, M. (Default S)")
 		parser.add_option("--group_id",               	type="str",  	default=None,              	help="Group particles for outlier detection by header name. Useful ones are e.g. ISAC_class_id or filament_id (Default None)")
 		parser.add_option("--filament_width",         	type="int",  	default=None,              	help="Filament width used to normalize the particles. (Default None)")
+		parser.add_option("--helical_rise",         	type="float",  	default=None,              	help="Helical rise in angstrom. This is used to limit the shift along the helical axis. (Default None)")
 		if do_continuation_mode:
 			# case1: local meridien run using parameters stored in headers
 			# case2: restart mode of standard meridien run. Parameters can be altered in the restart run.
@@ -7197,6 +7198,7 @@ def main():
 			Constants["even_angle_method"]			    = options.even_angle_method
 			Constants["group_id"]			    = options.group_id
 			Constants["filament_width"]			    = options.filament_width
+			Constants["helical_rise"]			    = options.helical_rise
 			if options.group_id is None:
 				Constants['stack_prior'] = None
 			else:
