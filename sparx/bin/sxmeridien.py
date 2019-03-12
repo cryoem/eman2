@@ -6217,16 +6217,41 @@ def update_tracker(shell_line_command):
 		'user_func_volume': 'do_volume_mask',
 		'user_func_ai': 'ai_spa',
 		'even_angle_method': 'S',
+		'group_id': None,
+		'filament_width': None,
+		'helical_rise': None,
+		'stack_prior': None,
+		'stack_prior_fmt': None,
+		'stack_prior_dtype': None,
 		}
 	backwards_dict = {
 		'theta_min': -1,
 		'theta_max': -1,
+		'ccfpercentage': -1,
+		'howmany': 4,
+		}
+	prior_dict = {
+		'tol_psi': 30,
+		'tol_theta': 15,
+		'tol_filament': 0.2,
+		'tol_std': 1,
+		'tol_mean': 30,
+		'outlier_method': 'deg',
+		'prior_method': 'running',
+		'force_outlier': False,
+		'remove_outlier': False,
+		'window_size': 3,
 		}
 	for key in backwards_dict_constants:
 		try:
 			Tracker["constants"][key]
 		except KeyError:
 			Tracker["constants"][key] = backwards_dict_constants[key]
+	for key in prior_dict:
+		try:
+			Tracker["prior"][key]
+		except KeyError:
+			Tracker["prior"][key] = backwards_dict_constants[key]
 	for key in backwards_dict:
 		try:
 			Tracker[key]
@@ -7201,6 +7226,8 @@ def main():
 			Constants["helical_rise"]			    = options.helical_rise
 			if options.group_id is None:
 				Constants['stack_prior'] = None
+				Constants['stack_prior_fmt'] = None
+				Constants['stack_prior_dtype'] = None
 			else:
 				Constants['stack_prior'] = ms_helix_sphire.import_sphire_stack(args[0], options.group_id)
 				Constants['stack_prior_fmt'] = prior_stack_fmt(Constants['stack_prior'])
@@ -7269,10 +7296,6 @@ def main():
 			Tracker["changed_delta"]        = False
 			Blockdata["bckgnoise"]          = None
 			Blockdata["accumulatepw"]       = [[],[]]
-			import copy
-			old_tracker = copy.deepcopy(Tracker)
-			dump_tracker_to_json('test_tracker.json', Tracker)
-			Tracker = load_tracker_from_json('test_tracker.json')
 
 			# ------------------------------------------------------------------------------------
 			# Get the pixel size; if none, set to 1.0, and the original image size
