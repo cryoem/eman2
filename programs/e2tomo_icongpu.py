@@ -359,32 +359,36 @@ def icontest(options,alifile,outsize,cmdsfilepath,aliextension):
 		#print "tmpdir={}, type={}".format(tmpdir,type(tmpdir))
 		#print "alifile={}, type={}".format(alifile,type(alifile))
 		#print "options.tltfile={}, type={}".format(options.tltfile,type(options.tltfile))
-
-		cmdicontest = "mkdir " + tmpdir + " ; ICON-GPU -input " + alifile + " -tiltfile " + options.tltfile + " -outputPath " + tmpdir + " -slice 0,1 -ICONIteration " + iterationsstring + " -dataType 1 -threshold 0 -gpu " + options.gpus
-
-		runcmd(options,cmdicontest,cmdsfilepath)
-
-		findirtest = os.listdir(tmpdir+'/reconstruction/')
 		
-		for f in findirtest:
-			if '.mrc' in f[-4:]:
-				imgpath = tmpdir+'/reconstruction/'+f
-				img = EMData(imgpath,0)
-				sigma = img['sigma']
-				sigmanonzero = img['sigma_nonzero']
+		icongpucmd = "ICON-GPU -input " + alifile + " -tiltfile " + options.tltfile + " -outputPath " + tmpdir + " -slice 0,1 -ICONIteration " + iterationsstring + " -dataType 1 -threshold 0 -gpu " + options.gpus
+		cmdicontest = "mkdir " + tmpdir + " ; " + icongpucmd
+		
+		try:
+			runcmd(options,cmdicontest,cmdsfilepath)
 
-				shutil.rmtree(tmpdir)
-				if sigma and sigmanonzero:
-					passtest = True
-					print("\nthe test passed; the tiltseries has a good size now nx={}, ny={}".format(img['nx'],img['ny']))
-					return alifile,outsize,iterationsstring
-				else:
-					passtest = False
-					outsize -= 2
-					print("\nICON-GPU failed becase the image size was bad; cropping the images in the tiltseries to this new size, nx={}, nx={}".format(outsize,outsize))
-					alifile = cropper(options,alifile,aliextension,outsize,cmdsfilepath)	
-					break
-	
+			findirtest = os.listdir(tmpdir+'/reconstruction/')
+		
+			for f in findirtest:
+				if '.mrc' in f[-4:]:
+					imgpath = tmpdir+'/reconstruction/'+f
+					img = EMData(imgpath,0)
+					sigma = img['sigma']
+					sigmanonzero = img['sigma_nonzero']
+
+					shutil.rmtree(tmpdir)
+					if sigma and sigmanonzero:
+						passtest = True
+						print("\nthe test passed; the tiltseries has a good size now nx={}, ny={}".format(img['nx'],img['ny']))
+						return alifile,outsize,iterationsstring
+					else:
+						passtest = False
+						outsize -= 2
+						print("\nICON-GPU failed becase the image size was bad; cropping the images in the tiltseries to this new size, nx={}, nx={}".format(outsize,outsize))
+						alifile = cropper(options,alifile,aliextension,outsize,cmdsfilepath)	
+						break
+		except:
+			print("\nWARNING: ICON-GPU command failed; the command run was cmd={}".format(icongpucmd))
+		
 	return
 
 
