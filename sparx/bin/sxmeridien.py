@@ -1724,6 +1724,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		phi,theta,psi,sx,sy = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4]#  First ITER
 
 		if preshift:
+			sx, sy = reduce_shifts(sx, sy, original_data[im])
 			sx = int(round(sx))
 			sy = int(round(sy))
 			dataimage  = cyclic_shift(original_data[im],sx,sy)
@@ -6901,8 +6902,7 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 
 	# Print to screen
 	if(blockdata["myid"] == blockdata["main_node"]):
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		sxprint(line,"Executed successfully: ", "Prior calculation")
+		sxprint("Executed successfully: ", "Prior calculation")
 
 	# Calculate outliers
 	if(blockdata["myid"] == blockdata["main_node"] ):
@@ -6930,7 +6930,7 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 		nr_outliers = len(outliers[outliers == 1])
 		len_data = len(outliers)
 		no_outliers = len_data - nr_outliers
-		sxprint('---> Chunk {0}: Discarded {1}|{2:.1f}%; Kept {3}|{4:.1f}%; Nr. particles {5}'.format(
+		sxprint('Chunk {0}: Discarded {1}|{2:.1f}%; Kept {3}|{4:.1f}%; Nr. particles {5}'.format(
 			procid,
 			nr_outliers,
 			100*nr_outliers/float(len_data),
@@ -6938,9 +6938,11 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 			100*no_outliers/float(len_data),
 			len_data
 			))
-		if Tracker['prior']['force_outlier']:
+		if Tracker['prior']['force_outlier'] is not None:
 			shutil.copy(params_file, '{0}_old'.format(params_file))
 			shutil.copy(new_params, params_file)
+		else:
+			outliers = [0] * len_data
 
 		np.savetxt(outlier_file, outliers)
 	else:
@@ -6951,12 +6953,34 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 	outliers = bcast_list_to_all(outliers, blockdata["myid"], blockdata["nodes"][0])
 
 	# Get the node specific outlier information
-	if Tracker['prior']['force_outlier'] is None:
-		outliers_node = [0] * (im_end - im_start)
-	else:
-		outliers_node = outliers[im_start:im_end]
+	outliers_node = outliers[im_start:im_end]
 
 	return outliers_node
+
+
+def reduce_shifts(sx, sy, img):
+	def rot_matrix(angle):
+		angle = np.radians(angle)
+		matrix = np.array([
+			[np.cos(angle), -np.sin(angle)],
+			[np.sin(angle), np.cos(angle)]
+			])
+		return matrix
+
+	if Tracker['constants']['helical_rise'] is not None:
+		try:
+			rotation_angle = img.get_attr('segment_angle')
+		except AttributeError:
+			pass
+		else:
+			rise = Tracker['constants']['helical_rise']
+			rise_half = rise / 2.0
+			point = np.array([sx, sy])
+			rot_point = np.dot(rot_matrix(rotation_angle), point.T)
+			rot_point[0] = ((rot_point[0] + rise_half) % rise ) - rise_half
+			sx, sy = np.dot(rot_matrix(rotation_angle).T, rot_point.T)
+
+	return int(round(sx)), int(round(sy))
 
 
 def main():
