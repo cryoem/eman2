@@ -43,6 +43,8 @@ from   optparse   import OptionParser
 import sys
 import mpi
 
+mpi.mpi_init( 0, [] )
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage    = progname + " stack outdir --ir --ou --delta --dpsi --lf --hf --rand_seed --maxit --debug --noweights --trials --given --first_zero --weights --MPIGA--pcross --pmut --maxgen --MPI --trials"
@@ -95,7 +97,6 @@ def main():
 			global_def.BATCH = False
 
 		elif options.MPI:
-			sys.argv = mpi.mpi_init(len(sys.argv),sys.argv)
 
 			from applications import cml_find_structure_MPI2
 			global_def.BATCH = True
@@ -118,5 +119,4 @@ if __name__ == "__main__":
 	global_def.write_command()
 	main()
 	global_def.print_timestamp( "Finish" )
-	if "OMPI_COMM_WORLD_SIZE" in os.environ:
-		mpi.mpi_finalize()
+	mpi.mpi_finalize()

@@ -12,6 +12,8 @@ import os
 import sys
 
 import mpi
+
+mpi.mpi_init( 0, [] )
       
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -46,9 +48,6 @@ def main():
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 
-		if options.MPI:
-			sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
-
 		from utilities import get_im
 		global_def.BATCH = True
 		
@@ -66,5 +65,4 @@ if __name__ == "__main__":
 	global_def.write_command()
 	main()
 	global_def.print_timestamp( "Finish" )
-	if "OMPI_COMM_WORLD_SIZE" in os.environ:
-		mpi.mpi_finalize()
+	mpi.mpi_finalize()

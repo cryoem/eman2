@@ -29,9 +29,6 @@ from __future__ import print_function
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-#
-#
-
 
 import os
 import global_def
@@ -40,6 +37,8 @@ from global_def import sxprint, ERROR
 from   global_def import *
 from   optparse import OptionParser
 import sys
+
+
 def main():
 	
 	progname = os.path.basename(sys.argv[0])

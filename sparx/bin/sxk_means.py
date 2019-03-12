@@ -45,7 +45,7 @@ import mpi
 
 #
 #
-# NOTE: this does not invoke mpi.mpi_init(); the mpi version probably does not work b/c of that
+# NOTE: this never invoke mpi.mpi_init(); the mpi version probably does not work b/c of that
 #
 #
 

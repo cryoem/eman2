@@ -48,6 +48,9 @@ from global_def import *
 
 import mpi
 
+mpi.mpi_init( 0, [] )
+
+
 # ========================================================================================
 # General Helper Functions
 # ========================================================================================
@@ -210,12 +213,11 @@ For negative staining data, use --skip_invert.
 	
 	main_mpi_proc = 0
 	if RUNNING_UNDER_MPI:
-		mpi.mpi_init(0, [])
 		my_mpi_proc_id = mpi.mpi_comm_rank( mpi.MPI_COMM_WORLD )
-		n_mpi_procs = mpi.mpi_comm_size( mpi.MPI_COMM_WORLD )
+		n_mpi_procs    = mpi.mpi_comm_size( mpi.MPI_COMM_WORLD )
 	else:
 		my_mpi_proc_id = 0
-		n_mpi_procs = 1
+		n_mpi_procs    = 1
 	
 	# ------------------------------------------------------------------------------------
 	# Set up SPHIRE global definitions
@@ -1370,8 +1372,7 @@ if __name__=="__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
-	if "OMPI_COMM_WORLD_SIZE" in os.environ:
-		mpi.mpi_finalize()
+	mpi.mpi_finalize()
 
 # ========================================================================================
 #  END OF FILE

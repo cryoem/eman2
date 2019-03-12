@@ -42,11 +42,6 @@ from logger import Logger, BaseLogger_Files
 import global_def
 from global_def import sxprint, ERROR
 
-from mpi   import  *
-from math  import  *
-
-
-
 import os
 import sys
 import subprocess
@@ -54,8 +49,6 @@ import time
 import string
 from   sys import exit
 from   time import localtime, strftime
-
-
 
 from utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
 import user_functions
@@ -70,8 +63,11 @@ import os
 import time
 import socket
 
+import mpi
+from mpi   import  *
+from math  import  *
 
-mpi_init(0, [])
+mpi.mpi_init( 0, [] )
 
 
 def subdict(d,u):
@@ -470,4 +466,4 @@ if __name__=="__main__":
 	global_def.print_timestamp( "Start" )
 	main()
 	global_def.print_timestamp( "Finish" )
-	mpi_finalize()
+	mpi.mpi_finalize()

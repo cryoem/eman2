@@ -731,16 +731,15 @@ def _main_():
 
 	args = child_argparser.parse_args()
 
-	meridien_path = args.meridien_path
-
-	if meridien_path is not None:
+	if "meridien" in sys.argv[1]:
+		meridien_path = args.meridien_path
 		files = sxctf_refine_io.read_meridien_data(meridien_path)
 		volume1_file_path = files["first_halfmap"]
 		volume2_file_path = files["second_halfmap"]
 		chunk_file_path = files["chunk1"]
 		params_file_path = files["final_params"]
 	else:
-		volume1_file_path = args.volume1
+		volume1_file_path = args.volume
 		volume2_file_path = args.volume2
 		params_file_path = args.params
 		chunk_file_path = args.chunk
