@@ -2562,7 +2562,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			lit = len(xod1)
 			for j in range(len(xod1)):
 				cumprob += xod1[j]
-				if(cumprob > Tracker["constants"]["ccfpercentage"]):
+				if(cumprob > Tracker["ccfpercentage"]):
 					lit = j+1
 					break
 			#keepf = mpi_reduce(keepf, 1, MPI_INT, MPI_MAX, Blockdata["main_node"], MPI_COMM_WORLD)
@@ -2627,7 +2627,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			lit = len(xod1)
 			for j in range(len(xod1)):
 				cumprob += xod1[j]
-				if(cumprob > Tracker["constants"]["ccfpercentage"]):
+				if(cumprob > Tracker["ccfpercentage"]):
 					lit = j+1
 					break
 
@@ -2750,7 +2750,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		cumprob = 0.0
 		for j in range(len(cod1)):
 			cumprob += cod1[j]
-			if(cumprob > Tracker["constants"]["ccfpercentage"]):
+			if(cumprob > Tracker["ccfpercentage"]):
 				lit = j+1
 				break
 		
@@ -3270,7 +3270,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 			lit = len(xod1)
 			for j in range(len(xod1)):
 				cumprob += xod1[j]
-				if(cumprob > Tracker["constants"]["ccfpercentage"]):
+				if(cumprob > Tracker["ccfpercentage"]):
 					lit = j+1
 					break
 			#keepf = mpi_reduce(keepf, 1, MPI_INT, MPI_MAX, Blockdata["main_node"], MPI_COMM_WORLD)
@@ -3335,7 +3335,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 			lit = len(xod1)
 			for j in range(len(xod1)):
 				cumprob += xod1[j]
-				if(cumprob > Tracker["constants"]["ccfpercentage"]):
+				if(cumprob > Tracker["ccfpercentage"]):
 					lit = j+1
 					break
 
@@ -3459,7 +3459,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		cumprob = 0.0
 		for j in range(len(cod1)):
 			cumprob += cod1[j]
-			if(cumprob > Tracker["constants"]["ccfpercentage"]):
+			if(cumprob > Tracker["ccfpercentage"]):
 				lit = j+1
 				break
 
@@ -4189,7 +4189,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 						###print("  STARTING3    ",Blockdata["myid"],lit)
 						for j in range(len(xod1)):
 							cumprob += xod1[j]
-							if(cumprob > Tracker["constants"]["ccfpercentage"]):
+							if(cumprob > Tracker["ccfpercentage"]):
 								lit = j+1
 								break
 
@@ -4295,7 +4295,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 						lit = len(xod1)
 						for j in range(len(xod1)):
 							cumprob += xod1[j]
-							if(cumprob > Tracker["constants"]["ccfpercentage"]):
+							if(cumprob > Tracker["ccfpercentage"]):
 								lit = j+1
 								break
 
@@ -4477,7 +4477,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					cumprob = 0.0
 					for j in range(len(cod1)):
 						cumprob += cod1[j]
-						if(cumprob > Tracker["constants"]["ccfpercentage"]):
+						if(cumprob > Tracker["ccfpercentage"]):
 							lit = j+1
 							break
 
@@ -5236,7 +5236,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						###print("  STARTING3    ",Blockdata["myid"],lit)
 						for j in range(len(xod1)):
 							cumprob += xod1[j]
-							if(cumprob > Tracker["constants"]["ccfpercentage"]):
+							if(cumprob > Tracker["ccfpercentage"]):
 								lit = j+1
 								break
 
@@ -5341,7 +5341,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						lit = len(xod1)
 						for j in range(len(xod1)):
 							cumprob += xod1[j]
-							if(cumprob > Tracker["constants"]["ccfpercentage"]):
+							if(cumprob > Tracker["ccfpercentage"]):
 								lit = j+1
 								break
 
@@ -5519,7 +5519,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					cumprob = 0.0
 					for j in range(len(cod1)):
 						cumprob += cod1[j]
-						if(cumprob > Tracker["constants"]["ccfpercentage"]):
+						if(cumprob > Tracker["ccfpercentage"]):
 							lit = j+1
 							break
 
@@ -6180,8 +6180,8 @@ def update_tracker(shell_line_command):
 		Tracker["constants"]["mask3D"] 						= options_no_default_value.mask3D
 		tempdict["mask3D"] = Tracker["constants"]["mask3D"]
 	if options_no_default_value.ccfpercentage != None:
-		Tracker["constants"]["ccfpercentage"] 				= options_no_default_value.ccfpercentage/100.0
-		tempdict["ccfpercentage"] = Tracker["constants"]["ccfpercentage"]
+		Tracker["ccfpercentage"] 				= options_no_default_value.ccfpercentage/100.0
+		tempdict["ccfpercentage"] = Tracker["ccfpercentage"]
 	if options_no_default_value.nonorm != None:
 		Tracker["constants"]["nonorm"] 						= options_no_default_value.nonorm
 		tempdict["nonorm"] = Tracker["constants"]["nonorm"]
@@ -7182,13 +7182,13 @@ def main():
 			Constants["refvol"]            			= volinit
 			Constants["masterdir"]         			= masterdir
 			Constants["best"]              			= 3
+			Constants["ccfpercentage"]     			= options.ccfpercentage/100. # Here for legacy reasons
 			Constants["limit_improvement"] 			= 1
 			Constants["limit_changes"]     			= 1  # reduce delta by half if both limits are reached simultaneously
 			Constants["states"]            			= ["INITIAL", "PRIMARY", "EXHAUSTIVE", "RESTRICTED", "PRIMARY LOCAL", "FINAL"]# will add two states, CONINUATION_INITIAL, CONINUATION_PRIMARY
 			Constants["user_func_volume"]			= options.function
 			Constants["user_func_ai"]				= options.function_ai
 			Constants["hardmask"]          			=  True #options.hardmask
-			Constants["ccfpercentage"]     			= options.ccfpercentage/100.
 			Constants["expthreshold"]      			= -10
 			Constants["number_of_groups"]  			= -1 # number of defocus groups, to be set by assign_particles_to_groups
 			Constants["nonorm"]            			= options.nonorm
@@ -7244,6 +7244,7 @@ def main():
 			Tracker["nxstep"]		= 10
 			#  Resolution in pixels at 0.5 cutoff
 			Tracker["currentres"]		    = -1
+			Tracker["ccfpercentage"]     			= options.ccfpercentage/100.
 			Tracker["howmany"]		        = 4
 			Tracker["fsc143"]			    = -1
 			Tracker["maxfrad"]           	= -1
