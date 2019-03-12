@@ -98,7 +98,7 @@ def write_virtual_bdb_stack(
     :param number_of_particles: Number of particles to write.
     :return: None
     """
-    global_def.sxprint("Write results to virtual stack...")
+    global_def.sxprint("Write results to virtual stack: " + output_stack_path)
 
     if number_of_particles is None:
         number_of_particles = EMAN2.EMUtil.get_image_count(origin_stack_path)
