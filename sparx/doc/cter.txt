@@ -58,7 +58,7 @@ sxcter exists in for both MPI and non-MPI versions (Running MPI version does not
   ; %%--%%ac : Amplitude contrast [%]: The amplitude contrast is in the range of 7% - 14%. The value  depends on the thickness of the ice embedding the particles, among other factors. (default 10.0)
   ; %%--%%f_start : Lowest resolution [A]: Lowest resolution used in the CTF estimation. Determined automatically if not given. (default -1.0)
   ; %%--%%f_stop : Highest resolution [A]: Highest resolution used in the CTF estimation. Determined automatically if not given. (default -1.0)
-
+  ; %%--%%pws : Skip calculation of 2D power spectra: Will write periodograms to disk. (default False question reversed in GUI)
 \\
 === Advanced Parameters ===
   ; %%--%%wn : CTF window size [Pixels]: The window size should be slightly larger than particle box size. This will be ignored in Stack Mode. (default 512)
