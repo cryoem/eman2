@@ -166,7 +166,7 @@ def create_and_save_particle_plots(
 				values=particle_drratio,
 				# vmin=min_max_ratio[0],
 				# vmax=min_max_ratio[1],
-				colmap="plasma",
+				colmap="YlOrBr",
 				title="Significance map",
 				plotpos=(2, 2, 3),
 			)
