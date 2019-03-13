@@ -34,8 +34,11 @@ Plotting stuff for CTF Refinement with error assessment in SPHIRE
 """
 # pylint: disable=C0330
 import os
-from matplotlib import pyplot
 import matplotlib as mpl
+
+mpl.use("Agg")
+from matplotlib import pyplot
+
 from tqdm import tqdm
 import sxctf_refine_io
 import numpy as np
