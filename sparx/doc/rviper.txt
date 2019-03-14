@@ -8,7 +8,7 @@ Initial 3D Model - RVIPER: Reproducible //ab initio// 3D structure determination
 
 Usage in command line
 
-  sxrviper.py  stack  directory  --radius=outer_radius  --sym=sym  --n_rv_runs=n_rv_runs  --iteration_start=iteration_start  --n_v_runs=n_v_runs  --npad=npad  --criterion_name=criterion_name  --outlier_index_threshold_method=outlier_index_threshold_method  --angle_threshold=angle_threshold  --outlier_percentile=outlier_percentile  --ir=inner_radius  --rs=ring_step  --xr=x_range  --yr=y_range  --ts=translational_search_step  --delta=angular_step  --center=center_type  --maxit1=max_iter1  --maxit2=max_iter2  --mask3D=mask3D  --moon_elimination=moon_elimination  --L2threshold=L2threshold  --ref_a=ref_a  --n_shc_runs=n_shc_runs  --doga=doga --fl=fl  --aa=aa  --pwreference=pwreference
+  sxrviper.py  stack  directory  --radius=outer_radius  --sym=sym  --n_rv_runs=n_rv_runs  --iteration_start=iteration_start  --n_v_runs=n_v_runs  --npad=npad  --criterion_name=criterion_name  --outlier_index_threshold_method=outlier_index_threshold_method  --angle_threshold=angle_threshold  --outlier_percentile=outlier_percentile  --ir=inner_radius  --rs=ring_step  --xr=x_range  --yr=y_range  --ts=translational_search_step  --delta=angular_step  --center=center_type  --maxit1=max_iter1  --maxit2=max_iter2  --mask3D=mask3D  --moon_elimination=moon_elimination  --L2threshold=L2threshold  --ref_a=ref_a  --n_shc_runs=n_shc_runs  --doga=doga --fl=fl  --aa=aa  --pwreference=pwreference --theta1=theta1 --theta2=theta2 --dpi=dpi
 
 \\
 ===== Typical usage =====
@@ -61,6 +61,9 @@ Since RVIPER uses group of processors working together, it is important for effi
   ; %%--%%aa : Low-pass filter fall-off [1/Pixels]: Fall-off of for the hyperbolic tangent low-pass filter. Specify with absolute frequency. (default 0.1)
   ; %%--%%pwreference : Power spectrum reference: Text file containing a 1D reference power spectrum. (default none)
   ; %%--%%npad : Image padding factor: Used by 3D reconstruction algorithm in the program. (default 2)
+  ; %%--%%theta1 : Minimum theta: Lower bound for out-of-plane tilt angle. No tilt corresponds to 90 degrees. (default -1)
+  ; %%--%%theta2 : Maximum theta: Upper bound for out-of-plane tilt angle. No tilt corresponds to 90 degrees. (default -1)
+  ; %%--%%dpi : BILD resolution: Resolution in dpi for angular distribution plot. (default 72)
 
 \\
 ===== Output =====
