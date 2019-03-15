@@ -29,9 +29,6 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
-from builtins import range
-from global_def import *
-
 def filt_median(f, nx, ny, nz = 1, kernelshape = "BLOCK"):
 	"""
 	Name
@@ -903,3 +900,7 @@ def filterlocal(ui, vi, m, falloff, myid, main_node, number_of_proc):
 	mpi_barrier(MPI_COMM_WORLD)
 	reduce_EMData_to_root(filteredvol, myid, main_node, MPI_COMM_WORLD)
 	return filteredvol
+
+from builtins import range
+from global_def import *
+

@@ -273,8 +273,8 @@ def main():
 			else:
 				li = 0
 			cmd="{} {}".format("mkdir -p", masterdir)
-			global_def.write_command(masterdir)
 			os.system(cmd)			
+			global_def.write_command(masterdir)
 		else:
 			li=0
 		li = mpi.mpi_bcast( li, 1, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD )[0]

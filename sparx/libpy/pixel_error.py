@@ -29,9 +29,6 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
-from builtins import range
-from global_def import *
-
 # Comment by Zhengfan Yang on 06/11/10
 # I decided to move everything related to pixel error to this file. Otherwise, they are
 # scattered all over the places and there are a lot of duplications and confusions.
@@ -1763,3 +1760,6 @@ def max_3D_pixel_errorA(t1, t2, r):
 	return sqrt(ddmax)
 '''
 
+
+from builtins import range
+from global_def import *

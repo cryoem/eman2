@@ -29,9 +29,6 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
-from builtins import range
-from global_def import *
-
 
 def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 						xrng, yrng, step, nomirror = False, mode="F", CTF=False, \
@@ -6224,3 +6221,6 @@ def XXali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 	return sx_sum, sy_sum
 '''
 
+
+from builtins import range
+from global_def import *

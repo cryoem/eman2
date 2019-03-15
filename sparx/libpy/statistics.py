@@ -31,10 +31,6 @@ from __future__ import print_function
 
 from future import standard_library
 standard_library.install_aliases()
-from builtins import range
-from builtins import object
-from global_def import *
-
 def avgvar(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_even=True):
 	'''
 	
@@ -10582,3 +10578,7 @@ def scale_fsc_datasetsize(fsc_to_be_adjusted, nfsc, nnew):
 	fsc_sub = [0.0]*len(fsc_to_be_adjusted)
 	for i,q in enumerate(fsc_to_be_adjusted):  fsc_sub[i] = q/(q*(1.0-s)+s)
 	return fsc_sub
+from builtins import range
+from builtins import object
+from global_def import *
+

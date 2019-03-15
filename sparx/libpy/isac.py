@@ -29,9 +29,6 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
-from builtins import range
-from global_def import SPARX_MPI_TAG_UNIVERSAL
-
 def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, init_iter, main_iter, iter_reali, \
 			  match_first, max_round, match_second, stab_ali, thld_err, indep_run, thld_grp, img_per_grp, \
 			  generation, candidatesexist = False, random_seed=None, new = False):
@@ -1615,4 +1612,7 @@ for i in xrange(len(d)):
 	else:
 		print ' Group  ',i,'  skipped'
 """
+from builtins import range
+from global_def import SPARX_MPI_TAG_UNIVERSAL
 from global_def import *
+

@@ -28,15 +28,6 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
-import numpy
-
-from builtins import range
-from global_def import *
-import global_def
-import scipy.ndimage.morphology as snm
-import EMAN2_cppwrap
-
-
 def fill_soft_edge_kernel_mask(kernel_mask, length, mode):
 	"""
 	Get the soft edge kernel value at the specified position.
@@ -6937,4 +6928,13 @@ def Xdefocusgett_vpp22(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_st
 	write_text_file([foki,ctf2[:len(foki)]],"toto1.txt")
 	'''
 	return defi, ampcont, subpw, ctf2, baseline, envelope, i_start, i_stop
+
+import numpy
+
+from builtins import range
+from global_def import *
+import global_def
+import scipy.ndimage.morphology as snm
+import EMAN2_cppwrap
+
 
