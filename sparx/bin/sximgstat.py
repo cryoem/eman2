@@ -65,6 +65,7 @@ def main():
 		disable_bdb_cache()
 	from applications import imgstat
 	global_def.BATCH = True
+	Util.init_threads(4)
 	imgstat( args, options.ccc, options.fsc, options.inf, options.rad )
 
 if __name__=="__main__":

@@ -37,7 +37,7 @@ from __future__ import division
 from past.utils import old_div
 from builtins import range
 import os,sys
-from PyQt4 import QtGui,QtCore
+from PyQt5 import QtGui, QtWidgets,QtCore
 from eman2_gui.valslider import ValSlider
 
 from e2eulerxplor import get_eulers_from
@@ -314,8 +314,8 @@ class EMSimmxXplorInspector(EMSymInspector):
 #		print "simmx xplor died"
 
 	def add_simmx_options(self):
-		self.simmx_tab= QtGui.QWidget()
-		vbl = QtGui.QVBoxLayout(self.simmx_tab)
+		self.simmx_tab= QtWidgets.QWidget()
+		vbl = QtWidgets.QVBoxLayout(self.simmx_tab)
 
 		self.__init_ptcl_slider(vbl)
 		self.tabwidget.insertTab(0,self.simmx_tab,"Simmx")
@@ -335,7 +335,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 		#self.ptcl_slider.setIntonly(True)
 		#layout.addWidget(self.ptcl_slider)
 		#self.connect(self.ptcl_slider, QtCore.SIGNAL("valueChanged"), self.set_ptcl_idx)
-		self.ptcl_slider=QtGui.QSpinBox()
+		self.ptcl_slider=QtWidgets.QSpinBox()
 		self.ptcl_slider.setRange(0,1000)
 		self.ptcl_slider.setSingleStep(1)
 		self.ptcl_slider.setValue(0)
@@ -351,14 +351,14 @@ class EMSimmxXplorInspector(EMSymInspector):
 		self.data = simmx_xplore_dir_data()
 		if len(self.data) == 0: raise RuntimeError("There is no simmx refinement data in the current directory")
 
-		self.simmx_dir_tab= QtGui.QWidget()
-		vbl = QtGui.QVBoxLayout(self.simmx_dir_tab)
+		self.simmx_dir_tab= QtWidgets.QWidget()
+		vbl = QtWidgets.QVBoxLayout(self.simmx_dir_tab)
 
 		# This is the combo-box with the list of refine_* directories
 		combo_entries = [d[0] for d in self.data]
 		combo_entries.sort()
 		combo_entries.reverse()
-		self.combo = QtGui.QComboBox(self)
+		self.combo = QtWidgets.QComboBox(self)
 		for e in combo_entries: self.combo.addItem(e)
 
 		self.combo.currentIndexChanged[str].connect(self.on_combo_change)
@@ -366,11 +366,11 @@ class EMSimmxXplorInspector(EMSymInspector):
 
 		vbl.addWidget(self.combo)
 
-		self.list_widget = QtGui.QListWidget(None)
+		self.list_widget = QtWidgets.QListWidget(None)
 
-		self.list_widget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+		self.list_widget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
 		self.list_widget.setMouseTracking(True)
-		self.list_widget.itemClicked[QtGui.QListWidgetItem].connect(self.list_widget_item_clicked)
+		self.list_widget.itemClicked[QtWidgets.QListWidgetItem].connect(self.list_widget_item_clicked)
 
 		self.update_simmx_list(True)
 		vbl.addWidget(self.list_widget)
@@ -434,11 +434,11 @@ class EMSimmxXplorInspector(EMSymInspector):
 		for i,vals in enumerate(data[3]):
 			choice = vals
 
-			a = QtGui.QListWidgetItem(str(choice),self.list_widget)
+			a = QtWidgets.QListWidgetItem(str(choice),self.list_widget)
 			if first_time and i == 0:
-				self.list_widget.setItemSelected(a,True)
+				a.setSelected(True)
 			elif choice == s_text:
-				self.list_widget.setItemSelected(a,True)
+				a.setSelected(True)
 
 
 	def on_combo_change(self,s):

@@ -441,7 +441,7 @@ def run(command):
 def display_validation_plots(path, radcut, planethres, plotdatalabels=False, color='#00ff00', plotzaxiscolor=False):
 	# In some cases it is impossible to import PyQT4, particularly on clusters
 	try:
-		from PyQt4 import QtCore, QtGui, QtOpenGL
+		from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
 #		from eman2_gui.emshape import *
 		from eman2_gui.valslider import ValSlider
 		from eman2_gui.emplot2d import EMPolarPlot2DWidget
@@ -453,7 +453,7 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False, col
 			def __init__(self,parent):
 				print("Qt4 has not been loaded")
 		QtGui=dummy()
-		QtGui.QWidget=QWidget
+		QtWidgets.QWidget=QWidget
 
 	from eman2_gui.emimage2d import EMImage2DWidget
 	from eman2_gui.emapplication import EMApp
@@ -521,33 +521,33 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False, col
 			R = 1.0 - B
 			return "#%02x%02x%02x"%(255*R,255*G,255*B)
 	
-	class EMValidationPlot(QtGui.QWidget):
+	class EMValidationPlot(QtWidgets.QWidget):
 		"""Make a plot to display validation info"""
 		def __init__(self):
-			QtGui.QWidget.__init__(self)
-			box = QtGui.QVBoxLayout()
+			QtWidgets.QWidget.__init__(self)
+			box = QtWidgets.QVBoxLayout()
 			self.polarplot = EMPolarPlot2DWidget()
 			self.polarplot.setMinimumHeight(50)
 			self.polarplot.setMinimumWidth(50)
 			self.resize(480,580)
 			
-			meanAngLabel = QtGui.QLabel("Mean Tilt Angle") 
-			self.meanAngle = QtGui.QLineEdit("")
-			meanAxisLabel = QtGui.QLabel("Mean Tilt Axis") 
-			self.meanAxis = QtGui.QLineEdit("")
-			rmsdAngLabel = QtGui.QLabel("RMSD Tilt Angle") 
-			self.rmsdAngle = QtGui.QLineEdit("")
-			rmsdAxisLabel = QtGui.QLabel("RMSD Tilt Axis") 
-			self.rmsdAxis = QtGui.QLineEdit("")
-			pointsLabel = QtGui.QLabel("Num points")
-			self.points = QtGui.QLineEdit("")
-			self.pointlabel = QtGui.QLabel("Right click to pick the nearest point")
+			meanAngLabel = QtWidgets.QLabel("Mean Tilt Angle") 
+			self.meanAngle = QtWidgets.QLineEdit("")
+			meanAxisLabel = QtWidgets.QLabel("Mean Tilt Axis") 
+			self.meanAxis = QtWidgets.QLineEdit("")
+			rmsdAngLabel = QtWidgets.QLabel("RMSD Tilt Angle") 
+			self.rmsdAngle = QtWidgets.QLineEdit("")
+			rmsdAxisLabel = QtWidgets.QLabel("RMSD Tilt Axis") 
+			self.rmsdAxis = QtWidgets.QLineEdit("")
+			pointsLabel = QtWidgets.QLabel("Num points")
+			self.points = QtWidgets.QLineEdit("")
+			self.pointlabel = QtWidgets.QLabel("Right click to pick the nearest point")
 			
 			
-			frame = QtGui.QFrame()
-			frame.setFrameShape(QtGui.QFrame.StyledPanel)
+			frame = QtWidgets.QFrame()
+			frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
 			frame.setMaximumHeight(100)
-			grid = QtGui.QGridLayout()
+			grid = QtWidgets.QGridLayout()
 			grid.addWidget(meanAngLabel, 0, 0)
 			grid.addWidget(self.meanAngle, 0, 1)
 			grid.addWidget(meanAxisLabel, 0, 2)

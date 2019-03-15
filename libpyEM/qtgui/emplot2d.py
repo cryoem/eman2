@@ -62,10 +62,8 @@ def safe_float(x):
 	try: return float(x)
 	except: return 0.0
 
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtGui import QListWidgetItem
-from PyQt4.QtOpenGL import QGLWidget
-from PyQt4.QtCore import Qt
+from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+from PyQt5.QtCore import Qt
 from OpenGL import GL,GLU
 from OpenGL.GL import *
 import OpenGL.GL as gl
@@ -101,14 +99,14 @@ linetypes=["-","--",":","-."]
 symtypes=["o","s","+","2","1"]
 colortypes=["k","b","r","g","y","c","m","gray"]
 qt_color_map = {}
-qt_color_map["k"] = QtGui.QColor(0,0,0)
-qt_color_map["b"] = QtGui.QColor(0,0,255)
-qt_color_map["r"] = QtGui.QColor(255,0,0)
-qt_color_map["g"] = QtGui.QColor(0,255,0)
-qt_color_map["y"] = QtGui.QColor(255,255,0)
-qt_color_map["c"] = QtGui.QColor(0,255,255)
-qt_color_map["m"] = QtGui.QColor(255,0,255)
-qt_color_map["gray"] = QtGui.QColor(127,127,127)
+qt_color_map["k"] = QtGui.QBrush(QtGui.QColor(0,0,0))
+qt_color_map["b"] = QtGui.QBrush(QtGui.QColor(0,0,255))
+qt_color_map["r"] = QtGui.QBrush(QtGui.QColor(255,0,0))
+qt_color_map["g"] = QtGui.QBrush(QtGui.QColor(0,255,0))
+qt_color_map["y"] = QtGui.QBrush(QtGui.QColor(255,255,0))
+qt_color_map["c"] = QtGui.QBrush(QtGui.QColor(0,255,255))
+qt_color_map["m"] = QtGui.QBrush(QtGui.QColor(255,0,255))
+qt_color_map["gray"] = QtGui.QBrush(QtGui.QColor(127,127,127))
 
 class EMPlot2DWidget(EMGLWidget):
 	"""A QT widget for drawing 2-D plots using matplotlib
@@ -118,10 +116,7 @@ class EMPlot2DWidget(EMGLWidget):
 
 	def __init__(self,application=None,winid=None,parent=None):
 
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True);
 		EMGLWidget.__init__(self, parent=parent, winid=winid)
-		self.setFormat(fmt)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
 
 		self.axes={}
@@ -192,13 +187,13 @@ class EMPlot2DWidget(EMGLWidget):
 		if event.key() == Qt.Key_C:
 			self.show_inspector(1)
 		elif event.key() == Qt.Key_F1:
-			try: from PyQt4 import QtWebKit
+			try: from PyQt5 import QtWebEngineWidgets
 			except: return
 			try:
 				try:
 					test = self.browser
 				except:
-					self.browser = QtWebKit.QWebView()
+					self.browser = QtWebEngineWidgets.QWebEngineView()
 					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display"))
 					self.browser.resize(800,800)
 
@@ -939,9 +934,9 @@ lc is the cursor selection point in plot coords"""
 
 	def wheelEvent(self, event):
 		pass
-		#if event.delta() > 0:
+		#if event.angleDelta().y() > 0:
 			#self.set_scale(self.scale + MAG_INC)
-		#elif event.delta() < 0:
+		#elif event.angleDelta().y() < 0:
 			#if ( self.scale - MAG_INC > 0 ):
 				#self.set_scale(self.scale - MAG_INC)
 		## The self.scale variable is updated now, so just update with that
@@ -957,10 +952,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 	clusterStats = QtCore.pyqtSignal(list)
 
 	def __init__(self,application=None,winid=None):
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True);
 		EMGLWidget.__init__(self, winid=winid)
-		self.setFormat(fmt)
 		self.resize(640,480)
 		self.setWindowIcon(QtGui.QIcon(QtGui.QPixmap(ploticon)))
 
@@ -1034,13 +1026,13 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		if event.key() == Qt.Key_C:
 			self.show_inspector(1)
 		elif event.key() == Qt.Key_F1:
-			try: from PyQt4 import QtWebKit
+			try: from PyQt5 import QtWebEngineWidgets
 			except: return
 			try:
 				try:
 					test = self.browser
 				except:
-					self.browser = QtWebKit.QWebView()
+					self.browser = QtWebEngineWidgets.QWebEngineView()
 					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display"))
 					self.browser.resize(800,800)
 
@@ -1069,7 +1061,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		x = self.firstcx - old_div(self.width(),2.0)
 		y = self.firstcy - old_div(self.height(),2.0)
 		if event.buttons()&Qt.MidButton:
-			filename = QtGui.QFileDialog.getSaveFileName(self, 'Publish or Perish! Save Plot', os.getcwd(), "(*.tiff *.jpeg, *.png)")
+			filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Publish or Perish! Save Plot', os.getcwd(), "(*.tiff *.jpeg, *.png)")[0]
 			if filename: # if we cancel
 				self.saveSnapShot(filename)
 		elif event.buttons()&Qt.LeftButton:
@@ -1512,29 +1504,29 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		self.shapechange=1
 		#self.updateGL()
 
-class EMPlot2DStatsInsp(QtGui.QWidget):
+class EMPlot2DStatsInsp(QtWidgets.QWidget):
 
 	"""This class implements the statistics pop-up from the EMPlot2DInspector"""
 
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
-		gbl0=QtGui.QGridLayout(self)
+		gbl0=QtWidgets.QGridLayout(self)
 
-		self.summary=QtGui.QPushButton(self)
+		self.summary=QtWidgets.QPushButton(self)
 		self.summary.setText("Summary Table")
 		gbl0.addWidget(self.summary,2,0,1,2)
 
-		hl1 = QtGui.QFrame()
-		hl1.setFrameStyle(QtGui.QFrame.HLine)
-		hl1.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
+		hl1 = QtWidgets.QFrame()
+		hl1.setFrameStyle(QtWidgets.QFrame.HLine)
+		hl1.setSizePolicy(QtWidgets.QSizePolicy.Minimum,QtWidgets.QSizePolicy.Expanding)
 		gbl0.addWidget(hl1,3,0,1,2)
 
-		self.wlnorm=QtGui.QLabel(self)
+		self.wlnorm=QtWidgets.QLabel(self)
 		self.wlnorm.setText("Test:")
 		gbl0.addWidget(self.wlnorm,4,0)
 
-		self.wcomb_test=QtGui.QComboBox(self)
+		self.wcomb_test=QtWidgets.QComboBox(self)
 		#self.wcomb_test.addItem("Welch's t-test")
 		#self.wcomb_test.addItem("Student's t-test")
 		#self.wcomb_test.addItem("Hotelling's T-squared test")
@@ -1556,16 +1548,16 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 		self.wnround.intonly=1
 		gbl0.addWidget(self.wnround,6,1)
 
-		self.run=QtGui.QPushButton(self)
+		self.run=QtWidgets.QPushButton(self)
 		self.run.setText("Compute")
 		gbl0.addWidget(self.run,8,0,1,2)
 
-		hl2 = QtGui.QFrame()
-		hl2.setFrameStyle(QtGui.QFrame.HLine)
-		hl2.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
+		hl2 = QtWidgets.QFrame()
+		hl2.setFrameStyle(QtWidgets.QFrame.HLine)
+		hl2.setSizePolicy(QtWidgets.QSizePolicy.Minimum,QtWidgets.QSizePolicy.Expanding)
 		gbl0.addWidget(hl2,9,0,1,2)
 
-		self.table = QtGui.QTableWidget() #QtGui.QTextEdit()
+		self.table = QtWidgets.QTableWidget() #QtWidgets.QTextEdit()
 		self.table.setRowCount(1)
 		self.table.setColumnCount(1)
 		self.table.setSortingEnabled(True)
@@ -1624,7 +1616,7 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 			for s,stat in enumerate(stats):
 				if s == 0: item = str(int(stat))
 				else: item = str(round(stat,rnd))
-				self.table.setItem( c, s, QtGui.QTableWidgetItem(item) )
+				self.table.setItem( c, s, QtWidgets.QTableWidgetItem(item) )
 
 	def runTest(self):
 		stat = str(self.wcomb_test.currentText())
@@ -1658,7 +1650,7 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 		for i, r in enumerate(result):
 			for j, c in enumerate(r):
 				item = str(c)
-				self.table.setItem( j, i, QtGui.QTableWidgetItem(item) )
+				self.table.setItem( j, i, QtWidgets.QTableWidgetItem(item) )
 
 	def replaceRowLabels(self,rows):
 		self.table.setVerticalHeaderLabels(rows)
@@ -1670,13 +1662,13 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 		self.table.setHorizontalHeaderLabels(cols)
 		self.table.setVerticalHeaderLabels(cols)
 
-class EMPlot2DRegrInsp(QtGui.QWidget):
+class EMPlot2DRegrInsp(QtWidgets.QWidget):
 	"""This class implements the regression pop-up from the EMPlot2DInspector"""
 
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
-		gbl0=QtGui.QGridLayout(self)
+		gbl0=QtWidgets.QGridLayout(self)
 
 		insp = self.target().get_inspector()
 
@@ -1696,17 +1688,17 @@ class EMPlot2DRegrInsp(QtGui.QWidget):
 		self.wnpts.intonly=1
 		gbl0.addWidget(self.wnpts,4,1)
 
-		self.wlnorm=QtGui.QLabel(self)
+		self.wlnorm=QtWidgets.QLabel(self)
 		self.wlnorm.setText("Normalization:")
 		gbl0.addWidget(self.wlnorm,6,0)
 
-		self.wcomb_norm=QtGui.QComboBox(self)
+		self.wcomb_norm=QtWidgets.QComboBox(self)
 		self.wcomb_norm.addItem("None")
 		self.wcomb_norm.addItem("Standardize")
 		self.wcomb_norm.addItem("Maxmin")
 		gbl0.addWidget(self.wcomb_norm,6,1)
 
-		self.regrb=QtGui.QPushButton(self)
+		self.regrb=QtWidgets.QPushButton(self)
 		self.regrb.setText("Regress")
 		gbl0.addWidget(self.regrb,8,0,1,2)
 
@@ -1731,7 +1723,7 @@ class EMPlot2DRegrInsp(QtGui.QWidget):
 			yaxes=[int(i) for i in yaxes.split(",")]
 			if max(yaxes)>=ncol : raise Exception
 		except:
-			pass #QtGui.QMessageBox.warning(self, "Axes must be a comma separated list of column numbers")
+			pass #QtWidgets.QMessageBox.warning(self, "Axes must be a comma separated list of column numbers")
 			#return
 
 		xs = ",".join([str(i) for i in xaxes])
@@ -1794,22 +1786,22 @@ class EMPlot2DRegrInsp(QtGui.QWidget):
 		elif norm == "None":
 			return x
 
-class EMPlot2DClassInsp(QtGui.QWidget):
+class EMPlot2DClassInsp(QtWidgets.QWidget):
 	"""This class implements the classification pop-up from the EMPlot2DInspector"""
 	def __init__(self,target) :
 
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
-		gbl0=QtGui.QGridLayout(self)
+		gbl0=QtWidgets.QGridLayout(self)
 
 		#self.wimgfile=StringBox(label="Images:")
 		#gbl0.addWidget(self.wimgfile,0,0)
 
-		#self.wimgfilebut=QtGui.QPushButton(self)
+		#self.wimgfilebut=QtWidgets.QPushButton(self)
 		#self.wimgfilebut.setText("Browse")
 		#gbl0.addWidget(self.wimgfilebut,0,1)
 
-		self.kmeansb=QtGui.QPushButton(self)
+		self.kmeansb=QtWidgets.QPushButton(self)
 		self.kmeansb.setText("K-means")
 		gbl0.addWidget(self.kmeansb,2,0,1,2)
 
@@ -1823,12 +1815,12 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		self.wcbaxnorm=CheckBox(label="Eq Wt Axes:",value=0)
 		gbl0.addWidget(self.wcbaxnorm,6,0)
 
-		hl1 = QtGui.QFrame()
-		hl1.setFrameStyle(QtGui.QFrame.HLine)
-		hl1.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
+		hl1 = QtWidgets.QFrame()
+		hl1.setFrameStyle(QtWidgets.QFrame.HLine)
+		hl1.setSizePolicy(QtWidgets.QSizePolicy.Minimum,QtWidgets.QSizePolicy.Expanding)
 		gbl0.addWidget(hl1,7,0,1,2)
 
-		self.threshb=QtGui.QPushButton(self)
+		self.threshb=QtWidgets.QPushButton(self)
 		self.threshb.setText("Threshold")
 		gbl0.addWidget(self.threshb,8,0,1,2)
 
@@ -1839,7 +1831,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		self.wnax_thresh=StringBox(label="Axes:",value="0")
 		gbl0.addWidget(self.wnax_thresh,10,1)
 
-		self.wcomb_threshtype=QtGui.QComboBox(self)
+		self.wcomb_threshtype=QtWidgets.QComboBox(self)
 		self.wcomb_threshtype.addItem("value")
 		self.wcomb_threshtype.addItem("sigma")
 		self.wcomb_threshtype.addItem("median")
@@ -1847,15 +1839,15 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		self.wcomb_threshtype.addItem("percentile")
 		gbl0.addWidget(self.wcomb_threshtype,12,0)
 
-		hl2 = QtGui.QFrame()
-		hl2.setFrameStyle(QtGui.QFrame.HLine)
-		hl2.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
+		hl2 = QtWidgets.QFrame()
+		hl2.setFrameStyle(QtWidgets.QFrame.HLine)
+		hl2.setSizePolicy(QtWidgets.QSizePolicy.Minimum,QtWidgets.QSizePolicy.Expanding)
 		gbl0.addWidget(hl2,13,0,1,2)
 
 		self.wspfix=StringBox(label="Prefix:",value="split")
 		gbl0.addWidget(self.wspfix,14,0)
 
-		self.wbmakeset=QtGui.QPushButton()
+		self.wbmakeset=QtWidgets.QPushButton()
 		self.wbmakeset.setText("New Sets")
 		gbl0.addWidget(self.wbmakeset,14,1)
 
@@ -1885,10 +1877,10 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		for name in names:
 			try: num=int(name.rsplit("_",1)[1])
 			except:
-				QtGui.QMessageBox.warning(self,"Error","Please hilight sets with names ending in _# !")
+				QtWidgets.QMessageBox.warning(self,"Error","Please hilight sets with names ending in _# !")
 				return
 			if num in nums:
-				QtGui.QMessageBox.warning(self, "Error","Please select only one group of sets at a time !")
+				QtWidgets.QMessageBox.warning(self, "Error","Please select only one group of sets at a time !")
 				return
 			nums.add(num)
 
@@ -1897,13 +1889,13 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 
 			try: comments=self.target().comments[name]
 			except:
-				QtGui.QMessageBox.warning(self,"Error", "No filenames stored in {}".format(name))
+				QtWidgets.QMessageBox.warning(self,"Error", "No filenames stored in {}".format(name))
 				return
 
 			for r in range(len(comments)):
 				try: imn,imf=comments[r].split(";")[:2]
 				except:
-					QtGui.QMessageBox.warning(self,"Error", "Invalid filename {} in {}, line {}".format(comments[r],name,r))
+					QtWidgets.QMessageBox.warning(self,"Error", "Invalid filename {} in {}, line {}".format(comments[r],name,r))
 					return
 
 				imn=int(imn)
@@ -1911,7 +1903,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 				val=lsx[imf][imn]
 				out[r]=val
 
-		QtGui.QMessageBox.information(None,"Finished","New sets created: "+", ".join(outs))
+		QtWidgets.QMessageBox.information(None,"Finished","New sets created: "+", ".join(outs))
 
 	def doKMeans(self):
 		"""Performs K-means classification, and produces nseg new data sets"""
@@ -1933,7 +1925,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 				axes=[int(i) for i in axes.split(",")]
 				if max(axes)>=ncol : raise Exception
 			except:
-				QtGui.QMessageBox.warning(self, "Axes must be 'all' or a comma separated list of column numbers")
+				QtWidgets.QMessageBox.warning(self, "Axes must be 'all' or a comma separated list of column numbers")
 				return
 
 		# Sometimes one axis dominates the classification improperly, this makes each axis equally weighted
@@ -1991,14 +1983,14 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 				axes=[int(i) for i in axes.split(",")]
 				if max(axes)>=ncol : raise Exception
 			except:
-				QtGui.QMessageBox.warning(self, "Axes must be 'all' or a comma separated list of column numbers")
+				QtWidgets.QMessageBox.warning(self, "Axes must be 'all' or a comma separated list of column numbers")
 				return
 
 		try:
 			vals=[float(i) for i in vals.split(",")]
 			if len(vals) != len(axes): raise Exception
 		except:
-			QtGui.QMessageBox.warning(self, "You must specify one (comma separated) value for each axis.")
+			QtWidgets.QMessageBox.warning(self, "You must specify one (comma separated) value for each axis.")
 			return
 
 		if thresh_type == "value":
@@ -2103,7 +2095,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		try: self.imgwin.close()
 		except: pass
 
-class DragListWidget(QtGui.QListWidget):
+class DragListWidget(QtWidgets.QListWidget):
 	"This is a minor modification of the QListWidget to support drag-drop of data sets"
 	def setDataSource(self,trg):
 		"""We keep a weak reference to our data source so we can pull the data only when dragging actually starts"""
@@ -2113,7 +2105,7 @@ class DragListWidget(QtGui.QListWidget):
 		if event.key() == Qt.Key_Backspace:
 			name=str(self.currentItem().text())		# currently hilighted item
 			self.datasource().target().set_data(None,key=name)
-		else: QtGui.QListWidget.keyPressEvent(self,event)
+		else: QtWidgets.QListWidget.keyPressEvent(self,event)
 
 	def dragEnterEvent(self,e):
 		if e.mimeData().hasText() : e.acceptProposedAction()
@@ -2162,13 +2154,13 @@ class DragListWidget(QtGui.QListWidget):
 
 	def setMovement(self,x):
 		"""The ListView and ListWidget unfortunately make use of drag-drop for internal rearrangement, but we need to use it for widget->widget copy. This prevents the parent from disabling drag/drop."""
-		QtGui.QListWidget.setMovement(self,x)
+		QtWidgets.QListWidget.setMovement(self,x)
 		self.setlist.setDragEnabled(True)
 		self.setlist.setAcceptDrops(True)
 
 	def setViewMode(self,x):
 		"""The ListView and ListWidget unfortunately make use of drag-drop for internal rearrangement, but we need to use it for widget->widget copy. This prevents the parent from disabling drag/drop."""
-		QtGui.QListWidget.setViewMode(self,x)
+		QtWidgets.QListWidget.setViewMode(self,x)
 		self.setlist.setDragEnabled(True)
 		self.setlist.setAcceptDrops(True)
 
@@ -2202,23 +2194,23 @@ class DragListWidget(QtGui.QListWidget):
 #		print "Dropped ",dropact
 
 
-class EMPlot2DInspector(QtGui.QWidget):
+class EMPlot2DInspector(QtWidgets.QWidget):
 
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
 		self.target=weakref.ref(target)
-		vbl0=QtGui.QVBoxLayout(self)
+		vbl0=QtWidgets.QVBoxLayout(self)
 
-		hbl = QtGui.QHBoxLayout()
-		hbl.setMargin(2)
+		hbl = QtWidgets.QHBoxLayout()
+		hbl.setContentsMargins(2, 2, 2, 2)
 		hbl.setSpacing(6)
 		hbl.setObjectName("hbl")
 
-		gbx = QtGui.QGroupBox("Data sets")
+		gbx = QtWidgets.QGroupBox("Data sets")
 
-		vbl3 = QtGui.QVBoxLayout()
-		vbl3.setMargin(4)
+		vbl3 = QtWidgets.QVBoxLayout()
+		vbl3.setContentsMargins(4, 4, 4, 4)
 		vbl3.setSpacing(6)
 		vbl3.setObjectName("vbl3")
 		gbx.setLayout(vbl3)
@@ -2228,21 +2220,21 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.setlist=DragListWidget(self)
 		self.setlist.setDataSource(self)
 		self.setlist.setSelectionMode(3)
-		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+		self.setlist.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		self.setlist.setDragEnabled(True)
 		self.setlist.setAcceptDrops(True)
 		vbl3.addWidget(self.setlist)
 
 		# none and all buttons for turning plot display on and off
-		hbl6 = QtGui.QHBoxLayout()
+		hbl6 = QtWidgets.QHBoxLayout()
 		hbl.setObjectName("hbl6")
 		vbl3.addLayout(hbl6)
 
-		self.nonebut=QtGui.QPushButton(self)
+		self.nonebut=QtWidgets.QPushButton(self)
 		self.nonebut.setText("None")
 		hbl6.addWidget(self.nonebut)
 
-		self.allbut=QtGui.QPushButton(self)
+		self.allbut=QtWidgets.QPushButton(self)
 		self.allbut.setText("All")
 		hbl6.addWidget(self.allbut)
 
@@ -2252,7 +2244,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		vbl3.addWidget(self.showslide)
 
 		# number and step for the slider
-		hbl7 = QtGui.QHBoxLayout()
+		hbl7 = QtWidgets.QHBoxLayout()
 		hbl.setObjectName("hbl7")
 		vbl3.addLayout(hbl7)
 
@@ -2262,52 +2254,52 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.stepbox=ValBox(label="stp:",value=1)
 		hbl7.addWidget(self.stepbox)
 
-		vbl = QtGui.QVBoxLayout()
-		vbl.setMargin(0)
+		vbl = QtWidgets.QVBoxLayout()
+		vbl.setContentsMargins(0, 0, 0, 0)
 		vbl.setSpacing(6)
 		vbl.setObjectName("vbl")
 		hbl.addLayout(vbl)
 
-		hbl0=QtGui.QHBoxLayout()
-		hbl0.setMargin(0)
+		hbl0=QtWidgets.QHBoxLayout()
+		hbl0.setContentsMargins(0, 0, 0, 0)
 		hbl0.setSpacing(6)
 		vbl.addLayout(hbl0)
 
-		self.saveb=QtGui.QPushButton(self)
+		self.saveb=QtWidgets.QPushButton(self)
 		self.saveb.setText("Save")
 		hbl0.addWidget(self.saveb)
 
-		self.concatb=QtGui.QPushButton(self)
+		self.concatb=QtWidgets.QPushButton(self)
 		self.concatb.setText("Concat")
 		hbl0.addWidget(self.concatb)
 
-		self.pdfb=QtGui.QPushButton(self)
+		self.pdfb=QtWidgets.QPushButton(self)
 		self.pdfb.setText("PDF")
 #		self.pdfb.setEnabled(False)
 		hbl0.addWidget(self.pdfb)
 
-		hbl01=QtGui.QHBoxLayout()
-		hbl01.setMargin(0)
+		hbl01=QtWidgets.QHBoxLayout()
+		hbl01.setContentsMargins(0, 0, 0, 0)
 		hbl01.setSpacing(6)
 		vbl.addLayout(hbl01)
 
-		self.stats=QtGui.QPushButton(self)
+		self.stats=QtWidgets.QPushButton(self)
 		self.stats.setText("Statistics")
 		hbl01.addWidget(self.stats)
 
-		self.regress=QtGui.QPushButton(self)
+		self.regress=QtWidgets.QPushButton(self)
 		self.regress.setText("Regression")
 		hbl01.addWidget(self.regress)
 
-		self.classb=QtGui.QPushButton(self)
+		self.classb=QtWidgets.QPushButton(self)
 		self.classb.setText("Classification")
 		hbl01.addWidget(self.classb)
 
-		hbl1 = QtGui.QHBoxLayout()
-		hbl1.setMargin(0)
+		hbl1 = QtWidgets.QHBoxLayout()
+		hbl1.setContentsMargins(0, 0, 0, 0)
 		hbl1.setSpacing(6)
 
-		self.color=QtGui.QComboBox(self)
+		self.color=QtWidgets.QComboBox(self)
 		self.color.addItem("black")
 		self.color.addItem("blue")
 		self.color.addItem("red")
@@ -2320,45 +2312,45 @@ class EMPlot2DInspector(QtGui.QWidget):
 
 		vbl.addLayout(hbl1)
 
-		hbl2 = QtGui.QHBoxLayout()
-		hbl2.setMargin(0)
+		hbl2 = QtWidgets.QHBoxLayout()
+		hbl2.setContentsMargins(0, 0, 0, 0)
 		hbl2.setSpacing(6)
 		vbl.addLayout(hbl2)
 
 		# This is for line parms
-		vbl2a = QtGui.QVBoxLayout()
-		vbl2a.setMargin(0)
+		vbl2a = QtWidgets.QVBoxLayout()
+		vbl2a.setContentsMargins(0, 0, 0, 0)
 		vbl2a.setSpacing(6)
 		hbl2.addLayout(vbl2a)
 
-		self.lintog=QtGui.QPushButton(self)
+		self.lintog=QtWidgets.QPushButton(self)
 		self.lintog.setText("Line")
 		self.lintog.setCheckable(1)
 		vbl2a.addWidget(self.lintog)
 
-		self.linsel=QtGui.QComboBox(self)
+		self.linsel=QtWidgets.QComboBox(self)
 		self.linsel.addItem("------")
 		self.linsel.addItem("- - - -")
 		self.linsel.addItem(".......")
 		self.linsel.addItem("-.-.-.-")
 		vbl2a.addWidget(self.linsel)
 
-		self.linwid=QtGui.QSpinBox(self)
+		self.linwid=QtWidgets.QSpinBox(self)
 		self.linwid.setRange(1,10)
 		vbl2a.addWidget(self.linwid)
 
 		# This is for point parms
-		vbl2b = QtGui.QVBoxLayout()
-		vbl2b.setMargin(0)
+		vbl2b = QtWidgets.QVBoxLayout()
+		vbl2b.setContentsMargins(0, 0, 0, 0)
 		vbl2b.setSpacing(6)
 		hbl2.addLayout(vbl2b)
 
-		self.symtog=QtGui.QPushButton(self)
+		self.symtog=QtWidgets.QPushButton(self)
 		self.symtog.setText("Symbol")
 		self.symtog.setCheckable(1)
 		vbl2b.addWidget(self.symtog)
 
-		self.symsel=QtGui.QComboBox(self)
+		self.symsel=QtWidgets.QComboBox(self)
 		self.symsel.addItem("circle")
 		self.symsel.addItem("square")
 		self.symsel.addItem("plus")
@@ -2366,102 +2358,102 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.symsel.addItem("tridown")
 		vbl2b.addWidget(self.symsel)
 
-		self.symsize=QtGui.QSpinBox(self)
+		self.symsize=QtWidgets.QSpinBox(self)
 		self.symsize.setRange(0,25)
 		vbl2b.addWidget(self.symsize)
 
 		# This is for "heatmap"/2D hexbin parms
-		#vbl2c = QtGui.QVBoxLayout()
-		#vbl2c.setMargin(0)
+		#vbl2c = QtWidgets.QVBoxLayout()
+		#vbl2c.setContentsMargins(0, 0, 0, 0)
 		#vbl2c.setSpacing(6)
 		#hbl2.addLayout(vbl2c)
 
-		#self.hmtog=QtGui.QPushButton(self)
+		#self.hmtog=QtWidgets.QPushButton(self)
 		#self.hmtog.setText("Heatmap")
 		#self.hmtog.setCheckable(1)
 		#vbl2c.addWidget(self.hmtog)
 
-		#self.hmsel=QtGui.QComboBox(self)
+		#self.hmsel=QtWidgets.QComboBox(self)
 		#self.hmsel.addItem("hex")
 		#self.hmsel.addItem("square")
 		#vbl2c.addWidget(self.hmsel)
 
-		#self.hmbins=QtGui.QSpinBox(self)
+		#self.hmbins=QtWidgets.QSpinBox(self)
 		#self.hmbins.setRange(1,50)
 		#vbl2c.addWidget(self.hmbins)
 
 		# per plot column selectors
-		gl=QtGui.QGridLayout()
-		gl.addWidget(QtGui.QLabel("X Col:",self),0,0,Qt.AlignRight)
-		self.slidex=QtGui.QSpinBox(self)
+		gl=QtWidgets.QGridLayout()
+		gl.addWidget(QtWidgets.QLabel("X Col:",self),0,0,Qt.AlignRight)
+		self.slidex=QtWidgets.QSpinBox(self)
 		self.slidex.setRange(-1,1)
 		gl.addWidget(self.slidex,0,1,Qt.AlignLeft)
 
-		gl.addWidget(QtGui.QLabel("Y Col:",self),1,0,Qt.AlignRight)
-		self.slidey=QtGui.QSpinBox(self)
+		gl.addWidget(QtWidgets.QLabel("Y Col:",self),1,0,Qt.AlignRight)
+		self.slidey=QtWidgets.QSpinBox(self)
 		self.slidey.setRange(-1,1)
 		gl.addWidget(self.slidey,1,1,Qt.AlignLeft)
 
-		gl.addWidget(QtGui.QLabel("C Col:",self),0,2,Qt.AlignRight)
-		self.slidec=QtGui.QSpinBox(self)
+		gl.addWidget(QtWidgets.QLabel("C Col:",self),0,2,Qt.AlignRight)
+		self.slidec=QtWidgets.QSpinBox(self)
 		self.slidec.setRange(-2,1)
 		gl.addWidget(self.slidec,0,3,Qt.AlignLeft)
 
-		gl.addWidget(QtGui.QLabel("S Col:",self),1,2,Qt.AlignRight)
-		self.slides=QtGui.QSpinBox(self)
+		gl.addWidget(QtWidgets.QLabel("S Col:",self),1,2,Qt.AlignRight)
+		self.slides=QtWidgets.QSpinBox(self)
 		self.slides.setRange(-2,1)
 		gl.addWidget(self.slides,1,3,Qt.AlignLeft)
 		vbl.addLayout(gl)
 
-		hbl2 = QtGui.QHBoxLayout()
+		hbl2 = QtWidgets.QHBoxLayout()
 
-		self.xlogtog=QtGui.QPushButton(self)
+		self.xlogtog=QtWidgets.QPushButton(self)
 		self.xlogtog.setText("X Log")
 		self.xlogtog.setCheckable(1)
 		hbl2.addWidget(self.xlogtog)
 
-		self.ylogtog=QtGui.QPushButton(self)
+		self.ylogtog=QtWidgets.QPushButton(self)
 		self.ylogtog.setText("Y Log")
 		self.ylogtog.setCheckable(1)
 		hbl2.addWidget(self.ylogtog)
 
-		#self.zlogtog=QtGui.QPushButton(self)
+		#self.zlogtog=QtWidgets.QPushButton(self)
 		#self.zlogtog.setText("Z Log")
 		#self.zlogtog.setCheckable(1)
 		#hbl2.addWidget(self.zlogtog)
 
 		vbl.addLayout(hbl2)
 
-		self.wrescale=QtGui.QPushButton(self)
+		self.wrescale=QtWidgets.QPushButton(self)
 		self.wrescale.setText("Rescale")
 		vbl.addWidget(self.wrescale)
 
 		vbl0.addLayout(hbl)
 
-		hbl2a=QtGui.QHBoxLayout()
+		hbl2a=QtWidgets.QHBoxLayout()
 
-		self.wl1=QtGui.QLabel("Min")
+		self.wl1=QtWidgets.QLabel("Min")
 		self.wl1.setAlignment(Qt.AlignHCenter)
 		hbl2a.addWidget(self.wl1)
-		self.wl2=QtGui.QLabel("Max")
+		self.wl2=QtWidgets.QLabel("Max")
 		self.wl2.setAlignment(Qt.AlignHCenter)
 		hbl2a.addWidget(self.wl2)
-		self.wl3=QtGui.QLabel("Min")
+		self.wl3=QtWidgets.QLabel("Min")
 		self.wl3.setAlignment(Qt.AlignHCenter)
 		hbl2a.addWidget(self.wl3)
-		self.wl4=QtGui.QLabel("Max")
+		self.wl4=QtWidgets.QLabel("Max")
 		self.wl4.setAlignment(Qt.AlignHCenter)
 		hbl2a.addWidget(self.wl4)
 		vbl0.addLayout(hbl2a)
 
-		hbl2=QtGui.QHBoxLayout()
+		hbl2=QtWidgets.QHBoxLayout()
 
-		#hbl2.addWidget(QtGui.QLabel("X:",self))
-		#self.wxmin=QtGui.QLineEdit(self)
+		#hbl2.addWidget(QtWidgets.QLabel("X:",self))
+		#self.wxmin=QtWidgets.QLineEdit(self)
 		self.wxmin=ValBox(label="X:")
 		hbl2.addWidget(self.wxmin)
-		#hbl2.addWidget(QtGui.QLabel("-",self))
-		#self.wxmax=QtGui.QLineEdit(self)
+		#hbl2.addWidget(QtWidgets.QLabel("-",self))
+		#self.wxmax=QtWidgets.QLineEdit(self)
 		self.wxmax=ValBox(label="  ")
 		hbl2.addWidget(self.wxmax)
 
@@ -2472,7 +2464,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 
 		vbl0.addLayout(hbl2)
 
-		hbl3=QtGui.QHBoxLayout()
+		hbl3=QtWidgets.QHBoxLayout()
 
 		self.wcmin=ValBox(label="C:")
 		hbl3.addWidget(self.wcmin)
@@ -2486,20 +2478,20 @@ class EMPlot2DInspector(QtGui.QWidget):
 		vbl0.addLayout(hbl3)
 
 
-		hbl4 = QtGui.QHBoxLayout()
-		hbl4.addWidget(QtGui.QLabel("X Label:",self))
-		self.xlabel=QtGui.QLineEdit(self)
+		hbl4 = QtWidgets.QHBoxLayout()
+		hbl4.addWidget(QtWidgets.QLabel("X Label:",self))
+		self.xlabel=QtWidgets.QLineEdit(self)
 		hbl4.addWidget(self.xlabel)
 		vbl0.addLayout(hbl4)
 
-		hbl5 = QtGui.QHBoxLayout()
-		hbl5.addWidget(QtGui.QLabel("Y Label:",self))
-		self.ylabel=QtGui.QLineEdit(self)
+		hbl5 = QtWidgets.QHBoxLayout()
+		hbl5.addWidget(QtWidgets.QLabel("Y Label:",self))
+		self.ylabel=QtWidgets.QLineEdit(self)
 		hbl5.addWidget(self.ylabel)
 		vbl0.addLayout(hbl5)
 
-		hbl6 = QtGui.QHBoxLayout()
-		#hbl6.addWidget(QtGui.QLabel("Transparency:",self))
+		hbl6 = QtWidgets.QHBoxLayout()
+		#hbl6.addWidget(QtWidgets.QLabel("Transparency:",self))
 		self.alphaslider=ValSlider(self,(0,1),"Transparency:",0.5,50)
 		hbl6.addWidget(self.alphaslider)
 		vbl0.addLayout(hbl6)
@@ -2521,7 +2513,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.slidec.valueChanged[int].connect(self.newCols)
 		self.slides.valueChanged[int].connect(self.newCols)
 		self.setlist.currentRowChanged[int].connect(self.newSet)
-		self.setlist.itemChanged[QListWidgetItem].connect(self.list_item_changed)
+		self.setlist.itemChanged[QtWidgets.QListWidgetItem].connect(self.list_item_changed)
 		self.color.currentIndexChanged[str].connect(self.updPlotColor)
 		self.classb.clicked.connect(self.openClassWin)
 		#QtCore.QObject.connect(self.hmsel,QtCore.SIGNAL("clicked()"),self.updPlot)
@@ -2945,9 +2937,9 @@ class EMPlot2DInspector(QtGui.QWidget):
 		parms = self.target().pparm # get the colors from this
 
 		for i,j in enumerate(keys) :
-			a = QtGui.QListWidgetItem(j)
+			a = QtWidgets.QListWidgetItem(j)
 			a.setFlags(flags)
-			try: a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
+			try: a.setForeground(qt_color_map[colortypes[parms[j][0]]])
 			except:
 				print("Color error")
 				print(list(sorted(parms.keys())))
@@ -2980,20 +2972,20 @@ class EMPlot2DInspector(QtGui.QWidget):
 		try: self.regresswin.close()
 		except: pass
 
-class EMDataFnPlotter(QtGui.QWidget):
+class EMDataFnPlotter(QtWidgets.QWidget):
 
 	def __init__(self, parent = None, data=None):
-		QtGui.QWidget.__init__(self, parent)
+		QtWidgets.QWidget.__init__(self, parent)
 
 		self.setWindowTitle("Plotter")
 
 		self.resize(780, 580)
-		self.gbl = QtGui.QGridLayout(self)
+		self.gbl = QtWidgets.QGridLayout(self)
 
 		self.plot = EMPlot2DWidget(parent=self)
 		self.gbl.addWidget(self.plot,0,0,1,1)
 
-		self.lplot = QtGui.QLabel("Plot")
+		self.lplot = QtWidgets.QLabel("Plot")
 		self.gbl.addWidget(self.plot,1,0)
 
 		if data!=None :
@@ -3047,7 +3039,7 @@ class EMDataFnPlotter(QtGui.QWidget):
 # 		# the window corner OpenGL coordinates are (-+1, -+1)
 # 		gl.glOrtho(-1, 1, 1, -1, -1, 1)
 #
-# class EMGLPlot2DWidget(QtGui.QMainWindow):
+# class EMGLPlot2DWidget(QtWidgets.QMainWindow):
 #
 # 	def __init__(self):
 # 		super(EMGLPlot2DWidget, self).__init__()

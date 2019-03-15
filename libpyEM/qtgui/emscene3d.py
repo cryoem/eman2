@@ -54,9 +54,8 @@ import weakref
 
 from OpenGL import GLU
 from OpenGL.GL import *
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QTreeWidgetItem, QColor
+from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+from PyQt5.QtCore import Qt
 
 
 #from emdataitem3d import EMDataItem3D, EMIsosurface, EMSliceItem3D, EMVolumeItem3D
@@ -997,11 +996,11 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.first_y = self.previous_y
 		# Process mouse events
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "app"):
-			QtGui.qApp.setOverrideCursor(self.appcursor)
+			QtWidgets.qApp.setOverrideCursor(self.appcursor)
 			self.sgmousepress.emit(event.x(), event.y())
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "data"):
-			QtGui.qApp.setOverrideCursor(self.datacursor)
-			filename = QtGui.QFileDialog.getOpenFileName(self, 'Get file', os.getcwd())
+			QtWidgets.qApp.setOverrideCursor(self.datacursor)
+			filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Get file', os.getcwd())[0]
 			if not filename: return
 			name = os.path.basename(str(filename))
 			self.newnode = EMDataItem3D(filename, transform=self._gettransformbasedonscreen(event, rescale=False))
@@ -1013,45 +1012,45 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.insertNewNode("Isosurface", self.isonode, parentnode=self.newnode)
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "text"):
-			QtGui.qApp.setOverrideCursor(self.textcursor)
-			text, ok = QtGui.QInputDialog.getText(self, 'Enter Text', '')
+			QtWidgets.qApp.setOverrideCursor(self.textcursor)
+			text, ok = QtWidgets.QInputDialog.getText(self, 'Enter Text', '')
 			if ok:
 				self.newnode = EM3DText(str(text), 32.0, transform=self._gettransformbasedonscreen(event))
 				self._insert_shape(text, self.newnode)
 				self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "line"):
-			QtGui.qApp.setOverrideCursor(self.linecursor)
+			QtWidgets.qApp.setOverrideCursor(self.linecursor)
 			self.newnode = EMLine(0.0, 0.0, 0.0, 2.0, 2.0, 0.0, 20.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Line", self.newnode)
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cube"):
-			QtGui.qApp.setOverrideCursor(self.cubecursor)
+			QtWidgets.qApp.setOverrideCursor(self.cubecursor)
 			self.newnode = EMCube(2.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Cube", self.newnode)
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "sphere"):
-			QtGui.qApp.setOverrideCursor(self.spherecursor)
+			QtWidgets.qApp.setOverrideCursor(self.spherecursor)
 			self.newnode = EMSphere(2.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Sphere", self.newnode)
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cylinder"):
-			QtGui.qApp.setOverrideCursor(self.cylindercursor)
+			QtWidgets.qApp.setOverrideCursor(self.cylindercursor)
 			self.newnode = EMCylinder(2.0,2.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Cylinder", self.newnode)
 			self.newnode.updateMatrices([90,1,0,0], "rotate")
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cone"):
-			QtGui.qApp.setOverrideCursor(self.conecursor)
+			QtWidgets.qApp.setOverrideCursor(self.conecursor)
 			self.newnode = EMCone(2.0,2.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Cone", self.newnode)
 			self.newnode.updateMatrices([90,1,0,0], "rotate")
 			self.updateSG()	
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
 			if  event.y() > 0.95*self.size().height(): # The lowest 5% of the screen is reserved from the Z spin virtual slider
-				QtGui.qApp.setOverrideCursor(self.zrotatecursor)
+				QtWidgets.qApp.setOverrideCursor(self.zrotatecursor)
 				self.zrotate = True
 			else:
-				QtGui.qApp.setOverrideCursor(self.xyrotatecursor)
+				QtWidgets.qApp.setOverrideCursor(self.xyrotatecursor)
 				self.zrotate = False
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "ruler"):
 			self.newnode = EMRuler(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, self.getAPix(), self.camera.getViewPortWidthScaling(), transform=self._gettransformbasedonscreen(event))
@@ -1059,9 +1058,9 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			#self.newnode.updateMatrices([90,1,0,0], "rotate")
 			self.updateSG()
 		if event.buttons()&Qt.LeftButton and self.mousemode == "scale":
-			QtGui.qApp.setOverrideCursor(self.scalecursor)
+			QtWidgets.qApp.setOverrideCursor(self.scalecursor)
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "selection"): 
-			#QtGui.qApp.setOverrideCursor(self.selectorcursor)
+			#QtWidgets.qApp.setOverrideCursor(self.selectorcursor)
 			self.multiselect = False
 			self.appendselection = False
 			self.toggleselection = False
@@ -1074,7 +1073,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.pickItem()
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "multiselection"):
-			#QtGui.qApp.setOverrideCursor(self.selectorcursor)
+			#QtWidgets.qApp.setOverrideCursor(self.selectorcursor)
 			self.multiselect = True
 			self.appendselection = False
 			self.toggleselection = False
@@ -1082,9 +1081,9 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			if event.modifiers()&Qt.ShiftModifier:
 				self.appendselection = True
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "ztranslate"):
-			QtGui.qApp.setOverrideCursor(self.zhaircursor)
+			QtWidgets.qApp.setOverrideCursor(self.zhaircursor)
 		if event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and self.mousemode == "xytranslate"):
-			QtGui.qApp.setOverrideCursor(self.crosshaircursor)
+			QtWidgets.qApp.setOverrideCursor(self.crosshaircursor)
 		if event.buttons()&Qt.MidButton or (event.buttons()&Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.showInspector()
 	
@@ -1160,7 +1159,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "app"):
 			self.sgmouserelease.emit([event.x(), event.y()])
 			
-		QtGui.qApp.setOverrideCursor(Qt.ArrowCursor)
+		QtWidgets.qApp.setOverrideCursor(Qt.ArrowCursor)
 		# Select using the selection box
 		if self.toggle_render_selectedarea:
 			self.pickItem()
@@ -1173,19 +1172,18 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		# Originally the wheel sclaed by zoom the viewport, but that caused all sorts of issues, so I now just scale the SG
 		# The 25 is a fudge factor that controls the speed of scaling, lower if slower scaling
-		if event.orientation() & Qt.Vertical:
-			self.cameraNeedsanUpdate()
-			if event.delta() > 0:
-				if self.camera.getUseOrtho():
-					self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()+old_div((self.camera.getPseudoFovyWidth()+self.camera.getWidth()),25))
-				else:
-					self.camera.setFovy(self.camera.getFovy()+1.0)
+		self.cameraNeedsanUpdate()
+		if event.angleDelta().y() > 0:
+			if self.camera.getUseOrtho():
+				self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()+old_div((self.camera.getPseudoFovyWidth()+self.camera.getWidth()),25))
 			else:
-				if self.camera.getUseOrtho():
-					self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()-old_div((self.camera.getPseudoFovyWidth()+self.camera.getWidth()),25))
-				else:
-					self.camera.setFovy(self.camera.getFovy()-1.0)
-			self.updateSG()
+				self.camera.setFovy(self.camera.getFovy()+1.0)
+		else:
+			if self.camera.getUseOrtho():
+				self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()-old_div((self.camera.getPseudoFovyWidth()+self.camera.getWidth()),25))
+			else:
+				self.camera.setFovy(self.camera.getFovy()-1.0)
+		self.updateSG()
 			
 			
 	def mouseDoubleClickEvent(self,event):
@@ -1721,7 +1719,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		EMGLWidget.closeEvent(self,event)
 	
 	def showEvent(self, event):
-		QtGui.QWidget.showEvent(self, event)
+		QtWidgets.QWidget.showEvent(self, event)
 		# if desired scale viewport to a chosen scale so that initialviewportdims fills the screen
 		if self.initialviewportdims != None:
 			self.camera.scaleToDims(self.initialviewportdims)
@@ -2103,24 +2101,24 @@ class EMCamera(object):
 		
 ###################################### Inspector Code #########################################################################################
 
-class EMInspector3D(QtGui.QWidget):
+class EMInspector3D(QtWidgets.QWidget):
 	def __init__(self, scenegraph):
 		"""
 		The inspector for the 3D widget. The inspector is a strict observer of the SceneGraph, and is updated by calling update inspector
 		"""
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		self.scenegraph = weakref.ref(scenegraph)
 		self.mintreewidth = 250		# minimum width of the tree
 		self.mincontrolwidth = 0
 		
-		vbox = QtGui.QVBoxLayout(self)
-		self.inspectortab = QtGui.QTabWidget()
+		vbox = QtWidgets.QVBoxLayout(self)
+		self.inspectortab = QtWidgets.QTabWidget()
 		self.inspectortab.addTab(self.getTreeWidget(), "Tree View")
 		self.inspectortab.addTab(self.getLightsWidget(), "Lights")
 		self.inspectortab.addTab(self.getCameraWidget(), "Camera")
 		self.inspectortab.addTab(self.getUtilsWidget(), "Utils")
-		toolframe = QtGui.QFrame()
-		toolframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		toolframe = QtWidgets.QFrame()
+		toolframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		toolframe.setLayout(self._get_toolbox_layout())
 		vbox.addWidget(self.inspectortab)
 		vbox.addWidget(toolframe)
@@ -2141,15 +2139,15 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		This returns the treeview-control panel widget
 		"""
-		widget = QtGui.QWidget()
-		hbox = QtGui.QHBoxLayout(widget)
-		treeframe = QtGui.QFrame()
-		treeframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		widget = QtWidgets.QWidget()
+		hbox = QtWidgets.QHBoxLayout(widget)
+		treeframe = QtWidgets.QFrame()
+		treeframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		treeframe.setLayout(self._get_tree_layout(widget))
 		treeframe.setMinimumWidth(self.mintreewidth)
 		hbox.addWidget(treeframe)
-		self.stacked_widget = QtGui.QStackedWidget()
-		self.stacked_widget.setFrameShape(QtGui.QFrame.StyledPanel)
+		self.stacked_widget = QtWidgets.QStackedWidget()
+		self.stacked_widget.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		hbox.addWidget(self.stacked_widget)
 		widget.setLayout(hbox)
 		
@@ -2159,12 +2157,12 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		Returns the tree layout
 		"""
-		tvbox = QtGui.QVBoxLayout()
+		tvbox = QtWidgets.QVBoxLayout()
 		self.tree_widget = EMQTreeWidget(parent)
 		self.tree_widget.setHeaderLabel("Choose a item")
 		tvbox.addWidget(self.tree_widget)
-		self.tree_node_button_add = QtGui.QPushButton("Add Object")
-		self.tree_node_button_remove = QtGui.QPushButton("Remove Object")
+		self.tree_node_button_add = QtWidgets.QPushButton("Add Object")
+		self.tree_node_button_remove = QtWidgets.QPushButton("Remove Object")
 		self.tree_node_slider = ValSlider(label="Seq:")
 		self.tree_node_slider.setIntonly(True)
 		self.tree_node_slider.setRange(0,1)
@@ -2173,9 +2171,9 @@ class EMInspector3D(QtGui.QWidget):
 		tvbox.addWidget(self.tree_node_button_remove)
 		tvbox.addWidget(self.tree_node_slider)
 		
-		self.tree_widget.itemClicked[QTreeWidgetItem, int].connect(self._tree_widget_click)
-		self.tree_widget.visibleItem[QTreeWidgetItem].connect(self._tree_widget_visible)
-		self.tree_widget.editItem[QTreeWidgetItem].connect(self._tree_widget_edit)
+		self.tree_widget.itemClicked[QtWidgets.QTreeWidgetItem, int].connect(self._tree_widget_click)
+		self.tree_widget.visibleItem[QtWidgets.QTreeWidgetItem].connect(self._tree_widget_visible)
+		self.tree_widget.editItem[QtWidgets.QTreeWidgetItem].connect(self._tree_widget_edit)
 		self.tree_node_button_remove.clicked.connect(self._tree_widget_remove)
 		self.tree_node_button_add.clicked.connect(self._on_add_button)
 		self.tree_node_slider.valueChanged.connect(self._slider_change)
@@ -2331,10 +2329,10 @@ class EMInspector3D(QtGui.QWidget):
 			print("Error cannot remove root node!!")
 			
 	def _get_toolbox_layout(self):
-		tvbox = QtGui.QHBoxLayout()
+		tvbox = QtWidgets.QHBoxLayout()
 		font = QtGui.QFont()
 		font.setBold(True)
-		toollabel = QtGui.QLabel("Tools")
+		toollabel = QtWidgets.QLabel("Tools")
 		toollabel.setFont(font)
 		self.rotatetool = EMANToolButton()
 		self.rotatetool.setIcon(QtGui.QIcon(QtGui.QPixmap(rotateicon)))
@@ -2468,9 +2466,9 @@ class EMInspector3D(QtGui.QWidget):
 		Returns the lights control widget
 		"""
 		self.lighttab_open = False
-		lwidget = QtGui.QWidget()
-		lvbox = QtGui.QVBoxLayout()
-		lightslabel = QtGui.QLabel("Lights", lwidget)
+		lwidget = QtWidgets.QWidget()
+		lvbox = QtWidgets.QVBoxLayout()
+		lightslabel = QtWidgets.QLabel("Lights", lwidget)
 		lightslabel.setAlignment(QtCore.Qt.AlignCenter)
 		lightslabel.setMaximumHeight(30.0)
 		font = QtGui.QFont()
@@ -2478,13 +2476,13 @@ class EMInspector3D(QtGui.QWidget):
 		lightslabel.setFont(font)
 		lvbox.addWidget(lightslabel)
 		self.lightwidget = EMLightControls(GL_LIGHT1)
-		positionlabel = QtGui.QLabel("Position", lwidget)
+		positionlabel = QtWidgets.QLabel("Position", lwidget)
 		positionlabel.setMaximumHeight(20.0)
 		positionlabel.setAlignment(QtCore.Qt.AlignCenter)
-		valslidersplitter = QtGui.QFrame()
-		valslidersplitter.setFrameShape(QtGui.QFrame.StyledPanel)
+		valslidersplitter = QtWidgets.QFrame()
+		valslidersplitter.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		valslidersplitter.setMaximumHeight(80)
-		valvbox = QtGui.QVBoxLayout()
+		valvbox = QtWidgets.QVBoxLayout()
 		self.hvalslider = ValSlider(lwidget,(0.0,360.0),"Horizontal")
 		self.vvalslider = ValSlider(lwidget,(0.0,360.0),"Vertical")
 		valvbox.addWidget(self.hvalslider)
@@ -2525,12 +2523,12 @@ class EMInspector3D(QtGui.QWidget):
 		Returns the camera control widget
 		"""
 		self.cameratab_open = False
-		cwidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
+		cwidget = QtWidgets.QWidget()
+		grid = QtWidgets.QGridLayout()
 		grid.setContentsMargins(11,5,11,5)
 		self.camerawidget = CameraControls(scenegraph=self.scenegraph())
 		grid.addWidget(self.camerawidget, 0, 0, 1, 3)
-		nlabel = QtGui.QLabel("Near clipping plane", cwidget)
+		nlabel = QtWidgets.QLabel("Near clipping plane", cwidget)
 		nlabel.setMaximumHeight(30.0)
 		nlabel.setAlignment(QtCore.Qt.AlignCenter)
 		self.near = EMSpinWidget(self.scenegraph().camera.getClipNear(), 1.0)
@@ -2538,7 +2536,7 @@ class EMInspector3D(QtGui.QWidget):
 		self.near.setMaximumHeight(40.0)
 		grid.addWidget(nlabel, 1, 0)
 		grid.addWidget(self.near ,1, 1)
-		flabel = QtGui.QLabel("Far clipping plane", cwidget)
+		flabel = QtWidgets.QLabel("Far clipping plane", cwidget)
 		flabel.setMaximumHeight(30.0)
 		flabel.setAlignment(QtCore.Qt.AlignCenter)
 		self.far = EMSpinWidget(self.scenegraph().camera.getClipFar(), 1.0)
@@ -2548,16 +2546,16 @@ class EMInspector3D(QtGui.QWidget):
 		grid.addWidget(self.far, 2, 1)
 		
 		# The frame for linking capping, etc
-		cframe = QtGui.QFrame()
-		cframe.setFrameShape(QtGui.QFrame.StyledPanel)
-		cframegrid = QtGui.QGridLayout()
-		self.linkcb = QtGui.QCheckBox("Link clipping planes")
+		cframe = QtWidgets.QFrame()
+		cframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
+		cframegrid = QtWidgets.QGridLayout()
+		self.linkcb = QtWidgets.QCheckBox("Link clipping planes")
 		self.linkcb.setMinimumHeight(40.0)
 		cframegrid.addWidget(self.linkcb, 0, 0, 1, 2)
-		self.capcb = QtGui.QCheckBox("Cap clipping planes")
+		self.capcb = QtWidgets.QCheckBox("Cap clipping planes")
 		self.capcb.setMinimumHeight(40.0)
 		cframegrid.addWidget(self.capcb, 1, 0, 1, 2)
-		capcolorlabel = QtGui.QLabel("Cap Color")
+		capcolorlabel = QtWidgets.QLabel("Cap Color")
 		cframegrid.addWidget(capcolorlabel, 2, 0, 1, 1)
 		self.cappingcolor = EMQTColorWidget(parent=self)
 		cframegrid.addWidget(self.cappingcolor, 2, 1, 1, 1)
@@ -2566,13 +2564,13 @@ class EMInspector3D(QtGui.QWidget):
 		grid.addWidget(cframe, 1, 2, 3, 1)
 		
 		# The frame for project matrices
-		frame = QtGui.QFrame()
+		frame = QtWidgets.QFrame()
 		frame.setMaximumHeight(40.0)
-		frame.setFrameShape(QtGui.QFrame.StyledPanel)
-		hbox = QtGui.QHBoxLayout()
-		vvlabel = QtGui.QLabel("Viewing Volume")
-		self.orthoradio = QtGui.QRadioButton("Orthographic")
-		self.perspectiveradio = QtGui.QRadioButton("Perspective")
+		frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+		hbox = QtWidgets.QHBoxLayout()
+		vvlabel = QtWidgets.QLabel("Viewing Volume")
+		self.orthoradio = QtWidgets.QRadioButton("Orthographic")
+		self.perspectiveradio = QtWidgets.QRadioButton("Perspective")
 		hbox.addWidget(vvlabel)
 		hbox.addWidget(self.orthoradio)
 		hbox.addWidget(self.perspectiveradio)
@@ -2588,7 +2586,7 @@ class EMInspector3D(QtGui.QWidget):
 		self.perspectiveradio.clicked.connect(self._on_radio_click)
 		self.capcb.clicked.connect(self._on_capping)
 		self.linkcb.clicked.connect(self._on_linking)
-		self.cappingcolor.newcolor[QColor].connect(self._on_cap_color)
+		self.cappingcolor.newcolor[QtGui.QColor].connect(self._on_cap_color)
 		
 		return cwidget
 		
@@ -2674,18 +2672,18 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		Return the utilites widget
 		"""
-		uwidget = QtGui.QWidget()
-		uvbox = QtGui.QVBoxLayout()
+		uwidget = QtWidgets.QWidget()
+		uvbox = QtWidgets.QVBoxLayout()
 		font = QtGui.QFont()
 		font.setBold(True)
 		# Controls frame
-		frame = QtGui.QFrame()
-		frame.setFrameShape(QtGui.QFrame.StyledPanel)
-		gridbox = QtGui.QGridLayout()
-		backgroundcolor_label = QtGui.QLabel("Background Color", frame)
+		frame = QtWidgets.QFrame()
+		frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+		gridbox = QtWidgets.QGridLayout()
+		backgroundcolor_label = QtWidgets.QLabel("Background Color", frame)
 		backgroundcolor_label.setFont(font)
 		self.backgroundcolor = EMQTColorWidget(parent=frame)
-		self.hideselectionbutton = QtGui.QCheckBox("Hide Display Selections")
+		self.hideselectionbutton = QtWidgets.QCheckBox("Hide Display Selections")
 		self.hideselectionbutton.setMinimumHeight(100)
 		self.hideselectionbutton.setFont(font)
 		gridbox.addWidget(backgroundcolor_label, 0, 0)
@@ -2696,11 +2694,11 @@ class EMInspector3D(QtGui.QWidget):
 		frame.setLayout(gridbox)
 		# Buttons frame
 		uvbox.addWidget(frame)
-		self.opensession_button = QtGui.QPushButton("Open Session")
-		self.savesession_button = QtGui.QPushButton("Save Session")
-		self.savebutton = QtGui.QPushButton("Save Image Snapshot")
-		self.moviebutton0 = QtGui.QPushButton("Save GIF Movie (rotate)")
-		self.moviebutton1 = QtGui.QPushButton("Save GIF Movie (model)")
+		self.opensession_button = QtWidgets.QPushButton("Open Session")
+		self.savesession_button = QtWidgets.QPushButton("Save Session")
+		self.savebutton = QtWidgets.QPushButton("Save Image Snapshot")
+		self.moviebutton0 = QtWidgets.QPushButton("Save GIF Movie (rotate)")
+		self.moviebutton1 = QtWidgets.QPushButton("Save GIF Movie (model)")
 		uvbox.addWidget(self.opensession_button)
 		uvbox.addWidget(self.savesession_button)
 		uvbox.addWidget(self.savebutton)
@@ -2708,7 +2706,7 @@ class EMInspector3D(QtGui.QWidget):
 		uvbox.addWidget(self.moviebutton1)
 		uwidget.setLayout(uvbox)
 		
-		self.backgroundcolor.newcolor[QColor].connect(self._on_bg_color)
+		self.backgroundcolor.newcolor[QtGui.QColor].connect(self._on_bg_color)
 		self.hideselectionbutton.clicked.connect(self._on_hide)
 		self.savebutton.clicked.connect(self._on_save)
 		self.moviebutton0.clicked.connect(self._on_save_movie_rotate)
@@ -2731,7 +2729,7 @@ class EMInspector3D(QtGui.QWidget):
 		Open a session
 		"""
 		# Open the file
-		filename = QtGui.QFileDialog.getOpenFileName(self, 'Open Session', os.getcwd(), "*.eman")
+		filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Open Session', os.getcwd(), "*.eman")[0]
 		if filename:
 			self.scenegraph().loadSession(filename)
 		
@@ -2739,7 +2737,7 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		Return a list of all the child items (actually a tree of sorts)
 		"""
-		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Session', os.getcwd(), "*.eman")
+		filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Session', os.getcwd(), "*.eman")[0]
 		if filename: # if we cancel
 			self.scenegraph().saveSession(filename)
 
@@ -2747,7 +2745,7 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		Save a snapshot of the scene
 		"""
-		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "(*.tiff *.jpeg *.png)")
+		filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "(*.tiff *.jpeg *.png)")[0]
 		if filename: # if we cancel
 			self.scenegraph().saveSnapShot(filename)
 	
@@ -2755,7 +2753,7 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		Save a movie of the scene
 		"""
-		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "(*.gif)")
+		filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "(*.gif)")[0]
 		if filename: # if we cancel
 			self.scenegraph().saveMovie_rotate(filename)
 			
@@ -2763,7 +2761,7 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		Save a movie of the scene
 		"""
-		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "(*.gif)")
+		filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "(*.gif)")[0]
 		if filename: # if we cancel
 			self.scenegraph().saveMovie_model(filename)
 	
@@ -2856,8 +2854,8 @@ class EMSGNodeInspector(EMItem3DInspector):
 	def __init__(self, name, item3d):
 		EMItem3DInspector.__init__(self, name, item3d)
 		if name=="All Objects":
-			tabwidget = QtGui.QWidget()
-			gridbox = QtGui.QGridLayout()
+			tabwidget = QtWidgets.QWidget()
+			gridbox = QtWidgets.QGridLayout()
 			
 			EMSGNodeInspector.addExtraTabAllObjects(self, gridbox)
 			
@@ -2865,8 +2863,8 @@ class EMSGNodeInspector(EMItem3DInspector):
 			self.addTab(tabwidget, "misc")
 		
 	def addExtraTabAllObjects(self,gridbox):
-		self.getthresh = QtGui.QLabel("Iso-threshod")
-		self.isothr_box=QtGui.QLineEdit("0.0")
+		self.getthresh = QtWidgets.QLabel("Iso-threshod")
+		self.isothr_box=QtWidgets.QLineEdit("0.0")
 		gridbox.addWidget(self.getthresh, 1, 0, 1, 1)
 		gridbox.addWidget(self.isothr_box, 1, 1, 1, 1)
 		self.isothr_box.returnPressed.connect(self._on_change_threshold)
@@ -2895,15 +2893,15 @@ class EMSGNodeInspector(EMItem3DInspector):
 
 	def addControls(self, gridbox):
 		super(EMSGNodeInspector, self).addControls(gridbox)
-		buttonframe = QtGui.QFrame()
-		buttonframe.setFrameShape(QtGui.QFrame.StyledPanel)
-		buttongrid = QtGui.QGridLayout()
+		buttonframe = QtWidgets.QFrame()
+		buttonframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
+		buttongrid = QtWidgets.QGridLayout()
 		# Make buttons
-		centerall = QtGui.QPushButton("Center All")
-		distributeall =  QtGui.QPushButton("Distribute All")
+		centerall = QtWidgets.QPushButton("Center All")
+		distributeall =  QtWidgets.QPushButton("Distribute All")
 		distributeall.setToolTip('Only works for data objects')
-		selectall = QtGui.QPushButton("Select All")
-		addaxes = QtGui.QPushButton("Add Axes")
+		selectall = QtWidgets.QPushButton("Select All")
+		addaxes = QtWidgets.QPushButton("Add Axes")
 		# Set layouts
 		buttongrid.addWidget(centerall, 0, 0)
 		buttongrid.addWidget(distributeall, 0, 1)
@@ -2987,31 +2985,31 @@ class EMSGNodeInspector(EMItem3DInspector):
 		if tp: tt = tp.inverse()*t
 		child.getTransform().set_trans(tt.get_trans())
 		
-class EMQTreeWidget(QtGui.QTreeWidget):
+class EMQTreeWidget(QtWidgets.QTreeWidget):
 	"""
 	Subclassing the QTreeWidget to enable is_visible toggling
 	"""
-	visibleItem = QtCore.pyqtSignal(QTreeWidgetItem)
-	editItem = QtCore.pyqtSignal(QTreeWidgetItem)
+	visibleItem = QtCore.pyqtSignal(QtWidgets.QTreeWidgetItem)
+	editItem = QtCore.pyqtSignal(QtWidgets.QTreeWidgetItem)
 
 	def __init__(self, parent=None):
-		QtGui.QTreeWidget.__init__(self, parent)
+		QtWidgets.QTreeWidget.__init__(self, parent)
 			
 	def mousePressEvent(self, e):
-		QtGui.QTreeWidget.mousePressEvent(self, e)
+		QtWidgets.QTreeWidget.mousePressEvent(self, e)
 		if e.button()==Qt.RightButton:
 			self.visibleItem.emit(self.currentItem())
 		if e.button()==Qt.MidButton or (e.buttons()&Qt.LeftButton and e.modifiers()&Qt.AltModifier):
 			self.editItem.emit(self.currentItem())
 			
 			
-class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
+class EMQTreeWidgetItem(QtWidgets.QTreeWidgetItem):
 	"""
 	Subclass of QTreeWidgetItem
 	adds functionality
 	"""
 	def __init__(self, qstring, item3d, parentnode):
-		QtGui.QTreeWidgetItem.__init__(self, [qstring])
+		QtWidgets.QTreeWidgetItem.__init__(self, [qstring])
 		self.name = ''.join(qstring)
 		self.item3d = weakref.ref(item3d)
 		if parentnode: self.parent = weakref.ref(parentnode)
@@ -3065,21 +3063,21 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 			self.child(0).removeAllChildren(inspector)
 			inspector.removeTreeNode(self, 0) 
 
-class NodeEditDialog(QtGui.QDialog):
+class NodeEditDialog(QtWidgets.QDialog):
 	"""
 	A dialog for editing the node
 	"""
 	def __init__(self, inspector, item):
-		QtGui.QDialog.__init__(self)
+		QtWidgets.QDialog.__init__(self)
 		self.item = item
 		self.inspector = weakref.ref(inspector)
-		grid = QtGui.QGridLayout(self)
-		label = QtGui.QLabel("Node Name")
-		self.nodename = QtGui.QLineEdit(self.item.item3d().getLabel())
+		grid = QtWidgets.QGridLayout(self)
+		label = QtWidgets.QLabel("Node Name")
+		self.nodename = QtWidgets.QLineEdit(self.item.item3d().getLabel())
 		grid.addWidget(label, 0, 0, 1, 2)
 		grid.addWidget(self.nodename, 1, 0, 1, 2)
-		self.ok_button = QtGui.QPushButton("Ok")
-		self.cancel_button = QtGui.QPushButton("Cancel")
+		self.ok_button = QtWidgets.QPushButton("Ok")
+		self.cancel_button = QtWidgets.QPushButton("Cancel")
 		grid.addWidget(self.ok_button, 2, 0, 1, 1)
 		grid.addWidget(self.cancel_button, 2, 1, 1, 1)
 		self.setLayout(grid)
@@ -3096,28 +3094,28 @@ class NodeEditDialog(QtGui.QDialog):
 	def _on_cancel(self):
 		self.done(1)
 	
-class NodeDialog(QtGui.QDialog):
+class NodeDialog(QtWidgets.QDialog):
 	"""
 	Generate a dialog to add or remove node. If reome is chosen 'item' node is removed
 	If add node is chosen, a node is inserted just below this node.
 	"""
 	def __init__(self, inspector, item):
-		QtGui.QDialog.__init__(self)
+		QtWidgets.QDialog.__init__(self)
 		self.item = item
 		self.inspector = weakref.ref(inspector)
 		self.setWindowTitle('Node Controler')
 		self.setMaximumWidth(300)
 		self.transformgroup = {}
-		vbox = QtGui.QVBoxLayout(self)
+		vbox = QtWidgets.QVBoxLayout(self)
 		# Stuff within the frame
-		frame = QtGui.QFrame()
-		frame.setFrameStyle(QtGui.QFrame.StyledPanel)
-		fvbox = QtGui.QVBoxLayout(frame)
-		label = QtGui.QLabel("Node Type to add")
-		self.node_type_combo = QtGui.QComboBox() 
-		self.node_stacked_widget = QtGui.QStackedWidget()
-		self.node_stacked_widget.setFrameStyle(QtGui.QFrame.StyledPanel)
-		self.addnode_button = QtGui.QPushButton("Add Node")
+		frame = QtWidgets.QFrame()
+		frame.setFrameStyle(QtWidgets.QFrame.StyledPanel)
+		fvbox = QtWidgets.QVBoxLayout(frame)
+		label = QtWidgets.QLabel("Node Type to add")
+		self.node_type_combo = QtWidgets.QComboBox() 
+		self.node_stacked_widget = QtWidgets.QStackedWidget()
+		self.node_stacked_widget.setFrameStyle(QtWidgets.QFrame.StyledPanel)
+		self.addnode_button = QtWidgets.QPushButton("Add Node")
 		fvbox.addWidget(label)
 		fvbox.addWidget(self.node_type_combo)
 		fvbox.addWidget(self.node_stacked_widget)
@@ -3125,7 +3123,7 @@ class NodeDialog(QtGui.QDialog):
 		frame.setLayout(fvbox)
 		# vbox widgets
 		vbox.addWidget(frame)
-		self.cancel_button = QtGui.QPushButton("Cancel")
+		self.cancel_button = QtWidgets.QPushButton("Cancel")
 		vbox.addWidget(self.cancel_button)
 		self.setLayout(vbox)
 		
@@ -3263,9 +3261,9 @@ class NodeDialog(QtGui.QDialog):
 		
 # All object that are rendered inherit from abstractSGnode and implement the render method
 
-class GLdemo(QtGui.QWidget):
+class GLdemo(QtWidgets.QWidget):
 	def __init__(self):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		
 		self.widget = EMScene3D()
 		#self.widget.camera.usePrespective(50, 0.5)
@@ -3277,7 +3275,7 @@ class GLdemo(QtGui.QWidget):
 		self.widget.addChild(self.cylider)
 		
 		# QT stuff to display the widget
-		vbox = QtGui.QVBoxLayout()
+		vbox = QtWidgets.QVBoxLayout()
 		vbox.addWidget(self.widget)
 		self.setLayout(vbox)
 		self.setGeometry(300, 300, 600, 600)
@@ -3290,7 +3288,7 @@ class GLdemo(QtGui.QWidget):
 def main():
 	import sys
 	#from pmwidgets import PMIntEntryWidget, PMStringEntryWidget, PMBoolWidget, PMFileNameWidget, PMComboWidget
-	app = QtGui.QApplication(sys.argv)
+	app = QtWidgets.QApplication(sys.argv)
 	window = GLdemo()
 	window.show()
 	app.exec_()

@@ -40,8 +40,8 @@ from EMAN2 import *
 from OpenGL import GL, GLU, GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt
+from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+from PyQt5.QtCore import Qt
 from .emapplication import EMGLWidget, get_application
 from libpyGLUtils2 import GLUtil
 from math import *
@@ -1433,7 +1433,7 @@ class Camera2(object):
 				return False
 			
 	def wheelEvent(self, event):
-		self.scale_delta(event.delta())
+		self.scale_delta(event.angleDelta().y())
 		return True
 	
 	def motion_translate_z_only(self,prev_x,prev_y,event):
@@ -1789,9 +1789,9 @@ def draw_volume_bounds(width,height,depth,color=True):
 
 
 def get_RGB_tab(parent, name=""):
-	rgbtab = QtGui.QWidget(parent)
-	rgbtab.vbl = QtGui.QVBoxLayout(rgbtab)
-	rgbtab.vbl.setMargin(0)
+	rgbtab = QtWidgets.QWidget(parent)
+	rgbtab.vbl = QtWidgets.QVBoxLayout(rgbtab)
+	rgbtab.vbl.setContentsMargins(0, 0, 0, 0)
 	rgbtab.vbl.setSpacing(6)
 	rgbtab.vbl.setObjectName(name)
 	
@@ -2221,12 +2221,6 @@ class EM3DGLWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	def __init__(self, model=None): #Usually model will be None, because a GL context must be created before a EM3DGLWidget
 		EMGLWidget.__init__(self)
 		EMGLProjectionViewMatrices.__init__(self)
-		
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True)
-		fmt.setDepth(1)
-		fmt.setSampleBuffers(True)
-		self.setFormat(fmt)
 		
 		self.fov = 30.0 # field of view angle used by gluPerspective
 		self.startz = 1.0

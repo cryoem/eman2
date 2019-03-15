@@ -64,7 +64,7 @@
         "CHILDREN": []
       },
       {
-        "PROGRAM": "e2spt_boxer22.py",
+        "PROGRAM": "e2spt_boxer.py",
         "MODE": "box2d",
         "NAME": "Box training references",
         "CHILDREN": []
@@ -129,8 +129,8 @@
       },
       {
         "MODE": "box3d",
-        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_boxer22",
-        "PROGRAM": "e2spt_boxer22.py",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_boxer",
+        "PROGRAM": "e2spt_boxer.py",
         "NAME": "Manual boxing",
         "CHILDREN": []
       },

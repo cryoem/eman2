@@ -940,7 +940,6 @@ class FakeKaiserBessel : public KaiserBessel {
 	static vector<float> lsfit(long int *ks,long int *n, long int *klm2d, long int *iswi, float *q1,double *q, double *x, double *res, double *cu, double *s,long int *iu);
 	static void cl1(long int *k, long int *l, long int *m, long int *n, long int *klm2d,double *q, double *x, double *res, double *cu, long
 	int *iu, double *s);
-	static float eval(char * images,EMData * img, vector<int> S,int N, int K,int size);
 
 	/*  VORONOI DIAGRAM */
 	static vector<double> vrdg(const vector<float>& ph, const vector<float>& th);

@@ -118,6 +118,7 @@ def main():
 		opt=opt.replace("--alltiltseries","")
 		for a in args:
 			run("{} {} {}".format(cmd[0], a, opt))
+		E2end(logid)
 		return
 	
 	tfile=args[0]

@@ -298,7 +298,7 @@ class TestEMData(unittest.TestCase):
                 e.insert_clip( e2,(30,30,30) )
             except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-        
+
         e.insert_clip(e2, (16,16,16))
         d1 = e.get_3dview()
         d2 = e2.get_3dview()
@@ -306,6 +306,34 @@ class TestEMData(unittest.TestCase):
             for j in range(10):
                 for i in range(10):
                     self.assertEqual(d1[i+16][j+16][k+16], d2[i][j][k])
+
+    #def test_insert_clip_large(self):
+    #    """test insert_clip_large() function ......................"""
+    #    e = EMData()
+    #    e.set_size(30000, 80000, 1)
+    #    e.to_zero()
+    #    e.process_inplace("testimage.noise.uniform.rand")
+    #    
+    #    e2 = EMData()
+    #    e2.set_size(30000, 1, 1)
+    #    e2.to_zero()
+    #    e2.process_inplace("testimage.noise.uniform.rand")
+
+    #    if(IS_TEST_EXCEPTION):
+    #        #test exception if the clip is out side of the image
+    #        self.assertRaises( RuntimeError, e.insert_clip, e2, (79998, 79998, 79998) )
+    #        try:
+    #            e.insert_clip( e2,(79998, 79998, 79998) )
+    #        except RuntimeError as runtime_err:
+    #            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+
+    #    e.insert_clip(e2, (0,71583))
+    #    d1 = e.get_3dview()
+    #    d2 = e2.get_3dview()
+    #    for k in range(10):
+    #        for j in range(1):
+    #            for i in range(1):
+    #                self.assertEqual(d1[i][j+71583][k], d2[i][j][k])
 
     def test_get_top_half(self):
         """test get_top_half() function ....................."""

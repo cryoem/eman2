@@ -58,9 +58,8 @@ ploticon = [
     'ccccccccccccccc'
 ]
 
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtOpenGL import QGLWidget
-from PyQt4.QtCore import Qt
+from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+from PyQt5.QtCore import Qt
 from OpenGL import GL,GLU
 from OpenGL.GL import *
 import OpenGL.GL as gl
@@ -117,10 +116,7 @@ class EMHistogramWidget(EMGLWidget):
 	"""
 
 	def __init__(self,application=None,winid=None,parent=None):
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True);
 		EMGLWidget.__init__(self, parent=parent, winid=winid)
-		self.setFormat(fmt)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
 		self.axes={}
 		self.pparm={}			# nbins,color,histtype,orient,align,alpha,width,norm,cumul,logy,stacked
@@ -184,12 +180,12 @@ class EMHistogramWidget(EMGLWidget):
 		if event.key() == Qt.Key_C:
 			self.show_inspector(1)
 		elif event.key() == Qt.Key_F1:
-			try: from PyQt4 import QtWebKit
+			try: from PyQt5 import QtWebEngineWidgets
 			except: return
 			try:
 				try: test = self.browser
 				except:
-					self.browser = QtWebKit.QWebView()
+					self.browser = QtWebEngineWidgets.QWebEngineView()
 					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display"))
 					self.browser.resize(800,800)
 				if not self.browser.isVisible(): self.browser.show()
@@ -820,9 +816,9 @@ lc is the cursor selection point in plot coords"""
 
 	def wheelEvent(self, event):
 		pass
-		#if event.delta() > 0:
+		#if event.angleDelta().y() > 0:
 			#self.set_scale(self.scale + MAG_INC)
-		#elif event.delta() < 0:
+		#elif event.angleDelta().y() < 0:
 			#if ( self.scale - MAG_INC > 0 ):
 				#self.set_scale(self.scale - MAG_INC)
 		## The self.scale variable is updated now, so just update with that
@@ -832,24 +828,24 @@ lc is the cursor selection point in plot coords"""
 		pass
 
 
-class EMHistogramInspector(QtGui.QWidget):
+class EMHistogramInspector(QtWidgets.QWidget):
 
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
 		self.target=weakref.ref(target)
 
-		vbl0=QtGui.QVBoxLayout(self)
+		vbl0=QtWidgets.QVBoxLayout(self)
 
-		hbl = QtGui.QHBoxLayout()
-		hbl.setMargin(2)
+		hbl = QtWidgets.QHBoxLayout()
+		hbl.setContentsMargins(2, 2, 2, 2)
 		hbl.setSpacing(6)
 		hbl.setObjectName("hbl")
 
-		gbx = QtGui.QGroupBox("Data sets")
+		gbx = QtWidgets.QGroupBox("Data sets")
 
-		vbl3 = QtGui.QVBoxLayout()
-		vbl3.setMargin(4)
+		vbl3 = QtWidgets.QVBoxLayout()
+		vbl3.setContentsMargins(4, 4, 4, 4)
 		vbl3.setSpacing(6)
 		vbl3.setObjectName("vbl3")
 		gbx.setLayout(vbl3)
@@ -859,21 +855,21 @@ class EMHistogramInspector(QtGui.QWidget):
 		self.setlist=DragListWidget(self)
 		self.setlist.setDataSource(self)
 		self.setlist.setSelectionMode(3)
-		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+		self.setlist.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		self.setlist.setDragEnabled(True)
 		self.setlist.setAcceptDrops(True)
 		vbl3.addWidget(self.setlist)
 
 		# none and all buttons for turning plot display on and off
-		hbl6 = QtGui.QHBoxLayout()
+		hbl6 = QtWidgets.QHBoxLayout()
 		hbl.setObjectName("hbl6")
 		vbl3.addLayout(hbl6)
 
-		self.nonebut=QtGui.QPushButton(self)
+		self.nonebut=QtWidgets.QPushButton(self)
 		self.nonebut.setText("None")
 		hbl6.addWidget(self.nonebut)
 
-		self.allbut=QtGui.QPushButton(self)
+		self.allbut=QtWidgets.QPushButton(self)
 		self.allbut.setText("All")
 		hbl6.addWidget(self.allbut)
 
@@ -883,7 +879,7 @@ class EMHistogramInspector(QtGui.QWidget):
 		vbl3.addWidget(self.showslide)
 
 		# number and step for the slider
-		hbl7 = QtGui.QHBoxLayout()
+		hbl7 = QtWidgets.QHBoxLayout()
 		hbl.setObjectName("hbl7")
 		vbl3.addLayout(hbl7)
 
@@ -893,57 +889,57 @@ class EMHistogramInspector(QtGui.QWidget):
 		self.stepbox=ValBox(label="stp:",value=1)
 		hbl7.addWidget(self.stepbox)
 
-		vbl = QtGui.QVBoxLayout()
-		vbl.setMargin(0)
+		vbl = QtWidgets.QVBoxLayout()
+		vbl.setContentsMargins(0, 0, 0, 0)
 		vbl.setSpacing(6)
 		vbl.setObjectName("vbl")
 		hbl.addLayout(vbl)
 
-		hbl0=QtGui.QHBoxLayout()
-		hbl0.setMargin(0)
+		hbl0=QtWidgets.QHBoxLayout()
+		hbl0.setContentsMargins(0, 0, 0, 0)
 		hbl0.setSpacing(6)
 		vbl.addLayout(hbl0)
 
-		self.saveb=QtGui.QPushButton(self)
+		self.saveb=QtWidgets.QPushButton(self)
 		self.saveb.setText("Save")
 		hbl0.addWidget(self.saveb)
 
-		self.concatb=QtGui.QPushButton(self)
+		self.concatb=QtWidgets.QPushButton(self)
 		self.concatb.setText("Concat")
 		hbl0.addWidget(self.concatb)
 
-		self.pdfb=QtGui.QPushButton(self)
+		self.pdfb=QtWidgets.QPushButton(self)
 		self.pdfb.setText("PDF")
 		hbl0.addWidget(self.pdfb)
 
-		hbl01=QtGui.QHBoxLayout()
-		hbl01.setMargin(0)
+		hbl01=QtWidgets.QHBoxLayout()
+		hbl01.setContentsMargins(0, 0, 0, 0)
 		hbl01.setSpacing(6)
 		vbl.addLayout(hbl01)
 
-		self.histtype=QtGui.QComboBox(self)
+		self.histtype=QtWidgets.QComboBox(self)
 		self.histtype.addItem("bar")
 		#self.histtype.addItem("barstacked")
 		#self.histtype.addItem("step")
 		#self.histtype.addItem("stepfilled")
 		hbl01.addWidget(self.histtype)
 
-		self.orient=QtGui.QComboBox(self)
+		self.orient=QtWidgets.QComboBox(self)
 		self.orient.addItem("vertical")
 		#self.orient.addItem("horizontal")
 		hbl01.addWidget(self.orient)
 
-		self.align=QtGui.QComboBox(self)
+		self.align=QtWidgets.QComboBox(self)
 		self.align.addItem("center")
 		self.align.addItem("edge")
 		#self.align.addItem("right")
 		hbl01.addWidget(self.align)
 
-		hbl1 = QtGui.QHBoxLayout()
-		hbl1.setMargin(0)
+		hbl1 = QtWidgets.QHBoxLayout()
+		hbl1.setContentsMargins(0, 0, 0, 0)
 		hbl1.setSpacing(6)
 
-		self.color=QtGui.QComboBox(self)
+		self.color=QtWidgets.QComboBox(self)
 		self.color.addItem("black")
 		self.color.addItem("blue")
 		self.color.addItem("red")
@@ -956,8 +952,8 @@ class EMHistogramInspector(QtGui.QWidget):
 
 		vbl.addLayout(hbl1)
 
-		hbl000 = QtGui.QHBoxLayout()
-		hbl000.setMargin(0)
+		hbl000 = QtWidgets.QHBoxLayout()
+		hbl000.setContentsMargins(0, 0, 0, 0)
 		hbl000.setSpacing(6)
 
 		self.alpha=ValSlider(self,(0,1),"Alpha:",0,25)
@@ -965,8 +961,8 @@ class EMHistogramInspector(QtGui.QWidget):
 		hbl000.addWidget(self.alpha)
 		vbl.addLayout(hbl000)
 
-		hbl001 = QtGui.QHBoxLayout()
-		hbl001.setMargin(0)
+		hbl001 = QtWidgets.QHBoxLayout()
+		hbl001.setContentsMargins(0, 0, 0, 0)
 		hbl001.setSpacing(6)
 
 		self.rwidth=ValSlider(self,(0,1),"Width:",0,25)
@@ -975,82 +971,82 @@ class EMHistogramInspector(QtGui.QWidget):
 
 		vbl.addLayout(hbl001)
 
-		hbl2 = QtGui.QHBoxLayout()
-		hbl2.setMargin(0)
+		hbl2 = QtWidgets.QHBoxLayout()
+		hbl2.setContentsMargins(0, 0, 0, 0)
 		hbl2.setSpacing(6)
 
 		vbl.addLayout(hbl2)
 
-		hbl2 = QtGui.QHBoxLayout()
-		hbl2.setMargin(0)
+		hbl2 = QtWidgets.QHBoxLayout()
+		hbl2.setContentsMargins(0, 0, 0, 0)
 		hbl2.setSpacing(6)
 		vbl.addLayout(hbl2)
 
 		# per plot column selectors
-		gl=QtGui.QGridLayout()
-		gl.addWidget(QtGui.QLabel("Column:",self),0,0,Qt.AlignRight)
-		self.slidecol=QtGui.QSpinBox(self)
+		gl=QtWidgets.QGridLayout()
+		gl.addWidget(QtWidgets.QLabel("Column:",self),0,0,Qt.AlignRight)
+		self.slidecol=QtWidgets.QSpinBox(self)
 		self.slidecol.setRange(0,1)
 		self.slidecol.setValue(1)
 		gl.addWidget(self.slidecol,0,1,Qt.AlignLeft)
 
-		gl.addWidget(QtGui.QLabel("N Bins:",self),0,2,Qt.AlignRight)
-		self.slidenbs=QtGui.QSpinBox(self)
+		gl.addWidget(QtWidgets.QLabel("N Bins:",self),0,2,Qt.AlignRight)
+		self.slidenbs=QtWidgets.QSpinBox(self)
 		self.slidenbs.setRange(1,10000)
 		self.slidenbs.setValue(10)
 		gl.addWidget(self.slidenbs,0,3,Qt.AlignLeft)
 
 		vbl.addLayout(gl)
 
-		hbl02=QtGui.QHBoxLayout()
-		hbl02.setMargin(0)
+		hbl02=QtWidgets.QHBoxLayout()
+		hbl02.setContentsMargins(0, 0, 0, 0)
 		hbl02.setSpacing(6)
 		vbl.addLayout(hbl02)
 
-		self.normed=QtGui.QCheckBox(self)
+		self.normed=QtWidgets.QCheckBox(self)
 		self.normed.setText("Norm")
 		hbl02.addWidget(self.normed)
 
-		self.cumulative=QtGui.QCheckBox(self)
+		self.cumulative=QtWidgets.QCheckBox(self)
 		self.cumulative.setText("Cumulative")
 		hbl02.addWidget(self.cumulative)
 
-		hbl03=QtGui.QHBoxLayout()
-		hbl03.setMargin(0)
+		hbl03=QtWidgets.QHBoxLayout()
+		hbl03.setContentsMargins(0, 0, 0, 0)
 		hbl03.setSpacing(6)
 		vbl.addLayout(hbl03)
 
-		self.logtogy=QtGui.QCheckBox(self)
+		self.logtogy=QtWidgets.QCheckBox(self)
 		self.logtogy.setText("Log Y")
 		hbl03.addWidget(self.logtogy)
 
-		self.stacked=QtGui.QCheckBox(self)
+		self.stacked=QtWidgets.QCheckBox(self)
 		self.stacked.setText("Stacked")
 		hbl03.addWidget(self.stacked)
 
-		self.wrescale=QtGui.QPushButton(self)
+		self.wrescale=QtWidgets.QPushButton(self)
 		self.wrescale.setText("Rescale")
 		vbl.addWidget(self.wrescale)
 
 		vbl0.addLayout(hbl)
 
-		hbl2a=QtGui.QHBoxLayout()
+		hbl2a=QtWidgets.QHBoxLayout()
 
-		self.wl1=QtGui.QLabel("Min")
+		self.wl1=QtWidgets.QLabel("Min")
 		self.wl1.setAlignment(Qt.AlignHCenter)
 		hbl2a.addWidget(self.wl1)
-		self.wl2=QtGui.QLabel("Max")
+		self.wl2=QtWidgets.QLabel("Max")
 		self.wl2.setAlignment(Qt.AlignHCenter)
 		hbl2a.addWidget(self.wl2)
-		self.wl3=QtGui.QLabel("Min")
+		self.wl3=QtWidgets.QLabel("Min")
 		self.wl3.setAlignment(Qt.AlignHCenter)
 		hbl2a.addWidget(self.wl3)
-		self.wl4=QtGui.QLabel("Max")
+		self.wl4=QtWidgets.QLabel("Max")
 		self.wl4.setAlignment(Qt.AlignHCenter)
 		hbl2a.addWidget(self.wl4)
 		vbl0.addLayout(hbl2a)
 
-		hbl2=QtGui.QHBoxLayout()
+		hbl2=QtWidgets.QHBoxLayout()
 
 		self.wxmin=ValBox(label="X:")
 		hbl2.addWidget(self.wxmin)
@@ -1064,15 +1060,15 @@ class EMHistogramInspector(QtGui.QWidget):
 
 		vbl0.addLayout(hbl2)
 #
-# 		hbl4 = QtGui.QHBoxLayout()
-# 		hbl4.addWidget(QtGui.QLabel("X Label:",self))
-# 		self.xlabel=QtGui.QLineEdit(self)
+# 		hbl4 = QtWidgets.QHBoxLayout()
+# 		hbl4.addWidget(QtWidgets.QLabel("X Label:",self))
+# 		self.xlabel=QtWidgets.QLineEdit(self)
 # 		hbl4.addWidget(self.xlabel)
 # 		vbl0.addLayout(hbl4)
 #
-# 		hbl5 = QtGui.QHBoxLayout()
-# 		hbl5.addWidget(QtGui.QLabel("Y Label:",self))
-# 		self.ylabel=QtGui.QLineEdit(self)
+# 		hbl5 = QtWidgets.QHBoxLayout()
+# 		hbl5.addWidget(QtWidgets.QLabel("Y Label:",self))
+# 		self.ylabel=QtWidgets.QLineEdit(self)
 # 		hbl5.addWidget(self.ylabel)
 # 		vbl0.addLayout(hbl5)
 
@@ -1083,7 +1079,7 @@ class EMHistogramInspector(QtGui.QWidget):
 		self.allbut.clicked.connect(self.selAll)
 		self.nonebut.clicked.connect(self.selNone)
 		self.setlist.currentRowChanged[int].connect(self.newSet)
-		self.setlist.itemChanged[QtGui.QListWidgetItem].connect(self.list_item_changed)
+		self.setlist.itemChanged[QtWidgets.QListWidgetItem].connect(self.list_item_changed)
 		self.saveb.clicked.connect(self.savePlot)
 		self.pdfb.clicked.connect(self.savePdf)
 		self.concatb.clicked.connect(self.saveConcatPlot)
@@ -1313,9 +1309,9 @@ class EMHistogramInspector(QtGui.QWidget):
 		keys.sort()
 		parms = self.target().pparm # get the colors from this
 		for i,j in enumerate(keys) :
-			a = QtGui.QListWidgetItem(j)
+			a = QtWidgets.QListWidgetItem(j)
 			a.setFlags(flags)
-			try: a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
+			try: a.setForeground(qt_color_map[colortypes[parms[j][0]]])
 			except:
 				print("Color error")
 				print(list(sorted(parms.keys())))
@@ -1340,7 +1336,7 @@ class EMHistogramInspector(QtGui.QWidget):
 	def closeEvent(self, event):
 		pass
 
-class DragListWidget(QtGui.QListWidget):
+class DragListWidget(QtWidgets.QListWidget):
 	"This is a minor modification of the QListWidget to support drag-drop of data sets"
 	def setDataSource(self,trg):
 		"""We keep a weak reference to our data source so we can pull the data only when dragging actually starts"""
@@ -1351,7 +1347,7 @@ class DragListWidget(QtGui.QListWidget):
 			name=str(self.currentItem().text())		# currently hilighted item
 			nbins=len(self.datasource().target().hist_edges)
 			self.datasource().target().set_data(None,key=name,alpha=0.8,width=0.8,nbins=nbins)
-		else: QtGui.QListWidget.keyPressEvent(self,event)
+		else: QtWidgets.QListWidget.keyPressEvent(self,event)
 
 	def dragEnterEvent(self,e):
 		if e.mimeData().hasText() : e.acceptProposedAction()
@@ -1390,13 +1386,13 @@ class DragListWidget(QtGui.QListWidget):
 
 	def setMovement(self,x):
 		"""The ListView and ListWidget unfortunately make use of drag-drop for internal rearrangement, but we need to use it for widget->widget copy. This prevents the parent from disabling drag/drop."""
-		QtGui.QListWidget.setMovement(self,x)
+		QtWidgets.QListWidget.setMovement(self,x)
 		self.setlist.setDragEnabled(True)
 		self.setlist.setAcceptDrops(True)
 
 	def setViewMode(self,x):
 		"""The ListView and ListWidget unfortunately make use of drag-drop for internal rearrangement, but we need to use it for widget->widget copy. This prevents the parent from disabling drag/drop."""
-		QtGui.QListWidget.setViewMode(self,x)
+		QtWidgets.QListWidget.setViewMode(self,x)
 		self.setlist.setDragEnabled(True)
 		self.setlist.setAcceptDrops(True)
 

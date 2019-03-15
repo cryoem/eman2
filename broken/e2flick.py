@@ -39,8 +39,8 @@ from builtins import range
 import sys
 import os
 #from optparse import OptionParser
-#from PyQt4 import QtCore, QtGui, QtOpenGL
-#from PyQt4.QtCore import Qt
+#from PyQt5 import QtCore, QtGui, QtOpenGL
+#from PyQt5.QtCore import Qt
 #from OpenGL import GL,GLU,GLUT
 
 

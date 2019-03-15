@@ -9,8 +9,8 @@ from eman2_gui.emapplication import EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emshape import EMShape
 
-from PyQt4.QtCore import Qt
-from PyQt4.QtCore import QTimer
+from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QTimer
 
 def main():
 	

@@ -236,8 +236,8 @@ def killdcserver(server,port,verbose):
 
 # We import Qt even if we don't need it
 try:
-	from PyQt4 import QtCore, QtGui
-	from PyQt4.QtCore import Qt
+	from PyQt5 import QtCore, QtGui, QtWidgets
+	from PyQt5.QtCore import Qt
 except:
 	class dummy(object):
 		"A dummy class for use when Qt not installed"
@@ -248,8 +248,8 @@ except:
 				traceback.print_exc()
 
 	QtGui=dummy(True)
-	QtGui.QWidget=dummy
-	QtGui.QMainWindow=dummy
+	QtWidgets.QWidget=dummy
+	QtWidgets.QMainWindow=dummy
 	QtCore=dummy(True)
 	QtCore.QAbstractTableModel=dummy
 	
@@ -263,7 +263,7 @@ def runservmon():
 #	activedata=TaskData(queue.active)
 #	completedata=TaskData(queue.complete)
 
-	app = QtGui.QApplication([])
+	app = QtWidgets.QApplication([])
 	window = GUIservmon()
 	
 #	ui.tableView.setModel(data)
@@ -273,34 +273,34 @@ def runservmon():
 	
 	app.exec_()
 	
-class GUIservmon(QtGui.QMainWindow):
+class GUIservmon(QtWidgets.QMainWindow):
 	"""A DC server monitor GUI"""
 	def __init__(self):
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 
-		self.cw=QtGui.QWidget()
+		self.cw=QtWidgets.QWidget()
 		self.setCentralWidget(self.cw)
-		self.vbl=QtGui.QVBoxLayout(self.cw)
+		self.vbl=QtWidgets.QVBoxLayout(self.cw)
 		
-		self.tabs = QtGui.QTabWidget()
+		self.tabs = QtWidgets.QTabWidget()
 		self.vbl.addWidget(self.tabs)
-		self.tabs.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+		self.tabs.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 	
-		self.activetab=QtGui.QWidget()
-		self.vblat=QtGui.QVBoxLayout(self.activetab)
-		self.actview=QtGui.QTableView()
+		self.activetab=QtWidgets.QWidget()
+		self.vblat=QtWidgets.QVBoxLayout(self.activetab)
+		self.actview=QtWidgets.QTableView()
 		self.vblat.addWidget(self.actview)
 		self.tabs.addTab(self.activetab,"Active")
 		
-		self.donetab=QtGui.QWidget()
-		self.vbldt=QtGui.QVBoxLayout(self.donetab)
-		self.doneview=QtGui.QTableView()
+		self.donetab=QtWidgets.QWidget()
+		self.vbldt=QtWidgets.QVBoxLayout(self.donetab)
+		self.doneview=QtWidgets.QTableView()
 		self.vbldt.addWidget(self.doneview)
 		self.tabs.addTab(self.donetab,"Complete")
 		
-		self.clienttab=QtGui.QWidget()
-		self.vblct=QtGui.QVBoxLayout(self.clienttab)
-		self.clientview=QtGui.QTableView()
+		self.clienttab=QtWidgets.QWidget()
+		self.vblct=QtWidgets.QVBoxLayout(self.clienttab)
+		self.clientview=QtWidgets.QTableView()
 		self.vblct.addWidget(self.clientview)
 		self.tabs.addTab(self.clienttab,"Clients")
 		

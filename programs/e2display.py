@@ -44,7 +44,7 @@ import os
 import sys
 
 from OpenGL import GL, GLU, GLUT
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -76,7 +76,7 @@ def main():
 
 	app = EMApp()
 	#gapp = app
-	#QtGui.QApplication(sys.argv)
+	#QtWidgets.QApplication(sys.argv)
 	win=[]
 	if options.fullrange:
 		print("""The --fullrange option has been removed, and replaced with an option in user preferences.

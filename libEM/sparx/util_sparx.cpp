@@ -10414,8 +10414,8 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi(EMData* dataimage, EMData* c
 		float* circ1b = cimage->get_data();
 		//for (int ic = 0; ic < 6; ic++)  cout<<"  "<<circ1b[ic];
 		//cout<<endl;
-		for (int ic = 0; ic < n_coarse_ang; ic++) {
-			int offset = lencrefim*ic;
+		for (size_t ic = 0; ic < n_coarse_ang; ic++) {
+			size_t offset = lencrefim*ic;
 	//cout<<" offset "<<ic<<"  "<<offset<<"  "<<startpsi[ic]<<endl;
 			for (i=0; i<maxrin; i++)  q[i] = 0.0f;
 
@@ -10515,8 +10515,8 @@ vector<float> Util::multiref_Crosrng_msg_stack_stepsi_scores(EMData* dataimage, 
 		float* circ1b = cimage->get_data();
 		//for (int ic = 0; ic < 6; ic++)  cout<<"  "<<circ1b[ic];
 		//cout<<endl;
-		for (int ic = 0; ic < n_coarse_ang; ic++) {
-			int offset = lencrefim*ic;
+		for (size_t ic = 0; ic < n_coarse_ang; ic++) {
+			size_t offset = lencrefim*ic;
 	//cout<<" offset "<<ic<<"  "<<offset<<"  "<<startpsi[ic]<<endl;
 			for (i=0; i<maxrin; i++)  q[i] = 0.0f;
 
@@ -10812,10 +10812,10 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 		for (int iqc = 0; iqc < n_assignments_of_refangles_to_angles; iqc++) {
 			int ic = assignments_of_refangles_to_angles[iqc];
 			vector<int>::iterator it = std::find(assignments_of_refangles_to_cones.begin(), assignments_of_refangles_to_cones.end(), ic);
-			int lixi = std::distance(assignments_of_refangles_to_cones.begin(), it);
+			size_t lixi = std::distance(assignments_of_refangles_to_cones.begin(), it);
 
 			//if(lixi < 0)  cout<<"   PROBLEM"<<endl; 
-			int offset = lencrefim*lixi;
+			size_t offset = lencrefim*lixi;
 	//cout<<" offset "<<ic<<"  "<<offset<<"  "<<startpsi[ic]<<endl;
 			for (i=0; i<maxrin; i++)  q[i] = 0.0f;
 
@@ -10976,8 +10976,8 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 			}*/
 			//if(lixi < 0)  cout<<"   PROBLEM"<<endl; 
 		for (int ic = 0; ic < n_assignments_of_refangles_to_angles; ic++) {
-			int lixi = assignments_of_refangles_to_angles[ic];
-			int offset = lencrefim*lixi;
+			size_t lixi = assignments_of_refangles_to_angles[ic];
+			size_t offset = lencrefim*lixi;
 	//cout<<" offset "<<ic<<"  "<<offset<<"  "<<startpsi[ic]<<endl;
 			for (i=0; i<maxrin; i++)  q[i] = 0.0f;
 
@@ -14121,23 +14121,6 @@ L640:
     }
     error = (float)xsum;
     return;
-}
-
-float Util::eval(char * images, EMData * img, vector<int> S, int N, int, int size)
-{
-	int j,d;
-	EMData * e = new EMData();
-	float *eptr, *imgptr;
-	imgptr = img->get_data();
-	float SSE = 0.f;
-	for (j = 0 ; j < N ; j++) {
-		e->read_image(images,S[j]);
-		eptr = e->get_data();
-		for (d = 0; d < size; d++) {
-			SSE += ((eptr[d] - imgptr[d])*(eptr[d] - imgptr[d]));}
-		}
-	delete e;
-	return SSE;
 }
 
 
@@ -29628,7 +29611,56 @@ void Util::cleanup_threads() {
 
 void Util::version()
 {
-	cout <<"   Source modification date: 02/03/2019" <<  endl;
+	cout <<"   Source modification date: 03/02/2019" <<  endl;
+
+/*
+This is test program for testing FFT speed 02/16/2019 PAP
+
+from time import time
+nx = 3810
+d=model_blank(nx,nx,1,1.1)
+at=time()
+for i in range(20):  o=fft(d)
+print(time()-at)
+
+at=time()
+for i in range(20):  Util.version()
+print(time()-at)
+
+
+        //int nthreads = 16;
+        int i;
+        int nx,ny,nz;
+        nx=ny=3810;
+        nz=1;
+        int forward = 1;
+        int rank = 2;
+        int dims[3];
+        dims[0] = nz;
+        dims[1] = ny;
+        dims[2] = nx;
+        size_t sizein = nx*ny*nz;
+        size_t sizeou = (nx+2)*ny*nz;
+
+        float *real_data = fftwf_alloc_real(sizein);
+        float *complex_data = fftwf_alloc_real(sizeou);
+
+        for( i = 0; i<sizein; i++ )  real_data[i]=1.1;
+
+        fftwf_plan plan;
+        //fftwf_init_threads();
+        //fftwf_plan_with_nthreads(nthreads);
+        if( forward == 1 )  plan = fftwf_plan_dft_r2c(rank, dims + (3 - rank), real_data, (fftwf_complex *) complex_data, FFTW_ESTIMATE);
+        else plan = fftwf_plan_dft_c2r(rank, dims + (3 - rank), (fftwf_complex *) complex_data, real_data, FFTW_ESTIMATE);
+
+
+        fftwf_execute(plan);
+        fftwf_destroy_plan(plan);
+
+	//fftwf_cleanup_threads();
+*/
+
+
 /*
 This is test program for threaded FFT  as of 11/20/2018 PAP
         int nthreads = 16;

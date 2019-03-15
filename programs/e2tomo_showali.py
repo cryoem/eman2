@@ -10,7 +10,7 @@ import numpy as np
 import weakref
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt4 import QtGui, QtCore, QtOpenGL
+from PyQt5 import QtGui, QtWidgets, QtCore, QtOpenGL
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emshape import EMShape
@@ -129,23 +129,15 @@ class Boxes(EMShape):
 		return
 
 
-class EMDrawWindow(QtGui.QMainWindow):
+class EMDrawWindow(QtWidgets.QMainWindow):
 
 	def __init__(self,application,options,datafile, pks, xfs, dirs):
-		QtGui.QWidget.__init__(self)
-		self.setCentralWidget(QtGui.QWidget())
-		self.gbl = QtGui.QGridLayout(self.centralWidget())
-		
-		
-		self.lb_lines=QtGui.QLabel("aaaaaaaaaaaa")
-		self.lb_lines.setWordWrap(True)
-		self.gbl.addWidget(self.lb_lines, 0,0,1,2)
-		
-		
-		self.bt_showimg=QtGui.QPushButton("bbb")
-		self.gbl.addWidget(self.bt_showimg, 1,0,1,2)
 
-		#self.gbl.addWidget(self.imgview,0,0)
+		QtWidgets.QWidget.__init__(self)
+		self.imgview = EMImage2DWidget()
+		self.setCentralWidget(QtWidgets.QWidget())
+		self.gbl = QtWidgets.QGridLayout(self.centralWidget())
+
 		self.options=options
 		self.app=weakref.ref(application)
 

@@ -38,8 +38,8 @@ from EMAN2 import *
 from optparse import OptionParser
 
 try:
-	from PyQt4 import QtCore, QtGui, QtOpenGL
-	from PyQt4.QtCore import Qt
+	from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+	from PyQt5.QtCore import Qt
 	from eman2_gui.emshape import *
 	from eman2_gui.valslider import ValSlider,ValBox
 	from eman2_gui.emimage import EMImageWidget
@@ -75,22 +75,22 @@ This program allows the user to play around with Fourier synthesis graphically
 	except: pass
 	app.exec_()
 	
-class GUIFourierSynth(QtGui.QWidget):
+class GUIFourierSynth(QtWidgets.QWidget):
 	"""This class represents an application for interactive Fourier synthesis"""
 	
 	def __init__(self,app):
 		self.app=app
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 
 		self.synthplot=EMPlot2DWidget(self.app)
 		self.synthplot.show()
 		
 		# overall layout
-		self.vbl1=QtGui.QVBoxLayout()
+		self.vbl1=QtWidgets.QVBoxLayout()
 		self.setLayout(self.vbl1)
 		
 		# First row contains general purpose controls
-		self.hbl1=QtGui.QHBoxLayout()
+		self.hbl1=QtWidgets.QHBoxLayout()
 		self.vbl1.addLayout(self.hbl1)
 		
 		self.vcell=ValBox(self,(0,128.0),"Cell:",64)
@@ -108,13 +108,13 @@ class GUIFourierSynth(QtGui.QWidget):
 		self.vnsin.intonly=1
 		self.hbl1.addWidget(self.vnsin)
 		
-		self.cbshowall=QtGui.QCheckBox("Show All")
+		self.cbshowall=QtWidgets.QCheckBox("Show All")
 		self.hbl1.addWidget(self.cbshowall)
 
-		self.cbshifted=QtGui.QCheckBox("Shifted")
+		self.cbshifted=QtWidgets.QCheckBox("Shifted")
 		self.hbl1.addWidget(self.cbshifted)
 
-		self.cbtargfn=QtGui.QComboBox(self)
+		self.cbtargfn=QtWidgets.QComboBox(self)
 		self.cbtargfn.addItem("None")
 		self.cbtargfn.addItem("triangle")
 		self.cbtargfn.addItem("square")
@@ -135,16 +135,16 @@ class GUIFourierSynth(QtGui.QWidget):
 		self.hbl1.addWidget(self.cbtargfn)
 		
 		# Widget containing valsliders
-		self.wapsliders=QtGui.QWidget(self)
+		self.wapsliders=QtWidgets.QWidget(self)
 #		self.wapsliders.setMinimumSize(800,640)
-		self.gblap=QtGui.QGridLayout()
-		self.gblap.setSizeConstraint(QtGui.QLayout.SetMinAndMaxSize)
+		self.gblap=QtWidgets.QGridLayout()
+		self.gblap.setSizeConstraint(QtWidgets.QLayout.SetMinAndMaxSize)
 		self.gblap.setColumnMinimumWidth(0,250)
 		self.gblap.setColumnMinimumWidth(1,250)
 		self.wapsliders.setLayout(self.gblap)
 		
 		# ScrollArea providing view on slider container widget
-		self.wapsarea=QtGui.QScrollArea(self)
+		self.wapsarea=QtWidgets.QScrollArea(self)
 		self.wapsarea.setWidgetResizable(True)
 		self.wapsarea.setWidget(self.wapsliders)
 		self.vbl1.addWidget(self.wapsarea)

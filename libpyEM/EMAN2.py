@@ -104,8 +104,8 @@ XYData.__len__=XYData.get_size
 
 try:
 	if __IPYTHON__ : GUIMode=True
-	from PyQt4 import QtGui
-	app=QtGui.qApp
+	from PyQt5 import QtGui, QtWidgets
+	app=QtWidgets.qApp
 except:
 	GUIMode=False
 	app = 0
@@ -376,13 +376,10 @@ This function will return a list of lists containing all currently set applicati
 
 def e2getinstalldir() :
 	"""platform independent path with '/'"""
-	if(sys.platform != 'win32'):
-		url=os.getenv("EMAN2DIR")
-	else:
-		url=os.getenv("EMAN2DIR")
+	url=os.getenv("EMAN2DIR")
+	if(sys.platform == 'win32'):
 		url=url.replace("\\","/")
 	return url
-
 
 def numbered_path(prefix,makenew):
 	"""Finds the next numbered path to use for a given prefix. ie- prefix='refine' if refine_01/EMAN2DB
@@ -428,12 +425,9 @@ def get_prefixed_directories(prefix,wd=e2getcwd()):
 	return dirs
 
 def get_image_directory():
-	pf = get_platform()
 	dtag = get_dtag()
-	if pf != "Windows":
-		return os.getenv("EMAN2DIR")+ dtag + "images" + dtag
-	else:
-		return os.getenv("EMAN2DIR").replace('\\', '/') + dtag + "images" + dtag
+	
+	return e2getinstalldir()+ dtag + "images" + dtag
 
 def get_dtag():
 #	pfrm = get_platform()

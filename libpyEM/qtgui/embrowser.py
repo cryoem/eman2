@@ -38,9 +38,8 @@ from builtins import range
 from builtins import object
 from EMAN2 import *
 from EMAN2jsondb import js_open_dict
-from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import Qt, QTimer
-from PyQt4.QtGui import QAction,QTreeWidgetItem
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import Qt, QTimer
 from .emapplication import EMApp
 from .emimage2d import *
 from .emimagemx import *
@@ -67,7 +66,7 @@ def display_error(msg) :
 
 	print(msg)
 	sys.stdout.flush()
-	QtGui.QMessageBox.warning(None, "Error", msg)
+	QtWidgets.QMessageBox.warning(None, "Error", msg)
 
 # This is a floating point number-finding regular expression
 
@@ -110,10 +109,10 @@ def isprint(s) :
 def askFileExists() :
 	"""Opens a dialog and asks the user what to do if a file to be written to already exists"""
 
-	box = QtGui.QMessageBox(4, "File Exists", "File already exists. What would you like to do ?")	# 4 means we're asking a question
-	b1 = box.addButton("Append", QtGui.QMessageBox.AcceptRole)
-	b2 = box.addButton("Overwrite", QtGui.QMessageBox.AcceptRole)
-	b3 = box.addButton("Cancel", QtGui.QMessageBox.AcceptRole)
+	box = QtWidgets.QMessageBox(4, "File Exists", "File already exists. What would you like to do ?")	# 4 means we're asking a question
+	b1 = box.addButton("Append", QtWidgets.QMessageBox.AcceptRole)
+	b2 = box.addButton("Overwrite", QtWidgets.QMessageBox.AcceptRole)
+	b3 = box.addButton("Cancel", QtWidgets.QMessageBox.AcceptRole)
 
 	box.exec_()
 
@@ -195,7 +194,7 @@ class EMFileType(object) :
 	def saveAs(self, brws) :
 		"""Save an image file/stack to a new file"""
 
-		outpath = QtGui.QInputDialog.getText(None, "Save Filename", "Filename to save to (type determined by extension)", 0, self.path)
+		outpath = QtWidgets.QInputDialog.getText(None, "Save Filename", "Filename to save to (type determined by extension)", 0, self.path)
 
 		if outpath[1] != True : return
 
@@ -486,7 +485,7 @@ class EMFileType(object) :
 	def showFilterTool(self, brws) :
 		"""Open in e2filtertool.py"""
 		
-		modifiers = QtGui.QApplication.keyboardModifiers()
+		modifiers = QtWidgets.QApplication.keyboardModifiers()
 		if modifiers == QtCore.Qt.ShiftModifier:
 			print("Running filter tool in safe mode...")
 			os.system("e2filtertool.py %s --safemode&"%self.path)
@@ -1923,16 +1922,16 @@ class EMFileItemModel(QtCore.QAbstractItemModel) :
 
 #---------------------------------------------------------------------------
 
-class myQItemSelection(QtGui.QItemSelectionModel) :
+class myQItemSelection(QtCore.QItemSelectionModel) :
 	"""For debugging"""
 
 	def select(self, tl, br) :
 		print(tl.indexes()[0].row(), tl.indexes()[0].column(), int(br))
-		QtGui.QItemSelectionModel.select(self, tl, QtGui.QItemSelectionModel.SelectionFlags(QtGui.QItemSelectionModel.ClearAndSelect+QtGui.QItemSelectionModel.Rows))
+		QtCore.QItemSelectionModel.select(self, tl, QtCore.QItemSelectionModel.SelectionFlags(QtCore.QItemSelectionModel.ClearAndSelect+QtCore.QItemSelectionModel.Rows))
 
 #---------------------------------------------------------------------------
 
-class EMInfoPane(QtGui.QWidget) :
+class EMInfoPane(QtWidgets.QWidget) :
 	"""Subclasses of this class will be used to display information about specific files. Each EMFileType class will return the
 	pointer to the appropriate infoPane subclass for displaying information about the file it represents. The subclass instances
 	are allocated by the infoWin class"""
@@ -1940,7 +1939,7 @@ class EMInfoPane(QtGui.QWidget) :
 	def __init__(self, parent = None) :
 		"""Set our GUI up"""
 
-		QtGui.QWidget.__init__(self, parent)
+		QtWidgets.QWidget.__init__(self, parent)
 
 		# self.setTitle("e2dispaly.py Information Pane")
 
@@ -1948,8 +1947,8 @@ class EMInfoPane(QtGui.QWidget) :
 
 		# Root class represents no target
 
-		self.hbl = QtGui.QHBoxLayout(self)
-		self.lbl = QtGui.QLabel("No Information Available")
+		self.hbl = QtWidgets.QHBoxLayout(self)
+		self.lbl = QtWidgets.QLabel("No Information Available")
 		self.hbl.addWidget(self.lbl)
 
 	def display(self, target) :
@@ -1970,13 +1969,13 @@ class EMInfoPane(QtGui.QWidget) :
 
 class EMTextInfoPane(EMInfoPane) :
 	def __init__(self, parent = None) :
-		QtGui.QWidget.__init__(self, parent)
+		QtWidgets.QWidget.__init__(self, parent)
 
-		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl = QtWidgets.QVBoxLayout(self)
 
 		# text editing widget
 
-		self.text = QtGui.QTextEdit()
+		self.text = QtWidgets.QTextEdit()
 		self.text.setAcceptRichText(False)
 		self.text.setReadOnly(True)
 		self.vbl.addWidget(self.text)
@@ -1988,16 +1987,16 @@ class EMTextInfoPane(EMInfoPane) :
 
 		# Buttons
 
-		self.hbl = QtGui.QHBoxLayout()
+		self.hbl = QtWidgets.QHBoxLayout()
 
-		self.wbutedit = QtGui.QPushButton("Edit")
+		self.wbutedit = QtWidgets.QPushButton("Edit")
 		self.hbl.addWidget(self.wbutedit)
 
-		self.wbutcancel = QtGui.QPushButton("Revert")
+		self.wbutcancel = QtWidgets.QPushButton("Revert")
 		self.wbutcancel.setEnabled(False)
 		self.hbl.addWidget(self.wbutcancel)
 
-		self.wbutok = QtGui.QPushButton("Save")
+		self.wbutok = QtWidgets.QPushButton("Save")
 		self.wbutok.setEnabled(False)
 		self.hbl.addWidget(self.wbutok)
 
@@ -2039,19 +2038,19 @@ class EMTextInfoPane(EMInfoPane) :
 
 	def buttonOk(self, tog) :
 		try : open(self.target.path(), "w").write(str(self.text.toPlainText()))
-		except : QtGui.QMessageBox.warning(self, "Error !", "File write failed")
+		except : QtWidgets.QMessageBox.warning(self, "Error !", "File write failed")
 
 #---------------------------------------------------------------------------
 
 class EMHTMLInfoPane(EMInfoPane) :
 	def __init__(self, parent = None) :
-		QtGui.QWidget.__init__(self, parent)
+		QtWidgets.QWidget.__init__(self, parent)
 
-		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl = QtWidgets.QVBoxLayout(self)
 
 		# text editing widget
 
-		self.text = QtGui.QTextEdit()
+		self.text = QtWidgets.QTextEdit()
 		self.text.setAcceptRichText(True)
 		self.text.setReadOnly(True)
 		self.vbl.addWidget(self.text)
@@ -2063,16 +2062,16 @@ class EMHTMLInfoPane(EMInfoPane) :
 
 		# Buttons
 
-		self.hbl = QtGui.QHBoxLayout()
+		self.hbl = QtWidgets.QHBoxLayout()
 
-		self.wbutedit = QtGui.QPushButton("Edit")
+		self.wbutedit = QtWidgets.QPushButton("Edit")
 		self.hbl.addWidget(self.wbutedit)
 
-		self.wbutcancel = QtGui.QPushButton("Revert")
+		self.wbutcancel = QtWidgets.QPushButton("Revert")
 		self.wbutcancel.setEnabled(False)
 		self.hbl.addWidget(self.wbutcancel)
 
-		self.wbutok = QtGui.QPushButton("Save")
+		self.wbutok = QtWidgets.QPushButton("Save")
 		self.wbutok.setEnabled(False)
 		self.hbl.addWidget(self.wbutok)
 
@@ -2112,16 +2111,16 @@ class EMHTMLInfoPane(EMInfoPane) :
 
 	def buttonOk(self, tog) :
 		try : open(self.target.path(), "w").write(str(self.text.toHtml()))
-		except : QtGui.QMessageBox.warning(self, "Error !", "File write failed")
+		except : QtWidgets.QMessageBox.warning(self, "Error !", "File write failed")
 
 #---------------------------------------------------------------------------
 
 class EMPDBInfoPane(EMInfoPane) :
 	def __init__(self, parent = None) :
-		QtGui.QWidget.__init__(self, parent)
-		self.vbl = QtGui.QVBoxLayout(self)
+		QtWidgets.QWidget.__init__(self, parent)
+		self.vbl = QtWidgets.QVBoxLayout(self)
 		# text editing widget
-		self.text = QtGui.QTextEdit()
+		self.text = QtWidgets.QTextEdit()
 		self.text.setAcceptRichText(False)
 		self.text.setReadOnly(True)
 		self.vbl.addWidget(self.text)
@@ -2129,13 +2128,13 @@ class EMPDBInfoPane(EMInfoPane) :
 		self.wfind = StringBox(label = "Find:")
 		self.vbl.addWidget(self.wfind)
 		# Buttons
-		self.hbl = QtGui.QHBoxLayout()
-		self.wbutedit = QtGui.QPushButton("Edit")
+		self.hbl = QtWidgets.QHBoxLayout()
+		self.wbutedit = QtWidgets.QPushButton("Edit")
 		self.hbl.addWidget(self.wbutedit)
-		self.wbutcancel = QtGui.QPushButton("Revert")
+		self.wbutcancel = QtWidgets.QPushButton("Revert")
 		self.wbutcancel.setEnabled(False)
 		self.hbl.addWidget(self.wbutcancel)
-		self.wbutok = QtGui.QPushButton("Save")
+		self.wbutok = QtWidgets.QPushButton("Save")
 		self.wbutok.setEnabled(False)
 		self.hbl.addWidget(self.wbutok)
 		self.vbl.addLayout(self.hbl)
@@ -2171,19 +2170,19 @@ class EMPDBInfoPane(EMInfoPane) :
 
 	def buttonOk(self, tog) :
 		try : open(self.target.path(), "w").write(str(self.text.toPlainText()))
-		except : QtGui.QMessageBox.warning(self, "Error !", "File write failed")
+		except : QtWidgets.QMessageBox.warning(self, "Error !", "File write failed")
 
 #---------------------------------------------------------------------------
 
 class EMPlotInfoPane(EMInfoPane) :
 	def __init__(self, parent = None) :
-		QtGui.QWidget.__init__(self, parent)
+		QtWidgets.QWidget.__init__(self, parent)
 
-		self.gbl = QtGui.QGridLayout(self)
+		self.gbl = QtWidgets.QGridLayout(self)
 
 		# List as alternate mechanism for selecting image number(s)
 
-		self.plotdata = QtGui.QTableWidget()
+		self.plotdata = QtWidgets.QTableWidget()
 		self.gbl.addWidget(self.plotdata, 0, 0)
 
 	def display(self, target) :
@@ -2219,18 +2218,18 @@ class EMPlotInfoPane(EMInfoPane) :
 
 		for r in range(len(data)) :
 			for c in range(numc) :
-				self.plotdata.setItem(r, c, QtGui.QTableWidgetItem("%1.4g"%data[r][c]))
+				self.plotdata.setItem(r, c, QtWidgets.QTableWidgetItem("%1.4g"%data[r][c]))
 
 		if len(data) == 2500 :
-			self.plotdata.setVerticalHeaderItem(2500, QtGui.QTableWidgetItem("..."))
+			self.plotdata.setVerticalHeaderItem(2500, QtWidgets.QTableWidgetItem("..."))
 
 #---------------------------------------------------------------------------
 
 class EMFolderInfoPane(EMInfoPane) :
 	def __init__(self, parent = None) :
-		QtGui.QWidget.__init__(self, parent)
+		QtWidgets.QWidget.__init__(self, parent)
 
-		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl = QtWidgets.QVBoxLayout(self)
 
 	def display(self, target) :
 		"""display information for the target EMDirEntry"""
@@ -2243,24 +2242,24 @@ class EMBDBInfoPane(EMInfoPane) :
 	maxim = 500
 
 	def __init__(self, parent = None) :
-		QtGui.QWidget.__init__(self, parent)
+		QtWidgets.QWidget.__init__(self, parent)
 
-		self.gbl = QtGui.QGridLayout(self)
+		self.gbl = QtWidgets.QGridLayout(self)
 
 		# Spinbox for selecting image number
 
-		self.wimnum = QtGui.QSpinBox()
+		self.wimnum = QtWidgets.QSpinBox()
 		self.wimnum.setRange(0, 0)
 		self.gbl.addWidget(self.wimnum, 0, 0)
 
 		# List as alternate mechanism for selecting image number(s)
 
-		self.wimlist = QtGui.QListWidget()
+		self.wimlist = QtWidgets.QListWidget()
 		self.gbl.addWidget(self.wimlist, 1, 0)
 
 		# Actual header contents
 
-		self.wheadtree = QtGui.QTreeWidget()
+		self.wheadtree = QtWidgets.QTreeWidget()
 		self.wheadtree.setColumnCount(2)
 		self.wheadtree.setHeaderLabels(["Item", "Value"])
 		self.gbl.addWidget(self.wheadtree, 0, 1, 2, 1)
@@ -2270,7 +2269,7 @@ class EMBDBInfoPane(EMInfoPane) :
 
 		# Lower region has buttons for actions
 
-		self.hbl2 = QtGui.QGridLayout()
+		self.hbl2 = QtWidgets.QGridLayout()
 
 		self.wbutmisc = []
 
@@ -2283,17 +2282,17 @@ class EMBDBInfoPane(EMInfoPane) :
 			self.hbl2.setColumnStretch(i, 2)
 	
 			for j in range(2) :
-				self.wbutmisc.append(QtGui.QPushButton(""))
+				self.wbutmisc.append(QtWidgets.QPushButton(""))
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
 				self.wbutmisc[-1].hide()
 				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
 		# These just clean up the layout a bit
 
-		self.wbutxx = QtGui.QLabel("")
+		self.wbutxx = QtWidgets.QLabel("")
 		self.wbutxx.setMaximumHeight(12)
 		self.hbl2.addWidget(self.wbutxx, 0, 6)
-		self.wbutyy = QtGui.QLabel("")
+		self.wbutyy = QtWidgets.QLabel("")
 		self.wbutyy.setMaximumHeight(12)
 		self.hbl2.addWidget(self.wbutyy, 1, 6)
 
@@ -2324,7 +2323,7 @@ class EMBDBInfoPane(EMInfoPane) :
 		try :
 			val = int(val)
 		except :
-			QtGui.QMessageBox.warning(self, "Error", "Sorry, cannot display string-keyed images")
+			QtWidgets.QMessageBox.warning(self, "Error", "Sorry, cannot display string-keyed images")
 			return
 
 		self.curft.setN(val)
@@ -2418,19 +2417,19 @@ class EMBDBInfoPane(EMInfoPane) :
 
 		if isinstance(trg, dict) :
 			for k in sorted(trg.keys()) :
-				itms.append(QtGui.QTreeWidgetItem(list((str(k), str(trg[k])))))
+				itms.append(QtWidgets.QTreeWidgetItem(list((str(k), str(trg[k])))))
 				if isinstance(trg[k], list) or isinstance(trg[k], tuple) or isinstance(trg[k], set) or isinstance(trg[k], dict) :
 					self.addTreeItem(trg[k], itms[-1])
 		elif isinstance(trg, list) or isinstance(trg, tuple) or isinstance(trg, set) :
 			for k in trg :
 				if isinstance(k, list) or isinstance(k, tuple) or isinstance(k, set) or isinstance(k, dict) :
-					try : itms.append(QtGui.QTreeWidgetItem(list((k.__class__.__name__, ""))))
-					except : itms.append(QtGui.QTreeWidgetItem(list(("??", ""))))
+					try : itms.append(QtWidgets.QTreeWidgetItem(list((k.__class__.__name__, ""))))
+					except : itms.append(QtWidgets.QTreeWidgetItem(list(("??", ""))))
 					self.addTreeItem(k, itms[-1])
 				else :
-					itms.append(QtGui.QTreeWidgetItem(list((str(k), ""))))
+					itms.append(QtWidgets.QTreeWidgetItem(list((str(k), ""))))
 		else :
-			itms.append(QtGui.QTreeWidgetItem(list((str(trg), ""))))
+			itms.append(QtWidgets.QTreeWidgetItem(list((str(trg), ""))))
 
 		if parent == None :
 			self.wheadtree.addTopLevelItems(itms)
@@ -2441,18 +2440,18 @@ class EMBDBInfoPane(EMInfoPane) :
 
 class EMJSONInfoPane(EMInfoPane) :
 	def __init__(self, parent = None) :
-		QtGui.QWidget.__init__(self, parent)
+		QtWidgets.QWidget.__init__(self, parent)
 
-		self.gbl = QtGui.QGridLayout(self)
+		self.gbl = QtWidgets.QGridLayout(self)
 
 		# List of keys
 
-		self.wkeylist = QtGui.QListWidget()
+		self.wkeylist = QtWidgets.QListWidget()
 		self.gbl.addWidget(self.wkeylist, 1, 0)
 
 		# contents of a single key
 
-		self.wheadtree = QtGui.QTreeWidget()
+		self.wheadtree = QtWidgets.QTreeWidget()
 		self.wheadtree.setColumnCount(2)
 		self.wheadtree.setHeaderLabels(["Key/#", "Value"])
 		self.gbl.addWidget(self.wheadtree, 0, 1, 2, 1)
@@ -2462,7 +2461,7 @@ class EMJSONInfoPane(EMInfoPane) :
 
 		# Lower region has buttons for actions
 
-		self.hbl2 = QtGui.QGridLayout()
+		self.hbl2 = QtWidgets.QGridLayout()
 
 		self.wbutmisc = []
 
@@ -2475,27 +2474,27 @@ class EMJSONInfoPane(EMInfoPane) :
 			self.hbl2.setColumnStretch(i, 2)
 
 			for j in range(2) :
-				self.wbutmisc.append(QtGui.QPushButton(""))
+				self.wbutmisc.append(QtWidgets.QPushButton(""))
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
 				self.wbutmisc[-1].hide()
 				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
 		# These just clean up the layout a bit
 
-		self.wbutxx = QtGui.QLabel("")
+		self.wbutxx = QtWidgets.QLabel("")
 		self.wbutxx.setMaximumHeight(12)
 		self.hbl2.addWidget(self.wbutxx, 0, 6)
-		self.wbutyy = QtGui.QLabel("")
+		self.wbutyy = QtWidgets.QLabel("")
 		self.wbutyy.setMaximumHeight(12)
 		self.hbl2.addWidget(self.wbutyy, 1, 6)
 
 		self.gbl.addLayout(self.hbl2, 2, 0, 1, 2)
 
 		self.wkeylist.itemSelectionChanged.connect(self.imSelChange)
-		self.wheadtree.itemExpanded[QTreeWidgetItem].connect(self.treeExp)
-		self.wheadtree.itemCollapsed[QTreeWidgetItem].connect(self.treeExp)
+		self.wheadtree.itemExpanded[QtWidgets.QTreeWidgetItem].connect(self.treeExp)
+		self.wheadtree.itemCollapsed[QtWidgets.QTreeWidgetItem].connect(self.treeExp)
 		self.wheadtree.itemSelectionChanged.connect(self.treeSel)
-		self.wheadtree.itemActivated[QTreeWidgetItem, int].connect(self.treeAct)
+		self.wheadtree.itemActivated[QtWidgets.QTreeWidgetItem, int].connect(self.treeAct)
 ##		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
 		self.view2d = []
 		self.view3d = []
@@ -2584,34 +2583,34 @@ class EMJSONInfoPane(EMInfoPane) :
 		if isinstance(trg, dict) :
 			for k in sorted(trg.keys()) :
 				if isinstance(trg[k], (list, tuple, set, dict, EMAN2Ctf)) :
-					itms.append(QtGui.QTreeWidgetItem(list((str(k), ""))))
+					itms.append(QtWidgets.QTreeWidgetItem(list((str(k), ""))))
 					self.addTreeItem(trg[k], itms[-1])
-				else : itms.append(QtGui.QTreeWidgetItem(list((str(k), str(trg[k])))))
+				else : itms.append(QtWidgets.QTreeWidgetItem(list((str(k), str(trg[k])))))
 		elif isinstance(trg, (list, tuple, set)) :
 			if isinstance(trg, set) : trg = sorted(trg)		# make a list temporarily
 			if len(trg) > 120 : vals = list(range(0, 50))+[-1]+list(range(len(trg)-50, len(trg)))
 			else : vals = list(range(len(trg)))
 			for k in vals :
-				if k == -1 : itms.append(QtGui.QTreeWidgetItem(list(("...", "..."))))
+				if k == -1 : itms.append(QtWidgets.QTreeWidgetItem(list(("...", "..."))))
 				else :
 					v = trg[k]
 					if isinstance(v, (list, tuple, set, dict, EMAN2Ctf)) :
-						itms.append(QtGui.QTreeWidgetItem(list((str(k), ""))))
+						itms.append(QtWidgets.QTreeWidgetItem(list((str(k), ""))))
 						self.addTreeItem(v, itms[-1])
-					else : itms.append(QtGui.QTreeWidgetItem(list((str(k), str(v)))))
+					else : itms.append(QtWidgets.QTreeWidgetItem(list((str(k), str(v)))))
 		elif isinstance(trg, EMAN2Ctf) :
-			itms.append(QtGui.QTreeWidgetItem(list(("EMAN2Ctf", ""))))
+			itms.append(QtWidgets.QTreeWidgetItem(list(("EMAN2Ctf", ""))))
 			subitms = []
 			for k, v in list(trg.to_dict().items()) :
 				if isinstance(v, (list, tuple)) :
 					v = ["%1.3g"%i for i in v]
-					subitms.append(QtGui.QTreeWidgetItem(list((str(k), ", ".join(v)))))
-				else : subitms.append(QtGui.QTreeWidgetItem(list((str(k), str(v)))))
+					subitms.append(QtWidgets.QTreeWidgetItem(list((str(k), ", ".join(v)))))
+				else : subitms.append(QtWidgets.QTreeWidgetItem(list((str(k), str(v)))))
 			itms[-1].addChildren(subitms)
 		elif isinstance(trg, EMData) :
-			itms.append(QtGui.QTreeWidgetItem(list(("EMData", ""))))
+			itms.append(QtWidgets.QTreeWidgetItem(list(("EMData", ""))))
 		else :
-			itms.append(QtGui.QTreeWidgetItem(list((str(trg), ""))))
+			itms.append(QtWidgets.QTreeWidgetItem(list((str(trg), ""))))
 
 		if parent == None :
 			self.wheadtree.addTopLevelItems(itms)
@@ -2624,13 +2623,13 @@ class EMImageInfoPane(EMInfoPane) :
 	maxim = 500
 
 	def __init__(self, parent = None) :
-		QtGui.QWidget.__init__(self, parent)
+		QtWidgets.QWidget.__init__(self, parent)
 
-		self.gbl = QtGui.QGridLayout(self)
+		self.gbl = QtWidgets.QGridLayout(self)
 
 		# Actual header contents
 
-		self.wheadtree = QtGui.QTreeWidget()
+		self.wheadtree = QtWidgets.QTreeWidget()
 		self.wheadtree.setColumnCount(2)
 		self.wheadtree.setHeaderLabels(["Item", "Value"])
 		self.gbl.addWidget(self.wheadtree, 0, 0)
@@ -2665,19 +2664,19 @@ class EMImageInfoPane(EMInfoPane) :
 
 		if isinstance(trg, dict) :
 			for k in sorted(trg.keys()) :
-				itms.append(QtGui.QTreeWidgetItem(list((str(k), str(trg[k])))))
+				itms.append(QtWidgets.QTreeWidgetItem(list((str(k), str(trg[k])))))
 				if isinstance(trg[k], list) or isinstance(trg[k], tuple) or isinstance(trg[k], set) or isinstance(trg[k], dict) :
 					self.addTreeItem(trg[k], itms[-1])
 		elif isinstance(trg, list) or isinstance(trg, tuple) or isinstance(trg, set) :
 			for k in trg :
 				if isinstance(k, list) or isinstance(k, tuple) or isinstance(k, set) or isinstance(k, dict) :
-					try : itms.append(QtGui.QTreeWidgetItem(list((k.__class__.__name__, ""))))
-					except : itms.append(QtGui.QTreeWidgetItem(list(("??", ""))))
+					try : itms.append(QtWidgets.QTreeWidgetItem(list((k.__class__.__name__, ""))))
+					except : itms.append(QtWidgets.QTreeWidgetItem(list(("??", ""))))
 					self.addTreeItem(k, itms[-1])
 				else :
-					itms.append(QtGui.QTreeWidgetItem(list((str(k), ""))))
+					itms.append(QtWidgets.QTreeWidgetItem(list((str(k), ""))))
 		else :
-			itms.append(QtGui.QTreeWidgetItem(list((str(trg), ""))))
+			itms.append(QtWidgets.QTreeWidgetItem(list((str(trg), ""))))
 
 		if parent == None :
 			self.wheadtree.addTopLevelItems(itms)
@@ -2691,22 +2690,22 @@ class EMStackInfoPane(EMInfoPane) :
 	maxim = 500
 
 	def __init__(self, parent = None) :
-		QtGui.QWidget.__init__(self, parent)
+		QtWidgets.QWidget.__init__(self, parent)
 
 		# self.setWindowTitle("e2display.py Information Pane") # Jesus
 		# self.setTitle("e2dispaly.py Information Pane")
 
-		self.gbl = QtGui.QGridLayout(self)
+		self.gbl = QtWidgets.QGridLayout(self)
 
-		self.gbl.label1 = QtGui.QLabel("Images") # Jesus
+		self.gbl.label1 = QtWidgets.QLabel("Images") # Jesus
 		self.gbl.addWidget(self.gbl.label1, 0, 0) # Jesus
 
-		self.gbl.label2 = QtGui.QLabel("Header Info") # Jesus
+		self.gbl.label2 = QtWidgets.QLabel("Header Info") # Jesus
 		self.gbl.addWidget(self.gbl.label2, 0, 1) # Jesus
 
 		'''Spinbox for selecting image number'''
 
-		self.wimnum = QtGui.QSpinBox()
+		self.wimnum = QtWidgets.QSpinBox()
 
 		# self.wimnum.setRange(0, 0) # JOHN
 		# self.gbl.addWidget(self.wimnum, 0, 0) # JOHN
@@ -2716,14 +2715,14 @@ class EMStackInfoPane(EMInfoPane) :
 
 		'''List as alternate mechanism for selecting image number(s)'''
 
-		self.wimlist = QtGui.QListWidget()
+		self.wimlist = QtWidgets.QListWidget()
 
 		# self.gbl.addWidget(self.wimlist, 1, 0) # JOHN
 
 		self.gbl.addWidget(self.wimlist, 2, 0) # Jesus
 
 		'''Actual header contents'''
-		self.wheadtree = QtGui.QTreeWidget()
+		self.wheadtree = QtWidgets.QTreeWidget()
 
 		# self.wheadtree.setColumnCount(2) #
 		self.wheadtree.setHeaderLabels(["Item", "Value"])
@@ -2735,7 +2734,7 @@ class EMStackInfoPane(EMInfoPane) :
 
 		'''Lower region has buttons for actions'''
 
-		self.hbl2 = QtGui.QGridLayout()
+		self.hbl2 = QtWidgets.QGridLayout()
 
 		self.wbutmisc = []
 
@@ -2751,19 +2750,19 @@ class EMStackInfoPane(EMInfoPane) :
 			self.hbl2.setColumnStretch(i, 2)
 	
 			for j in range(2) :
-				self.wbutmisc.append(QtGui.QPushButton(""))
+				self.wbutmisc.append(QtWidgets.QPushButton(""))
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
 				self.wbutmisc[-1].hide()
 				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
 		# These just clean up the layout a bit
 
-		self.wbutxx = QtGui.QLabel("")
+		self.wbutxx = QtWidgets.QLabel("")
 		self.wbutxx.setMaximumHeight(12)
 		# self.hbl2.addWidget(self.wbutxx, 0, 6) # JOHN
 		self.hbl2.addWidget(self.wbutxx, 1, 6) # Jesus
 
-		self.wbutyy = QtGui.QLabel("")
+		self.wbutyy = QtWidgets.QLabel("")
 		self.wbutyy.setMaximumHeight(12)
 
 		# self.hbl2.addWidget(self.wbutyy, 1, 6) # JOHN
@@ -2891,19 +2890,19 @@ class EMStackInfoPane(EMInfoPane) :
 
 		if isinstance(trg, dict) :
 			for k in sorted(trg.keys()) :
-				itms.append(QtGui.QTreeWidgetItem(list((str(k), str(trg[k])))))
+				itms.append(QtWidgets.QTreeWidgetItem(list((str(k), str(trg[k])))))
 				if isinstance(trg[k], list) or isinstance(trg[k], tuple) or isinstance(trg[k], set) or isinstance(trg[k], dict) :
 					self.addTreeItem(trg[k], itms[-1])
 		elif isinstance(trg, list) or isinstance(trg, tuple) or isinstance(trg, set) :
 			for k in trg :
 				if isinstance(k, list) or isinstance(k, tuple) or isinstance(k, set) or isinstance(k, dict) :
-					try : itms.append(QtGui.QTreeWidgetItem(list((k.__class__.__name__, ""))))
-					except : itms.append(QtGui.QTreeWidgetItem(list(("??", ""))))
+					try : itms.append(QtWidgets.QTreeWidgetItem(list((k.__class__.__name__, ""))))
+					except : itms.append(QtWidgets.QTreeWidgetItem(list(("??", ""))))
 					self.addTreeItem(k, itms[-1])
 				else :
-					itms.append(QtGui.QTreeWidgetItem(list((str(k), ""))))
+					itms.append(QtWidgets.QTreeWidgetItem(list((str(k), ""))))
 		else :
-			itms.append(QtGui.QTreeWidgetItem(list((str(trg), ""))))
+			itms.append(QtWidgets.QTreeWidgetItem(list((str(trg), ""))))
 
 		if parent == None :
 			self.wheadtree.addTopLevelItems(itms)
@@ -2912,15 +2911,15 @@ class EMStackInfoPane(EMInfoPane) :
 
 #---------------------------------------------------------------------------
 
-class EMInfoWin(QtGui.QWidget) :
+class EMInfoWin(QtWidgets.QWidget) :
 	"""The info window"""
 	winclosed = QtCore.pyqtSignal()
 
 	def __init__(self, parent = None) :
-		QtGui.QWidget.__init__(self, parent)
+		QtWidgets.QWidget.__init__(self, parent)
 
 		self.target = None
-		self.stack = QtGui.QStackedLayout(self)
+		self.stack = QtWidgets.QStackedLayout(self)
 
 		# We add one instance of 'infoPane' parent class to represent nothing
 
@@ -2955,16 +2954,16 @@ class EMInfoWin(QtGui.QWidget) :
 			self.stack.setCurrentIndex(i)		# put the new pane on top
 
 	def closeEvent(self, event) :
-		QtGui.QWidget.closeEvent(self, event)
+		QtWidgets.QWidget.closeEvent(self, event)
 		self.winclosed.emit()
 
-class SortSelTree(QtGui.QTreeView) :
-	"""This is a subclass of QtGui.QTreeView. It is almost identical but implements selection processing with sorting.
+class SortSelTree(QtWidgets.QTreeView) :
+	"""This is a subclass of QtWidgets.QTreeView. It is almost identical but implements selection processing with sorting.
 	The correct way of doing this in QT4.2 is to use a QSortFilterProxy object, but that won't work properly in this case."""
 
 	def __init__(self, parent = None) :
-		QtGui.QTreeView.__init__(self, parent)
-		self.header().setClickable(True)
+		QtWidgets.QTreeView.__init__(self, parent)
+		self.header().setSectionsClickable(True)
 		self.header().sectionClicked[int].connect(self.colclick)
 		self.scol = -1
 		self.sdir = 1
@@ -3001,23 +3000,23 @@ class SortSelTree(QtGui.QTreeView) :
 
 		# then do the actual sort
 
-		QtGui.QTreeView.sortByColumn(self, col, ascend)
+		QtWidgets.QTreeView.sortByColumn(self, col, ascend)
 
 		# then set a new selection list
 
 		sel = self.model().findSelected()
 		if len(sel) == 0 :return
 
-		qis = QtGui.QItemSelection()
+		qis = QtCore.QItemSelection()
 		for i in sel : qis.select(i, i)
-		self.selectionModel().select(qis, QtGui.QItemSelectionModel.ClearAndSelect|QtGui.QItemSelectionModel.Rows)
+		self.selectionModel().select(qis, QtCore.QItemSelectionModel.ClearAndSelect|QtCore.QItemSelectionModel.Rows)
 
-#		for i in sel : self.selectionModel().select(i, QtGui.QItemSelectionModel.ClearAndSelect)
+#		for i in sel : self.selectionModel().select(i, QtCore.QItemSelectionModel.ClearAndSelect)
 #		self.update()
 
 #---------------------------------------------------------------------------
 
-class EMBrowserWidget(QtGui.QWidget) :
+class EMBrowserWidget(QtWidgets.QWidget) :
 	"""This widget is a file browser for EMAN2. In addition to being a regular file browser, it supports:
 	- getting information about recognized data types
 	- embedding BDB: databases into the observed filesystem
@@ -3041,11 +3040,11 @@ class EMBrowserWidget(QtGui.QWidget) :
 		from . import emscene3d
 		from . import emdataitem3d
 
-		QtGui.QWidget.__init__(self, parent)
+		QtWidgets.QWidget.__init__(self, parent)
 
 		self.setWindowTitle("e2display.py Browser") # Jesus
 
-		# label = QtGui.QLabel(self);
+		# label = QtWidgets.QLabel(self);
       # label.setText("Window Title");
       # self.setWindowTitle("Window Title");
 
@@ -3053,35 +3052,35 @@ class EMBrowserWidget(QtGui.QWidget) :
 		self.multiselect = multiselect
 
 		self.resize(780, 580)
-		self.gbl = QtGui.QGridLayout(self)
+		self.gbl = QtWidgets.QGridLayout(self)
 
 		# Top Toolbar area
 
-		self.wtoolhbl = QtGui.QHBoxLayout()
+		self.wtoolhbl = QtWidgets.QHBoxLayout()
 		self.wtoolhbl.setContentsMargins(0, 0, 0, 0)
 
-		self.wbutback = QtGui.QPushButton(unichr(0x2190))
+		self.wbutback = QtWidgets.QPushButton(unichr(0x2190))
 		self.wbutback.setMaximumWidth(36)
 		self.wbutback.setEnabled(False)
 		self.wtoolhbl.addWidget(self.wbutback, 0)
 
-		self.wbutfwd = QtGui.QPushButton(unichr(0x2192))
+		self.wbutfwd = QtWidgets.QPushButton(unichr(0x2192))
 		self.wbutfwd.setMaximumWidth(36)
 		self.wbutfwd.setEnabled(False)
 		self.wtoolhbl.addWidget(self.wbutfwd, 0)
 
 		# Text line for showing (or editing) full path
 
-		self.lpath = QtGui.QLabel("  Path:")
+		self.lpath = QtWidgets.QLabel("  Path:")
 		self.wtoolhbl.addWidget(self.lpath)
 
-		self.wpath = QtGui.QLineEdit()
+		self.wpath = QtWidgets.QLineEdit()
 		self.wtoolhbl.addWidget(self.wpath, 5)
 
-		# self.wspacet1 = QtGui.QSpacerItem(100, 10, QtGui.QSizePolicy.MinimumExpanding)
+		# self.wspacet1 = QtWidgets.QSpacerItem(100, 10, QtWidgets.QSizePolicy.MinimumExpanding)
 		# self.wtoolhbl.addSpacerItem(self.wspacet1)
 
-		self.wbutinfo = QtGui.QPushButton("Info")
+		self.wbutinfo = QtWidgets.QPushButton("Info")
 		self.wbutinfo.setCheckable(True)
 		self.wtoolhbl.addWidget(self.wbutinfo, 1)
 
@@ -3089,25 +3088,25 @@ class EMBrowserWidget(QtGui.QWidget) :
 
 		# 2nd Top Toolbar area
 
-		self.wtoolhbl2 = QtGui.QHBoxLayout()
+		self.wtoolhbl2 = QtWidgets.QHBoxLayout()
 		self.wtoolhbl2.setContentsMargins(0, 0, 0, 0)
 
-		self.wbutup = QtGui.QPushButton(unichr(0x2191))
+		self.wbutup = QtWidgets.QPushButton(unichr(0x2191))
 		self.wbutup.setMaximumWidth(36)
 		self.wtoolhbl2.addWidget(self.wbutup, 0)
 
-		self.wbutrefresh = QtGui.QPushButton(unichr(0x21ba))
+		self.wbutrefresh = QtWidgets.QPushButton(unichr(0x21ba))
 		self.wbutrefresh.setMaximumWidth(36)
 		self.wtoolhbl2.addWidget(self.wbutrefresh, 0)
 
 		# Text line for showing (or editing) full path
 
-		self.lfilter = QtGui.QLabel("Filter:")
+		self.lfilter = QtWidgets.QLabel("Filter:")
 		self.wtoolhbl2.addWidget(self.lfilter)
 
-		self.wfilter = QtGui.QComboBox()
+		self.wfilter = QtWidgets.QComboBox()
 		self.wfilter.setEditable(True)
-		self.wfilter.setInsertPolicy(QtGui.QComboBox.InsertAtBottom)
+		self.wfilter.setInsertPolicy(QtWidgets.QComboBox.InsertAtBottom)
 		self.wfilter.addItem("")
 		self.wfilter.addItem("(.(?!_ctf))*$")
 		self.wfilter.addItem(".*\.img")
@@ -3121,10 +3120,10 @@ class EMBrowserWidget(QtGui.QWidget) :
 		self.wtoolhbl2.addWidget(self.wfilter, 5)
 		if dirregex!="":
 			self.wfilter.setEditText(dirregex)
-		# self.wspacet1 = QtGui.QSpacerItem(100, 10, QtGui.QSizePolicy.MinimumExpanding)
+		# self.wspacet1 = QtWidgets.QSpacerItem(100, 10, QtWidgets.QSizePolicy.MinimumExpanding)
 		# self.wtoolhbl.addSpacerItem(self.wspacet1)
 
-		self.selectall = QtGui.QPushButton("Sel All")
+		self.selectall = QtWidgets.QPushButton("Sel All")
 		self.wtoolhbl2.addWidget(self.selectall, 1)
 		self.selectall.setEnabled(withmodal)
 
@@ -3133,11 +3132,11 @@ class EMBrowserWidget(QtGui.QWidget) :
 		### Central verticalregion has bookmarks and tree
 		# Bookmarks implemented with a toolbar in a frame
 
-		self.wbookmarkfr = QtGui.QFrame()
-		self.wbookmarkfr.setFrameStyle(QtGui.QFrame.StyledPanel|QtGui.QFrame.Raised)
-		self.wbmfrbl = QtGui.QVBoxLayout(self.wbookmarkfr)
+		self.wbookmarkfr = QtWidgets.QFrame()
+		self.wbookmarkfr.setFrameStyle(QtWidgets.QFrame.StyledPanel|QtWidgets.QFrame.Raised)
+		self.wbmfrbl = QtWidgets.QVBoxLayout(self.wbookmarkfr)
 
-		self.wbookmarks = QtGui.QToolBar()
+		self.wbookmarks = QtWidgets.QToolBar()
 		# self.wbookmarks.setAutoFillBackground(True)
 		# self.wbookmarks.setBackgroundRole(QtGui.QPalette.Dark)
 		self.wbookmarks.setOrientation(2)
@@ -3166,7 +3165,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 
 		# Lower region has buttons for actions
 
-		self.hbl2 = QtGui.QGridLayout()
+		self.hbl2 = QtWidgets.QGridLayout()
 
 		self.wbutmisc = []
 
@@ -3179,29 +3178,29 @@ class EMBrowserWidget(QtGui.QWidget) :
 			self.hbl2.setColumnStretch(i, 2)
 	
 			for j in range(2) :
-				self.wbutmisc.append(QtGui.QPushButton(""))
+				self.wbutmisc.append(QtWidgets.QPushButton(""))
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
 				self.wbutmisc[-1].hide()
 #				self.wbutmisc[-1].setEnabled(False)
 				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
-		self.wbutxx = QtGui.QLabel("")
+		self.wbutxx = QtWidgets.QLabel("")
 		self.wbutxx.setMaximumHeight(12)
 		self.hbl2.addWidget(self.wbutxx, 0, 6)
-		self.wbutyy = QtGui.QLabel("")
+		self.wbutyy = QtWidgets.QLabel("")
 		self.wbutyy.setMaximumHeight(12)
 		self.hbl2.addWidget(self.wbutyy, 1, 6)
 
 		# buttons for selector use
 
 		if withmodal :
-#			self.wspace1 = QtGui.QSpacerItem(100, 10, QtGui.QSizePolicy.MinimumExpanding)
+#			self.wspace1 = QtWidgets.QSpacerItem(100, 10, QtWidgets.QSizePolicy.MinimumExpanding)
 #			self.hbl2.addSpacerItem(self.wspace1)
 
-			self.wbutcancel = QtGui.QPushButton("Cancel")
+			self.wbutcancel = QtWidgets.QPushButton("Cancel")
 			self.hbl2.addWidget(self.wbutcancel, 1, 7)
 
-			self.wbutok = QtGui.QPushButton("OK")
+			self.wbutok = QtWidgets.QPushButton("OK")
 			self.hbl2.addWidget(self.wbutok, 1, 8)
 
 			self.hbl2.setColumnStretch(6, 1)
@@ -3224,7 +3223,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 		self.wtree.doubleClicked[QtCore.QModelIndex].connect(self.itemDoubleClick)
 		self.wtree.expanded[QtCore.QModelIndex].connect(self.itemExpand)
 		self.wpath.returnPressed.connect(self.editPath)
-		self.wbookmarks.actionTriggered[QAction].connect(self.bookmarkPress)
+		self.wbookmarks.actionTriggered[QtWidgets.QAction].connect(self.bookmarkPress)
 		self.wfilter.currentIndexChanged[int].connect(self.editFilter)
 
 		self.setsmode = setsmode	# The sets mode is used when selecting bad particles
@@ -3268,12 +3267,12 @@ class EMBrowserWidget(QtGui.QWidget) :
 	def busy(self) :
 		"""display a busy cursor"""
 
-		QtGui.qApp.setOverrideCursor(Qt.BusyCursor)
+		QtWidgets.qApp.setOverrideCursor(Qt.BusyCursor)
 
 	def notbusy(self) :
 		"""normal arrow cursor"""
 
-		QtGui.qApp.setOverrideCursor(Qt.ArrowCursor)
+		QtWidgets.qApp.setOverrideCursor(Qt.ArrowCursor)
 
 	def updateDetails(self) :
 		"""This is spawned as a thread to gradually fill in file details in the background"""
@@ -3333,7 +3332,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 # 		"""Make sure we update selection when keyboard is pressed"""
 #
 # 		print "key", event.__dict__
-# 		QtGui.QTreeView.keyPressEvent(self.wtree, event)
+# 		QtWidgets.QTreeView.keyPressEvent(self.wtree, event)
 # 		self.itemSel(None)
 
 	def itemSel(self, qmi) :
@@ -3620,14 +3619,14 @@ class EMBrowserWidget(QtGui.QWidget) :
 			"3. *.txt *.tiff  - find all text files or tiff files\n" + \
 			"4. *             - find all files"
 
-			QtGui.QMessageBox.warning(None, "Info", hlp)
+			QtWidgets.QMessageBox.warning(None, "Info", hlp)
 		else :
 			try :
 				flt = re.compile(filt)
 				filt = flt
 			except :
 				filt = filt
-#				QtGui.QMessageBox.warning(self, "Error", "Bad filter expression")
+#				QtWidgets.QMessageBox.warning(self, "Error", "Bad filter expression")
 
 		# if path in self.models :
 			# self.curmodel = self.models[path]
@@ -3641,7 +3640,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 			except :
 				self.curmodel = inimodel(path)
 				filt = None
-#				QtGui.QMessageBox.warning(None, "Error", "Filtering not allowed.")
+#				QtWidgets.QMessageBox.warning(None, "Error", "Filtering not allowed.")
 				print("Filtering is not implemented in this instance of the file browser.")
 		else :
 			self.curmodel = inimodel(path)
@@ -3676,7 +3675,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 
 #		print "Got action ", action.text(), action.data().toString()
 
-		self.setPath(action.data().toString())
+		self.setPath(action.data())
 #		self.wtree.setSelectionModel(myQItemSelection(self.curmodel))
 
 	def closeEvent(self, event) :

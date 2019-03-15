@@ -169,31 +169,31 @@ once complete, bispectra can be recomputed based on the masked particles, or the
 def maskparmgui(classes):
 	try:
 		from eman2_gui.emapplication import EMApp
-		from PyQt4 import QtCore, QtGui, QtOpenGL
+		from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
 		from OpenGL import GL,GLUT
 		from eman2_gui.valslider import ValSlider,CheckBox
 		from eman2_gui.emimagemx import EMImageMXWidget
 		
 	except:
-		print("Error: PyQt4 must be usable to use the --gui option")
+		print("Error: PyQt5 must be usable to use the --gui option")
 		sys.exit(1)
 
 
-	class GUImask(QtGui.QWidget):
+	class GUImask(QtWidgets.QWidget):
 		def __init__(self,app,classes):
 			"""Effectively a modal dialog for selecting masking parameters interactively
 			"""
 			self.app=app
-			QtGui.QWidget.__init__(self,None)
+			QtWidgets.QWidget.__init__(self,None)
 			nx=classes[0]["nx"]
 			
 			self.classes=classes
 			self.classview=EMImageMXWidget(self,classes)
 			
-			self.vbl = QtGui.QVBoxLayout(self)
+			self.vbl = QtWidgets.QVBoxLayout(self)
 			self.vbl.addWidget(self.classview)
 			
-			self.hbl = QtGui.QHBoxLayout()
+			self.hbl = QtWidgets.QHBoxLayout()
 			
 			self.cmode=CheckBox(self,"orig",value=1)
 			self.hbl.addWidget(self.cmode)
@@ -212,7 +212,7 @@ def maskparmgui(classes):
 			self.ssigma=ValSlider(self,(0,2),"Sigma:",0.333,90)
 			self.hbl.addWidget(self.ssigma)
 			
-			self.bok=QtGui.QPushButton("OK")
+			self.bok=QtWidgets.QPushButton("OK")
 			self.hbl.addWidget(self.bok)
 
 			self.vbl.addLayout(self.hbl)

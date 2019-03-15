@@ -38,7 +38,7 @@ from builtins import range
 from builtins import object
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_close_dict, db_remove_dict
-from PyQt4 import QtCore
+from PyQt5 import QtCore
 from eman2_gui.emapplication import EMApp
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.emimage2d import EMImage2DWidget

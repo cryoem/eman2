@@ -6,8 +6,8 @@ from past.utils import old_div
 from EMAN2 import *
 import os
 import numpy as np
-from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import Qt
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import Qt
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emplot2d import EMPlot2DWidget
 from eman2_gui.emimagemx import EMImageMXWidget
@@ -40,21 +40,21 @@ def main():
 	E2end(logid)
 	
 	
-class TomoEvalGUI(QtGui.QWidget):
+class TomoEvalGUI(QtWidgets.QWidget):
 
 	
 	def __init__(self, options):
 		
 		self.path="tomograms/"
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 
 
 		self.win_size=[1000,680]
 		self.setMinimumSize(self.win_size[0], self.win_size[1])
 
 		# This object is itself a widget we need to set up
-		self.gbl = QtGui.QGridLayout(self)
-		self.gbl.setMargin(8)
+		self.gbl = QtWidgets.QGridLayout(self)
+		self.gbl.setContentsMargins(8, 8, 8, 8)
 		self.gbl.setSpacing(6)
 		self.gbl.setColumnStretch(0,4)
 		self.gbl.setColumnStretch(1,1)
@@ -62,7 +62,7 @@ class TomoEvalGUI(QtGui.QWidget):
 		self.gbl.setRowStretch(0,1)
 
 		# Micrograph list
-		self.imglst=QtGui.QTableWidget(1, 3, self)
+		self.imglst=QtWidgets.QTableWidget(1, 3, self)
 		self.imglst.verticalHeader().hide()
 		
 		self.gbl.addWidget(self.imglst,0,0,11,1)
@@ -81,32 +81,32 @@ class TomoEvalGUI(QtGui.QWidget):
 		self.wg_thumbnail.setMinimumHeight(330)
 		self.gbl.addWidget(self.wg_thumbnail, 0,1,3,2)
 		
-		self.bt_show2d=QtGui.QPushButton("Show2D")
+		self.bt_show2d=QtWidgets.QPushButton("Show2D")
 		self.bt_show2d.setToolTip("Show 2D images")
 		self.gbl.addWidget(self.bt_show2d, 4,1,1,2)
 		
-		self.bt_runboxer=QtGui.QPushButton("Boxer")
+		self.bt_runboxer=QtWidgets.QPushButton("Boxer")
 		self.bt_runboxer.setToolTip("Run spt_boxer")
 		self.gbl.addWidget(self.bt_runboxer, 5,1)
 		
-		self.bt_refresh=QtGui.QPushButton("Refresh")
+		self.bt_refresh=QtWidgets.QPushButton("Refresh")
 		self.bt_refresh.setToolTip("Refresh")
 		self.gbl.addWidget(self.bt_refresh, 5,2)
 		
-		self.bt_showtlts=QtGui.QPushButton("ShowTilts")
+		self.bt_showtlts=QtWidgets.QPushButton("ShowTilts")
 		self.bt_showtlts.setToolTip("Show raw tilt series")
 		self.gbl.addWidget(self.bt_showtlts, 6,1)
 		
-		self.bt_plottpm=QtGui.QPushButton("TiltParams")
+		self.bt_plottpm=QtWidgets.QPushButton("TiltParams")
 		self.bt_plottpm.setToolTip("Plot tilt parameters")
 		self.gbl.addWidget(self.bt_plottpm, 6,2)
 		
-		self.bt_plotloss=QtGui.QPushButton("PlotLoss")
+		self.bt_plotloss=QtWidgets.QPushButton("PlotLoss")
 		self.bt_plotloss.setToolTip("Plot alignment loss")
 		self.gbl.addWidget(self.bt_plotloss, 7,1)
 		
 		
-		self.bt_plotctf=QtGui.QPushButton("PlotCtf")
+		self.bt_plotctf=QtWidgets.QPushButton("PlotCtf")
 		self.bt_plotctf.setToolTip("Plot CTF estimation")
 		self.gbl.addWidget(self.bt_plotctf, 7,2)
 		
@@ -132,12 +132,12 @@ class TomoEvalGUI(QtGui.QWidget):
 		self.gbl.addWidget(self.setspanel, 8,1,2,2)
 		
 		
-		self.wg_notes=QtGui.QLineEdit(self)
+		self.wg_notes=QtWidgets.QLineEdit(self)
 		self.wg_notes.setText("Comments:")
 		#self.wg_notes.setStyleSheet("color: rgb(150, 150, 150);")
 		self.gbl.addWidget(self.wg_notes, 10,1,1,2)
 		
-		#self.setspanel.itemClicked[QtGui.QListWidgetItem].connect(self.clickset)
+		#self.setspanel.itemClicked[QtWidgets.QListWidgetItem].connect(self.clickset)
 		self.wg_notes.textChanged.connect(self.noteupdate)
 		
 		self.wg_plot2d=EMPlot2DWidget()
@@ -243,10 +243,10 @@ class TomoEvalGUI(QtGui.QWidget):
 		self.imglst.setHorizontalHeaderLabels(["ID", "file name", "#box", "loss", "defocus"])
 		for i,info in enumerate(self.imginfo):
 			#### use Qt.EditRole so we can sort them as numbers instead of strings
-			it=QtGui.QTableWidgetItem()
+			it=QtWidgets.QTableWidgetItem()
 			it.setData(Qt.EditRole, int(info["id"]))
 			self.imglst.setItem(i,0,it)
-			self.imglst.setItem(i,1,QtGui.QTableWidgetItem(str(info["basename"])))
+			self.imglst.setItem(i,1,QtWidgets.QTableWidgetItem(str(info["basename"])))
 			nbox=0
 			for kname in list(info["boxcls"].keys()):
 				if self.ptclcls[kname][0]==1:
@@ -261,7 +261,7 @@ class TomoEvalGUI(QtGui.QWidget):
 				loss=np.round(np.mean(info["loss"]), 2)
 				
 			
-			it=QtGui.QTableWidgetItem()
+			it=QtWidgets.QTableWidgetItem()
 			it.setData(Qt.EditRole, float(loss))
 			self.imglst.setItem(i,3, it)
 			
@@ -269,7 +269,7 @@ class TomoEvalGUI(QtGui.QWidget):
 				df=-1
 			else: 
 				df=np.round(np.mean(info["defocus"]), 1)
-			it=QtGui.QTableWidgetItem()
+			it=QtWidgets.QTableWidgetItem()
 			it.setData(Qt.EditRole, float(df))
 			self.imglst.setItem(i,4, it)
 			
@@ -336,7 +336,7 @@ class TomoEvalGUI(QtGui.QWidget):
 	
 	def runboxer(self):
 		idx, info=self.get_id_info()
-		modifiers = QtGui.QApplication.keyboardModifiers()
+		modifiers = QtWidgets.QApplication.keyboardModifiers()
 		### do not use launch_childprocess so the gui wont be frozen when boxer is opened
 		if modifiers == QtCore.Qt.ShiftModifier:
 			subprocess.Popen("e2tomo_drawcurve.py {} --ppid {}".format(info["filename"], os.getpid()),shell=True)
@@ -399,7 +399,7 @@ class TomoEvalGUI(QtGui.QWidget):
 		self.wg_thumbnail.close()
 		self.wg_2dimage.close()	
 		
-class TomoListWidget(QtGui.QListWidget):
+class TomoListWidget(QtWidgets.QListWidget):
 	def __init__(self, parent=None):
 		super(TomoListWidget, self).__init__(parent)
 		self.parent=parent
@@ -427,7 +427,7 @@ class TomoListWidget(QtGui.QListWidget):
 			self.itemlst.append([k, ni])
 			#print(txt)
 			txt=self.get_text(k, ni)
-			item=QtGui.QListWidgetItem(txt)
+			item=QtWidgets.QListWidgetItem(txt)
 			item.setFlags(self.itemflags)
 			item.setCheckState(Qt.Checked)
 			try: item.setFont(QtGui.QFont("Monospace"))
@@ -443,10 +443,10 @@ class TomoListWidget(QtGui.QListWidget):
 		for i,key in enumerate(self.itemlst):
 			if key[0] in lst:
 				self.item(i).setText(self.get_text(key[0], key[1], dic[key[0]]))
-				self.item(i).setTextColor(QtGui.QColor("blue"))
+				self.item(i).setForeground(QtGui.QColor("blue"))
 			else:
 				self.item(i).setText(self.get_text(key[0], key[1]))
-				self.item(i).setTextColor(QtGui.QColor("black"))
+				self.item(i).setForeground(QtGui.QColor("black"))
 
 		
 	

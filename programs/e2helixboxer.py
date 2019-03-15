@@ -42,7 +42,7 @@ import sys
 import os
 
 try:
-	from PyQt4 import QtGui, QtCore
+	from PyQt5 import QtGui, QtWidgets, QtCore
 	from eman2_gui.emapplication import EMApp, get_application
 	from eman2_gui.emimage2d import EMImage2DWidget
 	from eman2_gui.emselector import EMSelectorDialog
@@ -665,12 +665,12 @@ def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_overlap = No
 
 
 if ENABLE_GUI:
-	class EMWriteHelixFilesDialog(QtGui.QDialog):
+	class EMWriteHelixFilesDialog(QtWidgets.QDialog):
 		"""
 		options for writing helices and particles to files
 		"""
 		def __init__(self, qparent=None,saveext="hdf"):
-			QtGui.QWidget.__init__(self, qparent)
+			QtWidgets.QWidget.__init__(self, qparent)
 			self.setWindowTitle(self.tr("Write Helix and Particle Files"))
 			self.__create_ui()
 	#        self.helices_file_extension_dict = {"MRC":"mrc", "Spider":"spi", "Imagic": "img", "HDF5": "hdf"}
@@ -701,139 +701,139 @@ if ENABLE_GUI:
 			self.button_box.rejected.connect(self.cancel)
 
 		def __create_ui(self):
-			self.helices_groupbox = QtGui.QGroupBox(self.tr("Write &Helices:"))
+			self.helices_groupbox = QtWidgets.QGroupBox(self.tr("Write &Helices:"))
 			self.helices_groupbox.setCheckable(True)
 
-			self.helices_coords_groupbox = QtGui.QGroupBox(self.tr("Helix Coordinates (EMAN1 format)"))
+			self.helices_coords_groupbox = QtWidgets.QGroupBox(self.tr("Helix Coordinates (EMAN1 format)"))
 			self.helices_coords_groupbox.setCheckable(True)
-			helices_coords_label = QtGui.QLabel(self.tr("Path:"))
-			self.helices_coords_line_edit = QtGui.QLineEdit()
+			helices_coords_label = QtWidgets.QLabel(self.tr("Path:"))
+			self.helices_coords_line_edit = QtWidgets.QLineEdit()
 			self.helices_coords_line_edit.setMinimumWidth(300)
-			self.helices_coords_browse_button = QtGui.QPushButton(self.tr("Browse"))
+			self.helices_coords_browse_button = QtWidgets.QPushButton(self.tr("Browse"))
 
-			self.helices_images_groupbox = QtGui.QGroupBox(self.tr("Helix Images"))
+			self.helices_images_groupbox = QtWidgets.QGroupBox(self.tr("Helix Images"))
 			self.helices_images_groupbox.setCheckable(True)
-			helices_images_label = QtGui.QLabel(self.tr("Path:"))
-			self.helices_images_line_edit = QtGui.QLineEdit()
-			self.helices_images_browse_button = QtGui.QPushButton(self.tr("Browse"))
+			helices_images_label = QtWidgets.QLabel(self.tr("Path:"))
+			self.helices_images_line_edit = QtWidgets.QLineEdit()
+			self.helices_images_browse_button = QtWidgets.QPushButton(self.tr("Browse"))
 
-			self.ptcls_groupbox = QtGui.QGroupBox(self.tr("Write &Particles:"))
+			self.ptcls_groupbox = QtWidgets.QGroupBox(self.tr("Write &Particles:"))
 			self.ptcls_groupbox.setCheckable(True)
 
-			ptcls_overlap_label = QtGui.QLabel(self.tr("&Overlap:"))
-			self.ptcls_overlap_spinbox = QtGui.QSpinBox()
+			ptcls_overlap_label = QtWidgets.QLabel(self.tr("&Overlap:"))
+			self.ptcls_overlap_spinbox = QtWidgets.QSpinBox()
 			self.ptcls_overlap_spinbox.setMaximum(10000)
 			ptcls_overlap_label.setBuddy(self.ptcls_overlap_spinbox)
-			ptcls_length_label = QtGui.QLabel(self.tr("&Length:"))
-			self.ptcls_length_spinbox = QtGui.QSpinBox()
+			ptcls_length_label = QtWidgets.QLabel(self.tr("&Length:"))
+			self.ptcls_length_spinbox = QtWidgets.QSpinBox()
 			self.ptcls_length_spinbox.setMaximum(10000)
 			ptcls_length_label.setBuddy(self.ptcls_length_spinbox)
-			ptcls_width_label = QtGui.QLabel(self.tr("W&idth:"))
-			self.ptcls_width_spinbox = QtGui.QSpinBox()
+			ptcls_width_label = QtWidgets.QLabel(self.tr("W&idth:"))
+			self.ptcls_width_spinbox = QtWidgets.QSpinBox()
 			self.ptcls_width_spinbox.setMaximum(10000)
 			ptcls_width_label.setBuddy(self.ptcls_width_spinbox)
 
-			self.ptcls_coords_groupbox = QtGui.QGroupBox(self.tr("Particle Coordinates"))
+			self.ptcls_coords_groupbox = QtWidgets.QGroupBox(self.tr("Particle Coordinates"))
 			self.ptcls_coords_groupbox.setCheckable(True)
-			ptcls_coords_label = QtGui.QLabel(self.tr("Path:"))
-			self.ptcls_coords_line_edit = QtGui.QLineEdit()
-			self.ptcls_coords_browse_button = QtGui.QPushButton(self.tr("Browse"))
+			ptcls_coords_label = QtWidgets.QLabel(self.tr("Path:"))
+			self.ptcls_coords_line_edit = QtWidgets.QLineEdit()
+			self.ptcls_coords_browse_button = QtWidgets.QPushButton(self.tr("Browse"))
 
-			self.ptcls_images_groupbox = QtGui.QGroupBox(self.tr("Particle Images"))
+			self.ptcls_images_groupbox = QtWidgets.QGroupBox(self.tr("Particle Images"))
 			self.ptcls_images_groupbox.setCheckable(True)
-			self.ptcls_edgenorm_checkbox = QtGui.QCheckBox(self.tr("&Normalize Edge-Mean"))
+			self.ptcls_edgenorm_checkbox = QtWidgets.QCheckBox(self.tr("&Normalize Edge-Mean"))
 			self.ptcls_edgenorm_checkbox.setChecked(False)
 			self.ptcls_edgenorm_checkbox.setToolTip("Uses normalize.edgemean processor on each particle: pixel-value -> (pixel-value - edge-mean) / standard deviation")
 
-			self.ptcls_rotation_groupbox = QtGui.QGroupBox(self.tr("Rotation"))
-			self.ptcls_bilinear_rotation_radiobutton = QtGui.QRadioButton(self.tr("Bilinear Rotation"))
+			self.ptcls_rotation_groupbox = QtWidgets.QGroupBox(self.tr("Rotation"))
+			self.ptcls_bilinear_rotation_radiobutton = QtWidgets.QRadioButton(self.tr("Bilinear Rotation"))
 			self.ptcls_bilinear_rotation_radiobutton.setToolTip("Rectangular particles. Rotation angle is the one that makes associated helix vertical. Bilinear rotation algorithm.")
 			self.ptcls_bilinear_rotation_radiobutton.setChecked(True)
-			self.ptcls_gridding_rotation_radiobutton = QtGui.QRadioButton(self.tr("Gridding Rotation"))
+			self.ptcls_gridding_rotation_radiobutton = QtWidgets.QRadioButton(self.tr("Gridding Rotation"))
 			self.ptcls_gridding_rotation_radiobutton.setToolTip("Square particles with sides = max(Length, Width). Rotation angle is the one that makes associated helix vertical. Gridding rotation algorithm.")
-			self.ptcls_no_rotation_radiobutton = QtGui.QRadioButton(self.tr("No Rotation"))
+			self.ptcls_no_rotation_radiobutton = QtWidgets.QRadioButton(self.tr("No Rotation"))
 			self.ptcls_no_rotation_radiobutton.setToolTip("Particles are not rotated from the micrograph. Square particles with sides = max(length, width)")
 
-			self.ptcls_stack_groupbox = QtGui.QGroupBox(self.tr("Image Stacks"))
-			self.ptcls_single_stack_radiobutton = QtGui.QRadioButton(self.tr("Single image stack"))
+			self.ptcls_stack_groupbox = QtWidgets.QGroupBox(self.tr("Image Stacks"))
+			self.ptcls_single_stack_radiobutton = QtWidgets.QRadioButton(self.tr("Single image stack"))
 			self.ptcls_single_stack_radiobutton.setChecked(True)
 			self.ptcls_single_stack_radiobutton.setToolTip("Saves a single image stack file for all the helices. Fails for incompatible file formats.")
-			self.ptcls_multiple_stack_radiobutton = QtGui.QRadioButton(self.tr("Image stack per helix"))
+			self.ptcls_multiple_stack_radiobutton = QtWidgets.QRadioButton(self.tr("Image stack per helix"))
 			self.ptcls_multiple_stack_radiobutton.setToolTip("Saves an image stack file for each helix. Fails for incompatible file formats.")
-			self.ptcls_no_stack_radiobutton = QtGui.QRadioButton(self.tr("File for each particle"))
+			self.ptcls_no_stack_radiobutton = QtWidgets.QRadioButton(self.tr("File for each particle"))
 
-			ptcls_images_label = QtGui.QLabel(self.tr("Path:"))
-			self.ptcls_images_line_edit = QtGui.QLineEdit()
-			self.ptcls_images_browse_button = QtGui.QPushButton(self.tr("Browse"))
+			ptcls_images_label = QtWidgets.QLabel(self.tr("Path:"))
+			self.ptcls_images_line_edit = QtWidgets.QLineEdit()
+			self.ptcls_images_browse_button = QtWidgets.QPushButton(self.tr("Browse"))
 
-			self.button_box = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Save | QtGui.QDialogButtonBox.Cancel)
+			self.button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Save | QtWidgets.QDialogButtonBox.Cancel)
 
 
 
-			helices_coords_layout = QtGui.QHBoxLayout()
+			helices_coords_layout = QtWidgets.QHBoxLayout()
 			helices_coords_layout.addWidget(helices_coords_label)
 			helices_coords_layout.addWidget(self.helices_coords_line_edit)
 			helices_coords_layout.addWidget(self.helices_coords_browse_button)
 			self.helices_coords_groupbox.setLayout(helices_coords_layout)
 
-			helices_images_layout = QtGui.QHBoxLayout()
+			helices_images_layout = QtWidgets.QHBoxLayout()
 			helices_images_layout.addWidget(helices_images_label)
 			helices_images_layout.addWidget(self.helices_images_line_edit)
 			helices_images_layout.addWidget(self.helices_images_browse_button)
 			self.helices_images_groupbox.setLayout(helices_images_layout)
 
-			helices_layout = QtGui.QVBoxLayout()
+			helices_layout = QtWidgets.QVBoxLayout()
 			helices_layout.addWidget(self.helices_coords_groupbox)
 			helices_layout.addWidget(self.helices_images_groupbox)
 
 			self.helices_groupbox.setLayout(helices_layout)
 
-			ptcls_overlap_layout = QtGui.QHBoxLayout()
+			ptcls_overlap_layout = QtWidgets.QHBoxLayout()
 			ptcls_overlap_layout.addWidget(ptcls_overlap_label)
 			ptcls_overlap_layout.addWidget(self.ptcls_overlap_spinbox)
 
-			ptcls_length_layout = QtGui.QHBoxLayout()
+			ptcls_length_layout = QtWidgets.QHBoxLayout()
 			ptcls_length_layout.addWidget(ptcls_length_label)
 			ptcls_length_layout.addWidget(self.ptcls_length_spinbox)
 
-			ptcls_width_layout = QtGui.QHBoxLayout()
+			ptcls_width_layout = QtWidgets.QHBoxLayout()
 			ptcls_width_layout.addWidget(ptcls_width_label)
 			ptcls_width_layout.addWidget(self.ptcls_width_spinbox)
 
-			ptcls_coords_layout = QtGui.QHBoxLayout()
+			ptcls_coords_layout = QtWidgets.QHBoxLayout()
 			ptcls_coords_layout.addWidget(ptcls_coords_label)
 			ptcls_coords_layout.addWidget(self.ptcls_coords_line_edit)
 			ptcls_coords_layout.addWidget(self.ptcls_coords_browse_button)
 			self.ptcls_coords_groupbox.setLayout(ptcls_coords_layout)
 
-			ptcls_images_path_layout = QtGui.QHBoxLayout()
+			ptcls_images_path_layout = QtWidgets.QHBoxLayout()
 			ptcls_images_path_layout.addWidget(ptcls_images_label)
 			ptcls_images_path_layout.addWidget(self.ptcls_images_line_edit)
 			ptcls_images_path_layout.addWidget(self.ptcls_images_browse_button)
 
-			ptcls_images_rotation_layout = QtGui.QVBoxLayout()
+			ptcls_images_rotation_layout = QtWidgets.QVBoxLayout()
 			ptcls_images_rotation_layout.addWidget(self.ptcls_bilinear_rotation_radiobutton)
 			ptcls_images_rotation_layout.addWidget(self.ptcls_gridding_rotation_radiobutton)
 			ptcls_images_rotation_layout.addWidget(self.ptcls_no_rotation_radiobutton)
 			self.ptcls_rotation_groupbox.setLayout(ptcls_images_rotation_layout)
 
-			ptcls_imagestack_layout = QtGui.QVBoxLayout()
+			ptcls_imagestack_layout = QtWidgets.QVBoxLayout()
 			ptcls_imagestack_layout.addWidget(self.ptcls_single_stack_radiobutton)
 			ptcls_imagestack_layout.addWidget(self.ptcls_multiple_stack_radiobutton)
 			ptcls_imagestack_layout.addWidget(self.ptcls_no_stack_radiobutton)
 			self.ptcls_stack_groupbox.setLayout(ptcls_imagestack_layout)
 
-			ptcls_rotation_stack_layout = QtGui.QHBoxLayout()
+			ptcls_rotation_stack_layout = QtWidgets.QHBoxLayout()
 			ptcls_rotation_stack_layout.addWidget(self.ptcls_rotation_groupbox)
 			ptcls_rotation_stack_layout.addWidget(self.ptcls_stack_groupbox)
 
-			ptcls_images_layout = QtGui.QVBoxLayout()
+			ptcls_images_layout = QtWidgets.QVBoxLayout()
 			ptcls_images_layout.addLayout(ptcls_rotation_stack_layout)
 			ptcls_images_layout.addWidget(self.ptcls_edgenorm_checkbox)
 			ptcls_images_layout.addLayout(ptcls_images_path_layout)
 			self.ptcls_images_groupbox.setLayout(ptcls_images_layout)
 
-			ptcls_opts_layout = QtGui.QVBoxLayout()
+			ptcls_opts_layout = QtWidgets.QVBoxLayout()
 			ptcls_opts_layout.addLayout(ptcls_overlap_layout)
 			ptcls_opts_layout.addLayout(ptcls_length_layout)
 			ptcls_opts_layout.addLayout(ptcls_width_layout)
@@ -841,24 +841,24 @@ if ENABLE_GUI:
 			ptcls_opts_layout.addWidget(self.ptcls_images_groupbox)
 			self.ptcls_groupbox.setLayout(ptcls_opts_layout)
 
-			self.vbl = QtGui.QVBoxLayout(self)
-			self.vbl.setMargin(0)
+			self.vbl = QtWidgets.QVBoxLayout(self)
+			self.vbl.setContentsMargins(0, 0, 0, 0)
 			self.vbl.setSpacing(6)
 			self.vbl.setObjectName("vbl")
 			self.vbl.addWidget(self.helices_groupbox)
 			self.vbl.addWidget(self.ptcls_groupbox)
 			self.vbl.addWidget(self.button_box)
 		def browse_helix_coords(self):
-			file_dlg = QtGui.QFileDialog(self,self.tr("Save Helix Coordinates"))
-			file_dlg.setAcceptMode(QtGui.QFileDialog.AcceptSave)
+			file_dlg = QtWidgets.QFileDialog(self,self.tr("Save Helix Coordinates"))
+			file_dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
 			file_dlg.selectFile( os.path.join(self.default_dir, self.micrograph_name + "_boxes.txt") )
 			if file_dlg.exec_():
 				file_path = file_dlg.selectedFiles()[0]
 				file_path = str(file_path)
 				self.helices_coords_line_edit.setText(file_path)
 		def browse_helix_images(self):
-			file_dlg = QtGui.QFileDialog(self,self.tr("Save Helix Images"))
-			file_dlg.setAcceptMode(QtGui.QFileDialog.AcceptSave)
+			file_dlg = QtWidgets.QFileDialog(self,self.tr("Save Helix Images"))
+			file_dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
 			file_dlg.selectFile(self.helices_images_line_edit.text())
 			if file_dlg.exec_():
 				file_path = file_dlg.selectedFiles()[0]
@@ -874,16 +874,16 @@ if ENABLE_GUI:
 	#                path = os.path.join( path, os.path.basename(self.helices_images_line_edit.text()) )
 	#            self.helices_images_line_edit.setText(path)
 		def browse_ptcl_coords(self):
-			file_dlg = QtGui.QFileDialog(self,self.tr("Save Helix Coordinates"))
-			file_dlg.setAcceptMode(QtGui.QFileDialog.AcceptSave)
+			file_dlg = QtWidgets.QFileDialog(self,self.tr("Save Helix Coordinates"))
+			file_dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
 			file_dlg.selectFile(self.ptcls_coords_line_edit.text())
 			if file_dlg.exec_():
 				file_path = file_dlg.selectedFiles()[0]
 				file_path = str(file_path)
 				self.ptcls_coords_line_edit.setText(file_path)
 		def browse_ptcl_images(self):
-			file_dlg = QtGui.QFileDialog(self,self.tr("Save Helix Images"))
-			file_dlg.setAcceptMode(QtGui.QFileDialog.AcceptSave)
+			file_dlg = QtWidgets.QFileDialog(self,self.tr("Save Helix Images"))
+			file_dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
 			file_dlg.selectFile(self.ptcls_images_line_edit.text())
 			if file_dlg.exec_():
 				file_path = file_dlg.selectedFiles()[0]
@@ -960,7 +960,7 @@ if ENABLE_GUI:
 			self.hide()
 
 if ENABLE_GUI:
-	class EMHelixBoxerWidget(QtGui.QWidget):
+	class EMHelixBoxerWidget(QtWidgets.QWidget):
 		"""
 		the GUI widget which contains the settings for boxing helices and writing results to files
 		"""
@@ -969,7 +969,7 @@ if ENABLE_GUI:
 			@param micrograph_filepath: the path to the image file for the micrograph
 			@param app: the application to which this widget belongs
 			"""
-			QtGui.QWidget.__init__(self)
+			QtWidgets.QWidget.__init__(self)
 
 			if box_width<1 : box_width=100
 			self.box_width=box_width
@@ -1013,13 +1013,13 @@ if ENABLE_GUI:
 
 		def __create_ui(self):
 
-			self.menu_bar = QtGui.QMenuBar(self)
-			self.file_menu = QtGui.QMenu(self.tr("&File"))
-			self.load_micrograph_action = QtGui.QAction(self.tr("&Open Micrographs"), self)
-	#        self.write_coords_action = QtGui.QAction(self.tr("Save &Coordinates"), self)
-			self.write_images_action = QtGui.QAction(self.tr("&Save"), self)
-			self.load_boxes_action = QtGui.QAction(self.tr("&Load Coordinates"), self)
-			self.quit_action = QtGui.QAction(self.tr("&Quit"), self)
+			self.menu_bar = QtWidgets.QMenuBar(self)
+			self.file_menu = QtWidgets.QMenu(self.tr("&File"))
+			self.load_micrograph_action = QtWidgets.QAction(self.tr("&Open Micrographs"), self)
+	#        self.write_coords_action = QtWidgets.QAction(self.tr("Save &Coordinates"), self)
+			self.write_images_action = QtWidgets.QAction(self.tr("&Save"), self)
+			self.load_boxes_action = QtWidgets.QAction(self.tr("&Load Coordinates"), self)
+			self.quit_action = QtWidgets.QAction(self.tr("&Quit"), self)
 			self.file_menu.addAction(self.load_micrograph_action)
 			self.file_menu.addAction(self.load_boxes_action)
 	#        self.file_menu.addAction(self.write_coords_action)
@@ -1028,34 +1028,34 @@ if ENABLE_GUI:
 			self.file_menu.addAction(self.quit_action)
 			self.menu_bar.addMenu(self.file_menu)
 
-			self.box_width_label = QtGui.QLabel(self.tr("Box &Width:"))
-			self.box_width_spinbox = QtGui.QSpinBox()
+			self.box_width_label = QtWidgets.QLabel(self.tr("Box &Width:"))
+			self.box_width_spinbox = QtWidgets.QSpinBox()
 			self.box_width_spinbox.setMaximum(10000)
 			self.box_width_label.setBuddy(self.box_width_spinbox)
 
-			self.img_quality_label = QtGui.QLabel(self.tr("Image &Quality:"))
-			self.img_quality_combobox = QtGui.QComboBox()
+			self.img_quality_label = QtWidgets.QLabel(self.tr("Image &Quality:"))
+			self.img_quality_combobox = QtWidgets.QComboBox()
 			qualities = [str(i) for i in range(5)]
 			self.img_quality_combobox.addItems(qualities)
 			self.img_quality_combobox.setCurrentIndex(2)
 			self.img_quality_label.setBuddy(self.img_quality_combobox)
 
-			self.micrograph_table = QtGui.QTableWidget(1,2)
+			self.micrograph_table = QtWidgets.QTableWidget(1,2)
 			self.micrograph_table.setHorizontalHeaderLabels(["Micrograph", "Boxed Helices"])
 
-			self.status_bar = QtGui.QStatusBar()
+			self.status_bar = QtWidgets.QStatusBar()
 			#self.status_bar.showMessage("Ready",10000)
 
-			widthLayout = QtGui.QHBoxLayout()
+			widthLayout = QtWidgets.QHBoxLayout()
 			widthLayout.addWidget(self.box_width_label)
 			widthLayout.addWidget(self.box_width_spinbox)
 
-			qualityLayout = QtGui.QHBoxLayout()
+			qualityLayout = QtWidgets.QHBoxLayout()
 			qualityLayout.addWidget(self.img_quality_label)
 			qualityLayout.addWidget(self.img_quality_combobox)
 
-			self.vbl = QtGui.QVBoxLayout(self)
-			self.vbl.setMargin(0)
+			self.vbl = QtWidgets.QVBoxLayout(self)
+			self.vbl.setContentsMargins(0, 0, 0, 0)
 			self.vbl.setSpacing(6)
 			self.vbl.setObjectName("vbl")
 			self.vbl.addWidget(self.menu_bar)
@@ -1126,19 +1126,19 @@ if ENABLE_GUI:
 			"""
 			load boxes from a file selected in a file browser dialog
 			"""
-			path = QtGui.QFileDialog.getOpenFileName(self, self.tr("Open Box Coordinates File"), "", self.tr("Boxes (*.txt *.box)"))
+			path = QtWidgets.QFileDialog.getOpenFileName(self, self.tr("Open Box Coordinates File"), "", self.tr("Boxes (*.txt *.box)"))[0]
 			path = str(path)
 			coords_list = load_helix_coords(path)
 
 			if self.main_image.shapes!=None and len(self.main_image.shapes)>0 :
-				keep_boxes_msgbox = QtGui.QMessageBox()
+				keep_boxes_msgbox = QtWidgets.QMessageBox()
 				keep_boxes_msgbox.setText(self.tr("Keep current boxes?"))
 				keep_boxes_msgbox.setInformativeText(self.tr("Do you want to keep your current boxes?"))
-				keep_boxes_msgbox.setStandardButtons(QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)
-				keep_boxes_msgbox.setDefaultButton(QtGui.QMessageBox.Yes)
+				keep_boxes_msgbox.setStandardButtons(QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Yes)
+				keep_boxes_msgbox.setDefaultButton(QtWidgets.QMessageBox.Yes)
 				keep_current_boxes = keep_boxes_msgbox.exec_()
 
-				if keep_current_boxes == QtGui.QMessageBox.No:
+				if keep_current_boxes == QtWidgets.QMessageBox.No:
 					self.main_image.shapes = EMShapeDict()
 					self.set_db_item("helixboxes", [])
 					self.helices_dict = {}
@@ -1256,9 +1256,9 @@ if ENABLE_GUI:
 					num_boxes = len(boxes)
 				else:
 					num_boxes = 0
-				micrograph_item = QtGui.QTableWidgetItem(micrograph)
+				micrograph_item = QtWidgets.QTableWidgetItem(micrograph)
 				micrograph_item.setToolTip(micrograph_filepath)
-				num_boxes_item = QtGui.QTableWidgetItem(str(num_boxes))
+				num_boxes_item = QtWidgets.QTableWidgetItem(str(num_boxes))
 				self.micrograph_table.insertRow(i)
 				self.micrograph_table.setItem(i,0, micrograph_item)
 				self.micrograph_table.setItem(i,1, num_boxes_item)
@@ -1297,8 +1297,8 @@ if ENABLE_GUI:
 	#        """
 	#        (micrograph_dir, micrograph_filename) = os.path.split(self.micrograph_filepath)
 	#        default_filename = os.path.splitext(micrograph_filename)[0] + "_boxes.txt"
-	#        file_dlg = QtGui.QFileDialog(self,self.tr("Save Helix Coordinates"), micrograph_dir)
-	#        file_dlg.setAcceptMode(QtGui.QFileDialog.AcceptSave)
+	#        file_dlg = QtWidgets.QFileDialog(self,self.tr("Save Helix Coordinates"), micrograph_dir)
+	#        file_dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
 	#        file_dlg.selectFile(default_filename)
 	#        if file_dlg.exec_():
 	#            file_path = file_dlg.selectedFiles()[0]
