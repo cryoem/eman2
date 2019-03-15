@@ -413,8 +413,8 @@ def main():
 			masterdir = "master"+timestring
 		li = len(masterdir)
 		cmd = "{} {}".format("mkdir -p", masterdir)
-		global_def.write_command(masterdir)
 		junk = cmdexecute(cmd)
+		global_def.write_command(masterdir)
 	else:
 		li = 0
 
