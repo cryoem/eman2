@@ -163,8 +163,8 @@ def print_timestamp( tag="" ):
 
 	if mpi_rank == 0:
 		if tag != "":
-			sxprint( "["+tag+"] : ", end="" )
-		sxprint( get_timestamp() )
+			sxprint( "["+tag+"] : ", end="", print_timestamp=False)
+		sxprint( get_timestamp(), print_timestamp=False)
 
 
 def write_command(output_folder=None):
@@ -176,7 +176,7 @@ def write_command(output_folder=None):
 	sxprint(command)
 
 
-def sxprint( *args, **kwargs ):
+def sxprint( print_timestamp=True, *args, **kwargs ):
 	"""
 	Generic print function that includes time stamps and caller id. Everything
 	that is printed is also logged to file <SXPRINT_LOG> (can be disabled by
@@ -201,15 +201,18 @@ def sxprint( *args, **kwargs ):
 	# prepend timestamp
 	t = get_timestamp()
 	f = sys._getframe(1).f_code.co_name
-	m = t + " " + f + " => " + "  ".join(map(str, args))
+	if print_timestamp:
+		m = t + " " + f + " => " + "  ".join(map(str, args))
+	else:
+		m = "  ".join(map(str, args))
 	
 	# print message to stdout
-	sxprint( m ) # for Python 3: sxprint( m, **kwargs )
+	print( m, **kwargs )
 	sys.stdout.flush()
 
 	# print message to SPHIRE execution log
 	with open( SXPRINT_LOG, "a+" ) as f:
-		f.write( m + "\n" )
+		f.write( m + end)
 
 	# return printed message
 	return m
