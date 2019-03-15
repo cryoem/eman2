@@ -1615,3 +1615,4 @@ for i in xrange(len(d)):
 	else:
 		print ' Group  ',i,'  skipped'
 """
+from global_def import *
