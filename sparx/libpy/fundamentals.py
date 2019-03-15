@@ -1436,7 +1436,7 @@ def bracket(f,x1,h):
 		if f3 > f2: return x1,x3
 		x1 = x2; x2 = x3
 		f1 = f2; f2 = f3
-	print("Bracket did not find a mimimum")        
+	sxprint("Bracket did not find a mimimum")        
  
 def goldsearch(f,a,b,tol=1.0e-9):
 	from math import log, ceil
@@ -1965,7 +1965,7 @@ class symclass(object):
 									phi=p1; theta=p2; psi=p3
 									fifi = True
 									break
-					if(inc_mirror == 1 and not fifi): print("  FAILED no mirror ")
+					if(inc_mirror == 1 and not fifi): sxprint("  FAILED no mirror ")
 					if( not fifi ):
 						phi = (180.0+phi)%360.0; theta = 180.0 - theta; psi = (180.0 - psi)%360.0
 						mat = rotmatrix(phi,theta,psi)
@@ -1976,7 +1976,7 @@ class symclass(object):
 								fifi = True
 								break
 
-					if( not fifi ):  print("  FAILED mirror ")
+					if( not fifi ):  sxprint("  FAILED mirror ")
 			else:
 				if( theta>90.0  and inc_mirror == 0 ):
 					phi = (180.0+phi)%360.0; theta = 180.0 - theta; psi = (180.0 - psi)%360.0
@@ -2053,7 +2053,7 @@ class symclass(object):
 						if(inc_mirror):  return p1,p2,p3
 						else:
 							if(self.is_in_subunit(p1, p2, 0)):  return p1,p2,p3
-				if(inc_mirror == 1): print("  FAILED no mirror ")
+				if(inc_mirror == 1): sxprint("  FAILED no mirror ")
 				phi = (180.0+phi)%360.0; theta = 180.0 - theta; psi = (180.0 - psi)%360.0
 				mat = rotmatrix(phi,theta,psi)
 				for l in range(self.nsym):
@@ -2061,7 +2061,7 @@ class symclass(object):
 					#print(" MIR  ",l,p1,p2,p3 )
 					if(self.is_in_subunit(p1, p2, 0)):  return p1,p2,p3
 
-				print("  FAILED mirror ")
+				sxprint("  FAILED mirror ")
 		else:
 			if( thetain>90.0 and inc_mirror == 0 ):
 				phi = (180.0+phiin)%360.0; theta = 180.0 - thetain; psi = (180.0 - psiin)%360.0
