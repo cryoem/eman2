@@ -163,8 +163,8 @@ def print_timestamp( tag="" ):
 
 	if mpi_rank == 0:
 		if tag != "":
-			print( "["+tag+"] : ", end="" )
-		print( get_timestamp() )
+			sxprint( "["+tag+"] : ", end="" )
+		sxprint( get_timestamp() )
 
 
 def write_command(output_folder=None):
@@ -204,7 +204,7 @@ def sxprint( *args, **kwargs ):
 	m = t + " " + f + " => " + "  ".join(map(str, args))
 	
 	# print message to stdout
-	print( m ) # for Python 3: print( m, **kwargs )
+	sxprint( m ) # for Python 3: sxprint( m, **kwargs )
 	sys.stdout.flush()
 
 	# print message to SPHIRE execution log

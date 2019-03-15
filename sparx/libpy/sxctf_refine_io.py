@@ -166,7 +166,7 @@ def read_volume(
     :param path_mask: If provided, the volume is masked.
     :return: Volume for density map
     """
-    print("Read volumes, masking them and prepare them for reprojections")
+    sxprint("Read volumes, masking them and prepare them for reprojections")
     mask_vol = None
     vol2 = None
     if path_mask is not None:

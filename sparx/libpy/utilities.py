@@ -867,9 +867,9 @@ def combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2):
 	tt = t2 * t1
 	"""
 	t1.printme()
-	print(" ")
+	sxprint(" ")
 	t2.printme()
-	print(" ")
+	sxprint(" ")
 	tt.printme()
 	"""
 	d = tt.get_params("2D")
@@ -1590,7 +1590,7 @@ def info(image, mask=None, Comment=""):
 	Purpose: calculate basic statistical characteristics of an image.
 	"""
 	if Comment:
-		print(" ***  ", Comment)
+		sxprint(" ***  ", Comment)
 	e = get_image(image)
 	[mean, sigma, imin, imax] = Util.infomask(e, mask, True)
 	nx = e.get_xsize()
@@ -1601,14 +1601,14 @@ def info(image, mask=None, Comment=""):
 		if e.is_shuffled():
 			s = " (shuffled)"
 		if e.is_fftodd():
-			print("Complex odd image%s: nx = %i, ny = %i, nz = %i" % (s, nx, ny, nz))
+			sxprint("Complex odd image%s: nx = %i, ny = %i, nz = %i" % (s, nx, ny, nz))
 		else:
-			print("Complex even image%s: nx = %i, ny = %i, nz = %i" % (s, nx, ny, nz))
+			sxprint("Complex even image%s: nx = %i, ny = %i, nz = %i" % (s, nx, ny, nz))
 
 	else:
-		print("Real image: nx = %i, ny = %i, nz = %i" % (nx, ny, nz))
+		sxprint("Real image: nx = %i, ny = %i, nz = %i" % (nx, ny, nz))
 
-	print("avg = %g, std dev = %g, min = %g, max = %g" % (mean, sigma, imin, imax))
+	sxprint("avg = %g, std dev = %g, min = %g, max = %g" % (mean, sigma, imin, imax))
 	return mean, sigma, imin, imax, nx, ny, nz
 
 
@@ -1867,13 +1867,13 @@ def peak_search(e, npeak=1, invert=1, print_screen=0):
 		outpeaks = []
 		if print_screen:
 			if ndim == 1:
-				print(
+				sxprint(
 					"%10s%10s%10s%10s%10s"
 					% ("Index  ", " Peak_value", "X   ", "Peak/P_max", "X-NX/2")
 				)
 				print_list_format(peaks[1:], 4)
 			elif ndim == 2:
-				print(
+				sxprint(
 					"%10s%10s%10s%10s%10s%10s%10s"
 					% (
 						"Index  ",
@@ -1887,7 +1887,7 @@ def peak_search(e, npeak=1, invert=1, print_screen=0):
 				)
 				print_list_format(peaks[1:], 6)
 			elif ndim == 3:
-				print(
+				sxprint(
 					"%10s%10s%10s%10s%10s%10s%10s%10s%10s"
 					% (
 						"Index  ",
@@ -1965,14 +1965,14 @@ def print_row(input, ix=0, iz=0):
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
-	print("(z = %d slice, x = %d row)" % (iz, ix))
+	sxprint("(z = %d slice, x = %d row)" % (iz, ix))
 	line = []
 	for iy in range(ny):
 		line.append("%12.5g  " % (image.get_value_at(ix, iy, iz)))
 		if (iy + 1) % 10 == 0:
 			line.append("\n")
 	line.append("\n")
-	print("".join(line))
+	sxprint("".join(line))
 
 
 def print_col(input, iy=0, iz=0):
@@ -1986,14 +1986,14 @@ def print_col(input, iy=0, iz=0):
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
-	print("(z = %d slice, y = %d col)" % (iz, iy))
+	sxprint("(z = %d slice, y = %d col)" % (iz, iy))
 	line = []
 	for ix in range(nx):
 		line.append("%12.5g  " % (image.get_value_at(ix, iy, iz)))
 		if (ix + 1) % 10 == 0:
 			line.append("\n")
 	line.append("\n")
-	print("".join(line))
+	sxprint("".join(line))
 
 
 def print_slice(input, iz=0):
@@ -2007,7 +2007,7 @@ def print_slice(input, iz=0):
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
-	print("(z = %d slice)" % (iz))
+	sxprint("(z = %d slice)" % (iz))
 	line = []
 	for iy in range(ny):
 		line.append("Row ")
@@ -2020,7 +2020,7 @@ def print_slice(input, iz=0):
 		line.append("\n")
 		if nx % 5 != 0:
 			line.append("\n")
-	print("".join(line))
+	sxprint("".join(line))
 
 
 def print_image(input):
@@ -2047,14 +2047,14 @@ def print_image_col(input, ix=0, iz=0):
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
-	print("(z = %d slice, x = %d row)" % (iz, ix))
+	sxprint("(z = %d slice, x = %d row)" % (iz, ix))
 	line = []
 	for iy in range(ny):
 		line.append("%12.5g  " % (image.get_value_at(ix, iy, iz)))
 		if (iy + 1) % 10 == 0:
 			line.append("\n")
 	line.append("\n")
-	print("".join(line))
+	sxprint("".join(line))
 
 
 def print_image_row(input, iy=0, iz=0):
@@ -2068,14 +2068,14 @@ def print_image_row(input, iy=0, iz=0):
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
-	print("(z = %d slice, y = %d col)" % (iz, iy))
+	sxprint("(z = %d slice, y = %d col)" % (iz, iy))
 	line = []
 	for ix in range(nx):
 		line.append("%12.5g  " % (image.get_value_at(ix, iy, iz)))
 		if (ix + 1) % 10 == 0:
 			line.append("\n")
 	line.append("\n")
-	print("".join(line))
+	sxprint("".join(line))
 
 
 def print_image_slice(input, iz=0):
@@ -2089,7 +2089,7 @@ def print_image_slice(input, iz=0):
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
-	print("(z = %d slice)" % (iz))
+	sxprint("(z = %d slice)" % (iz))
 	line = []
 	for iy in range(ny - 1, -1, -1):
 		line.append("Row ")
@@ -2102,7 +2102,7 @@ def print_image_slice(input, iz=0):
 			line.append("\n")
 			if nx % 5 != 0:
 				line.append("\n")
-	print("".join(line))
+	sxprint("".join(line))
 
 
 def print_image_slice_3d(input, num=0, direction="z"):
@@ -2120,7 +2120,7 @@ def print_image_slice_3d(input, num=0, direction="z"):
 	if direction == "x":
 		# print "xxxxx"
 		ix = num
-		print("(x = %d slice)" % (ix))
+		sxprint("(x = %d slice)" % (ix))
 		line = []
 		for iz in range(nz - 1, -1, -1):
 			line.append("Z ")
@@ -2133,11 +2133,11 @@ def print_image_slice_3d(input, num=0, direction="z"):
 				line.append("\n")
 				if ny % 5 != 0:
 					line.append("\n")
-		print("".join(line))
+		sxprint("".join(line))
 	elif direction == "y":
 		# print "yyy"
 		iy = num
-		print("(y = %d slice)" % (iy))
+		sxprint("(y = %d slice)" % (iy))
 		line = []
 		for iz in range(nz - 1, -1, -1):
 			line.append("Z ")
@@ -2150,11 +2150,11 @@ def print_image_slice_3d(input, num=0, direction="z"):
 				line.append("\n")
 				if nx % 5 != 0:
 					line.append("\n")
-		print("".join(line))
+		sxprint("".join(line))
 	else:
 		# print "zzzz"
 		iz = num
-		print("(z = %d slice)" % (iz))
+		sxprint("(z = %d slice)" % (iz))
 		line = []
 		for iy in range(ny - 1, -1, -1):
 			line.append("Row ")
@@ -2167,7 +2167,7 @@ def print_image_slice_3d(input, num=0, direction="z"):
 				line.append("\n")
 				if nx % 5 != 0:
 					line.append("\n")
-		print("".join(line))
+		sxprint("".join(line))
 
 
 def print_list_format(m, narray=0):
@@ -2216,7 +2216,7 @@ def print_list_format(m, narray=0):
 				break
 		plist.append(qlist)
 	for i in range(lnum):
-		print("%6d " % (i + 1), plist[i])
+		sxprint("%6d " % (i + 1), plist[i])
 
 
 def pad(
@@ -2917,7 +2917,7 @@ def finish_time(start_time):
 	import time
 
 	finish_time = time.time()
-	print(("Running time is"), finish_time - start_time)
+	sxprint(("Running time is"), finish_time - start_time)
 	return finish_time
 
 
@@ -3089,7 +3089,7 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 	if size_of_one_refring_assumed_common_to_all * (ref_end - ref_start) > (
 		2 ** 31 - 1
 	):
-		print("Sending refrings: size of data to broadcast is greater than 2GB")
+		sxprint("Sending refrings: size of data to broadcast is greater than 2GB")
 
 	for sender_id in range(ncpu):
 		sender_ref_start, sender_ref_end = MPI_start_end(num_ref, ncpu, sender_id)
@@ -3188,7 +3188,7 @@ def bcast_compacted_EMData_all_to_all___original(list_of_em_objects, myid, comm=
 	if size_of_one_refring_assumed_common_to_all * (ref_end - ref_start) > (
 		2 ** 31 - 1
 	):
-		print("Sending refrings: size of data to broadcast is greater than 2GB")
+		sxprint("Sending refrings: size of data to broadcast is greater than 2GB")
 
 	for sender_id in range(ncpu):
 		if sender_id == myid:
@@ -3323,7 +3323,7 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(
 	if size_of_one_refring_assumed_common_to_all * (ref_end - ref_start) > (
 		2 ** 31 - 1
 	):
-		print("Sending refrings: size of data to broadcast is greater than 2GB")
+		sxprint("Sending refrings: size of data to broadcast is greater than 2GB")
 
 	for sender_id in range(1, ncpu):
 		if sender_id == myid:
@@ -3836,7 +3836,7 @@ def bcast_number_to_all(number_to_send, source_node=0, mpi_comm=-1):
 		else:
 			return False
 	else:
-		print(" ERROR in bcast_number_to_all")
+		sxprint(" ERROR in bcast_number_to_all")
 
 
 def bcast_list_to_all(list_to_send, myid, source_node=0, mpi_comm=-1):
@@ -4091,14 +4091,14 @@ def check_attr(ima, num, params, default_value, action="Warning"):
 	attr_list = ima.get_attr_dict()
 	if (params in attr_list) == False:
 		if action == "Warning":
-			print(
+			sxprint(
 				"WARNING: In image %i, cannot find attribute '%s' in the header, set it to the default value"
 				% (num, params),
 				default_value,
 			)
 			ima.set_attr_dict({params: default_value})
 		elif action == "Error":
-			print(
+			sxprint(
 				"ERROR:   In image %i, cannot find attribute '%s' in the header, the program has to terminate"
 				% (num, params)
 			)
@@ -4122,9 +4122,9 @@ def print_begin_msg(program_name, onscreen=False):
 	s = (t - len(string)) / 2
 	spacing = " " * s
 	if onscreen:
-		print(stars)
-		print(spacing + string)
-		print(stars)
+		sxprint(stars)
+		sxprint(spacing + string)
+		sxprint(stars)
 	else:
 		print_msg(stars + "\n")
 		print_msg(spacing + string + "\n")
@@ -4145,9 +4145,9 @@ def print_end_msg(program_name, onscreen=False):
 	s = (t - len(string)) / 2
 	spacing = " " * s
 	if onscreen:
-		print(stars)
-		print(spacing + string)
-		print(stars)
+		sxprint(stars)
+		sxprint(spacing + string)
+		sxprint(stars)
 	else:
 		print_msg(stars + "\n")
 		print_msg(spacing + string + "\n")
@@ -4790,7 +4790,7 @@ def nearestk_projangles(projangles, whichone=0, howmany=1, sym="c1"):
 			del tempan[best_j], lookup[best_j]
 
 	else:
-		print("  ERROR:  symmetry not supported  ", sym)
+		sxprint("  ERROR:  symmetry not supported  ", sym)
 		assignments = []
 
 	return assignments
@@ -5003,7 +5003,7 @@ def cone_ang(projangles, phi, tht, ant, symmetry="c1"):
 					)
 
 	else:
-		print("Symmetry not supported ", symmetry)
+		sxprint("Symmetry not supported ", symmetry)
 	return la
 
 
@@ -5073,7 +5073,7 @@ def cone_ang_f(projangles, phi, tht, ant, symmetry="c1"):
 					)
 
 	else:
-		print("Symmetry not supported ", symmetry)
+		sxprint("Symmetry not supported ", symmetry)
 
 	return la
 
@@ -5200,23 +5200,23 @@ def angular_occupancy(params, angstep=15.0, sym="c1", method="S", inc_mirror=0):
 	leah = len(eah)
 	u = []
 	for q in eah:
-		# print("q",q)
+		# sxprint("q",q)
 		m = smc.symmetry_related([(180.0 + q[0]) % 360.0, 180.0 - q[1], 0.0])
-		# print("m",m)
+		# sxprint("m",m)
 		itst = len(u)
 		for c in m:
-			# print("c",c)
+			# sxprint("c",c)
 			if smc.is_in_subunit(c[0], c[1], 1):
-				# print(" is in 1")
+				# sxprint(" is in 1")
 				if not smc.is_in_subunit(c[0], c[1], inc_mirror):
-					# print("  outside")
+					# sxprint("  outside")
 					u.append(c)
 					break
 		if len(u) != itst + 1:
 			u.append(q)  #  This is for exceptions that cannot be easily handled
 			"""
-			print(q)
-			print(m)
+			sxprint(q)
+			sxprint(m)
 			ERROR("balance angles","Fill up upper",1)
 			"""
 	seaf = []
@@ -5224,9 +5224,9 @@ def angular_occupancy(params, angstep=15.0, sym="c1", method="S", inc_mirror=0):
 		seaf += smc.symmetry_related(q)
 
 	lseaf = len(seaf) / (2 * leah)
-	# print(lseaf)
-	# for i,q in enumerate(seaf):  print(" seaf  ",i,q)
-	# print(seaf)
+	# sxprint(lseaf)
+	# for i,q in enumerate(seaf):  sxprint(" seaf  ",i,q)
+	# sxprint(seaf)
 	seaf = angles_to_normals(seaf)
 
 	occupancy = [[] for i in range(leah)]
@@ -5239,7 +5239,7 @@ def angular_occupancy(params, angstep=15.0, sym="c1", method="S", inc_mirror=0):
 		occupancy[l].append(i)
 		# for i,q in enumerate(occupancy):
 		# 	if q:
-		# 		print("  ",i,q,eah[i])
+		# 		sxprint("  ",i,q,eah[i])
 	return occupancy, eah
 
 
@@ -5261,16 +5261,16 @@ def balance_angular_distribution(params, max_occupy=-1, angstep=15.0, sym="c1"):
 			shuffle(q)
 			q = q[:max_occupy]
 			outo += q
-			print(
+			sxprint(
 				"  %10d   %10d        %6.1f   %6.1f" % (l, len(q), eah[l][0], eah[l][1])
 			)
-			# print(l,len(q),q)
+			# sxprint(l,len(q),q)
 		outo.sort()
 		# write_text_file(outo,"select.txt")
 		return outo
 	else:
 		# for l,q in enumerate(occupancy):
-		# 	print("  %10d   %10d        %6.1f   %6.1f"%(l,len(q),eah[l][0],eah[l][1]))
+		# 	sxprint("  %10d   %10d        %6.1f   %6.1f"%(l,len(q),eah[l][0],eah[l][1]))
 		return occupancy
 
 
@@ -5602,7 +5602,7 @@ def group_proj_by_phitheta_slow(
 	previous_group = -1
 	previous_zone = 5
 	for grp in range(N / img_per_grp):
-		print(grp, end=" ")
+		sxprint(grp, end=" ")
 		N_remain = N - grp * img_per_grp
 		# The idea here is that if each group has more than 100 images in average,
 		# we consider it crowded enough to just consider the most crowded group.
@@ -5660,7 +5660,7 @@ def group_proj_by_phitheta_slow(
 				if len(assignments[i]) > max_group_size:
 					max_group_size = len(assignments[i])
 					max_group = i
-			print(max_group_size, max_group, previous_group, end=" ")
+			sxprint(max_group_size, max_group, previous_group, end=" ")
 			for i in range(len(assignments[max_group])):
 				ind = remain_index[assignments[max_group][i]]
 				v.append(proj_ang[ind][5])
@@ -5687,9 +5687,9 @@ def group_proj_by_phitheta_slow(
 			diff_table_index = dict()
 			for i in range(Nn):
 				diff_table_index[index[i]] = i
-			print(Nn, True, end=" ")
+			sxprint(Nn, True, end=" ")
 		else:
-			print(Nn, False, end=" ")
+			sxprint(Nn, False, end=" ")
 
 		t21 = time()
 		for i in range(Nn):
@@ -5723,7 +5723,7 @@ def group_proj_by_phitheta_slow(
 			[proj_ang[center_i][0], proj_ang[center_i][1], dang[img_per_grp - 1][0]]
 		)
 		previous_group = max_group
-		print(t2 - t1, t3 - t2, t22 - t21, t3 - t22, t4 - t3)
+		sxprint(t2 - t1, t3 - t2, t22 - t21, t3 - t22, t4 - t3)
 
 	if N % img_per_grp * 3 >= 2 * img_per_grp:
 		members = []
@@ -5736,7 +5736,7 @@ def group_proj_by_phitheta_slow(
 		for i in range(N):
 			if proj_ang[i][4]:
 				proj_list[-1].append(i)
-	print("Total time used = ", time() - t0)
+	sxprint("Total time used = ", time() - t0)
 
 	return proj_list, angles_list
 
@@ -5940,7 +5940,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	if len(List) == 0:
 		List = list(range(N))
 	if N < img_per_grp:
-		print("Error: image per group larger than the number of particles!")
+		sxprint("Error: image per group larger than the number of particles!")
 		exit()
 	phi_list = [[0.0, 0] for i in range(N)]
 	theta_list = [[0.0, 0] for i in range(N)]
@@ -6295,7 +6295,7 @@ def unpack_message(msg):
 	elif msg[0] == "O":
 		return loads((msg[1:]).tostring())
 	else:
-		print(
+		sxprint(
 			"ERROR: Invalid MPI message. Please contact developers. (%s)"
 			% str(msg[:20])
 		)
@@ -6670,7 +6670,7 @@ def cmdexecute(cmd, printing_on_success=True):
 
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if outcome != 0:
-		print(
+		sxprint(
 			line,
 			"ERROR!!   Command failed:  ",
 			cmd,
@@ -6679,7 +6679,7 @@ def cmdexecute(cmd, printing_on_success=True):
 		)
 		return 0
 	elif printing_on_success:
-		print(line, "Executed successfully: ", cmd)
+		sxprint(line, "Executed successfully: ", cmd)
 		return 1
 
 
@@ -6733,7 +6733,7 @@ def print_with_time_info(msg):
 	from time import localtime, strftime
 
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>" + msg
-	print(line)
+	sxprint(line)
 
 
 def if_error_then_all_processes_exit_program(error_status):
@@ -7175,9 +7175,9 @@ def print_program_start_information():
 	)  # Total number of processes, passed by --np option.
 
 	if myid == 0:
-		print("Location: " + os.getcwd())
+		sxprint("Location: " + os.getcwd())
 
-	print(
+	sxprint(
 		"MPI Rank: %03d/%03d " % (myid, mpi_size)
 		+ "Hostname: "
 		+ gethostname()
@@ -7284,7 +7284,7 @@ def program_state_stack(
 	while mpi_comm_rank(MPI_COMM_WORLD) == 0:
 		if "file_name_of_saved_state" not in program_state_stack.__dict__:
 			if type(file_name_of_saved_state) != type(""):
-				print(
+				sxprint(
 					"Must provide the file name of saved state as a string in the first call of the function!"
 				)
 				error_status = 1
@@ -7473,7 +7473,7 @@ def print_from_process(process_rank, message):
 	)  # Total number of processes, passed by --np option.
 
 	if myid == process_rank:
-		print(
+		sxprint(
 			"MPI Rank: %03d/%03d " % (myid, mpi_size)
 			+ "Hostname: "
 			+ gethostname()
@@ -7676,7 +7676,7 @@ def print_upper_triangular_matrix(data_table_dict, N_indep, log_main):
 
 def print_a_line_with_timestamp(string_to_be_printed):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	print((line, string_to_be_printed))
+	sxprint((line, string_to_be_printed))
 	return string_to_be_printed
 
 
@@ -7711,11 +7711,11 @@ def prepare_ptp(data_list, K):
 
 def print_dict(dict, theme):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	print((line + theme))
+	sxprint((line + theme))
 	spaces = "                           "
 	for key, value in sorted(dict.items()):
 		if key != "constants":
-			print(
+			sxprint(
 				(
 					"                    => "
 					+ key
@@ -7751,7 +7751,7 @@ def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 			currentres = nfsc[0][i - 1]
 			break
 			# if(currentres < 0.0):
-			# print("  Something wrong with the resolution, cannot continue")
+			# sxprint("  Something wrong with the resolution, cannot continue")
 		currentres = nfsc[0][i - 1]
 
 	""" this commented previously
@@ -8238,7 +8238,7 @@ def recons_mref(Tracker):
 			myid=myid, prjlist=data, symmetry=Tracker["constants"]["sym"], finfo=None
 		)
 		if myid == main_node:
-			print("reconstructed %3d" % igrp)
+			sxprint("reconstructed %3d" % igrp)
 		ref_list.append(vol)
 		number_of_ref_class.append(len(Tracker["this_data_list"]))
 	Tracker["number_of_ref_class"] = number_of_ref_class
@@ -8282,7 +8282,7 @@ def get_number_of_groups(total_particles, number_of_images_per_group):
 
 def get_complementary_elements(total_list, sub_data_list):
 	if len(total_list) < len(sub_data_list):
-		print("Wrong input list!")
+		sxprint("Wrong input list!")
 		return []
 	else:
 		sub_data_dict = {}
@@ -8736,7 +8736,7 @@ def Kmeans_exhaustive_run(ref_vol_list, Tracker):
 
 def print_a_line_with_timestamp(string_to_be_printed):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	print((line, string_to_be_printed))
+	sxprint((line, string_to_be_printed))
 	return string_to_be_printed
 
 
