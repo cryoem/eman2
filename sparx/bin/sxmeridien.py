@@ -6741,6 +6741,21 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 				newparams_outlier.append(newparamstructure[procid][idx])
 				norm_outlier.append(norm_per_particle[procid][idx])
 		outliers[procid] = outlier_list
+		if Tracker['delta'] >= 7.5 / 2.0:
+			delta = Tracker['delta']
+		else:
+			delta = 3.75
+		utilities.angular_distribution(
+			params_file=params_chunk_file,
+			output_folder=os.path.join(Tracker["directory"], "ang_dist_{0}".format(procid)),
+			prefix='ang_dist_',
+			method=Tracker['constants']['even_angle_method'],
+			pixel_size=1,
+			delta=Tracker['delta'],
+			symmetry=Tracker['constants']['symmetry'],
+			box_size=Tracker['constants']['nnxo'],
+
+
 
 		do3d(
 			procid,
@@ -7194,8 +7209,7 @@ def main():
 			Constants["an"]                			= "-1"
 			Constants["maxit"]             			= 1
 			Constants["fuse_freq"]         			= 45  # Now in A, convert to absolute before using
-			sym                            			= options.symmetry
-			Constants["symmetry"]					= sym[0].lower() + sym[1:]
+			Constants["symmetry"]					= options.symmetry.lower()
 			Constants["npad"]              			= 1
 			Constants["center"]            			= 0
 			Constants["shake"]             			= options.shake  #  move params every iteration
