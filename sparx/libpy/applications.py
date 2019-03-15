@@ -31,7 +31,6 @@ from __future__ import print_function
 
 from builtins import range
 from builtins import object
-from global_def import *
 
 def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", \
 			nomirror=False, dst=0.0, center=-1, maxit=0, \
@@ -25818,6 +25817,7 @@ def mref_ali3d_EQ_Kmeans_circular(ref_list, outdir, particle_list_file, Tracker)
 		
 ######
  
+from global_def import *
  
 
 			

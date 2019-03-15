@@ -6656,8 +6656,18 @@ def cmdexecute(cmd, printing_on_success=True):
 	# import subprocess  I do not know why this is not used. PAP
 	import os
 
-	# outcome = subprocess.call(cmd, shell=True)
+	
+	# Remove the variable to avoid problems with subprograms not running with MPI in combination with print_timestamp in global_def
+	try:
+		mpi_comm_world_rank_value = os.environ['OMPI_COMM_WORLD_RANK']
+		del os.environ['OMPI_COMM_WORLD_RANK']
+	except KeyError:
+		mpi_comm_world_rank_value = None
+	
 	outcome = os.system(cmd)
+	if mpi_comm_world_rank_value is not None:
+		os.environ['OMPI_COMM_WORLD_RANK'] = mpi_comm_world_rank_value
+
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if outcome != 0:
 		print(
