@@ -227,6 +227,22 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 	ref_a  = ali3d_options.ref_a
 	L2threshold = ali3d_options.L2threshold
 
+	# Optionally restrict out-of-plane angle
+	####try: theta1 = ali3d_options.theta1
+	####except AttributeError: theta1 = -1.0
+	if hasattr(ali3d_options, 'theta1'): theta1 = ali3d_options.theta1
+	else: theta1 = -1.0
+	
+	####try: theta2 = ali3d_options.theta2
+	####except AttributeError: theta2 = -1.0
+	if hasattr(ali3d_options, 'theta2'): theta2 = ali3d_options.theta2
+	else: theta2 = -1.0
+	
+	####try: method = ali3d_options.method
+	####except AttributeError: method = "S"
+	if hasattr(ali3d_options, 'method'): method = ali3d_options.method
+	else: method = "S"
+	
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
 
@@ -344,7 +360,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 			# build references
 			volft, kb = prep_vol(vol)
 			#  We generate mirrored versions as well MAJOR CHANGE PAP 04/20/2017
-			reference_angles = symmetry_class.even_angles(delta[N_step])
+			reference_angles = symmetry_class.even_angles(delta[N_step], theta1=theta1, theta2=theta2, method=method)
 			refrings = prepare_refrings(volft, kb, nx, -1.0, reference_angles, "", numr, MPI=mpi_subcomm)
 			del volft, kb
 			#=========================================================================
@@ -872,6 +888,22 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 	CTF    = ali3d_options.CTF
 	ref_a  = ali3d_options.ref_a
 
+	# Optionally restrict out-of-plane angle
+	####try: theta1 = ali3d_options.theta1
+	####except AttributeError: theta1 = -1.0
+	if hasattr(ali3d_options, 'theta1'): theta1 = ali3d_options.theta1
+	else: theta1 = -1.0
+	
+	####try: theta2 = ali3d_options.theta2
+	####except AttributeError: theta2 = -1.0
+	if hasattr(ali3d_options, 'theta2'): theta2 = ali3d_options.theta2
+	else: theta2 = -1.0
+	
+	####try: method = ali3d_options.method
+	####except AttributeError: method = "S"
+	if hasattr(ali3d_options, 'method'): method = ali3d_options.method
+	else: method = "S"
+	
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
 
@@ -1086,7 +1118,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 			# build references
 			volft, kb = prep_vol(vol)
 			#  For the local SHC it is essential reference projections have psi zero, as otherwise it will get messed up.
-			reference_angles = symmetry_class.even_angles(delta[N_step], phiEqpsi = "Zero")
+			reference_angles = symmetry_class.even_angles(delta[N_step], phiEqpsi = "Zero", theta1=theta1, theta2=theta2, method=method)
 			refrings = prepare_refrings(volft, kb, nx, -1.0, reference_angles, "", numr, MPI=mpi_comm)
 			del volft, kb
 			#=========================================================================
@@ -1288,7 +1320,10 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 	import global_def
 	from random import random
 	from mpi import mpi_comm_rank, mpi_comm_size, mpi_finalize, mpi_comm_split, mpi_barrier
-
+	from argparse import Namespace
+	from utilities import angular_distribution, get_im
+	import os
+	
 	mpi_rank = mpi_comm_rank(mpi_comm)
 	mpi_size = mpi_comm_size(mpi_comm)
 
@@ -1308,7 +1343,25 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 	error = 0
 	projections = []
 	if mpi_rank == 0:
-		prms = symmetry_class.even_angles(float(ali3d_options.delta))
+		# Optionally restrict out-of-plane angle
+		if hasattr(ali3d_options, 'theta1'): 
+			theta1 = ali3d_options.theta1
+		else: 
+			theta1 = -1.0
+		
+		if hasattr(ali3d_options, 'theta2'):
+			theta2 = ali3d_options.theta2
+		else:
+			theta2 = -1.0
+		
+		if hasattr(ali3d_options, 'method'):
+			method = ali3d_options.method
+		else:
+			method = "S"
+		
+		prms = symmetry_class.even_angles(float(ali3d_options.delta), theta1=theta1, theta2=theta2, method=method)
+		write_text_row(prms, log.prefix + "initangles.txt")
+		
 		if(len(prms) < len(subset)): error = 1
 		else:
 			from random import shuffle
@@ -1323,7 +1376,6 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 
 	error = bcast_number_to_all(error, source_node = 0)
 	if(error == 1): ERROR("multi_shc","Angular step too large, decrease delta", 1, mpi_rank)
-
 
 	###from sys import exit
 	#if mpi_rank == 0:   print "  NEW   ",mpi_rank
@@ -1461,7 +1513,30 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		write_text_file(previousmax, log.prefix + "previousmax.txt")
 		write_text_row(out_params, log.prefix + "params.txt")
 		drop_image(out_vol, log.prefix + "volf.hdf")
-
+		
+		# Generate angular distribution
+		independent_run_dir = log.prefix
+		print('independent_run_dir', independent_run_dir)
+		
+		####params_file = log.prefix + "params.txt"
+		####write_text_row(rotated_params[i1], params_file)  # 5 columns
+		
+		args = Namespace()
+		args.params_file = log.prefix + "params.txt"
+		args.output_folder = independent_run_dir 
+		args.prefix = 'angdist'  # will overwrite input parameters file if blank
+		args.method = ali3d_options.ref_a  # method for generating the quasi-uniformly distributed projection directions
+		args.delta = float(ali3d_options.delta)
+		args.symmetry = ali3d_options.sym
+		args.dpi = ali3d_options.dpi
+		
+		# Not going to upscale to the original dimensions, so in Chimera open reconstruction at 1 Angstrom/voxel, etc.
+		args.pixel_size = 1
+		args.particle_radius = ali3d_options.radius
+		args.box_size = get_im( os.path.join(log.prefix, 'volf.hdf') ).get_xsize()
+		
+		angular_distribution(args)
+		
 	return out_params, out_vol, None#, out_peaks
 
 def mirror_and_reduce_dsym(params, indexes, symmetry_class):
