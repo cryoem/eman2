@@ -93,7 +93,7 @@ def write_command(output_folder=None):
 	sxprint(command)
 
 
-def sxprint( print_timestamp=True, *args, **kwargs ):
+def sxprint( *args, **kwargs ):
 	"""
 	Generic print function that includes time stamps and caller id. Everything
 	that is printed is also logged to file <SXPRINT_LOG> (can be disabled by
@@ -114,6 +114,8 @@ def sxprint( print_timestamp=True, *args, **kwargs ):
 		>>> sxprint( "This is " + "a %s" % "test" + ".", filename="out.log" )
 		2019-02-07 13:36:50 <module> => This is a test.
 	"""
+	end = kwargs.get('end', '\n')
+	print_timestamp = kwargs.get('print_timestamp', True)
 
 	# prepend timestamp
 	t = get_timestamp()
@@ -124,7 +126,7 @@ def sxprint( print_timestamp=True, *args, **kwargs ):
 		m = "  ".join(map(str, args))
 	
 	# print message to stdout
-	print( m, **kwargs )
+	print( m, end=end)
 	sys.stdout.flush()
 
 	# print message to SPHIRE execution log
