@@ -6952,7 +6952,7 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 			tol_filament=Tracker['prior']['tol_filament'],
 			tol_std=Tracker['prior']['tol_std'],
 			tol_mean=Tracker['prior']['tol_mean'],
-			outlier_method=Tracker['prior']['outlier_method']
+			outlier_method=Tracker['prior']['outlier_method'],
 			prior_method=Tracker['prior']['prior_method'],
 			force_outlier=Tracker['prior']['force_outlier'],
 			window_size=Tracker['prior']['window_size'],
