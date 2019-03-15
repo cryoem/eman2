@@ -1521,21 +1521,30 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		####params_file = log.prefix + "params.txt"
 		####write_text_row(rotated_params[i1], params_file)  # 5 columns
 		
-		args = Namespace()
-		args.params_file = log.prefix + "params.txt"
-		args.output_folder = independent_run_dir 
-		args.prefix = 'angdist'  # will overwrite input parameters file if blank
-		args.method = ali3d_options.ref_a  # method for generating the quasi-uniformly distributed projection directions
-		args.delta = float(ali3d_options.delta)
-		args.symmetry = ali3d_options.sym
-		args.dpi = ali3d_options.dpi
+		params_file = log.prefix + "params.txt"
+		output_folder = independent_run_dir 
+		prefix = 'angdist'  # will overwrite input parameters file if blank
+		method = ali3d_options.ref_a  # method for generating the quasi-uniformly distributed projection directions
+		delta = float(ali3d_options.delta)
+		symmetry = ali3d_options.sym
+		dpi = ali3d_options.dpi
 		
 		# Not going to upscale to the original dimensions, so in Chimera open reconstruction at 1 Angstrom/voxel, etc.
-		args.pixel_size = 1
-		args.particle_radius = ali3d_options.radius
-		args.box_size = get_im( os.path.join(log.prefix, 'volf.hdf') ).get_xsize()
+		pixel_size = 1
+		particle_radius = ali3d_options.radius
+		box_size = get_im( os.path.join(log.prefix, 'volf.hdf') ).get_xsize()
 		
-		angular_distribution(args)
+		angular_distribution(
+			params_file=params_file,
+			output_folder=output_folder,
+			prefix=prefix,
+			method=method,
+			pixel_size=pixel_size,
+			delta=delta,
+			symmetry=symmetry,
+			box_size=box_size,
+			particle_radius=particle_radius
+			)
 		
 	return out_params, out_vol, None#, out_peaks
 
