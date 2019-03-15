@@ -6754,8 +6754,8 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			delta=Tracker['delta'],
 			symmetry=Tracker['constants']['symmetry'],
 			box_size=Tracker['constants']['nnxo'],
-
-
+			particle_radius=Tracker['constants']['radius'],
+			)
 
 		do3d(
 			procid,
