@@ -34,14 +34,17 @@ Plotting stuff for CTF Refinement with error assessment in SPHIRE
 """
 # pylint: disable=C0330
 import os
-from matplotlib import pyplot
 import matplotlib as mpl
+
+mpl.use("Agg")
+from matplotlib import pyplot
+
 from tqdm import tqdm
 import sxctf_refine_io
 import numpy as np
 
 
-def create_particles_plot(
+def create_particles_plot_map(
 		stack_file_path,
 		indices,
 		values=None,
@@ -131,11 +134,12 @@ def create_and_save_particle_plots(
 			all_errors.extend(particle_error)
 			particle_defocus = refinement_results_per_micrograph[mic_name]["defocus"]
 			particle_drratio = refinement_results_per_micrograph[mic_name]["drratio"]
-
+			old_defocus = refinement_results_per_micrograph[mic_name]["diff"][0] + \
+						  refinement_results_per_micrograph[mic_name]["defocus"][0]
 			# First plot
 			out_img_name = os.path.basename(mic_name) + ".png"
 			out_img_name = os.path.join(path_output_img, out_img_name)
-			create_particles_plot(
+			create_particles_plot_map(
 				stack_file_path=stack_file_path,
 				indices=particle_indices,
 				values=particle_defocus,
@@ -144,33 +148,41 @@ def create_and_save_particle_plots(
 			)
 
 			# Second plot
-			create_particles_plot(
+			create_particles_plot_map(
 				stack_file_path=stack_file_path,
 				indices=particle_indices,
 				values=particle_error,
-				vmin=0,
-				vmax=0.08,
+				# vmin=0,
+				# vmax=0.08,
 				colmap="coolwarm",
 				title="Error map",
 				plotpos=(2, 2, 2),
 			)
 
 			# Third plot
-			create_particles_plot(
+			create_particles_plot_map(
 				stack_file_path=stack_file_path,
 				indices=particle_indices,
 				values=particle_drratio,
-				vmin=min_max_ratio[0],
-				vmax=min_max_ratio[1],
-				colmap="binary",
+				# vmin=min_max_ratio[0],
+				# vmax=min_max_ratio[1],
+				colmap="YlOrBr",
 				title="Significance map",
 				plotpos=(2, 2, 3),
 			)
 
 			axis = pyplot.subplot(2, 2, 4)
-			axis.scatter(particle_error, particle_drratio, marker="o", s=50, lw=0)
-			pyplot.xlabel("Error")
-			pyplot.ylabel("Significance")
+
+			from numpy.lib.function_base import _hist_bin_fd
+			width = int(np.round(_hist_bin_fd(np.array(particle_defocus))))
+
+			width = max(10, width)
+			n, _, _ = axis.hist(particle_defocus, bins=width, facecolor='green', alpha=0.75)
+			pyplot.axvline(old_defocus, color='k', linestyle='dashed', linewidth=1)
+			pyplot.text(old_defocus, max(n) / 2, "Old defocus", rotation=90,
+						verticalalignment='center')
+			pyplot.xlabel("Defocus")
+			pyplot.ylabel("Frequency")
 
 			pyplot.tight_layout()
 			pyplot.savefig(out_img_name)

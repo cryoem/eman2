@@ -168,7 +168,7 @@ def ref_ali3dm( refdata ):
 	#varf   = refdata[4]
 	mask   = refdata[5]
 
-	print('filter every volume at (0.4, 0.1)')
+	sxprint('filter every volume at (0.4, 0.1)')
 	for iref in range(numref):
 		v = get_im(os.path.join(outdir, "vol%04d.hdf"%total_iter), iref)
 		v = filt_tanl(v, 0.4, 0.1)
@@ -191,8 +191,8 @@ def ref_sort3d(refdata):
 	from time import strftime, localtime
 	theme='filter every volume at (%f, 0.1)'%low_pass_filter
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	print((line+theme))
-	print('filter every volume at (%f, 0.1)'%low_pass_filter)
+	sxprint((line+theme))
+	sxprint('filter every volume at (%f, 0.1)'%low_pass_filter)
 	for iref in range(numref):
 		v = get_im(os.path.join(outdir, "vol%04d.hdf"%total_iter), iref)
 		v = filt_tanl(v, low_pass_filter, 0.1)
@@ -223,9 +223,9 @@ def ref_ali3dm_ali_50S( refdata ):
 		if (fl > flmax):
 			flmax = fl
 			aamax = aa
-		print('iref,fl,aa: ', iref, fl, aa)
+		sxprint('iref,fl,aa: ', iref, fl, aa)
 		# filter to minimum resolution
-	print('flmin,aamin:', flmin, aamin)
+	sxprint('flmin,aamin:', flmin, aamin)
 	for iref in range(numref):
 		v = get_im(os.path.join(outdir, "vol%04d.hdf"%total_iter), iref)
 		v = filt_tanl(v, flmin, aamin)
@@ -239,7 +239,7 @@ def ref_ali3dm_ali_50S( refdata ):
 				v = alivol_mask( v, v50S_ref, mask_50S )
 
 		if not(varf is None):
-			print('filtering by fourier variance')
+			sxprint('filtering by fourier variance')
 			v.filter_by_image( varf )
 	
 		v.write_image(os.path.join(outdir, "volf%04d.hdf"%total_iter), iref)
@@ -1541,13 +1541,13 @@ def build_user_function(module_name=None,function_name=None,path_name=None):
 	try:
 		(file,path,descript) = imp.find_module(module_name,path_list)
 	except ImportError:
-		print("could not find module "+str(module_name)+" in path "+str(path_name))
+		sxprint("could not find module "+str(module_name)+" in path "+str(path_name))
 		return None
 
 	try:
 		dynamic_mod = imp.load_module(module_name,file,path,descript)
 	except ImportError:
-		print("could not load module "+str(module_name)+" in path "+str(path))
+		sxprint("could not load module "+str(module_name)+" in path "+str(path))
 		return None
 		
 	# function name has to be taken from dict, since otherwise we would be trying an
@@ -1556,11 +1556,11 @@ def build_user_function(module_name=None,function_name=None,path_name=None):
 		dynamic_func = dynamic_mod.__dict__[function_name]
 	except KeyError:
 		# key error means function is not defined in the module....
-		print("could not import user function "+str(function_name)+" from module")
-		print(str(path))
+		sxprint("could not import user function "+str(function_name)+" from module")
+		sxprint(str(path))
 		return None
 	except:
-		print("unknown error getting function!")
+		sxprint("unknown error getting function!")
 		return None
 	else:
 		return dynamic_func

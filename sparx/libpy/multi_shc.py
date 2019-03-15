@@ -227,6 +227,22 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 	ref_a  = ali3d_options.ref_a
 	L2threshold = ali3d_options.L2threshold
 
+	# Optionally restrict out-of-plane angle
+	####try: theta1 = ali3d_options.theta1
+	####except AttributeError: theta1 = -1.0
+	if hasattr(ali3d_options, 'theta1'): theta1 = ali3d_options.theta1
+	else: theta1 = -1.0
+	
+	####try: theta2 = ali3d_options.theta2
+	####except AttributeError: theta2 = -1.0
+	if hasattr(ali3d_options, 'theta2'): theta2 = ali3d_options.theta2
+	else: theta2 = -1.0
+	
+	####try: method = ali3d_options.method
+	####except AttributeError: method = "S"
+	if hasattr(ali3d_options, 'method'): method = ali3d_options.method
+	else: method = "S"
+	
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
 
@@ -344,7 +360,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 			# build references
 			volft, kb = prep_vol(vol)
 			#  We generate mirrored versions as well MAJOR CHANGE PAP 04/20/2017
-			reference_angles = symmetry_class.even_angles(delta[N_step])
+			reference_angles = symmetry_class.even_angles(delta[N_step], theta1=theta1, theta2=theta2, method=method)
 			refrings = prepare_refrings(volft, kb, nx, -1.0, reference_angles, "", numr, MPI=mpi_subcomm)
 			del volft, kb
 			#=========================================================================
@@ -613,7 +629,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 					noreseeding = True
 
 					if(all_L2s[0]<GA[number_of_runs-1][0]):
-						if firstcheck:  print("  SHOULD NOT BE HERE")
+						if firstcheck:  sxprint("  SHOULD NOT BE HERE")
 						noimprovement += 1
 						if(noimprovement == 2):  terminate = True
 						GA = GA[:number_of_runs]
@@ -872,6 +888,22 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 	CTF    = ali3d_options.CTF
 	ref_a  = ali3d_options.ref_a
 
+	# Optionally restrict out-of-plane angle
+	####try: theta1 = ali3d_options.theta1
+	####except AttributeError: theta1 = -1.0
+	if hasattr(ali3d_options, 'theta1'): theta1 = ali3d_options.theta1
+	else: theta1 = -1.0
+	
+	####try: theta2 = ali3d_options.theta2
+	####except AttributeError: theta2 = -1.0
+	if hasattr(ali3d_options, 'theta2'): theta2 = ali3d_options.theta2
+	else: theta2 = -1.0
+	
+	####try: method = ali3d_options.method
+	####except AttributeError: method = "S"
+	if hasattr(ali3d_options, 'method'): method = ali3d_options.method
+	else: method = "S"
+	
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
 
@@ -1086,7 +1118,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 			# build references
 			volft, kb = prep_vol(vol)
 			#  For the local SHC it is essential reference projections have psi zero, as otherwise it will get messed up.
-			reference_angles = symmetry_class.even_angles(delta[N_step], phiEqpsi = "Zero")
+			reference_angles = symmetry_class.even_angles(delta[N_step], phiEqpsi = "Zero", theta1=theta1, theta2=theta2, method=method)
 			refrings = prepare_refrings(volft, kb, nx, -1.0, reference_angles, "", numr, MPI=mpi_comm)
 			del volft, kb
 			#=========================================================================
@@ -1288,7 +1320,10 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 	import global_def
 	from random import random
 	from mpi import mpi_comm_rank, mpi_comm_size, mpi_finalize, mpi_comm_split, mpi_barrier
-
+	from argparse import Namespace
+	from utilities import angular_distribution, get_im
+	import os
+	
 	mpi_rank = mpi_comm_rank(mpi_comm)
 	mpi_size = mpi_comm_size(mpi_comm)
 
@@ -1308,7 +1343,25 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 	error = 0
 	projections = []
 	if mpi_rank == 0:
-		prms = symmetry_class.even_angles(float(ali3d_options.delta))
+		# Optionally restrict out-of-plane angle
+		if hasattr(ali3d_options, 'theta1'): 
+			theta1 = ali3d_options.theta1
+		else: 
+			theta1 = -1.0
+		
+		if hasattr(ali3d_options, 'theta2'):
+			theta2 = ali3d_options.theta2
+		else:
+			theta2 = -1.0
+		
+		if hasattr(ali3d_options, 'method'):
+			method = ali3d_options.method
+		else:
+			method = "S"
+		
+		prms = symmetry_class.even_angles(float(ali3d_options.delta), theta1=theta1, theta2=theta2, method=method)
+		write_text_row(prms, log.prefix + "initangles.txt")
+		
 		if(len(prms) < len(subset)): error = 1
 		else:
 			from random import shuffle
@@ -1323,7 +1376,6 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 
 	error = bcast_number_to_all(error, source_node = 0)
 	if(error == 1): ERROR("multi_shc","Angular step too large, decrease delta", 1, mpi_rank)
-
 
 	###from sys import exit
 	#if mpi_rank == 0:   print "  NEW   ",mpi_rank
@@ -1461,7 +1513,39 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		write_text_file(previousmax, log.prefix + "previousmax.txt")
 		write_text_row(out_params, log.prefix + "params.txt")
 		drop_image(out_vol, log.prefix + "volf.hdf")
-
+		
+		# Generate angular distribution
+		independent_run_dir = log.prefix
+		sxprint('independent_run_dir', independent_run_dir)
+		
+		####params_file = log.prefix + "params.txt"
+		####write_text_row(rotated_params[i1], params_file)  # 5 columns
+		
+		params_file = log.prefix + "params.txt"
+		output_folder = independent_run_dir 
+		prefix = 'angdist'  # will overwrite input parameters file if blank
+		method = ali3d_options.ref_a  # method for generating the quasi-uniformly distributed projection directions
+		delta = float(ali3d_options.delta)
+		symmetry = ali3d_options.sym
+		dpi = ali3d_options.dpi
+		
+		# Not going to upscale to the original dimensions, so in Chimera open reconstruction at 1 Angstrom/voxel, etc.
+		pixel_size = 1
+		particle_radius = ali3d_options.radius
+		box_size = get_im( os.path.join(log.prefix, 'volf.hdf') ).get_xsize()
+		
+		angular_distribution(
+			params_file=params_file,
+			output_folder=output_folder,
+			prefix=prefix,
+			method=method,
+			pixel_size=pixel_size,
+			delta=delta,
+			symmetry=symmetry,
+			box_size=box_size,
+			particle_radius=particle_radius
+			)
+		
 	return out_params, out_vol, None#, out_peaks
 
 def mirror_and_reduce_dsym(params, indexes, symmetry_class):
@@ -1683,8 +1767,8 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 			while(i<peaks_count):
 				ll = findall(taken[i], taken)
 				if(len(ll) > 1):
-					print("  PROBLEM, found the same orientation more than once !  ")
-					for k in range(len(params)):  print(params[k])
+					sxprint("  PROBLEM, found the same orientation more than once !  ")
+					for k in range(len(params)):  sxprint(params[k])
 					ll.sort(reverse=True)
 					for k in range(0,len(ll)-1):
 						del params[k]
@@ -1749,7 +1833,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 				for k in range(1,len(taken)):
 					dod = []
 					if( taken[k] == taken[k-1] ):
-						print("  PROBLEM 2, entries duplicated  ",taken)
+						sxprint("  PROBLEM 2, entries duplicated  ",taken)
 						dod.append(k)
 				if(len(dod) >0):
 					for k in dod:  del taken[k]
@@ -1757,10 +1841,10 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 			try:
 				for i in range(peaks_count):  del  tempref[taken[i]]
 			except:
-				print("  failed deleting tempref ")
-				print(i,peaks_count,nsoft)
-				print(" taken ",taken)
-				print(len(tempref), len(refrings))
+				sxprint("  failed deleting tempref ")
+				sxprint(i,peaks_count,nsoft)
+				sxprint(" taken ",taken)
+				sxprint(len(tempref), len(refrings))
 				from sys import exit
 				exit()
 
@@ -2161,7 +2245,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 							#print  im.get_attr("xform.projection" + str(i))
 							t = get_params_proj(im,"xform.projection" + str(i))
 						except:
-							print(" NO XFORM  ",myid, i,im.get_attr('ID'))
+							sxprint(" NO XFORM  ",myid, i,im.get_attr('ID'))
 							from sys import exit
 							exit()
 

@@ -438,7 +438,7 @@ def difsc(args,data):
 	vv = 0.0
 	for l in xrange(len(z)):
 		vv -= (data[0][l] - z[l])**2
-	print(args,vv)
+	sxprint(args,vv)
 	return vv
 
 ##amoeba(arg, [1.0,0.1], difsc, data=data)
@@ -1109,10 +1109,10 @@ def defocus_get_fast(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 					nr2     = 5
 					istop  += 0.5
 					defocus = defocus_get(fnam_roo, volt, Pixel_size, Cs, wgh, istart, istop, docf, skip, round_off, nr1, nr2)
-					if(print_screen == "p" or print_screen == "P"): print("defocus",defocus,"Euclidean distance", dis, "starting feq", istart, "stop freq", istop,"P R E", nr1,"P R B", nr2)
+					if(print_screen == "p" or print_screen == "P"): sxprint("defocus",defocus,"Euclidean distance", dis, "starting feq", istart, "stop freq", istop,"P R E", nr1,"P R B", nr2)
 					if(defocus < dz_max): 				break
 			if(defocus >= dz_max): 					ERROR("defocus_get_fast fails at estimating defocus", fnam, action = 0)
-			print("", flist[i], '%5d'%(defocus)) 	# screen output, give the user a general impression about estimated defoci
+			sxprint("", flist[i], '%5d'%(defocus)) 	# screen output, give the user a general impression about estimated defoci
 			if(writetodoc[0] == "w" or writetodoc[0] != "l"):	out.write("%d\t%5d\t%s\n" % (ncount,defocus,flist[i]))
 			if(writetodoc[0] == "l"):				res.append(defocus)
 			if type(micdir) is bytes : 
@@ -1122,7 +1122,7 @@ def defocus_get_fast(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 					e = get_image (mic_name)
 					U______set_arb_params(e, ctf_param, ctf_dicts)  # THIS IS INCORRECT< PLEASE CHANGE
 					e.write_image(mic_name,0, EMUtil.ImageType.IMAGE_HDF, True)
-					print("ctf parameters is written back into headers of ", mic_name)
+					sxprint("ctf parameters is written back into headers of ", mic_name)
 				#else :  print  mic_name, " Not found"
 	if(len(res) == 0 and  writetodoc == "l" ):				ERROR("No input file is found, check the input directory of file prefix", indir, 1)
 	else:
@@ -1196,7 +1196,7 @@ def defocus_get_fast_MPI(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wg
 	istop	= int(f_h )
 	for i in range(image_start,image_end):
 		filename=mic_name_list[i] 
-		print('%-15s%-30s'%("s # ",filename))
+		sxprint('%-15s%-30s'%("s # ",filename))
 		(f_nam, filextension) = os.path.splitext(filename)
 		fnam_roo     = "particle_"+f_nam[len(prefix_of_)+len(indir)+2:]+filextension	
 #	for i, v in enumerate(flist):
@@ -1207,14 +1207,14 @@ def defocus_get_fast_MPI(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wg
 				nr1 += 1
 				nr2 += 1
 				defocus = defocus_get(fnam_roo, volt, Pixel_size, Cs, wgh,istart, istop, docf,skip, round_off, nr1, nr2)
-				if(print_screen[0] == "p" or print_screen[0] == "P" ): print("defocus",defocus,"Euclidean distance",dis,"starting feq",istart,"stop freq",istop,"P R E", nr1,"P R B", nr2)
+				if(print_screen[0] == "p" or print_screen[0] == "P" ): sxprint("defocus",defocus,"Euclidean distance",dis,"starting feq",istart,"stop freq",istop,"P R E", nr1,"P R B", nr2)
 				if(defocus<dz_max): break
 		if(defocus > dz_max):
 			while(nr1 >= 2 and nr2 >= 2):
 				nr1 -= 1
 				nr2 -= 1
 				defocus = defocus_get(fnam_roo, volt,Pixel_size, Cs, wgh, istart, istop, docf, skip, round_off, nr1, nr2)
-				if(print_sreen[0] == "p" or print_screen=="P"): print("defocus",defocus,"Euclidean distance",dis,"starting feq",istart,"stop freq",istop,"P R E", nr1,"P R B", nr2)
+				if(print_sreen[0] == "p" or print_screen=="P"): sxprint("defocus",defocus,"Euclidean distance",dis,"starting feq",istart,"stop freq",istop,"P R E", nr1,"P R B", nr2)
 				if(defocus < dz_max): break
 		if(defocus > dz_max):
 			while(istart > istop):
@@ -1222,7 +1222,7 @@ def defocus_get_fast_MPI(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wg
 				nr2    =  5
 				istart -=.5
 				defocus = defocus_get(fnam_roo, volt, Pixel_size, Cs, wgh, istart, istop, docf,skip, round_off, nr1, nr2)
-				if(print_screen[0] == "p" or print_screen == "P"): print("defocus",defocus,"Euclidean distance",dis,"starting feq",istart,"stop freq",istop,"P R E", nr1,"P R B", nr2)
+				if(print_screen[0] == "p" or print_screen == "P"): sxprint("defocus",defocus,"Euclidean distance",dis,"starting feq",istart,"stop freq",istop,"P R E", nr1,"P R B", nr2)
 				if(defocus < dz_max): break
 		if(defocus > dz_max):
 			while(istart > istop):
@@ -1230,10 +1230,10 @@ def defocus_get_fast_MPI(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wg
 				nr2     = 5
 				istop  += 0.5
 				defocus = defocus_get(fnam_roo, volt, Pixel_size, Cs, wgh, istart, istop, docf, skip, round_off, nr1, nr2)
-				if(print_screen == "p" or print_screen == "P"): print("defocus",defocus,"Euclidean distance", dis, "starting feq", istart, "stop freq", istop,"P R E", nr1,"P R B", nr2)
+				if(print_screen == "p" or print_screen == "P"): sxprint("defocus",defocus,"Euclidean distance", dis, "starting feq", istart, "stop freq", istop,"P R E", nr1,"P R B", nr2)
 				if(defocus < dz_max): 				break
 		if(defocus >= dz_max): 					ERROR("defocus_get_fast fails at estimating defocus", fnam, action = 0)
-		print("", flist[i], '%10.3g'(defocus)) 	# screen output, give the user a general impression about estimated defoci
+		sxprint("", flist[i], '%10.3g'(defocus)) 	# screen output, give the user a general impression about estimated defoci
 		if(writetodoc[0] == "w" or writetodoc[0] != "l"):	out.write("%d\t%f\t%s\n" % (ncount,defocus,flist[i]))
 		if(writetodoc[0] == "l"):				res.append(defocus)
 	if(len(res) == 0 and  writetodoc == "l" ):				ERROR("No input file is found, check the input directory of file prefix", indir, 1)
@@ -1286,7 +1286,7 @@ def defocus_get_slow(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 			for nr1 in range(2,7,1):
 				for nr2 in range(2,7,1):
 					[defocus, dis]     = defocus_get_Eudis(fnam_roo, volt, Pixel_size, Cs, wgh, istart, istop, docf, skip, round_off, nr1, nr2)
-					if(print_screen[0]=="p"): print("defocus",defocus,"Euclidean distance",dis,"starting feq",istart,"stop freq",istop,"P R E", nr1,"P R B", nr2)
+					if(print_screen[0]=="p"): sxprint("defocus",defocus,"Euclidean distance",dis,"starting feq",istart,"stop freq",istop,"P R E", nr1,"P R B", nr2)
 					if(Mdis > dis):
 						defo = defocus
 						Mdis = dis
@@ -1299,7 +1299,7 @@ def defocus_get_slow(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 							defo = defocus
 							Mdis = dis
 			if(defo >= dz_max): 	ERROR("defo_get_s fails at estimating defocus from ", fnam, 0)
-			else:				print("", flist[i], defo) # screen output, give the user a general impression about estimated defoci		
+			else:				sxprint("", flist[i], defo) # screen output, give the user a general impression about estimated defoci		
 			if writetodoc    == "w" or writetodoc[0] == "a":out.write("%d\t%f\t%s\n" % (ncount, defo, fdefo_nam))
 			if writetodoc[0] == "l" : 	res.append(defo)
 	if  len(res) == 0 and writetodoc == "l" :  ERROR("No input file, check the input directory", indir, 1)
@@ -1376,7 +1376,7 @@ def imf_B_factor_get(res_N, x, ctf_params):
 	xopt  = fmin(residuals_B1, p, (res_N,x))
 	p     = xopt
 	xopt1 = fmin(residuals_B2, p, (res_N,ctf[1][0:nx-1], x))
-	print(xopt)
+	sxprint(xopt)
 	return xopt
 
 def imf_residuals_B1(p,y,x):
@@ -1915,7 +1915,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, \
 			check_consistency = False, stack_mode = False, debug_mode = False, \
 			program_name = "cter_mrk() in morphology.py", \
-			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1):
+			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1, write_pws=False):
 	"""
 	Arguments
 		input_image_path  :  file name pattern for Micrographs Modes (e.g. 'Micrographs/mic*.mrc') or particle stack file path for Stack Mode (e.g. 'bdb:stack'; must be stack_mode = True).
@@ -1987,8 +1987,8 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 		cter_mode_name = "Stack Mode"
 	
 	if my_mpi_proc_id == main_mpi_proc:
-		print(" ")
-		print(("----- Running with %s -----" % (cter_mode_name)))
+		sxprint(" ")
+		sxprint(("----- Running with %s -----" % (cter_mode_name)))
 	
 	# ------------------------------------------------------------------------------------
 	# Check mode-dependent error conditions of input arguments and options if abort is necessary. All nodes do this checking
@@ -2055,9 +2055,9 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 	if len(error_message_list) > 0:
 		# Detected error! Print all error messages
 		if my_mpi_proc_id == main_mpi_proc:
-			print(" ")
+			sxprint(" ")
 			for error_message in error_message_list:  
-				print(("ERROR!!! %s" % (error_message)))
+				sxprint(("ERROR!!! %s" % (error_message)))
 		error_status = ("Detected %d error(s) related to arguments and options. Run %s -h for help. Exiting..." % (len(error_message_list), program_name), getframeinfo(currentframe()))
 	if_error_then_all_processes_exit_program(error_status)
 	if RUNNING_UNDER_MPI:
@@ -2073,26 +2073,26 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 	if my_mpi_proc_id == main_mpi_proc:
 		if stack_mode:
 			if selection_list != None:
-				print(" ")
-				print(("WARNING!!! --selection_list option will be ignored in %s." % (cter_mode_name)))
+				sxprint(" ")
+				sxprint(("WARNING!!! --selection_list option will be ignored in %s." % (cter_mode_name)))
 			if wn != 512:
-				print(" ")
-				print(("WARNING!!! --wn option will be ignored in %s." % (cter_mode_name)))
+				sxprint(" ")
+				sxprint(("WARNING!!! --wn option will be ignored in %s." % (cter_mode_name)))
 			if overlap_x != 50:
-				print(" ")
-				print(("WARNING!!! --overlap_x option will be ignored in %s." % (cter_mode_name)))
+				sxprint(" ")
+				sxprint(("WARNING!!! --overlap_x option will be ignored in %s." % (cter_mode_name)))
 			if overlap_y != 50:
-				print(" ")
-				print(("WARNING!!! --overlap_y option will be ignored in %s." % (cter_mode_name)))
+				sxprint(" ")
+				sxprint(("WARNING!!! --overlap_y option will be ignored in %s." % (cter_mode_name)))
 			if edge_x != 0:
-				print(" ")
-				print(("WARNING!!! --edge_x option will be ignored in %s." % (cter_mode_name)))
+				sxprint(" ")
+				sxprint(("WARNING!!! --edge_x option will be ignored in %s." % (cter_mode_name)))
 			if edge_y != 0:
-				print(" ")
-				print(("WARNING!!! --edge_y option will be ignored in %s." % (cter_mode_name)))
+				sxprint(" ")
+				sxprint(("WARNING!!! --edge_y option will be ignored in %s." % (cter_mode_name)))
 			if check_consistency:
-				print(" ")
-				print(("WARNING!!! --check_consistency option will be ignored in %s." % (cter_mode_name)))
+				sxprint(" ")
+				sxprint(("WARNING!!! --check_consistency option will be ignored in %s." % (cter_mode_name)))
 
 	# ====================================================================================
 	# Create the input file path list and also check input-related error conditions if abort is necessary.
@@ -2139,11 +2139,11 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			# to the global entry dictionary
 			# --------------------------------------------------------------------------------
 			# Generate the list of  paths in the input directory
-			print(" ")
-			print("Checking the input directory...")
+			sxprint(" ")
+			sxprint("Checking the input directory...")
 			input_mic_path_list = glob.glob(mic_pattern)
 			# Check error condition of input  file path list
-			print(("Found %d micrographs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern))))
+			sxprint(("Found %d micrographs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern))))
 			if len(input_mic_path_list) == 0:
 				# The result shouldn't be empty if the specified  file name pattern is invalid
 				error_status = ("There are no micrographs whose paths match with the specified file path pattern (%s) for %s. Please check input_image_path. Run %s -h for help." % (mic_pattern, cter_mode_name, program_name), getframeinfo(currentframe()))
@@ -2156,7 +2156,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				mic_id_substr_tail_idx = input_mic_basename.index(mic_basename_tokens[1])
 				mic_id_substr = input_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
 				if not mic_id_substr in global_entry_dict:
-					# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from input_mic_path_list " % (mic_id_substr))
+					# sxprint("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from input_mic_path_list " % (mic_id_substr))
 					global_entry_dict[mic_id_substr] = {}
 				global_entry_dict[mic_id_substr][subkey_input_mic_path] = input_mic_path
 		
@@ -2172,23 +2172,23 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				selected_mic_path_list = input_mic_path_list
 			else:
 				if os.path.splitext(selection_list)[1] == ".txt":
-					print(" ")
-					print("Checking the selection list...")
+					sxprint(" ")
+					sxprint("Checking the selection list...")
 					selected_mic_path_list = read_text_file(selection_list)
 				
 					# Check error condition of  entry lists
-					print(("Found %d microgarph entries in %s." % (len(selected_mic_path_list), selection_list)))
+					sxprint(("Found %d microgarph entries in %s." % (len(selected_mic_path_list), selection_list)))
 					if len(selected_mic_path_list) == 0:
 						error_status = ("The provided  list file (%s) for %s mode contains no entries. Please check selection_list option and make sure the file contains a  list. Run %s -h for help." % (selection_list, cter_mode_name, program_name), getframeinfo(currentframe()))
 						break
 				else:
-					print(" ")
-					print(("Processing a single micorgprah: %s..." % (selection_list)))
+					sxprint(" ")
+					sxprint(("Processing a single micorgprah: %s..." % (selection_list)))
 					selected_mic_path_list = [selection_list]
 			
 				selected_mic_directory = os.path.dirname(selected_mic_path_list[0])
 				if selected_mic_directory != "":
-					print(("    NOTE: Program disregards the directory paths in the selection list (%s)." % (selected_mic_directory)))
+					sxprint(("    NOTE: Program disregards the directory paths in the selection list (%s)." % (selected_mic_directory)))
 		
 			# Register  id substrings to the global entry dictionary
 			for selected_mic_path in selected_mic_path_list:
@@ -2197,7 +2197,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				mic_id_substr_tail_idx = selected_mic_basename.index(mic_basename_tokens[1])
 				mic_id_substr = selected_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
 				if not mic_id_substr in global_entry_dict:
-					# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from selected_mic_path_list " % (mic_id_substr))
+					# sxprint("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from selected_mic_path_list " % (mic_id_substr))
 					global_entry_dict[mic_id_substr] = {}
 				global_entry_dict[mic_id_substr][subkey_selected_mic_basename] = selected_mic_basename
 			
@@ -2213,8 +2213,8 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			# Prepare lists to keep track of invalid (rejected) s 
 			no_input_mic_id_substr_list = []
 		
-			print(" ")
-			print("Checking the input datasets consistency...")
+			sxprint(" ")
+			sxprint("Checking the input datasets consistency...")
 		
 			# Loop over substring id list
 			for mic_id_substr in global_entry_dict:
@@ -2230,10 +2230,10 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 						no_input_mic_id_substr_list.append(mic_id_substr)
 				
 					if len(warinnig_messages) > 0:
-						print(("WARNING!!! Micrograph ID %s does not have:" % (mic_id_substr)))
+						sxprint(("WARNING!!! Micrograph ID %s does not have:" % (mic_id_substr)))
 						for warinnig_message in warinnig_messages:
-							print(warinnig_message)
-						print("    Ignores this as an invalid entry.")
+							sxprint(warinnig_message)
+						sxprint("    Ignores this as an invalid entry.")
 					else:
 						valid_mic_id_substr_list.append(mic_id_substr)
 				# otherwise: this entry is not in the selection list; do nothing
@@ -2244,8 +2244,8 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			
 				# Open the consistency check file
 				inconsist_mic_list_path = os.path.join(output_directory,"inconsist_mic_id_file.txt")
-				print(" ")
-				print(("Generating the input datasets consistency report in %s..." % (inconsist_mic_list_path)))
+				sxprint(" ")
+				sxprint(("Generating the input datasets consistency report in %s..." % (inconsist_mic_list_path)))
 				inconsist_mic_list_file = open(inconsist_mic_list_path, "w")
 				inconsist_mic_list_file.write("# The information about inconsistent  IDs\n")
 				# Loop over substring id list
@@ -2275,20 +2275,20 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			
 			# Since mic_id_substr is once stored as the key of global_entry_dict and extracted with the key order
 			# we need sort the valid_mic_id_substr_list here
-			if debug_mode: print(("BEFORE SORT: valid_mic_id_substr_list := ", valid_mic_id_substr_list))
+			if debug_mode: sxprint(("BEFORE SORT: valid_mic_id_substr_list := ", valid_mic_id_substr_list))
 			valid_mic_id_substr_list.sort(key=str.lower) # Sort list of  IDs using case insensitive string comparison
-			if debug_mode: print(("AFTER SORT: valid_mic_id_substr_list := ", valid_mic_id_substr_list))
+			if debug_mode: sxprint(("AFTER SORT: valid_mic_id_substr_list := ", valid_mic_id_substr_list))
 			
 			# --------------------------------------------------------------------------------
 			# Print out the summary of input consistency
 			# --------------------------------------------------------------------------------
-			print(" ")
-			print("Summary of dataset consistency check...")
-			print(("  Detected  IDs               : %6d" % (len(global_entry_dict))))
-			print(("  Entries in input directory  : %6d" % (len(input_mic_path_list))))
-			print(("  Entries in selection list   : %6d" % (len(selected_mic_path_list))))
-			print(("  Rejected by no input        : %6d" % (len(no_input_mic_id_substr_list))))
-			print(("  Valid Entries               : %6d" % (len(valid_mic_id_substr_list))))
+			sxprint(" ")
+			sxprint("Summary of dataset consistency check...")
+			sxprint(("  Detected  IDs               : %6d" % (len(global_entry_dict))))
+			sxprint(("  Entries in input directory  : %6d" % (len(input_mic_path_list))))
+			sxprint(("  Entries in selection list   : %6d" % (len(selected_mic_path_list))))
+			sxprint(("  Rejected by no input        : %6d" % (len(no_input_mic_id_substr_list))))
+			sxprint(("  Valid Entries               : %6d" % (len(valid_mic_id_substr_list))))
 					
 			# --------------------------------------------------------------------------------
 			# Create input file path list
@@ -2346,9 +2346,9 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 	namics = []  #  file name list
 	if not stack_mode:
 		namics = input_file_path_list
-		if debug_mode: print(("BEFORE SORT: namics := ", namics))
+		if debug_mode: sxprint(("BEFORE SORT: namics := ", namics))
 		namics.sort(key=str.lower) # Sort list of s using case insensitive string comparison
-		if debug_mode: print(("AFTER SORT: namics := ", namics))
+		if debug_mode: sxprint(("AFTER SORT: namics := ", namics))
 	else:
 		stack = input_file_path_list[0]
 	
@@ -2360,6 +2360,8 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 		outmicthumb = "%s/micthumb" % (output_directory)
 	if debug_mode:  
 		outravg = "%s/ravg" % (output_directory)
+	if write_pws:
+		outpower2d = os.path.join(output_directory,"power2d")
 	if my_mpi_proc_id == main_mpi_proc:
 		# Make output directory
 		if not os.path.exists(output_directory):
@@ -2369,6 +2371,8 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			os.mkdir(outmicthumb)
 		if debug_mode:
 			os.mkdir(outravg)
+		if write_pws and not os.path.exists(outpower2d): 
+			os.mkdir(outpower2d)
 	
 	if RUNNING_UNDER_MPI:
 		# Make all mpi processes wait for main mpi process to create output directory
@@ -2393,10 +2397,10 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 	
 	# Set up progress message
 	if my_mpi_proc_id == main_mpi_proc:
-		print(" ")
-		print("Estimating CTF parameters...")
+		sxprint(" ")
+		sxprint("Estimating CTF parameters...")
 		if stack == None:
-			print("  Micrographs processed by main process (including percent of progress):")
+			sxprint("  Micrographs processed by main process (including percent of progress):")
 			progress_percent_step = (set_end - set_start)/100.0 # the number of micrograms for main mpi processer divided by 100
 	
 	totresi = []
@@ -2412,18 +2416,18 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			img_name = namics[ifi]
 			
 			if my_mpi_proc_id == main_mpi_proc:
-				print(("    Processing %s ---> %6.2f%%" % (img_name, (ifi - set_start) / progress_percent_step)))
+				sxprint(("    Processing %s ---> %6.2f%%" % (img_name, (ifi - set_start) / progress_percent_step)))
 			
 			if not os.path.exists(img_name):
 				missing_img_names.append(img_name)
-				print("    %s %s: Can not find this file. Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name))
+				sxprint("    %s %s: Can not find this file. Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name))
 				continue
 
 			mic = get_im(img_name)
 			try:
 				pw2 = tilemic(mic, win_size = wn, overlp_x = overlap_x, overlp_y = overlap_y, edge_x = edge_x, edge_y = edge_y)
 			except:
-				print("MRK_DEBUG: tilemic() in cter_mrk() raised an exception. The micrographs {} might have a problem. Please check it and remove it if necessary.".format(img_name))
+				sxprint("MRK_DEBUG: tilemic() in cter_mrk() raised an exception. The micrographs {} might have a problem. Please check it and remove it if necessary.".format(img_name))
 				raise
 			del mic
 		else:
@@ -2437,7 +2441,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 
 		for i in range(len(pw2)):
 			pw2[i] = square_root(pw2[i])
-		if debug_mode: print("    %s %s: Process %04d started the processing. Detected %d image(s) in this %s file." % (img_type, img_name, ifi, numFM, img_type.lower()))
+		if debug_mode: sxprint("    %s %s: Process %04d started the processing. Detected %d image(s) in this %s file." % (img_type, img_name, ifi, numFM, img_type.lower()))
 
 		if db_check_dict(img_name) == False:
 			img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
@@ -2517,7 +2521,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			defc, subpw, ctf2, baseline, envelope, istart, istop = defocusgett_pap(rooc, wn, voltage = voltage, Pixel_size = pixel_size, Cs = Cs, ampcont = wgh, f_start = f_start, f_stop = f_stop, round_off = 1.0, nr1 = 3, nr2 = 6, parent = None, DEBug = debug_mode)
 			#defc, subpw, ctf2, baseline, envelope, istart, istop = defocusgett(rooc, wn, voltage = voltage, Pixel_size = pixel_size, Cs = Cs, ampcont = wgh, f_start = f_start, f_stop = f_stop, round_off = 1.0, nr1 = 3, nr2 = 6, parent = None, DEBug = debug_mode)
 			if debug_mode:
-				print("  RESULT %s" % (img_name), defc, istart, istop)
+				sxprint("  RESULT %s" % (img_name), defc, istart, istop)
 				
 				freq = list(range(len(subpw)))
 				for i in range(len(freq)):  freq[i] = float(i) / wn / pixel_size
@@ -2653,14 +2657,14 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				
 				dama = amoeba([bdef, bamp], [0.2, 0.2], fupw_pap, 1.e-4, 1.e-4, 500, astdata)
 				#dama = amoeba([bdef, bamp], [0.2, 0.2], fupw, 1.e-4, 1.e-4, 500, astdata)
-				if debug_mode:  print("AMOEBA    ", dama)
+				if debug_mode:  sxprint("AMOEBA    ", dama)
 				bdef = dama[0][0]
 				bamp = dama[0][1]
 				astdata = [crefim, numr, wn, bdef, Cs, voltage, pixel_size, wgh, bang, mask]
 				junk = fastigmatism3_pap(bamp, astdata)
 				#junk = fastigmatism3(bamp, astdata)
 				bang = astdata[8]
-				if debug_mode:  print(" after amoeba ", bdef, bamp, bang)
+				if debug_mode:  sxprint(" after amoeba ", bdef, bamp, bang)
 				#  The looping here is blocked as one shot at amoeba is good enough.  To unlock it, remove - from bold.
 				if(bcc < -bold): bold = bcc
 				else:           break
@@ -2688,26 +2692,26 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 		#exit()
 		ad1, ad2, ad3, ad4 = table_stat(adefocus) # return values: average, variance, minimum, maximum
 		if ad2 <= 0.0:
-			print(("    %s %s: Detected the variance less than zero (defocus statistics: avg = %f, var = %f, min = %f, max = %f)." % (img_type, img_name, ad1, ad2, ad3, ad4)))
-			print(("           The program ignores this estimate..."))
+			sxprint(("    %s %s: Detected the variance less than zero (defocus statistics: avg = %f, var = %f, min = %f, max = %f)." % (img_type, img_name, ad1, ad2, ad3, ad4)))
+			sxprint(("           The program ignores this estimate..."))
 			continue
 		
 		reject = []
 		thr = 3 * sqrt(ad2)
 		for i in range(len(adefocus)):
 			if(abs(adefocus[i] - ad1) > thr):
-				print(("    %s %s: Rejected an outlier defocus estimate (defocus = %f, average defocus = %f, threshold = %f)." % (img_type, img_name, adefocus[i], ad1, thr)))
+				sxprint(("    %s %s: Rejected an outlier defocus estimate (defocus = %f, average defocus = %f, threshold = %f)." % (img_type, img_name, adefocus[i], ad1, thr)))
 				reject.append(i)
 		
 		if(len(reject) > 0):
-			print(("    %s %s: Total number of rejects %s" % (img_type, img_name, len(reject))))
+			sxprint(("    %s %s: Total number of rejects %s" % (img_type, img_name, len(reject))))
 			for i in range(len(reject) - 1, -1, -1):
 				del adefocus[i]
 				del aamplitu[i]
 				del aangle[i]
 		
 		if(len(adefocus) < 2):
-			print(("    %s %s: After rejection of outliers, there is too few estimated defocus values. Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name)))
+			sxprint(("    %s %s: After rejection of outliers, there is too few estimated defocus values. Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name)))
 		else:
 			#print "adefocus",adefocus
 			#print  "aamplitu",aamplitu
@@ -2737,11 +2741,11 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			
 			if len(reject_img_messages) > 0:
 				rejected_img_names.append(img_name)
-				print("    %s %s: Rejected the CTF estimate - " % (img_type, img_name), ad1, Cs, voltage, pixel_size, wgh, bd1, cd1, "(def, Cs, vol, apix, amp_contrast, astig_amp, astig_angle)")
-				print("    %s %s: because... " % (img_type, img_name))
+				sxprint("    %s %s: Rejected the CTF estimate - " % (img_type, img_name), ad1, Cs, voltage, pixel_size, wgh, bd1, cd1, "(def, Cs, vol, apix, amp_contrast, astig_amp, astig_angle)")
+				sxprint("    %s %s: because... " % (img_type, img_name))
 				for reject_img_message in reject_img_messages:
-					print(reject_img_message)
-				print("    %s %s: Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name))
+					sxprint(reject_img_message)
+				sxprint("    %s %s: Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name))
 			else:
 				#  Estimate the point at which (sum_errordz ctf_1(dz+errordz))^2 falls to 0.5
 				import random as rqt
@@ -2787,6 +2791,10 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				cvavad1 = stdavad1 / ad1 * 100 # use percentage
 				
 				cvavbd1 = stdavbd1 / bd1 * 100 # use percentage
+				
+				if write_pws: 
+					draw_power2d(img_basename_root, qse, [defc,Cs,voltage,pixel_size,0.0,wgh, bd1, cd1], 
+					mask=mask, outdir=outpower2d, radius_1a=ibec)
 				
 				# Compute CTF limit (theoretical resolution limit based on the oscillations of CTF) 
 				# For output, use ctflim (relative frequency limit [1/A]), not ctflim_abs (absolute frequency limit)
@@ -2866,11 +2874,11 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				# wgh                     # constant amplitude contrast provided by user (default 10%). Here, it is also total amplitude contrast since Volta phase shift is not estimated with this function.
 				phase_shift = ampcont2angle(ed1) - ampcont2angle(wgh) # Volta phase shift [deg] = total amplitude contrast phase shift [deg] (ed1) -  constant amplitude contrast phase shift [deg]; ed1 is boot strap average of total amplitude contrast [%]
 				
-				if debug_mode: print(("    %s %s: Process %04d finished the processing. Estimated CTF parmaters are stored in %s." % (img_type, img_name, ifi, os.path.join(output_directory, "partres.txt"))))
-#				if debug_mode: print((ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim))
+				if debug_mode: sxprint(("    %s %s: Process %04d finished the processing. Estimated CTF parmaters are stored in %s." % (img_type, img_name, ifi, os.path.join(output_directory, "partres.txt"))))
+#				if debug_mode: sxprint((ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim))
 #				# totresi.append([img_name, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim])
 #				totresi.append([img_name, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdaved1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim])
-				if debug_mode: print((ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdaved1, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec, ctflim, max_freq, reserved, wgh, phase_shift))
+				if debug_mode: sxprint((ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdaved1, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec, ctflim, max_freq, reserved, wgh, phase_shift))
 				totresi.append([img_name, ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1, stdavad1, stdaved1, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec, ctflim, max_freq, reserved, wgh, phase_shift])
 				
 #				if stack == None:
@@ -2908,23 +2916,23 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			outf.write("  %s\n" % totresi[i][0])
 		outf.close()
 		
-		print(" ")
-		print(("Summary of %s processing..." % (img_type.lower())))
+		sxprint(" ")
+		sxprint(("Summary of %s processing..." % (img_type.lower())))
 		missing_counts = len(missing_img_names)
-		print(("  Missing  : %d" % (missing_counts)))
+		sxprint(("  Missing  : %d" % (missing_counts)))
 		if missing_counts > 0:
 			outfile_path = os.path.join(output_directory, "missing_%s_list.txt" % (img_type.lower()))
-			print(("    Saving list of missing in %s..." % (outfile_path)))
+			sxprint(("    Saving list of missing in %s..." % (outfile_path)))
 			outf = open(outfile_path, "w")
 			for missing_img_name in missing_img_names:
 				outf.write("%s\n" % missing_img_name)
 			outf.close()
 		
 		rejected_counts = len(rejected_img_names)
-		print(("  Rejected : %d" % (rejected_counts)))
+		sxprint(("  Rejected : %d" % (rejected_counts)))
 		if rejected_counts > 0:
 			outfile_path = os.path.join(output_directory, "rejected_%s_list.txt" % (img_type.lower()))
-			print(("    Saving list of rejected in %s..." % (outfile_path)))
+			sxprint(("    Saving list of rejected in %s..." % (outfile_path)))
 			outf = open(outfile_path, "w")
 			for rejected_img_name in rejected_img_names:
 				outf.write("%s\n" % rejected_img_name)
@@ -2958,7 +2966,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, \
 			check_consistency = False, stack_mode = False, debug_mode = False, \
 			program_name = "cter_pap() in morphology.py", \
-			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1):
+			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1, write_pws=False):
 	"""
 	Arguments
 		input_image_path  :  file name pattern for Micrographs Modes (e.g. 'Micrographs/mic*.mrc') or particle stack file path for Stack Mode (e.g. 'bdb:stack'; must be stack_mode = True).
@@ -3030,8 +3038,8 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 		cter_mode_name = "Stack Mode"
 
 	if my_mpi_proc_id == main_mpi_proc:
-		print(" ")
-		print(("----- Running with %s -----" % (cter_mode_name)))
+		sxprint(" ")
+		sxprint(("----- Running with %s -----" % (cter_mode_name)))
 
 	# ------------------------------------------------------------------------------------
 	# Check mode-dependent error conditions of input arguments and options if abort is necessary. All nodes do this checking
@@ -3098,9 +3106,9 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 	if len(error_message_list) > 0:
 		# Detected error! Print all error messages
 		if my_mpi_proc_id == main_mpi_proc:
-			print(" ")
+			sxprint(" ")
 			for error_message in error_message_list:  
-				print(("ERROR!!! %s" % (error_message)))
+				sxprint(("ERROR!!! %s" % (error_message)))
 		error_status = ("Detected %d error(s) related to arguments and options. Run %s -h for help. Exiting..." % (len(error_message_list), program_name), getframeinfo(currentframe()))
 	if_error_then_all_processes_exit_program(error_status)
 	if RUNNING_UNDER_MPI:
@@ -3116,26 +3124,26 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 	if my_mpi_proc_id == main_mpi_proc:
 		if stack_mode:
 			if selection_list != None:
-				print(" ")
-				print(("WARNING!!! --selection_list option will be ignored in %s." % (cter_mode_name)))
+				sxprint(" ")
+				sxprint(("WARNING!!! --selection_list option will be ignored in %s." % (cter_mode_name)))
 			if wn != 512:
-				print(" ")
-				print(("WARNING!!! --wn option will be ignored in %s." % (cter_mode_name)))
+				sxprint(" ")
+				sxprint(("WARNING!!! --wn option will be ignored in %s." % (cter_mode_name)))
 			if overlap_x != 50:
-				print(" ")
-				print(("WARNING!!! --overlap_x option will be ignored in %s." % (cter_mode_name)))
+				sxprint(" ")
+				sxprint(("WARNING!!! --overlap_x option will be ignored in %s." % (cter_mode_name)))
 			if overlap_y != 50:
-				print(" ")
-				print(("WARNING!!! --overlap_y option will be ignored in %s." % (cter_mode_name)))
+				sxprint(" ")
+				sxprint(("WARNING!!! --overlap_y option will be ignored in %s." % (cter_mode_name)))
 			if edge_x != 0:
-				print(" ")
-				print(("WARNING!!! --edge_x option will be ignored in %s." % (cter_mode_name)))
+				sxprint(" ")
+				sxprint(("WARNING!!! --edge_x option will be ignored in %s." % (cter_mode_name)))
 			if edge_y != 0:
-				print(" ")
-				print(("WARNING!!! --edge_y option will be ignored in %s." % (cter_mode_name)))
+				sxprint(" ")
+				sxprint(("WARNING!!! --edge_y option will be ignored in %s." % (cter_mode_name)))
 			if check_consistency:
-				print(" ")
-				print(("WARNING!!! --check_consistency option will be ignored in %s." % (cter_mode_name)))
+				sxprint(" ")
+				sxprint(("WARNING!!! --check_consistency option will be ignored in %s." % (cter_mode_name)))
 
 	# ====================================================================================
 	# Create the input file path list and also check input-related error conditions if abort is necessary.
@@ -3182,11 +3190,11 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			# to the global entry dictionary
 			# --------------------------------------------------------------------------------
 			# Generate the list of  paths in the input directory
-			print(" ")
-			print("Checking the input directory...")
+			sxprint(" ")
+			sxprint("Checking the input directory...")
 			input_mic_path_list = glob.glob(mic_pattern)
 			# Check error condition of input  file path list
-			print(("Found %d micrographs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern))))
+			sxprint(("Found %d micrographs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern))))
 			if len(input_mic_path_list) == 0:
 				# The result shouldn't be empty if the specified  file name pattern is invalid
 				error_status = ("There are no micrographs whose paths match with the specified file path pattern (%s) for %s. Please check input_image_path. Run %s -h for help." % (mic_pattern, cter_mode_name, program_name), getframeinfo(currentframe()))
@@ -3199,7 +3207,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				mic_id_substr_tail_idx = input_mic_basename.index(mic_basename_tokens[1])
 				mic_id_substr = input_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
 				if not mic_id_substr in global_entry_dict:
-					# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from input_mic_path_list " % (mic_id_substr))
+					# sxprint("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from input_mic_path_list " % (mic_id_substr))
 					global_entry_dict[mic_id_substr] = {}
 				global_entry_dict[mic_id_substr][subkey_input_mic_path] = input_mic_path
 		
@@ -3215,23 +3223,23 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				selected_mic_path_list = input_mic_path_list
 			else:
 				if os.path.splitext(selection_list)[1] == ".txt":
-					print(" ")
-					print("Checking the selection list...")
+					sxprint(" ")
+					sxprint("Checking the selection list...")
 					selected_mic_path_list = read_text_file(selection_list)
 				
 					# Check error condition of  entry lists
-					print(("Found %d microgarph entries in %s." % (len(selected_mic_path_list), selection_list)))
+					sxprint(("Found %d microgarph entries in %s." % (len(selected_mic_path_list), selection_list)))
 					if len(selected_mic_path_list) == 0:
 						error_status = ("The provided  list file (%s) for %s mode contains no entries. Please check selection_list option and make sure the file contains a  list. Run %s -h for help." % (selection_list, cter_mode_name, program_name), getframeinfo(currentframe()))
 						break
 				else:
-					print(" ")
-					print(("Processing a single micorgprah: %s..." % (selection_list)))
+					sxprint(" ")
+					sxprint(("Processing a single micorgprah: %s..." % (selection_list)))
 					selected_mic_path_list = [selection_list]
 			
 				selected_mic_directory = os.path.dirname(selected_mic_path_list[0])
 				if selected_mic_directory != "":
-					print(("    NOTE: Program disregards the directory paths in the selection list (%s)." % (selected_mic_directory)))
+					sxprint(("    NOTE: Program disregards the directory paths in the selection list (%s)." % (selected_mic_directory)))
 		
 			# Register  id substrings to the global entry dictionary
 			for selected_mic_path in selected_mic_path_list:
@@ -3240,7 +3248,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				mic_id_substr_tail_idx = selected_mic_basename.index(mic_basename_tokens[1])
 				mic_id_substr = selected_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
 				if not mic_id_substr in global_entry_dict:
-					# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from selected_mic_path_list " % (mic_id_substr))
+					# sxprint("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from selected_mic_path_list " % (mic_id_substr))
 					global_entry_dict[mic_id_substr] = {}
 				global_entry_dict[mic_id_substr][subkey_selected_mic_basename] = selected_mic_basename
 			
@@ -3256,8 +3264,8 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			# Prepare lists to keep track of invalid (rejected) s 
 			no_input_mic_id_substr_list = []
 		
-			print(" ")
-			print("Checking the input datasets consistency...")
+			sxprint(" ")
+			sxprint("Checking the input datasets consistency...")
 		
 			# Loop over substring id list
 			for mic_id_substr in global_entry_dict:
@@ -3273,12 +3281,12 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 						no_input_mic_id_substr_list.append(mic_id_substr)
 				
 					if len(warinnig_messages) > 0:
-						print(("WARNING!!! Micrograph ID %s does not have:" % (mic_id_substr)))
+						sxprint(("WARNING!!! Micrograph ID %s does not have:" % (mic_id_substr)))
 						for warinnig_message in warinnig_messages:
-							print(warinnig_message)
-						print("    Ignores this as an invalid entry.")
+							sxprint(warinnig_message)
+						sxprint("    Ignores this as an invalid entry.")
 					else:
-						# print("MRK_DEBUG: adding mic_id_substr := ", mic_id_substr)
+						# sxprint("MRK_DEBUG: adding mic_id_substr := ", mic_id_substr)
 						valid_mic_id_substr_list.append(mic_id_substr)
 				# 	# This entry is not in the selection list. Do nothing
 			
@@ -3289,8 +3297,8 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			
 				# Open the consistency check file
 				inconsist_mic_list_path = os.path.join(output_directory,"inconsist_mic_id_file.txt")
-				print(" ")
-				print(("Generating the input datasets consistency report in %s..." % (inconsist_mic_list_path)))
+				sxprint(" ")
+				sxprint(("Generating the input datasets consistency report in %s..." % (inconsist_mic_list_path)))
 				inconsist_mic_list_file = open(inconsist_mic_list_path, "w")
 				inconsist_mic_list_file.write("# The information about inconsistent  IDs\n")
 				# Loop over substring id list
@@ -3320,20 +3328,20 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			
 			# Since mic_id_substr is once stored as the key of global_entry_dict and extracted with the key order
 			# we need sort the valid_mic_id_substr_list here
-			if debug_mode: print(("BEFORE SORT: valid_mic_id_substr_list := ", valid_mic_id_substr_list))
+			if debug_mode: sxprint(("BEFORE SORT: valid_mic_id_substr_list := ", valid_mic_id_substr_list))
 			valid_mic_id_substr_list.sort(key=str.lower) # Sort list of  IDs using case insensitive string comparison
-			if debug_mode: print(("AFTER SORT: valid_mic_id_substr_list := ", valid_mic_id_substr_list))
+			if debug_mode: sxprint(("AFTER SORT: valid_mic_id_substr_list := ", valid_mic_id_substr_list))
 			
 			# --------------------------------------------------------------------------------
 			# Print out the summary of input consistency
 			# --------------------------------------------------------------------------------
-			print(" ")
-			print("Summary of dataset consistency check...")
-			print(("  Detected  IDs               : %6d" % (len(global_entry_dict))))
-			print(("  Entries in input directory  : %6d" % (len(input_mic_path_list))))
-			print(("  Entries in selection list   : %6d" % (len(selected_mic_path_list))))
-			print(("  Rejected by no input        : %6d" % (len(no_input_mic_id_substr_list))))
-			print(("  Valid Entries               : %6d" % (len(valid_mic_id_substr_list))))
+			sxprint(" ")
+			sxprint("Summary of dataset consistency check...")
+			sxprint(("  Detected  IDs               : %6d" % (len(global_entry_dict))))
+			sxprint(("  Entries in input directory  : %6d" % (len(input_mic_path_list))))
+			sxprint(("  Entries in selection list   : %6d" % (len(selected_mic_path_list))))
+			sxprint(("  Rejected by no input        : %6d" % (len(no_input_mic_id_substr_list))))
+			sxprint(("  Valid Entries               : %6d" % (len(valid_mic_id_substr_list))))
 					
 			# --------------------------------------------------------------------------------
 			# Create input file path list
@@ -3394,9 +3402,9 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 	namics = []  #  file name list
 	if not stack_mode:
 		namics = input_file_path_list
-		if debug_mode: print(("BEFORE SORT: namics := ", namics))
+		if debug_mode: sxprint(("BEFORE SORT: namics := ", namics))
 		namics.sort(key=str.lower) # Sort list of s using case insensitive string comparison
-		if debug_mode: print(("AFTER SORT: namics := ", namics))
+		if debug_mode: sxprint(("AFTER SORT: namics := ", namics))
 	else:
 		stack = input_file_path_list[0]
 	
@@ -3408,6 +3416,8 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 		outmicthumb = "%s/micthumb" % (output_directory)
 	if debug_mode:  
 		outravg = "%s/ravg" % (output_directory)
+	if write_pws:
+		outpower2d = os.path.join(output_directory,"power2d")
 	if my_mpi_proc_id == main_mpi_proc:
 		# Make output directory
 		if not os.path.exists(output_directory):
@@ -3417,6 +3427,8 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			os.mkdir(outmicthumb)
 		if debug_mode:
 			os.mkdir(outravg)
+		if write_pws and not os.path.exists(outpower2d): 
+			os.mkdir(outpower2d)
 	
 	if RUNNING_UNDER_MPI:
 		# Make all mpi processes wait for main mpi process to create output directory
@@ -3441,10 +3453,10 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 
 	# Set up progress message
 	if my_mpi_proc_id == main_mpi_proc:
-		print(" ")
-		print("Estimating CTF parameters...")
+		sxprint(" ")
+		sxprint("Estimating CTF parameters...")
 		if stack == None:
-			print("  Micrographs processed by main process (including percent of progress):")
+			sxprint("  Micrographs processed by main process (including percent of progress):")
 			progress_percent_step = (set_end - set_start)/100.0 # the number of micrograms for main mpi processer divided by 100
 
 	totresi = []
@@ -3460,18 +3472,18 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			img_name = namics[ifi]
 			
 			if my_mpi_proc_id == main_mpi_proc:
-				print(("    Processing %s ---> %6.2f%%" % (img_name, (ifi - set_start) / progress_percent_step)))
+				sxprint(("    Processing %s ---> %6.2f%%" % (img_name, (ifi - set_start) / progress_percent_step)))
 			
 			if not os.path.exists(img_name):
 				missing_img_names.append(img_name)
-				print("    %s %s: Can not find this file. Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name))
+				sxprint("    %s %s: Can not find this file. Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name))
 				continue
 
 			mic = get_im(img_name)
 			try:
 				pw2 = tilemic(mic, win_size = wn, overlp_x = overlap_x, overlp_y = overlap_y, edge_x = edge_x, edge_y = edge_y)
 			except:
-				print("MRK_DEBUG: tilemic() in cter_pap() raised an exception. The micrographs {} might have a problem. Please check it and remove it if necessary.".format(img_name))
+				sxprint("MRK_DEBUG: tilemic() in cter_pap() raised an exception. The micrographs {} might have a problem. Please check it and remove it if necessary.".format(img_name))
 				raise
 			del mic
 		else:
@@ -3483,7 +3495,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			for i in range(numFM):
 				pw2.append(periodogram(get_im(img_name,i)))
 
-		if debug_mode: print("    %s %s: Process %04d started the processing. Detected %d image(s) in this %s file." % (img_type, img_name, ifi, numFM, img_type.lower()))
+		if debug_mode: sxprint("    %s %s: Process %04d started the processing. Detected %d image(s) in this %s file." % (img_type, img_name, ifi, numFM, img_type.lower()))
 		
 		if db_check_dict(img_name) == False:
 			img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
@@ -3561,7 +3573,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			
 			defc, subpw, ctf2, baseline, envelope, istart, istop = defocusgett(rooc, wn, voltage = voltage, Pixel_size = pixel_size, Cs = Cs, ampcont = wgh, f_start = f_start, f_stop = f_stop, round_off = 1.0, nr1 = 3, nr2 = 6, parent = None, DEBug = debug_mode)
 			if debug_mode:
-				print("  RESULT %s" % (img_name), defc, istart, istop)
+				sxprint("  RESULT %s" % (img_name), defc, istart, istop)
 				
 				freq = list(range(len(subpw)))
 				for i in range(len(freq)):  freq[i] = float(i) / wn / pixel_size
@@ -3691,13 +3703,13 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				#bang = 277
 				
 				dama = amoeba([bdef, bamp], [0.2, 0.2], fupw, 1.e-4, 1.e-4, 500, astdata)
-				if debug_mode:  print("AMOEBA    ", dama)
+				if debug_mode:  sxprint("AMOEBA    ", dama)
 				bdef = dama[0][0]
 				bamp = dama[0][1]
 				astdata = [crefim, numr, wn, bdef, Cs, voltage, pixel_size, wgh, bang, mask]
 				junk = fastigmatism3(bamp, astdata)
 				bang = astdata[8]
-				if debug_mode:  print(" after amoeba ", bdef, bamp, bang)
+				if debug_mode:  sxprint(" after amoeba ", bdef, bamp, bang)
 				#  The looping here is blocked as one shot at amoeba is good enough.  To unlock it, remove - from bold.
 				if(bcc < -bold): bold = bcc
 				else:           break
@@ -3725,26 +3737,26 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 		#exit()
 		ad1, ad2, ad3, ad4 = table_stat(adefocus) # return values: average, variance, minimum, maximum
 		if ad2 <= 0.0:
-			print(("    %s %s: Detected the variance less than zero (defocus statics: avg = %f, var = %f, min = %f, max = %f)." % (img_type, img_name, ad1, ad2, ad3, ad4)))
-			print(("           The program ignores this estimate..."))
+			sxprint(("    %s %s: Detected the variance less than zero (defocus statics: avg = %f, var = %f, min = %f, max = %f)." % (img_type, img_name, ad1, ad2, ad3, ad4)))
+			sxprint(("           The program ignores this estimate..."))
 			continue
 		
 		reject = []
 		thr = 3 * sqrt(ad2)
 		for i in range(len(adefocus)):
 			if(abs(adefocus[i] - ad1) > thr):
-				print(("    %s %s: Rejected an outlier defocus estimate (defocus = %f, average defocus = %f, threshold = %f)." % (img_type, img_name, adefocus[i], ad1, thr)))
+				sxprint(("    %s %s: Rejected an outlier defocus estimate (defocus = %f, average defocus = %f, threshold = %f)." % (img_type, img_name, adefocus[i], ad1, thr)))
 				reject.append(i)
 		
 		if(len(reject) > 0):
-			print(("    %s %s: Total number of rejects %s" % (img_type, img_name, len(reject))))
+			sxprint(("    %s %s: Total number of rejects %s" % (img_type, img_name, len(reject))))
 			for i in range(len(reject) - 1, -1, -1):
 				del adefocus[i]
 				del aamplitu[i]
 				del aangle[i]
 		
 		if(len(adefocus) < 2):
-			print(("    %s %s: After rejection of outliers, there is too few estimated defocus values. Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name)))
+			sxprint(("    %s %s: After rejection of outliers, there is too few estimated defocus values. Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name)))
 		else:
 			#print "adefocus",adefocus
 			#print  "aamplitu",aamplitu
@@ -3774,11 +3786,11 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			
 			if len(reject_img_messages) > 0:
 				rejected_img_names.append(img_name)
-				print("    %s %s: Rejected the CTF estimate - " % (img_type, img_name), ad1, Cs, voltage, pixel_size, wgh, bd1, cd1, "(def, Cs, vol, apix, amp_contrast, astig_amp, astig_angle)")
-				print("    %s %s: because... " % (img_type, img_name))
+				sxprint("    %s %s: Rejected the CTF estimate - " % (img_type, img_name), ad1, Cs, voltage, pixel_size, wgh, bd1, cd1, "(def, Cs, vol, apix, amp_contrast, astig_amp, astig_angle)")
+				sxprint("    %s %s: because... " % (img_type, img_name))
 				for reject_img_message in reject_img_messages:
-					print(reject_img_message)
-				print("    %s %s: Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name))
+					sxprint(reject_img_message)
+				sxprint("    %s %s: Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name))
 			else: # assert(len(img_reject_messages) == 0)
 				#  Estimate the point at which (sum_errordz ctf_1(dz+errordz))^2 falls to 0.5
 				import random as rqt
@@ -3831,6 +3843,10 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				bd1 = max(bd1, 1.0e-15)
 				
 				cvavbd1 = stdavbd1 / bd1 * 100 # use percentage
+				
+				if write_pws: 
+					draw_power2d(img_basename_root, qse, [defc,Cs,voltage,pixel_size,0.0,wgh, bd1, cd1], 
+					mask=mask, outdir=outpower2d, radius_1a=ibec)
 				
 				# Compute CTF limit (theoretical resolution limit based on the oscillations of CTF) 
 				# For output, use ctflim (relative frequency limit [1/A]), not ctflim_abs (absolute frequency limit)
@@ -3909,11 +3925,11 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				# wgh                     # constant amplitude contrast provided by user (default 10%). Here, it is also total amplitude contrast since Volta phase shift is not estimated with this function.
 				phase_shift = ampcont2angle(ed1) - ampcont2angle(wgh) # Volta phase shift [deg] = total amplitude contrast phase shift [deg] (ed1) -  constant amplitude contrast phase shift [deg]; ed1 is boot strap average of total amplitude contrast [%]
 				
-				if debug_mode: print(("    %s %s: Process %04d finished the processing. Estimated CTF parmaters are stored in %s." % (img_type, img_name, ifi, os.path.join(output_directory, "partres.txt"))))
-#				if debug_mode: print((ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim))
+				if debug_mode: sxprint(("    %s %s: Process %04d finished the processing. Estimated CTF parmaters are stored in %s." % (img_type, img_name, ifi, os.path.join(output_directory, "partres.txt"))))
+#				if debug_mode: sxprint((ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim))
 #				# totresi.append([img_name, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim])
 #				totresi.append([img_name, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdaved1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim])
-				if debug_mode: print((ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1, stdavad1, stdavbd1, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec, ctflim, max_freq, reserved, wgh, phase_shift))
+				if debug_mode: sxprint((ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1, stdavad1, stdavbd1, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec, ctflim, max_freq, reserved, wgh, phase_shift))
 				totresi.append([img_name, ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1, stdavad1, stdaved1, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec, ctflim, max_freq, reserved, wgh, phase_shift])
 				
 #				if stack == None:
@@ -3951,23 +3967,23 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			outf.write("  %s\n" % totresi[i][0])
 		outf.close()
 		
-		print(" ")
-		print(("Summary of %s processing..." % (img_type.lower())))
+		sxprint(" ")
+		sxprint(("Summary of %s processing..." % (img_type.lower())))
 		missing_counts = len(missing_img_names)
-		print(("  Missing  : %d" % (missing_counts)))
+		sxprint(("  Missing  : %d" % (missing_counts)))
 		if missing_counts > 0:
 			outfile_path = os.path.join(output_directory, "missing_%s_list.txt" % (img_type.lower()))
-			print(("    Saving list of missing in %s..." % (outfile_path)))
+			sxprint(("    Saving list of missing in %s..." % (outfile_path)))
 			outf = open(outfile_path, "w")
 			for missing_img_name in missing_img_names:
 				outf.write("%s\n" % missing_img_name)
 			outf.close()
 		
 		rejected_counts = len(rejected_img_names)
-		print(("  Rejected : %d" % (rejected_counts)))
+		sxprint(("  Rejected : %d" % (rejected_counts)))
 		if rejected_counts > 0:
 			outfile_path = os.path.join(output_directory, "rejected_%s_list.txt" % (img_type.lower()))
-			print(("    Saving list of rejected in %s..." % (outfile_path)))
+			sxprint(("    Saving list of rejected in %s..." % (outfile_path)))
 			outf = open(outfile_path, "w")
 			for rejected_img_name in rejected_img_names:
 				outf.write("%s\n" % rejected_img_name)
@@ -4014,7 +4030,7 @@ def bracket_original(f, x1, h):
 		if f3 > f2: return x1,x3
 		x1 = x2; x2 = x3
 		f1 = f2; f2 = f3
-	print("Bracket did not find a mimimum")
+	sxprint("Bracket did not find a mimimum")
 
 
  
@@ -4040,7 +4056,7 @@ def bracket_def(f, dat, x1, h):
 		if f3 > f2: return x1,x3
 		x1 = x2; x2 = x3
 		f1 = f2; f2 = f3
-	print("Bracket did not find a mimimum")
+	sxprint("Bracket did not find a mimimum")
 	return None, x3
 
 
@@ -4059,7 +4075,7 @@ def bracket(f, dat, h):
 		if f3 > f2: return x1,x3
 		x1 = x2; x2 = x3
 		f1 = f2; f2 = f3
-	print("Bracket did not find a mimimum")
+	sxprint("Bracket did not find a mimimum")
  
 def goldsearch_astigmatism(f, dat, a, b, tol=1.0e-3):
 	from math import log, ceil
@@ -4151,7 +4167,7 @@ def simpw1d_print(defocus, data):
 	#ct = data[1]*np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
 	ct = np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
 	#print  " 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2)
-	for i in range(len(data[0])):  print(i,i+data[8],data[0][i],ct[i],data[1][i],data[0][i]/data[1][i])
+	for i in range(len(data[0])):  sxprint(i,i+data[8],data[0][i],ct[i],data[1][i],data[0][i]/data[1][i])
 	return  -sum(data[0]*ct/data[1])/np.linalg.norm(ct,2)
 
 def simpw2d(defocus, data2d):
@@ -4188,7 +4204,7 @@ def simpw1dc(defocus, data):
 	#  data = [subpw[i_start:i_stop], envelope[i_start:i_stop], nx, defocus, Cs, voltage, Pixel_size, ampcont, i_start, i_stop]
 	# data[1] - envelope
 	ct = data[1]*np.array( ctf_2(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]))[data[8]:data[9]], np.float32)
-	print(" 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2))
+	sxprint(" 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2))
 	return  2.0-sum(data[0]*ct)/np.linalg.norm(ct,2),ctf_2(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]))
 
 def simpw2dc(defocus, data2d):
@@ -4211,7 +4227,7 @@ def simpw2dc(defocus, data2d):
 	print  info(data2d[1], data2d[10])
 	print  info(ct, data2d[10])
 	'''
-	print(" 2d  ",q1,q2)
+	sxprint(" 2d  ",q1,q2)
 	return  2.0-q1/q2,ct
 
 def movingaverage(data, window_size, skip = 3):
@@ -4268,7 +4284,7 @@ def defocusgett(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_s
 
 	nroo = len(roo)
 
-	if DEBug:  print("f_start, i_start, f_stop, i_stop:", f_start, i_start, f_stop, i_stop-1)
+	if DEBug:  sxprint("f_start, i_start, f_stop, i_stop:", f_start, i_start, f_stop, i_stop-1)
 	#TE  = defocus_env_baseline_fit(roo, i_start, i_stop, int(nr1), 4)
 	#baseline = defocus_baseline_fit(roo, i_start, i_stop, int(nr2), 3)
 
@@ -4298,9 +4314,9 @@ def defocusgett(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_s
 	for  idef in range(ndefs):
 		def1 = (idef+1)*0.5
 		def1, def2 = bracket_def(simpw1d, data, def1, h)
-		if DEBug:  print("second bracket ",idef,def1, def2,simpw1d(def1, data),simpw1d(def2, data),h)
+		if DEBug:  sxprint("second bracket ",idef,def1, def2,simpw1d(def1, data),simpw1d(def2, data),h)
 		def1, val2 = goldsearch_astigmatism(simpw1d, data, def1, def2, tol=1.0e-3)
-		if DEBug:  print("golden ",idef,def1, val2,simpw1d(def1, data))
+		if DEBug:  sxprint("golden ",idef,def1, val2,simpw1d(def1, data))
 		if def1>0.0:  defound.append([val2,def1])
 	defound.sort()
 	del defound[3:]
@@ -4308,7 +4324,7 @@ def defocusgett(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_s
 	if adjust_fstop:
 		from morphology import ctflimit
 		newstop, fnewstop = ctflimit(nx, def1, Cs, voltage, Pixel_size)
-		if DEBug:  print("newstop  ", int(newstop*0.7), fnewstop*0.7, i_stop, newstop)
+		if DEBug:  sxprint("newstop  ", int(newstop*0.7), fnewstop*0.7, i_stop, newstop)
 		if( newstop != i_stop and (newstop-i_start)>min(10,(i_stop-i_start))):
 			i_stop = newstop
 			data = [subpw[i_start:i_stop], envelope[i_start:i_stop], nx, defocus, Cs, voltage, Pixel_size, ampcont, i_start, i_stop]
@@ -4323,13 +4339,13 @@ def defocusgett(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_s
 			h = 0.05
 			for idef in range(3):
 				def1, def2 = bracket_def(simpw1d, data, defound[idef][1], h)
-				if DEBug:  print(" adjusted def ",def1,def2)
+				if DEBug:  sxprint(" adjusted def ",def1,def2)
 				def1, val2 = goldsearch_astigmatism(simpw1d, data, def1, def2, tol=1.0e-3)
-				if DEBug:  print("adjusted golden ",def1, val2,simpw1d(def1, data))
+				if DEBug:  sxprint("adjusted golden ",def1, val2,simpw1d(def1, data))
 				if def1>0.0:  defound[idef] = [val2,def1]
 			defound.sort()
 			def1 = defound[0][1]
-	if DEBug: print(" ultimate defocus",def1,defound)
+	if DEBug: sxprint(" ultimate defocus",def1,defound)
 
 	#defocus = defocus_guessn(Res_roo, voltage, Cs, Pixel_size, ampcont, i_start, i_stop, 2, round_off)
 	#print simpw1d(def1, data),simpw1d(4.372, data)
@@ -4351,7 +4367,7 @@ def defocusgett(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_s
 				defi = dc
 		from utilities import write_text_row
 		write_text_row(toto,"toto1.txt")
-		print(" >>>>>>>>>  ",defi,simpw1d(defi, data))#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
+		sxprint(" >>>>>>>>>  ",defi,simpw1d(defi, data))#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
 		#def1 = defi
 	#exit()
 	ctf2 = ctf_2(nx, generate_ctf([def1, Cs, voltage, Pixel_size, 0.0, ampcont]))
@@ -4384,7 +4400,7 @@ def defocusgett_pap(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1,
 
 	nroo = len(roo)
 
-	if DEBug:  print("f_start, i_start, f_stop, i_stop:", f_start, i_start, f_stop, i_stop-1)
+	if DEBug:  sxprint("f_start, i_start, f_stop, i_stop:", f_start, i_start, f_stop, i_stop-1)
 	#TE  = defocus_env_baseline_fit(roo, i_start, i_stop, int(nr1), 4)
 	#baseline = defocus_baseline_fit(roo, i_start, i_stop, int(nr2), 3)
 
@@ -4414,9 +4430,9 @@ def defocusgett_pap(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1,
 	for  idef in range(ndefs):
 		def1 = (idef+1)*0.5
 		def1, def2 = bracket_def(simpw1d_pap, data, def1, h)
-		if DEBug:  print("second bracket ",idef,def1, def2,simpw1d(def1, data),simpw1d_pap(def2, data),h)
+		if DEBug:  sxprint("second bracket ",idef,def1, def2,simpw1d(def1, data),simpw1d_pap(def2, data),h)
 		def1, val2 = goldsearch_astigmatism(simpw1d_pap, data, def1, def2, tol=1.0e-3)
-		if DEBug:  print("golden ",idef,def1, val2,simpw1d_pap(def1, data))
+		if DEBug:  sxprint("golden ",idef,def1, val2,simpw1d_pap(def1, data))
 		if def1>0.0:  defound.append([val2,def1])
 	defound.sort()
 	del defound[3:]
@@ -4424,7 +4440,7 @@ def defocusgett_pap(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1,
 	if adjust_fstop:
 		from morphology import ctflimit
 		newstop, fnewstop = ctflimit(nx, def1, Cs, voltage, Pixel_size)
-		if DEBug:  print("newstop  ", int(newstop*0.7), fnewstop*0.7, i_stop, newstop)
+		if DEBug:  sxprint("newstop  ", int(newstop*0.7), fnewstop*0.7, i_stop, newstop)
 		if( newstop != i_stop and (newstop-i_start)>min(10,(i_stop-i_start))):
 			i_stop = newstop
 			data = [subpw[i_start:i_stop], envelope[i_start:i_stop], nx, defocus, Cs, voltage, Pixel_size, ampcont, i_start, i_stop]
@@ -4439,13 +4455,13 @@ def defocusgett_pap(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1,
 			h = 0.05
 			for idef in range(3):
 				def1, def2 = bracket_def(simpw1d_pap, data, defound[idef][1], h)
-				if DEBug:  print(" adjusted def ",def1,def2)
+				if DEBug:  sxprint(" adjusted def ",def1,def2)
 				def1, val2 = goldsearch_astigmatism(simpw1d_pap, data, def1, def2, tol=1.0e-3)
-				if DEBug:  print("adjusted golden ",def1, val2,simpw1d_pap(def1, data))
+				if DEBug:  sxprint("adjusted golden ",def1, val2,simpw1d_pap(def1, data))
 				if( def1>0.0 ):  defound[idef] = [val2,def1]
 			defound.sort()
 			def1 = defound[0][1]
-	if DEBug: print(" ultimate defocus",def1,defound)
+	if DEBug: sxprint(" ultimate defocus",def1,defound)
 
 	#defocus = defocus_guessn(Res_roo, voltage, Cs, Pixel_size, ampcont, i_start, i_stop, 2, round_off)
 	#print simpw1d(def1, data),simpw1d(4.372, data)
@@ -4467,7 +4483,7 @@ def defocusgett_pap(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1,
 				defi = dc
 		from utilities import write_text_row
 		write_text_row(toto,"toto1.txt")
-		print(" >>>>>>>>>  ",defi,simpw1d(defi, data))#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
+		sxprint(" >>>>>>>>>  ",defi,simpw1d(defi, data))#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
 		#def1 = defi
 	#exit()
 	ctf2 = ctf_1d(nx, generate_ctf([def1, Cs, voltage, Pixel_size, 0.0, ampcont]), doabs = True)
@@ -4515,7 +4531,7 @@ def defocus_guessn(roo, volt, Cs, Pixel_size, ampcont, istart, i_stop):
 	ct = np.array( ctf_2(nx, generate_ctf([defocus, Cs, volt, Pixel_size, 0.0, ampcont]))[:nn], np.float32)
 	temp = ct
 	ct = (ct - sum(ct)/nn)*envelope
-	for i in range(nn):  print(sub[i],envelope[i],ct[i],temp[i])
+	for i in range(nn):  sxprint(sub[i],envelope[i],ct[i],temp[i])
 	from sys import exit
 	exit()
 	#defocus = int( defocus/round_off )*round_off
@@ -4875,25 +4891,25 @@ def defocusgett_crf(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1,
 		if def1>0.0:  defound.append([val2,def1])
 	defound.sort()
 	del defound[3:]
-	if DEBug:  print(" BEST DEF CANDIDATES",defound)
+	if DEBug:  sxprint(" BEST DEF CANDIDATES",defound)
 	if adjust_fstop:
 		from morphology import ctflimit
 		newstop,fnewstop = ctflimit(nx, defound[0][1], Cs, voltage, Pixel_size)
 		if DEBug:  
-			print("newstop  ",int(newstop),fnewstop,i_stop,newstop,nx, defound[0][1])
+			sxprint("newstop  ",int(newstop),fnewstop,i_stop,newstop,nx, defound[0][1])
 		if( newstop != i_stop):
 			i_stop = newstop
 			data = [roo[i_start:i_stop], envelope[i_start:i_stop], nx, defocus, Cs, voltage, Pixel_size, ampcont, i_start, i_stop]
 			h = 0.05
 			for idef in range(3):
 				def1, def2 = bracket_def(simpw1d_crf, data, defound[idef][1], h)
-				if DEBug:  print(" adjusted def ",def1,def2)
+				if DEBug:  sxprint(" adjusted def ",def1,def2)
 				def1, val2 = goldsearch_astigmatism(simpw1d_crf, data, def1, def2, tol=1.0e-3)
-				if DEBug:  print("adjusted golden ",def1, val2,simpw1d_crf(def1, data))
+				if DEBug:  sxprint("adjusted golden ",def1, val2,simpw1d_crf(def1, data))
 				if def1>0.0:  defound[idef] = [val2,def1]
 			defound.sort()
 	def1 = defound[0][1]
-	if DEBug: print(" ultimate defocus",def1,defound)
+	if DEBug: sxprint(" ultimate defocus",def1,defound)
 
 	#defocus = defocus_guessn(Res_roo, voltage, Cs, Pixel_size, ampcont, i_start, i_stop, 2, round_off)
 	#print simpw1d(def1, data),simpw1d(4.372, data)
@@ -4914,7 +4930,7 @@ def defocusgett_crf(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1,
 				qm=qt
 				defi = dc
 		write_text_row(toto,"toto1.txt")
-		print(" >>>>>>>>>  ",defi,simpw1d_crf(defi, data))#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
+		sxprint(" >>>>>>>>>  ",defi,simpw1d_crf(defi, data))#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
 		#def1 = defi
 	#exit()
 	ctf1d = ctf_1d(nx, generate_ctf([def1, Cs, voltage, Pixel_size, 0.0, ampcont]))
@@ -4958,7 +4974,7 @@ def envelopegett_crf(defold, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, amp
 	if adjust_fstop:
 		from morphology import ctflimit
 		newstop,fnewstop = ctflimit(nx, defold, Cs, voltage, Pixel_size)
-		if DEBug:  print("newstop  ",int(newstop*0.7),fnewstop*0.7,i_stop)
+		if DEBug:  sxprint("newstop  ",int(newstop*0.7),fnewstop*0.7,i_stop)
 	
 	ctf1d = ctf_1d(nx, generate_ctf([defold, Cs, voltage, Pixel_size, 0.0, ampcont]))
 
@@ -5029,7 +5045,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 		ny2 = nx//2
 		if UseOldDef:
 			defold, csi, volti, apixi, bfcti, ampconti, astampi, astangi = get_ctf(d[0])
-			if DEBug:  print(" USING OLD CTF  ",defold, csi, volti, apixi, bfcti, ampconti, astampi, astangi)
+			if DEBug:  sxprint(" USING OLD CTF  ",defold, csi, volti, apixi, bfcti, ampconti, astampi, astangi)
 
 		fa  = [None]*nimi
 		fb  = [None]*nimi
@@ -5140,7 +5156,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 					defc = defold
 				else:
 					defc, ctf1d, baseline, envelope, istart, istop = defocusgett_crf(crf1d, nx, voltage=voltage, Pixel_size=Pixel_size, Cs=Cs, ampcont=wgh, f_start=f_start, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=DEBug)
-					if DEBug:  print("  RESULT ",namics,defc, istart, istop)
+					if DEBug:  sxprint("  RESULT ",namics,defc, istart, istop)
 					if DEBug:
 						freq = list(range(len(crf1d)))
 						for i in range(len(crf1d)):  freq[i] = float(i)/nx/Pixel_size
@@ -5238,13 +5254,13 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 					#bang = 277
 					dama = amoeba([bdef, bamp],[0.2,0.2], fufu, 1.e-4,1.e-4,500, astdata)
 
-					if DEBug:  print("AMOEBA    ",nboot,dama)
+					if DEBug:  sxprint("AMOEBA    ",nboot,dama)
 					bdef = dama[0][0]
 					bamp = dama[0][1]
 					astdata = [crefim, numr, nx, bdef, Cs, voltage, Pixel_size, wgh, bang]
 					junk = fastigmatism2(bamp, astdata)
 					bang = astdata[-1]
-					if DEBug:  print(" after amoeba ", nboot,bdef, bamp, bang)
+					if DEBug:  sxprint(" after amoeba ", nboot,bdef, bamp, bang)
 					#  The looping here is blocked as one shot at amoeba is good enough.  To unlock it, remove - from bold.
 					if(bcc < -bold): bold = bcc
 					else:           break
@@ -5253,7 +5269,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 				aamplitu[nboot] = bamp
 				aangle[nboot]   = bang
 				#from sys import exit
-				if DEBug:  print("this is what I found  ",nboot,bdef,bamp,bang)
+				if DEBug:  sxprint("this is what I found  ",nboot,bdef,bamp,bang)
 				#exit()
 
 			#print " ttt ",time()-srtt
@@ -5264,16 +5280,16 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 			thr = 3*sqrt(ad3)
 			for i in range(len(adefocus)):
 				if(abs(adefocus[i]-ad1)>thr):
-					if DEBug:  print(adefocus[i],ad1,thr)
+					if DEBug:  sxprint(adefocus[i],ad1,thr)
 					reject.append(i)
 			if(len(reject)>0):
-				if DEBug:  print("  Number of rejects  ",namics,len(reject))
+				if DEBug:  sxprint("  Number of rejects  ",namics,len(reject))
 				for i in range(len(reject)-1,-1,-1):
 					del adefocus[i]
 					del aamplitu[i]
 					del aangle[i]
 			if(len(adefocus)<2):
-				print("  After rejection of outliers too few estimated defocus values for :",namics)
+				sxprint("  After rejection of outliers too few estimated defocus values for :",namics)
 			else:
 				#print "adefocus",adefocus
 				#print  "aamplitu",aamplitu
@@ -5284,7 +5300,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 				cd1/=2
 				cd2/=2
 				temp = 0.0
-				print(namics,ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, sqrt(max(0.0,ad2)),sqrt(max(0.0,bd2)),cd2) 
+				sxprint(namics,ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, sqrt(max(0.0,ad2)),sqrt(max(0.0,bd2)),cd2) 
 				totresi.append( [ namics, ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, sqrt(max(0.0,ad2)),sqrt(max(0.0,bd2)),cd2 ])
 				#if ifi == 4 : break
 				"""
@@ -5313,7 +5329,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 				cmd = "echo "+"    "+namics+"  >>  "+fou
 				os.system(cmd)
 		else:  #except:
-			print(namics,"     FAILED")
+			sxprint(namics,"     FAILED")
 	#from utilities import write_text_row
 	outf = open( "partcrf/partcrf_%05d"%myid, "w")
 	for i in range(len(totresi)):
@@ -5338,7 +5354,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, \
 			check_consistency = False, stack_mode = False, debug_mode = False, \
 			program_name = "cter_vpp() in morphology.py", vpp_options = [], \
-			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1):
+			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1, write_pws=False):
 	"""
 	Arguments
 		input_image_path  :  file name pattern for Micrographs Modes (e.g. 'Micrographs/mic*.mrc') or particle stack file path for Stack Mode (e.g. 'bdb:stack'; must be stack_mode = True).
@@ -5412,8 +5428,8 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 		cter_mode_name = "Stack Mode"
 	
 	if my_mpi_proc_id == main_mpi_proc:
-		print(" ")
-		print(("----- Running with %s -----" % (cter_mode_name)))
+		sxprint(" ")
+		sxprint(("----- Running with %s -----" % (cter_mode_name)))
 	
 	# ------------------------------------------------------------------------------------
 	# Check mode-dependent error conditions of input arguments and options if abort is necessary. All nodes do this checking
@@ -5480,9 +5496,9 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 	if len(error_message_list) > 0:
 		# Detected error! Print all error messages
 		if my_mpi_proc_id == main_mpi_proc:
-			print(" ")
+			sxprint(" ")
 			for error_message in error_message_list:  
-				print(("ERROR!!! %s" % (error_message)))
+				sxprint(("ERROR!!! %s" % (error_message)))
 		error_status = ("Detected %d error(s) related to arguments and options. Run %s -h for help. Exiting..." % (len(error_message_list), program_name), getframeinfo(currentframe()))
 	if_error_then_all_processes_exit_program(error_status)
 	if RUNNING_UNDER_MPI:
@@ -5497,26 +5513,26 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 	if my_mpi_proc_id == main_mpi_proc:
 		if stack_mode:
 			if selection_list != None:
-				print(" ")
-				print(("WARNING!!! --selection_list option will be ignored in %s." % (cter_mode_name)))
+				sxprint(" ")
+				sxprint(("WARNING!!! --selection_list option will be ignored in %s." % (cter_mode_name)))
 			if wn != 512:
-				print(" ")
-				print(("WARNING!!! --wn option will be ignored in %s." % (cter_mode_name)))
+				sxprint(" ")
+				sxprint(("WARNING!!! --wn option will be ignored in %s." % (cter_mode_name)))
 			if overlap_x != 50:
-				print(" ")
-				print(("WARNING!!! --overlap_x option will be ignored in %s." % (cter_mode_name)))
+				sxprint(" ")
+				sxprint(("WARNING!!! --overlap_x option will be ignored in %s." % (cter_mode_name)))
 			if overlap_y != 50:
-				print(" ")
-				print(("WARNING!!! --overlap_y option will be ignored in %s." % (cter_mode_name)))
+				sxprint(" ")
+				sxprint(("WARNING!!! --overlap_y option will be ignored in %s." % (cter_mode_name)))
 			if edge_x != 0:
-				print(" ")
-				print(("WARNING!!! --edge_x option will be ignored in %s." % (cter_mode_name)))
+				sxprint(" ")
+				sxprint(("WARNING!!! --edge_x option will be ignored in %s." % (cter_mode_name)))
 			if edge_y != 0:
-				print(" ")
-				print(("WARNING!!! --edge_y option will be ignored in %s." % (cter_mode_name)))
+				sxprint(" ")
+				sxprint(("WARNING!!! --edge_y option will be ignored in %s." % (cter_mode_name)))
 			if check_consistency:
-				print(" ")
-				print(("WARNING!!! --check_consistency option will be ignored in %s." % (cter_mode_name)))
+				sxprint(" ")
+				sxprint(("WARNING!!! --check_consistency option will be ignored in %s." % (cter_mode_name)))
 
 	# ====================================================================================
 	# Create the input file path list and also check input-related error conditions if abort is necessary.
@@ -5562,11 +5578,11 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			# to the global entry dictionary
 			# --------------------------------------------------------------------------------
 			# Generate the list of  paths in the input directory
-			print(" ")
-			print("Checking the input directory...")
+			sxprint(" ")
+			sxprint("Checking the input directory...")
 			input_mic_path_list = glob.glob(mic_pattern)
 			# Check error condition of input  file path list
-			print(("Found %d micrographs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern))))
+			sxprint(("Found %d micrographs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern))))
 			if len(input_mic_path_list) == 0:
 				# The result shouldn't be empty if the specified  file name pattern is invalid
 				error_status = ("There are no micrographs whose paths match with the specified file path pattern (%s) for %s. Please check input_image_path. Run %s -h for help." % (mic_pattern, cter_mode_name, program_name), getframeinfo(currentframe()))
@@ -5579,7 +5595,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				mic_id_substr_tail_idx = input_mic_basename.index(mic_basename_tokens[1])
 				mic_id_substr = input_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
 				if not mic_id_substr in global_entry_dict:
-					# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from input_mic_path_list " % (mic_id_substr))
+					# sxprint("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from input_mic_path_list " % (mic_id_substr))
 					global_entry_dict[mic_id_substr] = {}
 				global_entry_dict[mic_id_substr][subkey_input_mic_path] = input_mic_path
 		
@@ -5595,23 +5611,23 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				selected_mic_path_list = input_mic_path_list
 			else:
 				if os.path.splitext(selection_list)[1] == ".txt":
-					print(" ")
-					print("Checking the selection list...")
+					sxprint(" ")
+					sxprint("Checking the selection list...")
 					selected_mic_path_list = read_text_file(selection_list)
 				
 					# Check error condition of  entry lists
-					print(("Found %d microgarph entries in %s." % (len(selected_mic_path_list), selection_list)))
+					sxprint(("Found %d microgarph entries in %s." % (len(selected_mic_path_list), selection_list)))
 					if len(selected_mic_path_list) == 0:
 						error_status = ("The provided  list file (%s) for %s mode contains no entries. Please check selection_list option and make sure the file contains a  list. Run %s -h for help." % (selection_list, cter_mode_name, program_name), getframeinfo(currentframe()))
 						break
 				else:
-					print(" ")
-					print(("Processing a single micorgprah: %s..." % (selection_list)))
+					sxprint(" ")
+					sxprint(("Processing a single micorgprah: %s..." % (selection_list)))
 					selected_mic_path_list = [selection_list]
 			
 				selected_mic_directory = os.path.dirname(selected_mic_path_list[0])
 				if selected_mic_directory != "":
-					print(("    NOTE: Program disregards the directory paths in the selection list (%s)." % (selected_mic_directory)))
+					sxprint(("    NOTE: Program disregards the directory paths in the selection list (%s)." % (selected_mic_directory)))
 		
 			# Register  id substrings to the global entry dictionary
 			for selected_mic_path in selected_mic_path_list:
@@ -5620,7 +5636,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				mic_id_substr_tail_idx = selected_mic_basename.index(mic_basename_tokens[1])
 				mic_id_substr = selected_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
 				if not mic_id_substr in global_entry_dict:
-					# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from selected_mic_path_list " % (mic_id_substr))
+					# sxprint("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from selected_mic_path_list " % (mic_id_substr))
 					global_entry_dict[mic_id_substr] = {}
 				global_entry_dict[mic_id_substr][subkey_selected_mic_basename] = selected_mic_basename
 			
@@ -5636,8 +5652,8 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			# Prepare lists to keep track of invalid (rejected) s 
 			no_input_mic_id_substr_list = []
 		
-			print(" ")
-			print("Checking the input datasets consistency...")
+			sxprint(" ")
+			sxprint("Checking the input datasets consistency...")
 		
 			# Loop over substring id list
 			for mic_id_substr in global_entry_dict:
@@ -5653,12 +5669,12 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 						no_input_mic_id_substr_list.append(mic_id_substr)
 				
 					if len(warinnig_messages) > 0:
-						print(("WARNING!!! Micrograph ID %s does not have:" % (mic_id_substr)))
+						sxprint(("WARNING!!! Micrograph ID %s does not have:" % (mic_id_substr)))
 						for warinnig_message in warinnig_messages:
-							print(warinnig_message)
-						print("    Ignores this as an invalid entry.")
+							sxprint(warinnig_message)
+						sxprint("    Ignores this as an invalid entry.")
 					else:
-						# print("MRK_DEBUG: adding mic_id_substr := ", mic_id_substr)
+						# sxprint("MRK_DEBUG: adding mic_id_substr := ", mic_id_substr)
 						valid_mic_id_substr_list.append(mic_id_substr)
 				# 	# This entry is not in the selection list. Do nothing
 			
@@ -5669,8 +5685,8 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			
 				# Open the consistency check file
 				inconsist_mic_list_path = os.path.join(output_directory,"inconsist_mic_id_file.txt")
-				print(" ")
-				print(("Generating the input datasets consistency report in %s..." % (inconsist_mic_list_path)))
+				sxprint(" ")
+				sxprint(("Generating the input datasets consistency report in %s..." % (inconsist_mic_list_path)))
 				inconsist_mic_list_file = open(inconsist_mic_list_path, "w")
 				inconsist_mic_list_file.write("# The information about inconsistent  IDs\n")
 				# Loop over substring id list
@@ -5700,20 +5716,20 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			
 			# Since mic_id_substr is once stored as the key of global_entry_dict and extracted with the key order
 			# we need sort the valid_mic_id_substr_list here
-			if debug_mode: print(("BEFORE SORT: valid_mic_id_substr_list := ", valid_mic_id_substr_list))
+			if debug_mode: sxprint(("BEFORE SORT: valid_mic_id_substr_list := ", valid_mic_id_substr_list))
 			valid_mic_id_substr_list.sort(key=str.lower) # Sort list of  IDs using case insensitive string comparison
-			if debug_mode: print(("AFTER SORT: valid_mic_id_substr_list := ", valid_mic_id_substr_list))
+			if debug_mode: sxprint(("AFTER SORT: valid_mic_id_substr_list := ", valid_mic_id_substr_list))
 			
 			# --------------------------------------------------------------------------------
 			# Print out the summary of input consistency
 			# --------------------------------------------------------------------------------
-			print(" ")
-			print("Summary of dataset consistency check...")
-			print(("  Detected  IDs               : %6d" % (len(global_entry_dict))))
-			print(("  Entries in input directory  : %6d" % (len(input_mic_path_list))))
-			print(("  Entries in selection list   : %6d" % (len(selected_mic_path_list))))
-			print(("  Rejected by no input        : %6d" % (len(no_input_mic_id_substr_list))))
-			print(("  Valid Entries               : %6d" % (len(valid_mic_id_substr_list))))
+			sxprint(" ")
+			sxprint("Summary of dataset consistency check...")
+			sxprint(("  Detected  IDs               : %6d" % (len(global_entry_dict))))
+			sxprint(("  Entries in input directory  : %6d" % (len(input_mic_path_list))))
+			sxprint(("  Entries in selection list   : %6d" % (len(selected_mic_path_list))))
+			sxprint(("  Rejected by no input        : %6d" % (len(no_input_mic_id_substr_list))))
+			sxprint(("  Valid Entries               : %6d" % (len(valid_mic_id_substr_list))))
 					
 			# --------------------------------------------------------------------------------
 			# Create input file path list
@@ -5775,9 +5791,9 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 	namics = []  #  file name list
 	if not stack_mode:
 		namics = input_file_path_list
-		if debug_mode: print(("BEFORE SORT: namics := ", namics))
+		if debug_mode: sxprint(("BEFORE SORT: namics := ", namics))
 		namics.sort(key=str.lower) # Sort list of s using case insensitive string comparison
-		if debug_mode: print(("AFTER SORT: namics := ", namics))
+		if debug_mode: sxprint(("AFTER SORT: namics := ", namics))
 	else:
 		stack = input_file_path_list[0]
 	
@@ -5789,6 +5805,8 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 		outmicthumb = "%s/micthumb" % (output_directory)
 	if debug_mode:  
 		outravg = "%s/ravg" % (output_directory)
+	if write_pws:
+		outpower2d = os.path.join(output_directory,"power2d")
 	if my_mpi_proc_id == main_mpi_proc:
 		# Make output directory
 		if not os.path.exists(output_directory):
@@ -5798,6 +5816,8 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			os.mkdir(outmicthumb)
 		if debug_mode:
 			os.mkdir(outravg)
+		if write_pws and not os.path.exists(outpower2d): 
+			os.mkdir(outpower2d)
 	
 	if RUNNING_UNDER_MPI:
 		# Make all mpi processes wait for main mpi process to create output directory
@@ -5822,10 +5842,10 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 	
 	# Set up progress message
 	if my_mpi_proc_id == main_mpi_proc:
-		print(" ")
-		print("Estimating CTF parameters...")
+		sxprint(" ")
+		sxprint("Estimating CTF parameters...")
 		if stack == None:
-			print("  Micrographs processed by main process (including percent of progress):")
+			sxprint("  Micrographs processed by main process (including percent of progress):")
 			progress_percent_step = (set_end - set_start)/100.0 # the number of micrograms for main mpi processer divided by 100
 	
 	totresi = []
@@ -5838,17 +5858,17 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
 
 			if my_mpi_proc_id == main_mpi_proc:
-				print(("    Processing %s ---> %6.2f%%" % (img_name, (ifi - set_start) / progress_percent_step)))
+				sxprint(("    Processing %s ---> %6.2f%%" % (img_name, (ifi - set_start) / progress_percent_step)))
 
 			if not os.path.exists(img_name):
 				missing_img_names.append(img_name)
-				print("    %s %s: Can not find this file. Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name))
+				sxprint("    %s %s: Can not find this file. Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name))
 				continue
 			mic = get_im(img_name)
 			try:
 				pw2 = tilemic(mic, win_size = wn, overlp_x = overlap_x, overlp_y = overlap_y, edge_x = edge_x, edge_y = edge_y)
 			except:
-				print("MRK_DEBUG: tilemic() in cter_vpp() raised an exception. The micrographs {} might have a problem. Please check it and remove it if necessary.".format(img_name))
+				sxprint("MRK_DEBUG: tilemic() in cter_vpp() raised an exception. The micrographs {} might have a problem. Please check it and remove it if necessary.".format(img_name))
 				raise
 			del mic
 
@@ -5864,7 +5884,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 		for i in range(len(pw2)):
 			pw2[i] = square_root(pw2[i])
 
-		if debug_mode: print("    %s %s: Process %04d started the processing. Detected %d image(s) in this %s file." % (img_type, img_name, ifi, img_type.lower()))
+		if debug_mode: sxprint("    %s %s: Process %04d started the processing. Detected %d image(s) in this %s file." % (img_type, img_name, ifi, img_type.lower()))
 
 		if db_check_dict(img_name) == False:
 			img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
@@ -5940,7 +5960,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			defc, ampcont, subpw, baseline, envelope, istart, istop = defocusgett_vpp(rooc, wn, voltage = voltage, Pixel_size = pixel_size, Cs = Cs, \
 										f_start = f_start, f_stop = f_stop, vpp_options = vpp_options, nr1 = 3, nr2 = 6, parent = None, DEBug = debug_mode)
 			if debug_mode:
-				print("  RESULT 1 %s" % (img_name), nboot, defc, ampcont, istart, istop)#, (time()-at)/60.
+				sxprint("  RESULT 1 %s" % (img_name), nboot, defc, ampcont, istart, istop)#, (time()-at)/60.
 				'''
 				freq = range(len(subpw))
 				for i in xrange(len(freq)):  freq[i] = float(i) / wn / pixel_size
@@ -5992,7 +6012,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			#at = time()
 			defc, ampcont, astamp, astang, score =  defocusgett_vpp2(qse, wn, defc, ampcont, voltage = voltage, Pixel_size = pixel_size, Cs = Cs, i_start=istart, i_stop=istop, parent = None, DEBug = debug_mode)
 			if debug_mode:
-				print("  RESULT 2 %s" % (img_name), nboot, defc, ampcont, astamp, astang, score)#, (time()-at)/60.
+				sxprint("  RESULT 2 %s" % (img_name), nboot, defc, ampcont, astamp, astang, score)#, (time()-at)/60.
 				'''
 				freq = range(len(subpw))
 				for i in xrange(len(freq)):  freq[i] = float(i) / wn / pixel_size
@@ -6016,19 +6036,19 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 
 		ad1, ad2, ad3, ad4 = table_stat(adefocus) # return values: average, variance, minimum, maximum
 		if ad2 <= 0.0:
-			print(("    %s %s: Detected the variance less than zero (defocus statics: avg = %f, var = %f, min = %f, max = %f)." % (img_type, img_name, ad1, ad2, ad3, ad4)))
-			print(("           The program ignores this estimate..."))
+			sxprint(("    %s %s: Detected the variance less than zero (defocus statics: avg = %f, var = %f, min = %f, max = %f)." % (img_type, img_name, ad1, ad2, ad3, ad4)))
+			sxprint(("           The program ignores this estimate..."))
 			continue
 		
 		reject = []
 		thr = 3 * sqrt(ad2)
 		for i in range(len(adefocus)):
 			if( abs(adefocus[i] - ad1) > thr ):
-				print(("    %s %s: Rejected an outlier defocus estimate (defocus = %f, average defocus = %f, threshold = %f)." % (img_type, img_name, adefocus[i], ad1, thr)))
+				sxprint(("    %s %s: Rejected an outlier defocus estimate (defocus = %f, average defocus = %f, threshold = %f)." % (img_type, img_name, adefocus[i], ad1, thr)))
 				reject.append(i)
 
 		if(len(reject) > 0):
-			print(("    %s %s: Total number of rejects %s" % (img_type, img_name, len(reject))))
+			sxprint(("    %s %s: Total number of rejects %s" % (img_type, img_name, len(reject))))
 			for i in range(len(reject) - 1, -1, -1):
 				del adefocus[i]
 				del aampcont[i]
@@ -6037,7 +6057,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 
 		#print  "  xxx2  ", nboot,(time()-at)/60.0
 		if(len(adefocus) < 2):
-			print(("    %s %s: After rejection of outliers, there is too few estimated defocus values. Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name)))
+			sxprint(("    %s %s: After rejection of outliers, there is too few estimated defocus values. Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name)))
 		else:
 			#print "adefocus",adefocus
 			#print  "aamplitu",aamplitu
@@ -6077,11 +6097,11 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 
 			if len(reject_img_messages) > 0:
 				rejected_img_names.append(img_name)
-				print("    %s %s: Rejected the CTF estimate - " % (img_type, img_name), ad1, Cs, voltage, pixel_size, angle2ampcont(ed1), bd1, cd1, "(def, Cs, vol, apix, amp_contrast, astig_amp, astig_angle)")
-				print("    %s %s: because... " % (img_type, img_name))
+				sxprint("    %s %s: Rejected the CTF estimate - " % (img_type, img_name), ad1, Cs, voltage, pixel_size, angle2ampcont(ed1), bd1, cd1, "(def, Cs, vol, apix, amp_contrast, astig_amp, astig_angle)")
+				sxprint("    %s %s: because... " % (img_type, img_name))
 				for reject_img_message in reject_img_messages:
-					print(reject_img_message)
-				print("    %s %s: Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name))
+					sxprint(reject_img_message)
+				sxprint("    %s %s: Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name))
 			else:
 				#  Estimate the point at which (sum_errordz ctf_1(dz+errordz))^2 falls to 0.5
 				import random as rqt
@@ -6129,6 +6149,10 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				#print  " error est  ",(time()-at)/60.0
 				#from utilities import write_text_file
 				#write_text_file([range(ni), supe[:ni],pwrot2[:ni]],"fifi.txt")
+				
+				if write_pws: 
+					draw_power2d(img_basename_root, qse, [defc,Cs,voltage,pixel_size,0.0,wgh, bd1, cd1], 
+					mask=mask, outdir=outpower2d, radius_1a=ibec)
 				
 				# Compute defocus CV and astig. amp. CV (CV: coefficient of variation; ratio of error (SD) relative to average (mean))
 				#  I blocked them, make no sense here.
@@ -6225,10 +6249,10 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				# wgh                     # constant amplitude contrast provided by user (default 10%)
 				phase_shift = ampcont2angle(ed1) - ampcont2angle(wgh) # Volta phase shift [deg] = total amplitude contrast phase shift [deg] (ed1) -  constant amplitude contrast phase shift [deg]; ed1 is boot strap average of total amplitude contrast [%]
 				
-				if debug_mode: print(("    %s %s: Process %04d finished the processing. Estimated CTF parmaters are stored in %s." % (img_type, img_name, ifi, os.path.join(output_directory, "partres.txt"))))
-#				if debug_mode: print((ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1, stdavad1, ed2, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim))
+				if debug_mode: sxprint(("    %s %s: Process %04d finished the processing. Estimated CTF parmaters are stored in %s." % (img_type, img_name, ifi, os.path.join(output_directory, "partres.txt"))))
+#				if debug_mode: sxprint((ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1, stdavad1, ed2, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim))
 #				totresi.append([img_name, ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1, stdavad1, ed2, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim])
-				if debug_mode: print((ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1, stdavad1, ed2, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec, ctflim, max_freq, reserved, wgh, phase_shift))
+				if debug_mode: sxprint((ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1, stdavad1, ed2, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec, ctflim, max_freq, reserved, wgh, phase_shift))
 				totresi.append([img_name, ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1, stdavad1, ed2, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec, ctflim, max_freq, reserved, wgh, phase_shift])
 				
 #				if stack == None:
@@ -6268,23 +6292,23 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			outf.write("  %s\n" % totresi[i][0])
 		outf.close()
 		
-		print(" ")
-		print(("Summary of %s processing..." % (img_type.lower())))
+		sxprint(" ")
+		sxprint(("Summary of %s processing..." % (img_type.lower())))
 		missing_counts = len(missing_img_names)
-		print(("  Missing  : %d" % (missing_counts)))
+		sxprint(("  Missing  : %d" % (missing_counts)))
 		if missing_counts > 0:
 			outfile_path = os.path.join(output_directory, "missing_%s_list.txt" % (img_type.lower()))
-			print(("    Saving list of missing in %s..." % (outfile_path)))
+			sxprint(("    Saving list of missing in %s..." % (outfile_path)))
 			outf = open(outfile_path, "w")
 			for missing_img_name in missing_img_names:
 				outf.write("%s\n" % missing_img_name)
 			outf.close()
 		
 		rejected_counts = len(rejected_img_names)
-		print(("  Rejected : %d" % (rejected_counts)))
+		sxprint(("  Rejected : %d" % (rejected_counts)))
 		if rejected_counts > 0:
 			outfile_path = os.path.join(output_directory, "rejected_%s_list.txt" % (img_type.lower()))
-			print(("    Saving list of rejected in %s..." % (outfile_path)))
+			sxprint(("    Saving list of rejected in %s..." % (outfile_path)))
 			outf = open(outfile_path, "w")
 			for rejected_img_name in rejected_img_names:
 				outf.write("%s\n" % rejected_img_name)
@@ -6293,6 +6317,48 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 	if cter_mode_idx == idx_cter_mode_stack:
 		return totresi[0][1], totresi[0][7], totresi[0][8], totresi[0][9], totresi[0][10], totresi[0][11]
 	
+def draw_power2d(file_root, input_pws, ctf_params, mask=None, outdir='.', radius_1a=None):
+	"""
+	Writes 2D power spectra
+	
+	Inputs:
+		file_root	filename
+		input_pws	power spectrum
+		ctf_params	CTF parameters, list of form [defocus,cs,voltage,pixel_size,bfactor,ac,astig,astang]
+		mask    	mask to apply to power spectrum (default: None)
+		outdir  	output directory (default: .)
+		radius_1a	radius (1/A) at which to draw circle depicting nominal resolution (default: None)
+	"""
+	import os
+	from utilities import generate_ctf, model_circle
+	from fundamentals import window2d
+	
+	pixel_size = ctf_params[3]
+	idim = input_pws['nx']
+	
+	# Draw 2D power spectra
+	new_pws = input_pws
+	new_pws.process_inplace("normalize")
+	if mask: new_pws = input_pws*mask
+	
+	# Insert quarter of theoretical power spectrum
+	calcpw = ctf2_rimg(idim, generate_ctf(ctf_params))  # B-factor is not calculated
+	halfboxdim = int(idim/2)
+	topright = idim*3/4
+	quarterctf = window2d(calcpw, halfboxdim, halfboxdim, opt="a", ix=topright, iy=topright)
+	quarterctf.process_inplace("normalize")
+	new_pws.insert_clip(quarterctf, (halfboxdim,halfboxdim))
+	
+	# Draw circle at resolution
+	if radius_1a:
+		radius_fpx = radius_1a * idim * pixel_size
+		circle = model_circle(radius_fpx, idim, idim) - model_circle(radius_fpx-1, idim, idim)  # by subtracting two discs
+		new_pws += 3*new_pws['sigma']*circle
+
+	# Write to disk
+	new_pws.write_image(os.path.join(outdir, "%s_pws.hdf"%(file_root)))
+
+
 ########################################
 # functions used by cter_vpp
 ########################################
@@ -6323,7 +6389,7 @@ def defocusgett_vpp(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0
 
 	nroo = len(roo)
 
-	if DEBug:  print("f_start, i_start, f_stop, i_stop:", f_start, i_start, f_stop, i_stop-1)
+	if DEBug:  sxprint("f_start, i_start, f_stop, i_stop:", f_start, i_start, f_stop, i_stop-1)
 	#TE  = defocus_env_baseline_fit(roo, i_start, i_stop, int(nr1), 4)
 	#baseline = defocus_baseline_fit(roo, i_start, i_stop, int(nr2), 3)
 	baseline = defocus_baseline_fit(roo, i_start, nroo, int(nr2), 3)
@@ -6375,7 +6441,7 @@ def defocusgett_vpp(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0
 		from utilities import write_text_row
 		#write_text_row(toto,"toto1.txt")
 		data[7] = ampcont
-		print(" >>>>>>>>>  ",defi,data[7],ampcont2angle(data[7]),simpw1d_print(defi, data))#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
+		sxprint(" >>>>>>>>>  ",defi,data[7],ampcont2angle(data[7]),simpw1d_print(defi, data))#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
 		#data[7]=10.
 		#defi = 4.5
 		#print " >>>>>>>>>  ",defi,data[7],simpw1d_print(defi, data)#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
@@ -6424,7 +6490,7 @@ def defocusgett_vpp2(qse, wn, xdefc, xampcont, voltage=300.0, Pixel_size=1.0, Cs
 	xphase_shift = ampcont2angle(xampcont)
 	dama = amoeba([xdefc,xphase_shift,initial_ast_ang], [0.1, 2.0, 0.05], fupw_vpp, 1.e-4, 1.e-4, 500, astdata)
 	qma = -dama[-2]
-	if DEBug: print(" amoeba  %7.2f  %7.2f  %12.6g  %12.6g"%(dama[0][0],dama[0][1]%180.0,dama[0][2],qma))
+	if DEBug: sxprint(" amoeba  %7.2f  %7.2f  %12.6g  %12.6g"%(dama[0][0],dama[0][1]%180.0,dama[0][2],qma))
 	dpefi = dama[0][0]
 	dphshift = dama[0][1]%180.0
 	dastamp = dama[0][2]
@@ -6466,7 +6532,7 @@ def defocusgett_vpp2(qse, wn, xdefc, xampcont, voltage=300.0, Pixel_size=1.0, Cs
 	if DEBug:
 		#from utilities import write_text_row
 		#write_text_row(toto,"toto1.txt")
-		print(" repi3  ", dpefi, dphshift, dastamp, dastang, junk)
+		sxprint(" repi3  ", dpefi, dphshift, dastamp, dastang, junk)
 
 	return dpefi, angle2ampcont(dphshift), dastamp, dastang, qma#dp
 
@@ -6587,7 +6653,7 @@ def Xdefocusgett_vpp2(qse, roo, nx, xdefc, xampcont, voltage=300.0, Pixel_size=1
 
 	nroo = len(roo)
 
-	if DEBug:  print("f_start, i_start, f_stop, i_stop:", f_start, i_start, f_stop, i_stop-1)
+	if DEBug:  sxprint("f_start, i_start, f_stop, i_stop:", f_start, i_start, f_stop, i_stop-1)
 	#TE  = defocus_env_baseline_fit(roo, i_start, i_stop, int(nr1), 4)
 	#baseline = defocus_baseline_fit(roo, i_start, i_stop, int(nr2), 3)
 
@@ -6625,7 +6691,7 @@ def Xdefocusgett_vpp2(qse, roo, nx, xdefc, xampcont, voltage=300.0, Pixel_size=1
 	wr = ringwe(numr, mode)
 	
 	crefim = Util.Polar2Dm(qse*mask, cnx, cny, numr, mode)
-	print("  CREFIM    ",Util.infomask(qse*mask,None,True),Util.infomask(crefim,None,True))
+	sxprint("  CREFIM    ",Util.infomask(qse*mask,None,True),Util.infomask(crefim,None,True))
 	Util.Frngs(crefim, numr)
 	Util.Applyws(crefim, numr, wr)
 	bdef = 0.
@@ -6635,7 +6701,7 @@ def Xdefocusgett_vpp2(qse, roo, nx, xdefc, xampcont, voltage=300.0, Pixel_size=1
 	astdata = [crefim, numr, wn, bdef, Cs, voltage, Pixel_size, baco, bamp, bang, mask]
 	data2d = [nx, qse, bdef, Cs, voltage, Pixel_size, 0.0, baco, bamp, bang, mask]
 
-	print(" i_start:i_stop",i_start,i_stop)
+	sxprint(" i_start:i_stop",i_start,i_stop)
 
 	qm = 1.e23
 	dm = 1.e23
@@ -6666,7 +6732,7 @@ def Xdefocusgett_vpp2(qse, roo, nx, xdefc, xampcont, voltage=300.0, Pixel_size=1
 	for aa in range(0,20,4):
 		a = xampcont + aa
 		data[7] = float(a)
-		print("  fdasfdsfa  ",a)
+		sxprint("  fdasfdsfa  ",a)
 		for i in range(0,2000,200):
 			dc = xdefc + float(i-1000)/10000.0
 			qt = simpw1d(dc, data)
@@ -6677,7 +6743,7 @@ def Xdefocusgett_vpp2(qse, roo, nx, xdefc, xampcont, voltage=300.0, Pixel_size=1
 			data2d[7] = float(a)
 			zigi = simpw2d(dc, data2d)
 			qma = -dama[-2]
-			print(" amoeba  %7.2f  %7.2f  %12.6g  %12.6g  %12.6g  %7.2f  %7.2f  %7.2f "%(dc,data[7],qma,zigi,qt,dama[0][0],dama[0][1],dama[0][2]), dama)
+			sxprint(" amoeba  %7.2f  %7.2f  %12.6g  %12.6g  %12.6g  %7.2f  %7.2f  %7.2f "%(dc,data[7],qma,zigi,qt,dama[0][0],dama[0][1],dama[0][2]), dama)
 			toto.append([dc,data[7],qt,zigi,qma])
 			if(qma<dp):
 				dp = qma
@@ -6694,9 +6760,9 @@ def Xdefocusgett_vpp2(qse, roo, nx, xdefc, xampcont, voltage=300.0, Pixel_size=1
 	if DEBug:
 		from utilities import write_text_row
 		write_text_row(toto,"toto1.txt")
-		print(" repi3  ",dp,dpefi,dpmpcont)
-		print(" resi2  ",qm,defi,ampcont)
-		print(" resi1  ",dm,ddefi,dampcont)
+		sxprint(" repi3  ",dp,dpefi,dpmpcont)
+		sxprint(" resi2  ",qm,defi,ampcont)
+		sxprint(" resi1  ",dm,ddefi,dampcont)
 		
 		#print " >>>>>>>>>  ",defi,simpw1d(defi, data)#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
 		#def1 = defi
@@ -6743,7 +6809,7 @@ def Xdefocusgett_vpp22(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_st
 
 	nroo = len(roo)
 
-	if DEBug:  print("f_start, i_start, f_stop, i_stop:", f_start, i_start, f_stop, i_stop-1)
+	if DEBug:  sxprint("f_start, i_start, f_stop, i_stop:", f_start, i_start, f_stop, i_stop-1)
 	#TE  = defocus_env_baseline_fit(roo, i_start, i_stop, int(nr1), 4)
 	#baseline = defocus_baseline_fit(roo, i_start, i_stop, int(nr2), 3)
 
@@ -6790,7 +6856,7 @@ def Xdefocusgett_vpp22(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_st
 	astdata = [crefim, numr, wn, bdef, Cs, voltage, Pixel_size, baco, bamp, bang, mask]
 	data2d = [nx, qse, bdef, Cs, voltage, Pixel_size, 0.0, baco, bamp, bang, mask]
 
-	print(" i_start:i_stop",i_start,i_stop)
+	sxprint(" i_start:i_stop",i_start,i_stop)
 
 	qm = 1.e23
 	dm = 1.e23
@@ -6820,7 +6886,7 @@ def Xdefocusgett_vpp22(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_st
 	'''
 	for a in range(5,96,10):
 		data[7] = float(a)
-		print("  fdasfdsfa  ",a)
+		sxprint("  fdasfdsfa  ",a)
 		for i in range(1000,100000,5000):
 			dc = float(i)/10000.0
 			qt = simpw1d(dc, data)
@@ -6831,7 +6897,7 @@ def Xdefocusgett_vpp22(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_st
 			data2d[7] = float(a)
 			zigi = simpw2d(dc, data2d)
 			qma = dama[-2]/42.
-			print(" amoeba  %7.2f  %7.2f  %12.6g  %12.6g  %12.6g  %7.2f  %7.2f  %7.2f "%(dc,data[7],qma,zigi,qt,dama[0][0],dama[0][1],dama[0][2]), dama)
+			sxprint(" amoeba  %7.2f  %7.2f  %12.6g  %12.6g  %12.6g  %7.2f  %7.2f  %7.2f "%(dc,data[7],qma,zigi,qt,dama[0][0],dama[0][1],dama[0][2]), dama)
 			toto.append([dc,data[7],qt,zigi,qma])
 			if(qma<dp):
 				dp = qma
@@ -6848,9 +6914,9 @@ def Xdefocusgett_vpp22(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_st
 	if DEBug:
 		from utilities import write_text_row
 		write_text_row(toto,"toto1.txt")
-		print(" repi3  ",dp,dpefi,dpmpcont)
-		print(" resi2  ",qm,defi,ampcont)
-		print(" resi1  ",dm,ddefi,dampcont)
+		sxprint(" repi3  ",dp,dpefi,dpmpcont)
+		sxprint(" resi2  ",qm,defi,ampcont)
+		sxprint(" resi1  ",dm,ddefi,dampcont)
 		
 		#print " >>>>>>>>>  ",defi,simpw1d(defi, data)#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
 		#def1 = defi
