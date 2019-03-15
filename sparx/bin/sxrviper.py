@@ -766,6 +766,7 @@ output_directory: directory name into which the output files will be written.  I
 			bdb_stack_location = "bdb:" + masterdir + os.path.splitext(filename)[0]
 			bdb_path = masterdir + "EMAN2DB" + DIR_DELIM + os.path.splitext(filename)[0] + "_000.bdb"
 
+			junk = True
 			if not os.path.exists(bdb_path):
 				cmd = "{} {} {}".format("sxcpy.py  ", args[0], bdb_stack_location + "_000")
 				junk = cmdexecute(cmd)
