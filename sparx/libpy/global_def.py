@@ -31,69 +31,6 @@ Suite 330, Boston, MA  02111-1307 USA
 
 
 #--------------------------------------------------------------------[ header ]
-
-# import
-import os
-import re
-import sys
-import time
-import inspect
-
-from EMAN2  import Util, EMData, EMUtil, Transform
-from EMAN2_meta import DATESTAMP
-
-import utilities as util
-
-from random import seed
-
-import mpi  # NOTE: put this import _after_ the EMAN2 imports
-
-# set global random seed
-rand_seed = Util.get_randnum_seed()
-seed(rand_seed)
-
-rand_seed = Util.get_randnum_seed()
-Util.set_randnum_seed(rand_seed)
-
-
-#___________________________________________ User settings: change as necessary
-
-# system-wide parameters
-interpolation_method_2D = "quadratic"  # set 2-D interpolation method ("linear", "quadratic", "gridding")
-Eulerian_Angles         = "SPIDER"     # set Euler angle convention ("SPIDER", "EMAN", "IMAGIC"):
-
-"""
-BATCH flag should generally be set to False, which indicates that the output
-should be both displayed on the screen and written to the log file.
-However, the user may change it to True (either here or in other programs) so
-that the output is only written to the log file.
-"""
-BATCH = False
-
-"""
-NOTICE: beginning from version 0.70, we will no longer use MPI as a global 
-variable. Instead, the user would add mpi as a parameter for command line, 
-example: $ mpirun -np 10 sxali2d_c.py  ...  --mpi
-NOTE: Version 0.70 is pretty old by now; it's unclear, however, whether this 
-can be removed safely [2019-0207,Fabian]
-"""
-MPI = False
-
-"""
-variable for disabling bdb cache use, For running sparx on clusters, set it to
-True to disable cache
-"""
-CACHE_DISABLE = False
-
-
-#________________________________________ System settings: please do not change
-
-SPARXVERSION = "SPHIRE v1.2 [rc6] (GitHub: " + DATESTAMP + ")"
-SPARX_MPI_TAG_UNIVERSAL = 123456
-SPARX_DOCUMENTATION_WEBSITE = "http://sparx-em.org/sparxwiki/"
-
-#-------------------------------------------------------------------[ logging ]
-
 def get_timestamp( file_format=False ):
 	"""
 	Utility function to get a properly formatted timestamp. 
@@ -107,26 +44,6 @@ def get_timestamp( file_format=False ):
 		return time.strftime( "%Y-%m-%d_%H-%M-%S", time.localtime() )
 	else:
 		return time.strftime( "%Y-%m-%d %H:%M:%S", time.localtime() )
-
-# classic, user-exposed logfile (non-uniform use throughout sparx modules)
-LOGFILE = "logfile_" + get_timestamp( file_format=True )
-LOGFILE_HANDLE  = 0
-IS_LOGFILE_OPEN = False
-
-# sxprint log (sxprint logging can be disabled by setting this to "")
-SXPRINT_LOG_PATH = "SPHIRE_LOG_HISTORY"
-try:
-	os.makedirs(SXPRINT_LOG_PATH)
-except OSError:
-	pass
-try:
-	init_func = re.search( "([^/]*).py", sys._getframe(len(inspect.stack())-1).f_code.co_filename ).group(1)
-except AttributeError:
-	init_func = 'none'
-
-SXPRINT_LOG = os.path.join( SXPRINT_LOG_PATH, get_timestamp(file_format=True) + "_" + init_func + ".log" )
-SXPRINT_LOG_SYNC = False # denotes whether SXPRINT_LOG has been synchronized across mpi processes
-
 
 #------------------------------------------------------------[ util functions ]
 
@@ -260,3 +177,86 @@ def ERROR( message, where="", action=1, myid=0 ):
 			if myid == 0:
 				sxprint( "EXIT" )
 			sys.exit(1)
+
+# import
+import os
+import re
+import sys
+import time
+import inspect
+
+from EMAN2  import Util, EMData, EMUtil, Transform
+from EMAN2_meta import DATESTAMP
+
+import utilities as util
+
+from random import seed
+
+import mpi  # NOTE: put this import _after_ the EMAN2 imports
+
+# set global random seed
+rand_seed = Util.get_randnum_seed()
+seed(rand_seed)
+
+rand_seed = Util.get_randnum_seed()
+Util.set_randnum_seed(rand_seed)
+
+
+#___________________________________________ User settings: change as necessary
+
+# system-wide parameters
+interpolation_method_2D = "quadratic"  # set 2-D interpolation method ("linear", "quadratic", "gridding")
+Eulerian_Angles         = "SPIDER"     # set Euler angle convention ("SPIDER", "EMAN", "IMAGIC"):
+
+"""
+BATCH flag should generally be set to False, which indicates that the output
+should be both displayed on the screen and written to the log file.
+However, the user may change it to True (either here or in other programs) so
+that the output is only written to the log file.
+"""
+BATCH = False
+
+"""
+NOTICE: beginning from version 0.70, we will no longer use MPI as a global 
+variable. Instead, the user would add mpi as a parameter for command line, 
+example: $ mpirun -np 10 sxali2d_c.py  ...  --mpi
+NOTE: Version 0.70 is pretty old by now; it's unclear, however, whether this 
+can be removed safely [2019-0207,Fabian]
+"""
+MPI = False
+
+"""
+variable for disabling bdb cache use, For running sparx on clusters, set it to
+True to disable cache
+"""
+CACHE_DISABLE = False
+
+
+#________________________________________ System settings: please do not change
+
+SPARXVERSION = "SPHIRE v1.2 [rc6] (GitHub: " + DATESTAMP + ")"
+SPARX_MPI_TAG_UNIVERSAL = 123456
+SPARX_DOCUMENTATION_WEBSITE = "http://sparx-em.org/sparxwiki/"
+
+#-------------------------------------------------------------------[ logging ]
+
+
+# classic, user-exposed logfile (non-uniform use throughout sparx modules)
+LOGFILE = "logfile_" + get_timestamp( file_format=True )
+LOGFILE_HANDLE  = 0
+IS_LOGFILE_OPEN = False
+
+# sxprint log (sxprint logging can be disabled by setting this to "")
+SXPRINT_LOG_PATH = "SPHIRE_LOG_HISTORY"
+try:
+	os.makedirs(SXPRINT_LOG_PATH)
+except OSError:
+	pass
+try:
+	init_func = re.search( "([^/]*).py", sys._getframe(len(inspect.stack())-1).f_code.co_filename ).group(1)
+except AttributeError:
+	init_func = 'none'
+
+SXPRINT_LOG = os.path.join( SXPRINT_LOG_PATH, get_timestamp(file_format=True) + "_" + init_func + ".log" )
+SXPRINT_LOG_SYNC = False # denotes whether SXPRINT_LOG has been synchronized across mpi processes
+

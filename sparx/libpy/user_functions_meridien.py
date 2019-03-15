@@ -37,15 +37,6 @@ from __future__ import division
 #   from appropriate application, in this case "sxali2d_c.py ...  --function=wei_func
 # 
 
-from builtins import range
-from builtins import object
-
-import numpy
-import global_def
-import morphology
-import utilities
-import EMAN2_cppwrap
-
 def do_volume_mask(ref_data):
 	"""
 		1. - volume
@@ -263,3 +254,12 @@ def ai_spa( Tracker, fff, anger, shifter, do_local, chout = False):
 				Tracker["anger"]				= 1.0e23
 				Tracker["shifter"]				= 1.0e23
 	return keepgoing
+from builtins import range
+from builtins import object
+
+import numpy
+import global_def
+import morphology
+import utilities
+import EMAN2_cppwrap
+

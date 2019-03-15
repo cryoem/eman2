@@ -29,10 +29,6 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
-from builtins import range
-from builtins import object
-from global_def import *
-
 def absi(e):
 	if e.is_complex():
 		e.set_attr_dict({"is_complex_ri":1})
@@ -2209,3 +2205,8 @@ class symclass(object):
 						angles.append([i*delta,90.0-j*theta2,90.0])
 			"""
 		return angles
+
+from builtins import range
+from builtins import object
+from global_def import *
+

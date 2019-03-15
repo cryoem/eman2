@@ -29,40 +29,6 @@ this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 Place, Suite 330, Boston, MA  02111-1307 USA
 """
 
-#------------------------------------------------[ import ]
-
-# compatibility
-from future import standard_library
-standard_library.install_aliases()
-
-# python natives
-from pickle    import dumps, loads
-from builtins  import range
-from builtins  import object
-from functools import reduce
-from struct    import pack, unpack
-
-# python commons
-import numpy as np
-import scipy.ndimage
-from zlib import compress, decompress
-
-# EMAN2 / sparx basics
-from global_def import *
-
-import EMAN2
-from EMAN2 import EMNumPy
-
-# EMAN2 / sparx modules
-import morphology
-
-# MPI imports (NOTE: import mpi after EMAN2)
-from applications import MPI_start_end
-import mpi
-from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
-from mpi import mpi_recv, mpi_send, mpi_barrier
-
-
 def params_2D_3D(alpha, sx, sy, mirror):
 	"""
 		Convert 2D alignment parameters (alpha, sx, sy, mirror) into
@@ -6302,8 +6268,6 @@ def unpack_message(msg):
 		raise Exception("unpack_message")
 
 
-statistics_send_recv = dict()
-
 
 def update_tag(
 	communicator, target_rank
@@ -9290,3 +9254,39 @@ def create_summovie_command(temp_name, micrograph_name, shift_name, frc_name, op
 			summovie_command.append("YES")
 
 	return summovie_command
+#------------------------------------------------[ import ]
+
+# compatibility
+from future import standard_library
+standard_library.install_aliases()
+
+# python natives
+from pickle    import dumps, loads
+from builtins  import range
+from builtins  import object
+from functools import reduce
+from struct    import pack, unpack
+
+# python commons
+import numpy as np
+import scipy.ndimage
+from zlib import compress, decompress
+
+# EMAN2 / sparx basics
+from global_def import *
+
+import EMAN2
+from EMAN2 import EMNumPy
+
+# EMAN2 / sparx modules
+import morphology
+
+# MPI imports (NOTE: import mpi after EMAN2)
+from applications import MPI_start_end
+import mpi
+from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
+from mpi import mpi_recv, mpi_send, mpi_barrier
+
+
+statistics_send_recv = dict()
+
