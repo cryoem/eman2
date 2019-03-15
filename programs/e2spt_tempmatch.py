@@ -37,7 +37,6 @@ def main():
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 
-	logid=E2init(sys.argv)
 	time0=time.time()
 
 	tmpname=options.reference #args[1]

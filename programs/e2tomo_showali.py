@@ -47,9 +47,9 @@ def main():
 	for i in range(n):
 		e=EMData(aname, i, True)
 		s=e["score"]
-		dirs[e["nid"], e["pid"]]=[s[1], -s[0]]
-	print(dirs)
-
+		dirs[e["nid"], e["pid"]]=[s[0], s[1]]
+	#print(dirs)
+	dirs=dirs*e["apix_x"]/imgs[0]["apix_x"]
 	app = EMApp()
 
 	drawer=EMDrawWindow(app,options,img, pks, xfs, dirs)
@@ -97,12 +97,12 @@ class Boxes(EMShape):
 			ptx=[ptx[0]+dx, ptx[1]+dy]
 			#print(ptx[0]+dx, ptx[1]+dy)
 			ps.append(ptx)
-			a=np.array(ptx)+self.dirs[mi, pid]
+			a=np.array(ptx)-self.dirs[mi, pid]
 			ps.append(a.tolist())
 
 			lns=get_circle(ptx, 32)
 			#print(lns)
-			glColor3f( 1., 1., 1. );
+			glColor3f( .2, .2, 1 );
 			glLineWidth(3.)
 			glEnableClientState(GL_VERTEX_ARRAY)
 			glVertexPointerf(lns)
@@ -133,23 +133,34 @@ class EMDrawWindow(QtGui.QMainWindow):
 
 	def __init__(self,application,options,datafile, pks, xfs, dirs):
 		QtGui.QWidget.__init__(self)
-		self.imgview = EMImage2DWidget()
 		self.setCentralWidget(QtGui.QWidget())
 		self.gbl = QtGui.QGridLayout(self.centralWidget())
+		
+		
+		self.lb_lines=QtGui.QLabel("aaaaaaaaaaaa")
+		self.lb_lines.setWordWrap(True)
+		self.gbl.addWidget(self.lb_lines, 0,0,1,2)
+		
+		
+		self.bt_showimg=QtGui.QPushButton("bbb")
+		self.gbl.addWidget(self.bt_showimg, 1,0,1,2)
 
-		self.gbl.addWidget(self.imgview,0,0)
+		#self.gbl.addWidget(self.imgview,0,0)
 		self.options=options
 		self.app=weakref.ref(application)
 
 		self.datafile=datafile
-		self.imgview.set_data(datafile)
 
 		#self.all_shapes=[]
 		#self.all_points=[]
 
+		self.imgview = EMImage2DWidget()
 		self.boxes=Boxes(self.imgview, pks, xfs, dirs)
 		self.shape_index = 0
+		
+		self.imgview.set_data(datafile)
 		self.imgview.shapes = {0:self.boxes}
+		self.imgview.show()
 
 
 
@@ -159,6 +170,8 @@ class EMDrawWindow(QtGui.QMainWindow):
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	def closeEvent(self, event):
+		self.imgview.close()
 
 
 if __name__ == '__main__':

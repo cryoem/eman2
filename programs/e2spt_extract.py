@@ -64,6 +64,7 @@ def main():
 			run("{} {} {}".format(cmd[0], a, opt))
 			
 		print("Finished.")
+		E2end(logid)
 		return
 	
 	pfile=args[0]

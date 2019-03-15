@@ -251,7 +251,7 @@ class TomoEvalGUI(QtGui.QWidget):
 			for kname in list(info["boxcls"].keys()):
 				if self.ptclcls[kname][0]==1:
 					nbox+=info["boxcls"][kname]
-			nbox+=len(info["curves"])
+			#nbox+=len(info["curves"])
 			it=QtGui.QTableWidgetItem()
 			it.setData(Qt.EditRole, int(nbox))
 			self.imglst.setItem(i,2, it)
