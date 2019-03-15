@@ -36,14 +36,6 @@ from __future__ import print_function
 #   from appropriate application, in this case "sxali2d_c.py ...  --function=wei_func
 # 
 
-from builtins import range
-from builtins import object
-from global_def import *
-from EMAN2_cppwrap import *
-
-import user_functions_meridien
-
-ref_ali2d_counter = -1
 def ref_ali2d( ref_data ):
 	from utilities    import print_msg
 	from filter       import fit_tanh, filt_tanl
@@ -1507,7 +1499,6 @@ class factory_class(object):
 		return None
 	
 
-factory=factory_class()
 						   
 # build_user_function: instead of a static user function factory that has to be updated for
 #    every change, we use the imp import mechanism: a module can be supplied at runtime (as
@@ -1567,3 +1558,12 @@ def build_user_function(module_name=None,function_name=None,path_name=None):
 
 
 
+from builtins import range
+from builtins import object
+from global_def import *
+from EMAN2_cppwrap import *
+
+import user_functions_meridien
+
+ref_ali2d_counter = -1
+factory=factory_class()

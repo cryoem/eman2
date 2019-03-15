@@ -29,9 +29,6 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
-from builtins import range
-from global_def import *
-
 def project(volume, params, radius=-1):
 	"""
 		Name
@@ -1187,4 +1184,7 @@ def generate_templates(volft, kb, x_half_size, y_half_size, psi_half_size, proje
 
 	return all_templates
 
+
+from builtins import range
+from global_def import *
 

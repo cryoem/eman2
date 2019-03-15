@@ -28,10 +28,6 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
-from builtins import range
-from builtins import object
-from global_def import *
-
 def rec2D(  lines, idrange=None, snr=None ):
 	""" Perform a 2D reconstruction on a set of 1D lines using nearest neighbouring reverse FFT algorithm.
 		Input: a set of 1D lines
@@ -3749,4 +3745,8 @@ def rec3D_two_chunks_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_cu
 		return model_blank(nx,nx,nx),None
 
 	return model_blank(nx,nx,nx),None
+
+from builtins import range
+from builtins import object
+from global_def import *
 
