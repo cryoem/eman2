@@ -6925,7 +6925,7 @@ def get_image_statistics(image, mask, invert):
 			ny=image.get_ysize(),
 			angle=image.get_attr('segment_angle'),
 			)
-	return Util.infomask(image, mask2D, invert)
+	return Util.infomask(image, mask2d, invert)
 
 
 def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_file, im_start, im_end, procid):
