@@ -112,7 +112,7 @@ def ai_spa( Tracker, fff, anger, shifter, do_local, chout = False):
 
 		inc = Tracker["currentres"]
 		if Tracker["large_at_Nyquist"]:
-			inc += int(0.25 * old_div(Tracker["constants"]["nnxo"]/2) + 0.5)
+			inc += int(0.25 * old_div(Tracker["constants"]["nnxo"], 2) + 0.5)
 		else:
 			inc += Tracker["nxstep"]
 		Tracker["nxinit"] = int(min(2*inc, Tracker["constants"]["nnxo"] ))  #  Cannot exceed image size
@@ -215,7 +215,7 @@ def ai_spa( Tracker, fff, anger, shifter, do_local, chout = False):
 
 		inc = Tracker["currentres"]
 		if Tracker["large_at_Nyquist"]:	
-			inc += int(0.25 * old_div(Tracker["constants"]["nnxo"]/2) +0.5)
+			inc += int(0.25 * old_div(Tracker["constants"]["nnxo"], 2) +0.5)
 			slim = int(Tracker["nxinit"]*1.09)
 			tmp = min(max(2*inc,slim+slim%2), Tracker["constants"]["nnxo"] )
 		else:
