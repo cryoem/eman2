@@ -65,7 +65,8 @@ def get_cmd_line():
 # ----------------------------------------------------------------------------------------
 def print_progress(message):
 	from time import strftime, localtime
-	time_stamp = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	#time_stamp = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	time_stamp = ''
 	sxprint(time_stamp, message)
 
 # ----------------------------------------------------------------------------------------
@@ -193,7 +194,7 @@ def isac_substack(args):
 	
 	# Create output directory
 	sxprint(" ")
-	print_progress("Creating output directory {}.".format(args.output_directory))
+	sxprint("Creating output directory {}.".format(args.output_directory))
 	os.makedirs(args.output_directory)
 	global_def.write_command(args.output_directory)
 	# Extract the number of images in the input BDB stack
@@ -323,8 +324,8 @@ def isac_substack(args):
 	if len(isac_missing_path_list) == 0:
 		# The specified run directory is ISAC. (ISAC run directory is prioritized over Beautifier run.)
 		sxprint(" ")
-		print_progress("ISAC run output directory is specified. The program assumes the ISAC class averages are shrunk and not beautified with the original image size.")
-		print_progress("Extracting the shrink ratio and 2D alingment parameters of this ISAC run...")
+		sxprint("ISAC run output directory is specified. The program assumes the ISAC class averages are shrunk and not beautified with the original image size.")
+		sxprint("Extracting the shrink ratio and 2D alingment parameters of this ISAC run...")
 		
 		# shrink ratio
 		isac_shrink_path = isac_path_list[idx_isac_path_file_shrink][idx_path_item_path]
@@ -333,15 +334,15 @@ def isac_substack(args):
 		isac_shrink_ratio = float(isac_shrink_lines[5])  # 6th line: shrink ratio (= [target particle radius]/[particle radius]) used in the ISAC run
 		isac_radius = float(isac_shrink_lines[6])        # 7th line: particle radius at original pixel size used in the ISAC run
 		isac_shrink_file.close()
-		print_progress("Extracted parameter values...")
-		print_progress("  ISAC shrink ratio    : {}".format(isac_shrink_ratio))
-		print_progress("  ISAC particle radius : {}".format(isac_radius))
+		sxprint("Extracted parameter values...")
+		sxprint("  ISAC shrink ratio    : {}".format(isac_shrink_ratio))
+		sxprint("  ISAC particle radius : {}".format(isac_radius))
 		
 		# Pre-alignment (initial 2D alignment) parameters
 		fullstack_prealign2d_path = isac_path_list[idx_isac_path_file_fullstack_prealign2d][idx_path_item_path]
 		fullstack_prealign2d_list = read_text_row(fullstack_prealign2d_path)
 		sxprint(" ")
-		print_progress("Found {} entries in {}.".format(len(fullstack_prealign2d_list), fullstack_prealign2d_path))
+		sxprint("Found {} entries in {}.".format(len(fullstack_prealign2d_list), fullstack_prealign2d_path))
 		if len(fullstack_prealign2d_list) != n_fullstack_img:
 			ERROR("The number of entries in {} is not consistent with {}. Please check the consistency of input datasets.".format(fullstack_prealign2d_path, args.input_bdb_stack_path), where=subcommand_name) # action=1 - fatal error, exit
 		
@@ -349,7 +350,7 @@ def isac_substack(args):
 		fullstack_shrunk_core_align2d_path = isac_path_list[idx_isac_path_file_fullstack_shrunk_core_align2d][idx_path_item_path]
 		fullstack_shrunk_core_align2d_list = read_text_row(fullstack_shrunk_core_align2d_path)
 		sxprint(" ")
-		print_progress("Found {} entries in {}.".format(len(fullstack_shrunk_core_align2d_list), fullstack_shrunk_core_align2d_path))
+		sxprint("Found {} entries in {}.".format(len(fullstack_shrunk_core_align2d_list), fullstack_shrunk_core_align2d_path))
 		if len(fullstack_shrunk_core_align2d_list) != n_fullstack_img:
 			ERROR("The number of entries in {} is not consistent with {}. Please check the consistency of input datasets.".format(fullstack_shrunk_core_align2d_path, args.input_bdb_stack_path), where=subcommand_name) # action=1 - fatal error, exit
 		
@@ -361,7 +362,7 @@ def isac_substack(args):
 
 		# collect 2D alignment parameters for all particle images accounted for by ISAC
 		sxprint(" ")
-		print_progress("Registering scaled back and combined 2D alignment parameters of this ISAC run...")
+		sxprint("Registering scaled back and combined 2D alignment parameters of this ISAC run...")
 		for fullstack_img_id in range(n_fullstack_img):
 			# alignment parameters as determined by the (optional) pre-alignment
 			prealign2d = fullstack_prealign2d_list[fullstack_img_id]
@@ -411,15 +412,15 @@ def isac_substack(args):
 	else:
 		# The specified run directory is Beautifier.
 		sxprint(" ")
-		print_progress("Beautifier run output directory is specified. The program assumes the ISAC class averages are beautified with the original image size.")
-		print_progress("Extracting the 2D alingment parameters of this Beautifier run...")
+		sxprint("Beautifier run output directory is specified. The program assumes the ISAC class averages are beautified with the original image size.")
+		sxprint("Extracting the 2D alingment parameters of this Beautifier run...")
 	
 		# local alignment parameters
 		accounted_local_total_align2d_path = beautifier_path_list[idx_beautifier_path_file_accounted_local_total_align2d][idx_path_item_path]
 		accounted_local_total_align2d_list = read_text_row(accounted_local_total_align2d_path)
 		n_accounted_img = len(accounted_local_total_align2d_list)
 		sxprint(" ")
-		print_progress("Found {} entries in {}.".format(n_accounted_img, accounted_local_total_align2d_path))
+		sxprint("Found {} entries in {}.".format(n_accounted_img, accounted_local_total_align2d_path))
 		if n_accounted_img > n_fullstack_img:
 			ERROR("The number of entries in {} is not consistent with {} (the number of accounted particles is larger than ones of particles in the original fullstack). Please check the consistency of input datasets.".format(accounted_local_total_align2d_path, args.input_bdb_stack_path), where=subcommand_name) # action=1 - fatal error, exit
 		
@@ -430,7 +431,7 @@ def isac_substack(args):
 
 		# For each entry (2D alignment parameters of accounted particle image), register 2D alignment parameters of this Beautifier run to the lists
 		sxprint(" ")
-		print_progress("Registering 2D alignment parameters of this Beautifier run...")
+		sxprint("Registering 2D alignment parameters of this Beautifier run...")
 		for accounted_img_id in range(n_accounted_img):
 			local_total_param2d = accounted_local_total_align2d_list[accounted_img_id]
 			if len(local_total_param2d) != n_idx_beautifier_align2d:
@@ -468,38 +469,38 @@ def isac_substack(args):
 	fullset_total_align2d_path = os.path.join(args.output_directory, "scaled_all_parameters.txt")
 	write_text_row(fullstack_total_align2d_list, fullset_total_align2d_path)
 	sxprint(" ")
-	print_progress("Saved the total 2D alignment parameters of all particles in original fullstack to {}, using the same format as ISAC 2D alignment file.".format(fullset_total_align2d_path))
+	sxprint("Saved the total 2D alignment parameters of all particles in original fullstack to {}, using the same format as ISAC 2D alignment file.".format(fullset_total_align2d_path))
 	
 	# Save the 2D alignment parameters of all accounted particles to file, using the same format as Beautifier 2D alignment file
 	accounted_total_align2d_path = os.path.join(args.output_directory, "init_isac_params.txt")
 	write_text_row(accounted_total_align2d_list, accounted_total_align2d_path)
 	sxprint(" ")
-	print_progress("Saved the total 2D alignment parameters of all accounted particles to {}, using the same format as Beautifier 2D alignment file.".format(accounted_total_align2d_path))
+	sxprint("Saved the total 2D alignment parameters of all accounted particles to {}, using the same format as Beautifier 2D alignment file.".format(accounted_total_align2d_path))
 	
 	# Create subdirectory
 	if not os.path.exists(subdir_path): 
 		sxprint(" ")
-		print_progress("Creating output subdirectory {}.".format(subdir_path))
+		sxprint("Creating output subdirectory {}.".format(subdir_path))
 		os.mkdir(subdir_path)
 	
 	# Check the number of default ISAC class averages in ISAC or Beautifier run
 	sxprint(" ")
-	print_progress("Checking the number of default ISAC class averages {} in ISAC or Beautifier run output directory...".format(default_isac_class_avgs_path))
+	sxprint("Checking the number of default ISAC class averages {} in ISAC or Beautifier run output directory...".format(default_isac_class_avgs_path))
 	n_default_class_avg = 0
 	if os.path.exists(default_isac_class_avgs_path):
 		n_default_class_avg = EMUtil.get_image_count(default_isac_class_avgs_path)
 	else: 
-		print_progress("WARNING! The default ISAC class averages file does not exist.")
+		sxprint("WARNING! The default ISAC class averages file does not exist.")
 	sxprint(" ")
-	print_progress("Detected {} default ISAC class averages in {}".format(n_default_class_avg, default_isac_class_avgs_path))
+	sxprint("Detected {} default ISAC class averages in {}".format(n_default_class_avg, default_isac_class_avgs_path))
 	
 	# Retrieve original fullstack particle IDs of members listed in ISAC class averages
 	sxprint(" ")
-	print_progress("Extracting original fullstack particle IDs of members listed in ISAC class averages...")
+	sxprint("Extracting original fullstack particle IDs of members listed in ISAC class averages...")
 	n_class_avg = EMUtil.get_image_count(args.isac_class_avgs_path)
 
 	sxprint(" ")
-	print_progress("Detected {} ISAC class averages in {}".format(n_class_avg, args.isac_class_avgs_path))
+	sxprint("Detected {} ISAC class averages in {}".format(n_class_avg, args.isac_class_avgs_path))
 	
 	fullstack_img_id_list_of_isac_substack = [] # fill this with the id values of all the accounted-for particles
 	class_membership={} # dictionary where entry[i] contains class id value for particle i
@@ -533,7 +534,7 @@ def isac_substack(args):
 
 	n_isac_substack_img = len(fullstack_img_id_list_of_isac_substack)
 	sxprint(" ")
-	print_progress("Extracted {} ISAC class members from {}".format(n_isac_substack_img, args.isac_class_avgs_path))
+	sxprint("Extracted {} ISAC class members from {}".format(n_isac_substack_img, args.isac_class_avgs_path))
 	if not n_isac_substack_img <= n_accounted_img:
 		ERROR("Invalid number of ISAC class members {}. It must be smaller than or equal to the total number of ISAC accounted particles {}. The stack header might be corrupted. Please consider to rerun ISAC.".format(n_isac_substack_img, n_accounted_img), where=subcommand_name) # action=1 - fatal error, exit
 	
@@ -541,10 +542,10 @@ def isac_substack(args):
 	fullstack_img_id_path_of_isac_substack = os.path.join(args.output_directory, "{}_particle_id_list.txt".format(args.substack_basename))
 	write_text_file(fullstack_img_id_list_of_isac_substack, fullstack_img_id_path_of_isac_substack)
 	sxprint(" ")
-	print_progress("Saved original fullstack particle IDs of all members listed in ISAC class averages to {}.".format(fullstack_img_id_path_of_isac_substack))
+	sxprint("Saved original fullstack particle IDs of all members listed in ISAC class averages to {}.".format(fullstack_img_id_path_of_isac_substack))
 	
 	sxprint(" ")
-	print_progress("Converting 2D alignment parameters of all members listed in ISAC class averages to 2D alignment parameters header entry format...")
+	sxprint("Converting 2D alignment parameters of all members listed in ISAC class averages to 2D alignment parameters header entry format...")
 	isac_substack_total_header_align2d_list = []
 	for isac_substack_img_id in range(n_isac_substack_img):
 		fullstack_img_id = fullstack_img_id_list_of_isac_substack[isac_substack_img_id]
@@ -558,11 +559,11 @@ def isac_substack(args):
 	isac_substack_total_header_align2d_path = os.path.join(args.output_directory, "{}_header_align2d.txt".format(args.substack_basename))
 	write_text_row(isac_substack_total_header_align2d_list, isac_substack_total_header_align2d_path)
 	sxprint(" ")
-	print_progress("Saved the converted 2D alignment parameters to {}.".format(isac_substack_total_header_align2d_path))
+	sxprint("Saved the converted 2D alignment parameters to {}.".format(isac_substack_total_header_align2d_path))
 	
 	# Create virtual stack for ISAC substack
 	sxprint(" ")
-	print_progress("Creating ISAC substack as a virtual stack...")
+	sxprint("Creating ISAC substack as a virtual stack...")
 	virtual_bdb_substack_path = "bdb:{}#{}".format(args.output_directory, args.substack_basename)
 	cmd_line = "e2bdb.py {} --makevstack={} --list={}".format( args.input_bdb_stack_path,  # source stack
 															   virtual_bdb_substack_path,  # target stack
@@ -573,7 +574,7 @@ def isac_substack(args):
 	
 	# Import the total 2D alignment parameters to xform.align2d
 	sxprint(" ")
-	print_progress("Importing the total 2D alignment parameters in the original scale to the header entry...")
+	sxprint("Importing the total 2D alignment parameters in the original scale to the header entry...")
 	cmd_line = "sxheader.py {} --import={} --params={}".format( virtual_bdb_substack_path, # target stack
 																isac_substack_total_header_align2d_path, # import alignment parameters from .txt file
 																"xform.align2d") # perform the import on the alignment parameters
@@ -582,14 +583,14 @@ def isac_substack(args):
 	
 	# Transform xform.align2d to xform.projection
 	sxprint(" ")
-	print_progress("Creating projection parameters header entry from imported 2D alignment parameters using 2D-to-3D transformation...")
+	sxprint("Creating projection parameters header entry from imported 2D alignment parameters using 2D-to-3D transformation...")
 	cmd_line = "sxparams_2D_to_3D.py {}".format(virtual_bdb_substack_path)
 	status = cmdexecute(cmd_line)
 	if status == 0: ERROR("\"{}\" execution failed. Exiting...".format(cmd_line), where=subcommand_name) # action=1 - fatal error, exit
 	
 	# Export projection parameters from xform.projection
 	sxprint(" ")
-	print_progress("Exporting projection parameters from the header entry...")
+	sxprint("Exporting projection parameters from the header entry...")
 	isac_substack_total_header_projection_path = os.path.join(args.output_directory, "{}_header_projection.txt".format(args.substack_basename))
 	cmd_line = "sxheader.py {} --export={} --params=xform.projection".format(virtual_bdb_substack_path, isac_substack_total_header_projection_path)
 	status = cmdexecute(cmd_line)
@@ -597,7 +598,7 @@ def isac_substack(args):
 	
 	# Export class id values
 	sxprint(" ")
-	print_progress("Importing class membership information (also found in file \'particle_membership.txt\')...")
+	sxprint("Importing class membership information (also found in file \'particle_membership.txt\')...")
 	cmd_line = "sxheader.py {} --import={} --params={}".format( virtual_bdb_substack_path, # target stack
 																class_membership_file_path, # import alignment parameters from .txt file
 																"ISAC_class_id") # perform the import on the alignment parameters
@@ -611,13 +612,13 @@ def isac_substack(args):
 
 	# summary
 	sxprint(" ")
-	print_progress("Summary of processing...")
-	print_progress("  Particles in fullstack  : %6d"%(n_fullstack_img)) 
-	print_progress("  Accounted particles     : %6d"%(n_accounted_img))
-	print_progress("  Default class averages  : %6d"%(n_default_class_avg)) 
-	print_progress("  Provided class averages : %6d"%(n_class_avg)) 
-	print_progress("  Extracted class members : %6d"%(n_isac_substack_img))
-	print_progress("  ISAC substack size      : %6d"%(EMUtil.get_image_count(virtual_bdb_substack_path)))
+	sxprint("Summary of processing...")
+	sxprint("  Particles in fullstack  : %6d"%(n_fullstack_img)) 
+	sxprint("  Accounted particles     : %6d"%(n_accounted_img))
+	sxprint("  Default class averages  : %6d"%(n_default_class_avg)) 
+	sxprint("  Provided class averages : %6d"%(n_class_avg)) 
+	sxprint("  Extracted class members : %6d"%(n_isac_substack_img))
+	sxprint("  ISAC substack size      : %6d"%(EMUtil.get_image_count(virtual_bdb_substack_path)))
 	sxprint(" ")
 
 # ----------------------------------------------------------------------------------------
@@ -1146,18 +1147,18 @@ def organize_micrographs(args):
 	# Swap input directory and output directory if necessary
 	if not args.reverse:
 		sxprint(" ")
-		print_progress("Running in Normal Operation Mode... ")
+		sxprint("Running in Normal Operation Mode... ")
 	else:
 		sxprint(" ")
-		print_progress("Running in Reverse Operation Mode... ")
+		sxprint("Running in Reverse Operation Mode... ")
 		dst_dir = src_dir
 		src_dir = record_dir
 		src_mic_pattern = os.path.join(src_dir, mic_basename_pattern)
 	
-	print_progress("Source micrograph basename pattern : %s"%(src_mic_pattern))
-	print_progress("Source directory                   : %s"%(src_dir))
-	print_progress("Destination directory              : %s"%(dst_dir))
-	print_progress("Recording directory                : %s"%(record_dir))
+	sxprint("Source micrograph basename pattern : %s"%(src_mic_pattern))
+	sxprint("Source directory                   : %s"%(src_dir))
+	sxprint("Destination directory              : %s"%(dst_dir))
+	sxprint("Recording directory                : %s"%(record_dir))
 	sxprint(" ")
 	
 
@@ -1188,7 +1189,7 @@ def organize_micrographs(args):
 	dst_mic_pattern = None
 	if os.path.exists(dst_dir):
 		sxprint(" ")
-		print_progress("The destination directory (%s) already exists. "%(dst_dir))
+		sxprint("The destination directory (%s) already exists. "%(dst_dir))
 		dst_mic_pattern = os.path.join(dst_dir, mic_basename_pattern)
 	
 	# --------------------------------------------------------------------------------
@@ -1197,10 +1198,10 @@ def organize_micrographs(args):
 	# --------------------------------------------------------------------------------
 	# Generate the list of micrograph paths in the source directory
 	sxprint(" ")
-	print_progress("Checking the source directory...")
+	sxprint("Checking the source directory...")
 	src_mic_path_list = glob.glob(src_mic_pattern)
 	# Check error condition of source micrograph file path list
-	print_progress("Found %d microgarphs in %s."%(len(src_mic_path_list), src_dir))
+	sxprint("Found %d microgarphs in %s."%(len(src_mic_path_list), src_dir))
 	if len(src_mic_path_list) == 0:
 		ERROR("No micrograph files are found in the directory specified by the micrograph path pattern (%s). Please check source_micrograph_pattern argument and restart the program."%(src_dir), where=subcommand_name) # action=1 - fatal error, exit
 	
@@ -1226,10 +1227,10 @@ def organize_micrographs(args):
 		dst_mic_pattern = os.path.join(dst_dir, mic_basename_pattern)
 		# Generate the list of micrograph paths in the output directory
 		sxprint(" ")
-		print_progress("Checking the destination directory...")
+		sxprint("Checking the destination directory...")
 		dst_mic_path_list = glob.glob(dst_mic_pattern)
 		# Check error condition of destination micrograph file path list
-		print_progress("Found %d microgarphs in %s."%(len(dst_mic_path_list), dst_dir))
+		sxprint("Found %d microgarphs in %s."%(len(dst_mic_path_list), dst_dir))
 		
 		# Register micrograph id substrings to the global entry dictionary
 		for dst_mic_path in dst_mic_path_list:
@@ -1253,17 +1254,17 @@ def organize_micrographs(args):
 	select_mic_path_list = []
 	# Generate micrograph lists according to the execution mode
 	sxprint(" ")
-	print_progress("Checking the selection list...")
+	sxprint("Checking the selection list...")
 	select_mic_path_list = read_text_file(select_list_path)
 	
 	# Check error condition of micrograph entry lists
-	print_progress("Found %d microgarph entries in %s."%(len(select_mic_path_list), select_list_path))
+	sxprint("Found %d microgarph entries in %s."%(len(select_mic_path_list), select_list_path))
 	if len(select_mic_path_list) == 0:
 		ERROR("No micrograph entries are found in the selection list file (%s). Please correct selection_list option and restart the program."%(select_list_path), where=subcommand_name) # action=1 - fatal error, exit
 	
 	select_mic_dir = os.path.dirname(select_mic_path_list[0])
 	if select_mic_dir != "":
-		print_progress("    NOTE: Program disregards the directory paths in the source selection list (%s)."%(select_mic_dir))
+		sxprint("    NOTE: Program disregards the directory paths in the source selection list (%s)."%(select_mic_dir))
 
 	# Register micrograph id substrings to the global entry dictionary
 	for select_mic_path in select_mic_path_list:
@@ -1289,7 +1290,7 @@ def organize_micrographs(args):
 	# Create the list containing only valid micrograph id substrings
 	# --------------------------------------------------------------------------------
 	sxprint(" ")
-	print_progress("Checking consistency of the provided dataset ...")
+	sxprint("Checking consistency of the provided dataset ...")
 
 	if dst_mic_pattern is None:
 		# Prepare lists to keep track of invalid (rejected) micrographs
@@ -1309,10 +1310,10 @@ def organize_micrographs(args):
 					no_src_mic_id_substr_list.append(mic_id_substr)
 				
 				if len(warinnig_messages) > 0:
-					print_progress("WARNING!!! Micrograph ID %s has problems with consistency among the provided dataset:"%(mic_id_substr))
+					sxprint("WARNING!!! Micrograph ID %s has problems with consistency among the provided dataset:"%(mic_id_substr))
 					for warinnig_message in warinnig_messages:
-						print_progress(warinnig_message)
-					print_progress("    Ignores this as an invalid entry.")
+						sxprint(warinnig_message)
+					sxprint("    Ignores this as an invalid entry.")
 				else:
 					# sxprint("MRK_DEBUG: adding mic_id_substr := ", mic_id_substr)
 					valid_mic_id_substr_list.append(mic_id_substr)
@@ -1327,7 +1328,7 @@ def organize_micrographs(args):
 			# Open the consistency check file
 			mic_consistency_check_info_path = os.path.join(record_dir, "mic_consistency_check_info_%s.txt"%(get_time_stamp_suffix()))
 			sxprint(" ")
-			print_progress("Generating consistency report of the provided dataset in %s..."%(mic_consistency_check_info_path))
+			sxprint("Generating consistency report of the provided dataset in %s..."%(mic_consistency_check_info_path))
 			mic_consistency_check_info_file = open(mic_consistency_check_info_path, "w")
 			mic_consistency_check_info_file.write("# The consistency information about micrograph IDs that might have problmes with consistency among the provided dataset.\n")
 			mic_consistency_check_info_file.write("# \n")
@@ -1366,10 +1367,10 @@ def organize_micrographs(args):
 		# Print out the summary of input consistency
 		# --------------------------------------------------------------------------------
 		sxprint(" ")
-		print_progress("Summary of consistency check for provided dataset...")
-		print_progress("Detected                           : %6d"%(len(global_entry_dict)))
-		print_progress("Valid                              : %6d"%(len(valid_mic_id_substr_list)))
-		print_progress("Rejected by no source micrographs  : %6d"%(len(no_src_mic_id_substr_list)))
+		sxprint("Summary of consistency check for provided dataset...")
+		sxprint("Detected                           : %6d"%(len(global_entry_dict)))
+		sxprint("Valid                              : %6d"%(len(valid_mic_id_substr_list)))
+		sxprint("Rejected by no source micrographs  : %6d"%(len(no_src_mic_id_substr_list)))
 		sxprint(" ")
 		
 		# --------------------------------------------------------------------------------
@@ -1407,10 +1408,10 @@ def organize_micrographs(args):
 					# else:
 					#	# This should most typical case!
 				if len(warinnig_messages) > 0:
-					print_progress("WARNING!!! Micrograph ID %s has problems with consistency among the provided dataset:"%(mic_id_substr))
+					sxprint("WARNING!!! Micrograph ID %s has problems with consistency among the provided dataset:"%(mic_id_substr))
 					for warinnig_message in warinnig_messages:
-						print_progress(warinnig_message)
-					print_progress("    Ignores this as an invalid entry.")
+						sxprint(warinnig_message)
+					sxprint("    Ignores this as an invalid entry.")
 				else:
 					# sxprint("MRK_DEBUG: adding mic_id_substr := ", mic_id_substr)
 					valid_mic_id_substr_list.append(mic_id_substr)
@@ -1423,7 +1424,7 @@ def organize_micrographs(args):
 			# Open the consistency check file
 			mic_consistency_check_info_path = os.path.join(record_dir, "mic_consistency_check_info_%s.txt"%(get_time_stamp_suffix()))
 			sxprint(" ")
-			print_progress("Generating consistency report of the provided dataset in %s..."%(mic_consistency_check_info_path))
+			sxprint("Generating consistency report of the provided dataset in %s..."%(mic_consistency_check_info_path))
 			mic_consistency_check_info_file = open(mic_consistency_check_info_path, "w")
 			mic_consistency_check_info_file.write("# The consistency information about micrograph IDs that might have problmes with consistency among the provided dataset.\n")
 			mic_consistency_check_info_file.write("# \n")
@@ -1467,12 +1468,12 @@ def organize_micrographs(args):
 		# Print out the summary of input consistency
 		# --------------------------------------------------------------------------------
 		sxprint(" ")
-		print_progress("Summary of dataset consistency check...")
-		print_progress("Detected                           : %6d"%(len(global_entry_dict)))
-		print_progress("Valid                              : %6d"%(len(valid_mic_id_substr_list)))
-		print_progress("Rejected by not found in both dirs : %6d"%(len(no_mic_in_both_dirs_id_substr_list)))
-		print_progress("Rejected by already in dst dir     : %6d"%(len(already_in_dst_dir_mic_id_substr_list)))
-		print_progress("Rejected by duplicated in dst dir  : %6d"%(len(duplicated_in_dst_dir_mic_id_substr_list)))
+		sxprint("Summary of dataset consistency check...")
+		sxprint("Detected                           : %6d"%(len(global_entry_dict)))
+		sxprint("Valid                              : %6d"%(len(valid_mic_id_substr_list)))
+		sxprint("Rejected by not found in both dirs : %6d"%(len(no_mic_in_both_dirs_id_substr_list)))
+		sxprint("Rejected by already in dst dir     : %6d"%(len(already_in_dst_dir_mic_id_substr_list)))
+		sxprint("Rejected by duplicated in dst dir  : %6d"%(len(duplicated_in_dst_dir_mic_id_substr_list)))
 		sxprint(" ")
 		
 		# --------------------------------------------------------------------------------
@@ -1481,7 +1482,7 @@ def organize_micrographs(args):
 		# --------------------------------------------------------------------------------
 		if len(duplicated_in_dst_dir_mic_id_substr_list) > 0:
 			duplicated_mic_list_path = os.path.join(record_dir, "duplicated_micrographs_%s.txt"%(get_time_stamp_suffix()))
-			print_progress("Storing the list of duplicated micrographs in %s."%(duplicated_mic_list_path))
+			sxprint("Storing the list of duplicated micrographs in %s."%(duplicated_mic_list_path))
 			sxprint(" ")
 			
 			# Open the duplicated micrograph list file
@@ -1506,7 +1507,7 @@ def organize_micrographs(args):
 	# --------------------------------------------------------------------------------
 	if not os.path.exists(dst_dir):
 		sxprint(" ")
-		print_progress("Creating the destination directory (%s)..."%(dst_dir))
+		sxprint("Creating the destination directory (%s)..."%(dst_dir))
 		os.mkdir(dst_dir)
 
 	# --------------------------------------------------------------------------------
@@ -1517,7 +1518,7 @@ def organize_micrographs(args):
 	
 	if len(valid_mic_id_substr_list) > 0:
 		sxprint(" ")
-		print_progress("Moving micrographs in the selecting list (%s) from the source directory (%s) to the destination directory (%s)..."%(select_list_path, src_dir, dst_dir))
+		sxprint("Moving micrographs in the selecting list (%s) from the source directory (%s) to the destination directory (%s)..."%(select_list_path, src_dir, dst_dir))
 		### sxprint("Micrographs processed (including percent of progress):")
 		### progress_percent_step = len(valid_mic_id_substr_list)*0.1 # Report every 10% of the number of micrograms
 
@@ -1541,8 +1542,8 @@ def organize_micrographs(args):
 	
 	# Print summary of processing
 	sxprint(" ")
-	print_progress("Summary of processing...")
-	print_progress("Moved      : %6d"%(n_moved_mics))
+	sxprint("Summary of processing...")
+	sxprint("Moved      : %6d"%(n_moved_mics))
 	sxprint(" ")
 	
 ### # ----------------------------------------------------------------------------------------
@@ -1619,7 +1620,7 @@ def organize_micrographs(args):
 ### 	
 ### 	n_img = EMUtil.get_image_count(args.input_stack_path)
 ### 	# sxprint(" ")
-### 	print_progress("Found {} particle images in the input stack {}".format(n_img, args.input_stack_path))
+### 	sxprint("Found {} particle images in the input stack {}".format(n_img, args.input_stack_path))
 ### 
 ### 	# Define variables and constants used in the loop
 ### 	global_coordinates_dict = {} # mic basename is the key. contains original and centered box coordinates in EMAN1 format
@@ -1635,7 +1636,7 @@ def organize_micrographs(args):
 ### 		mic_basename = os.path.basename(mic_path)
 ### 		if mic_basename not in global_coordinates_dict:
 ### 			global_coordinates_dict[mic_basename] = coordinates_entry(mic_basename)
-### 			# print_progress("Found new micrograph {}. Detected {} micrographs so far...".format(mic_basename, len(global_coordinates_dict)))
+### 			# sxprint("Found new micrograph {}. Detected {} micrographs so far...".format(mic_basename, len(global_coordinates_dict)))
 ### 		
 ### 		# Extract the associated coordinates from the image header
 ### 		ptcl_source_coordinate_x, ptcl_source_coordinate_y = img.get_attr("ptcl_source_coord")
@@ -1662,7 +1663,7 @@ def organize_micrographs(args):
 ### 		global_coordinates_dict[mic_basename].eman1_centered.append("{:6d} {:6d} {:6d} {:6d} {:6d}\n".format(eman1_centered_coordinate_x, eman1_centered_coordinate_y, args.box_size, args.box_size, eman1_dummy))
 ### 	
 ### 	sxprint(" ")
-### 	print_progress("Found total of {} assocaited micrographs in the input stack {}".format(len(global_coordinates_dict), args.input_stack_path))
+### 	sxprint("Found total of {} assocaited micrographs in the input stack {}".format(len(global_coordinates_dict), args.input_stack_path))
 ### 	
 ### 	os.mkdir(args.output_directory)
 ### 	
@@ -1703,21 +1704,21 @@ def organize_micrographs(args):
 ### 		eman1_centered_coordinates_file.close()
 ### 		
 ### 		# sxprint(" ")
-### 		# print_progress("Micrograph summary...")
-### 		# print_progress("  Micrograph Name                : {}".format(mic_basename))
-### 		# print_progress("  Extracted original coordinates : {:6d}".format(len(mic_entry.eman1_original)))
-### 		# print_progress("  Extracted centered coordinates : {:6d}".format(len(mic_entry.eman1_centered)))
-### 		# print_progress("  Saved original coordinates to  : {}".format(eman1_original_coordinates_path))
-### 		# print_progress("  Saved centered coordinates to  : {}".format(eman1_centered_coordinates_path))
-### 		print_progress(" {:6d} particle coordinates for {}...".format(len(mic_entry.eman1_original), mic_basename))
+### 		# sxprint("Micrograph summary...")
+### 		# sxprint("  Micrograph Name                : {}".format(mic_basename))
+### 		# sxprint("  Extracted original coordinates : {:6d}".format(len(mic_entry.eman1_original)))
+### 		# sxprint("  Extracted centered coordinates : {:6d}".format(len(mic_entry.eman1_centered)))
+### 		# sxprint("  Saved original coordinates to  : {}".format(eman1_original_coordinates_path))
+### 		# sxprint("  Saved centered coordinates to  : {}".format(eman1_centered_coordinates_path))
+### 		sxprint(" {:6d} particle coordinates for {}...".format(len(mic_entry.eman1_original), mic_basename))
 ### 	
 ### 	mic_list_file.close()
 ### 	
 ### 	sxprint(" ")
-### 	print_progress("Global summary of processing...")
-### 	print_progress("Processed particles                : {:6d}".format(n_img))
-### 	print_progress("Extracted micrographs              : {:6d}".format(len(global_coordinates_list)))
-### 	print_progress("Saved extracted micrograph list to : {}".format(mic_list_file_path))
+### 	sxprint("Global summary of processing...")
+### 	sxprint("Processed particles                : {:6d}".format(n_img))
+### 	sxprint("Extracted micrographs              : {:6d}".format(len(global_coordinates_list)))
+### 	sxprint("Saved extracted micrograph list to : {}".format(mic_list_file_path))
 
 # ----------------------------------------------------------------------------------------
 # Author 1: Christos Gatsogiannis 12/23/2015 (Christos.Gatsogiannis@mpi-dortmund.mpg.de)
@@ -1864,9 +1865,9 @@ def restacking(args):
 		
 		# Generate the list of selected micrograph paths in the selection file
 		sxprint(" ")
-		print_progress("----- Running in Selected Micrographs Mode -----")
+		sxprint("----- Running in Selected Micrographs Mode -----")
 		sxprint(" ")
-		print_progress("Checking the selection list {}...".format(args.selection_list))
+		sxprint("Checking the selection list {}...".format(args.selection_list))
 		selected_mic_path_list = read_text_file(args.selection_list)
 		
 		# Check error condition of micrograph entry lists
@@ -1878,34 +1879,34 @@ def restacking(args):
 		
 		selected_mic_directory = os.path.dirname(selected_mic_path_list[0])
 		if selected_mic_directory != "":
-			print_progress("    NOTE: Program disregards the directory paths in the selection list ({}).".format(selected_mic_directory))
+			sxprint("    NOTE: Program disregards the directory paths in the selection list ({}).".format(selected_mic_directory))
 		
 		# Register micrograph basename found in the selection list
 		# to the global entry dictionary
 		sxprint(" ")
-		print_progress("Registering all micrographs in the selection list {}...".format(args.selection_list))
+		sxprint("Registering all micrographs in the selection list {}...".format(args.selection_list))
 		for mic_path in selected_mic_path_list:
 			mic_basename = os.path.basename(mic_path)
 			if mic_basename in global_mic_dict:
-				print_progress("WARNING!!! Micrograph {} is duplicated in the selection list {}. Ignoring this duplicated entry...".format(mic_path, args.selection_list))
+				sxprint("WARNING!!! Micrograph {} is duplicated in the selection list {}. Ignoring this duplicated entry...".format(mic_path, args.selection_list))
 				continue
 			
 			global_mic_dict[mic_basename] = SX_mic_entry(mic_basename)
 			global_mic_dict[mic_basename].is_in_list = True
-			# print_progress("Found new micrograph {}. Detected {} micrographs so far...".format(mic_basename, len(global_mic_dict)))
+			# sxprint("Found new micrograph {}. Detected {} micrographs so far...".format(mic_basename, len(global_mic_dict)))
 	else:
 		sxprint(" ")
-		print_progress("----- Running in All Micrographs Mode -----")
+		sxprint("----- Running in All Micrographs Mode -----")
 
 	# --------------------------------------------------------------------------------
 	# Register micrograph basename found in the selection list
 	# to the global entry dictionary
 	# --------------------------------------------------------------------------------
 	sxprint(" ")
-	print_progress("Checking the input stack {}...".format(args.input_bdb_stack_path))
+	sxprint("Checking the input stack {}...".format(args.input_bdb_stack_path))
 	n_img = EMUtil.get_image_count(args.input_bdb_stack_path)
 	# sxprint(" ")
-	print_progress("Found {} particle images in the input stack {}".format(n_img, args.input_bdb_stack_path))
+	sxprint("Found {} particle images in the input stack {}".format(n_img, args.input_bdb_stack_path))
 	
 	# --------------------------------------------------------------------------------
 	# Register micrograph basenames found in the stack to the global micrographs dictionary
@@ -1930,7 +1931,7 @@ def restacking(args):
 				# If selection list is not provided, process as if all micrographs in the input stack are selected
 				mic_entry.is_in_list = True
 			global_mic_dict[mic_basename] = mic_entry
-			# print_progress("Found new micrograph {}. Detected {} micrographs so far...".format(mic_basename, len(global_mic_dict)))
+			# sxprint("Found new micrograph {}. Detected {} micrographs so far...".format(mic_basename, len(global_mic_dict)))
 		# Case 2: This micrograph has been registered already. (1) This is in the selection list or (2) Not first incidence in the input stack
 		else:
 			mic_entry = global_mic_dict[mic_basename]
@@ -2084,23 +2085,23 @@ def restacking(args):
 			global_mic_dict[mic_basename].centered_rebox_coords_list.append(line)
 			
 #	sxprint(" ")
-#	print_progress("Found total of {} assocaited micrographs in the input stack {}.".format(len(global_mic_dict), args.input_bdb_stack_path))
+#	sxprint("Found total of {} assocaited micrographs in the input stack {}.".format(len(global_mic_dict), args.input_bdb_stack_path))
 	
 	if missing_ctf_params_counter > 0:
 		sxprint(" ")
-		print_progress("WARNING!!! The CTF parameters (ctf header entry) are missing from {} out of {} particle images in the input stack {}.".format(missing_proj_params_counter, n_img, args.input_bdb_stack_path))
-		print_progress("           The program automatically sets dummy CTF parameters for these particle images.")
+		sxprint("WARNING!!! The CTF parameters (ctf header entry) are missing from {} out of {} particle images in the input stack {}.".format(missing_proj_params_counter, n_img, args.input_bdb_stack_path))
+		sxprint("           The program automatically sets dummy CTF parameters for these particle images.")
 		
 	if missing_proj_params_counter > 0:
 		sxprint(" ")
-		print_progress("WARNING!!! The projection parameters (xform.projection header entry) are missing from {} out of {} particle images in the input stack {}.".format(missing_proj_params_counter, n_img, args.input_bdb_stack_path))
-		print_progress("           The program automtically set the prjection parameters to all zeros (null alignment).")
+		sxprint("WARNING!!! The projection parameters (xform.projection header entry) are missing from {} out of {} particle images in the input stack {}.".format(missing_proj_params_counter, n_img, args.input_bdb_stack_path))
+		sxprint("           The program automtically set the prjection parameters to all zeros (null alignment).")
 
 	mic_basename_list_of_input_stack = []
 	mic_basename_list_of_output_stack = []
 	
 	sxprint(" ")
-	print_progress("Checking consistency of the provided dataset ...")
+	sxprint("Checking consistency of the provided dataset ...")
 		
 	# Loop over all registed micrograph basename
 	for mic_basename in global_mic_dict:
@@ -2112,15 +2113,15 @@ def restacking(args):
 				# This is only condition (expected typical case) where we have to output the info of this micrograph
 				mic_basename_list_of_output_stack.append(mic_basename)
 			else:
-				print_progress("    Micrograph {} is in the stack but not in the selection list.".format(mic_basename))
+				sxprint("    Micrograph {} is in the stack but not in the selection list.".format(mic_basename))
 		else:
 			if mic_entry.is_in_list:
-				print_progress("    Micrograph {} is in the selection list but not in the stack.".format(mic_basename))
+				sxprint("    Micrograph {} is in the selection list but not in the stack.".format(mic_basename))
 	
 	os.mkdir(args.output_directory)
 
 	sxprint(" ")
-	print_progress("Found total of {} micrographs in the input stack {}.".format(len(mic_basename_list_of_input_stack), args.input_bdb_stack_path))
+	sxprint("Found total of {} micrographs in the input stack {}.".format(len(mic_basename_list_of_input_stack), args.input_bdb_stack_path))
 	
 	mic_basename_list_of_input_stack.sort()
 	mic_basename_list_of_output_stack.sort()
@@ -2128,12 +2129,12 @@ def restacking(args):
 	
 	if args.selection_list is not None:
 		sxprint(" ")
-		print_progress("Found total of {} valid micrographs for the output.".format(len(mic_basename_list_of_output_stack)))
+		sxprint("Found total of {} valid micrographs for the output.".format(len(mic_basename_list_of_output_stack)))
 	
 	sxprint(" ")
 	input_mic_list_file_name = "micrographs_in_input_stack.txt"
 	input_mic_list_file_path = os.path.join(args.output_directory, input_mic_list_file_name)
-	print_progress("Saving the list of micrographs found in the input stack {} to {}...".format(args.input_bdb_stack_path, input_mic_list_file_path))
+	sxprint("Saving the list of micrographs found in the input stack {} to {}...".format(args.input_bdb_stack_path, input_mic_list_file_path))
 	input_mic_list_file = open(input_mic_list_file_path, "w")
 	for mic_basename in mic_basename_list_of_input_stack:
 		# Write the mic base name to output file; micrograph selection text file
@@ -2143,7 +2144,7 @@ def restacking(args):
 	sxprint(" ")
 	output_mic_list_file_name = "micrographs_in_output_dataset.txt"
 	output_mic_list_file_path = os.path.join(args.output_directory, output_mic_list_file_name)
-	print_progress("Saving the list of valid micrograph names for the output to {}...".format(output_mic_list_file_path))
+	sxprint("Saving the list of valid micrograph names for the output to {}...".format(output_mic_list_file_path))
 	output_mic_list_file = open(output_mic_list_file_path, "w")
 	for mic_basename in mic_basename_list_of_output_stack:
 		# Write the mic base name to output file; micrograph selection text file
@@ -2248,22 +2249,22 @@ def restacking(args):
 			centered_rebox_coords_list_file.close()
 		
 		# sxprint(" ")
-		# print_progress("Micrograph summary...")
-		# print_progress("  Micrograph Name                      : {}".format(mic_basename))
-		# print_progress("  Extracted particle image ID          : {:6d}".format(len(mic_entry.img_id_list)))
-		# print_progress("  Original projection parameters       : {:6d}".format(len(mic_entry.original_proj_params_list)))
-		# print_progress("  Centered projection parameters       : {:6d}".format(len(mic_entry.centered_proj_params_list)))
-		print_progress(" {:6d} particles in {}...".format(len(mic_entry.img_id_list), mic_basename))
+		# sxprint("Micrograph summary...")
+		# sxprint("  Micrograph Name                      : {}".format(mic_basename))
+		# sxprint("  Extracted particle image ID          : {:6d}".format(len(mic_entry.img_id_list)))
+		# sxprint("  Original projection parameters       : {:6d}".format(len(mic_entry.original_proj_params_list)))
+		# sxprint("  Centered projection parameters       : {:6d}".format(len(mic_entry.centered_proj_params_list)))
+		sxprint(" {:6d} particles in {}...".format(len(mic_entry.img_id_list), mic_basename))
 		#if args.reboxing:
-		#	print_progress("  Extracted original coordinates       : {:6d}".format(len(mic_entry.original_coords_list)))
-		#	print_progress("  Saved original coordinates to        : {}".format(original_coords_list_path))
-		#	print_progress("  Extracted original rebox coordinates : {:6d}".format(len(mic_entry.original_rebox_coords_list)))
-		#	print_progress("  Saved original rebox coordinates to  : {}".format(original_rebox_coords_list_path))
-		#	print_progress("  Extracted centered coordinates       : {:6d}".format(len(mic_entry.centered_coords_list)))
-		#	print_progress("  Saved centered coordinates to        : {}".format(centered_coords_list_path))
-		#	print_progress("  Extracted centered rebox coordinates : {:6d}".format(len(mic_entry.centered_rebox_coords_list)))
-		#	print_progress("  Saved centered rebox coordinates to  : {}".format(centered_rebox_coords_list_path))
-		#	print_progress(" {:6d} particle coordinates for {}...".format(len(mic_entry.original_coords_list), mic_basename))
+		#	sxprint("  Extracted original coordinates       : {:6d}".format(len(mic_entry.original_coords_list)))
+		#	sxprint("  Saved original coordinates to        : {}".format(original_coords_list_path))
+		#	sxprint("  Extracted original rebox coordinates : {:6d}".format(len(mic_entry.original_rebox_coords_list)))
+		#	sxprint("  Saved original rebox coordinates to  : {}".format(original_rebox_coords_list_path))
+		#	sxprint("  Extracted centered coordinates       : {:6d}".format(len(mic_entry.centered_coords_list)))
+		#	sxprint("  Saved centered coordinates to        : {}".format(centered_coords_list_path))
+		#	sxprint("  Extracted centered rebox coordinates : {:6d}".format(len(mic_entry.centered_rebox_coords_list)))
+		#	sxprint("  Saved centered rebox coordinates to  : {}".format(centered_rebox_coords_list_path))
+		#	sxprint(" {:6d} particle coordinates for {}...".format(len(mic_entry.original_coords_list), mic_basename))
 	
 	ctf_params_list_file.close()
 	original_proj_params_list_file.close()
@@ -2272,7 +2273,7 @@ def restacking(args):
 	sxprint(" ")
 	output_particle_id_list_file_name = "input_stack_particle_id_for_output_dataset.txt"
 	output_particle_id_list_file_path = os.path.join(args.output_directory, output_particle_id_list_file_name)
-	print_progress("Saving the list of input stack particle IDs for the output dataset to {}...".format(output_particle_id_list_file_path))
+	sxprint("Saving the list of input stack particle IDs for the output dataset to {}...".format(output_particle_id_list_file_path))
 	output_particle_id_list_file = open(output_particle_id_list_file_path, "w")
 	for output_image_id_list in global_output_image_id_list:
 		# Write the mic base name to output file; micrograph selection text file
@@ -2283,40 +2284,40 @@ def restacking(args):
 	if args.save_vstack:
 		# Create virtual stack for output stack
 		sxprint(" ")
-		print_progress("Creating output stack as a virtual stack...")
+		sxprint("Creating output stack as a virtual stack...")
 		virtual_bdb_stack_path = "bdb:{}#{}".format(args.output_directory, args.sv_vstack_basename)
 		cmd_line = "e2bdb.py {} --makevstack={} --list={}".format(args.input_bdb_stack_path, virtual_bdb_stack_path, output_particle_id_list_file_path)
 		status = cmdexecute(cmd_line)
 		if status == 0: ERROR("\"{}\" execution failed. Exiting...".format(cmd_line), where=subcommand_name) # action=1 - fatal error, exit
 
 	sxprint(" ")
-	print_progress("Global summary of processing...")
-	print_progress("Num. of extracted micrographs in selection list       : {:6d}".format(len(selected_mic_path_list)))
-	print_progress("Num. of extracted micrographs in input stack          : {:6d}".format(len(mic_basename_list_of_input_stack)))
-	print_progress("Saved input stack micrograph list to                  : {}".format(input_mic_list_file_path))
-	print_progress("Num. of valid micrographs for output dataset          : {:6d}".format(len(mic_basename_list_of_output_stack)))
-	print_progress("Saved output dataset micrograph list to               : {}".format(output_mic_list_file_path))
-	print_progress(" ")
-	print_progress("Num. of detected input stack particles                : {:6d}".format(n_img))
-	print_progress("Num. of particle IDs in output dataset                : {:6d}".format(len(global_output_image_id_list)))
-	print_progress("Saved particle ID list of output dataset to           : {}".format(output_particle_id_list_file_path))
-	print_progress("Num. of CTF params in output dataset                  : {:6d}".format(global_ctf_params_counters))
-	print_progress("Saved CTF params list of output dataset to            : {}".format(ctf_params_list_file_path))
-	print_progress("Num. of original proj. params in output dataset       : {:6d}".format(global_original_proj_params_counters))
-	print_progress("Saved original proj. params list of output dataset to : {}".format(original_proj_params_list_file_path))
-	print_progress("Num. of ceneterd proj. params in output dataset       : {:6d}".format(global_centered_proj_params_counters))
-	print_progress("Saved ceneterd proj. params list of output dataset to : {}".format(centered_proj_params_list_file_path))
+	sxprint("Global summary of processing...")
+	sxprint("Num. of extracted micrographs in selection list       : {:6d}".format(len(selected_mic_path_list)))
+	sxprint("Num. of extracted micrographs in input stack          : {:6d}".format(len(mic_basename_list_of_input_stack)))
+	sxprint("Saved input stack micrograph list to                  : {}".format(input_mic_list_file_path))
+	sxprint("Num. of valid micrographs for output dataset          : {:6d}".format(len(mic_basename_list_of_output_stack)))
+	sxprint("Saved output dataset micrograph list to               : {}".format(output_mic_list_file_path))
+	sxprint(" ")
+	sxprint("Num. of detected input stack particles                : {:6d}".format(n_img))
+	sxprint("Num. of particle IDs in output dataset                : {:6d}".format(len(global_output_image_id_list)))
+	sxprint("Saved particle ID list of output dataset to           : {}".format(output_particle_id_list_file_path))
+	sxprint("Num. of CTF params in output dataset                  : {:6d}".format(global_ctf_params_counters))
+	sxprint("Saved CTF params list of output dataset to            : {}".format(ctf_params_list_file_path))
+	sxprint("Num. of original proj. params in output dataset       : {:6d}".format(global_original_proj_params_counters))
+	sxprint("Saved original proj. params list of output dataset to : {}".format(original_proj_params_list_file_path))
+	sxprint("Num. of ceneterd proj. params in output dataset       : {:6d}".format(global_centered_proj_params_counters))
+	sxprint("Saved ceneterd proj. params list of output dataset to : {}".format(centered_proj_params_list_file_path))
 	if args.reboxing:
-		print_progress("Num. of original coordinates in output dataset        : {:6d}".format(global_original_coords_counters))
-		print_progress("Saved original coordinates files in                   : {}".format(os.path.join(args.output_directory, original_coords_list_subdir)))
-		print_progress("Num. of original rebox coordinates in output dataset  : {:6d}".format(global_original_rebox_coords_counters))
-		print_progress("Saved original rebox coordinates files in             : {}".format(os.path.join(args.output_directory, original_rebox_coords_list_subdir)))
-		print_progress("Num. of centered coordinates in output dataset        : {:6d}".format(global_centered_coords_counters))
-		print_progress("Saved centered coordinates files in                   : {}".format(os.path.join(args.output_directory, centered_coords_list_subdir)))
-		print_progress("Num. of centered rebox coordinates in output dataset  : {:6d}".format(global_centered_rebox_coords_counters))
-		print_progress("Saved centered rebox coordinates files in             : {}".format(os.path.join(args.output_directory, centered_rebox_coords_list_subdir)))
+		sxprint("Num. of original coordinates in output dataset        : {:6d}".format(global_original_coords_counters))
+		sxprint("Saved original coordinates files in                   : {}".format(os.path.join(args.output_directory, original_coords_list_subdir)))
+		sxprint("Num. of original rebox coordinates in output dataset  : {:6d}".format(global_original_rebox_coords_counters))
+		sxprint("Saved original rebox coordinates files in             : {}".format(os.path.join(args.output_directory, original_rebox_coords_list_subdir)))
+		sxprint("Num. of centered coordinates in output dataset        : {:6d}".format(global_centered_coords_counters))
+		sxprint("Saved centered coordinates files in                   : {}".format(os.path.join(args.output_directory, centered_coords_list_subdir)))
+		sxprint("Num. of centered rebox coordinates in output dataset  : {:6d}".format(global_centered_rebox_coords_counters))
+		sxprint("Saved centered rebox coordinates files in             : {}".format(os.path.join(args.output_directory, centered_rebox_coords_list_subdir)))
 	if args.save_vstack:
-		print_progress("Save output stack as                                  : {}".format(virtual_bdb_stack_path))
+		sxprint("Save output stack as                                  : {}".format(virtual_bdb_stack_path))
 
 # ----------------------------------------------------------------------------------------
 def moon_eliminator(args):
@@ -2419,7 +2420,7 @@ def moon_eliminator(args):
 	
 	vol3d_dims = vol3d.get_xsize()
 	sxprint(" ")
-	print_progress("Dimension of input 3D volume : {}".format(vol3d_dims))
+	sxprint("Dimension of input 3D volume : {}".format(vol3d_dims))
 	
 	# Load second volume if specified
 	if args.input_volume_path_2nd:
@@ -2441,19 +2442,19 @@ def moon_eliminator(args):
 		isac_radius = float(isac_shrink_lines[6])        # 7th line: particle radius at original pixel size used in the ISAC run
 		isac_shrink_file.close()
 		sxprint(" ")
-		print_progress("ISAC2 run directory path is specified with --resample_ratio option...")
-		print_progress("Extracted parameter values")
-		print_progress("  ISAC shrink ratio    : {}".format(isac_shrink_ratio))
-		print_progress("  ISAC particle radius : {}".format(isac_radius))
+		sxprint("ISAC2 run directory path is specified with --resample_ratio option...")
+		sxprint("Extracted parameter values")
+		sxprint("  ISAC shrink ratio    : {}".format(isac_shrink_ratio))
+		sxprint("  ISAC particle radius : {}".format(isac_radius))
 		resample_ratio = 1.0 / isac_shrink_ratio
 	else:
 		resample_ratio = float(args.resample_ratio)
 		if resample_ratio != 1.0:
 			sxprint(" ")
-			print_progress("Resample ratio {} is specified with --resample_ratio option...".format(resample_ratio))
+			sxprint("Resample ratio {} is specified with --resample_ratio option...".format(resample_ratio))
 		else:
 			sxprint(" ")
-			print_progress("Resample ratio is {}. The program does not resample the input volume...".format(resample_ratio))
+			sxprint("Resample ratio is {}. The program does not resample the input volume...".format(resample_ratio))
 	
 	# ------------------------------------------------------------------------------------
 	# Step 2: Resample and window the volume (Mainly designed for R-VIPER models)
@@ -2461,11 +2462,11 @@ def moon_eliminator(args):
 	# Resample input volume with specified resample ratio
 	if resample_ratio != 1.0:
 		sxprint(" ")
-		print_progress("Resampling the input volume with resample ratio {}...".format(resample_ratio))
+		sxprint("Resampling the input volume with resample ratio {}...".format(resample_ratio))
 		vol3d = resample(vol3d, resample_ratio)
 		
 		vol3d_dims = vol3d.get_xsize()
-		print_progress("  Dimensions of resampled 3D volume : {}".format(vol3d_dims))
+		sxprint("  Dimensions of resampled 3D volume : {}".format(vol3d_dims))
 		
 	# 
 	# NOTE: 2018/04/09 Toshio Moriya 
@@ -2481,14 +2482,14 @@ def moon_eliminator(args):
 	if args.box_size is not None:
 		if args.box_size != vol3d_dims:
 			sxprint(" ")
-			print_progress("Adjusting the dimensions of 3D volume to {}...".format(args.box_size))
+			sxprint("Adjusting the dimensions of 3D volume to {}...".format(args.box_size))
 			if args.box_size > vol3d_dims:
 				vol3d = Util.pad(vol3d, args.box_size, args.box_size, args.box_size, 0, 0, 0, "circumference")
 			else:
 				vol3d = Util.window(vol3d, args.box_size, args.box_size, args.box_size, 0, 0, 0)
 
 		vol3d_dims = vol3d.get_xsize()
-		print_progress("  The dimensions of adjusted 3D volume : {}".format(vol3d_dims))
+		sxprint("  The dimensions of adjusted 3D volume : {}".format(vol3d_dims))
 	
 	if args.debug:
 		vol3d_restore_dim_file_path = os.path.join(args.output_directory, "mrkdebug{:02d}_vol3d_restore_dim.hdf".format(debug_output_id))
@@ -2500,13 +2501,13 @@ def moon_eliminator(args):
 	# ------------------------------------------------------------------------------------
 	if not (args.shift3d_x == 0 and args.shift3d_y == 0 and args.shift3d_z == 0):
 		sxprint(" ")
-		print_progress("Shifting the 3D volume...")
+		sxprint("Shifting the 3D volume...")
 		if not args.resampled_shift3d and resample_ratio != 1.0:
-			print_progress("  Resampling provided 3D shift (x, y, z) = ({}, {}, {}) with resample ratio {}...".format(args.shift3d_x, args.shift3d_y, args.shift3d_z, resample_ratio))
+			sxprint("  Resampling provided 3D shift (x, y, z) = ({}, {}, {}) with resample ratio {}...".format(args.shift3d_x, args.shift3d_y, args.shift3d_z, resample_ratio))
 			args.shift3d_x *= resample_ratio
 			args.shift3d_y *= resample_ratio
 			args.shift3d_z *= resample_ratio
-		print_progress("  Applying 3D shift (x, y, z) = ({}, {}, {}) to the volume...".format(args.shift3d_x, args.shift3d_y, args.shift3d_z))
+		sxprint("  Applying 3D shift (x, y, z) = ({}, {}, {}) to the volume...".format(args.shift3d_x, args.shift3d_y, args.shift3d_z))
 		vol3d = rot_shift3D(vol3d, sx = args.shift3d_x, sy = args.shift3d_y, sz = args.shift3d_z)
 	
 	if args.debug:
@@ -2518,7 +2519,7 @@ def moon_eliminator(args):
 	# Step 4: Invert handedness if necessary.
 	# ------------------------------------------------------------------------------------
 	if args.invert_handedness:
-		print_progress("Inverting handedness of input volume...")
+		sxprint("Inverting handedness of input volume...")
 		# Rotate the volume upside down  
 		# PAP - clearly Toshio was not aware of the fact that mirroring along z followed by rotation about y 
 		# is equivalent to mirroring along y.
@@ -2534,11 +2535,11 @@ def moon_eliminator(args):
 	# ------------------------------------------------------------------------------------
 	if args.fl != -1.0:
 		sxprint(" ")
-		print_progress("Low-pass filtration of the input volume using cutoff resolution {}[A] and fall-off {}[1/Pixels]...".format(args.fl, args.aa))
+		sxprint("Low-pass filtration of the input volume using cutoff resolution {}[A] and fall-off {}[1/Pixels]...".format(args.fl, args.aa))
 		vol3d = filt_tanl(vol3d, args.pixel_size/args.fl, args.aa)
 	else:
 		sxprint(" ")
-		print_progress("The program does not low-pass filter input volume...".format(args.fl))
+		sxprint("The program does not low-pass filter input volume...".format(args.fl))
 	
 	if args.debug:
 		vol3d_lpf_file_path = os.path.join(args.output_directory, "mrkdebug{:02d}_vol3d_lpf.hdf".format(debug_output_id))
@@ -2553,15 +2554,15 @@ def moon_eliminator(args):
 	if args.use_density_threshold is None:
 		sxprint(" ")
 		density_threshold = vol3d.find_3d_threshold(args.mol_mass, args.pixel_size)
-		print_progress("The density threshold corresponing to the specified molecular mass {}[kDa] and pixel size {}[A/Pixels] is  {}".format(args.mol_mass, args.pixel_size,density_threshold))
+		sxprint("The density threshold corresponing to the specified molecular mass {}[kDa] and pixel size {}[A/Pixels] is  {}".format(args.mol_mass, args.pixel_size,density_threshold))
 	else:
 		sxprint(" ")
-		print_progress("Using user-provided density threshold {}...".format(args.use_density_threshold))
+		sxprint("Using user-provided density threshold {}...".format(args.use_density_threshold))
 		density_threshold = args.use_density_threshold
 
 	# Eliminate moons
 	sxprint(" ")
-	print_progress("Eliminating moons of the input volume using density threshold of {} with {} edge...".format(density_threshold, args.edge_type))
+	sxprint("Eliminating moons of the input volume using density threshold of {} with {} edge...".format(density_threshold, args.edge_type))
 	my_volume_binarized = binarize(vol3d, density_threshold)
 	my_volume_binarized_with_no_moons = Util.get_biggest_cluster(my_volume_binarized)
 	volume_difference = my_volume_binarized - my_volume_binarized_with_no_moons
@@ -2578,7 +2579,7 @@ def moon_eliminator(args):
 
 	ref3d_moon_eliminated_file_path = os.path.join(args.output_directory, "{}_ref_moon_eliminated.hdf".format(args.outputs_root))
 	sxprint(" ")
-	print_progress("Saving moon eliminated 3D reference {}...".format(ref3d_moon_eliminated_file_path))
+	sxprint("Saving moon eliminated 3D reference {}...".format(ref3d_moon_eliminated_file_path))
 	vol3d.write_image(ref3d_moon_eliminated_file_path)
 
 	
@@ -2588,8 +2589,8 @@ def moon_eliminator(args):
 	'''
 	if args.generate_mask:
 		sxprint(" ")
-		print_progress("Generating mooon elimnated soft-edged 3D mask from the 3D binary volume corresponding to the specified molecular mass or density threshold with specified option parameters...")
-		print_progress("  Soft-edge type : {}".format(args.edge_type ))
+		sxprint("Generating mooon elimnated soft-edged 3D mask from the 3D binary volume corresponding to the specified molecular mass or density threshold with specified option parameters...")
+		sxprint("  Soft-edge type : {}".format(args.edge_type ))
 		gm_mask3d_moon_eliminated = None
 		gm_bin3d_mol_mass_dilated = None
 		gm_soft_edging_start_time = time()
@@ -2597,17 +2598,17 @@ def moon_eliminator(args):
 			# Use cosine soft-edged which is same as PostRefiner
 			gm_binarize_threshold = 0.5
 			if args.debug:
-				print_progress("MRK_DEBUG: ")
-				print_progress("MRK_DEBUG: Util.adaptive_mask()")
-				print_progress("MRK_DEBUG:   gm_binarize_threshold  := {}".format(gm_binarize_threshold))
-				print_progress("MRK_DEBUG:   args.gm_dilation       := {}".format(args.gm_dilation))
-				print_progress("MRK_DEBUG:   args.gm_edge_width     := {}".format(args.gm_edge_width))
+				sxprint("MRK_DEBUG: ")
+				sxprint("MRK_DEBUG: Util.adaptive_mask()")
+				sxprint("MRK_DEBUG:   gm_binarize_threshold  := {}".format(gm_binarize_threshold))
+				sxprint("MRK_DEBUG:   args.gm_dilation       := {}".format(args.gm_dilation))
+				sxprint("MRK_DEBUG:   args.gm_edge_width     := {}".format(args.gm_edge_width))
 			gm_mask3d_moon_eliminated = Util.adaptive_mask(bin3d_mol_mass, gm_binarize_threshold, args.gm_dilation, args.gm_edge_width)
 		elif args.edge_type == "gauss":
 			gm_gauss_kernel_radius = args.gm_edge_width - args.gm_dilation
 			gm_mask3d_moon_eliminated, gm_bin3d_mol_mass_dilated = mrk_sphere_gauss_edge(bin3d_mol_mass, args.gm_dilation, gm_gauss_kernel_radius, args.gm_edge_sigma, args.debug)
 		else:
-		print_progress("  Totally, {} soft-edging of 3D mask took {:7.2f} sec...".format(args.edge_type.upper(), time() - gm_soft_edging_start_time))
+		sxprint("  Totally, {} soft-edging of 3D mask took {:7.2f} sec...".format(args.edge_type.upper(), time() - gm_soft_edging_start_time))
 		
 		if args.debug:
 			if gm_bin3d_mol_mass_dilated is not None:
@@ -2617,23 +2618,23 @@ def moon_eliminator(args):
 		
 		gm_mask3d_moon_eliminated_file_path = os.path.join(args.output_directory, "{}_mask_moon_eliminated.hdf".format(args.outputs_root))
 		sxprint(" ")
-		print_progress("Saving moon eliminated 3D mask to {}...".format(gm_mask3d_moon_eliminated_file_path))
+		sxprint("Saving moon eliminated 3D mask to {}...".format(gm_mask3d_moon_eliminated_file_path))
 		gm_mask3d_moon_eliminated.write_image(gm_mask3d_moon_eliminated_file_path)
 	'''	
 	'''
 	sxprint(" ")
-	print_progress("Summary of processing...")
-	print_progress("  Provided expected molecular mass [kDa]      : {}".format(args.mol_mass))
+	sxprint("Summary of processing...")
+	sxprint("  Provided expected molecular mass [kDa]      : {}".format(args.mol_mass))
 	"""
-	print_progress("  Applied density threshold                   : {}".format(density_threshold))
-	print_progress("  Computed molecular mass [kDa] of density    : {}".format(computed_mol_mass_from_density))
-	print_progress("  Percentage of this molecular mass [kDa]     : {}".format(computed_mol_mass_from_density/args.mol_mass * 100))
-	print_progress("  Computed volume [Voxels] of density         : {}".format(computed_vol_voxels_from_density))
-	print_progress("  Percentage of this volume [Voxels]          : {}".format(computed_vol_voxels_from_density/computed_vol_voxels_from_mass * 100))
+	sxprint("  Applied density threshold                   : {}".format(density_threshold))
+	sxprint("  Computed molecular mass [kDa] of density    : {}".format(computed_mol_mass_from_density))
+	sxprint("  Percentage of this molecular mass [kDa]     : {}".format(computed_mol_mass_from_density/args.mol_mass * 100))
+	sxprint("  Computed volume [Voxels] of density         : {}".format(computed_vol_voxels_from_density))
+	sxprint("  Percentage of this volume [Voxels]          : {}".format(computed_vol_voxels_from_density/computed_vol_voxels_from_mass * 100))
 	"""
-	print_progress("  Saved moon eliminated 3D reference to       : {}".format(ref3d_moon_eliminated_file_path))
+	sxprint("  Saved moon eliminated 3D reference to       : {}".format(ref3d_moon_eliminated_file_path))
 	if args.generate_mask:
-		print_progress("  Saved mooon elimnated soft-edged 3D mask to : {}".format(gm_mask3d_moon_eliminated_file_path))
+		sxprint("  Saved mooon elimnated soft-edged 3D mask to : {}".format(gm_mask3d_moon_eliminated_file_path))
 	'''
 # ----------------------------------------------------------------------------------------
 # Author 1: Toshio Moriya 08/008/2018 (toshio.moriya@mpi-dortmund.mpg.de)
@@ -2694,7 +2695,7 @@ def desymmetrize(args):
 	# Load symmetrized particle IDs of all sorted groups in the specified homogeneous group
 	symmetrized_particle_id_list = read_text_file(args.input_cluster_path)  # Cluster#.txt
 	sxprint("MRK_DEBUG: len(symmetrized_particle_id_list) := ", len(symmetrized_particle_id_list))
-	print_progress("Detected %d symmetrized particle IDs in the specified cluster text file %s."%(len(symmetrized_particle_id_list), args.input_cluster_path))
+	sxprint("Detected %d symmetrized particle IDs in the specified cluster text file %s."%(len(symmetrized_particle_id_list), args.input_cluster_path))
 	sxprint(" ")
 	
 	symmetrized_particle_id_list = sorted(symmetrized_particle_id_list)
@@ -2721,7 +2722,7 @@ def desymmetrize(args):
 	input_bdb_stack = db_open_dict(args.input_bdb_stack_path, ro=True) # Read only
 	
 	n_img_detected = EMUtil.get_image_count(args.input_bdb_stack_path)
-	print_progress("Detected %d particles in symmetrized input BDB stack %s."%(n_img_detected, args.input_bdb_stack_path))
+	sxprint("Detected %d particles in symmetrized input BDB stack %s."%(n_img_detected, args.input_bdb_stack_path))
 	sxprint(" ")
 	
 	# Get symmetrisation information from header of 1st image in input bdb stack
@@ -2734,7 +2735,7 @@ def desymmetrize(args):
 	n_symmetry = 0
 	n_presymmetriezed_img = 0
 	if "variabilitysymmetry" in img_header:
-		print_progress("Detected %s point-group symmetry in specified input BDB stack %s."%(img_header["variabilitysymmetry"], args.input_bdb_stack_path))
+		sxprint("Detected %s point-group symmetry in specified input BDB stack %s."%(img_header["variabilitysymmetry"], args.input_bdb_stack_path))
 		sxprint(" ")
 		
 		symmetry_type = img_header["variabilitysymmetry"][:1].lower()
@@ -2748,7 +2749,7 @@ def desymmetrize(args):
 	
 	
 	n_presymmetriezed_img = n_img_detected // n_symmetry
-	print_progress("The computed number of particles in the pre-symmetrized stack is %d."%(n_presymmetriezed_img))
+	sxprint("The computed number of particles in the pre-symmetrized stack is %d."%(n_presymmetriezed_img))
 	
 	if len(symmetrized_particle_id_list) > n_presymmetriezed_img:
 		ERROR("Input symmetrized particle ID list contains more entries (%d) than expected (%d)."%(len(symmetrized_particle_id_list), n_presymmetriezed_img), where=subcommand_name, action=0) # action = 0 - non-fatal, print a warning;
@@ -2763,7 +2764,7 @@ def desymmetrize(args):
 		# Print progress
 		if i_img_detected % 1000 == 0:
 			try:
-				print_progress("Progress %5.2f%%: Processing %6dth entry (Symmetrized Particle ID %6d)."%(float(i_img_detected)/n_img_detected*100.0, i_img_detected, symmetrized_particle_id))
+				sxprint("Progress %5.2f%%: Processing %6dth entry (Symmetrized Particle ID %6d)."%(float(i_img_detected)/n_img_detected*100.0, i_img_detected, symmetrized_particle_id))
 				sys.stdout.flush()
 			except:
 				pass
@@ -2787,7 +2788,7 @@ def desymmetrize(args):
 		
 		if args.check_duplication:
 			if desymmetrized_particle_id in desymmetrized_particle_id_info_dict:
-				print_progress("WARNING!!! Desymmetrized particle ID %d is duplicated."%(desymmetrized_particle_id))
+				sxprint("WARNING!!! Desymmetrized particle ID %d is duplicated."%(desymmetrized_particle_id))
 			else:
 				nodupilicated_desymmetrized_particle_id_list.append(desymmetrized_particle_id)
 				desymmetrized_particle_id_info_dict[desymmetrized_particle_id] = []
@@ -2799,12 +2800,12 @@ def desymmetrize(args):
 	
 	if args.check_duplication:
 		sxprint(" ")
-		print_progress("Duplication report...")
+		sxprint("Duplication report...")
 		for desymmetrized_particle_id in desymmetrized_particle_id_info_dict:
 			if len(desymmetrized_particle_id_info_dict[desymmetrized_particle_id]) > 1:
-				print_progress("- Desymmetrized Particle ID %d"%(desymmetrized_particle_id))
+				sxprint("- Desymmetrized Particle ID %d"%(desymmetrized_particle_id))
 				for desymmetrized_particle_id_info in desymmetrized_particle_id_info_dict[desymmetrized_particle_id]:
-					print_progress("-- Symmetrized Particle ID %d in %s (%d) "%(desymmetrized_particle_id_info[1], desymmetrized_particle_id_info[2], desymmetrized_particle_id_info[3]))
+					sxprint("-- Symmetrized Particle ID %d in %s (%d) "%(desymmetrized_particle_id_info[1], desymmetrized_particle_id_info[2], desymmetrized_particle_id_info[3]))
 		sxprint(" ")
 
 	# Save the desymmetrized particle id list
@@ -2817,11 +2818,11 @@ def desymmetrize(args):
 
 	# Print summary of processing
 	sxprint(" ")
-	print_progress("Summary of processing...")
-	print_progress("Symmetrized particle IDs in symmetrized stack               : %6d"%(n_img_detected))
-	print_progress("Symmetrized particle IDs in sorted cluster                  : %6d"%(len(symmetrized_particle_id_list)))
-	print_progress("Desymmetrized particle IDs in sorted cluster                : %6d"%(len(desymmetrized_particle_id_list)))
-	print_progress("No-duplicated desymmetrized particle IDs in sorted cluster  : %6d"%(len(nodupilicated_desymmetrized_particle_id_list)))
+	sxprint("Summary of processing...")
+	sxprint("Symmetrized particle IDs in symmetrized stack               : %6d"%(n_img_detected))
+	sxprint("Symmetrized particle IDs in sorted cluster                  : %6d"%(len(symmetrized_particle_id_list)))
+	sxprint("Desymmetrized particle IDs in sorted cluster                : %6d"%(len(desymmetrized_particle_id_list)))
+	sxprint("No-duplicated desymmetrized particle IDs in sorted cluster  : %6d"%(len(nodupilicated_desymmetrized_particle_id_list)))
 	sxprint(" ")
 
 
@@ -2845,10 +2846,14 @@ def angular_distribution_batch(args):
 		"--symmetry"
 		"--box_size"
 		"--particle_radius"
+		"--dpi"
 
 	Returns:
 	None
 	"""
+	kwargs = vars(args)
+	del kwargs['func']
+	del kwargs['subcommand']
 	utilities.angular_distribution(**vars(args))
 
 
@@ -2990,7 +2995,7 @@ def main():
 	# Print command line
 	if SXmpi_run.is_main_proc():
 		sxprint(" ")
-		print_progress(get_cmd_line())
+		sxprint(get_cmd_line())
 		sxprint(" ")
 	
 	# Call the associated function of the specified subcommand
@@ -2998,7 +3003,7 @@ def main():
 
 	if SXmpi_run.is_main_proc():
 		sxprint(" ")
-		print_progress("DONE!!!")
+		sxprint("DONE!!!")
 		sxprint(" ")
 
 	# ------------------------------------------------------------------------------------
