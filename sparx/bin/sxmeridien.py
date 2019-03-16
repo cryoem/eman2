@@ -584,7 +584,7 @@ def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi
 		for i in range(ndata):  # apply_shift; info_mask; norm consistent with get_shrink_data
 			indx = projdata[i].get_attr("particle_group")
 			phi,theta,psi,sx,sy = params[i][0],params[i][1],params[i][2],params[i][3],params[i][4]
-			sx, sy = reduce_shifts(sx, sy, original_data[im])
+			sx, sy = reduce_shifts(sx, sy, projdata[i])
 			stmp = cyclic_shift( projdata[i], sx, sy)
 			st = get_image_statistics(stmp, mask, False)
 			stmp -=st[0]
@@ -6931,7 +6931,7 @@ def get_image_statistics(image, mask, invert):
 def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_file, im_start, im_end, procid):
 	"""Calculate the prior values and identify outliers"""
 
-	if not tracker['constants']['apply_prior']:
+	if not tracker['constants']['group_id']:
 		return None
 
 	# Print to screen
