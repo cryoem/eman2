@@ -112,10 +112,10 @@ def ai_spa( Tracker, fff, anger, shifter, do_local, chout = False):
 
 		inc = Tracker["currentres"]
 		if Tracker["large_at_Nyquist"]:
-			inc += int(0.25 * Tracker["constants"]["nnxo"]/2 + 0.5)
+			inc += int(0.25 * old_div(Tracker["constants"]["nnxo"]/2) + 0.5)
 		else:
 			inc += Tracker["nxstep"]
-		Tracker["nxinit"] = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
+		Tracker["nxinit"] = int(min(2*inc, Tracker["constants"]["nnxo"] ))  #  Cannot exceed image size
 		Tracker["local"]  = False
 		Tracker["changed_delta"] = False
 
@@ -215,7 +215,7 @@ def ai_spa( Tracker, fff, anger, shifter, do_local, chout = False):
 
 		inc = Tracker["currentres"]
 		if Tracker["large_at_Nyquist"]:	
-			inc += int(0.25 * Tracker["constants"]["nnxo"]/2 +0.5)
+			inc += int(0.25 * old_div(Tracker["constants"]["nnxo"]/2) +0.5)
 			slim = int(Tracker["nxinit"]*1.09)
 			tmp = min(max(2*inc,slim+slim%2), Tracker["constants"]["nnxo"] )
 		else:
@@ -225,7 +225,7 @@ def ai_spa( Tracker, fff, anger, shifter, do_local, chout = False):
 		if chout:
 			global_def.sxprint("  IN AI: nxstep, large at Nyq, outcoming current res, adjusted current, inc, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
 
-		Tracker["nxinit"] = tmp
+		Tracker["nxinit"] = int(tmp)
 		Tracker["changed_delta"] = False
 		#  decide angular step and translations
 		if Tracker["no_improvement"] >= Tracker["constants"]["limit_improvement"] and Tracker["no_params_changes"] >= Tracker["constants"]["limit_changes"] and not Tracker["large_at_Nyquist"]:
@@ -271,4 +271,5 @@ import global_def
 import morphology
 import utilities
 import EMAN2_cppwrap
+from past.utils import old_div
 

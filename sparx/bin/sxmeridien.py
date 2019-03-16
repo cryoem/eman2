@@ -1125,7 +1125,7 @@ def print_dict(dict,theme):
 	sxprint(line,theme)
 	spaces = "                    "
 	exclude = ["constants", "maxit", "nodes", "yr", "shared_comm", "bckgnoise", "myid", "myid_on_node", "accumulatepw",\
-				"changed_delta"]
+				"changed_delta", "prior"]
 	for key, value in sorted( dict.items() ):
 		pt = True
 		for ll in exclude:
@@ -6148,6 +6148,9 @@ def update_tracker(shell_line_command):
 	#  This is for printout only
 	tempdict = {}
 
+	if options_no_default_value.local_refinement:
+		Tracker['constants']['do_local'] = True
+
 	if 	options_no_default_value.radius != None:
 		Tracker["constants"]["radius"] 				= options_no_default_value.radius
 		tempdict["radius"] = Tracker["constants"]["radius"]
@@ -6223,6 +6226,7 @@ def update_tracker(shell_line_command):
 		'stack_prior': None,
 		'stack_prior_fmt': None,
 		'stack_prior_dtype': None,
+		'do_local': False,
 		}
 	backwards_dict = {
 		'theta_min': -1,
@@ -7251,6 +7255,7 @@ def main():
 			Constants["group_id"]			    = options.group_id
 			Constants["filament_width"]			    = options.filament_width
 			Constants["helical_rise"]			    = options.helical_rise
+			Constants["do_local"]			    = do_continuation_mode
 			if options.group_id is None:
 				Constants['stack_prior'] = None
 				Constants['stack_prior_fmt'] = None
@@ -7527,7 +7532,7 @@ def main():
 			Tracker["constants"]["number_of_groups"] = bcast_number_to_all(Tracker["constants"]["number_of_groups"], Blockdata["main_node"])
 			del params2d
 
-			if do_continuation_mode:
+			if Tracker['constants']['do_local']:
 				if( Tracker["constants"]["inires"] > 0 ):
 					Tracker["nxinit"] = min(2*Tracker["constants"]["inires"], Tracker["constants"]["nnxo"] )
 				else: 
@@ -7624,7 +7629,7 @@ def main():
 				mpi_barrier(MPI_COMM_WORLD)
 
 				if Tracker["mainiteration"] == 1:
-					if do_continuation_mode:
+					if Tracker['constants']['do_local']:
 						fff = read_text_file(os.path.join(Tracker["previousoutputdir"],"driver_%03d.txt"%(Tracker["mainiteration"]-1)))
 					else:
 						fff = []
@@ -7643,7 +7648,7 @@ def main():
 					shifter = bcast_number_to_all(shifter,              source_node = Blockdata["main_node"])
 
 				func_ai = user_functions.factory[Tracker["constants"]["user_func_ai"]]
-				keepgoing = func_ai(Tracker, fff, anger, shifter, do_continuation_mode, Blockdata['myid'] == Blockdata['main_node'])
+				keepgoing = func_ai(Tracker, fff, anger, shifter, Tracker['constants']['do_local'], Blockdata['myid'] == Blockdata['main_node'])
 
 				if keepgoing == 1: # not converged
 					if Blockdata["myid"] == Blockdata["main_node"]:
@@ -7672,7 +7677,7 @@ def main():
 					mpi_barrier(MPI_COMM_WORLD)
 
 					#  READ DATA AND COMPUTE SIGMA2   ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-					refinement_one_iteration(partids, partstack, original_data, oldparams, projdata, continuation_mode=do_continuation_mode)
+					refinement_one_iteration(partids, partstack, original_data, oldparams, projdata, continuation_mode=Tracker['constants']['do_local'])
 					#	sxprint("  MOVING  ON --------------------------------------------------------------------")
 				else: # converged, do final
 					if( Blockdata["subgroup_myid"] > -1 ):
