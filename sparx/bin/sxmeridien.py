@@ -6757,6 +6757,17 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			box_size=Tracker['constants']['nnxo'],
 			particle_radius=Tracker['constants']['radius'],
 			)
+		utilities.angular_distribution(
+			params_file=params_chunk_file,
+			output_folder=os.path.join(Tracker["directory"], "ang_dist_{0}".format(procid)),
+			prefix='ang_dist_full',
+			method=Tracker['constants']['even_angle_method'],
+			pixel_size=1,
+			delta=delta,
+			symmetry=Tracker['constants']['symmetry'] + '_full',
+			box_size=Tracker['constants']['nnxo'],
+			particle_radius=Tracker['constants']['radius'],
+			)
 
 		do3d(
 			procid,
