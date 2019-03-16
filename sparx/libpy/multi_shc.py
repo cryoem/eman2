@@ -1544,6 +1544,7 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 			box_size=box_size,
 			particle_radius=particle_radius,
 			dpi=dpi,
+			do_print=False,
 			)
 		
 	return out_params, out_vol, None#, out_peaks

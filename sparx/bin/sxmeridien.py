@@ -697,7 +697,7 @@ def getindexdata(partids, partstack, particle_groups, original_data=None, small_
 		original_data = EMData.read_images(Tracker["constants"]["stack"], partids)
 		for im in range( len(original_data) ):
 			original_data[im].set_attr("particle_group", group_reference[im])
-	return original_data, partstack
+	return original_data, partstack, [im_start, im_end]
 
 def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 					return_real = False, preshift = False, apply_mask = True, nonorm = False, nosmearing = False, npad = 1):
@@ -5852,7 +5852,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 			del oldparamstructure_on_old_cpu
 			mpi_barrier(Blockdata["subgroup_comm"])
 			#####
-			original_data[procid], oldparams[procid] = getindexdata(partids[procid], \
+			original_data[procid], oldparams[procid], _ = getindexdata(partids[procid], \
 			   partstack[procid], os.path.join(Tracker["constants"]["masterdir"],"main000", \
 			   "particle_groups_%01d.txt"%procid), original_data[procid], small_memory = \
 			     Tracker["constants"]["small_memory"], nproc = Blockdata["subgroup_size"],\
@@ -6044,7 +6044,7 @@ def rec3d_continuation_nosmearing(mpi_comm):
 		partids[procid]   = os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
 		partstack[procid] = os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"params-chunk_%01d_%03d.txt"%(procid, Tracker["mainiteration"]))
 
-		original_data[procid], oldparams[procid] = getindexdata(partids[procid], partstack[procid], \
+		original_data[procid], oldparams[procid], _ = getindexdata(partids[procid], partstack[procid], \
 				os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_%01d.txt"%procid), \
 				original_data[procid], small_memory = Tracker["constants"]["small_memory"], \
 				nproc = Blockdata["nproc"], myid = Blockdata["myid"], mpi_comm = mpi_comm)
@@ -6510,11 +6510,22 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 	#  READ DATA AND COMPUTE SIGMA2   ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	if Blockdata['myid'] == Blockdata['main_node']:
 		sxprint('Import particle stack')
+	start_end_list = [[0, 0], [0, 0]]
 	for procid in range(2):
-		original_data[procid], oldparams[procid] = getindexdata(partids[procid], partstack[procid], \
-			os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_%01d.txt"%procid), \
-			original_data[procid], small_memory = Tracker["constants"]["small_memory"],\
-			nproc = Blockdata["nproc"], myid = Blockdata["myid"], mpi_comm = MPI_COMM_WORLD)
+		original_data[procid], oldparams[procid], start_end_list[procid] = getindexdata(
+			partids[procid],
+			partstack[procid],
+			os.path.join(
+				Tracker["constants"]["masterdir"],
+				"main000",
+				"particle_groups_%01d.txt"%procid
+				),
+			original_data[procid],
+			small_memory=Tracker["constants"]["small_memory"],
+			nproc=Blockdata["nproc"],
+			myid=Blockdata["myid"],
+			mpi_comm=MPI_COMM_WORLD,
+			)
 
 	mpi_barrier(MPI_COMM_WORLD)
 
@@ -6619,7 +6630,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		projdata[procid] = []
 		im_idx = [[0, 0], [0, 0]]
 		if Tracker["constants"]["small_memory"]:
-			original_data[procid], oldparams[procid] = getindexdata(partids[procid], partstack[procid], \
+			original_data[procid], oldparams[procid], start_end_list[procid] = getindexdata(partids[procid], partstack[procid], \
 			os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_%01d.txt"%procid), \
 			original_data[procid], small_memory = Tracker["constants"]["small_memory"], \
 			nproc = Blockdata["nproc"], myid = Blockdata["myid"], mpi_comm = MPI_COMM_WORLD)
@@ -6733,8 +6744,8 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			outlier_file=outlier_file,
 			params_file=params_chunk_file,
 			chunk_file=chunk_file,
-			im_start=im_start,
-			im_end=im_end,
+			im_start=start_end_list[procid][0],
+			im_end=start_end_list[procid][1],
 			procid=procid
 			)
 		projdata_outlier = []
@@ -6746,35 +6757,40 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 				newparams_outlier.append(newparamstructure[procid][idx])
 				norm_outlier.append(norm_per_particle[procid][idx])
 		outliers[procid] = outlier_list
-		if Tracker['delta'] >= 7.5 / 2.0:
-			delta = Tracker['delta']
-		else:
-			delta = 3.75
-		utilities.angular_distribution(
-			params_file=params_chunk_file,
-			output_folder=os.path.join(Tracker["directory"], "ang_dist_{0}".format(procid)),
-			prefix='ang_dist_',
-			method=Tracker['constants']['even_angle_method'],
-			pixel_size=1,
-			delta=delta,
-			symmetry=Tracker['constants']['symmetry'],
-			box_size=Tracker['constants']['nnxo'],
-			particle_radius=Tracker['constants']['radius'],
-			dpi=72,
-			)
-		utilities.angular_distribution(
-			params_file=params_chunk_file,
-			output_folder=os.path.join(Tracker["directory"], "ang_dist_{0}".format(procid)),
-			prefix='ang_dist_full',
-			method=Tracker['constants']['even_angle_method'],
-			pixel_size=1,
-			delta=delta,
-			symmetry=Tracker['constants']['symmetry'] + '_full',
-			box_size=Tracker['constants']['nnxo'],
-			particle_radius=Tracker['constants']['radius'],
-			dpi=72,
-			)
+		if Blockdata['myid'] == Blockdata['main_node']:
+			sxprint('Create angular distribution plot for chunk {0}'.format(procid))
+			if Tracker['delta'] >= 7.5 / 2.0:
+				delta = Tracker['delta']
+			else:
+				delta = 3.75
+			utilities.angular_distribution(
+				params_file=params_chunk_file,
+				output_folder=os.path.join(Tracker["directory"], "ang_dist_{0}".format(procid)),
+				prefix='ang_dist_',
+				method=Tracker['constants']['even_angle_method'],
+				pixel_size=1,
+				delta=delta,
+				symmetry=Tracker['constants']['symmetry'],
+				box_size=Tracker['constants']['nnxo'],
+				particle_radius=Tracker['constants']['radius'],
+				dpi=72,
+				do_print=False,
+				)
+			utilities.angular_distribution(
+				params_file=params_chunk_file,
+				output_folder=os.path.join(Tracker["directory"], "ang_dist_{0}".format(procid)),
+				prefix='ang_dist_full',
+				method=Tracker['constants']['even_angle_method'],
+				pixel_size=1,
+				delta=delta,
+				symmetry=Tracker['constants']['symmetry'] + '_full',
+				box_size=Tracker['constants']['nnxo'],
+				particle_radius=Tracker['constants']['radius'],
+				dpi=72,
+				do_print=False,
+				)
 
+			sxprint('Do 3D reconstruction for chunk {0}'.format(procid))
 		do3d(
 			procid,
 			projdata_outlier,

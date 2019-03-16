@@ -8821,7 +8821,7 @@ def search_lowpass(fsc):
 	return fcutoff
 
 
-def angular_distribution(params_file, output_folder, prefix, method, pixel_size, delta, symmetry, box_size, particle_radius, dpi):
+def angular_distribution(params_file, output_folder, prefix, method, pixel_size, delta, symmetry, box_size, particle_radius, dpi, do_print=True):
 	import fundamentals
 	import numpy
 	import scipy.spatial as scipy_spatial
@@ -8860,17 +8860,20 @@ def angular_distribution(params_file, output_folder, prefix, method, pixel_size,
 			sxprint(error_template.format(entry))
 		return None
 	else:
-		sxprint('Most values are valid')
+		if do_print:
+			sxprint('Most values are valid')
 
 	try:
 		os.makedirs(output_folder)
 	except OSError as exc:
 		if exc.errno == errno.EEXIST and os.path.lexists(output_folder):
-			sxprint('Output directory already exists: {0}'.format(output_folder))
+			if do_print:
+				sxprint('Output directory already exists: {0}'.format(output_folder))
 		else:
 			raise
 	else:
-		sxprint('Created output directory: {0}'.format(output_folder))
+		if do_print:
+			sxprint('Created output directory: {0}'.format(output_folder))
 
 	COLUMN_X = 0
 	COLUMN_Y = 1
@@ -8939,7 +8942,8 @@ def angular_distribution(params_file, output_folder, prefix, method, pixel_size,
 		return lseaf, leah, seaf
 
 	def markus(args, data, data_cart, sym_class):
-		sxprint('Create reference angles')
+		if do_print:
+			sxprint('Create reference angles')
 		# Create reference angles all around the sphere.
 		ref_angles_data = sym_class.even_angles(args.delta, inc_mirror=1, method=args.method)
 
@@ -8959,7 +8963,8 @@ def angular_distribution(params_file, output_folder, prefix, method, pixel_size,
 		angles_no_mirror_cart = to_cartesian(angles_no_mirror)
 		
 		# Find nearest neighbours to the reference angles with the help of a KDTree
-		sxprint('Find nearest neighbours')
+		if do_print:
+			sxprint('Find nearest neighbours')
 		# Find the nearest neighbours of the reduced data to the reference angles on the C1 sphere.
 		_, knn_data = scipy_spatial.cKDTree(angles_cart, balanced_tree=False).query(data_cart)
 		# Find the nearest neighbours of the reduced reference data to the reference angles that do not contain mirror projections.
@@ -8987,18 +8992,21 @@ def angular_distribution(params_file, output_folder, prefix, method, pixel_size,
 		#		sxprint(" hiti  ", i, q, angles_no_mirror[i])
 		nonzero_mask = numpy.nonzero(radius_array)
 		radius_array = radius_array[nonzero_mask]
-		sxprint(numpy.sort(radius_array))
+		if do_print:
+			sxprint(numpy.sort(radius_array))
 
 	# Use name of the params file as prefix if prefix is None
 	if prefix is None:
 		prefix = os.path.basename(os.path.splitext(params_file)[0])
 
 	# Import the parameters, assume the columns 0 (Phi) 1 (Theta) 2 (Psi) are present
-	sxprint('Import projection parameter')
+	if do_print:
+		sxprint('Import projection parameter')
 	data_params = numpy.atleast_2d(numpy.genfromtxt(params_file, usecols=(0, 1, 2)))
 
 	# If the symmetry is c0, do not remove mirror projections.
-	sxprint('Reduce anglesets')
+	if do_print:
+		sxprint('Reduce anglesets')
 	if symmetry.endswith('_full'):
 		symmetry = symmetry.rstrip('_full')
 		inc_mirror = 1
@@ -9012,7 +9020,8 @@ def angular_distribution(params_file, output_folder, prefix, method, pixel_size,
 	# One related to the actual symmetry, to deal with mirror projections.
 	sym_class = fundamentals.symclass(symmetry)
 
-	sxprint('Reduce data to symmetry - This might take some time for high symmetries')
+	if do_print:
+		sxprint('Reduce data to symmetry - This might take some time for high symmetries')
 	# Reduce the parameter data by moving mirror projections into the non-mirror region of the sphere.
 	data = numpy.array( sym_class.reduce_anglesets(data_params.tolist(), inc_mirror=inc_mirror))
 	# Create cartesian coordinates
@@ -9055,7 +9064,8 @@ def angular_distribution(params_file, output_folder, prefix, method, pixel_size,
 	numpy.multiply(outer_vector, pixel_size, out=outer_vector)
 
 	# Create output bild file
-	sxprint('Create bild file')
+	if do_print:
+		sxprint('Create bild file')
 	output_bild_file = os.path.join(output_folder, '{0}.bild'.format(prefix))
 	with open(output_bild_file, 'w') as write:
 		for inner, outer, radius in zip(inner_vector, outer_vector, radius_normalized):
@@ -9088,7 +9098,8 @@ def angular_distribution(params_file, output_folder, prefix, method, pixel_size,
 	
 
 	# 2D distribution plot
-	sxprint('Create 2D legend plot')
+	if do_print:
+		sxprint('Create 2D legend plot')
 	output_bild_legend_png = os.path.join(output_folder, '{0}.png'.format(prefix))
 	color = get_color(sorted_radius_plot)
 	plt.bar(array_x, height=sorted_radius_plot, width=1, color=color)
@@ -9104,7 +9115,8 @@ def angular_distribution(params_file, output_folder, prefix, method, pixel_size,
 	sxprint(angles_no_mirror)
 	"""
 	# 2D distribution txt file
-	sxprint('Create 2D legend text file')
+	if do_print:
+		sxprint('Create 2D legend text file')
 
 	output_bild_legend_txt = os.path.join(output_folder, '{0}.txt'.format(prefix))
 	with open(output_bild_legend_txt, 'w') as write:
