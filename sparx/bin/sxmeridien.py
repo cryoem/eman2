@@ -6861,8 +6861,8 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		for idx, entry in enumerate(outlier_params):
 			if entry == 0:
 				params_outlier.append(params[idx])
-				ctfs.append(ctfs[idx])
-				groups_outlier.append(groups_outlier[idx])
+				ctfs_outlier.append(ctfs[idx])
+				groups_outlier.append(particle_groups[idx])
 
 		cerrs(params_outlier, ctfs_outlier, groups_outlier)
 		del params, ctfs, particle_groups
