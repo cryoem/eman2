@@ -722,7 +722,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 			# First check number of nodes, if only one, no reduction necessary.
 			if(Blockdata["no_of_groups"] > 1):
 				# do reduction using numref chunks nima long (it does not matter what is the actual ordering in d)
-				at = time()
+				at = time.time()
 				for j in range(numref):
 					dbuf = np.zeros(nima, dtype=np.float32)
 					np.copyto(dbuf,d[j*nima:(j+1)*nima])
@@ -1537,9 +1537,9 @@ def main(args):
 
 	error = bcast_number_to_all(error, source_node = Blockdata["main_node"])
 	if(error == 1):  
-		ERROR( "Good Sir or Madam, for thine restart value %d there exists no ISAC directory for thine continuation. Please doth choose a restart value of -1 to start a fresh run or 0 to continue the iteration last completed." % options.restart )
+		ERROR( "Good Sir or Madam, for thine restart value %d there exists no ISAC directory for thine continuation. Please doth choose a restart value of -1 to start a fresh run or 0 to continue the iteration last completed." % options.restart, myid=Blockdata["myid"])
 	elif(error == 2):  
-		ERROR( "Cannot restart from unfinished main iteration number %d. To automatically detect the latest ISAC directory for continuation please choose a restart value of 0." % main_iter )
+		ERROR( "Cannot restart from unfinished main iteration number %d. To automatically detect the latest ISAC directory for continuation please choose a restart value of 0." % main_iter, myid=Blockdata["myid"])
 
 	# everyone waits for the root process to run the above checks
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
