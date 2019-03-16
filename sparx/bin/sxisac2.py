@@ -728,7 +728,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 					np.copyto(dbuf,d[j*nima:(j+1)*nima])
 
 					# reduce entries in section <dbuf> of the overall peak_list 
-					dbuf = mpi.mpi_reduce(dbuf, nima, MPI_FLOAT, MPI_SUM, main_node, Blockdata["subgroup_comm"])  #  RETURNS numpy array
+					dbuf = mpi.mpi_reduce(dbuf, nima, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, Blockdata["subgroup_comm"])  #  RETURNS numpy array
 					if( Blockdata["subgroup_myid"] == 0 ):  
 						np.copyto(d[j*nima:(j+1)*nima],dbuf)
 
