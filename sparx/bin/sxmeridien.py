@@ -6760,6 +6760,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			symmetry=Tracker['constants']['symmetry'],
 			box_size=Tracker['constants']['nnxo'],
 			particle_radius=Tracker['constants']['radius'],
+			dpi=72,
 			)
 		utilities.angular_distribution(
 			params_file=params_chunk_file,
@@ -6771,6 +6772,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			symmetry=Tracker['constants']['symmetry'] + '_full',
 			box_size=Tracker['constants']['nnxo'],
 			particle_radius=Tracker['constants']['radius'],
+			dpi=72,
 			)
 
 		do3d(
