@@ -147,6 +147,15 @@ def ai_spa( Tracker, fff, anger, shifter, do_local, chout = False):
 		if chout:
 			global_def.sxprint(ai_string)
 
+		if Tracker["mainiteration"] == 4 and do_local and Tracker['state'] != 'RESTRICTED':
+			step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
+			if chout:
+				global_def.sxprint('Move down to RESTRICTED from PRIMARY LOCAL in iteration 4 ')
+				global_def.sxprint("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
+			Tracker["xr"] = step_range
+			Tracker["ts"] = step
+			Tracker["state"] = "RESTRICTED"
+
 		if Tracker["mainiteration"] == 2 and not do_local:
 			Tracker["state"] = "PRIMARY"
 
