@@ -6753,37 +6753,38 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 				norm_outlier.append(norm_per_particle[procid][idx])
 		outliers[procid] = outlier_list
 		if Blockdata['myid'] == Blockdata['main_node']:
-			sxprint('Create angular distribution plot for chunk {0}'.format(procid))
-			if Tracker['delta'] >= 7.5 / 2.0:
-				delta = Tracker['delta']
-			else:
-				delta = 3.75
-			utilities.angular_distribution(
-				params_file=params_chunk_file,
-				output_folder=os.path.join(Tracker["directory"], "ang_dist_{0}".format(procid)),
-				prefix='ang_dist',
-				method=Tracker['constants']['even_angle_method'],
-				pixel_size=1,
-				delta=delta,
-				symmetry=Tracker['constants']['symmetry'],
-				box_size=Tracker['constants']['nnxo'],
-				particle_radius=Tracker['constants']['radius'],
-				dpi=72,
-				do_print=False,
-				)
-			utilities.angular_distribution(
-				params_file=params_chunk_file,
-				output_folder=os.path.join(Tracker["directory"], "ang_dist_{0}".format(procid)),
-				prefix='full_ang_dist',
-				method=Tracker['constants']['even_angle_method'],
-				pixel_size=1,
-				delta=delta,
-				symmetry=Tracker['constants']['symmetry'] + '_full',
-				box_size=Tracker['constants']['nnxo'],
-				particle_radius=Tracker['constants']['radius'],
-				dpi=72,
-				do_print=False,
-				)
+			### NEEDS TO BE REACTIVATED AFTER THE SYMCLASS CHANGE
+			#sxprint('Create angular distribution plot for chunk {0}'.format(procid))
+			#if Tracker['delta'] >= 7.5 / 2.0:
+			#	delta = Tracker['delta']
+			#else:
+			#	delta = 3.75
+			#utilities.angular_distribution(
+			#	params_file=params_chunk_file,
+			#	output_folder=os.path.join(Tracker["directory"], "ang_dist_{0}".format(procid)),
+			#	prefix='ang_dist',
+			#	method=Tracker['constants']['even_angle_method'],
+			#	pixel_size=1,
+			#	delta=delta,
+			#	symmetry=Tracker['constants']['symmetry'],
+			#	box_size=Tracker['constants']['nnxo'],
+			#	particle_radius=Tracker['constants']['radius'],
+			#	dpi=72,
+			#	do_print=False,
+			#	)
+			#utilities.angular_distribution(
+			#	params_file=params_chunk_file,
+			#	output_folder=os.path.join(Tracker["directory"], "ang_dist_{0}".format(procid)),
+			#	prefix='full_ang_dist',
+			#	method=Tracker['constants']['even_angle_method'],
+			#	pixel_size=1,
+			#	delta=delta,
+			#	symmetry=Tracker['constants']['symmetry'] + '_full',
+			#	box_size=Tracker['constants']['nnxo'],
+			#	particle_radius=Tracker['constants']['radius'],
+			#	dpi=72,
+			#	do_print=False,
+			#	)
 
 			sxprint('Do 3D reconstruction for chunk {0}'.format(procid))
 		do3d(
@@ -6822,7 +6823,10 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			params = read_text_row(os.path.join(Tracker["directory"],"params-chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_row(os.path.join(Tracker["directory"],"params-chunk_1_%03d.txt"%(Tracker["mainiteration"])))
-			outlier_params = read_text_row(os.path.join(Tracker["directory"],"outlier-params-chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_row(os.path.join(Tracker["directory"],"outlier-params-chunk_1_%03d.txt"%(Tracker["mainiteration"])))
+			try:
+				outlier_params = read_text_row(os.path.join(Tracker["directory"],"outlier-params-chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_row(os.path.join(Tracker["directory"],"outlier-params-chunk_1_%03d.txt"%(Tracker["mainiteration"])))
+			except IOError:
+				outlier_params = [0] * len(params)
 			li     = read_text_file(os.path.join(Tracker["directory"],"chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_file(os.path.join(Tracker["directory"],"chunk_1_%03d.txt"%(Tracker["mainiteration"])))
 			ctfs   = EMUtil.get_all_attributes(Tracker["constants"]["stack"],'ctf')
 			ctfs   = [ctfs[i] for i in li]
