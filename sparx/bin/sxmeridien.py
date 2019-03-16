@@ -6229,6 +6229,7 @@ def update_tracker(shell_line_command):
 		'theta_max': -1,
 		'ccfpercentage': -1,
 		'howmany': 4,
+		'prior': {},
 		}
 	prior_dict = {
 		'tol_psi': 30,
@@ -6242,6 +6243,11 @@ def update_tracker(shell_line_command):
 		'remove_outlier': False,
 		'window_size': 3,
 		}
+	for key in backwards_dict:
+		try:
+			Tracker[key]
+		except KeyError:
+			Tracker[key] = backwards_dict[key]
 	for key in backwards_dict_constants:
 		try:
 			Tracker["constants"][key]
@@ -6252,11 +6258,6 @@ def update_tracker(shell_line_command):
 			Tracker["prior"][key]
 		except KeyError:
 			Tracker["prior"][key] = backwards_dict_constants[key]
-	for key in backwards_dict:
-		try:
-			Tracker[key]
-		except KeyError:
-			Tracker[key] = backwards_dict[key]
 
 	if( (Blockdata["myid"] == Blockdata["main_node"])  and  (len(tempdict) > 0) ):
 		print_dict(tempdict, "Updated settings")
@@ -6751,7 +6752,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			prefix='ang_dist_',
 			method=Tracker['constants']['even_angle_method'],
 			pixel_size=1,
-			delta=Tracker['delta'],
+			delta=delta,
 			symmetry=Tracker['constants']['symmetry'],
 			box_size=Tracker['constants']['nnxo'],
 			particle_radius=Tracker['constants']['radius'],
@@ -6932,7 +6933,8 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 	"""Calculate the prior values and identify outliers"""
 
 	if not tracker['constants']['group_id']:
-		return None
+		return [0] * (im_end - im_start)
+
 
 	# Print to screen
 	if(blockdata["myid"] == blockdata["main_node"]):
