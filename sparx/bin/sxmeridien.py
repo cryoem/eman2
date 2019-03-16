@@ -6686,11 +6686,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		###fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,Blockdata["myid"],Tracker["mainiteration"])),'w')
 		###json.dump(newparamstructure[procid], fout)
 		###fout.close()
-		newparamstructure[procid] = []
-		norm_per_particle[procid] = []
 		mpi_barrier(MPI_COMM_WORLD)
-
-	del refang, rshifts
 
 	#  DRIVER RESOLUTION ASSESSMENT and RECONSTRUCTION <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 	if Tracker["changed_delta"]:
@@ -6737,7 +6733,6 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		chunk_file = os.path.join(Tracker["directory"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
 		params_chunk_file = os.path.join(Tracker["directory"],"params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
 		outlier_file = os.path.join(Tracker["directory"],"outlier-params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
-		im_start, im_end = MPI_start_end(len(partstack[procid]), Blockdata['nproc'], Blockdata['myid'])
 		outlier_list = calculate_prior_values(
 			tracker=Tracker,
 			blockdata=Blockdata,
@@ -6766,7 +6761,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			utilities.angular_distribution(
 				params_file=params_chunk_file,
 				output_folder=os.path.join(Tracker["directory"], "ang_dist_{0}".format(procid)),
-				prefix='ang_dist_',
+				prefix='ang_dist',
 				method=Tracker['constants']['even_angle_method'],
 				pixel_size=1,
 				delta=delta,
@@ -6779,7 +6774,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			utilities.angular_distribution(
 				params_file=params_chunk_file,
 				output_folder=os.path.join(Tracker["directory"], "ang_dist_{0}".format(procid)),
-				prefix='ang_dist_full',
+				prefix='full_ang_dist',
 				method=Tracker['constants']['even_angle_method'],
 				pixel_size=1,
 				delta=delta,
@@ -6802,8 +6797,12 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			smearing = True,
 			mpi_comm = MPI_COMM_WORLD,
 			)
-		projdata[procid] = []
 	rec3d_make_maps(compute_fsc = True, regularized = True)
+	projdata[procid] = [[], []]
+	newparamstructure[procid] = [[], []]
+	norm_per_particle[procid] = [[], []]
+
+	del refang, rshifts
 
 	if(Tracker["mainiteration"] == 1 ):
 		acc_rot = acc_trans = 1.e23
