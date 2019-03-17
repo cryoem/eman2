@@ -1339,7 +1339,7 @@ def calculate_2d_params_for_centering(kwargs):
 			#  Create output directory
 			log2d = Logger(BaseLogger_Files())
 			log2d.prefix = os.path.join(init2dir)
-			cmd = "mkdir -p "+log2d.prefix
+			cmd = "mkdir "+log2d.prefix
 			outcome = subprocess.call(cmd, shell=True)
 			log2d.prefix += "/"
 			# outcome = subprocess.call("sxheader.py  "+command_line_provided_stack_filename+"   --params=xform.align2d  --zero", shell=True)
@@ -7123,6 +7123,7 @@ def main():
 		parser.add_option("--delta",					type="float",			default= 3.75,		     		help="Initial angular sampling step (default 7.5)")
 		parser.add_option("--an",	           		    type="float", 	     	default= -1.,                	help="Angular neighborhood for local search")
 		parser.add_option("--shake",	           		type="float", 	     	default= 0.5,                	help="Shake (0.5)")
+		parser.add_option("--limit_improvement",	           		type="int", 	     	default=1,                	help="No improvement limit for the convergence criterion (Default 1)")
 		parser.add_option("--small_memory",         	action="store_true",  	default= False,             	help="Data will not be kept in memory if small_memory is true. (default False)")
 		parser.add_option("--ccfpercentage",			type="float", 	      	default= 99.9,               	help="Percentage of the correlation peak area to be included, 0.0 corresponds to hard matching (default 99.9%)")
 		parser.add_option("--nonorm",               	action="store_true",  	default= False,              	help="Do not apply image norm correction. (default False)")
@@ -7260,7 +7261,7 @@ def main():
 			Constants["masterdir"]         			= masterdir
 			Constants["best"]              			= 3
 			Constants["ccfpercentage"]     			= options.ccfpercentage/100. # Here for legacy reasons
-			Constants["limit_improvement"] 			= 1
+			Constants["limit_improvement"] 			= options.limit_improvement
 			Constants["limit_changes"]     			= 1  # reduce delta by half if both limits are reached simultaneously
 			Constants["states"]            			= ["INITIAL", "PRIMARY", "EXHAUSTIVE", "RESTRICTED", "PRIMARY LOCAL", "FINAL"]# will add two states, CONINUATION_INITIAL, CONINUATION_PRIMARY
 			Constants["user_func_volume"]			= options.function

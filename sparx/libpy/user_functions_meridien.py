@@ -147,15 +147,6 @@ def ai_spa( Tracker, fff, anger, shifter, do_local, chout = False):
 		if chout:
 			global_def.sxprint(ai_string)
 
-		if Tracker["mainiteration"] == 4 and do_local and Tracker['state'] != 'RESTRICTED':
-			step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
-			if chout:
-				global_def.sxprint('Move down to RESTRICTED from PRIMARY LOCAL in iteration 4 ')
-				global_def.sxprint("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
-			Tracker["xr"] = step_range
-			Tracker["ts"] = step
-			Tracker["state"] = "RESTRICTED"
-
 		if Tracker["mainiteration"] == 2 and not do_local:
 			Tracker["state"] = "PRIMARY"
 
@@ -230,9 +221,17 @@ def ai_spa( Tracker, fff, anger, shifter, do_local, chout = False):
 		#  decide angular step and translations
 		if Tracker["no_improvement"] >= Tracker["constants"]["limit_improvement"] and Tracker["no_params_changes"] >= Tracker["constants"]["limit_changes"] and not Tracker["large_at_Nyquist"]:
 			if( Tracker["delta"] < 0.75*Tracker["acc_rot"] ):#<<<----it might cause converge issues when shake is 0.0
-				keepgoing = 0
-				if chout:
-					global_def.sxprint("Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
+				if Tracker["state"] == "PRIMARY LOCAL":
+					step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
+					if chout:
+						global_def.sxprint("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
+					Tracker["xr"] = step_range
+					Tracker["ts"] = step
+					Tracker["state"] = "RESTRICTED"
+				else:
+					keepgoing = 0
+					if chout:
+						global_def.sxprint("Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
 			else:
 				step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
 				if chout:
