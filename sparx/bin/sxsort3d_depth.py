@@ -3041,22 +3041,29 @@ def isin(element, test_elements, assume_unique=False, invert=False):
 def split_partition_into_ordered_clusters_split_ucluster(partition_in, input_row_wise = True):
 	# group particles  by their cluster ids; take the last one as unaccounted group
 	clusters   = []
-	if input_row_wise: partition = np.array(partition_in, dtype=np.int32).transpose()
-	else:              partition = np.array(partition_in)
+	partition = np.array(partition, dtype=np.int32)
+	if input_row_wise:
+		partition = partition.transpose()
 	group_id = np.sort(np.unique(partition[0]))
-	if group_id.shape[0] >1: 
+	if group_id.shape[0] > 1: 
 		for icluster in range(group_id.shape[0]):
-			if icluster<group_id.shape[0]-1:
-				tmp = partition[1][isin(partition[0],group_id[icluster])]
-				if tmp.shape[0]>2: clusters.append((np.sort(tmp)).tolist())
-				else: clusters.append(tmp.tolist())
+			cluster = np.sort(
+					partition[1][
+						isin(
+							partition[0],
+							group_id[icluster]
+							)
+						]
+					).tolist()
+			if icluster < group_id.shape[0] - 1:
+				clusters.append(cluster)
 			else:
-				tmp = partition[1][isin(partition[0], group_id[icluster])]
-				if tmp.shape[0]>2:ucluster =(np.sort(tmp)).tolist()
-				else: ucluster = tmp.tolist()
-		return clusters, ucluster
-	else: return [partition[1].tolist()], []
-                           
+				ucluster = cluster
+	else:
+		clusters = [partition[1].tolist()]
+		ucluster = []
+	return clusters, ucluster
+
 def split_partition_into_ordered_clusters(partition_in, input_is_row_wise = True):
 	# partition column 0 cluster  IDs
 	# partition column 1 particle IDs
