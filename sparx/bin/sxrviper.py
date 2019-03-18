@@ -9,9 +9,9 @@ from global_def import sxprint, ERROR, SPARXVERSION
 from global_def import *
 
 from utilities import get_im, string_found_in_file, get_latest_directory_increment_value, store_value_of_simple_vars_in_json_file
-from utilities import cmdexecute, if_error_then_all_processes_exit_program
+from utilities import cmdexecute, if_error_then_all_processes_exit_program, wrap_mpi_bcast
 from utilities import read_text_row, read_text_file, write_text_file, write_text_row, getindexdata#, print_program_start_information
-from multi_shc import find_common_subset, do_volume, multi_shc
+from multi_shc_test import find_common_subset, do_volume, multi_shc
 
 import string
 import os, sys
@@ -21,10 +21,12 @@ import user_functions
 from optparse import OptionParser, SUPPRESS_HELP
 from EMAN2 import EMData
 
+from argparse import Namespace
+
 import mpi
+from applications import cpy
 
 mpi.mpi_init( 0, [] )
-
 
 
 MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER = 10
@@ -39,6 +41,7 @@ DUMMY_INDEX_USED_AS_BUFFER = -103
 
 NAME_OF_RUN_DIR = "run"
 NAME_OF_MAIN_DIR = "main"
+NAME_OF_PARAMS_FILE = "rotated_reduced_params.txt"
 DIR_DELIM = os.sep
 
 def calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination(no_of_viper_runs_analyzed_together, 
@@ -102,7 +105,7 @@ def calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination
 
 def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_together, 
 	no_of_viper_runs_analyzed_together_from_user_options, masterdir, bdb_stack_location, outlier_percentile, 
-	criterion_name, outlier_index_threshold_method, angle_threshold, symc):
+	criterion_name, outlier_index_threshold_method, angle_threshold, symc, options):
 	
 	no_of_viper_runs_analyzed_together_must_be_incremented = 0
 	do_calculation = 1
@@ -132,8 +135,7 @@ def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_to
 		if list_of_independent_viper_run_indices_used_for_outlier_elimination[0] == EMPTY_VIPER_RUN_INDICES_LIST:
 			if no_of_viper_runs_analyzed_together > MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER:
 				error_status = 1
-				sxprint("RVIPER reached maximum n"
-						"umber of VIPER runs analyzed together without finding a core set of stable projections for the current RVIPER iteration (%d)! Finishing."%rviper_iter)
+				sxprint("RVIPER reached maximum number of VIPER runs analyzed together without finding a core set of stable projections for the current RVIPER iteration (%d)! Finishing."%rviper_iter)
 				cmd = "{} {}".format("mkdir ", masterdir + "MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER__Reached"); junk = cmdexecute(cmd)
 			else:
 				# No set of solutions has been found to make a selection for outlier elimination.
@@ -146,12 +148,12 @@ def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_to
 			if list_of_independent_viper_run_indices_used_for_outlier_elimination[0] == MUST_END_PROGRAM_THIS_ITERATION:
 				no_of_viper_runs_analyzed_together_must_be_incremented = MUST_END_PROGRAM_THIS_ITERATION
 				found_outliers(list_of_independent_viper_run_indices_used_for_outlier_elimination[1:], outlier_percentile, 
-					rviper_iter, masterdir, bdb_stack_location, "use all images", angle_threshold, symc)
+					rviper_iter, masterdir, bdb_stack_location, "use all images", angle_threshold, symc, options)
 			else:
 				# still need to eliminate DUMMY_INDEX_USED_AS_BUFFER
 				found_outliers(list_of_independent_viper_run_indices_used_for_outlier_elimination[1:], outlier_percentile, 
-					rviper_iter, masterdir, bdb_stack_location, outlier_index_threshold_method, angle_threshold, symc)
-
+					rviper_iter, masterdir, bdb_stack_location, outlier_index_threshold_method, angle_threshold, symc, options)
+		
 	if_error_then_all_processes_exit_program(error_status)
 
 	no_of_viper_runs_analyzed_together_must_be_incremented = mpi.mpi_bcast(no_of_viper_runs_analyzed_together_must_be_incremented, 1, mpi.MPI_INT, 0, mpi.MPI_COMM_WORLD)[0]
@@ -325,13 +327,13 @@ def measure_for_outlier_criterion(criterion_name, masterdir, rviper_iter, list_o
 			return 0.0
 	else:
 		sxprint("Error, no criterion name is specified!")
-		mpi_finalize()
+		mpi.mpi_finalize()
 		sys.exit()
 
 
 
 def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, masterdir,  bdb_stack_location,
-	outlier_index_threshold_method, angle_threshold, symc):
+	outlier_index_threshold_method, angle_threshold, symc, options):
 	
 	# sxheader.py bdb:nj  --consecutive  --params=OID
 	import numpy as np
@@ -340,7 +342,7 @@ def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, 
 
 	# if this data analysis step was already performed in the past then return
 	for check_run in list_of_projection_indices:
-		if not (os.path.exists(mainoutputdir + DIR_DELIM + NAME_OF_RUN_DIR + "%03d"%(check_run) + DIR_DELIM + "rotated_reduced_params.txt")):
+		if not (os.path.exists(mainoutputdir + DIR_DELIM + NAME_OF_RUN_DIR + "%03d"%(check_run) + DIR_DELIM + NAME_OF_PARAMS_FILE)):
 			break
 	else:
 		return
@@ -407,10 +409,10 @@ def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, 
 
 	sxprint("index_outliers:: " + str(index_outliers))
 
-	# write rotated param files
 	for i1 in range(len(list_of_projection_indices)):
-		write_text_row(rotated_params[i1], mainoutputdir + NAME_OF_RUN_DIR + "%03d"%(list_of_projection_indices[i1]) + DIR_DELIM + "rotated_reduced_params.txt")
-
+		independent_run_dir = mainoutputdir + NAME_OF_RUN_DIR + "%03d"%(list_of_projection_indices[i1])
+		write_text_row(rotated_params[i1], mainoutputdir + NAME_OF_RUN_DIR + "%03d"%(list_of_projection_indices[i1]) + DIR_DELIM + NAME_OF_PARAMS_FILE)  # 5 columns
+		
 	return True
 
 
@@ -432,7 +434,7 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 
 	if len(list_of_independent_viper_run_indices_used_for_outlier_elimination)==0:
 		sxprint("Error: len(list_of_independent_viper_run_indices_used_for_outlier_elimination)==0")
-		mpi_finalize()
+		mpi.mpi_finalize()
 		sys.exit()
 
 	# if this data analysis step was already performed in the past then return
@@ -453,7 +455,7 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 	partstack = []
 	# for i1 in range(0,no_of_viper_runs_analyzed_together):
 	for i1 in list_of_independent_viper_run_indices_used_for_outlier_elimination:
-		partstack.append(mainoutputdir + NAME_OF_RUN_DIR + "%03d"%(i1) + DIR_DELIM + "rotated_reduced_params.txt")
+		partstack.append(mainoutputdir + NAME_OF_RUN_DIR + "%03d"%(i1) + DIR_DELIM + NAME_OF_PARAMS_FILE)
 	partids_file_name = mainoutputdir + "this_iteration_index_keep_images.txt"
 
 	lpartids = list(map(int, read_text_file(partids_file_name) ))
@@ -527,7 +529,6 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 	return
 
 
-
 def get_already_processed_viper_runs(run_get_already_processed_viper_runs):
 
 	import random
@@ -566,6 +567,7 @@ def main():
 	mpi_comm  = mpi.MPI_COMM_WORLD
 	myid      = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
 	mpi_size  = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)	# Total number of processes, passed by --np option.
+	
 
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack  [output_directory] --ir=inner_radius --radius=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood  --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1  --fl --aa --ref_a=S --sym=c1"
@@ -612,6 +614,13 @@ output_directory: directory name into which the output files will be written.  I
 	parser.add_option("--mask3D",                type="string",        default=None,       help="3D mask file: (default sphere)")
 	parser.add_option("--moon_elimination",      type="string",        default='',         help="elimination of disconnected pieces: two arguments: mass in KDa and pixel size in px/A separated by comma, no space (default none)")
 
+	#options introduced for the angular distribution
+	parser.add_option("--dpi",                   type="int",           default=72,         help="resolution of angular distribution BILD file, dpi (default 72)")
+	
+	#options introduced for the angular distribution
+	parser.add_option("--theta1",                type="float",         default=-1.0,       help="starting restriction angle for out-of-plane tilt")
+	parser.add_option("--theta2",                type="float",         default=-1.0,       help="ending restriction angle for out-of-plane tilt")
+	
 	# used for debugging, help is supressed with SUPPRESS_HELP
 	##### XXXXXXXXXXXXXXXXXXXXXX option does not exist in docs XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 	parser.add_option("--my_random_seed",      type="int",  default=123,  help = SUPPRESS_HELP)
@@ -654,7 +663,6 @@ output_directory: directory name into which the output files will be written.  I
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	# this is just for benefiting from a user friendly parameter name
-	options.ou = options.radius 
 	my_random_seed = options.my_random_seed
 	criterion_name = options.criterion_name
 	outlier_index_threshold_method = options.outlier_index_threshold_method
@@ -665,10 +673,12 @@ output_directory: directory name into which the output files will be written.  I
 	no_of_shc_runs_analyzed_together = options.n_shc_runs 
 	outlier_percentile = options.outlier_percentile 
 	angle_threshold = options.angle_threshold 
+	options.ou = options.radius  # used by multi_shc
+	options.method = options.ref_a  # used by angular_distribution
 	
 	run_get_already_processed_viper_runs = options.run_get_already_processed_viper_runs
 	get_already_processed_viper_runs(run_get_already_processed_viper_runs)
-
+	
 	import random
 	random.seed(my_random_seed)
 
@@ -692,6 +702,7 @@ output_directory: directory name into which the output files will be written.  I
 	
 	bdb_stack_location = ""
 
+	# If necessary, append trailing '/' to directory 
 	masterdir = ""
 	if len(args) == 2:
 		masterdir = args[1]
@@ -731,12 +742,12 @@ output_directory: directory name into which the output files will be written.  I
 		if not os.path.exists(masterdir):
 			cmd = "{} {}".format("mkdir -p", masterdir)
 			junk = cmdexecute(cmd)
-
+	
 		if ':' in args[0]:
 			bdb_stack_location = args[0].split(":")[0] + ":" + masterdir + args[0].split(":")[1]
 			org_stack_location = args[0]
 
-			if(not os.path.exists(os.path.join(masterdir,"EMAN2DB" + DIR_DELIM))):
+			if(not os.path.exists(os.path.join(masterdir,"EMAN2DB" + DIR_DELIM) ) ):
 				# cmd = "{} {}".format("cp -rp EMAN2DB", masterdir, "EMAN2DB" DIR_DELIM)
 				# junk = cmdexecute(cmd)
 				cmd = "{} {} {}".format("e2bdb.py", org_stack_location,"--makevstack=" + bdb_stack_location + "_000")
@@ -750,20 +761,36 @@ output_directory: directory name into which the output files will be written.  I
 					sxprint("Indexing images")
 					header(bdb_stack_location + "_000", params='original_image_index', consecutive=True)
 		else:
+			
 			filename = os.path.basename(args[0])
 			bdb_stack_location = "bdb:" + masterdir + os.path.splitext(filename)[0]
-			if(not os.path.exists(os.path.join(masterdir,"EMAN2DB" + DIR_DELIM))):
+			bdb_path = masterdir + "EMAN2DB" + DIR_DELIM + os.path.splitext(filename)[0] + "_000.bdb"
+
+			junk = True
+			if not os.path.exists(bdb_path):
 				cmd = "{} {} {}".format("sxcpy.py  ", args[0], bdb_stack_location + "_000")
 				junk = cmdexecute(cmd)
+				#cpy(args[0], bdb_stack_location + "_000")  # without subprocess
 
-				from applications import header
-				try:
-					header(bdb_stack_location + "_000", params='original_image_index', fprint=True)
-					sxprint("Images were already indexed!")
-				except KeyError:
-					sxprint("Indexing images")
-					header(bdb_stack_location + "_000", params='original_image_index', consecutive=True)
+				if junk:
+					from applications import header
+					try:
+						header(bdb_stack_location + "_000", params='original_image_index', fprint=True)
+						sxprint("Images were already indexed!")
+					except KeyError:
+						sxprint("Indexing images")
+						header(bdb_stack_location + "_000", params='original_image_index', consecutive=True)
+	else:
+		cmd = ''
+		junk = None
 
+	junk = wrap_mpi_bcast(junk, main_node, mpi.MPI_COMM_WORLD) 
+	if not junk:
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+		global_def.ERROR('Command failed! {0}. Exit here!'.format(cmd), myid=myid, action=0)
+		mpi.mpi_finalize()
+		exit(1)
+	
 	# send masterdir to all processes
 	dir_len  = len(masterdir)*int(myid == main_node)
 	dir_len = mpi.mpi_bcast(dir_len,1,mpi.MPI_INT,0,mpi.MPI_COMM_WORLD)[0]
@@ -782,13 +809,12 @@ output_directory: directory name into which the output files will be written.  I
 
 	iteration_start = get_latest_directory_increment_value(masterdir, "main")
 
-	if (myid == main_node):
-		if (iteration_start < iteration_start_default):
-			ERROR('Starting iteration provided is greater than last iteration performed. Quiting program' )
-			error_status = 1
-	if iteration_start_default!=0:
+	if iteration_start_default != 0:
 		iteration_start = iteration_start_default
 	if (myid == main_node):
+		if (iteration_start < iteration_start_default):
+			ERROR('Starting iteration provided is greater than last iteration performed. Quitting program' )
+			error_status = 1
 		if (number_of_rrr_viper_runs < iteration_start):
 			ERROR('Please provide number of rviper runs (--n_rv_runs) greater than number of iterations already performed.' )
 			error_status = 1
@@ -798,7 +824,7 @@ output_directory: directory name into which the output files will be written.  I
 	from fundamentals import symclass
 	symc = symclass(options.sym)
 	
-
+	# Loop through iterations
 	for rviper_iter in range(iteration_start, number_of_rrr_viper_runs + 1):
 		if(myid == main_node):
 			all_projs = EMData.read_images(bdb_stack_location + "_%03d"%(rviper_iter - 1))
@@ -876,19 +902,26 @@ output_directory: directory name into which the output files will be written.  I
 
 				out_params, out_vol, out_peaks = multi_shc(all_projs, subset, no_of_shc_runs_analyzed_together, options,
 				mpi_comm=mpi_comm, log=log, ref_vol=ref_vol)
-
+				# options used (not all below are accepted as input from command line):
+				# by multi_shc: sym, delta
+				# 	-> do_volume: sym, npad, CTF, snr, mask3D or ou, pwreference, fl, aa
+				# 	-> ali3d_multishc: ir, rs, ou, xr, yr, ts, an, delta, doga, center, CTF, ref_a, L2threshold, maxit1, moon_elimination
+				# 	-> model_circle: ou
+				# 	-> ali3d_multishc_2: ir, rs, ou, xr, yr, ts, an, delta, center, CTF, ref_a, maxit2
+							
 				# end of: if this_run_is_NOT_complete:
 
 			if runs_iter >= (no_of_viper_runs_analyzed_together_from_user_options - 1):
-				increment_for_current_iteration = identify_outliers(myid, main_node, rviper_iter,
+				increment_for_current_iteration = identify_outliers(myid, main_node, rviper_iter, 
 					no_of_viper_runs_analyzed_together, no_of_viper_runs_analyzed_together_from_user_options, masterdir,
-					bdb_stack_location, outlier_percentile, criterion_name, outlier_index_threshold_method, angle_threshold, symc)
+					bdb_stack_location, outlier_percentile, criterion_name, outlier_index_threshold_method, angle_threshold, symc, 
+					options)
 
 				if increment_for_current_iteration == MUST_END_PROGRAM_THIS_ITERATION:
 					break
 
 				no_of_viper_runs_analyzed_together += increment_for_current_iteration
-
+				
 		# end of independent viper loop
 
 		calculate_volumes_after_rotation_and_save_them(options, rviper_iter, masterdir, bdb_stack_location, myid,
@@ -901,9 +934,9 @@ output_directory: directory name into which the output files will be written.  I
 	else:
 		if (myid == main_node):
 			sxprint("After running the last iteration (%d), RVIPER did not find a set of projections with the maximum angle difference between corresponding projections from different VIPER volumes less than %.2f Finishing."%(rviper_iter, ANGLE_ERROR_THRESHOLD))
-		
 			
-	# end of RVIPER loop
+	# end of RVIPER iteration loop
+
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 

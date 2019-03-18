@@ -37,15 +37,6 @@ from __future__ import division
 #   from appropriate application, in this case "sxali2d_c.py ...  --function=wei_func
 # 
 
-from builtins import range
-from builtins import object
-
-import numpy
-import global_def
-import morphology
-import utilities
-import EMAN2_cppwrap
-
 def do_volume_mask(ref_data):
 	"""
 		1. - volume
@@ -121,10 +112,10 @@ def ai_spa( Tracker, fff, anger, shifter, do_local, chout = False):
 
 		inc = Tracker["currentres"]
 		if Tracker["large_at_Nyquist"]:
-			inc += int(0.25 * Tracker["constants"]["nnxo"]/2 + 0.5)
+			inc += int(0.25 * old_div(Tracker["constants"]["nnxo"], 2) + 0.5)
 		else:
 			inc += Tracker["nxstep"]
-		Tracker["nxinit"] = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
+		Tracker["nxinit"] = int(min(2*inc, Tracker["constants"]["nnxo"] ))  #  Cannot exceed image size
 		Tracker["local"]  = False
 		Tracker["changed_delta"] = False
 
@@ -215,7 +206,7 @@ def ai_spa( Tracker, fff, anger, shifter, do_local, chout = False):
 
 		inc = Tracker["currentres"]
 		if Tracker["large_at_Nyquist"]:	
-			inc += int(0.25 * Tracker["constants"]["nnxo"]/2 +0.5)
+			inc += int(0.25 * old_div(Tracker["constants"]["nnxo"], 2) +0.5)
 			slim = int(Tracker["nxinit"]*1.09)
 			tmp = min(max(2*inc,slim+slim%2), Tracker["constants"]["nnxo"] )
 		else:
@@ -225,14 +216,22 @@ def ai_spa( Tracker, fff, anger, shifter, do_local, chout = False):
 		if chout:
 			global_def.sxprint("  IN AI: nxstep, large at Nyq, outcoming current res, adjusted current, inc, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
 
-		Tracker["nxinit"] = tmp
+		Tracker["nxinit"] = int(tmp)
 		Tracker["changed_delta"] = False
 		#  decide angular step and translations
 		if Tracker["no_improvement"] >= Tracker["constants"]["limit_improvement"] and Tracker["no_params_changes"] >= Tracker["constants"]["limit_changes"] and not Tracker["large_at_Nyquist"]:
 			if( Tracker["delta"] < 0.75*Tracker["acc_rot"] ):#<<<----it might cause converge issues when shake is 0.0
-				keepgoing = 0
-				if chout:
-					global_def.sxprint("Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
+				if Tracker["state"] == "PRIMARY LOCAL":
+					step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
+					if chout:
+						global_def.sxprint("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
+					Tracker["xr"] = step_range
+					Tracker["ts"] = step
+					Tracker["state"] = "RESTRICTED"
+				else:
+					keepgoing = 0
+					if chout:
+						global_def.sxprint("Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
 			else:
 				step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
 				if chout:
@@ -263,3 +262,13 @@ def ai_spa( Tracker, fff, anger, shifter, do_local, chout = False):
 				Tracker["anger"]				= 1.0e23
 				Tracker["shifter"]				= 1.0e23
 	return keepgoing
+from builtins import range
+from builtins import object
+
+import numpy
+import global_def
+import morphology
+import utilities
+import EMAN2_cppwrap
+from past.utils import old_div
+

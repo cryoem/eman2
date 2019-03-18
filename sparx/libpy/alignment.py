@@ -29,9 +29,6 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
-from builtins import range
-from global_def import *
-
 
 def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 						xrng, yrng, step, nomirror = False, mode="F", CTF=False, \
@@ -140,7 +137,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 			[angt, sxst, syst, mirrort, peakt] = ormq_fast(data[im], cimage, txrng, tyrng, step, numr, mode, delta)
 			sxst = rings[0][0][0].get_attr("sxi")
 			syst = rings[0][0][0].get_attr("syi")
-			print(sxst, syst,sx,sy)
+			sxprint(sxst, syst,sx,sy)
 			dummy,sxs,sys, dummy = inverse_transform2(-angt,sx+sxst,sy+syst)
 			set_params2D(data[im][0][0], [angt, sxs, sys, mirrort, 1.0], ali_params)
 		else:
@@ -766,7 +763,7 @@ def symm_func(args, data):
 	from fundamentals  import  rot_shift3D
 	sym = sym_vol(rot_shift3D(data[0], args[0], args[1], args[2]), data[2])
 	avg = sym.cmp("dot",sym,{"mask":data[1], "negative":0})
-	print(avg, args)
+	sxprint(avg, args)
 	return avg
 
 def find_symm(vol, mask, sym_gp, phi, theta, psi, scale, ftolerance, xtolerance):
@@ -1820,7 +1817,7 @@ def prepare_refrings2( volft, kb, nz, segmask, delta, ref_a, sym, numr, MPI=Fals
 			Util.Applyws(cimage, numr, wr_four)
 			refrings[i] = cimage
 	else:
-		print("do not handle this case")
+		sxprint("do not handle this case")
 		sys.exit()
 	if MPI:
 		from utilities import bcast_EMData_to_all
@@ -2986,10 +2983,10 @@ def proj_ali_helicon_90_local_direct(data, refrings, xrng, yrng, \
 	imn1 = sin(radians(theta))*cos(radians(phi))
 	imn2 = sin(radians(theta))*sin(radians(phi))
 	imn3 = cos(radians(theta))
-	print('  aaaaaa  ',psi_max, psi_step, xrng, yrng, direction)
+	sxprint('  aaaaaa  ',psi_max, psi_step, xrng, yrng, direction)
 	for i in range(len(refrings)):
 		if( (refrings[i][0].get_attr("n1")*imn1 + refrings[i][0].get_attr("n2")*imn2 + refrings[i][0].get_attr("n3")*imn3)>=ant ):
-			print(" Matching refring  ",i,phi, theta, psi, tx, ty)
+			sxprint(" Matching refring  ",i,phi, theta, psi, tx, ty)
 			#  directali will do fft of the input image and 180 degs rotation, if necessary.  Eventually, this would have to be pulled up.
 			a, tx,ty, tp = directaligridding(data, refrings[i], psi_max, psi_step, xrng, yrng, stepx, stepy, direction)
 			if(tp>peak):
@@ -3009,13 +3006,13 @@ def proj_ali_helicon_90_local_direct(data, refrings, xrng, yrng, \
 		psi   = (refrings[iref][0].get_attr("psi")+angb+360.0)%360.0
 		s2x   = sxb #+ tx
 		s2y   = syb #+ ty
-		print("New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f" %(phi, theta, psi, s2x, s2y, peak))
+		sxprint("New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f" %(phi, theta, psi, s2x, s2y, peak))
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f\n\n" %(phi, theta, psi, s2x, s2y, peak))
 			finfo.flush()
 		return peak, phi, theta, psi, s2x, s2y
 	else:
-		print("  NO PEAK")
+		sxprint("  NO PEAK")
 		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0
 
 def proj_ali_helicon_90_local_direct1(data, refrings, xrng, yrng, \
@@ -3047,7 +3044,7 @@ def proj_ali_helicon_90_local_direct1(data, refrings, xrng, yrng, \
 		s2y   = syb #+ ty
 		return peak, phi, theta, psi, s2x, s2y
 	else:
-		print("  NO PEAK")
+		sxprint("  NO PEAK")
 		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0
 
 def proj_ali_helicon_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, an, psi_max=180.0, finfo=None, yrnglocal=-1.0):
@@ -3795,7 +3792,7 @@ def align2d_direct2(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 				bang = i
 	# returned parameters have to be inverted
 	bang = (bang//2-nc)*psistep + 180.*(bang%2)
-	print(bang,bsx,bsy)
+	sxprint(bang,bsx,bsy)
 	bang, bsx, bsy, i = inverse_transform2(bang, bsx, bsy)
 	return bang, bsx, bsy, ama
 
@@ -3930,7 +3927,7 @@ def align2d_direct(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 				rt180 = 180.
 	# returned parameters have to be inverted
 	bang = 180-(bang//2-nc)*psistep
-	print(bang, bsx, bsy,rt180)
+	sxprint(bang, bsx, bsy,rt180)
 	bang, bsx, bsy, i = inverse_transform2(bang, bsx, bsy)
 	return bang, bsx, bsy, ama
 
@@ -4057,7 +4054,7 @@ def directali(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, updown = "bo
 	if updown == "both" or updown == "up" :    ima = fft(inima)
 	if updown == "both" or updown == "down" :  imm = fft(rot_shift2D(inima,180.0, interpolation_method = 'linear'))
 
-	print(" in ali  ", psimax, psistep, xrng, yrng, wnx, wny, nr,updown) 
+	sxprint(" in ali  ", psimax, psistep, xrng, yrng, wnx, wny, nr,updown) 
 	ma1  = -1.e23
 	ma2  = -1.e23
 	ma3  = -1.e23
@@ -4077,7 +4074,7 @@ def directali(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, updown = "bo
 			pp = peak_search(w)[0]
 			px = int(pp[4])
 			py = int(pp[5])
-			print('  peak   ',i,pp)
+			sxprint('  peak   ',i,pp)
 			#  did not find a peak, find a maximum location instead
 			if( pp[0] == 1.0 and px == 0 and py == 0):
 				loc = w.calc_max_location()
@@ -4132,9 +4129,9 @@ def directali(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, updown = "bo
 					ma4 = PEAKV
 					oma4 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
 
-	print("  hoho ",updown)
-	print("  oma2 ",oma2)
-	print("  oma4 ",oma4)
+	sxprint("  hoho ",updown)
+	sxprint("  oma2 ",oma2)
+	sxprint("  oma4 ",oma4)
 	if( oma2[-2] > oma4[-2] ):
 		"""
 		print oma1
@@ -4237,7 +4234,7 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 	from utilities    import peak_search, model_blank, inverse_transform2, compose_transform2
 	from alignment    import parabl
 	from EMAN2 import Processor
-	print("  directaligridding  ",psimax, psistep, xrng, yrng, stepx, stepy, updown)
+	sxprint("  directaligridding  ",psimax, psistep, xrng, yrng, stepx, stepy, updown)
 	M = inima.get_xsize()
 	alpha = 1.75
 	K = 6
@@ -4308,7 +4305,7 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 	from utilities import get_params_proj
 	e1 = ref[0]['phi']
 	f1,e2,e3,e4,e5 = get_params_proj(inima)
-	print(" in ali  ", e1,f1,psimax, psistep, xrng, yrng, wnx, wny, rnx, rny, stepxx, stepyy, nr,updown) 
+	sxprint(" in ali  ", e1,f1,psimax, psistep, xrng, yrng, wnx, wny, rnx, rny, stepxx, stepyy, nr,updown) 
 	ma1  = -1.e23
 	ma2  = -1.e23
 	ma3  = -1.e23
@@ -4359,7 +4356,7 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 					for l in range(3):
 						ww[k,l] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
-				print(["S %10.1f"%pp[k] for k in range(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep))
+				sxprint(["S %10.1f"%pp[k] for k in range(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep))
 				"""
 				if(pp[0]>ma1):
 					ma1 = pp[0]
@@ -4394,7 +4391,7 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 					for l in range(3):
 						ww[k,l] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
-				print(["R %10.1f"%pp[k] for k in range(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep))
+				sxprint(["R %10.1f"%pp[k] for k in range(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep))
 				"""
 				if(pp[0]>ma3):
 					ma3 = pp[0]
@@ -4925,7 +4922,7 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 	#print "wnx wny enr-bnr", wnx,wny,enr-bnr
 	ccf3dimg = model_blank(wnx, wny, enr-bnr)
 	if ( rny == 0 ) : 
-		print("rny = 0 return---------------")
+		sxprint("rny = 0 return---------------")
 		return  0.0, 0.0, 0.0, -1.e23, ccf3dimg     ## do nothing for rny=0 @ming
 	for i in range(bnr, enr, 1):
 		if updown == "up" :
@@ -5076,7 +5073,7 @@ def alignment3Dsnake(partition, snakeknots, nsegs, initialori, ctx, psistep, ste
 		else: nknots[ipt]  = nsegs//2+1
 		#nknots1 = 4
 	#mknots = 1	
-	print("begin snake refine....")
+	sxprint("begin snake refine....")
 	##2. get initial b-splines coefficients for initial alignment parameters(snake).
 	###2.1 for b-spline fitting of tttt.
 	#nsegs = seg_end-seg_start
@@ -5133,9 +5130,9 @@ def alignment3Dsnake(partition, snakeknots, nsegs, initialori, ctx, psistep, ste
 	xtol = 1.e-8
 	maxi = 5000
 	scale = [nc*1.0]*len(TCK[0][1])+[rnx*1.0]*len(TCK[1][1])+[rny*1.0]*len(TCK[2][1])
-	print("begin amoeba refine... number of segments=%d, number of amoeba parameters for x-shift =%d"%(nsegs, len(sx))) #, params0
+	sxprint("begin amoeba refine... number of segments=%d, number of amoeba parameters for x-shift =%d"%(nsegs, len(sx))) #, params0
 	params,fval, numit=amoeba(params, scale, flexhelicalali, ftol, xtol, maxi, [ctx,params0, 0.0, TCK, nsegs])
-	print("after amoeba refine, iter_num=%d"%numit)#, params
+	sxprint("after amoeba refine, iter_num=%d"%numit)#, params
 	##4. get alignment parameters from refined b-spline coefficients.
 	import numpy as np        
 	pang = np.array(params[0:len(TCK[0][1])])
@@ -5293,7 +5290,7 @@ def ali_nvol(v, mask):
 			#print "final align3d params: %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f" % (phi,tht,psi,s3x,s3y,s3z)
 	for l in range(len(v)):
 		ophi,otht,opsi,os3x,os3y,os3z,dum,dum = get_params3D(v[l])
-		print(l,ophi,otht,opsi,os3x,os3y,os3z)
+		sxprint(l,ophi,otht,opsi,os3x,os3y,os3z)
 		v[l] = rot_shift3D( v[l], ophi,otht,opsi,os3x,os3y,os3z )
 		v[l].del_attr("xform.align3d")
 	return v
@@ -5351,7 +5348,7 @@ def ali_mvol(v, mask):
 			#print "final align3d params: %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f" % (phi,tht,psi,s3x,s3y,s3z)
 	for l in range(len(v)):
 		ophi,otht,opsi,os3x,os3y,os3z,dum,dum = get_params3D(v[l])
-		print(i,ophi,otht,opsi,os3x,os3y,os3z)
+		sxprint(i,ophi,otht,opsi,os3x,os3y,os3z)
 		v[l] = rot_shift3D( v[l], ophi,otht,opsi,os3x,os3y,os3z )
 		v[l].del_attr("xform.align3d")
 	return v
@@ -6224,3 +6221,6 @@ def XXali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 	return sx_sum, sy_sum
 '''
 
+
+from builtins import range
+from global_def import *

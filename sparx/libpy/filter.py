@@ -29,9 +29,6 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
-from builtins import range
-from global_def import *
-
 def filt_median(f, nx, ny, nz = 1, kernelshape = "BLOCK"):
 	"""
 	Name
@@ -56,7 +53,7 @@ def filt_median(f, nx, ny, nz = 1, kernelshape = "BLOCK"):
 	if kernelshape=="BLOCK":         return filt_median_(f,nx,ny,nz,kernel_shape.BLOCK)
 	elif kernelshape=="CIRCULAR":    return filt_median_(f,nx,ny,nz,kernel_shape.CIRCULAR)
 	elif kernelshape=="CROSS":       return filt_median_(f,nx,ny,nz,kernel_shape.CROSS)
-	else: print("Unknown kernel shape.")
+	else: sxprint("Unknown kernel shape.")
 
 # Fourier filters
 def filt_tophatl(e, freq, pad = False):
@@ -787,7 +784,7 @@ def filt_matched(ima, SNR, Pref):
 	for j in range(len(Pref)-1):
 		if(SNR[j]>.05): 
 			thm=SNR[j]*(SNR[j]+1.)*PU[j]/Pref[j]
-			print(thm)
+			sxprint(thm)
 			hm=sqrt(thm)
 			deno=(SNR[j]+1)*(ctf_2[j]*Pn2[j]*TE[j]**2+Pn1[j])+ctf_2[j]*PU[j]*TE[j]**2
 			xval=hm/deno 
@@ -823,7 +820,7 @@ def filt_vols( vols, fscs, mask3D ):
 		if (fl > flmax):
 			flmax = fl
 			idmax = i
-	print(" Filter tanl, parameters: ",flmin-0.05, "  ",  aamin)
+	sxprint(" Filter tanl, parameters: ",flmin-0.05, "  ",  aamin)
 	volmax = vols[idmax]
 	volmax = filt_tanl( volmax, flmin-0.05, aamin )
 	pmax = rops_table( volmax )
@@ -903,3 +900,7 @@ def filterlocal(ui, vi, m, falloff, myid, main_node, number_of_proc):
 	mpi_barrier(MPI_COMM_WORLD)
 	reduce_EMData_to_root(filteredvol, myid, main_node, MPI_COMM_WORLD)
 	return filteredvol
+
+from builtins import range
+from global_def import *
+

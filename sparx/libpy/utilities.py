@@ -29,40 +29,6 @@ this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 Place, Suite 330, Boston, MA  02111-1307 USA
 """
 
-#------------------------------------------------[ import ]
-
-# compatibility
-from future import standard_library
-standard_library.install_aliases()
-
-# python natives
-from pickle    import dumps, loads
-from builtins  import range
-from builtins  import object
-from functools import reduce
-from struct    import pack, unpack
-
-# python commons
-import numpy as np
-import scipy.ndimage
-from zlib import compress, decompress
-
-# EMAN2 / sparx basics
-from global_def import *
-
-import EMAN2
-from EMAN2 import EMNumPy
-
-# EMAN2 / sparx modules
-import morphology
-
-# MPI imports (NOTE: import mpi after EMAN2)
-from applications import MPI_start_end
-import mpi
-from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
-from mpi import mpi_recv, mpi_send, mpi_barrier
-
-
 def params_2D_3D(alpha, sx, sy, mirror):
 	"""
 		Convert 2D alignment parameters (alpha, sx, sy, mirror) into
@@ -867,9 +833,9 @@ def combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2):
 	tt = t2 * t1
 	"""
 	t1.printme()
-	print(" ")
+	sxprint(" ")
 	t2.printme()
-	print(" ")
+	sxprint(" ")
 	tt.printme()
 	"""
 	d = tt.get_params("2D")
@@ -1590,7 +1556,7 @@ def info(image, mask=None, Comment=""):
 	Purpose: calculate basic statistical characteristics of an image.
 	"""
 	if Comment:
-		print(" ***  ", Comment)
+		sxprint(" ***  ", Comment)
 	e = get_image(image)
 	[mean, sigma, imin, imax] = Util.infomask(e, mask, True)
 	nx = e.get_xsize()
@@ -1601,14 +1567,14 @@ def info(image, mask=None, Comment=""):
 		if e.is_shuffled():
 			s = " (shuffled)"
 		if e.is_fftodd():
-			print("Complex odd image%s: nx = %i, ny = %i, nz = %i" % (s, nx, ny, nz))
+			sxprint("Complex odd image%s: nx = %i, ny = %i, nz = %i" % (s, nx, ny, nz))
 		else:
-			print("Complex even image%s: nx = %i, ny = %i, nz = %i" % (s, nx, ny, nz))
+			sxprint("Complex even image%s: nx = %i, ny = %i, nz = %i" % (s, nx, ny, nz))
 
 	else:
-		print("Real image: nx = %i, ny = %i, nz = %i" % (nx, ny, nz))
+		sxprint("Real image: nx = %i, ny = %i, nz = %i" % (nx, ny, nz))
 
-	print("avg = %g, std dev = %g, min = %g, max = %g" % (mean, sigma, imin, imax))
+	sxprint("avg = %g, std dev = %g, min = %g, max = %g" % (mean, sigma, imin, imax))
 	return mean, sigma, imin, imax, nx, ny, nz
 
 
@@ -1867,13 +1833,13 @@ def peak_search(e, npeak=1, invert=1, print_screen=0):
 		outpeaks = []
 		if print_screen:
 			if ndim == 1:
-				print(
+				sxprint(
 					"%10s%10s%10s%10s%10s"
 					% ("Index  ", " Peak_value", "X   ", "Peak/P_max", "X-NX/2")
 				)
 				print_list_format(peaks[1:], 4)
 			elif ndim == 2:
-				print(
+				sxprint(
 					"%10s%10s%10s%10s%10s%10s%10s"
 					% (
 						"Index  ",
@@ -1887,7 +1853,7 @@ def peak_search(e, npeak=1, invert=1, print_screen=0):
 				)
 				print_list_format(peaks[1:], 6)
 			elif ndim == 3:
-				print(
+				sxprint(
 					"%10s%10s%10s%10s%10s%10s%10s%10s%10s"
 					% (
 						"Index  ",
@@ -1965,14 +1931,14 @@ def print_row(input, ix=0, iz=0):
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
-	print("(z = %d slice, x = %d row)" % (iz, ix))
+	sxprint("(z = %d slice, x = %d row)" % (iz, ix))
 	line = []
 	for iy in range(ny):
 		line.append("%12.5g  " % (image.get_value_at(ix, iy, iz)))
 		if (iy + 1) % 10 == 0:
 			line.append("\n")
 	line.append("\n")
-	print("".join(line))
+	sxprint("".join(line))
 
 
 def print_col(input, iy=0, iz=0):
@@ -1986,14 +1952,14 @@ def print_col(input, iy=0, iz=0):
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
-	print("(z = %d slice, y = %d col)" % (iz, iy))
+	sxprint("(z = %d slice, y = %d col)" % (iz, iy))
 	line = []
 	for ix in range(nx):
 		line.append("%12.5g  " % (image.get_value_at(ix, iy, iz)))
 		if (ix + 1) % 10 == 0:
 			line.append("\n")
 	line.append("\n")
-	print("".join(line))
+	sxprint("".join(line))
 
 
 def print_slice(input, iz=0):
@@ -2007,7 +1973,7 @@ def print_slice(input, iz=0):
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
-	print("(z = %d slice)" % (iz))
+	sxprint("(z = %d slice)" % (iz))
 	line = []
 	for iy in range(ny):
 		line.append("Row ")
@@ -2020,7 +1986,7 @@ def print_slice(input, iz=0):
 		line.append("\n")
 		if nx % 5 != 0:
 			line.append("\n")
-	print("".join(line))
+	sxprint("".join(line))
 
 
 def print_image(input):
@@ -2047,14 +2013,14 @@ def print_image_col(input, ix=0, iz=0):
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
-	print("(z = %d slice, x = %d row)" % (iz, ix))
+	sxprint("(z = %d slice, x = %d row)" % (iz, ix))
 	line = []
 	for iy in range(ny):
 		line.append("%12.5g  " % (image.get_value_at(ix, iy, iz)))
 		if (iy + 1) % 10 == 0:
 			line.append("\n")
 	line.append("\n")
-	print("".join(line))
+	sxprint("".join(line))
 
 
 def print_image_row(input, iy=0, iz=0):
@@ -2068,14 +2034,14 @@ def print_image_row(input, iy=0, iz=0):
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
-	print("(z = %d slice, y = %d col)" % (iz, iy))
+	sxprint("(z = %d slice, y = %d col)" % (iz, iy))
 	line = []
 	for ix in range(nx):
 		line.append("%12.5g  " % (image.get_value_at(ix, iy, iz)))
 		if (ix + 1) % 10 == 0:
 			line.append("\n")
 	line.append("\n")
-	print("".join(line))
+	sxprint("".join(line))
 
 
 def print_image_slice(input, iz=0):
@@ -2089,7 +2055,7 @@ def print_image_slice(input, iz=0):
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
-	print("(z = %d slice)" % (iz))
+	sxprint("(z = %d slice)" % (iz))
 	line = []
 	for iy in range(ny - 1, -1, -1):
 		line.append("Row ")
@@ -2102,7 +2068,7 @@ def print_image_slice(input, iz=0):
 			line.append("\n")
 			if nx % 5 != 0:
 				line.append("\n")
-	print("".join(line))
+	sxprint("".join(line))
 
 
 def print_image_slice_3d(input, num=0, direction="z"):
@@ -2120,7 +2086,7 @@ def print_image_slice_3d(input, num=0, direction="z"):
 	if direction == "x":
 		# print "xxxxx"
 		ix = num
-		print("(x = %d slice)" % (ix))
+		sxprint("(x = %d slice)" % (ix))
 		line = []
 		for iz in range(nz - 1, -1, -1):
 			line.append("Z ")
@@ -2133,11 +2099,11 @@ def print_image_slice_3d(input, num=0, direction="z"):
 				line.append("\n")
 				if ny % 5 != 0:
 					line.append("\n")
-		print("".join(line))
+		sxprint("".join(line))
 	elif direction == "y":
 		# print "yyy"
 		iy = num
-		print("(y = %d slice)" % (iy))
+		sxprint("(y = %d slice)" % (iy))
 		line = []
 		for iz in range(nz - 1, -1, -1):
 			line.append("Z ")
@@ -2150,11 +2116,11 @@ def print_image_slice_3d(input, num=0, direction="z"):
 				line.append("\n")
 				if nx % 5 != 0:
 					line.append("\n")
-		print("".join(line))
+		sxprint("".join(line))
 	else:
 		# print "zzzz"
 		iz = num
-		print("(z = %d slice)" % (iz))
+		sxprint("(z = %d slice)" % (iz))
 		line = []
 		for iy in range(ny - 1, -1, -1):
 			line.append("Row ")
@@ -2167,7 +2133,7 @@ def print_image_slice_3d(input, num=0, direction="z"):
 				line.append("\n")
 				if nx % 5 != 0:
 					line.append("\n")
-		print("".join(line))
+		sxprint("".join(line))
 
 
 def print_list_format(m, narray=0):
@@ -2216,7 +2182,7 @@ def print_list_format(m, narray=0):
 				break
 		plist.append(qlist)
 	for i in range(lnum):
-		print("%6d " % (i + 1), plist[i])
+		sxprint("%6d " % (i + 1), plist[i])
 
 
 def pad(
@@ -2917,7 +2883,7 @@ def finish_time(start_time):
 	import time
 
 	finish_time = time.time()
-	print(("Running time is"), finish_time - start_time)
+	sxprint(("Running time is"), finish_time - start_time)
 	return finish_time
 
 
@@ -3089,7 +3055,7 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 	if size_of_one_refring_assumed_common_to_all * (ref_end - ref_start) > (
 		2 ** 31 - 1
 	):
-		print("Sending refrings: size of data to broadcast is greater than 2GB")
+		sxprint("Sending refrings: size of data to broadcast is greater than 2GB")
 
 	for sender_id in range(ncpu):
 		sender_ref_start, sender_ref_end = MPI_start_end(num_ref, ncpu, sender_id)
@@ -3188,7 +3154,7 @@ def bcast_compacted_EMData_all_to_all___original(list_of_em_objects, myid, comm=
 	if size_of_one_refring_assumed_common_to_all * (ref_end - ref_start) > (
 		2 ** 31 - 1
 	):
-		print("Sending refrings: size of data to broadcast is greater than 2GB")
+		sxprint("Sending refrings: size of data to broadcast is greater than 2GB")
 
 	for sender_id in range(ncpu):
 		if sender_id == myid:
@@ -3323,7 +3289,7 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(
 	if size_of_one_refring_assumed_common_to_all * (ref_end - ref_start) > (
 		2 ** 31 - 1
 	):
-		print("Sending refrings: size of data to broadcast is greater than 2GB")
+		sxprint("Sending refrings: size of data to broadcast is greater than 2GB")
 
 	for sender_id in range(1, ncpu):
 		if sender_id == myid:
@@ -3836,7 +3802,7 @@ def bcast_number_to_all(number_to_send, source_node=0, mpi_comm=-1):
 		else:
 			return False
 	else:
-		print(" ERROR in bcast_number_to_all")
+		sxprint(" ERROR in bcast_number_to_all")
 
 
 def bcast_list_to_all(list_to_send, myid, source_node=0, mpi_comm=-1):
@@ -4091,14 +4057,14 @@ def check_attr(ima, num, params, default_value, action="Warning"):
 	attr_list = ima.get_attr_dict()
 	if (params in attr_list) == False:
 		if action == "Warning":
-			print(
+			sxprint(
 				"WARNING: In image %i, cannot find attribute '%s' in the header, set it to the default value"
 				% (num, params),
 				default_value,
 			)
 			ima.set_attr_dict({params: default_value})
 		elif action == "Error":
-			print(
+			sxprint(
 				"ERROR:   In image %i, cannot find attribute '%s' in the header, the program has to terminate"
 				% (num, params)
 			)
@@ -4122,9 +4088,9 @@ def print_begin_msg(program_name, onscreen=False):
 	s = (t - len(string)) / 2
 	spacing = " " * s
 	if onscreen:
-		print(stars)
-		print(spacing + string)
-		print(stars)
+		sxprint(stars)
+		sxprint(spacing + string)
+		sxprint(stars)
 	else:
 		print_msg(stars + "\n")
 		print_msg(spacing + string + "\n")
@@ -4145,9 +4111,9 @@ def print_end_msg(program_name, onscreen=False):
 	s = (t - len(string)) / 2
 	spacing = " " * s
 	if onscreen:
-		print(stars)
-		print(spacing + string)
-		print(stars)
+		sxprint(stars)
+		sxprint(spacing + string)
+		sxprint(stars)
 	else:
 		print_msg(stars + "\n")
 		print_msg(spacing + string + "\n")
@@ -4790,7 +4756,7 @@ def nearestk_projangles(projangles, whichone=0, howmany=1, sym="c1"):
 			del tempan[best_j], lookup[best_j]
 
 	else:
-		print("  ERROR:  symmetry not supported  ", sym)
+		sxprint("  ERROR:  symmetry not supported  ", sym)
 		assignments = []
 
 	return assignments
@@ -5003,7 +4969,7 @@ def cone_ang(projangles, phi, tht, ant, symmetry="c1"):
 					)
 
 	else:
-		print("Symmetry not supported ", symmetry)
+		sxprint("Symmetry not supported ", symmetry)
 	return la
 
 
@@ -5073,7 +5039,7 @@ def cone_ang_f(projangles, phi, tht, ant, symmetry="c1"):
 					)
 
 	else:
-		print("Symmetry not supported ", symmetry)
+		sxprint("Symmetry not supported ", symmetry)
 
 	return la
 
@@ -5190,33 +5156,33 @@ def symmetry_related_normals(angles, symmetry):
 """
 
 
-def angular_occupancy(params, angstep=15.0, sym="c1", method="S"):
+def angular_occupancy(params, angstep=15.0, sym="c1", method="S", inc_mirror=0):
 	from fundamentals import symclass
 	from utilities import nearest_fang, angles_to_normals
 
 	smc = symclass(sym)
-	eah = smc.even_angles(angstep, inc_mirror=0, method=method)
+	eah = smc.even_angles(angstep, inc_mirror=inc_mirror, method=method)
 
 	leah = len(eah)
 	u = []
 	for q in eah:
-		# print("q",q)
+		# sxprint("q",q)
 		m = smc.symmetry_related([(180.0 + q[0]) % 360.0, 180.0 - q[1], 0.0])
-		# print("m",m)
+		# sxprint("m",m)
 		itst = len(u)
 		for c in m:
-			# print("c",c)
+			# sxprint("c",c)
 			if smc.is_in_subunit(c[0], c[1], 1):
-				# print(" is in 1")
-				if not smc.is_in_subunit(c[0], c[1], 0):
-					# print("  outside")
+				# sxprint(" is in 1")
+				if not smc.is_in_subunit(c[0], c[1], inc_mirror):
+					# sxprint("  outside")
 					u.append(c)
 					break
 		if len(u) != itst + 1:
 			u.append(q)  #  This is for exceptions that cannot be easily handled
 			"""
-			print(q)
-			print(m)
+			sxprint(q)
+			sxprint(m)
 			ERROR("balance angles","Fill up upper",1)
 			"""
 	seaf = []
@@ -5224,9 +5190,9 @@ def angular_occupancy(params, angstep=15.0, sym="c1", method="S"):
 		seaf += smc.symmetry_related(q)
 
 	lseaf = len(seaf) / (2 * leah)
-	# print(lseaf)
-	# for i,q in enumerate(seaf):  print(" seaf  ",i,q)
-	# print(seaf)
+	# sxprint(lseaf)
+	# for i,q in enumerate(seaf):  sxprint(" seaf  ",i,q)
+	# sxprint(seaf)
 	seaf = angles_to_normals(seaf)
 
 	occupancy = [[] for i in range(leah)]
@@ -5239,12 +5205,12 @@ def angular_occupancy(params, angstep=15.0, sym="c1", method="S"):
 		occupancy[l].append(i)
 		# for i,q in enumerate(occupancy):
 		# 	if q:
-		# 		print("  ",i,q,eah[i])
+		# 		sxprint("  ",i,q,eah[i])
 	return occupancy, eah
 
 
-def angular_histogram(params, angstep=15.0, sym="c1", method="S"):
-	occupancy, eah = angular_occupancy(params, angstep, sym, method)
+def angular_histogram(params, angstep=15.0, sym="c1", method="S", inc_mirror=0):
+	occupancy, eah = angular_occupancy(params, angstep, sym, method, inc_mirror=inc_mirror)
 	return [len(q) for q in occupancy], eah
 
 
@@ -5261,16 +5227,16 @@ def balance_angular_distribution(params, max_occupy=-1, angstep=15.0, sym="c1"):
 			shuffle(q)
 			q = q[:max_occupy]
 			outo += q
-			print(
+			sxprint(
 				"  %10d   %10d        %6.1f   %6.1f" % (l, len(q), eah[l][0], eah[l][1])
 			)
-			# print(l,len(q),q)
+			# sxprint(l,len(q),q)
 		outo.sort()
 		# write_text_file(outo,"select.txt")
 		return outo
 	else:
 		# for l,q in enumerate(occupancy):
-		# 	print("  %10d   %10d        %6.1f   %6.1f"%(l,len(q),eah[l][0],eah[l][1]))
+		# 	sxprint("  %10d   %10d        %6.1f   %6.1f"%(l,len(q),eah[l][0],eah[l][1]))
 		return occupancy
 
 
@@ -5602,7 +5568,7 @@ def group_proj_by_phitheta_slow(
 	previous_group = -1
 	previous_zone = 5
 	for grp in range(N / img_per_grp):
-		print(grp, end=" ")
+		sxprint(grp, end=" ")
 		N_remain = N - grp * img_per_grp
 		# The idea here is that if each group has more than 100 images in average,
 		# we consider it crowded enough to just consider the most crowded group.
@@ -5660,7 +5626,7 @@ def group_proj_by_phitheta_slow(
 				if len(assignments[i]) > max_group_size:
 					max_group_size = len(assignments[i])
 					max_group = i
-			print(max_group_size, max_group, previous_group, end=" ")
+			sxprint(max_group_size, max_group, previous_group, end=" ")
 			for i in range(len(assignments[max_group])):
 				ind = remain_index[assignments[max_group][i]]
 				v.append(proj_ang[ind][5])
@@ -5687,9 +5653,9 @@ def group_proj_by_phitheta_slow(
 			diff_table_index = dict()
 			for i in range(Nn):
 				diff_table_index[index[i]] = i
-			print(Nn, True, end=" ")
+			sxprint(Nn, True, end=" ")
 		else:
-			print(Nn, False, end=" ")
+			sxprint(Nn, False, end=" ")
 
 		t21 = time()
 		for i in range(Nn):
@@ -5723,7 +5689,7 @@ def group_proj_by_phitheta_slow(
 			[proj_ang[center_i][0], proj_ang[center_i][1], dang[img_per_grp - 1][0]]
 		)
 		previous_group = max_group
-		print(t2 - t1, t3 - t2, t22 - t21, t3 - t22, t4 - t3)
+		sxprint(t2 - t1, t3 - t2, t22 - t21, t3 - t22, t4 - t3)
 
 	if N % img_per_grp * 3 >= 2 * img_per_grp:
 		members = []
@@ -5736,7 +5702,7 @@ def group_proj_by_phitheta_slow(
 		for i in range(N):
 			if proj_ang[i][4]:
 				proj_list[-1].append(i)
-	print("Total time used = ", time() - t0)
+	sxprint("Total time used = ", time() - t0)
 
 	return proj_list, angles_list
 
@@ -5940,7 +5906,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	if len(List) == 0:
 		List = list(range(N))
 	if N < img_per_grp:
-		print("Error: image per group larger than the number of particles!")
+		sxprint("Error: image per group larger than the number of particles!")
 		exit()
 	phi_list = [[0.0, 0] for i in range(N)]
 	theta_list = [[0.0, 0] for i in range(N)]
@@ -6295,14 +6261,12 @@ def unpack_message(msg):
 	elif msg[0] == "O":
 		return loads((msg[1:]).tostring())
 	else:
-		print(
+		sxprint(
 			"ERROR: Invalid MPI message. Please contact developers. (%s)"
 			% str(msg[:20])
 		)
 		raise Exception("unpack_message")
 
-
-statistics_send_recv = dict()
 
 
 def update_tag(
@@ -6656,11 +6620,21 @@ def cmdexecute(cmd, printing_on_success=True):
 	# import subprocess  I do not know why this is not used. PAP
 	import os
 
-	# outcome = subprocess.call(cmd, shell=True)
+	
+	# Remove the variable to avoid problems with subprograms not running with MPI in combination with print_timestamp in global_def
+	try:
+		mpi_comm_world_rank_value = os.environ['OMPI_COMM_WORLD_RANK']
+		del os.environ['OMPI_COMM_WORLD_RANK']
+	except KeyError:
+		mpi_comm_world_rank_value = None
+	
 	outcome = os.system(cmd)
+	if mpi_comm_world_rank_value is not None:
+		os.environ['OMPI_COMM_WORLD_RANK'] = mpi_comm_world_rank_value
+
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if outcome != 0:
-		print(
+		sxprint(
 			line,
 			"ERROR!!   Command failed:  ",
 			cmd,
@@ -6669,7 +6643,7 @@ def cmdexecute(cmd, printing_on_success=True):
 		)
 		return 0
 	elif printing_on_success:
-		print(line, "Executed successfully: ", cmd)
+		sxprint(line, "Executed successfully: ", cmd)
 		return 1
 
 
@@ -6723,7 +6697,7 @@ def print_with_time_info(msg):
 	from time import localtime, strftime
 
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>" + msg
-	print(line)
+	sxprint(line)
 
 
 def if_error_then_all_processes_exit_program(error_status):
@@ -7165,9 +7139,9 @@ def print_program_start_information():
 	)  # Total number of processes, passed by --np option.
 
 	if myid == 0:
-		print("Location: " + os.getcwd())
+		sxprint("Location: " + os.getcwd())
 
-	print(
+	sxprint(
 		"MPI Rank: %03d/%03d " % (myid, mpi_size)
 		+ "Hostname: "
 		+ gethostname()
@@ -7274,7 +7248,7 @@ def program_state_stack(
 	while mpi_comm_rank(MPI_COMM_WORLD) == 0:
 		if "file_name_of_saved_state" not in program_state_stack.__dict__:
 			if type(file_name_of_saved_state) != type(""):
-				print(
+				sxprint(
 					"Must provide the file name of saved state as a string in the first call of the function!"
 				)
 				error_status = 1
@@ -7463,7 +7437,7 @@ def print_from_process(process_rank, message):
 	)  # Total number of processes, passed by --np option.
 
 	if myid == process_rank:
-		print(
+		sxprint(
 			"MPI Rank: %03d/%03d " % (myid, mpi_size)
 			+ "Hostname: "
 			+ gethostname()
@@ -7666,7 +7640,7 @@ def print_upper_triangular_matrix(data_table_dict, N_indep, log_main):
 
 def print_a_line_with_timestamp(string_to_be_printed):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	print((line, string_to_be_printed))
+	sxprint((line, string_to_be_printed))
 	return string_to_be_printed
 
 
@@ -7701,11 +7675,11 @@ def prepare_ptp(data_list, K):
 
 def print_dict(dict, theme):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	print((line + theme))
+	sxprint((line + theme))
 	spaces = "                           "
 	for key, value in sorted(dict.items()):
 		if key != "constants":
-			print(
+			sxprint(
 				(
 					"                    => "
 					+ key
@@ -7741,7 +7715,7 @@ def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 			currentres = nfsc[0][i - 1]
 			break
 			# if(currentres < 0.0):
-			# print("  Something wrong with the resolution, cannot continue")
+			# sxprint("  Something wrong with the resolution, cannot continue")
 		currentres = nfsc[0][i - 1]
 
 	""" this commented previously
@@ -8228,7 +8202,7 @@ def recons_mref(Tracker):
 			myid=myid, prjlist=data, symmetry=Tracker["constants"]["sym"], finfo=None
 		)
 		if myid == main_node:
-			print("reconstructed %3d" % igrp)
+			sxprint("reconstructed %3d" % igrp)
 		ref_list.append(vol)
 		number_of_ref_class.append(len(Tracker["this_data_list"]))
 	Tracker["number_of_ref_class"] = number_of_ref_class
@@ -8272,7 +8246,7 @@ def get_number_of_groups(total_particles, number_of_images_per_group):
 
 def get_complementary_elements(total_list, sub_data_list):
 	if len(total_list) < len(sub_data_list):
-		print("Wrong input list!")
+		sxprint("Wrong input list!")
 		return []
 	else:
 		sub_data_dict = {}
@@ -8726,7 +8700,7 @@ def Kmeans_exhaustive_run(ref_vol_list, Tracker):
 
 def print_a_line_with_timestamp(string_to_be_printed):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	print((line, string_to_be_printed))
+	sxprint((line, string_to_be_printed))
 	return string_to_be_printed
 
 
@@ -8847,143 +8821,312 @@ def search_lowpass(fsc):
 	return fcutoff
 
 
-def angular_distribution(inputfile, options, output):
-	ERROR(
-		"Code disabled, please use sxplot_projs_distrib.py instead",
-		"angular_distribution",
-		1,
-	)
-	"""
+def angular_distribution(params_file, output_folder, prefix, method, pixel_size, delta, symmetry, box_size, particle_radius, dpi, do_print=True):
+	import fundamentals
 	import numpy
+	import scipy.spatial as scipy_spatial
+	import errno
+	import matplotlib
+	matplotlib.use('Agg')
+	import matplotlib.pyplot as plt
 
-	#print('Loading data')
-	# Import data
-	listDType = [
-		('Phi', '<f8'),
-		('Theta', '<f8'),
-	]
-	#arrData = numpy.genfromtxt(inputfile, dtype=listDType, usecols=(0, 1))
-	# The following two lines are in case there is no symmetry option in sxprocess, to be simiplified
-	try: sym = options.symmetry
-	except: sym = "c1"
-	from fundamentals import symclass
-	from utilities import read_text_row
-	if( sym == "c0" ):
-		angs = read_text_row(inputfile)
+	# Sanity checks
+	#sxprint('Check if values are valid')
+	error_template = 'ERROR: {0}'
+	error = False
+	error_list = []
+	if pixel_size <= 0:
+		error_list.append('Pixel size cannot be smaller equals 0')
+		error = True
+
+	if box_size <= 0:
+		error_list.append('Box size cannot be smaller equals 0')
+		error = True
+
+	if particle_radius <= 0:
+		error_list.append('Particle radius cannot be smaller equals 0')
+		error = True
+
+	if delta <= 0:
+		error_list.append('delta cannot be smaller equals 0')
+		error = True
+
+	if dpi <= 0:
+		error_list.append('Dpi cannot be smaller equals 0')
+		error = True
+
+	if error:
+		for entry in error_list:
+			sxprint(error_template.format(entry))
+		return None
 	else:
-		scs = symclass(sym)
-		angs = scs.reduce_anglesets(read_text_row(inputfile),0)
-		del scs
-	nang = len(angs)
+		if do_print:
+			sxprint('Most values are valid')
 
-	# Load angle Data
-	# below makes no sense
-	#arrPhi = numpy.round(arrData['Phi'], options.round_digit)
-	#arrTheta = numpy.round(arrData['Theta'], options.round_digit)
+	try:
+		os.makedirs(output_folder)
+	except OSError as exc:
+		if exc.errno == errno.EEXIST and os.path.lexists(output_folder):
+			if do_print:
+				sxprint('Output directory already exists: {0}'.format(output_folder))
+		else:
+			raise
+	else:
+		if do_print:
+			sxprint('Created output directory: {0}'.format(output_folder))
 
-	arrPhi   = numpy.array([numpy.round(angs[i][0], options.round_digit) for i in xrange(nang)])
-	arrTheta = numpy.array([numpy.round(angs[i][1], options.round_digit) for i in xrange(nang)])
-	del angs
+	COLUMN_X = 0
+	COLUMN_Y = 1
+	COLUMN_Z = 2
 
-	# Set the vectors for transformation and plotting
-	vectorInital = numpy.array([0, 0, 1])
-	vectorCenter = 0.5 * numpy.array([
-		options.box_size,
-		options.box_size,
-		options.box_size
-	])
+	def get_color(sorted_array):
+		"""
+		Get the color for the 2D visual representation.
 
-	#print('Calculate vector length')
-	# Create array for the angles
-	dtype = [
-		('alpha', '<f8'),
-		('beta', '<f8')
-	]
-	arrayAngles = numpy.empty(nang, dtype=dtype)
-	arrayAngles['alpha'] = numpy.radians(arrTheta)
-	arrayAngles['beta'] = numpy.radians(arrPhi)
+		Arguments:
+		sorted_array - Array sorted by size.
 
-	# Create length of the vectors. One angstrom is one particle.
-	uniqueArray, allArray = numpy.unique(
-		arrayAngles, return_inverse=True
-	)
-	arrayRadius = numpy.histogram(allArray, bins=len(uniqueArray))[0]
+		Returns:
+		List of colors for each entry in the sorted_array.
+		"""
+		sorted_normalized = numpy.true_divide(sorted_array, numpy.max(sorted_array))
+		color_list = []
+		for item in sorted_normalized:
+			color_list.append((0, item, 1-item))
+		return color_list
 
-	# Calculate the overall number of particles for the normalisation.
-	# Normalise the radius and calculate
-	# how many times there is the same radius.
-	particleNumber = len(arrayAngles)
-	arrayRadius = arrayRadius / float(particleNumber)
-	uniqueRadius, indicesRadius = numpy.unique(
-		arrayRadius, return_index=True
-	)
+	def to_cartesian(angles):
+		"""
+		Create carthesian coordinates out of spherical ones.
 
-	# Set the right colour to the right radius
-	uniqueRadiusNumber = len(uniqueRadius)
-	rangeGreen = numpy.linspace(0, 1, uniqueRadiusNumber)
-	rangeBlue = numpy.linspace(1, 0, uniqueRadiusNumber)
+		Arguments:
+		angles - list of angles that can should be converted.
 
-	sortRadius = numpy.sort(uniqueRadius)
-	dictColor = {}
-	for number, radius in enumerate(sortRadius):
-		dictColor.update(
-			{
-				radius:
-				str(rangeGreen[number]) +
-				' ' +
-				str(rangeBlue[number])
-			}
-		)
+		Returns:
+		Numpy array containing 3D cartesian coordinates
+		"""
+		column_phi = 0
+		column_theta = 1
+		angles_radians = numpy.radians(angles)
+		cartesian_array = numpy.empty((angles_radians.shape[0], 3))
 
-	# Merge all unique data and the related radius into one array
-	dtype = [
-		('alpha', '<f8'),
-		('beta', '<f8'),
-		('radius', '<f8')
-	]
-	arrayAnglesRadius = numpy.empty(len(uniqueArray['alpha']), dtype=dtype)
-	arrayAnglesRadius['alpha'] = uniqueArray['alpha']
-	arrayAnglesRadius['beta'] = uniqueArray['beta']
-	arrayAnglesRadius['radius'] = arrayRadius
+		sinus = numpy.sin(angles_radians[:,column_theta])
+		cartesian_array[:, COLUMN_X] = numpy.cos(angles_radians[:, column_phi]) * sinus
+		cartesian_array[:, COLUMN_Y] = numpy.sin(angles_radians[:, column_phi]) * sinus
+		cartesian_array[:, COLUMN_Z] = numpy.cos(angles_radians[:, column_theta])
 
-	#print('Write output')
-	# Create vectors for chimera
-	with open(output, 'w') as f:
-		for vector in arrayAnglesRadius:
-			arrayVector1 = numpy.empty(3)
-			arrayVector2 = numpy.empty(3)
-			arrayVectorSphere = numpy.empty(3)
+		return cartesian_array
 
-			arrayVectorSphere[0] = numpy.sin(vector[0]) * numpy.cos(vector[1])
-			arrayVectorSphere[1] = numpy.sin(vector[0]) * numpy.sin(vector[1])
-			arrayVectorSphere[2] = numpy.cos(vector[0])
+	def add_mirrored(eah, smc):
+		#eah  = smc.even_angles(angstep, inc_mirror=0)
+		leah = len(eah)
+		u = []
+		for q in eah:
+			#print("q",q)
+			m = smc.symmetry_related([(180.0+q[0])%360.0,180.0-q[1],0.0])
+			#print("m",m)
+			itst = len(u)
+			for c in m:
+				#print("c",c)
+				if smc.is_in_subunit(c[0],c[1],1) :
+					#print(" is in 1")
+					if not smc.is_in_subunit(c[0],c[1],0) :
+						#print("  outside")
+						u.append(c)
+						break
+			if(len(u) != itst+1):
+				u.append(q)  #  This is for exceptions that cannot be easily handled
+		seaf = []
+		for q in eah+u:  seaf += smc.symmetry_related(q)
+		lseaf = 2*leah
+		return lseaf, leah, seaf
 
-			arrayVector1 = vectorCenter
-			arrayVector2 = vectorCenter
+	def markus(args, data, data_cart, sym_class):
+		if do_print:
+			sxprint('Create reference angles')
+		# Create reference angles all around the sphere.
+		ref_angles_data = sym_class.even_angles(args.delta, inc_mirror=1, method=args.method)
 
-			arrayVector1 = arrayVector1 + \
-				options.particle_radius * arrayVectorSphere / options.pixel_size
-			arrayVector2 = arrayVector2 + \
-				(
-					options.particle_radius / options.pixel_size +
-					0.01 + vector[2] * options.cylinder_length
-				) * \
-				arrayVectorSphere
-			f.write('.color 0 {:s} \n'.format(dictColor[vector[2]]))
-			f.write(
-				'.cylinder {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} \n'.format(
-					arrayVector1[0],
-					arrayVector1[1],
-					arrayVector1[2],
-					arrayVector2[0],
-					arrayVector2[1],
-					arrayVector2[2],
-					options.cylinder_width
+		# Find symmetry neighbors
+		# Create cartesian coordinates
+		angles = sym_class.symmetry_neighbors(ref_angles_data)
+		angles_cart = to_cartesian(angles)
+
+		# Reduce the reference data by moving mirror projections into the non-mirror region of the sphere.
+		# Create cartesian coordinates
+		angles_reduce = sym_class.reduce_anglesets(angles, inc_mirror=inc_mirror)
+		angles_reduce_cart = to_cartesian(angles_reduce)
+
+		# Reduce the reference data by removing mirror projections instead of moving them into the non-mirror region of the sphere.
+		# Create cartesian coordinates
+		angles_no_mirror = [entry for entry in ref_angles_data if sym_class.is_in_subunit(phi=entry[0], theta=entry[1], inc_mirror=0)] 
+		angles_no_mirror_cart = to_cartesian(angles_no_mirror)
+		
+		# Find nearest neighbours to the reference angles with the help of a KDTree
+		if do_print:
+			sxprint('Find nearest neighbours')
+		# Find the nearest neighbours of the reduced data to the reference angles on the C1 sphere.
+		_, knn_data = scipy_spatial.cKDTree(angles_cart, balanced_tree=False).query(data_cart)
+		# Find the nearest neighbours of the reduced reference data to the reference angles that do not contain mirror projections.
+		_, knn_angle = scipy_spatial.cKDTree(angles_no_mirror_cart, balanced_tree=False).query(angles_reduce_cart)
+
+		#hiti = [[] for i in range(max(knn_data)+1)]
+		#for i,q in enumerate(knn_data):
+		#	hiti[q].append(i)
+		#for i,q in enumerate(	hiti):
+		#	if q:
+		#		sxprint(" hiti  ", i, q, angles_no_mirror[i])
+
+		# Calculate a histogram for the assignments to the C1 angles
+		radius = numpy.bincount(knn_data, minlength=angles_cart.shape[0])
+		# New output histogram array that needs to be filled later
+		radius_array = numpy.zeros(angles_cart.shape[0], dtype=int)
+
+		# Deal with symmetry wrapping!
+		# Every index idx corresponds to the angle prior to the symmetry wrapping.
+		# Every value of value corresponds to the angle after symmetry wrapping.
+		# Values can occure multiple times and therefore can contain the member information for multiple reference angles.
+		numpy.add.at(radius_array, knn_angle, radius)
+		#for i,q in enumerate(radius_array):
+		#	if q:
+		#		sxprint(" hiti  ", i, q, angles_no_mirror[i])
+		nonzero_mask = numpy.nonzero(radius_array)
+		radius_array = radius_array[nonzero_mask]
+		if do_print:
+			sxprint(numpy.sort(radius_array))
+
+	# Use name of the params file as prefix if prefix is None
+	if prefix is None:
+		prefix = os.path.basename(os.path.splitext(params_file)[0])
+
+	# Import the parameters, assume the columns 0 (Phi) 1 (Theta) 2 (Psi) are present
+	if do_print:
+		sxprint('Import projection parameter')
+	data_params = numpy.atleast_2d(numpy.genfromtxt(params_file, usecols=(0, 1, 2)))
+
+	# If the symmetry is c0, do not remove mirror projections.
+	if do_print:
+		sxprint('Reduce anglesets')
+	if symmetry.endswith('_full'):
+		symmetry = symmetry.rstrip('_full')
+		inc_mirror = 1
+	else:
+		symmetry = symmetry
+		inc_mirror = 0
+
+
+	# Create 2 symclass objects.
+	# One C1 object for the inital reference angles.
+	# One related to the actual symmetry, to deal with mirror projections.
+	sym_class = fundamentals.symclass(symmetry)
+
+	if do_print:
+		sxprint('Reduce data to symmetry - This might take some time for high symmetries')
+	# Reduce the parameter data by moving mirror projections into the non-mirror region of the sphere.
+	data = numpy.array( sym_class.reduce_anglesets(data_params.tolist(), inc_mirror=inc_mirror))
+	# Create cartesian coordinates
+	data_cart = to_cartesian(data)
+
+	#markus(args, data, data_cart, sym_class)
+
+	occupy, eva = angular_histogram(sym_class.reduce_anglesets(data_params.tolist(), inc_mirror=inc_mirror), angstep = delta, sym= symmetry, method=method, inc_mirror=inc_mirror)
+#		for i,q in enumerate(eva):  sxprint(i,q)
+	radius_array = numpy.array(occupy)
+	angles_no_mirror = numpy.array(eva)
+	angles_no_mirror_cart = to_cartesian(angles_no_mirror)
+
+
+	# Remove all zeros for speedup reasons
+	nonzero_mask = numpy.nonzero(radius_array)
+	radius_array = radius_array[nonzero_mask]
+	#print(numpy.sort(radius_array))
+
+	# Calculate best width and length for the bins in 3D
+	width = (pixel_size * particle_radius * numpy.radians(delta) * 2) / float(2 * 3)
+	length = particle_radius * 0.2
+
+	# Normalize the radii so that the maximum value is 1
+	radius_normalized = numpy.true_divide(radius_array, numpy.max(radius_array))
+
+	# Vector pointing to the center of the Box in chimera
+	vector_center = 0.5 * numpy.array([
+		box_size,
+		box_size,
+		box_size
+		])
+
+	# Inner and outer vector. The bin starts at inner vector and stops at outer vector
+	inner_vector = vector_center + angles_no_mirror_cart[nonzero_mask] * particle_radius
+	outer_vector = vector_center + angles_no_mirror_cart[nonzero_mask] * (particle_radius + radius_normalized.reshape(radius_normalized.shape[0], 1) * length )
+
+	# Adjust pixel size
+	numpy.multiply(inner_vector, pixel_size, out=inner_vector)
+	numpy.multiply(outer_vector, pixel_size, out=outer_vector)
+
+	# Create output bild file
+	if do_print:
+		sxprint('Create bild file')
+	output_bild_file = os.path.join(output_folder, '{0}.bild'.format(prefix))
+	with open(output_bild_file, 'w') as write:
+		for inner, outer, radius in zip(inner_vector, outer_vector, radius_normalized):
+			write.write('.color 0 {0} {1}\n'.format(radius, 1-radius))
+			write.write(
+				'.cylinder {0:.3f} {1:.3f} {2:.3f} {3:.3f} {4:.3f} {5:.3f} {6:.3f}\n'.format(
+					inner[COLUMN_X],
+					inner[COLUMN_Y],
+					inner[COLUMN_Z],
+					outer[COLUMN_X],
+					outer[COLUMN_Y],
+					outer[COLUMN_Z],
+					width
+					)
 				)
-			)
-	print(('All done! Saved output to: {0}'.format(output)))
-	"""
 
+	"""
+	lina = numpy.argsort(radius_array)
+	sorted_radius = radius_array[lina[::-1]]
+	array_x = numpy.arange(sorted_radius.shape[0])
+	angles_no_mirror = angles_no_mirror[lina[::-1]]
+	nonzero_mask = list(nonzero_mask[0][lina[::-1]])
+
+	"""
+	nonzero_mask = list(nonzero_mask[0])
+	sorted_radius = radius_array
+	sorted_radius_plot = numpy.sort(radius_array)[::-1]
+	array_x = numpy.arange(sorted_radius.shape[0])
+	#"""
+	
+
+	# 2D distribution plot
+	if do_print:
+		sxprint('Create 2D legend plot')
+	output_bild_legend_png = os.path.join(output_folder, '{0}.png'.format(prefix))
+	color = get_color(sorted_radius_plot)
+	plt.bar(array_x, height=sorted_radius_plot, width=1, color=color)
+	plt.grid()
+	plt.xlabel('Bin / a.u.')
+	plt.ylabel('Nr. of Particles')
+	plt.savefig(output_bild_legend_png, dpi=dpi)
+	plt.clf()
+	"""
+	sxprint(array_x)
+	sxprint(sorted_radius)
+	sxprint(len(angles_no_mirror))
+	sxprint(angles_no_mirror)
+	"""
+	# 2D distribution txt file
+	if do_print:
+		sxprint('Create 2D legend text file')
+
+	output_bild_legend_txt = os.path.join(output_folder, '{0}.txt'.format(prefix))
+	with open(output_bild_legend_txt, 'w') as write:
+		for i in range(len(sorted_radius)):
+			#	for value_x, value_y in zip(array_x, sorted_radius):
+			value_x = '{0:6d}'.format(array_x[i])
+			value_y = '{0:6d}'.format(sorted_radius[i])
+			phi     = '{0:10f}'.format(angles_no_mirror[nonzero_mask[i]][0])
+			theta   = '{0:10f}'.format(angles_no_mirror[nonzero_mask[i]][1])
+			write.write('{0}\n'.format('\t'.join([value_x, value_y, phi, theta])))
 
 #####---------------------------------------------------
 # used in new meridien
@@ -9123,3 +9266,39 @@ def create_summovie_command(temp_name, micrograph_name, shift_name, frc_name, op
 			summovie_command.append("YES")
 
 	return summovie_command
+#------------------------------------------------[ import ]
+
+# compatibility
+from future import standard_library
+standard_library.install_aliases()
+
+# python natives
+from pickle    import dumps, loads
+from builtins  import range
+from builtins  import object
+from functools import reduce
+from struct    import pack, unpack
+
+# python commons
+import numpy as np
+import scipy.ndimage
+from zlib import compress, decompress
+
+# EMAN2 / sparx basics
+from global_def import *
+
+import EMAN2
+from EMAN2 import EMNumPy
+
+# EMAN2 / sparx modules
+import morphology
+
+# MPI imports (NOTE: import mpi after EMAN2)
+from applications import MPI_start_end
+import mpi
+from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
+from mpi import mpi_recv, mpi_send, mpi_barrier
+
+
+statistics_send_recv = dict()
+

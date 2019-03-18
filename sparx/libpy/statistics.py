@@ -31,10 +31,6 @@ from __future__ import print_function
 
 from future import standard_library
 standard_library.install_aliases()
-from builtins import range
-from builtins import object
-from global_def import *
-
 def avgvar(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_even=True):
 	'''
 	
@@ -2101,7 +2097,7 @@ def get_refstack(imgstack,params,nref,refstack,cs,mask,center,Iter):
 	nima = EMUtil.get_image_count(imgstack)
 	ima = EMData()
 	tc=[]
-	print(len(params))
+	sxprint(len(params))
 	for ir in range(nref):
 		ncnt=0
 		for im in range(nima):
@@ -2130,7 +2126,7 @@ def get_refstack(imgstack,params,nref,refstack,cs,mask,center,Iter):
 			else:
 				refimg=refimgo
 		a0 = refimg.cmp("dot", refimg, {"negative":0, "mask":mask}) # tave' * tave
-		print(" ITERATION #",'%5d'%(Iter),"  criterion = ",'%11.4g'%(a0), "reference number", '%5d'%(Iter))
+		sxprint(" ITERATION #",'%5d'%(Iter),"  criterion = ",'%11.4g'%(a0), "reference number", '%5d'%(Iter))
 		refimg.write_image(refstack,ir)
 	return cs
 	
@@ -2823,7 +2819,7 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 		old_Je    = 0
 		change    = True
 
-		if DEBUG: print('init Je', Je)
+		if DEBUG: sxprint('init Je', Je)
 		
 		print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
 		print_msg('Criterion: %11.6e \n' % Je)
@@ -2930,11 +2926,11 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				T *= F
 				if T < 0.009 and ct_pert < 5: SA = False
 				print_msg('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d\n' % (ite, Je, T, ct_pert))
-				if DEBUG: print('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d' % (ite, Je, T, ct_pert))
+				if DEBUG: sxprint('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d' % (ite, Je, T, ct_pert))
 			else:
 				if thd < 1.0e-8: watch_dog = maxit
 				print_msg('> iteration: %5d    criterion: %11.6e\n' % (ite, Je))
-				if DEBUG: print('> iteration: %5d    criterion: %11.6e' % (ite, Je))
+				if DEBUG: sxprint('> iteration: %5d    criterion: %11.6e' % (ite, Je))
 
 			old_Je = Je
 
@@ -3030,7 +3026,7 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 	for k in range(K):	print_msg('Cls[%i]: %i\n'%(k, Cls['n'][k]))
 
 	# to debug
-	if DEBUG: print(Cls['n'])
+	if DEBUG: sxprint(Cls['n'])
 	
 	# return Cls, assign
 	return Cls, assign
@@ -3176,7 +3172,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 		change    = True
 		order     = list(range(N))
 
-		if DEBUG: print('init Je', Je)
+		if DEBUG: sxprint('init Je', Je)
 
 		print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
 		print_msg('Criterion: %11.6e \n' % Je)
@@ -3333,11 +3329,11 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				T *= F
 				if T < 0.009: SA = False
 				print_msg('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d\n' % (ite, Je, T, ct_pert))
-				if DEBUG: print('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d' % (ite, Je, T, ct_pert))
+				if DEBUG: sxprint('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d' % (ite, Je, T, ct_pert))
 			else:
 				if thd < 1e-8: watch_dog = maxit
 				print_msg('> iteration: %5d    criterion: %11.6e\n'%(ite, Je))
-				if DEBUG: print('> iteration: %5d    criterion: %11.6e'%(ite, Je))
+				if DEBUG: sxprint('> iteration: %5d    criterion: %11.6e'%(ite, Je))
 
 			old_Je = Je
 
@@ -3464,7 +3460,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 	for k in range(K):	print_msg('Cls[%i]: %i\n'%(k, Cls['n'][k]))
 	
 	# to debug
-	if DEBUG: print(Cls['n'])
+	if DEBUG: sxprint(Cls['n'])
 		
 	# return Cls, assign and Je
 	return Cls, assign
@@ -4116,7 +4112,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 	#for k in xrange(K):	print_msg('Cls[%i]: %i\n'%(k, Cls['n'][k]))
 	
 	# to debug
-	if DEBUG: print(Cls['n'])
+	if DEBUG: sxprint(Cls['n'])
 		
 	# return Cls, assign and Je
 	return Cls, assign, Je
@@ -4744,7 +4740,7 @@ def k_means_SSE_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, o
 	else:                           rnd = [rand_seed]
 	
 	for ipart in range(nbpart):
-		print("nbpart ==", nbpart)
+		sxprint("nbpart ==", nbpart)
 		if logging != -1: logging.info('...... Start partition: %d' % (ipart + 1))
 		
 		Kmeans.random_ASG(rnd[ipart])
@@ -7578,12 +7574,12 @@ class py_Cluster(object):
       """
       Pretty-prints this cluster. Useful for debuging
       """
-      print(depth*"   " + "[level %s]" % self.__level)
+      sxprint(depth*"   " + "[level %s]" % self.__level)
       for item in self.__items:
          if isinstance(item, py_Cluster):
             item.display(depth+1)
          else:
-            print(depth*"   "+"%s" % item)
+            sxprint(depth*"   "+"%s" % item)
 
    def topology(self):
       """
@@ -9387,7 +9383,7 @@ def cluster_pairwise(d, K):
 	from math import sqrt
 	N = 1 + int((sqrt(1.0 + 8.0*len(d))-1.0)/2.0)
 	if(N*(N-1)/2 != len(d)):
-		print("  incorrect dimension")
+		sxprint("  incorrect dimension")
 		return
 	cent = [0]*K
 	assign = list(range(N))
@@ -9457,7 +9453,7 @@ def cluster_equalsize(d, m):
 	nd = d.get_xsize()
 	N = 1 + int((sqrt(1.0 + 8.0*nd)-1.0)/2.0)
 	if(N*(N-1)/2 != nd):
-		print("  incorrect dimension")
+		sxprint("  incorrect dimension")
 		return
 	K = N/m
 	active = [True]*N
@@ -9465,7 +9461,7 @@ def cluster_equalsize(d, m):
 	for k in range(K):
 		# find two most similiar objects among active
 		dm = 1.0e23
-		print('K:', k)
+		sxprint('K:', k)
 		f = open('WATCH', 'a')
 		f.write('K: %d\n' % k)
 		f.close()
@@ -9525,11 +9521,11 @@ def cluster_equalsize(d, m):
 		for i in groupping[k]:
 			if(i != cent[k]):
 				disp += d.get_value_at(mono(i,cent[k]))
-	print(disp)
+	sxprint(disp)
 	# try swapping elements
 	for k1 in range(1,K):
 		for k2 in range(k1):
-			print(" trying to swap",k1,k2)
+			sxprint(" trying to swap",k1,k2)
 			for i in groupping[k1]:
 				if(i != cent[k1]): d1 = d.get_value_at(mono(i,cent[k1]))
 				else:              d1 = 0.0
@@ -9540,7 +9536,7 @@ def cluster_equalsize(d, m):
 					e2 = d.get_value_at(mono(j,cent[k1]))
 					if(d1+e1 > d2+e2):
 						#  swap!
-						print(" SWAP")
+						sxprint(" SWAP")
 						l1 = groupping[k1].index(i)
 						l2 = groupping[k2].index(j)
 						temp = groupping[k1][l1]
@@ -9552,7 +9548,7 @@ def cluster_equalsize(d, m):
 		for i in groupping[k]:
 			if(i != cent[k]):
 				disp += d.get_value_at(mono(i,cent[k]))
-	print(disp)
+	sxprint(disp)
 	for k in range(K):
 		groupping[k].sort()
 
@@ -10005,7 +10001,7 @@ class pcanalyzebck(object):
 	"""
 	def analyze( self ):
 		if self.myid==0:
-			print("analyze: ", self.ncov, " nvec: ", self.nvec)
+			sxprint("analyze: ", self.ncov, " nvec: ", self.nvec)
 		from time import time
 		from numpy import zeros, float32, int32, int64
 		ncov = self.ncov
@@ -10017,7 +10013,7 @@ class pcanalyzebck(object):
 
 		lanczos_start = time()
 		kstep = self.lanczos( kstep, diag, subdiag, vmat )
-		print('time for lanczos: ', time() - lanczos_start)
+		sxprint('time for lanczos: ', time() - lanczos_start)
 
 		if not self.MPI or self.myid==0:
 			qmat = zeros( (kstep,kstep), float32 )
@@ -10135,7 +10131,7 @@ class pcanalyzebck(object):
 
 			diag[iter] = hvec[iter]
 
-			print('iter, time, overall_time: ', iter, time()-iter_start, time()-all_start)
+			sxprint('iter, time, overall_time: ', iter, time()-iter_start, time()-all_start)
 		return kstep
 
 
@@ -10326,8 +10322,8 @@ def k_means_stab_bbenum(PART, T=10, nguesses=5, J=50, max_branching=40, stmult=0
 
 	if np == 2:
 		if sum(CT_s) != tot_n:
-			print(sum(CT_s), tot_n)
-			print("something wrong!!")
+			sxprint(sum(CT_s), tot_n)
+			sxprint("something wrong!!")
 			sys.exit()
 
 	return MATCH, STB_PART, CT_s, CT_t, ST, st
@@ -10342,7 +10338,7 @@ def k_means_match_bbenum(PART, T=10, J=1, max_branching=40, stmult=0.25, nguesse
 	
 	
 	if DoMPI==True and DoMPI_init==False:
-		print("Not supporting MPI currently")
+		sxprint("Not supporting MPI currently")
 		#if len(levels)<1:	
 		#	for i in xrange(K):
 		#		levels.append(1)
@@ -10442,7 +10438,7 @@ def k_means_match_bbenum(PART, T=10, J=1, max_branching=40, stmult=0.25, nguesse
 	outMATCH.sort()
 			
 	if DoMPI:
-		print("Not supporting MPI currently")
+		sxprint("Not supporting MPI currently")
 		return outMATCH, output[0]
 	else:
 		return outMATCH
@@ -10459,7 +10455,7 @@ def k_means_stab_getinfo(PART, match):
 	# convert argument match to a list of arrays, where each array is a match
 	len_match = len(match)
 	if (len_match % np) != 0:
-		print("something wrong in k_means_stab_getinfo")
+		sxprint("something wrong in k_means_stab_getinfo")
 		sys.exit()
 	num_matches = len_match/np
 	for i in range(num_matches):
@@ -10582,3 +10578,7 @@ def scale_fsc_datasetsize(fsc_to_be_adjusted, nfsc, nnew):
 	fsc_sub = [0.0]*len(fsc_to_be_adjusted)
 	for i,q in enumerate(fsc_to_be_adjusted):  fsc_sub[i] = q/(q*(1.0-s)+s)
 	return fsc_sub
+from builtins import range
+from builtins import object
+from global_def import *
+
