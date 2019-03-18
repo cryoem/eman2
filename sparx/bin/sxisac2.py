@@ -1394,15 +1394,14 @@ def main(args):
 			li = len(Blockdata["masterdir"])
 			cmd = "{} {}".format("mkdir -p", Blockdata["masterdir"])
 			junk = cmdexecute(cmd)
-			global_def.write_command(Blockdata["masterdir"])
 		else:
 			if not os.path.exists(Blockdata["masterdir"]):
 				cmd = "{} {}".format("mkdir -p", Blockdata["masterdir"])
 				junk = cmdexecute(cmd)
-				global_def.write_command(Blockdata["masterdir"])
 			li = 0
 	else:
 		li = 0
+	global_def.write_command(Blockdata["masterdir"])
 
 	# main process broadcasts length of master directory string
 	li = mpi.mpi_bcast(li,1,mpi.MPI_INT,Blockdata["main_node"],mpi.MPI_COMM_WORLD)[0]

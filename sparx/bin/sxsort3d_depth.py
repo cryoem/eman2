@@ -1055,7 +1055,6 @@ def create_masterdir():
 				timestring = time.strftime("_%d_%b_%Y_%H_%M_%S", time.localtime())
 				masterdir  ="sort3d"+timestring
 				os.makedirs(masterdir)
-				global_def.write_command(masterdir)
 			else:
 				if not os.path.exists(masterdir):
 					os.makedirs(masterdir)
