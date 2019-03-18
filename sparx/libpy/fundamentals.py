@@ -1928,10 +1928,11 @@ class symclass(object):
 		else:
 			return output_array
 
-	def rotate_params(self, params, transf, tolistconv=True):
-		matinv = self.rotmatrix([-transf[2], -transf[1], -transf[0]], tolistconv=False)
-		matrix = self.rotmatrix(numpy.atleast_2d(params), tolistconv=False)
-		return self.recmat(self.mulmat(matrix, matinv, tolistconv=False), tolistconv=tolistconv)
+	@classmethod
+	def rotate_params(cls, params, transf, tolistconv=True):
+		matinv = cls.rotmatrix([-transf[2], -transf[1], -transf[0]], tolistconv=False)
+		matrix = cls.rotmatrix(numpy.atleast_2d(params), tolistconv=False)
+		return cls.recmat(cls.mulmat(matrix, matinv, tolistconv=False), tolistconv=tolistconv)
 
 	@staticmethod
 	def rotmatrix(angles, tolistconv=True):
