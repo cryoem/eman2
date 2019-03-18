@@ -1059,7 +1059,6 @@ def create_masterdir():
 			else:
 				if not os.path.exists(masterdir):
 					os.makedirs(masterdir)
-					global_def.write_command(masterdir)
 			li =len(masterdir)
 		else:
 			li =len(masterdir)
@@ -1068,6 +1067,7 @@ def create_masterdir():
 	else: 
 		restart = 0
 		li = 0
+	global_def.write_command(masterdir)
 	restart   = sparx_utilities.bcast_number_to_all(restart,       Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	li        = mpi.mpi_bcast(li,       1,   mpi.MPI_INT,  Blockdata["main_node"], mpi.MPI_COMM_WORLD)[0]
 	masterdir = mpi.mpi_bcast(masterdir,li,  mpi.MPI_CHAR, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
