@@ -2352,6 +2352,23 @@ class symclass(object):
 				balanced_tree=False
 				)
 
+	def find_nearest_neighbors(self, angles, angular_distance, tolistconv=True, is_radians=False):
+		angles_cart = self.to_cartesian(angles, is_radians=is_radians, tolistconv=False)
+		distance = 2 * numpy.sin(numpy.radians(angular_distance) / 2)
+
+		neighbors = self.kdtree_neighbors.query_ball_point(angles_cart, r=distance)
+		max_neighbors = numpy.max(map(lambda x: len(x), neighbors), axis=0)
+		out_array = numpy.empty((neighbors.shape[0], max_neighbors, 3))
+		out_array.fill(numpy.nan)
+		for idx, row in enumerate(neighbors):
+			row = numpy.array(row)
+			for_reduction = self.kdneighbors[row]
+			new_ang = self.reduce_anglesets(for_reduction, tolistconv=False)
+			_, indices = numpy.unique(new_ang, axis=0, return_index=True)
+			for idx2, entry in enumerate(new_ang[numpy.sort(indices)]):
+				out_array[idx][idx2] = entry
+		return out_array
+
 	def find_k_nearest_neighbors(self, angles, k, tolistconv=True, is_radians=False):
 		angles_cart = self.to_cartesian(angles, is_radians=is_radians, tolistconv=False)
 
@@ -2367,7 +2384,6 @@ class symclass(object):
 		for idx, row in enumerate(new_ang):
 			_, indices = numpy.unique(row, axis=0, return_index=True)
 			out_array[idx] = row[numpy.sort(indices)][:k_min]
-
 		return out_array
 
 	@staticmethod
