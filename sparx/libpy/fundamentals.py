@@ -1928,11 +1928,10 @@ class symclass(object):
 		else:
 			return output_array
 
-	@classmethod
-	def rotate_params(cls, params, transf, tolistconv=True):
-		matinv = cls.rotmatrix([-transf[2], -transf[1], -transf[0]], tolistconv=False)
-		matrix = cls.rotmatrix(numpy.atleast_2d(params), tolistconv=False)
-		return cls.recmat(cls.mulmat(matrix, matinv, tolistconv=False), tolistconv=tolistconv)
+	def rotate_params(self, params, transf, tolistconv=True):
+		matinv = self.rotmatrix([-transf[2], -transf[1], -transf[0]], tolistconv=False)
+		matrix = self.rotmatrix(numpy.atleast_2d(params), tolistconv=False)
+		return self.recmat(self.mulmat(matrix, matinv, tolistconv=False), tolistconv=tolistconv)
 
 	@staticmethod
 	def rotmatrix(angles, tolistconv=True):
@@ -2136,6 +2135,7 @@ class symclass(object):
 			return
 
 		if self.old_even_angles_data['needs_rebuild']:
+			self.old_even_angles_data['needs_rebuild'] = False
 			self.kdneighbors = self.symmetry_neighbors(self.angles, tolistconv=False)
 			self.kddistance = 3 * numpy.sin(numpy.radians(self.old_even_angles_data['delta']) / 2)
 			self.kdtree = scipy.spatial.cKDTree(
@@ -2147,24 +2147,39 @@ class symclass(object):
 				balanced_tree=False
 				)
 
-	def find_nearest_neighbors(self, angles, angular_distance, tolistconv=True, is_radians=False):
+	def find_nearest_neighbors(self, angles, angular_distance, tolistconv=True, is_radians=False, return_index=True):
+		if self.old_even_angles_data['needs_rebuild']:
+			self.build_kdtree()
 		angles_cart = self.to_cartesian(angles, is_radians=is_radians, tolistconv=False)
 		distance = 2 * numpy.sin(numpy.radians(angular_distance) / 2)
 
 		neighbors = self.kdtree_neighbors.query_ball_point(angles_cart, r=distance)
 		max_neighbors = numpy.max(map(lambda x: len(x), neighbors), axis=0)
-		out_array = numpy.empty((neighbors.shape[0], max_neighbors, 3))
-		out_array.fill(numpy.nan)
-		for idx, row in enumerate(neighbors):
-			row = numpy.array(row)
-			for_reduction = self.kdneighbors[row]
-			new_ang = self.reduce_anglesets(for_reduction, tolistconv=False)
-			_, indices = numpy.unique(new_ang, axis=0, return_index=True)
-			for idx2, entry in enumerate(new_ang[numpy.sort(indices)]):
-				out_array[idx][idx2] = entry
+		if return_index:
+			out_array = numpy.empty((neighbors.shape[0], max_neighbors), dtype=int)
+			out_array.fill(numpy.nan)
+			for idx, row in enumerate(neighbors):
+				row = numpy.array(row)
+				for_reduction = self.kdneighbors[row]
+				new_ang = self.reduce_anglesets(for_reduction, tolistconv=False)
+				_, indices = numpy.unique(new_ang, axis=0, return_index=True)
+				for idx2, entry in enumerate(numpy.sort(indices)):
+					out_array[idx][idx2] = neighbors[idx][entry]
+		else:
+			out_array = numpy.empty((neighbors.shape[0], max_neighbors, 3))
+			out_array.fill(numpy.nan)
+			for idx, row in enumerate(neighbors):
+				row = numpy.array(row)
+				for_reduction = self.kdneighbors[row]
+				new_ang = self.reduce_anglesets(for_reduction, tolistconv=False)
+				_, indices = numpy.unique(new_ang, axis=0, return_index=True)
+				for idx2, entry in enumerate(new_ang[numpy.sort(indices)]):
+					out_array[idx][idx2] = entry
 		return out_array
 
-	def find_k_nearest_neighbors(self, angles, k, tolistconv=True, is_radians=False):
+	def find_k_nearest_neighbors(self, angles, k, tolistconv=True, is_radians=False, return_index=True):
+		if self.old_even_angles_data['needs_rebuild']:
+			self.build_kdtree()
 		angles_cart = self.to_cartesian(angles, is_radians=is_radians, tolistconv=False)
 
 		k_min_raw = numpy.minimum(3*k, self.kdneighbors.shape[0])
@@ -2173,12 +2188,18 @@ class symclass(object):
 		for_reduction = self.kdneighbors[neighbors].reshape(numpy.multiply(*neighbors.shape), 3)
 		new_ang = self.reduce_anglesets(for_reduction, tolistconv=False).reshape(*(list(neighbors.shape) + [3]))
 
-		out_array = numpy.empty((new_ang.shape[0], k_min, new_ang.shape[2]))
 		mask = dist < self.kddistance
 		new_ang[~mask] = numpy.nan
-		for idx, row in enumerate(new_ang):
-			_, indices = numpy.unique(row, axis=0, return_index=True)
-			out_array[idx] = row[numpy.sort(indices)][:k_min]
+		if return_index:
+			out_array = numpy.empty((new_ang.shape[0], k_min), dtype=int)
+			for idx, row in enumerate(new_ang):
+				_, indices = numpy.unique(row, axis=0, return_index=True)
+				out_array[idx] = neighbors[idx][numpy.sort(indices)][:k_min]
+		else:
+			out_array = numpy.empty((new_ang.shape[0], k_min, new_ang.shape[2]))
+			for idx, row in enumerate(new_ang):
+				_, indices = numpy.unique(row, axis=0, return_index=True)
+				out_array[idx] = row[numpy.sort(indices)][:k_min]
 		return out_array
 
 	@staticmethod
@@ -2213,6 +2234,11 @@ class symclass(object):
 				return output[0]
 			else:
 				return output
+
+	def set_angles(self, angles, tolistconv=True):
+		self.angles = numpy.array(angles)
+		new_even_angles_data['delta'] = None
+		new_even_angles_data['needs_rebuild'] = True
 
 	def get_angles(self, tolistconv=True):
 		if self.angles is None:
