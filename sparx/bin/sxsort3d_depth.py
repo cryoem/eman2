@@ -491,7 +491,7 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 				    Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, iter, cdata, fdata, srdata, ctf_images, \
 					parameterstructure, norm_per_particle, MGSKmeans_index_file, params, \
 					 minimum_grp_size[indep_run_iter], do_freeze[indep_run_iter], indep_run_iter, \
-					    clean_volumes = Tracker["clean_volumes"])
+					    clean_volumes = Tracker["clean_volumes"], global_log=log_main)
 				         
 				max_iter = min(max_iter, kmeans_iterations)	   
 				if Blockdata["myid"] == Blockdata["main_node"]:
@@ -1714,7 +1714,7 @@ def recons3d_trl_struct_group_nofsc_shifted_data_fcm_MPI(myid, main_node,\
 #####========>>> Constrained Kmeans clustering and respective utilities <<<<==============
 def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fdata, srdata,\
        ctf_images,paramstructure, norm_per_particle, partids, params, \
-         minimum_group_size_init, freeze_changes, indep_iter, clean_volumes = True):
+         minimum_group_size_init, freeze_changes, indep_iter, global_log, clean_volumes = True):
 	global Tracker, Blockdata
 	##-----------------------------------------------
 	### 1. assignment np.int32; 
@@ -1752,8 +1752,11 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 			else: minimum_group_size = minimum_group_size_init
 			log_main.add("Minimum_grp size step used in the current run:")
 			log_main.add("Step            Minimum_grp size")
+			global_log.add("Minimum_grp size step used in the current run:")
+			global_log.add("Step            Minimum_grp size")
 			for im in range(iter_mstep): # nstep controls the quality and stability of converge.
 				log_main.add("%4d                %6d"%(im+1, mlist[im]))
+				global_log.add("%4d                %6d"%(im+1, mlist[im]))
 		else:
 			mlist = 0
 			mdict = 0
@@ -1829,6 +1832,16 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 		log_main.add(msg)
 		log_main.add("Minimum_grp_size   low  high", minimum_group_size, Tracker["minimum_grp_size"][0],Tracker["minimum_grp_size"][1])
 		log_main.add("Img_per_grp  low  high", Tracker["constants"]["img_per_grp"], Tracker["img_per_grp"][0],Tracker["img_per_grp"][1])
+		global_log.add('----------------------------------------------------------------------------------------------------------------' )
+		global_log.add('      ==================> MGSKmeans clustering of run_iter %d<========== '%run_iter)
+		global_log.add('----------------------------------------------------------------------------------------------------------------' )
+		msg = "Total_stack:  %d K = : %d  nxinit: %d  CTF:  %s  Symmetry:  %s  stop percentage: %f  3-D mask: %s focus mask: %s  Comparison method: %s  minimum_group_size: %d orien  %d"% \
+		   (Tracker["total_stack"], Tracker["number_of_groups"], Tracker["nxinit"],  Tracker["constants"]["CTF"], Tracker["constants"]["symmetry"], \
+		   stopercnt, Tracker["constants"]["mask3D"], Tracker["constants"]["focus3D"], Tracker["constants"]["comparison_method"], \
+		       minimum_group_size, len(ptls_in_orien_groups))
+		global_log.add(msg)
+		global_log.add("Minimum_grp_size   low  high", minimum_group_size, Tracker["minimum_grp_size"][0],Tracker["minimum_grp_size"][1])
+		global_log.add("Img_per_grp  low  high", Tracker["constants"]["img_per_grp"], Tracker["img_per_grp"][0],Tracker["img_per_grp"][1])
 	###-------------------------------------------------------------------------------------------------------------------------------	
 	proc_list = [[None, None] for iproc in range(Blockdata["nproc"])]
 	for iproc in range(Blockdata["nproc"]):
@@ -1863,8 +1876,10 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			msg = "======================================================================="
 			log_main.add(msg)
+			global_log.add(msg)
 			msg = "Iteration %3d: particle assignment changed ratio  %f "%(total_iter, changed_nptls)
 			log_main.add(msg)
+			global_log.add(msg)
 			sparx_utilities.write_text_file(np.copy(iter_assignment).tolist(), os.path.join(Tracker["directory"],\
 			     "assignment%03d.txt"%total_iter))
 			if changed_nptls< 50.0: do_partial_rec3d = 1
@@ -1902,6 +1917,7 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 				move_up_counter+= 1
 				max_iter       += 1
 				log_main.add('Minimum_grp_size is updated to %d'%minimum_group_size) 
+				global_log.add('Minimum_grp_size is updated to %d'%minimum_group_size) 
 			else: move_up_counter = 0
 			minimum_group_size = sparx_utilities.bcast_number_to_all(minimum_group_size, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 			do_move_one_up     = sparx_utilities.bcast_number_to_all(do_move_one_up,     Blockdata["main_node"], mpi.MPI_COMM_WORLD)
@@ -1999,7 +2015,7 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 			       keepgoing, best_score, stopercnt, last_score, minimum_group_size, \
 			           current_mu, Tracker["constants"]["fsc_curve"], Tracker["constants"]["total_stack"],\
 			               do_move_one_up, mdict, mlist, freeze_changes, Tracker["search_mode"], \
-			                  Tracker["freeze_groups"], decrease_last_iter, log_main)
+			                  Tracker["freeze_groups"], decrease_last_iter, log_main, global_log)
 			changed_nptls_list.append(changed_nptls)
 			tmp_list =[best_score,changed_nptls]
 		else:
@@ -2094,7 +2110,7 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assignment, \
         keepgoing, best_score, stopercnt, last_score, minimum_grp_size, current_mu, global_fsc, \
              global_total, do_move_one_up, mdict, mlist, freeze_changes, search_mode, \
-               freeze_groups, decrease_last_iter, log_file):
+               freeze_groups, decrease_last_iter, log_file, global_log):
 	#------------ Single cpu function ----------------------------------------------------
 	#---------->>> Empirical parameters <<<-----------
 	large_cluster_scale    = 2.
@@ -2124,9 +2140,11 @@ def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assign
 	if len(sublist)>1: sstat = sparx_statistics.table_stat(sublist)
 	else:              sstat = [sublist[0], 0.0, sublist[0], sublist[0]]
 	log_file.add('Avg %f  1*Std %f  Min %f  Max  %f'%(sstat[0], numpy.sqrt(sstat[1]), sstat[2], sstat[3]))
+	global_log.add('Avg %f  1*Std %f  Min %f  Max  %f'%(sstat[0], numpy.sqrt(sstat[1]), sstat[2], sstat[3]))
 	if len(sublist1)>1: sstat1 = sparx_statistics.table_stat(sublist1)
 	else:               sstat1 = [sublist1[0], 0.0, sublist1[0], sublist1[0]]
 	log_file.add('Avg %f  1*Std %f  Min %f  Max  %f'%(sstat1[0], numpy.sqrt(sstat1[1]), sstat1[2], sstat1[3]))
+	global_log.add('Avg %f  1*Std %f  Min %f  Max  %f'%(sstat1[0], numpy.sqrt(sstat1[1]), sstat1[2], sstat1[3]))
 	###-----------------------------------------------------------------------------------
 	if search_mode: # Search AI
 		if len(clusters)>2:
@@ -2169,6 +2187,11 @@ def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assign
 	#log_file.add('  AVG   %8d        %3d       %3d  '%(len(iter_assignment)/number_of_groups, ares143, 0))
 	log_file.add('  Min   %8d        %3d       %3d  '%(minimum_grp_size, minres143, (minres143-ares143)))
 	log_file.add('------------------                            ---------------------')
+	global_log.add('Group ID  group size fsc143  move up/down  size over min     min')
+	global_log.add('--------->>> Current resolutions versus sizes <<<------------------')
+	#global_loglog_file.add('  AVG   %8d        %3d       %3d  '%(len(iter_assignment)/number_of_groups, ares143, 0))
+	global_log.add('  Min   %8d        %3d       %3d  '%(minimum_grp_size, minres143, (minres143-ares143)))
+	global_log.add('------------------                            ---------------------')
 	res_list = [ 0 for jl in range(number_of_groups)]
 	for il in range(len(clusters)):
 		cfsc = sparx_statistics.scale_fsc_datasetsize(global_fsc, len(iter_assignment), clusters[il])
@@ -2176,6 +2199,7 @@ def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assign
 		log_file.add('%5d   %8d        %3d       %3d     %8d    %8d'%(il, clusters[il], res_list[il],\
 		    (res_list[il] - ares143), (clusters[il]-minimum_grp_size),  minimum_grp_size))
 	log_file.add('------------------------------------------------------------------------')
+	global_log.add('------------------------------------------------------------------------')
 	ratio, newindices, stable_clusters = \
 	   compare_two_iterations(iter_assignment, last_iter_assignment)
 	########------------------------------------------------------------------------------
@@ -2202,7 +2226,9 @@ def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assign
 		freeze_changes   = 1
 		iter_assignment  = np.random.randint(0, number_of_groups, size = len(iter_assignment))
 		log_file.add("Freeze minimum_grp_size as %d and shuffle assignment."%minimum_grp_size)	
+		global_log.add("Freeze minimum_grp_size as %d and shuffle assignment."%minimum_grp_size)	
 	log_file.add("freeze_changes  %d;  best score %6.2f"%(freeze_changes, best_score))
+	global_log.add("freeze_changes  %d;  best score %6.2f"%(freeze_changes, best_score))
 	##------------------------------------------------------------------------------------
 	# 1. K is too large: Some groups have minimum_grp_size elements
 	# 2. K is too small
@@ -2226,6 +2252,9 @@ def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assign
 					log_file.add(msg)
 					log_file.add("Before switching minimum_grp_size, the changed_nptls is %f"%\
 					   changed_nptls)
+					global_log.add(msg)
+					global_log.add("Before switching minimum_grp_size, the changed_nptls is %f"%\
+					   changed_nptls)
 					keepgoing          = 1
 					do_move_one_up     = 1
 					decrease_last_iter = 1
@@ -2236,6 +2265,7 @@ def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assign
 		else:
 			decrease_last_iter = 0
 			log_file.add("Normal progress. No minimum_grp_size update.")
+			global_log.add("Normal progress. No minimum_grp_size update.")
 	####----------------------------------------------------------------------------------
 		if (changed_nptls < stopercnt) and (minimum_grp_size == mlist[-1]): keepgoing = 0
 	else:
