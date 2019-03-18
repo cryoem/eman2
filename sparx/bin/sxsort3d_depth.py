@@ -135,7 +135,7 @@ try:
 	_scale = {'kB': 1024.0, 'mB': 1024.0*1024.0,'KB': 1024.0, 'MB': 1024.0*1024.0}
 	is_unix_cluster = True
 except:
-	if Blockdata["myid"]== Blockdata["main_node"]: print("Not a unix machine")
+	if Blockdata["myid"]== Blockdata["main_node"]: sxprint("Not a unix machine")
 	is_unix_cluster = False
 ##========================================================================================	
 def create_subgroup():
@@ -629,9 +629,9 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 					os.mkdir(iter_dir)
 					for indep in range(2):
 						sparx_utilities.write_text_file(new_assignment_list[indep], \
-		  				os.path.join(iter_dir, "random_assignment_%03d.txt"%indep))
-		  				
-		  	if (reset_number_of_groups == 1): #----------------------------->>> Case 2
+						os.path.join(iter_dir, "random_assignment_%03d.txt"%indep))
+						
+			if (reset_number_of_groups == 1): #----------------------------->>> Case 2
 				minimum_grp_size         = [0, 0] # adjustable
 				do_freeze                = [0, 0]
 				box_niter               += 1
@@ -1499,12 +1499,12 @@ def do3d_fcm_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_particl
 			del tweight
 			del trol
 			if Tracker["do_timing"]:
-				print("volumes written    ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.)
+				sxprint("volumes written    ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.)
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	acc_rest = time.time() - rest_time
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if Tracker["do_timing"]:
-			print("insertion  take  %f minutes "%(acc_rest/60.))
+			sxprint("insertion  take  %f minutes "%(acc_rest/60.))
 	Tracker["maxfrad"] = Tracker["nxinit"]//2
 	fsc_groups = [None for im in range(len(current_group_sizes))]
 	total_size = sum(current_group_sizes)
@@ -1600,7 +1600,7 @@ def do3d_fcm_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_particl
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		acc_rest = time.time() - rest_time
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			if Tracker["do_timing"]: print("rec3d steptwo  take  %f minutes "%(acc_rest/60.))
+			if Tracker["do_timing"]: sxprint("rec3d steptwo  take  %f minutes "%(acc_rest/60.))
 		
 	else:# loop over all groups for single node
 		for index_of_group in range(Tracker["number_of_groups"]):
@@ -1628,7 +1628,7 @@ def do3d_fcm_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_particl
 	keepgoing = sparx_utilities.bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD) # always check 
 	Tracker   = sparx_utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 	if not keepgoing: sparx_global_def.ERROR("do3d_sorting_groups_trl_iter  %s"%os.path.join(Tracker["directory"], "tempdir"),"do3d_sorting_groups_trl_iter", 1, Blockdata["myid"])
-	if(Blockdata["myid"] == 0) and Tracker["do_timing"]:  print("Reconstructions done    ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.)
+	if(Blockdata["myid"] == 0) and Tracker["do_timing"]:  sxprint("Reconstructions done    ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.)
 	return
 ####--------------------------------------------------------------------------------------
 def recons3d_trl_struct_group_nofsc_shifted_data_fcm_MPI(myid, main_node,\
@@ -1807,12 +1807,12 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 	angle_step = get_angle_step_from_number_of_orien_groups(Tracker["orientation_groups"])
 	acc_rest   = time.time() - rest_time
 	if Blockdata["myid"] == Blockdata["main_node"]:
-		if Tracker["do_timing"]: print("angle_step  take  %f seconds "%(acc_rest/1.))
+		if Tracker["do_timing"]: sxprint("angle_step  take  %f seconds "%(acc_rest/1.))
 	rest_time  = time.time()
 	ptls_in_orien_groups = get_angle_step_and_orien_groups_mpi(params, partids, angle_step)
 	acc_rest             = time.time() - rest_time
 	if Blockdata["myid"] == Blockdata["main_node"]:
-		if Tracker["do_timing"]: print("orien search take  %f seconds "%(acc_rest/1.))
+		if Tracker["do_timing"]: sxprint("orien search take  %f seconds "%(acc_rest/1.))
 	rest_time  = time.time()
 	current_mu = Tracker["mu"]
 	minimum_group_size       = max(minimum_group_size, len(ptls_in_orien_groups)) # At least one particle in one orien group
@@ -1875,7 +1875,7 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)####----------
 		acc_rest = time.time() - rest_time
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			if Tracker["do_timing"]: print("orien_groups take  %f minutes"%(acc_rest/60.))
+			if Tracker["do_timing"]: sxprint("orien_groups take  %f minutes"%(acc_rest/60.))
 		rest_time           = time.time()
 		current_group_sizes = get_group_size_from_iter_assign(iter_assignment)
 		
@@ -1889,7 +1889,7 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
            
 		acc_rest = time.time() - rest_time
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			if Tracker["do_timing"]: print("The entire recon3d takes  %f minutes"%(acc_rest/60.))
+			if Tracker["do_timing"]: sxprint("The entire recon3d takes  %f minutes"%(acc_rest/60.))
 		rest_time   = time.time()
 		local_peaks = np.full((number_of_groups, nima), -1.0, dtype = np.float32)
 		## compute peaks and save them in 1D list--------------------------------------------------------------
@@ -1937,7 +1937,7 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 		local_peaks = local_peaks.reshape(number_of_groups*nima)
 		acc_rest    = time.time() - rest_time
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			if Tracker["do_timing"]: print("comparison and reference preparation take  %f minutes"%(acc_rest/60.))
+			if Tracker["do_timing"]: sxprint("comparison and reference preparation take  %f minutes"%(acc_rest/60.))
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		rest_time  = time.time()
 		tdmat      = time.time()
@@ -1959,7 +1959,7 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 		###-------------------------------------------------------------------------------
 		acc_rest = time.time() - rest_time
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			if Tracker["do_timing"]: print("compute dmatrix of various orien groups step1 take  %f minutes"%(acc_rest/60.))
+			if Tracker["do_timing"]: sxprint("compute dmatrix of various orien groups step1 take  %f minutes"%(acc_rest/60.))
 		rest_time = time.time()
 		###------------Ranking and Shortest distance assignment in orien groups-----------
 		last_iter_assignment = np.copy(iter_assignment)
@@ -1988,7 +1988,7 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 		td = time.time() - tdmat
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			if Tracker["do_timing"]:
-				print("compute dmatrix of various orien groups step3 take  %f minutes total %f minutes"%(acc_rest/60., td/60.))
+				sxprint("compute dmatrix of various orien groups step3 take  %f minutes total %f minutes"%(acc_rest/60., td/60.))
 		rest_time = time.time()
 		###-------------------------------------->>>>>  AI make decisions <<<<<<<<--------
 		if Blockdata["myid"] == Blockdata["main_node"]:
@@ -2043,7 +2043,7 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 		total_iter +=1
 		acc_rest    = time.time() - rest_time
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			if Tracker["do_timing"]: print("Compute analysis takes  %f minutes"%(acc_rest/60.))
+			if Tracker["do_timing"]: sxprint("Compute analysis takes  %f minutes"%(acc_rest/60.))
 		###-------------------------------------------------------------------------------
 		if (Tracker["freeze_groups"] == 0): stop_pstd = 1.0
 		else:                               stop_pstd = 2.0
@@ -2998,7 +2998,7 @@ def compare_two_images_cross(data, ref_vol, ctfimgs):
 			peaks[im] = EMAN2_cppwrap.Util.innerproduct(ref, data[im], m)/nrmref
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if Tracker["do_timing"]:
-			print("computing distances    ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.)
+			sxprint("computing distances    ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.)
 	return peaks		
 #####==========>>>  clustering assignment utilities  <<<=====================
 def isin(element, test_elements, assume_unique=False, invert=False):
@@ -3996,7 +3996,7 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 	# return two lists: group avgs and group stds. The last one of two lists are the total avg and std.
 	if (len(ptp1)>= 50) or (len(ptp2)>= 50):
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			print('Warning: too many simulaton groups')
+			sxprint('Warning: too many simulaton groups')
 	Nloop = max(1000//Blockdata["nproc"], 5)
 	NT    = 1000
 	a     = []
@@ -4273,7 +4273,7 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 	maxr2 = sparx_utilities.bcast_number_to_all(maxr2, source_node = 0, mpi_comm = Blockdata["shared_comm"])
 	"""Multiline Comment4"""
 	if( Blockdata["myid_on_node"] == 0 ):
-		print(" iterefa  ",Blockdata["myid"],"   ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time())/60.0)
+		sxprint(" iterefa  ",Blockdata["myid"],"   ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time())/60.0)
 		#  Either pad or window in F space to 2*nnxo
 		nx = tvol.get_ysize()
 		if( nx > 2*Tracker["constants"]["nnxo"]):
@@ -4353,18 +4353,18 @@ def steptwo_mpi_reg(tvol, tweight, treg, cfsc = None, cutoff_freq = 0.45, aa = 0
 			tvol = sparx_fundamentals.fpol(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"],\
 			  2*Tracker["constants"]["nnxo"], RetReal = False, normalize = False)
 		if Tracker["do_timing"]:
-			print(" pre fft  ",Blockdata["myid"],"   ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.0)
+			sxprint(" pre fft  ",Blockdata["myid"],"   ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.0)
 		fat = time.time()
 		tvol = sparx_fundamentals.fft(tvol)
 		if Tracker["do_timing"]: 
-			print(" fft  ",Blockdata["myid"],"   ",time.strftime("%a, %d %b %Y %H:%M:%S", \
+			sxprint(" fft  ",Blockdata["myid"],"   ",time.strftime("%a, %d %b %Y %H:%M:%S", \
 		   time.localtime()),"   ",(time.time()-fat)/60.0, tvol.get_xsize(), tvol.get_ysize(), tvol.get_zsize())
 		tvol = sparx_fundamentals.cyclic_shift(tvol,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 		tvol = EMAN2_cppwrap.Util.window(tvol, Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 		tvol.div_sinc(1)
 		tvol = sparx_morphology.cosinemask(tvol, Tracker["constants"]["nnxo"]//2-1,5, None)
 		if Tracker["do_timing"]:
-			print(" rec3d_rest  ",Blockdata["myid"],"   ", \
+			sxprint(" rec3d_rest  ",Blockdata["myid"],"   ", \
 		  time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.0)
 		return tvol
 	else:  return None
@@ -4470,16 +4470,16 @@ def do3d_sorting(procid, data, myid, mpi_comm = -1):
 	if(procid == 0):
 		if(Blockdata["no_of_groups"] >1):
 			if(Blockdata["myid"] == Blockdata["nodes"][procid]):
-				if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): print("tempdir exists")
+				if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): sxprint("tempdir exists")
 				else:
 					try: os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
-					except:  print("tempdir exists")
+					except:  sxprint("tempdir exists")
 		else:
 			if myid == Blockdata["main_node"]:
 				if not os.path.exists(os.path.join(Tracker["directory"],"tempdir")): 
 					try: os.mkdir(os.path.join(Tracker["directory"],    "tempdir"))
-					except: print("tempdir exists")
-				else: print("tempdir exists")
+					except: sxprint("tempdir exists")
+				else: sxprint("tempdir exists")
 	mpi.mpi_barrier(mpi_comm)
 	
 	tvol, tweight, trol = recons3d_4nnsorting_MPI(myid = Blockdata["myid"], \
@@ -4852,7 +4852,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	if import_from_sparx_refinement == 0:
 		Tracker["bckgnoise"] = None
 		if Blockdata["myid"] == Blockdata["main_node"]:	
-			if Tracker["do_timing"]: print("Noise file is not found. However we continue")
+			if Tracker["do_timing"]: sxprint("Noise file is not found. However we continue")
 	else: Tracker["bckgnoise"] = os.path.join(Tracker["constants"]["masterdir"], "bckgnoise.hdf")
 	
 	import_from_sparx_refinement = 1	
@@ -5240,12 +5240,12 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_par
 			del tweight
 			del trol
 			if Tracker["do_timing"]:
-				print("volumes written    ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.)
+				sxprint("volumes written    ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.)
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	acc_rest = time.time() - rest_time
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if Tracker["do_timing"]:
-			print("insertion  take  %f minutes "%(acc_rest/60.))
+			sxprint("insertion  take  %f minutes "%(acc_rest/60.))
 	Tracker["maxfrad"] = Tracker["nxinit"]//2
 	fsc_groups = [None for im in range(len(current_group_sizes))]
 	total_size = sum(current_group_sizes)
@@ -5342,7 +5342,7 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_par
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		acc_rest = time.time() - rest_time
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			if Tracker["do_timing"]: print("rec3d steptwo  take  %f minutes "%(acc_rest/60.))
+			if Tracker["do_timing"]: sxprint("rec3d steptwo  take  %f minutes "%(acc_rest/60.))
 		
 	else:# loop over all groups for single node
 		for index_of_group in range(Tracker["number_of_groups"]):
@@ -5372,7 +5372,7 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_par
 	if (not keepgoing):
 		sparx_global_def.ERROR("do3d_sorting_groups_trl_iter  %s"%os.path.join(Tracker["directory"], "tempdir"),"do3d_sorting_groups_trl_iter", 1, Blockdata["myid"])
 	if(Blockdata["myid"] == 0) and Tracker["do_timing"]:
-		print("Reconstructions done    ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.)
+		sxprint("Reconstructions done    ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.)
 	return
 	
 ### nofsc insertion #1
@@ -6816,7 +6816,7 @@ def main():
 		
 	if (not initiate_from_data_stack_mode) and (not initiate_from_meridien_mode):
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			print("Specify one of the two options to start the program: --refinement_dir, --instack")
+			sxprint("Specify one of the two options to start the program: --refinement_dir, --instack")
 	
 	if initiate_from_meridien_mode:
 		parser.add_option("--output_dir",                  type   ="string",        default ='',	    help="Sort3d output directory name")
