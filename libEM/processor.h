@@ -709,7 +709,7 @@ The basic design of EMAN Processors: <br>\
 				d.put("hn", EMObject::INT, "Computes a single translational invariant for the nth harmonic, 0 is a normal power spectrum");
 				d.put("rfp", EMObject::INT, "Returns a non square 2-D image rotational invariants organized such that X=azimuthal power. Used for rotational alignment.");
 				d.put("fp", EMObject::INT, "Returns a non-square 2-D image containing n harmonics. R&T invariant.");
-				d.put("size", EMObject::INT, "If specified, will determine the size (x/y) of the real-space bispectrum image. If not set, a size is selected automatically");
+				d.put("size", EMObject::INT, "If specified, will determine the number of rotational samples in the bispectrum. If not set, a size is selected automatically");
 				return d;
 			}
 
