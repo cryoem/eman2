@@ -3094,7 +3094,7 @@ def split_partition_into_ordered_clusters(partition_in, input_is_row_wise = True
 	partition[0] = new_clusters_ids
 	return new_clusters, (np.array(partition, dtype=np.int32).transpose()).tolist()
 
-def merge_classes_into_partition_list(classes_list):
+def merge_classes_into_partition_list(classes_list, do_sort=True):
 	if type(classes_list) is np.ndarray: classes_list.tolist()
 	if len(classes_list) == 0: return [], [[]] # Will do nothing if empty
 	if len(classes_list) == 1: # rare case, however providing solution here
@@ -3111,8 +3111,11 @@ def merge_classes_into_partition_list(classes_list):
 		parti_list = sorted(parti_list) # ptl IDs in descendant order
 		# mask by group ID and replace by group ID
 		parti_list = np.array(parti_list, dtype=np.int32)
-		indx       = np.argsort(np.array(size_list)) # GID in ascendent order
-		indx.tolist()
+		if do_sort:
+			indx       = np.argsort(np.array(size_list)) # GID in ascendent order
+			indx.tolist()
+		else:
+			indx = list(range(len(size_list)))
 		cluster_ids = np.full(parti_list.shape[0], -1, dtype=np.int32)
 		for im in range(len(classes_list)):
 			np.place(cluster_ids, isin(parti_list, \
@@ -6521,7 +6524,7 @@ def compute_final_map(work_dir, log_main):
 		sparx_global_def.ERROR("No clusters  found, the program terminates.", "compute_final_map", 1, Blockdata["myid"])
 	compute_noise(Tracker["nxinit"])
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		alist, partition = merge_classes_into_partition_list(clusters)
+		alist, partition = merge_classes_into_partition_list(clusters, do_sort=False)
 		sparx_utilities.write_text_row(partition, os.path.join(work_dir, "generation_partition.txt"))
 	parti_file      = os.path.join(work_dir, "generation_partition.txt")
 	params          = os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt")
