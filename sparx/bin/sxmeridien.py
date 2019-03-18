@@ -1713,7 +1713,6 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	#  Extract normals from rotation matrices
 	Blockdata['symclass'].set_angles(refang)
 	Blockdata['symclass'].build_kdtree()
-	Blockdata['symclass_coarse'].build_kdtree()
 	#refdirs = angles_to_normals(refang)
 
 	#if( Blockdata["myid"] == Blockdata["main_node"]):
@@ -2433,7 +2432,6 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	#  Extract normals from rotation matrices
 	Blockdata['symclass'].set_angles(refang)
 	Blockdata['symclass'].build_kdtree()
-	Blockdata['symclass_coarse'].build_kdtree()
 	#refdirs = angles_to_normals(refang)
 
 	#if( Blockdata["myid"] == Blockdata["main_node"]):
@@ -3144,7 +3142,6 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	#  Extract normals from rotation matrices
 	Blockdata['symclass'].set_angles(refang)
 	Blockdata['symclass'].build_kdtree()
-	Blockdata['symclass_coarse'].build_kdtree()
 	#refdirs = angles_to_normals(refang)
 
 	#if( Blockdata["myid"] == Blockdata["main_node"]):
@@ -3985,7 +3982,6 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	#  Extract normals from rotation matrices
 	Blockdata['symclass'].set_angles(refang)
 	Blockdata['symclass'].build_kdtree()
-	Blockdata['symclass_coarse'].build_kdtree()
 	#refdirs = angles_to_normals(refang)
 
 
@@ -5040,7 +5036,6 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	#  Extract normals from rotation matrices
 	Blockdata['symclass'].set_angles(refang)
 	Blockdata['symclass'].build_kdtree()
-	Blockdata['symclass_coarse'].build_kdtree()
 	#@refdirs = angles_to_normals(refang)
 
 
