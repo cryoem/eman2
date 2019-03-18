@@ -1499,7 +1499,7 @@ def do3d_fcm_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_particl
 			del tweight
 			del trol
 			if Tracker["do_timing"]:
-				sxprint("volumes written    ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.)
+				sxprint("volumes written:",(time.time()-at)/60.)
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	acc_rest = time.time() - rest_time
 	if Blockdata["myid"] == Blockdata["main_node"]:
@@ -1628,7 +1628,7 @@ def do3d_fcm_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_particl
 	keepgoing = sparx_utilities.bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD) # always check 
 	Tracker   = sparx_utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 	if not keepgoing: sparx_global_def.ERROR("do3d_sorting_groups_trl_iter  %s"%os.path.join(Tracker["directory"], "tempdir"),"do3d_sorting_groups_trl_iter", 1, Blockdata["myid"])
-	if(Blockdata["myid"] == 0) and Tracker["do_timing"]:  sxprint("Reconstructions done    ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.)
+	if(Blockdata["myid"] == 0) and Tracker["do_timing"]:  sxprint("Reconstructions done  ",(time.time()-at)/60.)
 	return
 ####--------------------------------------------------------------------------------------
 def recons3d_trl_struct_group_nofsc_shifted_data_fcm_MPI(myid, main_node,\
@@ -3028,7 +3028,7 @@ def compare_two_images_cross(data, ref_vol, ctfimgs):
 			peaks[im] = EMAN2_cppwrap.Util.innerproduct(ref, data[im], m)/nrmref
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if Tracker["do_timing"]:
-			sxprint("computing distances    ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.)
+			sxprint("computing distances    ",(time.time()-at)/60.)
 	return peaks		
 #####==========>>>  clustering assignment utilities  <<<=====================
 def isin(element, test_elements, assume_unique=False, invert=False):
@@ -4303,7 +4303,7 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 	maxr2 = sparx_utilities.bcast_number_to_all(maxr2, source_node = 0, mpi_comm = Blockdata["shared_comm"])
 	"""Multiline Comment4"""
 	if( Blockdata["myid_on_node"] == 0 ):
-		sxprint(" iterefa  ",Blockdata["myid"],"   ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time())/60.0)
+		sxprint(" iterefa  ",Blockdata["myid"],"   ",(time.time())/60.0)
 		#  Either pad or window in F space to 2*nnxo
 		nx = tvol.get_ysize()
 		if( nx > 2*Tracker["constants"]["nnxo"]):
@@ -4383,19 +4383,17 @@ def steptwo_mpi_reg(tvol, tweight, treg, cfsc = None, cutoff_freq = 0.45, aa = 0
 			tvol = sparx_fundamentals.fpol(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"],\
 			  2*Tracker["constants"]["nnxo"], RetReal = False, normalize = False)
 		if Tracker["do_timing"]:
-			sxprint(" pre fft  ",Blockdata["myid"],"   ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.0)
+			sxprint(" pre fft  ",Blockdata["myid"],"   ",(time.time()-at)/60.0)
 		fat = time.time()
 		tvol = sparx_fundamentals.fft(tvol)
 		if Tracker["do_timing"]: 
-			sxprint(" fft  ",Blockdata["myid"],"   ",time.strftime("%a, %d %b %Y %H:%M:%S", \
-		   time.localtime()),"   ",(time.time()-fat)/60.0, tvol.get_xsize(), tvol.get_ysize(), tvol.get_zsize())
+			sxprint(" fft  ",Blockdata["myid"],"   ",(time.time()-fat)/60.0, tvol.get_xsize(), tvol.get_ysize(), tvol.get_zsize())
 		tvol = sparx_fundamentals.cyclic_shift(tvol,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 		tvol = EMAN2_cppwrap.Util.window(tvol, Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 		tvol.div_sinc(1)
 		tvol = sparx_morphology.cosinemask(tvol, Tracker["constants"]["nnxo"]//2-1,5, None)
 		if Tracker["do_timing"]:
-			sxprint(" rec3d_rest  ",Blockdata["myid"],"   ", \
-		  time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.0)
+			sxprint(" rec3d_rest  ",Blockdata["myid"],"   ",(time.time()-at)/60.0)
 		return tvol
 	else:  return None
 ####-----------------------------------------------
@@ -5270,7 +5268,7 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_par
 			del tweight
 			del trol
 			if Tracker["do_timing"]:
-				sxprint("volumes written    ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.)
+				sxprint("volumes written    ",(time.time()-at)/60.)
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	acc_rest = time.time() - rest_time
 	if Blockdata["myid"] == Blockdata["main_node"]:
@@ -5402,7 +5400,7 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_par
 	if (not keepgoing):
 		sparx_global_def.ERROR("do3d_sorting_groups_trl_iter  %s"%os.path.join(Tracker["directory"], "tempdir"),"do3d_sorting_groups_trl_iter", 1, Blockdata["myid"])
 	if(Blockdata["myid"] == 0) and Tracker["do_timing"]:
-		sxprint("Reconstructions done    ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.)
+		sxprint("Reconstructions done    ",(time.time()-at)/60.)
 	return
 	
 ### nofsc insertion #1
