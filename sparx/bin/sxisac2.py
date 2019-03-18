@@ -1577,7 +1577,7 @@ def main(args):
 			rpw = [0.0]*ntp
 			for q in original_images:
 				tpw = rops_table(q)
-				for i in range(ntp):  rpw[i] += sqrt(tpw[i])
+				for i in range(ntp):  rpw[i] += np.sqrt(tpw[i])
 			del tpw
 			rpw = mpi.mpi_reduce(rpw, ntp, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)
 			if(myid == 0):
