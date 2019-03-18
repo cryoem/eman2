@@ -1459,242 +1459,22 @@ def goldsearch(f,a,b,tol=1.0e-9):
 #  01/06/2016 - This is my recoding of old FORTRAN code with the hope that python's double precission
 #                 will fix the problem of rotation of a 0,0,0 direction.  It does not as one neeeds psi
 #                 in this case as well.  So, the only choice is to use small theta instead of exact 0,0,0 direction
-def rotate_params(params, transf):
-	from fundamentals import rotmatrix, recmat, rotmatrix
-	matinv = rotmatrix( -transf[2], -transf[1], -transf[0] )
-	n = len(params)
-	cpar = [None]*n
-	for i in range(n):
-		d = rotmatrix( params[i][0], params[i][1], params[i][2] )
-		phi, theta, psi = recmat(mulmat(d,matinv))
-		cpar[i] = [phi, theta, psi]
-	return cpar
 
-"""
-def rotmatrix(phi,theta,psi):
-	from math import sin,cos,radians
-	rphi   = radians(phi)
-	rtheta = radians(theta)
-	rpsi   = radians(psi)
-	mat = [[0.0]*3,[0.0]*3,[0.0]*3]
+def recmat(mat, tolistconv=True):
+	return symclass.recmat(mat, tolistconv=tolistconv)
 
-	mat[0][0] =  cos(rpsi)*cos(rtheta)*cos(rphi) - sin(rpsi)*sin(rphi)
-	mat[1][0] = -sin(rpsi)*cos(rtheta)*cos(rphi) - cos(rpsi)*sin(rphi)
-	mat[2][0] =            sin(rtheta)*cos(rphi)
-
-
-	mat[0][1] =  cos(rpsi)*cos(rtheta)*sin(rphi) + sin(rpsi)*cos(rphi)
-	mat[1][1] = -sin(rpsi)*cos(rtheta)*sin(rphi) + cos(rpsi)*cos(rphi)
-	mat[2][1] =            sin(rtheta)*sin(rphi)
-
-
-	mat[0][2] = -cos(rpsi)*sin(rtheta)
-	mat[1][2] =  sin(rpsi)*sin(rtheta)
-	mat[2][2] =            cos(rtheta)
-	return mat
-"""
-
-def rotmatrix(phi,theta,psi):
-	from math import sin,cos,radians
-	rphi   = radians(phi)
-	rtheta = radians(theta)
-	rpsi   = radians(psi)
-	cosphi = cos(rphi)
-	sinphi = sin(rphi)
-	costheta = cos(rtheta)
-	sintheta = sin(rtheta)
-	cospsi = cos(rpsi)
-	sinpsi = sin(rpsi)
-	mat = [[0.0]*3,[0.0]*3,[0.0]*3]
-
-	mat[0][0] =  cospsi*costheta*cosphi - sinpsi*sinphi
-	mat[1][0] = -sinpsi*costheta*cosphi - cospsi*sinphi
-	mat[2][0] =            sintheta*cosphi
-
-
-	mat[0][1] =  cospsi*costheta*sinphi + sinpsi*cosphi
-	mat[1][1] = -sinpsi*costheta*sinphi + cospsi*cosphi
-	mat[2][1] =            sintheta*sinphi
-
-
-	mat[0][2] = -cospsi*sintheta
-	mat[1][2] =  sinpsi*sintheta
-	mat[2][2] =            costheta
-	return mat
-
-def mulmat(m1,m2):
-	mat = [[0.0]*3,[0.0]*3,[0.0]*3]
-	"""
-	for i in range(3):
-		for j in range(3):
-			for k in range(3):
-				mat[i][j] += m1[i][k]*m2[k][j]
-			#mat[i][j] = round(mat[i][j],8)
-	"""
-	mat[0][0] = m1[0][0]*m2[0][0] + m1[0][1]*m2[1][0] + m1[0][2]*m2[2][0]
-	mat[0][1] = m1[0][0]*m2[0][1] + m1[0][1]*m2[1][1] + m1[0][2]*m2[2][1]
-	mat[0][2] = m1[0][0]*m2[0][2] + m1[0][1]*m2[1][2] + m1[0][2]*m2[2][2]
-	mat[1][0] = m1[1][0]*m2[0][0] + m1[1][1]*m2[1][0] + m1[1][2]*m2[2][0]
-	mat[1][1] = m1[1][0]*m2[0][1] + m1[1][1]*m2[1][1] + m1[1][2]*m2[2][1]
-	mat[1][2] = m1[1][0]*m2[0][2] + m1[1][1]*m2[1][2] + m1[1][2]*m2[2][2]
-	mat[2][0] = m1[2][0]*m2[0][0] + m1[2][1]*m2[1][0] + m1[2][2]*m2[2][0]
-	mat[2][1] = m1[2][0]*m2[0][1] + m1[2][1]*m2[1][1] + m1[2][2]*m2[2][1]
-	mat[2][2] = m1[2][0]*m2[0][2] + m1[2][1]*m2[1][2] + m1[2][2]*m2[2][2]
-
-	return mat
-
-def recmat(mat):
-	from math import acos,asin,atan2,degrees,pi
-	def sign(x):
-		if( x >= 0.0 ): return 1
-		else:  return -1
-	"""
-	mat = [[0.0]*3,[0.0]*3,[0.0]*3]
-	# limit precision
-	for i in range(3):
-		for j in range(3):
-			mat[i][j] = inmat[i][j]
-			#if(abs(inmat[i][j])<1.0e-8):  mat[i][j] = 0.0
-			#else: mat[i][j] = inmat[i][j]
-	for i in range(3):
-		for j in range(3):  print  "     %14.8f"%mat[i][j],
-		print ""
-	"""
-	if(mat[2][2] == 1.0):
-		theta = 0.0
-		psi = 0.0
-		if( mat[0][0] == 0.0 ):
-			phi = asin(mat[0][1])
-		else:
-			phi = atan2(mat[0][1],mat[0][0])
-	elif(mat[2][2] == -1.0):
-		theta = pi
-		psi = 0.0
-		if(mat[0][0] == 0.0):
-			phi = asin(-mat[0][1])
-		else:
-			phi = atan2(-mat[0][1],-mat[0][0])
+def rotmatrix(phi, theta=None, psi=None, tolistconv=True):
+	if theta is None:
+		angles = phi
 	else:
-		theta = acos(mat[2][2])
-		st = sign(theta)
-		#print theta,st,mat[2][0]
-		if(mat[2][0] == 0.0):
-			if( st != sign(mat[2][1]) ):
-				phi = 1.5*pi
-			else:
-				phi = 0.5*pi
-		else:
-			phi = atan2(st*mat[2][1], st*mat[2][0])
+		angles = [phi, theta, psi]
+	return symclass.rotmatrix(angles, tolistconv=tolistconv)
 
-		#print theta,st,mat[0][2],mat[1][2]
-		if(mat[0][2] == 0.0):
-			if( st != sign(mat[1][2]) ):
-				psi = 1.5*pi
-			else:
-				psi = 0.5*pi
-		else:
-			psi = atan2(st*mat[1][2], -st*mat[0][2])
-	#pi2 = 2*pi
-	#return  degrees(round(phi%pi2,8)),degrees(round(theta%pi2,8)),degrees(round(psi%pi2,8))
-	#return  degrees(round(phi,10)%pi2)%360.0,degrees(round(theta,10)%pi2)%360.0,degrees(round(psi,10)%pi2)%360.0
-	return  degrees(phi)%360.0,degrees(theta)%360.0,degrees(psi)%360.0
+def mulmat(m1, m2, tolistconv=True):
+	return symclass.mulmat(m1, m2, tolistconv=tolistconv)
 
-
-"""
-
-def mulmat_np(m1,m2):
-	import numpy as np
-	mat1 = np.matrix(m1,dtype="f8")
-	mat2 = np.matrix(m2,dtype="f8")
-	mat1 = np.array(mat1*mat2)
-	return [list(q) for q in mat1]
-
-def rotmatrix_np(phi,theta,psi):
-	import numpy as np
-	mat = np.matrix(((0.,0.,0.),(0.,0.,0.),(0.,0.,0.)), dtype = "f8")
-	rphi   = np.radians(np.float64(phi))
-	rtheta = np.radians(np.float64(theta))
-	rpsi   = np.radians(np.float64(psi))
-	cosphi = np.cos(rphi)
-	sinphi = np.sin(rphi)
-	costheta = np.cos(rtheta)
-	sintheta = np.sin(rtheta)
-	cospsi = np.cos(rpsi)
-	sinpsi = np.sin(rpsi)
-
-	mat[0,0] =  cospsi*costheta*cosphi - sinpsi*sinphi
-	mat[1,0] = -sinpsi*costheta*cosphi - cospsi*sinphi
-	mat[2,0] =            sintheta*cosphi
-
-
-	mat[0,1] =  cospsi*costheta*sinphi + sinpsi*cosphi
-	mat[1,1] = -sinpsi*costheta*sinphi + cospsi*cosphi
-	mat[2,1] =            sintheta*sinphi
-
-
-	mat[0,2] = -cospsi*sintheta
-	mat[1,2] =  sinpsi*sintheta
-	mat[2,2] =            costheta
-	return mat
-
-
-def recmat_np(mat):
-	#from math import np.arccos,np.np.arcsin,np.arctan2,degrees,pi
-	import numpy as np
-	'''
-	def sign(x):
-		if( x >= 0.0 ): return 1
-		else:  return -1
-	mat = [[0.0]*3,[0.0]*3,[0.0]*3]
-	# limit precision
-	for i in range(3):
-		for j in range(3):
-			mat[i,j] = inmat[i,j]
-			#if(abs(inmat[i,j])<1.0e-8):  mat[i,j] = 0.0
-			#else: mat[i,j] = inmat[i,j]
-	for i in range(3):
-		for j in range(3):  print  "     %14.8f"%mat[i,j],
-		print ""
-	'''
-	if(mat[2,2] == 1.0):
-		theta = 0.0
-		psi = 0.0
-		if( mat[0,0] == 0.0 ):
-			phi = np.np.arcsin(mat[0,1])
-		else:
-			phi = np.arctan2(mat[0,1],mat[0,0])
-	elif(mat[2,2] == -1.0):
-		theta = pi
-		psi = 0.0
-		if(mat[0,0] == 0.0):
-			phi = np.np.arcsin(-mat[0,1])
-		else:
-			phi = np.arctan2(-mat[0,1],-mat[0,0])
-	else:
-		theta = np.arccos(mat[2,2])
-		st = np.sign(theta)
-		#print theta,st,mat[2,0]
-		if(mat[2,0] == 0.0):
-			if( st != np.sign(mat[2,1]) ):
-				phi = 1.5*pi
-			else:
-				phi = 0.5*pi
-		else:
-			phi = np.arctan2(st*mat[2,1], st*mat[2,0])
-
-		#print theta,st,mat[0,2],mat[1,2]
-		if(mat[0,2] == 0.0):
-			if( st != np.sign(mat[1,2]) ):
-				psi = 1.5*pi
-			else:
-				psi = 0.5*pi
-		else:
-			psi = np.arctan2(st*mat[1,2], -st*mat[0,2])
-	pi2 = 2*np.pi
-	#return  degrees(round(phi,10)%pi2),degrees(round(theta,10)%pi2),degrees(round(psi,10)%pi2)
-	#return  degrees(round(phi,10)%pi2)%360.0,degrees(round(theta,10)%pi2)%360.0,degrees(round(psi,10)%pi2)%360.0
-	return  np.degrees(np.mod(phi,pi2)),np.degrees(np.mod(theta,pi2)),np.degrees(np.mod(psi,pi2))
-"""
+def rotate_params(params, transf, tolistconv=True):
+	return symclass.rotate_params(params=params, transf=transf, tolistconv=tolistconv)
 
 class symclass(object):
 	def __init__(self, sym):
@@ -2063,6 +1843,11 @@ class symclass(object):
 
 	@staticmethod
 	def mulmat(matrix1, matrix2, tolistconv=True):
+		matrix1 = numpy.array(matrix1)
+		matrix2 = numpy.array(matrix2)
+		if len(matrix1.shape) != 3:
+			matrix1 = numpy.expand_dims(matrix1, axis=0)
+			matrix2 = numpy.expand_dims(matrix2, axis=0)
 		m1 = numpy.transpose(matrix1, (0, 2, 1)).reshape(
 			matrix1.shape[0],
 			matrix1.shape[1],
@@ -2087,6 +1872,9 @@ class symclass(object):
 			return_array = numpy.sign(x)
 			return_array[return_array == 0] = 1
 			return return_array
+		mat = numpy.array(mat)
+		if len(mat.shape) != 3:
+			matrix1 = numpy.expand_dims(mat, axis=0)
 
 		mask_2_2_1 = mat[:, 2, 2] == 1.0
 		mask_0_0_0 = mat[:, 0, 0] == 0.0
@@ -2140,8 +1928,15 @@ class symclass(object):
 		else:
 			return output_array
 
+	@classmethod
+	def rotate_params(cls, params, transf, tolistconv=True):
+		matinv = cls.rotmatrix([-transf[2], -transf[1], -transf[0]], tolistconv=False)
+		matrix = cls.rotmatrix(numpy.atleast_2d(params), tolistconv=False)
+		return cls.recmat(cls.mulmat(matrix, matinv, tolistconv=False), tolistconv=tolistconv)
+
 	@staticmethod
 	def rotmatrix(angles, tolistconv=True):
+		angles = numpy.atleast_2d(angles)
 		newmat = numpy.zeros((len(angles), 3, 3),dtype = numpy.float64)
 		index = numpy.arange(len(angles))
 
