@@ -2236,10 +2236,12 @@ class symclass(object):
 			else:
 				return output
 
-	def set_angles(self, angles, tolistconv=True):
+	def set_angles(self, angles, delta=None, tolistconv=True):
 		self.angles = numpy.array(angles)
-		new_even_angles_data['delta'] = None
-		new_even_angles_data['needs_rebuild'] = True
+		if delta is not None:
+			self.old_even_angles_data['delta'] = delta
+		self.old_even_angles_data['theta1'] = None
+		self.old_even_angles_data['needs_rebuild'] = True
 
 	def get_angles(self, tolistconv=True):
 		if self.angles is None:
