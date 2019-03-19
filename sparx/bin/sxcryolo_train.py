@@ -53,14 +53,14 @@ argparser.add_argument(
 
 argparser.add_argument(
 	'--architecture',
-	default="YOLO",
+	default="PhosaurusNet",
 	type=str,
 	help='Specifiy the used model')
 
 argparser.add_argument(
 	'--input_size',
 	type=int,
-	default=768,
+	default=1024,
 	help='Size to which the image is resized')
 
 argparser.add_argument(
@@ -72,7 +72,7 @@ argparser.add_argument(
 argparser.add_argument(
 	'--num_patches',
 	type=int,
-	default=2,
+	default=1,
 	help='Number of patches used during training')
 
 argparser.add_argument(
@@ -82,7 +82,13 @@ argparser.add_argument(
 	help='How often a images is augmented and repeadet in one epoch.')
 
 argparser.add_argument(
-	'--weights_name',
+	'--saved_weights_name',
+	type=str,
+	default="cryolo_model.h5",
+	help='Name of the model')
+
+argparser.add_argument(
+	'--pretrained_weights_name',
 	type=str,
 	default="cryolo_model.h5",
 	help='Name of the model')
@@ -126,11 +132,13 @@ argparser.add_argument(
 argparser.add_argument(
 	'--valid_image_dir',
 	type=str,
+	default="",
 	help='Path to validation images')
 
 argparser.add_argument(
 	'--valid_annot_dir',
 	type=str,
+	default="",
 	help='Path to validation annotations')
 
 argparser.add_argument(
@@ -153,6 +161,32 @@ argparser.add_argument(
 	help='Early stop patience. If the validation loss did not improve longer than the early stop patience, '
 		 'the training is stopped.')
 
+argparser.add_argument(
+	'--fine_tune',
+	default=False,
+	action="store_true",
+	help='Set it to true if you only want to use the fine tune mode')
+
+argparser.add_argument(
+    "--gpu_fraction",
+    type=float,
+    default=1.0,
+    help="Specify the fraction of memory per GPU used by crYOLO during training. Only values between 0.0 and 1.0 are allowed.",
+)
+
+argparser.add_argument(
+	"--cryolo_train_path",
+	default=None,
+)
+
+argparser.add_argument(
+    "-nc",
+    "--num_cpu",
+    type=int,
+    default=-1,
+    help="Number of CPUs used during training. By default it will use half of the available CPUs.",
+)
+
 
 def main():
 	# Read arguments
@@ -166,7 +200,8 @@ def main():
 	num_patches = args.num_patches
 	overlap_patches = args.overlap_patches
 	train_times = args.train_times
-	weights_name = args.weights_name
+	saved_weights_name = args.saved_weights_name
+	pretrained_weights_name = args.pretrained_weights_name
 	batch_size = args.batch_size
 	learning_rate = args.learning_rate
 	np_epoch = args.np_epoch
@@ -175,6 +210,9 @@ def main():
 	coord_scale = args.coord_scale
 	valid_image_dir = args.valid_image_dir
 	valid_annot_dir = args.valid_annot_dir
+	fine_tune = args.fine_tune
+	gpu_fraction = args.gpu_fraction
+	cryolo_train_path = args.cryolo_train_path
 
 	warmup = args.warmup
 	early_stop = int(args.early)
@@ -197,7 +235,7 @@ def main():
 	train_dict = {'train_image_folder': trainging_dir,
 				  'train_annot_folder': annot_dir,
 				  'train_times': train_times,
-				  'pretrained_weights': weights_name,
+				  'pretrained_weights': pretrained_weights_name,
 				  'batch_size': batch_size,
 				  'learning_rate': learning_rate,
 				  'nb_epoch': np_epoch,
@@ -206,7 +244,7 @@ def main():
 				  'no_object_scale': no_object_scale,
 				  'coord_scale': coord_scale,
 				  'class_scale': 1.0,
-				  "saved_weights_name": weights_name,
+				  "saved_weights_name": saved_weights_name,
 				  "debug": True,
 				  "log_path": "cryolo_logs/"
 				  }
@@ -224,11 +262,26 @@ def main():
 	warmup_argument = "-w=" + str(warmup)
 	gpu_argument = "-g=" + arg_gpu
 	early_stop = "-e=" + str(early_stop)
-	subprocess.check_call(
-		['cryolo_train.py', "-c=config_yolo.json", warmup_argument, gpu_argument, early_stop])
+	fine_tune_argument = ""
+	if fine_tune:
+		fine_tune_argument = "--fine_tune"
+	gpu_fraction_arg = "--gpu_fraction=1.0"
+	if gpu_fraction < 1.0 and gpu_fraction > 0.0:
+		gpu_fraction_arg = "--gpu_fraction=" + str(gpu_fraction)
+
+	cryolo_ex_pth = "cryolo_train.py"
+	if cryolo_train_path:
+		cryolo_ex_pth = cryolo_train_path
+	if not fine_tune:
+
+		subprocess.check_call(
+			[cryolo_ex_pth, "-c=config_yolo.json", warmup_argument, gpu_argument, early_stop, gpu_fraction_arg])
 	warmup_argument = "-w=0"
+	command = [cryolo_ex_pth, "-c=config_yolo.json", warmup_argument, gpu_argument, early_stop, gpu_fraction_arg]
+	if fine_tune:
+		command.append(fine_tune_argument)
 	subprocess.check_call(
-		['cryolo_train.py', "-c=config_yolo.json", warmup_argument, gpu_argument, early_stop])
+		command)
 
 
 if __name__ == "__main__":

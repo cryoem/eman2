@@ -247,9 +247,11 @@ def construct_keyword_dict():
 	keyword_dict["annot_dir"] = SXkeyword_map(2, "dir")
 	keyword_dict["valid_image_dir"] = SXkeyword_map(2, "dir")
 	keyword_dict["valid_annot_dir"] = SXkeyword_map(2, "dir")
+	keyword_dict["cryolo_train_path"] = SXkeyword_map(2, "exe")
 	keyword_dict["target_dir"] = SXkeyword_map(2, "dir")
 	keyword_dict["config_path"] = SXkeyword_map(2, "params_any_json")  # --import=INPUT_PARAMS_PATH
 	keyword_dict["model_path"] = SXkeyword_map(2, "params_any_h5")
+	keyword_dict["pretrained_weights_name"] = SXkeyword_map(2, "params_any_h5")
 	keyword_dict["box_dir"] = SXkeyword_map(2, "dir")
 
 	# Added keywords for ctf refine
