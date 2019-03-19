@@ -36,9 +36,6 @@ Fill it.
 
 \\
 ===== Output =====
-  ; angles.txt ; Text file of projection parameters of input images.
-  ; proj.hdf : Stack of re-projections of input 3D reconstruction.
-  ; comp-proj-reproj.hdf : Unnormalized comparison of re-projections and 2D images.
  
 \\
 ===== Description =====
