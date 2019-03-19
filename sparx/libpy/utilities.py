@@ -8821,7 +8821,7 @@ def search_lowpass(fsc):
 	return fcutoff
 
 
-def angular_distribution(params_file, output_folder, prefix, method, pixel_size, delta, symmetry, box_size, particle_radius, dpi, do_print=True):
+def angular_distribution(params_file, output_folder, prefix, method, pixel_size, delta, symmetry, box_size, particle_radius, dpi, do_print=True, exclude=None):
 	import fundamentals
 	import numpy
 	import scipy.spatial as scipy_spatial
@@ -8903,6 +8903,11 @@ def angular_distribution(params_file, output_folder, prefix, method, pixel_size,
 	if do_print:
 		sxprint('Import projection parameter')
 	data_params = numpy.atleast_2d(numpy.genfromtxt(params_file, usecols=(0, 1, 2)))
+	if exclude is not None:
+		mask = numpy.array(exclude)
+		mask[mask < 0] = 0
+		mask = mask.astype(numpy.bool)
+		data_params = data_params[~mask]
 
 	# If the symmetry is c0, do not remove mirror projections.
 	if do_print:

@@ -6598,6 +6598,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 	newparamstructure = [[],[]]
 	raw_vol           = [[],[]]
 	norm_per_particle = [[],[]]
+	outliers = [[], []]
 
 	for procid in range(2):
 		Tracker["refvol"] = os.path.join(Tracker["previousoutputdir"],"vol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"]-1))
@@ -6630,7 +6631,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			ERROR( "Incorrect state  %s" % Tracker["state"], myid=Blockdata["myid"] )
 
 
-		qt     = 1.0/Tracker["constants"]["nnxo"]/Tracker["constants"]["nnxo"]
+		qt = 1.0/Tracker["constants"]["nnxo"]/Tracker["constants"]["nnxo"]
 		params = []
 		for im in range(len(newparamstructure[procid])):
 			#  Select only one best
@@ -6647,64 +6648,180 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		params = wrap_mpi_gatherv(params, Blockdata["main_node"], MPI_COMM_WORLD)
 		#  store params
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			line = ''
 			sxprint(line,"Executed successfully: ","Projection matching, state: %s, number of images:%7d"%(Tracker["state"],len(params)))
 			write_text_row(params, os.path.join(Tracker["directory"], "params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"])) )
+			cmd = "{} {} {}".format(
+				"cp -p",
+				os.path.join(
+					Tracker["previousoutputdir"],
+					"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]-1)
+					),
+				os.path.join(
+					Tracker["directory"],
+					"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"])
+					)
+				)
+			junk = cmdexecute(cmd)
 		del params
 
 		projdata[procid] = []
-		im_idx = [[0, 0], [0, 0]]
 		if Tracker["constants"]["small_memory"]:
 			original_data[procid], oldparams[procid], start_end_list[procid] = getindexdata(partids[procid], partstack[procid], \
 			os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_%01d.txt"%procid), \
 			original_data[procid], small_memory = Tracker["constants"]["small_memory"], \
 			nproc = Blockdata["nproc"], myid = Blockdata["myid"], mpi_comm = MPI_COMM_WORLD)
 
+		# Prepare outlier calculation
+		partids[procid] = os.path.join(Tracker["directory"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
+		partstack[procid] = os.path.join(Tracker["directory"],"params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
+		outlier_file = os.path.join(Tracker["directory"],"outlier-params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
+		outlier_list, outlier_full = calculate_prior_values(
+			tracker=Tracker,
+			blockdata=Blockdata,
+			outlier_file=outlier_file,
+			params_file=partstack[procid],
+			chunk_file=partids[procid],
+			im_start=start_end_list[procid][0],
+			im_end=start_end_list[procid][1],
+			procid=procid
+			)
+		outliers[procid] = outlier_list
+
+		original_outlier = []
+		newparams_outlier = []
+		norm_outlier = []
+		oldparams_outlier = []
+		for idx, entry in enumerate(outlier_list):
+			if entry == 0:
+				original_outlier.append(original_data[procid][idx])
+				newparams_outlier.append(newparamstructure[procid][idx])
+				oldparams_outlier.append(oldparams[procid][idx])
+				norm_outlier.append(norm_per_particle[procid][idx])
+
 		if Tracker["changed_delta"]:
 			org_nxinit        = Tracker["nxinit"]
 			Tracker["nxinit"] = Tracker["constants"]["nnxo"]
 
-		projdata[procid] = get_shrink_data(Tracker["nxinit"], procid, original_data[procid], oldparams[procid], \
-											return_real = False, preshift = True, apply_mask = False, nonorm = True)
+		projdata[procid] = get_shrink_data(
+			Tracker["nxinit"],
+			procid,
+			original_outlier,
+			oldparams_outlier,
+			return_real=False,
+			preshift=True,
+			apply_mask=False,
+			nonorm=True
+			)
+		#projdata[procid] = get_shrink_data(
+		#	Tracker["nxinit"],
+		#	procid,
+		#	original_data[procid],
+		#	oldparams[procid],
+		#	return_real=False,
+		#	preshift=True,
+		#	apply_mask=False,
+		#	nonorm=True
+		#	)
 
+		oldparams_outlier = []
 		oldparams[procid] = []
-		if Tracker["constants"]["small_memory"]: original_data[procid]	= []
+		if Tracker["constants"]["small_memory"]:
+			original_data[procid]	= []
+			original_outlier = []
 
+		if Blockdata['myid'] == Blockdata['main_node']:
+			### NEEDS TO BE REACTIVATED AFTER THE SYMCLASS CHANGE
+			sxprint('Create angular distribution plot for chunk {0}'.format(procid))
+			delta = np.maximum(Tracker['delta'], 3.75)
+			exclude = []
+			exclude.append(
+				[
+					None,
+					os.path.join(Tracker["directory"], "ang_dist_{0}".format(procid)),
+					'',
+					]
+				)
+			if np.array(outlier_full).any():
+				exclude.append(
+					[
+						outlier_full,
+						os.path.join(Tracker["directory"], "ang_dist_{0}_outlier".format(procid)),
+						'_outlier',
+						]
+					)
+
+			for exclude_list, dir_name, suffix in exclude:
+				utilities.angular_distribution(
+					params_file=partstack[procid],
+					output_folder=dir_name,
+					prefix='ang_dist{0}'.format(suffix),
+					method=Tracker['constants']['even_angle_method'],
+					pixel_size=1,
+					delta=delta,
+					symmetry=Tracker['constants']['symmetry'],
+					box_size=Tracker['constants']['nnxo'],
+					particle_radius=Tracker['constants']['radius'],
+					dpi=72,
+					do_print=False,
+					exclude=exclude_list,
+					)
+				utilities.angular_distribution(
+					params_file=partstack[procid],
+					output_folder=dir_name,
+					prefix='full_ang_dist{0}'.format(suffix),
+					method=Tracker['constants']['even_angle_method'],
+					pixel_size=1,
+					delta=delta,
+					symmetry=Tracker['constants']['symmetry'] + '_full',
+					box_size=Tracker['constants']['nnxo'],
+					particle_radius=Tracker['constants']['radius'],
+					dpi=72,
+					do_print=False,
+					exclude=exclude_list,
+					)
+		else:
+			del outlier_full
+
+		if( Blockdata["myid"] == Blockdata['main_node'] ):
+			sxprint('Do 3D reconstruction')
+		do3d(
+			procid,
+			projdata[procid],
+			newparams_outlier,
+			refang,
+			rshifts,
+			norm_outlier,
+			Blockdata["myid"],
+			smearing=True,
+			mpi_comm=MPI_COMM_WORLD
+			)
+		#do3d(
+		#	procid,
+		#	projdata[procid],
+		#	newparamstructure[procid],
+		#	refang,
+		#	rshifts,
+		#	norm_per_particle[procid],
+		#	Blockdata["myid"],
+		#	smearing=True,
+		#	mpi_comm=MPI_COMM_WORLD
+		#	)
+		projdata[procid] = []
 		if Tracker["changed_delta"]:
 			Tracker["nxinit"] = org_nxinit
 
 		if( Blockdata["myid_on_node"] == 0 ):
 			for kproc in range(Blockdata["no_of_processes_per_group"]):
 				if( kproc == 0 ):
-					dump_object_to_json(
-						os.path.join(
-							Tracker["constants"]["masterdir"],
-							"main%03d"%Tracker["mainiteration"],
-							"oldparamstructure",
-							"oldparamstructure_%01d_%03d_%03d.json"%(
-								procid,
-								Blockdata["myid"],
-								Tracker["mainiteration"]
-								)
-							),
-						newparamstructure[procid]
-						)
+					fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,Blockdata["myid"],Tracker["mainiteration"])),'w')
+					json.dump(newparamstructure[procid], fout)
+					fout.close()
 				else:
 					dummy = wrap_mpi_recv(kproc, Blockdata["shared_comm"])
-					dump_object_to_json(
-						os.path.join(
-							Tracker["constants"]["masterdir"],
-							"main%03d"%Tracker["mainiteration"],
-							"oldparamstructure",
-							"oldparamstructure_%01d_%03d_%03d.json"%(
-								procid,
-								(Blockdata["color"]*Blockdata["no_of_processes_per_group"] + kproc),
-								Tracker["mainiteration"]
-								)
-							),
-						dummy
-						)
+					fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,(Blockdata["color"]*Blockdata["no_of_processes_per_group"] + kproc),Tracker["mainiteration"])),'w')
+					json.dump(dummy, fout)
+					fout.close()
 					del dummy
 		else:
 			wrap_mpi_send(newparamstructure[procid], 0, Blockdata["shared_comm"])
@@ -6712,12 +6829,21 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		###fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,Blockdata["myid"],Tracker["mainiteration"])),'w')
 		###json.dump(newparamstructure[procid], fout)
 		###fout.close()
+		newparamstructure[procid] = []
+		norm_per_particle[procid] = []
+		original_outlier = []
+		newparams_outlier = []
+		norm_outlier = []
 		mpi_barrier(MPI_COMM_WORLD)
+
+	del refang, rshifts
 
 	#  DRIVER RESOLUTION ASSESSMENT and RECONSTRUCTION <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 	if Tracker["changed_delta"]:
 		org_nxinit = Tracker["nxinit"]
 		Tracker["nxinit"] = Tracker["constants"]["nnxo"]
+
+	rec3d_make_maps(compute_fsc = True, regularized = True)
 
 	if Tracker["changed_delta"]:
 		Tracker["nxinit"] = org_nxinit
@@ -6727,11 +6853,6 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 	#exit()
 	#
 	#  Change to current params
-	partids = [None]*2
-	for procid in range(2):  partids[procid] = os.path.join(Tracker["directory"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
-	partstack = [None]*2
-	vol = [None]*2
-	for procid in range(2):  partstack[procid] = os.path.join(Tracker["directory"],"params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
 	if( Blockdata["myid"] == Blockdata["main_node"]):
 		# Carry over chunk information
 		for procid in range(2):
@@ -6753,83 +6874,6 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		write_text_row( [pinids[i][1] for i in range(len(pinids))], os.path.join(Tracker["directory"] ,"params_%03d.txt"%(Tracker["mainiteration"])))
 		del pinids
 	mpi_barrier(MPI_COMM_WORLD)
-
-	outliers = [[], []]
-	for procid in range(2):
-		chunk_file = os.path.join(Tracker["directory"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
-		params_chunk_file = os.path.join(Tracker["directory"],"params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
-		outlier_file = os.path.join(Tracker["directory"],"outlier-params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
-		outlier_list = calculate_prior_values(
-			tracker=Tracker,
-			blockdata=Blockdata,
-			outlier_file=outlier_file,
-			params_file=params_chunk_file,
-			chunk_file=chunk_file,
-			im_start=start_end_list[procid][0],
-			im_end=start_end_list[procid][1],
-			procid=procid
-			)
-		projdata_outlier = []
-		newparams_outlier = []
-		norm_outlier = []
-		for idx, entry in enumerate(outlier_list):
-			if entry == 0:
-				projdata_outlier.append(projdata[procid][idx])
-				newparams_outlier.append(newparamstructure[procid][idx])
-				norm_outlier.append(norm_per_particle[procid][idx])
-		outliers[procid] = outlier_list
-		if Blockdata['myid'] == Blockdata['main_node']:
-			### NEEDS TO BE REACTIVATED AFTER THE SYMCLASS CHANGE
-			#sxprint('Create angular distribution plot for chunk {0}'.format(procid))
-			#if Tracker['delta'] >= 7.5 / 2.0:
-			#	delta = Tracker['delta']
-			#else:
-			#	delta = 3.75
-			#utilities.angular_distribution(
-			#	params_file=params_chunk_file,
-			#	output_folder=os.path.join(Tracker["directory"], "ang_dist_{0}".format(procid)),
-			#	prefix='ang_dist',
-			#	method=Tracker['constants']['even_angle_method'],
-			#	pixel_size=1,
-			#	delta=delta,
-			#	symmetry=Tracker['constants']['symmetry'],
-			#	box_size=Tracker['constants']['nnxo'],
-			#	particle_radius=Tracker['constants']['radius'],
-			#	dpi=72,
-			#	do_print=False,
-			#	)
-			#utilities.angular_distribution(
-			#	params_file=params_chunk_file,
-			#	output_folder=os.path.join(Tracker["directory"], "ang_dist_{0}".format(procid)),
-			#	prefix='full_ang_dist',
-			#	method=Tracker['constants']['even_angle_method'],
-			#	pixel_size=1,
-			#	delta=delta,
-			#	symmetry=Tracker['constants']['symmetry'] + '_full',
-			#	box_size=Tracker['constants']['nnxo'],
-			#	particle_radius=Tracker['constants']['radius'],
-			#	dpi=72,
-			#	do_print=False,
-			#	)
-
-			sxprint('Do 3D reconstruction for chunk {0}'.format(procid))
-		do3d(
-			procid,
-			projdata_outlier,
-			newparams_outlier,
-			refang,
-			rshifts,
-			norm_outlier,
-			Blockdata["myid"],
-			smearing = True,
-			mpi_comm = MPI_COMM_WORLD,
-			)
-	rec3d_make_maps(compute_fsc = True, regularized = True)
-	projdata[procid] = [[], []]
-	newparamstructure[procid] = [[], []]
-	norm_per_particle[procid] = [[], []]
-
-	del refang, rshifts
 
 	if(Tracker["mainiteration"] == 1 ):
 		acc_rot = acc_trans = 1.e23
@@ -6931,7 +6975,7 @@ def prior_stack_fmt(sphire_prior_stack):
 		elif isinstance(sphire_prior_stack[entry][0], float):
 			fmt.append('% {0}.6f'.format(len(str(np.max(sphire_prior_stack[entry])))+3))
 		else:
-			print('UNKNOWN', entry, type(entry))
+			sxprint('UNKNOWN', entry, type(entry))
 	return ' '.join(fmt)
 
 
@@ -6995,7 +7039,7 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 	"""Calculate the prior values and identify outliers"""
 
 	if not tracker['constants']['group_id']:
-		return [0] * (im_end - im_start)
+		return [0] * (im_end - im_start), None
 
 
 	# Print to screen
@@ -7053,7 +7097,7 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 	# Get the node specific outlier information
 	outliers_node = outliers[im_start:im_end]
 
-	return outliers_node
+	return outliers_node, outliers
 
 
 def reduce_shifts(sx, sy, img):
@@ -7484,10 +7528,10 @@ def main():
 						os.makedirs(masterdir)
 					li = 0
 					keepchecking = 1
+				global_def.write_command(masterdir)
 			else:
 				li = 0
 				keepchecking = 1
-			global_def.write_command(masterdir)
 
 			li = mpi_bcast(li,1,MPI_INT,Blockdata["main_node"],MPI_COMM_WORLD)[0]
 

@@ -1466,9 +1466,15 @@ def recmat(mat, tolistconv=True):
 def rotmatrix(phi, theta=None, psi=None, tolistconv=True):
 	if theta is None:
 		angles = phi
+		return_single = False
 	else:
+		return_single = True
 		angles = [phi, theta, psi]
-	return symclass.rotmatrix(angles, tolistconv=tolistconv)
+	mat = symclass.rotmatrix(angles, tolistconv=tolistconv)
+	if return_single:
+		return mat[0]
+	else:
+		return mat
 
 def mulmat(m1, m2, tolistconv=True):
 	return symclass.mulmat(m1, m2, tolistconv=tolistconv)
@@ -1811,7 +1817,7 @@ class symclass(object):
 		else:
 			return sang_new
 
-	def symmetry_neighbors(self, angles, return_mirror=0, tolistconv=True, return_unique=True):
+	def symmetry_neighbors(self, angles, return_mirror=0, tolistconv=True, return_unique=True, return_neighbors=False):
 
 		if self.sym[0] == 'c':
 			if int(self.sym[1:]) > 2:
@@ -1842,7 +1848,10 @@ class symclass(object):
 			neighbors = [0,1,2,3,4,6,7,11,12]
 
 		sang_mod = self.symmetry_related(angles, return_mirror=return_mirror, neighbors=neighbors, tolistconv=tolistconv, return_unique=return_unique)
-		return sang_mod, neighbors
+		if return_neighbors:
+			return sang_mod, neighbors
+		else:
+			return sang_mod
 
 	@staticmethod
 	def mulmat(matrix1, matrix2, tolistconv=True):
@@ -2140,7 +2149,7 @@ class symclass(object):
 
 		if self.old_even_angles_data['needs_rebuild']:
 			self.old_even_angles_data['needs_rebuild'] = False
-			self.kdneighbors, neighbors = self.symmetry_neighbors(self.angles, tolistconv=False, return_unique=False)
+			self.kdneighbors, neighbors = self.symmetry_neighbors(self.angles, tolistconv=False, return_unique=False, return_neighbors=True)
 			self.kdnneigbors = len(neighbors)
 			self.kddistance = 3 * numpy.sin(numpy.radians(self.old_even_angles_data['delta']) / 2)
 			self.kdtree = scipy.spatial.cKDTree(
@@ -2170,6 +2179,7 @@ class symclass(object):
 				_, indices = numpy.unique(new_ang, axis=0, return_index=True)
 				for idx2, entry in enumerate(numpy.sort(indices)):
 					out_array[idx][idx2] = neighbors[idx][entry]
+			out_array //= self.kdnneigbors
 		else:
 			out_array = numpy.empty((neighbors.shape[0], max_neighbors, 3))
 			out_array.fill(numpy.nan)
@@ -2190,6 +2200,9 @@ class symclass(object):
 		k_min = numpy.minimum(k, self.angles.shape[0])
 		k_min_raw = self.kdnneigbors*k_min
 		dist, neighbors = self.kdtree_neighbors.query(angles_cart, k=k_min_raw)
+		if k == 1:
+			neighbors = neighbors.reshape(neighbors.shape[0], 1)
+			dist = dist.reshape(dist.shape[0], 1)
 		for_reduction = self.kdneighbors[neighbors].reshape(numpy.multiply(*neighbors.shape), 3)
 		new_ang = self.reduce_anglesets(for_reduction, tolistconv=False).reshape(*(list(neighbors.shape) + [3]))
 
