@@ -1,7 +1,7 @@
 ~~NOTOC~~
 
 ===== sxsphire2relion =====
-SPHIRE to RELION Conversion
+SPHIRE to RELION Conversion : Convert SPHIRE parameters to RELION.
 
 \\
 ===== Usage =====
@@ -34,3 +34,44 @@ Fill it.
   ;%%--%%list : Include particle list: List of particles to include. Requires --particle_stack. Cannot be used together with --exlist. (default None) : %%--%%particle_stack!=None %%--%%exlist==None
   ;%%--%%exlist : Exclude particle list: List of particles to exclude. Requires --particle_stack. Cannot be used together with --list. (default None) : %%--%%particle_stack!=None %%--%%list==None
 
+\\
+===== Output =====
+  ; angles.txt ; Text file of projection parameters of input images.
+  ; proj.hdf : Stack of re-projections of input 3D reconstruction.
+  ; comp-proj-reproj.hdf : Unnormalized comparison of re-projections and 2D images.
+ 
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sparx/bin/sxsphire2relion.py
+
+\\
+==== See also ====
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\
