@@ -11,7 +11,7 @@ from global_def import *
 from utilities import get_im, string_found_in_file, get_latest_directory_increment_value, store_value_of_simple_vars_in_json_file
 from utilities import cmdexecute, if_error_then_all_processes_exit_program, wrap_mpi_bcast
 from utilities import read_text_row, read_text_file, write_text_file, write_text_row, getindexdata#, print_program_start_information
-from multi_shc_test import find_common_subset, do_volume, multi_shc
+from multi_shc import find_common_subset, do_volume, multi_shc
 
 import string
 import os, sys
@@ -45,7 +45,7 @@ NAME_OF_PARAMS_FILE = "rotated_reduced_params.txt"
 DIR_DELIM = os.sep
 
 def calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination(no_of_viper_runs_analyzed_together, 
-	no_of_viper_runs_analyzed_together_from_user_options, masterdir, rviper_iter, criterion_name, symc):
+	no_of_viper_runs_analyzed_together_from_user_options, masterdir, rviper_iter, criterion_name, symc, runs_iter):
 
 	from utilities import combinations_of_n_taken_by_k
 
@@ -66,7 +66,7 @@ def calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination
 		if (my_rank == idx % no_of_processors):
 			list_of_viper_run_indices = list(tuple_of_projection_indices) + [no_of_viper_runs_analyzed_together - 1]
 			criterion_measure[idx] = measure_for_outlier_criterion(criterion_name, masterdir, rviper_iter, list_of_viper_run_indices, symc)
-			plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_of_viper_run_indices, criterion_measure[idx], symc)
+			plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_of_viper_run_indices, criterion_measure[idx], symc, idx, runs_iter)
 
 	criterion_measure = mpi.mpi_reduce(criterion_measure, number_of_additional_combinations_for_this_viper_iteration, mpi.MPI_FLOAT, mpi.MPI_SUM, 0, mpi.MPI_COMM_WORLD)
 
@@ -105,7 +105,7 @@ def calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination
 
 def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_together, 
 	no_of_viper_runs_analyzed_together_from_user_options, masterdir, bdb_stack_location, outlier_percentile, 
-	criterion_name, outlier_index_threshold_method, angle_threshold, symc, options):
+	criterion_name, outlier_index_threshold_method, angle_threshold, symc, options, runs_iter):
 	
 	no_of_viper_runs_analyzed_together_must_be_incremented = 0
 	do_calculation = 1
@@ -123,7 +123,7 @@ def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_to
 
 	if do_calculation:
 		list_of_independent_viper_run_indices_used_for_outlier_elimination = calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination(no_of_viper_runs_analyzed_together,
-			no_of_viper_runs_analyzed_together_from_user_options, masterdir, rviper_iter, criterion_name, symc)
+			no_of_viper_runs_analyzed_together_from_user_options, masterdir, rviper_iter, criterion_name, symc, runs_iter)
 
 	# only master has the actual list: list_of_independent_viper_run_indices_used_for_outlier_elimination
 	# only master has the actual list: list_of_independent_viper_run_indices_used_for_outlier_elimination
@@ -148,7 +148,7 @@ def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_to
 			if list_of_independent_viper_run_indices_used_for_outlier_elimination[0] == MUST_END_PROGRAM_THIS_ITERATION:
 				no_of_viper_runs_analyzed_together_must_be_incremented = MUST_END_PROGRAM_THIS_ITERATION
 				found_outliers(list_of_independent_viper_run_indices_used_for_outlier_elimination[1:], outlier_percentile, 
-					rviper_iter, masterdir, bdb_stack_location, "use all images", angle_threshold, symc, options)
+					rviper_iter, masterdir, bdb_stack_location, "use all images", angle_threshold, symc, options, runs_iter)
 			else:
 				# still need to eliminate DUMMY_INDEX_USED_AS_BUFFER
 				found_outliers(list_of_independent_viper_run_indices_used_for_outlier_elimination[1:], outlier_percentile, 
@@ -160,7 +160,7 @@ def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_to
 
 	return no_of_viper_runs_analyzed_together_must_be_incremented
 
-def plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_of_projection_indices, error_value, symc):
+def plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_of_projection_indices, error_value, symc, index, runs_iter):
 	import matplotlib
 	matplotlib.use('agg')
 	import matplotlib.pyplot as plt
@@ -191,7 +191,7 @@ def plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_o
 
 	plt.ylabel('Error')
 	plt.xlabel('Image index')
-	plt.title("Sorted errors between projections")
+	plt.title("Sorted errors between projections\nError value = %s" % error_value)
 	import io
 	import six
 	which_projections = io.StringIO()
@@ -199,7 +199,10 @@ def plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_o
 	for p_i in list_of_projection_indices: which_projections.write(six.u("_" + "%03d"%p_i))
 	for p_i in list_of_projection_indices: which_projections.write(six.u("___" + "%03d"%get_already_processed_viper_runs.r_permutation[p_i]))
 
-	plt.savefig(mainoutputdir + '/sorted_errors_between_projections' + which_projections.getvalue() + '.png')
+	prj_value = which_projections.getvalue()
+	####plt.savefig(mainoutputdir + '/sorted_errors_between_projections' + prj_value + '.png')
+	plt.savefig(mainoutputdir + '/sorted_errors_between_projections' + "_%03d"%(runs_iter) + "_%03d"%(index) + '.png')
+	####print('plot_errors_between_any_number_of_projections: rviper_iter %s, masterdir %s, error_value %s, getvalue %s index %s, runs_iter %s' % ( rviper_iter, masterdir, error_value, prj_value, index, runs_iter ) )
 	which_projections.close()
 	plt.close()
 
@@ -333,7 +336,7 @@ def measure_for_outlier_criterion(criterion_name, masterdir, rviper_iter, list_o
 
 
 def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, masterdir,  bdb_stack_location,
-	outlier_index_threshold_method, angle_threshold, symc, options):
+	outlier_index_threshold_method, angle_threshold, symc, options, runs_iter):
 	
 	# sxheader.py bdb:nj  --consecutive  --params=OID
 	import numpy as np
@@ -347,7 +350,6 @@ def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, 
 	else:
 		return
 
-	sxprint("identify_outliers")
 	projs = []
 	for i1 in list_of_projection_indices:
 		projs.append(read_text_row(mainoutputdir + NAME_OF_RUN_DIR + "%03d"%(i1) + DIR_DELIM + "params.txt"))
@@ -766,6 +768,7 @@ output_directory: directory name into which the output files will be written.  I
 			bdb_stack_location = "bdb:" + masterdir + os.path.splitext(filename)[0]
 			bdb_path = masterdir + "EMAN2DB" + DIR_DELIM + os.path.splitext(filename)[0] + "_000.bdb"
 
+			junk = True
 			if not os.path.exists(bdb_path):
 				cmd = "{} {} {}".format("sxcpy.py  ", args[0], bdb_stack_location + "_000")
 				junk = cmdexecute(cmd)
@@ -914,7 +917,7 @@ output_directory: directory name into which the output files will be written.  I
 				increment_for_current_iteration = identify_outliers(myid, main_node, rviper_iter, 
 					no_of_viper_runs_analyzed_together, no_of_viper_runs_analyzed_together_from_user_options, masterdir,
 					bdb_stack_location, outlier_percentile, criterion_name, outlier_index_threshold_method, angle_threshold, symc, 
-					options)
+					options, runs_iter)
 
 				if increment_for_current_iteration == MUST_END_PROGRAM_THIS_ITERATION:
 					break
