@@ -706,7 +706,8 @@ The basic design of EMAN Processors: <br>\
 			TypeDict get_param_types() const
 			{
 				TypeDict d;
-				d.put("hn", EMObject::INT, "Computes a single translational invariant for the nth harmonic, 0 is a normal power spectrum");
+				d.put("hn", EMObject::INT, "Computes a single translational invariant for the nth harmonic, 1 is a normal power spectrum");
+				d.put("rn", EMObject::INT, "Computes a single rot/trans invariant for the nth rotational harmonic, requires hn to be non zero");
 				d.put("rfp", EMObject::INT, "Returns a non square 2-D image rotational invariants organized such that X=azimuthal power. Used for rotational alignment.");
 				d.put("fp", EMObject::INT, "Returns a non-square 2-D image containing n harmonics. R&T invariant.");
 				d.put("size", EMObject::INT, "If specified, will determine the number of rotational samples in the bispectrum. If not set, a size is selected automatically");

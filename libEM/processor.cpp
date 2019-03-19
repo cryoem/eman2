@@ -13262,25 +13262,49 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 	if (params.has_key("hn")) {
 		int hn=(int)params.get("hn");
 		if (hn<1) throw InvalidParameterException("Invalid parameter, hn<1");
-		for (int jx=0; jx<nx/2; jx++) {
-			for (int jy=-ny/2; jy<ny/2; jy++) {
-				if (Util::hypot_fast(jx,jy)<3.0f*hn) continue;
-				complex<double> v1 = (complex<double>)cimage->get_complex_at(jx,jy);
-				complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx/(float)hn,jy/(float)hn);
-				trns->set_complex_at(jx,jy,0,(complex<float>)(v1*std::pow(std::conj(v2),(float)hn)));
+		int rn = (int)params.set_default("rn",0);
+		// rotational/translational single
+		if (rn>0) {
+			trns->set_size(naz*2,ny/2,1);
+			for (int ja=0; ja<naz; ja++) {
+				float si=sin(float(2.0*M_PI*ja/naz));
+				float co=sin(float(2.0*M_PI*ja/naz));
+				for (int jr=3*hn; jr<ny/2; jr++) {
+					float jx=co*jr;
+					float jy=si*jr;
+					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
+					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx/(float)hn,jy/(float)hn);
+					trns->set_complex_at(ja,jr-ny/4,0,(complex<float>)(v1*std::pow(std::conj(v2),(float)hn)));
+				}
 			}
+			trns->ri2ap();
+			size_t xyz=trns->get_size();
+			for (size_t i=0; i<xyz; i+=2) {
+				trns->set_value_at_index(i,pow(trns->get_value_at_index(i),1.0/(hn+1)));		// brings all of the components into a range linear with the original FFT
+			}
+			trns->ap2ri();
 		}
-		trns->ri2ap();
-		size_t xyz=trns->get_size();
-		for (size_t i=0; i<xyz; i+=2) {
-			trns->set_value_at_index(i,pow(trns->get_value_at_index(i),1.0/(hn+1)));		// brings all of the components into a range linear with the original FFT
+		else {
+			// translational only single
+			for (int jx=0; jx<nx/2; jx++) {
+				for (int jy=-ny/2; jy<ny/2; jy++) {
+					if (Util::hypot_fast(jx,jy)<3.0f*hn) continue;
+					complex<double> v1 = (complex<double>)cimage->get_complex_at(jx,jy);
+					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx/(float)hn,jy/(float)hn);
+					trns->set_complex_at(jx,jy,0,(complex<float>)(v1*std::pow(std::conj(v2),(float)hn)));
+				}
+			}
+			trns->ri2ap();
+			size_t xyz=trns->get_size();
+			for (size_t i=0; i<xyz; i+=2) {
+				trns->set_value_at_index(i,pow(trns->get_value_at_index(i),1.0/(hn+1)));		// brings all of the components into a range linear with the original FFT
+			}
+			trns->ap2ri();
+	//		EMData *ret = trns->do_ift();
 		}
-		trns->ap2ri();
-		EMData *ret = trns->do_ift();
-		
 		delete cimage;
-		delete trns;
-		return(ret);
+
+		return(trns);
 	}
 	
 }
