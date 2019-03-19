@@ -1399,9 +1399,9 @@ def main(args):
 				cmd = "{} {}".format("mkdir -p", Blockdata["masterdir"])
 				junk = cmdexecute(cmd)
 			li = 0
+		global_def.write_command(Blockdata["masterdir"])
 	else:
 		li = 0
-	global_def.write_command(Blockdata["masterdir"])
 
 	# main process broadcasts length of master directory string
 	li = mpi.mpi_bcast(li,1,mpi.MPI_INT,Blockdata["main_node"],mpi.MPI_COMM_WORLD)[0]
