@@ -168,6 +168,30 @@ def find_index_best_projection(particle_image, reprojections, mask):
 	return index_max
 
 
+def optimize(particle_image, projection_2d, ctf_list, masks):
+	# #########
+	# Calculate CTF corrupted projections
+	# #########
+	projections_ctf_applied_fft = [apply_ctf(projection_2d, ctf) for ctf in ctf_list]
+	projections_ctf = [proj.do_ift() for proj in projections_ctf_applied_fft]
+
+	# #########
+	# Calculate the best ctf for each mask
+	# #########
+	index_best_projections = [
+		find_index_best_projection(particle_image, projections_ctf, mask)
+		for mask in masks
+	]
+	best_ctf_no_boostrap = ctf_list[index_best_projections[-1]]
+
+	# #########
+	# Estimate error and difference/error ratio
+	# #########
+	best_ctfs_bootstrap = [ctf_list[i] for i in index_best_projections[:-1]]
+
+	return best_ctfs_bootstrap, best_ctf_no_boostrap
+
+
 def refine_defocus_with_error_est(
 		particle_volume,
 		particle_image,
@@ -207,40 +231,44 @@ def refine_defocus_with_error_est(
 	mask2d = ndimage.gaussian_filter(mask2d, 3)
 	object_pixel = np.where(mask2d > 0.05)
 
-	ctf_list = create_ctf_list(current_ctf, def_search_range, def_step_size)
-
 	# #########
 	# Calculate all masks for bootstrapping
 	# #########
 	num_bootstrap_runs = 15
+
+	# Create maks for bootstrapping
 	masks = [
 		create_mask(particle_image.get_2dview().shape, object_pixel, fraction_size=0.25)
 		for _ in range(num_bootstrap_runs)
 	]
+	# Append one mask that use all of the object_pixels to calculate the final defocus
 	masks.append(
 		create_mask(particle_image.get_2dview().shape, object_pixel, fraction_size=1.0)
 	)
 
-	# #########
-	# Calculate CTF corrupted projections
-	# #########
-	projections_ctf_applied_fft = [apply_ctf(projection_2d, ctf) for ctf in ctf_list]
-	projections_ctf = [proj.do_ift() for proj in projections_ctf_applied_fft]
+	# ########
+	# Try to find the CTF region of interest, by unique ctf estimates of the bootstrapping
+	# ########
+	ctf_list_corse = create_ctf_list(current_ctf, def_search_range, def_step_size * 10)
+	best_ctfs_bootstrap, best_ctf_no_boostrap = optimize(particle_image, projection_2d,
+														 ctf_list_corse, masks)
+	defocus_bootstrap = [ctf.defocus for ctf in best_ctfs_bootstrap]
+	unique_defocuses = set(defocus_bootstrap)
+	ctf_list_fine = []
+	for unique_def in unique_defocuses:
+		current_ctf.defocus = unique_def
+		ctf_list_fine.extend(create_ctf_list(current_ctf, def_step_size * 10, def_step_size))
+
+	# ########
+	# Final optimization
+	# ########
+	best_ctfs_bootstrap, best_ctf_no_boostrap = optimize(particle_image, projection_2d,
+														 ctf_list_fine, masks)
 
 	# #########
-	# Calculate the best ctf for each mask
+	# Estimate error and difference/error ratiopyt
 	# #########
-	# TODO: Instead of brute force, use smarter optimization
-	index_best_projections = [
-		find_index_best_projection(particle_image, projections_ctf, mask)
-		for mask in masks
-	]
-	best_ctf_no_boostrap = ctf_list[index_best_projections[-1]]
 
-	# #########
-	# Estimate error and difference/error ratio
-	# #########
-	best_ctfs_bootstrap = [ctf_list[i] for i in index_best_projections[:-1]]
 	defocus_bootstrap = [ctf.defocus for ctf in best_ctfs_bootstrap]
 	error_sd = np.std(defocus_bootstrap)
 	drratio = np.abs(best_ctf_no_boostrap.defocus - current_ctf.defocus) / (
@@ -250,9 +278,8 @@ def refine_defocus_with_error_est(
 	# #########
 	# Cleaning!
 	# #########
-	del projections_ctf
 	del projection_2d
-	del ctf_list
+	del ctf_list_corse
 
 	return best_ctf_no_boostrap, error_sd, drratio
 

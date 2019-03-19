@@ -1394,15 +1394,14 @@ def main(args):
 			li = len(Blockdata["masterdir"])
 			cmd = "{} {}".format("mkdir -p", Blockdata["masterdir"])
 			junk = cmdexecute(cmd)
-			global_def.write_command(Blockdata["masterdir"])
 		else:
 			if not os.path.exists(Blockdata["masterdir"]):
 				cmd = "{} {}".format("mkdir -p", Blockdata["masterdir"])
 				junk = cmdexecute(cmd)
-				global_def.write_command(Blockdata["masterdir"])
 			li = 0
 	else:
 		li = 0
+	global_def.write_command(Blockdata["masterdir"])
 
 	# main process broadcasts length of master directory string
 	li = mpi.mpi_bcast(li,1,mpi.MPI_INT,Blockdata["main_node"],mpi.MPI_COMM_WORLD)[0]
@@ -1578,7 +1577,7 @@ def main(args):
 			rpw = [0.0]*ntp
 			for q in original_images:
 				tpw = rops_table(q)
-				for i in range(ntp):  rpw[i] += sqrt(tpw[i])
+				for i in range(ntp):  rpw[i] += np.sqrt(tpw[i])
 			del tpw
 			rpw = mpi.mpi_reduce(rpw, ntp, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)
 			if(myid == 0):

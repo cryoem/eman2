@@ -1711,7 +1711,9 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	#  This is for auxiliary function searches.
 	Blockdata["angle_set"] = refang
 	#  Extract normals from rotation matrices
-	refdirs = angles_to_normals(refang)
+	Blockdata['symclass'].set_angles(refang)
+	Blockdata['symclass'].build_kdtree()
+	#refdirs = angles_to_normals(refang)
 
 	#if( Blockdata["myid"] == Blockdata["main_node"]):
 	#	sxprint("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, n_coarse_psi, len(list_of_coarse_shifts), lxod1 ",nima, nang,npsi,nshifts, n_coarse_ang,n_coarse_psi, len(coarse_shifts), lxod1)
@@ -1942,7 +1944,8 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		#exit()
 
 		# Find neighbors, ltabang contains positions on refang list, no psis
-		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
+		#ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
+		ltabang = Blockdata['symclass'].find_k_nearest_neighbors(firstdirections, k=Tracker['howmany'])
 
 		# ltabang has length lit, which is the same as length as firshifts.  However, original xod2 is still available,
 		#   even though it is longer than lit.
@@ -1963,8 +1966,10 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 			ipsi = ipsiandiang%100000
 			ishift = hashparams%1000
 			tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
-			for i2 in range(4):
+			for i2 in range(Tracker['howmany']):
 				iang = ltabang[i1][i2]
+				if iang < 0:
+					continue
 				for i3 in range(2):  # psi
 					itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
 					itpsi = (itpsi + i3)%npsi
@@ -2425,7 +2430,9 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	#  This is for auxiliary function searches.
 	Blockdata["angle_set"] = refang
 	#  Extract normals from rotation matrices
-	refdirs = angles_to_normals(refang)
+	Blockdata['symclass'].set_angles(refang)
+	Blockdata['symclass'].build_kdtree()
+	#refdirs = angles_to_normals(refang)
 
 	#if( Blockdata["myid"] == Blockdata["main_node"]):
 	#	sxprint("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, n_coarse_psi, len(list_of_coarse_shifts), lxod1 ",nima, nang,npsi,nshifts, n_coarse_ang,n_coarse_psi, len(coarse_shifts), lxod1)
@@ -2648,7 +2655,8 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			firstshifts[iln] = ishift
 
 		# Find neighbors, ltabang contains positions on refang list, no psis
-		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
+		#ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
+		ltabang = Blockdata['symclass'].find_k_nearest_neighbors(firstdirections, k=Tracker['howmany'])
 
 		# ltabang has length lit, which is the same as length as firshifts.  However, original xod2 is still available,
 		#   even though it is longer than lit.
@@ -2668,8 +2676,10 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			ipsi = ipsiandiang%100000
 			ishift = hashparams%1000
 			tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
-			for i2 in range(4):
+			for i2 in range(Tracker['howmany']):
 				iang = ltabang[i1][i2]
+				if iang < 0:
+					continue
 				for i3 in range(2):  # psi
 					itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
 					itpsi = (itpsi + i3)%npsi
@@ -3130,7 +3140,9 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	#  This is for auxiliary function searches.
 	Blockdata["angle_set"] = refang
 	#  Extract normals from rotation matrices
-	refdirs = angles_to_normals(refang)
+	Blockdata['symclass'].set_angles(refang)
+	Blockdata['symclass'].build_kdtree()
+	#refdirs = angles_to_normals(refang)
 
 	#if( Blockdata["myid"] == Blockdata["main_node"]):
 	#	sxprint("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, n_coarse_psi, len(list_of_coarse_shifts), lxod1 ",nima, nang,npsi,nshifts, n_coarse_ang,n_coarse_psi, len(coarse_shifts), lxod1)
@@ -3361,7 +3373,8 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		#exit()
 
 		# Find neighbors, ltabang contains positions on refang list, no psis
-		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
+		#ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
+		ltabang = Blockdata['symclass'].find_k_nearest_neighbors(firstdirections, k=Tracker['howmany'])
 
 		# ltabang has length lit, which is the same as length as firshifts.  However, original xod2 is still available,
 		#   even though it is longer than lit.
@@ -3382,8 +3395,10 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 			ipsi = ipsiandiang%100000
 			ishift = hashparams%1000
 			tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
-			for i2 in range(4):
+			for i2 in range(Tracker['howmany']):
 				iang = ltabang[i1][i2]
+				if iang < 0:
+					continue
 				for i3 in range(2):  # psi
 					itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
 					itpsi = (itpsi + i3)%npsi
@@ -3965,7 +3980,9 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	#  This is for auxiliary function searches.
 	Blockdata["angle_set"] = refang
 	#  Extract normals from rotation matrices
-	refdirs = angles_to_normals(refang)
+	Blockdata['symclass'].set_angles(refang)
+	Blockdata['symclass'].build_kdtree()
+	#refdirs = angles_to_normals(refang)
 
 
 	#  We have to make sure the number of cones is the same on all nodes, this is due to the strange MPI problem
@@ -4342,7 +4359,8 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  GUGU ",firstshifts)
 					# Find neighbors, ltabang contains positions on refang list, no psis
 					###ltabang = nearest_many_full_k_projangles(refang, firstdirections, howmany = 5, sym=Tracker["constants"]["symmetry"])
-					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
+					#ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
+					ltabang = Blockdata['symclass'].find_k_nearest_neighbors(firstdirections, k=Tracker['howmany'])
 					###if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  ltabang ",ltabang)
 					##mpi_barrier(MPI_COMM_WORLD)
 					##mpi_finalize()
@@ -4376,8 +4394,10 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 						ishift = hashparams%1000
 						tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
 						#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint(" tshifts  ",i1,len(tshifts))
-						for i2 in range(4):
+						for i2 in range(Tracker['howmany']):
 							iang = ltabang[i1][i2]
+							if iang < 0:
+								continue
 							for i3 in range(2):  # psi
 								itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
 								itpsi = (itpsi + i3)%npsi
@@ -5014,7 +5034,9 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	#  This is for auxiliary function searches.
 	Blockdata["angle_set"] = refang
 	#  Extract normals from rotation matrices
-	refdirs = angles_to_normals(refang)
+	Blockdata['symclass'].set_angles(refang)
+	Blockdata['symclass'].build_kdtree()
+	#@refdirs = angles_to_normals(refang)
 
 
 	#  We have to make sure the number of cones is the same on all nodes, this is due to the strange MPI problem
@@ -5388,7 +5410,8 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  GUGU ",firstshifts)
 					# Find neighbors, ltabang contains positions on refang list, no psis
 					###ltabang = nearest_many_full_k_projangles(refang, firstdirections, howmany = 5, sym=Tracker["constants"]["symmetry"])
-					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
+					#ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
+					ltabang = Blockdata['symclass'].find_k_nearest_neighbors(firstdirections, k=Tracker['howmany'])
 					###if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  ltabang ",ltabang)
 					##mpi_barrier(MPI_COMM_WORLD)
 					##mpi_finalize()
@@ -5422,8 +5445,10 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						ishift = hashparams%1000
 						tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
 						#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint(" tshifts  ",i1,len(tshifts))
-						for i2 in range(4):
+						for i2 in range(Tracker['howmany']):
 							iang = ltabang[i1][i2]
+							if iang < 0:
+								continue
 							for i3 in range(2):  # psi
 								itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
 								itpsi = (itpsi + i3)%npsi
@@ -6267,6 +6292,7 @@ def update_tracker(shell_line_command):
 		print_dict(tempdict, "Updated settings")
 
 	Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
+	Blockdata["symclass_coarse"] = symclass(Tracker["constants"]["symmetry"])
 	return 
 
 def compare_bckgnoise(bckgnoise1, bckgnoise2):
@@ -7380,6 +7406,7 @@ def main():
 			#Blockdata["parsesym"] = parsesym(Tracker["constants"]["symmetry"])
 			#  Initialize symmetry
 			Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
+			Blockdata["symclass_coarse"] = symclass(Tracker["constants"]["symmetry"])
 
 			nnxo = bcast_number_to_all(nnxo, source_node = Blockdata["main_node"])
 
@@ -7451,17 +7478,16 @@ def main():
 					masterdir = "master"+timestring
 					li = len(masterdir)
 					os.makedirs(masterdir)
-					global_def.write_command(masterdir)
 					keepchecking = 0
 				else:
 					if not os.path.exists(masterdir):
 						os.makedirs(masterdir)
-						global_def.write_command(masterdir)
 					li = 0
 					keepchecking = 1
 			else:
 				li = 0
 				keepchecking = 1
+			global_def.write_command(masterdir)
 
 			li = mpi_bcast(li,1,MPI_INT,Blockdata["main_node"],MPI_COMM_WORLD)[0]
 
