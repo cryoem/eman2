@@ -346,13 +346,11 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["fl"].type == "abs_freq")
 		sxcmd.token_dict["fl"].type = "float"
 	elif sxcmd.name == "sxproj_compare":
-		assert(sxcmd.token_dict["stack"].key_base == "stack")
-		assert(sxcmd.token_dict["stack"].type == "bdb2d_stack")
 		sxcmd.token_dict["stack"].type = "data2d_one"
-		assert(sxcmd.token_dict["angles"].key_base == "angles")
-		sxcmd.token_dict["angles"].type = "params_proj_txt"
-		assert(sxcmd.token_dict["select"].key_base == "select")
-		sxcmd.token_dict["select"].type = "select_data2d_stack"
+		sxcmd.token_dict["classangles"].type = "params_proj_txt"
+		sxcmd.token_dict["classselect"].type = "select_data2d_stack"
+		sxcmd.token_dict["partangles"].type = "params_proj_txt"
+		sxcmd.token_dict["partselect"].type = "select_data2d_stack"
 	elif sxcmd.name == "sxviper":
 		assert(sxcmd.token_dict["stack"].key_base == "stack")
 		assert(sxcmd.token_dict["stack"].type == "bdb2d_stack")
