@@ -1503,6 +1503,7 @@ class symclass(object):
 		self.kdtree = None
 		self.kddistance = None
 		self.kdtree_neighbors = None
+		self.kdnneigbors = None
 		self.kdneighbors = None
 		self.init_symmetry()
 
@@ -1538,11 +1539,11 @@ class symclass(object):
 			self.nsym = 24
 			ncap = 4
 			cap_sig = old_div(360.0, ncap)
-			alpha = numpy.degrees(math.acos( old_div(
+			alpha = numpy.degrees(numpy.arccos( old_div(
 				1.0,
 				(numpy.sqrt(3.0) * numpy.tan( 2 * old_div(old_div(numpy.pi, ncap), 2.0)))
 				)))  # also platonic_params["alt_max"]
-			theta = numpy.degrees(0.5 * math.acos(old_div(
+			theta = numpy.degrees(0.5 * numpy.arccos(old_div(
 				numpy.cos(numpy.radians(cap_sig)),
 				(1.0 - numpy.cos(numpy.radians( cap_sig)))
 				)))  # also platonic_params["theta_c_on_two"]
@@ -1561,11 +1562,11 @@ class symclass(object):
 			self.nsym = 12
 			ncap = 3
 			cap_sig = old_div(360.0, ncap)
-			alpha = numpy.degrees(math.acos(old_div(
+			alpha = numpy.degrees(numpy.arccos(old_div(
 				1.0,
 				(numpy.sqrt(3.0) * numpy.tan( 2 * old_div(old_div(numpy.pi, ncap), 2.0)))
 				)))  # also platonic_params["alt_max"]
-			theta = numpy.degrees(0.5 * math.acos(old_div(
+			theta = numpy.degrees(0.5 * numpy.arccos(old_div(
 				numpy.cos(numpy.radians(cap_sig)),
 				(1.0 - numpy.cos(numpy.radians( cap_sig)))
 				)))  # also platonic_params["theta_c_on_two"]
@@ -1573,7 +1574,7 @@ class symclass(object):
 				[old_div(360.0, ncap), theta, cap_sig, alpha],
 				[old_div(360.0, ncap), theta, cap_sig, alpha]
 				]
-			lvl1 = numpy.degrees(math.acos(old_div(-1.0, 3.0)))  # There  are 3 faces at this angle
+			lvl1 = numpy.degrees(numpy.arccos(old_div(-1.0, 3.0)))  # There  are 3 faces at this angle
 			self.symangles.extend([[0., 0., 0.], [0., 0., 120.], [0., 0., 240.]])
 			for l1 in range(0, 241, 120):
 				for l2 in range(60, 301, 120):
@@ -1583,11 +1584,11 @@ class symclass(object):
 			self.nsym = 60
 			ncap = 5
 			cap_sig = old_div(360.0, ncap)
-			alpha = numpy.degrees(math.acos(old_div(
+			alpha = numpy.degrees(numpy.arccos(old_div(
 				1.0,
 				(numpy.sqrt(3.0) * numpy.tan( 2 * old_div(old_div(numpy.pi, ncap), 2.0)))
 				)))  # also platonic_params["alt_max"]
-			theta = numpy.degrees(0.5 * math.acos(old_div(
+			theta = numpy.degrees(0.5 * numpy.arccos(old_div(
 				numpy.cos(numpy.radians(cap_sig)),
 				(1.0 - numpy.cos(numpy.radians( cap_sig)))
 				)))  # also platonic_params["theta_c_on_two"]
@@ -1595,7 +1596,7 @@ class symclass(object):
 				[36., theta, cap_sig, alpha],
 				[72., theta, cap_sig, alpha]
 				]
-			lvl1 = numpy.degrees(math.atan(2.0))  # there are 5 pentagons with centers at this height (angle)
+			lvl1 = numpy.degrees(numpy.arctan(2.0))  # there are 5 pentagons with centers at this height (angle)
 			lvl2 = 180.0 - lvl1  # there are 5 pentagons with centers at this height (angle)
 			self.symangles.extend([[0.0, 0.0, float(i)] for i in range(0, 288 + 1, 72)])
 			for l1 in range(0, 288 + 1, 72):
@@ -1619,7 +1620,7 @@ class symclass(object):
 				))
 		self.symatrix = self.rotmatrix(self.symangles)
 
-	def symmetry_related(self, angles, return_mirror=0, neighbors=None, tolistconv=True):
+	def symmetry_related(self, angles, return_mirror=0, neighbors=None, tolistconv=True, return_unique=True):
 		symatrix = numpy.array(self.symatrix, numpy.float64)
 		if neighbors is None:
 			symatrix = symatrix
@@ -1647,7 +1648,9 @@ class symclass(object):
 			mirror_list.append([mult, mask])
 			mirror_list.append([-mult, ~mask])
 
-		if self.sym[0] == "c":
+		if not return_unique:
+			inside_values = []
+		elif self.sym[0] == "c":
 			inside_values = (
 				(self.brackets[0][0], 0, 360.0, 0),
 				(self.brackets[0][0], 180, 360.0, 0),
@@ -1808,7 +1811,7 @@ class symclass(object):
 		else:
 			return sang_new
 
-	def symmetry_neighbors(self, angles, return_mirror=0, tolistconv=True):
+	def symmetry_neighbors(self, angles, return_mirror=0, tolistconv=True, return_unique=True):
 
 		if self.sym[0] == 'c':
 			if int(self.sym[1:]) > 2:
@@ -1838,8 +1841,8 @@ class symclass(object):
 		elif self.sym == 'icos':
 			neighbors = [0,1,2,3,4,6,7,11,12]
 
-		sang_mod = self.symmetry_related(angles, return_mirror=return_mirror, neighbors=neighbors, tolistconv=tolistconv)
-		return sang_mod
+		sang_mod = self.symmetry_related(angles, return_mirror=return_mirror, neighbors=neighbors, tolistconv=tolistconv, return_unique=return_unique)
+		return sang_mod, neighbors
 
 	@staticmethod
 	def mulmat(matrix1, matrix2, tolistconv=True):
@@ -2116,9 +2119,9 @@ class symclass(object):
 		  It will map all triplets to the first asymmetric subunit.
 		"""
 		if inc_mirror == 1:
-		   return_mirror = 0
+			return_mirror = 0
 		else:
-		   return_mirror = 2
+			return_mirror = 2
 
 		sym_angles = self.symmetry_related(angles, return_mirror=return_mirror, tolistconv=False)
 
@@ -2137,7 +2140,8 @@ class symclass(object):
 
 		if self.old_even_angles_data['needs_rebuild']:
 			self.old_even_angles_data['needs_rebuild'] = False
-			self.kdneighbors = self.symmetry_neighbors(self.angles, tolistconv=False)
+			self.kdneighbors, neighbors = self.symmetry_neighbors(self.angles, tolistconv=False, return_unique=False)
+			self.kdnneigbors = len(neighbors)
 			self.kddistance = 3 * numpy.sin(numpy.radians(self.old_even_angles_data['delta']) / 2)
 			self.kdtree = scipy.spatial.cKDTree(
 				self.to_cartesian(self.angles, tolistconv=False),
@@ -2183,8 +2187,8 @@ class symclass(object):
 			self.build_kdtree()
 		angles_cart = self.to_cartesian(angles, is_radians=is_radians, tolistconv=False)
 
-		k_min_raw = numpy.minimum(3*k, self.kdneighbors.shape[0])
-		k_min = numpy.minimum(k, self.kdneighbors.shape[0])
+		k_min = numpy.minimum(k, self.angles.shape[0])
+		k_min_raw = self.kdnneigbors*k_min
 		dist, neighbors = self.kdtree_neighbors.query(angles_cart, k=k_min_raw)
 		for_reduction = self.kdneighbors[neighbors].reshape(numpy.multiply(*neighbors.shape), 3)
 		new_ang = self.reduce_anglesets(for_reduction, tolistconv=False).reshape(*(list(neighbors.shape) + [3]))
@@ -2196,6 +2200,7 @@ class symclass(object):
 			for idx, row in enumerate(new_ang):
 				_, indices = numpy.unique(row, axis=0, return_index=True)
 				out_array[idx] = neighbors[idx][numpy.sort(indices)][:k_min]
+			out_array //= self.kdnneigbors
 		else:
 			out_array = numpy.empty((new_ang.shape[0], k_min, new_ang.shape[2]))
 			for idx, row in enumerate(new_ang):
