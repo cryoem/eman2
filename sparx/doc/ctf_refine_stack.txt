@@ -30,10 +30,10 @@ sxctf_refine.py exists only in non-MPI version.
 
 \\
 === Advanced Parameters ===
-  ; %%--%%range : Defocus serach range [default 0.15] : Search range around the current defocus value. (default 0.15)
-  ; %%--%%delta : Defocus search delta [default 0.0025] : Finest search delta. (default 0.0025)
-  ; %%--%%resolution : Nominal resolution [Angstrom] : Nominal resolution of the reconstruction. (default None)
-  ; %%--%%pixelsize : Pixelsize [Angstrom] : Pixelsize in Angstrom. (default None) : %%--%%resolution!=None
+  ; %%--%%range : Defocus search range [mum] : Search range +- around the current defocus value. (default 0.15)
+  ; %%--%%delta : Defocus search delta [mum] : Finest search delta. (default 0.0025)
+  ; %%--%%resolution : Nominal resolution [A] : Nominal resolution of the reconstruction. (default None)
+  ; %%--%%pixelsize : Pixelsize [A] : Pixelsize in Angstrom. (default None) : %%--%%resolution!=None
   ; %%--%%number_part : Number of particles : Number of particles to process. Mainly for debugging. (default none)
   ; %%--%%chunk : Path to chunk file : Path to chunk file (default none)
   ; %%--%%volume2 : Path to second volume : Path to second half volume. (default none): %%--%%chunk!=None

@@ -253,11 +253,12 @@ def construct_keyword_dict():
 	keyword_dict["box_dir"] = SXkeyword_map(2, "dir")
 
 	# Added keywords for ctf refine
-	keyword_dict["inputstack"] = SXkeyword_map(2, "dir")
+	keyword_dict["inputstack"] = SXkeyword_map(2, "data2d_stack")
+	keyword_dict["path_to_input_stack"] = SXkeyword_map(2, "data2d_stack")
 	keyword_dict["outstack"] = SXkeyword_map(2, "dir")
 	keyword_dict["output_directory"] = SXkeyword_map(2, "dir")
 	keyword_dict["refinement_dir"] = SXkeyword_map(2, "dir")
-	keyword_dict["volume_path"] = SXkeyword_map(2, "data3d_stack")
+	keyword_dict["volume_path"] = SXkeyword_map(2, "data3d_one")
 
 
 	keyword_dict["--range"] = SXkeyword_map(2, "float")
