@@ -54,7 +54,7 @@ Then the training typcial happens in two steps:
   ; %%--%%warmup : Warm up epochs : Number of warmup epochs. (default 5)
   ; %%--%%gpu: GPUs : List of GPUs to use. (default 0)
   ; %%--%%gpu_fraction: GPU memory fraction : Specify the fraction of memory per GPU used by crYOLO during training. Only values between 0.0 and 1.0 are allowed. (default 1.0)
-  ; %%--%%num_cpu: Number of CPUs : Number of CPUs used during training. By default it will use half of the available CPUs. (default 1.0)
+  ; %%--%%num_cpu: Number of CPUs : Number of CPUs used during training. By default it will use half of the available CPUs. (default -1)
 
 \\
 ===== Output =====

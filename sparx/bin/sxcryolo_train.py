@@ -175,17 +175,20 @@ argparser.add_argument(
 )
 
 argparser.add_argument(
-	"--cryolo_train_path",
-	default=None,
-)
-
-argparser.add_argument(
     "-nc",
     "--num_cpu",
     type=int,
     default=-1,
     help="Number of CPUs used during training. By default it will use half of the available CPUs.",
 )
+
+argparser.add_argument(
+	"--cryolo_train_path",
+	default=None,
+	type=str,
+)
+
+
 
 
 def main():
@@ -212,6 +215,7 @@ def main():
 	valid_annot_dir = args.valid_annot_dir
 	fine_tune = args.fine_tune
 	gpu_fraction = args.gpu_fraction
+	num_cpu = args.num_cpu
 	cryolo_train_path = args.cryolo_train_path
 
 	warmup = args.warmup
@@ -269,17 +273,27 @@ def main():
 	if gpu_fraction < 1.0 and gpu_fraction > 0.0:
 		gpu_fraction_arg = "--gpu_fraction=" + str(gpu_fraction)
 
+	num_cpu_arg = ""
+	if num_cpu != -1:
+		num_cpu_arg = "--num_cpu="+str(num_cpu)
 	cryolo_ex_pth = "cryolo_train.py"
 	if cryolo_train_path:
 		cryolo_ex_pth = cryolo_train_path
 	if not fine_tune:
+		command = [cryolo_ex_pth, "-c=config_yolo.json", warmup_argument, gpu_argument, early_stop, gpu_fraction_arg]
 
+		if num_cpu != -1:
+			command.append(num_cpu_arg)
 		subprocess.check_call(
-			[cryolo_ex_pth, "-c=config_yolo.json", warmup_argument, gpu_argument, early_stop, gpu_fraction_arg])
+			command)
+
 	warmup_argument = "-w=0"
 	command = [cryolo_ex_pth, "-c=config_yolo.json", warmup_argument, gpu_argument, early_stop, gpu_fraction_arg]
 	if fine_tune:
 		command.append(fine_tune_argument)
+	if num_cpu:
+		command.append(num_cpu_arg)
+
 	subprocess.check_call(
 		command)
 

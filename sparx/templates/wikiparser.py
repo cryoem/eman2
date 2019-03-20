@@ -248,6 +248,7 @@ def construct_keyword_dict():
 	keyword_dict["valid_image_dir"] = SXkeyword_map(2, "dir")
 	keyword_dict["valid_annot_dir"] = SXkeyword_map(2, "dir")
 	keyword_dict["cryolo_train_path"] = SXkeyword_map(2, "exe")
+	keyword_dict["cryolo_predict_path"] = SXkeyword_map(2, "exe")
 	keyword_dict["target_dir"] = SXkeyword_map(2, "dir")
 	keyword_dict["config_path"] = SXkeyword_map(2, "params_any_json")  # --import=INPUT_PARAMS_PATH
 	keyword_dict["model_path"] = SXkeyword_map(2, "params_any_h5")
