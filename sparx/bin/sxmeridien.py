@@ -696,7 +696,11 @@ def getindexdata(partids, partstack, particle_groups, original_data=None, small_
 	if( original_data == None or small_memory):
 		original_data = EMData.read_images(Tracker["constants"]["stack"], partids)
 		for im in range( len(original_data) ):
-			original_data[im].set_attr("particle_group", group_reference[im])
+			try:
+				original_data[im].set_attr("particle_group", group_reference[im])
+			except:
+				print(len(original_data), len(group_reference), len(partids))
+				raise
 	return original_data, partstack, [im_start, im_end]
 
 def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
@@ -6713,16 +6717,6 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			apply_mask=False,
 			nonorm=True
 			)
-		#projdata[procid] = get_shrink_data(
-		#	Tracker["nxinit"],
-		#	procid,
-		#	original_data[procid],
-		#	oldparams[procid],
-		#	return_real=False,
-		#	preshift=True,
-		#	apply_mask=False,
-		#	nonorm=True
-		#	)
 
 		oldparams_outlier = []
 		oldparams[procid] = []
@@ -6796,17 +6790,6 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			smearing=True,
 			mpi_comm=MPI_COMM_WORLD
 			)
-		#do3d(
-		#	procid,
-		#	projdata[procid],
-		#	newparamstructure[procid],
-		#	refang,
-		#	rshifts,
-		#	norm_per_particle[procid],
-		#	Blockdata["myid"],
-		#	smearing=True,
-		#	mpi_comm=MPI_COMM_WORLD
-		#	)
 		projdata[procid] = []
 		if Tracker["changed_delta"]:
 			Tracker["nxinit"] = org_nxinit
