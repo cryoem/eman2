@@ -1760,6 +1760,9 @@ def add_sxcmd_subconfig_meridien_shared(token_edit_list):
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("a_criterion"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("function"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("function_ai"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("group_id"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("filament_width"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("helical_rise"); token_edit_list.append(token_edit)
 
 def add_sxcmd_subconfig_meridien_standard_shared(token_edit_list):
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("inires"); token_edit_list.append(token_edit)
