@@ -1,7 +1,7 @@
 ~~NOTOC~~
 
-===== sxctf_refine meridien =====
-CTF refine (Meridien): Refine the defocus per particle
+===== sxctf_refine manual =====
+CTF refine (Stack): Refine the defocus per particle
 
 
 \\
@@ -9,7 +9,7 @@ CTF refine (Meridien): Refine the defocus per particle
 
 Usage in command line
 
-  sxctf_refine.py meridien path_to_input_stack output_directory refinement_dir  --mask=path_to_mask --range=defocus_range --delta=defocus_delta --resolution=nominal_resolution --pixelsize=pixelsize --number_part=NUMBER_PARTICLES
+  sxctf_refine.py manual path_to_input_stack output_directory volume_path params_file --mask=path_to_mask --range=defocus_range --delta=defocus_delta --resolution=nominal_resolution --pixelsize=pixelsize --number_part=NUMBER_PARTICLES --chunk=PATH_TO_CHUNK_FILE --volume2=PATH_TO_VOLUME
 
 \\
 ===== Typical usage =====
@@ -23,8 +23,10 @@ sxctf_refine.py exists only in non-MPI version.
 === Main Parameters ===
   ; path_to_input_stack : Input stack path  : Path to input stack. (default none)
   ; output_directory : Output directory : Folder to output files etc. (default none)
-  ; refinement_dir : Meridien directory : Path to Merdien directory.  (default required)
+  ; volume_path : Path to volume : Path to volume.  (default required)
+  ; params_file : Params file: Path to params file (default required)
   ; %%--%%mask : Path to mask : Path to mask used. (default none)
+
 
 \\
 === Advanced Parameters ===
@@ -33,6 +35,9 @@ sxctf_refine.py exists only in non-MPI version.
   ; %%--%%resolution : Nominal resolution [Angstrom] : Nominal resolution of the reconstruction. (default None)
   ; %%--%%pixelsize : Pixelsize [Angstrom] : Pixelsize in Angstrom. (default None) : %%--%%resolution!=None
   ; %%--%%number_part : Number of particles : Number of particles to process. Mainly for debugging. (default none)
+  ; %%--%%chunk : Path to chunk file : Path to chunk file (default none)
+  ; %%--%%volume2 : Path to second volume : Path to second half volume. (default none): %%--%%chunk!=None
+
 
 \\
 ===== Output =====
