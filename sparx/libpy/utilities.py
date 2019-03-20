@@ -8935,7 +8935,7 @@ def angular_distribution(params_file, output_folder, prefix, method, pixel_size,
 
 	sym_class.even_angles(delta= delta , method=method, inc_mirror=inc_mirror)
 	sym_class.build_kdtree()
-	indices = sym_class.find_k_nearest_neighbors(data, k=1)
+	indices = sym_class.find_k_nearest_neighbors(data, k=1, tolistconv=False)
 
 	radius_array = numpy.bincount(indices.flatten(), minlength=sym_class.angles.shape[0])
 	angles_no_mirror_cart = sym_class.to_cartesian(sym_class.angles, tolistconv=False)
