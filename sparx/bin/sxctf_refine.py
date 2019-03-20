@@ -672,8 +672,6 @@ def setup_argparser():
 
 	argparser.add_argument("outputdir", help="Path to the output directory")
 
-	argparser.add_argument("ouputstackname", help="bdb file path to new virtual stack")
-
 	argparser.add_argument(
 		"-r", "--range", default=0.15, type=float, help="Defocus search range (in microns)"
 	)
@@ -725,6 +723,8 @@ def setup_argparser():
 
 	parser_manual.add_argument("volume", help="Path to your first half map")
 
+	parser_manual.add_argument("params_path", help="Path to your params file")
+
 	parser_manual.add_argument(
 		"-v2",
 		"--volume2",
@@ -733,8 +733,6 @@ def setup_argparser():
 
 	# TODO: Use both chunks might be necessay in the future.
 	parser_manual.add_argument("-c", "--chunk", help="Path to one of the chunk files")
-
-	parser_manual.add_argument("-p", "--params", help="Path to your params file")
 
 	parser_meridien.add_argument("meridien_path", help="Path to meridien refinement folder")
 
@@ -791,9 +789,7 @@ def _main_():
 		os.makedirs(output_folder)
 		global_def.write_command(output_folder)
 
-	output_virtual_stack_name = args.ouputstackname
-
-	output_virtual_stack_path = "bdb:" + os.path.join(output_folder, output_virtual_stack_name)
+	output_virtual_stack_path = "bdb:" + os.path.join(output_folder, "ctf_refined")
 
 	output_stats_path = os.path.join(output_folder, "statistics")
 
