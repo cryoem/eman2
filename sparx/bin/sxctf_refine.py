@@ -768,7 +768,7 @@ def _main_():
 	else:
 		volume1_file_path = args.volume
 		volume2_file_path = args.volume2
-		params_file_path = args.params
+		params_file_path = args.params_path
 		chunk_file_path = args.chunk
 		if volume2_file_path is None and chunk_file_path is not None:
 			global_def.ERROR(
