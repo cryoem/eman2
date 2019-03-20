@@ -2331,6 +2331,32 @@ class symclass(object):
 							else:  	angles.append([phi, theta, 0.0])
 							phi += detphi
 						theta += delta
+				elif (method == 'M'):
+					if theta2 < 90:
+						theta2 = 90
+					theta = 90
+					while(theta >= theta1):
+						phi = phi1
+						if(theta==0.0 or theta==180.0): detphi = 2*phi2
+						else:  detphi = delta/sin(radians(theta))
+						while(phi<phi2):
+							if is_platonic_sym:
+								if(self.is_in_subunit(phi, theta, inc_mirror)): 	angles.append([phi, theta, 0.0])
+							else:  	angles.append([phi, theta, 0.0])
+							phi += detphi
+						theta -= delta
+					theta = 90 + delta
+					angles = angles[::-1] # Reverse list to get angles in ascending order
+					while(theta <= theta2):
+						phi = phi1
+						if(theta==0.0 or theta==180.0): detphi = 2*phi2
+						else:  detphi = delta/sin(radians(theta))
+						while(phi<phi2):
+							if is_platonic_sym:
+								if(self.is_in_subunit(phi, theta, inc_mirror)): 	angles.append([phi, theta, 0.0])
+							else:  	angles.append([phi, theta, 0.0])
+							phi += detphi
+						theta += delta
 				else:
 					# I have to use original phi2 and theta2 to compute Deltaz and wedgeFactor as otherwise
 					# points for include mirror differ from do not include mirror.
