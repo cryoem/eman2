@@ -912,7 +912,7 @@ def get_refangs_and_shifts():
 		theta2=Tracker['theta_max'],
 		method=Tracker['constants']['even_angle_method'],
 		)
-	coarse = Blockdata["symclass"].even_angles(
+	coarse = Blockdata["symclass_coarse"].even_angles(
 		delta=2*Tracker["delta"],
 		theta1=Tracker['theta_min'],
 		theta2=Tracker['theta_max'],
@@ -3800,7 +3800,9 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	numberofrefs_inmem = int(Tracker["constants"]["memory_per_node"]/4/((size_of_one_image*disp_unit)/1.0e9))
 	####if( Blockdata["myid_on_node"] == 0  ):  sxprint( " MEMEST ", n_coarse_ang,numberofrefs_inmem)
 	#  number of references that will fit into one mode
-	normals_set = angles_to_normals(coarse_angles)
+	#Blockdata['symclass_coarse'].set_angles(coarse_angles)
+	Blockdata['symclass_coarse'].build_kdtree()
+	#normals_set = angles_to_normals(coarse_angles)
 	Blockdata["angle_set"] = coarse_angles
 	if( n_coarse_ang <= numberofrefs_inmem ):
 		number_of_cones = 1
@@ -3817,7 +3819,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 			for m in q:
 				#print " m ",m,len(angles)
 
-				assignments_of_refangles_to_angles[m] = find_assignments_of_refangles_to_angles(normals_set, oldparams[m], Tracker["an"])
+				assignments_of_refangles_to_angles[m] = Blockdata['symclass_coarse'].find_nearest_neighbors(oldparams[m], Tracker["an"])
 				assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
 
 			assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
@@ -3883,7 +3885,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					for m in q:
 						#print " m ",m,len(angles)
 
-						assignments_of_refangles_to_angles[m] = find_assignments_of_refangles_to_angles(normals_set, oldparams[m], Tracker["an"])
+						assignments_of_refangles_to_angles[m] = Blockdata['symclass_coarse'].find_nearest_neighbors(oldparams[m], Tracker["an"])
 						#if Blockdata["myid"] == 0:  sxprint( "assignments_of_refangles_to_angles[m] ", Blockdata["color"],i,m,assignments_of_refangles_to_angles[m])
 						assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
 
@@ -3921,7 +3923,6 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	#  Maximum number of refangles assigned to angles (max number of references per image)
 	nlocal_angles = max( [ len(q) for q in assignments_of_refangles_to_angles] )
 	#  Most likely we have to delete some lists before proceeding
-	del normals_set
 	# We have to figure the maximum length of xod1, which is lang.  If there are no cones, it is an estimate.  If there are cones, we have list of assignments
 	#  For number of cones I use refang and an.  This should give approximately the same number as coarse angles and 2*an, which is what is actually used in searches
 	numberofrefs_inmem = max([len(q) for q in assignments_of_refangles_to_cones])
@@ -4859,7 +4860,8 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	numberofrefs_inmem = int(Tracker["constants"]["memory_per_node"]/4/((size_of_one_image*disp_unit)/1.0e9))
 	####if( Blockdata["myid_on_node"] == 0  ):  sxprint( " MEMEST ", n_coarse_ang,numberofrefs_inmem)
 	#  number of references that will fit into one mode
-	normals_set = angles_to_normals(coarse_angles)
+	Blockdata['symclass_coarse'].build_kdtree()
+	#normals_set = angles_to_normals(coarse_angles)
 	Blockdata["angle_set"] = coarse_angles
 	if( n_coarse_ang <= numberofrefs_inmem ):
 		number_of_cones = 1
@@ -4876,7 +4878,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 			for m in q:
 				#print " m ",m,len(angles)
 
-				assignments_of_refangles_to_angles[m] = find_assignments_of_refangles_to_angles(normals_set, oldparams[m], Tracker["an"])
+				assignments_of_refangles_to_angles[m] = Blockdata['symclass_coarse'].find_nearest_neighbors(oldparams[m], Tracker["an"])
 				assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
 
 			assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
@@ -4942,7 +4944,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					for m in q:
 						#print " m ",m,len(angles)
 
-						assignments_of_refangles_to_angles[m] = find_assignments_of_refangles_to_angles(normals_set, oldparams[m], Tracker["an"])
+						assignments_of_refangles_to_angles[m] = Blockdata['symclass_coarse'].find_nearest_neighbors(oldparams[m], Tracker["an"])
 						#if Blockdata["myid"] == 0:  sxprint( "assignments_of_refangles_to_angles[m] ", Blockdata["color"],i,m,assignments_of_refangles_to_angles[m])
 						assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
 
@@ -4980,7 +4982,6 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	#  Maximum number of refangles assigned to angles (max number of references per image)
 	nlocal_angles = max( [ len(q) for q in assignments_of_refangles_to_angles] )
 	#  Most likely we have to delete some lists before proceeding
-	del normals_set
 	# We have to figure the maximum length of xod1, which is lang.  If there are no cones, it is an estimate.  If there are cones, we have list of assignments
 	#  For number of cones I use refang and an.  This should give approximately the same number as coarse angles and 2*an, which is what is actually used in searches
 	numberofrefs_inmem = max([len(q) for q in assignments_of_refangles_to_cones])
@@ -6197,6 +6198,8 @@ def update_tracker(shell_line_command):
 	parser_no_default.add_option("--nonorm",               		action="store_true")
 	parser_no_default.add_option("--memory_per_node",         	type="float")
 	parser_no_default.add_option("--an",                        type="float")
+	parser_no_default.add_option("--limit_improvement",                        type="int")
+	parser_no_default.add_option("--a_criterion",                        type="float")
 
 	parser_no_default.add_option("--do_final",             		type="int")
 	parser_no_default.add_option("--local_refinement",			action="store_true")
@@ -6215,6 +6218,12 @@ def update_tracker(shell_line_command):
 
 	if options_no_default_value.local_refinement:
 		Tracker['constants']['do_local'] = True
+
+	if 	options_no_default_value.limit_improvement != None:
+		Tracker["constants"]["limit_improvement"] 				= options_no_default_value.limit_improvement
+
+	if 	options_no_default_value.a_criterion != None:
+		Tracker["constants"]["a_criterion"] 				= options_no_default_value.a_criterion
 
 	if 	options_no_default_value.radius != None:
 		Tracker["constants"]["radius"] 				= options_no_default_value.radius

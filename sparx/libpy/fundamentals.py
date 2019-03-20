@@ -2165,6 +2165,15 @@ class symclass(object):
 		if self.old_even_angles_data['needs_rebuild']:
 			self.build_kdtree()
 		angles_cart = self.to_cartesian(angles, is_radians=is_radians, tolistconv=False)
+		if len(angles_cart.shape) == 1:
+			return_single = True
+			angles_cart = numpy.atleast_2d(angles_cart)
+		elif len(angles_cart.shape) == 2:
+			return_single = False
+		else:
+			sxprint(angles_cart)
+			ERROR('Find nearest neighbors can only handle 1d or 2d data: {0}'.format(len(angles_cart.shape)))
+			return
 		distance = 2 * numpy.sin(numpy.radians(angular_distance) / 2)
 
 		neighbors = self.kdtree_neighbors.query_ball_point(angles_cart, r=distance)
@@ -2190,7 +2199,12 @@ class symclass(object):
 				_, indices = numpy.unique(new_ang, axis=0, return_index=True)
 				for idx2, entry in enumerate(new_ang[numpy.sort(indices)]):
 					out_array[idx][idx2] = entry
-		return out_array
+		if return_single:
+			out_array = out_array[0]
+		if tolistconv:
+			return out_array.tolist()
+		else:
+			return out_array
 
 	def find_k_nearest_neighbors(self, angles, k, tolistconv=True, is_radians=False, return_index=True):
 		if self.old_even_angles_data['needs_rebuild']:
@@ -2219,7 +2233,10 @@ class symclass(object):
 			for idx, row in enumerate(new_ang):
 				_, indices = numpy.unique(row, axis=0, return_index=True)
 				out_array[idx] = row[numpy.sort(indices)][:k_min]
-		return out_array
+		if tolistconv:
+			return out_array.tolist()
+		else:
+			return out_array
 
 	@staticmethod
 	def to_cartesian(angles, tolistconv=True, is_radians=False):
