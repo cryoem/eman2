@@ -42,6 +42,7 @@ import os
 import itertools
 import numpy as np
 import sys
+import copy
 
 from tqdm import tqdm
 from scipy import ndimage
@@ -255,9 +256,10 @@ def refine_defocus_with_error_est(
 	defocus_bootstrap = [ctf.defocus for ctf in best_ctfs_bootstrap]
 	unique_defocuses = set(defocus_bootstrap)
 	ctf_list_fine = []
+	current_ctf_cpy = copy.copy(current_ctf)
 	for unique_def in unique_defocuses:
-		current_ctf.defocus = unique_def
-		ctf_list_fine.extend(create_ctf_list(current_ctf, def_step_size * 10, def_step_size))
+		current_ctf_cpy.defocus = unique_def
+		ctf_list_fine.extend(create_ctf_list(current_ctf_cpy, def_step_size * 10, def_step_size))
 
 	# ########
 	# Final optimization
