@@ -37,6 +37,7 @@
 #include "ctf.h"
 #include "xydata.h"
 #include "emdata.h"
+#include "emfft.h"
 #include "emassert.h"
 #include "randnum.h"
 #include "symmetry.h"
@@ -85,6 +86,7 @@ const string AmpweightFourierProcessor::NAME = "filter.ampweight";
 const string Axis0FourierProcessor::NAME = "filter.xyaxes0";
 const string ConvolutionProcessor::NAME = "math.convolution";
 const string BispecSliceProcessor::NAME = "math.bispectrum.slice";
+const string HarmonicPowProcessor::NAME = "math.harmonicpow";
 const string XGradientProcessor::NAME = "math.edge.xgradient";
 const string YGradientProcessor::NAME = "math.edge.ygradient";
 const string ZGradientProcessor::NAME = "math.edge.zgradient";
@@ -448,6 +450,7 @@ template <> Factory < Processor >::Factory()
 
 	force_add<ConvolutionProcessor>();
 	force_add<BispecSliceProcessor>();
+	force_add<HarmonicPowProcessor>();
 
 	force_add<NormalizeStdProcessor>();
 	force_add<NormalizeUnitProcessor>();
@@ -13236,7 +13239,87 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	
 	return(ret);
 }
+
+EMData* HarmonicPowProcessor::process(const EMData * const image) {
+	if (image->get_zsize()!=1) throw ImageDimensionException("Only 2-D images supported");
+
+	EMData *cimage = NULL;
+	if (image->is_complex()) cimage = image->copy();
+	else cimage = image->do_fft();
+	cimage->process_inplace("xform.phaseorigin.tocorner");
 	
+	// Decide how large the bispectrum will be
+	int nx=cimage->get_xsize();
+	int ny=cimage->get_ysize();
+	int naz=(int)params.set_default("size",image->get_ysize());		
+
+	EMData* trns=new EMData(nx,ny,1);
+	trns->set_complex(1);
+	trns->set_fftpad(1);
+	trns->to_zero();
+//	printf("apix %f\tnx %d\n",(float)image->get_attr("apix_x"),(int)image->get_xsize());
+	
+	// Compute a translational invariant for a single harmonic
+	if (params.has_key("hn")) {
+		int hn=(int)params.get("hn");
+		if (hn<1) throw InvalidParameterException("Invalid parameter, hn<1");
+		int rn = (int)params.set_default("rn",0);
+		// rotational/translational single
+		if (rn>0) {
+			trns->set_size(naz*2,ny/2,1);
+			for (int ja=0; ja<naz; ja++) {
+				float si=sin(float(2.0*M_PI*ja/naz));
+				float co=cos(float(2.0*M_PI*ja/naz));
+				for (int jr=3*hn; jr<ny/2; jr++) {
+					float jx=co*jr;
+					float jy=si*jr;
+					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
+					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx/(float)hn,jy/(float)hn);
+					trns->set_complex_at(ja,jr-ny/4,0,(complex<float>)(v1*std::pow(std::conj(v2),(float)hn)));
+				}
+			}
+			// rescale components to have linear amplitude WRT the original FFT, without changing phase
+			trns->ri2ap();
+			size_t xyz=trns->get_size();
+			for (size_t i=0; i<xyz; i+=2) {
+				trns->set_value_at_index(i,pow(trns->get_value_at_index(i),1.0/(hn+1)));
+			}
+			trns->ap2ri();
+			float *tmp = EMfft::fftmalloc(naz*2);
+			for (int jy=3*hn;  jy<ny/2; jy++) {
+				// While it might seem a good idea to do inplace 1D transforms for each row, the potential memory
+				// alignment change for each row could cause bad things to happen
+				memcpy((void*)tmp,(void*)(trns->get_data()+jy*naz*2*sizeof(float)),naz*2*sizeof(float));
+				EMfft::complex_to_complex_1d_inplace(tmp,naz*2);
+				memcpy((void*)(trns->get_data()+jy*naz*2*sizeof(float)),(void*)tmp,naz*2*sizeof(float));
+			}
+			EMfft::fftfree(tmp);
+		}
+		else {
+			// translational only single
+			for (int jx=0; jx<nx/2; jx++) {
+				for (int jy=-ny/2; jy<ny/2; jy++) {
+					if (Util::hypot_fast(jx,jy)<3.0f*hn) continue;
+					complex<double> v1 = (complex<double>)cimage->get_complex_at(jx,jy);
+					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx/(float)hn,jy/(float)hn);
+					trns->set_complex_at(jx,jy,0,(complex<float>)(v1*std::pow(std::conj(v2),(float)hn)));
+				}
+			}
+			trns->ri2ap();
+			size_t xyz=trns->get_size();
+			for (size_t i=0; i<xyz; i+=2) {
+				trns->set_value_at_index(i,pow(trns->get_value_at_index(i),1.0/(hn+1)));		// brings all of the components into a range linear with the original FFT
+			}
+			trns->ap2ri();
+	//		EMData *ret = trns->do_ift();
+		}
+		delete cimage;
+
+		return(trns);
+	}
+	
+}
+
 
 EMData* ConvolutionKernelProcessor::process(const EMData* const image)
 {

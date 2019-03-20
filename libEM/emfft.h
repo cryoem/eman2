@@ -49,6 +49,7 @@ namespace EMAN
 	  public:
 		static int real_to_complex_1d(float *real_data, float *complex_data, int n);
 		static int complex_to_real_1d(float *complex_data, float *real_data, int n);
+		static int complex_to_complex_1d_inplace(float *data, int n);
 		static int complex_to_complex_1d_f(float *in, float *out, int n); // ming add
 		static int complex_to_complex_1d_b(float *in, float *out, int n); // ming add
 		static int real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny,
@@ -56,6 +57,8 @@ namespace EMAN
 		static int complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny,
 									  int nz);
 		static int complex_to_complex_nd(float *complex_data_in, float *complex_data_out, int nx,int ny,int nz);// ming add
+		static inline float *fftmalloc(int n) { return (float*)fftw_malloc(n*sizeof(float)); }
+		static inline void fftfree(float *mem) { fftw_free(mem); }
 		
 		// NOTE 2018/11/13 Toshio Moriya: 
 		// Added for Pawel so that he can access to EMfft::EMfftw3_cache::EMfftw3_cache() through this function
@@ -67,6 +70,7 @@ namespace EMAN
 #define EMFFTW3_CACHE_SIZE 32
 		static const int EMAN2_REAL_2_COMPLEX;
 		static const int EMAN2_COMPLEX_2_REAL;
+		static const int EMAN2_COMPLEX_2_COMPLEX;		// inplace only
 		/** EMfftw3_cache
 		 * An ecapsulation of FFTW3 plan caching. Keeps an array of plans and records of important details.
 		 * Main interface is get_plan(...)
@@ -181,6 +185,8 @@ namespace EMAN
 
 		static int real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny, int nz);
 		static int complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny, int nz);
+		static inline float *fftmalloc(int n) { return (float*)malloc(n*sizeof(float)); }
+		static inline void fftfree(float *mem) { free(mem) }
 	  
 	  private:
 		static int real_to_complex_2d(float *real_data, float *complex_data, int nx, int ny);

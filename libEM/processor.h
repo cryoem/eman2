@@ -670,6 +670,55 @@ The basic design of EMAN Processors: <br>\
 	};
 
 	/**
+	 * This processor computes what I've dubbed the 'harmonic power spectrum'. It is a 2 point invariant method based on the product
+	 * of a Fourier location and the complex conjugate of another Fourier location at r=1/N raised to the N power to cancel phases
+	 * Since raising complex values to fracional powers causes root uncertainty issues, this insures that phase information is preserved
+	 * Effectively this is giving a relative phase shift between different harmonics of each specific frequency. It also avoids problems with
+	 * multiplying noisy components into the invariant as the bispectrum does. Anyway... that's the idea.
+	 * Let's see if it works ;^)
+	 *@author Steve Ludtke
+	 *@date 2019/03/17
+	 */
+	class HarmonicPowProcessor : public Processor
+	{
+		public:
+			HarmonicPowProcessor() {}
+
+			string get_name() const
+			{
+				return NAME;
+			}
+
+			void process_inplace(EMData *image) { throw InvalidCallException("inplace not supported"); }
+			
+			virtual EMData* process(const EMData* const image);
+			
+			static Processor *NEW()
+			{
+				return new HarmonicPowProcessor();
+			}
+
+			string get_desc() const
+			{
+				return "Computes invariants including relative phase in harmonic series";
+			}
+
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("hn", EMObject::INT, "Computes a single translational invariant for the nth harmonic, 1 is a normal power spectrum");
+				d.put("rn", EMObject::INT, "Computes a single rot/trans invariant for the nth rotational harmonic, requires hn to be non zero");
+				d.put("rfp", EMObject::INT, "Returns a non square 2-D image rotational invariants organized such that X=azimuthal power. Used for rotational alignment.");
+				d.put("fp", EMObject::INT, "Returns a non-square 2-D image containing n harmonics. R&T invariant.");
+				d.put("size", EMObject::INT, "If specified, will determine the number of rotational samples in the bispectrum. If not set, a size is selected automatically");
+				return d;
+			}
+
+			static const string NAME;
+	};
+
+	
+	/**
 	 * This processor computes 2-D slices of the 4-D bispectrum of a 2-D image. It can also integrate over image rotation
 	 * to produce a set of rotationally/translationally invariant slices
 	 *@author Steve Ludtke
@@ -1728,7 +1777,7 @@ The basic design of EMAN Processors: <br>\
 			d.put("ampcont", EMObject::FLOAT, "% amplitude contrast (0-100)");
 			d.put("bfactor", EMObject::FLOAT, "B-factor in A^2, uses MRC convention rather than EMAN1 convention");
 			d.put("noiseamp", EMObject::FLOAT, "Amplitude of the added empirical pink noise");
-			d.put("noiseampwhite", EMObject::FLOAT, "Amplitude of added white noise");
+// 			d.put("noiseampwhite", EMObject::FLOAT, "Amplitude of added white noise");
 			d.put("voltage", EMObject::FLOAT, "Microscope voltage in KV");
 			d.put("cs", EMObject::FLOAT, "Cs of microscope in mm");
 			d.put("apix", EMObject::FLOAT, "A/pix of data");
