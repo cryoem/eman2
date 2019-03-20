@@ -56,6 +56,12 @@ argparser.add_argument(
 	help='Path to where the boxfiles are written.')
 
 argparser.add_argument(
+	"--cryolo_predict_path",
+	default=None,
+	type=str,
+)
+
+argparser.add_argument(
 	'--confidence_threshold',
 	type=float,
 	default=0.3,
@@ -91,6 +97,33 @@ argparser.add_argument(
 	type=int,
 	help="Minimum number of boxes per filament")
 
+argparser.add_argument(
+    "--nosplit",
+    action="store_true",
+    help="(FILAMENT MODE) The filament mode does not split to curved filaments",
+)
+
+argparser.add_argument(
+    "--nomerging",
+    action="store_true",
+    help="(FILAMENT MODE) The filament mode does not merge filaments",
+)
+
+argparser.add_argument(
+    "--gpu_fraction",
+    type=float,
+    default=1.0,
+    help="Specify the fraction of memory per GPU used by crYOLO during prediction. Only values between 0.0 and 1.0 are allowed.",
+)
+
+argparser.add_argument(
+    "-nc",
+    "--num_cpu",
+    type=int,
+    default=-1,
+    help="Number of CPUs used during prediction. By default it will use half of the available CPUs.",
+)
+
 
 def main():
 	# Read arguments
@@ -106,6 +139,10 @@ def main():
 	filament_width = args.filament_width
 	min_box_per_filament = args.min_box_per_filament
 	box_distance = args.box_distance
+	gpu_fraction = 1.0
+	if args.gpu_fraction < 1.0 and args.gpu_fraction > 0.0:
+		gpu_fraction = args.gpu_fraction
+	num_cpu = args.num_cpu
 
 	if type(args.gpu) is list:
 		str_gpus = [str(entry) for entry in args.gpu]
@@ -114,8 +151,15 @@ def main():
 
 	arg_gpu = ' '.join(str_gpus)
 
+	no_merging = args.nomerging
+	no_split = args.nosplit
+	cryolo_predict_path= args.cryolo_predict_path
+
 	# Run the training
 	complete_command = ['cryolo_predict.py']
+	if cryolo_predict_path is not None:
+		complete_command = [cryolo_predict_path]
+
 	config_argument = "-c=" + str(config_path)
 	complete_command.append(config_argument)
 	weights_argument = "-w=" + str(model_path)
@@ -128,11 +172,21 @@ def main():
 	complete_command.append(thresh_argument)
 	gpu_argument = "-g=" + arg_gpu
 	complete_command.append(gpu_argument)
+	gpu_fraction_arg = "--gpu_fraction="+str(gpu_fraction)
+	complete_command.append(gpu_fraction_arg)
+	if num_cpu != -1:
+		num_cpu_arg = "--num_cpu="+str(num_cpu)
+		complete_command.append(num_cpu_arg)
+
 	if do_filament_mode:
 		complete_command.append("--filament")
 		complete_command.append("-fw=" + str(filament_width))
 		complete_command.append("-mn=" + str(min_box_per_filament))
 		complete_command.append("-bd=" + str(box_distance))
+		if no_merging:
+			complete_command.append("--nomerging")
+		if no_split:
+			complete_command.append("--nosplit")
 	subprocess.check_call(complete_command)
 
 
