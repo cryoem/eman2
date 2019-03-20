@@ -256,10 +256,14 @@ def construct_keyword_dict():
 	keyword_dict["box_dir"] = SXkeyword_map(2, "dir")
 
 	# Added keywords for ctf refine
-	keyword_dict["inputstack"] = SXkeyword_map(2, "dir")
+	keyword_dict["inputstack"] = SXkeyword_map(2, "data2d_stack")
+	keyword_dict["path_to_input_stack"] = SXkeyword_map(2, "data2d_stack")
 	keyword_dict["outstack"] = SXkeyword_map(2, "dir")
 	keyword_dict["output_directory"] = SXkeyword_map(2, "dir")
 	keyword_dict["refinement_dir"] = SXkeyword_map(2, "dir")
+	keyword_dict["volume_path"] = SXkeyword_map(2, "data3d_one")
+
+
 	keyword_dict["--range"] = SXkeyword_map(2, "float")
 	keyword_dict["--delta"] = SXkeyword_map(2, "float")
 	keyword_dict["--resolution"] = SXkeyword_map(2, "float")
@@ -2306,7 +2310,9 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/batch.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/ctf_refine.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable=True))
-
+	sxcmd_config_list.append(
+		SXcmd_config("../doc/ctf_refine_stack.txt", "DokuWiki", sxcmd_category, sxcmd_role,
+					 is_submittable=True))
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_window"
 
@@ -2400,6 +2406,10 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(
 		SXcmd_config("../doc/ctf_refine.txt", "DokuWiki", sxcmd_category, sxcmd_role,
 					 is_submittable=True))
+	sxcmd_config_list.append(
+		SXcmd_config("../doc/ctf_refine_stack.txt", "DokuWiki", sxcmd_category, sxcmd_role,
+					 is_submittable=True))
+
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_sort3d"
@@ -2492,6 +2502,8 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_makevstack()))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/ctf_refine.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable=True))
+	sxcmd_config_list.append(SXcmd_config("../doc/ctf_refine_stack.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable=True))
+
 
 	# sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 
