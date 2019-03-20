@@ -348,14 +348,14 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["fl"].key_base == "fl")
 		assert(sxcmd.token_dict["fl"].type == "abs_freq")
 		sxcmd.token_dict["fl"].type = "float"
+	elif sxcmd.name == "sxseparate_class":
+		sxcmd.token_dict["input_class_avgs"].type = "data2d_one"
 	elif sxcmd.name == "sxproj_compare":
-		assert(sxcmd.token_dict["stack"].key_base == "stack")
-		assert(sxcmd.token_dict["stack"].type == "bdb2d_stack")
 		sxcmd.token_dict["stack"].type = "data2d_one"
-		assert(sxcmd.token_dict["angles"].key_base == "angles")
-		sxcmd.token_dict["angles"].type = "params_proj_txt"
-		assert(sxcmd.token_dict["select"].key_base == "select")
-		sxcmd.token_dict["select"].type = "select_data2d_stack"
+		sxcmd.token_dict["classangles"].type = "params_proj_txt"
+		sxcmd.token_dict["classselect"].type = "select_data2d_stack"
+		sxcmd.token_dict["partangles"].type = "params_proj_txt"
+		sxcmd.token_dict["partselect"].type = "select_data2d_stack"
 	elif sxcmd.name == "sxviper":
 		assert(sxcmd.token_dict["stack"].key_base == "stack")
 		assert(sxcmd.token_dict["stack"].type == "bdb2d_stack")
@@ -2348,6 +2348,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_makevstack()))
+	sxcmd_config_list.append(SXcmd_config("../doc/separate_class.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/batch.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
 
@@ -2473,6 +2474,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/pdb2em.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/relion2sphire.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(		SXcmd_config("../doc/sphire2relion.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/separate_class.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/proj_compare.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_moon_eliminator.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/mask.txt", "DokuWiki", sxcmd_category, sxcmd_role))
