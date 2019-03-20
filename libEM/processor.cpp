@@ -37,6 +37,7 @@
 #include "ctf.h"
 #include "xydata.h"
 #include "emdata.h"
+#include "emfft.h"
 #include "emassert.h"
 #include "randnum.h"
 #include "symmetry.h"
@@ -13268,7 +13269,7 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 			trns->set_size(naz*2,ny/2,1);
 			for (int ja=0; ja<naz; ja++) {
 				float si=sin(float(2.0*M_PI*ja/naz));
-				float co=sin(float(2.0*M_PI*ja/naz));
+				float co=cos(float(2.0*M_PI*ja/naz));
 				for (int jr=3*hn; jr<ny/2; jr++) {
 					float jx=co*jr;
 					float jy=si*jr;
@@ -13277,12 +13278,22 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 					trns->set_complex_at(ja,jr-ny/4,0,(complex<float>)(v1*std::pow(std::conj(v2),(float)hn)));
 				}
 			}
+			// rescale components to have linear amplitude WRT the original FFT, without changing phase
 			trns->ri2ap();
 			size_t xyz=trns->get_size();
 			for (size_t i=0; i<xyz; i+=2) {
-				trns->set_value_at_index(i,pow(trns->get_value_at_index(i),1.0/(hn+1)));		// brings all of the components into a range linear with the original FFT
+				trns->set_value_at_index(i,pow(trns->get_value_at_index(i),1.0/(hn+1)));
 			}
 			trns->ap2ri();
+			float *tmp = EMfft::fftmalloc(naz*2);
+			for (int jy=3*hn;  jy<ny/2; jy++) {
+				// While it might seem a good idea to do inplace 1D transforms for each row, the potential memory
+				// alignment change for each row could cause bad things to happen
+				memcpy((void*)tmp,(void*)(trns->get_data()+jy*naz*2*sizeof(float)),naz*2*sizeof(float));
+				EMfft::complex_to_complex_1d_inplace(tmp,naz*2);
+				memcpy((void*)(trns->get_data()+jy*naz*2*sizeof(float)),(void*)tmp,naz*2*sizeof(float));
+			}
+			EMfft::fftfree(tmp);
 		}
 		else {
 			// translational only single

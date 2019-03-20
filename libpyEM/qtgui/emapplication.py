@@ -246,10 +246,11 @@ class EMApp(QtWidgets.QApplication):
 		
 		QtWidgets.QApplication.__init__(self, sys.argv)
 		
-		style=QtWidgets.QStyleFactory.create("Plastique")
+		style=QtWidgets.QStyleFactory.create("Fusion")		# seems like Qt5 in Anaconda only has Windows and Fusion
+#		style=QtWidgets.QStyleFactory.create("Plastique")	# this was used in Qt4
 		
 		if style==None:
-			print("Note: standard Plastique style not available, controls may be distorted. Using ", end=' ')
+			print("Note: standard Fusion style not available, controls may be distorted. Using ", end=' ')
 			
 			# the first one should work, but we have the loop, just in case
 			for s in list(QtWidgets.QStyleFactory.keys()):
