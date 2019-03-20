@@ -21,8 +21,8 @@ sxctf_refine.py exists only in non-MPI version.
 \\
 ===== Input =====
 === Main Parameters ===
-  ; path_to_input_stack : Input stack path  : Path to input stack. (default none)
-  ; output_directory : Output directory : Folder to output files etc. (default none)
+  ; path_to_input_stack : Input stack path  : Path to input stack. (default required)
+  ; output_directory : Output directory : Folder to output files etc. (default required)
   ; refinement_dir : Meridien directory : Path to Merdien directory.  (default required)
   ; %%--%%mask : Path to mask : Path to mask used. (default none)
 
