@@ -2200,7 +2200,7 @@ class symclass(object):
 		k_min = numpy.minimum(k, self.angles.shape[0])
 		k_min_raw = self.kdnneigbors*k_min
 		dist, neighbors = self.kdtree_neighbors.query(angles_cart, k=k_min_raw)
-		if k == 1:
+		if k_min_raw == 1:
 			neighbors = neighbors.reshape(neighbors.shape[0], 1)
 			dist = dist.reshape(dist.shape[0], 1)
 		for_reduction = self.kdneighbors[neighbors].reshape(numpy.multiply(*neighbors.shape), 3)
