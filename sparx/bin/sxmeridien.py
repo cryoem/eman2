@@ -5789,6 +5789,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
       final_iter=-1, comm = -1 ):
 	global Tracker, Blockdata
 
+	final_dir = Tracker["directory"]
 	if(Blockdata["subgroup_myid"] > -1):
 		# load datastructure, read data, do two reconstructions(stepone, steptwo)
 		if final_iter ==-1: final_iter = Tracker["constants"]["best"]  
@@ -5800,7 +5801,6 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 			sxprint("Reconstruction uses solution of %d iteration"%final_iter)
 			sxprint("Final reconstruction image size is:  %d"%(Tracker["constants"]["nnxo"]))
 			sxprint("Final directory is %s"%(Tracker["directory"]))
-		final_dir = Tracker["directory"]
 		if(Blockdata["subgroup_myid"] == Blockdata["main_node"]):
 			try:
 				refang  = read_text_row( os.path.join(final_dir, "refang.txt"))
@@ -5842,9 +5842,8 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 		for procid in range(2):
 			if procid ==0: original_data[1] = None	
 			partids[procid]   = os.path.join(final_dir,"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
-			partstack[procid] = os.path.join(Tracker["constants"]["masterdir"],\
-			   "main%03d"%(Tracker["mainiteration"]-1),"params-chunk_%01d_%03d.txt"%(procid,\
-			     (Tracker["mainiteration"]-1)))
+			partstack[procid] = os.path.join(final_dir, "params-chunk_%01d_%03d.txt"%(procid,\
+			     (Tracker["mainiteration"])))
 			###
 			psize = len(read_text_file(partids[procid]))
 			oldparamstructure[procid] = []			
@@ -5926,7 +5925,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 	
 	# also copy params to masterdir as final params
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		shutil.copyfile(os.path.join(Tracker["constants"]["masterdir"], "main%03d"%Tracker["mainiteration"], \
+		shutil.copyfile(os.path.join(final_dir, \
 		  "params_%03d.txt"%Tracker["mainiteration"]), os.path.join(Tracker["constants"]["masterdir"], \
 		     "final_params_%03d.txt"%Tracker["mainiteration"]))
 		shutil.rmtree(os.path.join(Tracker["constants"]["masterdir"], "tempdir"))
@@ -5937,7 +5936,8 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 	global Tracker, Blockdata
 	# search for best solution, and load respective tracker
 	carryon  = 1
-	line     = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	#line     = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	line     = ''
 	if(Blockdata["myid"] == Blockdata["main_node"]):sxprint(line, "recons3d_final")
 	do_final_iter = 3
 	if(do_final_iter_init ==0):
