@@ -543,7 +543,7 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 				
 			else:
 				rx=np.cos(tlts[nid]*np.pi/180.)
-				msk=EMData(e0["nx"], e0["ny"])
+				msk=EMData(e1["nx"], e1["ny"])
 				msk.process_inplace("testimage.ellipsoid", {"a":rx*sz//4,"b":sz//4,"fill":1,"transform":Transform({"type":"2d","alpha":tltax})})
 				msk.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.01})
 				#m=msk.process("mask.gaussian.nonuniform",{"radius_x":sz//4, "radius_y":ry*sz//4, "gauss_width":0.4})

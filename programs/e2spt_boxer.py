@@ -264,7 +264,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.set_data(data)
 
 		# Boxviewer subwidget (details of a single box)
-		self.boxviewer=EMBoxViewer()
+		#self.boxviewer=EMBoxViewer()
 		#self.app().attach_child(self.boxviewer)
 
 		# Boxes Viewer (z projections of all boxes)
@@ -801,7 +801,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 #		print "del ",n
 		if n<0 or n>=len(self.boxes): return
 
-		if self.boxviewer.get_data(): self.boxviewer.set_data(None)
+		#if self.boxviewer.get_data(): self.boxviewer.set_data(None)
 		self.curbox=-1
 		self.do_deletion([n])
 
@@ -1231,7 +1231,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		print("Exiting")
 		self.SaveJson()
 		
-		self.boxviewer.close()
+		#self.boxviewer.close()
 		self.boxesviewer.close()
 		self.optionviewer.close()
 		self.xyview.close()
