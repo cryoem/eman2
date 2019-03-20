@@ -1730,7 +1730,7 @@ class SXCmdWidget(QWidget):
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "exe":
-			name = QFileDialog.getOpenFileName(self, "Select executable file", SXLookFeelConst.file_dialog_dir, "Executable files (*.exe );; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select executable file", SXLookFeelConst.file_dialog_dir, "All files (*);; Python (*.py) ;; Executable files (*.exe)", options = QFileDialog.DontUseNativeDialog)
 			if isinstance(name, tuple):
 				file_path = str(name[0])
 			else:
