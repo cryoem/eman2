@@ -5886,10 +5886,12 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 				os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_%01d.txt"%procid),
 				original_data[procid],
 				small_memory=Tracker["constants"]["small_memory"],
-				nproc=Blockdata["subgroup_size"],\
+				nproc=Blockdata["subgroup_size"],
 				myid=Blockdata["subgroup_myid"],
 				mpi_comm=comm
 				)
+			for ipar in range(len(oldparams[procid])):
+				norm_per_particle[procid].append(oldparams[procid][ipar][7])
 			temp = Tracker["directory"]
 			Tracker["directory"] = os.path.join(Tracker["constants"]["masterdir"], "tempdir")
 			mpi_barrier(Blockdata["subgroup_comm"])
@@ -5898,18 +5900,30 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 				    myid = Blockdata["subgroup_myid"], mpi_comm = comm)
 			Tracker["directory"] = temp
 			mpi_barrier(Blockdata["subgroup_comm"])
+			try:
+				outlier_params = read_text_row(os.path.join(Tracker["directory"],"outlier-params-chunk_%01d_%03d.txt"%(procid, Tracker["mainiteration"])))
+			except IOError:
+				outlier_params = [0] * len(oldparams[procid])
+			original_data_outlier = []
+			oldparams_outlier = []
+			norm_per_particle_outlier = []
+			oldparamstructure_outlier = []
+			for idx, entry in enumerate(outlier_params):
+				if entry == 0:
+					original_data_outlier.append(original_data[procid][idx])
+					oldparams_outlier.append(oldparams[procid][idx])
+					norm_per_particle_outlier.append(norm_per_particle[procid][idx])
+					oldparamstructure_outlier.append(oldparamstructure[procid][idx])
 			projdata[procid] = get_shrink_data(
 				Tracker["constants"]["nnxo"],
 				procid,
-				original_data[procid],
-				oldparams[procid],
+				original_data_outlier,
+				oldparams_outlier,
 				return_real=False,
 				preshift=True,
 				apply_mask=False,
 				nonorm=True
 				)
-			for ipar in range(len(oldparams[procid])):
-				norm_per_particle[procid].append(oldparams[procid][ipar][7])
 			oldparams[procid]      = []
 			original_data[procid]  = None
 			#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
@@ -5924,10 +5938,10 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 			do3d(
 				procid,
 				projdata[procid],
-				oldparamstructure[procid],
+				oldparamstructure_outlier,
 				refang,
 				rshifts,
-				norm_per_particle[procid],
+				norm_per_particle_outlier,
 				myid=Blockdata["subgroup_myid"],
 				smearing=True,
 				mpi_comm=comm
@@ -5990,6 +6004,7 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 	if carryon == 0: 
 		ERROR( "Failed to load Tracker file %s, program terminates " % os.path.join(final_dir,"Tracker_%03d.json"%do_final_iter), myid=Blockdata["myid"] )
 	Tracker = wrap_mpi_bcast(Tracker,      Blockdata["main_node"], MPI_COMM_WORLD)
+	update_legacy_tracker(Tracker)
 	if(Blockdata["myid"] == Blockdata["main_node"]): # check stack 
 		try:  image = get_im(Tracker["constants"]["stack"],0)
 		except:carryon = 0
@@ -6266,6 +6281,17 @@ def update_tracker(shell_line_command):
 		tempdict["an"] = Tracker["constants"]["an"]
 
 	# For backwards compatibility
+	update_legacy_tracker(Tracker)
+
+	if( (Blockdata["myid"] == Blockdata["main_node"])  and  (len(tempdict) > 0) ):
+		print_dict(tempdict, "Updated settings")
+
+	Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
+	Blockdata["symclass_coarse"] = symclass(Tracker["constants"]["symmetry"])
+	return 
+
+
+def update_legacy_tracker(tracker):
 	backwards_dict_constants = {
 		'user_func_volume': 'do_volume_mask',
 		'user_func_ai': 'ai_spa',
@@ -6277,6 +6303,7 @@ def update_tracker(shell_line_command):
 		'stack_prior_fmt': None,
 		'stack_prior_dtype': None,
 		'do_local': False,
+		'a_criterion': 0.75,
 		}
 	backwards_dict = {
 		'theta_min': -1,
@@ -6299,26 +6326,20 @@ def update_tracker(shell_line_command):
 		}
 	for key in backwards_dict:
 		try:
-			Tracker[key]
+			tracker[key]
 		except KeyError:
-			Tracker[key] = backwards_dict[key]
+			tracker[key] = backwards_dict[key]
 	for key in backwards_dict_constants:
 		try:
-			Tracker["constants"][key]
+			tracker["constants"][key]
 		except KeyError:
-			Tracker["constants"][key] = backwards_dict_constants[key]
+			tracker["constants"][key] = backwards_dict_constants[key]
 	for key in prior_dict:
 		try:
-			Tracker["prior"][key]
+			tracker["prior"][key]
 		except KeyError:
-			Tracker["prior"][key] = backwards_dict_constants[key]
+			tracker["prior"][key] = prior_dict[key]
 
-	if( (Blockdata["myid"] == Blockdata["main_node"])  and  (len(tempdict) > 0) ):
-		print_dict(tempdict, "Updated settings")
-
-	Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
-	Blockdata["symclass_coarse"] = symclass(Tracker["constants"]["symmetry"])
-	return 
 
 def compare_bckgnoise(bckgnoise1, bckgnoise2):
 	ccsum = 0.0
@@ -6985,11 +7006,14 @@ def prior_stack_fmt(sphire_prior_stack):
 
 def load_tracker_from_json(file_name):
 	tracker = load_object_from_json(file_name)
-	if tracker['constants']['stack_prior'] is not None:
-		tracker['constants']['stack_prior'] = np.genfromtxt(
-			tracker['constants']['stack_prior'],
-			dtype=tracker['constants']['stack_prior_dtype']
-			)
+	try:
+		if tracker['constants']['stack_prior'] is not None:
+			tracker['constants']['stack_prior'] = np.genfromtxt(
+				tracker['constants']['stack_prior'],
+				dtype=tracker['constants']['stack_prior_dtype']
+				)
+	except KeyError:
+		tracker['constants']['stack_prior'] = None
 	return tracker
 
 def load_object_from_json(file_name):
@@ -7194,9 +7218,8 @@ def main():
 		parser.add_option("--function_ai",				type="string",          default= "ai_spa",		help="Name of the internal heuristic function (default ai_spa)")
 		parser.add_option("--symmetry",					type="string",        	default= 'c1',		     		help="Point-group symmetry of the refined structure (default c1)")
 		parser.add_option("--inires",		       		type="float",	     	default= 25,		         	help="Resolution of the initial_volume volume. One can use -1 in local_refinement mode to filter to the resolution of the reconstructed volumes. (default 25A)")
-		parser.add_option("--delta",					type="float",			default= 3.75,		     		help="Initial angular sampling step (default 7.5)")
-		parser.add_option("--an",	           		    type="float", 	     	default= -1.,                	help="Angular neighborhood for local search")
-		parser.add_option("--shake",	           		type="float", 	     	default= 0.5,                	help="Shake (0.5)")
+		parser.add_option("--an",	           		    type="float", 	     	default=-1.,                	help="Angular neighborhood for local search")
+		parser.add_option("--shake",	           		type="float", 	     	default=0.5,                	help="Shake (0.5)")
 		parser.add_option("--limit_improvement",	           		type="int", 	     	default=1,                	help="No improvement limit for the convergence criterion (Default 1)")
 		parser.add_option("--a_criterion",	           		type="float", 	     	default=0.75,                	help="A criterions multiplication to acc_rot (Default 0.75)")
 		parser.add_option("--small_memory",         	action="store_true",  	default= False,             	help="Data will not be kept in memory if small_memory is true. (default False)")
@@ -7212,6 +7235,7 @@ def main():
 		if do_continuation_mode:
 			# case1: local meridien run using parameters stored in headers
 			# case2: restart mode of standard meridien run. Parameters can be altered in the restart run.
+			parser.add_option("--delta",					type="float",			default=3.75,		     		help="Initial angular sampling step (default 3.75)")
 			(options, args) = parser.parse_args(sys.argv[1:])
 
 			if( len(args) == 2 ):
@@ -7242,6 +7266,7 @@ def main():
 		else:
 			# case1: standard meridien run
 			# case2: restart mode of standard meridien run. Parameters can be altered in the restart run.
+			parser.add_option("--delta",					type="float",			default=7.5,		     		help="Initial angular sampling step (default 7.5)")
 			parser.add_option("--skip_prealignment",		action="store_true", 	default= False,		         	help="Skip 2-D pre-alignment step: to be used if images are already centered. (default False)")
 			parser.add_option("--initialshifts",         	action="store_true",  	default= False,	         		help="Use orientation parameters in the input file header to jumpstart the procedure. (default False)")
 			parser.add_option("--center_method",			type="int",			 	default= -1,			     	help="Method for centering: of average during initial 2D prealignment of data (0 : no centering; -1 : average shift  method;  please see center_2D in utilities.py for methods 1-7) (default -1)")
