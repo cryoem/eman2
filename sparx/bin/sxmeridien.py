@@ -5880,11 +5880,16 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 			del oldparamstructure_on_old_cpu
 			mpi_barrier(Blockdata["subgroup_comm"])
 			#####
-			original_data[procid], oldparams[procid], _ = getindexdata(partids[procid], \
-			   partstack[procid], os.path.join(Tracker["constants"]["masterdir"],"main000", \
-			   "particle_groups_%01d.txt"%procid), original_data[procid], small_memory = \
-			     Tracker["constants"]["small_memory"], nproc = Blockdata["subgroup_size"],\
-			      myid = Blockdata["subgroup_myid"], mpi_comm = comm)													
+			original_data[procid], oldparams[procid], _ = getindexdata(
+				partids[procid],
+				partstack[procid],
+				os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_%01d.txt"%procid),
+				original_data[procid],
+				small_memory=Tracker["constants"]["small_memory"],
+				nproc=Blockdata["subgroup_size"],\
+				myid=Blockdata["subgroup_myid"],
+				mpi_comm=comm
+				)
 			temp = Tracker["directory"]
 			Tracker["directory"] = os.path.join(Tracker["constants"]["masterdir"], "tempdir")
 			mpi_barrier(Blockdata["subgroup_comm"])
@@ -5893,9 +5898,16 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 				    myid = Blockdata["subgroup_myid"], mpi_comm = comm)
 			Tracker["directory"] = temp
 			mpi_barrier(Blockdata["subgroup_comm"])
-			projdata[procid] = get_shrink_data(Tracker["constants"]["nnxo"], procid, \
-			    original_data[procid], oldparams[procid], return_real = False, \
-			      preshift = True, apply_mask = False, nonorm = True)
+			projdata[procid] = get_shrink_data(
+				Tracker["constants"]["nnxo"],
+				procid,
+				original_data[procid],
+				oldparams[procid],
+				return_real=False,
+				preshift=True,
+				apply_mask=False,
+				nonorm=True
+				)
 			for ipar in range(len(oldparams[procid])):
 				norm_per_particle[procid].append(oldparams[procid][ipar][7])
 			oldparams[procid]      = []
@@ -5909,8 +5921,17 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 			Tracker["nxinit"]       = Tracker["constants"]["nnxo"]
 			Tracker["maxfrad"]      = Tracker["constants"]["nnxo"]//2
 			###---------------------------------------------------------
-			do3d(procid, projdata[procid], oldparamstructure[procid], refang, rshifts, \
-			 norm_per_particle[procid], myid = Blockdata["subgroup_myid"], smearing = True, mpi_comm = comm)
+			do3d(
+				procid,
+				projdata[procid],
+				oldparamstructure[procid],
+				refang,
+				rshifts,
+				norm_per_particle[procid],
+				myid=Blockdata["subgroup_myid"],
+				smearing=True,
+				mpi_comm=comm
+				)
 			projdata[procid]          = []
 			oldparamstructure[procid] = []
 			norm_per_particle[procid] = []
