@@ -1,6 +1,6 @@
 ~~NOTOC~~
 
-===== sxproj_compare =====
+===== sp_proj_compare =====
 Compare re-projections : Compare re-projections to class averages.
 
 \\
@@ -8,17 +8,17 @@ Compare re-projections : Compare re-projections to class averages.
 
 Usage in command line
 
-  	sxproj_compare.py stack input_volume outdir --mode=viper --classangles=angles_file --classselect=img_selection_file --prjmethod=interpolation_method --delta=angular_increment --matchshift=shift_range --matchrad=outer_radius --matchstep=ring_step --symmetry=optional_symmetry --partangles=refinement_params --partselect=substack_select --refineshift=shift_range --outliers=max_angle_diff --refinerad=outer_radius --refinestep=ring_step --align=2d_alignment_method --display --verbose
+  	sp_proj_compare.py stack input_volume outdir --mode=viper --classangles=angles_file --classselect=img_selection_file --prjmethod=interpolation_method --delta=angular_increment --matchshift=shift_range --matchrad=outer_radius --matchstep=ring_step --symmetry=optional_symmetry --partangles=refinement_params --partselect=substack_select --refineshift=shift_range --outliers=max_angle_diff --refinerad=outer_radius --refinestep=ring_step --align=2d_alignment_method --display --verbose
 
 
 \\
 ===== Typical usage =====
 
-sxproj_compare compares re-projections of a 3D reconstruction to 2D images, typically class averages. There are three methods for this comparison:
+sp_proj_compare compares re-projections of a 3D reconstruction to 2D images, typically class averages. There are three methods for this comparison:
 
 \\ __1. Use projections angles from VIPER/RVIPER __:
 
-  sxproj_compare.py Class2D/best.hdf Initial3D/main001/run002/rotated_volume.hdf Compare --mode viper --classangles Initial3D/main001/run002/rotated_reduced_params.txt --classselect Initial3D/main001/index_keep_images.txt
+  sp_proj_compare.py Class2D/best.hdf Initial3D/main001/run002/rotated_volume.hdf Compare --mode viper --classangles Initial3D/main001/run002/rotated_reduced_params.txt --classselect Initial3D/main001/index_keep_images.txt
 
 Note 1: The projection angles are not required if present in the image header.  When in doubt, include this file explicitly.
 
@@ -26,11 +26,11 @@ Note 2: RVIPER, if it finds a stable solution, may exclude some images, and thus
 
 \\ __2. Run a simple iteration of projection-matching__:
 
-  sxproj_compare.py Class2D/best.hdf Initial3D/main001/average_volume.hdf Compare/ProjMatch --mode=projmatch --delta 7.5
+  sp_proj_compare.py Class2D/best.hdf Initial3D/main001/average_volume.hdf Compare/ProjMatch --mode=projmatch --delta 7.5
 
 \\ __3. Use the orientation parameters from refinement__:
 
-  sxproj_compare.py Class2D/best.hdf Initial3D/main001/average_volume.hdf Compare/Meridien --mode=meridien --partangles Refine3D/final_params_037.txt --partselect Substack/isac_substack_particle_id_list.txt --outliers=15
+  sp_proj_compare.py Class2D/best.hdf Initial3D/main001/average_volume.hdf Compare/Meridien --mode=meridien --partangles Refine3D/final_params_037.txt --partselect Substack/isac_substack_particle_id_list.txt --outliers=15
 
 The projection angle for a class will be calculated by taking the vector sum of the projection angles of the particles belonging to that class.  
 
@@ -97,7 +97,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxproj_compare.py
+sparx/bin/sp_proj_compare.py
 
 \\
 ==== See also ====

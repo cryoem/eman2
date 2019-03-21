@@ -1,6 +1,6 @@
 ~~NOTOC~~
 
-===== sxheader =====
+===== sp_header =====
 Header Operations: Perform operations on headers of hdf or bdb file.
 
 \\
@@ -8,32 +8,32 @@ Header Operations: Perform operations on headers of hdf or bdb file.
 
 Usage in command line
 
-  sxheader.py  stack  --params=PARAMS_NAME_LIST  --import=INPUT_PARAMS_PATH  --export==OUTPUT_PARAMS_FILE  --delete  --zero  --one  --set  --consecutive  --randomize  --rand_alpha  --print  --backup  --restore  --suffix=PARAMS_FILE_SUFFIX
+  sp_header.py  stack  --params=PARAMS_NAME_LIST  --import=INPUT_PARAMS_PATH  --export==OUTPUT_PARAMS_FILE  --delete  --zero  --one  --set  --consecutive  --randomize  --rand_alpha  --print  --backup  --restore  --suffix=PARAMS_FILE_SUFFIX
 
 \\
 ===== Typical usage =====
 
-sxheader does not support MPI.
+sp_header does not support MPI.
 
 \\ __Print parameterrs__:
-  sxheader.py bdb:file --print --params=xform.projection
+  sp_header.py bdb:file --print --params=xform.projection
 
 \\ __Export ctf values to a text file__:
-  sxheader.py bdb:file --export=ctf.txt --params=ctf
+  sp_header.py bdb:file --export=ctf.txt --params=ctf
 
 \\ __Import ctf values from a text file and set them to headers__:
-  sxheader.py bdb:file --import=ctf.txt --params=ctf
+  sp_header.py bdb:file --import=ctf.txt --params=ctf
 
 \\ __Backup current alignment parameters__:
-  sxheader.py bdb:file --backup --suffix=_original --params=xform.projection
+  sp_header.py bdb:file --backup --suffix=_original --params=xform.projection
 
 \\ __Restore original alignment parameters__:
-  sxheader.py bdb:file --restore --params=xform.projection_original
+  sp_header.py bdb:file --restore --params=xform.projection_original
 
 Note: command will recognize the valid name of a parameters and truncate the suffix, thus in this case the restored parameter will be xform_projection.
 
 \\ __Delete parameters__:
-  sxheader.py bdb:file --delete --params=xform.projection_original
+  sp_header.py bdb:file --delete --params=xform.projection_original
 
 Note: the parameters will be permanently deleted and cannot be recovered.
 
@@ -97,7 +97,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxheader.py
+sparx/bin/sp_header.py
 
 \\
 ==== See also ====

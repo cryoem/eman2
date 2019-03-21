@@ -1,6 +1,6 @@
 ~~NOTOC~~
 
-===== sxisac2 =====
+===== sp_isac2 =====
 ISAC2 - 2D Clustering: Iterative Stable Alignment and Clustering (ISAC) of a 2D image stack.
 
 \\
@@ -8,22 +8,22 @@ ISAC2 - 2D Clustering: Iterative Stable Alignment and Clustering (ISAC) of a 2D 
 
 Usage in command line
 
-  sxisac2.py stack_file output_directory --radius=particle_radius --img_per_grp=img_per_grp --CTF --filament_width=filament_width --xr=xr --thld_err=thld_err --target_radius=target_radius --target_nx=target_nx --VPP --ir=ir --rs=rs --yr=yr --ts=ts --maxit=maxit --center_method=center_method --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --iter_reali=iter_reali --stab_ali=stab_ali --minimum_grp_size --rand_seed=rand_seed --skip_prealignment --restart --filament_mask_ignore 
+  sp_isac2.py stack_file output_directory --radius=particle_radius --img_per_grp=img_per_grp --CTF --filament_width=filament_width --xr=xr --thld_err=thld_err --target_radius=target_radius --target_nx=target_nx --VPP --ir=ir --rs=rs --yr=yr --ts=ts --maxit=maxit --center_method=center_method --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --iter_reali=iter_reali --stab_ali=stab_ali --minimum_grp_size --rand_seed=rand_seed --skip_prealignment --restart --filament_mask_ignore 
 
 \\
 ===== Typical usage =====
 
-sxisac2 exists only in MPI version.
+sp_isac2 exists only in MPI version.
 
 \\ __1. Conventional TEM dataset__:
 
-  mpirun -np 96 sxisac2.py bdb:stack isac2_outdir --radius=120 --CTF
+  mpirun -np 96 sp_isac2.py bdb:stack isac2_outdir --radius=120 --CTF
 
 Note: ISAC2 will change the size of input data such that they fit into box size 76x76 by default (see Description below).
 
 \\ __2. Phase Plate TEM dataset__:
 
-  mpirun -np 96 sxisac2.py bdb:stack isac2_outdir --radius=120 --VPP
+  mpirun -np 96 sp_isac2.py bdb:stack isac2_outdir --radius=120 --VPP
 
 Note: CTF and VPP options cannot be used together.
 
@@ -117,7 +117,7 @@ ISAC2 is very time- and memory-consuming.  For example, it may take 15 hours to 
   - Delete averages whose member particles should not be included in the output. 
   - Save the selected subset under a new name,say select1.hdf
   - Retrieve IDs of member particles and store them in a text file ok.txt:
-    * $ sxprocess.py --isacselect class_averages.hdf ok.txt
+    * $ sp_process.py --isacselect class_averages.hdf ok.txt
   - Create a vritual stack containng selected particles:
     * $ e2bdb.py bdb:data --makevstack:bdb:select1  --list=ok.txt
 
@@ -129,15 +129,15 @@ Let us assume we would want to generate a RCT reconstruction using as a basis gr
 
   - Retrieve original image numbers in the selected ISAC2 group.  The output is list3_12.txt, which will contain image numbers in the main stack (bdb:test) and thus of the tilted counterparts in the tilted stack.  First, change directory to the subdirectory of the main run that contains results of the generation 3.  Note bdb:../data is the file in the main output directory containing original (reduced size) particles.
     * $ cd generation_0003
-    * $ sxprocess.py  bdb:../data class_averages_generation_3.hdf  list3_12.txt  --isacgroup=12  --params=originalid
+    * $ sp_process.py  bdb:../data class_averages_generation_3.hdf  list3_12.txt  --isacgroup=12  --params=originalid
   - Extract the identified images from the main stack (into subdirectory RCT, has to be created):
     * $ e2bdb.py bdb:test  --makevstack=bdb:RCT/group3_12  --list=list3_12.txt
   - Extract the class average from the stack (NOTE the awkward numbering of the output file!).
     * $ e2proc2d.py --split=12 --first=12 --last=12 class_averages_generation3.hdf  group3_12.hdf
   - Align particles using the corresponding class average from ISAC2 as a template (please adjust the parameters):
-    * $ sxali2d.py bdb:RCT/group3_12 None --ou=28 --xr=3 --ts=1 --maxit=1  --template=group3_12.12.hdf
-  - Extract the needed alignment parameters.  The order is phi,sx,sy,mirror.  sx and mirror are used to transfer to tilted images.
-    * $ sxheader.py  group3_12.12.hdf  --params=xform.align2d  --export=params_group3_12.txt
+    * $ sp_ali2d.py bdb:RCT/group3_12 None --ou=28 --xr=3 --ts=1 --maxit=1  --template=group3_12.12.hdf
+  - Extract the needed alignment parameters.  The order is phi,sp_,sy,mirror.  sp_ and mirror are used to transfer to tilted images.
+    * $ sp_header.py  group3_12.12.hdf  --params=xform.align2d  --export=params_group3_12.txt
 
 \\
 ==== Developer Notes ====
@@ -161,11 +161,11 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxisac2.py, sparx/bin/sxisac.py, sparx/bin/isac.py
+sparx/bin/sp_isac2.py, sparx/bin/sp_isac.py, sparx/bin/isac.py
 
 \\
 ==== See also ====
-[[pipeline:isac:sxcompute_isac_avg|sxcompute_isac_avg]], [[pipeline:isac:sxpipe_isac_substack|sxpipe isac_substack]], and [[pipeline:isac:sxisac|sxisac]]
+[[pipeline:isac:sp_compute_isac_avg|sp_compute_isac_avg]], [[pipeline:isac:sp_pipe_isac_substack|sp_pipe isac_substack]], and [[pipeline:isac:sp_isac|sp_isac]]
 
 \\
 ==== Maturity ====

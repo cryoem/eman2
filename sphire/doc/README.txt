@@ -1,5 +1,5 @@
 ==========================================================================================
-TITLE  : README - How to generate sxgui.py from Wiki documents using wikiparser.py
+TITLE  : README - How to generate sp_gui.py from Wiki documents using wikiparser.py
 AUTHOR : Toshio Moriya
 DATE   : 2018/03/02
 ==========================================================================================
@@ -8,7 +8,7 @@ DATE   : 2018/03/02
 Contents
 ------------------------------------------------------------------------------------------
 1. Syntax of Wiki document and parsing rule.
-2. How to generate sxgui.py.
+2. How to generate sp_gui.py.
 
 ------------------------------------------------------------------------------------------
 1. Basic parsing rules and syntax of Wiki document 
@@ -57,15 +57,15 @@ ${USAGE_IN_COMMAND_LINE}
 
   ; ${COMMDNA_TOKEN_KEY_PREFIX}${COMMDNA_TOKEN_KEY_BASE} : ${COMMDNA_TOKEN_LABEL}: ${COMMDNA_TOKEN_HELP} (default required ${COMMDNA_TOKEN_TYPE})
 
-# (2) for command token where default value is provided by the sx script
+# (2) for command token where default value is provided by the sp_ script
 
   ; ${COMMDNA_TOKEN_KEY_PREFIX}${COMMDNA_TOKEN_KEY_BASE} : ${COMMDNA_TOKEN_LABEL}: ${COMMDNA_TOKEN_HELP} (default ${COMMDNA_TOKEN_DEFAULT})
 
-# (3) for command token of bool type (i.e. a flag option) where default value is provided by the sx script but the question is reversed in GUI.
+# (3) for command token of bool type (i.e. a flag option) where default value is provided by the sp_ script but the question is reversed in GUI.
 
   ; ${COMMDNA_TOKEN_KEY_PREFIX}${COMMDNA_TOKEN_KEY_BASE} : ${COMMDNA_TOKEN_LABEL}: ${COMMDNA_TOKEN_HELP} (default ${COMMDNA_TOKEN_DEFAULT} question reversed in GUI)
 
-# (4) for command token of bool type (i.e. a flag option) where default value is provided by the sx script but the default value is reversed in GUI.
+# (4) for command token of bool type (i.e. a flag option) where default value is provided by the sp_ script but the default value is reversed in GUI.
 
   ; ${COMMDNA_TOKEN_KEY_PREFIX}${COMMDNA_TOKEN_KEY_BASE} : ${COMMDNA_TOKEN_LABEL}: ${COMMDNA_TOKEN_HELP} (default ${COMMDNA_TOKEN_DEFAULT} value reversed in GUI)
 
@@ -81,15 +81,15 @@ ${USAGE_IN_COMMAND_LINE}
 ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
 ${SXSCRIPT}
-	Name of the sx script file without ".py" extension.
-	e.g. "sxviper"
+	Name of the sp_ script file without ".py" extension.
+	e.g. "sp_viper"
 
 	GUI uses this to generate the command line.
-	Used for title in popup window tabs for this sx script.
+	Used for title in popup window tabs for this sp_ script.
 
 ${SXSCRIPT_LABEL}
-	User friendly name of the sx script.
-	e.g. "sxviper"
+	User friendly name of the sp_ script.
+	e.g. "sp_viper"
 
 	Used for text of the button in main window.
 
@@ -101,7 +101,7 @@ ${SXSCRIPT_SHORT_INFO}
 
 ${USAGE_IN_COMMAND_LINE}
 	The usage in command line.
-	e.g "sxviper.py  stack  directory  --ir=INNER_RADIUS  --radius=OUTER_RADIUS"
+	e.g "sp_viper.py  stack  directory  --ir=INNER_RADIUS  --radius=OUTER_RADIUS"
 
 	Used to check the consistency between command tokens (i.e. arguments and options of the command) 
 	in "===== Input =====" and "===== Usage =====" sections.
@@ -177,7 +177,7 @@ ${COMMDNA_TOKEN_TYPE}
 	override by a special data type in the Wiki document parser.
 
 ------------------------------------------------------------------------------------------
-2. How to generate sxgui.py
+2. How to generate sp_gui.py
 ------------------------------------------------------------------------------------------
 (1) Go to the directory contains the Wiki document parser script.
 
@@ -187,20 +187,20 @@ $ cd ~/EMAN2/src/eman2/sparx/templates/wikiparser.py
 
 $ ./wikiparser.py
 
-The script generates sxgui_auto.py in the same directory by copying sxgui_template.py to the sxgui_auto.py, 
-and inserting the extracted information into sxgui_auto.py.
+The script generates sp_gui_auto.py in the same directory by copying sp_gui_template.py to the sp_gui_auto.py, 
+and inserting the extracted information into sp_gui_auto.py.
 
 Please check the print out of the Wiki document parser.  
 It will tell you about incorrect formats of some Wiki documents. 
 If this happens, please edit the Wiki documents.
 
-(3) Copy the generated sxgui_auto.py to the EMAN2/bin directory of your installation as sxgui.py.
+(3) Copy the generated sp_gui_auto.py to the EMAN2/bin directory of your installation as sp_gui.py.
 
-$ cp ~/EMAN2/src/eman2/sparx/bin/sxgui_auto.py ~/EMAN2/bin/sxgui.py
+$ cp ~/EMAN2/src/eman2/sparx/bin/sp_gui_auto.py ~/EMAN2/bin/sp_gui.py
 
-(4) Run sxgui.py in your project directory
+(4) Run sp_gui.py in your project directory
 
-$ sxgui.py &
+$ sp_gui.py &
 
 
 That's it!

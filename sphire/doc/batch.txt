@@ -1,6 +1,6 @@
 ~~NOTOC~~
 
-===== sxbatch =====
+===== sp_batch =====
 Batch Pipeline Execution: Run jobs that wait with the execution on each other.
 
 \\
@@ -8,25 +8,25 @@ Batch Pipeline Execution: Run jobs that wait with the execution on each other.
 
 Usage in command line
 
-  sxbatch.py  submission_command  input_run_dir --hold_flag=HOLD_FLAG --first_hold_number=FIRST_HOLD_NUMBER
+  sp_batch.py  submission_command  input_run_dir --hold_flag=HOLD_FLAG --first_hold_number=FIRST_HOLD_NUMBER
 \\
 ===== Typical usage =====
 
-sxbatch exists only in non-MPI version.
+sp_batch exists only in non-MPI version.
 
 The pipeline directory can be easily added within the GUI.
 
-Run sxbatch locally with bash:
+Run sp_batch locally with bash:
 
-  sxbatch.py bash input_run_dir
+  sp_batch.py bash input_run_dir
 
-Run sxbatch within a SGE/PBS/Torque queuing environment:
+Run sp_batch within a SGE/PBS/Torque queuing environment:
 
-  sxbatch.py 'qsub' input_run_dir --hold_flag='-hold_jid'
+  sp_batch.py 'qsub' input_run_dir --hold_flag='-hold_jid'
 
-Run sxbatch within a SGE/PBS/Torque queuing environment waiting for another job with the id 3456:
+Run sp_batch within a SGE/PBS/Torque queuing environment waiting for another job with the id 3456:
 
-  sxbatch.py 'qsub' input_run_dir --hold_flag='-hold_jid' --first_hold_number=3456
+  sp_batch.py 'qsub' input_run_dir --hold_flag='-hold_jid' --first_hold_number=3456
 
 \\
 ===== Input =====
@@ -62,7 +62,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxunblur.py
+sparx/bin/sp_unblur.py
 
 \\
 ==== See also ====

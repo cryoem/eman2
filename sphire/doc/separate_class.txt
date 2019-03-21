@@ -1,6 +1,6 @@
 ~~NOTOC~~
 
-===== sxseparate_class =====
+===== sp_separate_class =====
 Separate Into Classes : Separates stacks of particle images into stacks for each class.
 
 \\
@@ -8,13 +8,13 @@ Separate Into Classes : Separates stacks of particle images into stacks for each
 
 Usage in command line:
 
-  sxseparate_class.py input_class_avgs input_image_stack output_directory --filt=filter_radius --pxsz=pixel_size --shrink=shrink_factor --verbose
+  sp_separate_class.py input_class_avgs input_image_stack output_directory --filt=filter_radius --pxsz=pixel_size --shrink=shrink_factor --verbose
   
   
 \\
 ===== Typical usage =====
 
-The purpose of sxseparate_class.py is to: 
+The purpose of sp_separate_class.py is to: 
 
   : extract particle-membership information from a stack of class averages
   : write particle-membership lists for each class, and
@@ -22,17 +22,17 @@ The purpose of sxseparate_class.py is to:
 
 \\ __1. Standard usage: create separate stacks for each class__:
 
-  sxseparate_class.py input_class_avgs input_image_stack output_directory 
+  sp_separate_class.py input_class_avgs input_image_stack output_directory 
 
 \\ __2. Apply a low-pass filter to the image stacks__:
 
-  sxseparate_class.py input_class_avgs input_image_stack output_directory --filt=filter_radius --pxsz=pixel_size
+  sp_separate_class.py input_class_avgs input_image_stack output_directory --filt=filter_radius --pxsz=pixel_size
 
 Filter radius is in units of Angstroms. If pxsz parameter is not specified, program will assume units of pixels^-1.
 
 \\ __3. Downsample output image stack__:
 
-  sxseparate_class.py input_class_avgs input_image_stack output_directory --shrink=shrink_factor
+  sp_separate_class.py input_class_avgs input_image_stack output_directory --shrink=shrink_factor
   
 \\
 ===== Input =====
@@ -79,7 +79,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxseparate_class.py
+sparx/bin/sp_separate_class.py
 
 \\
 ==== See also ====

@@ -1,6 +1,6 @@
 ~~NOTOC~~
 
-===== sxunblur_old =====
+===== sp_unblur_old =====
 Unblur 1.0.2 (Pre cisTEM): Align frames of micrograph movies with [[http://grigoriefflab.janelia.org/unblur|Unblur & Summovie]].
 
 \\
@@ -8,38 +8,38 @@ Unblur 1.0.2 (Pre cisTEM): Align frames of micrograph movies with [[http://grigo
 
 Usage in command line
 
-  sxunblur_old.py  unblur_path  input_micrograph_pattern  output_directory  --summovie_path=SUMMOVIE_PATH  --selection_list=SELECTION_LIST  --nr_frames=NUM_OF_FRAMES  --pixel_size=PIXEL_SIZE  --voltage=VOLTAGE  --exposure_per_frame=EXPOSURE  --pre_exposure=EXPOSURE  --nr_threads=NUM_OF_THREADS  --save_frames  --skip_dose_filter  --expert_mode  --shift_initial=SHIFT  --shift_radius=SHIFT_RADISU  --b_factor=B_FACTOR  --fourier_vertical=VERTICAL_MASK  --fourier_horizontal=HORIZONTAL_MASK  --shift_threshold=SHIFT_THRESHOLD  --iterations=ITERATIONS  --dont_restore_noise  --verbose
+  sp_unblur_old.py  unblur_path  input_micrograph_pattern  output_directory  --summovie_path=SUMMOVIE_PATH  --selection_list=SELECTION_LIST  --nr_frames=NUM_OF_FRAMES  --pixel_size=PIXEL_SIZE  --voltage=VOLTAGE  --exposure_per_frame=EXPOSURE  --pre_exposure=EXPOSURE  --nr_threads=NUM_OF_THREADS  --save_frames  --skip_dose_filter  --expert_mode  --shift_initial=SHIFT  --shift_radius=SHIFT_RADISU  --b_factor=B_FACTOR  --fourier_vertical=VERTICAL_MASK  --fourier_horizontal=HORIZONTAL_MASK  --shift_threshold=SHIFT_THRESHOLD  --iterations=ITERATIONS  --dont_restore_noise  --verbose
 
 \\
 ===== Typical usage =====
 
-sxunblur_old exists only in non-MPI version.
+sp_unblur_old exists only in non-MPI version.
 
 Run Unblur with dose-filtering, and then run Summovie without dose-filtering.
 
-  sxunblur_old.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur --summovie_path=~/my_app/summovie --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0 --voltage=300.0 --pre_exposure=0.0 --nr_threads=1
+  sp_unblur_old.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur --summovie_path=~/my_app/summovie --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0 --voltage=300.0 --pre_exposure=0.0 --nr_threads=1
 
 Run Unblur with dose-filtering, and then run Summovie without dose-filtering with selection list.
 
-  sxunblur_old.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur --summovie_path=~/my_app/summovie --selection_list=selected_micrograph_file --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0 --voltage=300.0 --pre_exposure=0.0 --nr_threads=1
+  sp_unblur_old.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur --summovie_path=~/my_app/summovie --selection_list=selected_micrograph_file --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0 --voltage=300.0 --pre_exposure=0.0 --nr_threads=1
 
 Run Unblur without dose-filtering.
 
-  sxunblur_old.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur --nr_frames=25 --pixel_size=1.19 --skip_dose_filter --nr_threads=1
+  sp_unblur_old.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur --nr_frames=25 --pixel_size=1.19 --skip_dose_filter --nr_threads=1
 
 Run Unblur without dose-filtering, and save the frames.
 
-  sxunblur_old.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur --nr_frames=25 --pixel_size=1.19 --skip_dose_filter --save_frames --nr_threads=1
+  sp_unblur_old.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur --nr_frames=25 --pixel_size=1.19 --skip_dose_filter --save_frames --nr_threads=1
 
 Run Unblur with dose-filtering, and then run Summovie without dose-filtering with all options.
 
-  sxunblur_old.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur --summovie_path=~/my_app/summovie --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0 --voltage=300.0 --pre_exposure=0.0 --save_frames --expert_mode --shift_initial=2.0 --shift_radius=200.0 --b_factor=1500.0 --fourier_vertical=1 --fourier_horizontal=1 --shift_threshold=0.1 --iterations=10 --verbose --nr_threads=1
+  sp_unblur_old.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur --summovie_path=~/my_app/summovie --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0 --voltage=300.0 --pre_exposure=0.0 --save_frames --expert_mode --shift_initial=2.0 --shift_radius=200.0 --b_factor=1500.0 --fourier_vertical=1 --fourier_horizontal=1 --shift_threshold=0.1 --iterations=10 --verbose --nr_threads=1
 
 \\
 ===== Input =====
 === Main Parameters ===
   ; unblur_path : Unblur executable path: Specify the file path of Unblur executable. (This argument is specific to SPHIRE, and not directly used by Unblur and Summovie executables.) (default required string)
-  ; input_micrograph_pattern : Input movie path pattern: Specify path pattern of input micrograph movies with a wild card (*).. The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sxgui.py automatically adds single quotes (')). bdb files cannot be selected as input micrograph movies. (This argument is specific to SPHIRE, and not directly used by Unblur and Summovie executables.) (default required string)
+  ; input_micrograph_pattern : Input movie path pattern: Specify path pattern of input micrograph movies with a wild card (*).. The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sp_gui.py automatically adds single quotes (')). bdb files cannot be selected as input micrograph movies. (This argument is specific to SPHIRE, and not directly used by Unblur and Summovie executables.) (default required string)
   ; output_directory : Output directory: The results will be written here. It cannot be an existing one. (This argument is specific to SPHIRE, and not directly used by Unblur and Summovie executables.) (default required string)
 
   ; %%--%%summovie_path : Summovie executable path: Specify the file path of Summovie executable. (This option is specific to SPHIRE, and not directly used by Unblur and Summovie executables.) (default none)
@@ -107,11 +107,11 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxunblur_old.py
+sparx/bin/sp_unblur_old.py
 
 \\
 ==== See also ====
-[[pipeline:movie:sxgui_unblur|sxgui_unblur]]
+[[pipeline:movie:sp_gui_unblur|sp_gui_unblur]]
 
 \\
 ==== Maturity ====

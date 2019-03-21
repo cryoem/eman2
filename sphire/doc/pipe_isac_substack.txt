@@ -1,6 +1,6 @@
 ~~NOTOC~~
 
-===== sxpipe isac_substack =====
+===== sp_pipe isac_substack =====
 ISAC2 Stack Subset: Create a virtual subset stack consisting of particles acounted for by ISAC2 by retrieving particle numbers associated with the ISAC2 or Beautifier class averages. The command also saves a selection file containing the retrieved original image numbers and 2D alignment parameters. In addition, it stores the 2D alignment parameters to the stack header.
 
 \\
@@ -8,14 +8,14 @@ ISAC2 Stack Subset: Create a virtual subset stack consisting of particles acount
 
 Usage in command line
 
-  sxpipe.py  isac_substack  input_bdb_stack_path  input_run_dir  output_directory  --isac_class_avgs_path=FILE_PATH  --substack_basename=SUBSTACK_BASENAME
+  sp_pipe.py  isac_substack  input_bdb_stack_path  input_run_dir  output_directory  --isac_class_avgs_path=FILE_PATH  --substack_basename=SUBSTACK_BASENAME
 
 \\
 ===== Typical usage =====
 
-sxpipe isac_substack does not support MPI. 
+sp_pipe isac_substack does not support MPI. 
 
-  sxpipe.py isac_substack 'bdb:outdir_window#data' 'outdir_pipe_sac_substack' --isac_class_avgs_path='ordered_class_averages_selected.hdf'
+  sp_pipe.py isac_substack 'bdb:outdir_window#data' 'outdir_pipe_sac_substack' --isac_class_avgs_path='ordered_class_averages_selected.hdf'
 
 \\
 ===== Input =====
@@ -60,11 +60,11 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxpipe.py
+sparx/bin/sp_pipe.py
 
 \\
 ==== See also ====
-[[pipeline:isac:sxisac2|sxisac2]]
+[[pipeline:isac:sp_isac2|sp_isac2]]
 
 \\
 ==== Maturity ====

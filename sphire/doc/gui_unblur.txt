@@ -1,6 +1,6 @@
 ~~NOTOC~~
 
-===== sxgui_unblur =====
+===== sp_gui_unblur =====
 Drift Assessment: Assess micrographs based on drift estimation produced by [[http://grigoriefflab.janelia.org/unblur|Unblur]].
 
 \\
@@ -8,22 +8,22 @@ Drift Assessment: Assess micrographs based on drift estimation produced by [[htt
 
 Usage in command line
 
-  sxgui_unblur.py  inputfile  input_shift_list_file
+  sp_gui_unblur.py  inputfile  input_shift_list_file
 
 \\
 ===== Typical usage =====
 
-sxgui_unblur does not support MPI. 
+sp_gui_unblur does not support MPI. 
 
 This GUI tool can be run as a stand-alone program or from the SPHIRE GUI.
 
-  sxgui_unblur.py
+  sp_gui_unblur.py
 
-  sxgui_unblur.py 'example-*_shift.txt'
+  sp_gui_unblur.py 'example-*_shift.txt'
 
-  sxgui_unblur.py 'example-list'
+  sp_gui_unblur.py 'example-list'
 
-  sxgui_unblur.py 'example-*_shift.txt' 'example-list'
+  sp_gui_unblur.py 'example-*_shift.txt' 'example-list'
 
 \\
 ===== Input =====
@@ -61,11 +61,11 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxgui_unblur.py
+sparx/bin/sp_gui_unblur.py
 
 \\
 ==== See also ====
-[[pipeline:movie:sxunblur|sxunblur]] and [[http://grigoriefflab.janelia.org/unblur|Unblur & Summovie]].
+[[pipeline:movie:sp_unblur|sp_unblur]] and [[http://grigoriefflab.janelia.org/unblur|Unblur & Summovie]].
 
 \\
 ==== Maturity ====

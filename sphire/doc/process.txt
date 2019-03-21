@@ -1,6 +1,6 @@
 ~~NOTOC~~
 
-===== sxprocess =====
+===== sp_process =====
 Miscellaneous Commands: Carry out various SPARX commands on image series, and generate data and initialize database for demo script.
 
 \\
@@ -8,45 +8,45 @@ Miscellaneous Commands: Carry out various SPARX commands on image series, and ge
 
 Usage in command line
 
-  sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --threshold=THRESHOLD  --mol_mass=MOL_MASS --ndilation=NDILATION --edge_type=EDGE_TYP --edge_width=EDGE_WIDTH --binary_mask  --combinemaps  --output_dir=DIRECTORY  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --mask=MASK  --do_adaptive_mask   --mtf=MTF_FILE_NAME  --fsc_adj  --B_enhance=B_ENHANCE  --B_start=B_START  --B_stop=B_STOP  --fl=lpf_cutoff_freq  --aa=lpf_falloff  --window_stack  --box=BOX  --balance_angular_distribution  --max_occupy=MAX_ORIENTATIONS  --angstep=ANGULAR_STEP  --symmetry=SYMMETRY --nerosion=NEROSION --do_approx
+  sp_process.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --threshold=THRESHOLD  --mol_mass=MOL_MASS --ndilation=NDILATION --edge_type=EDGE_TYP --edge_width=EDGE_WIDTH --binary_mask  --combinemaps  --output_dir=DIRECTORY  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --mask=MASK  --do_adaptive_mask   --mtf=MTF_FILE_NAME  --fsc_adj  --B_enhance=B_ENHANCE  --B_start=B_START  --B_stop=B_STOP  --fl=lpf_cutoff_freq  --aa=lpf_falloff  --window_stack  --box=BOX  --balance_angular_distribution  --max_occupy=MAX_ORIENTATIONS  --angstep=ANGULAR_STEP  --symmetry=SYMMETRY --nerosion=NEROSION --do_approx
 
 \\
 ===== Typical usage =====
 
-sxprocess does not support MPI.
+sp_process does not support MPI.
 
  1. Phase flip a stack of images and write output to new file:
 
-  sxprocess.py  input_stack.hdf  output_stack.hdf  --phase_flip
+  sp_process.py  input_stack.hdf  output_stack.hdf  --phase_flip
 
  2. Change size of image or map (resample, decimation or interpolation up). The process also changes the pixel size and window size accordingly.
 
-  sxprocess  input.hdf  output.hdf  --changesize  --ratio=0.5
+  sp_process  input.hdf  output.hdf  --changesize  --ratio=0.5
 
  3. Compute average power spectrum of a stack of 2D images with optional padding (option wn) with zeroes.
 
-  sxprocess.py  input_stack.hdf  powerspectrum.hdf  --pw  [--wn=1024]
+  sp_process.py  input_stack.hdf  powerspectrum.hdf  --pw  [--wn=1024]
 
  4. Generate a stack of projections bdb:data and micrographs with prefix mic (i.e., mic0.hdf, mic1.hdf etc) from structure input_structure.hdf, with CTF applied to both projections and micrographs.
 
-  sxprocess.py  input_structure.hdf  data mic  --generate_projections  format="bdb":apix=5.2:CTF=True:boxsize=64
+  sp_process.py  input_structure.hdf  data mic  --generate_projections  format="bdb":apix=5.2:CTF=True:boxsize=64
 
  5. Retrieve original image numbers in the selected ISAC group (here group 12 from generation 3).
 
-  sxprocess.py  bdb:test3  class_averages_generation_3.hdf  list3_12.txt  --isacgroup=12  --params=originalid
+  sp_process.py  bdb:test3  class_averages_generation_3.hdf  list3_12.txt  --isacgroup=12  --params=originalid
 
  6.  Retrieve original image numbers of images listed in ISAC output stack of averages/
 
-  sxprocess.py  select1.hdf  ohk.txt
+  sp_process.py  select1.hdf  ohk.txt
 
  7. Adjust rotationally averaged power spectrum of an image to that of a reference image or a reference 1D power spectrum stored in an ASCII file. Optionally use a tangent low-pass filter.  Also works for a stack of images, in which case the output is also a stack.
 
-  sxprocess.py  vol.hdf ref.hdf  avol.hdf  < 0.25 0.2>  --adjpw
-  sxprocess.py  vol.hdf pw.txt   avol.hdf  < 0.25 0.2>  --adjpw
+  sp_process.py  vol.hdf ref.hdf  avol.hdf  < 0.25 0.2>  --adjpw
+  sp_process.py  vol.hdf pw.txt   avol.hdf  < 0.25 0.2>  --adjpw
 
  8. Generate a 1D rotationally averaged power spectrum of an image.
 
-  sxprocess.py  vol.hdf  --rotwp=rotpw.txt
+  sp_process.py  vol.hdf  --rotwp=rotpw.txt
 
 \\ Output will contain three columns:
   - rotationally averaged power spectrum
@@ -55,23 +55,23 @@ sxprocess does not support MPI.
 
  9. Apply 3D transformation (rotation and/or shift) to a set of orientation parameters associated with projection data.
 
-  sxprocess.py  --transfromparams=phi,theta,psi,tx,ty,tz  input.txt  output.txt
+  sp_process.py  --transfromparams=phi,theta,psi,tx,ty,tz  input.txt  output.txt
 
 The output file is then imported and 3D transformed map computed.
 
-  sxheader.py  bdb:p  --params=xform.projection  --import=output.txt
-  mpirun  -np  2  sxrecons3d_n.py  bdb:p tvol.hdf  --MPI
+  sp_header.py  bdb:p  --params=xform.projection  --import=output.txt
+  mpirun  -np  2  sp_recons3d_n.py  bdb:p tvol.hdf  --MPI
 
 The reconstructed map is in the position of the map computed using the input.txt parameters and then transformed with rot_shift3D(vol, phi,theta,psi,tx,ty,tz).
 
-10. Import ctf parameters from the output of sxcter into windowed particle headers. 
+10. Import ctf parameters from the output of sp_cter into windowed particle headers. 
 \\ There are three possible input files formats: (1) all particles are in one stack, (2) and/or (3) particles are in stacks, each stack corresponds to a single micrograph. In each case the particles should contain a name of the micrograph of origin stores using attribute name 'ptcl_source_image'. Normally this is done by e2boxer.py during windowing. Particles whose defocus or astigmatism error exceed set thresholds will be skipped, otherwise, virtual stacks with the original way preceded by G will be created.
 
-  sxprocess.py  --input=bdb:data  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
+  sp_process.py  --input=bdb:data  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
 
 \\ Output will be a vritual stack bdb:Gdata.
 
-  sxprocess.py  --input="bdb:directory/stacks*"  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
+  sp_process.py  --input="bdb:directory/stacks*"  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
 
 To concatenate output files,
 
@@ -82,21 +82,21 @@ To concatenate output files,
 
 11. Scale 3D shifts. The shifts in the input five columns text file with 3D orientation parameters will be DIVIDED by the scale factor.
 
-  sxprocess.py  orientationparams.txt  scaledparams.txt  scale=0.5
+  sp_process.py  orientationparams.txt  scaledparams.txt  scale=0.5
 
 12. Generate soft-edged 3D mask from input 3D map automatically or using the user-provided threshold.
 
 \\ Automatically compute the threshold to intially obtain the largest density cluster.
 
-  sxprocess.py  vol3d.hdf  mask3d.hdf  --adaptive_mask  --fl=12.0 --aa=0.02 --pixel_size=3.1 --nsigma=3.0  --ndilation=1  --edge_width=3 --edge_type="G" --mol_mass=1500.0
+  sp_process.py  vol3d.hdf  mask3d.hdf  --adaptive_mask  --fl=12.0 --aa=0.02 --pixel_size=3.1 --nsigma=3.0  --ndilation=1  --edge_width=3 --edge_type="G" --mol_mass=1500.0
 
 \\ Use the user-provided threshold to intially obtain the largest density cluster.
 
-  sxprocess.py  vol3d.hdf  mask3d.hdf  --adaptive_mask --threshold=0.05  --ndilation=0  --edge_width=5
+  sp_process.py  vol3d.hdf  mask3d.hdf  --adaptive_mask --threshold=0.05  --ndilation=0  --edge_width=5
 
 13. Generate binary 3D mask from input 3D map using the user-provided threshold.
 
-  sxprocess.py  vol3d.hdf  mask3d.hdf  --binary_mask  --threshold=0.05  --ndilation=0 --nerosion=0
+  sp_process.py  vol3d.hdf  mask3d.hdf  --binary_mask  --threshold=0.05  --ndilation=0 --nerosion=0
 
 14. PostRefiner - Post-refine maps or images by enhancing the power spectrum after 2D averaging, 3D refinement, or 3D sorting run.
 \\ (1) Half-set Maps Mode
@@ -117,9 +117,9 @@ To concatenate output files,
   * %%--%%B_enhance        : =0.0, program estimates B-factor from B_start (usually 10 Angstrom) to the resolution determined by FSC@0.143; >0.0, program uses the given value to enhance map; =-1.0, B-factor is not applied.
   * %%--%%fl               : =0.0, low-pass filter to resolution; >=0.5, low-pass filter to the given Angstrom; >0.0 AND <=0.5, low-pass filter to the given absolute frequency; =-1.0, no low-pass filter.
 
-  sxprocess.py  --combinemaps  vol_0_unfil.hdf vol_1_unfil.hdf  --output_dir=outdir_postrefine  --output=postrefine_fullset_vol3d.hdf  --pixel_size=1.12  --mask=mask3d.hdf   --mtf=mtf.txt  --fl=-1   --fsc_adj
-  sxprocess.py  --combinemaps  vol_0_unfil.hdf vol_1_unfil.hdf  --output_dir=outdir_postrefine  --pixel_size=1.12  --mask=mask3d.hdf   --mtf=aa.txt  --fl=4.7  --aa=0.02 --fsc_adj
-  sxprocess.py  --combinemaps  vol_0_unfil.hdf vol_1_unfil.hdf  --output_dir=outdir_postrefine  --output=postrefine_fullset_vol3d.hdf  --pixel_size=1.12  --do_adaptive_mask  --mtf=mtf.txt  --fl=3.9  --aa=0.01  --B_enhance=280
+  sp_process.py  --combinemaps  vol_0_unfil.hdf vol_1_unfil.hdf  --output_dir=outdir_postrefine  --output=postrefine_fullset_vol3d.hdf  --pixel_size=1.12  --mask=mask3d.hdf   --mtf=mtf.txt  --fl=-1   --fsc_adj
+  sp_process.py  --combinemaps  vol_0_unfil.hdf vol_1_unfil.hdf  --output_dir=outdir_postrefine  --pixel_size=1.12  --mask=mask3d.hdf   --mtf=aa.txt  --fl=4.7  --aa=0.02 --fsc_adj
+  sp_process.py  --combinemaps  vol_0_unfil.hdf vol_1_unfil.hdf  --output_dir=outdir_postrefine  --output=postrefine_fullset_vol3d.hdf  --pixel_size=1.12  --do_adaptive_mask  --mtf=mtf.txt  --fl=3.9  --aa=0.01  --B_enhance=280
 
 \\ (2) Cluster Maps Mode or Single Map Mode:
 \\ For cluster maps produced by SORT3D_DEPTH, this command executes the following processes:
@@ -134,29 +134,29 @@ To concatenate output files,
   * %%--%%fl               : >=0.5, low-pass filter to the given Angstrom; >0.0 AND <=0.5, low-pass filter to the given absolute frequency; =-1.0, no low-pass filter.
 \\ Note that this mode is mainly designed for SORT3D_DEPTH outputs but also applicable to ANY maps.
 
-  sxprocess.py  --combinemaps  vol_cluster*.hdf    --output_dir=outdir_postrefine_cluster_vols  --output=postrefine_cluster_vol3d.hdf  --pixel_size=1.12  --do_adaptive_mask  --mtf=mtf.txt  --fl=3.9  --aa=0.01  --B_enhance=280
+  sp_process.py  --combinemaps  vol_cluster*.hdf    --output_dir=outdir_postrefine_cluster_vols  --output=postrefine_cluster_vol3d.hdf  --pixel_size=1.12  --do_adaptive_mask  --mtf=mtf.txt  --fl=3.9  --aa=0.01  --B_enhance=280
 
 \\ To process one single map, simply specify the input volume path (without wild card '*'). This executes the same processes as above but on one single map:
 
-  sxprocess.py  --combinemaps  vol.hdf  --output_dir=outdir_postrefine_single_vol  --output=spostrefine_vol3d.hdf  --pixel_size=1.12  --do_adaptive_mask  --mtf=mtf.txt  --fl=3.9  --aa=0.01  --B_enhance=280
+  sp_process.py  --combinemaps  vol.hdf  --output_dir=outdir_postrefine_single_vol  --output=spostrefine_vol3d.hdf  --pixel_size=1.12  --do_adaptive_mask  --mtf=mtf.txt  --fl=3.9  --aa=0.01  --B_enhance=280
 
 \\ (3) Images Mode - for 2D images
 \\ Calculate B-factor and apply negative B-factor to 2D images.
 
 15. Window stack file -reduce size of images without changing the pixel size.
-	sxprocess.py input.hdf output.hdf --box=new_box_size
+	sp_process.py input.hdf output.hdf --box=new_box_size
 
 16. Pad stack file --pad images to a larger size and set surround background to request value (default 0.0).
-	sxprocess.py input.hdf output.hdf --box=new_box_size --background=3.0
+	sp_process.py input.hdf output.hdf --box=new_box_size --background=3.0
 
 17. Create angular distribution .build file
-	sxprocess.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --round_digit=5  --box_size=500  --particle_radius=175  --cylinder_width=1  --cylinder_length=10000
+	sp_process.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --round_digit=5  --box_size=500  --particle_radius=175  --cylinder_width=1  --cylinder_length=10000
 	
 18. Subtract from images in the first stack images in the second stack and write results to the third stack.
    If the name of the output stack is the same as the second stack, the results will be written to the second
    stack (it will be overwritten).
 
-	sxprocess.py bdb:orgstack bdb:proj/data  bdb:proj/sdata bdb:proj/odata --subtract_stack
+	sp_process.py bdb:orgstack bdb:proj/data  bdb:proj/sdata bdb:proj/odata --subtract_stack
 	
 19. Balance angular distribution. 
    Input ASCII file with 3D orientation parameters, compute a histogram
@@ -165,7 +165,7 @@ To concatenate output files,
    retained projection directions.  (In order to create a substack with retained images, use e2bdb.py
    with options makevstack and list).
 
-	sxprocess.py --balance_angular_distribution  params.txt select.txt --max_occupy=100 --angstep=15 --symmetry=d3
+	sp_process.py --balance_angular_distribution  params.txt select.txt --max_occupy=100 --angstep=15 --symmetry=d3
 
 
 \\
@@ -195,10 +195,10 @@ To concatenate output files,
 
   ; %%--%%rotpw : Compute rotationally averaged power spectrum of the input image: Store in output text file with name as specified. (default none)
 
-  ; %%--%%importctf : Import sxcter CTF parameters into stack file: Specify name of a file that contains CTF parameters produced by sxcter. (default none)
+  ; %%--%%importctf : Import sp_cter CTF parameters into stack file: Specify name of a file that contains CTF parameters produced by sp_cter. (default none)
   ; %%--%%input : Input particle image stack file: CTF parameters will be imported into headers of images in the stack. (default none)
-  ; %%--%%defocuserror : Defocus error threshold: Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent. the error is computed as (std dev defocus)/defocus*100%. (default 1000000.0)
-  ; %%--%%astigmatismerror : Astigmatism error threshold: Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees. (default 360.0)
+  ; %%--%%defocuserror : Defocus error threshold: Exclude micrographs whose relative defocus error as estimated by sp_cter is larger than defocuserror percent. the error is computed as (std dev defocus)/defocus*100%. (default 1000000.0)
+  ; %%--%%astigmatismerror : Astigmatism error threshold: Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sp_cter is larger than astigmatismerror degrees. (default 360.0)
 
   ; %%--%%scale : Divide shifts in input 3D orientation parameters text file by the specified scale factor: (default -1.0)
 
@@ -250,7 +250,7 @@ To concatenate output files,
 
   ; %%--%%makedb : Generate a database file containing a set of parameters: One argument is required, name of key with which the database will be created. Fill in database with parameters specified as %%--%%makedb param1=value1:param2=value2 (e.g. 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=1.0). (default none)
 
-  ; %%--%%transformparams : Transform 3D projection orientation parameters: Using six 3D parameters (phi,theta,psi,sx,sy,sz). input is %%--%%transformparams=45.,66.,12.,-2,3,-5.5 desired six transformation of the reconstructed structure. output is file with modified orientation parameters. (default none)
+  ; %%--%%transformparams : Transform 3D projection orientation parameters: Using six 3D parameters (phi,theta,psi,sp_,sy,sz). input is %%--%%transformparams=45.,66.,12.,-2,3,-5.5 desired six transformation of the reconstructed structure. output is file with modified orientation parameters. (default none)
 
 \\
 ===== Output =====
@@ -278,7 +278,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxprocess.py
+sparx/bin/sp_process.py
 
 \\
 ==== See also ====

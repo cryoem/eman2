@@ -1,6 +1,6 @@
 ~~NOTOC~~
 
-===== sxsort3d =====
+===== sp_sort3d =====
 3D Clustering - SORT3D: Sort 3D heterogeneity based on the reproducible members of K-means and Equal K-means classification. It runs after 3D refinement where the alignment parameters are determined.
 
 \\
@@ -8,14 +8,14 @@
 
 Usage in command line
 
-  sxsort3d.py  stack  outdir  mask  --focus=3Dmask  --radius=outer_radius  --delta=angular_step  --CTF  --sym=c1  --number_of_images_per_group=number_of_images_per_group  --nxinit=nxinit  --smallest_group=smallest_group  --chunk0=CHUNK0_FILE_NAME  --chunk1=CHUNK1_FILE_NAME  --ir=inner_radius  --maxit=max_iter  --rs=ring_step  --xr=xr  --yr=yr  --ts=ts  --an=angular_neighborhood  --center=centring_method  --nassign=nassign  --nrefine=nrefine  --stoprnct=stop_percent  --function=user_function  --independent=indenpendent_runs  --low_pass_filter=low_pass_filter  --unaccounted  --seed=random_seed  --sausage  --PWadjustment=PWadjustment  --protein_shape=protein_shape  --upscale=upscale  --wn=wn  --interpolation=method
+  sp_sort3d.py  stack  outdir  mask  --focus=3Dmask  --radius=outer_radius  --delta=angular_step  --CTF  --sym=c1  --number_of_images_per_group=number_of_images_per_group  --nxinit=nxinit  --smallest_group=smallest_group  --chunk0=CHUNK0_FILE_NAME  --chunk1=CHUNK1_FILE_NAME  --ir=inner_radius  --maxit=max_iter  --rs=ring_step  --xr=xr  --yr=yr  --ts=ts  --an=angular_neighborhood  --center=centring_method  --nassign=nassign  --nrefine=nrefine  --stoprnct=stop_percent  --function=user_function  --independent=indenpendent_runs  --low_pass_filter=low_pass_filter  --unaccounted  --seed=random_seed  --sausage  --PWadjustment=PWadjustment  --protein_shape=protein_shape  --upscale=upscale  --wn=wn  --interpolation=method
 
 \\
 ===== Typical usage =====
 
-sxsort3d exists only in MPI version.
+sp_sort3d exists only in MPI version.
 
-  mpirun -np 192 sxsort3d.py bdb:data sort3d_outdir1 mask.hdf --focus=ribosome_focus.hdf --chunkdir=/data/n10/pawel/ribosome_frank/ri3/main013 --radius=52 --CTF --number_of_images_per_group=2000 --low_pass_filter=.125 --stoprnct=5
+  mpirun -np 192 sp_sort3d.py bdb:data sort3d_outdir1 mask.hdf --focus=ribosome_focus.hdf --chunkdir=/data/n10/pawel/ribosome_frank/ri3/main013 --radius=52 --CTF --number_of_images_per_group=2000 --low_pass_filter=.125 --stoprnct=5
 
 \\
 ===== Input =====
@@ -65,7 +65,7 @@ sxsort3d exists only in MPI version.
 
 \\
 ===== Description =====
-The clustering algorithm in the program combines a couple of computational techniques, equal-Kmeans clustering, K-means clustering, and reproducibility of clustering such that it not only has a strong ability but also a high efficiency to sort out heterogeneity of cryo-EM images. The command sxsort3d.py is the protocol I (P1). In this protocol, the user defines the group size and thus defines the number of group K. Then the total data is randomly assigned into K group and an equal-size K-means (size restricted K-means) is carried out. N independent equal-Kmeans runs would give N partition of the K groups assignment. Then, two-way comparison of these partitions gives the reproducible number of particles.
+The clustering algorithm in the program combines a couple of computational techniques, equal-Kmeans clustering, K-means clustering, and reproducibility of clustering such that it not only has a strong ability but also a high efficiency to sort out heterogeneity of cryo-EM images. The command sp_sort3d.py is the protocol I (P1). In this protocol, the user defines the group size and thus defines the number of group K. Then the total data is randomly assigned into K group and an equal-size K-means (size restricted K-means) is carried out. N independent equal-Kmeans runs would give N partition of the K groups assignment. Then, two-way comparison of these partitions gives the reproducible number of particles.
 
 \\
 ==== Method ====
@@ -88,11 +88,11 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxsort3d.py
+sparx/bin/sp_sort3d.py
 
 \\
 ==== See also ====
-[[pipeline:meridien:sxmeridien|sxmeridien]], [[pipeline:utilities:sxheader|sxheader]], [[[pipeline:sort3d:sx3dvariability|sx3dvariability]], [[pipeline:sort3d:sxrsort3d|sxrsort3d]], and [[pipeline:sort3d:sxsort3d_depth|sxsort3d_depth]].
+[[pipeline:meridien:sp_meridien|sp_meridien]], [[pipeline:utilities:sp_header|sp_header]], [[[pipeline:sort3d:sp_3dvariability|sp_3dvariability]], [[pipeline:sort3d:sp_rsort3d|sp_rsort3d]], and [[pipeline:sort3d:sp_sort3d_depth|sp_sort3d_depth]].
 
 \\
 ==== Maturity ====

@@ -1,6 +1,6 @@
 ~~NOTOC~~
 
-===== sxmeridien =====
+===== sp_meridien =====
 3D Refinement: Performs 3D structure refinement using a quasi-Maximum Likelihood approach.
 
 \\
@@ -8,35 +8,35 @@
 
 Usage in command line
 
-  sxmeridien.py  stack  output_directory  initial_volume  --do_final=MERIDIEN_ITERATION_ID  --local_refinement  --radius=particle_radius  --mask3D=MASK3D  --symmetry=SYMMETRY  --inires=INITIAL_RESOLUTION  --delta=DELTA  --xr=XR  --ts=TS  --initialshifts  --skip_prealignment  --memory_per_node=MEMORY_PER_NODE  --center_method=CENTER_METHOD  --target_radius=TARGET_RADIUS  --an=ANGULAR_NEIGHBORHOOD  --shake=SHAKE  --small_memory  --ccfpercentage=CCFPERCENTAGE  --nonorm  --function=USER_FUNCTION --function_ai=USER_FUNCTION_AI --group_by=GROUP_BY --theta_min=THETA_MIN --theta_max=THETA_MAX --even_angle_method=EVEN_ANGLE_METHOD --group_id=GROUP_ID --filament_width=FILAMENT_WIDTH --helical_rise=HELICAL_RISE --a_criterion=A_CRITERION --limit_improvement=LIMIT_IMPROVEMENT
+  sp_meridien.py  stack  output_directory  initial_volume  --do_final=MERIDIEN_ITERATION_ID  --local_refinement  --radius=particle_radius  --mask3D=MASK3D  --symmetry=SYMMETRY  --inires=INITIAL_RESOLUTION  --delta=DELTA  --xr=XR  --ts=TS  --initialshifts  --skip_prealignment  --memory_per_node=MEMORY_PER_NODE  --center_method=CENTER_METHOD  --target_radius=TARGET_RADIUS  --an=ANGULAR_NEIGHBORHOOD  --shake=SHAKE  --small_memory  --ccfpercentage=CCFPERCENTAGE  --nonorm  --function=USER_FUNCTION --function_ai=USER_FUNCTION_AI --group_by=GROUP_BY --theta_min=THETA_MIN --theta_max=THETA_MAX --even_angle_method=EVEN_ANGLE_METHOD --group_id=GROUP_ID --filament_width=FILAMENT_WIDTH --helical_rise=HELICAL_RISE --a_criterion=A_CRITERION --limit_improvement=LIMIT_IMPROVEMENT
 
 
 \\
 ===== Typical usage =====
 
-sxmeridien exists only in MPI version (Running MPI version does not require --MPI flag).
+sp_meridien exists only in MPI version (Running MPI version does not require --MPI flag).
 
 There are five ways to run the program:
 
 \\ __1. Standard default run:__
 \\ The standard refinement starts from exhaustive searches, uses initial reference structure
-  mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py  bdb:sparx_stack vton1 mask15.hdf --sym=c5  --initialshifts  --radius=120  --mask3D=mask15.hdf    >1ovotn &
+  mpirun -np 64 --hostfile four_nodes.txt  sp_meridien.py  bdb:sparx_stack vton1 mask15.hdf --sym=c5  --initialshifts  --radius=120  --mask3D=mask15.hdf    >1ovotn &
 
 \\ __2. Restart after the last fully finished iteration:__
 One can change some parameters (MPI settings have to be the same)
-  mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py  vton1 --radius=100 >2ovotn &
+  mpirun -np 64 --hostfile four_nodes.txt  sp_meridien.py  vton1 --radius=100 >2ovotn &
 
 \\ __3. Local refinement:__
 \\  Local refinement starts from user-provided orientation parameters, delta has to be <= 3.75
-  mpirun -np 64 --hostfile four_nodes.txt sxmeridien.py --local_refinement bdb:sparx_stack   vton3 --delta=1.875 --xr=2.0  --inires=5.5  --sym=c5  --radius=120  --mask3D=mask15.hdf >5ovotn &
+  mpirun -np 64 --hostfile four_nodes.txt sp_meridien.py --local_refinement bdb:sparx_stack   vton3 --delta=1.875 --xr=2.0  --inires=5.5  --sym=c5  --radius=120  --mask3D=mask15.hdf >5ovotn &
 
 \\ __4. Restart of local refinement after the last fully finished iteration.:__
 \\  One can change some parameters (MPI settings have to be the same)
-  mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3  --xr=0.6 >6ovotn &
+  mpirun -np 64 --hostfile four_nodes.txt  sp_meridien.py --local_refinement  vton3  --xr=0.6 >6ovotn &
 
 \\ __5. Final reconstruction only:__
 \\ Do only final reconstruction using a fully finished iteration of meridien (here number 21).
-  mpirun -np 64 sxmeridien.py --do_final=21  meridien_outdir
+  mpirun -np 64 sp_meridien.py --do_final=21  meridien_outdir
 
 
 \\
@@ -108,7 +108,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxmeridien.py
+sparx/bin/sp_meridien.py
 
 \\
 ==== See also ====

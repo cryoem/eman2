@@ -1,6 +1,6 @@
 ~~NOTOC~~
 
-===== sxcryolo_boxmanager =====
+===== sp_cryolo_boxmanager =====
 crYOLO - boxmanager:  Displays boxfiles on images. Allows creation of new training data for crYOLO.
 
 \\
@@ -8,7 +8,7 @@ crYOLO - boxmanager:  Displays boxfiles on images. Allows creation of new traini
 
 Usage in command line
 
-  sxcryolo_boxmanager.py --target_dir=target_dir --box_dir=box_dir
+  sp_cryolo_boxmanager.py --target_dir=target_dir --box_dir=box_dir
 
 \\
 ===== Typical usage =====
@@ -17,11 +17,11 @@ Usage in command line
 
 \\ __1. Open images
 
-  sxcryolo_boxmanager.py images_dir
+  sp_cryolo_boxmanager.py images_dir
 
 \\ __2. Open images and show boxes
 
-  sxcryolo_boxmanager.py images_dir --box_dir=box_dir
+  sp_cryolo_boxmanager.py images_dir --box_dir=box_dir
 
 
 \\

@@ -1,6 +1,6 @@
 ~~NOTOC~~
 
-===== sxmask =====
+===== sp_mask =====
 Masking : Mask creation tool for 2D or 3D masks.
 
 \\
@@ -8,24 +8,24 @@ Masking : Mask creation tool for 2D or 3D masks.
 
 Usage in command line
 
-  sxmask.py  input_volume  output_directory  --prefix=PREFIX  --overwrite  --low_pass_filter_resolution=LOW_PASS_FILTER_RESOLUTION  --low_pass_filter_falloff=LOW_PASS_FILTER_FALLOFF  --pixel_size=PIXEL_SIZE  --threshold=THRESHOLD --nsigma=NSIGMA  --mol_mass=MOL_MASS  --ndilation=NDILATION  --nerosion=NEROSION  --edge_width=EDGE_WIDTH  --edge_type=EDGE_TYPE  --do_old --allow_disconnected  --fill_mask --second_mask=SECOND_MASK  --second_mask_shape=SECOND_MASK_SHAPE  --s_radius=S_RADIUS  --s_nx=S_NX  --s_ny=S_NY  --s_nz=S_NZ  --s_threshold=THRESHOLD --s_nsigma=NSIGMA  --s_mol_mass=MOL_MASS  --s_ndilation=NDILATION  --s_nerosion=NEROSION  --s_edge_width=EDGE_WIDTH  --s_edge_type=EDGE_TYPE  --s_do_old  --s_allow_disconnected  --s_invert=S_INVERT --s_fill_mask
+  sp_mask.py  input_volume  output_directory  --prefix=PREFIX  --overwrite  --low_pass_filter_resolution=LOW_PASS_FILTER_RESOLUTION  --low_pass_filter_falloff=LOW_PASS_FILTER_FALLOFF  --pixel_size=PIXEL_SIZE  --threshold=THRESHOLD --nsigma=NSIGMA  --mol_mass=MOL_MASS  --ndilation=NDILATION  --nerosion=NEROSION  --edge_width=EDGE_WIDTH  --edge_type=EDGE_TYPE  --do_old --allow_disconnected  --fill_mask --second_mask=SECOND_MASK  --second_mask_shape=SECOND_MASK_SHAPE  --s_radius=S_RADIUS  --s_nx=S_NX  --s_ny=S_NY  --s_nz=S_NZ  --s_threshold=THRESHOLD --s_nsigma=NSIGMA  --s_mol_mass=MOL_MASS  --s_ndilation=NDILATION  --s_nerosion=NEROSION  --s_edge_width=EDGE_WIDTH  --s_edge_type=EDGE_TYPE  --s_do_old  --s_allow_disconnected  --s_invert=S_INVERT --s_fill_mask
 
 \\
 ===== Typical usage =====
 
-sxmask.py exists only in non-MPI version.
+sp_mask.py exists only in non-MPI version.
 
 Create a binary mask dilated by 2 pixel using the binary threshold from chimera
 
-  sxmaks.py input_volume output_direcory --threshold=0.3 --edge_width=0 --ndilation=1
+  sp_maks.py input_volume output_direcory --threshold=0.3 --edge_width=0 --ndilation=1
 
 Create an adapted mask dilated by 2 pixel and a soft edge of 5 pixel using the binary threshold from chimera
 
-  sxmaks.py input_volume output_direcory --threshold=0.3 --edge_width=5 --ndilation=1
+  sp_maks.py input_volume output_direcory --threshold=0.3 --edge_width=5 --ndilation=1
 
 Create an adapted mask dilated by 2 pixel and a soft edge of 5 pixel using the binary threshold from chimera and masked by a soft edged cylinder to 80% (e.g. for helical reconstruction with a box size of 300)
 
-  sxmaks.py input_volume output_direcory --threshold=0.3 --edge_width=5 --ndilation=1 --second_mask_shape=cylinder --s_radius=40 --s_nx=240 --s_ny=240 --s_nz=240 --s_ndilation=1 --s_edge_width=5
+  sp_maks.py input_volume output_direcory --threshold=0.3 --edge_width=5 --ndilation=1 --second_mask_shape=cylinder --s_radius=40 --s_nx=240 --s_ny=240 --s_nz=240 --s_ndilation=1 --s_edge_width=5
 
 \\
 ===== Input =====
@@ -33,7 +33,7 @@ Create an adapted mask dilated by 2 pixel and a soft edge of 5 pixel using the b
   ; input_volume : Input image : Path to the 2D image or 3D Volume (default required string)
   ; output_directory : Output directory : Output direcory path (default required string)
 
-  ; %%--%%prefix : Output prefix : Prefix of the produced files (default sxmask)
+  ; %%--%%prefix : Output prefix : Prefix of the produced files (default sp_mask)
   ; %%--%%overwrite : Overwrite outputs : Overwrite the output mask in case it exists already. (default False)
   ; %%--%%use_mol_mass : Use molecular mass : GUI OPTION ONLY - Define if one want to use the molecular mass option as a masking threshold. (default False) : %%--%%threshold==none %%--%%nsigma==none
   ; %%--%%mol_mass : Molecular mass [kDa]: The estimated molecular mass of the target particle in kilodalton. This is used to calculate the binarization threshold automatically. (default none) : %%--%%use_mol_mass==True
@@ -100,7 +100,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxmask.py
+sparx/bin/sp_mask.py
 
 \\
 ==== See also ====

@@ -1,6 +1,6 @@
 ~~NOTOC~~
 
-===== sxsort3d_depth =====
+===== sp_sort3d_depth =====
 3D Clustering - SORT3D_DEPTH: Reproducible 3D Clustering of 2D projection images without modifications of 3D orientation parameters.
 
 \\
@@ -8,20 +8,20 @@
 
 Usage in command line
 
-  sxsort3d_depth.py  --refinement_dir=DIR  --instack=STACK_FILE  --output_dir=DIR  --niter_for_sorting=NUM_OF_ITERATIONS  --nxinit=INITIAL_IMAGE_SIZE  --mask3D=MASK3D_FILE  --focus=FOCUS3D_FILE  --radius=PARTICLE_RADIUS  --sym=SYMMETRY  --img_per_grp=NUM_OF_IMAGES  --img_per_grp_split_rate=SPLIT_RATE  --minimum_grp_size=GROUP_SIZE  --do_swap_au  --swap_ratio=RATIO  --memory_per_node=MEMORY_SIZE  --depth_order=DEPTH_ORDER  --stop_mgskmeans_percentage=PERCENTAGE  --nsmear=NUM_OF_SMEARS  --orientation_cones=NUM_OF_GROUPS  --not_include_unaccounted  --notapplybckgnoise  --random_group_elimination_threshold --check_smearing --num_core_set  --compute_on_the_fly  --override
+  sp_sort3d_depth.py  --refinement_dir=DIR  --instack=STACK_FILE  --output_dir=DIR  --niter_for_sorting=NUM_OF_ITERATIONS  --nxinit=INITIAL_IMAGE_SIZE  --mask3D=MASK3D_FILE  --focus=FOCUS3D_FILE  --radius=PARTICLE_RADIUS  --sym=SYMMETRY  --img_per_grp=NUM_OF_IMAGES  --img_per_grp_split_rate=SPLIT_RATE  --minimum_grp_size=GROUP_SIZE  --do_swap_au  --swap_ratio=RATIO  --memory_per_node=MEMORY_SIZE  --depth_order=DEPTH_ORDER  --stop_mgskmeans_percentage=PERCENTAGE  --nsmear=NUM_OF_SMEARS  --orientation_cones=NUM_OF_GROUPS  --not_include_unaccounted  --notapplybckgnoise  --random_group_elimination_threshold --check_smearing --num_core_set  --compute_on_the_fly  --override
 
 \\
 ===== Typical usage =====
 
-sxsort3d_depth.py exists only in MPI version. It surports single node workstation. 
+sp_sort3d_depth.py exists only in MPI version. It surports single node workstation. 
 
 There are two ways of running this command. 
 
 \\ __1. 3D sorting from meridien iteration__: Clustering is initiated from a completed iteration of meridien refinement and imports data from there. This mode uses all meridien information (i.e., smear, normalizations and such).
-  mpirun -np 48 sxsort3d_depth.py --refinement_dir='outdir_sxmeridien' --output_dir='outdir_sxsort3d_depth_iteration' --radius=52 --sym='c1' --memory_per_node=60.0 --img_per_grp=2000 --minimum_grp_size=1500 --stop_mgskmeans_percentage=10.0 --swap_ratio=5 --do_swap_au --shake=0.1
+  mpirun -np 48 sp_sort3d_depth.py --refinement_dir='outdir_sp_meridien' --output_dir='outdir_sp_sort3d_depth_iteration' --radius=52 --sym='c1' --memory_per_node=60.0 --img_per_grp=2000 --minimum_grp_size=1500 --stop_mgskmeans_percentage=10.0 --swap_ratio=5 --do_swap_au --shake=0.1
 
 \\ __2. 3D sorting from stack__: Clustering is initiated from user-provided orientation parameters stored in stack header.  This mode uses only orientation parameters, which is useful for sorting data refined, say with relion.
-  mpirun -np 48 sxsort3d_depth.py --instack='bdb:data' --output_dir='outdir_sxsort3d_depth_stack' --radius=52 --sym='c1' --img_per_grp=2000 --minimum_grp_size=1500 --stop_mgskmeans_percentage=10.0 --swap_ratio=5 --do_swap_au
+  mpirun -np 48 sp_sort3d_depth.py --instack='bdb:data' --output_dir='outdir_sp_sort3d_depth_stack' --radius=52 --sym='c1' --img_per_grp=2000 --minimum_grp_size=1500 --stop_mgskmeans_percentage=10.0 --swap_ratio=5 --do_swap_au
 
 \\
 ===== Input =====
@@ -69,7 +69,7 @@ Results outputted:
 
 \\
 ===== Description =====
-sxsort3d_depth performs 3D clustering on data and keeps 3D orientation parameters of data unchanged. It finds out stable group members by carrying out two-way comparison of two independent Kmeans clustering runs. The Kmeans clustering has minimum group size constraint on each cluster and thus the clustering will not fail in any circumstance.
+sp_sort3d_depth performs 3D clustering on data and keeps 3D orientation parameters of data unchanged. It finds out stable group members by carrying out two-way comparison of two independent Kmeans clustering runs. The Kmeans clustering has minimum group size constraint on each cluster and thus the clustering will not fail in any circumstance.
 
 \\
 === Important Options ===
@@ -116,11 +116,11 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxsort3d_depth.py
+sparx/bin/sp_sort3d_depth.py
 
 \\
 ==== See also ====
-[[pipeline:meridien:sxmeridien|sxmeridien]], [[pipeline:utilities:sxheader|sxheader]], [[[pipeline:sort3d:sx3dvariability|sx3dvariability]], [[pipeline:sort3d:sxsort3d|sxsort3d]], and [[pipeline:sort3d:sxrsort3d|sxrsort3d]].
+[[pipeline:meridien:sp_meridien|sp_meridien]], [[pipeline:utilities:sp_header|sp_header]], [[[pipeline:sort3d:sp_3dvariability|sp_3dvariability]], [[pipeline:sort3d:sp_sort3d|sp_sort3d]], and [[pipeline:sort3d:sp_rsort3d|sp_rsort3d]].
 
 \\
 ==== Maturity ====

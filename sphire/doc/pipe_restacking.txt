@@ -1,6 +1,6 @@
 ~~NOTOC~~
 
-===== sxpipe restacking =====
+===== sp_pipe restacking =====
 Restacking: Generate all necessary information to restack the input stack (i.e., particle image ID list, CTF parameters list, projection parameters list) while appling micrograph selection list. Optionally, the command can directly output the virtual stack.  In addition, this command can be used to generate all parameters files for reboxing (i.e. original/centered particle coordinates list files, CTF parameters list, original/centered projection parameters list as well as micrograph selection file). Optionally, user can provided a 3D shift to recenter the projection parameters and so the particle coordinates.
 
 \\
@@ -8,28 +8,28 @@ Restacking: Generate all necessary information to restack the input stack (i.e.,
 
 Usage in command line
 
-  sxpipe.py  restacking  input_bdb_stack_path  output_directory  --selection_list=FILE_PATH  --shift3d_x=SHIFT3D_X  --shift3d_y=SHIFT3D_Y  --shift3d_z=SHIFT3D_Z  --save_vstack  --sv_vstack_basename=BASENAME  --reboxing  --rb_box_size=BOX_SIZE
+  sp_pipe.py  restacking  input_bdb_stack_path  output_directory  --selection_list=FILE_PATH  --shift3d_x=SHIFT3D_X  --shift3d_y=SHIFT3D_Y  --shift3d_z=SHIFT3D_Z  --save_vstack  --sv_vstack_basename=BASENAME  --reboxing  --rb_box_size=BOX_SIZE
 
 \\
 ===== Typical usage =====
 
-sxpipe restacking does not support MPI. 
+sp_pipe restacking does not support MPI. 
 
 Do restacking to generate the virtual stack of only particle images associated to the micrographs in the selection list.
 
-  sxpipe.py restacking 'bdb:outdir_window#data' 'outdir_pipe_restacking' --selection_list='micrograph_selection_list.txt' --save_vstack --sv_vstack_basename='vstack_selected'
+  sp_pipe.py restacking 'bdb:outdir_window#data' 'outdir_pipe_restacking' --selection_list='micrograph_selection_list.txt' --save_vstack --sv_vstack_basename='vstack_selected'
 
 Generate the reboxing information of all particle images in the input stack.
 
-  sxpipe.py restacking 'bdb:outdir_window#data' 'outdir_pipe_restacking' --shift3d_z=20 --reboxing --rb_box_size=352
+  sp_pipe.py restacking 'bdb:outdir_window#data' 'outdir_pipe_restacking' --shift3d_z=20 --reboxing --rb_box_size=352
 
 Generate the reboxing information of only particle images associated to the micrographs in the selection list.
 
-  sxpipe.py restacking 'bdb:outdir_window#data' 'outdir_pipe_restacking' --selection_list='micrograph_selection_list.txt' --shift3d_z=20 --reboxing --rb_box_size=352
+  sp_pipe.py restacking 'bdb:outdir_window#data' 'outdir_pipe_restacking' --selection_list='micrograph_selection_list.txt' --shift3d_z=20 --reboxing --rb_box_size=352
 
 Do both restacking and reboxing to generate both the virtual stack and reboxing information of only particle images associated to the micrographs in the selection list.
 
-  sxpipe.py restacking 'bdb:outdir_window#data' 'outdir_pipe_restacking' --selection_list='micrograph_selection_list.txt' --save_vstack --sv_vstack_basename='vstack_selected' --shift3d_z=20 --reboxing --rb_box_size=352
+  sp_pipe.py restacking 'bdb:outdir_window#data' 'outdir_pipe_restacking' --selection_list='micrograph_selection_list.txt' --save_vstack --sv_vstack_basename='vstack_selected' --shift3d_z=20 --reboxing --rb_box_size=352
 
 \\
 ===== Input =====
@@ -53,15 +53,15 @@ Do both restacking and reboxing to generate both the virtual stack and reboxing 
 ===== Output =====
 === List of output Files ===
 || **File Name** || **Discription** ||
-|| micrographs_in_input_stack.txt || Micrograph selection text file containing the list of micrograph basenames extracted from the input stack. This file can be used as micrograph selection text file of [[pipeline:cter:sxcter|sxcter]], [[pipeline:cter:sxgui_cter|sxgui_cter]], [[pipeline:window:sxwindow|sxwindow]], and [[pipeline:utilities:sxpipe_organize_micrographs|sxpipe organize_micrographs]]. ||
-|| micrographs_in_output_dataset.txt || Micrograph selection text file containing the list of micrograph in the output dataset. This file can be used as micrograph selection text file of [[pipeline:cter:sxcter|sxcter]], [[pipeline:cter:sxgui_cter|sxgui_cter]], [[pipeline:window:sxwindow|sxwindow]], and [[pipeline:utilities:sxpipe_organize_micrographs|sxpipe organize_micrographs]]. ||
+|| micrographs_in_input_stack.txt || Micrograph selection text file containing the list of micrograph basenames extracted from the input stack. This file can be used as micrograph selection text file of [[pipeline:cter:sp_cter|sp_cter]], [[pipeline:cter:sp_gui_cter|sp_gui_cter]], [[pipeline:window:sp_window|sp_window]], and [[pipeline:utilities:sp_pipe_organize_micrographs|sp_pipe organize_micrographs]]. ||
+|| micrographs_in_output_dataset.txt || Micrograph selection text file containing the list of micrograph in the output dataset. This file can be used as micrograph selection text file of [[pipeline:cter:sp_cter|sp_cter]], [[pipeline:cter:sp_gui_cter|sp_gui_cter]], [[pipeline:window:sp_window|sp_window]], and [[pipeline:utilities:sp_pipe_organize_micrographs|sp_pipe organize_micrographs]]. ||
 || input_stack_particle_id_for_output_dataset.txt || Particle selection text file containing the list of particle image IDs used for generating the output dataset from the input stack. This file can be used as particle selection list text file of [[pipeline:utilities:e2bdb|e2bdb]]. ||
-|| ctf_params_for_output_dataset.txt || CTF parameters text file containing CTF parameters of all particle images in the output dateset. This projection parameters can be used as inputs of [[pipeline:window:sxwindow|sxwindow]] or imported to the reboxed stack using [[pipeline:utilities:sxheader|sxheader]]. ||
-|| original_proj_params_for_output_dataset.txt || Projection parameters text file containing **original** projection parameters of all particle images in the output dateset. This projection parameters can be imported to the reboxed stack using [[pipeline:utilities:sxheader|sxheader]]. ||
-|| centered_proj_params_for_output_dataset.txt || Projection parameters text file containing **centered** projection parameters of all particle images in the output dateset. This projection parameters can be imported to the reboxed stack using [[pipeline:utilities:sxheader|sxheader]]. ||
-|| original/${MICROGRAPH_ROOTNAME}_original.box || The list of original coordinates stored in the headers of particle images in the stack. These files can be used as inputs of [[pipeline:window:sxwindow|sxwindow]]. ||
-|| centered/${MICROGRAPH_ROOTNAME}_centered.box || The list of centered (or transformed) coordinates. These files can be used as inputs of [[pipeline:window:sxwindow|sxwindow]]. ||
-|| EMAN2DB/${VSTACK_BASENAME}.dbd || The output virtual stack. This stack can be directly used as input stack of [[pipeline:meridien:sxmeridien|sxmeridien]] local refinement. ||
+|| ctf_params_for_output_dataset.txt || CTF parameters text file containing CTF parameters of all particle images in the output dateset. This projection parameters can be used as inputs of [[pipeline:window:sp_window|sp_window]] or imported to the reboxed stack using [[pipeline:utilities:sp_header|sp_header]]. ||
+|| original_proj_params_for_output_dataset.txt || Projection parameters text file containing **original** projection parameters of all particle images in the output dateset. This projection parameters can be imported to the reboxed stack using [[pipeline:utilities:sp_header|sp_header]]. ||
+|| centered_proj_params_for_output_dataset.txt || Projection parameters text file containing **centered** projection parameters of all particle images in the output dateset. This projection parameters can be imported to the reboxed stack using [[pipeline:utilities:sp_header|sp_header]]. ||
+|| original/${MICROGRAPH_ROOTNAME}_original.box || The list of original coordinates stored in the headers of particle images in the stack. These files can be used as inputs of [[pipeline:window:sp_window|sp_window]]. ||
+|| centered/${MICROGRAPH_ROOTNAME}_centered.box || The list of centered (or transformed) coordinates. These files can be used as inputs of [[pipeline:window:sp_window|sp_window]]. ||
+|| EMAN2DB/${VSTACK_BASENAME}.dbd || The output virtual stack. This stack can be directly used as input stack of [[pipeline:meridien:sp_meridien|sp_meridien]] local refinement. ||
 
 \\
 ===== Description =====
@@ -105,11 +105,11 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxpipe.py
+sparx/bin/sp_pipe.py
 
 \\
 ==== See also ====
-[[pipeline:window:sxwindow|sxwindow]], [[pipeline:cter:sxcter|sxcter]], [[pipeline:cter:sxgui_cter|sxgui_cter]], [[pipeline:utilities:sxpipe_organize_micrographs|sxpipe organize_micrographs]], [[pipeline:utilities:e2bdb|e2bdb]], and [[pipeline:meridien:sxmeridien|sxmeridien]].
+[[pipeline:window:sp_window|sp_window]], [[pipeline:cter:sp_cter|sp_cter]], [[pipeline:cter:sp_gui_cter|sp_gui_cter]], [[pipeline:utilities:sp_pipe_organize_micrographs|sp_pipe organize_micrographs]], [[pipeline:utilities:e2bdb|e2bdb]], and [[pipeline:meridien:sp_meridien|sp_meridien]].
 
 \\
 ==== Maturity ====

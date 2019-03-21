@@ -1,6 +1,6 @@
 ~~NOTOC~~
 
-===== sx3dvariability =====
+===== sp_3dvariability =====
 3D Variability Estimation: Calculate 3D variability using a set of aligned projection images as an input.
 
 \\
@@ -8,21 +8,21 @@
 
 Usage in command line
 
-  sx3dvariability.py  prj_stack  --output_dir=DIRECTORY  --var3D=FILE_NAME  --ave3D=FILE_NAME  --img_per_grp=NUM_OF_IMAGES --sym=SYMMETRY  --CTF  --fl=LPF_CUTOFF_FREQ  --aa=LPF_FALLOFF_WIDTH  --symmetrize  --var2D=FILE_NAME  --ave2D=FILE_NAME  --VAR  --no_norm  --npad=PADDING_FACTOR  --decimate=FACTOR  --window=WINDOW_SIZE  --nvec=NUM_OF_EIGENVECTORS  --overhead=OVERHEAD
+  sp_3dvariability.py  prj_stack  --output_dir=DIRECTORY  --var3D=FILE_NAME  --ave3D=FILE_NAME  --img_per_grp=NUM_OF_IMAGES --sym=SYMMETRY  --CTF  --fl=LPF_CUTOFF_FREQ  --aa=LPF_FALLOFF_WIDTH  --symmetrize  --var2D=FILE_NAME  --ave2D=FILE_NAME  --VAR  --no_norm  --npad=PADDING_FACTOR  --decimate=FACTOR  --window=WINDOW_SIZE  --nvec=NUM_OF_EIGENVECTORS  --overhead=OVERHEAD
 
 \\
 ===== Typical usage =====
 
-sx3dvariability exists only in MPI version.
+sp_3dvariability exists only in MPI version.
 
 For asymmetric structure:
 
-  mpirun -np 64 sx3dvariability.py bdb:data --var3D=var_vol.hdf --ave3D=vol.hdf --output_dir=var3d --img_per_grp=100 --CTF 
+  mpirun -np 64 sp_3dvariability.py bdb:data --var3D=var_vol.hdf --ave3D=vol.hdf --output_dir=var3d --img_per_grp=100 --CTF 
 
 For structures that have symmetries (e.g. c2):
 
-  sx3dvariability.py stack --symmetrize --sym=c2
-  mpirun -np 64 sx3dvariability.py bdb:sdata --var3D=var_vol.hdf --ave3D=vol.hdf --img_per_grp=100 --sym=c2 --CTF --fl=0.4 --aa=0.05  --window=300
+  sp_3dvariability.py stack --symmetrize --sym=c2
+  mpirun -np 64 sp_3dvariability.py bdb:sdata --var3D=var_vol.hdf --ave3D=vol.hdf --img_per_grp=100 --sym=c2 --CTF --fl=0.4 --aa=0.05  --window=300
 
 \\
 ===== Input =====
@@ -56,7 +56,7 @@ For structures that have symmetries (e.g. c2):
 
 \\
 ===== Description =====
-The program calculates the variability observed in a collection of image projections. Structures with symmetry require preparing data before calculating the variability. The data preparation step would symmetrise the data and output a bdb:sdata for variability calculation. sx3dvariability.py can be slow.
+The program calculates the variability observed in a collection of image projections. Structures with symmetry require preparing data before calculating the variability. The data preparation step would symmetrise the data and output a bdb:sdata for variability calculation. sp_3dvariability.py can be slow.
 
 \\
 ==== Method ====
@@ -77,11 +77,11 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sx3dvariability.py
+sparx/bin/sp_3dvariability.py
 
 \\
 ==== See also ====
-[[pipeline:utilities:sxheader|sxheader]], [[pipeline:sort3d:sxsort3d_depth|sxsort3d_depth]], [[pipeline:localres:sxlocres|sxlocres]]
+[[pipeline:utilities:sp_header|sp_header]], [[pipeline:sort3d:sp_sort3d_depth|sp_sort3d_depth]], [[pipeline:localres:sp_locres|sp_locres]]
 
 \\
 ==== Maturity ====

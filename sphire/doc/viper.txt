@@ -1,25 +1,25 @@
 ~~NOTOC~~
 
-===== sxviper =====
-Initial 3D Model - VIPER: //ab initio// 3D structure determination using Validation of Individual Parameter Reproducibility (VIPER). Determines a validated initial model using a small set of class averages produced by [[pipeline:isac:sxisac2|ISAC2]].
+===== sp_viper =====
+Initial 3D Model - VIPER: //ab initio// 3D structure determination using Validation of Individual Parameter Reproducibility (VIPER). Determines a validated initial model using a small set of class averages produced by [[pipeline:isac:sp_isac2|ISAC2]].
 
 \\
 ===== Usage =====
 
 Usage in command line
 
-  sxviper.py stack  directory  --radius=outer_radius  --sym=sym  --moon_elimination=moon_elimination  --ir=inner_radius  --rs=ring_step  --xr=x_range  --yr=y_range  --ts=translational_search_step  --delta=angular_step  --center=center_type  --maxit1=max_iter1  --maxit2=max_iter2  --mask3D=mask3D  --L2threshold=L2threshold  --ref_a=ref_a  --nruns=nruns  --doga=doga  --fl=fl  --aa=aa  --pwreference=pwreference  --debug
+  sp_viper.py stack  directory  --radius=outer_radius  --sym=sym  --moon_elimination=moon_elimination  --ir=inner_radius  --rs=ring_step  --xr=x_range  --yr=y_range  --ts=translational_search_step  --delta=angular_step  --center=center_type  --maxit1=max_iter1  --maxit2=max_iter2  --mask3D=mask3D  --L2threshold=L2threshold  --ref_a=ref_a  --nruns=nruns  --doga=doga  --fl=fl  --aa=aa  --pwreference=pwreference  --debug
 
 \\
 ===== Typical usage =====
 
-sxrviper exists only in MPI version.
+sp_rviper exists only in MPI version.
 
-  mpirun --npernode 16 -np 24 --host node1,node2 sxviper.py  stack output_directory --fl=0.25 --radius=30 --xr=2 --moon_elimination=750,4.84
+  mpirun --npernode 16 -np 24 --host node1,node2 sp_viper.py  stack output_directory --fl=0.25 --radius=30 --xr=2 --moon_elimination=750,4.84
 
 A faster version using restricted ranges of parameters.
 
-  mpirun --npernode 16 -np 16 --host node1 sxviper.py  stack output_directory --fl=0.25 --radius=30 --xr=1 --nruns=2   --L2threshold=1.0e300  --doga=-1
+  mpirun --npernode 16 -np 16 --host node1 sp_viper.py  stack output_directory --fl=0.25 --radius=30 --xr=1 --nruns=2   --L2threshold=1.0e300  --doga=-1
 
 The VIPER program exists only in MPI version.  Number of MPI processes **must be** a multiple of %%--%%nruns (default = 6). 
 
@@ -90,11 +90,11 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxviper.py
+sparx/bin/sp_viper.py
 
 \\
 ==== See also ====
-[[pipeline:isac:sxisac2|sxisac2]] and [[pipeline:viper:sxrviper|sxrviper]]
+[[pipeline:isac:sp_isac2|sp_isac2]] and [[pipeline:viper:sp_rviper|sp_rviper]]
 
 \\
 ==== Maturity ====

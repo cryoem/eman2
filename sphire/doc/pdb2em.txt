@@ -1,6 +1,6 @@
 ~~NOTOC~~
 
-===== sxpdb2em =====
+===== sp_pdb2em =====
 PDB File Conversion: Converts an atomic model stored in a PDB file into a simulated electron density map. The coordinates (0,0,0) in PDB space will map to the center of the volume.
 
 \\
@@ -8,14 +8,14 @@ PDB File Conversion: Converts an atomic model stored in a PDB file into a simula
 
 Usage in command line
 
-  sxpdb2em.py  input_pdb  output_hdf  --apix=PIXEL_SIZE  --box=BOX_SIZE  --het  --chains=CHAIN_STRING --center=CENTERING_METHOD  --O  --tr0=MATRIX_FILE_PATH  --set_apix_value=PIXEL_SIZE_STRING  --quiet
+  sp_pdb2em.py  input_pdb  output_hdf  --apix=PIXEL_SIZE  --box=BOX_SIZE  --het  --chains=CHAIN_STRING --center=CENTERING_METHOD  --O  --tr0=MATRIX_FILE_PATH  --set_apix_value=PIXEL_SIZE_STRING  --quiet
 
 \\
 ===== Typical usage =====
 
-sxpdb2em does not support MPI.
+sp_pdb2em does not support MPI.
 
-  sxpdb2em.py  tRNA.pdb  tRNA.hdf  --apix=2.26  --box=150  --center=c  --O  --quiet  --tr0=<'filename'>  --het
+  sp_pdb2em.py  tRNA.pdb  tRNA.hdf  --apix=2.26  --box=150  --center=c  --O  --quiet  --tr0=<'filename'>  --het
 
 \\
 ===== Input =====
@@ -62,7 +62,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxpdb2em.py
+sparx/bin/sp_pdb2em.py
 
 \\
 ==== See also ====

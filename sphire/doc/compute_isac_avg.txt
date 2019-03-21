@@ -1,6 +1,6 @@
 ~~NOTOC~~
 
-===== sxcompute_isac_avg =====
+===== sp_compute_isac_avg =====
 Beautifier: Perform local 2D alignment of ISAC2 2D clustering results using the original pixel size and full CTF correction.
 
 \\
@@ -8,26 +8,26 @@ Beautifier: Perform local 2D alignment of ISAC2 2D clustering results using the 
 
 Usage in command line
 
-  sxcompute_isac_avg.py  --stack=FILE_PATH  --isac_dir=DIRECTORY_PATH  --output_dir=DIRECTORY_PATH  --pixel_size=PIXEL_SIZE  --radius=PARTICLE_PIXEL_RADIUS  --pw_adjustment=METHOD_OR_FILE_PATH  --fl=CUTOFF_FREQ_METHOD  --noctf  --local_alignment  --B_start=LOWER_RESOLUTION_BOUND  --Bfactor=B_FACTOR  --xr=PIXEL_RANGE  --ts=PIXEL_STEP  --fh=HIGH_FREQ_SERACH_LIMIT  --maxit=MAX_ITERS  --navg=NUM_OF_AVERAGES
+  sp_compute_isac_avg.py  --stack=FILE_PATH  --isac_dir=DIRECTORY_PATH  --output_dir=DIRECTORY_PATH  --pixel_size=PIXEL_SIZE  --radius=PARTICLE_PIXEL_RADIUS  --pw_adjustment=METHOD_OR_FILE_PATH  --fl=CUTOFF_FREQ_METHOD  --noctf  --local_alignment  --B_start=LOWER_RESOLUTION_BOUND  --Bfactor=B_FACTOR  --xr=PIXEL_RANGE  --ts=PIXEL_STEP  --fh=HIGH_FREQ_SERACH_LIMIT  --maxit=MAX_ITERS  --navg=NUM_OF_AVERAGES
 
 \\
 ===== Typical usage =====
 
-sxcompute_isac_avg.py exists only in MPI version. 
+sp_compute_isac_avg.py exists only in MPI version. 
 
 There are four methods to adjust the power spectrum of resultant average images, as specified by option pw_adjustment.
 
 \\ __1. Adjust to analytical model (default method):__
-  mpirun -np 48 sxcompute_isac_avg.py --stack=bdb:data --isac_dir=outdir_isac --output_dir=outdir_beautify2d --radius=120
+  mpirun -np 48 sp_compute_isac_avg.py --stack=bdb:data --isac_dir=outdir_isac --output_dir=outdir_beautify2d --radius=120
 
 \\ __2. Adjust to B-factor:__
-  mpirun -np 48 sxcompute_isac_avg.py --stack=bdb:data --isac_dir=outdir_isac --output_dir=outdir_beautify2d --radius=120 --pw_adjustment=bfactor --Bfactor=40.0 --fl=0.2
+  mpirun -np 48 sp_compute_isac_avg.py --stack=bdb:data --isac_dir=outdir_isac --output_dir=outdir_beautify2d --radius=120 --pw_adjustment=bfactor --Bfactor=40.0 --fl=0.2
 
 \\ __2. Adjust to rotational average:__
-  mpirun -np 48 sxcompute_isac_avg.py --stack=bdb:data --isac_dir=outdir_isac --output_dir=outdir_beautify2d --radius=120 --pw_adjustment=rot_avg_1d_pw_spectrum.txt
+  mpirun -np 48 sp_compute_isac_avg.py --stack=bdb:data --isac_dir=outdir_isac --output_dir=outdir_beautify2d --radius=120 --pw_adjustment=rot_avg_1d_pw_spectrum.txt
 
 \\ __4. No adjustment:__
-  mpirun -np 48 sxcompute_isac_avg.py --stack=bdb:data --isac_dir=outdir_isac --output_dir=outdir_beautify2d --radius=120 --pw_adjustment=no_adjustment
+  mpirun -np 48 sp_compute_isac_avg.py --stack=bdb:data --isac_dir=outdir_isac --output_dir=outdir_beautify2d --radius=120 --pw_adjustment=no_adjustment
 
 \\
 ===== Input =====
@@ -99,11 +99,11 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxcompute_isac_avg.py
+sparx/bin/sp_compute_isac_avg.py
 
 \\
 ==== See also ====
-[[pipeline:isac:sxisac2|sxisac2]]
+[[pipeline:isac:sp_isac2|sp_isac2]]
 
 \\
 ==== Maturity ====

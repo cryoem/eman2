@@ -1,6 +1,6 @@
 ~~NOTOC~~
 
-===== sxpipe moon_eliminator =====
+===== sp_pipe moon_eliminator =====
 Volume Adjustment: Eliminate moons or remove dusts from the background of a 3D density map based on the expected molecular mass.
 
 \\
@@ -8,12 +8,12 @@ Volume Adjustment: Eliminate moons or remove dusts from the background of a 3D d
 
 Usage in command line
 
-  sxpipe.py  moon_eliminator  input_volume_path  input_volume_path_2nd  output_directory  --pixel_size=PIXEL_SIZE  --mol_mass=KILODALTON  --use_density_threshold=THRESHOLD  --moon_distance=PIXEL_DISTANCE  --ndilation=DILATION_PIXEL_WIDTH  --edge_width=SIGMA_PIXEL_WIDTH  --resample_ratio=RATIO_OR_DIR_PATH  --box_size=BOX_SIZE  --resampled_shift3d  --shift3d_x=SHIFT3D_X  --shift3d_y=SHIFT3D_Y  --shift3d_z=SHIFT3D_Z  --invert_handedness  --fl=LPF_CUTOFF_FREQ  --aa=LPF_FALLOFF_WIDTH   --outputs_root=FILE_ROOT   --edge_type=SOFT_EDGE_TYPE  --debug
+  sp_pipe.py  moon_eliminator  input_volume_path  input_volume_path_2nd  output_directory  --pixel_size=PIXEL_SIZE  --mol_mass=KILODALTON  --use_density_threshold=THRESHOLD  --moon_distance=PIXEL_DISTANCE  --ndilation=DILATION_PIXEL_WIDTH  --edge_width=SIGMA_PIXEL_WIDTH  --resample_ratio=RATIO_OR_DIR_PATH  --box_size=BOX_SIZE  --resampled_shift3d  --shift3d_x=SHIFT3D_X  --shift3d_y=SHIFT3D_Y  --shift3d_z=SHIFT3D_Z  --invert_handedness  --fl=LPF_CUTOFF_FREQ  --aa=LPF_FALLOFF_WIDTH   --outputs_root=FILE_ROOT   --edge_type=SOFT_EDGE_TYPE  --debug
  
 \\
 ===== Typical usage =====
 
-sxpipe moon_eliminator does not support MPI. 
+sp_pipe moon_eliminator does not support MPI. 
 
 There are two modes to run the program:
 
@@ -22,22 +22,22 @@ __1. Single Volume Mode:__
 
 Create reference 3D structure and 3D mask from R-VIPER 3D model with the resample ratio used in ISAC2 using an expected molecular mass [kDa].
 
-  sxpipe.py moon_eliminator 'outdir_rviper/main001/average_volume.hdf' 'outdir_pipe_moon_eliminator' --mol_mass=1400 --pixel_size=1.12 --resample_ratio='outdir_isac2' --box_size=352
+  sp_pipe.py moon_eliminator 'outdir_rviper/main001/average_volume.hdf' 'outdir_pipe_moon_eliminator' --mol_mass=1400 --pixel_size=1.12 --resample_ratio='outdir_isac2' --box_size=352
 
 Create reference 3D structure and 3D mask from R-VIPER 3D model with the resample ratio used in ISAC2 using ad-hoc density threshold instead of the expected molecular mass [kDa].
 
-  sxpipe.py moon_eliminator 'outdir_rviper/main001/average_volume.hdf' 'outdir_pipe_moon_eliminator' --mol_mass=1400 --pixel_size=1.12 --use_density_threshold=13.2 --resample_ratio='outdir_isac2' --box_size=352
+  sp_pipe.py moon_eliminator 'outdir_rviper/main001/average_volume.hdf' 'outdir_pipe_moon_eliminator' --mol_mass=1400 --pixel_size=1.12 --use_density_threshold=13.2 --resample_ratio='outdir_isac2' --box_size=352
 
 Create reference 3D structure and 3D mask from post-refined MERIDIEN 3D model using the expected molecular mass [kDa].
 
-  sxpipe.py moon_eliminator 'outdir_postrefiner/postrefine3d.hdf' 'outdir_pipe_moon_eliminator' --mol_mass=1400 --pixel_size=1.12
+  sp_pipe.py moon_eliminator 'outdir_postrefiner/postrefine3d.hdf' 'outdir_pipe_moon_eliminator' --mol_mass=1400 --pixel_size=1.12
 
 \\
 __2. Halfset Volumes Mode:__
 
 Create reference 3D structure and 3D mask from halfset unfiltered maps produced by MERIDIEN, using the expected molecular mass [kDa].
 
-  sxpipe.py moon_eliminator 'outdir_meridien/vol_0_unfil_025.hdf' 'outdir_meridien/vol_0_unfil_025.hdf' 'outdir_pipe_moon_eliminator' --mol_mass=1400 --pixel_size=1.12
+  sp_pipe.py moon_eliminator 'outdir_meridien/vol_0_unfil_025.hdf' 'outdir_meridien/vol_0_unfil_025.hdf' 'outdir_pipe_moon_eliminator' --mol_mass=1400 --pixel_size=1.12
 
 
 \\
@@ -131,11 +131,11 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxpipe.py
+sparx/bin/sp_pipe.py
 
 \\
 ==== See also ====
-[[pipeline:viper:sxrviper|sxrviper]], [[pipeline:viper:sxviper|sxviper]], [[pipeline:isac:sxisac2|sxisac2]], [[pipeline:utilities:sxprocess|sxprocess]], [[pipeline:meridien:sxmeridien|sxmeridien]], [[pipeline:sort3d:sxsort3d_depth|sxsort3d_depth]], and [[pipeline:localres:sxfilterlocal|sxfilterlocal]].
+[[pipeline:viper:sp_rviper|sp_rviper]], [[pipeline:viper:sp_viper|sp_viper]], [[pipeline:isac:sp_isac2|sp_isac2]], [[pipeline:utilities:sp_process|sp_process]], [[pipeline:meridien:sp_meridien|sp_meridien]], [[pipeline:sort3d:sp_sort3d_depth|sp_sort3d_depth]], and [[pipeline:localres:sp_filterlocal|sp_filterlocal]].
 
 \\
 ==== Maturity ====

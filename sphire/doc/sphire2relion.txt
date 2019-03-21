@@ -1,6 +1,6 @@
 ~~NOTOC~~
 
-===== sxsphire2relion =====
+===== sp_sphire2relion =====
 SPHIRE to RELION Conversion : Convert SPHIRE parameters to RELION.
 
 \\
@@ -8,7 +8,7 @@ SPHIRE to RELION Conversion : Convert SPHIRE parameters to RELION.
 
 Usage in command line
 
-  sxsphire2relion.py output_dir --output_name=OUTPUT_NAME --particle_stack=PARTICLE_STACK  --params_2d_file=PARAMS_2D_FILE --params_3d_file=PARAMS_3D_FILE -params_3d_index_file=PARAMS_3D_INDEX_FILE  --params_3d_chunk_file_0=CHUNKFILE0 --params_3d_chunk_file_1=CHUNKFILE1 --list=INCLUDE_LIST --exlist=EXCLUDE_LIST --force
+  sp_sphire2relion.py output_dir --output_name=OUTPUT_NAME --particle_stack=PARTICLE_STACK  --params_2d_file=PARAMS_2D_FILE --params_3d_file=PARAMS_3D_FILE -params_3d_index_file=PARAMS_3D_INDEX_FILE  --params_3d_chunk_file_0=CHUNKFILE0 --params_3d_chunk_file_1=CHUNKFILE1 --list=INCLUDE_LIST --exlist=EXCLUDE_LIST --force
 \\
 ===== Typical usage =====
 
@@ -58,7 +58,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxsphire2relion.py
+sparx/bin/sp_sphire2relion.py
 
 \\
 ==== See also ====

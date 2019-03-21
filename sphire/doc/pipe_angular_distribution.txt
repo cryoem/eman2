@@ -1,6 +1,6 @@
 ~~NOTOC~~
 
-===== sxpipe angular_distribution =====
+===== sp_pipe angular_distribution =====
 Angular Distribution: Generate a chimera .bild file for the visual representation of the resulting projection parameters.
 
 \\
@@ -8,36 +8,36 @@ Angular Distribution: Generate a chimera .bild file for the visual representatio
 
 Usage in command line
 
-  sxpipe.py  angular_distribution  params_file  output_folder  --prefix=None --method=S --pixel_size=1.0 --delta=3.75 --symmetry=c1 --box_size=256 --particle_radius=120 --dpi=72
+  sp_pipe.py  angular_distribution  params_file  output_folder  --prefix=None --method=S --pixel_size=1.0 --delta=3.75 --symmetry=c1 --box_size=256 --particle_radius=120 --dpi=72
 
 \\
 ===== Typical usage =====
 
-sxpipe angular distribution does not support MPI. 
+sp_pipe angular distribution does not support MPI. 
 
 Bild files created with small delta values might crash chimera session depending on the computer available memory.
 
 Do angular distribution to generate a chimera .bild file based on the projection parameters stored in params_file.
 
-  sxpipe.py angular_distribution  params_file output_folder
+  sp_pipe.py angular_distribution  params_file output_folder
 
 By default, the resulting .bild file has the same name as the params_file. Use the --prefix option to change the name.
 
-  sxpipe.py angular_distribution  params_file output_folder --prefix=my_name
+  sp_pipe.py angular_distribution  params_file output_folder --prefix=my_name
 
 Adjust the pixel_size, box_size and particle_radius values if the .bild file will be opened together with the structure in chimera.
 
-  sxpipe.py angular_distribution  params_file output_folder --pixel_size=1.14 --box_size=120 --particle_radius=50
+  sp_pipe.py angular_distribution  params_file output_folder --pixel_size=1.14 --box_size=120 --particle_radius=50
 
 To adjust the number of bins used in the 3D histogram, use the --delta option.
 However, using small delta values might crash chimera session depending on the computers available memory.
 
-  sxpipe.py angular_distribution  params_file output_folder --delta=1.875
+  sp_pipe.py angular_distribution  params_file output_folder --delta=1.875
 
 Next to the bild file, a .png legends file will be created, that translates the bin color into real particle numbers.
 With the --dpi option, one can adjust the quality of the plot.
 
-  sxpipe.py angular_distribution  params_file output_folder --dpi=300
+  sp_pipe.py angular_distribution  params_file output_folder --dpi=300
 
 \\
 ===== Input =====
@@ -92,11 +92,11 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxpipe.py
+sparx/bin/sp_pipe.py
 
 \\
 ==== See also ====
-[[pipeline:meridien:sxmeridien|sxmeridien]].
+[[pipeline:meridien:sp_meridien|sp_meridien]].
 
 \\
 ==== Maturity ====

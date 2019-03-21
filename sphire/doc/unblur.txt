@@ -1,6 +1,6 @@
 ~~NOTOC~~
 
-===== sxunblur =====
+===== sp_unblur =====
 Unblur cisTEM: Align frames of micrograph movies with [[https://cistem.org/|Unblur]].
 
 \\
@@ -8,7 +8,7 @@ Unblur cisTEM: Align frames of micrograph movies with [[https://cistem.org/|Unbl
 
 Usage in command line
 
-  sxunblur.py  unblur_path  input_micrograph_pattern  output_directory   --selection_file=SELECTION_FILE  --pixel_size=PIXEL_SIZE   --bin_factor=BIN_FACTOR  --skip_dose_adjustment --additional_dose_unadjusted  --voltage=VOLTAGE  --exposure_per_frame=EXPOSURE  --pre_exposure=EXPOSURE   --min_shift_initial=MIN_SHIFT_INITIAL  --outer_radius=OUTER_RADIUS  --b_factor=B_FACTOR  --half_width_vert=HALF_WIDTH_VERT  --half_width_hor=HALF_WIDTH_HOR  --termination=TERMINATION  --max_iterations=MAX_ITERATIONS  --dont_restore_noise_power  --gain_file=GAIN_FILE  --first_frame=FIRST_FRAME  --last_frame=LAST_FRAME  --distortion_angle=DISTORTION_ANGLE  --major_scale=MAJOR_SCALE  --minor_scale=MINOR_SCALE
+  sp_unblur.py  unblur_path  input_micrograph_pattern  output_directory   --selection_file=SELECTION_FILE  --pixel_size=PIXEL_SIZE   --bin_factor=BIN_FACTOR  --skip_dose_adjustment --additional_dose_unadjusted  --voltage=VOLTAGE  --exposure_per_frame=EXPOSURE  --pre_exposure=EXPOSURE   --min_shift_initial=MIN_SHIFT_INITIAL  --outer_radius=OUTER_RADIUS  --b_factor=B_FACTOR  --half_width_vert=HALF_WIDTH_VERT  --half_width_hor=HALF_WIDTH_HOR  --termination=TERMINATION  --max_iterations=MAX_ITERATIONS  --dont_restore_noise_power  --gain_file=GAIN_FILE  --first_frame=FIRST_FRAME  --last_frame=LAST_FRAME  --distortion_angle=DISTORTION_ANGLE  --major_scale=MAJOR_SCALE  --minor_scale=MINOR_SCALE
 
 \\
 ===== Typical usage =====
@@ -16,27 +16,27 @@ Usage in command line
 
 Run unblur with dose adjustment
 
-sxunblur.py  path/to/unblur  'Movies/*' unblur_out_dir  --pixel_size=1.14  --voltage=300  --exposure_per_frame=1.3
+sp_unblur.py  path/to/unblur  'Movies/*' unblur_out_dir  --pixel_size=1.14  --voltage=300  --exposure_per_frame=1.3
 
 
 Run unblur with dose adjustment and gain reference file
 
-sxunblur.py  path/to/unblur  'Movies/*' unblur_out_dir  --pixel_size=1.14  --voltage=300  --exposure_per_frame=1.3  --gain_file=/path/to/gain.mrc
+sp_unblur.py  path/to/unblur  'Movies/*' unblur_out_dir  --pixel_size=1.14  --voltage=300  --exposure_per_frame=1.3  --gain_file=/path/to/gain.mrc
 
 
 Run unblur without dose adjustment
 
-sxunblur.py  path/to/unblur  'Movies/*' unblur_out_dir  --pixel_size=1.14  --skip_dose_adjustment
+sp_unblur.py  path/to/unblur  'Movies/*' unblur_out_dir  --pixel_size=1.14  --skip_dose_adjustment
 
 Run unblur without dose adjustment and in addition with dose adjustment
 
-sxunblur.py  path/to/unblur  'Movies/*' unblur_out_dir  --pixel_size=1.14  --voltage=300  --exposure_per_frame=1.3  --additional_dose_unadjusted
+sp_unblur.py  path/to/unblur  'Movies/*' unblur_out_dir  --pixel_size=1.14  --voltage=300  --exposure_per_frame=1.3  --additional_dose_unadjusted
 
 \\
 ===== Input =====
 === Main Parameters ===
   ; unblur_path : Unblur executable path: Specify the file path of Unblur executable. (This argument is specific to SPHIRE, and not directly used by Unblur and Summovie executables.) (default required string)
-  ; input_micrograph_pattern : Input movie path pattern: Specify path pattern of input micrograph movies with a wild card (*).. The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sxgui.py automatically adds single quotes (')). bdb files cannot be selected as input micrograph movies. (This argument is specific to SPHIRE, and not directly used by Unblur and Summovie executables.) (default required string)
+  ; input_micrograph_pattern : Input movie path pattern: Specify path pattern of input micrograph movies with a wild card (*).. The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sp_gui.py automatically adds single quotes (')). bdb files cannot be selected as input micrograph movies. (This argument is specific to SPHIRE, and not directly used by Unblur and Summovie executables.) (default required string)
   ; output_directory : Output directory: The results will be written here. It cannot be an existing one. (This argument is specific to SPHIRE, and not directly used by Unblur and Summovie executables.) (default required string)
 
   ; %%--%%selection_file : Movie selection file: Specify a name of micrograph movie selection list text file. The file extension must be '.txt'. If this is not provided, all files matched with the micrograph movie name pattern will be processed. (This option is specific to SPHIRE, and not directly used by Unblur and Summovie executables.) (default none)
@@ -110,11 +110,11 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxunblur.py
+sparx/bin/sp_unblur.py
 
 \\
 ==== See also ====
-[[pipeline:movie:sxgui_unblur|sxgui_unblur]]
+[[pipeline:movie:sp_gui_unblur|sp_gui_unblur]]
 
 \\
 ==== Maturity ====
