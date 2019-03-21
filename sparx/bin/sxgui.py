@@ -2889,8 +2889,8 @@ class SXCmdTab(QWidget):
 
 			self.qsub_cmd_edit = QLineEdit()
 			if self.sxcmdwidget.sxcmd.is_submittable == True:
-				if 'SPHIRE_SUBMISSION_COMAND' in os.environ:
-					submission_command = os.environ['SPHIRE_SUBMISSION_COMAND']
+				if 'SPHIRE_SUBMISSION_COMMAND' in os.environ:
+					submission_command = os.environ['SPHIRE_SUBMISSION_COMMAND']
 				else:
 					submission_command = "qsub"
 				self.qsub_cmd_edit.setText(submission_command)
