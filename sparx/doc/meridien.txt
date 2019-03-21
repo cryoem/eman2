@@ -8,7 +8,7 @@
 
 Usage in command line
 
-  sxmeridien.py  stack  output_directory  initial_volume  --do_final=MERIDIEN_ITERATION_ID  --local_refinement  --radius=particle_radius  --mask3D=MASK3D  --symmetry=SYMMETRY  --inires=INITIAL_RESOLUTION  --delta=DELTA  --xr=XR  --ts=TS  --initialshifts  --skip_prealignment  --memory_per_node=MEMORY_PER_NODE  --center_method=CENTER_METHOD  --target_radius=TARGET_RADIUS  --an=ANGULAR_NEIGHBORHOOD  --shake=SHAKE  --small_memory  --ccfpercentage=CCFPERCENTAGE  --nonorm  --function=USER_FUNCTION --function_ai=USER_FUNCTION_AI --group_by=GROUP_BY --theta_min=THETA_MIN --theta_max=THETA_MAX --even_angle_method=EVEN_ANGLE_METHOD --group_id=GROUP_ID --filament_width=FILAMENT_WIDTH --helical_rise=HELICAL_RISE --a_criterion=A_CRITERION --limit_improvement=LIMIT_IMPROVEMENT
+  sxmeridien.py  stack  output_directory  initial_volume  --do_final=MERIDIEN_ITERATION_ID  --local_refinement  --radius=particle_radius  --mask3D=MASK3D  --symmetry=SYMMETRY  --inires=INITIAL_RESOLUTION  --delta=DELTA  --xr=XR  --ts=TS  --initialshifts  --skip_prealignment  --memory_per_node=MEMORY_PER_NODE  --center_method=CENTER_METHOD  --target_radius=TARGET_RADIUS  --an=ANGULAR_NEIGHBORHOOD  --shake=SHAKE  --small_memory  --ccfpercentage=CCFPERCENTAGE  --nonorm  --function=USER_FUNCTION --function_ai=USER_FUNCTION_AI --group_by=GROUP_BY --theta_min=THETA_MIN --theta_max=THETA_MAX --even_angle_method=EVEN_ANGLE_METHOD --group_id=GROUP_ID --filament_width=FILAMENT_WIDTH --helical_rise=HELICAL_RISE --a_criterion=A_CRITERION --limit_improvement=LIMIT_IMPROVEMENT --plot_ang_dist=PLOT_ANG_DIST
 
 
 \\
@@ -81,6 +81,7 @@ One can change some parameters (MPI settings have to be the same)
   ; %%--%%helical_rise : Helical rise [A]: Helical rise used to limit the shift along the helical axis to +-rise/2 (default None)
   ; %%--%%a_criterion : Convergence criterion A value: Convergence criterion multiplication for the criterion A. (default 0.75)
   ; %%--%%limit_improvement : Limit of improvements: Specify the number of iterations in a row without changes that will be considered convergence. (default 1)
+  ; %%--%%plot_ang_dist : Plot angular distribution: Plot the angular distribution in every iteration. This will take some time for high symmetries.(default False)
 
 \\
 ===== Output =====

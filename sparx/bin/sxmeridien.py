@@ -6221,6 +6221,7 @@ def update_tracker(shell_line_command):
 	parser_no_default.add_option("--continuation_iter",         type="int")
 	parser_no_default.add_option("--continuation_smearing",     type="int")
 	parser_no_default.add_option("--keep_groups",               action="store_true")
+	parser_no_default.add_option("--plot_ang_dist",               action="store_true")
 
 	(options_no_default_value, args) = parser_no_default.parse_args(shell_line_command)
 
@@ -6229,6 +6230,9 @@ def update_tracker(shell_line_command):
 
 	if options_no_default_value.local_refinement:
 		Tracker['constants']['do_local'] = True
+
+	if 	options_no_default_value.plot_ang_dist != None:
+		Tracker["constants"]["plot_ang_dist"] 				= options_no_default_value.plot_ang_dist
 
 	if 	options_no_default_value.limit_improvement != None:
 		Tracker["constants"]["limit_improvement"] 				= options_no_default_value.limit_improvement
@@ -6324,6 +6328,7 @@ def update_legacy_tracker(tracker):
 		'stack_prior_dtype': None,
 		'do_local': False,
 		'a_criterion': 0.75,
+		'plot_ang_dist': False,
 		}
 	backwards_dict = {
 		'theta_min': -1,
@@ -6786,7 +6791,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			original_data[procid]	= []
 			original_outlier = []
 
-		if Blockdata['myid'] == Blockdata['main_node']:
+		if Blockdata['myid'] == Blockdata['main_node'] and Tracker['constants']['plot_ang_dist']:
 			### NEEDS TO BE REACTIVATED AFTER THE SYMCLASS CHANGE
 			sxprint('Create angular distribution plot for chunk {0}'.format(procid))
 			delta = np.maximum(Tracker['delta'], 3.75)
@@ -7252,6 +7257,7 @@ def main():
 		parser.add_option("--group_id",               	type="str",  	default=None,              	help="Group particles for outlier detection by header name. Useful ones are e.g. ISAC_class_id or filament_id (Default None)")
 		parser.add_option("--filament_width",         	type="int",  	default=None,              	help="Filament width used to normalize the particles. (Default None)")
 		parser.add_option("--helical_rise",         	type="float",  	default=None,              	help="Helical rise in angstrom. This is used to limit the shift along the helical axis. (Default None)")
+		parser.add_option("--plot_ang_dist",         	action='store_true',  	default=False,              	help="Plot the angular distribution plot for every iteration. This will take some time for high symmetries. (Default False)")
 		if do_continuation_mode:
 			# case1: local meridien run using parameters stored in headers
 			# case2: restart mode of standard meridien run. Parameters can be altered in the restart run.
@@ -7399,6 +7405,7 @@ def main():
 			Constants["filament_width"]			    = options.filament_width
 			Constants["helical_rise"]			    = options.helical_rise
 			Constants["do_local"]			    = do_continuation_mode
+			Constants["plot_ang_dist"]			    = options.plot_ang_dist
 			if options.group_id is None:
 				Constants['stack_prior'] = None
 				Constants['stack_prior_fmt'] = None
