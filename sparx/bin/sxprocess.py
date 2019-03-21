@@ -34,7 +34,7 @@ from __future__ import print_function
 
 from builtins import range
 import	global_def
-from global_def import sxprint, ERROR
+from global_def import ERROR  # sxprint,
 from	global_def 	import *
 from	EMAN2 		import EMUtil, parsemodopt, EMAN2Ctf
 from    EMAN2jsondb import js_open_dict
@@ -1152,6 +1152,8 @@ def main():
 			log_main.add("Output            :"+str(options.output))
 			log_main.add("Do_adaptive_mask  :"+str(options.do_adaptive_mask))
 			log_main.add("threshold    :"+str(options.threshold))
+			log_main.add("nsigma    :" + str(options.nsigma))
+			log_main.add("mol_mass    :" + str(options.mol_mass))
 			log_main.add("Edge width        :"+str(options.edge_width))
 			log_main.add("Ndilation         :"+str(options.ndilation))
 			log_main.add("Do approximation         :"+str(options.do_approx))
@@ -1327,7 +1329,7 @@ def main():
 					resolution_right = fsc[0][1]
 					idx_crit_right = 1
 					for ifreq in reversed(list(range(1, len(fsc[1])))):
-						if fsc[1][ifreq] >= 0.143:
+						if fsc[1][ifreq] >= criterion:
 							resolution_right = fsc[0][ifreq]
 							idx_crit_right = ifreq
 							break
@@ -1377,49 +1379,54 @@ def main():
 					fsc_true = fsc(map1, map2, 1)
 					fsc_true[1][0] = 1.0  # always reset fsc of zero frequency as 1.0
 					plot_curves.append(fsc_true)
-					plot_names.append(r'FSC halves')
+					plot_names.append(r'halves')
 					# map fsc obtained from halves to full maps
 					plot_curves.append([fsc_true[0], list(map(scale_fsc, fsc_true[1]))])
-					plot_names.append(r'FSC full')
+					plot_names.append(r'full')
 					if m is not None:
 						fsc_mask = fsc(map1*m, map2*m, 1)
 						fsc_mask[1][0] = 1.0  # always reset fsc of zero frequency to 1.0
 						plot_curves.append(fsc_mask)
-						plot_names.append(r'FSC masked halves')
+						plot_names.append(r'masked halves')
 						# map fsc obtained from masked two halves to full maps
 						plot_curves.append([fsc_mask[0], list(map(scale_fsc, fsc_mask[1]))])
-						plot_names.append(r'FSC masked full')
+						plot_names.append(r'masked full')
 
 					resolution_in_angstrom = freq_to_angstrom(pixel_size=options.pixel_size, values=fsc_true[0])
 
 					# Create plot and write output file
 					minimum_fsc = 0
+					color = ['blue', 'grey', 'orange', 'lightgrey']
+					idx = -1
+					thicknesslist = [2.5,0.7,2.5,0.7]
 					for fsc, name in zip(plot_curves, plot_names):
+						idx += 1
 						fsc[1][0] = 1
-						label = r'{0:18s}:  $0.5$: ${1}\AA$  |  $0.143$: ${2}\AA$'.format(
+						label = r'FSC {0:14s}:  $0.5$: ${1}\AA$  |  $0.143$: ${2}\AA$'.format(
 							name,
 							round(
 								freq_to_angstrom(
 									pixel_size=options.pixel_size,
 									values=calculate_fsc_criterion(fsc, criterion=0.5)[0]
 									)[0],
-								1
+								2
 								),
 							round(
 								freq_to_angstrom(
 									pixel_size=options.pixel_size,
 									values=calculate_fsc_criterion(fsc, criterion=0.143)[1]
 									)[0],
-								1
+								2
 								),
 							)
-						plt.plot(fsc[0], fsc[1], label=label)
+						plt.plot(fsc[0], fsc[1], label=label, color=color[idx], linewidth=thicknesslist[idx])
 						create_fsc_txt(
 							output_dir=options.output_dir,
 							fsc=fsc,
 							resolution=resolution_in_angstrom,
 							name=name.replace(' ', '_').lower()
 							)
+						log_main.add('Resolution: {0}'.format(label.replace('$', '').replace('\A', '')))
 						if min(fsc[1]) < minimum_fsc:
 							minimum_fsc = min(fsc[1])
 					plt.axhline(0.143, 0, 1, color='k', alpha=0.3)
@@ -1475,8 +1482,8 @@ def main():
 								else: fsc_true[1][i]=(fsct-fscn)/(1.-fscn)
 						else:
 					"""
-					log_main.add("Adjust FSC to the full dataset by: 2.*FSC/(FSC+1.)")
-					fsc_true[1] = list(map(scale_fsc, fsc_true[1]))
+					#log_main.add("Adjust FSC to the full dataset by: 2.*FSC/(FSC+1.)")
+					#fsc_true[1] = list(map(scale_fsc, fsc_true[1]))
 
 					## Determine 05/143 resolution from corrected FSC, RH correction of FSC from masked volumes
 					resolution_FSC143_right  = 0.0
@@ -1484,40 +1491,50 @@ def main():
 					#dip_at_fsc = False
 					nfreq0     = 1
 
-					for ifreq in range(1, len(fsc_true[1])):
-						if fsc_true[1][ifreq] < 0.0:
-							nfreq0  = ifreq - 1
-							break
-					if nfreq0 ==1: nfreq0= len(fsc_true[1]) - 1
+					# for ifreq in range(1, len(fsc_true[1])):
+					# 	if fsc_true[1][ifreq] < 0.0:
+					# 		nfreq0  = ifreq - 1
+					# 		break
+					# if nfreq0 ==1: nfreq0= len(fsc_true[1]) - 1
+					#
+					# nfreq05 = len(fsc_true[1])-1
+					# for ifreq in range(1, len(fsc_true[1])):
+					# 	if fsc_true[1][ifreq] < 0.5:
+					# 		resolution_FSChalf = fsc_true[0][ifreq-1]
+					# 		nfreq05 = ifreq-1
+					# 		break
+					#
+					# resolution_FSC143_left = fsc_true[0][len(fsc_true[1])-1]
+					# for ifreq in range(nfreq05, len(fsc_true[1])):
+					# 	if fsc_true[1][ifreq] < 0.143:
+					# 		resolution_FSC143_left = fsc_true[0][ifreq-1]
+					# 		nfreq143 = ifreq - 1
+					# 		break
+					#
+					# resolution_FSC143_right = fsc_true[0][nfreq05]
+					# nfreq143_right = nfreq05
+					# for ifreq in range(nfreq0, nfreq05, -1):
+					# 	if fsc_true[1][ifreq] >= 0.143:
+					# 		resolution_FSC143_right = fsc_true[0][ifreq]
+					# 		nfreq143_right = ifreq
+					# 		break
+					resolution_FSChalf, _, nfreq05, _ = calculate_fsc_criterion(
+						fsc_true,
+						0.5
+					)
+					resolution_FSC143_left, resolution_FSC143_right, nfreq143, nfreq143_right = calculate_fsc_criterion(
+						fsc_true,
+						0.143
+					)
 
-					nfreq05 = len(fsc_true[1])-1 		
-					for ifreq in range(1, len(fsc_true[1])):
-						if fsc_true[1][ifreq] < 0.5:
-							resolution_FSChalf = fsc_true[0][ifreq-1]
-							nfreq05 = ifreq-1
-							break
-
-					resolution_FSC143_left = fsc_true[0][len(fsc_true[1])-1]
-					for ifreq in range(nfreq05, len(fsc_true[1])):
-						if fsc_true[1][ifreq] < 0.143:
-							resolution_FSC143_left = fsc_true[0][ifreq-1]
-							nfreq143 = ifreq - 1
-							break
-
-					resolution_FSC143_right = fsc_true[0][nfreq05]
-					nfreq143_right = nfreq05
-					for ifreq in range(nfreq0, nfreq05, -1):
-						if fsc_true[1][ifreq] >= 0.143:
-							resolution_FSC143_right = fsc_true[0][ifreq]
-							nfreq143_right = ifreq
-							break
 
 					## output resolution
-					if resolution_FSC143_left != resolution_FSC143_right: log_main.add("there is a dip between 0.5 to 0.143 in FSC!")
+					if resolution_FSC143_left != resolution_FSC143_right:
+						log_main.add("there is a dip between 0.5 to 0.143 in FSC! Please check the FSC curve and your mask carefully.")
 					else:log_main.add("Fsc smoothly falls from 0.5 to 0.143 !")
 
-					resolution_FSC143 = resolution_FSC143_right
-					nfreq143 = nfreq143_right
+					resolution_FSC143 = resolution_FSC143_left
+					nfreq143 = nfreq143
 
 					for ifreq in range(len(fsc_true[0])): fsc_true[1][ifreq] = max(fsc_true[1][ifreq], 0.0)
 					## smooth FSC after FSC143 and set other values to zero
@@ -1663,8 +1680,8 @@ def main():
 				map1.write_image(file_path_final)
 				log_main.add("---------- >>> Summary <<<------------")
 				if not single_map:
-					log_main.add("Resolution 0.5/0.143 are %5.2f/%5.2f[A]"%(round((options.pixel_size/resolution_FSChalf),3), round((options.pixel_size/resolution_FSC143),3)))
-					if dip_at_fsc: log_main.add("There is a dip in the fsc curve in the region between 0.5 and 0.143, and you might cosider ploting your fsc curve")
+					log_main.add("Final resolution 0.5/0.143 is %5.2f/%5.2f[A]"%(round((options.pixel_size/resolution_FSChalf),3), round((options.pixel_size/resolution_FSC143),3)))
+					if dip_at_fsc: log_main.add("There is a dip in the fsc curve in the region between 0.5 and 0.143. Please check the FSC curve and mask.")
 				
 				if options.B_enhance !=-1:
 					log_main.add( "B-factor is %6.2f[A^2]"%(round((-global_b),2)))

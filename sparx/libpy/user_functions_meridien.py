@@ -220,7 +220,7 @@ def ai_spa( Tracker, fff, anger, shifter, do_local, chout = False):
 		Tracker["changed_delta"] = False
 		#  decide angular step and translations
 		if Tracker["no_improvement"] >= Tracker["constants"]["limit_improvement"] and Tracker["no_params_changes"] >= Tracker["constants"]["limit_changes"] and not Tracker["large_at_Nyquist"]:
-			if( Tracker["delta"] < 0.75*Tracker["acc_rot"] ):#<<<----it might cause converge issues when shake is 0.0
+			if( Tracker["delta"] < Tracker['constants']['a_criterion']*Tracker["acc_rot"] ):#<<<----it might cause converge issues when shake is 0.0
 				if Tracker["state"] == "PRIMARY LOCAL":
 					step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
 					if chout:
