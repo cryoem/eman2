@@ -333,14 +333,37 @@ class SXLookFeelConst(object):
 		# Set the directory for all file dialogs to script directory
 		SXLookFeelConst.project_dir += '_{0}'.format(version)
 		SXLookFeelConst.file_dialog_dir = os.getcwd()
+		
+		# Check whether current settings directory exists
+		if os.path.exists(SXLookFeelConst.project_dir):
+			current_settings_exist = True
+		else:
+			current_settings_exist = False
+			
+		do_longer_warning = False
+		older_settings_exist = False
 		for file_name in os.listdir(SXLookFeelConst.file_dialog_dir):
 			if SXLookFeelConst.project_dir_raw in file_name and file_name != SXLookFeelConst.project_dir:
-				print('sxgui_settings_XXX directory detected that belongs to another version of SPHIRE.')
-				print('To load old settings, please load the gui settings manually.')
-				print('Backwards compatibility cannot be guaranteed.')
-
+				print('WARNING: Directory %s/ detected that belongs to another version of SPHIRE.' % file_name)
+				older_settings_exist = True
+				
+				if not current_settings_exist:
+					do_longer_warning = True
+				
+		if do_longer_warning:
+			print('To load old settings, please load the gui settings manually.')
+			print('Backwards compatibility cannot be guaranteed.')
+		
+		if not current_settings_exist and not older_settings_exist:
+			create_settings_dir = raw_input(
+					"\nSettings directory for current SPHIRE version %s doesn't exist\nWould you like to create a new project directory and continue? [y/n] " 
+					% SXLookFeelConst.project_dir)
+			if create_settings_dir.lower() == 'n':
+				print("\nbye bye")
+				exit()
+		
 		monitor_index = 0
-		# Search for maximun screen height and set it to SXLookFeelConst singleton class
+		# Search for maximum screen height and set it to SXLookFeelConst singleton class
 		max_screen_height = sxapp.desktop().screenGeometry().height()
 		for index in range(sxapp.desktop().screenCount()):
 			screen_height = sxapp.desktop().screenGeometry(index).height()
@@ -348,7 +371,7 @@ class SXLookFeelConst(object):
 				monitor_index = index
 				max_screen_height = screen_height
 		SXLookFeelConst.screen_height = max_screen_height
-		# Search for maximun screen width and set it to SXLookFeelConst singleton class
+		# Search for maximum screen width and set it to SXLookFeelConst singleton class
 		SXLookFeelConst.screen_width = sxapp.desktop().screenGeometry(monitor_index).width()
 
 		# Set size of the main window depending on the screen size
@@ -1756,6 +1779,12 @@ class SXCmdWidget(QWidget):
 ###			# Use relative path.
 ###			for a_file_path in file_path_list:
 ###				file_path += SXLookFeelConst.format_path(str(a_file_path)) + " "
+		elif file_format == 'submission_template':
+			if 'SPHIRE_SUBMISSION_SCRIPT_TEMPLATE_FOLDER' in os.environ:
+				template_folder = os.environ['SPHIRE_SUBMISSION_SCRIPT_TEMPLATE_FOLDER']
+			else:
+				template_folder = SXLookFeelConst.file_dialog_dir
+			file_path = QFileDialog.getOpenFileName(self, "Select any file", template_folder, "All files (*)", options = QFileDialog.DontUseNativeDialog)
 		else:
 			if file_format:
 				name = QFileDialog.getOpenFileName(self, "Select %s file" % (file_format.upper()), SXLookFeelConst.file_dialog_dir, "%s files (*.%s)"  % (file_format.upper(), file_format), options = QFileDialog.DontUseNativeDialog)
@@ -2800,7 +2829,11 @@ class SXCmdTab(QWidget):
 			submit_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 
 			self.mpi_cmd_line_edit = QLineEdit()
-			self.mpi_cmd_line_edit.setText("")
+			if 'SPHIRE_MPI_COMMAND_LINE_TEMPLATE' in os.environ:
+				mpi_command_line_template = os.environ['SPHIRE_MPI_COMMAND_LINE_TEMPLATE']
+			else:
+				mpi_command_line_template = ""
+			self.mpi_cmd_line_edit.setText(mpi_command_line_template)
 			self.mpi_cmd_line_edit.setToolTip('<FONT>'+"Template of MPI command line (e.g. \"mpirun -np XXX_SXMPI_NPROC_XXX --host n0,n1,n2 XXX_SXCMD_LINE_XXX\"). if empty, use \"mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX\"</FONT>")
 			submit_layout.addWidget(self.mpi_cmd_line_edit, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
@@ -2856,7 +2889,11 @@ class SXCmdTab(QWidget):
 
 			self.qsub_cmd_edit = QLineEdit()
 			if self.sxcmdwidget.sxcmd.is_submittable == True:
-				self.qsub_cmd_edit.setText("qsub")
+				if 'SPHIRE_SUBMISSION_COMAND' in os.environ:
+					submission_command = os.environ['SPHIRE_SUBMISSION_COMAND']
+				else:
+					submission_command = "qsub"
+				self.qsub_cmd_edit.setText(submission_command)
 			else: # assert(self.sxcmdwidget.sxcmd.is_submittable == False)
 				assert(self.sxcmdwidget.sxcmd.mpi_support == False)
 				self.qsub_cmd_edit.setText("N/A")
@@ -2885,7 +2922,11 @@ class SXCmdTab(QWidget):
 
 			self.qsub_script_edit = QLineEdit()
 			if self.sxcmdwidget.sxcmd.is_submittable == True:
-				self.qsub_script_edit.setText("msgui_qsub.sh")
+				if 'SPHIRE_SUBMISSION_SCRIPT_TEMPLATE' in os.environ:
+					submission_script_template = os.environ['SPHIRE_SUBMISSION_SCRIPT_TEMPLATE']
+				else:
+					submission_script_template = "msgui_qsub.sh"
+				self.qsub_script_edit.setText(submission_script_template)
 			else: # assert(self.sxcmdwidget.sxcmd.is_submittable == False)
 				assert(self.sxcmdwidget.sxcmd.mpi_support == False)
 				self.qsub_script_edit.setText("N/A")
@@ -2895,7 +2936,7 @@ class SXCmdTab(QWidget):
 			self.qsub_script_open_btn = QPushButton("Select template")
 			self.qsub_script_open_btn.setMinimumWidth(func_btn_min_width)
 			self.qsub_script_open_btn.setToolTip('<FONT>'+"Display open file dialog to select job submission script template file"+'</FONT>')
-			self.qsub_script_open_btn.clicked.connect(partial(self.sxcmdwidget.select_file, self.qsub_script_edit))
+			self.qsub_script_open_btn.clicked.connect(partial(self.sxcmdwidget.select_file, self.qsub_script_edit, 'submission_template'))
 			submit_layout.addWidget(self.qsub_script_open_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 
 			# Add a run button
