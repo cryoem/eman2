@@ -79,6 +79,9 @@ def main():
 		
 	
 	n=len(pks)
+	if n==0:
+		print("No particles found. Exit...")
+		return
 	allbox=[]
 	allbox3d=[]
 	if options.sort:
