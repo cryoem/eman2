@@ -3801,6 +3801,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	####if( Blockdata["myid_on_node"] == 0  ):  sxprint( " MEMEST ", n_coarse_ang,numberofrefs_inmem)
 	#  number of references that will fit into one mode
 	#Blockdata['symclass_coarse'].set_angles(coarse_angles)
+	Blockdata['symclass_coarse'].set_angles(coarse_angles)
 	Blockdata['symclass_coarse'].build_kdtree()
 	#normals_set = angles_to_normals(coarse_angles)
 	Blockdata["angle_set"] = coarse_angles
@@ -4860,6 +4861,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	numberofrefs_inmem = int(Tracker["constants"]["memory_per_node"]/4/((size_of_one_image*disp_unit)/1.0e9))
 	####if( Blockdata["myid_on_node"] == 0  ):  sxprint( " MEMEST ", n_coarse_ang,numberofrefs_inmem)
 	#  number of references that will fit into one mode
+	Blockdata['symclass_coarse'].set_angles(coarse_angles)
 	Blockdata['symclass_coarse'].build_kdtree()
 	#normals_set = angles_to_normals(coarse_angles)
 	Blockdata["angle_set"] = coarse_angles
