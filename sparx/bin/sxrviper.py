@@ -479,7 +479,8 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 				del projdata
 				if( mpi_rank == 0):
 					vol.write_image(mainoutputdir + DIR_DELIM + NAME_OF_RUN_DIR + "%03d"%(i) + DIR_DELIM + "rotated_volume.hdf")
-					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " => "
+					#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " => "
+					line = ''
 					sxprint(line  + "Generated rec_ref_volume_run #%01d \n"%i)
 				del vol
 
@@ -491,7 +492,8 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 			del projdata
 			if( mpi_rank == 0):
 				vol.write_image(mainoutputdir + DIR_DELIM + NAME_OF_RUN_DIR + "%03d"%(i) + DIR_DELIM + "rotated_volume.hdf")
-				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " => "
+				#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " => "
+				line = ''
 				sxprint(line + "Generated rec_ref_volume_run #%01d"%i)
 			del vol
 
