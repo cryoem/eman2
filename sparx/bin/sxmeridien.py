@@ -3820,7 +3820,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 			for m in q:
 				#print " m ",m,len(angles)
 
-				assignments_of_refangles_to_angles[m] = Blockdata['symclass_coarse'].find_nearest_neighbors(oldparams[m], Tracker["an"])
+				assignments_of_refangles_to_angles[m] = [entry for entry in Blockdata['symclass_coarse'].find_nearest_neighbors(oldparams[m], Tracker["an"]) if not entry < 0]
 				assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
 
 			assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
@@ -3886,7 +3886,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					for m in q:
 						#print " m ",m,len(angles)
 
-						assignments_of_refangles_to_angles[m] = Blockdata['symclass_coarse'].find_nearest_neighbors(oldparams[m], Tracker["an"])
+						assignments_of_refangles_to_angles[m] = [entry for entry in Blockdata['symclass_coarse'].find_nearest_neighbors(oldparams[m], Tracker["an"]) if not entry < 0]
 						#if Blockdata["myid"] == 0:  sxprint( "assignments_of_refangles_to_angles[m] ", Blockdata["color"],i,m,assignments_of_refangles_to_angles[m])
 						assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
 
@@ -4880,7 +4880,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 			for m in q:
 				#print " m ",m,len(angles)
 
-				assignments_of_refangles_to_angles[m] = Blockdata['symclass_coarse'].find_nearest_neighbors(oldparams[m], Tracker["an"])
+				assignments_of_refangles_to_angles[m] = [entry for entry in Blockdata['symclass_coarse'].find_nearest_neighbors(oldparams[m], Tracker["an"]) if not entry < 0]
 				assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
 
 			assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
@@ -4946,7 +4946,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					for m in q:
 						#print " m ",m,len(angles)
 
-						assignments_of_refangles_to_angles[m] = Blockdata['symclass_coarse'].find_nearest_neighbors(oldparams[m], Tracker["an"])
+						assignments_of_refangles_to_angles[m] = [entry for entry in Blockdata['symclass_coarse'].find_nearest_neighbors(oldparams[m], Tracker["an"]) if not entry < 0]
 						#if Blockdata["myid"] == 0:  sxprint( "assignments_of_refangles_to_angles[m] ", Blockdata["color"],i,m,assignments_of_refangles_to_angles[m])
 						assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
 
@@ -5072,7 +5072,16 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 			for i in range(nang_start, nang_end, 1):  # This will take care of no of process on a node less than nang.  Some loops will not be executed
 				ic = assignments_of_refangles_to_cones[icone][i]
-				temp = prgl(volprep,[ coarse_angles[ic][0],coarse_angles[ic][1],0.0, 0.0,0.0], 1, True)
+				try:
+					temp = prgl(volprep,[ coarse_angles[ic][0],coarse_angles[ic][1],0.0, 0.0,0.0], 1, True)
+				except IndexError:
+					print(len(Blockdata['symclass_coarse'].kdneighbors))
+					print(Blockdata['symclass_coarse'].kdnneigbors)
+					print('ic', ic)
+					print('coarse_angles', coarse_angles)
+					print('len(coarse_angles)', len(coarse_angles))
+					print('assign', assignments_of_refangles_to_cones[icone])
+					raise
 				crefim = Util.Polar2Dm(temp, cnx, cnx, numr, mode)
 				Util.Frngs(crefim, numr)
 				Util.Applyws(crefim, numr, wr)
