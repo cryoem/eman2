@@ -42,6 +42,7 @@ import os
 import itertools
 import numpy as np
 import sys
+import copy
 
 from tqdm import tqdm
 from scipy import ndimage
@@ -255,9 +256,10 @@ def refine_defocus_with_error_est(
 	defocus_bootstrap = [ctf.defocus for ctf in best_ctfs_bootstrap]
 	unique_defocuses = set(defocus_bootstrap)
 	ctf_list_fine = []
+	current_ctf_cpy = copy.copy(current_ctf)
 	for unique_def in unique_defocuses:
-		current_ctf.defocus = unique_def
-		ctf_list_fine.extend(create_ctf_list(current_ctf, def_step_size * 10, def_step_size))
+		current_ctf_cpy.defocus = unique_def
+		ctf_list_fine.extend(create_ctf_list(current_ctf_cpy, def_step_size * 10, def_step_size))
 
 	# ########
 	# Final optimization
@@ -672,8 +674,6 @@ def setup_argparser():
 
 	argparser.add_argument("outputdir", help="Path to the output directory")
 
-	argparser.add_argument("ouputstackname", help="bdb file path to new virtual stack")
-
 	argparser.add_argument(
 		"-r", "--range", default=0.15, type=float, help="Defocus search range (in microns)"
 	)
@@ -725,6 +725,8 @@ def setup_argparser():
 
 	parser_manual.add_argument("volume", help="Path to your first half map")
 
+	parser_manual.add_argument("params_path", help="Path to your params file")
+
 	parser_manual.add_argument(
 		"-v2",
 		"--volume2",
@@ -733,8 +735,6 @@ def setup_argparser():
 
 	# TODO: Use both chunks might be necessay in the future.
 	parser_manual.add_argument("-c", "--chunk", help="Path to one of the chunk files")
-
-	parser_manual.add_argument("-p", "--params", help="Path to your params file")
 
 	parser_meridien.add_argument("meridien_path", help="Path to meridien refinement folder")
 
@@ -768,7 +768,7 @@ def _main_():
 	else:
 		volume1_file_path = args.volume
 		volume2_file_path = args.volume2
-		params_file_path = args.params
+		params_file_path = args.params_path
 		chunk_file_path = args.chunk
 		if volume2_file_path is None and chunk_file_path is not None:
 			global_def.ERROR(
@@ -791,9 +791,7 @@ def _main_():
 		os.makedirs(output_folder)
 		global_def.write_command(output_folder)
 
-	output_virtual_stack_name = args.ouputstackname
-
-	output_virtual_stack_path = "bdb:" + os.path.join(output_folder, output_virtual_stack_name)
+	output_virtual_stack_path = "bdb:" + os.path.join(output_folder, "ctf_refined")
 
 	output_stats_path = os.path.join(output_folder, "statistics")
 

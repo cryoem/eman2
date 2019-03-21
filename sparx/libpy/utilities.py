@@ -8821,7 +8821,7 @@ def search_lowpass(fsc):
 	return fcutoff
 
 
-def angular_distribution(params_file, output_folder, prefix, method, pixel_size, delta, symmetry, box_size, particle_radius, dpi, do_print=True):
+def angular_distribution(params_file, output_folder, prefix, method, pixel_size, delta, symmetry, box_size, particle_radius, dpi, do_print=True, exclude=None):
 	import fundamentals
 	import numpy
 	import scipy.spatial as scipy_spatial
@@ -8830,11 +8830,31 @@ def angular_distribution(params_file, output_folder, prefix, method, pixel_size,
 	matplotlib.use('Agg')
 	import matplotlib.pyplot as plt
 
+	def get_color(sorted_array):
+		"""
+		Get the color for the 2D visual representation.
+
+		Arguments:
+		sorted_array - Array sorted by size.
+
+		Returns:
+		List of colors for each entry in the sorted_array.
+		"""
+		sorted_normalized = numpy.true_divide(sorted_array, numpy.max(sorted_array))
+		color_list = []
+		for item in sorted_normalized:
+			color_list.append((0, item, 1-item))
+		return color_list
+
+	COLUMN_Z = 2
+
+	# Use name of the params file as prefix if prefix is None
 	# Sanity checks
 	#sxprint('Check if values are valid')
 	error_template = 'ERROR: {0}'
 	error = False
 	error_list = []
+
 	if pixel_size <= 0:
 		error_list.append('Pixel size cannot be smaller equals 0')
 		error = True
@@ -8874,128 +8894,8 @@ def angular_distribution(params_file, output_folder, prefix, method, pixel_size,
 	else:
 		if do_print:
 			sxprint('Created output directory: {0}'.format(output_folder))
-
 	COLUMN_X = 0
 	COLUMN_Y = 1
-	COLUMN_Z = 2
-
-	def get_color(sorted_array):
-		"""
-		Get the color for the 2D visual representation.
-
-		Arguments:
-		sorted_array - Array sorted by size.
-
-		Returns:
-		List of colors for each entry in the sorted_array.
-		"""
-		sorted_normalized = numpy.true_divide(sorted_array, numpy.max(sorted_array))
-		color_list = []
-		for item in sorted_normalized:
-			color_list.append((0, item, 1-item))
-		return color_list
-
-	def to_cartesian(angles):
-		"""
-		Create carthesian coordinates out of spherical ones.
-
-		Arguments:
-		angles - list of angles that can should be converted.
-
-		Returns:
-		Numpy array containing 3D cartesian coordinates
-		"""
-		column_phi = 0
-		column_theta = 1
-		angles_radians = numpy.radians(angles)
-		cartesian_array = numpy.empty((angles_radians.shape[0], 3))
-
-		sinus = numpy.sin(angles_radians[:,column_theta])
-		cartesian_array[:, COLUMN_X] = numpy.cos(angles_radians[:, column_phi]) * sinus
-		cartesian_array[:, COLUMN_Y] = numpy.sin(angles_radians[:, column_phi]) * sinus
-		cartesian_array[:, COLUMN_Z] = numpy.cos(angles_radians[:, column_theta])
-
-		return cartesian_array
-
-	def add_mirrored(eah, smc):
-		#eah  = smc.even_angles(angstep, inc_mirror=0)
-		leah = len(eah)
-		u = []
-		for q in eah:
-			#print("q",q)
-			m = smc.symmetry_related([(180.0+q[0])%360.0,180.0-q[1],0.0])
-			#print("m",m)
-			itst = len(u)
-			for c in m:
-				#print("c",c)
-				if smc.is_in_subunit(c[0],c[1],1) :
-					#print(" is in 1")
-					if not smc.is_in_subunit(c[0],c[1],0) :
-						#print("  outside")
-						u.append(c)
-						break
-			if(len(u) != itst+1):
-				u.append(q)  #  This is for exceptions that cannot be easily handled
-		seaf = []
-		for q in eah+u:  seaf += smc.symmetry_related(q)
-		lseaf = 2*leah
-		return lseaf, leah, seaf
-
-	def markus(args, data, data_cart, sym_class):
-		if do_print:
-			sxprint('Create reference angles')
-		# Create reference angles all around the sphere.
-		ref_angles_data = sym_class.even_angles(args.delta, inc_mirror=1, method=args.method)
-
-		# Find symmetry neighbors
-		# Create cartesian coordinates
-		angles = sym_class.symmetry_neighbors(ref_angles_data)
-		angles_cart = to_cartesian(angles)
-
-		# Reduce the reference data by moving mirror projections into the non-mirror region of the sphere.
-		# Create cartesian coordinates
-		angles_reduce = sym_class.reduce_anglesets(angles, inc_mirror=inc_mirror)
-		angles_reduce_cart = to_cartesian(angles_reduce)
-
-		# Reduce the reference data by removing mirror projections instead of moving them into the non-mirror region of the sphere.
-		# Create cartesian coordinates
-		angles_no_mirror = [entry for entry in ref_angles_data if sym_class.is_in_subunit(phi=entry[0], theta=entry[1], inc_mirror=0)] 
-		angles_no_mirror_cart = to_cartesian(angles_no_mirror)
-		
-		# Find nearest neighbours to the reference angles with the help of a KDTree
-		if do_print:
-			sxprint('Find nearest neighbours')
-		# Find the nearest neighbours of the reduced data to the reference angles on the C1 sphere.
-		_, knn_data = scipy_spatial.cKDTree(angles_cart, balanced_tree=False).query(data_cart)
-		# Find the nearest neighbours of the reduced reference data to the reference angles that do not contain mirror projections.
-		_, knn_angle = scipy_spatial.cKDTree(angles_no_mirror_cart, balanced_tree=False).query(angles_reduce_cart)
-
-		#hiti = [[] for i in range(max(knn_data)+1)]
-		#for i,q in enumerate(knn_data):
-		#	hiti[q].append(i)
-		#for i,q in enumerate(	hiti):
-		#	if q:
-		#		sxprint(" hiti  ", i, q, angles_no_mirror[i])
-
-		# Calculate a histogram for the assignments to the C1 angles
-		radius = numpy.bincount(knn_data, minlength=angles_cart.shape[0])
-		# New output histogram array that needs to be filled later
-		radius_array = numpy.zeros(angles_cart.shape[0], dtype=int)
-
-		# Deal with symmetry wrapping!
-		# Every index idx corresponds to the angle prior to the symmetry wrapping.
-		# Every value of value corresponds to the angle after symmetry wrapping.
-		# Values can occure multiple times and therefore can contain the member information for multiple reference angles.
-		numpy.add.at(radius_array, knn_angle, radius)
-		#for i,q in enumerate(radius_array):
-		#	if q:
-		#		sxprint(" hiti  ", i, q, angles_no_mirror[i])
-		nonzero_mask = numpy.nonzero(radius_array)
-		radius_array = radius_array[nonzero_mask]
-		if do_print:
-			sxprint(numpy.sort(radius_array))
-
-	# Use name of the params file as prefix if prefix is None
 	if prefix is None:
 		prefix = os.path.basename(os.path.splitext(params_file)[0])
 
@@ -9003,6 +8903,11 @@ def angular_distribution(params_file, output_folder, prefix, method, pixel_size,
 	if do_print:
 		sxprint('Import projection parameter')
 	data_params = numpy.atleast_2d(numpy.genfromtxt(params_file, usecols=(0, 1, 2)))
+	if exclude is not None:
+		mask = numpy.array(exclude)
+		mask[mask < 0] = 0
+		mask = mask.astype(numpy.bool)
+		data_params = data_params[~mask]
 
 	# If the symmetry is c0, do not remove mirror projections.
 	if do_print:
@@ -9014,32 +8919,30 @@ def angular_distribution(params_file, output_folder, prefix, method, pixel_size,
 		symmetry = symmetry
 		inc_mirror = 0
 
-
 	# Create 2 symclass objects.
 	# One C1 object for the inital reference angles.
 	# One related to the actual symmetry, to deal with mirror projections.
 	sym_class = fundamentals.symclass(symmetry)
 
+
+	# data_params = [[0.0, 0.0, 0.0], [22,91,45]]
+	# data_params = numpy.atleast_2d(data_params)
 	if do_print:
 		sxprint('Reduce data to symmetry - This might take some time for high symmetries')
 	# Reduce the parameter data by moving mirror projections into the non-mirror region of the sphere.
-	data = numpy.array( sym_class.reduce_anglesets(data_params.tolist(), inc_mirror=inc_mirror))
+	data = sym_class.reduce_anglesets(data_params, inc_mirror=inc_mirror, tolistconv=False)
 	# Create cartesian coordinates
-	data_cart = to_cartesian(data)
 
-	#markus(args, data, data_cart, sym_class)
+	sym_class.even_angles(delta= delta , method=method, inc_mirror=inc_mirror)
+	sym_class.build_kdtree()
+	indices = sym_class.find_k_nearest_neighbors(data, k=1, tolistconv=False)
 
-	occupy, eva = angular_histogram(sym_class.reduce_anglesets(data_params.tolist(), inc_mirror=inc_mirror), angstep = delta, sym= symmetry, method=method, inc_mirror=inc_mirror)
-#		for i,q in enumerate(eva):  sxprint(i,q)
-	radius_array = numpy.array(occupy)
-	angles_no_mirror = numpy.array(eva)
-	angles_no_mirror_cart = to_cartesian(angles_no_mirror)
+	radius_array = numpy.bincount(indices.flatten(), minlength=sym_class.angles.shape[0])
+	angles_no_mirror_cart = sym_class.to_cartesian(sym_class.angles, tolistconv=False)
 
-
-	# Remove all zeros for speedup reasons
 	nonzero_mask = numpy.nonzero(radius_array)
 	radius_array = radius_array[nonzero_mask]
-	#print(numpy.sort(radius_array))
+
 
 	# Calculate best width and length for the bins in 3D
 	width = (pixel_size * particle_radius * numpy.radians(delta) * 2) / float(2 * 3)
@@ -9124,8 +9027,317 @@ def angular_distribution(params_file, output_folder, prefix, method, pixel_size,
 			#	for value_x, value_y in zip(array_x, sorted_radius):
 			value_x = '{0:6d}'.format(array_x[i])
 			value_y = '{0:6d}'.format(sorted_radius[i])
-			phi     = '{0:10f}'.format(angles_no_mirror[nonzero_mask[i]][0])
-			theta   = '{0:10f}'.format(angles_no_mirror[nonzero_mask[i]][1])
+			phi     = '{0:10f}'.format(sym_class.angles[nonzero_mask[i]][0])
+			theta   = '{0:10f}'.format(sym_class.angles[nonzero_mask[i]][1])
+			write.write('{0}\n'.format('\t'.join([value_x, value_y, phi, theta])))
+
+
+def angular_distribution_old(params_file, output_folder, prefix, method, pixel_size, delta, symmetry, box_size,
+						 particle_radius, dpi, do_print=True):
+	import fundamentals
+	import numpy
+	import scipy.spatial as scipy_spatial
+	import errno
+	import matplotlib
+	matplotlib.use('Agg')
+	import matplotlib.pyplot as plt
+
+	# Sanity checks
+	# sxprint('Check if values are valid')
+	error_template = 'ERROR: {0}'
+	error = False
+	error_list = []
+	if pixel_size <= 0:
+		error_list.append('Pixel size cannot be smaller equals 0')
+		error = True
+
+	if box_size <= 0:
+		error_list.append('Box size cannot be smaller equals 0')
+		error = True
+
+	if particle_radius <= 0:
+		error_list.append('Particle radius cannot be smaller equals 0')
+		error = True
+
+	if delta <= 0:
+		error_list.append('delta cannot be smaller equals 0')
+		error = True
+
+	if dpi <= 0:
+		error_list.append('Dpi cannot be smaller equals 0')
+		error = True
+
+	if error:
+		for entry in error_list:
+			sxprint(error_template.format(entry))
+		return None
+	else:
+		if do_print:
+			sxprint('Most values are valid')
+
+	try:
+		os.makedirs(output_folder)
+	except OSError as exc:
+		if exc.errno == errno.EEXIST and os.path.lexists(output_folder):
+			if do_print:
+				sxprint('Output directory already exists: {0}'.format(output_folder))
+		else:
+			raise
+	else:
+		if do_print:
+			sxprint('Created output directory: {0}'.format(output_folder))
+
+	COLUMN_X = 0
+	COLUMN_Y = 1
+	COLUMN_Z = 2
+
+	def get_color(sorted_array):
+		"""
+		Get the color for the 2D visual representation.
+
+		Arguments:
+		sorted_array - Array sorted by size.
+
+		Returns:
+		List of colors for each entry in the sorted_array.
+		"""
+		sorted_normalized = numpy.true_divide(sorted_array, numpy.max(sorted_array))
+		color_list = []
+		for item in sorted_normalized:
+			color_list.append((0, item, 1 - item))
+		return color_list
+
+	def to_cartesian(angles):
+		"""
+		Create carthesian coordinates out of spherical ones.
+
+		Arguments:
+		angles - list of angles that can should be converted.
+
+		Returns:
+		Numpy array containing 3D cartesian coordinates
+		"""
+		column_phi = 0
+		column_theta = 1
+		angles_radians = numpy.radians(angles)
+		cartesian_array = numpy.empty((angles_radians.shape[0], 3))
+
+		sinus = numpy.sin(angles_radians[:, column_theta])
+		cartesian_array[:, COLUMN_X] = numpy.cos(angles_radians[:, column_phi]) * sinus
+		cartesian_array[:, COLUMN_Y] = numpy.sin(angles_radians[:, column_phi]) * sinus
+		cartesian_array[:, COLUMN_Z] = numpy.cos(angles_radians[:, column_theta])
+
+		return cartesian_array
+
+	def add_mirrored(eah, smc):
+		# eah  = smc.even_angles(angstep, inc_mirror=0)
+		leah = len(eah)
+		u = []
+		for q in eah:
+			# print("q",q)
+			m = smc.symmetry_related([(180.0 + q[0]) % 360.0, 180.0 - q[1], 0.0])
+			# print("m",m)
+			itst = len(u)
+			for c in m:
+				# print("c",c)
+				if smc.is_in_subunit(c[0], c[1], 1):
+					# print(" is in 1")
+					if not smc.is_in_subunit(c[0], c[1], 0):
+						# print("  outside")
+						u.append(c)
+						break
+			if (len(u) != itst + 1):
+				u.append(q)  # This is for exceptions that cannot be easily handled
+		seaf = []
+		for q in eah + u:  seaf += smc.symmetry_related(q)
+		lseaf = 2 * leah
+		return lseaf, leah, seaf
+
+	def markus(args, data, data_cart, sym_class):
+		if do_print:
+			sxprint('Create reference angles')
+		# Create reference angles all around the sphere.
+		ref_angles_data = sym_class.even_angles(args.delta, inc_mirror=1, method=args.method)
+
+		# Find symmetry neighbors
+		# Create cartesian coordinates
+		angles = sym_class.symmetry_neighbors(ref_angles_data)
+		angles_cart = to_cartesian(angles)
+
+		# Reduce the reference data by moving mirror projections into the non-mirror region of the sphere.
+		# Create cartesian coordinates
+		angles_reduce = sym_class.reduce_anglesets(angles, inc_mirror=inc_mirror)
+		angles_reduce_cart = to_cartesian(angles_reduce)
+
+		# Reduce the reference data by removing mirror projections instead of moving them into the non-mirror region of the sphere.
+		# Create cartesian coordinates
+		angles_no_mirror = [entry for entry in ref_angles_data if
+							sym_class.is_in_subunit(phi=entry[0], theta=entry[1], inc_mirror=0)]
+		angles_no_mirror_cart = to_cartesian(angles_no_mirror)
+
+		# Find nearest neighbours to the reference angles with the help of a KDTree
+		if do_print:
+			sxprint('Find nearest neighbours')
+		# Find the nearest neighbours of the reduced data to the reference angles on the C1 sphere.
+		_, knn_data = scipy_spatial.cKDTree(angles_cart, balanced_tree=False).query(data_cart)
+		# Find the nearest neighbours of the reduced reference data to the reference angles that do not contain mirror projections.
+		_, knn_angle = scipy_spatial.cKDTree(angles_no_mirror_cart, balanced_tree=False).query(angles_reduce_cart)
+
+		# hiti = [[] for i in range(max(knn_data)+1)]
+		# for i,q in enumerate(knn_data):
+		#	hiti[q].append(i)
+		# for i,q in enumerate(	hiti):
+		#	if q:
+		#		sxprint(" hiti  ", i, q, angles_no_mirror[i])
+
+		# Calculate a histogram for the assignments to the C1 angles
+		radius = numpy.bincount(knn_data, minlength=angles_cart.shape[0])
+		# New output histogram array that needs to be filled later
+		radius_array = numpy.zeros(angles_cart.shape[0], dtype=int)
+
+		# Deal with symmetry wrapping!
+		# Every index idx corresponds to the angle prior to the symmetry wrapping.
+		# Every value of value corresponds to the angle after symmetry wrapping.
+		# Values can occure multiple times and therefore can contain the member information for multiple reference angles.
+		numpy.add.at(radius_array, knn_angle, radius)
+		# for i,q in enumerate(radius_array):
+		#	if q:
+		#		sxprint(" hiti  ", i, q, angles_no_mirror[i])
+		nonzero_mask = numpy.nonzero(radius_array)
+		radius_array = radius_array[nonzero_mask]
+		if do_print:
+			sxprint(numpy.sort(radius_array))
+
+	# Use name of the params file as prefix if prefix is None
+	if prefix is None:
+		prefix = os.path.basename(os.path.splitext(params_file)[0])
+
+	# Import the parameters, assume the columns 0 (Phi) 1 (Theta) 2 (Psi) are present
+	if do_print:
+		sxprint('Import projection parameter')
+	data_params = numpy.atleast_2d(numpy.genfromtxt(params_file, usecols=(0, 1, 2)))
+
+	# If the symmetry is c0, do not remove mirror projections.
+	if do_print:
+		sxprint('Reduce anglesets')
+	if symmetry.endswith('_full'):
+		symmetry = symmetry.rstrip('_full')
+		inc_mirror = 1
+	else:
+		symmetry = symmetry
+		inc_mirror = 0
+
+	# Create 2 symclass objects.
+	# One C1 object for the inital reference angles.
+	# One related to the actual symmetry, to deal with mirror projections.
+	sym_class = fundamentals.symclass(symmetry)
+
+	if do_print:
+		sxprint('Reduce data to symmetry - This might take some time for high symmetries')
+	# Reduce the parameter data by moving mirror projections into the non-mirror region of the sphere.
+	data = numpy.array(sym_class.reduce_anglesets(data_params.tolist(), inc_mirror=inc_mirror))
+	# Create cartesian coordinates
+	data_cart = to_cartesian(data)
+
+	# markus(args, data, data_cart, sym_class)
+
+	occupy, eva = angular_histogram(sym_class.reduce_anglesets(data_params.tolist(), inc_mirror=inc_mirror),
+									angstep=delta, sym=symmetry, method=method, inc_mirror=inc_mirror)
+	#		for i,q in enumerate(eva):  sxprint(i,q)
+	radius_array = numpy.array(occupy)
+	angles_no_mirror = numpy.array(eva)
+	angles_no_mirror_cart = to_cartesian(angles_no_mirror)
+
+	# Remove all zeros for speedup reasons
+	nonzero_mask = numpy.nonzero(radius_array)
+	radius_array = radius_array[nonzero_mask]
+	# print(numpy.sort(radius_array))
+
+	# Calculate best width and length for the bins in 3D
+	width = (pixel_size * particle_radius * numpy.radians(delta) * 2) / float(2 * 3)
+	length = particle_radius * 0.2
+
+	# Normalize the radii so that the maximum value is 1
+	radius_normalized = numpy.true_divide(radius_array, numpy.max(radius_array))
+
+	# Vector pointing to the center of the Box in chimera
+	vector_center = 0.5 * numpy.array([
+		box_size,
+		box_size,
+		box_size
+	])
+
+	# Inner and outer vector. The bin starts at inner vector and stops at outer vector
+	inner_vector = vector_center + angles_no_mirror_cart[nonzero_mask] * particle_radius
+	outer_vector = vector_center + angles_no_mirror_cart[nonzero_mask] * (
+				particle_radius + radius_normalized.reshape(radius_normalized.shape[0], 1) * length)
+
+	# Adjust pixel size
+	numpy.multiply(inner_vector, pixel_size, out=inner_vector)
+	numpy.multiply(outer_vector, pixel_size, out=outer_vector)
+
+	# Create output bild file
+	if do_print:
+		sxprint('Create bild file')
+	output_bild_file = os.path.join(output_folder, '{0}.bild'.format(prefix))
+	with open(output_bild_file, 'w') as write:
+		for inner, outer, radius in zip(inner_vector, outer_vector, radius_normalized):
+			write.write('.color 0 {0} {1}\n'.format(radius, 1 - radius))
+			write.write(
+				'.cylinder {0:.3f} {1:.3f} {2:.3f} {3:.3f} {4:.3f} {5:.3f} {6:.3f}\n'.format(
+					inner[COLUMN_X],
+					inner[COLUMN_Y],
+					inner[COLUMN_Z],
+					outer[COLUMN_X],
+					outer[COLUMN_Y],
+					outer[COLUMN_Z],
+					width
+				)
+			)
+
+	"""
+	lina = numpy.argsort(radius_array)
+	sorted_radius = radius_array[lina[::-1]]
+	array_x = numpy.arange(sorted_radius.shape[0])
+	angles_no_mirror = angles_no_mirror[lina[::-1]]
+	nonzero_mask = list(nonzero_mask[0][lina[::-1]])
+
+	"""
+	nonzero_mask = list(nonzero_mask[0])
+	sorted_radius = radius_array
+	sorted_radius_plot = numpy.sort(radius_array)[::-1]
+	array_x = numpy.arange(sorted_radius.shape[0])
+	# """
+
+	# 2D distribution plot
+	if do_print:
+		sxprint('Create 2D legend plot')
+	output_bild_legend_png = os.path.join(output_folder, '{0}.png'.format(prefix))
+	color = get_color(sorted_radius_plot)
+	plt.bar(array_x, height=sorted_radius_plot, width=1, color=color)
+	plt.grid()
+	plt.xlabel('Bin / a.u.')
+	plt.ylabel('Nr. of Particles')
+	plt.savefig(output_bild_legend_png, dpi=dpi)
+	plt.clf()
+	"""
+	sxprint(array_x)
+	sxprint(sorted_radius)
+	sxprint(len(angles_no_mirror))
+	sxprint(angles_no_mirror)
+	"""
+	# 2D distribution txt file
+	if do_print:
+		sxprint('Create 2D legend text file')
+
+	output_bild_legend_txt = os.path.join(output_folder, '{0}.txt'.format(prefix))
+	with open(output_bild_legend_txt, 'w') as write:
+		for i in range(len(sorted_radius)):
+			#	for value_x, value_y in zip(array_x, sorted_radius):
+			value_x = '{0:6d}'.format(array_x[i])
+			value_y = '{0:6d}'.format(sorted_radius[i])
+			phi = '{0:10f}'.format(angles_no_mirror[nonzero_mask[i]][0])
+			theta = '{0:10f}'.format(angles_no_mirror[nonzero_mask[i]][1])
 			write.write('{0}\n'.format('\t'.join([value_x, value_y, phi, theta])))
 
 #####---------------------------------------------------
