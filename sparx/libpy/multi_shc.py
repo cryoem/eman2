@@ -628,7 +628,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 					noreseeding = True
 
 					if(all_L2s[0]<GA[number_of_runs-1][0]):
-						if firstcheck:  sxprint("  SHOULD NOT BE HERE")
+						if firstcheck:  global_def.sxprint("  SHOULD NOT BE HERE")
 						noimprovement += 1
 						if(noimprovement == 2):  terminate = True
 						GA = GA[:number_of_runs]
@@ -1515,7 +1515,7 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		
 		# Generate angular distribution
 		independent_run_dir = log.prefix
-		sxprint('independent_run_dir', independent_run_dir)
+		global_def.sxprint('independent_run_dir', independent_run_dir)
 		
 		####params_file = log.prefix + "params.txt"
 		####write_text_row(rotated_params[i1], params_file)  # 5 columns
@@ -1768,8 +1768,8 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 			while(i<peaks_count):
 				ll = findall(taken[i], taken)
 				if(len(ll) > 1):
-					sxprint("  PROBLEM, found the same orientation more than once !  ")
-					for k in range(len(params)):  sxprint(params[k])
+					global_def.sxprint("  PROBLEM, found the same orientation more than once !  ")
+					for k in range(len(params)):  global_def.sxprint(params[k])
 					ll.sort(reverse=True)
 					for k in range(0,len(ll)-1):
 						del params[k]
@@ -1834,7 +1834,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 				for k in range(1,len(taken)):
 					dod = []
 					if( taken[k] == taken[k-1] ):
-						sxprint("  PROBLEM 2, entries duplicated  ",taken)
+						global_def.sxprint("  PROBLEM 2, entries duplicated  ",taken)
 						dod.append(k)
 				if(len(dod) >0):
 					for k in dod:  del taken[k]
@@ -1842,10 +1842,10 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 			try:
 				for i in range(peaks_count):  del  tempref[taken[i]]
 			except:
-				sxprint("  failed deleting tempref ")
-				sxprint(i,peaks_count,nsoft)
-				sxprint(" taken ",taken)
-				sxprint(len(tempref), len(refrings))
+				global_def.sxprint("  failed deleting tempref ")
+				global_def.sxprint(i,peaks_count,nsoft)
+				global_def.sxprint(" taken ",taken)
+				global_def.sxprint(len(tempref), len(refrings))
 				from sys import exit
 				exit()
 
@@ -2246,7 +2246,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 							#print  im.get_attr("xform.projection" + str(i))
 							t = get_params_proj(im,"xform.projection" + str(i))
 						except:
-							sxprint(" NO XFORM  ",myid, i,im.get_attr('ID'))
+							global_def.sxprint(" NO XFORM  ",myid, i,im.get_attr('ID'))
 							from sys import exit
 							exit()
 
@@ -3364,3 +3364,4 @@ def mult_transform(v1, v2):
 	return [ T.get_params("spider")["phi"], T.get_params("spider")["theta"], T.get_params("spider")["psi"], T.get_params("spider")["tx"], T.get_params("spider")["ty"]  ]
 """
 from builtins import range
+import global_def
