@@ -94,6 +94,8 @@ class SptEvalGUI(QtWidgets.QWidget):
 		self.bt_plotParms.clicked[bool].connect(self.plot_params)
 
 		self.paramplot = EMPlot2DWidget()
+		self.paramplot.show()
+		self.paramplot.hide()
 		
 		self.bt_plotFSC=QtWidgets.QPushButton("PlotFSCs")
 		self.bt_plotFSC.setToolTip("Examine tightly masked FSCs from this SPT refinement")
@@ -101,6 +103,8 @@ class SptEvalGUI(QtWidgets.QWidget):
 		self.bt_plotFSC.clicked[bool].connect(self.plot_fscs)
 
 		self.fscplot = EMPlot2DWidget()
+		self.fscplot.show()
+		self.fscplot.hide()
 
 		self.setspanel=TomoListWidget(self)
 		self.gbl.addWidget(self.setspanel, 5,1,5,2)
@@ -169,7 +173,7 @@ class SptEvalGUI(QtWidgets.QWidget):
 		flds=[f for f in os.listdir('.') if (os.path.isdir(f) and f.startswith("{}_".format(sfx)))]
 		flds=sorted(flds)
 		for f in flds:
-			dic={"ID":int(f[len(sfx)+1:])}
+			dic={"ID": f[len(sfx)+1:]}
 			jsfile="{}/0_{}_params.json".format(f, self.paramfile[sfx])
 			if not os.path.isfile(jsfile):
 				continue

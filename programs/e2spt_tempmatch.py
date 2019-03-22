@@ -31,11 +31,16 @@ def main():
 
 	parser.add_argument("--delta", type=float,help="delta angle", default=30.0, guitype='floatbox', row=5, col=0,rowspan=1, colspan=1, mode="boxing")
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox', row=5, col=1,rowspan=1, colspan=1, mode="boxing")
+	
+	parser.add_argument("--rmedge", action="store_true",help="Remove particles on the edge.", default=False, guitype='boolbox', row=6, col=0,rowspan=1, colspan=1, mode="boxing[True]")
+	parser.add_argument("--rmgold", action="store_true",help="Remove particles near gold fiducial.", default=False, guitype='boolbox', row=6, col=1,rowspan=1, colspan=1, mode="boxing[True]")
+
 
 	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
+
 	time0=time.time()
 
 	tmpname=options.reference #args[1]
@@ -54,8 +59,9 @@ def main():
 		nbin=int(img["nx"]//500)
 		print("Will shrink tomogram by {}".format(nbin))
 		img.process_inplace("math.meanshrink",{'n':nbin})
+		tomo=img.copy()
 		img.mult(-1)
-		img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
+		img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4})
 		img.process_inplace('normalize')
 		img.process_inplace('threshold.clampminmax.nsigma', {"nsigma":1})
 		
@@ -64,6 +70,7 @@ def main():
 		print("Will shrink reference by {:.1f}".format(mbin))
 		m.process_inplace("math.fft.resample",{'n':mbin})
 		m.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
+		m.process_inplace("mask.soft",{"outer_radius":-2})
 		m.process_inplace('normalize')
 		sz=m["nx"]
 		if options.dthr<0:
@@ -97,9 +104,36 @@ def main():
 		cbin=ccc.process("math.maxshrink", {"n":2})
 		msk=cbin.copy()
 		msk.to_one()
-		#msk.process_inplace("mask.cylinder",{"outer_radius":128-8, "phirange":360})
-		msk.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.03})
-		cbin.mult(msk)
+		
+		if options.rmedge:
+			try:
+				js=js_open_dict(info_name(fname))
+				tpm=np.array(js["tlt_params"])
+				js.close()
+				rt=np.mean(tpm[:,2])
+			except:
+				rt=0
+
+			msk.process_inplace("mask.zeroedge3d",{"x0":10,"x1":10,"y0":10,"y1":10,"z0":10,"z1":10})
+			msk.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.1})
+			msk.rotate(0,0,-rt)
+			
+			cbin.mult(msk)
+		
+		if options.rmgold:
+			tomo.process_inplace("math.meanshrink",{"n":2})
+			tomo.process_inplace("normalize")
+			tomo.mult(-1)
+			tomo.process_inplace("threshold.binary",{"value":10})
+			tomo.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
+			tomo.process_inplace("normalize.edgemean")
+			tomo=1-tomo
+			
+			cbin.mult(tomo)
+		
+		cbin.process_inplace("threshold.belowtozero")
+		cbin.process_inplace("normalize.edgemean")
+		cbin.write_image("ccc.hdf")
 		#cbin.write_image("tmp0.hdf")
 		#msk.write_image("tmp1.hdf")
 		cc=cbin.numpy().copy()
@@ -148,7 +182,8 @@ def main():
 			apix_unbin=js["apix_unbin"]
 			apix=e["apix_x"]
 			shp=np.array([e["nz"], e["ny"], e["nx"]])
-			boxsz=int(np.round(sz*nbin*apix/apix_unbin))
+			#print(sz,nbin,apix, apix_unbin)
+			boxsz=int(np.round(sz*apix/apix_unbin))
 			box=(pts*2-shp/2)*apix/apix_unbin
 			bxs.extend([[p[2], p[1],p[0], 'tm', scr[i] ,kid] for i,p in enumerate(box[:n])])
 			

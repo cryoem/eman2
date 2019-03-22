@@ -1891,8 +1891,13 @@ void EMData::insert_scaled_sum(EMData *block, const FloatPoint &center,
 			for (int y=y0; y<=y1; y++) {
 				for (int z=z0; z<=z1; z++) {
 					idx = x + y * nx + (size_t)z * nx * ny;
-					data[idx] +=
+					if (scale==1) // skip interpolation so it is much faster
+						data[idx] +=
+						mult_factor*block->sget_value_at((x-center[0])+bx,(y-center[1])+by,(z-center[2])+bz);
+					else
+						data[idx] +=
 						mult_factor*block->sget_value_at_interp((x-center[0])/scale+bx,(y-center[1])/scale+by,(z-center[2])/scale+bz);
+					
 				}
 			}
 		}

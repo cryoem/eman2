@@ -92,7 +92,7 @@ def main():
 
 	parser.add_argument("--invert",action="store_true",help="Invert the contrast before importing tomograms",default=False, guitype='boolbox', row=5, col=0, rowspan=1, colspan=1, mode='tomos,rawtilts,tiltseries')
 	#parser.add_argument("--tomoseg_auto",action="store_true",help="Default process for tomogram segmentation, including lowpass, highpass, normalize, clampminmax.",default=True, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='tomos,rawtilts,tiltseries')
-	parser.add_argument("--shrink",type=int,help="Shrink tomograms before importing. Does not work while not copying.",default=1.0, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode='tomos')
+	parser.add_argument("--shrink",type=int,help="Shrink tomograms before importing. Does not work while not copying.",default=1, guitype='intbox', row=6, col=0, rowspan=1, colspan=1, mode='tomos')
 	#parser.add_argument("--preprocess",type=str,help="Other pre-processing operation before importing tomograms. Dose not work while not copying.",default="", guitype='strbox', row=6, col=0, rowspan=1, colspan=2, mode='tomos,rawtilts,tiltseries')
 
 	parser.add_argument("--import_boxes",action="store_true",help="Import boxes",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='coords[True]')

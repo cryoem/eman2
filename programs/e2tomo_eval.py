@@ -75,7 +75,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		
 		self.wg_thumbnail=EMImage2DWidget(parent=self)
 		self.wg_thumbnail.set_scale(1)
-		self.wg_thumbnail_width=old_div(self.size().width(),3)*.9
+		self.wg_thumbnail_width=int(self.size().width()/3*.9)
 		self.wg_thumbnail.resize(self.wg_thumbnail_width,self.wg_thumbnail_width)
 		#print self.wg_thumbnail_width
 		self.wg_thumbnail.setMinimumHeight(330)
@@ -141,6 +141,9 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		self.wg_notes.textChanged.connect(self.noteupdate)
 		
 		self.wg_plot2d=EMPlot2DWidget()
+		self.wg_plot2d.show()
+		self.wg_plot2d.hide()
+		
 		
 		self.update_files()
 
@@ -251,7 +254,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 			for kname in list(info["boxcls"].keys()):
 				if self.ptclcls[kname][0]==1:
 					nbox+=info["boxcls"][kname]
-			nbox+=len(info["curves"])
+			#nbox+=len(info["curves"])
 			it=QtWidgets.QTableWidgetItem()
 			it.setData(Qt.EditRole, int(nbox))
 			self.imglst.setItem(i,2, it)
@@ -341,7 +344,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		if modifiers == QtCore.Qt.ShiftModifier:
 			subprocess.Popen("e2tomo_drawcurve.py {} --ppid {}".format(info["filename"], os.getpid()),shell=True)
 		else:
-			subprocess.Popen("e2spt_boxer22.py {} --ppid {}".format(info["filename"], os.getpid()),shell=True)
+			subprocess.Popen("e2spt_boxer.py {} --ppid {}".format(info["filename"], os.getpid()),shell=True)
 		#launch_childprocess()
 
 	#def clickset(self, item):
@@ -398,6 +401,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		self.wg_plot2d.close()
 		self.wg_thumbnail.close()
 		self.wg_2dimage.close()	
+		self.wg_tltimage.close()
 		
 class TomoListWidget(QtWidgets.QListWidget):
 	def __init__(self, parent=None):

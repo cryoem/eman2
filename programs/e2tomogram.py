@@ -103,6 +103,8 @@ def main():
 		opt=opt.replace("--alltiltseries","")
 		for a in args:
 			run("{} {} {}".format(cmd[0], a, opt))
+			
+		E2end(logid)
 		return
 		
 		
@@ -144,6 +146,7 @@ def main():
 	img=None
 	
 	options.apix_init=float(imgs[0]["apix_x"])
+	
 	#### need to make sure this works for images of all sizes (2k, 4k 8k)
 	## the translation numbers used in this program are based on 2k tomograms. so binfac is the factor from the input to 2k images
 	#binfac=max(1, int(np.round(imgs[0]["nx"]/2048.)))
@@ -181,7 +184,7 @@ def main():
 	for p in imgs_1k:
 		m=p.process("math.meanshrink", {"n":2})
 		m.process_inplace("filter.ramp")
-		m.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
+		m.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.3})
 		m.process_inplace("normalize.edgemean")
 		m.process_inplace("filter.highpass.gauss",{"cutoff_pixels":5})
 		m["apix_x"]=m["apix_y"]=p["apix_x"]*2.
@@ -204,7 +207,7 @@ def main():
 		for i,m in enumerate(imgs_1k):
 			m.write_image(inppath, i)
 		
-	loss0=np.zeros(num) ### this is used to exclude bad tilt. in case the user ask 0 iterations..
+	
 	if options.load:
 		#### loading parameters from json file
 		jsname=info_name(options.inputname)
@@ -239,7 +242,7 @@ def main():
 				return
 		else: 
 			#### parse tilt step
-			tlts=np.arange(old_div(-len(imgs_2k)*options.tltstep,2),old_div(len(imgs_2k)*options.tltstep,2),options.tltstep)
+			tlts=np.arange(-len(imgs_2k)*options.tltstep//2,len(imgs_2k)*options.tltstep//2,options.tltstep)
 		
 		if options.writetmp: np.savetxt(options.tmppath+"rawtilt.txt", tlts)
 		
@@ -252,20 +255,25 @@ def main():
 		#### here we always assume the center tilt is at 0 degree
 		tlts-=tlts[options.zeroid]
 		
-		#### course alignment
-		img_tali, pretrans=calc_global_trans(imgs_500, options)
-		if options.writetmp:
-			for i,m in enumerate(img_tali):
-				m.write_image(options.tmppath+"tltseries_transali.hdf", i)
 		
-		#return
+		
 		#### estimate initial tilt axis by common line
 		if options.tltax==None:
+			#### do an initial course alignment before common line
+			img_tali, pretrans=calc_global_trans(imgs_500, options)
 			tltax=calc_tltax_rot(img_tali, options)
 			options.tltax=tltax
 		else:
+			### it turns out there is a sign difference between serialem and eman...
 			tltax=-options.tltax
+			options.tltax=tltax
 		print("tilt axis:  {:.2f}".format(tltax))
+		
+		#### a second round of course alignment, using the rotation axis information...
+		img_tali, pretrans=calc_global_trans(imgs_500, options, tltax=options.tltax, tlts=tlts)
+		if options.writetmp:
+			for i,m in enumerate(img_tali):
+				m.write_image(options.tmppath+"tltseries_transali.hdf", i)
 		
 		#### this is the matrix that save the alignment parameters
 		pretrans*=img_tali[0]["apix_x"]/options.apix_init  #### since the pretrans is calculated from 500x500 images..
@@ -275,7 +283,8 @@ def main():
 		ttparams[:,2]=tltax # rot
 		ttparams[:,3]=tlts.copy() # ytilt
 		ttparams[:,4]=0 # off axis tilt
-		
+	
+	loss0=abs(ttparams[:,3]) ### this is used to exclude bad tilt. in case the user ask 0 iterations..
 	pks=np.zeros((options.npk, 3))
 	#### pack parameters together so it is easier to pass around
 	allparams=np.hstack([ttparams.flatten(), pks.flatten()])
@@ -308,7 +317,7 @@ def main():
 		imgs_, n_m3d, options.fidkeep, rfseq = siter
 		if n_m3d==0: continue
 		apix=float(imgs_[0]["apix_x"])
-		binx=apix//options.apix_init
+		binx=np.round(apix/options.apix_init)
 		print("\n******************************")
 		print("Iteration {}. Refining alignment on bin{:.0f} images...".format(niter, binx))
 		print("Image size {} x {}, Apix {:.2f}".format(imgs_[0]["nx"], imgs_[0]["ny"], apix))
@@ -324,7 +333,7 @@ def main():
 			name_ptclali=path+"ptclali_{:02d}.hdf".format(niter)
 		else:
 			name_tomo=name_sample=name_ali=name_ptclali=None
-			
+		
 		#### make tomogram loop
 		for m3diter in range(n_m3d):
 
@@ -341,6 +350,9 @@ def main():
 
 			if niter==0 and m3diter==0 and options.writetmp:
 				make_samples(imgs_, allparams, options, outname=path+"samples_init.hdf", refinepos=True);
+				
+			#ptclpos=ali_ptcls(imgs_, allparams, options, outname=name_ptclali, doali=True)
+			#exit()
 
 			#### Now actually refine the alignment parameters using the landmarks.
 			for idx in rfseq:
@@ -500,7 +512,7 @@ def get_xf_pos(tpm, pk):
 
 
 #### coarse translational alignment
-def calc_global_trans(imgs, options, excludes=[]):
+def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 	print("Doing coarse translational alignment...")
 
 	num=len(imgs)
@@ -510,8 +522,8 @@ def calc_global_trans(imgs, options, excludes=[]):
 	rmsk=sz//3
 	e0=imgs[options.zeroid].copy()
 	e0.clip_inplace(Region(e0["nx"]//2-sz//2, e0["ny"]//2-sz//2, sz,sz))
-	#e0.process_inplace("filter.highpass.gauss",{"cutoff_pixels":10})
 	e0.process_inplace("mask.soft",{"outer_radius":sz//4,"width":sz//10})
+		
 	e0["xform.align2d"]=Transform()
 	imgout[options.zeroid]=e0
 
@@ -526,7 +538,17 @@ def calc_global_trans(imgs, options, excludes=[]):
 			e0=imgout[options.zeroid+i*dr]
 			e1=imgs[nid].copy()
 			lastx=pretrans[options.zeroid+i*dr]
-			e1.process_inplace("mask.soft",{"outer_radius":sz//4,"width":sz//10})
+			if tltax==None:
+				e1.process_inplace("mask.soft",{"outer_radius":sz//4,"width":sz//10})
+				
+			else:
+				rx=np.cos(tlts[nid]*np.pi/180.)
+				msk=EMData(e1["nx"], e1["ny"])
+				msk.process_inplace("testimage.ellipsoid", {"a":rx*sz//4,"b":sz//4,"fill":1,"transform":Transform({"type":"2d","alpha":tltax})})
+				msk.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.01})
+				#m=msk.process("mask.gaussian.nonuniform",{"radius_x":sz//4, "radius_y":ry*sz//4, "gauss_width":0.4})
+				e1.mult(msk)
+				
 			e1.clip_inplace(Region(e1["nx"]//2-sz//2-lastx[0], e1["ny"]//2-sz//2-lastx[1], sz,sz))
 			#e1.process_inplace("filter.highpass.gauss",{"cutoff_pixels":10})
 
@@ -540,7 +562,6 @@ def calc_global_trans(imgs, options, excludes=[]):
 				if c1<c0*4:
 					print("Bad tilt image at {}  ".format(nid), c0, c1)
 					xf=e1b["xform.align2d"]
-					#exit()
 				
 
 			xf.translate(lastx[0], lastx[1], 0)
@@ -668,8 +689,8 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	print("Using {} out of {} tilts..".format(len(nrange), num))
 
 	outxy=1024*b
-	step=128*b #### distance between each tile
-	sz=step*2 #### this is the output 3D size 
+	sz=max(int(clipz*0.8), 256*b) #### this is the output 3D size 
+	step=sz//2 #### distance between each tile
 	if options.extrapad:
 		pad=good_boxsize(sz*2) #### this is the padded size in fourier space
 	else:
@@ -682,22 +703,10 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 
 	#### we make 2 tomograms with half a box shift and average them together to compensate for boundary artifacts.
 	mem=(outxy*outxy*outz*4+pad*pad*pad*options.threads*4)
-	print("This will take {}x{}x{}x4 + {}x{}x{}x{}x4 = {:.1f} GB of memory memory...".format(outxy, outxy, outz, pad, pad, pad,options.threads, mem/1024**3))
-	#try:
-		#import psutil
-		#memaval=psutil.virtual_memory()
-		#if mem>memaval.total:
-			#print("Not enough memory. Exit.")
-			#exit()
-	
-	#except:
-		#pass
+	print("This will take {}x{}x{}x4 + {}x{}x{}x{}x4 = {:.1f} GB of memory...".format(outxy, outxy, outz, pad, pad, pad,options.threads, mem/1024**3))
 	
 	
-	#full3d=[EMData(outxy, outxy, outz) for i in [0,1]]
 	full3d=EMData(outxy, outxy, outz)
-	#wt=full3d.copy()
-	#wt.to_zero()
 	
 	jsd=queue.Queue(0)
 	jobs=[]
@@ -790,7 +799,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 #### reconstruct tomogram...
 def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[], clipz=-1):
 	num=len(imgs)
-	scale=old_div(imgs[0]["apix_x"],options.apix_init)
+	scale=imgs[0]["apix_x"]/options.apix_init
 	print("Making bin{:d} tomogram...".format(int(np.round(scale))))
 	ttparams=tltpm.copy()
 	ttparams[:,:2]/=scale
@@ -813,7 +822,7 @@ def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[], clip
 	pad=good_size(outxy*padr)
 	#############
 	#clipz=options.clipz
-	zthick=good_size(pad//2)
+	zthick=good_size(max(clipz*1.2, pad//2))
 	if options.verbose:
 		print("\t Image size: {:d} x {:d}".format(nx, ny))
 		print("\tPadded volume to: {:d} x {:d} x {:d}".format(pad, pad, zthick))

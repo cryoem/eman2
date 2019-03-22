@@ -264,7 +264,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.set_data(data)
 
 		# Boxviewer subwidget (details of a single box)
-		self.boxviewer=EMBoxViewer()
+		#self.boxviewer=EMBoxViewer()
 		#self.app().attach_child(self.boxviewer)
 
 		# Boxes Viewer (z projections of all boxes)
@@ -801,7 +801,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 #		print "del ",n
 		if n<0 or n>=len(self.boxes): return
 
-		if self.boxviewer.get_data(): self.boxviewer.set_data(None)
+		#if self.boxviewer.get_data(): self.boxviewer.set_data(None)
 		self.curbox=-1
 		self.do_deletion([n])
 
@@ -1137,7 +1137,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		name=parse_setname(name)
 		self.sets_visible[name]=0
 		#self.currentset=name
-		self.wboxsize.setValue(self.get_boxsize())
+		#self.wboxsize.setValue(self.get_boxsize())
 		if self.initialized: 
 			self.update_all()
 			self.update_boximgs()
@@ -1231,7 +1231,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		print("Exiting")
 		self.SaveJson()
 		
-		self.boxviewer.close()
+		#self.boxviewer.close()
 		self.boxesviewer.close()
 		self.optionviewer.close()
 		self.xyview.close()
@@ -1423,15 +1423,17 @@ class EMTomoSetsPanel(QtWidgets.QWidget):
 				#break
 
 	def set_list_row_changed(self,i):
+		#print(i)
 		if not self.initialized: return 
 		a = self.setlist.item(i)
 		if a==None : return
 		name = str(a.text())
 		self.target().set_current_set(name)
-		self.update_sets()
+		#self.update_sets()
 
 	def set_list_item_changed(self,item):
 		name=str(item.text())
+		#print(name)
 		if item.checkState() == Qt.Checked : 
 			self.target().show_set(name)
 		else: 
@@ -1443,11 +1445,10 @@ class EMTomoSetsPanel(QtWidgets.QWidget):
 		if len(selections)==0 : return
 		names=[str(i.text()) for i in selections]
 		cancel=QtWidgets.QMessageBox.question(self, "Delete set", "Are you sure to delete {}? This will remove all particles in that class".format(names[0]),QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
-		if cancel==QtWidgets.QMessageBox.Yes : cancel=1
-		else: cancel=0
-		if not cancel:
+		#print(cancel, QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+		if cancel==QtWidgets.QMessageBox.Yes :
 			self.target().delete_set(names[0])
-		self.update_sets()
+			self.update_sets()
 
 
 	def new_set(self,unused=None):

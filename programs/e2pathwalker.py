@@ -550,7 +550,8 @@ class PathWalker(object):
 		f.write(lkh)
 		f.close()
 
-		self.write_tsplib(filename=tspfile)
+		self.write_tsplib(filename="test.tsp")#tspfile)
+		print("aaaaaaaaaaaa")
 		
 		args =' '.join(['LKH',lkhfile])
 		print(args)
