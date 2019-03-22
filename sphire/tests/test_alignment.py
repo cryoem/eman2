@@ -287,12 +287,17 @@ class Test_ang_n(unittest.TestCase):
             fu.ang_n()
             oldfu.ang_n()
 
-    def test_C2(self):
+    def test_Full_mode(self):
         return_new = fu.ang_n(2, 'f', 3)
         return_old = oldfu.ang_n(2, 'f', 3)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_D2(self):
+    def test_null_max_ring_ZeroDivisionError(self):
+        with self.assertRaises(ZeroDivisionError):
+            fu.ang_n(3, 'f', 0)
+            oldfu.ang_n(3, 'f', 0)
+
+    def test_Half_mode(self):
         return_new = fu.ang_n(2, 'not_f', 3)
         return_old = oldfu.ang_n(2, 'not_f', 3)
         self.assertTrue(numpy.array_equal(return_new, return_old))
@@ -306,8 +311,11 @@ class Test_log2(unittest.TestCase):
             fu.log2()
             oldfu.log2()
 
-    def test_C3(self):
+    def test_positive_number(self):
         self.assertEqual(fu.log2(10),oldfu.log2(10))
+
+    def test_null_number(self):
+        self.assertEqual(fu.log2(0),oldfu.log2(0))
 
 
 
@@ -323,12 +331,12 @@ class Test_Numrinit(unittest.TestCase):
             fu.Numrinit(2, 5, skip=0, mode="F")
             oldfu.Numrinit(2, 5, skip=0,mode="F")
 
-    def test_C4(self):
+    def test_Full_mode(self):
         return_new = fu.Numrinit(2, 5, skip=1, mode="F")
         return_old = oldfu.Numrinit(2, 5, skip=1, mode="F")
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_D4(self):
+    def test_Half_mode(self):
         return_new = fu.Numrinit(2, 5, skip=1, mode="not_F")
         return_old = oldfu.Numrinit(2, 5, skip=1, mode="not_F")
         self.assertTrue(numpy.array_equal(return_new, return_old))
@@ -348,12 +356,12 @@ class Test_ringwe(unittest.TestCase):
             fu.ringwe([], mode="F")
             oldfu.ringwe([], mode="F")
 
-    def test_C5(self):
+    def test_Full_mode(self):
         return_new = fu.ringwe(self.argum[0][0], mode="F")
         return_old = oldfu.ringwe(self.argum[0][0], mode="F")
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_D5(self):
+    def test_Half_mode(self):
         return_new = fu.ringwe(self.argum[0][0], mode="not_F")
         return_old = oldfu.ringwe(self.argum[0][0], mode="not_F")
         self.assertTrue(numpy.array_equal(return_new, return_old))
@@ -418,20 +426,20 @@ class Test_ornq(unittest.TestCase):
             fu.ornq(image, crefim, xrng, yrng, 0, mode, numr, cnx, cny, deltapsi = 0.0)
             oldfu.ornq(image, crefim, xrng, yrng, 0, mode, numr, cnx, cny, deltapsi = 0.0)
 
-    def test_C6(self):
+    def test_Half_mode(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0] #mode is H
         return_new = fu.ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         return_old = oldfu.ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_C6_2(self):
+    def test_Full_mode(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         mode ='f'
         return_new = fu.ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         return_old = oldfu.ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_C6_with_invalid_mode(self):
+    def test_invalid_mode(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         mode ='invalid'
         return_new = fu.ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
@@ -464,12 +472,6 @@ class Test_ormq(unittest.TestCase):
             fu.ormq()
             oldfu.ormq()
 
-    def test_F7_G7_H7(self):
-        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]  # mode is F
-        return_new = fu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
-        return_old = oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-
     def test_empty_list1(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
         xrng=[]
@@ -499,7 +501,13 @@ class Test_ormq(unittest.TestCase):
             fu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
             oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
 
-    def test_F7_G7_H7_2(self):
+    def test_Full_mode(self):
+        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]  # mode is F
+        return_new = fu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
+        return_old = oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_Half_mode(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
         mode ='H'
         return_new = fu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
@@ -512,31 +520,31 @@ class Test_ormq(unittest.TestCase):
         return_old = oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, -5, -5, delta)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_F7_G7_H7_with_invalid_mode(self):
+    def test_with_invalid_mode(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
         mode ='invalid'
         return_new = fu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
         return_old = oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_C7_D7_E7(self):
+    def test_Full_mode_and_zero_delta(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
-        return_new = fu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
-        return_old = oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
+        return_new = fu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0)
+        return_old = oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_C7_D7_E7_2(self):
+    def test_Half_mode_and_zero_delta(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
         mode = 'H'
-        return_new = fu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
-        return_old = oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
+        return_new = fu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0)
+        return_old = oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_C7_D7_E7_with_invalid_mode(self):
+    def test_with_invalid_mode_and_zero_delta(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
         mode = 'invalid'
-        return_new = fu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
-        return_old = oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
+        return_new = fu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0)
+        return_old = oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
 
@@ -584,15 +592,23 @@ class Test_prepref(unittest.TestCase):
             fu.prepref(data, None, cnx, cny, [], mode = 'f', maxrangex = 4, maxrangey = 4, step =step)
             oldfu.prepref(data, None, cnx, cny, [], mode = 'f', maxrangex = 4, maxrangey = 4, step =step)
 
-    def test_C9(self):
+    def test_full_mode_without_mask(self):
         """
         The output is an array of array of image. Without the TOLERANCE  even if I compare 2 results got launching the same function the test fail
         """
         (data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         return_new = fu.prepref(data, None, cnx, cny, numr, mode = 'f', maxrangex = 4, maxrangey = 4, step =step)
         return_old = oldfu.prepref(data, None, cnx, cny, numr, mode = 'f', maxrangex = 4, maxrangey = 4, step =step)
-        self.assertEqual(len(return_old),len(return_new))
         self.test_all_the_conditions(return_new,return_old,False)
+
+    def test_half_mode_without_mask(self):
+        """
+        The output is an array of array of image. Without the TOLERANCE  even if I compare 2 results got launching the same function the test fail
+        """
+        (data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
+        return_new = fu.prepref(data, None, cnx, cny, numr, mode = 'H', maxrangex = 4, maxrangey = 4, step =step)
+        return_old = oldfu.prepref(data, None, cnx, cny, numr, mode = 'H', maxrangex = 4, maxrangey = 4, step =step)
+        self.test_all_the_conditions(return_new, return_old, False)
 
     def test_withBadMask_error(self):
         """
@@ -604,7 +620,7 @@ class Test_prepref(unittest.TestCase):
             fu.prepref(data, mask, cnx, cny, numr, mode = 'f', maxrangex = 4, maxrangey = 4, step =step)
             oldfu.prepref(data, mask, cnx, cny, numr, mode = 'f', maxrangex = 4, maxrangey = 4, step =step)
 
-    def test_C9_withMask(self):
+    def test_Full_mode_withMask(self):
         """
         The output is an array of array of image. Without the TOLERANCE  even if I compare 2 results got launching the same function the test fail
         """
@@ -613,27 +629,26 @@ class Test_prepref(unittest.TestCase):
         mask = sparx_utilities.model_circle(nx//2-1,nx,nx)
         return_new = fu.prepref(data, mask, cnx, cny, numr, mode = 'f', maxrangex = 4, maxrangey = 4, step =step)
         return_old = oldfu.prepref(data, mask, cnx, cny, numr, mode = 'f', maxrangex = 4, maxrangey = 4, step =step)
-        self.assertEqual(len(return_old),len(return_new))
         self.test_all_the_conditions(return_new,return_old,False)
 
-    def test_C9_2(self):
+    def test_Half_mode_withMask(self):
         """
         The output is an array of array of image. Without the TOLERANCE  even if I compare 2 results got launching the same function the test fail
         """
         (data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
-        return_new = fu.prepref(data, None, cnx, cny, numr, mode = 'H', maxrangex = 4, maxrangey = 4, step =step)
-        return_old = oldfu.prepref(data, None, cnx, cny, numr, mode = 'H', maxrangex = 4, maxrangey = 4, step =step)
-        self.assertEqual(len(return_old),len(return_new))
-        self.test_all_the_conditions(return_new, return_old, False)
+        nx = data[0].get_xsize()
+        mask = sparx_utilities.model_circle(nx//2-1,nx,nx)
+        return_new = fu.prepref(data, mask, cnx, cny, numr, mode = 'H', maxrangex = 4, maxrangey = 4, step =step)
+        return_old = oldfu.prepref(data, mask, cnx, cny, numr, mode = 'H', maxrangex = 4, maxrangey = 4, step =step)
+        self.test_all_the_conditions(return_new,return_old,False)
 
-    def test_C9_with_invalid_mode(self):
+    def test_with_invalid_mode(self):
         """
         The output is an array of array of image. Without the TOLERANCE  even if I compare 2 results got launching the same function the test fail
         """
         (data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         return_new = fu.prepref(data, None, cnx, cny, numr, mode = 'not_valid', maxrangex = 4, maxrangey = 4, step =step)
         return_old = oldfu.prepref(data, None, cnx, cny, numr, mode = 'not_valid', maxrangex = 4, maxrangey = 4, step =step)
-        self.assertEqual(len(return_old),len(return_new))
         self.test_all_the_conditions(return_new, return_old, False)
 
 
@@ -911,7 +926,7 @@ class Test_ali_vol_func(unittest.TestCase):
             fu.ali_vol_func(param,self.data)
             oldfu.ali_vol_func(param, self.data)
 
-    def test_C13(self):
+    def test_ali_vol_func(self):
         return_new = fu.ali_vol_func(self.param, self.data)
         return_old = oldfu.ali_vol_func(self.param, self.data)
         self.assertTrue(numpy.array_equal(return_new, return_old))
@@ -984,25 +999,25 @@ class Test_align2d(unittest.TestCase):
             fu.align2d(image, refim, xrng=[0, 0], yrng=[], step=0, first_ring=1, last_ring=0, rstep=1, mode = "F")
             oldfu.align2d(image, refim, xrng=[0, 0], yrng=[], step=0, first_ring=1, last_ring=0, rstep=1, mode = "F")
 
-    def test_C14(self):
+    def test_Full_mode_zero_lastRing(self):
         (image, refim, xrng, yrng) = self.argum[0]
         return_new = fu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
         return_old = oldfu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_D14(self):
-        (image, refim, xrng, yrng) = self.argum[0]
-        return_new = fu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=2, rstep=1, mode = "F")
-        return_old = oldfu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=2, rstep=1, mode = "F")
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-
-    def test_C14_2(self):
+    def test_Half_mode_zero_lastRing(self):
         (image, refim, xrng, yrng) = self.argum[0]
         return_new = fu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "H")
         return_old = oldfu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "H")
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_D14_2(self):
+    def test_Full_mode(self):
+        (image, refim, xrng, yrng) = self.argum[0]
+        return_new = fu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=2, rstep=1, mode = "F")
+        return_old = oldfu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=2, rstep=1, mode = "F")
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_Half_mode(self):
         (image, refim, xrng, yrng) = self.argum[0]
         return_new = fu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=2, rstep=1, mode = "H")
         return_old = oldfu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=2, rstep=1, mode = "H")
@@ -1168,12 +1183,12 @@ class Test_parabl(unittest.TestCase):
         return_old = oldfu.parabl(EMData())
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_D17(self):
+    def test_peak_found(self):
         return_new = fu.parabl(self.argum[0][0])
         return_old = oldfu.parabl(self.argum[0][0])
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_C17(self):
+    def test_No_peak_found(self):
         Z=self.argum[0][0]
         for i in range(3):
             for j in range(3):
@@ -1271,22 +1286,18 @@ class Test_search_range(unittest.TestCase):
             fu.search_range()
             oldfu.search_range()
 
-    def test_D19(self):
+    def test_search_range(self):
         (n, radius, shift, range_, location) = self.argum[0]
-
-        return_new = fu.search_range(n, radius, shift, range_)
-        return_old = oldfu.search_range(n, radius, shift, range_)
-
+        return_new = fu.search_range(n, radius, shift, range_, location = "")
+        return_old = oldfu.search_range(n, radius, shift, range_, location = "")
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-
-    def test_C19(self):
+    def test_no_image_size_warning(self):
         (n, radius, shift, range_, location) = self.argum[0]
-
-        return_new = fu.search_range(0, radius, shift, range_)
-        return_old = oldfu.search_range(0, radius, shift, range_)
-
+        return_new = fu.search_range(0, radius, shift, range_, location = "")
+        return_old = oldfu.search_range(0, radius, shift, range_, location = "")
         self.assertTrue(numpy.array_equal(return_new, return_old))
+
 
 
 class Test_generate_list_of_reference_angles_for_search(unittest.TestCase):
@@ -1296,14 +1307,14 @@ class Test_generate_list_of_reference_angles_for_search(unittest.TestCase):
             fu.generate_list_of_reference_angles_for_search()
             oldfu.generate_list_of_reference_angles_for_search()
 
-    def test_C20(self):
+    def test_c5Sym(self):
         nsym = 5
         symangles = [[0.0, 0.0, k * 360. / nsym] for k in range(nsym)]
         return_new = fu.generate_list_of_reference_angles_for_search(symangles, 'c5')
         return_old = oldfu.generate_list_of_reference_angles_for_search(symangles, 'c5')
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_D20(self):
+    def test_c1Sym(self):
         nsym = 5
         symangles = [[0.0, 0.0, k * 360. / nsym] for k in range(nsym)]
         return_new = fu.generate_list_of_reference_angles_for_search(symangles, 'c1')
