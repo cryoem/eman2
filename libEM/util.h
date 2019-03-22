@@ -532,6 +532,17 @@ namespace EMAN
 		{
 			return (1-t) * p1 + t  * p2;
 		}
+		
+		/** Calculate linear interpolation.
+		 * @param[in] p1 The first number. corresponding to (x0,y0).
+		 * @param[in] p2 The second number. corresponding to (x1,y0).
+		 * @param[in]  t (x-x1)/(x2-x1)
+		 * @return The bilinear interpolation value.
+		 */
+		static inline std::complex<float> linear_interpolate_cmplx(std::complex<float> p1, std::complex<float> p2, float t)
+		{
+			return (1.0f-t) * p1 + t * p2;
+		}
 
 		/** Calculate bilinear interpolation.
 		 * @param[in] p1 The first number. corresponding to (x0,y0).
