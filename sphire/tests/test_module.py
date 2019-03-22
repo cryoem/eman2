@@ -2,8 +2,10 @@
 helper function used in the tests
 List:
 1) create_kb --> create a Kaiser Bessel filter
-
-
+2) get_data --> create a list of 2d EMdata image
+3) get_data_3d --> create a list of 3d EMdata image
+4) get_arg_from_pickle_file --> returns the values saved in a given pickle file
+5) remove_dir --> removed a given directory with its files
 """
 
 import numpy
