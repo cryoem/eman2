@@ -7,7 +7,8 @@ from copy import deepcopy
 from EMAN2_cppwrap import EMData,Util
 import unittest
 from os import path
-from cPickle import load as pickle_load
+
+from test_module import get_data, get_arg_from_pickle_file
 
 from ..libpy import sparx_fundamentals
 from ..libpy import sparx_utilities
@@ -22,34 +23,9 @@ ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 print(ABSOLUTE_PATH)
 
 
-def get_data(num,dim = 10):
-    data_list = []
-    for i in range(num):
-        a = EMData(dim, dim)
-        data_a = a.get_3dview()
-        data_a[...] = numpy.arange(dim * dim, dtype=numpy.float32).reshape(dim, dim) + i
-        data_list.append(a)
-    return data_list
-
-
-def get_data_3d(num, dim=10):
-    data_list = []
-    for i in range(num):
-        a = EMData(dim, dim,dim)
-        data_a = a.get_3dview()
-        data_a[...] = numpy.arange(dim * dim * dim, dtype=numpy.float32).reshape(dim, dim, dim) + i
-        data_list.append(a)
-
-    return data_list
-
-
-def get_arg_from_pickle_files(filepath):
-    with open(filepath, 'rb') as rb:
-        return pickle_load(rb)
-
 
 class Test_ali2d_single_iter(unittest.TestCase):
-    argum = get_arg_from_pickle_files(path.join(ABSOLUTE_PATH, "pickle files/alignment.ali2d_single_iter"))
+    argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.ali2d_single_iter"))
 
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError):
@@ -360,7 +336,7 @@ class Test_Numrinit(unittest.TestCase):
 
 
 class Test_ringwe(unittest.TestCase):
-    argum = get_arg_from_pickle_files(path.join(ABSOLUTE_PATH, "pickle files/alignment.ringwe"))
+    argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.ringwe"))
 
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError):
@@ -385,7 +361,7 @@ class Test_ringwe(unittest.TestCase):
 
 
 class Test_ornq(unittest.TestCase):
-    argum = get_arg_from_pickle_files(path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq"))
+    argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq"))
 
     @unittest.skip("\n***************************\n\t\t 'Test_ornq.test_empty_input_image' because: interrupted by signal 11: SIGSEGV\n***************************")
     def test_empty_input_image(self):
@@ -465,7 +441,7 @@ class Test_ornq(unittest.TestCase):
 
 
 class Test_ormq(unittest.TestCase):
-    argum = get_arg_from_pickle_files(path.join(ABSOLUTE_PATH, "pickle files/alignment.ormq"))
+    argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.ormq"))
 
     @unittest.skip("\n***************************\n\t\t 'Test_ormq.test_empty_input_image' because: interrupted by signal 11: SIGSEGV\n***************************")
     def test_empty_input_image(self):
@@ -566,7 +542,7 @@ class Test_ormq(unittest.TestCase):
 
 
 class Test_prepref(unittest.TestCase):
-    argum = get_arg_from_pickle_files(path.join(ABSOLUTE_PATH, "pickle files/alignment.ali2d_single_iter"))
+    argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.ali2d_single_iter"))
 
     def test_all_the_conditions(self,return_new=None,return_old=None, skip=True):
         if skip is False:
@@ -776,7 +752,7 @@ class Test_prepare_refrings(unittest.TestCase):
 
 
 class Test_proj_ali_incore(unittest.TestCase):
-    argum = get_arg_from_pickle_files(path.join(ABSOLUTE_PATH, "pickle files/alignment.shc"))
+    argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.shc"))
 
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError):
@@ -837,7 +813,7 @@ class Test_proj_ali_incore(unittest.TestCase):
 
 
 class Test_proj_ali_incore_local(unittest.TestCase):
-    argum = get_arg_from_pickle_files(path.join(ABSOLUTE_PATH, "pickle files/alignment.shc"))
+    argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.shc"))
 
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError):
@@ -955,7 +931,7 @@ class Test_ali_vol_func(unittest.TestCase):
 
 
 class Test_align2d(unittest.TestCase):
-    argum = get_arg_from_pickle_files(path.join(ABSOLUTE_PATH, "pickle files/alignment.align2d_scf"))
+    argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.align2d_scf"))
 
     @unittest.skip("\n***************************\n\t\t 'Test_align2d.test_empty_input_image' because: interrupted by signal 11: SIGSEGV\n***************************")
     def test_empty_input_image(self):
@@ -1035,7 +1011,7 @@ class Test_align2d(unittest.TestCase):
 
 
 class Test_align2d_scf(unittest.TestCase):
-    argum = get_arg_from_pickle_files(path.join(ABSOLUTE_PATH, "pickle files/alignment.align2d_scf"))
+    argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.align2d_scf"))
 
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError):
@@ -1084,7 +1060,7 @@ class Test_align2d_scf(unittest.TestCase):
 
 
 class Test_multialign2d_scf(unittest.TestCase):
-    argum = get_arg_from_pickle_files(path.join(ABSOLUTE_PATH, "pickle files/alignment.ali2d_single_iter"))
+    argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.ali2d_single_iter"))
 
     @unittest.skip("\n***************************\n\t\t 'Test_multialign2d_scf.test_empty_input_image' because: interrupted by signal 11: SIGSEGV\n***************************")
     def test_empty_input_image(self):
@@ -1180,7 +1156,7 @@ class Test_multialign2d_scf(unittest.TestCase):
 
 
 class Test_parabl(unittest.TestCase):
-    argum = get_arg_from_pickle_files(path.join(ABSOLUTE_PATH, "pickle files/alignment.parabl"))
+    argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.parabl"))
 
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError):
@@ -1210,7 +1186,7 @@ class Test_parabl(unittest.TestCase):
 
 """ In all the tests we have some values that are different"""
 class Test_shc(unittest.TestCase):
-    argum = get_arg_from_pickle_files(path.join(ABSOLUTE_PATH, "pickle files/alignment.shc"))
+    argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.shc"))
 
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError):
@@ -1288,7 +1264,7 @@ class Test_shc(unittest.TestCase):
 
 
 class Test_search_range(unittest.TestCase):
-    argum = get_arg_from_pickle_files(path.join(ABSOLUTE_PATH, "pickle files/alignment.search_range"))
+    argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.search_range"))
 
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError):
