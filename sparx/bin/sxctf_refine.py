@@ -842,7 +842,7 @@ def _main_():
 	num_chunks = len(particle_chunks)
 	refinement_results = []
 
-	with tqdm(total=num_chunks) as pbar:
+	with tqdm(total=num_chunks, file=sys.stdout) as pbar:
 		for i in range(0, num_chunks, num_cpu):
 			subset_chunk = particle_chunks[i: (i + num_cpu)]
 			pool = multiprocessing.Pool(num_cpu)
