@@ -16593,7 +16593,7 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 			if fexport != None:
 				fexp.write( "\n" )
 			if fprint:
-				sxprint(" ")
+				print(" ")
 	if ext == "bdb": DB.close()
 
 def imgstat_ccc( stacks, rad ):
