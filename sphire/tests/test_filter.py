@@ -40,9 +40,217 @@ def get_data_gauss_noise():
     dim = 10
     return ut.model_gauss_noise(0.25 , dim,dim,dim)
 
+from EMAN2_cppwrap import EMData
+
+class Test_filt_ctd(unittest.TestCase):
+    image = get_data(1)[0]
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError):
+            fu.filt_ctf()
+            oldfu.filt_ctf()
+
+    def test_empty_input_image(self):
+        image =EMData()
+        ctf = e2cpp.EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0,"ampcont": 0.1})
+        with self.assertRaises(AssertionError):
+            fu.filt_ctf(image,ctf)
+            oldfu.filt_ctf(image,ctf)
+
+    def test_E9(self):
+        ctf = e2cpp.EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0,"ampcont": 0.1})
+
+        return_new = fu.filt_ctf(self.image,ctf)
+        return_old = oldfu.filt_ctf(self.image,ctf)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_F9(self):
+        ctf = e2cpp.EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0,"ampcont": 0.1})
+
+        return_new = fu.filt_ctf(self.image,ctf, False)
+        return_old = oldfu.filt_ctf(self.image,ctf, False)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_raiseError(self):
+        # Since there is no try-except paradigma but only an assert I suppose that the most common error is given a None vuole instead an image
+        with self.assertRaises(AttributeError) :
+            fu.filt_ctf(None,None)
 
 
+class Test_filt_tophatl(unittest.TestCase):
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError):
+            fu.filt_tophatl()
+            oldfu.filt_tophatl()
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError):
+            fu.filt_tophatl(EMData(), freq=0.25)
+            oldfu.filt_tophatl(EMData(), freq=0.25)
+
+    def test_D1(self):
+        image, = get_data(1)
+        return_new = fu.filt_tophatl(image, freq= 0.25)
+        return_old = oldfu.filt_tophatl(image,freq= 0.25)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+class Test_filt_tophatb(unittest.TestCase):
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError):
+            fu.filt_tophatb(EMData(), freql=0.25, freqh=0.35)
+            oldfu.filt_tophatb(EMData(), freql=0.25, freqh=0.35)
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError):
+            fu.filt_tophatb()
+            oldfu.filt_tophatb()
+
+    def test_D2(self):
+        image, = get_data(1)
+        return_new = fu.filt_tophatb(image,freql= 0.25, freqh= 0.35)
+        return_old = oldfu.filt_tophatb(image,freql= 0.25, freqh= 0.35)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+class Test_filt_gaussl(unittest.TestCase):
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError):
+            fu.filt_gaussl()
+            oldfu.filt_gaussl()
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError):
+            fu.filt_gaussl(EMData(), sigma=0.23)
+            oldfu.filt_gaussl(EMData(), sigma=0.23)
+
+    def test_D3(self):
+        image, = get_data(1)
+        return_new = fu.filt_gaussl(image,sigma= 0.23 )
+        return_old = oldfu.filt_gaussl(image,sigma= 0.23)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+class Test_filt_gaussinv(unittest.TestCase):
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError):
+            fu.filt_gaussinv()
+            oldfu.filt_gaussinv()
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError):
+            fu.filt_gaussinv(EMData(), sigma=0.23)
+            oldfu.filt_gaussinv(EMData(), sigma=0.23)
+
+    def test_D4(self):
+        image, = get_data(1)
+        return_new = fu.filt_gaussinv(image,sigma= 0.23)
+        return_old = oldfu.filt_gaussinv(image,sigma= 0.23)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+class Test_filt_gaussh(unittest.TestCase):
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError):
+            fu.filt_gaussh()
+            oldfu.filt_gaussh()
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError):
+            fu.filt_gaussh(EMData(), sigma=0.23)
+            oldfu.filt_gaussh(EMData(), sigma=0.23)
+
+    def test_filt_gaussh_true_should_return_equal_object(self):
+        image, = get_data(1)
+        return_new = fu.filt_gaussh(image,sigma= 0.23)
+        return_old = oldfu.filt_gaussh(image,sigma= 0.23)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+class Test_filt_btwl(unittest.TestCase):
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError):
+            fu.filt_btwl()
+            oldfu.filt_btwl()
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError):
+            fu.filt_btwl(EMData(), freql=0.25, freqh=0.35)
+            oldfu.filt_btwl(EMData(), freql=0.25, freqh=0.35)
+
+    def test_D6(self):
+        image, = get_data(1)
+        return_new = fu.filt_btwl(image,freql= 0.25, freqh= 0.35)
+        return_old = oldfu.filt_btwl(image,freql= 0.25, freqh= 0.35)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+class Test_filt_tanl(unittest.TestCase):
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError):
+            fu.filt_tanl()
+            oldfu.filt_tanl()
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError):
+            fu.filt_tanl(EMData(), freq=0.25, fall_off=0.35)
+            oldfu.filt_tanl(EMData(), freq=0.25, fall_off=0.35)
+
+    def test_D7(self):
+        image, = get_data(1)
+        return_new = fu.filt_tanl(image,freq= 0.25, fall_off=0.35)
+        return_old = oldfu.filt_tanl(image,freq= 0.25, fall_off=0.35)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+class Test_filt_table(unittest.TestCase):
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError):
+            fu.filt_table()
+            oldfu.filt_table()
+
+    def test_empty_input_image(self):
+        table = [entry for entry in numpy.linspace(0, 0.5).tolist()]
+        with self.assertRaises(RuntimeError):
+            fu.filt_table(EMData(), table)
+            oldfu.filt_table(EMData(), table)
+
+    def test_filt_table_true_should_return_equal_object(self):
+        image, = get_data(1)
+        table =[entry for entry in numpy.linspace(0, 0.5).tolist()]
+
+        return_new = fu.filt_table(image,table)
+        return_old = oldfu.filt_table(image,table)
+
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@unittest.skip("original adnan")
 class MyTestCase(unittest.TestCase):
+
     def test_filt_tophatl_true_should_return_equal_object(self):
         image, = get_data(1)
         freq = 0.25
