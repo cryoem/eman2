@@ -3,8 +3,7 @@ from __future__ import division
 
 
 import numpy
-import copy
-import math
+
 import EMAN2_cppwrap as e2cpp
 
 from ..libpy_py3 import sphire_filter as fu
@@ -14,33 +13,10 @@ from ..libpy import sparx_utilities as ut
 
 import unittest
 
-def get_data(num):
-    dim = 10
-    data_list = []
-    for i in range(num):
-        a = e2cpp.EMData(dim, dim)
-        data_a = a.get_3dview()
-        data_a[...] = numpy.arange(dim * dim, dtype=numpy.float32).reshape(dim, dim) + i
-        data_list.append(a)
-    return data_list
 
-
-def get_data_3d(num):
-    dim = 10
-    data_list = []
-    for i in range(num):
-        a = e2cpp.EMData(dim, dim,dim)
-        data_a = a.get_3dview()
-        data_a[...] = numpy.arange(dim * dim * dim, dtype=numpy.float32).reshape(dim, dim, dim) + i
-        data_list.append(a)
-
-    return data_list
-
-def get_data_gauss_noise():
-    dim = 10
-    return ut.model_gauss_noise(0.25 , dim,dim,dim)
-
+from test_module import get_data, get_data_3d
 from EMAN2_cppwrap import EMData
+
 
 class Test_filt_ctd(unittest.TestCase):
     image = get_data(1)[0]
@@ -360,9 +336,9 @@ class MyTestCase(unittest.TestCase):
 
     def test_filt_vols_true_should_return_equal_object(self):
         vols = []
-        vols.append(get_data_gauss_noise())
-        vols.append(get_data_gauss_noise())
-        vols.append(get_data_gauss_noise())
+        vols.append( ut.model_gauss_noise(0.25 , 10,10,10) )
+        vols.append(ut.model_gauss_noise(0.25 , 10,10,10))
+        vols.append(ut.model_gauss_noise(0.25 , 10,10,10))
 
         dres = []
         dres.append([0.05, 0.05, 0.05, 0.10, 0.15, 0.20])
@@ -382,11 +358,11 @@ class MyTestCase(unittest.TestCase):
 
     def test_filterlocal_true_should_return_equal_object(self):
         vols = []
-        vols.append(get_data_gauss_noise())
-        vols.append(get_data_gauss_noise())
-        vols.append(get_data_gauss_noise())
-        ui =  get_data_gauss_noise()     # or use ut.model_blank(1,1,1)
-        vi =  get_data_gauss_noise()
+        vols.append(ut.model_gauss_noise(0.25 , 10,10,10))
+        vols.append(ut.model_gauss_noise(0.25 , 10,10,10))
+        vols.append(ut.model_gauss_noise(0.25 , 10,10,10))
+        ui =  ut.model_gauss_noise(0.25 , 10,10,10)     # or use ut.model_blank(1,1,1)
+        vi =  ut.model_gauss_noise(0.25 , 10,10,10)
         m  = "sphire/tests/3d_volume.txt"
         falloff = 4
         myid =   1

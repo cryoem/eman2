@@ -9,44 +9,15 @@ from ..libpy import sparx_utilities
 
 import numpy
 import unittest
-from cPickle import load as pickle_load
+
+from test_module import get_data, get_data_3d, remove_dir, get_arg_from_pickle_file
+
 from EMAN2_cppwrap import EMData, EMAN2Ctf
 from os import path
-from shutil import rmtree
+
 
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 TOLERANCE = 0.005
-
-def get_data(num, dim=10):
-    data_list = []
-    for i in range(num):
-        a = EMData(dim, dim)
-        data_a = a.get_3dview()
-        data_a[...] = numpy.arange(dim * dim, dtype=numpy.float32).reshape(dim, dim) + i
-        data_list.append(a)
-    return data_list
-
-def get_data_3d(num, dim=10):
-    data_list = []
-    for i in range(num):
-        a = EMData(dim, dim,dim)
-        data_a = a.get_3dview()
-        data_a[...] = numpy.arange(dim * dim * dim, dtype=numpy.float32).reshape(dim, dim, dim) + i
-        data_list.append(a)
-    return data_list
-
-def get_data_gauss_noise(dim = 10):
-    return sparx_utilities.model_gauss_noise(0.25 , dim,dim,dim)
-
-def get_arg_from_pickle_files(filepath):
-    with open(filepath, 'rb') as rb:
-        return pickle_load(rb)
-
-def remove_dir(d):
-    if path.isdir(d):
-        rmtree(d)
-
-
 
 
 class Test_binarize(unittest.TestCase):
@@ -770,7 +741,7 @@ class Test_cosinemask(unittest.TestCase):
     @unittest.skip("\n***************************\n\t\t 'Test_cosinemask.test_D20_4' because: interrupted by signal 11: SIGSEGV\n***************************")
     def test_D20_4(self):
         image = get_data_3d(1)[0]
-        bckg = get_data_gauss_noise()
+        bckg = sparx_utilities.model_gauss_noise(0.25 , 10,10,10)
         return_new = fu.cosinemask(image, bckg=bckg)
         return_old = oldfu.cosinemask(image, bckg=bckg)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
@@ -856,7 +827,7 @@ class Test_get_biggest_cluster(unittest.TestCase):
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_D22_3(self):
-        image = get_data_gauss_noise()
+        image = sparx_utilities.model_gauss_noise(0.25 , 10,10,10)
         return_new = fu.get_biggest_cluster(image)
         return_old = oldfu.get_biggest_cluster(image)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
@@ -1582,7 +1553,7 @@ class Test_defocusgett_vpp2(unittest.TestCase):
 
 
 class Test_fastigmatism3(unittest.TestCase):
-    argum = get_arg_from_pickle_files(path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq"))
+    argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq"))
     amp = 4
     defocus = 0
     Cs = 2
@@ -1642,7 +1613,7 @@ class Test_fastigmatism3(unittest.TestCase):
 
 
 class Test_fastigmatism3_pap(unittest.TestCase):
-    argum = get_arg_from_pickle_files(path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq"))
+    argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq"))
     amp = 4
     defocus = 0
     Cs = 2
@@ -1703,7 +1674,7 @@ class Test_fastigmatism3_pap(unittest.TestCase):
 
 
 class Test_fastigmatism3_vpp(unittest.TestCase):
-    argum = get_arg_from_pickle_files(path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq"))
+    argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq"))
     amp = 4
     defocus = 0
     Cs = 2
@@ -1866,7 +1837,7 @@ class Test_simctf2_pap(unittest.TestCase):
 
 
 class Test_fupw(unittest.TestCase):
-    argum = get_arg_from_pickle_files(path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq"))
+    argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq"))
     defocus = 0
     amp = 4
     Cs = 2
@@ -1919,7 +1890,7 @@ class Test_fupw(unittest.TestCase):
 
 
 class Test_fupw_pap(unittest.TestCase):
-    argum = get_arg_from_pickle_files(path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq"))
+    argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq"))
     defocus = 0
     amp = 4
     Cs = 2
@@ -1973,7 +1944,7 @@ class Test_fupw_pap(unittest.TestCase):
 
 
 class Test_fupw_vpp(unittest.TestCase):
-    argum = get_arg_from_pickle_files(path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq"))
+    argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq"))
     defocus = 0
     amp = 4
     Cs = 2
@@ -2027,7 +1998,7 @@ class Test_fupw_vpp(unittest.TestCase):
 
 
 class Test_ornq_vpp(unittest.TestCase):
-    argum = get_arg_from_pickle_files(path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq"))
+    argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq"))
 
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError):
