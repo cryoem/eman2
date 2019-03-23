@@ -248,6 +248,9 @@ IF(ENABLE_EMAN_CUDA)
 	ADD_SUBDIRECTORY(libEM/cuda)
 ENDIF()
 
+# Find Boost
+include(cmake/Boost.cmake)
+
 ADD_SUBDIRECTORY(libEM)
 ADD_SUBDIRECTORY(libpyEM)
 ADD_SUBDIRECTORY(pyemtbx)
