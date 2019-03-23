@@ -98,12 +98,8 @@ if(ENABLE_FFTW3)
 	endif()
 endif()
 
-if(WIN32)
+if(WIN32 OR ENABLE_FFTW3)
     target_link_libraries(EM2 FFTW3::FFTW3)
-else()
-    if(ENABLE_FFTW3)
-    	target_link_libraries(EM2 FFTW3::FFTW3)
-    endif()
 endif()
 
 target_link_libraries(EM2 GSL::gsl GSL::gslcblas)
