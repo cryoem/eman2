@@ -2145,5 +2145,3 @@ map<string, vector<string> > EMAN::dump_projectors_list()
 {
 	return dump_factory_list < Projector > ();
 }
-
-/* vim: set ts=4 noet nospell: */

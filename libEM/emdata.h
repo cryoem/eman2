@@ -1018,5 +1018,3 @@ namespace EMAN
 
 
 #endif
-
-/* vim: set ts=4 noet nospell: */

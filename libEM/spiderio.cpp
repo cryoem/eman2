@@ -701,4 +701,3 @@ bool SpiderIO::need_swap() const
 	}
 	return false;
 }
-/* vim: set ts=4 noet: */

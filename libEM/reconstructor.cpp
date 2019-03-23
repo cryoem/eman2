@@ -6254,5 +6254,3 @@ void file_store::restart( )
 
     m_ihandle->seekg( 0, std::ios::beg );
 }
-
-/* vim: set ts=4 noet: */

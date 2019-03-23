@@ -2710,9 +2710,6 @@ The update of rotations for quaternions is very easy.
 
 
 
-/* vim: set ts=4 noet: */
-
-
 /*    Rotation stuff */
 
 /**  A rotation is given by

@@ -755,5 +755,3 @@ to be missing values. If not provided, these values will be computed automatical
 
 
 #endif
-
-/* vim: set ts=4 noet: */

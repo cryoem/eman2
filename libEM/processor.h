@@ -9630,6 +9630,3 @@ correction is not possible, this will allow you to approximate the correction to
 }
 
 #endif	//eman_filter_h__
-
-/* vim: set ts=4 noet: */
-

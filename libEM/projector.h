@@ -426,5 +426,3 @@ namespace EMAN
 }
 
 #endif	//eman__projector_h__
-
-/* vim: set ts=4 noet nospell: */

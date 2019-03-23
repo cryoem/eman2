@@ -12678,8 +12678,6 @@ map<string, vector<string> > EMAN::group_processors()
 
 
 
-/* vim: set ts=4 noet: */
-
 float ModelHelixProcessor::radprofile(float r, int type)
 //Ross Coleman: modified from EMAN1 Cylinder.C by Wen Jiang
 {

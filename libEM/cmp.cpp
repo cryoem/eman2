@@ -1656,5 +1656,3 @@ map<string, vector<string> > EMAN::dump_cmps_list()
 {
 	return dump_factory_list < Cmp > ();
 }
-
-/* vim: set ts=4 noet: */
