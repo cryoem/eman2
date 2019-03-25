@@ -97,7 +97,7 @@ autoprocessing prior to using this program, but no other processing is required.
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--nenrich", default=54,type=int,help="Number of additional particles to average with each particle. Default=5")
-	parser.add_argument("--redoinvar"choices=["bispec","harmonic"],help="Recomputes invariants",default=None)
+	parser.add_argument("--redoinvar",choices=["bispec","harmonic"],help="Recomputes invariants",default=None)
 	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer.", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
 #	parser.add_argument("--gui",action="store_true",help="Permits interactive adjustment of mask parameters",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="tuning[True]")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
