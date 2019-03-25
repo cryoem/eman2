@@ -301,6 +301,20 @@ inline size_t get_complex_index_fast(const int &x,const int &y,const int &z) con
 	return x*2+(y<0?ny+y:y)*(size_t)nx+(z<0?nz+z:z)*(size_t)nxy;
 }
 
+/** Set complex<float> value at x,y,z without reinterpreting the coordinates. That is, x=y=z=0 will be inserted in the first data element.
+ * The x coordinate is still multiplied by 2 to compensate for the complex being 2 floats.
+ *
+ * @param x	x coordinate
+ * @param y	y coordinate
+ * @param z z coordinate
+ * @param val complex<float> value to set
+ */
+inline void set_complex_at_idx(const int &x,const int &y,const int &z,const std::complex<float> &val) {
+	size_t idx=x*2+y*(size_t)nx+z*(size_t)nxy;
+	rdata[idx]=(float)val.real();
+	rdata[idx+1]=(float)val.imag();
+}
+
 /** Set complex<float> value at x,y. This assumes the image is
  * a standard real/imaginary image with the complex origin in the first memory location.
  * If you take the fft of a real nx x ny image, a nx+2 x ny image will be produced, and

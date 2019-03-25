@@ -35,6 +35,7 @@
 
 #include <string>
 #include <cstring>
+#include <complex>
 #include "emfft.h"
 #include "log.h"
 
@@ -334,7 +335,7 @@ int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
 	return 0;
 }
 
-int EMfft::complex_to_complex_1d_inplace(float *complex_data, int n)
+int EMfft::complex_to_complex_1d_inplace(std::complex<float> *complex_data, int n)
 {
 #ifdef FFTW_PLAN_CACHING
 	fftwf_plan plan = plan_cache.get_plan(1,n/2,1,1,EMAN2_COMPLEX_2_COMPLEX,1,(fftwf_complex *) complex_data,NULL);

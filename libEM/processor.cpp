@@ -13240,6 +13240,9 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	return(ret);
 }
 
+const int NHARMROOT = 5;
+const unsigned int harmbase[NHARMROOT] = {3,4,5,7,11}; // 2 is excluded to to the need to avoid very low resolution, so we use 4 instead
+
 EMData* HarmonicPowProcessor::process(const EMData * const image) {
 	if (image->get_zsize()!=1) throw ImageDimensionException("Only 2-D images supported");
 
@@ -13248,25 +13251,26 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 	else cimage = image->do_fft();
 	cimage->process_inplace("xform.phaseorigin.tocorner");
 	
-	// Decide how large the bispectrum will be
+	// Decide how large the harmonic invariant will be
 	int nx=cimage->get_xsize();
 	int ny=cimage->get_ysize();
-	int naz=(int)params.set_default("size",image->get_ysize());		
+	int naz=(int)params.set_default("size",image->get_ysize());
 
-	EMData* trns=new EMData(nx,ny,1);
+	EMData* trns=new EMData(naz*2,ny/2,1);
+	trns->to_zero();
 	trns->set_complex(1);
 	trns->set_fftpad(1);
-	trns->to_zero();
+	size_t xyz=trns->get_size();
 //	printf("apix %f\tnx %d\n",(float)image->get_attr("apix_x"),(int)image->get_xsize());
 	
 	// Compute a translational invariant for a single harmonic
 	if (params.has_key("hn")) {
 		int hn=(int)params.get("hn");
 		if (hn<1) throw InvalidParameterException("Invalid parameter, hn<1");
-		int rn = (int)params.set_default("rn",0);
-		// rotational/translational single
-		if (rn>0) {
-			trns->set_size(naz*2,ny/2,1);
+		int rn = (int)params.set_default("rn",-1);
+		// rotational/translational single. If rn==0, special case where polar coordinate version of translational invariant is generated
+		if (rn>=0) {
+			// Start with the translational invariant in Fourier space in a radial coordinate system
 			for (int ja=0; ja<naz; ja++) {
 				float si=sin(float(2.0*M_PI*ja/naz));
 				float co=cos(float(2.0*M_PI*ja/naz));
@@ -13275,27 +13279,47 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 					float jy=si*jr;
 					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
 					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx/(float)hn,jy/(float)hn);
-					trns->set_complex_at(ja,jr-ny/4,0,(complex<float>)(v1*std::pow(std::conj(v2),(float)hn)));
+					trns->set_complex_at_idx(ja,jr,0,(complex<float>)(v1*std::pow(std::conj(v2),(float)hn)));
 				}
 			}
 			// rescale components to have linear amplitude WRT the original FFT, without changing phase
 			trns->ri2ap();
-			size_t xyz=trns->get_size();
 			for (size_t i=0; i<xyz; i+=2) {
 				trns->set_value_at_index(i,pow(trns->get_value_at_index(i),1.0/(hn+1)));
 			}
 			trns->ap2ri();
-			float *tmp = EMfft::fftmalloc(naz*2);
-			for (int jy=3*hn;  jy<ny/2; jy++) {
-				// While it might seem a good idea to do inplace 1D transforms for each row, the potential memory
-				// alignment change for each row could cause bad things to happen
-				memcpy((void*)tmp,(void*)(trns->get_data()+jy*naz*2*sizeof(float)),naz*2*sizeof(float));
-				EMfft::complex_to_complex_1d_inplace(tmp,naz*2);
-				memcpy((void*)(trns->get_data()+jy*naz*2*sizeof(float)),(void*)tmp,naz*2*sizeof(float));
+			
+			if (rn>0) {
+				// Now we do the 1-D FFTs on the lines of the translational invariant
+				complex<float> *tmp = (complex<float>*)EMfft::fftmalloc(naz*2);
+				for (int jy=3*hn;  jy<ny/2; jy++) {
+					// While it might seem a good idea to do inplace 1D transforms for each row, the potential memory
+					// alignment change for each row could cause bad things to happen
+					memcpy((void*)tmp,(void*)(trns->get_data()+jy*naz*2),naz*2*sizeof(float));
+					EMfft::complex_to_complex_1d_inplace(tmp,naz*2);
+					for (int jx=0; jx<naz; jx++) {
+						float l=jx/float(rn);
+						float frc=l-floor(l);
+						int li=(int)l;
+						complex<float> v1 = tmp[jx];
+						complex<float> v2 = Util::linear_interpolate_cmplx(tmp[li],tmp[li+1],frc);
+						trns->set_complex_at_idx(jx,jy,0,v1*std::pow(std::conj(v2),(float)rn));
+					}
+	//				memcpy((void*)(trns->get_data()+jy*naz*2),(void*)tmp,naz*2*sizeof(float));
+				}
+				EMfft::fftfree((float *)tmp);
+
+				// rescale components to have linear amplitude WRT the original FFT, without changing phase
+				trns->ri2ap();
+				for (size_t i=0; i<xyz; i+=2) {
+					trns->set_value_at_index(i,pow(trns->get_value_at_index(i),1.0/(rn+1)));
+				}
+				trns->ap2ri();
 			}
-			EMfft::fftfree(tmp);
 		}
 		else {
+			trns->set_size(nx,ny,1);
+			xyz=trns->get_size();
 			// translational only single
 			for (int jx=0; jx<nx/2; jx++) {
 				for (int jy=-ny/2; jy<ny/2; jy++) {
@@ -13305,16 +13329,46 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 					trns->set_complex_at(jx,jy,0,(complex<float>)(v1*std::pow(std::conj(v2),(float)hn)));
 				}
 			}
+			// rescale components to have linear amplitude WRT the original FFT, without changing phase
 			trns->ri2ap();
-			size_t xyz=trns->get_size();
 			for (size_t i=0; i<xyz; i+=2) {
-				trns->set_value_at_index(i,pow(trns->get_value_at_index(i),1.0/(hn+1)));		// brings all of the components into a range linear with the original FFT
+				trns->set_value_at_index(i,pow(trns->get_value_at_index(i),1.0/(hn+1)));
 			}
 			trns->ap2ri();
 	//		EMData *ret = trns->do_ift();
 		}
 		delete cimage;
 
+		return(trns);
+	}
+	if (params.has_key("rfp")) {
+		trns->set_size(naz*2,ny/4,1);
+		xyz=trns->get_size();
+		// We deal with each radial line at a time 
+		for (int ja=0; ja<naz; ja++) {
+			float si=sin(float(2.0*M_PI*ja/naz));
+			float co=cos(float(2.0*M_PI*ja/naz));
+			int rc=0; 								// This counts the number of components we've generated for the current angle
+			// outer loop is for the harmonic index, each cycle we generate one harmonic for each root
+			for (int hn=2; hn<ny/6; hn++) {
+				// inner loop is for the roots of each harmonic
+				if (rc>=ny/4) break;			// this is the maximum number of components we generate in the output
+				for (int j=0; j<NHARMROOT; j++) {
+					int jr=harmbase[j]*hn;
+					if (rc>=ny/4 || jr>=ny/2) break;			// this is the maximum number of components we generate in the output, and we need to stay within the image
+					float jx=co*jr;
+					float jy=si*jr;
+					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
+					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx/(float)hn,jy/(float)hn);
+					v1*=std::pow(std::conj(v2),(float)hn);						// This is the invariant
+					v1=std::polar(std::pow(std::abs(v1),1.0/(hn+1.0)),std::arg(v1));	// rescale the amplitude without changing the phase
+					trns->set_complex_at_idx(ja,rc,0,(complex<float>)v1);
+					rc++;
+					if (!isfinite(trns->get_value_at(ja*2,rc))) printf("%d %d %d %d\n",ja,hn,j,rc);
+				}
+			}
+		}
+		delete cimage;
 		return(trns);
 	}
 	

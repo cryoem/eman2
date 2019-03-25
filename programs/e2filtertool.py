@@ -847,7 +847,10 @@ class EMFilterTool(QtWidgets.QMainWindow):
 		for i in range(n):
 			im=EMData(self.datafile,i)
 			QtWidgets.qApp.processEvents()
-			for p in pp: im.process_inplace(p[0],p[1])
+			for p in pp: 
+				if p[0] in outplaceprocs:
+					im=im.process(p[0],p[1])
+				else: im.process_inplace(p[0],p[1])
 			im.write_image(str(name[0]),i)
 			progressdialog.setValue(i+1)
 			if progressdialog.wasCanceled() :
