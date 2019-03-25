@@ -13429,7 +13429,7 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 					if (rc>=naz) break;
 					// rather than taking a complex conjugate we make use of the negative frequencies, and we pair both ways
 					// the conjugate on the second term may not be optimal? Not positive...
-					complex<double>v1=std::pow(std::conj(tmp[i/hn]),hn)*(complex<double>)tmp[i]+std::conj(std::pow(std::conj(tmp[naz-i/hn]),hn)*(complex<double>)tmp[naz-i]);
+					complex<double>v1=(complex<double>)std::pow(std::conj(tmp[i/hn]),hn)*(complex<double>)tmp[i]+(complex<double>)std::conj(std::pow(std::conj(tmp[naz-i/hn]),hn)*(complex<double>)tmp[naz-i]);
 //						complex<double>v1=std::pow(tmp[i/hn],hn)*tmp[naz-i]+std::conj(std::pow(tmp[naz-i/hn],hn)*tmp[i]);
 					v1=std::polar(std::pow(std::abs(v1),1.0/(hn+1.0)),std::arg(v1));	// rescale the amplitude without changing the phase
 					trns->set_complex_at_idx(rc/2,jy,0,(complex<float>)v1);
