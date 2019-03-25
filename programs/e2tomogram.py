@@ -10,6 +10,7 @@ from EMAN2 import *
 import numpy as np
 from scipy.optimize import minimize
 import scipy.spatial.distance as scidist
+import scipy.ndimage as sciimg
 from EMAN2_utils import *
 import queue
 from sklearn.decomposition import PCA
@@ -72,6 +73,8 @@ def main():
 
 	parser.add_argument("--extrapad", action="store_true",help="pad extra for tilted reconstruction. slower and cost more memory, but reduce boundary artifacts when the sample is thick", default=False,guitype='boolbox',row=14, col=0, rowspan=1, colspan=1,mode="easy")
 	
+	parser.add_argument("--rmbeadthr", type=float, help="Density value threshold (of sigma) for removing beads. high contrast objects beyond this value will be removed. default is -1 for not removing. try 10 for removing fiducials", default=-1,guitype='floatbox',row=14, col=1, rowspan=1, colspan=1,mode="easy")
+	
 	parser.add_argument("--threads", type=int,help="Number of threads", default=12,guitype='intbox',row=12, col=1, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--tmppath", type=str,help="Temporary path", default=None)
 	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0)
@@ -106,6 +109,9 @@ def main():
 			
 		E2end(logid)
 		return
+		
+	#### testing multithread fft...
+	Util.init_threads(options.threads)
 		
 		
 	#### parse options.
@@ -203,7 +209,7 @@ def main():
 		
 	#### save 1k input only.
 	if options.writetmp:
-		inppath=options.tmppath+"tltseries_input.hdf"
+		inppath=os.path.join(options.tmppath,"tltseries_input.hdf")
 		for i,m in enumerate(imgs_1k):
 			m.write_image(inppath, i)
 		
@@ -244,7 +250,7 @@ def main():
 			#### parse tilt step
 			tlts=np.arange(-len(imgs_2k)*options.tltstep//2,len(imgs_2k)*options.tltstep//2,options.tltstep)
 		
-		if options.writetmp: np.savetxt(options.tmppath+"rawtilt.txt", tlts)
+		if options.writetmp: np.savetxt(os.path.join(options.tmppath,"rawtilt.txt"), tlts)
 		
 		#### we need a zero degree tilt as reference to position the tomogram
 		zeroid=np.argmin(abs(tlts))
@@ -273,7 +279,7 @@ def main():
 		img_tali, pretrans=calc_global_trans(imgs_500, options, tltax=options.tltax, tlts=tlts)
 		if options.writetmp:
 			for i,m in enumerate(img_tali):
-				m.write_image(options.tmppath+"tltseries_transali.hdf", i)
+				m.write_image(os.path.join(options.tmppath,"tltseries_transali.hdf"), i)
 		
 		#### this is the matrix that save the alignment parameters
 		pretrans*=img_tali[0]["apix_x"]/options.apix_init  #### since the pretrans is calculated from 500x500 images..
@@ -299,7 +305,7 @@ def main():
 	if options.writetmp:
 		#### dump options to file
 		options.cmd=' '.join(sys.argv)
-		js=js_open_dict(path+"0_tomorecon_params.json")
+		js=js_open_dict(os.path.join(path,"0_tomorecon_params.json"))
 		js.update(vars(options))
 		js.close()
 		
@@ -307,7 +313,7 @@ def main():
 		tpm=ttparams.copy()
 		#tpm[:,:2]*=options.binfac
 		tpm=np.hstack([np.arange(len(tpm))[:,None], tpm])
-		np.savetxt(path+"tltparams_init.txt", tpm, fmt="%.3f")
+		np.savetxt(os.path.join(path,"tltparams_init.txt"), tpm, fmt="%.3f")
 	
 	yrot=0 #### this is to save the overall rotation of tomogram
 	
@@ -327,10 +333,10 @@ def main():
 			print("High resolution mode. Using center of mass of landmarks for alignment")
 			
 		if options.writetmp:
-			name_tomo=path+"tomo_{:02d}.hdf".format(niter)
-			name_sample=path+"samples_{:02d}.hdf".format(niter)
-			name_ali=path+"ali_{:02d}.hdf".format(niter)
-			name_ptclali=path+"ptclali_{:02d}.hdf".format(niter)
+			name_tomo=os.path.join(path,"tomo_{:02d}.hdf".format(niter))
+			name_sample=os.path.join(path,"samples_{:02d}.hdf".format(niter))
+			name_ali=os.path.join(path,"ali_{:02d}.hdf".format(niter))
+			name_ptclali=os.path.join(path,"ptclali_{:02d}.hdf".format(niter))
 		else:
 			name_tomo=name_sample=name_ali=name_ptclali=None
 		
@@ -345,11 +351,11 @@ def main():
 			allparams=np.hstack([ttparams.flatten(), pks.flatten()])
 			
 			#### do two round of generating 3D maps of landmarks to refine the location of them
-			allparams=make_samples(imgs_, allparams, options, refinepos=True);
-			allparams=make_samples(imgs_, allparams, options, refinepos=True);
+			allparams,smp=make_samples(imgs_, allparams, options, refinepos=True);
+			allparams,smp=make_samples(imgs_, allparams, options, refinepos=True);
 
 			if niter==0 and m3diter==0 and options.writetmp:
-				make_samples(imgs_, allparams, options, outname=path+"samples_init.hdf", refinepos=True);
+				make_samples(imgs_, allparams, options, outname=os.path.join(path,"samples_init.hdf"), refinepos=True);
 				
 			#ptclpos=ali_ptcls(imgs_, allparams, options, outname=name_ptclali, doali=True)
 			#exit()
@@ -391,10 +397,11 @@ def main():
 		#tpm[:,:2]*=options.binfac
 		tpm=np.hstack([np.arange(len(tpm))[:,None], tpm])
 		if options.writetmp:
-			np.savetxt(path+"landmarks_{:02d}.txt".format(niter), pks, fmt="%.1f")
-			np.savetxt(path+"tltparams_{:02d}.txt".format(niter), tpm, fmt="%.3f")
-			np.savetxt(path+"loss_{:02d}.txt".format(niter), np.vstack([np.arange(len(loss0)), loss0]).T, fmt="%.2f")
+			np.savetxt(os.path.join(path,"landmarks_{:02d}.txt".format(niter)), pks, fmt="%.1f")
+			np.savetxt(os.path.join(path,"tltparams_{:02d}.txt".format(niter)), tpm, fmt="%.3f")
+			np.savetxt(os.path.join(path,"loss_{:02d}.txt".format(niter)), np.vstack([np.arange(len(loss0)), loss0]).T, fmt="%.2f")
 		
+	options.loss0=loss0
 	#### alignment finish. now save output
 	if options.outsize=="2k":
 		imgout=imgs_2k
@@ -404,6 +411,10 @@ def main():
 	else:
 		imgout=imgs_1k
 		
+	
+	if options.rmbeadthr>0:
+		remove_beads(imgs_500, imgout, ttparams, options)
+	
 	#### only clip z axis at the end..
 	if options.bytile:
 		threed=make_tomogram_tile(imgout, ttparams, options, errtlt=loss0, clipz=options.clipz)
@@ -411,8 +422,8 @@ def main():
 		threed=make_tomogram(imgout, ttparams, options, errtlt=loss0, clipz=options.clipz)
 
 	if options.writetmp:
-		threed.write_image(path+"tomo_final.hdf")
-		make_ali(imgs_4k, ttparams, options, outname=path+"tiltseries_ali.hdf")
+		threed.write_image(os.path.join(path,"tomo_final.hdf"))
+		make_ali(imgout, ttparams, options, outname=os.path.join(path,"tiltseries_ali.hdf"))
 
 	#### write to the tomogram folder
 	try: os.mkdir("tomograms")
@@ -441,6 +452,115 @@ def main():
 	print("Finished. Total time: {:.1f}s".format(dtime))
 
 	E2end(logid)
+
+
+def remove_beads(imgs_500, imgout, ttparams, options):
+	
+	print("Removing high contrast objects...")
+	threed=make_tomogram(imgs_500, ttparams, options, errtlt=options.loss0, clipz=options.clipz)
+	threed.process_inplace("math.meanshrink",{"n":2})
+	threed.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./100})
+	threed.process_inplace("filter.highpass.gauss",{"cutoff_pixels":1./50})
+	threed.process_inplace("normalize")
+	
+	
+	vthr=options.rmbeadthr
+	img=threed.numpy().T.copy()
+	
+	img=-img
+	img[img<0]=0
+	lb, nlb= sciimg.label(img>vthr)
+	idx=np.arange(1,nlb, dtype=int)
+	
+	sm=np.array(sciimg.sum(img, lb, idx))/vthr
+	idx=idx[sm>8]
+	cnt=np.array(sciimg.center_of_mass(img, lb, idx))
+	
+	
+	scale=threed["apix_x"]/options.apix_init
+	
+	pts=(cnt-np.array(img.shape)/2.)*scale
+	
+	realnpk=options.npk
+	options.npk=len(pts)
+	allparams=np.hstack([ttparams.flatten(), pts.flatten()])
+	apm, smp=make_samples(imgs_500, allparams, options)
+	
+	nx, ny=imgout[0]["nx"],imgout[0]["ny"]
+	
+	tpms=ttparams.copy()
+	scale=imgout[0]["apix_x"]/options.apix_init
+	tpms[:,:2]/=scale
+	pts/=scale
+	
+	if options.writetmp:
+		fname=os.path.join(options.tmppath, "ptcls_rmbead.hdf")
+		try:
+			os.remove(fname)
+		except:
+			pass
+	
+	for i, pk in enumerate(pts):
+		if smp[i]["minimum"]>-vthr:
+			continue
+			
+		for n, tpm in enumerate(tpms):
+			pxf=get_xf_pos(tpm, pk)
+			
+			pad=good_boxsize(options.bxsz*2)
+			pxf=[int(round(pxf[0]))+nx//2-pad//2, int(round(pxf[1]))+ny//2-pad//2,0]
+			
+			
+			e=imgout[n].get_clip(Region(pxf[0], pxf[1], pad, pad))
+			
+			
+			m=e.process("normalize.edgemean")
+			m.mult(m)
+			#m.process_inplace("threshold.belowtozero")
+			m.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./100})
+			m.add(-1)
+			
+			m.process_inplace("threshold.belowtozero")
+			
+			if m["maximum"]>0:
+				m.mult(5./m["maximum"])
+			else:
+				continue
+				
+			m.process_inplace("threshold.clampminmax",{"maxval":1})
+			
+			if m["mean"]>0.6:
+				continue
+			
+			m.process_inplace("mask.soft",{"outer_radius":int(pad*.3),"width":8})
+			
+			a0=e*(1-m)
+			
+			a1=m.copy()
+			a1.to_zero()
+			a1.process_inplace("math.addnoise",{"noise":1})
+			a1=a1-a1["mean"]+a0["mean"]
+			
+			a1.process_inplace("filter.matchto",{"to":a0})
+			
+			a1.mult(m)
+			
+			e1=a0+a1    
+			
+			if options.writetmp:
+				e.write_image(fname,-1)
+				m.write_image(fname,-1)
+				e1.write_image(fname,-1)
+			
+			
+			imgout[n].insert_clip(e1, pxf)
+			
+			
+			
+			
+	options.npk=realnpk
+	#exit()
+	
 
 #### find the optimal global rotation of the tomogram so the high contrast features lies flat
 def fix_rotation(threed, ttparams):
@@ -619,8 +739,8 @@ def calc_tltax_rot(imgs, options):
 	tltax=angs[np.argmax(vs)]
 	e=from_numpy(sm)
 	if options.writetmp: 
-		e.write_image(options.tmppath+"commonline.hdf")
-		np.savetxt(options.tmppath+"tltrot.txt", np.vstack([angs, vs]).T)
+		e.write_image(os.path.join(options.tmppath,"commonline.hdf"))
+		np.savetxt(os.path.join(options.tmppath,"tltrot.txt"), np.vstack([angs, vs]).T)
 		
 	return tltax
 
@@ -664,7 +784,7 @@ def make_tile(args):
 #### make tomogram by tiles
 #### this is faster and has less artifacts. but takes a lot of memory (~4x the tomogram)
 def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
-
+	
 	num=len(imgs)
 	scale=imgs[0]["apix_x"]/options.apix_init
 	if imgs[0]["nx"]<=1024*1.1:
@@ -1003,6 +1123,8 @@ def make_samples(imgs, allparams, options, refinepos=False, outname=None, errtlt
 	#if not lowres:
 		#bx=int(bx*2/(scale))
 	#print("scale{}, box size {}".format(scale, bx*2))
+	
+	samples=[]
 
 	for pid in range(npk):
 		pad=good_size(bx*4)
@@ -1015,8 +1137,8 @@ def make_samples(imgs, allparams, options, refinepos=False, outname=None, errtlt
 
 			pxf=get_xf_pos(ttparams[nid], pks[pid])
 
-			pxf[0]+=old_div(imgs[nid]["nx"],2)
-			pxf[1]+=old_div(imgs[nid]["ny"],2)
+			pxf[0]+=imgs[nid]["nx"]//2
+			pxf[1]+=imgs[nid]["ny"]//2
 			
 			xf=Transform({"type":"2d","tx":pxf[0],"ty":pxf[1]})
 			e=imgs[nid].get_rotated_clip(xf,(pad,pad,1))
@@ -1029,13 +1151,14 @@ def make_samples(imgs, allparams, options, refinepos=False, outname=None, errtlt
 			recon.insert_slice(p3,rot,1)
 		bxcr=np.round(pks[pid]).astype(int).tolist()
 		threed=recon.finish(True)
-		threed=threed.get_clip(Region(old_div((pad-bx*2),2),old_div((pad-bx*2),2),old_div((pad-bx*2),2),bx*2,bx*2,bx*2))
+		threed=threed.get_clip(Region((pad-bx*2)//2,(pad-bx*2)//2,(pad-bx*2)//2,bx*2,bx*2,bx*2))
 		threed.process_inplace("normalize")
 		threed["apix_x"]=threed["apix_y"]=threed["apix_z"]=imgs[0]["apix_x"]
 		threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.3})
 		threed.process_inplace("mask.soft",{"outer_radius":-1})
 		pj=threed.project("standard", Transform({"type":"eman", "alt":90}))
 		pj["box"]=bxcr
+		samples.append(threed)
 
 		#### center the subvolumes. in low resolution mode by minima position; in high resolution mode by center of mass
 		if refinepos:
@@ -1053,7 +1176,7 @@ def make_samples(imgs, allparams, options, refinepos=False, outname=None, errtlt
 		if refinepos:
 			xysft=get_center(pj1, lowres)
 			#xysft=[p[0]-bx, p[1]-bx]
-			pks[pid, 0]-=old_div((xysft[0]+zsft[0]),2.)
+			pks[pid, 0]-=(xysft[0]+zsft[0])/2.
 			pks[pid, 1]-=xysft[1]
 
 			#			 pj1.mult(-1)
@@ -1069,8 +1192,11 @@ def make_samples(imgs, allparams, options, refinepos=False, outname=None, errtlt
 		pks*=scale
 		allparams=np.hstack([ttparams.flatten(), pks.flatten()])
 
-	if outname: print("Landmark samples written to {}.".format(outname))
-	return allparams
+	if outname: 
+		print("Landmark samples written to {}.".format(outname))
+	
+	return allparams, samples
+
 
 #### find center of landmark subtomogram. 
 def get_center(img, lowres=True):
@@ -1177,7 +1303,7 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
 def refine_one_iter(imgs, allparams, options, idx=[]):
 	#### refine landmark location -> calculate landmark offset per tilt -> refine alignment parameters to minimize offset
 
-	apms=make_samples(imgs, allparams, options, refinepos=True);
+	apms,smp=make_samples(imgs, allparams, options, refinepos=True);
 	ttparams, pks=get_params(apms, options)
 	ptclpos=ali_ptcls(imgs, apms, options, doali=True)
 

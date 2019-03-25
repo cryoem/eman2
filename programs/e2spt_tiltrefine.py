@@ -15,38 +15,6 @@ import re
 from EMAN2_utils import make_path
 from shutil import copy2
 
-def alifn(jsd,ii, info,a,options):
-	#### deal with mirror
-		
-	nxf=options.refinentry
-	astep=options.refineastep
-	xfs=[]
-	initxf=eval(info[-1])
-	
-	for i in range(nxf):
-		d={"type":"eman","tx":initxf["tx"], "ty":initxf["ty"]}
-		for ky in ["alt", "az", "phi"]:
-			d[ky]=initxf[ky]+(i>0)*np.random.randn()*astep
-			xfs.append(Transform(d))
-			
-	
-	alignpm={"verbose":0,"sym":options.sym,"maxshift":options.maxshift,"initxform":xfs}
-	
-	b=EMData(info[1],info[0])
-	if b["ny"]!=a["ny"]: # box size mismatch. simply clip the box
-		b=b.get_clip(Region((b["nx"]-a["ny"])/2, (b["ny"]-a["ny"])/2, a["ny"],a["ny"]))
-		
-		
-	b=b.do_fft()
-	b.process_inplace("xform.phaseorigin.tocorner")
-	c=b.xform_align_nbest("rotate_translate_2d_to_3d_tree",a, alignpm, 1)
-
-	
-	xf=c[0]["xform.align3d"]
-	c={"xform.align3d":xf, "score":c[0]["score"]}
-	
-	jsd.put((ii,c))
-
 def main():
 	
 	usage=" "
@@ -193,7 +161,7 @@ def main():
 		k=list(js.keys())[0]
 		src=eval(k)[0]
 		
-		print("loading 3D particles from {}".format(src))
+		print("loading 3D particles from {}".format(base_name(src)))
 		print("box size {}, apix {:.2f}".format(bxsz, apix))
 
 		lname=[os.path.join(path, "ali_ptcls_00_{}.lst".format(eo)) for eo in ["even", "odd"]]
@@ -203,13 +171,27 @@ def main():
 		
 		lst=[LSXFile(m, False) for m in lname]
 		n3d=len(list(js.keys()))
-		for ii in range(n3d):
+		#for ii in range(n3d):
+			
+		for ky in js.keys():
+			
+			src,ii=eval(ky)
 			e=EMData(src, ii, True)
 			fname=e["class_ptcl_src"]
 			ids=e["class_ptcl_idxs"]
-			ky="('{}', {})".format(src, ii)
+			#ky="('{}', {})".format(src, ii)
 			dic=js[ky]
 			xali=dic["xform.align3d"]
+			
+			if "__even" in src:
+				eo=0
+			elif "__odd" in src:
+				eo=1
+			else:
+				eo=ii%2
+			
+			#print(src, eo)
+			
 			for i in ids:
 				try:
 					m=EMData(fname, i, True)
@@ -220,7 +202,7 @@ def main():
 				if abs(dc["ytilt"])>options.maxalt:
 					continue
 				rot=xf*xali.inverse()
-				lst[ii%2].write(-1, i, fname, str(rot.get_params("eman")))
+				lst[eo].write(-1, i, fname, str(rot.get_params("eman")))
 		for l in lst:
 			l.close()
 		js=None

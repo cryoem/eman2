@@ -72,6 +72,7 @@ from e2spt_simulation import SubtomoSimTask
 from e2tomopreproc import TomoPreproc2DTask
 from e2symsearch3d import SymAlignTask
 from e2spt_tiltrefine import SptTltRefineTask
+from e2spt_align import SptAlignTask
 #from e2spt_boxer import TomoBoxer3DTask
 
 from e2erasefiducials import EraseGold2DTask

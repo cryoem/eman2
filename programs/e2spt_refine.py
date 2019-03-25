@@ -47,6 +47,8 @@ def main():
 	parser.add_argument("--wtori",type=float,help="Weight for using the prior orientation in the particle header. default is -1, i.e. not used.",default=-1)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
+	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="")
+
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -54,6 +56,8 @@ def main():
 	ref=options.reference
 
 	if options.path==None: options.path = make_path("spt") 
+	if options.parallel=="":
+		options.parallel="thread:{}".format(options.threads)
 	
 	#### make a list file if the particles are not in a lst
 	if not ptcls.endswith(".lst"):
@@ -94,7 +98,8 @@ def main():
 			gd=" --goldcontinue".format(options.goldstandard)
 			
 		#curres=0
-		cmd="e2spt_align.py {} {} --threads {} --path {} --iter {} --sym {} --wtori {} {}".format(ptcls, ref,  options.threads, options.path, itr, options.sym, options.wtori, gd)
+		#cmd="e2spt_align.py {} {} --threads {} --path {} --iter {} --sym {} --wtori {} {}".format(ptcls, ref,  options.threads, options.path, itr, options.sym, options.wtori, gd)
+		cmd="e2spt_align.py {} {} --parallel {} --path {} --iter {} --sym {} --wtori {} {}".format(ptcls, ref,  options.parallel, options.path, itr, options.sym, options.wtori, gd)
 		
 		#### in case e2spt_align get segfault....
 		ret=1

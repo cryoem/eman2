@@ -41,6 +41,8 @@ import os
 import threading
 import queue
 from sys import argv,exit
+from EMAN2jsondb import JSTask
+import numpy as np
 
 def alifn(jsd,fsp,i,a,options):
 	t=time.time()
@@ -77,6 +79,7 @@ This program will take an input stack of subtomograms and a reference volume, an
 	parser.add_argument("--nsoln",type=int,help="number of solutions to keep at low resolution for the aligner",default=1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default=None)
 
 	(options, args) = parser.parse_args()
 
@@ -91,6 +94,9 @@ This program will take an input stack of subtomograms and a reference volume, an
 		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]
 		if len(fls)==0 : options.iter=1
 		else: options.iter=max(fls)+1
+		
+	if options.parallel==None:
+		options.parallel="thread:{}".format(options.threads)
 
 	reffile=args[1]
 	NTHREADS=max(options.threads+1,2)		# we have one thread just writing results
@@ -124,38 +130,117 @@ This program will take an input stack of subtomograms and a reference volume, an
 	jsd=queue.Queue(0)
 
 	n=-1
-	N=EMUtil.get_image_count(args[0])
-	thrds=[threading.Thread(target=alifn,args=(jsd,args[0],i,ref[i%2],options)) for i in range(N)]
-
-	# here we run the threads and save the results, no actual alignment done here
-	print(len(thrds)," threads")
-	thrtolaunch=0
-	while thrtolaunch<len(thrds) or threading.active_count()>1:
-		# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
-		# note that it's ok that we wait here forever, since there can't be new results if an existing
-		# thread hasn't finished.
-		if thrtolaunch<len(thrds) :
-			while (threading.active_count()==NTHREADS ) : time.sleep(.1)
-			if options.verbose : print("Starting thread {}/{}".format(thrtolaunch,len(thrds)))
-			thrds[thrtolaunch].start()
-			thrtolaunch+=1
-		else: time.sleep(1)
-
-		while not jsd.empty():
-			fsp,n,d=jsd.get()
-			angs[(fsp,n)]=d
-			if options.saveali:
-				v=EMData(fsp,n)
-				v.transform(d["xform.align3d"])
-				if options.savealibin>1:
-					v.process_inplace("math.meanshrink",{"n":options.savealibin})
-				v.write_image("{}/aliptcls_{:02d}.hdf".format(options.path, options.iter),n)
+	#### check if even/odd split exists
+	fsps=[args[0][:-4]+"__even.lst",args[0][:-4]+"__odd.lst"]
+	tasks=[]
+	if os.path.isfile(fsps[0]) and os.path.isfile(fsps[1]):
+		print("Using particle list: \n\t {} \n\t {}".format(fsps[0], fsps[1]))
+		for eo, f in enumerate(fsps):
+			N=EMUtil.get_image_count(f)
+			tasks.extend([(f,i,ref[eo]) for i in range(N)])
+			
+	#### split by even/odd by default
+	else:
+		N=EMUtil.get_image_count(args[0])
+		tasks.extend([(args[0],i,ref[i%2]) for i in range(N)])
+		#thrds=[threading.Thread(target=alifn,args=(jsd,args[0],i,ref[i%2],options)) for i in range(N)]
 
 
-	for t in thrds:
-		t.join()
+	from EMAN2PAR import EMTaskCustomer
+	etc=EMTaskCustomer(options.parallel)
+	num_cpus = etc.cpu_est()
+	
+	#tasks=tasks[:24]
+	print("{} total CPUs available".format(num_cpus))
+	print("{} jobs".format(len(tasks)))
+
+	tids=[]
+	for t in tasks:
+		task = SptAlignTask(t[0], t[1], t[2], options)
+		tid=etc.send_task(task)
+		tids.append(tid)
+
+	while 1:
+		st_vals = etc.check_task(tids)
+		#print("{:.1f}/{} finished".format(np.mean(st_vals), 100))
+		#print(tids)
+		if np.min(st_vals) == 100: break
+		time.sleep(5)
+
+	#dics=[0]*nptcl
+	for i in tids:
+		ret=etc.get_results(i)[1]
+		fsp,n,d=ret
+		angs[(fsp,n)]=d
+		
+
+	del etc
+	
+	
+	## here we run the threads and save the results, no actual alignment done here
+	#print(len(thrds)," threads")
+	#thrtolaunch=0
+	#while thrtolaunch<len(thrds) or threading.active_count()>1:
+		## If we haven't launched all threads yet, then we wait for an empty slot, and launch another
+		## note that it's ok that we wait here forever, since there can't be new results if an existing
+		## thread hasn't finished.
+		#if thrtolaunch<len(thrds) :
+			#while (threading.active_count()==NTHREADS ) : time.sleep(.1)
+			#if options.verbose : print("Starting thread {}/{}".format(thrtolaunch,len(thrds)))
+			#thrds[thrtolaunch].start()
+			#thrtolaunch+=1
+		#else: time.sleep(1)
+
+		#while not jsd.empty():
+			#fsp,n,d=jsd.get()
+			#angs[(fsp,n)]=d
+			#if options.saveali:
+				#v=EMData(fsp,n)
+				#v.transform(d["xform.align3d"])
+				#if options.savealibin>1:
+					#v.process_inplace("math.meanshrink",{"n":options.savealibin})
+				#v.write_image("{}/aliptcls_{:02d}.hdf".format(options.path, options.iter),n)
+
+
+	#for t in thrds:
+		#t.join()
 
 	E2end(logid)
+
+
+class SptAlignTask(JSTask):
+	
+	
+	def __init__(self, fsp, i, ref, options):
+		
+		data={"fsp":fsp, "i":i, "ref": ref}
+		JSTask.__init__(self,"SptAlign",data,{},"")
+		self.options=options
+	
+	
+	def execute(self, callback):
+		
+		data=self.data
+		options=self.options
+		
+		fsp=data["fsp"]
+		i=data["i"]
+		ref=data["ref"]
+		
+		callback(0)
+		b=EMData(fsp,i).do_fft()
+		b.process_inplace("xform.phaseorigin.tocorner")
+
+		# we align backwards due to symmetry
+		if options.verbose>2 : print("Aligning: ",fsp,i)
+		c=ref.xform_align_nbest("rotate_translate_3d_tree",b,{"verbose":0,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0, "maxres":options.maxres,"wt_ori":options.wtori},options.nsoln)
+		for cc in c : cc["xform.align3d"]=cc["xform.align3d"].inverse()
+
+		#print(fsp, i, c[0])
+		callback(100)
+		
+		return (fsp,i,c[0])
+		
 
 
 if __name__ == "__main__":

@@ -248,6 +248,7 @@ except:
 				traceback.print_exc()
 
 	QtGui=dummy(True)
+	QtWidgets=dummy
 	QtWidgets.QWidget=dummy
 	QtWidgets.QMainWindow=dummy
 	QtCore=dummy(True)
