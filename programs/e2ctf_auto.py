@@ -83,7 +83,8 @@ Important: This program must be run from the project directory, not from within 
 	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting (use e2rawdata first)",default=False, guitype='boolbox', row=25, col=0, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--phaseplate",action="store_true",help="Include phase/amplitude contrast in CTF estimation. For use with hole-less phase plates.",default=False, guitype='boolbox', row=25, col=1, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--extrapad",action="store_true",help="If particles were boxed more tightly than EMAN requires, this will add some extra padding",default=False, guitype='boolbox', row=22, col=1, rowspan=1, colspan=1, mode='auto[False]')
-	parser.add_argument("--missingonly",action="store_true",help="Operates only on images with missing __ctf_flip_bispec files, for cases where a previous run failed before completion",default=False, guitype='boolbox', row=22, col=2, rowspan=1, colspan=1, mode='auto[False]')
+	parser.add_argument("--invartype",choices=["auto","bispec","harmonic"],help="Which type of invariants to generate: (bispec,harmonic)",default="auto", guitype='combobox', row=21, col=1, rowspan=1, colspan=2, choicelist="['auto','bispec','harmonic']",mode='auto["auto"]')
+	parser.add_argument("--missingonly",action="store_true",help="Operates only on images with missing __ctf_flip_invar files, for cases where a previous run failed before completion",default=False, guitype='boolbox', row=22, col=2, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--highdensity",action="store_true",help="If particles are very close together, this will interfere with SSNR estimation. If set uses an alternative strategy, but may over-estimate SSNR.",default=False, guitype='boolbox', row=24, col=0, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--invert",action="store_true",help="Invert the contrast of the particles in output files (default false)",default=False, guitype='boolbox', row=24, col=1, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--outputonly",action="store_true",help="Skips all of the initial steps, and just generates the final output, assuming previous steps completed successfully",default=False, guitype='boolbox', row=25, col=2, rowspan=1, colspan=1, mode='auto[False]')
@@ -114,6 +115,8 @@ Important: This program must be run from the project directory, not from within 
 		constbfactor=""
 	else:
 		constbfactor="--constbfactor {:02f}".format(options.constbfactor)
+
+		
 
 	# Check to see what we're dealing with. If we have frame-based parameters, we take that into account.
 	# If the frame parameters have astigmatism, then we don't adjust the defocus or astigmatism. We only check the first 10 frames
@@ -167,6 +170,12 @@ Strongly suggest refitting CTF from frames with e2rawdata.py with revised parame
 		except:
 			print("Error, no A/pix found")
 			sys.exit(1)
+
+	if options.invartype=="auto" :
+		try: options.invartype=str(project(["global.invartype"]))
+		except: 
+			print("Warning: no project invariant type spectified, using bispectrum")
+			options.invartype="bispec"
 
 	try:
 		tmp=EMData(ptcls[0],0)
@@ -228,7 +237,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 			else:
 				fit_options="--curdefocushint"
 				
-	if options.missingonly : missingonly="--onlynobispec"
+	if options.missingonly : missingonly="--onlynoinvar"
 	else: missingonly=""
 
 	logid=E2init(sys.argv, options.ppid)
@@ -402,11 +411,13 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 		launch_childprocess(com)
 		print("Phase-flipped output files:\n__ctf_flip_lp12 - masked, downsampled, filtered to 12 A resolution\n__ctf_flip_lp5 - masked, downsampled, filtered to 5 A resolution\n__ctf_flip_fullres - masked, full sampling")
 
-	com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} --proctag bispec --phaseflipproc filter.highpass.gauss:cutoff_freq=0.01 --phaseflipproc2 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc3 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc4 math.bispectrum.slice:size={bssz}:fp={bsfp} {extrapad} --threads {threads} ".format(
-		maskrad=maskrad4,maskwid=maskwid4,invert=invert,minqual=options.minqual,extrapad=extrapad,threads=options.threads,bssz=bispec_invar_parm[0],bsfp=bispec_invar_parm[1],missingonly=missingonly)
+	if options.invartype=="bispec" : pp4="math.bispectrum.slice:size={bssz}:fp={bsfp}".format(bssz=invar_invar_parm[0],bsfp=invar_invar_parm[1])
+	elif options.invartype=="harmonic" : pp4="math.harmonicpow:fp=1"
+	com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} --proctag invar --phaseflipproc filter.highpass.gauss:cutoff_freq=0.01 --phaseflipproc2 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc3 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc4 {pp4} {extrapad} --threads {threads} ".format(
+		maskrad=maskrad4,maskwid=maskwid4,invert=invert,minqual=options.minqual,extrapad=extrapad,pp4=pp4,threads=options.threads,missingonly=missingonly)
 	if options.verbose: print(com)
 	launch_childprocess(com)
-	print("Phase-flipped output files:\n__ctf_flip_bispec - bispectra footprints computed from high pass filtered normalized particles")
+	print("Phase-flipped output files:\n__ctf_flip_invar - invartra footprints computed from high pass filtered normalized particles")
 
 	print("Building default set with all particles for convenience")
 	com="e2buildsets.py --setname=all --excludebad --allparticles"

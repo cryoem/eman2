@@ -398,8 +398,14 @@ EMData * RotationalAlignerBispec::align(EMData * this_img, EMData *to, const str
 	EMData* this_img_bispec, * to_bispec;
 	int rfp = params.set_default("rfpn",4);
 	int size = params.set_default("size",32);
-	this_img_bispec=this_img->process("math.bispectrum.slice",Dict("rfp",rfp,"size",size));
-	to_bispec=to->process("math.bispectrum.slice",Dict("rfp",rfp,"size",size));
+	int harmonic = params.set_default("harmonic",0);
+	if (harmonic) {
+		this_img_bispec=this_img->process("math.harmonicpow",Dict("rfp",1));
+		to_bispec=to->process("math.harmonicpow",Dict("rfp",1));
+	} else {
+		this_img_bispec=this_img->process("math.bispectrum.slice",Dict("rfp",rfp,"size",size));
+		to_bispec=to->process("math.bispectrum.slice",Dict("rfp",rfp,"size",size));
+	}
 	int this_img_rfp_nx = this_img_bispec->get_xsize();
 
 	// Do row-wise correlation, returning a sum.
@@ -829,7 +835,8 @@ EMData *RotateTranslateAlignerBispec::align(EMData * this_img, EMData *to, const
 	int zscore = params.set_default("zscore",0);
 	int rfp = params.set_default("rfpn",4);			// rfpn and size were determined empirically. rfpn<4 shows obvious alignment shifts
 	int size = params.set_default("size",16);		// size=32 and size=16 seem generally to give equivalent results
-	EMData *rot_align  =  this_img->align("rotational_bispec", to,Dict("rfpn",rfp,"size",size));
+	int harmonic = params.set_default("harmonic",0);
+	EMData *rot_align  =  this_img->align("rotational_bispec", to,Dict("rfpn",rfp,"size",size,"harmonic",harmonic));
 	Transform * tmp = rot_align->get_attr("xform.align2d");
 	Dict rot = tmp->get_rotation("2d");
 	float rotate_angle_solution = rot["alpha"];
@@ -880,10 +887,13 @@ EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to, const s
 
 	EMData *rot_trans_align_flip=0;
 	EMData *rot_trans_align=0;
+	int usebispec=params.set_default("usebispec",0);
+	int useharmonic=params.set_default("useharmonic",0);
 	
-	if (params.set_default("usebispec",0)) {
+	
+	if (usebispec || useharmonic) {
 		// Get the non flipped rotational, tranlsationally aligned image
-		Dict rt_params("maxshift", params["maxshift"], "useflcf",params.set_default("useflcf",0));
+		Dict rt_params("maxshift", params["maxshift"], "useflcf",params.set_default("useflcf",0),"harmonic",useharmonic);
 		rot_trans_align = this_img->align("rotate_translate_bispec",to,rt_params,cmp_name, cmp_params);
 
 		// Do the same alignment, but using the flipped version of the image

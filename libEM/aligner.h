@@ -323,7 +323,7 @@ namespace EMAN
 		static const string NAME;
 	};
 
-	/** rotational alignment using bispectral invariants
+	/** rotational alignment using invariants
         */
 	class RotationalAlignerBispec:public Aligner
 	{
@@ -357,6 +357,7 @@ namespace EMAN
 			d.put("maxshift", EMObject::INT,"This is provided for compatibility with other aligners. It does absolutely nothing here, as there is an implicit maxshift=0.");
 			d.put("size", EMObject::INT,"Passed as the size parameter to the bispectrum calculation");
 			d.put("rfpn", EMObject::INT,"Passed as the rfp parameter to the bispectrum calculation");
+			d.put("harmonic", EMObject::INT,"If set, uses harmonic power instead of bispectra");
 			return d;
 		}
 
@@ -533,6 +534,7 @@ namespace EMAN
 			d.put("useflcf", EMObject::INT,"Use Fast Local Correlation Function rather than CCF for translational alignment");
 			d.put("size", EMObject::INT,"Passed as the size parameter to the bispectrum calculation");
 			d.put("rfpn", EMObject::INT,"Passed as the rfp parameter to the bispectrum calculation");
+			d.put("harmonic", EMObject::INT,"If set, uses harmonic power instead of bispectra");
 			
 //			d.put("zscore", EMObject::INT,"Either 0 or 1. This option is passed directly to the rotational aligner (default=false)");
 			return d;
@@ -937,6 +939,7 @@ namespace EMAN
 			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
 			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
 			d.put("usebispec", EMObject::INT,"Uses rotate_translate_bispec for subalignments and ignore rfp_mode.");
+			d.put("useharmonic", EMObject::INT,"Uses rotate_translate_bispec in harmonic mode for alignments and ignores rfp_mode.");
 			d.put("useflcf", EMObject::INT,"Use Fast Local Correlation Function rather than CCF for translational alignment");
 			d.put("zscore", EMObject::INT,"Either 0 or 1. This option is passed directly to the rotational aligner (default=false)");
 			return d;

@@ -92,7 +92,7 @@ NOTE: This program should be run from the project directory, not from within the
 
 	parser.add_argument("--allparticles",action="store_true",help="Will process all particle stacks stored in the particles subdirectory (no list of files required)",default=False, guitype='boolbox',row=1, col=0, mode='autofit[True],tuning[True],genoutp[True],gensf[False]')
 	parser.add_argument("--onlynew",action="store_true",help="Will skip any files for which __ctf_flip files already exist.",default=False)
-	parser.add_argument("--onlynobispec",action="store_true",help="Will skip any files for which __ctf_flip_bispec files already exist.",default=False)
+	parser.add_argument("--onlynoinvar",action="store_true",help="Will skip any files for which __ctf_flip_invar files already exist.",default=False)
 	parser.add_argument("--sortdefocus",action="store_true",help="Sorts the micrographs in order by defocus",default=False,guitype='boolbox',row=3,col=1, mode='tuning[True]')
 	parser.add_argument("--minptcl",type=int,help="Files with fewer than the specified number of particles will be skipped",default=0,guitype='intbox', row=2, col=0, mode='autofit,tuning,genoutp,gensf')
 	parser.add_argument("--minqual",type=int,help="Files with a quality value lower than specified will be skipped",default=0,guitype='intbox', row=2, col=1, mode='autofit,tuning,genoutp,gensf')
@@ -176,11 +176,11 @@ NOTE: This program should be run from the project directory, not from within the
 		if options.verbose: print("{} stacks in specified chunk".format(len(args)))
 		nthreads=1		# no threading with chunks
 
-	if options.onlynobispec:
+	if options.onlynoinvar:
 		print("%d files to process"%len(args))
 		dl=os.listdir("particles")
-		args=[i for i in args if not base_name(i)+"__ctf_flip_bispec.hdf" in dl]
-		if options.verbose: print("{} stacks after onlynobispec filter".format(len(args)))
+		args=[i for i in args if not base_name(i)+"__ctf_flip_invar.hdf" in dl]
+		if options.verbose: print("{} stacks after onlynoinvar filter".format(len(args)))
 
 	if options.onlynew:
 		print("%d files to process"%len(args))
@@ -885,9 +885,9 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 				out2["apix_z"] = ctf.apix
 				# we take a sequence of processor option 2-tuples
 				for op in phaseproc[1:]:
-					if op[0]=="math.bispectrum.slice" and extrapad:
+					if op[0] in ("math.bispectrum.slice","math.harmonicpow")  and extrapad:
 						pad=good_size(out2["ny"]*1.25)
-						out2.clip_inplace(Region(old_div(-(pad-out2["nx"]),2),old_div(-(pad-out2["ny"]),2),pad,pad))
+						out2.clip_inplace(Region((-(pad-out2["nx"])//2),(-(pad-out2["ny"])//2),pad,pad))
 					if op[0] in outplaceprocs: out2=out2.process(op[0],op[1])
 					else: out2.process_inplace(op[0],op[1])
 #				out2.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
@@ -895,9 +895,9 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 #				print fft2.get_ysize(),len(hpfilt)
 
 				if edgenorm: out2.process_inplace("normalize.edgemean")
-				if extrapad and out2["nx"]==out2["ny"]:
+				if extrapad and out2["nx"]==out2["ny"] and out2["ny"]==out["ny"]:
 					pad=good_size(out2["ny"]*1.25)
-					out2.clip_inplace(Region(old_div(-(pad-out2["nx"]),2),old_div(-(pad-out2["ny"]),2),pad,pad))
+					out2.clip_inplace(Region((-(pad-out2["nx"])//2),(-(pad-out2["ny"])//2),pad,pad))
 				out2.write_image(phaseproc[0],i)
 
 			if phasehp:

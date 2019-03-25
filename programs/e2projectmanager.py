@@ -821,6 +821,13 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		except:
 			return ""
 
+	def getInvar(self):
+		""" Return the project invariant type """
+		try:
+			return self.pm_projects_db.setdefault("global.invariant_type",dfl="bispec")
+		except:
+			return ""
+
 	def getVoltage(self):
 		""" Return the project Voltage """
 		try:
@@ -2070,12 +2077,17 @@ class ProjectDialog(QtWidgets.QDialog):
 		self.microscope_voltage = QtWidgets.QLineEdit()
 		microscope_apix_label = QtWidgets.QLabel("Microscope apix")
 		self.microscope_apix = QtWidgets.QLineEdit()
+		self.invar_type = QtWidgets.QComboBox()
+		self.invar_type.addItem("bispec")
+		self.invar_type.addItem("harmonic")
+		
 		grid.addWidget(micrscope_cs_label, 4, 0)
 		grid.addWidget(self.micrscope_cs, 4, 1)
 		grid.addWidget(microscope_voltage_label, 5, 0)
 		grid.addWidget(self.microscope_voltage, 5, 1)
 		grid.addWidget(microscope_apix_label, 6, 0)
 		grid.addWidget(self.microscope_apix, 6, 1)
+		grid.addWidget(self.invar_type, 7, 1)
 
 		frame.setLayout(grid)
 
@@ -2101,8 +2113,10 @@ class ProjectDialog(QtWidgets.QDialog):
 		self.microscope_voltage.setText(str(self.pm.getVoltage()))
 		self.microscope_apix.setText(str(self.pm.getAPIX()))
 		self.particle_mass.setText(str(self.pm.getMass()))
+		self.invar_type.setCurrentText(str(self.pm.getInvar()))
 
 	def _on_done(self):
+		self.pm.pm_projects_db['global.invariant_type'] = str(self.invar_type.currentText())
 		self.pm.pm_projects_db['global.particle_mass'] = str(self.particle_mass.text())
 		self.pm.pm_projects_db['global.microscope_cs'] = str(self.micrscope_cs.text())
 		self.pm.pm_projects_db['global.microscope_voltage'] = str(self.microscope_voltage.text())

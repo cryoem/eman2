@@ -133,7 +133,7 @@ def importfn(i,arg,options):
 
 	cmdext=[]
 	if options.invert: cmdext.append(" --mult=-1")
-	if options.edgenorm: cmdext.append(" --process=normalize.edgemean")
+	if options.edgenorm: cmdext.append(" --process=mask.zeroedgefill:nonzero=1 --process=normalize.edgemean")
 	if options.xraypixel: cmdext.append(" --process=threshold.clampminmax.nsigma:nsigma=4")
 	if len(cmdext)>0 or arg!=output:
 		cmd+="".join(cmdext)
