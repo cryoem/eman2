@@ -81,7 +81,7 @@ if(SP_DIR)
 	file(WRITE ${SP_DIR}/eman2dir_relative_path_to_sp_dir ${eman2dir_relative_path})
 endif()
 
-set(CMAKE_INSTALL_RPATH ${SP_DIR})
+set(CMAKE_INSTALL_RPATH "${SP_DIR};${EMAN_PREFIX_LIB}")
 
 OPTION(ENABLE_AUTODOC "enable latex/doxygen document generation and etc. " OFF)
 
