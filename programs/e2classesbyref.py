@@ -53,7 +53,7 @@ def main():
 	** EXPERIMENTAL **
 	
 	This program classifies a set of particles based on a set of references (usually projections). This program makes use of
-	bispectral rotational/translational invariants which, aside from computing the invariants, makes the process extremely fast.
+	rotational/translational invariants which, aside from computing the invariants, makes the process extremely fast.
 	
 	"""
 	
@@ -90,39 +90,40 @@ def main():
 	nref=EMUtil.get_image_count(args[0])
 	nptcl=EMUtil.get_image_count(args[1])
 
-	# get refs and bispectra
+	# get refs and invariants
 	refs=EMData.read_images(args[0])
-	refsbsfs=args[0].rsplit(".")[0]+"_bispec.hdf"
+	refsbsfs=args[0].rsplit(".")[0]+"_invar.hdf"
 	try:
 		nrefbs=EMUtil.get_image_count(refsbsfs)
 		if nrefbs!=len(refs) :
-			print("Reference bispectrum file too short :",nrefbs,len(refs))
+			print("Reference invariant file too short :",nrefbs,len(refs))
 			raise Exception
 	except:
-		print("No good bispecta found for refs. Building")
-		com="e2proc2dpar.py {inp} {out} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process mask.soft:outer_radius={maskrad}:width={maskw} --process math.bispectrum.slice:size={bssize}:fp={bsdepth} --threads {threads}".format(
-			inp=args[0],out=refsbsfs,maskrad=int(refs[0]["nx"]//2.2),maskw=int(refs[0]["nx"]//15),bssize=bispec_invar_parm[0],bsdepth=bispec_invar_parm[1],threads=options.threads)
-		run(com)
+		print("Error! No good invariants found for refs. Please rerun CTF generate output and set building.")
+		sys.exit(1)
+		#com="e2proc2dpar.py {inp} {out} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process mask.soft:outer_radius={maskrad}:width={maskw} --process math.bispectrum.slice:size={bssize}:fp={bsdepth} --threads {threads}".format(
+			#inp=args[0],out=refsbsfs,maskrad=int(refs[0]["nx"]//2.2),maskw=int(refs[0]["nx"]//15),bssize=bispec_invar_parm[0],bsdepth=bispec_invar_parm[1],threads=options.threads)
+		#run(com)
 	
-	refsbs=EMData.read_images(refsbsfs)
+	#refsbs=EMData.read_images(refsbsfs)
 	#refsbs=[i.process("filter.highpass.gauss",{"cutoff_freq":0.01}).process("normalize.edgemean").process("math.bispectrum.slice:size=32:fp=6") for i in refs]
 	
-	# Find particle bispectra
+	# Find particle invariants
 	if "__ctf_flip" in args[1]:
-		if "even" in args[1]: bsfs=args[1].split("__ctf_flip")[0]+"__ctf_flip_bispec_even.lst"
-		elif "odd" in args[1]: bsfs=args[1].split("__ctf_flip")[0]+"__ctf_flip_bispec_odd.lst"
+		if "even" in args[1]: bsfs=args[1].split("__ctf_flip")[0]+"__ctf_flip_invar_even.lst"
+		elif "odd" in args[1]: bsfs=args[1].split("__ctf_flip")[0]+"__ctf_flip_invar_odd.lst"
 		else:
-			bsfs=args[1].split("__ctf_flip")[0]+"__ctf_flip_bispec.lst"
+			bsfs=args[1].split("__ctf_flip")[0]+"__ctf_flip_invar.lst"
 		try: nptclbs=EMUtil.get_image_count(bsfs)
 		except:
 			print("Could not get particle count on ",bsfs)
 			sys.exit(1)
 		if nptclbs!=nptcl : 
 			print(nptclbs,nptcl)
-			raise Exception("Particle bispectra file has wrong particle count")
+			raise Exception("Particle invariant file has wrong particle count")
 	else:
-		if "even" in args[1]: bsfs=args[1].split("_even")[0]+"_bispec_even.lst"
-		elif "odd" in args[1]: bsfs=args[1].split("_odd")[0]+"_bispec_odd.lst"
+		if "even" in args[1]: bsfs=args[1].split("_even")[0]+"_invar_even.lst"
+		elif "odd" in args[1]: bsfs=args[1].split("_odd")[0]+"_invar_odd.lst"
 		
 	### initialize output files
 	
@@ -258,7 +259,10 @@ def clsfn(jsd,refs,refsbs_org,ptclfs,ptclbsfs,options,grp,n0,n1):
 #			print "New DF {} -> {}   ( {} -> {} )".format(lastdf,ctf.defocus,lastdfn,i)
 			# note that with purectf=1 this is replacing the image entirely
 			ctfim=ptcl.process("math.simulatectf",{"voltage":ctf.voltage,"cs":ctf.cs,"defocus":ctf.defocus,"bfactor":ctf.bfactor,"ampcont":ctf.ampcont,"apix":ctf.apix,"phaseflip":0,"purectf":1})
-			dfmod=ctfim.process("math.bispectrum.slice",{"size":bispec_invar_parm[0],"fp":bispec_invar_parm[1]})
+			if ptclbs.has_attr("is_harmonic_fp"):
+				dfmod=ctfim.process("math.harmonicpow",{"fp":1})
+			else:
+				dfmod=ctfim.process("math.bispectrum.slice",{"size":bispec_invar_parm[0],"fp":bispec_invar_parm[1]})
 			#print(ctfim["nx"],dfmod["nx"],refsbs_org[0]["nx"])
 			#print(ctfim["ny"],dfmod["ny"],refsbs_org[0]["ny"])
 			refsbs=[im.copy() for im in refsbs_org]

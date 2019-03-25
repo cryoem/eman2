@@ -64,7 +64,7 @@ def main():
 	parser.add_argument("--excludebad",action="store_true",help="Exclude bad particles.",default=False, guitype='boolbox',row=4,col=0,rowspan=1,colspan=1,mode="build[True]")
 	parser.add_argument("--allparticles",action="store_true",help="Will process all particle stacks stored in the particles subdirectory (if specified, list of files will be ignored)",default=False, guitype='boolbox',row=1, col=0,mode="build[True]")
 	parser.add_argument("--withflipped",action="store_true",help="Only include images with phase-flipped counterparts!",default=False,guitype='boolbox', row=4, col=1, rowspan=1, colspan=1,mode="build")
-	parser.add_argument("--withbispec",action="store_true",help="Only include images with bispectrum counterparts!",default=False,guitype='boolbox', row=4, col=2, rowspan=1, colspan=1,mode="build")
+	parser.add_argument("--withinvar",action="store_true",help="Only include images with _invar counterparts!",default=False,guitype='boolbox', row=4, col=2, rowspan=1, colspan=1,mode="build")
 	parser.add_argument("--minptcl",type=int,help="Files with fewer than the specified number of particles will be skipped",default=0,guitype='intbox', row=5, col=0,mode="build")
 	parser.add_argument("--minqual",type=int,help="Files with a quality value lower than specified will be skipped",default=0,guitype='intbox', row=5, col=1,mode="build")
 	parser.add_argument("--mindf",type=float,help="Files with a defocus lower than specified will be skipped",default=0,guitype='floatbox', row=6, col=0,mode="build")
@@ -126,10 +126,10 @@ def main():
 		ptcls=[i for i in os.listdir("particles") if i[0]!="."]
 		args=[i for i in args if i+"__ctf_flip_fullres.hdf" in ptcls]	# Not super-efficient, but functional
 
-	if options.withbispec :
-		print("Insuring that files have bispectrum particles")
+	if options.withinvar :
+		print("Insuring that files have invariant particles")
 		ptcls=[i for i in os.listdir("particles") if i[0]!="."]
-		args=[i for i in args if i+"__ctf_flip_bispec.hdf" in ptcls]	# Not super-efficient, but functional
+		args=[i for i in args if i+"__ctf_flip_invar.hdf" in ptcls]	# Not super-efficient, but functional
 
 	print("Filtering by Defocus and B-factor")
 	ctfmsg=0

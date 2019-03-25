@@ -378,7 +378,7 @@ class ClassAvTask(JSTask):
 			#ali=align_one(avg,ref,True,self.options["align"],self.options["aligncmp"],self.options["ralign"],self.options["raligncmp"])
 #			ali=align_one(avg,ref,True,("rotate_translate_flip_iterative",{}),("ccc",{}),("refine",{}),("ccc",{}))
 			# changed to this in 3/6/14 because it was causing class-averages done without flipping to sometimes become flipped. Also not sure if I trust the _iterative aligner
-			ali=align_one(avg,ref,True,("rotate_translate_bispec",{}),("ccc",{}),("refine",{}),("ccc",{}))
+			ali=align_one(avg,ref,True,("rotate_translate_bispec",{}),("ccc",{}),("refine",{}),("ccc",{}))	# best choice? Switch back to tree?
 			fxf=ali["xform.align2d"]
 			avg1=avg
 			if options["verbose"]>0 : print("Final realign:",fxf)

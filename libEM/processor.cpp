@@ -13061,6 +13061,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 //		printf("%d\t%d\t%d\t%d\t%d\n",fp,nkx,nky,cimage->get_xsize(),cimage->get_ysize());
 		delete ret;
 		delete cimage;
+		ret2->set_attr("is_bispec_fp",(int)fp);
 		return ret2;
         }
 	// In this mode we are making a translational invariant with information we can use for rotational alignment
@@ -13163,6 +13164,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		delete ret;
 		delete line;
 		delete cimage;
+		ret2->set_attr("is_bispec_rfp",(int)rfp);
 		return ret2;
 	}
 	// angular integrate mode, produces the simplest rotational invariant, ignoring rotational correlations
@@ -13242,6 +13244,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 
 const int NHARMROOT = 5;
 const unsigned int harmbase[NHARMROOT] = {3,4,5,7,11}; // 2 is excluded to to the need to avoid very low resolution, so we use 4 instead
+const unsigned int harmbaser[NHARMROOT] = {2,3,5,7,11}; // for rotation, all of the terms should be safe?  We also get negative frequencies which may not be conjugate
 
 EMData* HarmonicPowProcessor::process(const EMData * const image) {
 	if (image->get_zsize()!=1) throw ImageDimensionException("Only 2-D images supported");
@@ -13259,6 +13262,7 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 	EMData* trns=new EMData(naz*2,ny/2,1);
 	trns->to_zero();
 	trns->set_complex(1);
+	trns->set_ri(1);
 	trns->set_fftpad(1);
 	size_t xyz=trns->get_size();
 //	printf("apix %f\tnx %d\n",(float)image->get_attr("apix_x"),(int)image->get_xsize());
@@ -13284,6 +13288,7 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 			}
 			// rescale components to have linear amplitude WRT the original FFT, without changing phase
 			trns->ri2ap();
+			
 			for (size_t i=0; i<xyz; i+=2) {
 				trns->set_value_at_index(i,pow(trns->get_value_at_index(i),1.0/(hn+1)));
 			}
@@ -13316,6 +13321,7 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 				}
 				trns->ap2ri();
 			}
+			trns->set_attr("is_harmonic_rn",(int)rn);
 		}
 		else {
 			trns->set_size(nx,ny,1);
@@ -13338,10 +13344,12 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 	//		EMData *ret = trns->do_ift();
 		}
 		delete cimage;
+		trns->set_attr("is_harmonic_hn",(int)hn);
 
 		return(trns);
 	}
 	if (params.has_key("rfp")) {
+		int rfp=(int)params.get("rfp");
 		trns->set_size(naz*2,ny/4,1);
 		xyz=trns->get_size();
 		// We deal with each radial line at a time 
@@ -13364,12 +13372,79 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 					v1=std::polar(std::pow(std::abs(v1),1.0/(hn+1.0)),std::arg(v1));	// rescale the amplitude without changing the phase
 					trns->set_complex_at_idx(ja,rc,0,(complex<float>)v1);
 					rc++;
-					if (!isfinite(trns->get_value_at(ja*2,rc))) printf("%d %d %d %d\n",ja,hn,j,rc);
+//					if (rc==0) printf("%d %d %d %d %f %f\n",ja,hn,j,rc,jx,jy);
 				}
 			}
 		}
 		delete cimage;
+		trns->set_attr("is_harmonic_rfp",(int)rfp);
+		trns->set_complex(0);
 		return(trns);
+	}
+	// This generates rotational & translational invariants
+	if (params.has_key("fp")) {
+		int fp=(int)params.get("fp");
+		trns->set_size(naz*2,ny/4,1);
+		xyz=trns->get_size();
+		// We deal with each radial line at a time 
+		for (int ja=0; ja<naz; ja++) {
+			float si=sin(float(2.0*M_PI*ja/naz));
+			float co=cos(float(2.0*M_PI*ja/naz));
+			int rc=0; 								// This counts the number of components we've generated for the current angle
+			// outer loop is for the harmonic index, each cycle we generate one harmonic for each root
+			for (int hn=2; hn<ny/6; hn++) {
+				// inner loop is for the roots of each harmonic
+				if (rc>=ny/4) break;			// this is the maximum number of components we generate in the output
+				for (int j=0; j<NHARMROOT; j++) {
+					int jr=harmbase[j]*hn;
+					if (rc>=ny/4 || jr>=ny/2) break;			// this is the maximum number of components we generate in the output, and we need to stay within the image
+					float jx=co*jr;
+					float jy=si*jr;
+					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
+					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx/(float)hn,jy/(float)hn);
+					v1*=std::pow(std::conj(v2),(float)hn);						// This is the invariant
+					v1=std::polar(std::pow(std::abs(v1),1.0/(hn+1.0)),std::arg(v1));	// rescale the amplitude without changing the phase
+					trns->set_complex_at_idx(ja,rc,0,(complex<float>)v1);
+					rc++;
+				}
+			}
+		}
+		// Now we do the 1-D FFTs on the lines of the translational invariant
+		complex<float> *tmp = (complex<float>*)EMfft::fftmalloc(naz*2);
+		for (int jy=0;  jy<ny/4; jy++) {
+			// While it might seem a good idea to do inplace 1D transforms for each row, the potential memory
+			// alignment change for each row could cause bad things to happen
+			memcpy((void*)tmp,(void*)(trns->get_data()+jy*naz*2),naz*2*sizeof(float));
+			EMfft::complex_to_complex_1d_inplace(tmp,naz*2);
+			
+			// now we generate our rotationally invariant line from the fft
+			// Note that here we group all of the harmonics of a particular order, and include the "1" harmonic,
+			// which would be a power spectrum, except that we took the FFT of a complex function, so Friedel symmetry may not exist
+			int rc=0;
+			for (int j=0; j<NHARMROOT;  j++) {
+				int hn=harmbaser[j];
+				if (rc>=naz) break;
+				// The first component is different since it uses a single frequency
+				for (int i=hn; i<naz/2; i+=hn) {		// this is normally naz/2, by using 3/8 we ignore really high frequency components and gain higher harmonic bands
+					if (rc>=naz) break;
+					// rather than taking a complex conjugate we make use of the negative frequencies, and we pair both ways
+					// the conjugate on the second term may not be optimal? Not positive...
+					complex<double>v1=std::pow(std::conj(tmp[i/hn]),hn)*tmp[i]+std::conj(std::pow(std::conj(tmp[naz-i/hn]),hn)*tmp[naz-i]);
+//						complex<double>v1=std::pow(tmp[i/hn],hn)*tmp[naz-i]+std::conj(std::pow(tmp[naz-i/hn],hn)*tmp[i]);
+					v1=std::polar(std::pow(std::abs(v1),1.0/(hn+1.0)),std::arg(v1));	// rescale the amplitude without changing the phase
+					trns->set_complex_at_idx(rc/2,jy,0,(complex<float>)v1);
+					rc+=2;
+				}
+			}
+		}
+		EMfft::fftfree((float *)tmp);
+
+		delete cimage;
+		EMData *ret=trns->get_clip(Region(0,0,naz,ny/4));
+		delete trns;
+		ret->set_attr("is_harmonic_fp",(int)fp);
+		ret->set_complex(0);
+		return(ret);
 	}
 	
 }

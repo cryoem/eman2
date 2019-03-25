@@ -180,7 +180,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--iter", dest = "iter", type = int, default=6, help = "The total number of refinement iterations to perform. Default=auto", guitype='intbox', row=10, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--mass", default=0, type=float,help="The ~mass of the particle in kilodaltons, used to run normalize.bymass. Due to resolution effects, not always the true mass.", guitype='floatbox', row=12, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getMass()']")
 	parser.add_header(name="optional", help='Just a visual separation', title="Optional:", row=14, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--bispec",default=False, action="store_true", help="Will use bispectra for orientation determination (EXPERIMENTAL).",guitype='boolbox', row=18, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--invar",default=False, action="store_true", help="Will use invariants for orientation determination, set invariant type in project (EXPERIMENTAL).",guitype='boolbox', row=18, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--mirror",default=False, action="store_true", help="Default for non bispectrum refinement is to handle mirrored projections by permitting flips in 2-D alignment. This will force the normal refinement to make explict mirrored projections")
 	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles. Normally set to 0, which will read the value from the header of the input file", guitype='floatbox', row=16, col=0, rowspan=1, colspan=1, mode="refinement[0]")
 	parser.add_argument("--sep", type=int, help="The number of classes each particle can contribute towards (normally 1). Increasing will improve SNR, but produce rotational blurring.", default=-1)
@@ -396,19 +396,19 @@ then this map have initial model bias, and resolution evaluation may be unrealia
 gold standard resolution assessment is not valid, and you need to re-refine, starting with a lower resolution target.</p>
 <p>Input particles are from <i>{infile}</i></p>""".format(model=options.model,infile=options.input,res=randomres,resb=randomres*0.9))
 			# input gets modified below, we need to do this first
-			if options.bispec: 
+			if options.invar: 
 				try: 
 #					print "eosplit ",options.input.split("__ctf_flip")[0]+"__ctf_flip_bispec.lst","\n\n"
-					bsinput=image_eosplit(options.input.split("__ctf_flip")[0]+"__ctf_flip_bispec.lst")
-					bsh=EMData(options.input.split("__ctf_flip")[0]+"__ctf_flip_bispec.lst",0)
+					bsinput=image_eosplit(options.input.split("__ctf_flip")[0]+"__ctf_flip_invar.lst")
+					bsh=EMData(options.input.split("__ctf_flip")[0]+"__ctf_flip_invar.lst",0)
 					bsx=bsh["nx"]
 					bsy=bsh["ny"]
-					if bsx!=bispec_invar_parm[0]/2 or bsy!=bispec_invar_parm[0]*bispec_invar_parm[1] : 
+					if not bsh.has_key("is_harmonic_fp") and (bsx!=bispec_invar_parm[0]/2 or bsy!=bispec_invar_parm[0]*bispec_invar_parm[1]) : 
 						print("ERROR: bispectra file found, but with incorrect dimensions. This likely means it was created with an earlier version of EMAN2. Please rerun e2ctf_auto.py with the --outputonly option to regenerate bispectra.")
 						sys.exit(1)
 				except: 
 #					traceback.print_exc()
-					print("ERROR: ",options.input.split("__ctf_flip")[0]+"__ctf_flip_bispec.lst"," is not present or not usable. Please run e2ctf_auto.py on this project, and regenerate any sets you plan to use.")
+					print("ERROR: ",options.input.split("__ctf_flip")[0]+"__ctf_flip_invar.lst"," is not present or not usable. Please run e2ctf_auto.py on this project, and regenerate any sets you plan to use.")
 					sys.exit(1)
 					#traceback.print_exc()
 					#bsinput=options.input.rsplit(".",1)[0]+"_bispec.hdf"
@@ -515,7 +515,7 @@ the actual map quality. This can achieve maximum liklihood-like effects without 
 are really required to achieve the targeted resolution, you may consider manually specifiying --sep 1, which will override this automatic behavior.</p>".format(sep=options.sep))
 
 	# in bispectrum mode, we make classes for the full sphere
-	if options.bispec or options.mirror: incmir=1
+	if options.invar or options.mirror: incmir=1
 	else: incmir=0
 	
 	if options.orientgen==None :
@@ -867,10 +867,10 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 			run(cmd)
 			progress += 1.0
 			E2progress(logid,old_div(progress,total_procs))
-		elif options.bispec:
+		elif options.invar:
 			### FIXME - hard-coded rotate_translate aligner here due to odd irreproducible memory related crashes with rotate_translate_tree:flip=0   8/22/17
 			### At some point this was changed back to rotate_translate_tree with flipping. May be ok since it would recover some mis-classified handedness related particles?  5/29/18
-			append_html("<p>* Computing similarity of each particle to the set of projections using bispectra. This avoids alignment, and permits classification in a single step.</p>",True)
+			append_html("<p>* Computing similarity of each particle to the set of projections using invariants. This avoids alignment, and permits classification in a single step.</p>",True)
 			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_even.hdf {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --classinfo {path}/classinfo_{itr:02d}_even.json --classes {path}/classes_{itr:02}_even.hdf --averager {averager} --cmp {simcmp} --align rotate_translate_flip:usebispec=1 --aligncmp {simaligncmp} {simralign} {verbose} --sep {sep} --threads {threads}".format(
 				path=options.path,itr=it,inputfile=options.input[0],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,sep=options.sep,averager=options.classaverager,
 				verbose=verbose,threads=options.threads)
