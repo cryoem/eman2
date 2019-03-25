@@ -13244,7 +13244,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 
 const int NHARMROOT = 5;
 const unsigned int harmbase[NHARMROOT] = {3,4,5,7,11}; // 2 is excluded to to the need to avoid very low resolution, so we use 4 instead
-const unsigned int harmbaser[NHARMROOT] = {1,2,3,5,7}; // for rotation, all of the terms should be safe?  We also get negative frequencies which may not be conjugate
+const unsigned int harmbaser[NHARMROOT] = {2,3,5,7,11}; // for rotation, all of the terms should be safe?  We also get negative frequencies which may not be conjugate
 
 EMData* HarmonicPowProcessor::process(const EMData * const image) {
 	if (image->get_zsize()!=1) throw ImageDimensionException("Only 2-D images supported");
@@ -13425,26 +13425,15 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 				int hn=harmbaser[j];
 				if (rc>=naz) break;
 				// The first component is different since it uses a single frequency
-				if (j==0) {
-					for (int i=hn; i<naz*3/8; i+=hn) {		// this is normally naz/2, by using 3/8, we ignore really high frequency components and gain higher harmonic bands
-						if (rc>=naz) break;
-						complex<double>v1=std::pow(tmp[i/hn],hn)*tmp[naz-i];  // rather than taking a complex conjugate we make use of the negative frequencies
-						v1=std::polar(std::pow(std::abs(v1),0.5),std::arg(v1));	// rescale the amplitude without changing the phase
-						trns->set_value_at(rc,jy,0,(float)real(v1)*(rc%2==0?-1.0f:1.0f));		// Since it is almost conjugate for j==0, we just keep the real component
-						rc++;
-					}
-				}
-				else {
-					for (int i=hn; i<naz*3/8; i+=hn) {		// this is normally naz/2, by using 3/8 we ignore really high frequency components and gain higher harmonic bands
-						if (rc>=naz) break;
-						// rather than taking a complex conjugate we make use of the negative frequencies, and we pair both ways
-						// the conjugate on the second term may not be optimal? Not positive...
-						complex<double>v1=std::pow(std::conj(tmp[i/hn]),hn)*tmp[i]+std::conj(std::pow(std::conj(tmp[naz-i/hn]),hn)*tmp[naz-i]);
+				for (int i=hn; i<naz/2; i+=hn) {		// this is normally naz/2, by using 3/8 we ignore really high frequency components and gain higher harmonic bands
+					if (rc>=naz) break;
+					// rather than taking a complex conjugate we make use of the negative frequencies, and we pair both ways
+					// the conjugate on the second term may not be optimal? Not positive...
+					complex<double>v1=std::pow(std::conj(tmp[i/hn]),hn)*tmp[i]+std::conj(std::pow(std::conj(tmp[naz-i/hn]),hn)*tmp[naz-i]);
 //						complex<double>v1=std::pow(tmp[i/hn],hn)*tmp[naz-i]+std::conj(std::pow(tmp[naz-i/hn],hn)*tmp[i]);
-						v1=std::polar(std::pow(std::abs(v1),1.0/(hn+1.0)),std::arg(v1));	// rescale the amplitude without changing the phase
-						trns->set_complex_at_idx(rc/2,jy,0,(complex<float>)v1);		// Since it is almost conjugate for j==0, we just keep the real component
-						rc+=2;
-					}
+					v1=std::polar(std::pow(std::abs(v1),1.0/(hn+1.0)),std::arg(v1));	// rescale the amplitude without changing the phase
+					trns->set_complex_at_idx(rc/2,jy,0,(complex<float>)v1);
+					rc+=2;
 				}
 			}
 		}
