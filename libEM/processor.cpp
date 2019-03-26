@@ -13244,7 +13244,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 
 const int NHARMROOT = 5;
 const unsigned int harmbase[NHARMROOT] = {3,4,5,7,11}; // 2 is excluded to to the need to avoid very low resolution, so we use 4 instead
-const unsigned int harmbaser[NHARMROOT] = {2,3,5,7,11}; // for rotation, all of the terms should be safe?  We also get negative frequencies which may not be conjugate
+const unsigned int harmbaser[NHARMROOT] = {2,3,4,5,6}; // for rotation, all of the terms should be safe?  We also get negative frequencies which may not be conjugate
 
 EMData* HarmonicPowProcessor::process(const EMData * const image) {
 	if (image->get_zsize()!=1) throw ImageDimensionException("Only 2-D images supported");
@@ -13446,7 +13446,7 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 					int hn=harmbaser[j];
 					if (rc>=naz) break;
 					// The first component is different since it uses a single frequency
-					for (int i=hn; i<naz/2; i+=hn) {		// this is normally naz/2, by using 3/8 we ignore really high frequency components and gain higher harmonic bands
+					for (int i=hn; i<naz*3/8; i+=hn) {		// this is normally naz/2, by using 3/8 we ignore really high frequency components and gain higher harmonic bands
 						if (rc>=naz) break;
 						// rather than taking a complex conjugate we make use of the negative frequencies, and we pair both ways
 						// the conjugate on the second term may not be optimal? Not positive...
@@ -13467,7 +13467,7 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 		EMData *ret=trns->get_clip(Region(0,0,naz,ny/4));
 		delete trns;
 		ret->set_attr("is_harmonic_fp",(int)fp);
-//		ret->set_complex(0);
+		ret->set_complex(0);
 		return(ret);
 	}
 	
