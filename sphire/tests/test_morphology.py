@@ -13,20 +13,38 @@ import unittest
 from test_module import get_data, get_data_3d, remove_dir, get_arg_from_pickle_file
 
 from EMAN2_cppwrap import EMData, EMAN2Ctf
+from copy import  deepcopy
 from os import path
 
 
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
-TOLERANCE = 0.005
+TOLERANCE = 0.0075
+
+IMAGE_2D = get_data(1)[0]
+IMAGE_3D = get_data_3d(1)[0]
+IMAGE_BLANK_2D = sparx_utilities.model_blank(10, 10)
+IMAGE_BLANK_3D = sparx_utilities.model_blank(10, 10, 10)
+MASK = sparx_utilities.model_circle(2, 5, 5)
 
 
+
+
+
+"""
+There are some opened issues in:
+1) rotavg_ctf for definition it'll process a 2D image ... should we impede a 3D img as input?
+
+"""
 class Test_binarize(unittest.TestCase):
 
-    def test_D1(self):
-        image = get_data(1)[0]
+    def test_binarize_2Dimg(self):
+        return_new = fu.binarize(IMAGE_2D, minval = 0.0)
+        return_old = oldfu.binarize(IMAGE_2D, minval = 0.0)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-        return_new = fu.binarize(image)
-        return_old = oldfu.binarize(image)
+    def test_binarize_3Dimg(self):
+        return_new = fu.binarize(IMAGE_3D, minval = 0.0)
+        return_old = oldfu.binarize(IMAGE_3D, minval = 0.0)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_empty_input_image(self):
@@ -44,11 +62,14 @@ class Test_binarize(unittest.TestCase):
 
 class Test_collapse(unittest.TestCase):
 
-    def test_D2(self):
-        image = get_data(1)[0]
+    def test_collapse_2Dimg(self):
+        return_new = fu.collapse(IMAGE_2D, minval = -1.0, maxval = 1.0)
+        return_old = oldfu.collapse(IMAGE_2D, minval = -1.0, maxval = 1.0)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-        return_new = fu.collapse(image)
-        return_old = oldfu.collapse(image)
+    def test_collapse_3Dimg(self):
+        return_new = fu.collapse(IMAGE_3D, minval = -1.0, maxval = 1.0)
+        return_old = oldfu.collapse(IMAGE_3D, minval = -1.0, maxval = 1.0)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_empty_input_image(self):
@@ -65,9 +86,6 @@ class Test_collapse(unittest.TestCase):
 
 
 class Test_dilatation(unittest.TestCase):
-    image_2d = sparx_utilities.model_blank(10,10)
-    image_3d = sparx_utilities.model_blank(10, 10,10)
-    mask = sparx_utilities.model_circle(2, 5, 5)
 
     @unittest.skip("\n***************************\n\t\t 'Test_dilatation.test_empty_input_image' because: interrupted by signal 11: SIGSEGV\n***************************")
     def test_test_empty_input_image(self):
@@ -81,67 +99,71 @@ class Test_dilatation(unittest.TestCase):
         self.assertTrue(return_old is None)
         self.assertTrue(return_new is None)
 
-    def test_empty_input_image2(self):
+    def test_empty_mask_image(self):
         with self.assertRaises(RuntimeError):
-            fu.dilation(self.image_2d, EMData(), morphtype="BINARY")
-            oldfu.dilation(self.image_2d, EMData(), morphtype="BINARY")
+            fu.dilation(IMAGE_BLANK_2D, EMData(), morphtype="BINARY")
+            oldfu.dilation(IMAGE_BLANK_2D, EMData(), morphtype="BINARY")
 
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError):
             fu.dilation()
             oldfu.dilation()
 
-    def test_D3(self):
-        return_new = fu.dilation(self.image_2d, self.mask, morphtype="BINARY")
-        return_old = oldfu.dilation(self.image_2d, self.mask, morphtype="BINARY")
+    def test_bynary_2Dimg(self):
+        return_new = fu.dilation(IMAGE_BLANK_2D, MASK, morphtype="BINARY")
+        return_old = oldfu.dilation(IMAGE_BLANK_2D, MASK, morphtype="BINARY")
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_D3_2(self):
-        return_new = fu.dilation(self.image_3d, self.mask, morphtype="BINARY")
-        return_old = oldfu.dilation(self.image_3d, self.mask, morphtype="BINARY")
+    def test_bynary_3Dimg(self):
+        return_new = fu.dilation(IMAGE_BLANK_3D, MASK, morphtype="BINARY")
+        return_old = oldfu.dilation(IMAGE_BLANK_3D, MASK, morphtype="BINARY")
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_E3(self):
-        return_new = fu.dilation(self.image_2d, self.mask, morphtype="GRAYLEVEL")
-        return_old = oldfu.dilation(self.image_2d, self.mask, morphtype="GRAYLEVEL")
+    def test_bynary_2Dimg_NOmask(self):
+        return_new = fu.dilation(IMAGE_BLANK_2D, morphtype="BINARY")
+        return_old = oldfu.dilation(IMAGE_BLANK_2D, morphtype="BINARY")
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_E3_2(self):
-        return_new = fu.dilation(self.image_3d, self.mask, morphtype="GRAYLEVEL")
-        return_old = oldfu.dilation(self.image_3d, self.mask, morphtype="GRAYLEVEL")
+    def test_bynary_3Dimg_NOmask(self):
+        return_new = fu.dilation(IMAGE_BLANK_3D, morphtype="BINARY")
+        return_old = oldfu.dilation(IMAGE_BLANK_3D, morphtype="BINARY")
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_I3(self):
-        return_new = fu.dilation(self.image_3d, self.mask, morphtype="invalid_type")
-        return_old = oldfu.dilation(self.image_3d, self.mask, morphtype="invalid_type")
+    def test_graylevel_2Dimg(self):
+        return_new = fu.dilation(IMAGE_BLANK_2D, MASK, morphtype="GRAYLEVEL")
+        return_old = oldfu.dilation(IMAGE_BLANK_2D, MASK, morphtype="GRAYLEVEL")
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_graylevel_3Dimg(self):
+        return_new = fu.dilation(IMAGE_BLANK_3D, MASK, morphtype="GRAYLEVEL")
+        return_old = oldfu.dilation(IMAGE_BLANK_3D, MASK, morphtype="GRAYLEVEL")
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_graylevel_2Dimg_NOmask(self):
+        return_new = fu.dilation(IMAGE_BLANK_2D,morphtype="GRAYLEVEL")
+        return_old = oldfu.dilation(IMAGE_BLANK_2D,morphtype="GRAYLEVEL")
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_graylevel_3Dimg_NOmask(self):
+        return_new = fu.dilation(IMAGE_BLANK_3D,morphtype="GRAYLEVEL")
+        return_old = oldfu.dilation(IMAGE_BLANK_3D,morphtype="GRAYLEVEL")
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_invalid_2Dimg(self):
+        return_new = fu.dilation(IMAGE_BLANK_2D, MASK, morphtype="invalid_type")
+        return_old = oldfu.dilation(IMAGE_BLANK_2D, MASK, morphtype="invalid_type")
         self.assertTrue(return_old is None)
         self.assertTrue(return_new is None)
 
-    def test_G3(self):
-        return_new = fu.dilation(self.image_2d, morphtype="BINARY")
-        return_old = oldfu.dilation(self.image_2d, morphtype="BINARY")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+    def test_invalid_3Dimg(self):
+        return_new = fu.dilation(IMAGE_BLANK_3D, MASK, morphtype="invalid_type")
+        return_old = oldfu.dilation(IMAGE_BLANK_3D, MASK, morphtype="invalid_type")
+        self.assertTrue(return_old is None)
+        self.assertTrue(return_new is None)
 
-    def test_J3(self):
-        return_new = fu.dilation(self.image_3d, morphtype="BINARY")
-        return_old = oldfu.dilation(self.image_3d, morphtype="BINARY")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
-
-    def test_L3(self):
-        return_new = fu.dilation(self.image_2d,morphtype="GRAYLEVEL")
-        return_old = oldfu.dilation(self.image_2d,morphtype="GRAYLEVEL")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
-
-    def test_K3(self):
-        return_new = fu.dilation(self.image_3d,morphtype="GRAYLEVEL")
-        return_old = oldfu.dilation(self.image_3d,morphtype="GRAYLEVEL")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 class Test_erosion(unittest.TestCase):
-    image_2d = sparx_utilities.model_blank(10,10)
-    image_3d = sparx_utilities.model_blank(10, 10,10)
-    mask = sparx_utilities.model_circle(2, 5, 5)
 
     @unittest.skip("\n***************************\n\t\t 'Test_erosion.test_empty_input_image' because: interrupted by signal 11: SIGSEGV\n***************************")
     def test_empty_input_image(self):
@@ -155,74 +177,80 @@ class Test_erosion(unittest.TestCase):
         self.assertTrue(return_old is None)
         self.assertTrue(return_new is None)
 
-    def test_empty_input_image2(self):
+    def test_empty_mask_image(self):
         with self.assertRaises(RuntimeError):
-            fu.erosion(self.image_2d, EMData())
-            oldfu.erosion(self.image_2d, EMData())
-
-    def test_empty_input_image3(self):
-        with self.assertRaises(RuntimeError):
-            fu.erosion(self.image_3d, EMData())
-            oldfu.erosion(self.image_3d, EMData())
+            fu.erosion(IMAGE_BLANK_2D, EMData(), morphtype="BINARY")
+            oldfu.erosion(IMAGE_BLANK_2D, EMData(), morphtype="BINARY")
 
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError):
             fu.erosion()
             oldfu.erosion()
 
-    def test_D4(self):
-        return_new = fu.erosion(self.image_2d, self.mask, morphtype="BINARY")
-        return_old = oldfu.erosion(self.image_2d, self.mask, morphtype="BINARY")
+    def test_bynary_2Dimg(self):
+        return_new = fu.erosion(IMAGE_BLANK_2D, MASK, morphtype="BINARY")
+        return_old = oldfu.erosion(IMAGE_BLANK_2D, MASK, morphtype="BINARY")
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_D4_2(self):
-        return_new = fu.erosion(self.image_3d, self.mask, morphtype="BINARY")
-        return_old = oldfu.erosion(self.image_3d, self.mask, morphtype="BINARY")
+    def test_bynary_3Dimg(self):
+        return_new = fu.erosion(IMAGE_BLANK_3D, MASK, morphtype="BINARY")
+        return_old = oldfu.erosion(IMAGE_BLANK_3D, MASK, morphtype="BINARY")
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_E4(self):
-        return_new = fu.erosion(self.image_2d, self.mask, morphtype="GRAYLEVEL")
-        return_old = oldfu.erosion(self.image_2d, self.mask, morphtype="GRAYLEVEL")
+    def test_bynary_2Dimg_NOmask(self):
+        return_new = fu.erosion(IMAGE_BLANK_2D, morphtype="BINARY")
+        return_old = oldfu.erosion(IMAGE_BLANK_2D, morphtype="BINARY")
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_E4_2(self):
-        return_new = fu.erosion(self.image_3d, self.mask, morphtype="GRAYLEVEL")
-        return_old = oldfu.erosion(self.image_3d, self.mask, morphtype="GRAYLEVEL")
+    def test_bynary_3Dimg_NOmask(self):
+        return_new = fu.erosion(IMAGE_BLANK_3D, morphtype="BINARY")
+        return_old = oldfu.erosion(IMAGE_BLANK_3D, morphtype="BINARY")
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_I4(self):
-        return_new = fu.erosion(self.image_3d, self.mask, morphtype="invalid_type")
-        return_old = oldfu.erosion(self.image_3d, self.mask, morphtype="invalid_type")
+    def test_graylevel_2Dimg(self):
+        return_new = fu.erosion(IMAGE_BLANK_2D, MASK, morphtype="GRAYLEVEL")
+        return_old = oldfu.erosion(IMAGE_BLANK_2D, MASK, morphtype="GRAYLEVEL")
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_graylevel_3Dimg(self):
+        return_new = fu.erosion(IMAGE_BLANK_3D, MASK, morphtype="GRAYLEVEL")
+        return_old = oldfu.erosion(IMAGE_BLANK_3D, MASK, morphtype="GRAYLEVEL")
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_graylevel_2Dimg_NOmask(self):
+        return_new = fu.erosion(IMAGE_BLANK_2D,morphtype="GRAYLEVEL")
+        return_old = oldfu.erosion(IMAGE_BLANK_2D,morphtype="GRAYLEVEL")
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_graylevel_3Dimg_NOmask(self):
+        return_new = fu.erosion(IMAGE_BLANK_3D,morphtype="GRAYLEVEL")
+        return_old = oldfu.erosion(IMAGE_BLANK_3D,morphtype="GRAYLEVEL")
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_invalid_2Dimg(self):
+        return_new = fu.erosion(IMAGE_BLANK_2D, MASK, morphtype="invalid_type")
+        return_old = oldfu.erosion(IMAGE_BLANK_2D, MASK, morphtype="invalid_type")
         self.assertTrue(return_old is None)
         self.assertTrue(return_new is None)
 
-    def test_G4(self):
-        return_new = fu.erosion(self.image_2d, morphtype="BINARY")
-        return_old = oldfu.erosion(self.image_2d, morphtype="BINARY")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+    def test_invalid_3Dimg(self):
+        return_new = fu.erosion(IMAGE_BLANK_3D, MASK, morphtype="invalid_type")
+        return_old = oldfu.erosion(IMAGE_BLANK_3D, MASK, morphtype="invalid_type")
+        self.assertTrue(return_old is None)
+        self.assertTrue(return_new is None)
 
-    def test_J4(self):
-        return_new = fu.erosion(self.image_3d, morphtype="BINARY")
-        return_old = oldfu.erosion(self.image_3d, morphtype="BINARY")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
-
-    def test_L4(self):
-        return_new = fu.erosion(self.image_2d, morphtype="GRAYLEVEL")
-        return_old = oldfu.erosion(self.image_2d, morphtype="GRAYLEVEL")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
-
-    def test_K4(self):
-        return_new = fu.erosion(self.image_3d, morphtype="GRAYLEVEL")
-        return_old = oldfu.erosion(self.image_3d, morphtype="GRAYLEVEL")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 class Test_power(unittest.TestCase):
-    image = get_data(1)[0]
 
-    def test_D5(self):
-        return_new = fu.power(self.image)
-        return_old = oldfu.power(self.image)
+    def test_power_2Dimg(self):
+        return_new = fu.power(IMAGE_2D, x = 3.0)
+        return_old = oldfu.power(IMAGE_2D, x = 3.0)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_power_3Dimg(self):
+        return_new = fu.power(IMAGE_3D, x = 3.0)
+        return_old = oldfu.power(IMAGE_3D, x = 3.0)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_empty_input_image(self):
@@ -236,13 +264,39 @@ class Test_power(unittest.TestCase):
             oldfu.power()
 
 
-class Test_square_root(unittest.TestCase):
-    image = get_data(1)[0]
 
-    def test_D6(self):
-        return_new = fu.square_root(self.image)
-        return_old = oldfu.square_root(self.image)
+class Test_square_root(unittest.TestCase):
+
+    def test_positive_2Dimg(self):
+        return_new = fu.square_root(IMAGE_2D)
+        return_old = oldfu.square_root(IMAGE_2D)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_positive_3Dimg(self):
+        return_new = fu.square_root(IMAGE_3D)
+        return_old = oldfu.square_root(IMAGE_3D)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_negative_2Dimg_error(self):
+        img= deepcopy(IMAGE_2D)
+        img.sub(100)
+        return_new = fu.square_root(img)
+        return_old = oldfu.square_root(img)
+        self.assertTrue(numpy.all(numpy.isnan(return_old.get_3dview())))
+        self.assertTrue(numpy.all(numpy.isnan(return_new.get_3dview())))
+
+    def test_negative_3Dimg_error(self):
+        img= deepcopy(IMAGE_3D)
+        img.sub(100)
+        return_new = fu.square_root(img)
+        return_old = oldfu.square_root(img)
+
+        for i in range(len(return_new.get_3dview())):
+            try:
+                self.assertTrue(numpy.allclose(return_old.get_3dview()[i], return_new.get_3dview()[i], atol=TOLERANCE))
+            except AssertionError:
+                self.assertTrue(numpy.all(numpy.isnan(return_old.get_3dview()[i])))
+                self.assertTrue(numpy.all(numpy.isnan(return_new.get_3dview()[i])))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError):
@@ -255,12 +309,17 @@ class Test_square_root(unittest.TestCase):
             oldfu.square_root()
 
 
-class Test_square(unittest.TestCase):
-    image = get_data(1)[0]
 
-    def test_D7(self):
-        return_new = fu.square(self.image)
-        return_old = oldfu.square(self.image)
+class Test_square(unittest.TestCase):
+
+    def test_square_2Dimg(self):
+        return_new = fu.square(IMAGE_2D)
+        return_old = oldfu.square(IMAGE_2D)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_square_3Dimg(self):
+        return_new = fu.square(IMAGE_3D)
+        return_old = oldfu.square(IMAGE_3D)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_empty_input_image(self):
@@ -274,12 +333,17 @@ class Test_square(unittest.TestCase):
             oldfu.square()
 
 
-class Test_threshold(unittest.TestCase):
-    image = get_data(1)[0]
 
-    def test_D8(self):
-        return_new = fu.threshold(self.image)
-        return_old = oldfu.threshold(self.image)
+class Test_threshold(unittest.TestCase):
+
+    def test_threshold_2Dimg(self):
+        return_new = fu.threshold(IMAGE_2D)
+        return_old = oldfu.threshold(IMAGE_2D)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_threshold_3Dimg(self):
+        return_new = fu.threshold(IMAGE_3D)
+        return_old = oldfu.threshold(IMAGE_3D)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_empty_input_image(self):
@@ -293,12 +357,17 @@ class Test_threshold(unittest.TestCase):
             oldfu.threshold()
 
 
-class Test_threshold_outside(unittest.TestCase):
-    image = get_data(1)[0]
 
-    def test_D9(self):
-        return_new = fu.threshold_outside(self.image, 2 , 10)
-        return_old = oldfu.threshold_outside(self.image, 2 , 10)
+class Test_threshold_outside(unittest.TestCase):
+
+    def test_threshold_outside_2Dimg(self):
+        return_new = fu.threshold_outside(IMAGE_2D, 2 , 10)
+        return_old = oldfu.threshold_outside(IMAGE_2D, 2 , 10)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_threshold_outside_3Dimg(self):
+        return_new = fu.threshold_outside(IMAGE_3D, 2 , 10)
+        return_old = oldfu.threshold_outside(IMAGE_3D, 2 , 10)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_empty_input_image(self):
@@ -312,12 +381,17 @@ class Test_threshold_outside(unittest.TestCase):
             oldfu.threshold_outside()
 
 
-class Test_notzero(unittest.TestCase):
-    image = get_data(1)[0]
 
-    def test_D10(self):
-        return_new = fu.notzero(self.image)
-        return_old = oldfu.notzero(self.image)
+class Test_notzero(unittest.TestCase):
+
+    def test_notzero_2Dimg(self):
+        return_new = fu.notzero(IMAGE_2D)
+        return_old = oldfu.notzero(IMAGE_2D)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_notzero_3Dimg(self):
+        return_new = fu.notzero(IMAGE_3D)
+        return_old = oldfu.notzero(IMAGE_3D)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_empty_input_image(self):
@@ -331,12 +405,13 @@ class Test_notzero(unittest.TestCase):
             oldfu.notzero()
 
 
+
 class Test_rotavg_ctf(unittest.TestCase):
-    image = get_data(1)[0]
+    """ See http://sparx-em.org/sparxwiki/CTF_info for the meaning of the params"""
 
     def test_empty_input_image(self):
-        return_new = fu.rotavg_ctf(EMData(), defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5)
-        return_old = oldfu.rotavg_ctf(EMData(), defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5)
+        return_new = fu.rotavg_ctf(EMData(), defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        return_old = oldfu.rotavg_ctf(EMData(), defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
     def test_wrong_number_params(self):
@@ -344,20 +419,71 @@ class Test_rotavg_ctf(unittest.TestCase):
             fu.rotavg_ctf()
             oldfu.rotavg_ctf()
 
-    def test_D11_E11(self):
-        return_new = fu.rotavg_ctf(self.image, defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5)
-        return_old = oldfu.rotavg_ctf(self.image, defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5)
+    def test_2DImg_nullCS(self):
+        return_new = fu.rotavg_ctf(IMAGE_2D, defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        return_old = oldfu.rotavg_ctf(IMAGE_2D, defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_G11_H11(self):
-        return_new = fu.rotavg_ctf(self.image, defocus= 1, Cs =2, voltage=300, Pixel_size=1.5)
-        return_old = oldfu.rotavg_ctf(self.image, defocus= 1, Cs =2, voltage=300, Pixel_size=1.5)
+    def test_3DImg_nullCS(self):
+        return_new = fu.rotavg_ctf(IMAGE_3D, defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        return_old = oldfu.rotavg_ctf(IMAGE_3D, defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_RuntimeWarning(self):
-        return_new = fu.rotavg_ctf(self.image, defocus= 1, Cs =2, voltage=300, Pixel_size=0)
-        return_old = oldfu.rotavg_ctf(self.image, defocus= 1, Cs =2, voltage=300, Pixel_size=0)
+    def test_2DImg_withCS(self):
+        return_new = fu.rotavg_ctf(IMAGE_2D, defocus= 1, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        return_old = oldfu.rotavg_ctf(IMAGE_2D, defocus= 1, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_3DImg_withCS(self):
+        return_new = fu.rotavg_ctf(IMAGE_3D, defocus= 1, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        return_old = oldfu.rotavg_ctf(IMAGE_3D, defocus= 1, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_2DImg_nullCS_and_defocus_RuntimeWarning(self):
+        return_new = fu.rotavg_ctf(IMAGE_2D, defocus= 0, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        return_old = oldfu.rotavg_ctf(IMAGE_2D, defocus= 0, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_3DImg_nullCS_and_defocus_RuntimeWarning(self):
+        return_new = fu.rotavg_ctf(IMAGE_3D, defocus= 0, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        return_old = oldfu.rotavg_ctf(IMAGE_3D, defocus= 0, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_2DImg_withCS_and_defocus_RuntimeWarning(self):
+        return_new = fu.rotavg_ctf(IMAGE_2D, defocus= 0, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        return_old = oldfu.rotavg_ctf(IMAGE_2D, defocus= 0, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_3DImg_withCS_and_defocus_RuntimeWarning(self):
+        return_new = fu.rotavg_ctf(IMAGE_3D, defocus= 0, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        return_old = oldfu.rotavg_ctf(IMAGE_3D, defocus= 0, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_2DImg_nullCS_and_voltage_RuntimeWarning(self):
+        return_new = fu.rotavg_ctf(IMAGE_2D, defocus= 1, Cs =0.0, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        return_old = oldfu.rotavg_ctf(IMAGE_2D, defocus= 1, Cs =0.0, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_3DImg_nullCS_and_voltage_RuntimeWarning(self):
+        return_new = fu.rotavg_ctf(IMAGE_3D, defocus= 1, Cs =0.0, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        return_old = oldfu.rotavg_ctf(IMAGE_3D, defocus= 1, Cs =0.0, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_2DImg_withCS_and_voltage_RuntimeWarning(self):
+        return_new = fu.rotavg_ctf(IMAGE_2D, defocus= 1, Cs =2, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        return_old = oldfu.rotavg_ctf(IMAGE_2D, defocus= 1, Cs =2, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_3DImg_withCS_and_voltage_RuntimeWarning(self):
+        return_new = fu.rotavg_ctf(IMAGE_3D, defocus= 1, Cs =2, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        return_old = oldfu.rotavg_ctf(IMAGE_3D, defocus= 1, Cs =2, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_Null_pixelSize_RuntimeWarning(self):
+        return_new = fu.rotavg_ctf(IMAGE_2D, defocus= 1, Cs =2, voltage=300, Pixel_size=0,amp = 0.0, ang = 0.0)
+        return_old = oldfu.rotavg_ctf(IMAGE_2D, defocus= 1, Cs =2, voltage=300, Pixel_size=0,amp = 0.0, ang = 0.0)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
 
 
 class Test_ctf_1d(unittest.TestCase):
@@ -377,43 +503,58 @@ class Test_ctf_1d(unittest.TestCase):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         with self.assertRaises(ZeroDivisionError):
-            fu.ctf_1d(nx=0, ctf=ctf)
-            oldfu.ctf_1d(nx=0, ctf=ctf)
+            fu.ctf_1d(nx=0, ctf=ctf, sign = 1, doabs = False)
+            oldfu.ctf_1d(nx=0, ctf=ctf, sign = 1, doabs = False)
 
     def test_no_pixel_size_error(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 0, "bfactor": 0, "ampcont": 0.1})
         with self.assertRaises(ZeroDivisionError):
-            fu.ctf_1d(nx =2, ctf=ctf)
-            oldfu.ctf_1d(nx=2, ctf=ctf)
+            fu.ctf_1d(nx =2, ctf=ctf, sign = 1, doabs = False)
+            oldfu.ctf_1d(nx=2, ctf=ctf, sign = 1, doabs = False)
 
-    def test_E12(self):
+    def test_NOSign(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_1d(nx=20, ctf=ctf, sign=0, doabs=False)
         return_old= oldfu.ctf_1d(nx=20, ctf=ctf, sign=0, doabs=False)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_E12_2(self):
+    def test_positive_sign(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
-        return_new =fu.ctf_1d(nx=20, ctf=ctf, doabs=False)
-        return_old= oldfu.ctf_1d(nx=20, ctf=ctf, doabs=False)
+        return_new =fu.ctf_1d(nx=20, ctf=ctf, sign = 1,doabs=False)
+        return_old= oldfu.ctf_1d(nx=20, ctf=ctf, sign = 1,doabs=False)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_D12(self):
+    def test_negative_sign(self):
+        ctf = EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
+        return_new =fu.ctf_1d(nx=20, ctf=ctf, sign = -1,doabs=False)
+        return_old= oldfu.ctf_1d(nx=20, ctf=ctf, sign = -1,doabs=False)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_NOSign_withABS(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_1d(nx=20, ctf=ctf, sign=0, doabs=True)
         return_old= oldfu.ctf_1d(nx=20, ctf=ctf, sign=0, doabs=True)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_D12_2(self):
+    def test_positive_sign_withABS(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
-        return_new =fu.ctf_1d(nx=20, ctf=ctf, doabs=True)
-        return_old= oldfu.ctf_1d(nx=20, ctf=ctf, doabs=True)
+        return_new =fu.ctf_1d(nx=20, ctf=ctf, sign = 1,doabs=True)
+        return_old= oldfu.ctf_1d(nx=20, ctf=ctf, sign = 1,doabs=True)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_negative_sign_withABS(self):
+        ctf = EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
+        return_new =fu.ctf_1d(nx=20, ctf=ctf, sign = -1,doabs=True)
+        return_old= oldfu.ctf_1d(nx=20, ctf=ctf, sign = -1,doabs=True)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
 
 
 class Test_ctf_2(unittest.TestCase):
@@ -443,12 +584,13 @@ class Test_ctf_2(unittest.TestCase):
             fu.ctf_2(nx =2, ctf=ctf)
             oldfu.ctf_2(nx=2, ctf=ctf)
 
-    def test_ctf_2_D13(self):
+    def test_ctf_2(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_2(nx =2, ctf=ctf)
         return_old= oldfu.ctf_2(nx=2, ctf=ctf)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+
 
 
 class Test_ctf_img(unittest.TestCase):
@@ -459,8 +601,8 @@ class Test_ctf_img(unittest.TestCase):
             oldfu.ctf_img()
 
     def test_with_empty_ctfDict(self):
-        return_new =fu.ctf_img(nx=20, ctf= EMAN2Ctf())
-        return_old= oldfu.ctf_img(nx=20, ctf= EMAN2Ctf())
+        return_new =fu.ctf_img(nx=20, ctf= EMAN2Ctf(), sign = 1, ny = 0, nz = 1)
+        return_old= oldfu.ctf_img(nx=20, ctf= EMAN2Ctf(), sign = 1, ny = 0, nz = 1)
         self.assertTrue(numpy.isnan(return_new.get_3dview()).any())
         self.assertTrue(numpy.isnan(return_old.get_3dview()).any())
 
@@ -468,23 +610,59 @@ class Test_ctf_img(unittest.TestCase):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         with self.assertRaises(RuntimeError):
-            fu.ctf_img(nx=0, ctf=ctf)
-            oldfu.ctf_img(nx=0, ctf=ctf)
+            fu.ctf_img(nx=0, ctf=ctf, sign = 1, ny = 0, nz = 1)
+            oldfu.ctf_img(nx=0, ctf=ctf, sign = 1, ny = 0, nz = 1)
 
     def test_no_pixel_size_error(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 0, "bfactor": 0, "ampcont": 0.1})
-        return_new = fu.ctf_img(nx =2, ctf=ctf)
-        return_old = oldfu.ctf_img(nx=2, ctf=ctf)
+        return_new = fu.ctf_img(nx =2, ctf=ctf, sign = 1, ny = 0, nz = 1)
+        return_old = oldfu.ctf_img(nx=2, ctf=ctf, sign = 1, ny = 0, nz = 1)
         self.assertTrue(numpy.isnan(return_new.get_3dview()).any())
         self.assertTrue(numpy.isnan(return_old.get_3dview()).any())
 
-    def test_D14(self):
+    def test_null_ny(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
-        return_new =fu.ctf_img(nx =20, ctf=ctf)
-        return_old=oldfu.ctf_img(nx=20, ctf=ctf)
+        return_new =fu.ctf_img(nx =20, ctf=ctf, sign = 1, ny = 0, nz = 1)
+        return_old=oldfu.ctf_img(nx=20, ctf=ctf, sign = 1, ny = 0, nz = 1)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_positive_ny(self):
+        ctf = EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
+        return_new =fu.ctf_img(nx =20, ctf=ctf, sign = 1, ny = 2, nz = 1)
+        return_old=oldfu.ctf_img(nx=20, ctf=ctf, sign = 1, ny = 2, nz = 1)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_negative_ny(self):
+        ctf = EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
+        return_new =fu.ctf_img(nx =20, ctf=ctf, sign = 1, ny = -2, nz = 1)
+        return_old=oldfu.ctf_img(nx=20, ctf=ctf, sign = 1, ny = -2, nz = 1)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_null_ny_and_sign(self):
+        ctf = EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
+        return_new =fu.ctf_img(nx =20, ctf=ctf, sign = 0, ny = 0, nz = 1)
+        return_old=oldfu.ctf_img(nx=20, ctf=ctf, sign = 0, ny = 0, nz = 1)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_positive_ny_null_sign(self):
+        ctf = EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
+        return_new =fu.ctf_img(nx =20, ctf=ctf, sign = 0, ny = 2, nz = 1)
+        return_old=oldfu.ctf_img(nx=20, ctf=ctf, sign = 0, ny = 2, nz = 1)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_null_nz_error(self):
+        ctf = EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
+        with self.assertRaises(RuntimeError):
+            fu.ctf_img(nx =20, ctf=ctf, sign = 1, ny = 0, nz = 0)
+            oldfu.ctf_img(nx=20, ctf=ctf, sign = 1, ny = 0, nz = 0)
+
 
 
 class Test_ctf_img_real(unittest.TestCase):
@@ -495,8 +673,8 @@ class Test_ctf_img_real(unittest.TestCase):
             oldfu.ctf_img_real()
 
     def test_with_empty_ctfDict(self):
-        return_new =fu.ctf_img_real(nx=20, ctf= EMAN2Ctf())
-        return_old= oldfu.ctf_img_real(nx=20, ctf= EMAN2Ctf())
+        return_new =fu.ctf_img_real(nx=20, ctf= EMAN2Ctf(), sign = 1, ny = 0, nz = 1)
+        return_old= oldfu.ctf_img_real(nx=20, ctf= EMAN2Ctf(), sign = 1, ny = 0, nz = 1)
         self.assertTrue(numpy.isnan(return_new.get_3dview()).any())
         self.assertTrue(numpy.isnan(return_old.get_3dview()).any())
 
@@ -504,30 +682,60 @@ class Test_ctf_img_real(unittest.TestCase):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         with self.assertRaises(RuntimeError):
-            fu.ctf_img_real(nx=0, ctf=ctf)
-            oldfu.ctf_img_real(nx=0, ctf=ctf)
+            fu.ctf_img_real(nx=0, ctf=ctf, sign = 1, ny = 0, nz = 1)
+            oldfu.ctf_img_real(nx=0, ctf=ctf, sign = 1, ny = 0, nz = 1)
 
     def test_no_pixel_size_error(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 0, "bfactor": 0, "ampcont": 0.1})
-        return_new = fu.ctf_img_real(nx =2, ctf=ctf)
-        return_old = oldfu.ctf_img_real(nx=2, ctf=ctf)
+        return_new = fu.ctf_img_real(nx =2, ctf=ctf, sign = 1, ny = 0, nz = 1)
+        return_old = oldfu.ctf_img_real(nx=2, ctf=ctf, sign = 1, ny = 0, nz = 1)
         self.assertTrue(numpy.isnan(return_new.get_3dview()).any())
         self.assertTrue(numpy.isnan(return_old.get_3dview()).any())
 
-    def test_D15(self):
+    def test_null_ny(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
-        return_new =fu.ctf_img_real(nx=20, ctf=ctf)
-        return_old=oldfu.ctf_img_real(nx=20, ctf=ctf)
+        return_new =fu.ctf_img_real(nx =20, ctf=ctf, sign = 1, ny = 0, nz = 1)
+        return_old=oldfu.ctf_img_real(nx=20, ctf=ctf, sign = 1, ny = 0, nz = 1)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_E15(self):
+    def test_positive_ny(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
-        return_new =fu.ctf_img_real(nx=20, ctf=ctf, ny=1)
-        return_old=oldfu.ctf_img_real(nx=20, ctf=ctf, ny=1)
+        return_new =fu.ctf_img_real(nx =20, ctf=ctf, sign = 1, ny = 2, nz = 1)
+        return_old=oldfu.ctf_img_real(nx=20, ctf=ctf, sign = 1, ny = 2, nz = 1)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_negative_ny(self):
+        ctf = EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
+        return_new =fu.ctf_img_real(nx =20, ctf=ctf, sign = 1, ny = -2, nz = 1)
+        return_old=oldfu.ctf_img_real(nx=20, ctf=ctf, sign = 1, ny = -2, nz = 1)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_null_ny_and_sign(self):
+        ctf = EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
+        return_new =fu.ctf_img_real(nx =20, ctf=ctf, sign = 0, ny = 0, nz = 1)
+        return_old=oldfu.ctf_img_real(nx=20, ctf=ctf, sign = 0, ny = 0, nz = 1)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_positive_ny_null_sign(self):
+        ctf = EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
+        return_new =fu.ctf_img_real(nx =20, ctf=ctf, sign = 0, ny = 2, nz = 1)
+        return_old=oldfu.ctf_img_real(nx=20, ctf=ctf, sign = 0, ny = 2, nz = 1)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_null_nz_error(self):
+        ctf = EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
+        with self.assertRaises(RuntimeError):
+            fu.ctf_img_real(nx =20, ctf=ctf, sign = 1, ny = 0, nz = 0)
+            oldfu.ctf_img_real(nx=20, ctf=ctf, sign = 1, ny = 0, nz = 0)
+
+
 
 
 class Test_ctf_rimg(unittest.TestCase):
@@ -538,8 +746,8 @@ class Test_ctf_rimg(unittest.TestCase):
             oldfu.ctf_rimg()
 
     def test_with_empty_ctfDict(self):
-        return_new =fu.ctf_rimg(nx=20, ctf= EMAN2Ctf())
-        return_old= oldfu.ctf_rimg(nx=20, ctf= EMAN2Ctf())
+        return_new =fu.ctf_rimg(nx=20, ctf= EMAN2Ctf(), sign = 1, ny = 0, nz = 1)
+        return_old= oldfu.ctf_rimg(nx=20, ctf= EMAN2Ctf(), sign = 1, ny = 0, nz = 1)
         self.assertTrue(numpy.isnan(return_new.get_3dview()).any())
         self.assertTrue(numpy.isnan(return_old.get_3dview()).any())
 
@@ -547,30 +755,131 @@ class Test_ctf_rimg(unittest.TestCase):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         with self.assertRaises(RuntimeError):
-            fu.ctf_rimg(nx=0, ctf=ctf)
-            oldfu.ctf_rimg(nx=0, ctf=ctf)
+            fu.ctf_rimg(nx=0, ctf=ctf, sign = 1, ny = 0, nz = 1)
+            oldfu.ctf_rimg(nx=0, ctf=ctf, sign = 1, ny = 0, nz = 1)
 
     def test_no_pixel_size_error(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 0, "bfactor": 0, "ampcont": 0.1})
-        return_new = fu.ctf_rimg(nx =2, ctf=ctf)
-        return_old = oldfu.ctf_rimg(nx=2, ctf=ctf)
+        return_new = fu.ctf_rimg(nx =2, ctf=ctf, sign = 1, ny = 0, nz = 1)
+        return_old = oldfu.ctf_rimg(nx=2, ctf=ctf, sign = 1, ny = 0, nz = 1)
         self.assertTrue(numpy.isnan(return_new.get_3dview()).any())
         self.assertTrue(numpy.isnan(return_old.get_3dview()).any())
 
-    def test_D16(self):
+    def test_null_ny(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
-        return_new =fu.ctf_rimg(nx=20, ctf=ctf)
-        return_old=oldfu.ctf_rimg(nx=20, ctf=ctf)
+        return_new =fu.ctf_rimg(nx =20, ctf=ctf, sign = 1, ny = 0, nz = 1)
+        return_old=oldfu.ctf_rimg(nx=20, ctf=ctf, sign = 1, ny = 0, nz = 1)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_E16(self):
+    def test_positive_ny(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
-        return_new =fu.ctf_rimg(nx=20, ctf=ctf, ny=1)
-        return_old=oldfu.ctf_rimg(nx=20, ctf=ctf, ny=1)
+        return_new =fu.ctf_rimg(nx =20, ctf=ctf, sign = 1, ny = 2, nz = 1)
+        return_old=oldfu.ctf_rimg(nx=20, ctf=ctf, sign = 1, ny = 2, nz = 1)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_negative_ny(self):
+        ctf = EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
+        return_new =fu.ctf_rimg(nx =20, ctf=ctf, sign = 1, ny = -2, nz = 1)
+        return_old=oldfu.ctf_rimg(nx=20, ctf=ctf, sign = 1, ny = -2, nz = 1)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_null_ny_and_sign(self):
+        ctf = EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
+        return_new =fu.ctf_rimg(nx =20, ctf=ctf, sign = 0, ny = 0, nz = 1)
+        return_old=oldfu.ctf_rimg(nx=20, ctf=ctf, sign = 0, ny = 0, nz = 1)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_positive_ny_null_sign(self):
+        ctf = EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
+        return_new =fu.ctf_rimg(nx =20, ctf=ctf, sign = 0, ny = 2, nz = 1)
+        return_old=oldfu.ctf_rimg(nx=20, ctf=ctf, sign = 0, ny = 2, nz = 1)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_null_nz_error(self):
+        ctf = EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
+        with self.assertRaises(RuntimeError):
+            fu.ctf_rimg(nx =20, ctf=ctf, sign = 1, ny = 0, nz = 0)
+            oldfu.ctf_rimg(nx=20, ctf=ctf, sign = 1, ny = 0, nz = 0)
+
+
+
+class Test_ctf2_rimg(unittest.TestCase):
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError):
+            fu.ctf2_rimg()
+            oldfu.ctf2_rimg()
+
+    def test_with_empty_ctfDict(self):
+        return_new =fu.ctf2_rimg(nx=20, ctf= EMAN2Ctf(), sign = 1, ny = 0, nz = 1)
+        return_old= oldfu.ctf2_rimg(nx=20, ctf= EMAN2Ctf(), sign = 1, ny = 0, nz = 1)
+        self.assertTrue(numpy.isnan(return_new.get_3dview()).any())
+        self.assertTrue(numpy.isnan(return_old.get_3dview()).any())
+
+    def test_no_image_size_error(self):
+        ctf = EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
+        with self.assertRaises(RuntimeError):
+            fu.ctf2_rimg(nx=0, ctf=ctf, sign = 1, ny = 0, nz = 1)
+            oldfu.ctf2_rimg(nx=0, ctf=ctf, sign = 1, ny = 0, nz = 1)
+
+    def test_no_pixel_size_error(self):
+        ctf = EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 0, "bfactor": 0, "ampcont": 0.1})
+        return_new = fu.ctf2_rimg(nx =2, ctf=ctf, sign = 1, ny = 0, nz = 1)
+        return_old = oldfu.ctf2_rimg(nx=2, ctf=ctf, sign = 1, ny = 0, nz = 1)
+        self.assertTrue(numpy.isnan(return_new.get_3dview()).any())
+        self.assertTrue(numpy.isnan(return_old.get_3dview()).any())
+
+    def test_null_ny(self):
+        ctf = EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
+        return_new =fu.ctf2_rimg(nx =20, ctf=ctf, sign = 1, ny = 0, nz = 1)
+        return_old=oldfu.ctf2_rimg(nx=20, ctf=ctf, sign = 1, ny = 0, nz = 1)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_positive_ny(self):
+        ctf = EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
+        return_new =fu.ctf2_rimg(nx =20, ctf=ctf, sign = 1, ny = 2, nz = 1)
+        return_old=oldfu.ctf2_rimg(nx=20, ctf=ctf, sign = 1, ny = 2, nz = 1)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_negative_ny(self):
+        ctf = EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
+        return_new =fu.ctf2_rimg(nx =20, ctf=ctf, sign = 1, ny = -2, nz = 1)
+        return_old=oldfu.ctf2_rimg(nx=20, ctf=ctf, sign = 1, ny = -2, nz = 1)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_null_ny_and_sign(self):
+        ctf = EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
+        return_new =fu.ctf2_rimg(nx =20, ctf=ctf, sign = 0, ny = 0, nz = 1)
+        return_old=oldfu.ctf2_rimg(nx=20, ctf=ctf, sign = 0, ny = 0, nz = 1)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_positive_ny_null_sign(self):
+        ctf = EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
+        return_new =fu.ctf2_rimg(nx =20, ctf=ctf, sign = 0, ny = 2, nz = 1)
+        return_old=oldfu.ctf2_rimg(nx=20, ctf=ctf, sign = 0, ny = 2, nz = 1)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_null_nz_error(self):
+        ctf = EMAN2Ctf()
+        ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
+        with self.assertRaises(RuntimeError):
+            fu.ctf2_rimg(nx =20, ctf=ctf, sign = 1, ny = 0, nz = 0)
+            oldfu.ctf2_rimg(nx=20, ctf=ctf, sign = 1, ny = 0, nz = 0)
+
 
 
 class Test_ctflimit(unittest.TestCase):
@@ -580,17 +889,35 @@ class Test_ctflimit(unittest.TestCase):
             fu.ctflimit()
             oldfu.ctflimit()
 
-    def test_D17(self):
+    def test_ctfLimit(self):
         return_new = fu.ctflimit(nx=30, defocus=1, cs=2, voltage=300, pix=1.5)
         return_old = oldfu.ctflimit(nx=30, defocus=1, cs=2, voltage=300, pix=1.5)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_E17(self):
+    @unittest.skip("\n***************************\n\t\t 'Test_ctflimit.test_null_voltage' because I cannot catch the 'LinAlgError'\n***************************")
+    def test_null_voltage(self):
+        """ How can I catch the '"LinAlgError"'"""
+        with self.assertRaises(ValueError):
+            return_new = fu.ctflimit(nx=30, defocus=1, cs=2, voltage=0, pix=1.5)
+            return_old = oldfu.ctflimit(nx=30, defocus=1, cs=2, voltage=0, pix=1.5)
+            self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_null_defocus(self):
+        return_new = fu.ctflimit(nx=30, defocus=0, cs=2, voltage=300, pix=1.5)
+        return_old = oldfu.ctflimit(nx=30, defocus=0, cs=2, voltage=300, pix=1.5)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_null_cs(self):
+        return_new = fu.ctflimit(nx=30, defocus=1, cs=0, voltage=300, pix=1.5)
+        return_old = oldfu.ctflimit(nx=30, defocus=1, cs=0, voltage=300, pix=1.5)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_null_nx(self):
         return_new = fu.ctflimit(nx=0, defocus=1, cs=2, voltage=300, pix=1.5)
         return_old = oldfu.ctflimit(nx=0, defocus=1, cs=2, voltage=300, pix=1.5)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_ZeroDivisionError(self):
+    def test_negative_nx_ZeroDivisionError(self):
         with self.assertRaises(ZeroDivisionError):
             fu.ctflimit(nx=-1, defocus=1, cs=2, voltage=300, pix=1.5)
             oldfu.ctflimit(nx=-1, defocus=1, cs=2, voltage=300, pix=1.5)
@@ -665,7 +992,6 @@ class Test_imf_params_cl1(unittest.TestCase):
 
 
 class Test_adaptive_mask(unittest.TestCase):
-    image = get_data_3d(1)[0]
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError):
@@ -678,43 +1004,43 @@ class Test_adaptive_mask(unittest.TestCase):
             oldfu.adaptive_mask()
 
     def test_D19(self):
-        return_new = fu.adaptive_mask(self.image)
-        return_old = oldfu.adaptive_mask(self.image)
+        return_new = fu.adaptive_mask(IMAGE_3D)
+        return_old = oldfu.adaptive_mask(IMAGE_3D)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_E19(self):
-        return_new = fu.adaptive_mask(self.image,threshold = 0)
-        return_old = oldfu.adaptive_mask(self.image,threshold = 0)
+        return_new = fu.adaptive_mask(IMAGE_3D,threshold = 0)
+        return_old = oldfu.adaptive_mask(IMAGE_3D,threshold = 0)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_E19_2(self):
-        return_new = fu.adaptive_mask(self.image,threshold = 0, ndilation=0)
-        return_old = oldfu.adaptive_mask(self.image,threshold = 0, ndilation=0)
+        return_new = fu.adaptive_mask(IMAGE_3D,threshold = 0, ndilation=0)
+        return_old = oldfu.adaptive_mask(IMAGE_3D,threshold = 0, ndilation=0)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_E19_3(self):
-        return_new = fu.adaptive_mask(self.image,threshold = 0, nsigma=0)
-        return_old = oldfu.adaptive_mask(self.image,threshold = 0, nsigma=0)
+        return_new = fu.adaptive_mask(IMAGE_3D,threshold = 0, nsigma=0)
+        return_old = oldfu.adaptive_mask(IMAGE_3D,threshold = 0, nsigma=0)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_E19_4(self):
-        return_new = fu.adaptive_mask(self.image,threshold = 0, edge_width=0)
-        return_old = oldfu.adaptive_mask(self.image,threshold = 0, edge_width=0)
+        return_new = fu.adaptive_mask(IMAGE_3D,threshold = 0, edge_width=0)
+        return_old = oldfu.adaptive_mask(IMAGE_3D,threshold = 0, edge_width=0)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_D19_2(self):
-        return_new = fu.adaptive_mask(self.image, ndilation=0)
-        return_old = oldfu.adaptive_mask(self.image, ndilation=0)
+        return_new = fu.adaptive_mask(IMAGE_3D, ndilation=0)
+        return_old = oldfu.adaptive_mask(IMAGE_3D, ndilation=0)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_D19_3(self):
-        return_new = fu.adaptive_mask(self.image, nsigma=0)
-        return_old = oldfu.adaptive_mask(self.image, nsigma=0)
+        return_new = fu.adaptive_mask(IMAGE_3D, nsigma=0)
+        return_old = oldfu.adaptive_mask(IMAGE_3D, nsigma=0)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_D19_4(self):
-        return_new = fu.adaptive_mask(self.image, edge_width=0)
-        return_old = oldfu.adaptive_mask(self.image, edge_width=0)
+        return_new = fu.adaptive_mask(IMAGE_3D, edge_width=0)
+        return_old = oldfu.adaptive_mask(IMAGE_3D, edge_width=0)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
@@ -732,42 +1058,36 @@ class Test_cosinemask(unittest.TestCase):
 
     @unittest.skip("\n***************************\n\t\t 'Test_cosinemask.test_empty_input_image2' because: interrupted by signal 11: SIGSEGV\n***************************")
     def test_empty_input_image(self):
-        image = get_data_3d(1)[0]
         bckg = EMData()
-        return_new = fu.cosinemask(image, bckg=bckg)
-        return_old = oldfu.cosinemask(image, bckg=bckg)
+        return_new = fu.cosinemask(IMAGE_3D, bckg=bckg)
+        return_old = oldfu.cosinemask(IMAGE_3D, bckg=bckg)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     @unittest.skip("\n***************************\n\t\t 'Test_cosinemask.test_D20_4' because: interrupted by signal 11: SIGSEGV\n***************************")
     def test_D20_4(self):
-        image = get_data_3d(1)[0]
         bckg = sparx_utilities.model_gauss_noise(0.25 , 10,10,10)
-        return_new = fu.cosinemask(image, bckg=bckg)
-        return_old = oldfu.cosinemask(image, bckg=bckg)
+        return_new = fu.cosinemask(IMAGE_3D, bckg=bckg)
+        return_old = oldfu.cosinemask(IMAGE_3D, bckg=bckg)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_D20(self):
-        image = get_data_3d(1)[0]
-        return_new = fu.cosinemask(image)
-        return_old = oldfu.cosinemask(image)
+        return_new = fu.cosinemask(IMAGE_3D)
+        return_old = oldfu.cosinemask(IMAGE_3D)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_D20_1(self):
-        image = get_data_3d(1)[0]
-        return_new = fu.cosinemask(image, radius=0)
-        return_old = oldfu.cosinemask(image, radius=0)
+        return_new = fu.cosinemask(IMAGE_3D, radius=0)
+        return_old = oldfu.cosinemask(IMAGE_3D, radius=0)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_D20_2(self):
-        image = get_data_3d(1)[0]
-        return_new = fu.cosinemask(image, cosine_width=0)
-        return_old = oldfu.cosinemask(image, cosine_width=0)
+        return_new = fu.cosinemask(IMAGE_3D, cosine_width=0)
+        return_old = oldfu.cosinemask(IMAGE_3D, cosine_width=0)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_D20_3(self):
-        image = get_data_3d(1)[0]
-        return_new = fu.cosinemask(image, s=0)
-        return_old = oldfu.cosinemask(image, s=0)
+        return_new = fu.cosinemask(IMAGE_3D, s=0)
+        return_old = oldfu.cosinemask(IMAGE_3D, s=0)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
@@ -815,15 +1135,13 @@ class Test_get_biggest_cluster(unittest.TestCase):
             oldfu.get_biggest_cluster( EMData())
 
     def test_D22(self):
-        image = get_data(1)[0]
-        return_new = fu.get_biggest_cluster(image)
-        return_old = oldfu.get_biggest_cluster(image)
+        return_new = fu.get_biggest_cluster(IMAGE_2D)
+        return_old = oldfu.get_biggest_cluster(IMAGE_2D)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_D22_2(self):
-        image = get_data_3d(1)[0]
-        return_new = fu.get_biggest_cluster(image)
-        return_old = oldfu.get_biggest_cluster(image)
+        return_new = fu.get_biggest_cluster(IMAGE_3D)
+        return_old = oldfu.get_biggest_cluster(IMAGE_3D)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_D22_3(self):
@@ -1528,7 +1846,7 @@ class Test_defocusgett_vpp2(unittest.TestCase):
     i_start = 1
     i_stop = 10
     wn = 512
-    qse = get_data_3d(1)[0]
+    qse = IMAGE_3D
 
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError):
