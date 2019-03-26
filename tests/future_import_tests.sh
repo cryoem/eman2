@@ -5,7 +5,7 @@ future_imports=(
                 division
                )
 
-py_files=$( find . -path ./sparx -prune -o -not -empty -name '*.py' )
+py_files=$( find . -path ./sphire -prune -o -path ./sparx -prune -o -not -empty -name '*.py' )
 
 failed_cases=()
 for f in ${py_files[@]};do
