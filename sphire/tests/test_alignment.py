@@ -1360,7 +1360,6 @@ class Test_shc(unittest.TestCase):
     def test_empty_input_image(self):
         (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = self.argum[0]
         data =  EMData()
-        a=self.argum[0][1]
         with self.assertRaises(RuntimeError):
             fu.shc(data, refrings, list_of_ref_ang, numr, xrng, yrng, step, an =-1.0)
             oldfu.shc(data, refrings, list_of_ref_ang, numr, xrng, yrng, step, an =-1.0)
@@ -1450,17 +1449,17 @@ class Test_generate_list_of_reference_angles_for_search(unittest.TestCase):
             oldfu.generate_list_of_reference_angles_for_search()
 
     def test_c5Sym(self):
-        nsym = 5
-        symangles = [[0.0, 0.0, k * 360. / nsym] for k in range(nsym)]
-        return_new = fu.generate_list_of_reference_angles_for_search(symangles, 'c5')
-        return_old = oldfu.generate_list_of_reference_angles_for_search(symangles, 'c5')
+        sym = 'c5'
+        ref_angles = sparx_utilities.even_angles(symmetry=sym)
+        return_new = fu.generate_list_of_reference_angles_for_search(ref_angles, sym)
+        return_old = oldfu.generate_list_of_reference_angles_for_search(ref_angles, sym)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
     def test_c1Sym(self):
-        nsym = 5
-        symangles = [[0.0, 0.0, k * 360. / nsym] for k in range(nsym)]
-        return_new = fu.generate_list_of_reference_angles_for_search(symangles, 'c1')
-        return_old = oldfu.generate_list_of_reference_angles_for_search(symangles, 'c1')
+        sym = 'c1'
+        ref_angles = sparx_utilities.even_angles(symmetry=sym)
+        return_new = fu.generate_list_of_reference_angles_for_search(ref_angles, sym)
+        return_old = oldfu.generate_list_of_reference_angles_for_search(ref_angles, sym)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
     def test_NoAngleList(self):
