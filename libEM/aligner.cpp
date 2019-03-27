@@ -3452,11 +3452,16 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	float apix=(float)this_img->get_attr("apix_x");
 	int ny=this_img->get_ysize();
 	float preferori=params.set_default("wt_ori",-1.0);
-	if (to->has_attr("xform.curve")==false)
-		preferori=-1;
 	Transform *pfxf=0;
+	
+	if (to->has_attr("xform.init")==false && to->has_attr("xform.curve")==false)
+		preferori=-1;
 	if (preferori>0){
-		pfxf=(Transform*) to->get_attr("xform.curve");
+		if (to->has_attr("xform.init"))
+			pfxf=(Transform*) to->get_attr("xform.init");
+		if (to->has_attr("xform.curve"))
+			pfxf=(Transform*) to->get_attr("xform.curve");
+		
 	}
 //	int downsample=floor(ny/20);		// Minimum shrunken box size is 20^3
 

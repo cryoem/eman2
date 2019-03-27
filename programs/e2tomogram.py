@@ -213,7 +213,7 @@ def main():
 		for i,m in enumerate(imgs_1k):
 			m.write_image(inppath, i)
 		
-	
+	loss0=abs(ttparams[:,3]) ### this is used to exclude bad tilt. in case the user ask 0 iterations..
 	if options.load:
 		#### loading parameters from json file
 		jsname=info_name(options.inputname)
@@ -290,7 +290,7 @@ def main():
 		ttparams[:,3]=tlts.copy() # ytilt
 		ttparams[:,4]=0 # off axis tilt
 	
-	loss0=abs(ttparams[:,3]) ### this is used to exclude bad tilt. in case the user ask 0 iterations..
+	
 	pks=np.zeros((options.npk, 3))
 	#### pack parameters together so it is easier to pass around
 	allparams=np.hstack([ttparams.flatten(), pks.flatten()])

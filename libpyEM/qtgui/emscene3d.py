@@ -2299,6 +2299,7 @@ class EMInspector3D(QtWidgets.QWidget):
 		When a user clicks on the visible icon
 		"""
 		item.toggleVisibleState()
+		self.updateSceneGraph()
 	
 	def _tree_widget_edit(self):
 		"""
