@@ -1414,7 +1414,7 @@ def main():
 							round(
 								freq_to_angstrom(
 									pixel_size=options.pixel_size,
-									values=calculate_fsc_criterion(fsc, criterion=0.143)[1]
+									values=calculate_fsc_criterion(fsc, criterion=0.143)[0]
 									)[0],
 								2
 								),
