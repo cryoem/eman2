@@ -28,11 +28,11 @@ MASK = sparx_utilities.model_circle(2, 5, 5)
 
 
 
-
-
 """
 There are some opened issues in:
 1) rotavg_ctf for definition it'll process a 2D image ... should we impede a 3D img as input?
+2) adaptive_mask  it'll process a 3D image ... should we impede a 2D img as input?
+3) get_shrink_3dmask accepts the 'mask_file_name' params as string too. I did not test it because it is processed by 'sparx_fundamentals.resample'
 
 """
 class Test_binarize(unittest.TestCase):
@@ -928,120 +928,160 @@ class Test_ctflimit(unittest.TestCase):
             oldfu.ctflimit(nx=0, defocus=1, cs=2, voltage=300, pix=0)
 
 
+
 class Test_imf_params_cl1(unittest.TestCase):
+    """
+    pw = power spectrum to be fitted
+    n = the polynomial rank +1
+    iswi = integer between 1-8 is used in 'vector<float> Util::call_cl1' to calculate the interpolation value (lagracian?)
+    """
     pw = [entry for entry in numpy.arange(0, 10).tolist()]
+
+
+    def test_all_the_conditions(self,return_new=None,return_old=None, skip=True):
+        if skip is False:
+            self.assertEqual(len(return_new), len(return_old))
+            for i,j in zip(return_new,return_old):
+                try:
+                    self.assertTrue(numpy.array_equal(i,j))
+                except AssertionError:
+                    self.assertTrue(numpy.isnan(i).any())
+                    self.assertTrue(numpy.isnan(j).any())
+
 
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError):
             fu.imf_params_cl1()
             oldfu.imf_params_cl1()
 
+    @unittest.skip("\n***************************\n\t\t 'Test_imf_params_cl1.test_empty_list' because an invalid pointer in C++ cide: interrupted by signal 6: SIGABRT\n***************************")
+    def test_empty_list(self):
+        return_new = fu.imf_params_cl1([], n=2, iswi=3, Pixel_size=1)
+        return_old = oldfu.imf_params_cl1([], n=2, iswi=3, Pixel_size=1)
+        self.test_all_the_conditions(return_old,return_new, False)
+
     def test_no_pixel_size_error(self):
-        return_new = fu.imf_params_cl1(self.pw,Pixel_size=0)
-        return_old = oldfu.imf_params_cl1(self.pw,Pixel_size=0)
+        return_new = fu.imf_params_cl1(self.pw, n=4, iswi=3, Pixel_size=0)
+        return_old = oldfu.imf_params_cl1(self.pw, n=4, iswi=3, Pixel_size=0)
+        self.test_all_the_conditions(return_old, return_new, False)
 
-        self.assertTrue(numpy.isnan(return_new[0]).any())
-        self.assertTrue(numpy.isnan(return_old[0]).any())
+    def test_with_default_value(self):
+        return_new = fu.imf_params_cl1(self.pw, n=2, iswi=3, Pixel_size=1)
+        return_old = oldfu.imf_params_cl1(self.pw, n=2, iswi=3, Pixel_size=1)
+        self.test_all_the_conditions(return_old,return_new, False)
 
-        self.assertTrue(numpy.isnan(return_new[1]).any())
-        self.assertTrue(numpy.isnan(return_old[1]).any())
+    def test_null_rank(self):
+        return_new = fu.imf_params_cl1(self.pw, n=0, iswi=3, Pixel_size=1)
+        return_old = oldfu.imf_params_cl1(self.pw, n=0, iswi=3, Pixel_size=1)
+        self.test_all_the_conditions(return_old, return_new, False)
 
-        self.assertTrue(numpy.array_equal(return_new[2], return_old[2]))
-        self.assertTrue(numpy.array_equal(return_new[3], return_old[3]))
+    def test_null_iswi(self):
+        return_new = fu.imf_params_cl1(self.pw, n=2, iswi=0, Pixel_size=1)
+        return_old = oldfu.imf_params_cl1(self.pw, n=2, iswi=0, Pixel_size=1)
+        self.test_all_the_conditions(return_old, return_new, False)
 
-    def test_D18(self):
-        return_new = fu.imf_params_cl1(self.pw)
-        return_old = oldfu.imf_params_cl1(self.pw)
-        self.assertTrue(numpy.array_equal(return_new[0], return_old[0]))
-        self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
-        self.assertTrue(numpy.array_equal(return_new[2], return_old[2]))
-        self.assertTrue(numpy.array_equal(return_new[3], return_old[3]))
+    @unittest.skip("\n***************************\n\t\t 'Test_imf_params_cl1.test_negative_rank_error' because an invalid pointer in C++ cide: interrupted by signal 6: SIGABRT\n***************************")
+    def test_negative_rank_error(self):
+        return_new = fu.imf_params_cl1(self.pw, n=-2, iswi=2, Pixel_size=1)
+        return_old = oldfu.imf_params_cl1(self.pw, n=-2, iswi=2, Pixel_size=1)
+        self.test_all_the_conditions(return_old,return_new, False)
 
-    def test_D18_2(self):
-        return_new = fu.imf_params_cl1(self.pw, n=0)
-        return_old = oldfu.imf_params_cl1(self.pw, n=0)
-        self.assertTrue(numpy.array_equal(return_new[0], return_old[0]))
-        self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
-        self.assertTrue(numpy.array_equal(return_new[2], return_old[2]))
-        self.assertTrue(numpy.array_equal(return_new[3], return_old[3]))
+    def test_with_invalid_iswi(self):
+        for iswi in  [-2,10]:
+            return_new = fu.imf_params_cl1(self.pw, n=2, iswi=iswi, Pixel_size=1)
+            return_old = oldfu.imf_params_cl1(self.pw, n=2, iswi=iswi, Pixel_size=1)
+            self.test_all_the_conditions(return_old, return_new, False)
 
-    def test_D18_3(self):
-        return_new = fu.imf_params_cl1(self.pw, iswi=0)
-        return_old = oldfu.imf_params_cl1(self.pw, iswi=0)
-        self.assertTrue(numpy.array_equal(return_new[0], return_old[0]))
-        self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
-        self.assertTrue(numpy.array_equal(return_new[2], return_old[2]))
-        self.assertTrue(numpy.array_equal(return_new[3], return_old[3]))
-
-    def test_D18_4(self):
-        return_new = fu.imf_params_cl1(self.pw, iswi=0, n=0)
-        return_old = oldfu.imf_params_cl1(self.pw, iswi=0, n=0)
-        self.assertTrue(numpy.array_equal(return_new[0], return_old[0]))
-        self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
-        self.assertTrue(numpy.array_equal(return_new[2], return_old[2]))
-        self.assertTrue(numpy.array_equal(return_new[3], return_old[3]))
-
-    @unittest.skip("\n***************************\n\t\t 'Test_imf_params_cl1.test_D18_5' because an invalid pointer in C++ cide: interrupted by signal 6: SIGABRT\n***************************")
-    def test_D18_5(self):
-        return_new = fu.imf_params_cl1([])
-        return_old = oldfu.imf_params_cl1([])
-        self.assertTrue(numpy.array_equal(return_new[0], return_old[0]))
-        self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
-        self.assertTrue(numpy.array_equal(return_new[2], return_old[2]))
-        self.assertTrue(numpy.array_equal(return_new[3], return_old[3]))
 
 
 class Test_adaptive_mask(unittest.TestCase):
-
+    """
+    If threshold as the -9999.0 default value it uses the nsigma value to calculate the thresheld
+    """
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError):
-            fu.adaptive_mask(EMData())
-            oldfu.adaptive_mask(EMData())
+            fu.adaptive_mask(EMData(),nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
+            oldfu.adaptive_mask(EMData(),nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
 
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError):
             fu.adaptive_mask()
             oldfu.adaptive_mask()
 
-    def test_D19(self):
-        return_new = fu.adaptive_mask(IMAGE_3D)
-        return_old = oldfu.adaptive_mask(IMAGE_3D)
+    def test_2dimg_default_values(self):
+        return_new = fu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
+        return_old = oldfu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_E19(self):
-        return_new = fu.adaptive_mask(IMAGE_3D,threshold = 0)
-        return_old = oldfu.adaptive_mask(IMAGE_3D,threshold = 0)
+    def test_2dimg_no_threshold_null_sigma(self):
+        return_new = fu.adaptive_mask(IMAGE_2D, nsigma = 0, threshold = -9999.0, ndilation = 3, edge_width = 5)
+        return_old = oldfu.adaptive_mask(IMAGE_2D, nsigma = 0, threshold = -9999.0, ndilation = 3, edge_width = 5)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_E19_2(self):
-        return_new = fu.adaptive_mask(IMAGE_3D,threshold = 0, ndilation=0)
-        return_old = oldfu.adaptive_mask(IMAGE_3D,threshold = 0, ndilation=0)
+    def test_2dimg_no_threshold_negative_sigma(self):
+        return_new = fu.adaptive_mask(IMAGE_2D, nsigma = -10, threshold = -9999.0, ndilation = 3, edge_width = 5)
+        return_old = oldfu.adaptive_mask(IMAGE_2D, nsigma = -10, threshold = -9999.0, ndilation = 3, edge_width = 5)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_E19_3(self):
-        return_new = fu.adaptive_mask(IMAGE_3D,threshold = 0, nsigma=0)
-        return_old = oldfu.adaptive_mask(IMAGE_3D,threshold = 0, nsigma=0)
+    def test_2dimg_no_dilation(self):
+        return_new = fu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0,  ndilation = 0, edge_width = 5)
+        return_old = oldfu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0,  ndilation = 0, edge_width = 5)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_E19_4(self):
-        return_new = fu.adaptive_mask(IMAGE_3D,threshold = 0, edge_width=0)
-        return_old = oldfu.adaptive_mask(IMAGE_3D,threshold = 0, edge_width=0)
+    def test_2dimg_negative_dilation(self):
+        return_new = fu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0,  ndilation = -2, edge_width = 5)
+        return_old = oldfu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0,  ndilation = -2, edge_width = 5)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_D19_2(self):
-        return_new = fu.adaptive_mask(IMAGE_3D, ndilation=0)
-        return_old = oldfu.adaptive_mask(IMAGE_3D, ndilation=0)
+    @unittest.skip("\n***************************\n\t\t 'Test_adaptive_mask.test_2dimg_negative_edge_width' because: interrupted by signal 11: SIGSEGV\n***************************")
+    def test_2dimg_negative_edge_width(self):
+        return_new = fu.adaptive_mask(IMAGE_2D,nsigma = 1.0, threshold = -9999.0,  ndilation = 3, edge_width = -5)
+        return_old = oldfu.adaptive_mask(IMAGE_2D,nsigma = 1.0, threshold = -9999.0,  ndilation = 3, edge_width = -5)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_D19_3(self):
-        return_new = fu.adaptive_mask(IMAGE_3D, nsigma=0)
-        return_old = oldfu.adaptive_mask(IMAGE_3D, nsigma=0)
+
+    def test_2dimg_null_edge_width(self):
+        return_new = fu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width=0)
+        return_old = oldfu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0, ndilation = 3 ,edge_width=0)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_D19_4(self):
-        return_new = fu.adaptive_mask(IMAGE_3D, edge_width=0)
-        return_old = oldfu.adaptive_mask(IMAGE_3D, edge_width=0)
+    def test_3dimg_default_values(self):
+        return_new = fu.adaptive_mask(IMAGE_3D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
+        return_old = oldfu.adaptive_mask(IMAGE_3D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3dimg_no_threshold_null_sigma(self):
+        return_new = fu.adaptive_mask(IMAGE_3D, nsigma = 0, threshold = -9999.0, ndilation = 3, edge_width = 5)
+        return_old = oldfu.adaptive_mask(IMAGE_3D, nsigma = 0, threshold = -9999.0, ndilation = 3, edge_width = 5)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3dimg_no_threshold_negative_sigma(self):
+        return_new = fu.adaptive_mask(IMAGE_3D, nsigma = -10, threshold = -9999.0, ndilation = 3, edge_width = 5)
+        return_old = oldfu.adaptive_mask(IMAGE_3D, nsigma = -10, threshold = -9999.0, ndilation = 3, edge_width = 5)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3dimg_no_dilation(self):
+        return_new = fu.adaptive_mask(IMAGE_3D, nsigma = 1.0, threshold = -9999.0,  ndilation = 0, edge_width = 5)
+        return_old = oldfu.adaptive_mask(IMAGE_3D, nsigma = 1.0, threshold = -9999.0,  ndilation = 0, edge_width = 5)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3dimg_negative_dilation(self):
+        return_new = fu.adaptive_mask(IMAGE_3D, nsigma = 1.0, threshold = -9999.0,  ndilation = -2, edge_width = 5)
+        return_old = oldfu.adaptive_mask(IMAGE_3D, nsigma = 1.0, threshold = -9999.0,  ndilation = -2, edge_width = 5)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    @unittest.skip("\n***************************\n\t\t 'Test_adaptive_mask.test_3dimg_negative_edge_width' because: interrupted by signal 11: SIGSEGV\n***************************")
+    def test_3dimg_negative_edge_width(self):
+        return_new = fu.adaptive_mask(IMAGE_3D,nsigma = 1.0, threshold = -9999.0,  ndilation = 3, edge_width = -5)
+        return_old = oldfu.adaptive_mask(IMAGE_3D,nsigma = 1.0, threshold = -9999.0,  ndilation = 3, edge_width = -5)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+    def test_3dimg_null_edge_width(self):
+        return_new = fu.adaptive_mask(IMAGE_3D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width=0)
+        return_old = oldfu.adaptive_mask(IMAGE_3D, nsigma = 1.0, threshold = -9999.0, ndilation = 3 ,edge_width=0)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 
 
 class Test_cosinemask(unittest.TestCase):
@@ -1053,41 +1093,98 @@ class Test_cosinemask(unittest.TestCase):
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError):
-            fu.cosinemask(EMData())
-            oldfu.cosinemask(EMData())
+            fu.cosinemask(EMData(), radius = -1, cosine_width = 5, bckg = None, s=999999.0)
+            oldfu.cosinemask(EMData(), radius = -1, cosine_width = 5, bckg = None, s=999999.0)
 
-    @unittest.skip("\n***************************\n\t\t 'Test_cosinemask.test_empty_input_image2' because: interrupted by signal 11: SIGSEGV\n***************************")
-    def test_empty_input_image(self):
+    @unittest.skip("\n***************************\n\t\t 'Test_cosinemask.test_empty_bckg_image' because: interrupted by signal 11: SIGSEGV\n***************************")
+    def test_empty_bckg_image(self):
         bckg = EMData()
         return_new = fu.cosinemask(IMAGE_3D, bckg=bckg)
         return_old = oldfu.cosinemask(IMAGE_3D, bckg=bckg)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    @unittest.skip("\n***************************\n\t\t 'Test_cosinemask.test_D20_4' because: interrupted by signal 11: SIGSEGV\n***************************")
-    def test_D20_4(self):
+    @unittest.skip("\n***************************\n\t\t 'Test_cosinemask.test_3d_img_with_bckg' because: interrupted by signal 11: SIGSEGV\n***************************")
+    def test_3d_img_with_bckg(self):
         bckg = sparx_utilities.model_gauss_noise(0.25 , 10,10,10)
         return_new = fu.cosinemask(IMAGE_3D, bckg=bckg)
         return_old = oldfu.cosinemask(IMAGE_3D, bckg=bckg)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_D20(self):
-        return_new = fu.cosinemask(IMAGE_3D)
-        return_old = oldfu.cosinemask(IMAGE_3D)
+    def test_3d_img_default_values(self):
+        return_new = fu.cosinemask(IMAGE_3D, radius = -1, cosine_width = 5, bckg = None, s=999999.0)
+        return_old = oldfu.cosinemask(IMAGE_3D, radius = -1, cosine_width = 5, bckg = None, s=999999.0)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_D20_1(self):
-        return_new = fu.cosinemask(IMAGE_3D, radius=0)
-        return_old = oldfu.cosinemask(IMAGE_3D, radius=0)
+    def test_3d_img_null_radius(self):
+        return_new = fu.cosinemask(IMAGE_3D, radius = 0, cosine_width = 5, bckg = None, s=999999.0)
+        return_old = oldfu.cosinemask(IMAGE_3D, radius = 0, cosine_width = 5, bckg = None, s=999999.0)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_D20_2(self):
-        return_new = fu.cosinemask(IMAGE_3D, cosine_width=0)
-        return_old = oldfu.cosinemask(IMAGE_3D, cosine_width=0)
+    def test_3d_img_positive_radius(self):
+        return_new = fu.cosinemask(IMAGE_3D, radius = 10, cosine_width = 5, bckg = None, s=999999.0)
+        return_old = oldfu.cosinemask(IMAGE_3D, radius = 10, cosine_width = 5, bckg = None, s=999999.0)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_D20_3(self):
-        return_new = fu.cosinemask(IMAGE_3D, s=0)
-        return_old = oldfu.cosinemask(IMAGE_3D, s=0)
+    def test_3d_img_null_cosine_width(self):
+        return_new = fu.cosinemask(IMAGE_3D, radius = -1, cosine_width = 0, bckg = None, s=999999.0)
+        return_old = oldfu.cosinemask(IMAGE_3D, radius = -1, cosine_width = 0, bckg = None, s=999999.0)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3d_img_negative_cosine_width(self):
+        return_new = fu.cosinemask(IMAGE_3D, radius = -1, cosine_width = -5, bckg = None, s=999999.0)
+        return_old = oldfu.cosinemask(IMAGE_3D, radius = -1, cosine_width = -5, bckg = None, s=999999.0)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3d_img_null_s(self):
+        return_new = fu.cosinemask(IMAGE_3D, radius = -1, cosine_width = 5, bckg = None, s=0)
+        return_old = oldfu.cosinemask(IMAGE_3D, radius = -1, cosine_width = 5, bckg = None, s=0)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3d_img_negative_s(self):
+        return_new = fu.cosinemask(IMAGE_3D, radius = -1, cosine_width = 5, bckg = None, s=-10)
+        return_old = oldfu.cosinemask(IMAGE_3D, radius = -1, cosine_width = 5, bckg = None, s=-10)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    @unittest.skip("\n***************************\n\t\t 'Test_cosinemask.test_2d_img_with_bckg' because: interrupted by signal 11: SIGSEGV\n***************************")
+    def test_2d_img_with_bckg(self):
+        bckg = sparx_utilities.model_gauss_noise(0.25 , 10,10,10)
+        return_new = fu.cosinemask(IMAGE_2D, bckg=bckg)
+        return_old = oldfu.cosinemask(IMAGE_2D, bckg=bckg)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2d_img_default_values(self):
+        return_new = fu.cosinemask(IMAGE_2D, radius = -1, cosine_width = 5, bckg = None, s=999999.0)
+        return_old = oldfu.cosinemask(IMAGE_2D, radius = -1, cosine_width = 5, bckg = None, s=999999.0)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2d_img_null_radius(self):
+        return_new = fu.cosinemask(IMAGE_2D, radius = 0, cosine_width = 5, bckg = None, s=999999.0)
+        return_old = oldfu.cosinemask(IMAGE_2D, radius = 0, cosine_width = 5, bckg = None, s=999999.0)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2d_img_positive_radius(self):
+        return_new = fu.cosinemask(IMAGE_2D, radius = 10, cosine_width = 5, bckg = None, s=999999.0)
+        return_old = oldfu.cosinemask(IMAGE_2D, radius = 10, cosine_width = 5, bckg = None, s=999999.0)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2d_img_null_cosine_width(self):
+        return_new = fu.cosinemask(IMAGE_2D, radius = -1, cosine_width = 0, bckg = None, s=999999.0)
+        return_old = oldfu.cosinemask(IMAGE_2D, radius = -1, cosine_width = 0, bckg = None, s=999999.0)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2d_img_negative_cosine_width(self):
+        return_new = fu.cosinemask(IMAGE_2D, radius = -1, cosine_width = -5, bckg = None, s=999999.0)
+        return_old = oldfu.cosinemask(IMAGE_2D, radius = -1, cosine_width = -5, bckg = None, s=999999.0)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2d_img_null_s(self):
+        return_new = fu.cosinemask(IMAGE_2D, radius = -1, cosine_width = 5, bckg = None, s=0)
+        return_old = oldfu.cosinemask(IMAGE_2D, radius = -1, cosine_width = 5, bckg = None, s=0)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2d_img_negative_s(self):
+        return_new = fu.cosinemask(IMAGE_2D, radius = -1, cosine_width = 5, bckg = None, s=-10)
+        return_old = oldfu.cosinemask(IMAGE_2D, radius = -1, cosine_width = 5, bckg = None, s=-10)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
@@ -1109,17 +1206,36 @@ class Test_get_shrink_3dmask(unittest.TestCase):
             fu.get_shrink_3dmask(nxinit = 0, mask_file_name = get_data_3d(1))
             oldfu.get_shrink_3dmask(nxinit = 0, mask_file_name = get_data_3d(1))
 
-    def test_E21(self):
+    def test_3Dmask_format_error(self):
+        """ the Image3D is an EMdata"""
+        with self.assertRaises(AttributeError):
+            fu.get_shrink_3dmask(nxinit = 4, mask_file_name = IMAGE_3D)
+            oldfu.get_shrink_3dmask(nxinit = 4, mask_file_name = IMAGE_3D)
+
+    def test_2Dmask_format_error(self):
+        """ the Image3D is an EMdata"""
+        with self.assertRaises(AttributeError):
+            fu.get_shrink_3dmask(nxinit = 4, mask_file_name = IMAGE_2D)
+            oldfu.get_shrink_3dmask(nxinit = 4, mask_file_name = IMAGE_2D)
+
+    def test_3Dmask(self):
+        """ the get_data_3d(1) is a list with one EMdata element"""
         return_new = fu.get_shrink_3dmask(nxinit = 4, mask_file_name = get_data_3d(1))
         return_old = oldfu.get_shrink_3dmask(nxinit = 4, mask_file_name = get_data_3d(1))
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_D21(self):
+    def test_2Dmask(self):
+        return_new = fu.get_shrink_3dmask(nxinit = 4, mask_file_name = get_data(1))
+        return_old = oldfu.get_shrink_3dmask(nxinit = 4, mask_file_name = get_data(1))
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_nx_equal_size3Dmask(self):
         mask_file_name = get_data_3d(1)
         nx =sparx_utilities.get_im(mask_file_name).get_xsize()
         return_new = fu.get_shrink_3dmask(nxinit = nx, mask_file_name = mask_file_name)
         return_old = oldfu.get_shrink_3dmask(nxinit = nx, mask_file_name = mask_file_name)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 
 
 class Test_get_biggest_cluster(unittest.TestCase):
@@ -1134,17 +1250,17 @@ class Test_get_biggest_cluster(unittest.TestCase):
             fu.get_biggest_cluster( EMData())
             oldfu.get_biggest_cluster( EMData())
 
-    def test_D22(self):
+    def test_2Dimg(self):
         return_new = fu.get_biggest_cluster(IMAGE_2D)
         return_old = oldfu.get_biggest_cluster(IMAGE_2D)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_D22_2(self):
+    def test_3Dimg(self):
         return_new = fu.get_biggest_cluster(IMAGE_3D)
         return_old = oldfu.get_biggest_cluster(IMAGE_3D)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_D22_3(self):
+    def test_gauss_noise_img(self):
         image = sparx_utilities.model_gauss_noise(0.25 , 10,10,10)
         return_new = fu.get_biggest_cluster(image)
         return_old = oldfu.get_biggest_cluster(image)
@@ -1154,6 +1270,16 @@ class Test_get_biggest_cluster(unittest.TestCase):
 
 class Test_compute_bfactor(unittest.TestCase):
     pw = [entry for entry in numpy.arange(0, 10).tolist()]
+
+    def test_all_the_conditions(self,return_new=None,return_old=None, skip=True):
+        if skip is False:
+            self.assertEqual(return_new[0], return_old[0])
+            self.assertEqual(return_new[2], return_old[2])
+            self.assertEqual(return_new[3], return_old[3])
+            self.assertEqual(len(return_new[1]), len(return_old[1]))
+            for i, j in zip(return_new[1], return_old[1]):
+                self.assertTrue(numpy.array_equal(i, j))
+            self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
 
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError):
@@ -1165,44 +1291,38 @@ class Test_compute_bfactor(unittest.TestCase):
             fu.compute_bfactor(pws=self.pw, freq_min = 0.15, freq_max= 0.25, pixel_size=0)
             oldfu.compute_bfactor(pws=self.pw, freq_min = 0.15, freq_max= 0.25, pixel_size=0)
 
-    def test_D23(self):
-        return_new =fu.compute_bfactor(pws=self.pw, freq_min = 0.15, freq_max= 0.25)
-        return_old = oldfu.compute_bfactor(pws=self.pw, freq_min = 0.15, freq_max= 0.25)
-        self.assertEqual(return_new[0], return_old[0])
-        self.assertEqual(return_new[2], return_old[2])
-        self.assertEqual(return_new[3], return_old[3])
-        self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
+    def test_compute_bfactor(self):
+        return_new =fu.compute_bfactor(pws=self.pw, freq_min = 0.15, freq_max= 0.25, pixel_size=1.0)
+        return_old = oldfu.compute_bfactor(pws=self.pw, freq_min = 0.15, freq_max= 0.25, pixel_size=1.0)
+        self.test_all_the_conditions(return_new, return_old, False)
 
     @unittest.skip("\n***************************\n\t\t 'Test_compute_bfactor.test_with_f_negative' because: It works but i think it 'd not\n***************************")
     def test_with_f_negative(self):
-        return_new =fu.compute_bfactor(pws=self.pw, freq_min = -0.15, freq_max= -0.25)
-        return_old = oldfu.compute_bfactor(pws=self.pw, freq_min = -0.15, freq_max= -0.25)
-        self.assertEqual(return_new[0], return_old[0])
-        self.assertEqual(return_new[2], return_old[2])
-        self.assertEqual(return_new[3], return_old[3])
-        self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
+        return_new =fu.compute_bfactor(pws=self.pw, freq_min = -0.15, freq_max= -0.25, pixel_size=1.0)
+        return_old = oldfu.compute_bfactor(pws=self.pw, freq_min = -0.15, freq_max= -0.25, pixel_size=1.0)
+        self.test_all_the_conditions(return_new, return_old, False)
 
     def test_freqMin_bigger_than_freqMAx_error(self):
         with self.assertRaises(ZeroDivisionError):
-            fu.compute_bfactor(pws=self.pw, freq_min = 0.35, freq_max= 0.25)
-            oldfu.compute_bfactor(pws=self.pw, freq_min = 0.35, freq_max= 0.25)
+            fu.compute_bfactor(pws=self.pw, freq_min = 0.35, freq_max= 0.25, pixel_size=1.0)
+            oldfu.compute_bfactor(pws=self.pw, freq_min = 0.35, freq_max= 0.25, pixel_size=1.0)
 
     def test_freqMin_equal_freqMAx_error(self):
         with self.assertRaises(ZeroDivisionError):
-            fu.compute_bfactor(pws=self.pw, freq_min = 0.35, freq_max= 0.35)
-            oldfu.compute_bfactor(pws=self.pw, freq_min = 0.35, freq_max= 0.35)
+            fu.compute_bfactor(pws=self.pw, freq_min = 0.35, freq_max= 0.35, pixel_size=1.0)
+            oldfu.compute_bfactor(pws=self.pw, freq_min = 0.35, freq_max= 0.35, pixel_size=1.0)
 
     def test_E4_and_ZeroDivisionError(self):
         with self.assertRaises(ZeroDivisionError):
-            fu.compute_bfactor(pws=[1], freq_min = 0.15, freq_max= 0.25)
-            oldfu.compute_bfactor(pws=[1], freq_min= 0.15, freq_max= 0.25)
-            fu.compute_bfactor(pws=[1,1], freq_min = 0.15, freq_max= 0.25)
-            oldfu.compute_bfactor(pws=[1,1], freq_min= 0.15, freq_max= 0.25)
+            fu.compute_bfactor(pws=[1], freq_min = 0.15, freq_max= 0.25, pixel_size=1.0)
+            oldfu.compute_bfactor(pws=[1], freq_min= 0.15, freq_max= 0.25, pixel_size=1.0)
+            fu.compute_bfactor(pws=[1,1], freq_min = 0.15, freq_max= 0.25, pixel_size=1.0)
+            oldfu.compute_bfactor(pws=[1,1], freq_min= 0.15, freq_max= 0.25, pixel_size=1.0)
 
     def test_Empty_array_error(self):
         with self.assertRaises(ValueError):
-            fu.compute_bfactor(pws=[], freq_min=0.15, freq_max=0.25)
-            oldfu.compute_bfactor(pws=[], freq_min=0.15, freq_max=0.25)
+            fu.compute_bfactor(pws=[], freq_min=0.15, freq_max=0.25, pixel_size=1.0)
+            oldfu.compute_bfactor(pws=[], freq_min=0.15, freq_max=0.25, pixel_size=1.0)
 
 
 
@@ -1330,22 +1450,22 @@ class Test_ampcont2angle(unittest.TestCase):
             fu.ampcont2angle()
             oldfu.ampcont2angle()
 
-    def test_D26(self):
+    def test_A_equal_minus100(self):
         return_new = fu.ampcont2angle(100.0)
         return_old = oldfu.ampcont2angle(100.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_E26(self):
+    def test_A_equal100(self):
         return_new = fu.ampcont2angle(-100.0)
         return_old = oldfu.ampcont2angle(-100.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_F26(self):
+    def test_negative_A(self):
         return_new = fu.ampcont2angle(-1)
         return_old = oldfu.ampcont2angle(-1)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_G26(self):
+    def test_positive_A(self):
         return_new = fu.ampcont2angle(8)
         return_old = oldfu.ampcont2angle(8)
         self.assertTrue(numpy.array_equal(return_new, return_old))
@@ -1359,9 +1479,19 @@ class Test_angle2ampcont(unittest.TestCase):
             fu.angle2ampcont()
             oldfu.angle2ampcont()
 
-    def test_D27(self):
+    def test_positive_phi(self):
         return_new = fu.angle2ampcont(0.45)
         return_old = oldfu.angle2ampcont(0.45)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_negativetive_phi(self):
+        return_new = fu.angle2ampcont(-0.45)
+        return_old = oldfu.angle2ampcont(-0.45)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_null_phi(self):
+        return_new = fu.angle2ampcont(0)
+        return_old = oldfu.angle2ampcont(0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
 
@@ -1377,15 +1507,16 @@ class Test_bracket_def(unittest.TestCase):
             fu.bracket_def()
             oldfu.bracket_def()
 
-    def test_E28(self):
+    def test_f2_greater_f1(self):
         return_new = fu.bracket_def(self.function_test,dat=5, x1=3, h=3)
         return_old = oldfu.bracket_def(self.function_test,dat=5, x1=3, h=3)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_G28(self):
+    def test_f2_not_greater_f1(self):
         return_new = fu.bracket_def(self.function_test,dat=5, x1=3, h=0)
         return_old = oldfu.bracket_def(self.function_test,dat=5, x1=3, h=0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+
 
 
 class Test_bracket(unittest.TestCase):
@@ -1399,12 +1530,12 @@ class Test_bracket(unittest.TestCase):
             fu.bracket()
             oldfu.bracket()
 
-    def test_D29(self):
+    def test_f3_greater_f1(self):
         return_new = fu.bracket(self.function_test,dat=5,h=4)
         return_old = oldfu.bracket(self.function_test,dat=5,h=4)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_E29(self):
+    def test_f3_not_greater_f1(self):
         self.assertTrue(fu.bracket(self.function_test,dat=0,h=0) is None)
         self.assertTrue(oldfu.bracket(self.function_test,dat=0,h=0) is None)
 
@@ -1446,29 +1577,27 @@ class Test_goldsearch_astigmatism(unittest.TestCase):
             fu.goldsearch_astigmatism(self.bad_function_test,5,3,4)
             oldfu.goldsearch_astigmatism(self.bad_function_test,5,3,4)
 
-    def test_F30(self):
+    def test_f2_greater_f1(self):
         return_new = fu.goldsearch_astigmatism(self.function_test,5,3,4)
         return_old = oldfu.goldsearch_astigmatism(self.function_test,5,3,4)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_G30(self):
+    def test_return_f2_greater_f1(self):
         return_new = fu.goldsearch_astigmatism(self.function_test_return_0,5,3,4)
         return_old = oldfu.goldsearch_astigmatism(self.function_test_return_0,5,3,4)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_E30(self):
+    def test_test_f1_greater_f2(self):
         return_new = fu.goldsearch_astigmatism(self.function_test,5,4,3)
         return_old = oldfu.goldsearch_astigmatism(self.function_test,5,4,3)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_ZeroDivisionError(self):
-        with self.assertRaises(ZeroDivisionError):
-            fu.goldsearch_astigmatism(self.function_test, 0, 0, 0)
-            oldfu.goldsearch_astigmatism(self.function_test, 0, 0, 0)
-
 
 
 class Test_defocus_baseline_fit(unittest.TestCase):
+    """
+    Its input params are used at the beginning of the body of the functions to feed 'imf_params_cl1'.
+    """
     roo = [entry for entry in numpy.arange(0, 10).tolist()]
 
     def test_wrong_number_params(self):
@@ -1476,31 +1605,26 @@ class Test_defocus_baseline_fit(unittest.TestCase):
             fu.defocus_baseline_fit()
             oldfu.defocus_baseline_fit()
 
-    def test_D31(self):
+    def test_iswi3(self):
         return_new = fu.defocus_baseline_fit(roo=self.roo, i_start=0, i_stop=10, nrank=2, iswi=3)
         return_old = oldfu.defocus_baseline_fit(roo=self.roo, i_start=0, i_stop=10, nrank=2, iswi=3)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_D31_2(self):
+    def test_D31_iswi_not3(self):
         return_new = fu.defocus_baseline_fit(roo=self.roo, i_start=0, i_stop=10, nrank=2, iswi=0)
         return_old = oldfu.defocus_baseline_fit(roo=self.roo, i_start=0, i_stop=10, nrank=2, iswi=0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
     @unittest.skip("\n***************************\n\t\t 'Test_defocus_baseline_fit.test_start_is_bigger_than_stop' because an invalid pointer in C++ cide: interrupted by signal 6: SIGABRT\n***************************")
     def test_start_is_bigger_than_stop(self):
-        return_new = fu.defocus_baseline_fit(roo=self.roo, i_start=110, i_stop=10, nrank=2, iswi=3)
-        return_old = oldfu.defocus_baseline_fit(roo=self.roo, i_start=110, i_stop=10, nrank=2, iswi=3)
+        return_new = fu.defocus_baseline_fit(roo=self.roo, i_start=10, i_stop=7, nrank=2, iswi=3)
+        return_old = oldfu.defocus_baseline_fit(roo=self.roo, i_start=10, i_stop=7, nrank=2, iswi=3)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
     @unittest.skip("\n***************************\n\t\t 'Test_defocus_baseline_fit.test_start_is_equal_stop' because an invalid pointer in C++ cide: interrupted by signal 6: SIGABRT\n***************************")
     def test_start_is_equal_stop(self):
-        return_new = fu.defocus_baseline_fit(roo=self.roo, i_start=10, i_stop=10, nrank=2, iswi=3)
-        return_old = oldfu.defocus_baseline_fit(roo=self.roo, i_start=10, i_stop=10, nrank=2, iswi=3)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-
-    def test_E31(self):
-        return_new = fu.defocus_baseline_fit(roo=self.roo, i_start=0, i_stop=10, nrank=2, iswi=2)
-        return_old = oldfu.defocus_baseline_fit(roo=self.roo, i_start=0, i_stop=10, nrank=2, iswi=2)
+        return_new = fu.defocus_baseline_fit(roo=self.roo, i_start=9, i_stop=9, nrank=2, iswi=3)
+        return_old = oldfu.defocus_baseline_fit(roo=self.roo, i_start=9, i_stop=9, nrank=2, iswi=3)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
     @unittest.skip("\n***************************\n\t\t 'Test_defocus_baseline_fit.test_negative_rank_error' because an invalid pointer in C++ cide: interrupted by signal 6: SIGABRT\n***************************")
@@ -1522,6 +1646,7 @@ class Test_defocus_baseline_fit(unittest.TestCase):
 
 
 class Test_simpw1d(unittest.TestCase):
+    """ I got this value from the pickle file"""
     data = [entry for entry in numpy.arange(1, 256).tolist()]
     defocus = 1
     Cs = 2
@@ -1537,15 +1662,11 @@ class Test_simpw1d(unittest.TestCase):
             fu.simpw1d()
             oldfu.simpw1d()
 
-    def test_D32(self):
+    def test_positive_defocus(self):
         datanew = [self.data[self.i_start:self.i_stop], self.data[self.i_start:self.i_stop], self.nx, self.defocus, self.Cs, self.voltage, self.pixel_size, self.amp_contrast, self.i_start,self.i_stop]
         self.assertEqual(fu.simpw1d(self.defocus,datanew), oldfu.simpw1d(self.defocus,datanew))
 
-    def test_D32_2(self):
-        datanew = [self.data[self.i_start:self.i_stop], self.data[self.i_start:self.i_stop], self.nx, self.defocus, self.Cs, self.voltage, self.pixel_size, self.amp_contrast, self.i_start,self.i_stop]
-        self.assertEqual(fu.simpw1d(self.defocus+1,datanew), oldfu.simpw1d(self.defocus+1,datanew))
-
-    def test_D32_3(self):
+    def test_negative_defocus(self):
         datanew = [self.data[self.i_start:self.i_stop], self.data[self.i_start:self.i_stop], self.nx, -1, self.Cs, self.voltage, self.pixel_size, self.amp_contrast, self.i_start,self.i_stop]
         self.assertEqual(fu.simpw1d(-1,datanew), oldfu.simpw1d(-1,datanew))
 
@@ -1584,15 +1705,11 @@ class Test_simpw1d_pap(unittest.TestCase):
             fu.simpw1d_pap()
             oldfu.simpw1d_pap()
 
-    def test_D33(self):
+    def test_positive_focus(self):
         datanew = [self.data[self.i_start:self.i_stop], self.data[self.i_start:self.i_stop], self.nx, self.defocus,self.Cs, self.voltage, self.pixel_size, self.amp_contrast, self.i_start, self.i_stop]
         self.assertEqual(fu.simpw1d_pap(self.defocus, datanew), oldfu.simpw1d_pap(self.defocus, datanew))
 
-    def test_D33_2(self):
-        datanew = [self.data[self.i_start:self.i_stop], self.data[self.i_start:self.i_stop], self.nx, self.defocus, self.Cs, self.voltage, self.pixel_size, self.amp_contrast, self.i_start,self.i_stop]
-        self.assertEqual(fu.simpw1d(self.defocus+1,datanew), oldfu.simpw1d(self.defocus+1,datanew))
-
-    def test_D33_3(self):
+    def test_negative_focus(self):
         datanew = [self.data[self.i_start:self.i_stop], self.data[self.i_start:self.i_stop], self.nx, -1, self.Cs, self.voltage, self.pixel_size, self.amp_contrast, self.i_start,self.i_stop]
         self.assertEqual(fu.simpw1d(-1,datanew), oldfu.simpw1d(-1,datanew))
 
@@ -1632,15 +1749,11 @@ class Test_simpw1d_print(unittest.TestCase):
             oldfu.simpw1d_print()
 
 
-    def test_D34(self):
+    def test_positive_focus(self):
         datanew = [self.data[self.i_start:self.i_stop], self.data[self.i_start:self.i_stop], self.nx, self.defocus, self.Cs, self.voltage, self.pixel_size, self.amp_contrast, self.i_start, self.i_stop]
         self.assertEqual(fu.simpw1d_print(self.defocus,datanew), oldfu.simpw1d_print(self.defocus,datanew))
 
-    def test_D34_2(self):
-        datanew = [self.data[self.i_start:self.i_stop], self.data[self.i_start:self.i_stop], self.nx, self.defocus, self.Cs, self.voltage, self.pixel_size, self.amp_contrast, self.i_start,self.i_stop]
-        self.assertEqual(fu.simpw1d(self.defocus+1,datanew), oldfu.simpw1d(self.defocus+1,datanew))
-
-    def test_D34_3(self):
+    def test_negative_focus(self):
         datanew = [self.data[self.i_start:self.i_stop], self.data[self.i_start:self.i_stop], self.nx, -1, self.Cs, self.voltage, self.pixel_size, self.amp_contrast, self.i_start,self.i_stop]
         self.assertEqual(fu.simpw1d(-1,datanew), oldfu.simpw1d(-1,datanew))
 
@@ -1671,12 +1784,12 @@ class Test_movingaverage(unittest.TestCase):
             fu.movingaverage()
             oldfu.movingaverage()
 
-    def test_D35(self):
-        return_new = fu.movingaverage(self.data,window_size=2)
-        return_old = oldfu.movingaverage(self.data, window_size=2)
+    def test_default_value(self):
+        return_new = fu.movingaverage(self.data,window_size=2, skip=3)
+        return_old = oldfu.movingaverage(self.data, window_size=2, skip=3)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_D35_2(self):
+    def test_null_skip(self):
         return_new = fu.movingaverage(self.data,window_size=2, skip=0)
         return_old = oldfu.movingaverage(self.data, window_size=2, skip=0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
@@ -1778,12 +1891,12 @@ class Test_defocusgett_pap(unittest.TestCase):
 
     def test_no_pixel_size_error(self):
         with self.assertRaises(ZeroDivisionError):
-            fu.defocusgett_pap(self.roo, self.nx, self.voltage, 0, self.Cs, self.amp_contrast,self.i_start, self.i_stop)
-            oldfu.defocusgett_pap(self.roo, self.nx, self.voltage, 0, self.Cs, self.amp_contrast,self.i_start, self.i_stop)
+            fu.defocusgett_pap(self.roo, self.nx, self.voltage, 0, self.Cs, self.amp_contrast,self.i_start, self.i_stop, nr2=self.nr2)
+            oldfu.defocusgett_pap(self.roo, self.nx, self.voltage, 0, self.Cs, self.amp_contrast,self.i_start, self.i_stop, nr2=self.nr2)
 
     def test_defocusgett_pap_true_should_return_equal_object(self):
-        return_new = fu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.i_start, self.i_stop)
-        return_old = oldfu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.i_start, self.i_stop)
+        return_new = fu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.i_start, self.i_stop, nr2=self.nr2)
+        return_old = oldfu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.i_start, self.i_stop, nr2=self.nr2)
         self.test_all_the_conditions(return_new, return_old, self.skip)
 
 
