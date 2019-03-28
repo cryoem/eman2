@@ -17,6 +17,7 @@ from copy import  deepcopy
 from os import path
 
 
+
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 TOLERANCE = 0.0075
 
@@ -33,6 +34,7 @@ There are some opened issues in:
 1) rotavg_ctf for definition it'll process a 2D image ... should we impede a 3D img as input?
 2) adaptive_mask  it'll process a 3D image ... should we impede a 2D img as input?
 3) get_shrink_3dmask accepts the 'mask_file_name' params as string too. I did not test it because it is processed by 'sparx_fundamentals.resample'
+4) defocusgett with f_start=0 it crashes but in the code it manages this situation at the beginning ...it seems that should be possible to init it with 0
 
 """
 class Test_binarize(unittest.TestCase):
@@ -1813,26 +1815,27 @@ class Test_movingaverage(unittest.TestCase):
 
 
 class Test_defocusgett(unittest.TestCase):
+    """ I did not change a lot the voltage, Cs= and ampcont input params becaus they are used to feed a ctf. I have already test them in the appropriate testclass"""
     roo = [entry for entry in numpy.arange(0, 10).tolist()]
     Cs = 2
     voltage = 300
     pixel_size = 1.0
     amp_contrast = 0.1
     nr2 = 6
-    i_start = 1
-    i_stop = 10
+    f_start = 1
+    f_stop = 10
     nx = 1
     skip =False
 
     def test_all_the_conditions(self,return_new=None,return_old=None, skip=True):
         if skip is False:
-            self.assertTrue((return_new[0], return_old[0]))
+            self.assertEqual(return_new[0], return_old[0])
             self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
             self.assertTrue(numpy.array_equal(return_new[2], return_old[2]))
             self.assertTrue(numpy.array_equal(return_new[3], return_old[3]))
             self.assertTrue(numpy.array_equal(return_new[4], return_old[4]))
-            self.assertTrue(return_new[5], return_old[5])
-            self.assertTrue(return_new[6], return_old[6])
+            self.assertEqual(return_new[5], return_old[5])
+            self.assertEqual(return_new[6], return_old[6])
 
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError):
@@ -1842,18 +1845,39 @@ class Test_defocusgett(unittest.TestCase):
     @unittest.skip("\n***************************\n\t\t 'Test_defocusgett.test_empty_array_error' because an invalid pointer in C++ cide: interrupted by signal 6: SIGABRT\n***************************")
     def test_empty_array_error(self):
         with self.assertRaises(IndexError):
-            fu.defocusgett([], self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.i_start, self.i_stop, nr2=self.nr2)
-            oldfu.defocusgett([], self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast,self.i_start, self.i_stop, nr2=self.nr2)
+            fu.defocusgett([], self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
+            oldfu.defocusgett([], self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
 
     def test_no_pixel_size_error(self):
         with self.assertRaises(ZeroDivisionError):
-            fu.defocusgett(self.roo, self.nx, self.voltage, 0, self.Cs, self.amp_contrast, self.i_start, self.i_stop,nr2=self.nr2)
-            oldfu.defocusgett(self.roo, self.nx, self.voltage, 0, self.Cs, self.amp_contrast, self.i_start, self.i_stop,nr2=self.nr2)
+            fu.defocusgett(self.roo, self.nx, self.voltage, 0, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
+            oldfu.defocusgett(self.roo, self.nx, self.voltage, 0, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
 
-    def test_defocusgett_true_should_return_equal_object(self):
-        return_new = fu.defocusgett(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.i_start, self.i_stop,nr2=self.nr2)
-        return_old = oldfu.defocusgett(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.i_start, self.i_stop,nr2=self.nr2)
+    def test_pickle_value(self):
+        return_new = fu.defocusgett(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
+        return_old = oldfu.defocusgett(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
         self.test_all_the_conditions(return_new,return_old,False)
+
+    def test_null_fstop(self):
+        return_new = fu.defocusgett(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, 0, nr2=self.nr2)
+        return_old = oldfu.defocusgett(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, 0, nr2=self.nr2)
+        self.test_all_the_conditions(return_new,return_old,False)
+
+    @unittest.skip("\n***************************\n\t\t 'Test_defocusgett.test_negative_rank_error' because an invalid pointer in C++ cide: interrupted by signal 6: SIGABRT\n***************************")
+    def test_negative_rank_error(self):
+        return_new = fu.defocusgett(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=-2)
+        return_old = oldfu.defocusgett(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=-2)
+        self.test_all_the_conditions(return_new,return_old,False)
+
+    def test_null_fstart(self):
+        with self.assertRaises(ValueError):
+            fu.defocusgett(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, 0, self.f_stop, nr2=self.nr2)
+            oldfu.defocusgett(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, 0, self.f_stop, nr2=self.nr2)
+
+    def test_no_image_size(self):
+        with self.assertRaises(ZeroDivisionError):
+            fu.defocusgett(self.roo, 0, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
+            oldfu.defocusgett(self.roo, 0, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
 
 
 class Test_defocusgett_pap(unittest.TestCase):
@@ -1862,42 +1886,63 @@ class Test_defocusgett_pap(unittest.TestCase):
     voltage = 300
     pixel_size = 1.09
     amp_contrast = 0.1
-    i_start = 0.048
-    i_stop = -1
+    f_start = 0.048
+    f_stop = -1
     nx = 512
     nr2 = 6
     skip =False
 
     def test_all_the_conditions(self,return_new=None,return_old=None, skip=True):
         if skip is False:
-            self.assertTrue((return_new[0], return_old[0]))
+            self.assertEqual(return_new[0], return_old[0])
             self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
             self.assertTrue(numpy.array_equal(return_new[2], return_old[2]))
             self.assertTrue(numpy.array_equal(return_new[3], return_old[3]))
             self.assertTrue(numpy.array_equal(return_new[4], return_old[4]))
-            self.assertTrue(return_new[5], return_old[5])
-            self.assertTrue(return_new[6], return_old[6])
+            self.assertEqual(return_new[5], return_old[5])
+            self.assertEqual(return_new[6], return_old[6])
 
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError):
             fu.defocusgett_pap()
             oldfu.defocusgett_pap()
 
-    @unittest.skip("\n***************************\n\t\t 'Test_defocusgett_pap.test_empty_array_error' because an invalid pointer in C++ cide: interrupted by signal 6: SIGABRT\n***************************")
+    @unittest.skip("\n***************************\n\t\t 'Test_defocusgett.test_empty_array_error' because an invalid pointer in C++ cide: interrupted by signal 6: SIGABRT\n***************************")
     def test_empty_array_error(self):
         with self.assertRaises(IndexError):
-            fu.defocusgett([], self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.i_start, self.i_stop, nr2=self.nr2)
-            oldfu.defocusgett([], self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast,self.i_start, self.i_stop, nr2=self.nr2)
+            fu.defocusgett_pap([], self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
+            oldfu.defocusgett_pap([], self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
 
     def test_no_pixel_size_error(self):
         with self.assertRaises(ZeroDivisionError):
-            fu.defocusgett_pap(self.roo, self.nx, self.voltage, 0, self.Cs, self.amp_contrast,self.i_start, self.i_stop, nr2=self.nr2)
-            oldfu.defocusgett_pap(self.roo, self.nx, self.voltage, 0, self.Cs, self.amp_contrast,self.i_start, self.i_stop, nr2=self.nr2)
+            fu.defocusgett_pap(self.roo, self.nx, self.voltage, 0, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
+            oldfu.defocusgett_pap(self.roo, self.nx, self.voltage, 0, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
 
-    def test_defocusgett_pap_true_should_return_equal_object(self):
-        return_new = fu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.i_start, self.i_stop, nr2=self.nr2)
-        return_old = oldfu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.i_start, self.i_stop, nr2=self.nr2)
-        self.test_all_the_conditions(return_new, return_old, self.skip)
+    def test_pickle_value(self):
+        return_new = fu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
+        return_old = oldfu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
+        self.test_all_the_conditions(return_new,return_old,False)
+
+    def test_null_fstop(self):
+        return_new = fu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, 0, nr2=self.nr2)
+        return_old = oldfu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, 0, nr2=self.nr2)
+        self.test_all_the_conditions(return_new,return_old,False)
+
+    @unittest.skip("\n***************************\n\t\t 'Test_defocusgett.test_negative_rank_error' because an invalid pointer in C++ cide: interrupted by signal 6: SIGABRT\n***************************")
+    def test_negative_rank_error(self):
+        return_new = fu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=-2)
+        return_old = oldfu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=-2)
+        self.test_all_the_conditions(return_new,return_old,False)
+
+    def test_null_fstart(self):
+        return_new = fu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, 0, self.f_stop, nr2=self.nr2)
+        return_old = oldfu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, 0, self.f_stop, nr2=self.nr2)
+        self.test_all_the_conditions(return_new, return_old, False)
+
+    def test_no_image_size(self):
+        with self.assertRaises(ZeroDivisionError):
+            fu.defocusgett_pap(self.roo, 0, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
+            oldfu.defocusgett_pap(self.roo, 0, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
 
 
 
@@ -1914,13 +1959,13 @@ class Test_defocusgett_vpp(unittest.TestCase):
 
     def test_all_the_conditions(self,return_new=None,return_old=None, skip=True):
         if skip is False:
-            self.assertTrue((return_new[0], return_old[0]))
-            self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
+            self.assertEqual(return_new[0], return_old[0])
+            self.assertEqual(return_new[1], return_old[1])
             self.assertTrue(numpy.array_equal(return_new[2], return_old[2]))
             self.assertTrue(numpy.array_equal(return_new[3], return_old[3]))
             self.assertTrue(numpy.array_equal(return_new[4], return_old[4]))
-            self.assertTrue(return_new[5], return_old[5])
-            self.assertTrue(return_new[6], return_old[6])
+            self.assertEqual(return_new[5], return_old[5])
+            self.assertEqual(return_new[6], return_old[6])
 
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError):
