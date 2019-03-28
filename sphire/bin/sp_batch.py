@@ -61,11 +61,11 @@ if args.first_hold_number:
     prev_hold = args.first_hold_number
 else:
     prev_hold = 'aaa'
+
 for idx, file_name in enumerate(sorted(glob.glob('{0}/*'.format(args.input_run_dir)))):
     command = args.submission_command.split()
     if args.hold_flag and (idx != 0 or args.first_hold_number):
-        command.append(args.hold_flag)
-        command.append(prev_hold)
+        command.append('{0} {1}'.format(args.hold_flag, prev_hold))
     else:
         pass
     command.append(file_name)

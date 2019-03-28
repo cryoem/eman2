@@ -33,8 +33,8 @@ Run sp_batch within a SGE/PBS/Torque queuing environment waiting for another job
 === Main Parameters ===
   ; submission_command : Submission command : Submission command, e.g., qsub, qsub -V, sbatch, bash (default required string)
   ; input_run_dir: Pipeline directory : Directory containin the pipeline submission files (default required string)
-  ; %%--%%hold_flag: Hold flag: Hold flag for the submission command, e.g. -hold_jid, --wait; Default is None and should be used in combination with a local execution with bash (default none)
-  ; %%--%%first_hold_number: First hold number : Wait number for the first jobs that is submitted. By default, the first job will not wait for others (default none)
+  ; %%--%%hold_flag: Hold flag: Hold flag for the submission command, e.g. -hold_jid=, --wait=, --dependency=afterany:; Default is None and should be used in combination with a local execution with bash (default none)
+  ; %%--%%first_hold_number: First hold number : Wait number for the first job that is submitted. By default, the first job will not wait for others (default none)
 
 \\
 ===== Output =====
