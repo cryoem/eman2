@@ -216,6 +216,8 @@ def ai_spa( Tracker, fff, anger, shifter, do_local, chout = False):
 		if chout:
 			sp_global_def.sxprint("  IN AI: nxstep, large at Nyq, outcoming current res, adjusted current, inc, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
 
+		if do_local:
+			tmp = max(tmp, Tracker['nxinit'])
 		Tracker["nxinit"] = int(tmp)
 		Tracker["changed_delta"] = False
 		#  decide angular step and translations
@@ -223,6 +225,9 @@ def ai_spa( Tracker, fff, anger, shifter, do_local, chout = False):
 			if( Tracker["delta"] < Tracker['constants']['a_criterion']*Tracker["acc_rot"] ):#<<<----it might cause converge issues when shake is 0.0
 				if Tracker["state"] == "PRIMARY LOCAL":
 					step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
+					if do_local:
+						step_range = min(step_range, Tracker['xr'])
+						step = min(step, Tracker['ts'])
 					if chout:
 						sp_global_def.sxprint("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
 					Tracker["xr"] = step_range
@@ -234,6 +239,9 @@ def ai_spa( Tracker, fff, anger, shifter, do_local, chout = False):
 						sp_global_def.sxprint("Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
 			else:
 				step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
+				if do_local:
+					step_range = min(step_range, Tracker['xr'])
+					step = min(step, Tracker['ts'])
 				if chout:
 					sp_global_def.sxprint("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
 				Tracker["xr"] = step_range

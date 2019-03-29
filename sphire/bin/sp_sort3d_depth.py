@@ -7052,6 +7052,7 @@ def main():
 		parser.add_option("--not_include_unaccounted",           action ="store_true",    default =False,      help="Do not reconstruct unaccounted elements in each generation")
 		parser.add_option("--notapplybckgnoise",                 action ="store_true",    default =False,      help="Flag to turn off background noise")
 		parser.add_option("--num_core_set",                      type   ="int",           default =-1,		   help="Number of images for reconstructing core set images. Will not reconstruct core set images if the total number of core set images is less than this")
+		parser.add_option("--compute_on_the_fly",          action ="store_true",    default =False,     help="Pre-compute part of multiple assignment images for reconstruction till memory is filled up and then the other part on the fly")
 		parser.add_option("--nstep",                             type   ="int",           default =7,		   help="number of steps to decrease minimum group size from high bound to low bound")
 		parser.add_option("--overhead",                          type   ="float",         default =5.0,        help="Estimated python overhead per node in GB")
 		parser.add_option("--not_freeze_groups",                 action ="store_true",    default =False,      help="Do not remove small groups during within-box clustering")
@@ -7114,7 +7115,7 @@ def main():
 		Constants["fuse_freq"] = 45.  # Now in A, convert to pixels before being used
 		Constants["orientation_groups"]  = options.orientation_groups # orientation constrained angle step
 		Constants["num_core_set"]        = options.num_core_set
-		Constants["compute_on_the_fly"]  = False
+		Constants["compute_on_the_fly"]  = options.compute_on_the_fly
 		Constants["overhead"]            = max(options.overhead, 1.)
 		#
 		#
