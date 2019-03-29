@@ -1851,9 +1851,10 @@ def main():
 					ssimage.write_image(result_stack, im)
 
 	elif options.balance_angular_distribution:
-		from sp_utilities  import balance_angular_distribution, read_text_row, write_text_file
-		write_text_file(balance_angular_distribution(read_text_row(args[0]), options.max_occupy, options.angstep, options.symmetry),args[1])
-
+		from sp_utilities  import balance_angular_distribution, read_text_row, write_text_file, write_text_row
+		resulting_index, resulting_params = balance_angular_distribution(read_text_row(args[0]), options.max_occupy, options.angstep, options.symmetry)
+		write_text_file(resulting_index,args[1])
+		write_text_row(resulting_params.tolist(), args[1]+'_params.txt')
 	else: 
 		ERROR( "Please provide option name" )
 		return

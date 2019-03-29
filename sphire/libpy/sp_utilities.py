@@ -5156,84 +5156,113 @@ def symmetry_related_normals(angles, symmetry):
 """
 
 
-def angular_occupancy(params, angstep=15.0, sym="c1", method="S", inc_mirror=0):
-	from sp_fundamentals import symclass
+def angular_occupancy(params, angstep=15.0, sym="", method="S", inc_mirror=0):
+	import sp_fundamentals
 	from sp_utilities import nearest_fang, angles_to_normals
 
-	smc = symclass(sym)
-	eah = smc.even_angles(angstep, inc_mirror=inc_mirror, method=method)
+	# smc = symclass(sym)
+	# eah = smc.even_angles(angstep, inc_mirror=inc_mirror, method=method)
 
-	leah = len(eah)
-	u = []
-	for q in eah:
-		# sxprint("q",q)
-		m = smc.symmetry_related([(180.0 + q[0]) % 360.0, 180.0 - q[1], 0.0])
-		# sxprint("m",m)
-		itst = len(u)
-		for c in m:
-			# sxprint("c",c)
-			if smc.is_in_subunit(c[0], c[1], 1):
-				# sxprint(" is in 1")
-				if not smc.is_in_subunit(c[0], c[1], inc_mirror):
-					# sxprint("  outside")
-					u.append(c)
-					break
-		if len(u) != itst + 1:
-			u.append(q)  #  This is for exceptions that cannot be easily handled
-			"""
-			sxprint(q)
-			sxprint(m)
-			ERROR("balance angles","Fill up upper",1)
-			"""
-	seaf = []
-	for q in eah + u:
-		seaf += smc.symmetry_related(q)
-
-	lseaf = len(seaf) / (2 * leah)
-	# sxprint(lseaf)
-	# for i,q in enumerate(seaf):  sxprint(" seaf  ",i,q)
-	# sxprint(seaf)
-	seaf = angles_to_normals(seaf)
-
-	occupancy = [[] for i in range(leah)]
-
-	for i, q in enumerate(params):
-		l = nearest_fang(seaf, q[0], q[1])
-		l = l / lseaf
-		if l >= leah:
-			l = l - leah
-		occupancy[l].append(i)
+	# leah = len(eah)
+	# u = []
+	# for q in eah:
+	# 	# sxprint("q",q)
+	# 	m = smc.symmetry_related([(180.0 + q[0]) % 360.0, 180.0 - q[1], 0.0])
+	# 	# sxprint("m",m)
+	# 	itst = len(u)
+	# 	for c in m:
+	# 		# sxprint("c",c)
+	# 		if smc.is_in_subunit(c[0], c[1], 1):
+	# 			# sxprint(" is in 1")
+	# 			if not smc.is_in_subunit(c[0], c[1], inc_mirror):
+	# 				# sxprint("  outside")
+	# 				u.append(c)
+	# 				break
+	# 	if len(u) != itst + 1:
+	# 		u.append(q)  #  This is for exceptions that cannot be easily handled
+	# 		"""
+	# 		sxprint(q)
+	# 		sxprint(m)
+	# 		ERROR("balance angles","Fill up upper",1)
+	# 		"""
+	# seaf = []
+	# for q in eah + u:
+	# 	seaf += smc.symmetry_related(q)
+	#
+	# lseaf = len(seaf) / (2 * leah)
+	# # sxprint(lseaf)
+	# # for i,q in enumerate(seaf):  sxprint(" seaf  ",i,q)
+	# # sxprint(seaf)
+	# seaf = angles_to_normals(seaf)
+	#
+	# occupancy = [[] for i in range(leah)]
+	#
+	# for i, q in enumerate(params):
+	# 	l = nearest_fang(seaf, q[0], q[1])
+	# 	l = l / lseaf
+	# 	if l >= leah:
+	# 		l = l - leah
+	# 	occupancy[l].append(i)
 		# for i,q in enumerate(occupancy):
 		# 	if q:
 		# 		sxprint("  ",i,q,eah[i])
+	# delta = angstep
+	# data = params
+	if isinstance(sym, sp_fundamentals.symclass):
+		sym_class = sym
+	else:
+		sym_class = sp_fundamentals.symclass(sym)
+
+
+
+	eah = sym_class.even_angles(delta=angstep, method=method, inc_mirror=inc_mirror)
+	# symclass.even_angles(delta=delta, method=method, inc_mirror=inc_mirror)
+	sym_class.build_kdtree()
+	occupancy = sym_class.find_k_nearest_neighbors(params, k=1, tolistconv=False)
+	# occupancy = indices
 	return occupancy, eah
 
 
 def angular_histogram(params, angstep=15.0, sym="c1", method="S", inc_mirror=0):
-	occupancy, eah = angular_occupancy(params, angstep, sym, method, inc_mirror=inc_mirror)
-	return [len(q) for q in occupancy], eah
 
+
+	occupancy, eah = angular_occupancy(params, angstep, sym, method, inc_mirror=inc_mirror)
+
+
+	# return [len(q) for q in occupancy], eah
+
+	radius_array = numpy.bincount(occupancy.flatten(), minlength=len(eah))
+
+	return radius_array, eah
 
 def balance_angular_distribution(params, max_occupy=-1, angstep=15.0, sym="c1"):
 	from sp_fundamentals import symclass
+	data = symclass(sym).reduce_anglesets(numpy.array(params)[:,0:3], inc_mirror=0, tolistconv=False)
+	occupancy, eah = angular_occupancy(data, angstep, sym, method="S")
 
-	occupancy, eah = angular_occupancy(params, angstep, sym, method="S")
 
 	if max_occupy > 0:
 		outo = []
 		from random import shuffle
+		for i in set(occupancy.flatten()):
+		# for l, q in enumerate(occupancy):
+			idxs = numpy.where(numpy.array(occupancy).flatten()==i)[0]
+			numpy.random.shuffle(idxs)
 
-		for l, q in enumerate(occupancy):
-			shuffle(q)
-			q = q[:max_occupy]
-			outo += q
+			findalidxs = idxs[:max_occupy]
+			outo.extend(findalidxs)
+			# shuffle(q)
+			# q = q[:max_occupy]
+			# outo += q
 			sxprint(
-				"  %10d   %10d        %6.1f   %6.1f" % (l, len(q), eah[l][0], eah[l][1])
-			)
+				"  %10d   %10d        %6.1f   %6.1f" % (i, len(idxs),  eah[i][0], eah[i][1])
+			 )
 			# sxprint(l,len(q),q)
 		outo.sort()
+
+
 		# write_text_file(outo,"select.txt")
-		return outo
+		return outo, numpy.array(params)[outo]
 	else:
 		# for l,q in enumerate(occupancy):
 		# 	sxprint("  %10d   %10d        %6.1f   %6.1f"%(l,len(q),eah[l][0],eah[l][1]))
@@ -8933,11 +8962,14 @@ def angular_distribution(params_file, output_folder, prefix, method, pixel_size,
 	data = sym_class.reduce_anglesets(data_params, inc_mirror=inc_mirror, tolistconv=False)
 	# Create cartesian coordinates
 
-	sym_class.even_angles(delta= delta , method=method, inc_mirror=inc_mirror)
-	sym_class.build_kdtree()
-	indices = sym_class.find_k_nearest_neighbors(data, k=1, tolistconv=False)
+	# sym_class.even_angles(delta= delta , method=method, inc_mirror=inc_mirror)
+	# sym_class.build_kdtree()
+	# indices = sym_class.find_k_nearest_neighbors(data, k=1, tolistconv=False)
 
-	radius_array = numpy.bincount(indices.flatten(), minlength=sym_class.angles.shape[0])
+	# radius_array = numpy.bincount(indices.flatten(), minlength=sym_class.angles.shape[0])
+
+	radius_array, indices = angular_histogram(data,delta,sym =sym_class,method=method,inc_mirror=inc_mirror)
+
 	angles_no_mirror_cart = sym_class.to_cartesian(sym_class.angles, tolistconv=False)
 
 	nonzero_mask = numpy.nonzero(radius_array)
@@ -9493,6 +9525,7 @@ from struct    import pack, unpack
 
 # python commons
 import numpy as np
+import numpy
 import scipy.ndimage
 from zlib import compress, decompress
 
