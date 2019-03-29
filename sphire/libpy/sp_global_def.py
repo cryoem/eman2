@@ -144,6 +144,13 @@ def sxprint( *args, **kwargs ):
 	sys.stdout.flush()
 
 	# print message to SPHIRE execution log
+	global SXPRINT_LOG_EXISTS
+	if not SXPRINT_LOG_EXISTS:
+		try:
+			os.makedirs(SXPRINT_LOG_PATH)
+		except OSError:
+			pass
+		SXPRINT_LOG_EXISTS = True
 	with open( SXPRINT_LOG, "a+" ) as f:
 		f.write( m + end)
 
@@ -264,10 +271,7 @@ IS_LOGFILE_OPEN = False
 
 # sxprint log (sxprint logging can be disabled by setting this to "")
 SXPRINT_LOG_PATH = "SPHIRE_LOG_HISTORY"
-try:
-	os.makedirs(SXPRINT_LOG_PATH)
-except OSError:
-	pass
+SXPRINT_LOG_EXISTS = os.path.exists(SXPRINT_LOG_PATH)
 try:
 	init_func = re.search( "([^/]*).py", sys._getframe(len(inspect.stack())-1).f_code.co_filename ).group(1)
 except AttributeError:
