@@ -1346,7 +1346,7 @@ class SXCmdWidget(QWidget):
 				file_path_list = name
 			for a_file_path in file_path_list:
 				# Use relative path.
-				a_file_path = SXLookFeelConst.format_path(a_file_path)
+				a_file_path = str(SXLookFeelConst.format_path(a_file_path))
 				try: # Check if the path is bdb
 					a_file_path = translate_to_bdb_path(a_file_path) # Convert the standard path to bdb key if possible.
 				except ValueError:  # If the path is not bdb, we will receive this exception
@@ -1429,7 +1429,7 @@ class SXCmdWidget(QWidget):
 				file_path_list = name
 			# Use relative path.
 			for a_file_path in file_path_list:
-				file_path += SXLookFeelConst.format_path(a_file_path) + " "
+				file_path += str(SXLookFeelConst.format_path(a_file_path)) + " "
 		elif file_format == "mic_one_list":
 			# NOTE: Toshio Moriya 2018/01/25
 			# Currently, the distinction between MRC and MRCS is not always used, and 
@@ -1444,7 +1444,7 @@ class SXCmdWidget(QWidget):
 				file_path_list = name
 			# Use relative path.
 			for a_file_path in file_path_list:
-				a_file_path = SXLookFeelConst.format_path(a_file_path)
+				a_file_path = str(SXLookFeelConst.format_path(a_file_path))
 				try: # Check if the path is bdb
 					a_file_path = translate_to_bdb_path(a_file_path) # Convert the standard path to bdb key if possible.
 				except ValueError:  # If the path is not bdb, we will receive this exception

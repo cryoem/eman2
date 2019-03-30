@@ -2988,6 +2988,7 @@ def main():
 	# ------------------------------------------------------------------------------------
 	# Detect if program is running under MPI
 	SXmpi_run.setup()
+	sp_global_def.print_timestamp( "Start" )
 	
 	# ------------------------------------------------------------------------------------
 	# Execute command
@@ -3010,12 +3011,11 @@ def main():
 	# Clean up MPI related variables
 	# ------------------------------------------------------------------------------------
 	SXmpi_run.cleanup()
+	sp_global_def.print_timestamp( "Finish" )
 	
 # ----------------------------------------------------------------------------------------
 if __name__ == "__main__":
-	sp_global_def.print_timestamp( "Start" )
 	main()
-	sp_global_def.print_timestamp( "Finish" )
 
 # ========================================================================================
 # END OF SCRIPT
