@@ -189,6 +189,48 @@ class TestPNGIO(ImageIOTester):
 		"""test write-read png .............................."""
 		self.do_test_read_write("png")  
 		
+class TestJPEGIO(ImageIOTester):
+	"""JPEG file IO test"""
+	
+	def test_write_jpeg(self):
+		"""test ignore negative index for jpeg .............."""
+		filename = 'testimage.jpeg'
+		e = EMData()
+		e.set_size(32,32)
+		e.to_zero()
+		try:
+			e.write_image(filename, -1)	
+		except RuntimeError as runtime_err:
+			err_type = exception_type(runtime_err)
+			self.assertEqual(err_type, "ImageWriteException")
+		finally:
+			os.unlink(filename)
+		
+	def no_test_read_write_jpeg(self):
+		"""test write-read jpeg ............................."""
+		self.do_test_read_write("jpeg")  
+		
+class TestTIFFIO(ImageIOTester):
+	"""TIFF file IO test"""
+	
+	def test_write_tiff(self):
+		"""test ignore negative index for tiff .............."""
+		filename = 'testimage.tiff'
+		e = EMData()
+		e.set_size(32,32)
+		e.to_zero()
+		try:
+			e.write_image(filename, -1)	
+		except RuntimeError as runtime_err:
+			err_type = exception_type(runtime_err)
+			self.assertEqual(err_type, "ImageWriteException")
+		finally:
+			os.unlink(filename)
+		
+	def test_read_write_tiff(self):
+		"""test write-read tiff ............................."""
+		self.do_test_read_write("tiff")  
+		
 class TestVTKIO(ImageIOTester):
 	"""VTK file IO test"""
 
