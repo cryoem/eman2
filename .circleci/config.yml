@@ -2,29 +2,31 @@ version: 2
 
 jobs:
   build_no_recipe:
-    machine: true
+    docker:
+      - image: circleci/buildpack-deps:16.04
     steps:
       - run: sudo apt-get update && sudo apt-get install freeglut3-dev
       - checkout
       - restore_cache:
           keys:
-            - mini-eman-deps-14.0
+            - mini-eman-deps-14.0-1
       - save_cache:
-          key: mini-eman-deps-14.0
+          key: mini-eman-deps-14.0-1
           paths:
             - ~/miniconda2
       - run: bash ci_support/build_no_recipe.sh
 
   build_recipe:
-    machine: true
+    docker:
+      - image: circleci/buildpack-deps:16.04
     steps:
       - run: sudo apt-get update && sudo apt-get install freeglut3-dev
       - checkout
       - restore_cache:
           keys:
-            - mini-eman-deps-14.0
+            - mini-eman-deps-14.0-1
       - save_cache:
-          key: mini-eman-deps-14.0
+          key: mini-eman-deps-14.0-1
           paths:
             - ~/miniconda2
       - run: bash ci_support/build_recipe.sh
