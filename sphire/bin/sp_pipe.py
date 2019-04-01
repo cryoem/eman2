@@ -931,9 +931,9 @@ def resample_micrographs(args):
 		# --------------------------------------------------------------------------------
 		# Check MPI error condition
 		# --------------------------------------------------------------------------------
-		if error_status is None and len(valid_mic_id_substr_list) < SXmpi_run.n_mpi_procs:
-			error_status = ("Number of MPI processes (%d) supplied by --np in mpirun cannot be greater than %d (number of valid micrographs that satisfy all criteria to be processed)." % (SXmpi_run.n_mpi_procs, len(valid_mic_id_substr_list)), getframeinfo(currentframe()))
-			break
+		# if error_status is None and len(valid_mic_id_substr_list) < SXmpi_run.n_mpi_procs:
+		# 	error_status = ("Number of MPI processes (%d) supplied by --np in mpirun cannot be greater than %d (number of valid micrographs that satisfy all criteria to be processed)." % (SXmpi_run.n_mpi_procs, len(valid_mic_id_substr_list)), getframeinfo(currentframe()))
+		# 	break
 		
 		break
 	# 
