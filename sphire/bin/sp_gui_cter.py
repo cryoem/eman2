@@ -598,6 +598,7 @@ class SXGuiCter(QWidget):
 		self.is_wplotrotavgcoarse_minimized = False
 		
 		self.wplotrotavgfine = SXPlot2DWidget()
+		print('initialize_popup_windows: wplotrotavgfine.scrlim', hasattr(self.wplotrotavgfine, 'scrlim'))  #### DIAGNOSTIC
 		self.wplotrotavgfine.setWindowTitle("sxgui_cter - Plot Zoom")
 		self.wplotrotavgfine.qt_parent.setWindowFlags((self.wplotrotavgfine.qt_parent.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
 		self.is_wplotrotavgfine_minimized = False
@@ -709,8 +710,11 @@ class SXGuiCter(QWidget):
 		
 		leftcolumn.addStretch(1)
 		
-		logo = SXLogoButton("logo_transphire_thick.png", 256, parent=self, keep_aspect=True)
-		logo.add_sxmenu_item_btn_widget(leftcolumn)
+		#logo_file_path = '{0}logo_transphire_thick.png'.format(get_image_directory())
+		#print('logo_file_path', logo_file_path)
+		#logo = SXLogoButton(logo_file_path, 256, parent=self, keep_aspect=True)
+		#####logo = SXLogoButton("logo_transphire_thick.png", 256, parent=self, keep_aspect=True)
+		#logo.add_sxmenu_item_btn_widget(leftcolumn)
 		
 		# --------------------------------------------------------------------------------
 		# 2nd column
@@ -1070,6 +1074,7 @@ class SXGuiCter(QWidget):
 		self.wscatterparam.qt_parent.move(win_left, win_top); win_left += win_left_shift; win_top += win_top_shift
 		self.whistparam.qt_parent.resize(child_win_width,child_win_height)
 		self.whistparam.qt_parent.move(win_left, win_top); win_left += win_left_shift; win_top += win_top_shift
+		print('set_size_popup_windows: wplotrotavgfine.scrlim', hasattr(self.wplotrotavgfine, 'scrlim'))  #### DIAGNOSTIC
 		self.wplotrotavgfine.qt_parent.resize(child_win_width,child_win_height)
 		self.wplotrotavgfine.qt_parent.move(win_left, win_top); win_left += win_left_shift; win_top += win_top_shift
 		self.wplotrotavgcoarse.qt_parent.resize(child_win_width,child_win_height)
@@ -1410,6 +1415,7 @@ class SXGuiCter(QWidget):
 				self.wplotrotavgcoarse.hide()
 		
 		# Zoomed plot
+		print('readCterPartresFile: wplotrotavgfine.scrlim', hasattr(self.wplotrotavgfine, 'scrlim'))  #### DIAGNOSTIC
 		if self.curplotrotzoomdisplay:
 			if not self.wplotrotavgfine.isVisible():
 				self.wplotrotavgfine.show()
@@ -1731,6 +1737,15 @@ class SXGuiCter(QWidget):
 		return combinedList
 		
 	def draw_limits(self, error_name, error_label, shape_r,shape_g,shape_b, y_offset, nyquist_freq):
+		#if not hasattr(self.wplotrotavgfine, 'scrlim'):
+		print('draw_limits0: wplotrotavgfine.scrlim', hasattr(self.wplotrotavgfine, 'scrlim'))  #### DIAGNOSTIC
+		self.wplotrotavgfine.render()
+		print('draw_limits1: wplotrotavgfine.scrlim', hasattr(self.wplotrotavgfine, 'scrlim'))  #### DIAGNOSTIC
+		#if not hasattr(self.wplotrotavgcoarse, 'scrlim'):
+		print('draw_limits0: wplotrotavgcoarse.scrlim', hasattr(self.wplotrotavgcoarse, 'scrlim'))  #### DIAGNOSTIC
+		self.wplotrotavgcoarse.render()
+		print('draw_limits1: wplotrotavgcoarse.scrlim', hasattr(self.wplotrotavgcoarse, 'scrlim'))  #### DIAGNOSTIC
+		
 		fineLimits   = self.wplotrotavgfine.scrlim
 		coarseLimits = self.wplotrotavgcoarse.scrlim
 		
