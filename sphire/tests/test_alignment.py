@@ -60,7 +60,7 @@ class Test_ali2d_single_iter(unittest.TestCase):
             fu.ali2d_single_iter(images, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="H", CTF=True, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
             oldfu.ali2d_single_iter(images, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="H", CTF=True, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
 
-    def test_empty_image_reference_crashes_because_signal11SIGDEV(self):
+    def test_empty_image_reference_crashes_because_signal11SIGSEV(self):
         """
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         return_new = fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, EMData(), cnx, cny, xrng, yrng, step)
@@ -69,7 +69,7 @@ class Test_ali2d_single_iter(unittest.TestCase):
         """
         self.assertTrue(True)
 
-    def test_few_shift_params_IndexError_list_index_out_of_range(self):
+    def test_few_shift_params_returns_IndexError_list_index_out_of_range(self):
         (not_used, numr, wr, not_used2, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         cs =[1]
         with self.assertRaises(IndexError):
@@ -83,7 +83,7 @@ class Test_ali2d_single_iter(unittest.TestCase):
         return_old = oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="H", CTF=True, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_empty_list_fourier_weight_crashes_because_signal11SIGDEV(self):
+    def test_empty_list_fourier_weight_crashes_because_signal11SIGSEV(self):
         """
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         wr = []
@@ -93,7 +93,7 @@ class Test_ali2d_single_iter(unittest.TestCase):
         """
         self.assertTrue(True)
 
-    def test_empty_list_Numrinit_IndexError_list_index_out_of_range(self):
+    def test_empty_list_Numrinit_returns_IndexError_list_index_out_of_range(self):
         (not_used, not_used, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         numr = []
         with self.assertRaises(IndexError):
@@ -106,7 +106,7 @@ class Test_ali2d_single_iter(unittest.TestCase):
             fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="F", CTF=False, random_method="", ali_params="Unknown", delta = 0.0)
             oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="F", CTF=False, random_method="", ali_params="Unknown", delta = 0.0)
 
-    def test_default_center_out_of_possible_range_crashes_because_signal11SIGDEV(self):
+    def test_default_center_out_of_possible_range_crashes_because_signal11SIGSEV(self):
         """
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         return_new = fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, 10000, 10000, xrng, yrng, step, nomirror = False, mode="F", CTF=False, random_method="", ali_params="xform.align2d", delta = 0.0)
@@ -409,7 +409,7 @@ class Test_ringwe(unittest.TestCase):
             fu.ringwe()
             oldfu.ringwe()
 
-    def test_empty_list_Numrinit_IndexError_list_index_out_of_range(self):
+    def test_empty_list_Numrinit_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError):
             fu.ringwe([], mode="F")
             oldfu.ringwe([], mode="F")
@@ -429,7 +429,7 @@ class Test_ringwe(unittest.TestCase):
 class Test_ornq(unittest.TestCase):
     argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq"))
 
-    def test_empty_image_to_align_crashes_because_signal11SIGDEV(self):
+    def test_empty_image_to_align_crashes_because_signal11SIGSEV(self):
         """
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         return_new = fu.ornq(EMData(), crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
@@ -438,7 +438,7 @@ class Test_ornq(unittest.TestCase):
         """
         self.assertTrue(True)
 
-    def test_empty_image_reference_crashes_because_signal11SIGDEV(self):
+    def test_empty_image_reference_crashes_because_signal11SIGSEV(self):
         """
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         return_new = fu.ornq(image, EMData(),  xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
@@ -452,7 +452,7 @@ class Test_ornq(unittest.TestCase):
             fu.ornq()
             oldfu.ornq()
 
-    def test_empty_list_Numrinit_crashes_because_signal11SIGDEV(self):
+    def test_empty_list_Numrinit_crashes_because_signal11SIGSEV(self):
         """
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         numr = []
@@ -462,14 +462,14 @@ class Test_ornq(unittest.TestCase):
         """
         self.assertTrue(True)
 
-    def test_empty_list_xrng_IndexError_list_index_out_of_range(self):
+    def test_empty_list_xrng_returns_IndexError_list_index_out_of_range(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         xrng=[]
         with self.assertRaises(IndexError):
             fu.ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
             oldfu.ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
 
-    def test_empty_list_yrng_IndexError_list_index_out_of_range(self):
+    def test_empty_list_yrng_returns_IndexError_list_index_out_of_range(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         yrng=[]
         with self.assertRaises(IndexError):
@@ -513,7 +513,7 @@ class Test_ornq(unittest.TestCase):
 class Test_ormq(unittest.TestCase):
     argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.ormq"))
 
-    def test_empty_image_to_align_crashes_because_signal11SIGDEV(self):
+    def test_empty_image_to_align_crashes_because_signal11SIGSEV(self):
         """
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
         image =EMData()
@@ -523,7 +523,7 @@ class Test_ormq(unittest.TestCase):
         """
         self.assertTrue(True)
 
-    def test_empty_image_reference_crashes_because_signal11SIGDEV(self):
+    def test_empty_image_reference_crashes_because_signal11SIGSEV(self):
         """
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
         crefim =EMData()
@@ -538,21 +538,21 @@ class Test_ormq(unittest.TestCase):
             fu.ormq()
             oldfu.ormq()
 
-    def test_empty_list_xrng_IndexError_list_index_out_of_range(self):
+    def test_empty_list_xrng_returns_IndexError_list_index_out_of_range(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
         xrng=[]
         with self.assertRaises(IndexError):
             fu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
             oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
 
-    def test_empty_list_yrng_IndexError_list_index_out_of_range(self):
+    def test_empty_list_yrng_returns_IndexError_list_index_out_of_range(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
         yrng=[]
         with self.assertRaises(IndexError):
             fu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
             oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
 
-    def test_empty_list_Numrinit_crashes_because_signal11SIGDEV(self):
+    def test_empty_list_Numrinit_crashes_because_signal11SIGSEV(self):
         """
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
         numr=[]
@@ -651,7 +651,7 @@ class Test_prepref(unittest.TestCase):
             fu.prepref(data, None, cnx, cny, numr, mode = 'f', maxrangex = 4, maxrangey = 4, step =step)
             oldfu.prepref(data, None, cnx, cny, numr, mode = 'f', maxrangex = 4, maxrangey = 4, step =step)
 
-    def test_empty_list_Numrinit_IndexError_list_index_out_of_range(self):
+    def test_empty_list_Numrinit_returns_IndexError_list_index_out_of_range(self):
         (data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         with self.assertRaises(IndexError):
             fu.prepref(data, None, cnx, cny, [], mode = 'f', maxrangex = 4, maxrangey = 4, step =step)
@@ -752,13 +752,13 @@ class Test_prepare_refrings(unittest.TestCase):
             fu.prepare_refrings(EMData(), kb, nz=4, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5,initial_phi=0.1)
             oldfu.prepare_refrings(EMData(), kb, nz=4, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=False,phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5,initial_phi=0.1)
 
-    def test_empty_list_Numrinit_IndexError_list_index_out_of_range(self):
+    def test_empty_list_Numrinit_returns_IndexError_list_index_out_of_range(self):
         volft, kb = sparx_projection.prep_vol(self.volft)
         with self.assertRaises(IndexError):
             fu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="P", sym="c1", numr=[], MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
             oldfu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="P", sym="c1", numr=[], MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
 
-    def test_empty_list_referenceAngle_IndexError_list_index_out_of_range(self):
+    def test_empty_list_referenceAngle_returns_IndexError_list_index_out_of_range(self):
         volft, kb = sparx_projection.prep_vol(self.volft)
         with self.assertRaises(IndexError):
             fu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a=[], sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
@@ -769,7 +769,7 @@ class Test_prepare_refrings(unittest.TestCase):
             fu.prepare_refrings(self.volft, None,nz=4, delta=2.0, ref_a= sparx_utilities.even_angles(60.0), sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
             oldfu.prepare_refrings(self.volft, None,nz=4, delta=2.0, ref_a= sparx_utilities.even_angles(60.0), sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
 
-    def test_with_sym_c1_MPI_flag(self):
+    def test_with_sym_c1_MPI_flag_deprecationWarning_outputmsg_PyArray_FromDims_AND_NPYCHAR_type_num_is_deprecated(self):
         volft,kb = sparx_projection.prep_vol(self.volft)
         mpi_barrier(MPI_COMM_WORLD)
         return_new = fu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=True, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
@@ -777,7 +777,7 @@ class Test_prepare_refrings(unittest.TestCase):
         return_old = oldfu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=True, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
         self.test_all_the_conditions(return_new,return_old,False)
 
-    def test_with_sym_c5_MPI_flag(self):
+    def test_with_sym_c5_MPI_flag_deprecationWarning_outputmsg_PyArray_FromDims_AND_NPYCHAR_type_num_is_deprecated(self):
         volft,kb = sparx_projection.prep_vol(self.volft)
         mpi_barrier(MPI_COMM_WORLD)
         return_new = fu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="P", sym="c5", numr=self.numr, MPI=True, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
@@ -904,7 +904,7 @@ class Test_proj_ali_incore(unittest.TestCase):
             fu.proj_ali_incore()
             oldfu.proj_ali_incore()
 
-    def test_empty_input_image_refrings_crashes_because_signal11SIGDEV(self):
+    def test_empty_input_image_refrings_crashes_because_signal11SIGSEV(self):
         """
         (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = self.argum[0]
         refrings = [EMData(),EMData()]
@@ -914,14 +914,14 @@ class Test_proj_ali_incore(unittest.TestCase):
         """
         self.assertTrue(True)
 
-    def returns_RuntimeError_NotExistingObjectException_the_key_xform_projection_doesnot_exist(self):
+    def test_empty_img_data_returns_RuntimeError_NotExistingObjectException_the_key_xform_projection_doesnot_exist(self):
         (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = self.argum[0]
         data=EMData()
         with self.assertRaises(RuntimeError):
             fu.proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = 0.0, rshift = 0.0)
             oldfu.proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = 0.0, rshift = 0.0)
 
-    def test_empty_list_Numrinit_IndexError_list_index_out_of_range(self):
+    def test_empty_list_Numrinit_returns_IndexError_list_index_out_of_range(self):
         (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = self.argum[0]
         numr=[]
         with self.assertRaises(IndexError):
@@ -1059,13 +1059,13 @@ class Test_ali_vol_func(unittest.TestCase):
             fu.ali_vol_func()
             oldfu.ali_vol_func()
 
-    def test_few_params_params_IndexError_list_index_out_of_range(self):
+    def test_few_params_params_returns_IndexError_list_index_out_of_range(self):
         param = [1,1,1,1]
         with self.assertRaises(IndexError):
             fu.ali_vol_func(param,self.data)
             oldfu.ali_vol_func(param, self.data)
 
-    def test_too_few_data_params_IndexError_list_index_out_of_range(self):
+    def test_too_few_data_params_returns_IndexError_list_index_out_of_range(self):
         data =get_data(2)
         with self.assertRaises(IndexError):
             fu.ali_vol_func(self.param, data)
@@ -1087,7 +1087,7 @@ class Test_ali_vol_func(unittest.TestCase):
 class Test_align2d(unittest.TestCase):
     argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.align2d_scf"))
 
-    def test_empty_image_to_align_crashes_because_signal11SIGDEV(self):
+    def test_empty_image_to_align_crashes_because_signal11SIGSEV(self):
         """
         (image, refim, xrng, yrng) = self.argum[0]
         image = EMData()
@@ -1121,7 +1121,7 @@ class Test_align2d(unittest.TestCase):
             fu.align2d()
             oldfu.align2d()
 
-    def test_wrong_enumerate_rings_error_crashes_because_signal11SIGDEV(self):
+    def test_wrong_enumerate_rings_error_crashes_because_signal11SIGSEV(self):
         """
         (image, refim, xrng, yrng) = self.argum[0]
         return_new = fu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=0, last_ring=1, rstep=1, mode = "F")
@@ -1213,14 +1213,14 @@ class Test_align2d_scf(unittest.TestCase):
 	    -) p2 = sparx_utilities.peak_search(ccf2)
 	in these casea it is a list of 4 elements and it is trying to get the 5th
     """
-    def test_with_DEFAULT_params_IndexError_list_index_out_of_range(self):
+    def test_with_DEFAULT_params_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError):
             (image, refim, xrng, yrng) = self.argum[0]
             return_new = oldfu.align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1)
             return_old = oldfu.align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1)
             self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_with_DEFAULT_params_but_validOU_IndexError_list_index_out_of_range(self):
+    def test_with_DEFAULT_params_but_validOU_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError):
             (image, refim, xrng, yrng) = self.argum[0]
             return_new = fu.align2d_scf(image, refim, xrng=-1, yrng=-1, ou = self.argum[1]['ou'])
@@ -1232,7 +1232,7 @@ class Test_align2d_scf(unittest.TestCase):
 class Test_multialign2d_scf(unittest.TestCase):
     argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.ali2d_single_iter"))
 
-    def test_empty_input_image_refrings_crashes_because_signal11SIGDEV(self):
+    def test_empty_input_image_refrings_crashes_because_signal11SIGSEV(self):
         """
         (dataa, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
 
@@ -1246,7 +1246,7 @@ class Test_multialign2d_scf(unittest.TestCase):
         """
         self.assertTrue(True)
 
-    def test_empty_image_reference_crashes_because_signal11SIGDEV(self):
+    def test_empty_image_reference_crashes_because_signal11SIGSEV(self):
         """
         (dataa, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
 
@@ -1270,7 +1270,7 @@ class Test_multialign2d_scf(unittest.TestCase):
             fu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=174)
             oldfu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=174)
 
-    def test_empty_list_Numrinit_crashes_because_signal11SIGDEV(self):
+    def test_empty_list_Numrinit_crashes_because_signal11SIGSEV(self):
         """
         (dataa, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         dataa = deepcopy(self.argum[0][0])
@@ -1322,7 +1322,7 @@ class Test_multialign2d_scf(unittest.TestCase):
         return_old = oldfu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=1)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_with_DEFAULT_params_IndexError_list_index_out_of_range(self):
+    def test_with_DEFAULT_params_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError):
             (dataa, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
 
@@ -1374,7 +1374,7 @@ class Test_shc(unittest.TestCase):
             fu.shc()
             oldfu.shc()
 
-    def test_empty_input_image_refringscrashes_because_signal11SIGDEV(self):
+    def test_empty_input_image_refringscrashes_because_signal11SIGSEV(self):
         """
         (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = self.argum[0]
         refrings = [EMData(), EMData()]
@@ -1392,7 +1392,7 @@ class Test_shc(unittest.TestCase):
             fu.shc(data, refrings, list_of_ref_ang, numr, xrng, yrng, step, an =-1.0)
             oldfu.shc(data, refrings, list_of_ref_ang, numr, xrng, yrng, step, an =-1.0)
 
-    def test_empty_list_Numrinit_IndexError_list_index_out_of_range(self):
+    def test_empty_list_Numrinit_returns_IndexError_list_index_out_of_range(self):
         (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = self.argum[0]
         numr = []
         with self.assertRaises(IndexError):
@@ -1450,7 +1450,7 @@ class Test_search_range(unittest.TestCase):
         return_old = oldfu.search_range(n, radius, shift, range_, location = "")
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_no_image_size_warning(self):
+    def test_no_image_size_warning_msg_shift_of_particle_too_large(self):
         (n, radius, shift, range_, location) = self.argum[0]
         return_new = fu.search_range(0, radius, shift, range_, location = "")
         return_old = oldfu.search_range(0, radius, shift, range_, location = "")
@@ -1484,10 +1484,10 @@ class Test_generate_list_of_reference_angles_for_search(unittest.TestCase):
         return_old = oldfu.generate_list_of_reference_angles_for_search([], 'c1')
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_invalid_simmetry(self):
+    def test_invalid_simmetry_returns_RuntimeError_NotExistingObjectException_the_key_invalid_doesnot_exist(self):
         with self.assertRaises(RuntimeError):
-            fu.generate_list_of_reference_angles_for_search([], 'not_valid')
-            oldfu.generate_list_of_reference_angles_for_search([], 'not_valid')
+            fu.generate_list_of_reference_angles_for_search([], 'invalid')
+            oldfu.generate_list_of_reference_angles_for_search([], 'invalid')
 
 
 
