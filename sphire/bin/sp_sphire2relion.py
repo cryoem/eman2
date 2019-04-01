@@ -356,7 +356,7 @@ def import_params(params_file, dim):
 			"Dimension {0} not supported. Only '2d' and '3d' are supported.".format(
 				dim
 			),
-			"sxsphire2relion",
+			"sp_sphire2relion",
 		)
 
 	input_data = np.genfromtxt(params_file, dtype=dtype_import_list)
@@ -429,7 +429,7 @@ def import_partres_file(partres_file):
 			"Number of columns in partres file not known: {0}".format(
 				number_of_columns
 			),
-			"sxsphire2relion",
+			"sp_sphire2relion",
 		)
 
 	assert len(columns) == len(dtype_import_list)
@@ -490,7 +490,7 @@ def sanity_checks(args):
 	if not args.particle_stack and not args.partres_file:
 		sp_global_def.ERROR(
 			"Particle_stack or partres_file option needs to be present!",
-			"sxsphire2relion",
+			"sp_sphire2relion",
 			1,
 		)
 
@@ -498,7 +498,7 @@ def sanity_checks(args):
 		if option and not args.particle_stack:
 			sp_global_def.ERROR(
 				"{0} requires particle stack option!".format(option),
-				"sxsphire2relion",
+				"sp_sphire2relion",
 				1,
 			)
 
@@ -516,41 +516,41 @@ def sanity_checks(args):
 				option = "{0}/EMAN2DB/{1}.bdb".format(dirnames, basename)
 			if not os.path.isfile(option):
 				sp_global_def.ERROR(
-					"{0} stack must exist!".format(option), "sxsphire2relion", 1
+					"{0} stack must exist!".format(option), "sp_sphire2relion", 1
 				)
 
 	if args.list and args.exlist:
 		sp_global_def.ERROR(
 			"Arguments list and exlist cannot be used at the same time.",
-			"sxsphire2relion",
+			"sp_sphire2relion",
 			1,
 		)
 
 	if args.params_2d_file and args.params_3d_file:
 		sp_global_def.ERROR(
 			"Arguments params_2d_file and params_3d_file cannot be used at the same time.",
-			"sxsphire2relion",
+			"sp_sphire2relion",
 			1,
 		)
 
 	if args.params_3d_index_file and not args.params_3d_file:
 		sp_global_def.ERROR(
 			"Arguments params_3d_index_file requires params_3d_file to be set.",
-			"sxsphire2relion",
+			"sp_sphire2relion",
 			1,
 		)
 
 	if args.params_3d_chunk_file_0 and not args.params_3d_file:
 		sp_global_def.ERROR(
 			"Arguments params_3d_chunk_files requires params_3d_file to be set.",
-			"sxsphire2relion",
+			"sp_sphire2relion",
 			1,
 		)
 
 	if args.params_3d_chunk_file_1 and not args.params_3d_file:
 		sp_global_def.ERROR(
 			"Arguments params_3d_chunk_files requires params_3d_file to be set.",
-			"sxsphire2relion",
+			"sp_sphire2relion",
 			1,
 		)
 
@@ -567,7 +567,7 @@ def sanity_checks(args):
 			"Output file {0} must not exist! Use the --force flag to overwrite existing files".format(
 				output_path
 			),
-			"sxsphire2relion",
+			"sp_sphire2relion",
 			1,
 		)
 	else:
