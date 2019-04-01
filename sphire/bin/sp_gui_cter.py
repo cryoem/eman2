@@ -710,9 +710,11 @@ class SXGuiCter(QWidget):
 		
 		leftcolumn.addStretch(1)
 		
-		logo_file_path = '{0}logo_transphire_thick.png'.format(get_image_directory())
-		logo = SXLogoButton(logo_file_path, 256, parent=self, keep_aspect=True)
-		logo.add_sxmenu_item_btn_widget(leftcolumn)
+		#logo_file_path = '{0}logo_transphire_thick.png'.format(get_image_directory())
+		#print('logo_file_path', logo_file_path)
+		#logo = SXLogoButton(logo_file_path, 256, parent=self, keep_aspect=True)
+		#####logo = SXLogoButton("logo_transphire_thick.png", 256, parent=self, keep_aspect=True)
+		#logo.add_sxmenu_item_btn_widget(leftcolumn)
 		
 		# --------------------------------------------------------------------------------
 		# 2nd column
