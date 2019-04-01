@@ -181,7 +181,7 @@ def normalize_particle_images( aligned_images, shrink_ratio, target_radius, targ
 	"""
 	Function to normalize the images given in <aligned_images>. Note that the
 	normalization also includes the shrinking/re-scaling of the particle images.
-	The normalization itself is being done by substracting the mean of the data
+	The normalization itself is being done by subtracting the mean of the data
 	inside a particle mask (signal) and dividing by the variance outsice of the
 	mask (noise).
 
@@ -1692,7 +1692,7 @@ def main(args):
 				mask = util.model_rotated_rectangle2D( radius_long=int(np.sqrt(2*nx**2))//2, # use a length that will be guaranteed to cross the whole image
 													   radius_short=int( options.filament_width*1.5 ), # use a conservative, slightly larger mask since filaments might not be aligned as well as they could be
 													   nx=nx, ny=nx, angle=aligned_images[im].get_attr("segment_angle") )
-			# substract mean of the within-mask area
+			# subtract mean of the within-mask area
 			st = Util.infomask(aligned_images[im], mask, False)
 			aligned_images[im] -= st[0]
 			# for normal data: CTF correction

@@ -9120,7 +9120,7 @@ def noise_corrected_PW(pw, lo_limit, hi_limit, abs_limit):
 	# abs_limit : upper limit of the power spectrum
 
 	# returns a noise corrected power spectrum, a list of corresponding frequency values and the factors a and b
-	# which were used to substract the function f(x)=exp( a*x*x+b ) from the original power spectrum pw 
+	# which were used to subtract the function f(x)=exp( a*x*x+b ) from the original power spectrum pw 
 
 
 	def fit_min(lt,ut,pw):
@@ -9144,7 +9144,7 @@ def noise_corrected_PW(pw, lo_limit, hi_limit, abs_limit):
 		return 	linreg(xx, yy)
 
 	def get_ns_pw(pw_in,a,b):
-		# computes a noise substracted power spectrum 
+		# computes a noise subtracted power spectrum 
 		# based on model f(x)=a*x*x+b
 		pw_sub = []
 		nnn = len(pw_in)
@@ -9172,7 +9172,7 @@ def noise_corrected_PW(pw, lo_limit, hi_limit, abs_limit):
 			x2.append(float(k))
 	
 	#if(len(x2) < 3):
-		#print "only ",len(xc)," minima found, can only estimate noise-substracted power spectrum"
+		#print "only ",len(xc)," minima found, can only estimate noise-subtracted power spectrum"
 		#for k in xrange(lt,ut+1): 
 			#xc.append(pow(float(k)*0.5/nnn,2))
 			#y2.append(log(pw[k]))
