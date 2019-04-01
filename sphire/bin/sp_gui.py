@@ -2576,6 +2576,28 @@ class SXCmdTab(QWidget):
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "py":
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select python file")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip(
+								'<FONT>' + "Display open file dialog to select an executable file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row,
+												  grid_col_origin + token_label_col_span + token_widget_col_span * 2,
+												  token_widget_row_span, token_widget_col_span)
+							temp_btn.clicked.connect(
+								partial(self.sxcmdwidget.select_file, cmd_token_widget,
+										file_format))
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>' + "This is %s button</FONT>" % file_format)
+							temp_btn.setEnabled(False)
+							temp_btn.setStyleSheet(
+								'background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row,
+												  grid_col_origin + token_label_col_span + token_widget_col_span * 3,
+												  token_widget_row_span, token_widget_col_span)
 						elif cmd_token.type == "dir" or cmd_token.type == "dir_list" or cmd_token.type == "output_continue":
 							temp_btn = QPushButton("Select directory")
 							temp_btn.setMinimumWidth(func_btn_min_width)
@@ -4621,7 +4643,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sp_cryolo_predict"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "crYOLO - predict"; sxcmd.short_info = "Prediction with crYOLO, a deep learning high accuracy particle picking procedure."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_window"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "cryolo_predict_path"; token.key_prefix = "--"; token.label = "crYOLO predict executeable"; token.help = "Path to the crYOLO prediction executeable "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = [['', '', '']]; token.default = "none"; token.restore = "none"; token.type = "exe"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "cryolo_predict_path"; token.key_prefix = "--"; token.label = "crYOLO predict executeable"; token.help = "Path to the crYOLO prediction executeable "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = [['', '', '']]; token.default = "none"; token.restore = "none"; token.type = "py"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "config_path"; token.key_prefix = ""; token.label = "Config file"; token.help = "Path of the crYOLO config file.  "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = ""; token.type = "params_any_json"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "target_dir"; token.key_prefix = ""; token.label = "Image directory"; token.help = "Folder which contain all images. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = [['', '', '']]; token.default = "none"; token.restore = "none"; token.type = "dir"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "model_path"; token.key_prefix = ""; token.label = "Model path"; token.help = "Path to the trained model. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = ""; token.type = "params_any_h5"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
@@ -4719,7 +4741,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sp_cryolo_train"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "crYOLO - training"; sxcmd.short_info = "Training of crYOLO, a deep learning high accuracy particle picking procedure."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_window"; sxcmd.role = "sxr_alt"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "cryolo_train_path"; token.key_prefix = "--"; token.label = "crYOLO train executeable"; token.help = "Path to the crYOLO executeable "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = [['', '', '']]; token.default = "none"; token.restore = "none"; token.type = "exe"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "cryolo_train_path"; token.key_prefix = "--"; token.label = "crYOLO train executeable"; token.help = "Path to the crYOLO executeable "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = [['', '', '']]; token.default = "none"; token.restore = "none"; token.type = "py"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "particle_diameter"; token.key_prefix = ""; token.label = "Particle diameter [Pixel]"; token.help = "Particle diameter in pixel. This size will be used for as box size for picking. Should be as small as possible. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = ""; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "training_dir"; token.key_prefix = ""; token.label = "Training image directory"; token.help = "Folder which contain all images. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = ""; token.type = "dir"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "annot_dir"; token.key_prefix = ""; token.label = "Annotation directory"; token.help = "Box or star files used for training. The should have the same name as the images. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = ""; token.type = "dir"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
@@ -4764,6 +4786,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sp_cryolo_boxmanager"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "crYOLO - boxmanager"; sxcmd.short_info = "Displays boxfiles on images. Allows creation of new training data for crYOLO."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_window"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
+		token = SXcmd_token(); token.key_base = "cryolo_bm_path"; token.key_prefix = "--"; token.label = "crYOLO boxmanager executable"; token.help = "Path to crYOLO boxmanager executable "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = [['', '', '']]; token.default = "none"; token.restore = "none"; token.type = "py"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "target_dir"; token.key_prefix = "--"; token.label = "Input image directory"; token.help = "Path to input images "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = [['', '', '']]; token.default = "none"; token.restore = "none"; token.type = "dir"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "box_dir"; token.key_prefix = "--"; token.label = "Annotation directory"; token.help = "Path to annotation data like .box or .star files "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = [['', '', '']]; token.default = "none"; token.restore = "none"; token.type = "dir"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 
@@ -6082,6 +6105,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sp_cryolo_boxmanager"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "crYOLO - boxmanager"; sxcmd.short_info = "Displays boxfiles on images. Allows creation of new training data for crYOLO."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_utilities"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
+		token = SXcmd_token(); token.key_base = "cryolo_bm_path"; token.key_prefix = "--"; token.label = "crYOLO boxmanager executable"; token.help = "Path to crYOLO boxmanager executable "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = [['', '', '']]; token.default = "none"; token.restore = "none"; token.type = "py"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "target_dir"; token.key_prefix = "--"; token.label = "Input image directory"; token.help = "Path to input images "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = [['', '', '']]; token.default = "none"; token.restore = "none"; token.type = "dir"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "box_dir"; token.key_prefix = "--"; token.label = "Annotation directory"; token.help = "Path to annotation data like .box or .star files "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = [['', '', '']]; token.default = "none"; token.restore = "none"; token.type = "dir"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 
