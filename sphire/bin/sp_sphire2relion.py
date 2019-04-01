@@ -609,7 +609,7 @@ def create_stack_dtype(particle_dict):
 		elif key == "ptcl_source_coord_id":
 			original_name[key] = [("ptcl_source_coord_id", int)]
 
-		elif key == "filament_id":
+		elif key == "filament_id" or key == "filament":
 			original_name[key] = [("_rlnHelicalTubeID", int)]
 
 		elif key == "ctf":
@@ -669,8 +669,8 @@ def create_stack_array(dtype_list, header_dict, output_dir):
 			particle_array["_rlnDetectorPixelSize"] = header_dict[key]
 			particle_array["_rlnMagnification"] = 10000
 
-		elif key == "filament_id":
-			data = [int(entry[-5:]) + 1 for entry in header_dict[key]]
+		elif key == "filament_id" or key == "filament":
+			data = [int(str(entry)[-5:]) + 1 for entry in header_dict[key]]
 			particle_array["_rlnHelicalTubeID"] = data
 
 		elif key == "ctf":
