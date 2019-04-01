@@ -291,7 +291,7 @@ def main():
 	command = [cryolo_ex_pth, "-c=config_yolo.json", warmup_argument, gpu_argument, early_stop, gpu_fraction_arg]
 	if fine_tune:
 		command.append(fine_tune_argument)
-	if num_cpu:
+	if num_cpu != -1:
 		command.append(num_cpu_arg)
 
 	subprocess.check_call(
