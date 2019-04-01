@@ -8,7 +8,7 @@ crYOLO - boxmanager:  Displays boxfiles on images. Allows creation of new traini
 
 Usage in command line
 
-  sp_cryolo_boxmanager.py --target_dir=target_dir --box_dir=box_dir
+  sp_cryolo_boxmanager.py --cryolo_bm_path=PATH_TO_CRYOLO_EXECUTEABLE --target_dir=target_dir --box_dir=box_dir
 
 \\
 ===== Typical usage =====
@@ -17,16 +17,17 @@ Usage in command line
 
 \\ __1. Open images
 
-  sp_cryolo_boxmanager.py images_dir
+  sp_cryolo_boxmanager.py --target_dir=images_dir
 
 \\ __2. Open images and show boxes
 
-  sp_cryolo_boxmanager.py images_dir --box_dir=box_dir
+  sp_cryolo_boxmanager.py --target_dir=images_dir --box_dir=box_dir
 
 
 \\
 ===== Input =====
 === Main Parameters ===
+  ; %%--%%cryolo_bm_path : crYOLO boxmanager executable: Path to crYOLO boxmanager executable (default none)
   ; %%--%%target_dir : Input image directory: Path to input images (default none)
 
 \\

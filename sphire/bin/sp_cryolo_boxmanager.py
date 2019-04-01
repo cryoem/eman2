@@ -35,6 +35,11 @@ argparser = argparse.ArgumentParser(
 	formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 argparser.add_argument(
+	'--cryolo_bm_path',
+	type=str,
+	help='Specifiy cryolo boxmanager executeable.')
+
+argparser.add_argument(
 	'--target_dir',
 	type=str,
 	help='Specifiy the path to your image directory.')
@@ -51,7 +56,10 @@ def main():
 
 	target_dir = args.target_dir
 	box_dir = args.box_dir
+
 	call = ['cryolo_boxmanager.py']
+	if args.cryolo_bm_path:
+		call = [args.cryolo_bm_path]
 	if target_dir:
 		input_argument = "-i=" + str(target_dir)
 		call.append(input_argument)
