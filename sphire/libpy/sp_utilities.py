@@ -29,6 +29,82 @@ this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 Place, Suite 330, Boston, MA  02111-1307 USA
 """
 
+def make_v_stack_header(path, vstack_path, verbose=False):
+	def makerelpath(p1,p2):
+		"""Takes a pair of paths /a/b/c/d and /a/b/e/f/g and returns a relative path to b from a, ../../e/f/g"""
+		
+		p1s=[i for i in p1.split("/") if len(i)>0]
+		p2s=[i for i in p2.split("/") if len(i)>0]
+
+		for dv in range(min(len(p1s),len(p2s))):
+			if p1s[dv]!=p2s[dv] : break
+		else: dv+=1
+
+		p1s=p1s[dv:]
+		p2s=p2s[dv:]
+		
+		return "../"*len(p1s)+"/".join(p2s)
+	if vstack_path.startswith('bdb:'):
+		vspath = EMAN2db.db_parse_path(vstack_path)[0]
+		if vspath == "." or vspath == "./":
+			vspath=EMAN2db.e2getcwd()
+		vspath = os.path.join(vspath, 'EMAN2DB')
+	else:
+		vspath = vstack_path
+
+	if path.lower()[:4]=="bdb:" and not "#" in path :
+		uu = os.path.split(path)
+		if(uu[0] == ''):    path="bdb:.#"+path[4:]
+		else:               path=uu[0]+"#"+uu[1]
+	if path.lower()[:4]!="bdb:" : path="bdb:"+path
+	if '#' in path :
+		path,dbs=path.rsplit("#",1)
+		path+="#"
+		dbs=[dbs]
+	else:
+		if not '#' in path and path[-1]!='/' : path+='#'			
+		dbs=db_list_dicts(path)
+
+	dbs.sort()
+
+	step = [0, 1]
+	vstack_list = []
+	for db in dbs:
+		dct,keys=EMAN2db.db_open_dict(path+db,ro=True,with_keys=True)
+		if len(step)==2 :
+			if keys == None: vals = list(range(step[0],len(dct),step[1]))
+			else: vals = keys[step[0]::step[1]]		# we apply --step even if we have a list of keys
+		else:
+			if keys == None: vals = list(range(step[0],step[2],step[1]))
+			else: vals = keys[step[0]:step[2]:step[1]]		# we apply --step even if we have a list of keys
+
+		for n in vals:
+			try: d=dct.get(n,nodata=1).get_attr_dict()
+			except:
+				traceback.print_exc()
+				print("---\nerror reading ",db,n) 
+				continue
+			# This block converts an absolute path to the actual data to a relative path
+			try:
+				dpath=os.path.realpath(dct.get_data_path(n))
+				if os.name == 'nt':
+					vspath=vspath.replace("\\", '/')
+					dpath=dpath.replace('\\', '/')
+				rpath=makerelpath(vspath,dpath)
+			except Exception as e:
+				print(e)
+				print("error with data_path ",db,n)
+				continue
+			d["data_path"]=rpath
+			d["data_n"]=n
+			d["data_source"]= path+db
+			if d["data_path"]==None :
+				print("error with data_path ",db,n)
+				continue
+			vstack_list.append(d)
+		dct.close()
+	return vstack_list
+
 def params_2D_3D(alpha, sx, sy, mirror):
 	"""
 		Convert 2D alignment parameters (alpha, sx, sy, mirror) into
@@ -9533,6 +9609,7 @@ from zlib import compress, decompress
 from sp_global_def import *
 
 import EMAN2
+import EMAN2db
 from EMAN2 import EMNumPy
 
 # EMAN2 / sparx modules
