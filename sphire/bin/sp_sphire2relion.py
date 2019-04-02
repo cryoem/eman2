@@ -161,7 +161,7 @@ def main(args):
 	if args.particle_stack:
 		sxprint("Import particle stack")
 		particle_data, create_stack = import_particle_stack(
-			args.particle_stack, args.output_dir, args.relion_project_dir
+			args.particle_stack, args.output_directory, args.relion_project_dir
 		)
 		output_dtype.extend(particle_data.dtype.descr)
 
@@ -272,7 +272,7 @@ def main(args):
 
 	if create_stack:
 		sxprint("Create particle stacks")
-		create_particle_stack(args.particle_stack, args.output_dir, particle_data)
+		create_particle_stack(args.particle_stack, args.output_directory, particle_data)
 
 	sxprint("Done!")
 	sp_global_def.BATCH = False
@@ -565,12 +565,12 @@ def sanity_checks(args):
 		)
 
 	try:
-		os.makedirs(args.output_dir)
+		os.makedirs(args.output_directory)
 	except OSError:
 		pass
-	sp_global_def.write_command(args.output_dir)
+	sp_global_def.write_command(args.output_directory)
 
-	output_path = os.path.join(args.output_dir, args.output_name)
+	output_path = os.path.join(args.output_directory, args.output_name)
 	if os.path.exists(output_path) and args.force:
 		pass
 	elif os.path.exists(output_path) and not args.force:
