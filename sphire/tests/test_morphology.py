@@ -1521,7 +1521,7 @@ class Test_angle2ampcont(unittest.TestCase):
 class Test_bracket_def(unittest.TestCase):
 
     @staticmethod
-    def function_test(x1,dat):
+    def function1(x1, dat):
         return x1 + dat
 
     def test_wrong_number_params_too_few_parameters(self):
@@ -1530,13 +1530,13 @@ class Test_bracket_def(unittest.TestCase):
             oldfu.bracket_def()
 
     def test_f2_greater_f1_outputmsg_Bracket_didnot_find_a_minimum(self):
-        return_new = fu.bracket_def(self.function_test,dat=5, x1=3, h=3)
-        return_old = oldfu.bracket_def(self.function_test,dat=5, x1=3, h=3)
+        return_new = fu.bracket_def(self.function1, dat=5, x1=3, h=3)
+        return_old = oldfu.bracket_def(self.function1, dat=5, x1=3, h=3)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
     def test_f2_not_greater_f1_outputmsg_Bracket_didnot_find_a_minimum(self):
-        return_new = fu.bracket_def(self.function_test,dat=5, x1=3, h=0)
-        return_old = oldfu.bracket_def(self.function_test,dat=5, x1=3, h=0)
+        return_new = fu.bracket_def(self.function1, dat=5, x1=3, h=0)
+        return_old = oldfu.bracket_def(self.function1, dat=5, x1=3, h=0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
 
@@ -1544,7 +1544,7 @@ class Test_bracket_def(unittest.TestCase):
 class Test_bracket(unittest.TestCase):
 
     @staticmethod
-    def function_test(x1,dat):
+    def function1(x1, dat):
         return x1 + dat
 
     def test_wrong_number_params_too_few_parameters(self):
@@ -1553,29 +1553,29 @@ class Test_bracket(unittest.TestCase):
             oldfu.bracket()
 
     def test_f3_greater_f1(self):
-        return_new = fu.bracket(self.function_test,dat=5,h=4)
-        return_old = oldfu.bracket(self.function_test,dat=5,h=4)
+        return_new = fu.bracket(self.function1, dat=5, h=4)
+        return_old = oldfu.bracket(self.function1, dat=5, h=4)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
     def test_f3_not_greater_f1_outputmsg_Bracket_didnot_find_a_minimum(self):
-        self.assertTrue(fu.bracket(self.function_test,dat=0,h=0) is None)
-        self.assertTrue(oldfu.bracket(self.function_test,dat=0,h=0) is None)
+        self.assertTrue(fu.bracket(self.function1, dat=0, h=0) is None)
+        self.assertTrue(oldfu.bracket(self.function1, dat=0, h=0) is None)
 
 
 
 class Test_goldsearch_astigmatism(unittest.TestCase):
 
     @staticmethod
-    def function_test(x1, dat):
+    def function1(x1, dat):
         f = x1 + dat
         return f
 
     @staticmethod
-    def function_test_return_0(x1, dat):
+    def function_return_0(x1, dat):
         return 0
 
     @staticmethod
-    def bad_function_test():
+    def bad_function():
         return 0
 
     def test_wrong_number_params_too_few_parameters(self):
@@ -1585,33 +1585,33 @@ class Test_goldsearch_astigmatism(unittest.TestCase):
 
     def test_null_tolerance_returns_OverflowError_cannot_convert_infinity_to_integer(self):
         with self.assertRaises(OverflowError):
-            fu.goldsearch_astigmatism(self.function_test,5,3,4, 0)
-            oldfu.goldsearch_astigmatism(self.function_test,5,3,4, 0)
+            fu.goldsearch_astigmatism(self.function1, 5, 3, 4, 0)
+            oldfu.goldsearch_astigmatism(self.function1, 5, 3, 4, 0)
 
 
     def test_A_B_same_value_error_returns_ZeroDivisionError(self):
         with self.assertRaises(ZeroDivisionError):
-            fu.goldsearch_astigmatism(self.function_test, 5, 3, 3)
-            oldfu.goldsearch_astigmatism(self.function_test, 5, 3, 3)
+            fu.goldsearch_astigmatism(self.function1, 5, 3, 3)
+            oldfu.goldsearch_astigmatism(self.function1, 5, 3, 3)
 
     def test_Invalid_function_returns_TypeError_bad_function_takes_no_arguments(self):
         with self.assertRaises(TypeError):
-            fu.goldsearch_astigmatism(self.bad_function_test,5,3,4)
-            oldfu.goldsearch_astigmatism(self.bad_function_test,5,3,4)
+            fu.goldsearch_astigmatism(self.bad_function, 5, 3, 4)
+            oldfu.goldsearch_astigmatism(self.bad_function, 5, 3, 4)
 
     def test_f2_greater_f1(self):
-        return_new = fu.goldsearch_astigmatism(self.function_test,5,3,4)
-        return_old = oldfu.goldsearch_astigmatism(self.function_test,5,3,4)
+        return_new = fu.goldsearch_astigmatism(self.function1, 5, 3, 4)
+        return_old = oldfu.goldsearch_astigmatism(self.function1, 5, 3, 4)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
     def test_return_f2_greater_f1(self):
-        return_new = fu.goldsearch_astigmatism(self.function_test_return_0,5,3,4)
-        return_old = oldfu.goldsearch_astigmatism(self.function_test_return_0,5,3,4)
+        return_new = fu.goldsearch_astigmatism(self.function_return_0, 5, 3, 4)
+        return_old = oldfu.goldsearch_astigmatism(self.function_return_0, 5, 3, 4)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
     def test_test_f1_greater_f2(self):
-        return_new = fu.goldsearch_astigmatism(self.function_test,5,4,3)
-        return_old = oldfu.goldsearch_astigmatism(self.function_test,5,4,3)
+        return_new = fu.goldsearch_astigmatism(self.function1, 5, 4, 3)
+        return_old = oldfu.goldsearch_astigmatism(self.function1, 5, 4, 3)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
 
