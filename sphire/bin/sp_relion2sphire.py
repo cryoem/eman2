@@ -386,7 +386,7 @@ def main():
 				##### Store micrograph related parameters #####
 				# Micrograph must be found always.
 				assert relion_category_dict['mic'][idx_is_category_found], '# Logical Error: Micrograph information must be found any type of RELION STAR file at this point of code.'
-				relion_micrograph_name = tokens_line[relion_dict['_rlnMicrographName'][idx_col] - 1]
+				relion_micrograph_name = os.path.join(*[entry for entry in tokens_line[relion_dict['_rlnMicrographName'][idx_col] - 1].split('/') if entry != '..'])
 				micrograph_path = relion_micrograph_name
 				micrograph_dirname, micrograph_basename = os.path.split(relion_micrograph_name)
 				adjusted_relion_micrograph_name = relion_micrograph_name
