@@ -377,8 +377,6 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["fl"].key_base == "fl")
 		assert(sxcmd.token_dict["fl"].type == "abs_freq")
 		sxcmd.token_dict["fl"].type = "float"
-	elif sxcmd.name == "sp_sphire2relion":
-		sxcmd.token_dict["output_directory"].type = "dir"
 	elif sxcmd.name == "sp_meridien":
 		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
 		assert(sxcmd.token_dict["output_directory"].type == "output")
