@@ -104,13 +104,13 @@ def write_virtual_bdb_stack(
 		number_of_particles = EMAN2.EMUtil.get_image_count(origin_stack_path)
 
 	local_bdb_stack = EMAN2db.db_open_dict(output_stack_path)
+	particle_headers = sp_utilities.make_v_stack_header(origin_stack_path, output_stack_path)
 
 	for particle_index in range(number_of_particles):
-		particle = read_particle(origin_stack_path, particle_index, header_only=True)
-		particle_header = particle.get_attr_dict()
+		particle_header = particle_headers[particle_index]
 		particle_header["ctf"] = refined_ctfs[particle_index]
-
 		local_bdb_stack[particle_index] = particle_header
+
 	EMAN2db.db_close_dict(local_bdb_stack)
 	sp_global_def.sxprint("Write results to virtual stack done")
 
