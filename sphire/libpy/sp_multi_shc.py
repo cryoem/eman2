@@ -1311,6 +1311,24 @@ multi_shc - main
 # remaining parameters must be set for all
 # size of mpi_communicator must be >= runs_count
 def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, ref_vol=None):
+	"""
+	Arguments:
+		all_projs : Stack of projections
+		subset : Selection of images
+		runs_count : Number of quasi-independent shc runs
+		ali3d_options : Command-line options (as a namespace)
+			.sym : Symmetry
+			.theta1 : Starting tilt angle (optional)
+			.theta2 : Ending tilt angle (optional)
+			.ref_a : Method for generating quasi-uniformly distributed projection directions
+			.delta : Angular increment
+			.ou : Outer radius
+			.dpi : Resolution of BILD angular-distribution file (optional)
+		mpi_comm : MPI communicator
+		log : Log file instance (optional)
+		ref_vol : Reference volume (optional)
+	"""
+	
 	from sp_applications import MPI_start_end
 	from sp_utilities import set_params_proj, wrap_mpi_bcast, write_text_row, drop_image, write_text_file
 	from sp_utilities import bcast_EMData_to_all, bcast_list_to_all, bcast_number_to_all
@@ -1354,7 +1372,7 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 			theta2 = -1.0
 		
 		if hasattr(ali3d_options, 'method'):
-			method = ali3d_options.method
+			method = ali3d_options.ref_a
 		else:
 			method = "S"
 		
@@ -1523,14 +1541,17 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		params_file = log.prefix + "params.txt"
 		output_folder = independent_run_dir 
 		prefix = 'angdist'  # will overwrite input parameters file if blank
-		method = ali3d_options.ref_a  # method for generating the quasi-uniformly distributed projection directions
+		####method = ali3d_options.ref_a  # method for generating the quasi-uniformly distributed projection directions
 		delta = float(ali3d_options.delta)
 		symmetry = ali3d_options.sym
-		dpi = ali3d_options.dpi
+		if hasattr(ali3d_options, 'dpi'):
+			dpi = ali3d_options.dpi
+		else:
+			dpi = 72
 		
 		# Not going to upscale to the original dimensions, so in Chimera open reconstruction at 1 Angstrom/voxel, etc.
 		pixel_size = 1
-		particle_radius = ali3d_options.radius
+		####particle_radius = ali3d_options.radius
 		box_size = get_im( os.path.join(log.prefix, 'volf.hdf') ).get_xsize()
 		
 		angular_distribution(
@@ -1542,7 +1563,7 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 			delta=delta,
 			symmetry=symmetry,
 			box_size=box_size,
-			particle_radius=particle_radius,
+			particle_radius=ali3d_options.ou,
 			dpi=dpi,
 			do_print=False,
 			)
