@@ -75,8 +75,8 @@ def get_cmd_line():
 def makerelpath(p1,p2):
 	"""Takes a pair of paths /a/b/c/d and /a/b/e/f/g and returns a relative path to b from a, ../../e/f/g"""
 	
-	p1s=[i for i in p1.split("/") if len(i)>0]
-	p2s=[i for i in p2.split("/") if len(i)>0]
+	p1s=[i for i in os.path.realpath(p1).split("/") if len(i)>0]
+	p2s=[i for i in os.path.realpath(p2).split("/") if len(i)>0]
 
 	for dv in range(min(len(p1s),len(p2s))):
 		if p1s[dv]!=p2s[dv] : break
@@ -392,7 +392,7 @@ def main():
 				adjusted_relion_micrograph_name = relion_micrograph_name
 				if dir_path_relion_project is not None:
 					adjusted_relion_micrograph_name = os.path.join(dir_path_relion_project, adjusted_relion_micrograph_name)
-				
+
 				if micrograph_dirname not in sphire_micrographs_dict:
 					sphire_micrographs_dict[micrograph_dirname] = {}
 				assert micrograph_dirname in sphire_micrographs_dict
