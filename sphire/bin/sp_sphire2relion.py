@@ -42,6 +42,7 @@ import numpy as np
 import EMAN2_cppwrap
 from sp_global_def import sxprint
 import sp_global_def
+import sp_utilities
 
 
 def parse_args():
@@ -70,7 +71,17 @@ def parse_args():
 	parser = argparse.ArgumentParser(
 		formatter_class=argparse.ArgumentDefaultsHelpFormatter
 	)
-	parser.add_argument("output_dir", type=str, help="Output directory")
+	parser.add_argument(
+		"output_directory",
+		type=str,
+		help="Output directory containing the output star file."
+		)
+	parser.add_argument(
+		"--relion_project_dir",
+		type=str,
+		default='.',
+		help="Path to the new relion project directory."
+	)
 	parser.add_argument(
 		"--output_name",
 		type=str,
@@ -150,7 +161,7 @@ def main(args):
 	if args.particle_stack:
 		sxprint("Import particle stack")
 		particle_data, create_stack = import_particle_stack(
-			args.particle_stack, args.output_dir
+			args.particle_stack, args.output_dir, args.relion_project_dir
 		)
 		output_dtype.extend(particle_data.dtype.descr)
 
@@ -557,7 +568,7 @@ def sanity_checks(args):
 		os.makedirs(args.output_dir)
 	except OSError:
 		pass
-	sp_global_def.write_command(os.path.dirname(output_name))
+	sp_global_def.write_command(args.output_dir)
 
 	output_path = os.path.join(args.output_dir, args.output_name)
 	if os.path.exists(output_path) and args.force:
@@ -643,7 +654,7 @@ def create_stack_dtype(particle_dict):
 	return sorted(dtype_list), original_name.keys()
 
 
-def create_stack_array(dtype_list, header_dict, output_dir):
+def create_stack_array(dtype_list, header_dict, output_dir, project_dir):
 	"""
 	Import the bdb file into an numpy array.
 
@@ -719,10 +730,12 @@ def create_stack_array(dtype_list, header_dict, output_dir):
 			if header_dict["data_path"][0].endswith(".mrcs"):
 				data = [
 					"{0:05d}@{1}".format(
-						entry1 + 1, os.path.relpath(entry2, output_dir)
+						entry1 + 1,
+						entry2
 					)
 					for entry1, entry2 in zip(
-						header_dict["ptcl_source_coord_id"], header_dict["data_path"]
+						header_dict["ptcl_source_coord_id"],
+						header_dict["data_path"]
 					)
 				]
 				particle_array["_rlnImageName"] = data
@@ -738,7 +751,7 @@ def create_stack_array(dtype_list, header_dict, output_dir):
 								os.path.join(
 									output_dir, "Particles", os.path.basename(name)
 								),
-								output_dir,
+								project_dir,
 							),
 						)
 						for entry in np.arange(np.sum(mask))
@@ -746,14 +759,14 @@ def create_stack_array(dtype_list, header_dict, output_dir):
 
 		elif key == "ptcl_source_image":
 			particle_array["_rlnMicrographName"] = [
-				entry if entry.startswith("/") else os.path.relpath(entry, output_dir)
+				entry if entry.startswith("/") else sp_utilities.makerelpath(project_dir, entry)
 				for entry in header_dict[key]
 			]
 
 	return particle_array, create_stack
 
 
-def import_particle_stack(particle_stack, output_dir):
+def import_particle_stack(particle_stack, output_dir, project_dir):
 	"""
 	Import the particle stack.
 
@@ -767,14 +780,16 @@ def import_particle_stack(particle_stack, output_dir):
 	particle_header.read_image(particle_stack, 0, True)
 
 	dtype_list, name_list = create_stack_dtype(particle_header.get_attr_dict())
+	new_header = sp_utilities.make_v_stack_header(particle_stack, project_dir)
 
 	header_dict = {}
 	for name in name_list:
-		header_dict[name] = np.array(
-			EMAN2_cppwrap.EMUtil.get_all_attributes(particle_stack, name)
-		)
+		for entry in new_header:
+			header_dict.setdefault(name, []).append(entry[name])
+	for key in header_dict:
+		header_dict[key] = np.array(header_dict[key])
 
-	stack_array, create_stack = create_stack_array(dtype_list, header_dict, output_dir)
+	stack_array, create_stack = create_stack_array(dtype_list, header_dict, output_dir, project_dir)
 
 	return stack_array, create_stack
 

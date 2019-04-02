@@ -28,29 +28,31 @@ You should have received a copy of the GNU General Public License along with
 this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 Place, Suite 330, Boston, MA  02111-1307 USA
 """
+def makerelpath(p1,p2):
+	"""Takes a pair of paths /a/b/c/d and /a/b/e/f/g and returns a relative path to b from a, ../../e/f/g"""
+	
+	p1s=[i for i in os.path.realpath(p1).split("/") if len(i)>0]
+	p2s=[i for i in os.path.realpath(p2).split("/") if len(i)>0]
+
+	for dv in range(min(len(p1s),len(p2s))):
+		if p1s[dv]!=p2s[dv] : break
+	else: dv+=1
+
+	p1s=p1s[dv:]
+	p2s=p2s[dv:]
+	
+	return "../"*len(p1s)+"/".join(p2s)
 
 def make_v_stack_header(path, vstack_path, verbose=False):
-	def makerelpath(p1,p2):
-		"""Takes a pair of paths /a/b/c/d and /a/b/e/f/g and returns a relative path to b from a, ../../e/f/g"""
-		
-		p1s=[i for i in p1.split("/") if len(i)>0]
-		p2s=[i for i in p2.split("/") if len(i)>0]
-
-		for dv in range(min(len(p1s),len(p2s))):
-			if p1s[dv]!=p2s[dv] : break
-		else: dv+=1
-
-		p1s=p1s[dv:]
-		p2s=p2s[dv:]
-		
-		return "../"*len(p1s)+"/".join(p2s)
 	if vstack_path.startswith('bdb:'):
 		vspath = EMAN2db.db_parse_path(vstack_path)[0]
 		if vspath == "." or vspath == "./":
 			vspath=EMAN2db.e2getcwd()
-		vspath = os.path.join(vspath, 'EMAN2DB')
+		vspath = os.path.join(vspath, 'EMAN2DB/')
 	else:
 		vspath = vstack_path
+		if vspath == "." or vspath == "./":
+			vspath=EMAN2db.e2getcwd()
 
 	if path.lower()[:4]=="bdb:" and not "#" in path :
 		uu = os.path.split(path)
@@ -9593,6 +9595,7 @@ from future import standard_library
 standard_library.install_aliases()
 
 # python natives
+import os
 from pickle    import dumps, loads
 from builtins  import range
 from builtins  import object
