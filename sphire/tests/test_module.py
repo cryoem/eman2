@@ -16,6 +16,27 @@ from os import path
 from shutil import rmtree
 
 
+#argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.align2d_scf"))
+ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
+
+def get_real_data(dim =2):
+    """
+    In order to run our tests with valid value this function returns the value got from pickle file.
+    It returns the iamge and the reference image
+    If dim=2 returns 2d img if 3 returns 3d image
+    :param dim: dimension of the output image
+    :return: image,refim #todo: in 3d case the refim is None ...i have to look for a better pickle file, maybe'projection.prgl'
+    """
+    if dim == 2:
+        argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.align2d_scf"))
+        image, refim, xrng, yrng = argum[0]
+        return image,refim
+    if dim == 3:
+        argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.ali_vol_func"))
+        return argum[1].get('data')[0], None
+
+    print ("ERROR: the dimension has to be 2 or 3. Given "+str(dim))
+    exit(-1)
 
 def get_data(num,dim = 10):
     """
