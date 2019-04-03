@@ -709,8 +709,8 @@ class SXGuiCter(QWidget):
 		
 		leftcolumn.addStretch(1)
 		
-#		logo = SXLogoButton("logo_transphire_thick.png", 256, parent=self, keep_aspect=True)
-#		logo.add_sxmenu_item_btn_widget(leftcolumn)
+		logo = SXLogoButton("logo_transphire_thick.png", 256, parent=self, keep_aspect=True)
+		logo.add_sxmenu_item_btn_widget(leftcolumn)
 		
 		# --------------------------------------------------------------------------------
 		# 2nd column
