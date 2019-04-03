@@ -623,6 +623,9 @@ def create_stack_dtype(particle_dict):
 		elif key == "filament_id" or key == "filament":
 			original_name[key] = [("_rlnHelicalTubeID", int)]
 
+		elif key == "filament_track_length":
+			original_name[key] = [("_rlnHelicalTrackLength", int)]
+
 		elif key == "ctf":
 			original_name[key] = [
 				("_rlnDefocusU", float),
@@ -683,6 +686,9 @@ def create_stack_array(dtype_list, header_dict, output_dir, project_dir):
 		elif key == "filament_id" or key == "filament":
 			data = [int(str(entry)[-5:]) + 1 for entry in header_dict[key]]
 			particle_array["_rlnHelicalTubeID"] = data
+
+		elif key == "filament_track_length":
+			particle_array["_rlnHelicalTrackLength"] = header_dict[key]
 
 		elif key == "ctf":
 			dict_list = [entry.to_dict() for entry in header_dict[key]]

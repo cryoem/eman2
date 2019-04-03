@@ -131,6 +131,10 @@ def read_cryolo_helical_segmented_coords_file(coords_path):
 					angle = estimate_angle(
 						filament[segment_id - 1], filament[segment_id + 1]
 					)
+				if segment_id == 0 and len(filament) > 1:
+					helical_track_length = 0
+				else:
+					helical_track_length += estimate_distance(coords, filament[segment_id - 1])
 				curr_filaments_coords.append(
 					[
 						float(coords[0]),
@@ -138,6 +142,7 @@ def read_cryolo_helical_segmented_coords_file(coords_path):
 						filament_name.format(filament_id),
 						segment_id,
 						angle,
+						helical_track_length,
 					]
 				)
 
@@ -150,6 +155,20 @@ def read_cryolo_helical_segmented_coords_file(coords_path):
 # ========================================================================================
 #  Helper functions
 # ========================================================================================
+
+
+def estimate_distance(coords_a, coords_b):
+	"""
+	Estimates the distance of a line between two  boxes.
+	:param coords_a: First coordinate pair
+	:param coords_b: Second coordinate pair
+	:return: Distance of the line connectiong coords_a and coords_b.
+	"""
+	delta_x = coords_b[0] - coords_a[0]
+	delta_y = coords_b[1] - coords_a[1]
+	distance = np.sqrt(delta_x**2+delta_y**2)
+
+	return distance
 
 
 def estimate_angle(coords_a, coords_b):
@@ -1693,6 +1712,10 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 					pass
 				try:
 					particle_img_dict["segment_angle"] = coords_list[original_id][4]
+				except IndexError:
+					pass
+				try:
+					particle_img_dict["filament_track_length"] = coords_list[original_id][5]
 				except IndexError:
 					pass
 				particle_img_dict[

@@ -386,7 +386,7 @@ def main():
 				##### Store micrograph related parameters #####
 				# Micrograph must be found always.
 				assert relion_category_dict['mic'][idx_is_category_found], '# Logical Error: Micrograph information must be found any type of RELION STAR file at this point of code.'
-				relion_micrograph_name = os.path.join(*[entry for entry in tokens_line[relion_dict['_rlnMicrographName'][idx_col] - 1].split('/') if entry != '..'])
+				relion_micrograph_name = tokens_line[relion_dict['_rlnMicrographName'][idx_col] - 1]
 				micrograph_path = relion_micrograph_name
 				micrograph_dirname, micrograph_basename = os.path.split(relion_micrograph_name)
 				adjusted_relion_micrograph_name = relion_micrograph_name
@@ -653,6 +653,7 @@ def main():
 						if relion_category_dict['helical'][idx_is_category_found]:
 							sphire_header['filament_id'] = '{0}{1:05d}'.format(adjusted_relion_micrograph_name, sphire_filament_id)
 							sphire_header['segment_id'] = sphire_local_particle_id
+							sphire_header['filament_track_length'] = float(tokens_line[relion_dict['_rlnHelicalTrackLength'][idx_col] - 1])
 						if relion_category_dict['ctf'][idx_is_category_found] or options.negative_stain:
 							sphire_cter_entry_list = []
 							for idx_sphire_ctf in range(n_idx_sphire_ctf):
@@ -765,7 +766,16 @@ def main():
 		
 		# Write micrograph name to files (micrograph selection list file)
 		for micrograph_dirname in sorted(sphire_micrographs_dict):
-			dir_path_sphire_micrographs = os.path.join(dir_path_work, micrograph_dirname)
+			dir_path_sphire_micrographs = os.path.join(
+				dir_path_work,
+				os.path.join(
+					*[
+						entry
+						for entry in micrograph_dirname.split('/')
+						if entry != '..'
+						]
+					)
+				)
 			if not os.path.exists(dir_path_sphire_micrographs):
 				#Markus 05.06.18 -- os.mkdir(dir_path_sphire_micrographs)
 				os.makedirs(dir_path_sphire_micrographs)
@@ -778,7 +788,16 @@ def main():
 		
 		# Write CTER entry to files (doing here to avoid repeating open/close files in loop)
 		for micrograph_dirname in sorted(sphire_cter_dict):
-			dir_path_sphire_cter_partres = os.path.join(dir_path_work, micrograph_dirname)
+			dir_path_sphire_cter_partres = os.path.join(
+				dir_path_work,
+				os.path.join(
+					*[
+						entry
+						for entry in micrograph_dirname.split('/')
+						if entry != '..'
+						]
+					)
+				)
 			if not os.path.exists(dir_path_sphire_cter_partres):
 				#Markus 05.06.18 -- os.mkdir(dir_path_sphire_micrographs)
 				os.makedirs(dir_path_sphire_cter_partres)
@@ -843,9 +862,19 @@ def main():
 			assert box_size <= 0, '# Logical Error: Box size should be always zero or negative at this point of code.'
 		
 		for micrograph_dirname in sorted(sphire_coordinates_dict):
-			dir_path_coordinates = os.path.join(dir_path_work, micrograph_dirname, dir_name_coordinates)
+			dir_path_coordinates = os.path.join(
+				dir_path_work,
+				os.path.join(
+					*[
+						entry
+						for entry in micrograph_dirname.split('/')
+						if entry != '..'
+						]
+					),
+				dir_name_coordinates,
+				)
 			if not os.path.exists(dir_path_coordinates):
-				os.mkdir(dir_path_coordinates)
+				os.makedirs(dir_path_coordinates)
 			
 			for micrograph_basename in sorted(sphire_coordinates_dict[micrograph_dirname]):
 				micrograph_extension = os.path.splitext(micrograph_basename)[1]
@@ -922,9 +951,19 @@ def main():
 				dummy_particle_resample_ratio = 1.0
 				
 				for micrograph_dirname in sorted(sphire_micrographs_dict):
-					dir_path_rebox = os.path.join(dir_path_work, micrograph_dirname, dir_name_rebox)
+					dir_path_rebox = os.path.join(
+						dir_path_work,
+						os.path.join(
+							*[
+								entry
+								for entry in micrograph_dirname.split('/')
+								if entry != '..'
+								]
+							),
+						dir_name_rebox,
+						)
 					if not os.path.exists(dir_path_rebox):
-						os.mkdir(dir_path_rebox)
+						os.makedirs(dir_path_rebox)
 		
 					for micrograph_basename in sorted(sphire_micrographs_dict[micrograph_dirname]):
 						micrograph_extension = os.path.splitext(micrograph_basename)[1]
@@ -1019,9 +1058,19 @@ def main():
 				sxprint('# ')
 				sxprint('# Processing {} directory ...'.format(micrograph_dirname))
 
-				dir_path_local_bdb_stacks = os.path.join(dir_path_work, micrograph_dirname, dir_name_local_stacks)
+				dir_path_local_bdb_stacks = os.path.join(
+					dir_path_work,
+					os.path.join(
+						*[
+							entry
+							for entry in micrograph_dirname.split('/')
+							if entry != '..'
+							]
+						),
+					dir_name_local_stacks,
+					)
 				if not os.path.exists(dir_path_local_bdb_stacks):
-					os.mkdir(dir_path_local_bdb_stacks)
+					os.makedirs(dir_path_local_bdb_stacks)
 
 				for i_micrograph, micrograph_basename in enumerate(sorted(sphire_header_dict[micrograph_dirname])):
 					if i_micrograph % 100 == 0:
@@ -1062,6 +1111,7 @@ def main():
 						if relion_category_dict['helical'][idx_is_category_found] == True:
 							img_particles_dict['filament_id'] = sphire_header['filament_id']
 							img_particles_dict['segment_id'] = sphire_header['segment_id']
+							img_particles_dict['filament_track_length'] = sphire_header['filament_track_length']
 						if relion_category_dict['ctf'][idx_is_category_found] == True or options.negative_stain:
 							img_particles_dict['ctf'] = sphire_header['ctf']
 							img_particles_dict['ctf_applied'] = sphire_header['ctf_applied']
