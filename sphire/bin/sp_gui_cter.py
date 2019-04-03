@@ -598,7 +598,6 @@ class SXGuiCter(QWidget):
 		self.is_wplotrotavgcoarse_minimized = False
 		
 		self.wplotrotavgfine = SXPlot2DWidget()
-		print('initialize_popup_windows: wplotrotavgfine.scrlim', hasattr(self.wplotrotavgfine, 'scrlim'))  #### DIAGNOSTIC
 		self.wplotrotavgfine.setWindowTitle("sxgui_cter - Plot Zoom")
 		self.wplotrotavgfine.qt_parent.setWindowFlags((self.wplotrotavgfine.qt_parent.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
 		self.is_wplotrotavgfine_minimized = False
@@ -710,11 +709,8 @@ class SXGuiCter(QWidget):
 		
 		leftcolumn.addStretch(1)
 		
-		#logo_file_path = '{0}logo_transphire_thick.png'.format(get_image_directory())
-		#print('logo_file_path', logo_file_path)
-		#logo = SXLogoButton(logo_file_path, 256, parent=self, keep_aspect=True)
-		#####logo = SXLogoButton("logo_transphire_thick.png", 256, parent=self, keep_aspect=True)
-		#logo.add_sxmenu_item_btn_widget(leftcolumn)
+#		logo = SXLogoButton("logo_transphire_thick.png", 256, parent=self, keep_aspect=True)
+#		logo.add_sxmenu_item_btn_widget(leftcolumn)
 		
 		# --------------------------------------------------------------------------------
 		# 2nd column
@@ -1074,7 +1070,6 @@ class SXGuiCter(QWidget):
 		self.wscatterparam.qt_parent.move(win_left, win_top); win_left += win_left_shift; win_top += win_top_shift
 		self.whistparam.qt_parent.resize(child_win_width,child_win_height)
 		self.whistparam.qt_parent.move(win_left, win_top); win_left += win_left_shift; win_top += win_top_shift
-		print('set_size_popup_windows: wplotrotavgfine.scrlim', hasattr(self.wplotrotavgfine, 'scrlim'))  #### DIAGNOSTIC
 		self.wplotrotavgfine.qt_parent.resize(child_win_width,child_win_height)
 		self.wplotrotavgfine.qt_parent.move(win_left, win_top); win_left += win_left_shift; win_top += win_top_shift
 		self.wplotrotavgcoarse.qt_parent.resize(child_win_width,child_win_height)
@@ -1410,12 +1405,10 @@ class SXGuiCter(QWidget):
 				self.wplotrotavgcoarse.show()
 		else:
 			assert not self.curplotrotavgdisplay, "MRK_DEBUG"
-			self.wplotrotavgcoarse.show()  # scrlim isn't calculated unless show() is called
 			if self.wplotrotavgcoarse.isVisible():
 				self.wplotrotavgcoarse.hide()
 		
 		# Zoomed plot
-		print('readCterPartresFile: wplotrotavgfine.scrlim', hasattr(self.wplotrotavgfine, 'scrlim'))  #### DIAGNOSTIC
 		if self.curplotrotzoomdisplay:
 			if not self.wplotrotavgfine.isVisible():
 				self.wplotrotavgfine.show()
@@ -1462,7 +1455,6 @@ class SXGuiCter(QWidget):
 		if self.cter_entry_list == None: return # no cter ctf file is selected
 		#if self.curhistdisable == True: return # do nothing while it is hidden
 		if not self.curhistogramdisplay:
-			#print('self.curhistogramdisplay',self.curhistogramdisplay)
 			return
 	
 		val_list = []
@@ -1737,14 +1729,11 @@ class SXGuiCter(QWidget):
 		return combinedList
 		
 	def draw_limits(self, error_name, error_label, shape_r,shape_g,shape_b, y_offset, nyquist_freq):
-		#if not hasattr(self.wplotrotavgfine, 'scrlim'):
-		print('draw_limits0: wplotrotavgfine.scrlim', hasattr(self.wplotrotavgfine, 'scrlim'))  #### DIAGNOSTIC
-		self.wplotrotavgfine.render()
-		print('draw_limits1: wplotrotavgfine.scrlim', hasattr(self.wplotrotavgfine, 'scrlim'))  #### DIAGNOSTIC
-		#if not hasattr(self.wplotrotavgcoarse, 'scrlim'):
-		print('draw_limits0: wplotrotavgcoarse.scrlim', hasattr(self.wplotrotavgcoarse, 'scrlim'))  #### DIAGNOSTIC
-		self.wplotrotavgcoarse.render()
-		print('draw_limits1: wplotrotavgcoarse.scrlim', hasattr(self.wplotrotavgcoarse, 'scrlim'))  #### DIAGNOSTIC
+		# (I don't know why I need the following, but on some machines, scrlim is undefined. --Tapu, 2019/04/03)
+		if not hasattr(self.wplotrotavgfine, 'scrlim'):
+			self.wplotrotavgfine.render()
+		if not hasattr(self.wplotrotavgcoarse, 'scrlim'):
+			self.wplotrotavgcoarse.render()
 		
 		fineLimits   = self.wplotrotavgfine.scrlim
 		coarseLimits = self.wplotrotavgcoarse.scrlim
@@ -1835,7 +1824,6 @@ class SXGuiCter(QWidget):
 	def newScatterDisplay(self,val=None):
 		"""Change sort plot display status."""
 		
-		#print('newScatterDisplay', val)
 		if self.curscatterdisplay != val:
 			# now set the new display status
 			self.curscatterdisplay = val
@@ -2552,19 +2540,15 @@ class SXGuiCter(QWidget):
 		if self.cter_entry_list != None:
 			is_child_shown = False
 			if not self.wfft.isVisible() and self.is_wfft_minimized:
-				##print('wfft.show')
 				self.wfft.show()
 				is_child_shown = True
 			if not self.wimgmicthumb.isVisible() and self.curimgmicthumbdisplay and not self.is_wimgmicthumb_minimized and os.path.exists(self.cter_micthumb_file_path):
-				##print('wimgmicthumb.show')
 				self.wimgmicthumb.show()
 				is_child_shown = True
 			if not self.wplotrotavgcoarse.isVisible() and self.curplotrotavgdisplay and not self.is_wplotrotavgcoarse_minimized and os.path.exists(self.cter_pwrot_file_path):
-				##print('wplotrotavgcoarse.show')
 				self.wplotrotavgcoarse.show()
 				is_child_shown = True
 			if not self.wplotrotavgfine.isVisible() and self.curplotrotzoomdisplay and not self.is_wplotrotavgfine_minimized and os.path.exists(self.cter_pwrot_file_path):
-				##print('wplotrotavgfine.show')
 				self.wplotrotavgfine.show()
 				is_child_shown = True
 			#if not self.whistparam.isVisible() and not self.curhistdisable and not self.is_whistparam_minimized:
@@ -2588,6 +2572,8 @@ class SXGuiCter(QWidget):
 		self.busy = False
 		
 	def eventFilter(self, source, event):
+		####import inspect
+		####print('eventFilter called by', inspect.stack()[1][3])
 		if event.type() == QtCore.QEvent.WindowStateChange:
 			if self.windowState() & QtCore.Qt.WindowMinimized:
 				assert self.isMinimized() == True, "MRK_DEBUG"
@@ -2656,28 +2642,29 @@ class SXGuiCter(QWidget):
 				if self.isVisible() : # Depends on timing at startup, this can happen?!!
 					self.raise_()
 					self.activateWindow()
-		elif event.type() == QtCore.QEvent.WindowActivate:
-			# print "MRK_DEBUG: sxgui main window has gained focus (become active)"
-			# 
-			# NOTE: 2016/03/08 Toshio Moriya
-			# To raise EMGLWidget (SXPlot2DWidget and EMImage2DWidget) window,
-			# we have to go through its qt_parent attribute to call raise_()...
-			# 
-			if self.cter_entry_list != None:
-				if self.wfft.isVisible() == True:
-					self.wfft.qt_parent.raise_()
-				if self.wimgmicthumb.isVisible() == True:
-					self.wimgmicthumb.qt_parent.raise_()
-				if self.wplotrotavgcoarse.isVisible() == True:
-					self.wplotrotavgcoarse.qt_parent.raise_()
-				if self.wplotrotavgfine.isVisible() == True:
-					self.wplotrotavgfine.qt_parent.raise_()
-				if self.whistparam.isVisible() == True:
-					self.whistparam.qt_parent.raise_()
-				if self.wscatterparam.isVisible() == True:
-					self.wscatterparam.qt_parent.raise_()
-				assert self.isVisible(), "MRK_DEBUG"
-				self.raise_()
+		# If focus-follow-mouse set in window manager, the pop-ups flicker if they're raised automatically. --Tapu, 2019/04/03
+		#elif event.type() == QtCore.QEvent.WindowActivate:
+			## print "MRK_DEBUG: sxgui main window has gained focus (become active)"
+			## 
+			## NOTE: 2016/03/08 Toshio Moriya
+			## To raise EMGLWidget (SXPlot2DWidget and EMImage2DWidget) window,
+			## we have to go through its qt_parent attribute to call raise_()...
+			## 
+			#if self.cter_entry_list != None:
+				#if self.wfft.isVisible() == True:
+					#self.wfft.qt_parent.raise_()
+				#if self.wimgmicthumb.isVisible() == True:
+					#self.wimgmicthumb.qt_parent.raise_()
+				#if self.wplotrotavgcoarse.isVisible() == True:
+					#self.wplotrotavgcoarse.qt_parent.raise_()
+				#if self.wplotrotavgfine.isVisible() == True:
+					#self.wplotrotavgfine.qt_parent.raise_()
+				#if self.whistparam.isVisible() == True:
+					#self.whistparam.qt_parent.raise_()
+				#if self.wscatterparam.isVisible() == True:
+					#self.wscatterparam.qt_parent.raise_()
+				#assert self.isVisible(), "MRK_DEBUG"
+				#self.raise_()
 		
 		return super(SXGuiCter, self).eventFilter(source, event)
 	
