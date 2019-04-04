@@ -19,6 +19,11 @@ from os import path
 
 
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
+
+"""
+change it when you run the tests with your path.In this folder I copied 'TcdA1-0010_frames.mrc' got from the sphire tutorial:
+"""
+ABSOLUTE_PATH_TO_MRC_FILES="/home/lusnig/Downloads/mrc_files_for_unit_test"
 TOLERANCE = 0.0075
 
 IMAGE_2D, IMAGE_2D_REFERENCE = get_real_data(dim=2)
@@ -71,14 +76,16 @@ class Test_binarize(unittest.TestCase):
 
     def test_empty_input_image_returns_RuntimeError_stdException(self):
         """ We are not able to catch the 'NotExistingObjectException' C++ exception"""
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.binarize(EMData())
             oldfu.binarize(EMData())
+        self.assertEqual(cm.exception.message, "std::exception")
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.binarize()
             oldfu.binarize()
+        self.assertEqual(cm.exception.message, "binarize() takes at least 1 argument (0 given)")
 
 
 
@@ -106,14 +113,16 @@ class Test_collapse(unittest.TestCase):
 
     def test_empty_input_image_returns_RuntimeError_stdException(self):
         """ We are not able to catch the 'NotExistingObjectException' C++ exception"""
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.collapse(EMData())
             oldfu.collapse(EMData())
+        self.assertEqual(cm.exception.message, "std::exception")
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.collapse()
             oldfu.collapse()
+        self.assertEqual(cm.exception.message, "collapse() takes at least 1 argument (0 given)")
 
 
 
@@ -133,14 +142,19 @@ class Test_dilatation(unittest.TestCase):
         self.assertTrue(True)
 
     def test_empty_mask_image_returns_RuntimeError_ImageDimensionException_center_isnot_welldefined(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.dilation(IMAGE_BLANK_2D, EMData(), morphtype="BINARY")
             oldfu.dilation(IMAGE_BLANK_2D, EMData(), morphtype="BINARY")
 
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], "Kernel should have odd nx,ny,nz so that the center is well-defined.")
+
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.dilation()
             oldfu.dilation()
+        self.assertEqual(cm.exception.message, "dilation() takes at least 1 argument (0 given)")
 
     def test_bynary_img_blank2D_withMASK(self):
         return_new = fu.dilation(IMAGE_BLANK_2D, MASK, morphtype="BINARY")
@@ -189,24 +203,40 @@ class Test_dilatation(unittest.TestCase):
         self.assertTrue(return_new is None)
 
     def test_bynary_img2D_withMASK_returns_RuntimeError_ImageDimensionException_one_of_the_two_imgs_are_not_byinary(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError)  as cm:
             fu.dilation(IMAGE_2D, MASK, morphtype="BINARY")
             oldfu.dilation(IMAGE_2D, MASK, morphtype="BINARY")
 
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], "One of the two images is not binary.")
+
     def test_bynary_img3D_withMASK_returns_RuntimeError_ImageDimensionException_one_of_the_two_imgs_are_not_byinary(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.dilation(IMAGE_3D, MASK, morphtype="BINARY")
             oldfu.dilation(IMAGE_3D, MASK, morphtype="BINARY")
 
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], "One of the two images is not binary.")
+
     def test_bynary_img2D_NOmask_returns_RuntimeError_ImageDimensionException_one_of_the_two_imgs_are_not_byinary(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.dilation(IMAGE_2D, morphtype="BINARY")
             oldfu.dilation(IMAGE_2D, morphtype="BINARY")
 
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], "One of the two images is not binary.")
+
     def test_bynary_img3D_NOmask_returns_RuntimeError_ImageDimensionException_one_of_the_two_imgs_are_not_byinary(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.dilation(IMAGE_3D, morphtype="BINARY")
             oldfu.dilation(IMAGE_3D, morphtype="BINARY")
+
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], "One of the two images is not binary.")
 
     def test_graylevel_img2D_withMASK(self):
         return_new = fu.dilation(IMAGE_2D, MASK, morphtype="GRAYLEVEL")
@@ -245,14 +275,19 @@ class Test_erosion(unittest.TestCase):
         self.assertTrue(True)
 
     def test_empty_mask_image_RuntimeError_ImageDimensionException_center_isnot_welldefined(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError)as cm:
             fu.erosion(IMAGE_BLANK_2D, EMData(), morphtype="BINARY")
             oldfu.erosion(IMAGE_BLANK_2D, EMData(), morphtype="BINARY")
 
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], "Kernel should have odd nx,ny,nz so that the center is well-defined.")
+
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.erosion()
             oldfu.erosion()
+        self.assertEqual(cm.exception.message, "erosion() takes at least 1 argument (0 given)")
 
     def test_bynary_img_blank2D_with_mask(self):
         return_new = fu.erosion(IMAGE_BLANK_2D, MASK, morphtype="BINARY")
@@ -301,24 +336,40 @@ class Test_erosion(unittest.TestCase):
         self.assertTrue(return_new is None)
 
     def test_bynary_img2D_with_mask_returns_RuntimeError_ImageDimensionException_one_of_the_two_imgs_are_not_byinary(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.erosion(IMAGE_2D, MASK, morphtype="BINARY")
             oldfu.erosion(IMAGE_2D, MASK, morphtype="BINARY")
 
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], "One of the two images is not binary.")
+
     def test_bynary_img3D_with_mask_returns_RuntimeError_ImageDimensionException_one_of_the_two_imgs_are_not_byinary(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.erosion(IMAGE_3D, MASK, morphtype="BINARY")
             oldfu.erosion(IMAGE_3D, MASK, morphtype="BINARY")
 
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], "One of the two images is not binary.")
+
     def test_bynary_img2D_NOmask_returns_RuntimeError_ImageDimensionException_one_of_the_two_imgs_are_not_byinary(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.erosion(IMAGE_2D, morphtype="BINARY")
             oldfu.erosion(IMAGE_2D, morphtype="BINARY")
 
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], "One of the two images is not binary.")
+
     def test_bynary_img3D_NOmask_returns_RuntimeError_ImageDimensionException_one_of_the_two_imgs_are_not_byinary(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.erosion(IMAGE_3D, morphtype="BINARY")
             oldfu.erosion(IMAGE_3D, morphtype="BINARY")
+
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], "One of the two images is not binary.")
 
     def test_graylevel_img2D_with_mask(self):
         return_new = fu.erosion(IMAGE_2D, MASK, morphtype="GRAYLEVEL")
@@ -365,14 +416,16 @@ class Test_power(unittest.TestCase):
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_empty_input_image_returns_RuntimeError_stdException(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.power(EMData())
             oldfu.power(EMData())
+        self.assertEqual(cm.exception.message, "std::exception")
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.power()
             oldfu.power()
+        self.assertEqual(cm.exception.message, "power() takes at least 1 argument (0 given)")
 
 
 
@@ -416,14 +469,19 @@ class Test_square_root(unittest.TestCase):
         self.assertTrue(numpy.allclose(return_new.get_3dview(), return_old.get_3dview(), equal_nan=True))
 
     def test_empty_input_image_returns_RuntimeError_NotExistingObjectException_the_key_mean_doesnot_exist(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.square_root(EMData())
             oldfu.square_root(EMData())
 
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
+        self.assertEqual(msg[3], "The requested key does not exist")
+
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.square_root()
             oldfu.square_root()
+        self.assertEqual(cm.exception.message, "square_root() takes exactly 1 argument (0 given)")
 
 
 
@@ -450,14 +508,16 @@ class Test_square(unittest.TestCase):
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_empty_input_image_returns_RuntimeError_stdException_and_NotExistingObjectException_the_key_maximum_doesnot_exist(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.square(EMData())
             oldfu.square(EMData())
+        self.assertEqual(cm.exception.message, "std::exception")
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.square()
             oldfu.square()
+        self.assertEqual(cm.exception.message, "square() takes exactly 1 argument (0 given)")
 
 
 
@@ -484,15 +544,16 @@ class Test_threshold(unittest.TestCase):
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_empty_input_image_returns_RuntimeError_stdException_and_NotExistingObjectException_the_key_maximum_doesnot_exist(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.threshold(EMData())
             oldfu.threshold(EMData())
+        self.assertEqual(cm.exception.message, "std::exception")
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.threshold()
             oldfu.threshold()
-
+        self.assertEqual(cm.exception.message, "threshold() takes at least 1 argument (0 given)")
 
 
 class Test_threshold_outside(unittest.TestCase):
@@ -523,9 +584,10 @@ class Test_threshold_outside(unittest.TestCase):
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.threshold_outside()
             oldfu.threshold_outside()
+        self.assertEqual(cm.exception.message, "threshold_outside() takes exactly 3 arguments (0 given)")
 
 
 
@@ -552,14 +614,16 @@ class Test_notzero(unittest.TestCase):
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_empty_input_image_returns_RuntimeError_stdException_and_NotExistingObjectException_the_key_maximum_doesnot_exist(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.notzero(EMData())
             oldfu.notzero(EMData())
+        self.assertEqual(cm.exception.message, "std::exception")
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.notzero()
             oldfu.notzero()
+        self.assertEqual(cm.exception.message, "notzero() takes exactly 1 argument (0 given)")
 
 
 
@@ -572,9 +636,10 @@ class Test_rotavg_ctf(unittest.TestCase):
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.rotavg_ctf()
             oldfu.rotavg_ctf()
+        self.assertEqual(cm.exception.message, "rotavg_ctf() takes at least 5 arguments (0 given)")
 
     def test_2DImg_null_spherical_abberation(self):
         return_new = fu.rotavg_ctf(IMAGE_2D, defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
@@ -706,9 +771,10 @@ class Test_rotavg_ctf(unittest.TestCase):
 class Test_ctf_1d(unittest.TestCase):
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.ctf_1d()
             oldfu.ctf_1d()
+        self.assertEqual(cm.exception.message, "ctf_1d() takes at least 2 arguments (0 given)")
 
     def test_with_empty_ctfDict(self):
         return_new =fu.ctf_1d(nx=20, ctf= EMAN2Ctf())
@@ -719,16 +785,18 @@ class Test_ctf_1d(unittest.TestCase):
     def test_no_image_size_retuns_ZeroDivisionError(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.ctf_1d(nx=0, ctf=ctf, sign = 1, doabs = False)
             oldfu.ctf_1d(nx=0, ctf=ctf, sign = 1, doabs = False)
+        self.assertEqual(cm.exception.message, "float division by zero")
 
     def test_no_pixel_size_retuns_ZeroDivisionError(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 0, "bfactor": 0, "ampcont": 0.1})
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.ctf_1d(nx =2, ctf=ctf, sign = 1, doabs = False)
             oldfu.ctf_1d(nx=2, ctf=ctf, sign = 1, doabs = False)
+        self.assertEqual(cm.exception.message, "float division by zero")
 
     def test_NOSign(self):
         ctf = EMAN2Ctf()
@@ -777,16 +845,18 @@ class Test_ctf_1d(unittest.TestCase):
 class Test_ctf_2(unittest.TestCase):
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.ctf_2()
             oldfu.ctf_2()
+        self.assertEqual(cm.exception.message, "ctf_2() takes exactly 2 arguments (0 given)")
 
     def test_no_image_size_retuns_ZeroDivisionError(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.ctf_2(nx=0, ctf=ctf)
             oldfu.ctf_2(nx=0, ctf=ctf)
+        self.assertEqual(cm.exception.message, "float division by zero")
 
     def test_with_empty_ctfDict(self):
         return_new =fu.ctf_2(nx=20, ctf= EMAN2Ctf())
@@ -797,9 +867,10 @@ class Test_ctf_2(unittest.TestCase):
     def test_no_pixel_size_retuns_ZeroDivisionError(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 0, "bfactor": 0, "ampcont": 0.1})
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.ctf_2(nx =2, ctf=ctf)
             oldfu.ctf_2(nx=2, ctf=ctf)
+        self.assertEqual(cm.exception.message, "float division by zero")
 
     def test_ctf_2(self):
         ctf = EMAN2Ctf()
@@ -813,9 +884,10 @@ class Test_ctf_2(unittest.TestCase):
 class Test_ctf_img(unittest.TestCase):
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.ctf_img()
             oldfu.ctf_img()
+        self.assertEqual(cm.exception.message, "ctf_img() takes at least 2 arguments (0 given)")
 
     def test_with_empty_ctfDict(self):
         return_new =fu.ctf_img(nx=20, ctf= EMAN2Ctf(), sign = 1, ny = 0, nz = 1)
@@ -826,9 +898,13 @@ class Test_ctf_img(unittest.TestCase):
     def test_no_image_size_error_returns_RuntimeError_InvalidValueException(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.ctf_img(nx=0, ctf=ctf, sign = 1, ny = 0, nz = 1)
             oldfu.ctf_img(nx=0, ctf=ctf, sign = 1, ny = 0, nz = 1)
+
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "y size <= 0")
 
     def test_no_pixel_size_error(self):
         ctf = EMAN2Ctf()
@@ -876,7 +952,7 @@ class Test_ctf_img(unittest.TestCase):
     def test_null_nz_error_returns_RuntimeError_InvalidValueException(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.ctf_img(nx =20, ctf=ctf, sign = 1, ny = 0, nz = 0)
             oldfu.ctf_img(nx=20, ctf=ctf, sign = 1, ny = 0, nz = 0)
 
@@ -885,9 +961,10 @@ class Test_ctf_img(unittest.TestCase):
 class Test_ctf_img_real(unittest.TestCase):
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.ctf_img_real()
             oldfu.ctf_img_real()
+        self.assertEqual(cm.exception.message, "ctf_img_real() takes at least 2 arguments (0 given)")
 
     def test_with_empty_ctfDict(self):
         return_new =fu.ctf_img_real(nx=20, ctf= EMAN2Ctf(), sign = 1, ny = 0, nz = 1)
@@ -898,9 +975,13 @@ class Test_ctf_img_real(unittest.TestCase):
     def test_no_image_size_error_returns_RuntimeError_InvalidValueException(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.ctf_img_real(nx=0, ctf=ctf, sign = 1, ny = 0, nz = 1)
             oldfu.ctf_img_real(nx=0, ctf=ctf, sign = 1, ny = 0, nz = 1)
+
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "y size <= 0")
 
     def test_no_pixel_size_error(self):
         ctf = EMAN2Ctf()
@@ -948,9 +1029,13 @@ class Test_ctf_img_real(unittest.TestCase):
     def test_null_nz_error_returns_RuntimeError_InvalidValueException(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.ctf_img_real(nx =20, ctf=ctf, sign = 1, ny = 0, nz = 0)
             oldfu.ctf_img_real(nx=20, ctf=ctf, sign = 1, ny = 0, nz = 0)
+
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "z size <= 0")
 
 
 
@@ -958,9 +1043,10 @@ class Test_ctf_img_real(unittest.TestCase):
 class Test_ctf_rimg(unittest.TestCase):
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.ctf_rimg()
             oldfu.ctf_rimg()
+        self.assertEqual(cm.exception.message, "ctf_rimg() takes at least 2 arguments (0 given)")
 
     def test_with_empty_ctfDict(self):
         return_new =fu.ctf_rimg(nx=20, ctf= EMAN2Ctf(), sign = 1, ny = 0, nz = 1)
@@ -971,9 +1057,13 @@ class Test_ctf_rimg(unittest.TestCase):
     def test_no_image_size_error_returns_RuntimeError_InvalidValueException(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.ctf_rimg(nx=0, ctf=ctf, sign = 1, ny = 0, nz = 1)
             oldfu.ctf_rimg(nx=0, ctf=ctf, sign = 1, ny = 0, nz = 1)
+
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "x size <= 0")
 
     def test_no_pixel_size_error(self):
         ctf = EMAN2Ctf()
@@ -1021,18 +1111,23 @@ class Test_ctf_rimg(unittest.TestCase):
     def test_null_nz_error_returns_RuntimeError_InvalidValueException(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.ctf_rimg(nx =20, ctf=ctf, sign = 1, ny = 0, nz = 0)
             oldfu.ctf_rimg(nx=20, ctf=ctf, sign = 1, ny = 0, nz = 0)
+
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "z size <= 0")
 
 
 
 class Test_ctf2_rimg(unittest.TestCase):
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.ctf2_rimg()
             oldfu.ctf2_rimg()
+        self.assertEqual(cm.exception.message, "ctf2_rimg() takes at least 2 arguments (0 given)")
 
     def test_with_empty_ctfDict(self):
         return_new =fu.ctf2_rimg(nx=20, ctf= EMAN2Ctf(), sign = 1, ny = 0, nz = 1)
@@ -1043,9 +1138,13 @@ class Test_ctf2_rimg(unittest.TestCase):
     def test_no_image_size_error_returns_RuntimeError_InvalidValueException(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.ctf2_rimg(nx=0, ctf=ctf, sign = 1, ny = 0, nz = 1)
             oldfu.ctf2_rimg(nx=0, ctf=ctf, sign = 1, ny = 0, nz = 1)
+
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "x size <= 0")
 
     def test_no_pixel_size_error(self):
         ctf = EMAN2Ctf()
@@ -1093,18 +1192,23 @@ class Test_ctf2_rimg(unittest.TestCase):
     def test_null_nz_error_returns_RuntimeError_InvalidValueException(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.ctf2_rimg(nx =20, ctf=ctf, sign = 1, ny = 0, nz = 0)
             oldfu.ctf2_rimg(nx=20, ctf=ctf, sign = 1, ny = 0, nz = 0)
+
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "z size <= 0")
 
 
 
 class Test_ctflimit(unittest.TestCase):
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.ctflimit()
             oldfu.ctflimit()
+        self.assertEqual(cm.exception.message, "ctflimit() takes exactly 5 arguments (0 given)")
 
     def test_ctfLimit(self):
         return_new = fu.ctflimit(nx=30, defocus=1, cs=2, voltage=300, pix=1.5)
@@ -1136,14 +1240,16 @@ class Test_ctflimit(unittest.TestCase):
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
     def test_negative_nx_retuns_ZeroDivisionError(self):
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.ctflimit(nx=-1, defocus=1, cs=2, voltage=300, pix=1.5)
             oldfu.ctflimit(nx=-1, defocus=1, cs=2, voltage=300, pix=1.5)
+        self.assertEqual(cm.exception.message, "float division by zero")
 
     def test_no_pixel_size_retuns_ZeroDivisionError(self):
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.ctflimit(nx=0, defocus=1, cs=2, voltage=300, pix=0)
             oldfu.ctflimit(nx=0, defocus=1, cs=2, voltage=300, pix=0)
+        self.assertEqual(cm.exception.message, "float division by zero")
 
 
 
@@ -1168,9 +1274,10 @@ class Test_imf_params_cl1(unittest.TestCase):
 
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.imf_params_cl1()
             oldfu.imf_params_cl1()
+        self.assertEqual(cm.exception.message, "imf_params_cl1() takes at least 1 argument (0 given)")
 
     def test_empty_list_crashes_because_signal6SIGABRT(self):
         """
@@ -1221,14 +1328,18 @@ class Test_adaptive_mask(unittest.TestCase):
     If threshold as the -9999.0 default value it uses the nsigma value to calculate the thresheld
     """
     def test_empty_input_image_returns_RuntimeError_InvalidValueException(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.adaptive_mask(EMData(),nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
             oldfu.adaptive_mask(EMData(),nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "x size <= 0")
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.adaptive_mask()
             oldfu.adaptive_mask()
+        self.assertEqual(cm.exception.message, "adaptive_mask() takes at least 1 argument (0 given)")
 
     def test_2dimg_default_values(self):
         return_new = fu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
@@ -1387,14 +1498,18 @@ class Test_adaptive_mask(unittest.TestCase):
 class Test_cosinemask(unittest.TestCase):
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.cosinemask()
             oldfu.cosinemask()
+        self.assertEqual(cm.exception.message, "cosinemask() takes at least 1 argument (0 given)")
 
     def test_empty_input_image_returns_RuntimeError_InvalidValueException(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.cosinemask(EMData(), radius = -1, cosine_width = 5, bckg = None, s=999999.0)
             oldfu.cosinemask(EMData(), radius = -1, cosine_width = 5, bckg = None, s=999999.0)
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "x size <= 0")
 
     def test_empty_bckg_image_crashes_because_signal11SIGSEV(self):
         """
@@ -1571,9 +1686,10 @@ class Test_cosinemask(unittest.TestCase):
 class Test_get_shrink_3dmask(unittest.TestCase):
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.get_shrink_3dmask()
             oldfu.get_shrink_3dmask()
+        self.assertEqual(cm.exception.message, "get_shrink_3dmask() takes exactly 2 arguments (0 given)")
 
     def test_empty_input_image_crashes_because_signal11SIGSEV(self):
         """
@@ -1584,21 +1700,26 @@ class Test_get_shrink_3dmask(unittest.TestCase):
         self.assertTrue(True)
 
     def test_No_xinit_error_returns_RuntimeError_InvalidValueException(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.get_shrink_3dmask(nxinit = 0, mask_file_name = [IMAGE_BLANK_3D])
             oldfu.get_shrink_3dmask(nxinit = 0, mask_file_name = [IMAGE_BLANK_3D])
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "x size <= 0")
 
     def test_3Dmask_format_error_returns_RuntimeError_float_hasnot_attribute_copy(self):
         """ the Image3D is an EMdata"""
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(AttributeError) as cm:
             fu.get_shrink_3dmask(nxinit = 4, mask_file_name = IMAGE_3D)
             oldfu.get_shrink_3dmask(nxinit = 4, mask_file_name = IMAGE_3D)
+        self.assertEqual(cm.exception.message, "'float' object has no attribute 'copy'")
 
     def test_2Dmask_format_error_returns_RuntimeError_float_hasnot_attribute_copy(self):
         """ the Image3D is an EMdata"""
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(AttributeError) as cm:
             fu.get_shrink_3dmask(nxinit = 4, mask_file_name = IMAGE_2D)
             oldfu.get_shrink_3dmask(nxinit = 4, mask_file_name = IMAGE_2D)
+        self.assertEqual(cm.exception.message, "'float' object has no attribute 'copy'")
 
     def test_3Dmask(self):
         """ the get_data_3d(1) is a list with one EMdata element"""
@@ -1635,14 +1756,18 @@ class Test_get_shrink_3dmask(unittest.TestCase):
 class Test_get_biggest_cluster(unittest.TestCase):
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.get_biggest_cluster()
             oldfu.get_biggest_cluster()
+        self.assertEqual(cm.exception.message, "get_biggest_cluster() takes exactly 1 argument (0 given)")
 
     def test_empty_input_image_returns_RuntimeError_NotExistingObjectException_the_key_mean_doesnot_exist(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.get_biggest_cluster( EMData())
             oldfu.get_biggest_cluster( EMData())
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
+        self.assertEqual(msg[3], "The requested key does not exist")
 
     def test_2Dimg(self):
         return_new = fu.get_biggest_cluster(IMAGE_2D)
@@ -1686,14 +1811,16 @@ class Test_compute_bfactor(unittest.TestCase):
             self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.compute_bfactor()
             oldfu.compute_bfactor()
+        self.assertEqual(cm.exception.message, "compute_bfactor() takes at least 3 arguments (0 given)")
 
     def test_no_pixel_size_returns_ZeroDivisionError(self):
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.compute_bfactor(pws=self.pw, freq_min = 0.15, freq_max= 0.25, pixel_size=0)
             oldfu.compute_bfactor(pws=self.pw, freq_min = 0.15, freq_max= 0.25, pixel_size=0)
+        self.assertEqual(cm.exception.message, "float division by zero")
 
     def test_compute_bfactor(self):
         return_new =fu.compute_bfactor(pws=self.pw, freq_min = 0.15, freq_max= 0.25, pixel_size=1.0)
@@ -1706,24 +1833,28 @@ class Test_compute_bfactor(unittest.TestCase):
         self.test_all_the_conditions(return_new, return_old, False)
 
     def test_freqMin_bigger_than_freqMAx_returns_ZeroDivisionError(self):
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.compute_bfactor(pws=self.pw, freq_min = 0.35, freq_max= 0.25, pixel_size=1.0)
             oldfu.compute_bfactor(pws=self.pw, freq_min = 0.35, freq_max= 0.25, pixel_size=1.0)
+        self.assertEqual(cm.exception.message, "float division by zero")
 
     def test_freqMin_equal_freqMAx_returns_ZeroDivisionError(self):
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.compute_bfactor(pws=self.pw, freq_min = 0.35, freq_max= 0.35, pixel_size=1.0)
             oldfu.compute_bfactor(pws=self.pw, freq_min = 0.35, freq_max= 0.35, pixel_size=1.0)
+        self.assertEqual(cm.exception.message, "float division by zero")
 
     def test_few_value_in_power_spectrum_list_returns_ZeroDivisionError(self):
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.compute_bfactor(pws=[1,1], freq_min = 0.15, freq_max= 0.25, pixel_size=1.0)
             oldfu.compute_bfactor(pws=[1,1], freq_min= 0.15, freq_max= 0.25, pixel_size=1.0)
+        self.assertEqual(cm.exception.message, "float division by zero")
 
     def test_Empty_array_error(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             fu.compute_bfactor(pws=[], freq_min=0.15, freq_max=0.25, pixel_size=1.0)
             oldfu.compute_bfactor(pws=[], freq_min=0.15, freq_max=0.25, pixel_size=1.0)
+        self.assertEqual(cm.exception.message, "min() arg is an empty sequence")
 
 
 
@@ -1741,9 +1872,10 @@ class Test_cter_mrk(unittest.TestCase):
     output_directory = path.join(ABSOLUTE_PATH, "cter_mrk/results")
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.cter_mrk()
             oldfu.cter_mrk()
+        self.assertEqual(cm.exception.message, "cter_mrk() takes at least 2 arguments (0 given)")
 
     @unittest.skip("I need the cter_mrk/image.mrc from Adnan")
     def test_cter_mark_true_should_return_equal_object(self):
@@ -1779,9 +1911,10 @@ class Test_cter_pap(unittest.TestCase):
     output_directory = path.join(ABSOLUTE_PATH, "cter_mrk/results")
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.cter_pap()
             oldfu.cter_pap()
+        self.assertEqual(cm.exception.message, "cter_pap() takes at least 2 arguments (0 given)")
 
     @unittest.skip("I need the cter_mrk/image.mrc from Adnan")
     def test_cter_pap_true_should_return_equal_object(self):
@@ -1805,31 +1938,46 @@ class Test_cter_pap(unittest.TestCase):
 
 
 class Test_cter_vpp(unittest.TestCase):
+    """ default params got from sxcter.py and Test_defocusgett"""
     defocus = 1
     cs = 2
     voltage = 300
-    pixel_size = 1.5
+    pixel_size = 1.0
     bfactor = 0
-    amp_contrast = 0.1
-    wn = 32
-    i_start = 0.048
-    i_stop = -1
-    vpp_options = [entry for entry in numpy.arange(0, 6).tolist()]
+    amp_contrast = 0.1   # it is the 'ac' input user param
+    wn = 512
+    i_start = 1
+    i_stop = 10
+    vpp_options = [0.3, 9.0, 0.1, 5.0, 175.0, 5.0]
     image1 = get_data(1, 256)[0]
     selection_list = 'image.mrc'
-    input_image_path = path.join(ABSOLUTE_PATH, "cter_mrk/image*.mrc")
-    output_directory = path.join(ABSOLUTE_PATH, "cter_mrk/results")
+    input_image_path = path.join(ABSOLUTE_PATH_TO_MRC_FILES, "TcdA1-*_frames.mrc")
+    output_directory = path.join(ABSOLUTE_PATH_TO_MRC_FILES, "cter_mrk_results")
+
+    @unittest.skip("I need the cter_mrk/image.mrc from Adnan")
+    def test_no_image_ininput_image_path_error_msg(self):
+        """
+        Since the process finishes with an not-specified exit code, we cannot test it uniquely
+        output message: ERROR!!! Input image file path (.) for All Micrographs Mode must be a  path pattern containing wild card (*). Please check input_image_path argument.
+        """
+        with self.assertRaises(SystemExit) as cm:
+            fu.cter_vpp(".", self.output_directory, selection_list=None, wn=self.wn,
+                        pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start,
+                        f_stop=self.i_stop, vpp_options=self.vpp_options)
+        self.assertEqual(cm.exception.code,None)
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.cter_vpp()
             oldfu.cter_vpp()
+        self.assertEqual(cm.exception.message, "cter_vpp() takes at least 2 arguments (0 given)")
+
 
     @unittest.skip("I need the cter_mrk/image.mrc from Adnan")
     def test_cter_vpp_true_should_return_equal_object(self):
         #RuntimeError: FileAccessException at /home/lusnig/EMAN2/eman2/libEM/imageio.cpp:158: error with 'cter_mrk/image.mrc': 'cannot access file 'cter_mrk/image.mrc'' caught
 
-
+        """
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": self.defocus, "cs": self.cs, "voltage": self.voltage, "apix": self.pixel_size, "bfactor": self.bfactor, "ampcont": self.amp_contrast})
         image1, = get_data(1, 256)
@@ -1839,13 +1987,15 @@ class Test_cter_vpp(unittest.TestCase):
         selection_list = 'image.mrc'
 
         remove_dir(self.output_directory)
+        """
 
-        return_new = fu.cter_vpp(self.input_image_path, self.output_directory, selection_list = selection_list, wn = self.wn,  pixel_size=self.pixel_size, Cs= self.cs, voltage = self.voltage, f_start=self.i_start, f_stop=self.i_stop, vpp_options=self.vpp_options)
+        return_new = fu.cter_vpp(self.input_image_path, self.output_directory, selection_list = None, wn = self.wn,  pixel_size=self.pixel_size, Cs= self.cs, voltage = self.voltage, f_start=self.i_start, f_stop=self.i_stop, vpp_options=self.vpp_options)
 
         remove_dir(self.output_directory)
 
-        return_old = oldfu.cter_vpp(self.input_image_path, self.output_directory, selection_list = selection_list, wn = self.wn,  pixel_size=self.pixel_size, Cs= self.cs, voltage = self.voltage, f_start=self.i_start, f_stop=self.i_stop, vpp_options=self.vpp_options)
+        return_old = oldfu.cter_vpp(self.input_image_path, self.output_directory, selection_list = None, wn = self.wn,  pixel_size=self.pixel_size, Cs= self.cs, voltage = self.voltage, f_start=self.i_start, f_stop=self.i_stop, vpp_options=self.vpp_options)
 
+        remove_dir(self.output_directory)
         self.assertEqual(return_new, return_old)
 
 
@@ -1853,9 +2003,10 @@ class Test_cter_vpp(unittest.TestCase):
 class Test_ampcont2angle(unittest.TestCase):
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.ampcont2angle()
             oldfu.ampcont2angle()
+        self.assertEqual(cm.exception.message, "ampcont2angle() takes exactly 1 argument (0 given)")
 
     def test_A_equal_minus100(self):
         return_new = fu.ampcont2angle(100.0)
@@ -1882,9 +2033,10 @@ class Test_ampcont2angle(unittest.TestCase):
 class Test_angle2ampcont(unittest.TestCase):
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.angle2ampcont()
             oldfu.angle2ampcont()
+            self.assertEqual(cm.exception.message, "angle2ampcont() takes exactly 1 argument (0 given)")
 
     def test_positive_phi(self):
         return_new = fu.angle2ampcont(0.45)
@@ -1910,9 +2062,10 @@ class Test_bracket_def(unittest.TestCase):
         return x1 + dat
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.bracket_def()
             oldfu.bracket_def()
+        self.assertEqual(cm.exception.message, "bracket_def() takes exactly 4 arguments (0 given)")
 
     def test_f2_greater_f1_outputmsg_Bracket_didnot_find_a_minimum(self):
         return_new = fu.bracket_def(self.function1, dat=5, x1=3, h=3)
@@ -1933,9 +2086,10 @@ class Test_bracket(unittest.TestCase):
         return x1 + dat
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.bracket()
             oldfu.bracket()
+        self.assertEqual(cm.exception.message, "bracket() takes exactly 3 arguments (0 given)")
 
     def test_f3_greater_f1(self):
         return_new = fu.bracket(self.function1, dat=5, h=4)
@@ -1964,25 +2118,29 @@ class Test_goldsearch_astigmatism(unittest.TestCase):
         return 0
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.goldsearch_astigmatism()
             oldfu.goldsearch_astigmatism()
+        self.assertEqual(cm.exception.message, "goldsearch_astigmatism() takes at least 4 arguments (0 given)")
 
     def test_null_tolerance_returns_OverflowError_cannot_convert_infinity_to_integer(self):
-        with self.assertRaises(OverflowError):
+        with self.assertRaises(OverflowError) as cm:
             fu.goldsearch_astigmatism(self.function1, 5, 3, 4, 0)
             oldfu.goldsearch_astigmatism(self.function1, 5, 3, 4, 0)
+        self.assertEqual(cm.exception.message, "cannot convert float infinity to integer")
 
 
     def test_A_B_same_value_error_returns_ZeroDivisionError(self):
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.goldsearch_astigmatism(self.function1, 5, 3, 3)
             oldfu.goldsearch_astigmatism(self.function1, 5, 3, 3)
+        self.assertEqual(cm.exception.message, "float division by zero")
 
     def test_Invalid_function_returns_TypeError_bad_function_takes_no_arguments(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.goldsearch_astigmatism(self.bad_function, 5, 3, 4)
             oldfu.goldsearch_astigmatism(self.bad_function, 5, 3, 4)
+        self.assertEqual(cm.exception.message, "bad_function() takes no arguments (2 given)")
 
     def test_f2_greater_f1(self):
         return_new = fu.goldsearch_astigmatism(self.function1, 5, 3, 4)
@@ -2008,9 +2166,10 @@ class Test_defocus_baseline_fit(unittest.TestCase):
     roo = [entry for entry in numpy.arange(0, 10).tolist()]
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.defocus_baseline_fit()
             oldfu.defocus_baseline_fit()
+        self.assertEqual(cm.exception.message, "defocus_baseline_fit() takes exactly 5 arguments (0 given)")
 
     def test_iswi3(self):
         return_new = fu.defocus_baseline_fit(roo=self.roo, i_start=0, i_stop=10, nrank=2, iswi=3)
@@ -2047,14 +2206,16 @@ class Test_defocus_baseline_fit(unittest.TestCase):
         self.assertTrue(True)
 
     def test_null_rank_returns_IndexError_list_index_out_of_range(self):
-        with self.assertRaises(IndexError):
+        with self.assertRaises(IndexError) as cm:
             fu.defocus_baseline_fit(roo=self.roo, i_start=0, i_stop=10, nrank=0, iswi=2)
             oldfu.defocus_baseline_fit(roo=self.roo, i_start=0, i_stop=10, nrank=0, iswi=2)
+        self.assertEqual(cm.exception.message, "list index out of range")
 
     def test_empty_array_returns_IndexError_list_index_out_of_range(self):
-        with self.assertRaises(IndexError):
+        with self.assertRaises(IndexError) as cm:
             fu.defocus_baseline_fit(roo=[], i_start=0, i_stop=10, nrank=2, iswi=2)
             oldfu.defocus_baseline_fit(roo=[], i_start=0, i_stop=10, nrank=2, iswi=2)
+        self.assertEqual(cm.exception.message, "list index out of range")
 
 
 
@@ -2071,9 +2232,10 @@ class Test_simpw1d(unittest.TestCase):
     nx = 20
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.simpw1d()
             oldfu.simpw1d()
+        self.assertEqual(cm.exception.message, "simpw1d() takes exactly 2 arguments (0 given)")
 
     def test_positive_defocus(self):
         datanew = [self.data[self.i_start:self.i_stop], self.data[self.i_start:self.i_stop], self.nx, self.defocus, self.Cs, self.voltage, self.pixel_size, self.amp_contrast, self.i_start,self.i_stop]
@@ -2084,22 +2246,24 @@ class Test_simpw1d(unittest.TestCase):
         self.assertEqual(fu.simpw1d(-1,datanew), oldfu.simpw1d(-1,datanew))
 
     def test_empty_array_returns_IndexError_list_index_out_of_range(self):
-        with self.assertRaises(IndexError):
+        with self.assertRaises(IndexError) as cm:
             fu.simpw1d(1, [])
             oldfu.simpw1d(1, [])
+        self.assertEqual(cm.exception.message, "list index out of range")
 
     def test_no_pixel_size_returns_ZeroDivisionError(self):
         datanew = [self.data[self.i_start:self.i_stop], self.data[self.i_start:self.i_stop], self.nx, self.defocus, self.Cs, self.voltage, 0, self.amp_contrast, self.i_start,self.i_stop]
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.simpw1d(self.defocus, datanew)
             oldfu.simpw1d(self.defocus, datanew)
+        self.assertEqual(cm.exception.message, "float division by zero")
 
     def test_no_image_size_returns_ZeroDivisionError(self):
         datanew = [self.data[self.i_start:self.i_stop], self.data[self.i_start:self.i_stop], 0, self.defocus,self.Cs, self.voltage, 0, self.amp_contrast, self.i_start, self.i_stop]
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.simpw1d(self.defocus, datanew)
             oldfu.simpw1d(self.defocus, datanew)
-
+        self.assertEqual(cm.exception.message, "float division by zero")
 
 
 class Test_simpw1d_pap(unittest.TestCase):
@@ -2114,9 +2278,10 @@ class Test_simpw1d_pap(unittest.TestCase):
     nx = 20
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.simpw1d_pap()
             oldfu.simpw1d_pap()
+        self.assertEqual(cm.exception.message, "simpw1d_pap() takes exactly 2 arguments (0 given)")
 
     def test_positive_focus(self):
         datanew = [self.data[self.i_start:self.i_stop], self.data[self.i_start:self.i_stop], self.nx, self.defocus,self.Cs, self.voltage, self.pixel_size, self.amp_contrast, self.i_start, self.i_stop]
@@ -2127,21 +2292,24 @@ class Test_simpw1d_pap(unittest.TestCase):
         self.assertEqual(fu.simpw1d(-1,datanew), oldfu.simpw1d(-1,datanew))
 
     def test_empty_array_returns_IndexError_list_index_out_of_range(self):
-        with self.assertRaises(IndexError):
+        with self.assertRaises(IndexError) as cm:
             fu.simpw1d(1, [])
             oldfu.simpw1d(1, [])
+        self.assertEqual(cm.exception.message, "list index out of range")
 
     def test_no_pixel_size_returns_ZeroDivisionError(self):
         datanew = [self.data[self.i_start:self.i_stop], self.data[self.i_start:self.i_stop], self.nx, self.defocus, self.Cs, self.voltage, 0, self.amp_contrast, self.i_start,self.i_stop]
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.simpw1d(self.defocus, datanew)
             oldfu.simpw1d(self.defocus, datanew)
+        self.assertEqual(cm.exception.message, "float division by zero")
 
     def test_no_image_size_returns_ZeroDivisionError(self):
         datanew = [self.data[self.i_start:self.i_stop], self.data[self.i_start:self.i_stop], 0, self.defocus,self.Cs, self.voltage, 0, self.amp_contrast, self.i_start, self.i_stop]
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.simpw1d(self.defocus, datanew)
             oldfu.simpw1d(self.defocus, datanew)
+        self.assertEqual(cm.exception.message, "float division by zero")
 
 
 
@@ -2157,9 +2325,10 @@ class Test_simpw1d_print(unittest.TestCase):
     nx = 20
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.simpw1d_print()
             oldfu.simpw1d_print()
+        self.assertEqual(cm.exception.message, "simpw1d_print() takes exactly 2 arguments (0 given)")
 
 
     def test_positive_focus(self):
@@ -2171,21 +2340,24 @@ class Test_simpw1d_print(unittest.TestCase):
         self.assertEqual(fu.simpw1d(-1,datanew), oldfu.simpw1d(-1,datanew))
 
     def test_empty_array_returns_IndexError_list_index_out_of_range(self):
-        with self.assertRaises(IndexError):
+        with self.assertRaises(IndexError) as cm:
             fu.simpw1d(1, [])
             oldfu.simpw1d(1, [])
+        self.assertEqual(cm.exception.message, "list index out of range")
 
     def test_no_pixel_size_returns_ZeroDivisionError(self):
         datanew = [self.data[self.i_start:self.i_stop], self.data[self.i_start:self.i_stop], self.nx, self.defocus, self.Cs, self.voltage, 0, self.amp_contrast, self.i_start,self.i_stop]
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.simpw1d(self.defocus, datanew)
             oldfu.simpw1d(self.defocus, datanew)
+        self.assertEqual(cm.exception.message, "float division by zero")
 
     def test_no_image_size_returns_ZeroDivisionError(self):
         datanew = [self.data[self.i_start:self.i_stop], self.data[self.i_start:self.i_stop], 0, self.defocus,self.Cs, self.voltage, 0, self.amp_contrast, self.i_start, self.i_stop]
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.simpw1d(self.defocus, datanew)
             oldfu.simpw1d(self.defocus, datanew)
+        self.assertEqual(cm.exception.message, "float division by zero")
 
 
 
@@ -2193,9 +2365,10 @@ class Test_movingaverage(unittest.TestCase):
     data = [entry for entry in numpy.arange(0, 10).tolist()]
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.movingaverage()
             oldfu.movingaverage()
+        self.assertEqual(cm.exception.message, "movingaverage() takes at least 2 arguments (0 given)")
 
     def test_default_value(self):
         return_new = fu.movingaverage(self.data,window_size=2, skip=3)
@@ -2208,20 +2381,23 @@ class Test_movingaverage(unittest.TestCase):
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
     def test_windows_size_negative_Value_returns_ValueError_negative_dimensions_arenot_allowed(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             fu.movingaverage(self.data,window_size=-2)
             oldfu.movingaverage(self.data, window_size=-2)
+        self.assertEqual(cm.exception.message, "negative dimensions are not allowed")
 
 
     def test_windows_size_null__returns_ZeroDivisionError(self):
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.movingaverage(self.data,window_size=0)
             oldfu.movingaverage(self.data, window_size=0)
+        self.assertEqual(cm.exception.message, "float division by zero")
 
     def test_empty_array_returns_IndexError_list_index_out_of_range(self):
-        with self.assertRaises(IndexError):
+        with self.assertRaises(IndexError) as cm:
             fu.movingaverage([], window_size=2)
             oldfu.movingaverage([], window_size=2)
+        self.assertEqual(cm.exception.message, "list index out of range")
 
 
 
@@ -2246,9 +2422,10 @@ class Test_defocusgett(unittest.TestCase):
                 self.assertTrue(numpy.array_equal(return_new[i], return_old[i]))
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.defocusgett()
             oldfu.defocusgett()
+        self.assertEqual(cm.exception.message, "defocusgett() takes at least 2 arguments (0 given)")
 
     def test_empty_array_crashes_because_signal6SIGABRT(self):
         """
@@ -2259,9 +2436,10 @@ class Test_defocusgett(unittest.TestCase):
         self.assertTrue(True)
 
     def test_no_pixel_size_returns_ZeroDivisionError(self):
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.defocusgett(self.roo, self.nx, self.voltage, 0, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
             oldfu.defocusgett(self.roo, self.nx, self.voltage, 0, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
+        self.assertEqual(cm.exception.message, "float division by zero")
 
     def test_pickle_value(self):
         return_new = fu.defocusgett(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
@@ -2269,9 +2447,10 @@ class Test_defocusgett(unittest.TestCase):
         self.test_all_the_conditions(return_new,return_old,False)
 
     def test_null_voltage_returns_TypeError_unsupported_operand_type(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.defocusgett(self.roo, self.nx, 0, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
             oldfu.defocusgett(self.roo, self.nx, 0, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
+        self.assertEqual(cm.exception.message, "unsupported operand type(s) for -: 'float' and 'NoneType'")
 
     def test_null_spherical_abberation(self):
         return_new = fu.defocusgett(self.roo, self.nx, self.voltage, self.pixel_size, 0, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
@@ -2292,14 +2471,16 @@ class Test_defocusgett(unittest.TestCase):
         self.assertTrue(True)
 
     def test_null_fstart_returns_ValueError_operand_couldnotbe_broadcast_togethe_with_shape(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             fu.defocusgett(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, 0, self.f_stop, nr2=self.nr2)
             oldfu.defocusgett(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, 0, self.f_stop, nr2=self.nr2)
+        self.assertEqual(cm.exception.message, "operands could not be broadcast together with shapes (10,) (2,) ")
 
     def test_no_image_size_returns_ZeroDivisionError(self):
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.defocusgett(self.roo, 0, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
             oldfu.defocusgett(self.roo, 0, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
+        self.assertEqual(cm.exception.message, "float division by zero")
 
 
 
@@ -2323,9 +2504,10 @@ class Test_defocusgett_pap(unittest.TestCase):
                 self.assertTrue(numpy.array_equal(return_new[i], return_old[i]))
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.defocusgett_pap()
             oldfu.defocusgett_pap()
+        self.assertEqual(cm.exception.message, "defocusgett_pap() takes at least 2 arguments (0 given)")
 
     def test_empty_array_crashes_because_signal6SIGABRT(self):
         """
@@ -2336,9 +2518,10 @@ class Test_defocusgett_pap(unittest.TestCase):
         self.assertTrue(True)
 
     def test_no_pixel_size_returns_ZeroDivisionError(self):
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.defocusgett_pap(self.roo, self.nx, self.voltage, 0, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
             oldfu.defocusgett_pap(self.roo, self.nx, self.voltage, 0, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
+        self.assertEqual(cm.exception.message, "float division by zero")
 
     def test_pickle_value(self):
         return_new = fu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
@@ -2351,9 +2534,10 @@ class Test_defocusgett_pap(unittest.TestCase):
         self.test_all_the_conditions(return_new,return_old,False)
 
     def test_null_voltage_returns_TypeError_unsupported_operand_type(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.defocusgett_pap(self.roo, self.nx, 0, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
             oldfu.defocusgett_pap(self.roo, self.nx, 0, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
+        self.assertEqual(cm.exception.message, "unsupported operand type(s) for -: 'float' and 'NoneType'")
 
     def test_null_fstop(self):
         return_new = fu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, 0, nr2=self.nr2)
@@ -2374,9 +2558,10 @@ class Test_defocusgett_pap(unittest.TestCase):
         self.test_all_the_conditions(return_new, return_old, False)
 
     def test_no_image_size_returns_ZeroDivisionError(self):
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.defocusgett_pap(self.roo, 0, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
             oldfu.defocusgett_pap(self.roo, 0, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
+        self.assertEqual(cm.exception.message, "float division by zero")
 
 
 
@@ -2404,9 +2589,10 @@ class Test_defocusgett_vpp(unittest.TestCase):
                 self.assertTrue(numpy.array_equal(return_new[i], return_old[i]))
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.defocusgett_vpp()
             oldfu.defocusgett_vpp()
+        self.assertEqual(cm.exception.message, "defocusgett_vpp() takes at least 2 arguments (0 given)")
 
     def test_empty_spectrum_array_crashes_because_signal6SIGABRT(self):
         """
@@ -2417,14 +2603,16 @@ class Test_defocusgett_vpp(unittest.TestCase):
         self.assertTrue(True)
 
     def test_empty_vpp_array_returns_IndexError_list_index_out_of_range(self):
-        with self.assertRaises(IndexError):
+        with self.assertRaises(IndexError) as cm:
             fu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.f_start, self.f_stop, [], nr2=self.nr2)
             oldfu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.f_start, self.f_stop, [], nr2=self.nr2)
+        self.assertEqual(cm.exception.message, "list index out of range")
 
     def test_no_pixel_size_returns_ZeroDivisionError(self):
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.defocusgett_vpp(self.roo, self.nx, self.voltage, 0, self.Cs, self.f_start, self.f_stop, self.vpp_options, nr2=self.nr2)
             oldfu.defocusgett_vpp(self.roo, self.nx, self.voltage, 0, self.Cs, self.f_start, self.f_stop, self.vpp_options, nr2=self.nr2)
+        self.assertEqual(cm.exception.message, "float division by zero")
 
     def test_pickle_value(self):
         return_new = fu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.f_start, self.f_stop, self.vpp_options, nr2=self.nr2)
@@ -2437,9 +2625,10 @@ class Test_defocusgett_vpp(unittest.TestCase):
         self.test_all_the_conditions(return_new, return_old, self.skip)
 
     def test_null_voltage_returns_UnboundLocalError_variable_defi_referenced_before_assignment(self):
-        with self.assertRaises(UnboundLocalError):
+        with self.assertRaises(UnboundLocalError) as cm:
             fu.defocusgett_vpp(self.roo, self.nx, 0, self.pixel_size, self.Cs, self.f_start, self.f_stop, self.vpp_options, nr2=self.nr2)
             oldfu.defocusgett_vpp(self.roo, self.nx, 0, self.pixel_size, self.Cs, self.f_start, self.f_stop, self.vpp_options, nr2=self.nr2)
+        self.assertEqual(cm.exception.message, "local variable 'defi' referenced before assignment")
 
     def test_null_start_value(self):
         return_new = fu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, 0, self.f_stop, self.vpp_options, nr2=self.nr2)
@@ -2453,9 +2642,10 @@ class Test_defocusgett_vpp(unittest.TestCase):
 
     def test_inverted_defocus_values_in_VPPreturns_returns_UnboundLocalError_variable_defi_referenced_before_assignment(self):
         vpp_options = [9.0, 0.3, 0.1, 5.0, 175.0, 5.0]
-        with self.assertRaises(UnboundLocalError):
+        with self.assertRaises(UnboundLocalError) as cm:
             fu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.f_start, self.f_stop, vpp_options, nr2=self.nr2)
             oldfu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.f_start, self.f_stop, vpp_options, nr2=self.nr2)
+        self.assertEqual(cm.exception.message, "local variable 'defi' referenced before assignment")
 
     def test_inverted_phase_values_in_VPP(self):
         vpp_options = [0.3, 9.0, 0.1, 175.0, 15.0, 5.0]
@@ -2499,7 +2689,7 @@ class Test_defocusgett_vpp(unittest.TestCase):
 		"""
         self.assertTrue(True)
     
-        #vpp_options = [0.3, 9.0, 0.1, 5.0, 175.0, 5.0]
+
 
 class Test_defocusgett_vpp2(unittest.TestCase):
     Cs = 2
@@ -2514,9 +2704,10 @@ class Test_defocusgett_vpp2(unittest.TestCase):
     old_defc, old_ampcont, old_subpw, old_baseline, old_envelope, old_istart, old_istop = oldfu.defocusgett_vpp([entry for entry in numpy.arange(1, 258).tolist()], wn, voltage, pixel_size, Cs, 0.048, -1, [0.3, 9.0, 0.1, 5.0, 175.0, 5.0], nr2=6)
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.defocusgett_vpp2()
             oldfu.defocusgett_vpp2()
+        self.assertEqual(cm.exception.message, "defocusgett_vpp2() takes at least 4 arguments (0 given)")
 
     def test_empty_input_image_crashes_because_signal11SIGSEGV(self):
         """
@@ -2539,12 +2730,15 @@ class Test_defocusgett_vpp2(unittest.TestCase):
     def test_img2D_default_value(self):
         return_new = fu.defocusgett_vpp2(IMAGE_2D, self.wn, self.new_defc, self.new_ampcont, self.voltage, self.pixel_size,self.Cs, self.new_istart, self.new_istop)
         return_old = oldfu.defocusgett_vpp2(IMAGE_2D, self.wn, self.old_defc, self.old_ampcont, self.voltage, self.pixel_size,self.Cs, self.old_istart, self.old_istop)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.allclose(return_new, return_old, atol=TOLERANCE,equal_nan=True))
 
     def test_null_window_sizereturns_RuntimeError_InvalidValueException(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.defocusgett_vpp2(IMAGE_2D, 0, self.new_defc, self.new_ampcont, self.voltage, self.pixel_size,self.Cs, self.new_istart, self.new_istop)
             oldfu.defocusgett_vpp2(IMAGE_2D, 0, self.old_defc, self.old_ampcont, self.voltage, self.pixel_size,self.Cs, self.old_istart, self.old_istop)
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "x size <= 0")
 
     def test_img2D_null_voltage(self):
         return_new = fu.defocusgett_vpp2(IMAGE_2D, self.wn, self.new_defc, self.new_ampcont, 0, self.pixel_size,self.Cs, self.new_istart, self.new_istop)
@@ -2604,9 +2798,10 @@ class Test_fastigmatism3(unittest.TestCase):
     nx = 12
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.fastigmatism3()
             oldfu.fastigmatism3()
+        self.assertEqual(cm.exception.message, "fastigmatism3() takes exactly 2 arguments (0 given)")
 
     def test_empty_input_image_crashes_because_signal11SIGSEGV(self):
         """
@@ -2639,9 +2834,12 @@ class Test_fastigmatism3(unittest.TestCase):
     def test_no_image_size_returns_RuntimeError_InvalidValueException(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         data = [crefim, numr, 0, self.defocus, self.Cs, self.voltage, self.pixel_size, self.bfactor, self.amp_contrast]
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError)  as cm:
             fu.fastigmatism3(self.amp, deepcopy(data))
             oldfu.fastigmatism3(self.amp, deepcopy(data))
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "x size <= 0")
 
     def test_no_pixel_size_fails_randomly(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
@@ -2654,9 +2852,10 @@ class Test_fastigmatism3(unittest.TestCase):
         #self.assertEqual(result_new, result_old)
 
     def test_empty_array_returns_IndexError_list_index_out_of_range(self):
-        with self.assertRaises(IndexError):
+        with self.assertRaises(IndexError) as cm:
             fu.fastigmatism3(self.amp, [])
             oldfu.fastigmatism3(self.amp, [])
+        self.assertEqual(cm.exception.message, "list index out of range")
 
 
 
@@ -2672,9 +2871,10 @@ class Test_fastigmatism3_pap(unittest.TestCase):
     nx = 12
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.fastigmatism3_pap()
             oldfu.fastigmatism3_pap()
+        self.assertEqual(cm.exception.message, "fastigmatism3_pap() takes exactly 2 arguments (0 given)")
 
     def test_empty_input_image__crashes_because_signal11SIGSEGV(self):
         """
@@ -2705,9 +2905,12 @@ class Test_fastigmatism3_pap(unittest.TestCase):
     def test_no_image_size_returns_RuntimeError_InvalidValueException(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         data = [crefim, numr, 0, self.defocus, self.Cs, self.voltage, self.pixel_size, self.bfactor, self.amp_contrast]
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.fastigmatism3_pap(self.amp, deepcopy(data))
             oldfu.fastigmatism3_pap(self.amp, deepcopy(data))
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "x size <= 0")
 
     def test_no_pixel_size(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
@@ -2719,9 +2922,10 @@ class Test_fastigmatism3_pap(unittest.TestCase):
         self.assertEqual(result_new , result_old)
 
     def test_empty_array_returns_IndexError_list_index_out_of_range(self):
-        with self.assertRaises(IndexError):
+        with self.assertRaises(IndexError) as cm:
             fu.fastigmatism3_pap(self.amp, [])
             oldfu.fastigmatism3_pap(self.amp, [])
+        self.assertEqual(cm.exception.message, "list index out of range")
 
 
 
@@ -2737,9 +2941,10 @@ class Test_fastigmatism3_vpp(unittest.TestCase):
     nx = 12
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.fastigmatism3_vpp()
             oldfu.fastigmatism3_vpp()
+        self.assertEqual(cm.exception.message, "fastigmatism3_vpp() takes exactly 2 arguments (0 given)")
 
     def test_empty_input_image_crashes_because_signal11SIGSEGV(self):
         """
@@ -2770,9 +2975,12 @@ class Test_fastigmatism3_vpp(unittest.TestCase):
     def test_no_image_size_returns_RuntimeError_InvalidValueException(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         data = [crefim, numr, 0, self.defocus, self.Cs, self.voltage, self.pixel_size, self.bfactor, self.amp_contrast, 0.0]
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.fastigmatism3_vpp(self.amp, deepcopy(data))
             oldfu.fastigmatism3_vpp(self.amp, deepcopy(data))
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "x size <= 0")
 
     def test_no_pixel_size(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
@@ -2784,9 +2992,10 @@ class Test_fastigmatism3_vpp(unittest.TestCase):
         self.assertEqual(result_new, result_old)
 
     def test_empty_array_returns_IndexError_list_index_out_of_range(self):
-        with self.assertRaises(IndexError):
+        with self.assertRaises(IndexError) as cm:
             fu.fastigmatism3_vpp(self.amp, [])
             oldfu.fastigmatism3_vpp(self.amp, [])
+        self.assertEqual(cm.exception.message, "list index out of range")
 
 
 
@@ -2803,21 +3012,24 @@ class Test_simctf2(unittest.TestCase):
     nx = 12
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.simctf2()
             oldfu.simctf2()
+        self.assertEqual(cm.exception.message, "simctf2() takes exactly 2 arguments (0 given)")
 
     def test_empty_input_image_returns_RuntimeError_ImageFormatException_image_not_same_size(self):
         image = get_data(1, self.nx)[0]
         data = [EMData(), image, self.nx,  self.dfdiff, self.cs, self.voltage, self.pixel_size, self.amp_contrast ,self.dfang ]
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.simctf2(self.defocus, data)
             oldfu.simctf2(self.defocus,data)
+        self.assertEqual(cm.exception.message, "std::exception")
 
     def test_empty_array_returns_IndexError_list_index_out_of_range(self):
-        with self.assertRaises(IndexError):
+        with self.assertRaises(IndexError) as cm:
             fu.simctf2(self.defocus, [])
             oldfu.simctf2(self.defocus, [])
+        self.assertEqual(cm.exception.message, "list index out of range")
 
     def test_no_pixel_size(self):
         image = get_data(1, self.nx)[0]
@@ -2855,21 +3067,24 @@ class Test_simctf2_pap(unittest.TestCase):
     nx = 12
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.simctf2_pap()
             oldfu.simctf2_pap()
+        self.assertEqual(cm.exception.message, "simctf2_pap() takes exactly 2 arguments (0 given)")
 
     def test_empty_input_image_returns_RuntimeError_ImageFormatException_image_not_same_size(self):
         image = get_data(1, self.nx)[0]
         data = [EMData(), image, self.nx,  self.dfdiff, self.cs, self.voltage, self.pixel_size, self.amp_contrast ,self.dfang ]
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.simctf2_pap(self.defocus, data)
             oldfu.simctf2_pap(self.defocus,data)
+        self.assertEqual(cm.exception.message, "std::exception")
 
     def test_empty_array_returns_IndexError_list_index_out_of_range(self):
-        with self.assertRaises(IndexError):
+        with self.assertRaises(IndexError) as cm:
             fu.simctf2_pap(self.defocus, [])
             oldfu.simctf2_pap(self.defocus, [])
+        self.assertEqual(cm.exception.message, "list index out of range")
 
     def test_no_pixel_size(self):
         image = get_data(1, self.nx)[0]
@@ -2908,9 +3123,10 @@ class Test_fupw(unittest.TestCase):
     args = [defocus, amp]
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.fupw()
             oldfu.fupw()
+        self.assertEqual(cm.exception.message, "fupw() takes exactly 2 arguments (0 given)")
 
     def test_empty_input_image_crashes_because_signal11SIGSEGV(self):
         
@@ -2943,9 +3159,12 @@ class Test_fupw(unittest.TestCase):
     def test_no_image_size_returns_RuntimeError_InvalidValueException(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         data = [crefim, numr, 0, self.defocus, self.Cs, self.voltage, self.pixel_size, self.bfactor, self.amp_contrast,1]
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.fupw(self.args, deepcopy(data))
             oldfu.fupw(self.args, deepcopy(data))
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "x size <= 0")
 
     def test_no_pixel_size(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
@@ -2957,9 +3176,10 @@ class Test_fupw(unittest.TestCase):
         self.assertEqual(result_new, result_old)
 
     def test_empty_array_returns_IndexError_list_index_out_of_range(self):
-        with self.assertRaises(IndexError):
+        with self.assertRaises(IndexError) as cm:
             fu.fupw(self.args, [])
             oldfu.fupw(self.args, [])
+        self.assertEqual(cm.exception.message, "list index out of range")
 
 
 
@@ -2977,9 +3197,10 @@ class Test_fupw_pap(unittest.TestCase):
     args = [defocus, amp]
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.fupw_pap()
             oldfu.fupw_pap()
+        self.assertEqual(cm.exception.message, "fupw_pap() takes exactly 2 arguments (0 given)")
 
     def test_empty_input_image_crashes_because_signal11SIGSEGV(self):
         """
@@ -3019,7 +3240,7 @@ class Test_fupw_pap(unittest.TestCase):
     def test_no_image_size_returns_RuntimeError_InvalidValueException(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         data = [crefim, numr, 0, self.defocus, self.Cs, self.voltage, self.pixel_size, self.bfactor, self.amp_contrast,1]
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.fupw_pap(self.args, data)
             oldfu.fupw_pap(self.args, data)
 
@@ -3033,9 +3254,10 @@ class Test_fupw_pap(unittest.TestCase):
         self.assertEqual(result_new, result_old)
 
     def test_empty_array_returns_IndexError_list_index_out_of_range(self):
-        with self.assertRaises(IndexError):
+        with self.assertRaises(IndexError) as cm:
             fu.fupw_pap(self.args, [])
             oldfu.fupw_pap(self.args, [])
+        self.assertEqual(cm.exception.message, "list index out of range")
 
 
 
@@ -3053,9 +3275,10 @@ class Test_fupw_vpp(unittest.TestCase):
     args = [defocus, phaseshift, amp]
 
     def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.fupw_vpp()
             oldfu.fupw_vpp()
+        self.assertEqual(cm.exception.message, "fupw_vpp() takes exactly 2 arguments (0 given)")
 
     def test_empty_input_image_crashes_because_signal11SIGSEGV(self):
         """
@@ -3077,9 +3300,12 @@ class Test_fupw_vpp(unittest.TestCase):
     def test_no_image_size_returns_RuntimeError_InvalidValueException(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         data = [crefim, numr, 0, self.defocus, self.Cs, self.voltage, self.pixel_size, self.bfactor, self.amp_contrast,1]
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             fu.fupw_vpp(self.args, deepcopy(data))
             oldfu.fupw_vpp(self.args, deepcopy(data))
+        msg = cm.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "x size <= 0")
 
     def test_no_pixel_size(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
@@ -3091,9 +3317,10 @@ class Test_fupw_vpp(unittest.TestCase):
         self.assertEqual(result_new, result_old)
 
     def test_empty_array_returns_IndexError_list_index_out_of_range(self):
-        with self.assertRaises(IndexError):
+        with self.assertRaises(IndexError) as cm:
             fu.fupw_vpp(self.args, [])
             oldfu.fupw_vpp(self.args, [])
+        self.assertEqual(cm.exception.message, "list index out of range")
 
 
 
@@ -3119,9 +3346,10 @@ class Test_ornq_vpp(unittest.TestCase):
         self.assertTrue(True)
 
     def test_wrong_number_params_returns_TypeError_too_few_parameters(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             fu.ornq_vpp()
             oldfu.ornq_vpp()
+        self.assertEqual(cm.exception.message, "ornq_vpp() takes at least 9 arguments (0 given)")
 
     def test_empty_list_Numrinit_crashes_because_signal11SIGSEV(self):
         """
@@ -3136,16 +3364,18 @@ class Test_ornq_vpp(unittest.TestCase):
     def test_empty_list_xrng_returns_IndexError_list_index_out_of_range(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         xrng=[]
-        with self.assertRaises(IndexError):
+        with self.assertRaises(IndexError) as cm:
             fu.ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
             oldfu.ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
+        self.assertEqual(cm.exception.message, "list index out of range")
 
     def test_empty_list_yrng_returns_IndexError_list_index_out_of_range(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         yrng=[]
-        with self.assertRaises(IndexError):
+        with self.assertRaises(IndexError) as cm:
             fu.ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
             oldfu.ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
+        self.assertEqual(cm.exception.message, "list index out of range")
 
     def test_with_negative_center(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
@@ -3155,9 +3385,10 @@ class Test_ornq_vpp(unittest.TestCase):
 
     def test_null_skip_value_returns_ZeroDivisionError(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0] #mode is H
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ZeroDivisionError) as cm:
             fu.ornq_vpp(image, crefim, xrng, yrng, 0, mode, numr, cnx, cny, deltapsi = 0.0)
             oldfu.ornq_vpp(image, crefim, xrng, yrng, 0, mode, numr, cnx, cny, deltapsi = 0.0)
+        self.assertEqual(cm.exception.message, "float division by zero")
 
     def test_Half_mode(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0] #mode is H
