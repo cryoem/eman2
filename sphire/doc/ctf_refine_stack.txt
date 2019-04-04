@@ -9,7 +9,7 @@ CTF refine (Stack): Refine the defocus per particle
 
 Usage in command line
 
-  sp_ctf_refine.py manual path_to_input_stack output_directory volume_path params_file --mask=path_to_mask --range=defocus_range --delta=defocus_delta --resolution=nominal_resolution --pixelsize=pixelsize --number_part=NUMBER_PARTICLES --chunk=PATH_TO_CHUNK_FILE --volume2=PATH_TO_VOLUME
+  sp_ctf_refine.py manual path_to_input_stack output_directory volume_path params_file --mask=path_to_mask --range=defocus_range --delta=defocus_delta --resolution=nominal_resolution --apix=pixelsize --number_part=NUMBER_PARTICLES --chunk=PATH_TO_CHUNK_FILE --volume2=PATH_TO_VOLUME
 
 \\
 ===== Typical usage =====
@@ -30,10 +30,10 @@ sp_ctf_refine.py exists only in non-MPI version.
 
 \\
 === Advanced Parameters ===
-  ; %%--%%range : Defocus search range [mum] : Search range +- around the current defocus value. (default 0.15)
-  ; %%--%%delta : Defocus search delta [mum] : Finest search delta. (default 0.0025)
+  ; %%--%%range : Defocus search range [um] : Search range +- around the current defocus value. (default 0.15)
+  ; %%--%%delta : Defocus search delta [um] : Finest search delta. (default 0.0025)
   ; %%--%%resolution : Nominal resolution [A] : Nominal resolution of the reconstruction. (default None)
-  ; %%--%%pixelsize : Pixelsize [A] : Pixelsize in Angstrom. (default None) : %%--%%resolution!=None
+  ; %%--%%apix : Pixel size [A] : Pixel size in Angstroms. (default None) : %%--%%resolution!=None
   ; %%--%%number_part : Number of particles : Number of particles to process. Mainly for debugging. (default none)
   ; %%--%%chunk : Path to chunk file : Path to chunk file (default none)
   ; %%--%%volume2 : Path to second volume : Path to second half volume. (default none): %%--%%chunk!=None
