@@ -241,7 +241,7 @@ All Micrographs Mode - Process all micrographs in a directory:
 	Finally, specify output directory where all outputs should be saved.
 	In this mode, all micrographs matching the path pattern will be processed.
 
-	mpirun  -np  32  sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  outdir_cter/partres/partres.txt  particles  --coordinates_format=eman2  --box_size=64
+	mpirun  -np  32  sp_window.py  './mic*.hdf'  'info/mic*_info.json'  outdir_cter/partres/partres.txt  particles  --coordinates_format=eman2  --box_size=64
 
 Selected Micrographs Mode - Process all micrographs in a selection list file:
 	In addition to input micrographs path pattern, coordinates files path pattern, CTF paramters source, and output directry arguments, 
@@ -249,7 +249,7 @@ Selected Micrographs Mode - Process all micrographs in a selection list file:
 	In this mode, only micrographs in the selection list which matches the file name part of the pattern (ignoring the directory paths) will be processed.
 	If a micrograph name in the selection list does not exists in the directory specified by the micrograph path pattern, processing of the micrograph will be skipped.
 
-	mpirun  -np  32  sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  outdir_cter/partres/partres.txt  particles  --selection_list=mic_list.txt  --coordinates_format=eman2  --box_size=64
+	mpirun  -np  32  sp_window.py  './mic*.hdf'  'info/mic*_info.json'  outdir_cter/partres/partres.txt  particles  --selection_list=mic_list.txt  --coordinates_format=eman2  --box_size=64
 
 Single Micrograph Mode - Process a single micrograph:
 	In addition to input micrographs path pattern, coordinates files path pattern, CTF paramters source, and output directry arguments, 
@@ -259,11 +259,11 @@ Single Micrograph Mode - Process a single micrograph:
 	If this micrograph name matches the file name part of the pattern but does not exists in the directory which specified by the micrograph path pattern, again the process will exit without processing it.
 	Use single processor for this mode. 
 
-	sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  outdir_cter/partres/partres.txt  particles  --selection_list=mic0.hdf  --coordinates_format=eman2  --box_size=64
+	sp_window.py  './mic*.hdf'  'info/mic*_info.json'  outdir_cter/partres/partres.txt  particles  --selection_list=mic0.hdf  --coordinates_format=eman2  --box_size=64
 
 For negative staining data, set the pixel size [A/Pixels] as the source of CTF paramters and use --skip_invert.
 
-	mpirun  -np  32  sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  5.2  particles  --coordinates_format=eman2  --box_size=64  --skip_invert
+	mpirun  -np  32  sp_window.py  './mic*.hdf'  'info/mic*_info.json'  5.2  particles  --coordinates_format=eman2  --box_size=64  --skip_invert
 
 """
 	)
@@ -314,7 +314,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		"--check_consistency",
 		action="store_true",
 		default=False,
-		help="Check consistency of dataset: Create a text file containing the list of Micrograph ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info_TIMESTAMP.txt). (default False)",
+		help="Check consistency of dataset: Create a text file containing the list of Micrograph ID entries might have inconsistency among the provided dataset. (i.e. mic_consistency_check_info_TIMESTAMP.txt). (default False)",
 	)
 	parser.add_option(
 		"--filament_width",
@@ -783,7 +783,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				sxprint("----- Running with Single Micrograph Mode -----")
 				sxprint(" ")
 				sxprint(
-					"Processing a single micorgprah: %s..." % (options.selection_list)
+					"Processing a single micrograph: %s..." % (options.selection_list)
 				)
 				selected_mic_path_list = [options.selection_list]
 			assert selected_mic_path_list

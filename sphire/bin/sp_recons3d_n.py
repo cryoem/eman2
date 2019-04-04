@@ -113,7 +113,7 @@ def main():
 		 options.sym, options.verbose, options.niter, options.compensate, options.target_window_size)
 		
 	else:
-		ERROR( "Wrong interpolation method. The current options are 4nn, and tril. 4nn is the defalut one." )
+		ERROR( "Wrong interpolation method. The current options are 4nn, and tril. 4nn is the default one." )
 		return
 		
 	sp_global_def.BATCH = False

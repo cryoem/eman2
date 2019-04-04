@@ -32,14 +32,14 @@ The program can be executed in several different modes:
 \\
 ===== Input =====
 === Main Parameters ===
-  ; input_data_list : Input files: List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. (default none)
+  ; input_data_list : Input files: List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is large. (default none)
 
 \\
 === Advanced Parameters ===
   ; %%--%%classmx : Show particles from a class: Shows particles in one class defined in a classification matrix. The options requires <classmx>,<#>. (default none)
   ; %%--%%classes : Show class-averages associated with particles: Shows particles associated class averages. Requires <rawptcl>,<classmx>. (default none)
   ; %%--%%pdb : Show PDB structure: Show PDB structure. (default none)
-  ; %%--%%singleimage : Single image view: Display a stack in a single image view. (default False)
+  ; %%--%%singleimage : Single image view: Display a stack one image at a time. (default False)
   ; %%--%%plot : Plot 2D: Data file(s) should be plotted rather than displayed in 2D. (default False)
   ; %%--%%plot3 : Plot 3D: Data file(s) should be plotted rather than displayed in 3D. (default False)
   ; %%--%%fullrange : Use full range of pixel values: Instead of default auto-contrast, use full range of pixel values for the display of particles stacks and 2D images. (default False)

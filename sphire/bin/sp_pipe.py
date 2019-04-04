@@ -325,7 +325,7 @@ def isac_substack(args):
 		# The specified run directory is ISAC. (ISAC run directory is prioritized over Beautifier run.)
 		sxprint(" ")
 		sxprint("ISAC run output directory is specified. The program assumes the ISAC class averages are shrunk and not beautified with the original image size.")
-		sxprint("Extracting the shrink ratio and 2D alingment parameters of this ISAC run...")
+		sxprint("Extracting the shrink ratio and 2D alignment parameters of this ISAC run...")
 		
 		# shrink ratio
 		isac_shrink_path = isac_path_list[idx_isac_path_file_shrink][idx_path_item_path]
@@ -413,7 +413,7 @@ def isac_substack(args):
 		# The specified run directory is Beautifier.
 		sxprint(" ")
 		sxprint("Beautifier run output directory is specified. The program assumes the ISAC class averages are beautified with the original image size.")
-		sxprint("Extracting the 2D alingment parameters of this Beautifier run...")
+		sxprint("Extracting the 2D alignment parameters of this Beautifier run...")
 	
 		# local alignment parameters
 		accounted_local_total_align2d_path = beautifier_path_list[idx_beautifier_path_file_accounted_local_total_align2d][idx_path_item_path]
@@ -808,7 +808,7 @@ def resample_micrographs(args):
 				sxprint(" ")
 				sxprint("----- Running in Single Micrograph Mode -----")
 				sxprint(" ")
-				sxprint("Processing a single micorgprah: %s..." % (args.selection_list))
+				sxprint("Processing a single micrograph: %s..." % (args.selection_list))
 				selected_mic_path_list = [args.selection_list]
 			
 			selected_mic_directory = os.path.dirname(selected_mic_path_list[0])
@@ -1727,7 +1727,7 @@ def organize_micrographs(args):
 # --- Restacking ---
 # Generate all necessary information to restack the input stack 
 # (i.e. particle image ID list, CTF parameters list, projection parameters list) 
-# while appling micrograph selection list. 
+# while applying micrograph selection list. 
 # Optionally, the command can directly output the virtual stack.  
 # In addition, this command can be used to generate all parameters files for reboxing 
 # (i.e. original/centered particle coordinates list files, CTF parameters list, 
@@ -2095,7 +2095,7 @@ def restacking(args):
 	if missing_proj_params_counter > 0:
 		sxprint(" ")
 		sxprint("WARNING!!! The projection parameters (xform.projection header entry) are missing from {} out of {} particle images in the input stack {}.".format(missing_proj_params_counter, n_img, args.input_bdb_stack_path))
-		sxprint("           The program automtically set the prjection parameters to all zeros (null alignment).")
+		sxprint("           The program automtically sets the projection parameters to all zeros (null alignment).")
 
 	mic_basename_list_of_input_stack = []
 	mic_basename_list_of_output_stack = []
@@ -2870,11 +2870,11 @@ def main():
 	subparsers = parser.add_subparsers(help="sub-command help", dest="subcommand")
 
 	# create the subparser for the "isac_substack" subcommand
-	parser_isac_subset = subparsers.add_parser("isac_substack", help="ISAC2 Stack Subset: Create virtual subset stack consisting from ISAC2 accounted particles by retrieving particle numbers associated with the ISAC2 or Beautifier class averages. The command also saves a list text file containing the retrieved original image numbers and 2D alingment parameters. In addition, it stores the 2D alingment parameters to stack header.")
+	parser_isac_subset = subparsers.add_parser("isac_substack", help="ISAC2 Stack Subset: Create virtual subset stack consisting from ISAC2 accounted particles by retrieving particle numbers associated with the ISAC2 or Beautifier class averages. The command also saves a list text file containing the retrieved original image numbers and 2D alignment parameters. In addition, it stores the 2D alignment parameters to stack header.")
 	parser_isac_subset.add_argument("input_bdb_stack_path",          type=str,                            help="Input BDB image stack: Specify the same BDB image stack used for the associated ISAC2 run. (default required string)")
-	parser_isac_subset.add_argument("input_run_dir",                 type=str,                            help="ISAC2 or Beautifier run output directory: Specify output directory of an ISAC2 or Beautifier run as an input to this command. From this directory, the program extracts the shrink ratio and 2D alingment parameters of the ISAC2 run or local 2D alingment parameters of the Beautifier run. (default required string)")
+	parser_isac_subset.add_argument("input_run_dir",                 type=str,                            help="ISAC2 or Beautifier run output directory: Specify output directory of an ISAC2 or Beautifier run as an input to this command. From this directory, the program extracts the shrink ratio and 2D alignment parameters of the ISAC2 run or local 2D alignment parameters of the Beautifier run. (default required string)")
 	parser_isac_subset.add_argument("output_directory",              type=str,                            help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
-	parser_isac_subset.add_argument("--isac_class_avgs_path",        type=str,  default="",               help="ISAC2 or Beautifier class averages path: Specify path to a file containg ISAC2 or Beautifier class averages. The calss averages can be fullset or selected subset, as long as they are associated with the input BDB image stack and contain class member information stored in the headers. By default, the program uses the same deafult name of ordered class averages in ISAC2 or Beautifier (i.e. ordered_class_averages.hdf). (default none)")
+	parser_isac_subset.add_argument("--isac_class_avgs_path",        type=str,  default="",               help="ISAC2 or Beautifier class averages path: Specify path to a file containg ISAC2 or Beautifier class averages. The class averages can be fullset or selected subset, as long as they are associated with the input BDB image stack and contain class member information stored in the headers. By default, the program uses the same default name of ordered class averages in ISAC2 or Beautifier (i.e. ordered_class_averages.hdf). (default none)")
 	parser_isac_subset.add_argument("--substack_basename",           type=str,  default="isac_substack",  help="Stack subset basename: Specify the basename of ISAC2 stack subset file. It cannot be empty string or only white spaces. (default isac_substack)")
 	### 
 	### NOTE: Toshio Moriya 2018/01/13
@@ -2890,7 +2890,7 @@ def main():
 	parser_resample_micrographs.add_argument("output_directory",          type=str,                             help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
 	parser_resample_micrographs.add_argument("--resample_ratio",          type=float,           default=None,   help="Resampling ratio: Specify ratio between new and original pixel size. Use a value between 0.0 and 1.0 (exclusive both ends). (default required float)")
 	parser_resample_micrographs.add_argument("--selection_list",          type=str,             default=None,   help="Micrograph selecting list: Specify a name of micrograph selection list text file for Selected Micrographs Mode. The file extension must be \'.txt\'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. (default none)")
-	parser_resample_micrographs.add_argument("--check_consistency",       action="store_true",  default=False,  help="Check consistency of dataset: Create a text file containing the list of Micrograph ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info_TIMESTAMP.txt). (default False)")
+	parser_resample_micrographs.add_argument("--check_consistency",       action="store_true",  default=False,  help="Check consistency of dataset: Create a text file containing the list of Micrograph ID entries might have inconsistency among the provided dataset. (i.e. mic_consistency_check_info_TIMESTAMP.txt). (default False)")
 	parser_resample_micrographs.set_defaults(func=resample_micrographs)
 
 	# create the subparser for the "organize_micrographs" subcommand
@@ -2899,7 +2899,7 @@ def main():
 	parser_organize_micrographs.add_argument("selection_list",               type=str,                                help="Micrograph/Movie selection file: Specify a path of text file containing a list of selected micrograph/movie names or paths. The file extension must be \'.txt\'. The directory path of each entry will be ignored if there are any. (default required string)")
 	parser_organize_micrographs.add_argument("destination_directory",        type=str,                                help="Destination directory: The micrographs/movies in selecting list will be moved to this directory. This directory will be created automatically if it does not exist. (default required string)")
 	parser_organize_micrographs.add_argument("--reverse",                    action="store_true",  default=False,     help="Reverse operation: Move back micrographs/movies from the destination directory to the source directory. Please use this option to restore the previously-moved micrographs/movies. (default False)")
-	parser_organize_micrographs.add_argument("--check_consistency",          action="store_true",  default=False,     help="Check consistency of dataset: Create a text file containing the list of micrograph/movie ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info.txt). (default False)")
+	parser_organize_micrographs.add_argument("--check_consistency",          action="store_true",  default=False,     help="Check consistency of dataset: Create a text file containing the list of micrograph/movie ID entries might have inconsistency among the provided dataset. (i.e. mic_consistency_check_info.txt). (default False)")
 	parser_organize_micrographs.set_defaults(func=organize_micrographs)
 	
 ###	# NOTE: Toshio Moriya 2018/03/05
@@ -2916,7 +2916,7 @@ def main():
 ###	parser_reboxing.set_defaults(func=reboxing)
 
 	# create the subparser for the "restacking" subcommand
-	parser_restacking = subparsers.add_parser("restacking", help="Restacking: Generate all necessary information to restack the input stack (i.e. particle image ID list and projection parameters list) while appling micrograph selection list. Optinally, the command can directly output the virtual stack.  Also, this command can be used to generate all parameters files for reboxing (i.e. original/centered particle coordinates list files, original/centered projection parameters list as well as micrograph selection file). Optionally, user can provided a 3D shift to recenter the projection parameters and so the particle coordinates.")
+	parser_restacking = subparsers.add_parser("restacking", help="Restacking: Generate all necessary information to restack the input stack (i.e. particle image ID list and projection parameters list) while applying micrograph selection list. Optinally, the command can directly output the virtual stack.  Also, this command can be used to generate all parameters files for reboxing (i.e. original/centered particle coordinates list files, original/centered projection parameters list as well as micrograph selection file). Optionally, user can provided a 3D shift to recenter the projection parameters and so the particle coordinates.")
 	parser_restacking.add_argument("input_bdb_stack_path",    type=str,                                help="Input BDB image stack: Specify the input BDB image stack. (default required string)")
 	parser_restacking.add_argument("output_directory",        type=str,                                help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
 	parser_restacking.add_argument("--selection_list",        type=str,             default=None,      help="Micrograph/Movie selection file: Specify path to text file containing a list of selected micrograph/movie names or paths. The particles associated with the micrographs/movies in this list will be processed. The file extension must be \'.txt\'. The directory path of each entry will be ignored if there are any. (default none)")
@@ -2930,7 +2930,7 @@ def main():
 	parser_restacking.set_defaults(func=restacking)
 
 	# create the subparser for the "moon_eliminator" subcommand
-	parser_moon_eliminator = subparsers.add_parser("moon_eliminator", help="Moon eliminator: Eliminate moons or remove dusts from the background of a 3D density map based on the expected molecular mass.")
+	parser_moon_eliminator = subparsers.add_parser("moon_eliminator", help="Moon eliminator: Eliminate moons or remove dust from the background of a 3D density map based on the expected molecular mass.")
 	parser_moon_eliminator.add_argument("input_volume_path",                type=str,                              help="Input volume path: Path to input volume file containing the 3D density map. (default required string)")
 	parser_moon_eliminator.add_argument("input_volume_path_2nd", nargs="?", type=str,             default=None,    help="Second input volume path: Path to second input volume file containing the 3D density map. Use this option to create a mask from the volume combined two MERIDIEN halfset volumes. (default none)")
 	parser_moon_eliminator.add_argument("output_directory",                 type=str,                              help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")

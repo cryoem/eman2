@@ -34,7 +34,7 @@ sp_pipe organize_micrographs does not support MPI.
 
 \\
 === Advanced Parameters ===
-  ; %%--%%check_consistency : Check consistency of dataset: Create a text file containing the list of micrograph/movie ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info.txt). (default False)
+  ; %%--%%check_consistency : Check consistency of dataset: Create a text file containing the list of micrograph/movie ID entries might have inconsistency among the provided dataset. (i.e. mic_consistency_check_info.txt). (default False)
 
 \\
 ===== Output =====

@@ -1,7 +1,7 @@
 ~~NOTOC~~
 
 ===== sp_pdb2em =====
-PDB File Conversion: Converts an atomic model stored in a PDB file into a simulated electron density map. The coordinates (0,0,0) in PDB space will map to the center of the volume.
+PDB File Conversion: Converts an atomic model stored in a PDB file into a simulated electron density map. 
 
 \\
 ===== Usage =====

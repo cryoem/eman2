@@ -33,8 +33,8 @@ There are four methods to adjust the power spectrum of resultant average images,
 ===== Input =====
 === Main Parameters ===
   ; %%--%%stack : Original image stack: Data stack that used for the associated ISAC2 run. The particle images in this stack are used to create the full-sized class averages. (default required string)
-  ; %%--%%isac_dir : ISAC2 run directory: Path to the output directory of the associated ISAC2 run. This is input directory for this command. (default required string)
-  ; %%--%%output_dir : Output directory: The automatically-created output directory will contain results. By default, the program uses sharpen_DATA_AND_TIME for the name. If this is the same as ISAC2 run directory, the program automatically creates sharpen subdirectory under the ISAC2 run directory. (default none)
+  ; %%--%%isac_dir : ISAC2 run directory: Path to the output directory of the associated ISAC2 run. This is the input directory for this command. (default required string)
+  ; %%--%%output_dir : Output directory: This automatically-created output directory will contain results. By default, the program uses sharpen_DATA_AND_TIME for the name. If this is the same as ISAC2 run directory, the program automatically creates sharpen subdirectory under the ISAC2 run directory. (default none)
   ; %%--%%pixel_size : Pixel size [A]: The pixel size of particle images in input particle stack for the associated ISAC2 run. Use 1.0 in case of negative stain data. (default -1.0)
   ; %%--%%radius : Particle radius [Pixels]: There is no default radius. (default -1)
   ; %%--%%noctf : CTF correction: Indicate if full CTF correction should be applied or not. Always use the CTF correction for cryo data, but not for negative stained data. By default, do full CTF correction. (default False question reversed in GUI) 

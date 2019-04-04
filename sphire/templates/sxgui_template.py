@@ -4539,7 +4539,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 				if sxcmd_token.type == "user_func":
 					n_widgets = 2 # function type has two line edit boxes
 					sxcmd_token.label = [sxcmd_token.label, "Python script for user function"]
-					sxcmd_token.help = [sxcmd_token.help, "Please leave it blank if file is not external to sphire"]
+					sxcmd_token.help = [sxcmd_token.help, "Please leave it none/blank if file is not external to SPHIRE"]
 					sxcmd_token.default = [sxcmd_token.default, "none"]
 					if not sxcmd_token.is_locked:
 						sxcmd_token.restore = sxcmd_token.default

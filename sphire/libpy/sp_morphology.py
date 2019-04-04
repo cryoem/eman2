@@ -2174,7 +2174,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 						break
 				else:
 					sxprint(" ")
-					sxprint(("Processing a single micorgprah: %s..." % (selection_list)))
+					sxprint(("Processing a single micrograph: %s..." % (selection_list)))
 					selected_mic_path_list = [selection_list]
 			
 				selected_mic_directory = os.path.dirname(selected_mic_path_list[0])
@@ -3226,7 +3226,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 						break
 				else:
 					sxprint(" ")
-					sxprint(("Processing a single micorgprah: %s..." % (selection_list)))
+					sxprint(("Processing a single micrograph: %s..." % (selection_list)))
 					selected_mic_path_list = [selection_list]
 			
 				selected_mic_directory = os.path.dirname(selected_mic_path_list[0])
@@ -5615,7 +5615,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 						break
 				else:
 					sxprint(" ")
-					sxprint(("Processing a single micorgprah: %s..." % (selection_list)))
+					sxprint(("Processing a single micrograph: %s..." % (selection_list)))
 					selected_mic_path_list = [selection_list]
 			
 				selected_mic_directory = os.path.dirname(selected_mic_path_list[0])

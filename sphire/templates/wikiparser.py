@@ -1393,7 +1393,7 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 def create_sxcmd_subconfig_window_makevstack():
 	token_edit_list = []
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("makevstack"); token_edit.is_required = True; token_edit.is_locked = False; token_edit.default = "none"; token_edit.restore = "none"; token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_pattern"); token_edit.key_prefix = ""; token_edit.label = "Input BDB image stack pattern"; token_edit.help = "Specify file path pattern of stack subsets created in particle extraction using a wild card /'*/' (e.g. /'//sxwindow_output_dir//*/'). The stack subsets are located in the sxwindow output directory."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "dir_list"; token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_pattern"); token_edit.key_prefix = ""; token_edit.label = "Input BDB image stack pattern"; token_edit.help = "Specify file path pattern of stack subsets created in particle extraction using a wild card /'*/' (e.g. /'//sp_window_output_dir//*/'). The stack subsets are located in the sp_window output directory."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "dir_list"; token_edit_list.append(token_edit)
 
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("Particle Stack", None, token_edit_list, sxsubcmd_mpi_support, subset_config="fullset")
@@ -1781,7 +1781,7 @@ def add_sxcmd_subconfig_meridien_standard_shared(token_edit_list):
 
 
 def add_sxcmd_subconfig_meridien_local_shared_refine(token_edit_list):
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("inires"); token_edit.help = "Resolution of the initial_volume structure. For local refinement, the program automatically calculates the initial resolution using provided orientation parameters."; token_edit.default = -1.0; token_edit.restore = -1.0; token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("inires"); token_edit.help = "Resolution of the initial volume. For local refinement, the program automatically calculates the initial resolution using provided orientation parameters."; token_edit.default = -1.0; token_edit.restore = -1.0; token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("delta"); token_edit.help = "Initial angular sampling step. For local refinement, the value has to be less than or equal to 3.75."; token_edit.default = 3.75; token_edit.restore = 3.75; token_edit_list.append(token_edit)
 	add_sxcmd_subconfig_meridien_shared(token_edit_list)
 
@@ -1854,7 +1854,7 @@ def create_sxcmd_subconfig_meridien_local_stack():
 	token_edit_list = []
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("local_refinement"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("stack"); token_edit.help = "The stack must 3D orientation parameters (xform.projection) in image headers. They can be imporeted using sxheader.py."; token_edit.is_required = True; token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("stack"); token_edit.help = "The stack must have 3D orientation parameters (xform.projection) stored in image headers. They can be imported using sp_header.py."; token_edit.is_required = True; token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit_list.append(token_edit)
 
 	add_sxcmd_subconfig_meridien_local_shared_refine(token_edit_list)

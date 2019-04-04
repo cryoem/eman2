@@ -29,7 +29,7 @@ e2boxer exists in non-MPI version.
   ; %%--%%apix : Pixel size [A]: Angstroms per pixel for all images. (default -1)
   ; %%--%%boxsize : Box size [Pixels]: Box size in pixels. (default -1)
   ; %%--%%ptclsize : Particle diameter [Pixels]: Longest axis of particle in pixels (diameter, not radius). (default -1)
-  ; %%--%%invert : Invert input contrast: Preferably, particles should be brigt on a dark background. (default False)
+  ; %%--%%invert : Invert input contrast: Preferably, particles should be bright on a dark background. (default False)
   ; %%--%%no_ctf : Disable CTF estimation: Disable CTF estimation. (default False)
   ; %%--%%gui : Interactive GUI mode: Use interactive GUI mode. (default False)
   ; %%--%%write_dbbox : Export EMAN1 box files: Export EMAN1 box files (.box extension). (default False)
