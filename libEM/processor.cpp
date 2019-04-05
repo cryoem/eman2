@@ -13429,7 +13429,7 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 				}
 			}
 		}
-		// Now we do the 1-D FFTs on the lines of the translational invariant
+		// Now we do the 1-D FFTs on the lines of the translational invariant and build a rotational invariant
 		complex<float> *tmp = (complex<float>*)EMfft::fftmalloc(naz*2);
 		for (int jy=0;  jy<ny/4; jy++) {
 			// While it might seem a good idea to do inplace 1D transforms for each row, the potential memory
@@ -13442,15 +13442,16 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 			// which would be a power spectrum, except that we took the FFT of a complex function, so Friedel symmetry may not exist
 			if (fp>=0) {
 				int rc=0;
-				for (int j=0; j<NHARMROOT;  j++) {
-					int hn=harmbaser[j];
+				for (int b=1; b<naz/2; b++) {		// this is normally naz/2, by using 3/8 we ignore really high frequency components and gain higher harmonic bands
 					if (rc>=naz) break;
 					// The first component is different since it uses a single frequency
-					for (int i=hn; i<naz*3/8; i+=hn) {		// this is normally naz/2, by using 3/8 we ignore really high frequency components and gain higher harmonic bands
+					for (int j=0; j<NHARMROOT;  j++) {
 						if (rc>=naz) break;
+						int hn=harmbaser[j];
+						int i=b*hn;
 						// rather than taking a complex conjugate we make use of the negative frequencies, and we pair both ways
 						// the conjugate on the second term may not be optimal? Not positive...
-						complex<double>v1=((complex<double>)std::pow(std::conj(tmp[i/hn]),hn))*((complex<double>)tmp[i])+((complex<double>)std::conj(std::pow(std::conj(tmp[naz-i/hn]),hn))*((complex<double>)tmp[naz-i]));
+						complex<double>v1=((complex<double>)std::pow(std::conj(tmp[b]),hn))*((complex<double>)tmp[i])+((complex<double>)std::conj(std::pow(std::conj(tmp[naz-b]),hn))*((complex<double>)tmp[naz-i]));
 						v1=std::polar(std::pow(std::abs(v1),1.0/(hn+1.0)),std::arg(v1));	// rescale the amplitude without changing the phase
 						trns->set_complex_at_idx(rc/2,jy,0,(complex<float>)v1);
 						rc+=2;
@@ -13460,6 +13461,11 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 			// mostly for debugging, puts the FFT directly in the result. If other negative fp values are
 			// specified, then the unmodified translational invariant in polar coordinates is generated
 			if (fp==-1) memcpy((void*)(trns->get_data()+jy*naz*2),(void*)tmp,naz*2*sizeof(float));
+			
+			// This produces something which works better with PCA
+//			memcpy((void*)tmp,(void*)(trns->get_data()+jy*naz*2),naz*2*sizeof(float));
+//			EMfft::complex_to_real_1d((float*)tmp,trns->get_data()+jy*naz*2,naz*2-2);
+			
 		}
 		EMfft::fftfree((float *)tmp);
 
@@ -13467,7 +13473,7 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 		EMData *ret=trns->get_clip(Region(0,0,naz,ny/4));
 		delete trns;
 		ret->set_attr("is_harmonic_fp",(int)fp);
-		ret->set_complex(0);
+//		ret->set_complex(0);
 		return(ret);
 	}
 	
