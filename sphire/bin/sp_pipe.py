@@ -2095,7 +2095,7 @@ def restacking(args):
 	if missing_proj_params_counter > 0:
 		sxprint(" ")
 		sxprint("WARNING!!! The projection parameters (xform.projection header entry) are missing from {} out of {} particle images in the input stack {}.".format(missing_proj_params_counter, n_img, args.input_bdb_stack_path))
-		sxprint("           The program automtically sets the projection parameters to all zeros (null alignment).")
+		sxprint("           The program automatically sets the projection parameters to all zeros (null alignment).")
 
 	mic_basename_list_of_input_stack = []
 	mic_basename_list_of_output_stack = []
