@@ -362,13 +362,13 @@ class SXGuiCter(QWidget):
 		self.set_size_popup_windows()
 		
 		# Try to recover sizes & positions of windows of the previous GUI session
-		E2loadappwin("sxgui_cter","main",self)
-		E2loadappwin("sxgui_cter","fft",self.wfft.qt_parent)
-		E2loadappwin("sxgui_cter","imgmicthumb",self.wimgmicthumb.qt_parent)
-		E2loadappwin("sxgui_cter","plotcoarse",self.wplotrotavgcoarse.qt_parent)
-		E2loadappwin("sxgui_cter","plotfine",self.wplotrotavgfine.qt_parent)
-		E2loadappwin("sxgui_cter","histparam",self.whistparam.qt_parent)
-		E2loadappwin("sxgui_cter","plotparam",self.wscatterparam.qt_parent)
+		E2loadappwin("sp_gui_cter","main",self)
+		E2loadappwin("sp_gui_cter","fft",self.wfft.qt_parent)
+		E2loadappwin("sp_gui_cter","imgmicthumb",self.wimgmicthumb.qt_parent)
+		E2loadappwin("sp_gui_cter","plotcoarse",self.wplotrotavgcoarse.qt_parent)
+		E2loadappwin("sp_gui_cter","plotfine",self.wplotrotavgfine.qt_parent)
+		E2loadappwin("sp_gui_cter","histparam",self.whistparam.qt_parent)
+		E2loadappwin("sp_gui_cter","plotparam",self.wscatterparam.qt_parent)
 		
 		# This section is responsible for background updates
 		self.checkedpwrot = False
@@ -581,34 +581,34 @@ class SXGuiCter(QWidget):
 		# we have to go through its qt_parent attribute to call setWindowTitle()...
 		# 
 		self.wfft = EMImage2DWidget()
-		self.wfft.setWindowTitle("sxgui_cter - 2D FFT")
+		self.wfft.setWindowTitle("sp_gui_cter - 2D FFT")
 		#self.wfft.mmode="app"  # NOT USED?
 		self.wfft.qt_parent.setWindowFlags((self.wfft.qt_parent.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
 		self.is_wfft_minimized = False
 		
 		self.wimgmicthumb = EMImage2DWidget()
-		self.wimgmicthumb.setWindowTitle("sxgui_cter - Micrograph Thumbnail")
+		self.wimgmicthumb.setWindowTitle("sp_gui_cter - Micrograph Thumbnail")
 		#self.wimgmicthumb.mmode="app"  # NOT USED?
 		self.wimgmicthumb.qt_parent.setWindowFlags((self.wimgmicthumb.qt_parent.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
 		self.is_wimgmicthumb_minimized = False
 		
 		self.wplotrotavgcoarse = SXPlot2DWidget()
-		self.wplotrotavgcoarse.setWindowTitle("sxgui_cter - Plot")
+		self.wplotrotavgcoarse.setWindowTitle("sp_gui_cter - Plot")
 		self.wplotrotavgcoarse.qt_parent.setWindowFlags((self.wplotrotavgcoarse.qt_parent.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
 		self.is_wplotrotavgcoarse_minimized = False
 		
 		self.wplotrotavgfine = SXPlot2DWidget()
-		self.wplotrotavgfine.setWindowTitle("sxgui_cter - Plot Zoom")
+		self.wplotrotavgfine.setWindowTitle("sp_gui_cter - Plot Zoom")
 		self.wplotrotavgfine.qt_parent.setWindowFlags((self.wplotrotavgfine.qt_parent.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
 		self.is_wplotrotavgfine_minimized = False
 		
 		self.whistparam = SXPlot2DWidget()
-		self.whistparam.setWindowTitle("sxgui_cter - Histogram")
+		self.whistparam.setWindowTitle("sp_gui_cter - Histogram")
 		self.whistparam.qt_parent.setWindowFlags((self.whistparam.qt_parent.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
 		self.is_whistparam_minimized = False
 		
 		self.wscatterparam=SXPlot2DWidget()
-		self.wscatterparam.setWindowTitle("sxgui_cter - Sort Plot")
+		self.wscatterparam.setWindowTitle("sp_gui_cter - Sort Plot")
 		self.wscatterparam.qt_parent.setWindowFlags((self.wscatterparam.qt_parent.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
 		self.is_wscatterparam_minimized = False
 	
@@ -1012,7 +1012,7 @@ class SXGuiCter(QWidget):
 		# Pad at the bottom
 		biglayout.addStretch(1)
 		
-		self.setWindowTitle("sxgui_cter - Control Panel")
+		self.setWindowTitle("sp_gui_cter - Control Panel")
 		
 	def signal_handler(self):
 		self.pbopencter.clicked[bool].connect(self.openCterPartres)
@@ -1899,7 +1899,7 @@ class SXGuiCter(QWidget):
 		# Now update the image
 		micthumb_img = EMData(self.cter_micthumb_file_path) # read the image from disk
 		self.wimgmicthumb.set_data(micthumb_img)
-		self.wimgmicthumb.setWindowTitle("sxgui_cter - Micrograph Thumbnail- %s, %s" 
+		self.wimgmicthumb.setWindowTitle("sp_gui_cter - Micrograph Thumbnail- %s, %s" 
 				% (os.path.basename(self.cter_entry_list[self.curentry][self.cter_params['mic_name'].idx_cter]), 
 				os.path.basename(self.cter_micthumb_file_path)))
 		
@@ -1947,7 +1947,7 @@ class SXGuiCter(QWidget):
 		# Now update the image
 		fft_img = EMData(self.cter_fft_file_path) # read the image from disk
 		self.wfft.set_data(fft_img)
-		self.wfft.setWindowTitle("sxgui_cter - 2D FFT %s, %s" 
+		self.wfft.setWindowTitle("sp_gui_cter - 2D FFT %s, %s" 
 				% (os.path.basename(self.cter_entry_list[self.curentry][self.cter_params['mic_name'].idx_cter]), 
 				os.path.basename(self.cter_fft_file_path)))
 		
@@ -2044,8 +2044,8 @@ class SXGuiCter(QWidget):
 				assert lower_threshold == param_val and param_val == upper_threshold, "MRK_DEBUG"
 				self.cter_params[self.hist_params[param].param_name].widget.text.setStyleSheet("color: rgb(127,127,127);")
 		
-		self.wplotrotavgcoarse.setWindowTitle("sxgui_cter - Plot - %s, %s" % (os.path.basename(self.cter_entry_list[self.curentry][self.cter_params['mic_name'].idx_cter]), os.path.basename(self.cter_pwrot_file_path)))
-		self.wplotrotavgfine.setWindowTitle("sxgui_cter - Plot Zoom- %s, %s" % (os.path.basename(self.cter_entry_list[self.curentry][self.cter_params['mic_name'].idx_cter]), os.path.basename(self.cter_pwrot_file_path)))
+		self.wplotrotavgcoarse.setWindowTitle("sp_gui_cter - Plot - %s, %s" % (os.path.basename(self.cter_entry_list[self.curentry][self.cter_params['mic_name'].idx_cter]), os.path.basename(self.cter_pwrot_file_path)))
+		self.wplotrotavgfine.setWindowTitle("sp_gui_cter - Plot Zoom- %s, %s" % (os.path.basename(self.cter_entry_list[self.curentry][self.cter_params['mic_name'].idx_cter]), os.path.basename(self.cter_pwrot_file_path)))
 		
 		self.needredisp = True
 	
@@ -2203,7 +2203,7 @@ class SXGuiCter(QWidget):
 			
 			idx_cter = selected_hist_param.idx_cter
 
-			self.whistparam.setWindowTitle("sxgui_cter - %s Histogram" % (param_label))
+			self.whistparam.setWindowTitle("sp_gui_cter - %s Histogram" % (param_label))
 			
 			if self.cursyncsort == True:
 				idx_sort = self.cter_params_sort[param_name].idx_sort
@@ -2670,14 +2670,14 @@ class SXGuiCter(QWidget):
 	
 	def closeEvent(self,event):
 		# Save current window layout
-		E2saveappwin("sxgui_cter","main",self)
+		E2saveappwin("sp_gui_cter","main",self)
 		if self.cter_entry_list != None:
-			E2saveappwin("sxgui_cter","fft",self.wfft.qt_parent)
-			E2saveappwin("sxgui_cter","imgmicthumb",self.wimgmicthumb.qt_parent)
-			E2saveappwin("sxgui_cter","plotcoarse",self.wplotrotavgcoarse.qt_parent)
-			E2saveappwin("sxgui_cter","plotfine",self.wplotrotavgfine.qt_parent)
-			E2saveappwin("sxgui_cter","plotparam",self.wscatterparam.qt_parent)
-			E2saveappwin("sxgui_cter","histparam",self.whistparam.qt_parent)
+			E2saveappwin("sp_gui_cter","fft",self.wfft.qt_parent)
+			E2saveappwin("sp_gui_cter","imgmicthumb",self.wimgmicthumb.qt_parent)
+			E2saveappwin("sp_gui_cter","plotcoarse",self.wplotrotavgcoarse.qt_parent)
+			E2saveappwin("sp_gui_cter","plotfine",self.wplotrotavgfine.qt_parent)
+			E2saveappwin("sp_gui_cter","plotparam",self.wscatterparam.qt_parent)
+			E2saveappwin("sp_gui_cter","histparam",self.whistparam.qt_parent)
 		
 		# close all child windows
 		if self.wfft: self.wfft.close()
