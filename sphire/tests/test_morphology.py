@@ -16,6 +16,8 @@ from EMAN2_cppwrap import EMData, EMAN2Ctf
 from copy import  deepcopy
 from os import path
 
+from mpi import *
+mpi_init(0, [])
 
 
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
@@ -646,6 +648,13 @@ class Test_rotavg_ctf(unittest.TestCase):
             oldfu.rotavg_ctf()
         self.assertEqual(cm.exception.message, "rotavg_ctf() takes at least 5 arguments (0 given)")
 
+    def test_with_real_case_values(self):
+        """ value got running 'fu.cter_vpp'"""
+        return_new = fu.rotavg_ctf(sparx_utilities.model_blank(512, 512), defocus= 1.21383448092, Cs =2, voltage=300, Pixel_size=1.09,amp = 0.0710737964085, ang = 36.5871642719)
+        return_old = oldfu.rotavg_ctf(sparx_utilities.model_blank(512, 512), defocus= 1.21383448092, Cs =2, voltage=300, Pixel_size=1.09,amp = 0.0710737964085, ang = 36.5871642719)
+        # the results is a list with 256 0.0 values
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
     def test_2DImg_null_spherical_abberation(self):
         return_new = fu.rotavg_ctf(IMAGE_2D, defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_2D, defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
@@ -1208,16 +1217,17 @@ class Test_ctf2_rimg(unittest.TestCase):
 
 
 class Test_ctflimit(unittest.TestCase):
-
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm:
             fu.ctflimit()
             oldfu.ctflimit()
         self.assertEqual(cm.exception.message, "ctflimit() takes exactly 5 arguments (0 given)")
 
-    def test_ctfLimit(self):
-        return_new = fu.ctflimit(nx=30, defocus=1, cs=2, voltage=300, pix=1.5)
-        return_old = oldfu.ctflimit(nx=30, defocus=1, cs=2, voltage=300, pix=1.5)
+    def test_with_real_case_values(self):
+        """ value got running 'fu.cter_vpp'"""
+        return_new = fu.ctflimit(nx=512, defocus=1.21383448092, cs=2, voltage=300, pix=1.09)
+        return_old = oldfu.ctflimit(nx=512, defocus=1.21383448092, cs=2, voltage=300, pix=1.09)
+        """    ctflim = {float} 0.45871559633    ctflim_abs = {int} 257      """
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
     def test_null_voltage_crashes_because_LinAlgError(self):
@@ -1872,41 +1882,39 @@ class Test_cter_mrk(unittest.TestCase):
     defocus = 1
     cs = 2
     voltage = 300
-    pixel_size = 1.0
+    pixel_size = 1.09
     bfactor = 0
-    amp_contrast = 0.1   # it is the 'ac' input user param
+    amp_contrast = 0.1  # it is the 'ac' input user param
     wn = 512
-    i_start = 1
-    i_stop = 10
-    vpp_options = [0.3, 9.0, 0.1, 5.0, 175.0, 5.0]
+    i_start = 0.048
+    i_stop = -1
     image1 = get_data(1, 256)[0]
     selection_list = 'image.mrc'
-    input_image_path = path.join(ABSOLUTE_PATH_TO_MRC_FILES, "TcdA1-*_frames.mrc")
+    input_image_path = path.join(ABSOLUTE_PATH_TO_MRC_FILES, "TcdA1-*_frames_sum.mrc")
     output_directory = path.join(ABSOLUTE_PATH_TO_MRC_FILES, "cter_mrk_results")
+
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm:
             fu.cter_mrk()
             oldfu.cter_mrk()
         self.assertEqual(cm.exception.message, "cter_mrk() takes at least 2 arguments (0 given)")
 
-    @unittest.skip("I need the cter_mrk/image.mrc from Adnan")
-    def test_cter_mark_true_should_return_equal_object(self):
-        #RuntimeError: FileAccessException at /home/lusnig/EMAN2/eman2/libEM/imageio.cpp:158: error with 'cter_mrk/image.mrc': 'cannot access file 'cter_mrk/image.mrc'' caught
-
-        ctf = EMAN2Ctf()
-        ctf.from_dict({"defocus": self.defocus, "cs": self.cs, "voltage": self.voltage, "apix": self.pixel_size, "bfactor": self.bfactor,"ampcont": self.amp_contrast})
-
-        micrograph_image = sparx_filter.filt_ctf(self.image1,ctf)
-        micrograph_image.write_image('cter_mrk/image.mrc')
-
+    def test_cter_mrk_default_value_runningundermpiFalse(self):
         remove_dir(self.output_directory)
-
-        return_new = fu.cter_mrk(self.input_image_path, self.output_directory, selection_list = self.selection_list, wn = self.wn,  pixel_size=self.pixel_size, Cs= self.cs, voltage = self.voltage)
-
+        return_new = fu.cter_mrk(self.input_image_path, self.output_directory, selection_list=None, wn=self.wn, pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0, check_consistency=False, stack_mode=False, debug_mode=False, program_name="cter_mrk() in morphology.py", RUNNING_UNDER_MPI=False, main_mpi_proc=0, my_mpi_proc_id=0, n_mpi_procs=1)
+        # returns None because last if --> cter_mode_idx == idx_cter_mode_stack is not cter_mode_idx == idx_cter_mode_stack --> 0 ==3
         remove_dir(self.output_directory)
+        return_old = oldfu.cter_mrk(self.input_image_path, self.output_directory, selection_list=None, wn=self.wn, pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0, check_consistency=False, stack_mode=False, debug_mode=False, program_name="cter_mrk() in morphology.py", RUNNING_UNDER_MPI=False, main_mpi_proc=0, my_mpi_proc_id=0, n_mpi_procs=1)
+        self.assertEqual(return_new, return_old)
 
-        return_old = oldfu.cter_mrk(self.input_image_path, self.output_directory, selection_list = self.selection_list, wn = self.wn,  pixel_size=self.pixel_size, Cs= self.cs, voltage = self.voltage)
-
+    def test_cter_mrk_default_value_runningundermpiTrue(self):
+        remove_dir(self.output_directory)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_new = fu.cter_mrk(self.input_image_path, self.output_directory, selection_list=None, wn=self.wn,pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0, check_consistency=False, stack_mode=False, debug_mode=False, program_name="cter_mrk() in morphology.py", RUNNING_UNDER_MPI=True, main_mpi_proc=0,my_mpi_proc_id=0, n_mpi_procs=1)
+        # returns None because last if --> cter_mode_idx == idx_cter_mode_stack is not cter_mode_idx == idx_cter_mode_stack --> 0 ==3
+        remove_dir(self.output_directory)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_old = oldfu.cter_mrk(self.input_image_path, self.output_directory, selection_list=None, wn=self.wn,pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start,f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0,check_consistency=False, stack_mode=False, debug_mode=False,program_name="cter_mrk() in morphology.py", RUNNING_UNDER_MPI=True, main_mpi_proc=0,my_mpi_proc_id=0, n_mpi_procs=1)
         self.assertEqual(return_new, return_old)
 
 
@@ -1920,16 +1928,15 @@ class Test_cter_pap(unittest.TestCase):
     defocus = 1
     cs = 2
     voltage = 300
-    pixel_size = 1.0
+    pixel_size = 1.09
     bfactor = 0
-    amp_contrast = 0.1   # it is the 'ac' input user param
+    amp_contrast = 0.1  # it is the 'ac' input user param
     wn = 512
-    i_start = 1
-    i_stop = 10
-    vpp_options = [0.3, 9.0, 0.1, 5.0, 175.0, 5.0]
+    i_start = 0.048
+    i_stop = -1
     image1 = get_data(1, 256)[0]
     selection_list = 'image.mrc'
-    input_image_path = path.join(ABSOLUTE_PATH_TO_MRC_FILES, "TcdA1-*_frames.mrc")
+    input_image_path = path.join(ABSOLUTE_PATH_TO_MRC_FILES, "TcdA1-*_frames_sum.mrc")
     output_directory = path.join(ABSOLUTE_PATH_TO_MRC_FILES, "cter_mrk_results")
 
     def test_wrong_number_params_too_few_parameters(self):
@@ -1938,25 +1945,23 @@ class Test_cter_pap(unittest.TestCase):
             oldfu.cter_pap()
         self.assertEqual(cm.exception.message, "cter_pap() takes at least 2 arguments (0 given)")
 
-    @unittest.skip("I need the cter_mrk/image.mrc from Adnan")
-    def test_cter_pap_true_should_return_equal_object(self):
-        #RuntimeError: FileAccessException at /home/lusnig/EMAN2/eman2/libEM/imageio.cpp:158: error with 'cter_mrk/image.mrc': 'cannot access file 'cter_mrk/image.mrc'' caught
-
-        ctf = EMAN2Ctf()
-        ctf.from_dict({"defocus": self.defocus, "cs": self.cs, "voltage": self.voltage, "apix": self.pixel_size, "bfactor": self.bfactor,"ampcont": self.amp_contrast})
-
-        micrograph_image = sparx_filter.filt_ctf(self.image1,ctf)
-        micrograph_image.write_image('cter_mrk/image.mrc')
-
+    def test_cter_pap_default_value_runningundermpiFalse(self):
         remove_dir(self.output_directory)
-
-        return_new = fu.cter_pap(self.input_image_path, self.output_directory, selection_list = self.selection_list, wn = self.wn,  pixel_size=self.pixel_size, Cs= self.cs, voltage = self.voltage)
-
+        return_new = fu.cter_pap(self.input_image_path, self.output_directory, selection_list=None, wn=self.wn,pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0, check_consistency=False, stack_mode=False, debug_mode=False, program_name="cter_pap() in morphology.py", RUNNING_UNDER_MPI=False, main_mpi_proc=0, my_mpi_proc_id=0, n_mpi_procs=1)
+        # returns None because last if --> cter_mode_idx == idx_cter_mode_stack is not cter_mode_idx == idx_cter_mode_stack --> 0 ==3
         remove_dir(self.output_directory)
-
-        return_old = oldfu.cter_pap(self.input_image_path, self.output_directory, selection_list = self.selection_list, wn = self.wn,  pixel_size=self.pixel_size, Cs= self.cs, voltage = self.voltage)
-
+        return_old = oldfu.cter_pap(self.input_image_path, self.output_directory, selection_list=None, wn=self.wn, pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0, check_consistency=False, stack_mode=False, debug_mode=False, program_name="cter_pap() in morphology.py", RUNNING_UNDER_MPI=False, main_mpi_proc=0, my_mpi_proc_id=0, n_mpi_procs=1)
         self.assertEqual(return_new, return_old)
+        
+    def test_cter_pap_default_value_runningundermpiTrue(self):
+        remove_dir(self.output_directory)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_new = fu.cter_pap(self.input_image_path, self.output_directory, selection_list=None, wn=self.wn,pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0, check_consistency=False, stack_mode=False, debug_mode=False, program_name="cter_pap() in morphology.py", RUNNING_UNDER_MPI=True, main_mpi_proc=0, my_mpi_proc_id=0, n_mpi_procs=1)
+        # returns None because last if --> cter_mode_idx == idx_cter_mode_stack is not cter_mode_idx == idx_cter_mode_stack --> 0 ==3
+        remove_dir(self.output_directory)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_old = oldfu.cter_pap(self.input_image_path, self.output_directory, selection_list=None, wn=self.wn, pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0, check_consistency=False, stack_mode=False, debug_mode=False, program_name="cter_pap() in morphology.py", RUNNING_UNDER_MPI=True, main_mpi_proc=0, my_mpi_proc_id=0, n_mpi_procs=1)
+        self.assertEqual(return_new, return_old)    
 
 
 
@@ -1970,17 +1975,18 @@ class Test_cter_vpp(unittest.TestCase):
     defocus = 1
     cs = 2
     voltage = 300
-    pixel_size = 1.0
+    pixel_size = 1.09
     bfactor = 0
     amp_contrast = 0.1   # it is the 'ac' input user param
     wn = 512
-    i_start = 0
-    i_stop = 10
+    i_start = 0.048
+    i_stop = -1
     vpp_options = [0.3, 9.0, 0.1, 5.0, 175.0, 5.0]
     image1 = get_data(1, 256)[0]
     selection_list = 'image.mrc'
     input_image_path = path.join(ABSOLUTE_PATH_TO_MRC_FILES, "TcdA1-*_frames_sum.mrc")
     output_directory = path.join(ABSOLUTE_PATH_TO_MRC_FILES, "cter_mrk_results")
+
 
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm:
@@ -1988,32 +1994,23 @@ class Test_cter_vpp(unittest.TestCase):
             oldfu.cter_vpp()
         self.assertEqual(cm.exception.message, "cter_vpp() takes at least 2 arguments (0 given)")
 
-
-    @unittest.skip("for now crash in ln 3888 			defc, ampcont, astamp, astang, score =  defocusgett_vpp2(qse, wn, defc, ampcont, voltage = voltage, Pixel_size = pixel_size, Cs = Cs, i_start=istart, i_stop=istop, parent = None, DEBug = debug_mode)")
-    def test_cter_vpp_true_should_return_equal_object(self):
-        #RuntimeError: FileAccessException at /home/lusnig/EMAN2/eman2/libEM/imageio.cpp:158: error with 'cter_mrk/image.mrc': 'cannot access file 'cter_mrk/image.mrc'' caught
-
-        """
-        ctf = EMAN2Ctf()
-        ctf.from_dict({"defocus": self.defocus, "cs": self.cs, "voltage": self.voltage, "apix": self.pixel_size, "bfactor": self.bfactor, "ampcont": self.amp_contrast})
-        image1, = get_data(1, 256)
-
-        micrograph_image = sparx_filter.filt_ctf(image1,ctf)
-        micrograph_image.write_image('cter_mrk/image.mrc')
-        selection_list = 'image.mrc'
-
+    def test_cter_vpp__default_value_runningundermpiFalse(self):
         remove_dir(self.output_directory)
-        """
-
-        return_new = fu.cter_vpp(self.input_image_path, self.output_directory, selection_list = None, wn = self.wn,  pixel_size=self.pixel_size, Cs= self.cs, voltage = self.voltage, f_start=self.i_start, f_stop=self.i_stop, vpp_options=self.vpp_options)
-
+        return_new = fu.cter_vpp(self.input_image_path, self.output_directory, selection_list = None, wn = self.wn,  pixel_size=self.pixel_size, Cs= self.cs, voltage = self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot = 3, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, check_consistency = False, stack_mode = False, debug_mode = False, program_name = "cter_vpp() in morphology.py", vpp_options = self.vpp_options, RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1)
+        #returns None because last if --> cter_mode_idx == idx_cter_mode_stack is not cter_mode_idx == idx_cter_mode_stack --> 0 ==3
         remove_dir(self.output_directory)
-
-        return_old = oldfu.cter_vpp(self.input_image_path, self.output_directory, selection_list = None, wn = self.wn,  pixel_size=self.pixel_size, Cs= self.cs, voltage = self.voltage, f_start=self.i_start, f_stop=self.i_stop, vpp_options=self.vpp_options)
-
-        remove_dir(self.output_directory)
+        return_old = oldfu.cter_vpp(self.input_image_path, self.output_directory, selection_list = None, wn = self.wn,  pixel_size=self.pixel_size, Cs= self.cs, voltage = self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot = 3, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, check_consistency = False, stack_mode = False, debug_mode = False, program_name = "cter_vpp() in morphology.py", vpp_options = self.vpp_options, RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1)
         self.assertEqual(return_new, return_old)
 
+    def test_cter_vpp__default_value_runningundermpiTrue(self):
+        remove_dir(self.output_directory)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_new = fu.cter_vpp(self.input_image_path, self.output_directory, selection_list = None, wn = self.wn,  pixel_size=self.pixel_size, Cs= self.cs, voltage = self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot = 3, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, check_consistency = False, stack_mode = False, debug_mode = False, program_name = "cter_vpp() in morphology.py", vpp_options = self.vpp_options, RUNNING_UNDER_MPI = True, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1)
+        #returns None because last if --> cter_mode_idx == idx_cter_mode_stack is not cter_mode_idx == idx_cter_mode_stack --> 0 ==3
+        remove_dir(self.output_directory)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_old = oldfu.cter_vpp(self.input_image_path, self.output_directory, selection_list = None, wn = self.wn,  pixel_size=self.pixel_size, Cs= self.cs, voltage = self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot = 3, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, check_consistency = False, stack_mode = False, debug_mode = False, program_name = "cter_vpp() in morphology.py", vpp_options = self.vpp_options, RUNNING_UNDER_MPI = True, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1)
+        self.assertEqual(return_new, return_old)
 
 
 class Test_ampcont2angle(unittest.TestCase):
