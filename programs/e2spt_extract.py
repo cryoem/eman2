@@ -36,9 +36,11 @@ def main():
 	parser.add_argument("--shrink", type=int, help="Shrinking factor for output particles. Default is 1 (no shrink)",default=1, guitype='intbox',row=8, col=0, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--tltkeep", type=float,help="keep a fraction of tilt images with good score determined from tomogram reconstruction", default=1.0, guitype='floatbox',row=8, col=1, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--rmbeadthr", type=float,help="remove 2d particles with high contrast object beyond N sigma at 100A. Note that this may result in generating fewer particles than selected. Default is -1 (include all particles). 5 might be a good choice for removing gold beads but may need some testing...", default=-1, guitype='floatbox',row=9, col=0, rowspan=1, colspan=1, mode="extract")
+	
+	parser.add_header(name="orblock1", help='Just a visual separation', title="Re-extraction from spt", row=10, col=0, rowspan=1, colspan=1, mode="extract")
 
-	parser.add_argument("--jsonali", type=str,help="re-extract particles using a particle_param_xx json file from a spt alignment", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=10, col=0,rowspan=1, colspan=2, mode="extract")
-	parser.add_argument("--alioffset", type=str,help="coordinate offset when re-extract particles. (x,y,z)", default="(0,0,0)", guitype='strbox', row=11, col=0,rowspan=1, colspan=1, mode="extract")
+	parser.add_argument("--jsonali", type=str,help="re-extract particles using a particle_param_xx json file from a spt alignment", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=11, col=0,rowspan=1, colspan=2, mode="extract")
+	parser.add_argument("--alioffset", type=str,help="coordinate offset when re-extract particles. (x,y,z)", default="0,0,0", guitype='strbox', row=12, col=0,rowspan=1, colspan=1, mode="extract")
 
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
@@ -53,7 +55,9 @@ def main():
 			offset=list(float(i) for i in options.alioffset.split(','))
 		except:
 			offset=(0,0,0)
-		print("offset ({},{},{})".format(offset[0], offset[1], offset[2]))
+		
+		print("extracting {} sub-particles per particle, with offset".format(len(offset)//3))
+		print(np.array(offset).reshape((-1,3)))
 		allxfs=parse_json(options.jsonali, offset)
 		for fname in allxfs.keys():
 			#### it seems options is changed inplace somewhere...
@@ -418,7 +422,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[]):
 		else:
 			tf_dir=None
 
-		recon=Reconstructors.get("fourier", {"sym":'c1', "size":[p3d, p3d, p3d]})
+		recon=Reconstructors.get("fourier", {"sym":'c1', "size":[p3d, p3d, p3d], "mode":"gauss_2"})
 		recon.setup()
 		projs=[]
 		for nid, m in enumerate(imgs):
@@ -508,6 +512,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[]):
 			continue
 		else:
 			threed=recon.finish(True)
+			threed.process_inplace("math.gausskernelfix",{"gauss_width":4.0})
 			threed=threed.get_clip(Region((p3d-bx)//2,(p3d-bx)//2,(p3d-bx)//2,bx,bx,bx))
 			
 		threed["apix_x"]=threed["apix_y"]=threed["apix_z"]=apix
@@ -544,21 +549,23 @@ def parse_json(jsfile, offset=(0,0,0)):
 	js=js_open_dict(jsfile)
 	coord=[]
 	allxfs={}
+	
 	for ky in js.keys():
 		src, ii = eval(ky)
 		e=EMData(src, ii, True)
 		tomo=e["class_ptcl_src"]
 		dic=js[ky]
 		c=e["ptcl_source_coord"]
-		ali=dic["xform.align3d"]
-		ali.translate(offset[0], offset[1], offset[2])
-		a=ali.inverse()
-		a.translate(c[0], c[1], c[2])
-		
-		if allxfs.has_key(tomo):
-			allxfs[tomo].append(a)
-		else:
-			allxfs[tomo]=[a]
+		for o in range(len(offset)//3):
+			ali=dic["xform.align3d"]
+			ali.translate(offset[o*3+0], offset[o*3+1], offset[o*3+2])
+			a=ali.inverse()
+			a.translate(c[0], c[1], c[2])
+			
+			if allxfs.has_key(tomo):
+				allxfs[tomo].append(a)
+			else:
+				allxfs[tomo]=[a]
 			
 	js.close()
 	
