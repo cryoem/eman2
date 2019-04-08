@@ -24,7 +24,9 @@ ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 """
 change it when you run the tests with your path.In this folder I copied 'TcdA1-0010_frames.mrc' got from the sphire tutorial i.e.: 'SphireDemoResults/CorrectedSums/corrsum':
 """
-ABSOLUTE_PATH_TO_MRC_FILES="/home/lusnig/Downloads/mrc_files_for_unit_test"
+ABSOLUTE_PATH_TO_MRC_FOLDER= "/home/lusnig/Downloads/mrc_files_for_unit_test"
+ABSOLUTE_PATH_TO_STACK="bdb:/home/lusnig/Downloads/SphireDemoResults/Class2D/stack_ali2d"
+
 TOLERANCE = 0.0075
 
 IMAGE_2D, IMAGE_2D_REFERENCE = get_real_data(dim=2)
@@ -59,6 +61,14 @@ There are some opened issues in:
 
 """
 class Test_binarize(unittest.TestCase):
+
+    def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(self):
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.binarize(None)
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.binarize(None)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'process'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_binarize_2Dimg(self):
         return_new = fu.binarize(IMAGE_2D, minval = 0.0)
@@ -100,6 +110,14 @@ class Test_binarize(unittest.TestCase):
 
 
 class Test_collapse(unittest.TestCase):
+
+    def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(self):
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.collapse(None, minval = -1.0, maxval = 1.0)
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.collapse(None, minval = -1.0, maxval = 1.0)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'process'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_collapse_2Dimg(self):
         return_new = fu.collapse(IMAGE_2D, minval = -1.0, maxval = 1.0)
@@ -143,7 +161,7 @@ class Test_collapse(unittest.TestCase):
 
 class Test_dilatation(unittest.TestCase):
 
-    def test_test_empty_input_image_crashes_because_signal11SIGSEV(self):
+    def test_empty_input_image_crashes_because_signal11SIGSEV(self):
         """
         It seems not possible to test it without getting an segmentation fault. We should return None after the first error message
         in order to avoid to run in the second if/else and get the segmentation fault in the c+++ code
@@ -155,6 +173,15 @@ class Test_dilatation(unittest.TestCase):
         self.assertTrue(return_new is None)
         """
         self.assertTrue(True)
+
+    def test_NoneType_as_input_image_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.dilation(None, MASK, morphtype="BINARY")
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.dilation(None, MASK, morphtype="BINARY")
+        """
 
     def test_empty_mask_image_returns_RuntimeError_ImageDimensionException_center_isnot_welldefined(self):
         with self.assertRaises(RuntimeError) as cm_new:
@@ -313,11 +340,22 @@ class Test_erosion(unittest.TestCase):
         """
         self.assertTrue(True)
 
+    def test_NoneType_as_input_image_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.erosion(None, MASK, morphtype="BINARY")
+        with self.assertRaises(AttributeError) as cm_old:
+            fu.erosion(None, MASK, morphtype="BINARY")
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'process'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        """
+
     def test_empty_mask_image_RuntimeError_ImageDimensionException_center_isnot_welldefined(self):
         with self.assertRaises(RuntimeError)as cm_new:
-            oldfu.erosion(IMAGE_BLANK_2D, EMData(), morphtype="BINARY")
-        with self.assertRaises(RuntimeError)as cm_old:
             fu.erosion(IMAGE_BLANK_2D, EMData(), morphtype="BINARY")
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.erosion(IMAGE_BLANK_2D, EMData(), morphtype="BINARY")
 
         msg = cm_new.exception.message.split("'")
         msg_old = cm_old.exception.message.split("'")
@@ -457,6 +495,14 @@ class Test_erosion(unittest.TestCase):
 
 class Test_power(unittest.TestCase):
 
+    def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(self):
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.power(None, x = 3.0)
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.power(None, x = 3.0)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'process'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
     def test_power_2Dimg(self):
         return_new = fu.power(IMAGE_2D, x = 3.0)
         return_old = oldfu.power(IMAGE_2D, x = 3.0)
@@ -495,6 +541,14 @@ class Test_power(unittest.TestCase):
 
 
 class Test_square_root(unittest.TestCase):
+
+    def test_NoneType_img_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        return_new = fu.square_root(None)
+        return_old = oldfu.square_root(None)
+        self.assertTrue(numpy.allclose(return_new.get_3dview(), return_old.get_3dview(),equal_nan=True))
+        """
 
     def test_positive_2Dimg(self):
         return_new = fu.square_root(IMAGE_2D)
@@ -558,10 +612,13 @@ class Test_square_root(unittest.TestCase):
 
 class Test_square(unittest.TestCase):
 
-    def test_square_2Dimg(self):
-        return_new = fu.square(IMAGE_2D)
-        return_old = oldfu.square(IMAGE_2D)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+    def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(self):
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.square(None)
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.square(None)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'process'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_square_3Dimg(self):
         return_new = fu.square(IMAGE_3D)
@@ -597,6 +654,14 @@ class Test_square(unittest.TestCase):
 
 
 class Test_threshold(unittest.TestCase):
+
+    def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(self):
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.threshold(None)
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.threshold(None)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'process'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_threshold_2Dimg(self):
         return_new = fu.threshold(IMAGE_2D)
@@ -637,6 +702,13 @@ class Test_threshold(unittest.TestCase):
 
 
 class Test_threshold_outside(unittest.TestCase):
+    def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(self):
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.threshold_outside(None,2 ,4)
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.threshold_outside(None,2,4)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'process'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_threshold_outside_2Dimg(self):
         return_new = fu.threshold_outside(IMAGE_2D, 2 , 10)
@@ -674,6 +746,14 @@ class Test_threshold_outside(unittest.TestCase):
 
 
 class Test_notzero(unittest.TestCase):
+
+    def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(self):
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.notzero(None)
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.notzero(None)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'process'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_notzero_2Dimg(self):
         return_new = fu.notzero(IMAGE_2D)
@@ -715,6 +795,14 @@ class Test_notzero(unittest.TestCase):
 
 class Test_rotavg_ctf(unittest.TestCase):
     """ See http://sparx-em.org/sparxwiki/CTF_info for the meaning of the params"""
+
+    def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_get_xsize(self):
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.rotavg_ctf(None, defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.rotavg_ctf(None, defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_empty_input_image(self):
         return_new = fu.rotavg_ctf(EMData(), defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
@@ -1504,6 +1592,14 @@ class Test_adaptive_mask(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, "adaptive_mask() takes at least 1 argument (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
+    def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_get_xsize(self):
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.adaptive_mask(None, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.adaptive_mask(None, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
     def test_2dimg_default_values(self):
         return_new = fu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
         return_old = oldfu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
@@ -1698,6 +1794,17 @@ class Test_cosinemask(unittest.TestCase):
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
         """
         self.assertTrue(True)
+
+    def test_NoneType_as_input_image_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.cosinemask(None, radius = -1, cosine_width = 5, bckg = None, s=999999.0)
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.cosinemask(None, radius = -1, cosine_width = 5, bckg = None, s=999999.0)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'process'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        """
 
     def test_3d_img_default_values(self):
         return_new = fu.cosinemask(IMAGE_3D, radius = -1, cosine_width = 5, bckg = None, s=999999.0)
@@ -1958,6 +2065,14 @@ class Test_get_biggest_cluster(unittest.TestCase):
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
 
+    def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_get_xsize(self):
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.get_biggest_cluster(None)
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.get_biggest_cluster(None)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
     def test_2Dimg(self):
         return_new = fu.get_biggest_cluster(IMAGE_2D)
         return_old = oldfu.get_biggest_cluster(IMAGE_2D)
@@ -2058,7 +2173,7 @@ class Test_compute_bfactor(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
 
-@unittest.skip("sdasd")
+@unittest.skip("quasda")
 class Test_cter_mrk(unittest.TestCase):
     """
     1) Since the process finishes with an not-specified exit code, we cannot test it uniquely
@@ -2076,8 +2191,8 @@ class Test_cter_mrk(unittest.TestCase):
     i_stop = -1
     image1 = get_data(1, 256)[0]
     selection_list = 'image.mrc'
-    input_image_path = path.join(ABSOLUTE_PATH_TO_MRC_FILES, "TcdA1-*_frames_sum.mrc")
-    output_directory = path.join(ABSOLUTE_PATH_TO_MRC_FILES, "cter_mrk_results")
+    input_image_path = path.join(ABSOLUTE_PATH_TO_MRC_FOLDER, "TcdA1-*_frames_sum.mrc")
+    output_directory = path.join(ABSOLUTE_PATH_TO_MRC_FOLDER, "cter_mrk_results")
 
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -2095,6 +2210,14 @@ class Test_cter_mrk(unittest.TestCase):
         return_old = oldfu.cter_mrk(self.input_image_path, self.output_directory, selection_list=None, wn=self.wn, pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0, check_consistency=False, stack_mode=False, debug_mode=False, program_name="cter_mrk() in morphology.py", RUNNING_UNDER_MPI=False, main_mpi_proc=0, my_mpi_proc_id=0, n_mpi_procs=1)
         self.assertEqual(return_new, return_old)
 
+    def test_cter_mrk_default_value_runningundermpiFalse_and_checkconsistencyTrue(self):
+        remove_dir(self.output_directory)
+        return_new = fu.cter_mrk(self.input_image_path, self.output_directory, selection_list=None, wn=self.wn, pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0, check_consistency=True, stack_mode=False, debug_mode=False, program_name="cter_mrk() in morphology.py", RUNNING_UNDER_MPI=False, main_mpi_proc=0, my_mpi_proc_id=0, n_mpi_procs=1)
+        # returns None because last if --> cter_mode_idx == idx_cter_mode_stack is not cter_mode_idx == idx_cter_mode_stack --> 0 ==3
+        remove_dir(self.output_directory)
+        return_old = oldfu.cter_mrk(self.input_image_path, self.output_directory, selection_list=None, wn=self.wn, pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0, check_consistency=True, stack_mode=False, debug_mode=False, program_name="cter_mrk() in morphology.py", RUNNING_UNDER_MPI=False, main_mpi_proc=0, my_mpi_proc_id=0, n_mpi_procs=1)
+        self.assertEqual(return_new, return_old)
+
     def test_cter_mrk_default_value_runningundermpiTrue(self):
         remove_dir(self.output_directory)
         mpi_barrier(MPI_COMM_WORLD)
@@ -2105,8 +2228,30 @@ class Test_cter_mrk(unittest.TestCase):
         return_old = oldfu.cter_mrk(self.input_image_path, self.output_directory, selection_list=None, wn=self.wn,pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start,f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0,check_consistency=False, stack_mode=False, debug_mode=False,program_name="cter_mrk() in morphology.py", RUNNING_UNDER_MPI=True, main_mpi_proc=0,my_mpi_proc_id=0, n_mpi_procs=1)
         self.assertEqual(return_new, return_old)
 
+    def test_cter_mrk_default_value_runningundermpiTrue_and_checkconsistencyTrue(self):
+        remove_dir(self.output_directory)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_new = fu.cter_mrk(self.input_image_path, self.output_directory, selection_list=None, wn=self.wn,pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0, check_consistency=True, stack_mode=False, debug_mode=False, program_name="cter_mrk() in morphology.py", RUNNING_UNDER_MPI=True, main_mpi_proc=0,my_mpi_proc_id=0, n_mpi_procs=1)
+        # returns None because last if --> cter_mode_idx == idx_cter_mode_stack is not cter_mode_idx == idx_cter_mode_stack --> 0 ==3
+        remove_dir(self.output_directory)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_old = oldfu.cter_mrk(self.input_image_path, self.output_directory, selection_list=None, wn=self.wn,pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start,f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0,check_consistency=True, stack_mode=False, debug_mode=False,program_name="cter_mrk() in morphology.py", RUNNING_UNDER_MPI=True, main_mpi_proc=0,my_mpi_proc_id=0, n_mpi_procs=1)
+        self.assertEqual(return_new, return_old)
 
-@unittest.skip("sd2asd")
+    def test_cter_mrk_default_value_runningundermpiTrue_stackMode(self):
+        remove_dir(self.output_directory)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_new = fu.cter_mrk(ABSOLUTE_PATH_TO_STACK, self.output_directory, selection_list=None, wn=self.wn,pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0, check_consistency=False, stack_mode=True, debug_mode=False, program_name="cter_mrk() in morphology.py", RUNNING_UNDER_MPI=True, main_mpi_proc=0,my_mpi_proc_id=0, n_mpi_procs=1)
+        # returns None because last if --> cter_mode_idx == idx_cter_mode_stack is not cter_mode_idx == idx_cter_mode_stack --> 0 ==3
+        remove_dir(self.output_directory)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_old = oldfu.cter_mrk(ABSOLUTE_PATH_TO_STACK, self.output_directory, selection_list=None, wn=self.wn,pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start,f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0,check_consistency=False, stack_mode=True, debug_mode=False,program_name="cter_mrk() in morphology.py", RUNNING_UNDER_MPI=True, main_mpi_proc=0,my_mpi_proc_id=0, n_mpi_procs=1)
+        self.assertEqual(return_new, return_old)
+
+
+
+
+@unittest.skip("quasda")
 class Test_cter_pap(unittest.TestCase):
     """
     1) Since the process finishes with an not-specified exit code, we cannot test it uniquely
@@ -2124,8 +2269,8 @@ class Test_cter_pap(unittest.TestCase):
     i_stop = -1
     image1 = get_data(1, 256)[0]
     selection_list = 'image.mrc'
-    input_image_path = path.join(ABSOLUTE_PATH_TO_MRC_FILES, "TcdA1-*_frames_sum.mrc")
-    output_directory = path.join(ABSOLUTE_PATH_TO_MRC_FILES, "cter_mrk_results")
+    input_image_path = path.join(ABSOLUTE_PATH_TO_MRC_FOLDER, "TcdA1-*_frames_sum.mrc")
+    output_directory = path.join(ABSOLUTE_PATH_TO_MRC_FOLDER, "cter_mrk_results")
 
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -2142,6 +2287,14 @@ class Test_cter_pap(unittest.TestCase):
         remove_dir(self.output_directory)
         return_old = oldfu.cter_pap(self.input_image_path, self.output_directory, selection_list=None, wn=self.wn, pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0, check_consistency=False, stack_mode=False, debug_mode=False, program_name="cter_pap() in morphology.py", RUNNING_UNDER_MPI=False, main_mpi_proc=0, my_mpi_proc_id=0, n_mpi_procs=1)
         self.assertEqual(return_new, return_old)
+
+    def test_cter_pap_default_value_runningundermpiFalse_and_checkconsistencyTrue(self):
+        remove_dir(self.output_directory)
+        return_new = fu.cter_pap(self.input_image_path, self.output_directory, selection_list=None, wn=self.wn,pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0, check_consistency=True, stack_mode=False, debug_mode=False, program_name="cter_pap() in morphology.py", RUNNING_UNDER_MPI=False, main_mpi_proc=0, my_mpi_proc_id=0, n_mpi_procs=1)
+        # returns None because last if --> cter_mode_idx == idx_cter_mode_stack is not cter_mode_idx == idx_cter_mode_stack --> 0 ==3
+        remove_dir(self.output_directory)
+        return_old = oldfu.cter_pap(self.input_image_path, self.output_directory, selection_list=None, wn=self.wn, pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0, check_consistency=True, stack_mode=False, debug_mode=False, program_name="cter_pap() in morphology.py", RUNNING_UNDER_MPI=False, main_mpi_proc=0, my_mpi_proc_id=0, n_mpi_procs=1)
+        self.assertEqual(return_new, return_old)
         
     def test_cter_pap_default_value_runningundermpiTrue(self):
         remove_dir(self.output_directory)
@@ -2151,10 +2304,20 @@ class Test_cter_pap(unittest.TestCase):
         remove_dir(self.output_directory)
         mpi_barrier(MPI_COMM_WORLD)
         return_old = oldfu.cter_pap(self.input_image_path, self.output_directory, selection_list=None, wn=self.wn, pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0, check_consistency=False, stack_mode=False, debug_mode=False, program_name="cter_pap() in morphology.py", RUNNING_UNDER_MPI=True, main_mpi_proc=0, my_mpi_proc_id=0, n_mpi_procs=1)
-        self.assertEqual(return_new, return_old)    
+        self.assertEqual(return_new, return_old)
+
+    def test_cter_pap_default_value_runningundermpiTrue_and_checkconsistencyTrue(self):
+        remove_dir(self.output_directory)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_new = fu.cter_pap(self.input_image_path, self.output_directory, selection_list=None, wn=self.wn,pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0, check_consistency=True, stack_mode=False, debug_mode=False, program_name="cter_pap() in morphology.py", RUNNING_UNDER_MPI=True, main_mpi_proc=0, my_mpi_proc_id=0, n_mpi_procs=1)
+        # returns None because last if --> cter_mode_idx == idx_cter_mode_stack is not cter_mode_idx == idx_cter_mode_stack --> 0 ==3
+        remove_dir(self.output_directory)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_old = oldfu.cter_pap(self.input_image_path, self.output_directory, selection_list=None, wn=self.wn, pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0, check_consistency=True, stack_mode=False, debug_mode=False, program_name="cter_pap() in morphology.py", RUNNING_UNDER_MPI=True, main_mpi_proc=0, my_mpi_proc_id=0, n_mpi_procs=1)
+        self.assertEqual(return_new, return_old)
 
 
-@unittest.skip("sd3asd")
+@unittest.skip("quasda")
 class Test_cter_vpp(unittest.TestCase):
     """
     1) Since the process finishes with an not-specified exit code, we cannot test it uniquely
@@ -2174,8 +2337,8 @@ class Test_cter_vpp(unittest.TestCase):
     vpp_options = [0.3, 9.0, 0.1, 5.0, 175.0, 5.0]
     image1 = get_data(1, 256)[0]
     selection_list = 'image.mrc'
-    input_image_path = path.join(ABSOLUTE_PATH_TO_MRC_FILES, "TcdA1-*_frames_sum.mrc")
-    output_directory = path.join(ABSOLUTE_PATH_TO_MRC_FILES, "cter_mrk_results")
+    input_image_path = path.join(ABSOLUTE_PATH_TO_MRC_FOLDER, "TcdA1-*_frames_sum.mrc")
+    output_directory = path.join(ABSOLUTE_PATH_TO_MRC_FOLDER, "cter_mrk_results")
 
 
     def test_wrong_number_params_too_few_parameters(self):
@@ -2194,6 +2357,14 @@ class Test_cter_vpp(unittest.TestCase):
         return_old = oldfu.cter_vpp(self.input_image_path, self.output_directory, selection_list = None, wn = self.wn,  pixel_size=self.pixel_size, Cs= self.cs, voltage = self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot = 3, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, check_consistency = False, stack_mode = False, debug_mode = False, program_name = "cter_vpp() in morphology.py", vpp_options = self.vpp_options, RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1)
         self.assertEqual(return_new, return_old)
 
+    def test_cter_vpp__default_value_runningundermpiFalse_and_checkconsistencyTrue(self):
+        remove_dir(self.output_directory)
+        return_new = fu.cter_vpp(self.input_image_path, self.output_directory, selection_list = None, wn = self.wn,  pixel_size=self.pixel_size, Cs= self.cs, voltage = self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot = 3, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, check_consistency = False, stack_mode = False, debug_mode = False, program_name = "cter_vpp() in morphology.py", vpp_options = self.vpp_options, RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1)
+        #returns None because last if --> cter_mode_idx == idx_cter_mode_stack is not cter_mode_idx == idx_cter_mode_stack --> 0 ==3
+        remove_dir(self.output_directory)
+        return_old = oldfu.cter_vpp(self.input_image_path, self.output_directory, selection_list = None, wn = self.wn,  pixel_size=self.pixel_size, Cs= self.cs, voltage = self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot = 3, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, check_consistency = False, stack_mode = False, debug_mode = False, program_name = "cter_vpp() in morphology.py", vpp_options = self.vpp_options, RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1)
+        self.assertEqual(return_new, return_old)
+
     def test_cter_vpp__default_value_runningundermpiTrue(self):
         remove_dir(self.output_directory)
         mpi_barrier(MPI_COMM_WORLD)
@@ -2203,6 +2374,17 @@ class Test_cter_vpp(unittest.TestCase):
         mpi_barrier(MPI_COMM_WORLD)
         return_old = oldfu.cter_vpp(self.input_image_path, self.output_directory, selection_list = None, wn = self.wn,  pixel_size=self.pixel_size, Cs= self.cs, voltage = self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot = 3, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, check_consistency = False, stack_mode = False, debug_mode = False, program_name = "cter_vpp() in morphology.py", vpp_options = self.vpp_options, RUNNING_UNDER_MPI = True, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1)
         self.assertEqual(return_new, return_old)
+
+    def test_cter_vpp__default_value_runningundermpi_and_checkconsistencyTrue(self):
+        remove_dir(self.output_directory)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_new = fu.cter_vpp(self.input_image_path, self.output_directory, selection_list = None, wn = self.wn,  pixel_size=self.pixel_size, Cs= self.cs, voltage = self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot = 3, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, check_consistency = True, stack_mode = False, debug_mode = False, program_name = "cter_vpp() in morphology.py", vpp_options = self.vpp_options, RUNNING_UNDER_MPI = True, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1)
+        #returns None because last if --> cter_mode_idx == idx_cter_mode_stack is not cter_mode_idx == idx_cter_mode_stack --> 0 ==3
+        remove_dir(self.output_directory)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_old = oldfu.cter_vpp(self.input_image_path, self.output_directory, selection_list = None, wn = self.wn,  pixel_size=self.pixel_size, Cs= self.cs, voltage = self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot = 3, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, check_consistency = True, stack_mode = False, debug_mode = False, program_name = "cter_vpp() in morphology.py", vpp_options = self.vpp_options, RUNNING_UNDER_MPI = True, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1)
+        self.assertEqual(return_new, return_old)
+
 
 
 class Test_ampcont2angle(unittest.TestCase):
@@ -3063,7 +3245,16 @@ class Test_defocusgett_vpp2(unittest.TestCase):
         return_old = oldfu.defocusgett_vpp2(IMAGE_3D, self.wn, self.old_defc, self.old_ampcont, self.voltage, self.pixel_size, 0, self.old_istart, self.old_istop)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
-
+    def test_NoneType_as_input_image_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.defocusgett_vpp2(None, self.wn, self.new_defc, self.new_ampcont, self.voltage, self.pixel_size, 0, self.new_istart, self.new_istop)
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.defocusgett_vpp2(None, self.wn, self.new_defc, self.new_ampcont, self.voltage, self.pixel_size, 0, self.new_istart, self.new_istop)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'process'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        """
 
     def test_img_blank2D_null_voltage(self):
         return_new = fu.defocusgett_vpp2(IMAGE_BLANK_2D, self.wn, self.new_defc, self.new_ampcont, 0, self.pixel_size,self.Cs, self.new_istart, self.new_istop)
