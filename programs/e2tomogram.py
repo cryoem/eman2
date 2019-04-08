@@ -78,6 +78,7 @@ def main():
 	parser.add_argument("--threads", type=int,help="Number of threads", default=12,guitype='intbox',row=12, col=1, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--tmppath", type=str,help="Temporary path", default=None)
 	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0)
+	parser.add_argument("--noali", action="store_true",help="skip initial alignment", default=False)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 
@@ -213,7 +214,7 @@ def main():
 		for i,m in enumerate(imgs_1k):
 			m.write_image(inppath, i)
 		
-	loss0=abs(ttparams[:,3]) ### this is used to exclude bad tilt. in case the user ask 0 iterations..
+	
 	if options.load:
 		#### loading parameters from json file
 		jsname=info_name(options.inputname)
@@ -233,8 +234,11 @@ def main():
 		js.close()
 		tlts=ttparams[:,3].copy()
 		#### some old version may not save loss
-		try: loss0=np.array(js["ali_loss"])
-		except: pass
+		try: 
+			loss0=np.array(js["ali_loss"])
+		except: 
+			loss0=abs(ttparams[:,3])
+			
 		options.zeroid=zeroid=np.argmin(abs(tlts))
 		
 	else:
@@ -261,7 +265,7 @@ def main():
 		#### here we always assume the center tilt is at 0 degree
 		tlts-=tlts[options.zeroid]
 		
-		
+		ttparams=np.zeros((num, 5))
 		
 		#### estimate initial tilt axis by common line
 		if options.tltax==None:
@@ -275,20 +279,26 @@ def main():
 			options.tltax=tltax
 		print("tilt axis:  {:.2f}".format(tltax))
 		
-		#### a second round of course alignment, using the rotation axis information...
-		img_tali, pretrans=calc_global_trans(imgs_500, options, tltax=options.tltax, tlts=tlts)
-		if options.writetmp:
-			for i,m in enumerate(img_tali):
-				m.write_image(os.path.join(options.tmppath,"tltseries_transali.hdf"), i)
+		if options.noali:
+			print("Skipping coarse alignment...")
+			
+		else:
+			#### a second round of course alignment, using the rotation axis information...
+			img_tali, pretrans=calc_global_trans(imgs_500, options, tltax=options.tltax, tlts=tlts)
+			if options.writetmp:
+				for i,m in enumerate(img_tali):
+					m.write_image(os.path.join(options.tmppath,"tltseries_transali.hdf"), i)
+			
+			#### this is the matrix that save the alignment parameters
+			pretrans*=img_tali[0]["apix_x"]/options.apix_init  #### since the pretrans is calculated from 500x500 images..
 		
-		#### this is the matrix that save the alignment parameters
-		pretrans*=img_tali[0]["apix_x"]/options.apix_init  #### since the pretrans is calculated from 500x500 images..
-		ttparams=np.zeros((num, 5))
-		ttparams[:,0]=-pretrans[:,0] # tx
-		ttparams[:,1]=-pretrans[:,1] # ty
+			ttparams[:,0]=-pretrans[:,0] # tx
+			ttparams[:,1]=-pretrans[:,1] # ty
+			
 		ttparams[:,2]=tltax # rot
 		ttparams[:,3]=tlts.copy() # ytilt
 		ttparams[:,4]=0 # off axis tilt
+		loss0=abs(ttparams[:,3]) ### this is used to exclude bad tilt. in case the user ask 0 iterations..
 	
 	
 	pks=np.zeros((options.npk, 3))
@@ -460,7 +470,7 @@ def remove_beads(imgs_500, imgout, ttparams, options):
 	threed=make_tomogram(imgs_500, ttparams, options, errtlt=options.loss0, clipz=options.clipz)
 	threed.process_inplace("math.meanshrink",{"n":2})
 	threed.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./100})
-	threed.process_inplace("filter.highpass.gauss",{"cutoff_pixels":1./50})
+	threed.process_inplace("filter.highpass.gauss",{"cutoff_freq":1./50})
 	threed.process_inplace("normalize")
 	
 	
@@ -541,8 +551,10 @@ def remove_beads(imgs_500, imgout, ttparams, options):
 			a1.process_inplace("math.addnoise",{"noise":1})
 			a1=a1-a1["mean"]+a0["mean"]
 			
-			a1.process_inplace("filter.matchto",{"to":a0})
-			
+			if m["mean"]>0.05:
+				a1.process_inplace("filter.matchto",{"to":e})
+			else:
+				a1.process_inplace("filter.matchto",{"to":a0})
 			a1.mult(m)
 			
 			e1=a0+a1    
@@ -559,7 +571,6 @@ def remove_beads(imgs_500, imgout, ttparams, options):
 			
 			
 	options.npk=realnpk
-	#exit()
 	
 
 #### find the optimal global rotation of the tomogram so the high contrast features lies flat
@@ -772,6 +783,7 @@ def make_tile(args):
 		
 	
 	threed=recon.finish(True)
+	threed.process_inplace("math.gausskernelfix",{"gauss_width":4.0})
 	#threed.write_image("tmp3d00.hdf", -1)
 	threed.clip_inplace(Region((pad-sz)//2, (pad-sz)//2, (pad-outz)//2, sz, sz, outz))
 	threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.filterto})
