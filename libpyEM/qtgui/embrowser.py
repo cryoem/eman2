@@ -2935,7 +2935,10 @@ class EMInfoWin(QtWidgets.QWidget) :
 			self.stack.setCurrentIndex(0)
 			return
 
-		cls = ftype.infoClass()
+		if hasattr(ftype, "infoClass"):
+			cls = ftype.infoClass()
+		else:
+			return
 
 		for i in range(self.stack.count()) :
 			if isinstance(self.stack.itemAt(i), cls) :
