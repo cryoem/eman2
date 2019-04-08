@@ -44,12 +44,18 @@ from builtins import object
 
 import sys
 from EMAN2 import *
-from EMAN2PAR import EMMpiClient, load_module
+from EMAN2PAR import EMMpiClient
 
 debug=False
 logid=None
 
 
+def load_module(module):
+	fname, cls=module.split('.')
+	#print("import {} from {}".format(cls, fname))
+	sys.path.append(os.path.join(os.getenv("EMAN2DIR"),"bin"))
+	mod=__import__(fname, fromlist=[cls])
+	setattr(sys.modules["__main__"], cls, getattr(mod,cls))
 
 def main():
 	

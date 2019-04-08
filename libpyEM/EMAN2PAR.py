@@ -71,12 +71,6 @@ EMAN2PARVER=14
 DCMAXTHREADS=7
 
 
-def load_module(module):
-	fname, cls=module.split('.')
-	#print("import {} from {}".format(cls, fname))
-	sys.path.append(os.path.join(os.getenv("EMAN2DIR"),"bin"))
-	mod=__import__(fname, fromlist=[cls])
-	setattr(sys.modules["__main__"], cls, getattr(mod,cls))
 
 class EMTaskCustomer(object):
 	"""This will communicate with the specified task server on behalf of an application needing to

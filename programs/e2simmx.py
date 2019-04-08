@@ -101,7 +101,7 @@ class EMParallelSimMX(object):
 
 
 		from EMAN2PAR import EMTaskCustomer
-		self.etc=EMTaskCustomer(options.parallel)
+		self.etc=EMTaskCustomer(options.parallel, module="e2simmx.EMSimTaskDC")
 		if options.colmasks!=None : self.etc.precache([args[0],args[1],options.colmasks])
 		else : self.etc.precache([args[0],args[1]])
 		self.num_cpus = self.etc.cpu_est()
@@ -343,6 +343,13 @@ class EMParallelSimMX(object):
 			mxout.write_image(output,i,EMUtil.ImageType.IMAGE_UNKNOWN,False,r)
 
 
+def image_range(a,b=None):
+	"""This is an iterator which handles the (#), (min,max), (1,2,3,...) image number convention for passed data"""
+	if b!=None:
+		for i in range(a,b): yield i
+	elif isinstance(a,int) : yield a
+	else:
+		for i in a : yield i
 
 from EMAN2jsondb import JSTask,jsonclasses
 class EMSimTaskDC(JSTask):
@@ -371,7 +378,7 @@ class EMSimTaskDC(JSTask):
 		This function assigns critical attributes
 		'''
 #		print "init ",options
-		from EMAN2PAR import image_range
+		#from EMAN2PAR import image_range
 		shrink = None
 		if "shrink" in options and options["shrink"] != None and options["shrink"] > 1:
 			shrink = options["shrink"]

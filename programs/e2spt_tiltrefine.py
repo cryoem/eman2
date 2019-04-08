@@ -343,11 +343,27 @@ def main():
 		fsc=np.loadtxt(os.path.join(path, "fsc_masked_{:02d}.txt".format(itr)))
 		rs=1./fsc[fsc[:,1]<0.3, 0][0]
 		curres=rs*.5
+		
+		even=os.path.join(path, "threed_{:02d}_even.hdf".format(itr+1))
+		odd=os.path.join(path, "threed_{:02d}_odd.hdf".format(itr+1))
+		if jd.has_key("radref") and jd["radref"]!="":
+			print("doing radial correction")
+			for f in [even, odd]:
+				e=EMData(f).process("normalize")
+				rf=EMData(options.radref).process("normalize")
+				rf=rf.align("translational",e)
+
+				radrf=rf.calc_radial_dist(rf["nx"]//2, 0.0, 1.0,1)
+				rade=e.calc_radial_dist(e["nx"]//2, 0.0, 1.0,1)
+				rmlt=np.array(radrf)/np.array(rade)
+				rmlt[0]=1
+				rmlt=from_numpy(rmlt.copy())
+				er=e.mult_radial(rmlt)
+				er.write_image(f)
+		
 
 		#os.system("rm {}/mask*.hdf {}/*unmasked.hdf".format(path, path))
-		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --restarget {} --threads {} --sym {} --mass {} {}".format(
-			os.path.join(path, "threed_{:02d}_even.hdf".format(itr+1)), 
-			os.path.join(path, "threed_{:02d}_odd.hdf".format(itr+1)), 
+		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --restarget {} --threads {} --sym {} --mass {} {}".format(even, odd, 
 			os.path.join(path, "threed_{:02d}.hdf".format(itr+1)), itr+1, curres, options.threads, jd["sym"], jd["mass"], s)
 		run(ppcmd)
 
