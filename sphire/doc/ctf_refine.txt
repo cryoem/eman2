@@ -9,7 +9,7 @@ CTF refine (Meridien): Refine the defocus per particle
 
 Usage in command line
 
-  sp_ctf_refine.py meridien path_to_input_stack output_directory refinement_dir  --mask=path_to_mask --range=defocus_range --delta=defocus_delta --resolution=nominal_resolution --pixelsize=pixelsize --number_part=NUMBER_PARTICLES
+  sp_ctf_refine.py meridien path_to_input_stack output_directory refinement_dir  --mask=path_to_mask --range=defocus_range --delta=defocus_delta --resolution=nominal_resolution --apix=pixelsize --number_part=NUMBER_PARTICLES
 
 \\
 ===== Typical usage =====
@@ -28,10 +28,10 @@ sp_ctf_refine.py exists only in non-MPI version.
 
 \\
 === Advanced Parameters ===
-  ; %%--%%range : Defocus search range [mum] : Search range +- around the current defocus value. (default 0.15)
-  ; %%--%%delta : Defocus search delta [mum] : Finest search delta. (default 0.0025)
+  ; %%--%%range : Defocus search range [um] : Search range +- around the current defocus value. (default 0.15)
+  ; %%--%%delta : Defocus search delta [um] : Finest search delta. (default 0.0025)
   ; %%--%%resolution : Nominal resolution [A] : Nominal resolution of the reconstruction. (default None)
-  ; %%--%%pixelsize : Pixelsize [A] : Pixelsize in Angstrom. (default None) : %%--%%resolution!=None
+  ; %%--%%apix : Pixel size [A] : Pixel size in Angstroms. (default None) : %%--%%resolution!=None
   ; %%--%%number_part : Number of particles : Number of particles to process. Mainly for debugging. (default none)
 
 \\

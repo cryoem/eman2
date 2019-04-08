@@ -31,13 +31,13 @@ Note: CTF and VPP options cannot be used together.
 ===== Input =====
 === Main Parameters ===
   ; stack_file : Input image stack: Images must to be square (//nx//=//ny//). The stack can be either in .bdb or in .hdf format. (default required string)
-  ; output_directory : Output directory: General ISAC output directory to store all results. If the directory already exists ISC will only run in continuation mode (see advanced parameter restart). (default required string)
+  ; output_directory : Output directory: General ISAC output directory to store all results. If the directory already exists ISAC will only run in continuation mode (see advanced parameter restart). (default required string)
 
   ; %%--%%radius : Particle radius [Pixels] : Radius of the particle in pixels. ISAC cannot offer a default here since the value will depend on the particle im question. (default required int)
-  ; %%--%%img_per_grp : Images per class: Ideally the number of images per. In practice this value determines the number of classes //K// = //N// / //img_per_grp//, where //N// is the total number of images in the input stack. (default 200)
+  ; %%--%%img_per_grp : Images per class: Ideally the number of images per class. In practice this value determines the number of classes //K// = //N// / //img_per_grp//, where //N// is the total number of images in the input stack. (default 200)
   ; %%--%%CTF : CTF phase flipping : Use for cryo datasets. If set to True the data will be phase-flipped using CTF information included in the image headers. Cannot be used together with the VPP option. (default False) : %%--%%VPP==False
-  ; %%--%%VPP : Phase Plate data : Use this option if the dataset is taken with phase plate. Cannot be used togehter with the CTF option. (default False) : %%--%%CTF==False
-  ; %%--%%filament_width : Filament width [Pixels]: When this is set to a non-default value ISAC assumes helical data in which case particle images will be subjected to rectangular masking of the given filament_width value. (default -1)
+  ; %%--%%VPP : Phase Plate data : Use this option if the dataset is taken with a phase plate. Cannot be used together with the CTF option. (default False) : %%--%%CTF==False
+  ; %%--%%filament_width : Filament width [Pixels]: When this is set to a non-default value, ISAC assumes helical data, in which case particle images will be subjected to rectangular masking of the given this value. (default -1)
 
 \\
 === Advanced Parameters ===
@@ -50,7 +50,7 @@ Note: CTF and VPP options cannot be used together.
   ; %%--%%yr : Y search range [Pixels] : The translational search range in the y direction. Set to the value of //xr// by default. (default -1)
   ; %%--%%ts : Search step [Pixels] : Translational search step. (default 1.0)
   ; %%--%%maxit : Reference-free alignment iterations: The number of iterations for reference-free alignments. (default 30)
-  ; %%--%%center_method : Centering method : Method to center global 2D average during the initial prealignment of the data (0: no centering; -1: average shift method; please see center_2D in utilities.py for methods 1-7). (default -1)
+  ; %%--%%center_method : Centering method : Method to center global 2D average during the initial prealignment of the data (0: no centering; -1: average shift method; please see function center_2D in sp_utilities.py for methods 1-7). (default -1)
   ; %%--%%dst : Discrete angle used for within-group alignment : Discrete angle used for within-group alignment. (default 90.0)
   ; %%--%%FL : Lowest filter frequency [1/Pixel] : Lowest frequency used for the tangent filter. (default 0.2)
   ; %%--%%FH : Highest filter frequency [1/Pixel] : Highest frequency used for the tangent filter. (default 0.45)

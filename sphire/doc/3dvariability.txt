@@ -42,7 +42,7 @@ For structures that have symmetries (e.g. c2):
 === Advanced Parameters ===
   ; %%--%%var2D : Output 2D variances: Specify a file name to indicate if the program should write the stack of computed 2D variances to the disk. Useful for debugging. (default none)
   ; %%--%%ave2D : Output 2D averages: Specify a file name to indicate if the program should write the stack of computed 2D averages to the disk. Useful for debugging. (default none)
-  ; %%--%%VAR : Stack on input consists of 2D variances: Stack on input consists of 2D variances. (default False)
+  ; %%--%%VAR : Input stack consists of 2D variances: Stack on input consists of 2D variances. (default False)
   ; %%--%%no_norm : Apply normalization: Indicate if normalization should be applied or not. By default, apply normalization. (default False question reversed in GUI)
   ; %%--%%npad : Image padding factor: The number of time to pad the original images. The images will be padded to achieve the original size times this option. (default 2)
   ; %%--%%decimate : Image decimate factor: Reduce images by this factor and change the pixel size. Specify a non-zero positive float value smaller than 1.0. By default, it does not change size of images. (default 0.25)

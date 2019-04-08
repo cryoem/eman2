@@ -687,7 +687,7 @@ def setup_argparser():
 	)
 
 	argparser.add_argument(
-		"-apix", "--pixelsize", type=float, help="Pixel size (in angstrom)"
+		"-apix", "--apix", type=float, help="Pixel size (in angstrom)"
 	)
 
 	argparser.add_argument("-m", "--mask", help="Path to adaptive mask for the volume")
@@ -799,7 +799,7 @@ def _main_():
 
 	volume_nominal_resolution = args.resolution
 	RESOLUTION = volume_nominal_resolution
-	PIXEL_SIZE = args.pixelsize
+	PIXEL_SIZE = args.apix
 
 	PROJECTION_PARAMETERS = sp_ctf_refine_io.read_meridien_params(params_file_path)
 

@@ -1,7 +1,7 @@
 ~~NOTOC~~
 
 ===== sp_pipe moon_eliminator =====
-Volume Adjustment: Eliminate moons or remove dusts from the background of a 3D density map based on the expected molecular mass.
+Volume Adjustment: Eliminate moons or remove dust from the background of a 3D density map based on the expected molecular mass.
 
 \\
 ===== Usage =====
@@ -68,7 +68,7 @@ Create reference 3D structure and 3D mask from halfset unfiltered maps produced 
   ; %%--%%shift3d_y : 3D y-shift [Pixels]: 3D y-shift value. (default 0)
   ; %%--%%shift3d_z : 3D z-shift [Pixels]: 3D z-shift value. (default 0)
   ; %%--%%aa : Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off in absolute frequency. The program applies this low-pass filter before the moon elimination. Effective only when %%--%%fl > 0.0. (default 0.1) : %%--%%fl!=-1.0
-  ; %%--%%debug : Run with debug mode: Mainly for developer. (default False)
+  ; %%--%%debug : Run with debug mode: Mainly for developers. (default False)
 
 \\
 ===== Output =====

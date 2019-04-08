@@ -27,19 +27,19 @@ Then the training typcial happens in two steps:
 \\
 ===== Input =====
 === Main Parameters ===
-  ; %%--%%cryolo_train_path : crYOLO train executeable : Path to the crYOLO executeable (default none)
-  ; particle_diameter : Particle diameter [Pixel] : Particle diameter in pixel. This size will be used for as box size for picking. Should be as small as possible. (default required int)
-  ; training_dir : Training image directory : Folder which contain all images. (default required string)
-  ; annot_dir : Annotation directory : Box or star files used for training. The should have the same name as the images. (default required string)
+  ; %%--%%cryolo_train_path : crYOLO train executeable : Path to the crYOLO executable (default none)
+  ; particle_diameter : Particle diameter [Pixel] : Particle diameter in pixels. This size will be used for as box size for picking. Should be as small as possible. (default required int)
+  ; training_dir : Training image directory : Folder which contains all images. (default required string)
+  ; annot_dir : Annotation directory : Box or star files used for training. Files should have the same name as the images, with the appropriate extension. (default required string)
 
 
 \\
 === Advanced Parameters ===
   ; %%--%%architecture : Network architecture: Type of network that is trained.  (default PhosaurusNet)
-  ; %%--%%input_size : Input image dimension [Pixel] : Dimension of the image used as input to network. (default 1024)
-  ; %%--%%num_patches : Number of patches : The number of patches (e.g 2x2) the image is divided and classified separately. (default 1)
+  ; %%--%%input_size : Input image dimension [Pixel] : Dimension of the image used as input by the network. (default 1024)
+  ; %%--%%num_patches : Number of patches : The number of patches (e.g 2x2) the image is divided into and classified separately. (default 1)
   ; %%--%%overlap_patches: Patch overlap [Pixel]: The amount of overlap the patches will overlap (default 0)
-  ; %%--%%train_times : Repeat images :  How often a images is augmented and repeadet in one epoch. (default 10)
+  ; %%--%%train_times : Repeat images :  How often a images is augmented and repeated in one epoch. (default 10)
   ; %%--%%pretrained_weights_name: Pretrained weights name : Name of the pretrained model (default cryolo_model.h5)
   ; %%--%%saved_weights_name: Saved weights name : Name of the model to save (default cryolo_model.h5)
   ; %%--%%batch_size : Batch size : How many patches are processed in parallel. (default 5)
@@ -52,7 +52,7 @@ Then the training typcial happens in two steps:
   ; %%--%%valid_image_dir : Path to validation images : Images used (default none)
   ; %%--%%valid_annot_dir : Path to validation annotations : Path to the validation box files (default none)
   ; %%--%%warmup : Warm up epochs : Number of warmup epochs. (default 5)
-  ; %%--%%gpu: GPUs : List of GPUs to use. (default 0)
+  ; %%--%%gpu: GPUs : List of GPUs to use, separated by commas. (default 0)
   ; %%--%%gpu_fraction: GPU memory fraction : Specify the fraction of memory per GPU used by crYOLO during training. Only values between 0.0 and 1.0 are allowed. (default 1.0)
   ; %%--%%num_cpu: Number of CPUs : Number of CPUs used during training. By default it will use half of the available CPUs. (default -1)
 

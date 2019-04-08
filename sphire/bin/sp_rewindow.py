@@ -198,7 +198,7 @@ For negative staining data, use --skip_invert.
 	parser.add_option("--mic_resample_ratio",  type="float",         default=1.0,       help="Image size reduction factor (<1): Use a value between 0.0 and 1.0 (excluding 0.0). The new pixel size will be automatically recalculated and stored in CTF paramers when mic_resample_ratio < 1.0 is used. (default 1.0)")
 	
 	parser.add_option("--swap_ctf_params",     type="string",        default=None,      help="Swap CTF parameters: Swaps CTF parameters by setting the CTF parameters in the specified CTER partres file while ignoring the CTF parameters in the input rebox parameters file. Typically, specify the file produced by sxcter and normally called partres.txt. Alternatively, enter pixel size [A/Pixels] to simulate ideal CTF. By default, the program uses the CTF parameters in the input rebox parameters file. (default None)")
-	parser.add_option("--check_consistency",   action="store_true",  default=False,     help="Check consistency of dataset: Create a text file containing the list of Micrograph ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info_TIMESTAMP.txt). (default False)")
+	parser.add_option("--check_consistency",   action="store_true",  default=False,     help="Check consistency of dataset: Create a text file containing the list of Micrograph ID entries might have inconsistency among the provided dataset. (i.e. mic_consistency_check_info_TIMESTAMP.txt). (default False)")
 	
 	(options, args) = parser.parse_args(sys.argv[1:])
 	
@@ -511,7 +511,7 @@ For negative staining data, use --skip_invert.
 				sxprint(" ")
 				sxprint("----- Running with Single Micrograph Mode -----")
 				sxprint(" ")
-				sxprint("Processing a single micorgprah: %s..." % (options.selection_list))
+				sxprint("Processing a single micrograph: %s..." % (options.selection_list))
 				selected_mic_path_list = [options.selection_list]
 			assert (len(selected_mic_path_list) > 0)
 			

@@ -37,7 +37,7 @@ There are several modes to run the program:
 
   ; %%--%%resample_ratio : Resampling ratio: Specify ratio between new and original pixel size. Use a value between 0.0 and 1.0 (exclusive both ends). (default required float)
   ; %%--%%selection_list : Micrograph selecting list: Specify a name of micrograph selection list text file for Selected Micrographs Mode. The file extension must be //.txt//. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. (default none)
-  ; %%--%%check_consistency : Check consistency of dataset: Create a text file containing the list of Micrograph ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info_TIMESTAMP.txt). (default False)
+  ; %%--%%check_consistency : Check consistency of dataset: Create a text file containing the list of Micrograph ID entries might have inconsistency among the provided dataset. (i.e. mic_consistency_check_info_TIMESTAMP.txt). (default False)
 
 \\
 === Advanced Parameters ===
