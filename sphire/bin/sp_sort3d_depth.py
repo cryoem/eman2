@@ -1420,7 +1420,12 @@ def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", lo
 def assignment_to_umat(iter_assignment, number_of_groups):
 	umat = np.full((len(iter_assignment), number_of_groups), 0.0, dtype = np.float64)
 	for im in range(len(iter_assignment)): 
-		umat[im][iter_assignment[im]] = 1.0
+		try:
+			umat[im][iter_assignment[im]] = 1.0
+		except IndexError:
+			print('im', im, 'iter_assignment[im]', iter_assignment[im], 'number_of_groups', number_of_groups)
+			print(np.unique(iter_assignment))
+			raise
 	return umat
 	
 def mix_assignment(umat, ngroups, iter_assignment, scale = 1.0, shake_rate = 0.1):
@@ -1873,7 +1878,7 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 	#volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, refvolsize*disp_unit), dtype = 'f4')
 	#volbuf = volbuf.reshape(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
 	#### ---end of shared memory----------------------------------------------
-	umat = assignment_to_umat(iter_assignment[image_start:image_end], Tracker['number_of_groups'])
+	umat = assignment_to_umat(iter_assignment[image_start:image_end], Tracker['number_of_groups']+1)
 	while total_iter < max_iter: #### Kmeans
 		rest_time  = time.time()
 		if(Blockdata["myid"] == Blockdata["main_node"]):
