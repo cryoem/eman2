@@ -3042,7 +3042,7 @@ def isin(element, test_elements, assume_unique=False, invert=False):
 def split_partition_into_ordered_clusters_split_ucluster(partition_in, input_row_wise = True):
 	# group particles  by their cluster ids; take the last one as unaccounted group
 	clusters   = []
-	partition = np.array(partition, dtype=np.int32)
+	partition = np.array(partition_in, dtype=np.int32)
 	if input_row_wise:
 		partition = partition.transpose()
 	group_id = np.sort(np.unique(partition[0]))
