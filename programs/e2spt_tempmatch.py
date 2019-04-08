@@ -35,6 +35,7 @@ def main():
 	parser.add_argument("--rmedge", action="store_true",help="Remove particles on the edge.", default=False, guitype='boolbox', row=6, col=0,rowspan=1, colspan=1, mode="boxing[True]")
 	parser.add_argument("--rmgold", action="store_true",help="Remove particles near gold fiducial.", default=False, guitype='boolbox', row=6, col=1,rowspan=1, colspan=1, mode="boxing[True]")
 
+	parser.add_argument("--boxsz", type=int,help="Overwrite box size", default=-1, guitype='intbox', row=7, col=0,rowspan=1, colspan=1, mode="boxing")
 
 	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
 
@@ -184,13 +185,21 @@ def main():
 			apix=e["apix_x"]
 			shp=np.array([e["nz"], e["ny"], e["nx"]])
 			#print(sz,nbin,apix, apix_unbin)
-			boxsz=int(np.round(sz*apix/apix_unbin))
+			if options.boxsz<0:
+				boxsz=int(np.round(sz*apix/apix_unbin))
+			else:
+				boxsz=options.boxsz
+			
 			box=(pts*2-shp/2)*apix/apix_unbin
 			bxs.extend([[p[2], p[1],p[0], 'tm', scr[i] ,kid] for i,p in enumerate(box[:n])])
 			
 		else:
 			bxs.extend([[p[2], p[1],p[0], 'tm', scr[i] ,kid] for i,p in enumerate(pts[:n]*4)])
-			boxsz=sz*nbin
+			if options.boxsz<0:
+				boxsz=sz*nbin
+			else:
+				boxsz=options.boxsz
+				
 			
 		js['boxes_3d']=bxs
 		
