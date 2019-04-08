@@ -347,7 +347,7 @@ def db_emd_init(self,*parms):
         C++ signature :
             void* __init__(_object*,EMAN::EMData)
 
-    __init__( (object)arg1, (object)filename [[, (object)image_index],header_only]) -> object :
+    __init__( (object)arg1, (str) filespec,(int)image_idx,[(int) header_only],[(Region) region],[(int) is_3d]) -> object :
         Construct from an image file.
 
         filename - the image file name
