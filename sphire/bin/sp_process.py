@@ -1140,7 +1140,7 @@ def main():
 
 		else: # 3D case High pass filter should always come along with low-pass filter. 
 			log_main.add("-------->>>Settings given by all options <<<-------")
-			log_main.add("Pixle_size        :"+str(options.pixel_size))
+			log_main.add("Pixel_size        :"+str(options.pixel_size))
 			log_main.add("Mask              :"+str(options.mask))
 			log_main.add("Fsc_adj           :"+str(options.fsc_adj))
 			log_main.add("B_enhance         :"+str(options.B_enhance))
