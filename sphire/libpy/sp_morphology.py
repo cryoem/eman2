@@ -2364,7 +2364,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			os.mkdir(outravg)
 		if write_pws and not os.path.exists(outpower2d): 
 			os.mkdir(outpower2d)
-		sp_global_def.write_command()
+		sp_global_def.write_command(output_directory)
 	
 	if RUNNING_UNDER_MPI:
 		# Make all mpi processes wait for main mpi process to create output directory
@@ -3421,7 +3421,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			os.mkdir(outravg)
 		if write_pws and not os.path.exists(outpower2d): 
 			os.mkdir(outpower2d)
-		sp_global_def.write_command()
+		sp_global_def.write_command(output_directory)
 	
 	if RUNNING_UNDER_MPI:
 		# Make all mpi processes wait for main mpi process to create output directory
@@ -5811,7 +5811,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			os.mkdir(outravg)
 		if write_pws and not os.path.exists(outpower2d): 
 			os.mkdir(outpower2d)
-		sp_global_def.write_command()
+		sp_global_def.write_command(output_directory)
 	
 	if RUNNING_UNDER_MPI:
 		# Make all mpi processes wait for main mpi process to create output directory
