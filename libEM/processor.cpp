@@ -13310,7 +13310,7 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 			trns->ri2ap();
 			
 			for (size_t i=0; i<xyz; i+=2) {
-				trns->set_value_at_index(i,pow(trns->get_value_at_index(i),1.0/(hn+1)));
+				trns->set_value_at_index(i,pow(trns->get_value_at_index(i),float(1.0/(hn+1))));
 			}
 			trns->ap2ri();
 			
@@ -13338,7 +13338,7 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 				// rescale components to have linear amplitude WRT the original FFT, without changing phase
 				trns->ri2ap();
 				for (size_t i=0; i<xyz; i+=2) {
-					trns->set_value_at_index(i,pow(trns->get_value_at_index(i),1.0/(rn+1)));
+					trns->set_value_at_index(i,pow(trns->get_value_at_index(i),float(1.0/(rn+1))));
 				}
 				trns->ap2ri();
 			}
@@ -13363,7 +13363,7 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 			// rescale components to have linear amplitude WRT the original FFT, without changing phase
 			trns->ri2ap();
 			for (size_t i=0; i<xyz; i+=2) {
-				trns->set_value_at_index(i,pow(trns->get_value_at_index(i),1.0/(hn+1)));
+				trns->set_value_at_index(i,pow(trns->get_value_at_index(i),float(1.0/(hn+1))));
 			}
 			trns->ap2ri();
 	//		EMData *ret = trns->do_ift();
