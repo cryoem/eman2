@@ -2475,8 +2475,8 @@ class SXGuiCter(QWidget):
 		file_out_select = open(file_path_out_select,"w")
 		file_out_discard = open(file_path_out_discard,"w")
 		
-		save_cter_entry_list = sorted(self.cter_entry_list, key=lambda x: x[ self.cter_params['id'] ])
-		idx_cter_ignore_list = [self.cter_params['id'], self.cter_params['select'].idx_cter]
+		save_cter_entry_list = sorted(self.cter_entry_list, key=lambda x: x[ self.cter_params['id'].idx_cter ])
+		idx_cter_ignore_list = [self.cter_params['id'].idx_cter, self.cter_params['select'].idx_cter]
 		
 		for cter_entry in save_cter_entry_list:
 			file_out = file_out_select
