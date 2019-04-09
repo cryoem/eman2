@@ -69,10 +69,9 @@ argparser.add_argument(
 
 argparser.add_argument(
 	'--gpu',
-	default=0,
-	type=int,
-	nargs="+",
-	help="Specifiy which gpu(s) should be used. Multiple GPUs are separated by a whitespace")
+	default="0",
+	type=str,
+	help="Specifiy which gpu(s) should be used. Multiple GPUs are separated by a comma")
 
 argparser.add_argument(
 	'--filament_mode',
@@ -87,7 +86,7 @@ argparser.add_argument(
 
 argparser.add_argument(
 	'--box_distance',
-	default=100,
+	default=-1,
 	type=int,
 	help="Distance between two boxes in pixel")
 
@@ -144,11 +143,8 @@ def main():
 		gpu_fraction = args.gpu_fraction
 	num_cpu = args.num_cpu
 
-	if type(args.gpu) is list:
-		str_gpus = [str(entry) for entry in args.gpu]
-	else:
-		str_gpus = str(args.gpu)
 
+	str_gpus = [str(entry).strip() for entry in args.gpu.split(",")]
 	arg_gpu = ' '.join(str_gpus)
 
 	no_merging = args.nomerging
@@ -170,7 +166,7 @@ def main():
 	complete_command.append(output_argument)
 	thresh_argument = "-t=" + str(confidence_threshold)
 	complete_command.append(thresh_argument)
-	gpu_argument = "-g=" + arg_gpu
+	gpu_argument = "-g " + arg_gpu
 	complete_command.append(gpu_argument)
 	gpu_fraction_arg = "--gpu_fraction="+str(gpu_fraction)
 	complete_command.append(gpu_fraction_arg)
@@ -182,7 +178,8 @@ def main():
 		complete_command.append("--filament")
 		complete_command.append("-fw=" + str(filament_width))
 		complete_command.append("-mn=" + str(min_box_per_filament))
-		complete_command.append("-bd=" + str(box_distance))
+		if box_distance > 0:
+			complete_command.append("-bd=" + str(box_distance))
 		if no_merging:
 			complete_command.append("--nomerging")
 		if no_split:
