@@ -13298,7 +13298,7 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 			for (int ja=0; ja<naz; ja++) {
 				float si=sin(float(2.0*M_PI*ja/naz));
 				float co=cos(float(2.0*M_PI*ja/naz));
-				for (int jr=3*hn; jr<ny/2; jr++) {
+				for (int jr=3*hn; jr<ny/2; jr++) {			// This is cryoEM specific, we have bad values near the origin
 					float jx=co*jr;
 					float jy=si*jr;
 					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
@@ -13314,6 +13314,7 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 			}
 			trns->ap2ri();
 			
+			// Only if rn is defined
 			if (rn>0) {
 				// Now we do the 1-D FFTs on the lines of the translational invariant
 				complex<float> *tmp = (complex<float>*)EMfft::fftmalloc(naz*2);
@@ -13343,13 +13344,17 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 			}
 			trns->set_attr("is_harmonic_rn",(int)rn);
 		}
+		// With no rotational component
 		else {
 			trns->set_size(nx,ny,1);
 			xyz=trns->get_size();
 			// translational only single
 			for (int jx=0; jx<nx/2; jx++) {
 				for (int jy=-ny/2; jy<ny/2; jy++) {
-					if (Util::hypot_fast(jx,jy)<3.0f*hn) continue;
+					if (Util::hypot_fast(jx,jy)<3.0f*hn) { 
+						trns->set_complex_at(jx,jy,0,(complex<float>)0);
+						continue;
+					}
 					complex<double> v1 = (complex<double>)cimage->get_complex_at(jx,jy);
 					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx/(float)hn,jy/(float)hn);
 					trns->set_complex_at(jx,jy,0,(complex<float>)(v1*std::pow(std::conj(v2),(float)hn)));
