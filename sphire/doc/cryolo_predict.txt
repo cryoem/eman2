@@ -41,7 +41,7 @@ for writing the box files. Optionally one can specify the confidence threshold a
   ; %%--%%filament_mode : Filament mode [Yes/No] : Check if you want to use the filament mode. (default False)
   ; %%--%%filament_width : Filament width [Pixel] : Width of your filament in pixel. (default 100) : %%--%%filament_mode==True
   ; %%--%%min_box_per_filament : Minimum number of boxes per filament : Specifies the minimum number of boxes per filament. (default 6) : %%--%%filament_mode==True
-  ; %%--%%box_distance : Box distance : Distance between two boxes in pixels. (default 20) : %%--%%filament_mode==True
+  ; %%--%%box_distance : Box distance : Distance between two boxes in pixels. (default -1) : %%--%%filament_mode==True
   ; %%--%%nosplit: Don't split curved filaments : If checked, the filament mode does not split curved filaments. (default False) :  %%--%%filament_mode==True
   ; %%--%%nomerging: Don't merge filaments : If checked, the filament mode does not merge filaments. (default False) : %%--%%filament_mode==True
 
