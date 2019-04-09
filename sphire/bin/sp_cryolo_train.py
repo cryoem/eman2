@@ -149,9 +149,8 @@ argparser.add_argument(
 
 argparser.add_argument(
 	'--gpu',
-	default=0,
-	type=int,
-	nargs="+",
+	default="0",
+	type=str,
 	help="Specifiy which gpu(s) should be used. Multiple GPUs are separated by a whitespace")
 
 argparser.add_argument(
@@ -221,11 +220,7 @@ def main():
 	warmup = args.warmup
 	early_stop = int(args.early)
 
-	if type(args.gpu) is list:
-		str_gpus = [str(entry) for entry in args.gpu]
-	else:
-		str_gpus = str(args.gpu)
-
+	str_gpus = [str(entry).strip() for entry in args.gpu.split(",")]
 	arg_gpu = ' '.join(str_gpus)
 
 	# Create config file
@@ -264,7 +259,7 @@ def main():
 
 	# Run the training
 	warmup_argument = "-w=" + str(warmup)
-	gpu_argument = "-g=" + arg_gpu
+	gpu_argument = "-g " + arg_gpu
 	early_stop = "-e=" + str(early_stop)
 	fine_tune_argument = ""
 	if fine_tune:
