@@ -1,0 +1,94 @@
+~~NOTOC~~
+
+===== e2boxer_old =====
+Particle Coordinates: Generate files containing particle coordinates for all input micrographs by picking particles manual and/or automatically.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  e2boxer_old.py  input_micrograph_list  --boxsize=BOXSIZE  --write_dbbox  --write_ptcls  --exclude_edges  --force  --format=FORMAT  --norm=NORM  --invert  --suffix=SUFFIX  --dbls=DBLS  --autoboxer=AUTOBOXER  --ppid=PPID  --gui  --verbose=n  --gauss_autoboxer=GAUSS_AUTOBOXER  --do_ctf=DO_CTF  --cter  --indir=INDIR  --nameroot=NAMEROOT  --micsuffix=MICSUFFIX  --wn=WN  --Cs=CS  --voltage=VOLTAGE  --ac=AC  --kboot=KBOOT  --debug  --apix=APIX
+
+\\
+===== Typical usage =====
+
+e2boxer_old exists in non-MPI version.
+
+\\ __Start the e2boxer_old GUI with a list of micrographs__:
+
+  e2boxer_old.py micrographs_number*
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; input_micrograph_list : Input micrographs: Wild cards (e.g. *) can be used to specify a list of micrographs. Not recommended if their number is very large. (default required string)
+
+  ; %%--%%boxsize : Box size [Pixels]: Box size for extraction of particle images. (default -1)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%write_dbbox : Write coordinate files: Write coordinate files. (default False)
+  ; %%--%%write_ptcls : Write particle images: Write particle images. (default False)
+  ; %%--%%exclude_edges : Exclude edge images: Exclude particles extending outside the micrograph. (default False)
+  ; %%--%%force : Force overwrite: Force overwrite. (default False)
+  ; %%--%%format : Particle image format: Format of the output particles images. (default hdf)
+  ; %%--%%norm : Particle normalization: Normalization processor applied to the final particle images. (default normalize.edgemean)
+  ; %%--%%invert : Invert contrast: Invert contrast of micrographs. (default False)
+  ; %%--%%suffix : Particle name suffix: Suffix used for the name of the output images and coordinates. (default _ptcls)
+  ; %%--%%dbls : Data base list storage: Data base list storage, used by the workflow. (default none)
+  ; %%--%%autoboxer : Swarm_boxers dict key: A key of the swarm_boxers dict in the local directory, used by the workflow. (default none)
+  ; %%--%%ppid : Set PPID: Sets the PPID of the process. (default -1)
+  ; %%--%%gui : Dummy option: Dummy option used in even older version of e2boxer_old. (default True)
+  ; %%--%%verbose : Verbose: Verbose level. Accepted values 0-9. (default 0)
+  ; %%--%%gauss_autoboxer : Sample autoboxed image: Gets the parameters used for autoboxing from the EMANDB. It requires the name of a micrograph used for automatic boxing previously. (default none)
+  ; %%--%%do_ctf : CTF parameters file: Specify name of file whose CTF estimation parameters should be used for automatic CTF estimation. (default none)
+  ; %%--%%cter : Use CTER CTF estimation: CTF estimation using CTER. (default False)
+  ; %%--%%indir : Input directory: Directory containing micrographs to be processed. (default current directory)
+  ; %%--%%nameroot : Micrograph rootname: Rootname of micrographs to be processed. (default none)
+  ; %%--%%micsuffix : Micrograph type: A string denoting micrograph type. (default none)
+  ; %%--%%wn : Window size: size of window to use. (default 256)
+  ; %%--%%Cs : Spherical aberration [mm]: Spherical aberration [mm] used to acquire the input micrographs. (default 2.0)
+  ; %%--%%voltage : Microscope voltage [kV]: Microscope voltage [kV] used to acquire the input micrographs. (default 300.0)
+  ; %%--%%ac : Amplitude contrast: Expected amplitude contrast of this dataset. (default 10.0)
+  ; %%--%%kboot : kboot: The number of boot-strap trials. (default 16)
+  ; %%--%%debug : Debug mode: Use debug mode. (default False)
+  ; %%--%%apix : Pixel size [A]: Pixel size of the input micrographs. (default -1.0)
+
+\\
+===== Output =====
+The program creates the directory automatically in the micrograph directory.
+
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+EMAN2 Group
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+programs/e2boxer_old.py
+
+\\
+==== See also ====
+[[http://blake.bcm.edu/emanwiki/EMAN2/Programs/e2boxer|e2boxer]] and [[http://blake.grid.bcm.edu/emanwiki/EMAN2/boxerFAQ|e2boxer FAQ]]
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

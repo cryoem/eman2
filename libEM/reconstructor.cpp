@@ -2414,7 +2414,7 @@ int BackProjectionReconstructor::insert_slice(const EMData* const input, const T
 // 	transform->set_trans(0,0,0);
 // 	transform->invert();
 
-	tmp->transform(t);
+	tmp->transform(t.inverse());		// This was incorrect. inverse() was missing
 	image->add(*tmp);
 
 // 	if(transform) {delete transform; transform=0;}
