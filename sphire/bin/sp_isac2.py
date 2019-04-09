@@ -1712,8 +1712,13 @@ def main(args):
 		#--------------------------------------------------[ shrinking / re-scaling ]
 
 		# normalize all particle images after applying ctf correction (includes shrinking/re-scaling)
+		if( Blockdata["myid"] == main_node ):
+			sxprint('Create normalize particles')
 		normalize_particle_images( aligned_images, shrink_ratio, target_radius, target_nx, params, 
 								   filament_width=options.filament_width, ignore_helical_mask=options.filament_mask_ignore )
+
+		if( Blockdata["myid"] == main_node ):
+			sxprint('Gather EMData')
 
 		# gather normalized particles at the root node
 		util.gather_compacted_EMData_to_root(Blockdata["total_nima"], aligned_images, myid)
