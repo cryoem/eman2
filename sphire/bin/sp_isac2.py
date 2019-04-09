@@ -1686,6 +1686,8 @@ def main(args):
 			mask = util.model_circle(radi, nx, nx)
 
 		# defocus value correction for all images
+		if( Blockdata["myid"] == main_node ):
+			sxprint('Apply CTF')
 		for im in range(nima):
 			# create custom mask per particle in case we're processing filament images
 			if options.filament_width != -1:
@@ -1713,7 +1715,7 @@ def main(args):
 
 		# normalize all particle images after applying ctf correction (includes shrinking/re-scaling)
 		if( Blockdata["myid"] == main_node ):
-			sxprint('Create normalize particles')
+			sxprint('Create normalized particles')
 		normalize_particle_images( aligned_images, shrink_ratio, target_radius, target_nx, params, 
 								   filament_width=options.filament_width, ignore_helical_mask=options.filament_mask_ignore )
 
@@ -1724,6 +1726,7 @@ def main(args):
 		util.gather_compacted_EMData_to_root(Blockdata["total_nima"], aligned_images, myid)
 
 		if( Blockdata["myid"] == main_node ):
+			sxprint('Write aligned stack')
 			for i in range(Blockdata["total_nima"]):
 				aligned_images[i].write_image(Blockdata["stack_ali2d"],i)
 			del aligned_images
