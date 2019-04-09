@@ -1,0 +1,87 @@
+~~NOTOC~~
+
+===== e2boxer =====
+Particle Coordinates (NEW): Generate files containing particle coordinates for all input micrographs by picking particles manual and/or automatically.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  e2boxer.py  input_micrograph_list  --apix=PIXEL_SIZE  --boxsize=BOX_SIZE  --ptclsize=PARTICLE_DIAMETER  --invert  --no_ctf  --gui  --write_dbbox  --allmicrographs  --unboxedonly  --write_ptcls  --suffix=SUFFIX  --voltage=VOLTAGE  --cs=CS  --ac=AMP_CONTRAST  --autopick=MODE  --threads=THREADS  --ppid=PPID  --verbose=LEVEL
+
+\\
+===== Typical usage =====
+
+e2boxer exists in non-MPI version.
+
+\\ __Step 1__: Use this command to start e2boxer's GUI with a list of micrographs using the right settings.
+  e2boxer.py CorrectedSums/corrsum_dose_filtered/*.mrc --apix=1.14 --boxsize=352 --invert --no_ctf --gui
+
+\\ __Step 2__: After user finished picking, run this command line to export .box files.
+  e2boxer.py CorrectedSums/corrsum_dose_filtered/*.mrc --apix=1.14 --boxsize=352 --invert --no_ctf --write_dbbox
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; input_micrograph_list : Input micrograph list: Wild cards (e.g. *) can be used to specify a list of micrographs. Not recommended if their number is very large. (default required string)
+
+  ; %%--%%apix : Pixel size [A]: Angstroms per pixel for all images. (default -1)
+  ; %%--%%boxsize : Box size [Pixels]: Box size in pixels. (default -1)
+  ; %%--%%ptclsize : Particle diameter [Pixels]: Longest axis of particle in pixels (diameter, not radius). (default -1)
+  ; %%--%%invert : Invert input contrast: Preferably, particles should be bright on a dark background. (default False)
+  ; %%--%%no_ctf : Disable CTF estimation: Disable CTF estimation. (default False)
+  ; %%--%%gui : Interactive GUI mode: Use interactive GUI mode. (default False)
+  ; %%--%%write_dbbox : Export EMAN1 box files: Export EMAN1 box files (.box extension). (default False)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%unboxedonly : Include only unboxed micrographs: Only include image files without existing box locations. (default False)
+  ; %%--%%write_ptcls : Save selected particle: Extract selected particles from micrographs and write to disk. (default False)
+  ; %%--%%allmicrographs : Include all micrographs in a directory: Add all images from micrographs folder. (default False)
+  ; %%--%%suffix : Micrograph suffix: Suffix of the micrographs used for particle picking (i.e. suffix=goodali will use micrographs end with _goodali.hdf). It is only useful when --allmicrographs option is True. (default none): %%--%%allmicrographs==True
+  ; %%--%%voltage : Microscope voltage [kV]: The acceleration voltage of microscope used for imaging. (default -1)
+  ; %%--%%cs : Microscope spherical aberration (Cs) [mm]: The spherical aberration (Cs) of microscope used for imaging. (default -1)
+  ; %%--%%ac : Amplitude contrast [%]: The typical amplitude contrast is in the range of 7% - 14%. The value mainly depends on the thickness of the ice embedding the particles. (default 10.0)
+  ; %%--%%autopick : Perform automatic particle picking: Provide mode and parameter string (eg - auto_local:threshold=5.5). (default none)
+  ; %%--%%threads : Number of threads: Number of threads to run in parallel on a single computer. (default 4)
+  ; %%--%%ppid : Parent process PID: Set the PID of the parent process, used for cross platform PPID. (default -1)
+  ; %%--%%verbose : Use verbose mode: Specify verbose level [0-9]. Higner number means higher level of verboseness. (default 0)
+
+\\
+===== Output =====
+
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+EMAN2 Group
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+programs/e2boxer.py
+
+\\
+==== See also ====
+[[http://blake.bcm.edu/emanwiki/EMAN2/Programs/convnet_pickparticle|Particle Picking with Convolution Neural Network]]
+
+\\
+==== Maturity ====
+Beta:: Under development
+
+\\
+==== Bugs ====

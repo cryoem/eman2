@@ -249,6 +249,7 @@ ADD_SUBDIRECTORY(libEM)
 ADD_SUBDIRECTORY(libpyEM)
 ADD_SUBDIRECTORY(pyemtbx)
 ADD_SUBDIRECTORY(sparx)
+ADD_SUBDIRECTORY(sphire)
 ADD_SUBDIRECTORY(utils)
 ADD_SUBDIRECTORY(examples)
 ADD_SUBDIRECTORY(programs)
@@ -262,7 +263,8 @@ add_custom_target(PythonFiles
 
 if(NOT WIN32)
 	install(CODE "execute_process(
-					COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sxgui.py ${EMAN_PREFIX}/bin/sphire
+					COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sp_gui.py ${EMAN_PREFIX}/bin/sphire
+					COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sp_sx.py ${EMAN_PREFIX}/bin/sp_sparx
 					COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sx.py    ${EMAN_PREFIX}/bin/sparx
 				 )"
 			)
