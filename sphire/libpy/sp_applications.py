@@ -2261,9 +2261,9 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "mref_ali2d_MPI ", 1, myid)
 	mpi_barrier(MPI_COMM_WORLD)
 
+	import sp_global_def
 	if myid == main_node:
 		os.mkdir(outdir)
-		import sp_global_def
 		sp_global_def.LOGFILE =  os.path.join(outdir, sp_global_def.LOGFILE)
 		print_begin_msg("mref_ali2d_MPI")
 
@@ -2429,12 +2429,14 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 			if myid == main_node:
 				for n in range(number_of_proc):
 					if n != main_node:
-						ln =  mpi_recv(1, MPI_INT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-						lis = mpi_recv(ln[0], MPI_INT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+						import sp_global_def
+						ln =  mpi_recv(1, MPI_INT, n, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+						lis = mpi_recv(ln[0], MPI_INT, n, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 						for l in range(ln[0]): assign[j].append(int(lis[l]))
 			else:
-				mpi_send(len(assign[j]), 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-				mpi_send(assign[j], len(assign[j]), MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+				import sp_global_def
+				mpi_send(len(assign[j]), 1, MPI_INT, main_node, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+				mpi_send(assign[j], len(assign[j]), MPI_INT, main_node, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 
 		if myid == main_node:
 			# replace the name of the stack with reference with the current one
@@ -12593,7 +12595,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 				fexp = open(os.path.join(outdir, "parameters_%04d_%04d.txt"%(N_step+1,Iter)),"w")
 				for n in range(number_of_proc):
 					if n!=main_node:
-						t = mpi_recv(recvcount[n] * m, MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+						import sp_global_def
+						t = mpi_recv(recvcount[n] * m, MPI_FLOAT, n, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 						for i in range(recvcount[n]):
 							for j in range(m):
 								fexp.write(" %15.5f  "%t[j+i*m])
@@ -12614,7 +12617,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 					t = get_params_proj(data[i])
 					for j in range(m):
 						nvalue[j + i*m] = t[j]
-				mpi_send(nvalue, recvcount[myid] * m, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+				import sp_global_def
+				mpi_send(nvalue, recvcount[myid] * m, MPI_FLOAT, main_node, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 				del nvalue
 			if myid == main_node:
 				print_msg("Time to write parameters = %d\n"%(time()-start_time))
@@ -12669,10 +12673,12 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 
 				if myid == main_node:
 					for n in range(number_of_proc):
-						if n!=main_node: mpi_send(lprms[2*recvpara[2*n]:2*recvpara[2*n+1]], 2 * (recvpara[2*n+1]-recvpara[2*n]), MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+						import sp_global_def
+						if n!=main_node: mpi_send(lprms[2*recvpara[2*n]:2*recvpara[2*n+1]], 2 * (recvpara[2*n+1]-recvpara[2*n]), MPI_FLOAT, n, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 						else:    list_dps = lprms[2*recvpara[2*0]:2*recvpara[2*0+1]]
 				else:
-					list_dps = mpi_recv((para_end-para_start) * 2, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+					import sp_global_def
+					list_dps = mpi_recv((para_end-para_start) * 2, MPI_FLOAT, main_node, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 
 				list_dps = list(map(float, list_dps))
 
@@ -12684,10 +12690,12 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 				if myid == main_node:
 					list_return = [0.0]*(3*number_of_proc)
 					for n in range(number_of_proc):
-						if n != main_node: list_return[3*n:3*n+3]                 = mpi_recv(3, MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+						import sp_global_def
+						if n != main_node: list_return[3*n:3*n+3]                 = mpi_recv(3, MPI_FLOAT, n, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 						else:              list_return[3*main_node:3*main_node+3]  = local_pos[:]
 				else:
-					mpi_send(local_pos, 3, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+					import sp_global_def
+					mpi_send(local_pos, 3, MPI_FLOAT, main_node, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 
 				if myid == main_node:	
 					maxvalue = list_return[2]
@@ -13339,7 +13347,8 @@ def gchelix_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 				fexp = open(os.path.join(outdir, "parameters_%04d_%04d.txt"%(N_step+1,Iter)),"w")
 				for n in xrange(number_of_proc):
 					if n!=main_node:
-						t = mpi_recv(recvcount[n]*m,MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+						import sp_global_def
+						t = mpi_recv(recvcount[n]*m,MPI_FLOAT, n, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 						for i in xrange(recvcount[n]):
 							for j in xrange(m):
 								fexp.write(" %15.5f  "%t[j+i*m])
@@ -13360,7 +13369,8 @@ def gchelix_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 					t = get_params_proj(data[i])
 					for j in xrange(m):
 						nvalue[j + i*m] = t[j]
-				mpi_send(nvalue, recvcount[myid]*m, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+				import sp_global_def
+				mpi_send(nvalue, recvcount[myid]*m, MPI_FLOAT, main_node, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 				del nvalue
 			if myid == main_node:
 				print_msg("Time to write parameters = %d\n"%(time()-start_time))
@@ -13415,10 +13425,12 @@ def gchelix_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 
 				if myid == main_node:
 					for n in xrange(number_of_proc):
-						if n!=main_node: mpi_send(lprms[2*recvpara[2*n]:2*recvpara[2*n+1]], 2*(recvpara[2*n+1]-recvpara[2*n]), MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+						import sp_global_def
+						if n!=main_node: mpi_send(lprms[2*recvpara[2*n]:2*recvpara[2*n+1]], 2*(recvpara[2*n+1]-recvpara[2*n]), MPI_FLOAT, n, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 						else:    list_dps = lprms[2*recvpara[2*0]:2*recvpara[2*0+1]]
 				else:
-					list_dps = mpi_recv((para_end-para_start)*2, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+					import sp_global_def
+					list_dps = mpi_recv((para_end-para_start)*2, MPI_FLOAT, main_node, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 
 				list_dps = map(float, list_dps)
 
@@ -13430,10 +13442,12 @@ def gchelix_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 				if myid == main_node:
 					list_return = [0.0]*(3*number_of_proc)
 					for n in xrange(number_of_proc):
-						if n != main_node: list_return[3*n:3*n+3]                 = mpi_recv(3,MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+						import sp_global_def
+						if n != main_node: list_return[3*n:3*n+3]                 = mpi_recv(3,MPI_FLOAT, n, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
  						else:              list_return[3*main_node:3*main_node+3]  = local_pos[:]
 				else:
-					mpi_send(local_pos, 3, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+					import sp_global_def
+					mpi_send(local_pos, 3, MPI_FLOAT, main_node, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 
 				if myid == main_node:	
 					maxvalue = list_return[2]
@@ -16925,14 +16939,16 @@ def normal_prj( prj_stack, outdir, refvol, weights, r, niter, snr, sym, verbose 
 				if(iq == 0):
 					ltot = spill_out(ltot, base, pred, 1, foutput)
 				else:
-					lend = mpi_recv(1, MPI_INT, iq, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+					import sp_global_def
+					lend = mpi_recv(1, MPI_INT, iq, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					lend = int(lend[0])
-					pred = mpi_recv(lend, MPI_FLOAT, iq, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+					pred = mpi_recv(lend, MPI_FLOAT, iq, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					ltot = spill_out(ltot, base, pred, 1, foutput)
 				base += len(pred)
 		else:
-			mpi_send([len(pred)], 1, MPI_INT, 0, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-			mpi_send(pred, len(pred), MPI_FLOAT, 0, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			import sp_global_def
+			mpi_send([len(pred)], 1, MPI_INT, 0, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			mpi_send(pred, len(pred), MPI_FLOAT, 0, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 	else:
 		ltot = 0
 		base = 0
@@ -17399,14 +17415,16 @@ def factcoords_vol( vol_stacks, avgvol_stack, eigvol_stack, prefix, rad = -1, ne
 				if(iq == 0):
 					ltot = spill_out(ltot, base, d, neigvol, foutput)
 				else:
-					lend = mpi_recv(1, MPI_INT, iq, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+					import sp_global_def
+					lend = mpi_recv(1, MPI_INT, iq, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					lend = int(lend[0])
-					d = mpi_recv(lend, MPI_FLOAT, iq, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+					d = mpi_recv(lend, MPI_FLOAT, iq, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					ltot = spill_out(ltot, base, d, neigvol, foutput)
 				base += len(d)/neigvol
 		else:
-			mpi_send([len(d)], 1, MPI_INT, 0, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-			mpi_send(d, len(d), MPI_FLOAT, 0, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			import sp_global_def
+			mpi_send([len(d)], 1, MPI_INT, 0, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			mpi_send(d, len(d), MPI_FLOAT, 0, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 	else:
 		ltot = 0
 		base = 0
@@ -17489,14 +17507,16 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 				if(iq == 0):
 					ltot = spill_out(ltot, base, d, neigvol, foutput)
 				else:
-					lend = mpi_recv(1, MPI_INT, iq, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+					import sp_global_def
+					lend = mpi_recv(1, MPI_INT, iq, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					lend = int(lend[0])
-					d = mpi_recv(lend, MPI_FLOAT, iq, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+					d = mpi_recv(lend, MPI_FLOAT, iq, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					ltot = spill_out(ltot, base, d, neigvol, foutput)
 				base += len(d)/neigvol
 		else:
-			mpi_send([len(d)], 1, MPI_INT, 0, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-			mpi_send(d, len(d), MPI_FLOAT, 0, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			import sp_global_def
+			mpi_send([len(d)], 1, MPI_INT, 0, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			mpi_send(d, len(d), MPI_FLOAT, 0, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 	else:
 		ltot = 0
 		base = 0
@@ -19667,7 +19687,8 @@ def gendisks_MPI(stack, mask3d, ref_nx, pixel_size, dp, dphi, fract=0.67, rmax=7
 		if(myid == main_node):
 			for i in range(nproc):
 				if(i != main_node):
-					didfil = mpi_recv(1, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+					import sp_global_def
+					didfil = mpi_recv(1, MPI_INT, i, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					didfil = int(didfil[0])
 					if(didfil == 1):
 						fil = recv_EMData(i, ivol+i+70000)
@@ -19682,7 +19703,8 @@ def gendisks_MPI(stack, mask3d, ref_nx, pixel_size, dp, dphi, fract=0.67, rmax=7
 						#print outvol, filatable[main_node][ivol]
 						outvol += 1
 		else:
-			mpi_send(gotfil, 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			import sp_global_def
+			mpi_send(gotfil, 1, MPI_INT, main_node, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 			if(gotfil == 1):
 				send_EMData(fullvol0, main_node, ivol+myid+70000)
 
@@ -22445,10 +22467,12 @@ def symsearch_MPI(ref_vol, outdir, maskfile, dp, ndp, dp_step, dphi, ndphi, dphi
 
 	if myid == main_node:
 		for n in range(number_of_proc):
-			if n!=main_node: mpi_send(lprms[2*recvpara[2*n]:2*recvpara[2*n+1]], 2 * (recvpara[2*n+1]-recvpara[2*n]), MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			import sp_global_def
+			if n!=main_node: mpi_send(lprms[2*recvpara[2*n]:2*recvpara[2*n+1]], 2 * (recvpara[2*n+1]-recvpara[2*n]), MPI_FLOAT, n, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 			else:            list_dps = lprms[2*recvpara[2*0]:2*recvpara[2*0+1]]
 	else:
-		list_dps = mpi_recv((para_end-para_start) * 2, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+		import sp_global_def
+		list_dps = mpi_recv((para_end-para_start) * 2, MPI_FLOAT, main_node, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 
 	list_dps = list(map(float, list_dps))
 
@@ -22460,10 +22484,12 @@ def symsearch_MPI(ref_vol, outdir, maskfile, dp, ndp, dp_step, dphi, ndphi, dphi
 	if myid == main_node:
 		list_return = [0.0]*(3*number_of_proc)
 		for n in range(number_of_proc):
-			if n != main_node: list_return[3*n:3*n+3]                 = mpi_recv(3, MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			import sp_global_def
+			if n != main_node: list_return[3*n:3*n+3]                 = mpi_recv(3, MPI_FLOAT, n, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 			else:              list_return[3*main_node:3*main_node+3]  = local_pos[:]
 	else:
-		mpi_send(local_pos, 3, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+		import sp_global_def
+		mpi_send(local_pos, 3, MPI_FLOAT, main_node, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 
 	if myid == main_node:	
 		maxvalue = list_return[2]
@@ -25820,8 +25846,4 @@ from builtins import range
 from builtins import object
 
 from sp_global_def import *
- 
-
-			
-			
-			
+import sp_global_def
