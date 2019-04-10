@@ -48,7 +48,7 @@ def main():
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--shift",		action="store_true",	 default=False,	      help="Apply only translation, disregard rotation, useful for centering of data (default False)")
 	parser.add_option("--ignore_mirror",action="store_true",	 default=False,	      help="If centering data with CTF and astigmatism, use option ignore mirror (default False)")
-	parser.add_option("--method",		type="string"      ,	 default="quadratic", help="Interpolation method (default linear)")
+	parser.add_option("--method",		type="string"      ,	 default="quadratic", help="Interpolation method (default quadratic)")
 	(options, args) = parser.parse_args()
 	if len(args) != 2:
 		sxprint("Usage: " + usage)

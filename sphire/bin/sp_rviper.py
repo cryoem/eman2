@@ -25,6 +25,8 @@ from argparse import Namespace
 
 import mpi
 from sp_applications import cpy
+import sp_applications
+
 
 mpi.mpi_init( 0, [] )
 
@@ -620,7 +622,7 @@ output_directory: directory name into which the output files will be written.  I
 	parser.add_option("--fl",                    type="float",         default=0.25,       help="cut-off frequency applied to the template volume: using a hyperbolic tangent low-pass filter (default 0.25)")
 	parser.add_option("--aa",                    type="float",         default=0.1,        help="fall-off of hyperbolic tangent low-pass filter: (default 0.1)")
 	parser.add_option("--pwreference",           type="string",        default='',         help="text file with a reference power spectrum: (default none)")
-	parser.add_option("--mask3D",                type="string",        default=None,       help="3D mask file: (default sphere)")
+	parser.add_option("--mask3D",                type="string",        default=None,       help="3D mask file (default sphere)")
 	parser.add_option("--moon_elimination",      type="string",        default='',         help="elimination of disconnected pieces: two arguments: mass in KDa and pixel size in px/A separated by comma, no space (default none)")
 
 	#options introduced for the angular distribution
@@ -641,6 +643,8 @@ output_directory: directory name into which the output files will be written.  I
 	parser.add_option("--criterion_name",        type="string",        default='80th percentile',help="criterion deciding if volumes have a core set of stable projections: '80th percentile', other options:'fastest increase in the last quartile' (default '80th percentile')")
 	parser.add_option("--outlier_index_threshold_method",type="string",        default='discontinuity_in_derivative',help="method that decides which images to keep: discontinuity_in_derivative, other options:percentile, angle_measure (default discontinuity_in_derivative)")
 	parser.add_option("--angle_threshold",       type="int",           default=30,         help="angle threshold for projection removal if using 'angle_measure': (default 30)")
+	parser.add_option( "--filament_width",       type="int",          default=-1,    help="When this is set to a non-default value helical data is assumed in which case the input images will be aligned to a mask with this width. (Default: -1)" )
+	parser.add_option( "--isac_shrink_ratio",       type="float",          default=1,    help="ISAC shrink ratio used to resample the filament_width to the input class averages. (Default 1)" )
 	
 
 	required_option_list = ['radius']
@@ -751,7 +755,11 @@ output_directory: directory name into which the output files will be written.  I
 		if not os.path.exists(masterdir):
 			cmd = "{} {}".format("mkdir -p", masterdir)
 			junk = cmdexecute(cmd)
-	
+
+		if options.filament_width != -1:
+			suffix = '_000_no_align'
+		else:
+			suffix = '_000'
 		if ':' in args[0]:
 			bdb_stack_location = args[0].split(":")[0] + ":" + masterdir + args[0].split(":")[1]
 			org_stack_location = args[0]
@@ -759,36 +767,69 @@ output_directory: directory name into which the output files will be written.  I
 			if(not os.path.exists(os.path.join(masterdir,"EMAN2DB" + DIR_DELIM) ) ):
 				# cmd = "{} {}".format("cp -rp EMAN2DB", masterdir, "EMAN2DB" DIR_DELIM)
 				# junk = cmdexecute(cmd)
-				cmd = "{} {} {}".format("e2bdb.py", org_stack_location,"--makevstack=" + bdb_stack_location + "_000")
+				cmd = "{} {} {}".format("e2bdb.py", org_stack_location,"--makevstack=" + bdb_stack_location + suffix)
 				junk = cmdexecute(cmd)
 
 				from sp_applications import header
 				try:
-					header(bdb_stack_location + "_000", params='original_image_index', fprint=True)
+					header(bdb_stack_location + suffix, params='original_image_index', fprint=True)
 					sxprint("Images were already indexed!")
 				except KeyError:
 					sxprint("Indexing images")
-					header(bdb_stack_location + "_000", params='original_image_index', consecutive=True)
+					header(bdb_stack_location + suffix, params='original_image_index', consecutive=True)
 		else:
 			
 			filename = os.path.basename(args[0])
 			bdb_stack_location = "bdb:" + masterdir + os.path.splitext(filename)[0]
-			bdb_path = masterdir + "EMAN2DB" + DIR_DELIM + os.path.splitext(filename)[0] + "_000.bdb"
+			bdb_path = masterdir + "EMAN2DB" + DIR_DELIM + os.path.splitext(filename)[0] + suffix + '.bdb'
 
 			junk = True
 			if not os.path.exists(bdb_path):
-				cmd = "{} {} {}".format("sp_cpy.py  ", args[0], bdb_stack_location + "_000")
+				cmd = "{} {} {}".format("sp_cpy.py  ", args[0], bdb_stack_location + suffix)
 				junk = cmdexecute(cmd)
 				#cpy(args[0], bdb_stack_location + "_000")  # without subprocess
 
 				if junk:
 					from sp_applications import header
 					try:
-						header(bdb_stack_location + "_000", params='original_image_index', fprint=True)
+						header(bdb_stack_location + suffix, params='original_image_index', fprint=True)
 						sxprint("Images were already indexed!")
 					except KeyError:
 						sxprint("Indexing images")
-						header(bdb_stack_location + "_000", params='original_image_index', consecutive=True)
+						header(bdb_stack_location + suffix, params='original_image_index', consecutive=True)
+
+		if options.filament_width != -1:
+			sxprint("XXXXXXXXXXXXXXXXX")
+			sxprint("Do helical prealignment")
+			sxprint("XXXXXXXXXXXXXXXXX")
+			helical_stack = bdb_stack_location + "_000_helical"
+			transform_stack = bdb_stack_location + "_000"
+			cmd = "{} {} {}".format("e2bdb.py", bdb_stack_location + suffix,"--makevstack=" + helical_stack)
+			junk = cmdexecute(cmd)
+			from sp_applications import header
+			header(helical_stack, params='xform.align2d', zero=True)
+			first_proj = get_im(helical_stack)
+			mask_dim = first_proj.get_xsize()
+			mask = util.model_rotated_rectangle2D(
+				radius_long=mask_dim, # long  edge of the rectangular mask
+				radius_short=int( options.filament_width * options.isac_shrink_ratio + 0.5 ), # short edge of the rectangular mask
+				nx=mask_dim,
+				ny=mask_dim,
+				angle=90
+				)
+			mask_file = '{0}/filament_mask.hdf'.format(masterdir)
+			mask.write_image(mask_file)
+			sp_applications.mref_ali2d(
+				stack=helical_stack,
+				refim=mask_file,
+				outdir=os.path.join(masterdir, 'filament_mref'),
+				maskfile=mask_file,
+				ir=1,
+				ou=options.radius,
+				center=0,
+				maxit=10,
+				)
+			sp_applications.transform2d(helical_stack, transform_stack)
 	else:
 		cmd = ''
 		junk = None

@@ -2318,10 +2318,13 @@ def do_volume(data, options, iter, mpi_comm):
 	if myid == 0:
 		from sp_morphology import threshold
 		from sp_filter     import filt_tanl, filt_btwl
-		from sp_utilities  import model_circle, get_im
+		from sp_utilities  import model_circle, model_cylinder, get_im
 		import types
 		nx = vol.get_xsize()
-		if(options.mask3D == None):
+		if options.filament_width != -1:
+			mask3D = model_cylinder(options.filament_width, nx, nx, nx)
+			options.mask3D = mask3D
+		elif(options.mask3D == None):
 			last_ring   = int(options.ou)
 			mask3D = model_circle(last_ring, nx, nx, nx)
 		elif(options.mask3D == "auto"):
