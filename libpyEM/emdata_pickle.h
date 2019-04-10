@@ -34,7 +34,7 @@
 
 #include "emdata.h"
 #include "emobject.h"
-#include "typeconverter.h"
+#include "ctf.h"
 
 struct EMData_pickle_suite : boost::python::pickle_suite
 {

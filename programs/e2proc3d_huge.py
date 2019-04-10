@@ -33,8 +33,6 @@ from __future__ import division
 #
 #
 
-# $Id$
-
 
 from EMAN2 import *
 from optparse import OptionParser
