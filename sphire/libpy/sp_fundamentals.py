@@ -2149,12 +2149,19 @@ class symclass(object):
 		else:
 			return_mirror = 2
 
+		if len(numpy.array(angles).shape) == 1:
+			return_single = True
+		else:
+			return_single = False
+
 		sym_angles = self.symmetry_related(angles, return_mirror=return_mirror, tolistconv=False)
 
 		subunits = self.is_in_subunit(sym_angles, inc_mirror=inc_mirror)
 		reduced_anglesets = sym_angles[subunits]
 
-		if tolistconv:
+		if return_single:
+			return reduced_anglesets[0]
+		elif tolistconv:
 			return reduced_anglesets.tolist()
 		else:
 			return reduced_anglesets
