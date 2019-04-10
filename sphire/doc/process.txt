@@ -46,7 +46,7 @@ sp_process does not support MPI.
 
  8. Generate a 1D rotationally averaged power spectrum of an image.
 
-  sp_process.py  vol.hdf  --rotwp=rotpw.txt
+  sp_process.py  vol.hdf  --rotpw=rotpw.txt
 
 \\ Output will contain three columns:
   - rotationally averaged power spectrum

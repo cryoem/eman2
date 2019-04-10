@@ -1140,7 +1140,7 @@ def main():
 
 		else: # 3D case High pass filter should always come along with low-pass filter. 
 			log_main.add("-------->>>Settings given by all options <<<-------")
-			log_main.add("Pixle_size        :"+str(options.pixel_size))
+			log_main.add("Pixel_size        :"+str(options.pixel_size))
 			log_main.add("Mask              :"+str(options.mask))
 			log_main.add("Fsc_adj           :"+str(options.fsc_adj))
 			log_main.add("B_enhance         :"+str(options.B_enhance))
@@ -1584,6 +1584,9 @@ def main():
 
 				if options.B_enhance !=-1: #3 One specifies and then apply B-factor sharpen
 					if options.B_enhance == 0.0: # auto mode
+						import matplotlib
+						import matplotlib.pylab as plt
+						
 						cutoff_by_fsc = 0
 						for ifreq in range(len(fsc_true[1])):
 							if fsc_true[1][ifreq]<0.143: break
@@ -1591,19 +1594,50 @@ def main():
 						freq_max      = cutoff_by_fsc/(2.*len(fsc_true[0]))/options.pixel_size
 						guinierline    = rot_avg_table(power(periodogram(map1),.5))
 						logguinierline = []
-						for ig in range(len(guinierline)):logguinierline.append(log(guinierline[ig]))
+						spfreq = []
+						for ig in range(len(guinierline)):
+							logguinierline.append(log(guinierline[ig]))
+							spfreq.append(float(ig)/ (2*(len(guinierline)-1)*options.pixel_size) )
 						freq_min = 1./options.B_start  # given frequencies in Angstrom unit, say, B_start is 10 Angstrom, or 15  Angstrom
 						if options.B_stop!=0.0: freq_max = 1./options.B_stop 
 						if freq_min>= freq_max:
 							log_main.add("B_start is too high! Decrease it and rerun the program!")
 							ERROR( "B_start is too high! Decrease it and re-run the program! (--combinemaps option)" )
 							return
+						
+						# Write Guinier plot
+						guinierzip = [spfreq, guinierline, logguinierline]
+						write_text_file(guinierline, os.path.join(options.output_dir, 'guinierplot.txt') )  # write power and log 
+						plt.title('Guinier plot')
+						plt.plot(spfreq, logguinierline)
+						raw_x_ticks_ang = [int(round(options.pixel_size / float(entry), 0)) for entry in [0.1, 0.2, 0.3, 0.4, 0.5]]
+						nyquist_resolution = options.pixel_size*2
+						x_ticks_ang = [r'$\frac{{1}}{{{0}}}$'.format(tick) for tick in raw_x_ticks_ang if tick > nyquist_resolution*1.03]
+						x_ticks_freq = [options.pixel_size/float(tick) for tick in raw_x_ticks_ang if tick > nyquist_resolution*1.03]
+						x_ticks_ang.insert(0, r'$0$')
+						x_ticks_freq.insert(0, 0)
+						x_ticks_ang.append(r'$\frac{{1}}{{{0}}}$'.format(round(nyquist_resolution, 2)))
+						x_ticks_freq.append(options.pixel_size/round(nyquist_resolution, 2))
+						plt.xticks(x_ticks_freq, x_ticks_ang, size='xx-large')
+						plt.legend(loc='lower left', bbox_to_anchor=(0, 1, 1, 0.2), mode='expand', frameon=False)
+						plt.xlabel(r'Spatial frequency / $\frac{1}{\AA}$')
+						plt.ylabel(r'log(I)')
+						plt.grid()
+						plt.tight_layout()
+						plt.savefig(os.path.join(options.output_dir, "guinierplot.png"), bbox_inches='tight')
+						
 						b, junk, ifreqmin, ifreqmax = compute_bfactor(guinierline, freq_min, freq_max, options.pixel_size)
 						global_b = 4.*b # Just a convention!
 						cc = pearson(junk[1],logguinierline)
 						log_main.add("Similarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %5.3f"%(\
 							  ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinierline[ifreqmin:ifreqmax])))
-						log_main.add("The slope is %6.2f[A^2]"%(round(-b,2)))
+						if b < 0:
+							log_main.add("WARNING! B-factor slope %6.2f[A^2] is positive. Inverse B-factor will NOT be applied."%(round(-b,2)))
+							log_main.add("WARNING! Check the Guinier plot, and try to diagnose the problem.")
+							return
+						else:
+							log_main.add("The slope is %6.2f[A^2]"%(round(-b,2)))
+							
 						sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
 
 					else: # User provided value
