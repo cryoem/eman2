@@ -16255,6 +16255,8 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 					elif ext == "hdf":
 						EMUtil.write_hdf_attribute(stack, "xform.align3d", t, i)
 					il+=8	
+				elif p[:len('members')] == "members":
+					EMUtil.write_hdf_attribute(stack, "members", line.strip(), i)
 				elif p == "ctf":
 					if len(parmvalues) < il+6:
 						sxprint("Not enough parameters!")
