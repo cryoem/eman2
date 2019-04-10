@@ -241,7 +241,7 @@ def normalize_particle_images( aligned_images, shrink_ratio, target_radius, targ
 		# create custom masks for filament particle images
 		if filament_width != -1:
 			mask = util.model_rotated_rectangle2D( radius_long=int( np.sqrt(2*new_dim**2) )//2, # long  edge of the rectangular mask
-													  radius_short=int( filament_width*shrink_ratio+0.5 ), # short edge of the rectangular mask
+													  radius_short=int( filament_width*shrink_ratio+0.5 )//2, # short edge of the rectangular mask
 													  nx=new_dim, ny=new_dim, angle=aligned_images[im].get_attr("segment_angle") )
 
 		# normalize using mean of the data and variance of the noise

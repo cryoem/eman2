@@ -7080,7 +7080,7 @@ def get_image_statistics(image, mask, invert):
 	else:
 		mask2d = sp_utilities.model_rotated_rectangle2D(
 			radius_long=int(np.sqrt(2 * image.get_xsize()**2) // 2),
-			radius_short=int(Tracker['constants']['filament_width'] * image.get_xsize() / float(Tracker['constants']['nnxo']) + 0.5),
+			radius_short=int(Tracker['constants']['filament_width'] * image.get_xsize() / float(Tracker['constants']['nnxo']) + 0.5) // 2,
 			nx=image.get_xsize(),
 			ny=image.get_ysize(),
 			angle=image.get_attr('segment_angle'),

@@ -28,6 +28,8 @@ from sp_applications import cpy
 import sp_applications
 
 from shutil import copyfile
+from sp_utilities import disable_bdb_cache
+disable_bdb_cache()
 
 mpi.mpi_init( 0, [] )
 
@@ -815,7 +817,7 @@ output_directory: directory name into which the output files will be written.  I
 			mask_dim = first_proj.get_xsize()
 			mask = util.model_rotated_rectangle2D(
 				radius_long=mask_dim, # long  edge of the rectangular mask
-				radius_short=int( options.filament_width * options.isac_shrink_ratio + 0.5 ), # short edge of the rectangular mask
+				radius_short=int( options.filament_width * options.isac_shrink_ratio + 0.5 )//2, # short edge of the rectangular mask
 				nx=mask_dim,
 				ny=mask_dim,
 				angle=90
@@ -832,7 +834,8 @@ output_directory: directory name into which the output files will be written.  I
 				center=0,
 				maxit=10,
 				)
-			sp_applications.transform2d(helical_stack, transform_stack)
+			cmd = "{} {} {}".format("sp_transform2d.py", helical_stack, transform_stack)
+			junk = cmdexecute(cmd)
 	else:
 		cmd = ''
 		junk = None
