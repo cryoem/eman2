@@ -3411,7 +3411,7 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(
 				sender_size_of_refrings,
 				MPI_FLOAT,
 				sender_id,
-				SPARX_MPI_TAG_UNIVERSAL,
+				sp_global_def.SPARX_MPI_TAG_UNIVERSAL,
 				MPI_COMM_WORLD,
 			)
 		elif sender_id == myid:
@@ -3422,7 +3422,7 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(
 				sender_size_of_refrings,
 				MPI_FLOAT,
 				0,
-				SPARX_MPI_TAG_UNIVERSAL,
+				sp_global_def.SPARX_MPI_TAG_UNIVERSAL,
 				MPI_COMM_WORLD,
 			)
 
@@ -3815,13 +3815,13 @@ def gather_EMData(data, number_of_proc, myid, main_node):
 				for k in range(l):
 					im = recv_EMData(i, i * l + k)
 					mem_len = mpi_recv(
-						1, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD
+						1, MPI_INT, i, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD
 					)
 					members = mpi_recv(
 						int(mem_len[0]),
 						MPI_INT,
 						i,
-						SPARX_MPI_TAG_UNIVERSAL,
+						sp_global_def.SPARX_MPI_TAG_UNIVERSAL,
 						MPI_COMM_WORLD,
 					)
 					members = list(map(int, members))
@@ -3832,14 +3832,14 @@ def gather_EMData(data, number_of_proc, myid, main_node):
 			send_EMData(data[k], main_node, myid * l + k)
 			mem = data[k].get_attr("members")
 			mpi_send(
-				len(mem), 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD
+				len(mem), 1, MPI_INT, main_node, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD
 			)
 			mpi_send(
 				mem,
 				len(mem),
 				MPI_INT,
 				main_node,
-				SPARX_MPI_TAG_UNIVERSAL,
+				sp_global_def.SPARX_MPI_TAG_UNIVERSAL,
 				MPI_COMM_WORLD,
 			)
 	return gathered_data
@@ -3954,12 +3954,12 @@ def recv_attr_dict(
 	headers = []
 	for n in range(number_of_proc):
 		if n != main_node:
-			dis = mpi_recv(2, MPI_INT, n, SPARX_MPI_TAG_UNIVERSAL, comm)
+			dis = mpi_recv(2, MPI_INT, n, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
 			value = mpi_recv(
 				len_list * (dis[1] - dis[0]),
 				MPI_FLOAT,
 				n,
-				SPARX_MPI_TAG_UNIVERSAL,
+				sp_global_def.SPARX_MPI_TAG_UNIVERSAL,
 				comm,
 			)
 			ldis.append([dis[0], dis[1]])
@@ -4027,7 +4027,7 @@ def send_attr_dict(main_node, data, list_params, image_start, image_end, comm=-1
 		comm = MPI_COMM_WORLD
 	TransType = type(Transform())
 	mpi_send(
-		[image_start, image_end], 2, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, comm
+		[image_start, image_end], 2, MPI_INT, main_node, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, comm
 	)
 	nvalue = []
 	for im in range(image_start, image_end):
@@ -4042,7 +4042,7 @@ def send_attr_dict(main_node, data, list_params, image_start, image_end, comm=-1
 				assert len(m) == 12
 				for f in m:
 					nvalue.append(f)
-	mpi_send(nvalue, len(nvalue), MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, comm)
+	mpi_send(nvalue, len(nvalue), MPI_FLOAT, main_node, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
 
 
 def recv_attr_dict_bdb(
@@ -4083,14 +4083,14 @@ def recv_attr_dict_bdb(
 	headers = []
 	for n in range(number_of_proc):
 		if n != main_node:
-			dis = mpi_recv(2, MPI_INT, n, SPARX_MPI_TAG_UNIVERSAL, comm)
+			dis = mpi_recv(2, MPI_INT, n, sp_global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
 			img_begin = int(dis[0])
 			img_end = int(dis[1])
 			header = mpi_recv(
 				len_list * (img_end - img_begin),
 				MPI_FLOAT,
 				n,
-				SPARX_MPI_TAG_UNIVERSAL,
+				sp_global_def.SPARX_MPI_TAG_UNIVERSAL,
 				comm,
 			)
 			for im in range(img_begin, img_end):
@@ -9610,6 +9610,7 @@ from zlib import compress, decompress
 
 # EMAN2 / sparx basics
 from sp_global_def import *
+import sp_global_def
 
 import EMAN2
 import EMAN2db
