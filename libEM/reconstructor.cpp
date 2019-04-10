@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -6258,5 +6254,3 @@ void file_store::restart( )
 
     m_ihandle->seekg( 0, std::ios::beg );
 }
-
-/* vim: set ts=4 noet: */

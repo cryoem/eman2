@@ -119,7 +119,7 @@ target_link_libraries(EM2 GSL::gsl GSL::gslcblas)
 option(ENABLE_TIFF "enable TIFF support" ON)
 if(ENABLE_TIFF)
 	include(${CMAKE_SOURCE_DIR}/cmake/TIFF.cmake)
-    target_link_libraries(EM2 TIFF::TIFF JPEG::JPEG)
+    target_link_libraries(EM2 TIFF::TIFF)
 endif()
 
 option(ENABLE_JPEG "enable JPEG support" ON)

@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -2149,5 +2145,3 @@ map<string, vector<string> > EMAN::dump_projectors_list()
 {
 	return dump_factory_list < Projector > ();
 }
-
-/* vim: set ts=4 noet nospell: */

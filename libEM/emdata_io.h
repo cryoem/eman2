@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Probable contributing author: Liwei Peng
