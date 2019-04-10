@@ -25,6 +25,7 @@ from argparse import Namespace
 
 import mpi
 from sp_applications import cpy
+from shutil import copyfile
 
 mpi.mpi_init( 0, [] )
 
@@ -43,6 +44,8 @@ NAME_OF_RUN_DIR = "run"
 NAME_OF_MAIN_DIR = "main"
 NAME_OF_PARAMS_FILE = "rotated_reduced_params.txt"
 DIR_DELIM = os.sep
+AVG_VOL_FILE = "average_volume.hdf"
+VAR_VOL_FILE = "variance_volume.hdf"
 
 def calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination(no_of_viper_runs_analyzed_together, 
 	no_of_viper_runs_analyzed_together_from_user_options, masterdir, rviper_iter, criterion_name, symc, runs_iter):
@@ -533,8 +536,8 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 			if(st[0] > goal):  goal = st[0]
 			else:  going = False
 		# over and out
-		asa.write_image(mainoutputdir + DIR_DELIM + "average_volume.hdf")
-		sas.write_image(mainoutputdir + DIR_DELIM + "variance_volume.hdf")
+		asa.write_image(os.path.join(mainoutputdir, AVG_VOL_FILE) )
+		sas.write_image(os.path.join(mainoutputdir, VAR_VOL_FILE) )
 	return
 
 
@@ -939,6 +942,13 @@ output_directory: directory name into which the output files will be written.  I
 		if increment_for_current_iteration == MUST_END_PROGRAM_THIS_ITERATION:
 			if (myid == main_node):
 				sxprint("RVIPER found a core set of stable projections for the current RVIPER iteration (%d), the maximum angle difference between corresponding projections from different VIPER volumes is less than %.2f. Finishing."%(rviper_iter, ANGLE_ERROR_THRESHOLD))
+				iter_avg = masterdir + DIR_DELIM + NAME_OF_MAIN_DIR + "%03d"%(rviper_iter) + DIR_DELIM + AVG_VOL_FILE  
+				iter_var = masterdir + DIR_DELIM + NAME_OF_MAIN_DIR + "%03d"%(rviper_iter) + DIR_DELIM + VAR_VOL_FILE  
+				master_avg = os.path.join(masterdir, "average_volume_%03d.hdf" % rviper_iter)
+				master_var = os.path.join(masterdir, "variance_volume_%03d.hdf" % rviper_iter)
+				sxprint('Copying average and variance from iteration %03d to output directory %s' % (rviper_iter, masterdir) )
+				copyfile(iter_avg, master_avg) 
+				copyfile(iter_var, master_var) 
 			break
 	else:
 		if (myid == main_node):
