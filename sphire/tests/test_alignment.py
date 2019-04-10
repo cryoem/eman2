@@ -531,6 +531,24 @@ class Test_ornq(unittest.TestCase):
         """
         self.assertTrue(True)
 
+    def test_NoneType_as_input_image_crashes_because_signal11SIGSEV(self):
+        """
+        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
+        return_new = fu.ornq(None, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
+        return_old = oldfu.ornq(None, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+        """
+        self.assertTrue(True)
+
+    def test_NoneType_as_image_reference_crashes_because_signal11SIGSEV(self):
+        """
+        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
+        return_new = fu.ornq(image, None,  xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
+        return_old = oldfu.ornq(image, None,  xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+        """
+        self.assertTrue(True)
+
     def test_wrong_number_params_returns_TypeError_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.ornq()
@@ -620,12 +638,30 @@ class Test_ormq(unittest.TestCase):
         """
         self.assertTrue(True)
 
+    def test_NoneType_as_input_image_crashes_because_signal11SIGSEV(self):
+        """
+        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
+        return_new = fu.ormq(None, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
+        return_old = oldfu.ormq(None, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+        """
+        self.assertTrue(True)
+
     def test_empty_image_reference_crashes_because_signal11SIGSEV(self):
         """
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
         crefim =EMData()
         return_new = fu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
         return_old = oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+        """
+        self.assertTrue(True)
+
+    def test_NoneType_as_image_reference_crashes_because_signal11SIGSEV(self):
+        """
+        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
+        return_new = fu.ormq(image, None, xrng, yrng, step, mode, numr, cnx, cny, delta)
+        return_old = oldfu.ormq(image, None, xrng, yrng, step, mode, numr, cnx, cny, delta)
         self.assertTrue(numpy.array_equal(return_new, return_old))
         """
         self.assertTrue(True)
@@ -902,6 +938,15 @@ class Test_prepare_refrings(unittest.TestCase):
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[1], msg_old[1])
 
+    def test_NoneType_as_volume_returns_AttributeError_ImageFormatException_extractplane_requires_complex_img(self):
+
+        volft, kb = sparx_projection.prep_vol(self.volft)
+        with self.assertRaises(AttributeError)as cm_new:
+            fu.prepare_refrings(None, kb, nz=4, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5,initial_phi=0.1)
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.prepare_refrings(None, kb, nz=4, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=False,phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5,initial_phi=0.1)
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(cm_new.exception.message,"'NoneType' object has no attribute 'extract_plane'")
 
     def test_empty_list_Numrinit_returns_IndexError_list_index_out_of_range(self):
         volft, kb = sparx_projection.prep_vol(self.volft)
@@ -1264,6 +1309,15 @@ class Test_ali_vol_func(unittest.TestCase):
         return_old = oldfu.ali_vol_func(self.param, self.data)
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
+    def test_ali_vol_func_with_NoneTypes_as_image_returns_AttributeError_NoneType_obj_hasnot_attribute_rot_scale_trans_background(self):
+        data = [None,None,None]
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.ali_vol_func(self.param, data)
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.ali_vol_func(self.param, data)
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'rot_scale_trans_background'")
+
     def test_empty_data_images_returns_RuntimeError_InvalidValueException_xsize_not_positive(self):
         data = [EMData(), EMData(), EMData()]
         with self.assertRaises(RuntimeError) as cm_new:
@@ -1291,6 +1345,24 @@ class Test_align2d(unittest.TestCase):
         self.assertTrue(numpy.array_equal(return_new, return_old))
         """
         self.assertTrue(True)
+
+    def test_NoneType_image_to_align_crashes_because_signal11SIGSEV(self):
+        """
+        (image, refim, xrng, yrng) = self.argum[0]
+        return_new = fu.align2d(None, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
+        return_old = oldfu.align2d(None, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+        """
+        self.assertTrue(True)
+
+    def test_NoneType__image_to_align_creturns_AttributeError_NoneType_obj_hasnot_attribute_get_xsize(self):
+        (image, refim, xrng, yrng) = self.argum[0]
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.align2d(image, None, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.align2d(image, None, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
 
     def test_empty_image_reference_returns_IndexError_list_index_out_of_range(self):
         (image, refim, xrng, yrng) = self.argum[0]
@@ -1408,6 +1480,15 @@ class Test_align2d_scf(unittest.TestCase):
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
 
+    def test_NoneType__image_to_align_creturns_AttributeError_NoneType_obj_hasnot_attribute_get_xsize(self):
+        (image, refim, xrng, yrng) = self.argum[0]
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.align2d_scf(None, refim, xrng, yrng, self.argum[1]['ou'])
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.align2d_scf(None, refim, xrng, yrng, self.argum[1]['ou'])
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
+
     def test_empty_reference_image_returns_RuntimeError_InvalidValueException_xsize_not_positive(self):
         (image, refim, xrng, yrng) = self.argum[0]
         refim =EMData()
@@ -1421,6 +1502,22 @@ class Test_align2d_scf(unittest.TestCase):
         self.assertEqual(msg[3], "x size <= 0")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_as_reference_image_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        (image, refim, xrng, yrng) = self.argum[0]
+        with self.assertRaises(RuntimeError) as cm_old:
+            fu.align2d_scf(image, None, xrng, yrng, self.argum[1]['ou'])
+        with self.assertRaises(RuntimeError) as cm_new:
+            oldfu.align2d_scf(image, Nnoe, xrng, yrng, self.argum[1]['ou'])
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "x size <= 0")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+        """
 
     def test_with_valid_params(self):
         (image, refim, xrng, yrng) = self.argum[0]
@@ -1482,6 +1579,20 @@ class Test_multialign2d_scf(unittest.TestCase):
         """
         self.assertTrue(True)
 
+    def test_NoneType_as_input_image_crashes_because_signal11SIGSEV(self):
+        """
+        (dataa, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
+
+        dataa = deepcopy(self.argum[0][0])
+        cimage = None
+        frotim = [sparx_fundamentals.fft(tavg)]
+
+        return_new = fu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=174)
+        return_old = oldfu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=174)
+        self.assertEqual(return_old, return_new)
+        """
+        self.assertTrue(True)
+
     def test_empty_image_reference_crashes_because_signal11SIGSEV(self):
         """
         (dataa, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -1495,6 +1606,18 @@ class Test_multialign2d_scf(unittest.TestCase):
         self.assertEqual(return_old, return_new)
         """
         self.assertTrue(True)
+
+    def test_NoneType__image_reference_typeError_NoneType_obj_hasnot_attribute___getitem__(self):
+        (dataa, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
+
+        dataa = deepcopy(self.argum[0][0])
+        cimage = Util.Polar2Dm(tavg, float(cnx), float(cny), numr, "F")
+        with self.assertRaises(TypeError) as cm_new:
+            fu.multalign2d_scf(dataa[0], [cimage], None, numr, xrng, yrng, ou=174)
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.multalign2d_scf(dataa[0], [cimage], None, numr, xrng, yrng, ou=174)
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute '__getitem__'")
 
     def test_empty_list_Numrinit_crashes_because_signal11SIGSEV(self):
         """
@@ -1534,6 +1657,19 @@ class Test_multialign2d_scf(unittest.TestCase):
         self.assertEqual(msg[3], "x size <= 0")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
+
+    def test_with_NoneType_images_as_data_AttributeError_NoneType_obj_hasnot_attribute_get_xsize(self):
+        (dataa, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
+
+        dataa = [None,None,None]
+        cimage = Util.Polar2Dm(tavg, float(cnx), float(cny), numr, "F")
+        frotim = [sparx_fundamentals.fft(tavg)]
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=174)
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=174)
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
 
     def test_with_valid_params_cimage_with_mode_F(self):
         (dataa, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -1597,6 +1733,14 @@ class Test_parabl(unittest.TestCase):
         return_new = fu.parabl(EMData())
         return_old = oldfu.parabl(EMData())
         self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_NoneType_as_input_image_returns_typeError_object_float_hasnot_attibute(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.parabl(None)
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.parabl(None)
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute '__getitem__'")
 
     def test_peak_found(self):
         return_new = fu.parabl(self.argum[0][0])
