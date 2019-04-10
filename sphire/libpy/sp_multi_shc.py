@@ -227,18 +227,12 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 	L2threshold = ali3d_options.L2threshold
 
 	# Optionally restrict out-of-plane angle
-	####try: theta1 = ali3d_options.theta1
-	####except AttributeError: theta1 = -1.0
 	if hasattr(ali3d_options, 'theta1'): theta1 = ali3d_options.theta1
 	else: theta1 = -1.0
 	
-	####try: theta2 = ali3d_options.theta2
-	####except AttributeError: theta2 = -1.0
 	if hasattr(ali3d_options, 'theta2'): theta2 = ali3d_options.theta2
 	else: theta2 = -1.0
 	
-	####try: method = ali3d_options.method
-	####except AttributeError: method = "S"
 	if hasattr(ali3d_options, 'method'): method = ali3d_options.method
 	else: method = "S"
 	
@@ -888,18 +882,12 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 	ref_a  = ali3d_options.ref_a
 
 	# Optionally restrict out-of-plane angle
-	####try: theta1 = ali3d_options.theta1
-	####except AttributeError: theta1 = -1.0
 	if hasattr(ali3d_options, 'theta1'): theta1 = ali3d_options.theta1
 	else: theta1 = -1.0
 	
-	####try: theta2 = ali3d_options.theta2
-	####except AttributeError: theta2 = -1.0
 	if hasattr(ali3d_options, 'theta2'): theta2 = ali3d_options.theta2
 	else: theta2 = -1.0
 	
-	####try: method = ali3d_options.method
-	####except AttributeError: method = "S"
 	if hasattr(ali3d_options, 'method'): method = ali3d_options.method
 	else: method = "S"
 	
@@ -1496,6 +1484,27 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		L2 = ref_vol.cmp("dot", ref_vol, dict(negative = 0, mask = model_circle(ali3d_options.ou, nx,nx,nx)))
 		log.add(" L2 norm of reference volume:  %f"%L2)
 
+		# Generate angular distribution
+		if hasattr(ali3d_options, 'dpi'):
+			dpi = ali3d_options.dpi
+		else:
+			dpi = 72
+		pixel_size = 1  # Not going to upscale to the original dimensions, so in Chimera open reconstruction at 1 Angstrom/voxel, etc.
+		
+		angular_distribution(
+			params_file=log.prefix+'refparams2.txt',
+			output_folder=log.prefix,
+			prefix='refvol2_angdist',
+			method=method,
+			pixel_size=pixel_size,
+			delta=float(ali3d_options.delta),
+			symmetry=ali3d_options.sym,
+			box_size=nx,
+			particle_radius=ali3d_options.ou,
+			dpi=dpi,
+			do_print=False,
+			)
+		
 	"""
 	if mpi_rank == 17:
 		temp = []
@@ -1535,13 +1544,9 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		independent_run_dir = log.prefix
 		sp_global_def.sxprint('independent_run_dir', independent_run_dir)
 		
-		####params_file = log.prefix + "params.txt"
-		####write_text_row(rotated_params[i1], params_file)  # 5 columns
-		
 		params_file = log.prefix + "params.txt"
 		output_folder = independent_run_dir 
-		prefix = 'angdist'  # will overwrite input parameters file if blank
-		####method = ali3d_options.ref_a  # method for generating the quasi-uniformly distributed projection directions
+		prefix = 'volf_angdist'  # will overwrite input parameters file if blank
 		delta = float(ali3d_options.delta)
 		symmetry = ali3d_options.sym
 		if hasattr(ali3d_options, 'dpi'):
@@ -1551,7 +1556,6 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		
 		# Not going to upscale to the original dimensions, so in Chimera open reconstruction at 1 Angstrom/voxel, etc.
 		pixel_size = 1
-		####particle_radius = ali3d_options.radius
 		box_size = get_im( os.path.join(log.prefix, 'volf.hdf') ).get_xsize()
 		
 		angular_distribution(
