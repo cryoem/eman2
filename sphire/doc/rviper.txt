@@ -52,7 +52,7 @@ Since RVIPER uses group of processors working together, it is important for effi
   ; %%--%%center : Center 3D template: -1: center of coordinates, 0: no centering; 1: center of gravity (default -1.0)
   ; %%--%%maxit1 : Maximum iterations - GA step: Maximum number of iterations for GA step. (default 400)
   ; %%--%%maxit2 : Maximum iterations - Finish step: Maximum iterations number of for Finish step. (default 50)
-  ; %%--%%mask3D : 3D mask: Path to 3D mask file. By default, a spherical mask will be used. (default sphere)
+  ; %%--%%mask3D : 3D mask: Path to 3D mask file. By default, a spherical mask will be used. (default sphere): %%--%%filament_width==-1
   ; %%--%%L2threshold : GA stop threshold: Defines the maximum relative dispersion of structures' L2 norms. (default 0.03)
   ; %%--%%ref_a : Projection generation method: Method for generating the quasi-uniformly distributed projection directions. S - Saff algorithm, or P - Penczek 1994 algorithm. (default S)
   ; %%--%%n_shc_runs : GA population size: This defines the number of quasi-independent structures generated. (same as %%--nruns%% parameter from [[pipeline:viper:sp_viper|sp_viper]]). (default 4)
@@ -64,6 +64,8 @@ Since RVIPER uses group of processors working together, it is important for effi
   ; %%--%%theta1 : Minimum theta: Lower bound for out-of-plane tilt angle. No tilt corresponds to 90 degrees. (default -1)
   ; %%--%%theta2 : Maximum theta: Upper bound for out-of-plane tilt angle. No tilt corresponds to 90 degrees. (default -1)
   ; %%--%%dpi : BILD resolution: Resolution in dpi for angular distribution plot. (default 72)
+  ; %%--%%filament_width : Filament width [Pixels]: When this is set to a non-default value helical data is assumed in which case the input images will be aligned to a mask with this width. (default -1): %%--%%mask3D==sphere
+  ; %%--%%resample_ratio : Resample ratio: Specify a value larger than 0.0. By default, the program does not resample the input map (i.e. resample ratio is 1.0). Use this option maily to restore the original dimensions or pixel size of VIPER or R-VIPER model. Alternatively, specify the path to the output directory of an ISAC2 run. The program automatically extracts the resampling ratio used by the ISAC2 run. (default '1.0'): %%--%%filament_width!=-1 %%--%%mask3D==sphere
 
 \\
 ===== Output =====

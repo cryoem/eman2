@@ -339,6 +339,9 @@ def handle_exceptional_cases(sxcmd):
 	elif sxcmd.name == "sp_mask":
 		sxcmd.token_dict["output_directory"].type = "dir"
 	elif sxcmd.name == "sp_rviper":
+		assert(sxcmd.token_dict["resample_ratio"].key_base == "resample_ratio")
+		assert(sxcmd.token_dict["resample_ratio"].type == "string")
+		sxcmd.token_dict["resample_ratio"].type = "dir"
 		assert(sxcmd.token_dict["stack"].key_base == "stack")
 		assert(sxcmd.token_dict["stack"].type == "bdb2d_stack")
 		sxcmd.token_dict["stack"].type = "data2d_one"

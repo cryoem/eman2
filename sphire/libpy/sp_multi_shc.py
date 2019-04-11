@@ -2326,7 +2326,7 @@ def do_volume(data, options, iter, mpi_comm):
 		import types
 		nx = vol.get_xsize()
 		if options.filament_width != -1:
-			mask3D = model_cylinder(int(options.filament_width*options.isac_shrink_ratio+0.5)//2, nx, nx, nx)
+			mask3D = model_cylinder(int(options.filament_width*options.resample_ratio+0.5)//2, nx, nx, nx)
 			options.mask3D = mask3D
 		elif(options.mask3D == None):
 			last_ring   = int(options.ou)
