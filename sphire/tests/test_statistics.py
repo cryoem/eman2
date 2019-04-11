@@ -5,11 +5,11 @@ import unittest
 
 import cPickle as pickle
 import os
-import sys
 import numpy
 from mpi import *
 import global_def
 import EMAN2_cppwrap as e2cpp
+import EMAN2_cppwrap
 
 mpi_init(0, [])
 global_def.BATCH = True
@@ -18,7 +18,7 @@ global_def.MPI = True
 ABSOLUTE_PATH = os.path.dirname(os.path.realpath(__file__))
 
 
-from ..libpy import sparx_statistics as fu
+from sphire.libpy_py3 import sphire_statistics as fu
 
 from .sparx_lib import sparx_statistics as oldfu
 
@@ -43,7 +43,7 @@ class Test_lib_statistics_compare(unittest.TestCase):
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
-        print(argum[0])
+        # print(argum[0])
 
         (data,) = argum[0]
 
@@ -52,23 +52,25 @@ class Test_lib_statistics_compare(unittest.TestCase):
         mpi_barrier(MPI_COMM_WORLD)
         return_old = oldfu.add_ave_varf_MPI(0, data)
 
-        self.assertTrue(return_new, return_old)
+
+        self.assertTrue(numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
 
 
     """Unable to read the file """
-    # def test_sum_oe_true_should_return_equal_objects(self):
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/statistics/statistics.sum_oe")
-    #     with open(filepath, 'rb') as rb:
-    #         argum = pickle.load(rb)
-    #
-    #     print(argum[0])
-    #
-    #     (data, mode) = argum[0]
-    #
-    #     return_new = fu.sum_oe(data, mode)
-    #     return_old = oldfu.sum_oe(data, mode)
-    #
-    #     self.assertEqual(return_new, return_old)
+    def test_sum_oe_true_should_return_equal_objects(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/statistics/statistics.ave_series")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        (data,) = argum[0]
+
+        return_new = fu.sum_oe(data)
+        return_old = oldfu.sum_oe(data)
+
+        # print(return_new)
+
+        self.assertTrue(numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
+        self.assertTrue(numpy.array_equal(return_new[1].get_3dview(), return_old[1].get_3dview()))
 
 
     def test_ave_var_true_should_return_equal_objects(self):
@@ -76,7 +78,7 @@ class Test_lib_statistics_compare(unittest.TestCase):
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
-        print(argum[0])
+        # print(argum[0])
 
         (data) = argum[0][0]
 
@@ -91,7 +93,7 @@ class Test_lib_statistics_compare(unittest.TestCase):
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
-        print(argum[0])
+        # print(argum[0])
 
         (data,) = argum[0]
 
@@ -106,7 +108,7 @@ class Test_lib_statistics_compare(unittest.TestCase):
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
-        print(argum[0])
+        # print(argum[0])
 
         (data,) = argum[0]
         ave = get_data(1)
@@ -117,12 +119,31 @@ class Test_lib_statistics_compare(unittest.TestCase):
         self.assertTrue(return_new, return_old)
 
 
+    """The function works but is extremely slow. It takes 55 mins to check the unit test that is why it is commented"""
+    # def test_varf3d_MPI_true_should_return_equal_objects(self):
+    #
+    #     stack_name = "bdb:tests/Substack/sort3d_substack_003"
+    #     nima = EMAN2_cppwrap.EMUtil.get_image_count(stack_name)
+    #     list_proj = list(range(nima))
+    #     proj = EMAN2_cppwrap.EMData()
+    #     proj.read_image(stack_name, list_proj[0])
+    #
+    #     return_new = fu.varf3d_MPI([proj], mask2D=False  )
+    #     mpi_barrier(MPI_COMM_WORLD)
+    #     print("Hello")
+    #     return_old = oldfu.varf3d_MPI([proj] , mask2D=False)
+    #     mpi_barrier(MPI_COMM_WORLD)
+    #     print('yoyo')
+    #
+    #     self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
     def test_ccc_true_should_return_equal_objects(self):
         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/statistics/statistics.ccc")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
-        print(argum[0])
+        # print(argum[0])
 
         (img1, img2,mask) = argum[0]
 
@@ -137,7 +158,7 @@ class Test_lib_statistics_compare(unittest.TestCase):
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
-        print(argum[0])
+        # print(argum[0])
 
         (img1, img2) = argum[0]
 
@@ -152,9 +173,10 @@ class Test_lib_statistics_compare(unittest.TestCase):
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
-        print(argum[0])
+        # print(argum[0])
 
         (img1, img2, mask, w, filename) = argum[0]
+        filename = os.path.join(ABSOLUTE_PATH, filename)
 
         return_new = fu.fsc_mask(img1, img2, mask, w, filename)
         return_old = oldfu.fsc_mask(img1, img2, mask, w, filename)
@@ -162,7 +184,7 @@ class Test_lib_statistics_compare(unittest.TestCase):
         self.assertEqual(return_new, return_old)
 
     """  Can only work on the cluster"""
-    # def test_locres_mask_true_should_return_equal_objects(self):
+    # def test_locres_true_should_return_equal_objects(self):
     #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/statistics/statistics.locres")
     #     with open(filepath, 'rb') as rb:
     #         argum = pickle.load(rb)
@@ -171,9 +193,9 @@ class Test_lib_statistics_compare(unittest.TestCase):
     #
     #     (vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc) = argum[0]
     #
-    # #    number_of_proc = 12
-    #  #   main_node = 0
-    #  #   myid = 0
+    #     number_of_proc = 1
+    #     main_node = 0
+    #     myid = 0
     #
     #     return_new = fu.locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc)
     #     mpi_barrier(MPI_COMM_WORLD)
@@ -188,7 +210,7 @@ class Test_lib_statistics_compare(unittest.TestCase):
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
-        print(argum[0])
+        # print(argum[0])
 
         (data) = argum[0][0]
 
@@ -206,7 +228,7 @@ class Test_lib_statistics_compare(unittest.TestCase):
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
-        print(argum[0])
+        # print(argum[0])
 
         (asg1, asg2) = argum[0]
 
@@ -221,8 +243,8 @@ class Test_lib_statistics_compare(unittest.TestCase):
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
-        print(argum[0])
-        print(argum[1])
+        # print(argum[0])
+        # print(argum[1])
 
         (data,nbins) = argum[0]
 
@@ -237,8 +259,8 @@ class Test_lib_statistics_compare(unittest.TestCase):
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
-        print(argum[0])
-        print(argum[1])
+        # print(argum[0])
+        # print(argum[1])
 
         (X, Y) = argum[0]
 
@@ -253,8 +275,8 @@ class Test_lib_statistics_compare(unittest.TestCase):
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
-        print(argum[0])
-        print(argum[1])
+        # print(argum[0])
+        # print(argum[1])
 
         (X, Y) = argum[0]
 
@@ -269,8 +291,8 @@ class Test_lib_statistics_compare(unittest.TestCase):
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
-        print(argum[0])
-        print(argum[1])
+        # print(argum[0])
+        # print(argum[1])
 
         (X, ) = argum[0]
 
@@ -285,8 +307,8 @@ class Test_lib_statistics_compare(unittest.TestCase):
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
-        print(argum[0])
-        print(argum[1])
+        # print(argum[0])
+        # print(argum[1])
 
         (k1,k2) = argum[0]
 
@@ -301,8 +323,8 @@ class Test_lib_statistics_compare(unittest.TestCase):
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
-        print(argum[0])
-        print(argum[1])
+        # print(argum[0])
+        # print(argum[1])
 
         (Part,) = argum[0]
 
@@ -317,8 +339,8 @@ class Test_lib_statistics_compare(unittest.TestCase):
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
-        print(argum[0])
-        print(argum[1])
+        # print(argum[0])
+        # print(argum[1])
 
         (Part,) = argum[0]
 
@@ -333,8 +355,8 @@ class Test_lib_statistics_compare(unittest.TestCase):
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
-        print(argum[0])
-        print(argum[1])
+        # print(argum[0])
+        # print(argum[1])
 
         (fsc_to_be_adjusted, nfsc, nnew) = argum[0]
 

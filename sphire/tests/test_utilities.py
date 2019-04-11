@@ -12,6 +12,8 @@ import copy
 import numpy
 import shutil
 
+from EMAN2_cppwrap import EMData
+
 mpi_init(0, [])
 global_def.BATCH = True
 global_def.MPI = True
@@ -116,6 +118,49 @@ class Test_lib_utilities_compare(unittest.TestCase):
             self.assertTrue(return_new, return_old)
 
 
+    def test_even_angles_true_should_return_equal_objects(self):
+
+
+        return_new = fu.even_angles(delta = 0.25)
+        return_old = oldfu.even_angles(delta = 0.25)
+
+        if return_new is not None   and  return_old is not None:
+            self.assertTrue(return_new, return_old)
+
+    """If method is P , then it takes a lot of time"""
+    def test_even_angles_cd_true_should_return_equal_objects(self):
+
+
+        return_new = fu.even_angles_cd(delta = 0.5, method = 'P')
+        return_old = oldfu.even_angles_cd(delta = 0.5, method = 'P')
+
+        print("call to function is done ")
+        print(return_old)
+
+        if return_new is not None   and  return_old is not None:
+            self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_gauss_edge_true_should_return_equal_objects(self):
+
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_params3D")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        print(argum[0])
+
+        (ima,) = argum[0]
+
+        return_new = fu.gauss_edge(ima)
+        return_old = oldfu.gauss_edge(ima)
+
+        print("call to function is done ")
+        print(return_old)
+
+        if return_new is not None and return_old is not None:
+            self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+
     def test_get_im_true_should_return_equal_objects(self):
         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_im")
         with open(filepath, 'rb') as rb:
@@ -212,6 +257,37 @@ class Test_lib_utilities_compare(unittest.TestCase):
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
+    def test_model_gauss_true_should_return_equal_objects(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.model_circle")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        print(argum)
+
+        (r, nx, ny) = argum[0]
+
+        return_new = fu.model_gauss(0.25,nx,ny)
+        return_old = oldfu.model_gauss(0.25,nx,ny)
+
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+    """  This function creates random noise each time so arrays cannot be compared """
+    def test_model_gauss_noise_true_should_return_equal_objects(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.model_circle")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        print(argum)
+
+        (r, nx, ny) = argum[0]
+
+        return_new = fu.model_gauss_noise(0.15,nx,ny)
+        return_old = oldfu.model_gauss_noise(0.15,nx,ny)
+
+        self.assertTrue(return_new, return_old)
+
+
     def test_model_blank_true_should_return_equal_objects(self):
         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.model_blank")
         with open(filepath, 'rb') as rb:
@@ -239,7 +315,27 @@ class Test_lib_utilities_compare(unittest.TestCase):
         return_new = fu.peak_search(e )
         return_old = oldfu.peak_search(e )
 
-        self.assertTrue(return_new, return_old)
+        self.assertEqual(return_new, return_old)
+
+
+
+    """No return parameter for this function. """
+    def test_print_list_format_true_should_return_equal_objects(self):
+        import StringIO
+
+        m = []
+        for i in range(1):
+            m.append((i))
+
+        # fu.print_list_format(m)
+        # oldfu.print_list_format(m)
+
+        capturedOutput = StringIO.StringIO()
+        sys.stdout = capturedOutput
+        fu.print_list_format(m)
+        oldfu.print_list_format(m)
+        # sys.stdout = sys.__stdout__
+        print ('Captured', capturedOutput.getvalue())
 
 
 
@@ -336,6 +432,17 @@ class Test_lib_utilities_compare(unittest.TestCase):
         self.assertEqual(return_new, return_old)
 
 
+    def test_rotate_shift_params_true_should_return_equal_objects(self):
+
+        paramsin = [[0.25,1.25,0.5]]
+        transf  = [0.25, 1.25, 0.5]
+
+        return_new = fu.rotate_shift_params(paramsin, transf)
+        return_old = oldfu.rotate_shift_params(paramsin, transf)
+
+        self.assertEqual(return_new, return_old)
+
+
     def test_reshape_1d_true_should_return_equal_objects(self):
         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.reshape_1d")
         with open(filepath, 'rb') as rb:
@@ -382,6 +489,38 @@ class Test_lib_utilities_compare(unittest.TestCase):
             self.assertTrue(return_new, return_old)
         else:
             print('returns None')
+
+
+    def test_set_arb_params_true_should_return_equal_objects(self):
+        params = "lowpassfilter"
+        par_str = "0.50"
+
+        return_new = fu.set_arb_params(EMData(), params, par_str)
+        return_old = oldfu.set_arb_params(EMData(), params, par_str)
+
+        if return_new is not None and return_old is not None:
+            self.assertTrue(return_new, return_old)
+        else:
+            print('returns None')
+
+
+    def test_get_arb_params_true_should_return_equal_objects(self):
+        params = "lowpassfilter"
+        par_str = "0.50"
+
+        a = EMData()
+        a[params] = par_str
+
+        for i in range(len(par_str)): a.set_attr_dict({par_str[i]: params[i]})
+
+        return_new = fu.get_arb_params(a, par_str)
+        return_old = oldfu.get_arb_params(a, par_str)
+
+        if return_new is not None and return_old is not None:
+            self.assertTrue(return_new, return_old)
+        else:
+            print('returns None')
+
 
 
     """
@@ -517,6 +656,77 @@ class Test_lib_utilities_compare(unittest.TestCase):
 
         self.assertEqual(return_new, return_old)
 
+    def test_bcast_list_to_all_true_should_return_equal_objects(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.bcast_list_to_all")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        print(argum[0])
+
+        (list_to_send, source_node, mpi_comm) = argum[0]
+
+        return_new = fu.bcast_list_to_all(list_to_send, source_node)
+        mpi_barrier(MPI_COMM_WORLD)
+
+        return_old = oldfu.bcast_list_to_all(list_to_send, source_node)
+        mpi_barrier(MPI_COMM_WORLD)
+
+        self.assertEqual(return_new, return_old)
+
+
+    # def test_recv_attr_dict_true_should_return_equal_objects(self):
+    #
+    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_params2D")
+    #     with open(filepath, 'rb') as rb:
+    #         argum = pickle.load(rb)
+    #
+    #     print(argum[0])
+    #     print(argum)
+    #
+    #     (ima,) = argum[0]
+    #     # params = "values"
+    #     paramstr = 0
+    #     # ima[params] = paramstr
+    #
+    #     ima.set_attr_dict({"values": 0})
+    #
+    #     return_new = fu.recv_attr_dict(0, "test", ima,paramstr,0,0,1)
+    #
+    #     return_old = oldfu.recv_attr_dict(0, "test1", ima,paramstr, 0,0,1)
+
+
+
+    def test_print_begin_msg_true_should_return_equal_objects(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.print_msg")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        print(argum[0])
+
+        (msg) = argum[0][0]
+
+        return_new = fu.print_begin_msg(msg)
+
+        return_old = oldfu.print_begin_msg(msg)
+
+        self.assertEqual(return_new, return_old)
+
+
+    def test_print_end_msg_true_should_return_equal_objects(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.print_msg")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        print(argum[0])
+
+        (msg) = argum[0][0]
+
+        return_new = fu.print_end_msg(msg)
+
+        return_old = oldfu.print_end_msg(msg)
+
+        self.assertEqual(return_new, return_old)
+
 
     def test_print_msg_true_should_return_equal_objects(self):
         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.print_msg")
@@ -530,6 +740,71 @@ class Test_lib_utilities_compare(unittest.TestCase):
         return_new = fu.print_msg(msg)
 
         return_old = oldfu.print_msg(msg)
+
+        self.assertEqual(return_new, return_old)
+
+
+    def test_read_fsc_true_should_return_equal_objects(self):
+
+        print(os.getcwd())
+        filename = "sphire/tests/Sort3D/fsc_global.txt"
+        return_new = fu.read_fsc(filename)
+
+        return_old = oldfu.read_fsc(filename)
+
+        self.assertEqual(return_new, return_old)
+
+
+    def test_circumference_true_should_return_equal_objects(self):
+
+
+        img = fu.model_blank(10,10,10)
+
+        return_new = fu.circumference(img)
+
+        return_old = oldfu.circumference(img)
+
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+    def test_write_headers_true_should_return_equal_objects(self):
+
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_params2D")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        (ima,) = argum[0]
+
+
+        fu.write_headers("test.hdf", [ima], [1])
+
+        oldfu.write_headers("test1.hdf", [ima], [1])
+
+        filepath = "/home/adnan/PycharmProjects/eman2/"
+
+        return_new = os.path.isfile(filepath + "test.hdf")
+        return_old = os.path.isfile(filepath + "test1.hdf")
+
+        self.assertEqual(return_new, return_old)
+
+
+    def test_write_headers_true_should_return_equal_objects(self):
+
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_params2D")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        (ima,) = argum[0]
+
+
+        fu.write_header("test.hdf", ima, 1)
+
+        oldfu.write_header("test1.hdf", ima, 1)
+
+        filepath = "/home/adnan/PycharmProjects/eman2/"
+
+        return_new = os.path.isfile(filepath + "test.hdf")
+        return_old = os.path.isfile(filepath + "test1.hdf")
 
         self.assertEqual(return_new, return_old)
 
@@ -663,6 +938,19 @@ class Test_lib_utilities_compare(unittest.TestCase):
         self.assertEqual(return_new, return_old)
 
 
+    def test_get_ctf_true_should_return_equal_objects(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ali2d_single_iter")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        (img) = argum[0][0]
+
+        return_new = fu.get_ctf(img[0])
+        return_old = oldfu.get_ctf(img[0])
+
+        self.assertEqual(return_new, return_old)
+
+
     def test_same_ctf_true_should_return_equal_objects(self):
         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.same_ctf")
         with open(filepath, 'rb') as rb:
@@ -681,7 +969,7 @@ class Test_lib_utilities_compare(unittest.TestCase):
 
 
     def test_generate_ctf_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.generate_ctf")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ali2d_single_iter")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
@@ -714,6 +1002,20 @@ class Test_lib_utilities_compare(unittest.TestCase):
         else:
             print('returns None')
 
+    def test_getvec_true_should_return_equal_objects(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.getfvec")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        print(argum)
+
+        (phi, tht) = argum[0]
+
+        return_new = fu.getvec(phi, tht)
+
+        return_old = oldfu.getvec(phi, tht)
+
+        self.assertEqual(return_new, return_old)
 
 
     def test_getfvec_true_should_return_equal_objects(self):
@@ -781,29 +1083,72 @@ class Test_lib_utilities_compare(unittest.TestCase):
 
         self.assertEqual(return_new, return_old)
 
-    """
-      This function test works but takes too much time that is why for the time being it is
-       commented,  will uncomment it once everything is done 
-    """
-    """  Test works with sym = "c1 but fails with sym = "c5"  """
+
     def test_angular_occupancy_true_should_return_equal_objects(self):
         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.angular_occupancy")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
-        # print(argum[0])
+        (params, angstep, sym, method) = argum[0]
 
+        return_new = fu.angular_occupancy(params, angstep, sym, method)
+        return_old = oldfu.angular_occupancy(params, angstep, sym, method)
+
+        self.assertEqual(return_new, return_old)
+
+    def test_angular_histogram_true_should_return_equal_objects(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.angular_occupancy")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
 
         (params, angstep, sym, method) = argum[0]
 
-        print("params = ", params)
-        print("angstep = ", angstep)
-        print("sym = ", sym)
-        print("method = ", method)
+        return_new = fu.angular_histogram(params, angstep, sym, method)
+        return_old = oldfu.angular_histogram(params, angstep, sym, method)
 
-        return_new = fu.angular_occupancy(params, angstep, sym, method)
+        self.assertEqual(return_new, return_old)
 
-        return_old = oldfu.angular_occupancy(params, angstep, sym, method)
+
+    def test_balance_angular_distribution_true_should_return_equal_objects(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.angular_occupancy")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        (params, angstep, sym, method) = argum[0]
+
+        max_occupy = -1
+
+        return_new = fu.balance_angular_distribution(params, max_occupy, angstep, sym)
+        return_old = oldfu.balance_angular_distribution(params, max_occupy, angstep, sym)
+
+        self.assertEqual(return_new, return_old)
+
+
+    def test_symmetry_neighbors_true_should_return_equal_objects(self):
+
+        angles = [[idx1, idx2, 0] for idx1 in range(50) for idx2 in range(90)]
+        return_new = fu.symmetry_neighbors(angles , symmetry= "c1")
+        return_old = oldfu.symmetry_neighbors(angles , symmetry= "c1")
+
+        self.assertEqual(return_new, return_old)
+
+
+    def test_rotation_between_anglesets_true_should_return_equal_objects(self):
+
+        agls1 = [[idx1, idx2, 0] for idx1 in range(50) for idx2 in range(90)]
+        agls2 = [[idx1, idx2, 5] for idx1 in range(50) for idx2 in range(90)]
+        return_new = fu.rotation_between_anglesets(agls1, agls2)
+        return_old = oldfu.rotation_between_anglesets(agls1, agls2)
+
+        self.assertEqual(return_new, return_old)
+
+
+    def test_angle_between_projections_directions_true_should_return_equal_objects(self):
+
+        agls1 = [20, 60, 0]
+        agls2 = [45, 75, 5]
+        return_new = fu.angle_between_projections_directions(agls1, agls2)
+        return_old = oldfu.angle_between_projections_directions(agls1, agls2)
 
         self.assertEqual(return_new, return_old)
 
@@ -1043,6 +1388,21 @@ class Test_lib_utilities_compare(unittest.TestCase):
     #
     #     self.assertEqual(return_new, return_old)
 
+    def test_eliminate_moons_true_should_return_equal_objects(self):
+
+        volume = fu.model_gauss(0.25,12,12,12)
+
+
+        moon_params = []
+        moon_params.append(0.5)
+        moon_params.append(1.45)
+
+        return_new = fu.eliminate_moons(volume, moon_params)
+
+        return_old = oldfu.eliminate_moons(volume, moon_params)
+
+        self.assertEqual(return_new, return_old)
+
 
     def test_get_dist_true_should_return_equal_objects(self):
         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_dist")
@@ -1120,6 +1480,38 @@ class Test_lib_utilities_compare(unittest.TestCase):
 
         self.assertEqual(return_new, return_old)
 
+
+
+    def test_get_shrink_data_huang_true_should_return_equal_objects(self):
+
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        Tracker = argum[0][0][1]
+        Tracker["constants"]["log_main"] = "logging"
+        Tracker["constants"]["myid"] = 0
+        Tracker["constants"]["main_node"] = 0
+        Tracker["constants"]["stack"] = "bdb:sphire/tests/Substack/sort3d_substack_002"
+        Tracker["applyctf"] = True
+        ids = []
+        for i in range(1227):
+            ids.append(i)
+        Tracker["chunk_dict"] =ids
+        myid = 0
+        m_node = 0
+        nproc = 1
+        partids = "sphire/tests/Sort3D/indexes_010.txt"
+        partstack = "sphire/tests/Sort3D/params_010.txt"
+        nxinit = 2
+
+        return_new = fu.get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, m_node, nproc)
+
+        return_old = oldfu.get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, m_node, nproc)
+
+        self.assertTrue(numpy.allclose(return_new[0][0].get_3dview(), return_old[0][0].get_3dview(), 0.5))
+
+
     def test_getindexdata_true_should_return_equal_objects(self):
         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.getindexdata")
         with open(filepath, 'rb') as rb:
@@ -1129,11 +1521,15 @@ class Test_lib_utilities_compare(unittest.TestCase):
 
         (stack, partids, partstack, myid, nproc) = argum[0]
 
+        stack = 'bdb:sphire/tests/VIPER/best_000'
+        partids = 'sphire/tests/VIPER/main001/this_iteration_index_keep_images.txt'
+        partstack = 'sphire/tests/VIPER//main001/run000/rotated_reduced_params.txt'
+
         return_new = fu.getindexdata(stack, partids, partstack, myid, nproc)
 
         return_old = oldfu.getindexdata(stack, partids, partstack, myid, nproc)
 
-        self.assertTrue(return_new, return_old)
+        self.assertTrue(numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
 
     def test_convert_json_fromunicode_true_should_return_equal_objects(self):
         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.convert_json_fromunicode")
@@ -1149,6 +1545,319 @@ class Test_lib_utilities_compare(unittest.TestCase):
         return_old = oldfu.convert_json_fromunicode(data)
 
         self.assertEqual(return_new, return_old)
+
+
+    def test_get_sorting_attr_stack_should_return_equal_object(self):
+
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/multi_shc/multi_shc.ali3d_multishc")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        (stack, ref_vol, ali3d_options, symmetry_class) = argum[0]
+        for i in range(len(stack)):
+            stack[i].set_attr("group",i)
+
+        return_new = fu.get_sorting_attr_stack(stack)
+        return_old = oldfu.get_sorting_attr_stack(stack)
+
+        self.assertEqual(return_new, return_old)
+
+
+    def test_get_sorting_params_refine_should_return_equal_object(self):
+
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/multi_shc/multi_shc.ali3d_multishc")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        (stack, ref_vol, ali3d_options, symmetry_class) = argum[0]
+        for i in range(len(stack)):
+            stack[i].set_attr("group",i)
+
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        Tracker = argum[0][0][1]
+        Tracker["constants"]["log_main"] = "logging"
+        Tracker["constants"]["myid"] = 0
+        Tracker["constants"]["main_node"] = 0
+        Tracker["constants"]["stack"] = "bdb:sphire/tests/Substack/sort3d_substack_002"
+        Tracker["applyctf"] = True
+        Tracker["constants"]["nproc"] = 1
+
+        return_new = fu.get_sorting_params_refine(Tracker, stack, 95)
+        return_old = oldfu.get_sorting_params_refine(Tracker, stack, 95)
+
+        self.assertEqual(return_new, return_old)
+
+    def test_parsing_sorting_params_should_return_equal_object(self):
+
+        sorting_list = []
+
+        sorting_list.append(numpy.arange(10))
+        sorting_list.append(numpy.arange(10))
+
+        return_new = fu.parsing_sorting_params(sorting_list)
+        return_old = oldfu.parsing_sorting_params(sorting_list)
+
+        self.assertEqual(return_new[0], return_old[0])
+        self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
+
+    # def test_get_initial_ID_should_return_equal_object(self):
+    #
+    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask")
+    #     with open(filepath, 'rb') as rb:
+    #         argum = pickle.load(rb)
+    #
+    #     Tracker = argum[0][0][1]
+    #
+    #     return_new = fu.get_initial_ID(Tracker["two_way_stable_member"][istable], Tracker["full_ID_dict"])
+    #     return_old = oldfu.get_initial_ID(Tracker["two_way_stable_member"][istable], Tracker["full_ID_dict"])
+    #
+    #     self.assertEqual(return_new, return_old)
+
+
+
+
+
+
+
+
+
+
+    def test_convertasi_true_should_return_equal_objects(self):
+
+        K = 7
+        asig = [0,1,2,3,4,5,6]
+
+        return_new = fu.convertasi(asig,K)
+        return_old = oldfu.convertasi(asig,K)
+
+        self.assertEqual(return_new, return_old)
+
+
+    def test_prepare_ptp_true_should_return_equal_objects(self):
+
+        K = 7
+        data_list = [[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6]]
+
+        return_new = fu.prepare_ptp(data_list, K)
+        return_old = oldfu.prepare_ptp(data_list, K)
+
+        self.assertEqual(return_new, return_old)
+
+
+    def test_get_resolution_mrk01_true_should_return_equal_objects(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/statistics/statistics.fsc")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        (img1, img2) = argum[0]
+        volume = []
+        volume.append(img1)
+        volume.append(img2)
+
+        fscoutputdir = "sphire/tests/Sort3D"
+        mask_option = "sphire/tests/Sharpening/vol_adaptive_mask.hdf"
+
+        return_new = fu.get_resolution_mrk01(volume, 0.5,0.15,fscoutputdir,mask_option)
+        return_old = oldfu.get_resolution_mrk01(volume, 0.5,0.15,fscoutputdir,mask_option)
+
+        self.assertEqual(return_new, return_old)
+
+
+    def test_partition_to_groups_true_should_return_equal_objects(self):
+
+        K = 7
+        data_list = [[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6]]
+
+        return_new = fu.partition_to_groups(data_list, K)
+        return_old = oldfu.partition_to_groups(data_list, K)
+
+        self.assertEqual(return_new, return_old)
+
+
+    def test_partition_independent_runs_true_should_return_equal_objects(self):
+
+        K = 7
+        data_list = [[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6]]
+
+        return_new = fu.partition_independent_runs(data_list, K)
+        return_old = oldfu.partition_independent_runs(data_list, K)
+
+        self.assertEqual(return_new, return_old)
+
+
+    def test_merge_groups_true_should_return_equal_objects(self):
+
+        K = 7
+        data_list = [[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6]]
+
+        return_new = fu.merge_groups(data_list)
+        return_old = oldfu.merge_groups(data_list)
+
+        self.assertEqual(return_new, return_old)
+
+
+    def test_save_alist_true_should_return_equal_objects(self):
+
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        Tracker = argum[0][0][1]
+
+        Tracker["this_dir"] = "sphire/tests/Sharpening/"
+        Tracker["constants"]["log_main"] = "logging"
+        Tracker["constants"]["myid"] = "myid"
+        Tracker["constants"]["main_node"] = "myid"
+
+        filename = "listfile.txt"
+        data_list = [[0, 1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5, 6]]
+
+        return_new = fu.save_alist(Tracker,filename,data_list)
+        return_old = oldfu.save_alist(Tracker,filename,data_list)
+
+        self.assertEqual(return_new, return_old)
+
+    def test_margin_of_error_true_should_return_equal_objects(self):
+
+        return_new = fu.margin_of_error(0,1)
+        return_old = oldfu.margin_of_error(0,1)
+
+        self.assertEqual(return_new, return_old)
+
+    def test_counting_projections_true_should_return_equal_objects(self):
+
+        delta = 0.5
+        ali3d_params  = [[idx1, idx2, 0 , 0.25, 0.25] for idx1 in range(2) for idx2 in range(2)]
+        image_start = 1
+
+        return_new = fu.counting_projections(delta, ali3d_params, image_start)
+        print("one function call done")
+        return_old = oldfu.counting_projections(delta, ali3d_params, image_start)
+        print("second function call done")
+        self.assertEqual(return_new, return_old)
+
+
+    """
+      This function test works but takes too much time that is why for the time being it is
+       commented,  will uncomment it once everything is done 
+    """
+    # def test_get_stat_proj_true_should_return_equal_objects(self):
+    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask")
+    #     with open(filepath, 'rb') as rb:
+    #         argum = pickle.load(rb)
+    #
+    #     Tracker = argum[0][0][1]
+    #     Tracker["constants"]["nproc"] = 1
+    #     Tracker["constants"]["myid"] = 0
+    #     Tracker["constants"]["main_node"] = 0
+    #
+    #     delta = 0.5
+    #     this_ali3d = "sphire/tests/VIPER/main001/run000/rotated_reduced_params.txt"
+    #
+    #     return_new = fu.get_stat_proj(Tracker,delta,this_ali3d)
+    #     return_old = oldfu.get_stat_proj(Tracker,delta,this_ali3d)
+    #     self.assertEqual(return_new, return_old)
+
+
+    def test_create_random_list_true_should_return_equal_objects(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        Tracker = argum[0][0][1]
+        Tracker["constants"]["nproc"] = 1
+        Tracker["constants"]["myid"] = 0
+        Tracker["constants"]["main_node"] = 0
+        Tracker["total_stack"] = "stack"
+        Tracker["constants"]["seed"] = 1.4
+        Tracker["constants"]["indep_runs"] = 2
+        Tracker["this_data_list"] = [2,3,5]
+
+        return_new = fu.create_random_list(Tracker)
+        return_old = oldfu.create_random_list(Tracker)
+        self.assertEqual(return_new, return_old)
+
+    def test_recons_mref_true_should_return_equal_objects(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        Tracker = argum[0][0][1]
+        Tracker["constants"]["nproc"] = 1
+        Tracker["constants"]["myid"] = 0
+        Tracker["constants"]["main_node"] = 0
+        Tracker["number_of_groups"] = 1
+        Tracker["constants"]["nnxo"] = 4  # roi
+        Tracker["this_particle_list"] = [[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6]]
+        Tracker["nxinit"] = 1
+        Tracker["constants"]["partstack"] = 'sphire/tests/VIPER//main001/run000/rotated_reduced_params.txt'
+        Tracker["this_dir"] = "sphire/tests/Particles/"
+        Tracker["constants"]["stack"] = 'bdb:sphire/tests/Class2D/stack_ali2d'
+        Tracker["applyctf"] = False
+        Tracker["chunk_dict"] = [0, 1, 2, 3, 4, 5, 6]
+        Tracker["constants"]["sym"] = "c1"
+
+        return_new = fu.recons_mref(Tracker)
+        return_old = oldfu.recons_mref(Tracker)
+        self.assertTrue(return_new[0], return_old[0])
+
+
+    def test_apply_low_pass_filter_true_should_return_equal_objects(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        Tracker = argum[0][0][1]
+        Tracker["low_pass_filter"] = 0.087
+
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/projection.prgl")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        (volft, params, interpolation_method, return_real) = argum[0]
+
+        refvol = [volft,volft]
+
+        return_new = fu.apply_low_pass_filter(refvol,Tracker)
+        return_old = oldfu.apply_low_pass_filter(refvol,Tracker)
+        self.assertEqual(return_new, return_old)
+
+    def test_count_chunk_members_true_should_return_equal_objects(self):
+
+        chunk_dict =  [0,1,2,3,4,5,6]
+        one_class = [0,1,2,3,4,5,6]
+
+        return_new = fu.count_chunk_members(chunk_dict, one_class)
+        return_old = oldfu.count_chunk_members(chunk_dict, one_class)
+        self.assertEqual(return_new, return_old)
+
+
+    def test_remove_small_groups_true_should_return_equal_objects(self):
+
+        chunk_dict =  [[0,1,2,3,4,5,6],[0,1,2,3,4,5,6],[0,1,2,3,4,5,6]]
+        one_class = [0,1,2,3,4,5,6]
+
+        return_new = fu.remove_small_groups(chunk_dict, 3)
+        return_old = oldfu.remove_small_groups(chunk_dict, 3)
+        self.assertEqual(return_new, return_old)
+
+
+    def test_get_number_of_groups_true_should_return_equal_objects(self):
+
+        return_new = fu.get_number_of_groups(500, 5)
+        return_old = oldfu.get_number_of_groups(500, 5)
+        self.assertEqual(return_new, return_old)
+
+
+    def test_tabessel_true_should_return_equal_objects(self):
+
+        return_new = fu.tabessel(5,4)
+        return_old = oldfu.tabessel(5, 4)
+        self.assertEqual(return_new, return_old)
+
 
 
 if __name__ == '__main__':

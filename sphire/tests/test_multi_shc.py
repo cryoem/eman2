@@ -10,15 +10,14 @@ import math
 import sys
 
 
+from sphire.libpy import sparx_multi_shc as fu
 
-from ..libpy import sparx_multi_shc as fu
+from sphire.libpy import sparx_multi_shc as oldfu
 
-from .sparx_lib import sparx_multi_shc as oldfu
+# from sphire.libpy import sparx_fundamentals
+# sys.modules['sparx_fundamentals'] = sparx_fundamentals
 
-import sparx_fundamentals as sf
-
-from ..libpy import sparx_utilities as ut
-
+# from ..libpy import sparx_utilities as ut
 
 import cPickle as pickle
 import os
@@ -37,8 +36,9 @@ ABSOLUTE_PATH = os.path.dirname(os.path.realpath(__file__))
 class Test_lib_multi_shc_compare(unittest.TestCase):
 
     def test_orient_params_true_should_return_equal_objects(self):
+        from sphire.libpy import sparx_fundamentals
         print(ABSOLUTE_PATH)
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/multi_shc.orient_params")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/multi_shc/multi_shc.orient_params")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
@@ -46,16 +46,16 @@ class Test_lib_multi_shc_compare(unittest.TestCase):
         symmetry_class = argum[1]['symmetry_class']
 
 
-        return_new = fu.orient_params(params, refparams, indexes,symmetry_class)
+        return_new = fu.orient_params(params, refparams,indexes,symmetry_class)
 
-        return_old = oldfu.orient_params(params, refparams, indexes,symmetry_class)
+        return_old = oldfu.orient_params(params, refparams,indexes,symmetry_class)
 
         self.assertEqual(return_new, return_old)
 
 
     def test_find_common_subset_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/multi_shc.find_common_subset")
-        import sparx_fundamentals
+        print(ABSOLUTE_PATH)
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/multi_shc/multi_shc.find_common_subset")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
@@ -74,48 +74,48 @@ class Test_lib_multi_shc_compare(unittest.TestCase):
         self.assertEqual(return_new, return_old)
 
 
+    """
+    Cannot Work without proper value of mpi_comm . have to ask markus for this
+    """
+    def test_ali3d_multishc_true_should_return_equal_objects(self):
 
-    # def test_ali3d_multishc_true_should_return_equal_objects(self):
-    #
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/multi_shc.ali3d_multishc")
-    #     import sparx_fundamentals
-    #     with open(filepath, 'rb') as rb:
-    #         argum = pickle.load(rb)
-    #
-    #     print(argum)
-    #
-    #     (stack, ref_vol, ali3d_options, symmetry_class) = argum[0]
-    #
-    #     (dd) = argum[1]
-    #
-    #     print('stack values are', stack)
-    #     print('refvol values are', ref_vol)
-    #     print('ali3d_option are ', ali3d_options)
-    #     print('symmetry_class are', symmetry_class)
-    #     print('argument 1 are' , dd)
-    #
-    #
-    #     mpi_barrier(MPI_COMM_WORLD)
-    #
-    #     return_new = fu.ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class)
-    #
-    #     mpi_barrier(MPI_COMM_WORLD)
-    #
-    #     return_old = oldfu.ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class)
-    #
-    #     mpi_barrier(MPI_COMM_WORLD)
-    #
-    #     # mpi_finalize()
-    #
-    #     if (return_old is not None  and return_new is not None) :
-    #         self.assertTrue(return_new, return_old)
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/multi_shc/multi_shc.ali3d_multishc")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        print(argum)
+
+        (stack, ref_vol, ali3d_options, symmetry_class) = argum[0]
+
+        (dd) = argum[1]
+
+        print('stack values are', stack)
+        print('refvol values are', ref_vol)
+        print('ali3d_option are ', ali3d_options)
+        print('symmetry_class are', symmetry_class)
+        print('argument 1 are' , dd)
+
+
+        mpi_barrier(MPI_COMM_WORLD)
+
+        return_new = fu.ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, number_of_runs=1)
+
+        mpi_barrier(MPI_COMM_WORLD)
+
+        return_old = oldfu.ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, number_of_runs=1)
+
+        mpi_barrier(MPI_COMM_WORLD)
+
+        # mpi_finalize()
+
+        if (return_old is not None  and return_new is not None) :
+            self.assertTrue(return_new, return_old)
 
 
 
     # def test_ali3d_multishc_2_true_should_return_equal_objects(self):
     #
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/multi_shc.ali3d_multishc_2")
-    #     import sparx_fundamentals
+    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/multi_shc/multi_shc.ali3d_multishc_2")
     #     with open(filepath, 'rb') as rb:
     #         argum = pickle.load(rb)
     #
@@ -184,8 +184,8 @@ class Test_lib_multi_shc_compare(unittest.TestCase):
 
 
     def test_mirror_and_reduce_dsym_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/multi_shc.find_common_subset")
-        import sparx_fundamentals
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/multi_shc/multi_shc.find_common_subset")
+
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
@@ -205,8 +205,8 @@ class Test_lib_multi_shc_compare(unittest.TestCase):
     """
 
     def test_do_volume_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/multi_shc.do_volume")
-        import sparx_fundamentals
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/multi_shc/multi_shc.do_volume")
+
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 

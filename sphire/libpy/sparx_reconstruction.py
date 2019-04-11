@@ -782,6 +782,8 @@ def rec3D_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None,
 	fftvol_eve_file, weight_eve_file = prepare_recons_ctf(nx, imgdata, snr, symmetry, myid, main_node_eve, eve_start, 2, finfo, npad, mpi_comm=mpi_comm, smearstep = smearstep)
 	del imgdata
 
+
+
 	if nproc == 1:
 		fftvol = sparx_utilities.get_image(fftvol_odd_file)
 		weight = sparx_utilities.get_image(weight_odd_file)
@@ -797,7 +799,7 @@ def rec3D_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None,
 			nz = volodd.get_zsize()
 			mask3D = sparx_utilities.model_circle(min(nx,ny,nz)//2 - 2, nx,ny,nz)
 		fscdat = sparx_statistics.fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
-		del  volodd, voleve, mask3d
+		del  volodd, voleve, mask3D
 
 		fftvol = sparx_utilities.get_image( fftvol_odd_file )
 		fftvol_tmp = sparx_utilities.get_image(fftvol_eve_file)
@@ -1242,7 +1244,7 @@ def rec3D_two_chunks_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_cu
 			nz = volodd.get_zsize()
 			mask3D = sparx_utilities.model_circle(min(nx,ny,nz)//2 - 2, nx,ny,nz)
 		fscdat = sparx_statistics.fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
-		del  volodd, voleve, mask3d
+		del  volodd, voleve, mask3D
 
 		fftvol = sparx_utilities.get_image( fftvol_odd_file )
 		fftvol_tmp = sparx_utilities.get_image(fftvol_eve_file)

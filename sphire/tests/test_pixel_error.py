@@ -16,15 +16,16 @@ global_def.MPI = True
 ABSOLUTE_PATH = os.path.dirname(os.path.realpath(__file__))
 
 
-from ..libpy import sparx_pixel_error as fu
+from sphire.libpy_py3 import sphire_pixel_error as fu
 
-from .sparx_lib import sparx_pixel_error as oldfu
+from sphire.tests.sparx_lib import sparx_pixel_error as oldfu
 
 
 class Test_lib_pixel_error_compare(unittest.TestCase):
 
     def test_pixel_error_2D_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/pixel_error.pixel_error_2D")
+        print("Hello testing")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/pixel_error/pixel_error.pixel_error_2D")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
@@ -40,7 +41,7 @@ class Test_lib_pixel_error_compare(unittest.TestCase):
 
 
     def test_max_3D_pixel_error_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/pixel_error.max_3D_pixel_error")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/pixel_error/pixel_error.max_3D_pixel_error")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
@@ -55,7 +56,7 @@ class Test_lib_pixel_error_compare(unittest.TestCase):
 
 
     def test_angle_ave_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/pixel_error.angle_ave")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/pixel_error/pixel_error.angle_ave")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
@@ -70,7 +71,7 @@ class Test_lib_pixel_error_compare(unittest.TestCase):
 
 
     def test_angle_diff_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/pixel_error.angle_diff")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/pixel_error/pixel_error.angle_diff")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
@@ -85,7 +86,7 @@ class Test_lib_pixel_error_compare(unittest.TestCase):
 
 
     def test_angle_diff_sym_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/pixel_error.angle_diff_sym")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/pixel_error/pixel_error.angle_diff_sym")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
@@ -100,7 +101,7 @@ class Test_lib_pixel_error_compare(unittest.TestCase):
 
 
     def test_align_diff_params_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/pixel_error.align_diff_params")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/pixel_error/pixel_error.align_diff_params")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
@@ -116,7 +117,7 @@ class Test_lib_pixel_error_compare(unittest.TestCase):
 
 
     def test_multi_align_stability_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/pixel_error.multi_align_stability")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/pixel_error/pixel_error.multi_align_stability")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 

@@ -399,7 +399,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 				#  moved it here, so it is for unfiltered average and thus hopefully makes more sense
 				a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
 				msg = "Criterion %d = %15.8e"%(total_iter, a1)
-				numpy.log.add(msg)
+				# numpy.log.add(msg)
 
 
 				ref_data[2] = tavg
@@ -1954,8 +1954,6 @@ def cpy(ins_list, ous):
 
 	# iterate over all images in the list, even if it's only one...
 	for ins in image_list:
-
-		print('ins value is ',ins)
 		nima = EMAN2_cppwrap.EMUtil.get_image_count(ins)
 		data = EMAN2_cppwrap.EMData()
 		iextension = sparx_utilities.file_type(ins)

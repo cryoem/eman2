@@ -426,6 +426,7 @@ def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structur
 				sparx_reconstruction.recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, mpi_comm=mpi_comm)
 				reference_structure = sparx_utilities.model_blank(nx, nx, nx)
 		else  :
+			snr = 1.0
 			if myid == 0 :
 				reference_structure = sparx_reconstruction.recons3d_4nn_MPI(myid, prjlist, sym, snr = snr, mpi_comm=mpi_comm)
 			else :

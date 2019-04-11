@@ -89,7 +89,6 @@ from builtins import range
 pass#IMPORTIMPORTIMPORT from global_def import *
 pass#IMPORTIMPORTIMPORT import numpy.random
 
-
 #  06-12-14 code lifted
 def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 						xrng, yrng, step, nomirror = False, mode="F", CTF=False, \

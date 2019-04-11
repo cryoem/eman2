@@ -11,12 +11,13 @@ from mpi import *
 import global_def
 
 import os
+import shutil
 import sys
 import cPickle as pickle
 ABSOLUTE_PATH = os.path.dirname(os.path.realpath(__file__))
 
 
-from ..libpy import sparx_applications as fu
+from sphire.libpy import sparx_applications as fu
 from .sparx_lib import sparx_applications as oldfu
 
 
@@ -41,53 +42,38 @@ def get_data(num):
 class Test_lib_applications_compare(unittest.TestCase):
 
 
-    # def test_ali2d_MPI_true_should_return_equal_object(self):
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.ali2d_base")
-    #     with open(filepath, 'rb') as rb:
-    #         argum = pickle.load(rb)
-    #
-    #     (stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, nomirror, dst, center, maxit, CTF, snr,
-    #      Fourvar, user_func_name, random_method, log, number_of_proc, myid, main_node, mpi_comm) = argum[0]
-    #
-    #     outdirnew = os.path.join(ABSOLUTE_PATH, outdir+'AA')
-    #
-    #     number_of_proc = 1
-    #     myid = 12
-    #     main_node = 0
-    #
-    #
-    #     import sparx_utilities
-    #     import EMAN2_cppwrap
-    #     import EMAN2db
-    #
-    #     stack = "bdb:Class2D/EMAN2DB/stack"
-    #
-    #     """  Test face  """
-    #     ftp = sparx_utilities.file_type(stack)
-    #
-    #     print(ftp)
-    #
-    #
-    #     dummy = EMAN2db.db_open_dict(stack, True)
-    #     nima = EMAN2_cppwrap.EMUtil.get_image_count(stack)
-    #     print(nima)
-    #
-    #
-    #     return_new = fu.ali2d_MPI(stack, outdirnew, maskfile=maskfile, ir=ir, ou=ou, rs=rs, xr=xr, yr=yr, \
-    #                                ts=ts, nomirror=nomirror, dst=dst, center=center, maxit=maxit, CTF=True, snr=snr, \
-    #                                Fourvar=Fourvar, user_func_name=user_func_name, random_method=random_method)
-    #
-    #     mpi_barrier(MPI_COMM_WORLD)
-    #
-    #     outdirnew = os.path.join(ABSOLUTE_PATH, outdir + 'AB')
-    #     return_old = oldfu.ali2d_MPI(stack, outdirnew, maskfile=maskfile, ir=ir, ou=ou, rs=rs, xr=xr, yr=yr, \
-    #                                   ts=ts, nomirror=nomirror, dst=dst, center=center, maxit=maxit, CTF=True, snr=snr, \
-    #                                   Fourvar=Fourvar, user_func_name=user_func_name, random_method=random_method)
-    #
-    #     mpi_barrier(MPI_COMM_WORLD)
-    #     mpi_finalize()
-    #
-    #     self.assertTrue(return_new, return_old)
+    def test_ali2d_MPI_true_should_return_equal_object(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.ali2d_base")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        (stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, nomirror, dst, center, maxit, CTF, snr,
+         Fourvar, user_func_name, random_method, log, number_of_proc, myid, main_node, mpi_comm) = argum[0]
+        maxit = 4
+
+        outdirnewa = os.path.join(ABSOLUTE_PATH, outdir+'AA')
+        outdirnewb = os.path.join(ABSOLUTE_PATH, outdir + 'ABB')
+
+
+        if (os.path.exists(outdirnewa)):
+            shutil.rmtree(outdirnewa)
+
+        if (os.path.exists(outdirnewb)):
+            shutil.rmtree(outdirnewb)
+
+        stacka = "bdb:tests/Class2D/isac_substack"
+        print(os.getcwd())
+        return_new = fu.ali2d_MPI(stacka, outdirnewa, maskfile=maskfile, ou=ou, xr=xr, yr=yr, \
+                                   ts=ts, dst=dst, maxit=maxit, CTF=True, snr=snr)
+
+        mpi_barrier(MPI_COMM_WORLD)
+
+        return_old = oldfu.ali2d_MPI(stacka, outdirnewb, maskfile=maskfile, ou=ou, xr=xr, yr=yr, \
+                                   ts=ts, dst=dst, maxit=maxit, CTF=True, snr=snr)
+        mpi_barrier(MPI_COMM_WORLD)
+        # mpi_finalize()
+
+        self.assertTrue(return_new, return_old)
 
 
     def test_ali2d_base_true_should_return_equal_object(self):
@@ -118,20 +104,55 @@ class Test_lib_applications_compare(unittest.TestCase):
                                    log = log, number_of_proc = number_of_proc, myid = myid, main_node = main_node, mpi_comm = None)
 
         mpi_barrier(MPI_COMM_WORLD)
-        mpi_finalize()
+        # mpi_finalize()
 
         self.assertTrue(return_new, return_old)
 
-    # def test_Kmref_ali3d_MPI_true_should_return_equal_object(self):
+
+
+    """  mref_ali3d_MPI is corrupted function so we wont create unit test for that 
+         below unittest is just to show where the problem lies inside the code """
+    # def test_mref_ali3d_MPI_true_should_return_equal_object(self):
+    #
+    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.ali2d_base")
+    #     with open(filepath, 'rb') as rb:
+    #         argum = pickle.load(rb)
+    #
+    #     (stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, nomirror, dst, center, maxit, CTF, snr,
+    #      Fourvar, user_func_name, random_method, log, number_of_proc, myid, main_node, mpi_comm) = argum[0]
+    #
     #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.ali_vol")
     #     with open(filepath, 'rb') as rb:
     #         argum = pickle.load(rb)
-    #         # print(argum[0])
-    #         # print(argum[0][1])
-    #
     #     (vol,refv,ang_scale,shift_scale,radius) = argum[0]
     #
+    #     maxit = 4
+    #     outdirnewa = os.path.join(ABSOLUTE_PATH, outdir+'AA')
+    #     outdirnewb = os.path.join(ABSOLUTE_PATH, outdir + 'ABB')
     #
+    #     if (os.path.exists(outdirnewa)):
+    #         shutil.rmtree(outdirnewa)
+    #     if (os.path.exists(outdirnewb)):
+    #         shutil.rmtree(outdirnewb)
+    #
+    #     print(mpi_comm_rank(MPI_COMM_WORLD))
+    #
+    #     stacka = "bdb:tests/Substack/isac_substack"
+    #     vola = "tests/Class2D/EMAN2DB/vol_adaptive_mask.hdf"
+    #
+    #     return_new = fu.mref_ali3d_MPI(stacka, vola, outdirnewa, maskfile=maskfile, ou=ou, xr=xr, yr=yr, \
+    #                                ts=ts,  maxit=maxit, CTF=False, snr=snr, mpi_comm = MPI_COMM_WORLD)
+    #     mpi_barrier(MPI_COMM_WORLD)
+        # return_old = oldfu.mref_ali3d_MPI(stacka, refv, outdirnewb, maskfile=maskfile, ou=ou, xr=xr, yr=yr, \
+        #                            ts=ts, dst=dst, maxit=maxit, CTF=True, snr=snr)
+        # mpi_barrier(MPI_COMM_WORLD)
+        # mpi_finalize()
+        # self.assertTrue(return_new, return_old)
+
+
+    """  mref_ali3d_MPI is corrupted function so we wont create unit test for that 
+         below unittest is just to show where the problem lies inside the code """
+    # def test_Kmref_ali3d_MPI_true_should_return_equal_object(self):
     #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.ali2d_base")
     #     with open(filepath, 'rb') as rb:
     #         argum = pickle.load(rb)
@@ -145,7 +166,13 @@ class Test_lib_applications_compare(unittest.TestCase):
     #
     #     outdirnew = os.path.join(ABSOLUTE_PATH, outdir)
     #
-    #     return_new = fu.Kmref_ali3d_MPI(stack, vol, outdirnew,  maskfile, focus = None, \
+    #     if (os.path.exists(outdirnew)):
+    #         shutil.rmtree(outdirnew)
+    #
+    #     stacka = "bdb:tests/Class2D/isac_substack"
+    #     vola = "tests/Class2D/EMAN2DB/vol_adaptive_mask.hdf"
+    #
+    #     return_new = fu.Kmref_ali3d_MPI(stacka, vola, outdirnew,  maskfile, focus = None, \
     #                                     ir = ir, ou = ou, rs = rs, xr = xr, yr = yr, ts = ts )
     #
     #     mpi_barrier(MPI_COMM_WORLD)
@@ -153,7 +180,7 @@ class Test_lib_applications_compare(unittest.TestCase):
     #     outdir = "Class2D/Kmref_aligB"
     #     outdirnew = os.path.join(ABSOLUTE_PATH, outdir)
     #
-    #     return_old = oldfu.Kmref_ali3d_MPI(stack, vol, outdirnew, maskfile, focus = None, \
+    #     return_old = oldfu.Kmref_ali3d_MPI(stacka, vola, outdirnew, maskfile, focus = None, \
     #                                        ir=ir, ou=ou, rs=rs, xr=xr, yr=yr, ts=ts)
     #
     #     mpi_barrier(MPI_COMM_WORLD)
@@ -162,26 +189,14 @@ class Test_lib_applications_compare(unittest.TestCase):
     #     self.assertTrue(return_new, return_old)
 
 
-    # def test_cpy_true_should_return_equal_object(self):
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.cpy")
-    #     with open(filepath, 'rb') as rb:
-    #         argum = pickle.load(rb)
-    #
-    #     print(argum[0][1])
-    #
-    #     # ins_list = argum[0]
-    #
-    #     ins_list = os.path.join(ABSOLUTE_PATH,  'Class2D/best.hdf')
-    #     ous = os.path.join(ABSOLUTE_PATH, 'Class2D/stack_ali2d')
-    #
-    #
-    #     ins_list = 'best.hdf'
-    #     ous = 'best_000'
-    #
-    #     return_new = fu.cpy(ins_list,ous)
-    #     return_old = oldfu.cpy(ins_list, ous)
-    #
-    #     self.assertEqual(return_new, return_old)
+    def test_cpy_true_should_return_equal_object(self):
+        ins_list = os.path.join(ABSOLUTE_PATH, 'Class2D/best_temp.hdf')
+        ous = "bdb:tests/Class2D/isac_substack"
+
+        return_new = fu.cpy(ins_list,ous)
+        return_old = oldfu.cpy(ins_list, ous)
+
+        self.assertEqual(return_new, return_old)
 
 
     def test_project3d_true_should_return_equal_object(self):
@@ -215,20 +230,24 @@ class Test_lib_applications_compare(unittest.TestCase):
         self.assertTrue(return_new, return_old)
 
 
-    # def test_pca_true_should_return_equal_object(self):
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.header")
-    #     with open(filepath, 'rb') as rb:
-    #         argum = pickle.load(rb)
-    #         print(argum)
-    #         print(argum[1])
-    #
-    #     stack =  argum[0][0]
-    #     params = argum[0][1]
-    #
-    #     return_new = fu.pca(stack)
-    #     return_old = oldfu.pca(stack)
-    #
-    #     self.assertEqual(return_new, return_old)
+    def test_pca_true_should_return_equal_object(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.ali2d_base")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        (stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, nomirror, dst, center, maxit, CTF, snr,
+         Fourvar, user_func_name, random_method, log ,number_of_proc, myid, main_node, mpi_comm) = argum[0]
+
+
+        stacka  = copy.deepcopy(stack)
+        stackb = copy.deepcopy(stack)
+
+
+        return_new = fu.pca(stacka,nvec = 3)
+        return_old = oldfu.pca(stackb,nvec = 3)
+
+
+        self.assertTrue(return_new, return_old)
 
 
 
@@ -237,8 +256,13 @@ class Test_lib_applications_compare(unittest.TestCase):
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
+        print(argum[0])
+
         return_new = fu.prepare_2d_forPCA(data = argum[0][0])
         return_old = oldfu.prepare_2d_forPCA(data = argum[0][0])
+
+        print(return_new)
+        print(return_old)
 
         self.assertTrue(return_new, return_old)
 
@@ -249,7 +273,7 @@ class Test_lib_applications_compare(unittest.TestCase):
         return_new = fu.extract_value('20')
         return_old = oldfu.extract_value('20')
 
-        self.assertTrue(return_new, return_old)
+        self.assertEqual(return_new, return_old)
 
 
     def test_header_true_should_return_equal_object(self):
@@ -280,19 +304,21 @@ class Test_lib_applications_compare(unittest.TestCase):
         self.assertEqual(return_new, return_old)
 
 
-    # def test_refvol_true_should_return_equal_object(self):
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.ali_vol")
-    #     with open(filepath, 'rb') as rb:
-    #         argum = pickle.load(rb)
-    #         print(argum[0])
-    #         print(argum[0][1])
-    #
-    #     (vol,refv,ang_scale,shift_scale,radius) = argum[0]
-    #
-    #
-    #     vollist = [vol, vol, vol]
-    #
-    #     return_new = fu.refvol(vollist , vollist)
+    def test_refvol_true_should_return_equal_object(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.ali_vol")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+            print(argum[0])
+            print(argum[0][1])
+
+        (vol,refv,ang_scale,shift_scale,radius) = argum[0]
+
+
+        vollist = [vol, vol, vol]
+        output = "tests/Class2D/"
+        mask = "bdb:tests/Class2D/stack_ali2d_76x76x1"
+
+        return_new = fu.refvol(vollist , vollist, output, refv)
 
 
 
@@ -311,6 +337,7 @@ class Test_lib_applications_compare(unittest.TestCase):
         return_old = oldfu.within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, step, dst, maxit, FH, FF)
 
         self.assertTrue(return_new, return_old)
+
 
 if __name__ == '__main__':
     unittest.main()
