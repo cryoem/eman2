@@ -1,0 +1,556 @@
+NB:
+PAP --> use power spectrum for fitting
+VPP --> Volta Phase Plate - fit amplitude contrast see https://www.biochem.mpg.de/275098/03_ContentMethods
+Summary:
+-) binarize(img, minval = 0.0)
+-) collapse(img, minval = -1.0, maxval = 1.0)
+-) dilation(f, mask = None, morphtype="BINARY")
+-) erosion(f, mask = None, morphtype="BINARY")
+-) power(img, x = 3.0)
+-) square_root(img)
+-) square(img)
+-) threshold(img, minval = 0.0)
+-) threshold_outside(img, minval, maxval)
+-) notzero(img)
+-) rotavg_ctf(img, defocus, Cs, voltage, Pixel_size, amp = 0.0, ang = 0.0)
+-) ctf_1d(nx, ctf, sign = 1, doabs = False)
+-) ctf_2(nx, ctf)
+-) ctf_img(nx, ctf, sign = 1, ny = 0, nz = 1)
+-) ctf_img_real(nx, ctf, sign = 1, ny = 0, nz = 1)
+-) ctf_rimg(nx, ctf, sign = 1, ny = 0, nz = 1)
+-) ctf2_rimg(nx, ctf, sign = 1, ny = 0, nz = 1)
+-) ctflimit(nx, defocus, cs, voltage, pix)
+-) imf_params_cl1(pw, n=2, iswi=3, Pixel_size=1)
+-) adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
+-) cosinemask(im, radius = -1, cosine_width = 5, bckg = None, s=999999.0)
+-) get_shrink_3dmask(nxinit, mask_file_name)
+-) get_biggest_cluster(mg)
+-) compute_bfactor(pws, freq_min, freq_max, pixel_size = 1.0)
+-) cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512, pixel_size = -1.0, Cs = 2.0, voltage = 300.0
+			wgh = 10.0, f_start = -1.0, f_stop = -1.0, kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0,
+			check_consistency = False, stack_mode = False, debug_mode = False, program_name = "cter_mrk() in morphology.py",
+			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1)
+-)cter_pap(input_image_path, output_directory, selection_list = None, wn = 512, pixel_size = -1.0, Cs = 2.0, voltage = 300.0,
+			wgh = 10.0, f_start = -1.0, f_stop = -1.0, kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0,
+			check_consistency = False, stack_mode = False, debug_mode = False, program_name = "cter_pap() in morphology.py",
+			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1)
+-)cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512, pixel_size = -1.0, Cs = 2.0, voltage = 300.0,
+			wgh = 10.0, f_start = -1.0, f_stop = -1.0, kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0,
+			check_consistency = False, stack_mode = False, debug_mode = False, program_name = "cter_vpp() in morphology.py",
+			vpp_options = [], RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1):
+-) bracket_def(f, dat, x1, h)
+-) bracket(f, dat, h)
+-) goldsearch_astigmatism(f, dat, a, b, tol=1.0e-3)
+-) defocus_baseline_fit(roo, i_start, i_stop, nrank, iswi)
+-) simpw1d(defocus, data)
+-) simpw1d_pap(defocus, data)
+-) simpw1d_print(defocus, data)
+-) movingaverage(data, window_size, skip = 3)
+-) defocusgett(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_start=-1.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=False)
+-) defocusgett_pap(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_start=-1.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=False):
+-) defocusgett_vpp(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0, f_stop=-1.0, vpp_options = [], nr1 = 3, nr2 = 6, parent=None, DEBug=False)
+-) defocusgett_vpp2(qse, wn, xdefc, xampcont, voltage=300.0, Pixel_size=1.0, Cs=2.0, i_start=0, i_stop=0, parent=None, DEBug=False)
+-) fastigmatism3(amp, data)
+-) fastigmatism3_vpp(amp, data)
+-) fastigmatism3_pap(amp, data)
+-) simctf2(dz, data)
+-) fupw(args, data)
+-) fupw_pap(args, data)
+-) ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
+
+
+################################################################################################################################################################################################################################################
+        binarize(img, minval = 0.0)
+		img --> input image
+		minval --> value below which image pixels will be set to zero.
+create a binary image from an input image
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        collapse(img, minval = -1.0, maxval = 1.0)
+		input --> input image
+		minval --> minimum bracket value (default is -1.0).
+		maxval --> maximum bracket value (default is 1.0).
+binarize image by setting to zero values within predefined range, and to one outside of this range
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        dilation(f, mask = None, morphtype="BINARY")
+		f --> input image
+		mask --> image used as mask
+		morphtype = type of dilatation (BINARY/GRAYLEVEL)
+Apply the dilation operation to the 'f' input image.For more info: https://en.wikipedia.org/wiki/Dilation_(morphology)
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        erosion(f, mask = None, morphtype="BINARY")
+		f --> input image
+		mask --> image used as mask
+		morphtype = type of dilatation (BINARY/GRAYLEVEL)
+Apply the erosion operation to the 'f' input image.For more info: https://en.wikipedia.org/wiki/Dilation_(morphology)
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        power(img, x = 3.0)
+		img -->
+		x --> power factor
+Generates image whose pixels are generated of raising to a given power pixels of the input image
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        square_root(img)
+		img -->
+create image whose pixels will be square roots of pixels of the input image
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        square(img)	cioe' il quadrato
+		img -->
+create image whose pixels will be squared values of pixels of the input image
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        threshold(img, minval = 0.0)
+		img
+		minval --> threshold value
+replace values below given threshold by zero
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        threshold_outside(img, minval, maxval)
+		input --> input image
+		minval --> min threshold value
+		maxval --> max threshold value
+replace values beetween minval and maxval  by zero
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        notzero(img)
+replace values that are not zero by 1.0 returning a binary img
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        rotavg_ctf(img, defocus, Cs, voltage, Pixel_size, amp = 0.0, ang = 0.0)
+		img -->
+		defocus --> defocus in µm. Positive number means underfocus. It'll use defocus*10000
+		Cs --> Microscope spherical aberration [mm]: The spherical aberration (Cs) of microscope used for imaging.
+		voltage --> Microscope voltage [kV]: The acceleration voltage of microscope used for imaging
+		pixel_size --> Pixel size [A/Pixels]: The pixel size of input micrograph(s) or images in input particle stack. It is the 'apix' value of the ctf
+		amp --> astigmatism amplitude in nm. It'll use amp*10000
+		ang --> astigmatism angle in degrees. It'll convert in radiant
+1D rotational average of a 2D power spectrum (img) based on estimated CTF parameters, including astigmatism amplitude and angle
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        ctf_1d(nx, ctf, sign = 1, doabs = False)
+		nx --> image size to which CTF will be applied
+		ctf --> CTF object created using generate_ctf
+		sign --> sign of the CTF
+		doabs --> flag to apply abs() to the output
+Returns a list of CTF values via "EMAN2_cppwrap.Util.tf(dz, i*scl, voltage, cs, ampcont, bfactor, sign)"
+It calls:
+-) EMAN2_cppwrap.Util.tf(dz, i*scl, voltage, cs, ampcont, bfactor, sign) --> returns the float value of the ctf
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        ctf_2(nx, ctf)
+		nx --> image size to which CTF will be applied
+		ctf --> CTF object created using generate_ctf
+The same of ctf_1d but it resturns a list of the square of CTF values, via "EMAN2_cppwrap.Util.tf(dz, i*scl, voltage, cs, ampcont, bfactor, sign)"
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        ctf_img(nx, ctf, sign = 1, ny = 0, nz = 1)
+		nx: x image size.
+		ctf: ctf object
+		sign: sign of the CTF.
+		ny: y image size
+		nz: z image size
+Generate a 1-2 or 3-D complex image containing the CTF, Default is 2D, via "EMAN2_cppwrap.Util.ctf_img(nx, ny, nz, dz, pixel_size, voltage, cs, ampcont, b_factor, dza, azz, sign)"
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        ctf_img_real(nx, ctf, sign = 1, ny = 0, nz = 1)
+		nx: x image size.
+		ctf: ctf object
+		sign: sign of the CTF.
+		ny: y image size
+		nz: z image size
+Generate a 1-2 or 3-D real image containing the CTF, Default is 2D, via "EMAN2_cppwrap.Util.ctf_img_real(nx, ny, nz, dz, pixel_size, voltage, cs, ampcont, b_factor, dza, azz, sign)"
+Used in the bin/	e.g.: sxmeridien
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        ctf_rimg(nx, ctf, sign = 1, ny = 0, nz = 1)
+		nx: x image size.
+		ctf: ctf object
+		sign: sign of the CTF.
+		ny: y image size
+		nz: z image size
+Generate a 1-2 or 3-D real image containing the CTF^2 via "EMAN2_cppwrap.Util.ctf_rimg(nx, ny, nz, dz, pixel_size, voltage, cs, ampcont, b_factor, dza, azz, sign)"
+Used almost everywhwere in the file
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        ctf2_rimg(nx, ctf, sign = 1, ny = 0, nz = 1)
+		nx: x image size.
+		ctf: ctf object
+		sign: sign of the CTF.
+		ny: y image size
+		nz: z image size
+Same output but via "EMAN2_cppwrap.Util.ctf_rimg(nx, ny, nz, dz, pixel_size, voltage, cs, ampcont, b_factor, dza, azz, sign)".
+Used in "fastigmatism3"
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        ctflimit(nx, defocus, cs, voltage, pix)
+		nx --> image size. (e.g.: A box size of a mask)
+		defocus --> defocus in µm. Positive number means underfoctcus. It'll use defocus*10000
+		cs --> Spherical aberration constant in mm
+		voltage --> Microscope voltage [kV]: The acceleration voltage of microscope used for imaging
+		pix --> pixel size
+Compute CTF limit (theoretical resolution limit based on the oscillations of CTF). Returns frequency of CTF limit with the resampled pixel size in abs and amstrong value: [abs_value,amstrong_value]
+(see line 1603 -- return  int(xr/fwpix+0.5),xr, which is limiting_abs_frequency [1/pixel], and Limiting_frequency[1/A])
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        imf_params_cl1(pw, n=2, iswi=3, Pixel_size=1)
+		pw --> original power spectrum to be fitted
+		n --> polynomial rank +1
+		iswi --> integer between 1-8 is used in 'vector<float> Util::call_cl1' to calculate the interpolation value (lagracian?)
+		pixel_size --> Pixel size [A/Pixels]: The pixel size of input micrograph(s) or images in input particle stack. It is the 'apix' value of the ctf
+It uses EMAN2_cppwrap.Util.pw_extract(pw, n, iswi, Pixel_size)
+Extract image formation parameters using contrained simplex method (see https://en.wikipedia.org/wiki/Simplex_algorithm). The output is a list of list [feq, cur, pw, parm]
+feq = listof frequencies in 1/Angstrom
+cur = fitted curve, either background noise or envelope function
+pw = it is the pw input.
+parm = the params of the fitted curve ... not so sure
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
+		vol -->	img
+		nsigma --> value for initial thresholding of the image (it threshold = -9999.0)
+		threshold --> initial value of threshold if it is not -9999.0
+		ndilation --> # of the times the output mask has to be processed via 'sparx_morphology.dilation()' (i.e. m=dilation(m) ndilation times)
+		edge_width --> parameter used by (2) to avoid resolution exaggeration
+
+1) EMAN2_cppwrap.Util.get_biggest_cluster(binarize(vol, s1[0])) --> clusterizza le regioni non nulle e poi restituisce un immagine binaria contenente solo i valori del cluster + grande. stessa f definita in
+				sparx.morphology
+2) EMAN2_cppwrap.Util.soft_edge(mask, edge_width, "C") --> Restituisce copia modificata dell'immagine per evitare  'resolution exaggeration' in pratica fa il blur C=cosine puo' essere G=gaussian
+
+See https://blake.bcm.edu/emanwiki/EMAN2/FAQ/AutoMask for some theoretical infos about the automasking during refinement
+Returns a binary mask in according with the cosine smooth transition beetween 2 regions form the given img 'vol'
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        cosinemask(im, radius = -1, cosine_width = 5, bckg = None, s=999999.0)
+		im --> img
+		radius--> radius of WHAT ????? i cannot figure out
+		cosine_width--> Amplitude of the cosine
+		bckg --> it should be the background noise. it is often "sparx_utilities.model_gauss_noise(...)
+		s --> if it specified it use this value instead of calculate the average computed
+Apply mask with a cosine fall-off setting values outside of radius_cosine_width to the average computed outside
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        get_shrink_3dmask(nxinit, mask_file_name)
+		nxinit --> percentual of the subrate. Subrate = nxinit/mask_file_name.get_xsize()
+		mask_file_name --> image to resample or path to the image
+Returns the resampled mask of "mask_file_name" where the subrate is nxinit/mask_file_name.get_xsize() via 'sparx_fundamentals.resample'
+NB: the image has to be stored in a list of one elements otherwise you get an error. See the code to better understand
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        get_biggest_cluster(mg)
+		mg --> image
+returns an image that contains the largest connected subset in the input image. I.e.: if img is binary it searches all the 1-value clusters and returns the biggest
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        compute_bfactor(pws, freq_min, freq_max, pixel_size = 1.0)
+		pws --> 1D rotational average of power spectrum, length should be half of the image size
+		freq_min --> the index of the minimum frequency of fitting range
+		freq_max -->the index of the maximum frequency of fitting range
+		pixel_size --> Pixel size [A/Pixels]: The pixel size of input micrograph(s) or images in input particle stack. It is the 'apix' value of the ctf
+Estimate B-factor from power spectrum. There is a list of value, where the second is another list. It use "B, s = sparx_statistics.linreg( ...)" where Linear regression y=Bx+s
+outupt: -B, [x,ff,pws_log], idx_freq_min, idx_freq_max
+B = estimated bfactor
+[x,ff,pws_log] = never used
+idx_freq_min = index minimun frequency of the given spectrum pws
+idx_freq_max = index maximum frequency of the given spectrum pws
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512, pixel_size = -1.0, Cs = 2.0, voltage = 300.0, wgh = 10.0, f_start = -1.0, f_stop = -1.0, kboot = 16, overlap_x = 50,
+			overlap_y = 50, edge_x = 0, edge_y = 0, check_consistency = False, stack_mode = False, debug_mode = False, program_name = "cter_mrk() in morphology.py", \
+			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1)
+
+it uses:
+1) pw2 = sparx_fundamentals.tilemic(mic, win_size = wn, overlp_x = overlap_x, overlp_y = overlap_y, edge_x = edge_x, edge_y = edge_y)
+2) pw2.append( EMAN2_cppwrap.periodogram(sparx_utilities.get_im(img_name,i)) --> returns the sub powerspectrum called periodogram. It is an EMData()
+3) allroo.append(sparx_fundamentals.rot_avg_table(pw2[imi]))	-->	   Returns a table containing a rotational average of image e
+4) cppwrap.Util.add_img() .....?????
+5) movingaverage(temp1, 10) -> Returns a kind of moving average
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+################################################################################################################################################################################################################################################
+        cter_pap(input_image_path, output_directory, selection_list = None, wn = 512, pixel_size = -1.0, Cs = 2.0, voltage = 300.0, wgh = 10.0, f_start = -1.0, f_stop = -1.0, \
+			kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, check_consistency = False, stack_mode = False, debug_mode = False, program_name = "cter_pap() in morphology.py", \
+			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1)
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        ampcont2angle(A)
+		A --> Amnplitude contrast
+Convert amplitude contrast to phase shift. It is used in the cter functions
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        angle2ampcont(phi):
+		phi --> phase shift
+Convert phase shift to amplitude contrast
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        bracket_def(f, dat, x1, h)
+		f --> cost function
+		dat --> input as list of f
+		x1 --> numerical input of f
+		h --> delat value used as input in the second call of f
+Helper function, something like di lambda f in c++, to find an interval of value using the cost function 'f' on the data 'dat. Where f(x1,dat) and f(x1+h, dat)
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        bracket(f, dat, h)
+Helper function similar to 'bracket_def'
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        goldsearch_astigmatism(f, dat, a, b, tol=1.0e-3)
+Helper function similar to 'bracket_def' with a tollerance value
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        defocus_baseline_fit(roo, i_start, i_stop, nrank, iswi)
+		roo --> power spectrum to be fitted
+		i_start --> since it is not going to use all the values of roo it is the first index that it'll use
+		i_stop --> the last index that it'll use
+		nrank --> the polynomial rank +1
+		iswi --> integer between 1-8 is used in 'vector<float> Util::call_cl1' to calculate the interpolation value (lagracian?)
+It uses TMP = imf_params_cl1(roo[i_start:i_stop], nrank, iswi)
+Returns the baseline of the defocus ... is it the noise or?
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        simpw1d(defocus, data)
+		defocus --> defocus value given to the ctf
+		data -->	bunch of data used for generating the ctf too
+Returns the norm value over the given ctf. It is used as input function of 'bracket_def' and 'goldsearch_astigmatism'
+It uses:
+-) ctf_2(...)
+-) sparx_utilities.generate_ctf(...)
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        simpw1d_pap(defocus, data)
+Same of 'simpw1d' but it uses the 'ctf_1d(...) function
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        simpw1d_print(defocus, data)
+It is 'simpw1d_pap' but it prints out the result before returning the values
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        movingaverage(data, window_size, skip = 3)
+		data --> data
+		window_size  --> size of the moving average
+		skip  --> skip value to sample the data
+Returns a kind of moving average .... which one?
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        defocusgett(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_start=-1.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=False)
+		roo --> power spectrum to be fitted used by 'defocus_baseline_fit'
+		nx --> CTF window size [pixels]: The size should be slightly larger than particle box size. Got from sxcter.py user params and used as image size in 'ctflimit(..)'
+		voltage --> Microscope voltage [kV]: The acceleration voltage of microscope used for imaging. Got from sxcter.py user
+		Pixel_size --> Pixel size [A/Pixels]: The pixel size of input micrograph(s) or images in input particle stack. Got from sxcter.py user it is the 'apix' value of the ctf
+		Cs --> Microscope spherical aberration (Cs) [mm]: The spherical aberration (Cs) of microscope used for imaging.  Got from sxcter.py user
+		ampcont -->	'amp_contrast' value of the ctf that it uses in the code
+		f_start --> Lowest resolution [A]: Lowest resolution to be considered in the CTF estimation. Got from sxcter.py user params. Used to calculate the sub-power spectrum
+		f_stop -->  Highest resolution [A]: Highest resolution to be considered in the CTF estimation. Got from sxcter.py user params. Used to calculate the sub-power spectrum
+		nr2 -->  the polynomial rank +1 used by 'defocus_baseline_fit'
+		DEBug -->
+		round_off,nr1,parent --> not_used
+1. Estimate envelope function and baseline noise using constrained simplex method so as to extract CTF imprints from 1D power spectrum
+2. Based one extracted ctf imprints, perform exhaustive defocus searching to get defocus which matches the extracted CTF imprints
+It returns [def1, subpw, ctf2, baseline, envelope, i_start, i_stop]
+-) def1 = minimum defocus found
+-) subpw = sub-power spectrum. It is 'roo-baseline'
+-) ctf2 = list of 1D CTF^2 values  got via 'ctf_2(nx, sparx_utilities.generate_ctf([def1, Cs, voltage, Pixel_size, 0.0, ampcont]))'
+-) baseline = the baseline of the defocus got via 'defocus_baseline_fit(roo, i_start,nroo, int(nr2), 3)'
+-) envelope = ????
+-) i_start = index starting value to calculate the  sub-power spectrum
+-) i_stop = index stopping value to calculate the  sub-power spectrum
+
+It calls:
+1) baseline = defocus_baseline_fit(roo, i_start,nroo, int(nr2), 3)
+2) def1, def2 = bracket_def(simpw1d, data, def1, h)
+3) def1, val2 = goldsearch_astigmatism(simpw1d, data, def1, def2, tol=1.0e-3)
+4) newstop, fnewstop = ctflimit(nx, def1, Cs, voltage, Pixel_size)
+5) ctf_2(nx, sparx_utilities.generate_ctf([def1, Cs, voltage, Pixel_size, 0.0, ampcont]))
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+################################################################################################################################################################################################################################################
+        defocusgett_pap(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_start=-1.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=False):
+The same of defocusgett but it uses 'simpw1d_pap' instead of 'simpw1d' and ctf_1d(nx, sparx_utilities.generate_ctf([def1, Cs, voltage, Pixel_size, 0.0, ampcont]), doabs = True) instead ctf_2....
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+		defocusgett_vpp(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0, f_stop=-1.0, vpp_options = [], nr1 = 3, nr2 = 6, parent=None, DEBug=False)
+		roo --> power spectrum to be fitted used by 'defocus_baseline_fit'
+		nx --> CTF window size [pixels]: The size should be slightly larger than particle box size. Got from sxcter.py user params and used as image size in 'ctflimit(..)'
+		voltage --> Microscope voltage [kV]: The acceleration voltage of microscope used for imaging. Got from sxcter.py user params
+		Pixel_size --> Pixel size [A/Pixels]: The pixel size of input micrograph(s) or images in input particle stack. Got from sxcter.py user paramsit is the 'apix' value of the ctf
+		Cs --> Microscope spherical aberration (Cs) [mm]: The spherical aberration (Cs) of microscope used for imaging.  Got from sxcter.py user params
+		vpp_options = [defocus_min,  defocus_max,  defocus_step,  phase_min,  phase_max,  phase_step] --> the phase are used to find the amp_contrast 'ampcont'. Got from sxcter.py user params
+		f_start --> Lowest resolution [A]: Lowest resolution to be considered in the CTF estimation. Got from sxcter.py user params. Used to calculate the sub-power spectrum
+		f_stop -->  Highest resolution [A]: Highest resolution to be considered in the CTF estimation. Got from sxcter.py user params. Used to calculate the sub-power spectrum
+		nr2 -->  the polynomial rank +1 used by 'defocus_baseline_fit'
+		DEBug -->
+		round_off,nr1,parent --> not_used
+It returns [defi, ampcont, subpw.tolist(), baseline, envelope, i_start, i_stop ]
+-) def1 = minimum defocus found
+-) ampcont = the amplitude contrast calculated
+-) subpw = sub-power spectrum. It is 'roo - baseline'
+-) baseline = the baseline of the defocus got via 'defocus_baseline_fit(roo, i_start,nroo, int(nr2), 3)'
+-) envelope = ????
+-) i_start = index starting value to calculate the  sub-power spectrum
+-) i_stop = index stopping value to calculate the  sub-power spectrum
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        defocusgett_vpp2(qse, wn, xdefc, xampcont, voltage=300.0, Pixel_size=1.0, Cs=2.0, i_start=0, i_stop=0, parent=None, DEBug=False)
+		qse --> image calculated as 'threshold((qa - bckg))/envl' where should be --> bckg=noise envl=envelop curve qa?????
+		wn --> CTF window size [pixels]: The size should be slightly larger than particle box size. Got from sxcter.py user params
+		xdefc --> minimum defocus (e.g.: calculated via 'defocusgett_vpp')
+		xampcont --> the amplitude contrast (e.g.: calculated via 'defocusgett_vpp')
+		voltage --> Microscope voltage [kV]: The acceleration voltage of microscope used for imaging
+		Pixel_size --> Pixel size [A/Pixels]: The pixel size of input micrograph(s) or images in input particle stack. Got from sxcter.py user paramsit is the 'apix' value of the ctf
+		Cs= --> Microscope spherical aberration (Cs) [mm]: The spherical aberration (Cs) of microscope used for imaging.
+		i_start --> index starting value (e.g.: calculated via 'defocusgett_vpp') to calculate the 2D polar coordinate for the interpolation via sparx_alignment.Numrinit
+		i_stop --> index ending value (e.g.: calculated via 'defocusgett_vpp') to calculate the 2D polar coordinate for the interpolation via sparx_alignment.Numrinit
+		parent --> not used
+This is different from the others and it uses the output value of 'defocusgett_vpp'.
+It calls:
+1) numr = sparx_alignment.Numrinit(i_start, i_stop-1, 1, mode)				--> calculates the infos value for the polar coordinates calculation
+2) 	wr = sparx_alignment.ringwe(numr, mode)									--> calculates the weights for the rotation
+3) crefim = EMAN2_cppwrap.Util.Polar2Dm(qse, cnx, cny, numr, mode)			--> resamples 'qse' with polar coordinates
+4) EMAN2_cppwrap.Util.Frngs(crefim, numr)									--> calculates the fft
+5) EMAN2_cppwrap.Util.Applyws(crefim, numr, wr)								--> applies the weights to the fourier of the rings
+6) xphase_shift = ampcont2angle(xampcont)
+7) dama = sparx_utilities.amoeba([xdefc,xphase_shift,initial_ast_ang], [0.1, 2.0, 0.05], fupw_vpp, 1.e-4, 1.e-4, 500, astdata) --> maximize the [xdefc,xphase_shift,initial_ast_ang] variables using 'fupw_vpp'
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        fastigmatism3(amp, data)
+		amp --> astigmatism_amplitude given as input to 'sparx_utilities.generate_ctf'
+		data --> vect of data:
+					0 = image of reference "crefim"
+					1 = numr
+					2 = nx size image (it is square)
+					3,4,5,6,7 = defocus,cs,voltage,pixelsize, Amplitude contrast ratio to generate a ctf containing the image to align, via ornq, to crefim (i.e. data[0])
+					8 = rotation angle beetween the 2 images. It'll be modify
+
+1,2) ctf2_rimg(data[2], sparx_utilities.generate_ctf([data[3], data[4], data[5], data[6], 0.0, data[7], amp, 0.0]) )
+3) ang, sxs, sys, mirror, peak = sparx_alignment.ornq(pc, data[0], [0.0,0.0], [0.0,0.0], 1, "H", data[1], cnx, cnx)
+Seems to be used in the "fupw" function that is never used
+Returns the opposite value of the correlation peak, got via ornq (i.e.: without mirroring), and modifies in the input data list the rotation angle , with the angle associated to the peak,
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+################################################################################################################################################################################################################################################
+		fastigmatism3_pap(amp, data)
+		amp --> astigmatism_amplitude given as input to 'sparx_utilities.generate_ctf'
+		data --> vect of data:
+					0 = image of reference "crefim"
+					1 = numr
+					2 = nx size image (it is square)
+					3,4,5,6,7 = defocus,cs,voltage,pixelsize, Amplitude contrast ratio to generate a ctf containing the image to align, via ornq, to crefim (i.e. data[0])
+					8 = rotation angle beetween the 2 images. It'll be modify
+It is the 'fastigmatism3' but it used the 'ornq_vpp instead the 'ornq' where the rings are normalized before calculating the crosscorrelation
+1,2) ctf2_rimg(data[2], sparx_utilities.generate_ctf([data[3], data[4], data[5], data[6], 0.0, data[7], amp, 0.0]) )
+3) ang, sxs, sys, mirror, peak = sparx_alignment.ornq_vpp(pc, data[0], [0.0,0.0], [0.0,0.0], 1, "H", data[1], cnx, cnx)
+Returns the opposite value of the correlation peak, got via ornq_vpp, and modifies in the input data list the rotation angle , with the angle associated to the peak,
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+################################################################################################################################################################################################################################################
+        fastigmatism3_vpp(amp, data)
+		amp --> astigmatism_amplitude given as input to 'sparx_utilities.generate_ctf'
+		data --> vect of data:
+					0 = image of reference "crefim"
+					1 = numr
+					2 = nx size image (it is square)
+					3,4,5,6,7 = defocus,cs,voltage,pixelsize, Amplitude contrast ratio to generate a ctf containing the image to align, via ornq, to crefim (i.e. data[0])
+					8 = rotation angle beetween the 2 images. It'll be modify
+
+It is the 'fastigmatism3_pap' but it receive anangle instead of amplitude as input ...see how it calls generate_ctf
+1,2) ctf2_rimg(data[2], sparx_utilities.generate_ctf([data[3], data[4], data[5], data[6], 0.0, angle2ampcont(data[7]%180.0), amp, 0.0]) )
+3) ang, sxs, sys, mirror, peak = sparx_alignment.ornq_vpp(pc, data[0], [0.0,0.0], [0.0,0.0], 1, "H", data[1], cnx, cnx)
+Returns the opposite value of the correlation peak, got via ornq_vpp, and modifies in the input data list the rotation angle , with the angle associated to the peak,
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        simctf2(dz, data)
+		dz --> defocus given as input to 'sparx_utilities.generate_ctf'
+		data --> vect of data
+It calculates the similarity between the 2 images
+ 1,2) ctf_rimg(data[2], sparx_utilities.generate_ctf([dz, data[4], data[5], data[6], 0.0, data[7], data[3], data[8]]) )
+ 3) pc.cmp("dot", data[0], {"mask":data[1], "negative":0, "normalize":1})
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        simctf2_pap(dz, data)
+		dz --> defocus given as input to 'sparx_utilities.generate_ctf'
+		data --> vect of data
+It calculates the similarity between the 2 images. The differece with 'simctf2' is that now the ctf_rimg will calculate the abs of the ctf (i.e:  |CTF|)
+ 1,2) ctf_rimg(data[2], sparx_utilities.generate_ctf([dz, data[4], data[5], data[6], 0.0, data[7], data[3], data[8]]) )
+ 3) pc.cmp("dot", data[0], {"mask":data[1], "negative":0, "normalize":1})
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        fupw(args, data)
+It returns -fastigmatism3
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        fupw_pap(args, data)
+It returns -fastigmatism3_pap
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+img_blank3D
+IMAGE_BLANK_2D
+################################################################################################################################################################################################################################################
+        ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
+		dimage --> img
+		crefim --> img di riferimento
+		xrng -->
+		yrng -->
+		step --> Step da usare nei range di intervallo
+		numr --> vettore contenente tutte le info per l'interpolazione 2D polare
+		mode --> tipo di interpolazione puo' essere F(full circle interpolation) o H (half ...)
+		cnx, cny --> sono i centri predefiniti usati da "Util.Polar2Dm" (see https://blake.grid.bcm.edu/eman2/doxygen_html/util__sparx_8cpp_source.html ln2410)
+		deltapsi --> Usato nel calcolo della crosscorrelazione in LIBem/SPARX/UTIL_SPARX.CPP Util::Crosrng_e. Rappresenta la variazione angolare tra una crosscorrelazione e l'altra
+determina rotazione e traslazione tra i data e l'immagine di riferimento (cimage). No mirror. Interpolazione quadratic
+1) cimage = EMAN2_cppwrap.Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
+2) EMAN2_cppwrap.Util.Frngs(cimage, numr)
+3) EMAN2_cppwrap.Util.Normalize_ring(cimage, numr, 0)
+4 retvals = EMAN2_cppwrap.Util.Crosrng_e(crefim, cimage, numr, 0, deltapsi)
+
+The same of sparx_alignment.ornq" but it normalizes the ring before calculating the crosscorrelation (i.e. the point 3)
+determina rotazione e traslazione tra i data e l'immagine di riferimento (cimage) e valore massimo (peak) di correlazione associato all'angolo restituito "ang". No mirror. Interpolazione quadratic
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
