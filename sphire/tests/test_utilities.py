@@ -1617,14 +1617,6 @@ class Test_lib_utilities_compare(unittest.TestCase):
     #     self.assertEqual(return_new, return_old)
 
 
-
-
-
-
-
-
-
-
     def test_convertasi_true_should_return_equal_objects(self):
 
         K = 7
@@ -1727,6 +1719,29 @@ class Test_lib_utilities_compare(unittest.TestCase):
 
         self.assertEqual(return_new, return_old)
 
+    # def test_do_two_way_comparison_true_should_return_equal_objects(self):
+    #
+    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask")
+    #     with open(filepath, 'rb') as rb:
+    #         argum = pickle.load(rb)
+    #
+    #     Tracker = argum[0][0][1]
+    #
+    #     Tracker["this_dir"] = "sphire/tests/Sharpening/"
+    #     Tracker["constants"]["log_main"] = "logging"
+    #     Tracker["constants"]["myid"] = 0
+    #     Tracker["constants"]["main_node"] = 1
+    #     Tracker["this_total_stack"] = "bdb:sphire/tests/Substack/sort3d_substack_002"
+    #     Tracker["number_of_groups"] = 4
+    #     Tracker["constants"]["indep_runs"]  = 4
+    #     Tracker["partition_dict"]    = [0,1,2,3]
+    #
+    #
+    #     return_new = fu.do_two_way_comparison(Tracker)
+    #     return_old = oldfu.do_two_way_comparison(Tracker)
+    #
+    #     self.assertEqual(return_new, return_old)
+
     def test_counting_projections_true_should_return_equal_objects(self):
 
         delta = 0.5
@@ -1738,6 +1753,32 @@ class Test_lib_utilities_compare(unittest.TestCase):
         return_old = oldfu.counting_projections(delta, ali3d_params, image_start)
         print("second function call done")
         self.assertEqual(return_new, return_old)
+
+    def test_unload_dict_true_should_return_equal_objects(self):
+
+        delta = 0.5
+        ali3d_params  = [[idx1, idx2, 0 , 0.25, 0.25] for idx1 in range(2) for idx2 in range(2)]
+        image_start = 1
+        sampled = fu.counting_projections(delta, ali3d_params,image_start)
+
+        return_new = fu.unload_dict(sampled)
+        return_old = oldfu.unload_dict(sampled)
+        self.assertEqual(return_new, return_old)
+
+
+    def test_unload_dict_true_should_return_equal_objects(self):
+
+        delta = 0.5
+        ali3d_params  = [[idx1, idx2, 0 , 0.25, 0.25] for idx1 in range(2) for idx2 in range(2)]
+        image_start = 1
+        sampled = fu.counting_projections(delta, ali3d_params,image_start)
+        dicto = fu.unload_dict(sampled)
+
+        return_new = fu.load_dict(sampled, dicto)
+        return_old = oldfu.load_dict(sampled, dicto)
+        self.assertEqual(return_new, return_old)
+
+
 
 
     """
@@ -1780,6 +1821,7 @@ class Test_lib_utilities_compare(unittest.TestCase):
         return_old = oldfu.create_random_list(Tracker)
         self.assertEqual(return_new, return_old)
 
+
     def test_recons_mref_true_should_return_equal_objects(self):
         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask")
         with open(filepath, 'rb') as rb:
@@ -1805,6 +1847,7 @@ class Test_lib_utilities_compare(unittest.TestCase):
         self.assertTrue(return_new[0], return_old[0])
 
 
+
     def test_apply_low_pass_filter_true_should_return_equal_objects(self):
         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask")
         with open(filepath, 'rb') as rb:
@@ -1825,6 +1868,8 @@ class Test_lib_utilities_compare(unittest.TestCase):
         return_old = oldfu.apply_low_pass_filter(refvol,Tracker)
         self.assertEqual(return_new, return_old)
 
+
+
     def test_count_chunk_members_true_should_return_equal_objects(self):
 
         chunk_dict =  [0,1,2,3,4,5,6]
@@ -1834,6 +1879,30 @@ class Test_lib_utilities_compare(unittest.TestCase):
         return_old = oldfu.count_chunk_members(chunk_dict, one_class)
         self.assertEqual(return_new, return_old)
 
+
+    def test_get_groups_from_partition_true_should_return_equal_objects(self):
+        final_list = []
+
+        final_list.append(numpy.arange(10))
+        final_list.append(numpy.arange(10))
+
+        this_data_list_file = "sphire/tests/Sort3D/chunk_0.txt"
+
+        # final_list = sparx_utilities.get_sorting_params_refine(Tracker, data, total_nima)
+        group_list, ali3d_params_list = fu.parsing_sorting_params(final_list)
+        list_of_particles = fu.read_text_file(this_data_list_file)
+        return_new = fu.get_groups_from_partition(group_list, list_of_particles, 2)
+        return_old = oldfu.get_groups_from_partition(group_list, list_of_particles, 2)
+        self.assertEqual(return_new, return_old)
+
+    def test_get_complementary_elements_true_should_return_equal_objects(self):
+
+        sub_data_list = [1,2,2]
+        total_list = [1,2,2,4,5,6]
+
+        return_new = fu.get_complementary_elements(total_list,sub_data_list)
+        return_old = oldfu.get_complementary_elements(total_list,sub_data_list)
+        self.assertEqual(return_new, return_old)
 
     def test_remove_small_groups_true_should_return_equal_objects(self):
 

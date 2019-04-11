@@ -339,5 +339,65 @@ class Test_lib_applications_compare(unittest.TestCase):
         self.assertTrue(return_new, return_old)
 
 
+
+    def test_ali3d_mref_Kmeans_MPI_true_should_return_equal_object(self):
+
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+
+        Tracker = argum[0][0][1]
+        Tracker["constants"]["nproc"] = 1
+        Tracker["constants"]["myid"] = 0
+        Tracker["constants"]["main_node"] = 0
+        Tracker["total_stack"] = "stack"
+        Tracker["constants"]["seed"] = 1.4
+        Tracker["constants"]["indep_runs"] = 2
+        Tracker["this_data_list"] = [2,3,5]
+        Tracker["shrinkage"] = 0.5
+        Tracker["constants"]["ir"] = 1
+        Tracker["constants"]["xr"] = 1
+        Tracker["constants"]["yr"] = 1
+        Tracker["constants"]["ts"] = 1
+        Tracker["constants"]["delta"] = 0.5
+        Tracker["constants"]["an"] = 1
+        Tracker["constants"]["center"] = 4
+        Tracker["constants"]["nassign"] =1
+        Tracker["constants"]["nrefine"] =1
+        Tracker["constants"]["sym"] = "c1"
+        Tracker["constants"]["stoprnct"] =5
+        Tracker["constants"]["mask3D"]  = False
+        Tracker["low_pass_filter"] = "0.50"
+        Tracker["constants"]["PWadjustment"] = False
+
+        outdir = "Class2D/Kmref_alig_MPI_A"
+
+        outdirnew = os.path.join(ABSOLUTE_PATH, outdir)
+
+        if (os.path.exists(outdirnew)):
+            shutil.rmtree(outdirnew)
+
+        this_data_list_file = "sphire/tests/Sort3D/chunk_0.txt"
+
+        ref_list = "sphire/tests/Sort3D/refang.txt"
+
+        return_new = fu.ali3d_mref_Kmeans_MPI(ref_list, outdirnew, this_data_list_file, Tracker)
+
+        mpi_barrier(MPI_COMM_WORLD)
+
+        outdir = "Class2D/Kmref_alig_MPI_B"
+        outdirnew = os.path.join(ABSOLUTE_PATH, outdir)
+
+
+        return_old = oldfu.ali3d_mref_Kmeans_MPI(ref_list, outdirnew, this_data_list_file, Tracker)
+
+        mpi_barrier(MPI_COMM_WORLD)
+        mpi_finalize()
+
+        self.assertTrue(return_new, return_old)
+
+
+
+
 if __name__ == '__main__':
     unittest.main()
