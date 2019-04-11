@@ -2377,7 +2377,9 @@ def moon_eliminator(args):
 			ERROR("Invalid molecular mass {}[A]. Please set a pasitive value larger than 0.0 to --mol_mass option.".format(args.mol_mass), where=subcommand_name) # action=1 - fatal error, exit
 
 	isac_shrink_path = None
-	if( not (type(args.resample_ratio) is float)):
+	try:
+		float(args.resample_ratio)
+	except ValueError:
 		
 		# This should be string for the output directory path of an ISAC2 run
 		if not os.path.exists(args.resample_ratio):
