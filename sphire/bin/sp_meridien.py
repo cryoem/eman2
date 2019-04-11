@@ -5096,6 +5096,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	##eat = 0.0
 	lima = 0  #  total counter of images
 	#  PROCESSING OF CONES
+	keep_checking_keepfirst = False
 	for icone in range(max_number_of_cones):
 		mpi_barrier(MPI_COMM_WORLD)
 		if( icone < number_of_cones ):  #  This is executed for individual number of cones, some nodes may have fewer.
@@ -5233,7 +5234,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 
 				###print("  CONA1    ",Blockdata["myid"],lima)
-				if( lima == 1 and procid == 0):
+				if( lima == 1 and procid == 0) or keep_checking_keepfirst:
 					###print("  CONA2    ",Blockdata["myid"])
 					if( lenass > 0):
 						###print("   CICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
@@ -5331,8 +5332,12 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					###print("  STARTING7    ",Blockdata["myid"],keepf)
 					keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
 					if(keepf == 0):
-						ERROR( "Too few images to estimate keepfirst", myid=Blockdata["myid"] )
-						return
+						keepf = 3
+						ERROR( "Too few images to estimate keepfirst, try with the next particle.", myid=Blockdata["myid"], action=0 )
+						keep_checking_keepfirst = True
+					else:
+						keep_checking_keepfirst = False
+						#return
 					###print("  STARTING8    ",Blockdata["myid"],keepf)
 					Tracker["keepfirst"] = int(keepf)
 					###if( Blockdata["myid"] == 0 ):  sxprint("  keepfirst first ",Tracker["keepfirst"])
