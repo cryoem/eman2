@@ -673,12 +673,12 @@ output_directory: directory name into which the output files will be written.  I
 	else:
 		options.resample_ratio = float(options.resample_ratio)
 		if(myid == main_node):
-			if resample_ratio != 1.0:
+			if options.resample_ratio != 1.0:
 				sxprint(" ")
-				sxprint("Resample ratio {} is specified with --resample_ratio option...".format(resample_ratio))
+				sxprint("Resample ratio {} is specified with --resample_ratio option...".format(options.resample_ratio))
 			else:
 				sxprint(" ")
-				sxprint("Resample ratio is {}. The program does not resample the input volume...".format(resample_ratio))
+				sxprint("Resample ratio is {}. The program does not resample the input volume...".format(options.resample_ratio))
 
 	options.CTF = False
 	options.snr = 1.0
