@@ -1370,7 +1370,7 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		prms = symmetry_class.even_angles(float(ali3d_options.delta), theta1=theta1, theta2=theta2, method=method)
 		write_text_row(prms, log.prefix + "initangles.txt")
 		
-		if(len(prms) < len(subset) and ali3d_options.filament_width == -1): error = 1
+		if(len(prms) < len(subset)): error = 1
 		else:
 			from random import shuffle
 			shuffle(prms)
