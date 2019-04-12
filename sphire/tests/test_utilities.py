@@ -4,7 +4,6 @@ from __future__ import division
 
 import cPickle as pickle
 import os
-import sys
 from mpi import *
 import global_def
 import numpy
@@ -20,7 +19,7 @@ ABSOLUTE_PATH = os.path.dirname(os.path.realpath(__file__))
 
 
 import unittest
-from test_module import get_arg_from_pickle_file, get_real_data
+from test_module import get_arg_from_pickle_file, get_real_data, remove_list_of_file, returns_values_in_file
 from ..libpy import sparx_utilities as fu
 from .sparx_lib import sparx_utilities as oldfu
 from os import path
@@ -35,6 +34,8 @@ There are some opened issues in:
 4) find --> it seems to be not used
 5) get_image --> I need an image to test the last 2 cases: get_image(path_to_img) and get_image(path_to_img, im=1)
 6) get_im --> I need an image to test the last case ... similarly the (5)
+7) read_text_row --> I need at least a file to test it
+8) read_text_file --> same situation of 7
 """
 
 class Test_amoeba(unittest.TestCase):
@@ -115,7 +116,6 @@ class Test_compose_transform2(unittest.TestCase):
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
     def test_null_scaleFactor_returns_RunTimeError_scale_factor_must_be_positive(self):
-        """ values got from 'pickle files/utilities/utilities.compose_transform2'"""
         with self.assertRaises(RuntimeError) as cm_new:
             fu.compose_transform2(alpha1 = 0, sx1 = 2.90828285217, sy1 =-0.879739010334, scale1 = 0, alpha2 = 0, sx2 = 2.90828285217, sy2 =-0.879739010334, scale2 = 1.0)
         with self.assertRaises(RuntimeError) as cm_old:
@@ -129,7 +129,6 @@ class Test_compose_transform2(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_negative_scaleFactor_returns_RunTimeError_scale_factor_must_be_positive(self):
-        """ values got from 'pickle files/utilities/utilities.compose_transform2'"""
         with self.assertRaises(RuntimeError) as cm_new:
             fu.compose_transform2(alpha1 = 0, sx1 = 2.90828285217, sy1 =-0.879739010334, scale1 = -1.0, alpha2 = 0, sx2 = 2.90828285217, sy2 =-0.879739010334, scale2 = 1.0)
         with self.assertRaises(RuntimeError) as cm_old:
@@ -161,7 +160,6 @@ class Test_compose_transform3(unittest.TestCase):
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
     def test_null_scaleFactor_returns_RunTimeError_scale_factor_must_be_positive(self):
-        """ values got from 'pickle files/utilities/utilities.compose_transform2'"""
         with self.assertRaises(RuntimeError) as cm_new:
             fu.compose_transform3(phi1 = 0.0, theta1  = 0.0, psi1 = 0.0, sx1 = 0.0,sy1 = 0.0, sz1 = 0.0,scale1 = 0, phi2 = 0.328125, theta2= 0.0, psi2 = 0.0, sx2 = 0.001220703125, sy2 = 0.0,sz2 = 0.001220703125,scale2 = 1.0)
         with self.assertRaises(RuntimeError) as cm_old:
@@ -175,7 +173,6 @@ class Test_compose_transform3(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_negative_scaleFactor_returns_RunTimeError_scale_factor_must_be_positive(self):
-        """ values got from 'pickle files/utilities/utilities.compose_transform2'"""
         with self.assertRaises(RuntimeError) as cm_new:
             fu.compose_transform3(phi1 = 0.0, theta1  = 0.0, psi1 = 0.0, sx1 = 0.0,sy1 = 0.0, sz1 = 0.0,scale1 = -1.0, phi2 = 0.328125, theta2= 0.0, psi2 = 0.0, sx2 = 0.001220703125, sy2 = 0.0,sz2 = 0.001220703125,scale2 = 1.0)
         with self.assertRaises(RuntimeError) as cm_old:
@@ -545,247 +542,542 @@ class Test_get_image_data(unittest.TestCase):
         #fu.get_image_data(None)
 
 
+
+class Test_get_symt(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.get_symt()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.get_symt()
+        self.assertEqual(cm_new.exception.message, "get_symt() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_get_symt(self):
+        self.assertTrue(numpy.array_equal(fu.get_symt('c3'), oldfu.get_symt('c3')))
+
+    def test_get_symt_with_invaliSym_returns_AttributeError_symclass_hasnot_attribute_symangles(self):
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.get_symt('invaliSym')
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.get_symt('invaliSym')
+        self.assertEqual(cm_new.exception.message, "'symclass' object has no attribute 'symangles'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+
+
+class Test_get_input_from_string(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.get_input_from_string()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.get_input_from_string()
+        self.assertEqual(cm_new.exception.message, "get_input_from_string() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_get_input_from_string_integer_case(self):
+        self.assertEqual(fu.get_input_from_string('5'), oldfu.get_input_from_string('5'))
+
+    def test_get_input_from_string_negative_number_case(self):
+        self.assertEqual(fu.get_input_from_string('-5'), oldfu.get_input_from_string('-5'))
+
+    def test_get_input_from_string_float_case(self):
+        self.assertEqual(fu.get_input_from_string('5.3'), oldfu.get_input_from_string('5.3'))
+
+    def test_get_input_from_string_invalid_case(self):
+        with self.assertRaises(ValueError) as cm_new:
+            fu.get_input_from_string('not_a_number')
+        with self.assertRaises(ValueError) as cm_old:
+            oldfu.get_input_from_string('not_a_number')
+        self.assertEqual(cm_new.exception.message, "invalid literal for int() with base 10: 'not_a_number'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_get_input_from_string_list_of_values_number_case(self):
+        self.assertTrue(numpy.array_equal(fu.get_input_from_string('-5,3.11,5'), oldfu.get_input_from_string('-5,3.11,5')))
+
+
+
+class Test_model_circle(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.model_circle()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.model_circle()
+        self.assertEqual(cm_new.exception.message, "model_circle() takes at least 3 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_pickle_file_values(self):
+        """ values got from 'pickle files/utilities/utilities.model_circle'"""
+        return_new = fu.model_circle(r = 145, nx = 352, ny = 352, nz =1)
+        return_old = oldfu.model_circle(r = 145, nx = 352, ny = 352, nz =1)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_null_Y_size_returns_RuntimeError_InvalidValueException(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.model_circle(r = 145, nx = 352, ny = 0, nz =1)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.model_circle(r = 145, nx = 352, ny = 0, nz =1)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "y size <= 0")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_null_X_size_returns_RuntimeError_InvalidValueException(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.model_circle(r = 145, nx = 0, ny = 252, nz =1)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.model_circle(r = 145, nx = 0, ny = 252, nz =1)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "x size <= 0")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_null_Z_size_returns_RuntimeError_InvalidValueException(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.model_circle(r = 145, nx = 252, ny = 252, nz =0)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.model_circle(r = 145, nx = 252, ny = 252, nz =0)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "z size <= 0")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_null_R_size_(self):
+        return_new = fu.model_circle(r = 0, nx = 352, ny = 352, nz =1)
+        return_old = oldfu.model_circle(r = 0, nx = 352, ny = 352, nz =1)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_negative_R_size_(self):
+        return_new = fu.model_circle(r = -10, nx = 352, ny = 352, nz =1)
+        return_old = oldfu.model_circle(r = -10, nx = 352, ny = 352, nz =1)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+
+class Test_model_gauss(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.model_gauss()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.model_gauss()
+        self.assertEqual(cm_new.exception.message, "model_gauss() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_default_values(self):
+        return_new = fu.model_gauss(xsigma=2, nx=352, ny=1, nz=1, ysigma=None, zsigma=None, xcenter=None, ycenter=None, zcenter=None)
+        return_old = oldfu.model_gauss(xsigma=2, nx=352, ny=1, nz=1, ysigma=None, zsigma=None, xcenter=None, ycenter=None, zcenter=None)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_null_Xsigma_returns_Nan_matrix(self):
+        return_new = fu.model_gauss(xsigma=0, nx=352, ny=1, nz=1, ysigma=None, zsigma=None, xcenter=None, ycenter=None, zcenter=None)
+        return_old = oldfu.model_gauss(xsigma=0, nx=352, ny=1, nz=1, ysigma=None, zsigma=None, xcenter=None, ycenter=None, zcenter=None)
+        self.assertTrue(numpy.allclose(return_new.get_3dview(), return_old.get_3dview(), equal_nan=True))
+
+    def test_null_Ysigma_returns_Nan_matrix(self):
+        return_new = fu.model_gauss(xsigma=2, nx=352, ny=1, nz=1, ysigma=0, zsigma=None, xcenter=None, ycenter=None, zcenter=None)
+        return_old = oldfu.model_gauss(xsigma=2, nx=352, ny=1, nz=1, ysigma=0, zsigma=None, xcenter=None, ycenter=None, zcenter=None)
+        self.assertTrue(numpy.allclose(return_new.get_3dview(), return_old.get_3dview(), equal_nan=True))
+
+    def test_null_Zsigma_returns_Nan_matrix(self):
+        return_new = fu.model_gauss(xsigma=2, nx=352, ny=1, nz=1, ysigma=None, zsigma=0, xcenter=None, ycenter=None, zcenter=None)
+        return_old = oldfu.model_gauss(xsigma=2, nx=352, ny=1, nz=1, ysigma=None, zsigma=0, xcenter=None, ycenter=None, zcenter=None)
+        self.assertTrue(numpy.allclose(return_new.get_3dview(), return_old.get_3dview(), equal_nan=True))
+
+    def test_null_Y_size_returns_RuntimeError_InvalidValueException(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.model_gauss(xsigma=2, nx=352, ny=0, nz=1, ysigma=None, zsigma=None, xcenter=None, ycenter=None, zcenter=None)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.model_gauss(xsigma=2, nx=352, ny=0, nz=1, ysigma=None, zsigma=None, xcenter=None, ycenter=None, zcenter=None)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "y size <= 0")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_null_X_size_returns_RuntimeError_InvalidValueException(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.model_gauss(xsigma=2, nx=0, ny=1, nz=1, ysigma=None, zsigma=None, xcenter=None, ycenter=None, zcenter=None)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.model_gauss(xsigma=2, nx=0, ny=1, nz=1, ysigma=None, zsigma=None, xcenter=None, ycenter=None, zcenter=None)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "x size <= 0")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_null_Z_size_returns_RuntimeError_InvalidValueException(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.model_gauss(xsigma=2, nx=352, ny=1, nz=0, ysigma=None, zsigma=None, xcenter=None, ycenter=None, zcenter=None)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.model_gauss(xsigma=2, nx=352, ny=1, nz=0, ysigma=None, zsigma=None, xcenter=None, ycenter=None, zcenter=None)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "z size <= 0")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+
+
+class Test_model_gauss_noise(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.model_gauss_noise()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.model_gauss_noise()
+        self.assertEqual(cm_new.exception.message, "model_gauss_noise() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_model_gauss_noise(self):
+        """  This function creates random noise each time so arrays cannot be compared """
+        return_new = fu.model_gauss_noise(sigma = 1, nx = 352, ny=1, nz=1)
+        return_old = oldfu.model_gauss_noise(sigma =1, nx = 352, ny=1, nz=1)
+        self.assertTrue(numpy.allclose(return_new.get_3dview(), return_old.get_3dview(), atol=1000))
+
+    def test_null_sigma(self):
+        return_new = fu.model_gauss_noise(sigma = 0.0, nx = 352, ny=1, nz=1)
+        return_old = oldfu.model_gauss_noise(sigma =0.0, nx = 352, ny=1, nz=1)
+        self.assertTrue(numpy.allclose(return_new.get_3dview(), return_old.get_3dview()))
+
+
+    def test_null_Y_size_returns_RuntimeError_InvalidValueException(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.model_gauss_noise(sigma = 1, nx = 1, ny=0, nz=1)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.model_gauss_noise(sigma = 1, nx = 1, ny=0, nz=1)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "y size <= 0")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_null_X_size_returns_RuntimeError_InvalidValueException(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.model_gauss_noise(sigma = 1, nx = 0, ny=10, nz=1)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.model_gauss_noise(sigma = 1, nx = 0, ny=10, nz=1)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "x size <= 0")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_null_Z_size_returns_RuntimeError_InvalidValueException(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.model_gauss_noise(sigma = 1, nx = 352, ny=1, nz=0)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.model_gauss_noise(sigma = 1, nx = 352, ny=1, nz=0)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "z size <= 0")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+
+
+class Test_model_blank(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.model_blank()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.model_blank()
+        self.assertEqual(cm_new.exception.message, "model_blank() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_default_values(self):
+        return_new = fu.model_blank(nx = 100, ny=1, nz=1, bckg = 0.0)
+        return_old = oldfu.model_blank(nx = 100, ny=1, nz=1, bckg = 0.0)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_default_values_with_bckg(self):
+        return_new = fu.model_blank(nx = 100, ny=1, nz=1, bckg = 10.0)
+        return_old = oldfu.model_blank(nx = 100, ny=1, nz=1, bckg = 10.0)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_null_X_size_returns_RuntimeError_InvalidValueException(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.model_blank(nx = 0, ny=1, nz=1, bckg = 0.0)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.model_blank(nx = 0, ny=1, nz=1, bckg = 0.0)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "x size <= 0")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_null_Y_size_returns_RuntimeError_InvalidValueException(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.model_blank(nx = 10, ny=0, nz=1, bckg = 0.0)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.model_blank(nx = 10, ny=0, nz=1, bckg = 0.0)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "y size <= 0")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_null_Z_size_returns_RuntimeError_InvalidValueException(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.model_blank(nx = 10, ny=1, nz=0, bckg = 0.0)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.model_blank(nx = 10, ny=1, nz=0, bckg = 0.0)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "z size <= 0")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+
+
+class Test_peak_search(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.peak_search()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.peak_search()
+        self.assertEqual(cm_new.exception.message, "peak_search() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_default_values(self):
+        img, NotUsed = get_real_data(dim=2)
+        return_new = fu.peak_search(img, npeak = 3, invert = 1, print_screen = 0)
+        return_old = oldfu.peak_search(img, npeak = 3, invert = 1, print_screen = 0)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_inverted_sort(self):
+        img, NotUsed = get_real_data(dim=2)
+        return_new = fu.peak_search(img, npeak = 3, invert = -1, print_screen = 0)
+        return_old = oldfu.peak_search(img, npeak = 3, invert = -1, print_screen = 0)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_null_npeak_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        img, NotUsed = get_real_data(dim=2)
+        return_new = fu.peak_search(img, npeak = 0, invert = 1, print_screen = 0)
+        return_old = oldfu.peak_search(img, npeak = 0, invert = 1, print_screen = 0)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+        """
+
+    def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(self):
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.peak_search(None, npeak = 3, invert = -1, print_screen = 0)
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.peak_search(None, npeak = 3, invert = -1, print_screen = 0)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'peak_search'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_Empty_img_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        fu.peak_search(EMData(), npeak = 3, invert = -1, print_screen = 0)
+        oldfu.peak_search(EMData(), npeak = 3, invert = -1, print_screen = 0)
+        """
+
+
+class Test_pad(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.pad()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.pad()
+        self.assertEqual(cm_new.exception.message, "pad() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_returns_RuntimeError_ImageDimensionException_padder_cannot_be_lower_than_sizee_img(self):
+        img, NotUsed = get_real_data(dim=2)
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.pad(image_to_be_padded = img, new_nx = 10, new_ny = 1,	new_nz = 1, background = "average", off_center_nx = 0, off_center_ny = 0, off_center_nz = 0)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.pad(image_to_be_padded = img, new_nx = 10, new_ny = 1,	new_nz = 1, background = "average", off_center_nx = 0, off_center_ny = 0, off_center_nz = 0)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], "The size of the padded image cannot be lower than the input image size.")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[1], msg_old[1])
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_returns_RuntimeError_ImageDimensionException_offset_inconsistent(self):
+        img, NotUsed = get_real_data(dim=2)
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.pad(image_to_be_padded = img, new_nx = img.get_xsize()+10, new_ny = img.get_ysize()+10,	new_nz = img.get_zsize()+10, background = "average", off_center_nx = 100, off_center_ny = 100, off_center_nz = 100)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.pad(image_to_be_padded = img, new_nx = img.get_xsize()+10, new_ny = img.get_ysize()+10,	new_nz = img.get_zsize()+10, background ="average", off_center_nx = 100, off_center_ny = 100, off_center_nz = 100)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], "The offset inconsistent with the input image size. Solution: Change the offset parameters")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[1], msg_old[1])
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_default_values(self):
+        img, NotUsed = get_real_data(dim=2)
+        return_new = fu.pad(image_to_be_padded = img, new_nx = img.get_xsize()+10, new_ny = img.get_ysize()+10,	new_nz = img.get_zsize()+10, background = "average", off_center_nx = 0, off_center_ny = 0, off_center_nz = 0)
+        return_old = oldfu.pad(image_to_be_padded = img, new_nx = img.get_xsize()+10, new_ny = img.get_ysize()+10,	new_nz = img.get_zsize()+10, background = "average", off_center_nx = 0, off_center_ny = 0, off_center_nz = 0)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_default_values_with_circumference_bckg(self):
+        img, NotUsed = get_real_data(dim=2)
+        return_new = fu.pad(image_to_be_padded = img, new_nx = img.get_xsize()+10, new_ny = img.get_ysize()+10,	new_nz = img.get_zsize()+10, background = "circumference", off_center_nx = 0, off_center_ny = 0, off_center_nz = 0)
+        return_old = oldfu.pad(image_to_be_padded = img, new_nx = img.get_xsize()+10, new_ny = img.get_ysize()+10,	new_nz = img.get_zsize()+10, background = "circumference", off_center_nx = 0, off_center_ny = 0, off_center_nz = 0)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_default_values_with_unknown_bckg(self):
+        img, NotUsed = get_real_data(dim=2)
+        return_new = fu.pad(image_to_be_padded = img, new_nx = img.get_xsize()+10, new_ny = img.get_ysize()+10,	new_nz = img.get_zsize()+10, background = "unknown", off_center_nx = 0, off_center_ny = 0, off_center_nz = 0)
+        return_old = oldfu.pad(image_to_be_padded = img, new_nx = img.get_xsize()+10, new_ny = img.get_ysize()+10,	new_nz = img.get_zsize()+10, background = "unknown", off_center_nx = 0, off_center_ny = 0, off_center_nz = 0)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_NoneType_as_img_returns_RuntimeError_NullPointerException(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.pad(image_to_be_padded = None, new_nx = 10, new_ny = 1,	new_nz = 1, background = "average", off_center_nx = 0, off_center_ny = 0, off_center_nz = 0)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.pad(image_to_be_padded = None, new_nx = 10, new_ny = 1,	new_nz = 1, background = "average", off_center_nx = 0, off_center_ny = 0, off_center_nz = 0)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "NullPointerException")
+        self.assertEqual(msg[1], "NULL input image")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[1], msg_old[1])
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_Empty_img_returns_RuntimeError_InvalidValueException(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.pad(image_to_be_padded = EMData(), new_nx = 10, new_ny = 1,	new_nz = 1, background = "average", off_center_nx = 0, off_center_ny = 0, off_center_nz = 0)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.pad(image_to_be_padded = EMData(), new_nx = 10, new_ny = 1,	new_nz = 1, background = "average", off_center_nx = 0, off_center_ny = 0, off_center_nz = 0)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "x size <= 0")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+
+
+class Test_chooseformat(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.chooseformat()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.chooseformat()
+        self.assertEqual(cm_new.exception.message, "chooseformat() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_exponential_number(self):
+        self.assertEqual(fu.chooseformat(0.00000000000000000000000000003), oldfu.chooseformat(0.00000000000000000000000000003))
+
+    def test_float(self):
+        self.assertEqual(fu.chooseformat(0.3), oldfu.chooseformat(0.3))
+
+    def test_typeError_float_argument_required(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.chooseformat('w')
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.chooseformat('w')
+        self.assertEqual(cm_new.exception.message, "float argument required, not str")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+
+class Test_read_text_row(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.read_text_row()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.read_text_row()
+        self.assertEqual(cm_new.exception.message, "read_text_row() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_file_not_found(self):
+        with self.assertRaises(IOError) as cm_new:
+            fu.read_text_row("no_file.txt")
+        with self.assertRaises(IOError) as cm_old:
+            oldfu.read_text_row("no_file.txt")
+        self.assertEqual(cm_new.exception.strerror, "No such file or directory")
+        self.assertEqual(cm_new.exception.strerror, cm_old.exception.strerror)
+
+
+
+class Test_write_text_row(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.write_text_row()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.write_text_row()
+        self.assertEqual(cm_new.exception.message, "write_text_row() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_write_text_row(self):
+        data=[[1,1,1,1],[2,2,2,2],[3,3,3,3]]
+        f=path.join(ABSOLUTE_PATH, "filefu.txt")
+        fold=path.join(ABSOLUTE_PATH, "filefold.txt")
+        fu.write_text_row(data, f)
+        oldfu.write_text_row(data, fold)
+        self.assertEqual(returns_values_in_file(f),returns_values_in_file(fold))
+        remove_list_of_file([f,fold])
+
+
+
+class Test_read_text_file(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.read_text_file()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.read_text_file()
+        self.assertEqual(cm_new.exception.message, "read_text_file() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_file_not_found(self):
+        with self.assertRaises(IOError) as cm_new:
+            fu.read_text_file("no_file.txt")
+        with self.assertRaises(IOError) as cm_old:
+            oldfu.read_text_file("no_file.txt")
+        self.assertEqual(cm_new.exception.strerror, "No such file or directory")
+        self.assertEqual(cm_new.exception.strerror, cm_old.exception.strerror)
+
+
+
+class Test_write_text_file(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.write_text_file()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.write_text_file()
+        self.assertEqual(cm_new.exception.message, "write_text_file() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_write_text_row(self):
+        data=[[1,1,1,1],[2,2,2,2],[3,3,3,3]]
+        f=path.join(ABSOLUTE_PATH, "filefu.txt")
+        fold=path.join(ABSOLUTE_PATH, "filefold.txt")
+        fu.write_text_file(data, f)
+        oldfu.write_text_file(data, fold)
+        self.assertEqual(returns_values_in_file(f),returns_values_in_file(fold))
+        remove_list_of_file([f,fold])
+
+
+
+
+
+
 @unittest.skip("adnan tests")
 class Test_lib_utilities_compare(unittest.TestCase):
-
-
-    """
-      This function test works but takes too much time that is why for the time being it is
-       commented,  will uncomment it once everything is done 
-    """
-    # def test_get_image_data_true_should_return_equal_objects(self):
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_image_data")
-    #     with open(filepath, 'rb') as rb:
-    #         argum = pickle.load(rb)
-    #
-    #     print(argum[0][0])
-    #
-    #     (image) = argum[0][0]
-    #
-    #     return_new = fu.get_image_data(image)
-    #     return_old = oldfu.get_image_data(image)
-    #
-    #     self.assertTrue(numpy.array_equal(return_new, return_old))
-
-
-    def test_get_symt_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_symt")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum)
-
-        (symmetry,) = argum[0]
-
-        return_new = fu.get_symt(symmetry)
-        return_old = oldfu.get_symt(symmetry)
-
-        self.assertTrue(return_new, return_old)
-
-
-    def test_get_input_from_string_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_input_from_string")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum[0])
-
-        (str_input) = argum[0][0]
-
-        return_new = fu.get_input_from_string(str_input)
-        return_old = oldfu.get_input_from_string(str_input)
-
-        self.assertTrue(return_new, return_old)
-
-
-    def test_model_circle_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.model_circle")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum)
-
-        (r, nx, ny) = argum[0]
-
-        return_new = fu.model_circle(r, nx, ny)
-        return_old = oldfu.model_circle(r, nx, ny)
-
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
-
-
-    def test_model_gauss_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.model_circle")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum)
-
-        (r, nx, ny) = argum[0]
-
-        return_new = fu.model_gauss(0.25,nx,ny)
-        return_old = oldfu.model_gauss(0.25,nx,ny)
-
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
-
-
-    """  This function creates random noise each time so arrays cannot be compared """
-    def test_model_gauss_noise_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.model_circle")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum)
-
-        (r, nx, ny) = argum[0]
-
-        return_new = fu.model_gauss_noise(0.15,nx,ny)
-        return_old = oldfu.model_gauss_noise(0.15,nx,ny)
-
-        self.assertTrue(return_new, return_old)
-
-
-    def test_model_blank_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.model_blank")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum)
-
-        (nx,ny) = argum[0]
-
-        return_new = fu.model_blank(nx,ny)
-        return_old = oldfu.model_blank(nx,ny)
-
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
-
-
-    def test_peak_search_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.peak_search")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum)
-
-        (e,) = argum[0]
-
-        return_new = fu.peak_search(e )
-        return_old = oldfu.peak_search(e )
-
-        self.assertEqual(return_new, return_old)
-
-
-
-    """No return parameter for this function. """
-    def test_print_list_format_true_should_return_equal_objects(self):
-        import StringIO
-
-        m = []
-        for i in range(1):
-            m.append((i))
-
-        # fu.print_list_format(m)
-        # oldfu.print_list_format(m)
-
-        capturedOutput = StringIO.StringIO()
-        sys.stdout = capturedOutput
-        fu.print_list_format(m)
-        oldfu.print_list_format(m)
-        # sys.stdout = sys.__stdout__
-        print ('Captured', capturedOutput.getvalue())
-
-
-
-    """
-      This function test works but takes too much time that is why for the time being it is
-       commented,  will uncomment it once everything is done 
-    """
-    # def test_pad_true_should_return_equal_objects(self):
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.pad")
-    #     with open(filepath, 'rb') as rb:
-    #         argum = pickle.load(rb)
-    #
-    #     print(argum[0])
-    #
-    #     (image_to_be_padded, new_nx, new_ny, new_nz,off_center_nx) = argum[0]
-    #
-    #     return_new = fu.pad(image_to_be_padded, new_nx, new_ny, new_nz)
-    #     return_old = oldfu.pad(image_to_be_padded, new_nx, new_ny, new_nz)
-    #
-    #     self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
-
-
-    def test_chooseformat_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.chooseformat")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum[0])
-
-        (t) = argum[0][0]
-
-        return_new = fu.chooseformat(t)
-        return_old = oldfu.chooseformat(t)
-
-        self.assertEqual(return_new, return_old)
-
-    def test_read_text_row_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.read_text_row")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum[0])
-
-        (fnam) = argum[0][0]
-
-        return_new = fu.read_text_row(fnam)
-        return_old = oldfu.read_text_row(fnam)
-
-        self.assertEqual(return_new, return_old)
-
-
-    def test_write_text_row_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.write_text_row")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum[0])
-
-        (data, filename) = argum[0]
-
-        return_new = fu.write_text_row(data, filename)
-        return_old = oldfu.write_text_row(data, filename)
-
-        self.assertEqual(return_new, return_old)
-
-
-    def test_read_text_file_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.read_text_file")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum[0])
-
-        (filename,) = argum[0]
-
-        return_new = fu.read_text_file(filename)
-        return_old = oldfu.read_text_file(filename)
-
-        self.assertEqual(return_new, return_old)
-
-
-    def test_write_text_file_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.write_text_file")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum[0])
-
-        (data, filename) = argum[0]
-
-        return_new = fu.write_text_file(data, filename)
-        return_old = oldfu.write_text_file(data, filename)
-
-        self.assertEqual(return_new, return_old)
 
 
     def test_rotate_shift_params_true_should_return_equal_objects(self):

@@ -12,7 +12,7 @@ import numpy
 
 from EMAN2_cppwrap import Util,EMData
 from cPickle import load as pickle_load
-from os import path
+from os import path,remove
 from shutil import rmtree
 
 
@@ -86,6 +86,29 @@ def remove_dir(d):
     """
     if path.isdir(d):
         rmtree(d)
+
+def remove_list_of_file(l):
+    """
+    Remove the given directory with all its files
+    :param l: list of file to remove
+    """
+    for f in l:
+        if path.isfile(f):
+            remove(f)
+
+def returns_values_in_file(f):
+    """
+    read a file and returns all its lines
+    :param f: path to file
+    :return: contained values
+    """
+    if path.isfile(f):
+        f1 = open(f, 'r')
+        values_f1 = f1.readlines()
+        f1.close()
+        return values_f1
+    print ("ERROR> the given file '"+str(f)+"' is not present!")
+    exit(-1)
 
 def create_kb(dim,  sizex=100 ,sizey=80 ,sizez=70):
     """
