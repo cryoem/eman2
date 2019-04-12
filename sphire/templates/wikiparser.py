@@ -240,6 +240,7 @@ def construct_keyword_dict():
 	keyword_dict["--radius"]                      = SXkeyword_map(2, "radius")              # --radius=particle_radius, --radius=outer_radius, --radius=outer_radius, --radius=particle_radius, --radius=outer_radius, --radius=outer_radius
 	keyword_dict["--sym"]                         = SXkeyword_map(2, "sym")                 # --sym=c1, --sym=symmetry, --sym=c4
 	keyword_dict["--mol_mass"]                    = SXkeyword_map(2, "mass")                # --mol_mass=KILODALTON
+	keyword_dict["--filament_width"]                    = SXkeyword_map(2, "filament_width")                # --mol_mass=KILODALTON
 	#keyword_dict["--symmetry"]                    = SXkeyword_map(2, "sym")                 # --symmetry
 	#keyword_dict["--max_occupy"]                  = SXkeyword_map(2, "int")                 # --max_occupy
 
