@@ -2154,13 +2154,13 @@ for the new convention in a semi-backwards compatible way. If there are any issu
 with output_only, and regenerate any sets/""")
 		for ii in bis:
 			try:
-				rpl=i.replace("_bispec","_invar")
+				rpl=ii.replace("_bispec","_invar")
 				i="sets/"+ii
 				if not os.path.exists("sets/"+rpl) :
-					print("rename",i,"sets/"+rpl)
-					print("link",rpl,ii)			# may fail in some cases
-#					os.rename(i,"sets/"+rpl)
-#					os.symlink(rpl,ii)			# may fail in some cases
+#					print("rename",i,"sets/"+rpl)
+#					print("link",rpl,i)			# may fail in some cases
+					os.rename(i,"sets/"+rpl)
+					os.symlink(rpl,i)			# may fail in some cases
 			except: pass
 		
 		# all _bispec particles
@@ -2168,10 +2168,10 @@ with output_only, and regenerate any sets/""")
 		for i in bis:
 			try:
 				if not os.path.exists("particles/"+i[1]):
-					print("rename",i[0],"particles/"+i[1])
-					print("link",i[1],i[0])			# may fail in some cases
-#					os.rename(i[0],"particles/"+i[1])
-#					os.symlink(i[1],i[0])			# may fail in some cases
+#					print("rename",i[0],"particles/"+i[1])
+#					print("link",i[1],i[0])			# may fail in some cases
+					os.rename(i[0],"particles/"+i[1])
+					os.symlink(i[1],i[0])			# may fail in some cases
 			except: pass
 
 	from eman2_gui.emapplication import EMApp
