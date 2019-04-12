@@ -1330,6 +1330,7 @@ def parse_parameters( prog_name, usage, args ):
 
 	parser.add_option( "--filament_width",       type="int",          default=-1,    help="When this is set to a non-default value helical data is assumed in which case particle images will be masked with a rectangular mask. (Default: -1)" )
 	parser.add_option( "--filament_mask_ignore", action="store_true", default=False, help="Only relevant when parameter \'--filament_width\' is set. When set to False a rectangular mask is used to (a) normalize and (b) to mask the particle images. The latter can be disabled by setting this flag to True. (Default: False)" )
+	parser.add_option( "--skip_ordering", action="store_true", default=False, help="Skip the ordered class_averages creation. (Default: False)" )
 
 	return parser.parse_args(args)
 
@@ -1857,7 +1858,9 @@ def main(args):
 
 	mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 	if( Blockdata["myid"] == 0 ):
-		if( os.path.exists(os.path.join(Blockdata["masterdir"],"class_averages.hdf")) ):
+		if options.skip_ordering:
+			pass
+		elif( os.path.exists(os.path.join(Blockdata["masterdir"],"class_averages.hdf")) ):
 			cmd = "{} {} {} {} {} {} {} {} {} {}".format( "sp_chains.py", 
 														  os.path.join(Blockdata["masterdir"],"class_averages.hdf"),
 														  os.path.join(Blockdata["masterdir"],"junk.hdf"),

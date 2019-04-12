@@ -8,7 +8,7 @@ ISAC2 - 2D Clustering: Iterative Stable Alignment and Clustering (ISAC) of a 2D 
 
 Usage in command line
 
-  sp_isac2.py stack_file output_directory --radius=particle_radius --img_per_grp=img_per_grp --CTF --filament_width=filament_width --xr=xr --thld_err=thld_err --target_radius=target_radius --target_nx=target_nx --VPP --ir=ir --rs=rs --yr=yr --ts=ts --maxit=maxit --center_method=center_method --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --iter_reali=iter_reali --stab_ali=stab_ali --minimum_grp_size --rand_seed=rand_seed --skip_prealignment --restart --filament_mask_ignore 
+  sp_isac2.py stack_file output_directory --radius=particle_radius --img_per_grp=img_per_grp --CTF --filament_width=filament_width --xr=xr --thld_err=thld_err --target_radius=target_radius --target_nx=target_nx --VPP --ir=ir --rs=rs --yr=yr --ts=ts --maxit=maxit --center_method=center_method --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --iter_reali=iter_reali --stab_ali=stab_ali --minimum_grp_size --rand_seed=rand_seed --skip_prealignment --restart --filament_mask_ignore --skip_ordering
 
 \\
 ===== Typical usage =====
@@ -63,6 +63,7 @@ Note: CTF and VPP options cannot be used together.
   ; %%--%%skip_prealignment : Do pre-alignment: Indicate if pre-alignment should be used or not. Do not use pre-alignment if images are already centered. The //2dalignment// directory will still be generated but the parameters will be zero. By default, do pre-alignment. (default False question reversed in GUI)
   ; %%--%%restart : Restart run: 0: Restart ISAC2 after the last completed main iteration (i.e. the directory must contain //finished// file); //k//: Restart ISAC2 after //k//-th main iteration, it has to be completed (i.e. the directory must contain //finished// file), and higer iterations will be removed; Default: Do not restart. (default -1)
   ; %%--%%filament_mask_ignore : Ignore filament masking (filament use only): ONLY RELEVANT IF parameter filament_width is set to a non-default value. When processing helical particle images rectangular masking is used (A) to normalize and (B) to mask the actual particle images. The latter can be disabled by setting this flag to True. (default True question reversed in GUI)
+  ; %%--%%skip_ordering: Skip ordered class averages: Skip the creation of the ordered class averages. (default False)
 
 \\
 ===== Output =====
