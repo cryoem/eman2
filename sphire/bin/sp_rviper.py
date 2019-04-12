@@ -655,26 +655,30 @@ output_directory: directory name into which the output files will be written.  I
 	required_option_list = ['radius']
 	(options, args) = parser.parse_args(sys.argv[1:])
 
-	if options.resample_ratio is not None:
-		isac_shrink_file = open(options.resample_ratio, "r")
+	try:
+		float(options.resample_ratio)
+	except ValueError:
+		isac_shrink_file = open(os.path.join(options.resample_ratio, "README_shrink_ratio.txt"), "r")
 		isac_shrink_lines = isac_shrink_file.readlines()
 		isac_shrink_ratio = float(isac_shrink_lines[5])  # 6th line: shrink ratio (= [target particle radius]/[particle radius]) used in the ISAC run
 		isac_radius = float(isac_shrink_lines[6])        # 7th line: particle radius at original pixel size used in the ISAC run
 		isac_shrink_file.close()
-		sxprint(" ")
-		sxprint("ISAC2 run directory path is specified with --resample_ratio option...")
-		sxprint("Extracted parameter values")
-		sxprint("  ISAC shrink ratio    : {}".format(isac_shrink_ratio))
-		sxprint("  ISAC particle radius : {}".format(isac_radius))
+		if(myid == main_node):
+			sxprint(" ")
+			sxprint("ISAC2 run directory path is specified with --resample_ratio option...")
+			sxprint("Extracted parameter values")
+			sxprint("  ISAC shrink ratio    : {}".format(isac_shrink_ratio))
+			sxprint("  ISAC particle radius : {}".format(isac_radius))
 		options.resample_ratio = isac_shrink_ratio
 	else:
 		options.resample_ratio = float(options.resample_ratio)
-		if resample_ratio != 1.0:
-			sxprint(" ")
-			sxprint("Resample ratio {} is specified with --resample_ratio option...".format(resample_ratio))
-		else:
-			sxprint(" ")
-			sxprint("Resample ratio is {}. The program does not resample the input volume...".format(resample_ratio))
+		if(myid == main_node):
+			if resample_ratio != 1.0:
+				sxprint(" ")
+				sxprint("Resample ratio {} is specified with --resample_ratio option...".format(resample_ratio))
+			else:
+				sxprint(" ")
+				sxprint("Resample ratio is {}. The program does not resample the input volume...".format(resample_ratio))
 
 	options.CTF = False
 	options.snr = 1.0
