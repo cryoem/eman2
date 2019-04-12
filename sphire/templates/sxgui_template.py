@@ -918,7 +918,7 @@ class SXCmdWidget(QWidget):
 						# For now, using line edit box for the other type
 						widget_text = str(sxcmd_token.widget.text())
 ###						if sxcmd_token.type not in ["int", "float", "apix", "ctfwin", "box", "radius", "mass", "displayable_list", "mic_one_list", "any_file_list", "any_image_list", "dir_list"]:
-						if sxcmd_token.type not in ["int", "float", "abs_freq", "apix", "ctfwin", "box", "radius", "mass", "displayable_list", "mic_one_list", "dir_list"]:
+						if sxcmd_token.type not in ["int", "float", "abs_freq", "apix", "ctfwin", "box", "radius", "mass", "displayable_list", "mic_one_list", "dir_list", "filament_width"]:
 							# Always enclose the string value with single quotes (')
 							widget_text = widget_text.strip("\'")  # make sure the string is not enclosed by (')
 							widget_text = widget_text.strip("\"")  # make sure the string is not enclosed by (")
@@ -2764,7 +2764,7 @@ class SXCmdTab(QWidget):
 ###							temp_btn.setMinimumWidth(func_btn_min_width)
 ###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 						else:
-							if cmd_token.type not in ["int", "float", "string", "output", "apix", "ctfwin", "box", "radius", "sym", "mass"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % cmd_token.type, "%s in %s" % (__name__, os.path.basename(__file__)))
+							if cmd_token.type not in ["int", "float", "string", "output", "apix", "ctfwin", "box", "radius", "sym", "mass", "filament_width"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % cmd_token.type, "%s in %s" % (__name__, os.path.basename(__file__)))
 						
 						# if cmd_token.type in ["output", "output_continue", "output_bdb2d_stack"]:
 						# 	# Need to add output info button in future
@@ -4512,6 +4512,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxconst = SXconst(); sxconst.key = "radius"; sxconst.label = "Protein particle radius [pixels]"; sxconst.help = ""; sxconst.register = "-1"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "sym"; sxconst.label = "Point-group symmetry"; sxconst.help = "e.g. c1, c4, d5"; sxconst.register = "c1"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "mass"; sxconst.label = "Protein molecular mass [kDa]"; sxconst.help = ""; sxconst.register = "-1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+		sxconst = SXconst(); sxconst.key = "filament_width"; sxconst.label = "Filament width [pixels]"; sxconst.help = "Width of the filament in case of filamentous processing."; sxconst.register = "-1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "config"; sxconst.label = "Imaging configurations"; sxconst.help = "a free-style string for your record. please use it to describe the set of imaging configurations used in this project (e.g. types of microscope, detector, enegy filter, abbration corrector, phase plate, and etc."; sxconst.register = "MY_MICROSCOPE"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 
 		# Store the project constant parameter set as a class data member
