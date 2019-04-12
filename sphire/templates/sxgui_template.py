@@ -132,8 +132,8 @@ class SXcmd_token(object):
 		self.is_required = False      # Required argument or options. No default values are available
 		self.is_locked = False        # The restore value will be used as the locked value.
 		self.is_reversed = False      # Reversed default value of bool. The flag will be added if the value is same as default 
-		self.default = ""             # Default value
-		self.restore = ""             # Restore value
+		self.default = ["", ""]             # Default value
+		self.restore = ["", ""]             # Restore value
 		self.type = ""                # Type of value
 		# NOTE: Toshio Moriya 2018/01/19
 		# self.is_in_io should be removed after cleaning up MoinMoin related codes.
@@ -904,7 +904,7 @@ class SXCmdWidget(QWidget):
 					#else: # Do not add this token to command line
 					
 				else:
-					if sxcmd_token.widget.text() == sxcmd_token.default:
+					if sxcmd_token.widget.text() == sxcmd_token.default[0]:
 						### if sxcmd_token.widget.text() == sxcmd_token.default and sxcmd_token.is_required == True:  # Error case
 						if sxcmd_token.is_required == True:
 							QMessageBox.warning(self, "Invalid parameter value", "Token (%s) of command (%s) is required. Please set the value for this." % (sxcmd_token.label, self.sxcmd.get_mode_name_for("human")))
@@ -1871,7 +1871,7 @@ class SXCmdTab(QWidget):
 		short_info_row_span = 1; short_info_col_span = 5
 		func_btn_row_span = 1; func_btn_col_span = 2
 		token_label_row_span = 1; token_label_col_span = 4
-		token_widget_row_span = 1; token_widget_col_span = 1
+		token_widget_row_span = 1; token_widget_col_span = 1.5
 		cmd_frame_row_span = 32; cmd_frame_col_span = 7
 
 		title_label_min_width = 180 # title_label_min_width = 150
@@ -2024,14 +2024,14 @@ class SXCmdTab(QWidget):
 					grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 
 					assert(cmd_token.is_required == False)
-					cmd_token_restore_widget[widget_index] = QPushButton("%s" % cmd_token.restore[widget_index])
+					cmd_token_restore_widget[widget_index] = QPushButton("%s" % cmd_token.restore[0][widget_index])
 					cmd_token_restore_widget[widget_index].setStyleSheet(custom_style)
 					cmd_token_restore_widget[widget_index].setToolTip('<FONT>'+default_cmd_token_restore_tooltip+'</FONT>')
 					grid_layout.addWidget(cmd_token_restore_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
 					# cmd_token_widget[widget_index] = SXLineEdit(self)
 					cmd_token_widget[widget_index] = SXLineEdit(cmd_token.key_base)
-					cmd_token_widget[widget_index].setText(cmd_token.restore[widget_index])
+					cmd_token_widget[widget_index].setText(cmd_token.restore[widget_index][0])
 					cmd_token_widget[widget_index].setToolTip('<FONT>'+cmd_token.help[widget_index]+'</FONT>')
 					grid_layout.addWidget(cmd_token_widget[widget_index], grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 
@@ -2045,13 +2045,13 @@ class SXCmdTab(QWidget):
 					grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 
 					assert(cmd_token.is_required == False)
-					cmd_token_restore_widget[widget_index] = QPushButton("%s" % cmd_token.restore[widget_index])
+					cmd_token_restore_widget[widget_index] = QPushButton("%s" % cmd_token.restore[widget_index][0])
 					cmd_token_restore_widget[widget_index].setStyleSheet(custom_style)
 					cmd_token_restore_widget[widget_index].setToolTip('<FONT>'+default_cmd_token_restore_tooltip+'</FONT>')
 					grid_layout.addWidget(cmd_token_restore_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
 					cmd_token_widget[widget_index] = SXLineEdit(cmd_token.key_base)
-					cmd_token_widget[widget_index].setText(cmd_token.restore[widget_index]) # Because default user functions is internal
+					cmd_token_widget[widget_index].setText(cmd_token.restore[widget_index][0]) # Because default user functions is internal
 					cmd_token_widget[widget_index].setToolTip('<FONT>'+cmd_token.help[widget_index]+'</FONT>')
 					grid_layout.addWidget(cmd_token_widget[widget_index], grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 
@@ -2085,72 +2085,157 @@ class SXCmdTab(QWidget):
 					cmd_token_subwidget_right = None
 					cmd_token_calculator_dialog = None
 
+					if cmd_token.restore[0] != cmd_token.restore[1]:
+						restores = cmd_token.restore
+					else:
+						restores = [cmd_token.restore[0]]
 					if cmd_token.type in ("bool", "bool_ignore"):
-						btn_name = "NO"
-						is_btn_enable = True
-						custom_style = "QPushButton {color:gray; }"
-						if cmd_token.restore:
-							btn_name = "YES"
-						if cmd_token.type in list(parent.sxconst_set.dict.keys()):
-							custom_style = "QPushButton {color:green; }"
-							cmd_token_restore_tooltip = const_cmd_token_restore_tooltip
-						elif cmd_token.is_required:
-							if cmd_token.is_locked:
-								btn_name = "locked"
-								custom_style = "QPushButton {color:blue; }"
-								is_btn_enable = False
-								cmd_token_restore_tooltip = locked_cmd_token_restore_tooltip
-							else:
-								btn_name = "required"
-								custom_style = "QPushButton {color:red; }"
-								is_btn_enable = False
-								cmd_token_restore_tooltip = required_cmd_token_restore_tooltip
-							
-						cmd_token_restore_widget = QPushButton("%s" % btn_name)
-						cmd_token_restore_widget.setStyleSheet(custom_style)
-						cmd_token_restore_widget.setEnabled(is_btn_enable)
-						grid_layout.addWidget(cmd_token_restore_widget, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
+						if len(restores) == 1:
+							btn_name = "NO"
+							is_btn_enable = True
+							custom_style = "QPushButton {color:gray; }"
+							if restores[0]:
+								btn_name = "YES"
+							if cmd_token.type in list(parent.sxconst_set.dict.keys()):
+								custom_style = "QPushButton {color:green; }"
+								cmd_token_restore_tooltip = const_cmd_token_restore_tooltip
+							elif cmd_token.is_required:
+								if cmd_token.is_locked:
+									btn_name = "locked"
+									custom_style = "QPushButton {color:blue; }"
+									is_btn_enable = False
+									cmd_token_restore_tooltip = locked_cmd_token_restore_tooltip
+								else:
+									btn_name = "required"
+									custom_style = "QPushButton {color:red; }"
+									is_btn_enable = False
+									cmd_token_restore_tooltip = required_cmd_token_restore_tooltip
+								
+							cmd_token_restore_widget = QPushButton("%s" % btn_name)
+							cmd_token_restore_widget.setStyleSheet(custom_style)
+							cmd_token_restore_widget.setEnabled(is_btn_enable)
+							grid_layout.addWidget(
+								cmd_token_restore_widget,
+								grid_row,
+								grid_col_origin + token_label_col_span,
+								token_widget_row_span,
+								token_widget_col_span
+								)
+							cmd_token_restore_widget.clicked.connect(partial(self.handle_restore_widget_event, cmd_token))
+						else:
+							custom_style = "QComboBox {color:gray; }"
+							is_btn_enable = True
+							if cmd_token.type in list(parent.sxconst_set.dict.keys()):
+								custom_style = "QComboBox {color:green; }"
+								cmd_token_restore_tooltip = const_cmd_token_restore_tooltip
+							elif cmd_token.is_required:
+								if cmd_token.is_locked:
+									btn_name = "locked"
+									custom_style = "QComboBox {color:blue; }"
+									is_btn_enable = False
+									cmd_token_restore_tooltip = locked_cmd_token_restore_tooltip
+								else:
+									btn_name = "required"
+									custom_style = "QComboBox {color:red; }"
+									is_btn_enable = False
+									cmd_token_restore_tooltip = required_cmd_token_restore_tooltip
+							cmd_token_restore_widget = QComboBox()
+							cmd_token_restore_widget.setEditable(True)
+							cmd_token_restore_widget.lineEdit().setReadOnly(True)
+							cmd_token_restore_widget.lineEdit().setAlignment(QtCore.Qt.AlignCenter)
+
+							cmd_token_restore_widget.addItems(['SPA: {0}'.format('YES' if restores[0] else 'NO'), 'HELICAL: {0}'.format('YES' if restores[1] else 'NO')])
+							cmd_token_restore_widget.setStyleSheet(custom_style)
+							cmd_token_restore_widget.setEnabled(is_btn_enable)
+							grid_layout.addWidget(
+								cmd_token_restore_widget,
+								grid_row,
+								grid_col_origin + token_label_col_span,
+								token_widget_row_span,
+								token_widget_col_span
+								)
+							cmd_token_restore_widget.activated.connect(partial(self.handle_restore_widget_event, cmd_token))
 
 						# construct new widget(s) for this command token
 						cmd_token_widget = SXCheckBox(cmd_token.key_base)
-						if cmd_token.restore == True:
+						if restores[0] == True:
 							cmd_token_widget.setCheckState(Qt.Checked)
 						else:
 							cmd_token_widget.setCheckState(Qt.Unchecked)
 						cmd_token_widget.setEnabled(not cmd_token.is_locked)
 						grid_layout.addWidget(cmd_token_widget, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 
-						cmd_token_restore_widget.clicked.connect(partial(self.handle_restore_widget_event, cmd_token))
 
 					else:
-						btn_name = "%s" % cmd_token.restore
-						custom_style = "QPushButton {color:gray; }"
-						is_btn_enable = True
-						if cmd_token.type in list(parent.sxconst_set.dict.keys()):
-							custom_style = "QPushButton {color:green; }"
-							cmd_token_restore_tooltip = const_cmd_token_restore_tooltip
-						elif cmd_token.is_required:
-							if cmd_token.is_locked:
-								btn_name = "locked"
-								custom_style = "QPushButton {color:blue; }"
-								is_btn_enable = False
-								cmd_token_restore_tooltip = locked_cmd_token_restore_tooltip
-							else:
-								btn_name = "required"
-								custom_style = "QPushButton {color:red; }"
-								is_btn_enable = False
-								cmd_token_restore_tooltip = required_cmd_token_restore_tooltip
-						cmd_token_restore_widget = QPushButton("%s" % btn_name)
-						cmd_token_restore_widget.setStyleSheet(custom_style)
-						cmd_token_restore_widget.setEnabled(is_btn_enable)
-						grid_layout.addWidget(cmd_token_restore_widget, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
+
+						if len(restores) == 1:
+							btn_name = "%s" % restores[0]
+							custom_style = "QPushButton {color:gray; }"
+							is_btn_enable = True
+							if cmd_token.type in list(parent.sxconst_set.dict.keys()):
+								custom_style = "QPushButton {color:green; }"
+								cmd_token_restore_tooltip = const_cmd_token_restore_tooltip
+							elif cmd_token.is_required:
+								if cmd_token.is_locked:
+									btn_name = "locked"
+									custom_style = "QPushButton {color:blue; }"
+									is_btn_enable = False
+									cmd_token_restore_tooltip = locked_cmd_token_restore_tooltip
+								else:
+									btn_name = "required"
+									custom_style = "QPushButton {color:red; }"
+									is_btn_enable = False
+									cmd_token_restore_tooltip = required_cmd_token_restore_tooltip
+							cmd_token_restore_widget = QPushButton("%s" % btn_name)
+							cmd_token_restore_widget.setStyleSheet(custom_style)
+							cmd_token_restore_widget.setEnabled(is_btn_enable)
+							grid_layout.addWidget(
+								cmd_token_restore_widget,
+								grid_row,
+								grid_col_origin + token_label_col_span,
+								token_widget_row_span,
+								token_widget_col_span
+								)
+							cmd_token_restore_widget.clicked.connect(partial(self.handle_restore_widget_event, cmd_token))
+						else:
+							custom_style = "QComboBox {color:gray; }"
+							is_btn_enable = True
+							if cmd_token.type in list(parent.sxconst_set.dict.keys()):
+								custom_style = "QComboBox {color:green; }"
+								cmd_token_restore_tooltip = const_cmd_token_restore_tooltip
+							elif cmd_token.is_required:
+								if cmd_token.is_locked:
+									btn_name = "locked"
+									custom_style = "QComboBox {color:blue; }"
+									is_btn_enable = False
+									cmd_token_restore_tooltip = locked_cmd_token_restore_tooltip
+								else:
+									btn_name = "required"
+									custom_style = "QComboBox {color:red; }"
+									is_btn_enable = False
+									cmd_token_restore_tooltip = required_cmd_token_restore_tooltip
+							cmd_token_restore_widget = QComboBox()
+							cmd_token_restore_widget.setEditable(True)
+							cmd_token_restore_widget.lineEdit().setReadOnly(True)
+							cmd_token_restore_widget.lineEdit().setAlignment(QtCore.Qt.AlignCenter)
+
+							cmd_token_restore_widget.addItems(['SPA: ' + restores[0], 'HELICAL: ' + restores[1]])
+							cmd_token_restore_widget.setStyleSheet(custom_style)
+							cmd_token_restore_widget.setEnabled(is_btn_enable)
+							grid_layout.addWidget(
+								cmd_token_restore_widget,
+								grid_row,
+								grid_col_origin + token_label_col_span,
+								token_widget_row_span,
+								token_widget_col_span
+								)
+							cmd_token_restore_widget.activated.connect(partial(self.handle_restore_widget_event, cmd_token))
 
 						cmd_token_widget = SXLineEdit(cmd_token.key_base)
-						cmd_token_widget.setText(cmd_token.restore)
+						cmd_token_widget.setText(str(restores[0]))
 						cmd_token_widget.setEnabled(not cmd_token.is_locked)
 						grid_layout.addWidget(cmd_token_widget, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 
-						cmd_token_restore_widget.clicked.connect(partial(self.handle_restore_widget_event, cmd_token))
 
 						if cmd_token.type == "displayable_list":
 							file_format = cmd_token.type
@@ -3028,19 +3113,41 @@ class SXCmdTab(QWidget):
 		self.set_text_entry_widget_enable_state(self.qsub_script_edit, is_enabled)
 		self.qsub_script_open_btn.setEnabled(is_enabled)
 
-	def handle_restore_widget_event(self, sxcmd_token, widget_index=0):
+	def handle_restore_widget_event(self, sxcmd_token, widget_index=0, restore_idx=0):
 		assert(not sxcmd_token.is_locked)
 		if sxcmd_token.type == "user_func":
 			assert(len(sxcmd_token.widget) == 2 and len(sxcmd_token.restore) == 2 and widget_index < 2)
-			sxcmd_token.widget[widget_index].setText("%s" % sxcmd_token.restore[widget_index])
+			sxcmd_token.widget[widget_index].setText("%s" % sxcmd_token.restore[widget_index][restore_idx])
 		else:
 			if sxcmd_token.type in ("bool", "bool_ignore"):
-				if sxcmd_token.restore:
+				try:
+					text = str(self.sender().text())
+				except AttributeError:
+					if restore_idx == 0:
+						text = str(self.sender().currentText())
+					else:
+						text = str(self.sender().itemText(restore_idx))
+					text = text.split(':')[1].strip()
+					self.sender().blockSignals(True)
+					self.sender().setCurrentIndex(0)
+					self.sender().blockSignals(False)
+				if text == 'YES':
 					sxcmd_token.widget.setChecked(Qt.Checked)
 				else: # sxcmd_token.restore == False
 					sxcmd_token.widget.setChecked(Qt.Unchecked)
 			else:
-				sxcmd_token.widget.setText("%s" % sxcmd_token.restore)
+				try:
+					text = str(self.sender().text())
+				except AttributeError:
+					if restore_idx == 0:
+						text = str(self.sender().currentText())
+					else:
+						text = str(self.sender().itemText(restore_idx))
+					text = text.split(':')[1].strip()
+					self.sender().blockSignals(True)
+					self.sender().setCurrentIndex(0)
+					self.sender().blockSignals(False)
+				sxcmd_token.widget.setText(text)
 				if sxcmd_token.type == "abs_freq":
 					sxcmd_token.calculator_dialog.reflect_external_local_update_abs_freq()
 					for sxcmd_token_other_dialog in sxcmd_token.other_dialog_list:
@@ -4541,9 +4648,11 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 					n_widgets = 2 # function type has two line edit boxes
 					sxcmd_token.label = [sxcmd_token.label, "Python script for user function"]
 					sxcmd_token.help = [sxcmd_token.help, "Please leave it none/blank if file is not external to SPHIRE"]
-					sxcmd_token.default = [sxcmd_token.default, "none"]
+					sxcmd_token.default = [sxcmd_token.default, ["none", "none"]]
 					if not sxcmd_token.is_locked:
 						sxcmd_token.restore = sxcmd_token.default
+					else:
+						sxcmd_token.restore = [["", ""], ["", ""]]
 				# else: Do nothing for the other types
 
 				# Register this to command token dictionary

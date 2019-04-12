@@ -684,31 +684,38 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 						else:
 							# This is not required command token and should have default value
 							# token.is_required = False
-							token.default = default_value
+							token.default = default_value.split('|||')
+							if len(token.default) == 1:
+								token.default = [default_value, default_value]
 
 							if not token.type:
 								# Type is still empty, meaning no special type is assigned
 								# Find out the data type from default value
 								try:
-									int(token.default)
+									int(token.default[0])
 									token.type = "int"
 								except:
 									try:
-										float(token.default)
+										float(token.default[0])
 										token.type = "float"
 									except:
-										if token.default == "True":
-											token.default = True # convert the default value to boolean
-											token.type = "bool"
-										elif token.default == "False":
-											token.default = False # convert the default value to boolean
-											token.type = "bool"
-										else:
-											token.type = "string"
+										for idx, item in enumerate(token.default):
+											if item == "True":
+												token.default[idx] = True # convert the default value to boolean
+												token.type = "bool"
+											elif item == "False":
+												token.default[idx] = False # convert the default value to boolean
+												token.type = "bool"
+											else:
+												token.type = "string"
 							# else: keep the special type
 							assert (not token.is_required)
 							assert (not token.is_locked)
 							assert (not token.is_reversed)
+
+						# Use a 2D default list
+						if not isinstance(token.default, list):
+							token.default = [token.default, token.default]
 						### Initialise restore value with default value
 						### if not token.is_locked:
 						### 	token.restore = token.default
@@ -1046,33 +1053,40 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 						else:
 							# This is not required command token and should have default value
 							# token.is_required = False
-							token.default = default_value
+							token.default = default_value.split('|||')
+							if len(token.default) == 1:
+								token.default = [default_value, default_value]
 
 							if not token.type:
 								# Type is still empty, meaning no special type is assigned
 								# Find out the data type from default value
 								try:
-									int(token.default)
+									int(token.default[0])
 									token.type = "int"
 								except:
 									try:
-										float(token.default)
+										float(token.default[0])
 										token.type = "float"
 									except:
-										if token.default == "True":
-											token.default = True # convert the default value to boolean
-											token.type = "bool"
-										elif token.default == "False":
-											token.default = False # convert the default value to boolean
-											token.type = "bool"
-										else:
-											token.type = "string"
+										for idx, item in enumerate(token.default):
+											if item == "True":
+												token.default[idx] = True # convert the default value to boolean
+												token.type = "bool"
+											elif item == "False":
+												token.default[idx] = False # convert the default value to boolean
+												token.type = "bool"
+											else:
+												token.type = "string"
 							# else: keep the special type
 							assert (not token.is_required)
 							assert (not token.is_locked)
 							assert (not token.is_reversed)
+						if not isinstance(token.default, list):
+							token.default = [token.default, token.default]
 						if not token.is_locked:
 							token.restore = token.default
+						else:
+							token.restore = ["", ""]
 						target_operator = ":"
 						item_tail = line_buffer.find(target_operator)
 						if item_tail != -1:
@@ -1294,8 +1308,12 @@ def apply_sxsubcmd_config(sxsubcmd_config, sxcmd):
 		if token_edit.type is not None:
 			token.type = token_edit.type
 		
+		if not isinstance(token.default, list):
+			token.default = [token.default, token.default]
 		if not token.is_locked:
 			token.restore = token.default
+		else:
+			token.restore = ["", ""]
 		
 		# Make sure all fields of token are not None
 		if token.key_base is None: sp_global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.key_base should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
@@ -1369,14 +1387,14 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 		else:
 			if token.is_required:
 				if token.is_locked:
-					output_file.write("; token.default = \"\"")
-					output_file.write("; token.restore = \"%s\"" % token.restore)
+					output_file.write("; token.default = %s" % token.default)
+					output_file.write("; token.restore = %s" % token.restore)
 				else:
-					output_file.write("; token.default = \"\"")
-					output_file.write("; token.restore = \"\"")
+					output_file.write("; token.default = [\"\", \"\"]")
+					output_file.write("; token.restore = [\"\", \"\"]")
 			else:
-				output_file.write("; token.default = \"%s\"" % token.default)
-				output_file.write("; token.restore = \"%s\"" % token.restore)
+				output_file.write("; token.default = %s" % token.default)
+				output_file.write("; token.restore = %s" % token.restore)
 		output_file.write("; token.type = \"%s\"" % token.type)
 		# output_file.write("; token.is_in_io = %s" % token.is_in_io)
 
