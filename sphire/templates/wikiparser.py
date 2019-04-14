@@ -1113,6 +1113,17 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 									sxcmd.dependency_dict[group_key].append([token.key_base, state, inverse])
 								except KeyError:
 									sxcmd.dependency_dict[group_key] = [[token.key_base, state, inverse]]
+						target_operator = ":"
+						item_tail = line_buffer.find(target_operator)
+						if item_tail != -1:
+							line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line
+							default_value, tab_filament = line_buffer.split(';')
+							default_value = default_value.split('|||')
+							if token.type == 'bool':
+								default_value = [True if entry == 'True' else False for entry in default_value]
+							if not token.is_locked:
+								token.restore[1] = default_value
+							token.filament_tab = tab_filament
 						# Initialise restore value with default value
 						# Ignore the rest of line ...
 						# Register this command token to the list (ordered) and dictionary (unordered)
@@ -1374,6 +1385,7 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 		output_file.write("; token.is_required = %s" % token.is_required)
 		output_file.write("; token.is_locked = %s" % token.is_locked)
 		output_file.write("; token.is_reversed = %s" % token.is_reversed)
+		output_file.write("; token.filament_tab = \"%s\"" % token.filament_tab.lower())
 		output_file.write("; token.dependency_group = %s" % str([[str(entry) for entry in group_dep] for group_dep in token.dependency_group]))
 		if not isinstance(token.restore[0], list):
 			token.restore[0] = [token.restore[0]]

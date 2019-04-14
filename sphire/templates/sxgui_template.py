@@ -135,6 +135,7 @@ class SXcmd_token(object):
 		self.default = ""             # Default value
 		self.restore = [[""], [""]]             # Restore value
 		self.type = ""                # Type of value
+		self.filament_tab = ""                # Type of value
 		# NOTE: Toshio Moriya 2018/01/19
 		# self.is_in_io should be removed after cleaning up MoinMoin related codes.
 		self.is_in_io = False         # <Used only in wikiparser.py> To check consistency between "usage in command line" and list in "== Input ==" and "== Output ==" sections
@@ -2008,8 +2009,11 @@ class SXCmdTab(QWidget):
 			elif cmd_token.type == "abs_freq":
 				cmd_token_abs_freq_list.append(cmd_token)
 			# else: # Do nothing
-			
-			if cmd_token.group == tab_group:
+			curr_group = cmd_token.group
+			if cmd_token.filament_tab and helical:
+				curr_group = cmd_token.filament_tab
+
+			if curr_group == tab_group:
 				# First, handle very special cases
 				if cmd_token.type == "user_func":
 					n_widgets = 2 # function type has two line edit boxes
