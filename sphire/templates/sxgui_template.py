@@ -2144,7 +2144,7 @@ class SXCmdTab(QWidget):
 							cmd_token_restore_widget.lineEdit().setReadOnly(True)
 							cmd_token_restore_widget.lineEdit().setAlignment(QtCore.Qt.AlignCenter)
 
-							cmd_token_restore_widget.addItems(['SPA: {0}'.format('YES' if restores[0] else 'NO'), 'HELICAL: {0}'.format('YES' if restores[1] else 'NO')])
+							cmd_token_restore_widget.addItems(restores)
 							cmd_token_restore_widget.setStyleSheet(custom_style)
 							cmd_token_restore_widget.setEnabled(is_btn_enable)
 							grid_layout.addWidget(
@@ -2219,7 +2219,7 @@ class SXCmdTab(QWidget):
 							cmd_token_restore_widget.lineEdit().setReadOnly(True)
 							cmd_token_restore_widget.lineEdit().setAlignment(QtCore.Qt.AlignCenter)
 
-							cmd_token_restore_widget.addItems(['SPA: ' + restores[0], 'HELICAL: ' + restores[1]])
+							cmd_token_restore_widget.addItems(restores)
 							cmd_token_restore_widget.setStyleSheet(custom_style)
 							cmd_token_restore_widget.setEnabled(is_btn_enable)
 							grid_layout.addWidget(
@@ -3127,7 +3127,7 @@ class SXCmdTab(QWidget):
 						text = str(self.sender().currentText())
 					else:
 						text = str(self.sender().itemText(restore_idx))
-					text = text.split(':')[1].strip()
+					text = text.strip()
 					self.sender().blockSignals(True)
 					self.sender().setCurrentIndex(0)
 					self.sender().blockSignals(False)
@@ -3143,7 +3143,7 @@ class SXCmdTab(QWidget):
 						text = str(self.sender().currentText())
 					else:
 						text = str(self.sender().itemText(restore_idx))
-					text = text.split(':')[1].strip()
+					text = text.strip()
 					self.sender().blockSignals(True)
 					self.sender().setCurrentIndex(0)
 					self.sender().blockSignals(False)
