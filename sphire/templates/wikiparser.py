@@ -1117,13 +1117,14 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 						item_tail = line_buffer.find(target_operator)
 						if item_tail != -1:
 							line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line
-							default_value, tab_filament = line_buffer.split(';')
-							default_value = default_value.split('|||')
-							if token.type == 'bool':
-								default_value = [True if entry == 'True' else False for entry in default_value]
-							if not token.is_locked:
-								token.restore[1] = default_value
-							token.filament_tab = tab_filament
+							if line_buffer.strip():
+								default_value, tab_filament = line_buffer.split(';')
+								default_value = default_value.split('|||')
+								if token.type == 'bool':
+									default_value = [True if entry == 'True' else False for entry in default_value]
+								if not token.is_locked:
+									token.restore[1] = default_value
+								token.filament_tab = tab_filament
 						# Initialise restore value with default value
 						# Ignore the rest of line ...
 						# Register this command token to the list (ordered) and dictionary (unordered)
