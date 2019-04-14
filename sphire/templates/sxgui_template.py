@@ -488,6 +488,7 @@ class SXPictogramButton(QPushButton):
 		# print "MRK_DEBUG: os.path.exists(logo_file_path) %s" % os.path.exists(pictogram_file_path)
 
 		# Width of pictogram image
+		self.parent = parent
 		pictogram_width = SXLookFeelConst.sxmenu_item_btn_width
 
 		# Style of widget
@@ -520,6 +521,7 @@ class SXMenuItemBtnAreaWidget(QWidget):
 		sxcmd_category_btn_subarea_widget = self.create_sxmenu_item_btn_subarea_widget()
 		misc_func_btn_subarea_widget = self.create_sxmenu_item_btn_subarea_widget()
 		self.add_sxmenu_item_btn_widget(sxconst_set, sxcmd_category_btn_subarea_widget)
+		self.sxconst_set = sxconst_set
 		for sxcmd_category in sxcmd_category_list:
 			if sxcmd_category.name != "sxc_utilities" and sxcmd_category.name != "sxc_movie":
 				self.add_sxmenu_item_btn_widget(sxcmd_category, sxcmd_category_btn_subarea_widget)
@@ -3347,11 +3349,12 @@ class SXCmdCategoryWidget(QWidget):
 # ========================================================================================
 # Layout of the project constants parameters widget; owned by the main window
 class SXConstSetWidget(QWidget):
-	def __init__(self, sxconst_set, sxcmd_category_list, parent=None):
+	def __init__(self, sxconst_set, sxcmd_category_list, helical=False, parent=None):
 		super(SXConstSetWidget, self).__init__(parent)
 
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
+		self.parent = parent
 		self.sxconst_set = sxconst_set
 		self.sxcmd_category_list = sxcmd_category_list
 
@@ -3495,6 +3498,18 @@ class SXConstSetWidget(QWidget):
 
 		btn_grid_row += 1
 
+		# Add a register button
+		self.execute_btn = QPushButton("Blaa")
+		# make 3D textured push button look
+		custom_style = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
+		self.execute_btn.setStyleSheet(custom_style)
+		self.execute_btn.setMinimumWidth(func_btn_min_width * register_btn_col_span)
+		self.execute_btn.setToolTip('<FONT>'+"Register project constant parameter settings to automatically set values to command arguments and options"+'</FONT>')
+		self.execute_btn.clicked.connect(self.switch_gui)
+		btn_layout.addWidget(self.execute_btn, btn_grid_row, btn_col_origin, register_btn_row_span, register_btn_col_span)
+
+		btn_grid_row += 1
+
 		# Add button grid layout to global layout
 		# global_layout.addLayout(btn_layout, global_grid_row, global_col_origin) # Maybe later :)
 
@@ -3510,6 +3525,9 @@ class SXConstSetWidget(QWidget):
 		constant_width_layout = QHBoxLayout(self)
 		constant_width_layout.addLayout(constant_height_layout)
 		constant_width_layout.addStretch(1)
+
+	def switch_gui(self):
+		self.parent.helical = not self.parent.helical
 
 	def handle_regster_widget_event(self, sxconst):
 		sxconst.widget.setText(sxconst.register)
@@ -4509,108 +4527,122 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		# class variables
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		self.helical = False
-		self.sxinfo = None
-		self.sxconst_set = None
-		self.sxcmd_category_list = None
+		self.sxinfo = []
+		self.sxconst_set = []
+		self.sxcmd_category_list = []
 
 		self.cur_sxmenu_item = None
-		self.sxmenu_item_widget_stacked_layout = None
+		self.sxmenu_item_widget_stacked_layout = []
 
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
 		# --------------------------------------------------------------------------------
 		# Construct menu items
 		# --------------------------------------------------------------------------------
-		self.construct_sxinfo()              # Construct application information
-		self.construct_sxconst_set(self.helical)         # Construct project constant set for project settings
-		self.construct_sxcmd_category_list() # Construct list of categorised sxscript objects (extracted from associated wiki documents)
+		self.sxinfo.append(self.construct_sxinfo())              # Construct application information
+		self.sxinfo.append(self.construct_sxinfo())              # Construct application information
+		self.sxconst_set.append(self.construct_sxconst_set(0))         # Construct project constant set for project settings
+		self.sxconst_set.append(self.construct_sxconst_set(1))         # Construct project constant set for project settings
+		self.sxcmd_category_list.append(self.construct_sxcmd_category_list()) # Construct list of categorised sxscript objects (extracted from associated wiki documents)
+		self.sxcmd_category_list.append(self.construct_sxcmd_category_list()) # Construct list of categorised sxscript objects (extracted from associated wiki documents)
 
 		# --------------------------------------------------------------------------------
 		# Setup Window Layout
 		# --------------------------------------------------------------------------------
 		background_image_file_path = '{0}sxgui_background.png'.format(get_image_directory())
 
-		# Central widget
-		central_widget = QWidget(self)
-		central_widget.setObjectName('central')
-		central_widget.setStyleSheet(
+		central_widget_global = QWidget(self)
+		central_widget_global.setObjectName('central')
+		central_widget_global.setStyleSheet(
 			'QWidget#central {{background-image: url("{0}")}}'.format(background_image_file_path)
 			)
-		self.setCentralWidget(central_widget)
+		self.setCentralWidget(central_widget_global)
+		sxmenu_item_widget_stacked_layout_global = QStackedLayout()
+		central_widget_global.setLayout(sxmenu_item_widget_stacked_layout_global)
 
-		# Layout for central widget
-		central_layout = QHBoxLayout(central_widget)
-		central_widget.setLayout(central_layout)
+		for idx in range(2):
+			# Central widget
+			central_widget = QWidget(self)
+			central_widget.setObjectName('central')
+			central_widget.setStyleSheet(
+				'QWidget#central {{background-image: url("{0}")}}'.format(background_image_file_path)
+				)
 
-		# --------------------------------------------------------------------------------
-		# Construct and add a widget for menu item button area (containing all menu item buttons)
-		# --------------------------------------------------------------------------------
-		sxmenu_item_btn_area_widget = SXMenuItemBtnAreaWidget(self.sxconst_set, self.sxcmd_category_list, self.sxinfo, central_widget)
-		central_layout.addWidget(sxmenu_item_btn_area_widget)
+			# Layout for central widget
+			central_layout = QHBoxLayout(central_widget)
+			central_widget.setLayout(central_layout)
 
-		# --------------------------------------------------------------------------------
-		# Construct and add widgets for menu item widget area (containing all menu item widgets)
-		# --------------------------------------------------------------------------------
-		# Stacked layout for sx menu item widgets area
-		self.sxmenu_item_widget_stacked_layout = QStackedLayout()
-		central_layout.addLayout(self.sxmenu_item_widget_stacked_layout, stretch = 1)
+			# --------------------------------------------------------------------------------
+			# Construct and add a widget for menu item button area (containing all menu item buttons)
+			# --------------------------------------------------------------------------------
+			sxmenu_item_btn_area_widget = SXMenuItemBtnAreaWidget(self.sxconst_set[idx], self.sxcmd_category_list[idx], self.sxinfo[idx], central_widget)
+			central_layout.addWidget(sxmenu_item_btn_area_widget)
 
-		# Construct and add a widget for project constants settings
-		self.sxconst_set.widget = SXConstSetWidget(self.sxconst_set, self.sxcmd_category_list)
-		self.sxmenu_item_widget_stacked_layout.addWidget(self.sxconst_set.widget)
+			# --------------------------------------------------------------------------------
+			# Construct and add widgets for menu item widget area (containing all menu item widgets)
+			# --------------------------------------------------------------------------------
+			# Stacked layout for sx menu item widgets area
+			self.sxmenu_item_widget_stacked_layout.append(QStackedLayout())
+			central_layout.addLayout(self.sxmenu_item_widget_stacked_layout[idx], stretch = 1)
 
-		# Construct and add widgets for sx command categories
-		for sxcmd_category in self.sxcmd_category_list:
-			# Create SXCmdCategoryWidget for this command category
-			sxcmd_category.widget = SXCmdCategoryWidget(self.sxconst_set, sxcmd_category)
-			self.sxmenu_item_widget_stacked_layout.addWidget(sxcmd_category.widget)
+			# Construct and add a widget for project constants settings
+			self.sxconst_set[idx].widget = SXConstSetWidget(self.sxconst_set[idx], self.sxcmd_category_list[idx], helical=idx, parent=self)
+			self.sxmenu_item_widget_stacked_layout[idx].addWidget(self.sxconst_set[idx].widget)
 
-		# Construct and add a widget for GUI application information
-		self.sxinfo.widget = SXInfoWidget()
-		self.sxmenu_item_widget_stacked_layout.addWidget(self.sxinfo.widget)
+			# Construct and add widgets for sx command categories
+			for sxcmd_category in self.sxcmd_category_list[idx]:
+				# Create SXCmdCategoryWidget for this command category
+				sxcmd_category.widget = SXCmdCategoryWidget(self.sxconst_set[idx], sxcmd_category)
+				self.sxmenu_item_widget_stacked_layout[idx].addWidget(sxcmd_category.widget)
 
-		# --------------------------------------------------------------------------------
-		# Set up event handler of all menu item buttons
-		# --------------------------------------------------------------------------------
-		for sxcmd_category in self.sxcmd_category_list:
-			sxcmd_category.btn.clicked.connect(partial(self.handle_sxmenu_item_btn_event, sxcmd_category))
-		self.sxconst_set.btn.clicked.connect(partial(self.handle_sxmenu_item_btn_event, self.sxconst_set))
-		self.sxinfo.btn.clicked.connect(partial(self.handle_sxmenu_item_btn_event, self.sxinfo))
+			# Construct and add a widget for GUI application information
+			self.sxinfo[idx].widget = SXInfoWidget()
+			self.sxmenu_item_widget_stacked_layout[idx].addWidget(self.sxinfo[idx].widget)
 
-		# --------------------------------------------------------------------------------
-		# Register project constant parameter settings upon initialization
-		# --------------------------------------------------------------------------------
-		self.sxconst_set.widget.register_const_set()
+			# --------------------------------------------------------------------------------
+			# Set up event handler of all menu item buttons
+			# --------------------------------------------------------------------------------
+			#for sxcmd_category in self.sxcmd_category_list[idx]:
+			#	sxcmd_category.btn.clicked.connect(partial(self.handle_sxmenu_item_btn_event, sxcmd_category))
+			self.sxconst_set[idx].btn.clicked.connect(partial(self.handle_sxmenu_item_btn_event, self.sxconst_set[idx]))
+			#self.sxinfo[idx].btn.clicked.connect(partial(self.handle_sxmenu_item_btn_event, self.sxinfo[idx]))
 
-		# --------------------------------------------------------------------------------
-		# Load the previously saved parameter setting of all sx commands
-		# Override the registration of project constant parameter settings with the previously-saved one
-		# --------------------------------------------------------------------------------
-		for sxcmd_category in self.sxcmd_category_list:
-			sxcmd_category.widget.load_previous_session()
+			# --------------------------------------------------------------------------------
+			# Register project constant parameter settings upon initialization
+			# --------------------------------------------------------------------------------
+			self.sxconst_set[idx].widget.register_const_set()
 
-		# --------------------------------------------------------------------------------
-		# Start widget
-		# --------------------------------------------------------------------------------
-		start_widget = QtGui.QWidget()
-		logo_container = QtGui.QWidget()
-		layout_start_widget = QtGui.QHBoxLayout()
-		layout_logo_container = QtGui.QVBoxLayout()
-		logo_container.setStyleSheet('border-image: url("{0}sxgui_pictograph_info.png")'.format(get_image_directory()))
-		logo_container.setFixedSize(100, 100)
-		layout_start_widget.setContentsMargins(0, 0, 0, 20)
+			# --------------------------------------------------------------------------------
+			# Load the previously saved parameter setting of all sx commands
+			# Override the registration of project constant parameter settings with the previously-saved one
+			# --------------------------------------------------------------------------------
+			for sxcmd_category in self.sxcmd_category_list[idx]:
+				sxcmd_category.widget.load_previous_session()
 
-		layout_logo_container.addStretch(1)
-		layout_logo_container.addWidget(logo_container)
-		layout_start_widget.addLayout(layout_logo_container)
-		layout_start_widget.addStretch(1)
-		start_widget.setLayout(layout_start_widget)
-		self.sxmenu_item_widget_stacked_layout.addWidget(start_widget)
+			# --------------------------------------------------------------------------------
+			# Start widget
+			# --------------------------------------------------------------------------------
+			start_widget = QtGui.QWidget()
+			logo_container = QtGui.QWidget()
+			layout_start_widget = QtGui.QHBoxLayout()
+			layout_logo_container = QtGui.QVBoxLayout()
+			logo_container.setStyleSheet('border-image: url("{0}sxgui_pictograph_info.png")'.format(get_image_directory()))
+			logo_container.setFixedSize(100, 100)
+			layout_start_widget.setContentsMargins(0, 0, 0, 20)
 
-		# --------------------------------------------------------------------------------
-		# Display application information upon startup
-		# --------------------------------------------------------------------------------
-		self.sxmenu_item_widget_stacked_layout.setCurrentWidget(start_widget)
+			layout_logo_container.addStretch(1)
+			layout_logo_container.addWidget(logo_container)
+			layout_start_widget.addLayout(layout_logo_container)
+			layout_start_widget.addStretch(1)
+			start_widget.setLayout(layout_start_widget)
+			self.sxmenu_item_widget_stacked_layout[idx].addWidget(start_widget)
+
+			# --------------------------------------------------------------------------------
+			# Display application information upon startup
+			# --------------------------------------------------------------------------------
+			self.sxmenu_item_widget_stacked_layout[idx].setCurrentWidget(start_widget)
+			sxmenu_item_widget_stacked_layout_global.addWidget(central_widget)
+		sxmenu_item_widget_stacked_layout_global.setCurrentIndex(0)
 
 		# --------------------------------------------------------------------------------
 		# Get focus to main window
@@ -4622,7 +4654,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxinfo = SXmenu_item(); sxinfo.name = "sxc_gui_info"; sxinfo.label = "GUI Appliation Information"; sxinfo.short_info = "DUMMY STRING"
 
 		# Store GUI application information as a class data member
-		self.sxinfo = sxinfo
+		return sxinfo
 
 	def construct_sxconst_set(self, helical):
 		sxconst_set = SXconst_set(); sxconst_set.name = "sxc_project"; sxconst_set.label = "Project Settings"; sxconst_set.short_info = "Set constant parameter values for this project. These constants will be used as default values of associated arguments and options in command settings. However, the project settings here are not required to run commands."
@@ -4638,7 +4670,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxconst = SXconst(); sxconst.key = "config"; sxconst.label = "Imaging configurations"; sxconst.help = "a free-style string for your record. please use it to describe the set of imaging configurations used in this project (e.g. types of microscope, detector, enegy filter, abbration corrector, phase plate, and etc."; sxconst.register = "MY_MICROSCOPE"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 
 		# Store the project constant parameter set as a class data member
-		self.sxconst_set = sxconst_set
+		return sxconst_set
 
 	def construct_sxcmd_category_list(self):
 		sxcmd_category_list = []
@@ -4678,14 +4710,15 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 			sxcmd_category_dict[sxcmd.category].cmd_list.append(sxcmd)
 
 		# Store the constructed lists and dictionary as a class data member
-		self.sxcmd_category_list = sxcmd_category_list
+		return sxcmd_category_list
 
 	def update_qsub_enable_states(self):
 		# Construct and add widgets for sx command categories
-		for sxcmd_category in self.sxcmd_category_list:
-			# Create SXCmdCategoryWidget for this command category
-			for sxcmd in sxcmd_category.cmd_list:
-				sxcmd.widget.sxcmd_tab_main.set_qsub_enable_state()
+		for idx in range(2):
+			for sxcmd_category in self.sxcmd_category_list[idx]:
+				# Create SXCmdCategoryWidget for this command category
+				for sxcmd in sxcmd_category.cmd_list:
+					sxcmd.widget.sxcmd_tab_main.set_qsub_enable_state()
 
 	def handle_sxmenu_item_btn_event(self, sxmenu_item):
 		assert(isinstance(sxmenu_item, SXmenu_item) == True) # Assuming the sxmenu_item is an instance of class SXmenu_item
@@ -4703,18 +4736,22 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		if self.cur_sxmenu_item != None:
 			self.cur_sxmenu_item.btn.setStyleSheet(self.cur_sxmenu_item.btn.customButtonStyle)
 
-		self.cur_sxmenu_item = sxmenu_item
+		self.cur_sxmenu_item = self.sender().parent.sxconst_set
 
 		if self.cur_sxmenu_item != None:
 			self.cur_sxmenu_item.btn.setStyleSheet(self.cur_sxmenu_item.btn.customButtonStyleClicked)
-			self.sxmenu_item_widget_stacked_layout.setCurrentWidget(self.cur_sxmenu_item.widget)
+			print(sxmenu_item.widget)
+			print(self.sender().parent.sxconst_set.widget)
+			print()
+			self.sxmenu_item_widget_stacked_layout[self.helical].setCurrentWidget(self.cur_sxmenu_item.widget)
 
 	def closeEvent(self, event):
 		event.ignore() # event.accept()
 
 		# Quit child applications of all sxcmd widgets
-		for sxcmd_category in self.sxcmd_category_list:
-			sxcmd_category.widget.quit_all_child_applications()
+		for idx in range(2):
+			for sxcmd_category in self.sxcmd_category_list[idx]:
+				sxcmd_category.widget.quit_all_child_applications()
 
 		print("bye bye")
 		QtCore.QCoreApplication.instance().quit()
