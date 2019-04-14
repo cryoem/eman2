@@ -4523,13 +4523,13 @@ class SXDialogCalculator(QDialog):
 # Main Window (started by class SXApplication)
 class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
-	def __init__(self, parent = None):
+	def __init__(self, helical, parent = None):
 		super(SXMainWindow, self).__init__(parent)
 
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-		self.helical = False
+		self.helical = helical
 		self.sxinfo = []
 		self.sxconst_set = []
 		self.sxcmd_category_list = []
@@ -4645,7 +4645,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 			# --------------------------------------------------------------------------------
 			self.sxmenu_item_widget_stacked_layout[idx].setCurrentWidget(start_widget)
 			self.sxmenu_item_widget_stacked_layout_global.addWidget(central_widget)
-		self.sxmenu_item_widget_stacked_layout_global.setCurrentIndex(0)
+		self.sxmenu_item_widget_stacked_layout_global.setCurrentIndex(self.helical)
 
 		# --------------------------------------------------------------------------------
 		# Get focus to main window
@@ -4772,6 +4772,7 @@ def main():
 	The main SPHIRE GUI application. It is designed as the command generator for the SPHIRE single particle analysis pipeline.
 	"""
 	parser = OptionParser(usage, version=SPARXVERSION)
+	parser.add_option('--helical', action='store_true', default=False, help='Start the GUI in helical mode. This can be changed after the start. (default False)')
 	# No options!!! Does not need to call parser.add_option()
 	
 	(options, args) = parser.parse_args(sys.argv[1:])
@@ -4837,7 +4838,7 @@ def main():
 	SXLookFeelConst.initialise(sxapp, version_string)
 
 	# Define the main window (class SXMainWindow)
-	sxmain_window = SXMainWindow()
+	sxmain_window = SXMainWindow(options.helical)
 	sxmain_window.setWindowTitle("SPHIRE-GUI Main Version {0}".format(version_string))
 	sxmain_window.setMinimumWidth(SXLookFeelConst.sxmain_window_width)
 	sxmain_window.setMinimumHeight(SXLookFeelConst.sxmain_window_height)
