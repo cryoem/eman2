@@ -2849,7 +2849,7 @@ class SXCmdTab(QWidget):
 ###							temp_btn.setMinimumWidth(func_btn_min_width)
 ###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 						else:
-							if cmd_token.type not in ["int", "float", "string", "output", "apix", "ctfwin", "box", "radius", "sym", "mass", "filament_width", "use_helical_defaults"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % cmd_token.type, "%s in %s" % (__name__, os.path.basename(__file__)))
+							if cmd_token.type not in ["int", "float", "string", "output", "apix", "ctfwin", "box", "radius", "sym", "mass", "filament_width"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % cmd_token.type, "%s in %s" % (__name__, os.path.basename(__file__)))
 						
 						# if cmd_token.type in ["output", "output_continue", "output_bdb2d_stack"]:
 						# 	# Need to add output info button in future
@@ -3516,12 +3516,9 @@ class SXConstSetWidget(QWidget):
 
 	def register_const_set(self):
 		# Loop through all project constant parameters
-		register_helical = False
 		for sxconst in self.sxconst_set.list:
 			sxconst.register = sxconst.widget.text()
 			sxconst.register_widget.setText("%s" % sxconst.register)
-			if sxconst.key == "use_helical_defaults" and sxconst.register == "YES":
-				register_helical = True
 
 		# Loop through all command categories
 		for sxcmd_category in self.sxcmd_category_list:
@@ -3562,16 +3559,10 @@ class SXConstSetWidget(QWidget):
 						else:
 							widgets = cmd_token.widget
 						for idx, widget in enumerate(widgets):
-							if register_helical:
-								try:
-									widget.setText(cmd_token.restore[idx][1])
-								except IndexError:
-									widget.setText(cmd_token.restore[1])
-							else:
-								try:
-									widget.setText(cmd_token.restore[idx][0])
-								except IndexError:
-									widget.setText(cmd_token.restore[0])
+							try:
+								widget.setText(cmd_token.restore[idx][0])
+							except IndexError:
+								widget.setText(cmd_token.restore[0])
 
 		# Save the current state of GUI settings
 		if os.path.exists(SXLookFeelConst.project_dir) == False:
@@ -4639,7 +4630,6 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxconst = SXconst(); sxconst.key = "sym"; sxconst.label = "Point-group symmetry"; sxconst.help = "e.g. c1, c4, d5"; sxconst.register = "c1"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "mass"; sxconst.label = "Protein molecular mass [kDa]"; sxconst.help = ""; sxconst.register = "-1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "filament_width"; sxconst.label = "Filament width [pixels]"; sxconst.help = "Width of the filament in case of filamentous processing."; sxconst.register = "-1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
-		sxconst = SXconst(); sxconst.key = "use_helical_defaults"; sxconst.label = "Use helical defaults"; sxconst.help = "If 'YES', helical default values will be used. Otherwhise, the SPA default values will be restored."; sxconst.register = 'NO'; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "config"; sxconst.label = "Imaging configurations"; sxconst.help = "a free-style string for your record. please use it to describe the set of imaging configurations used in this project (e.g. types of microscope, detector, enegy filter, abbration corrector, phase plate, and etc."; sxconst.register = "MY_MICROSCOPE"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 
 		# Store the project constant parameter set as a class data member
