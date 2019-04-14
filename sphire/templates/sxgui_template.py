@@ -132,8 +132,8 @@ class SXcmd_token(object):
 		self.is_required = False      # Required argument or options. No default values are available
 		self.is_locked = False        # The restore value will be used as the locked value.
 		self.is_reversed = False      # Reversed default value of bool. The flag will be added if the value is same as default 
-		self.default = ["", ""]             # Default value
-		self.restore = ["", ""]             # Restore value
+		self.default = ""             # Default value
+		self.restore = [[""], [""]]             # Restore value
 		self.type = ""                # Type of value
 		# NOTE: Toshio Moriya 2018/01/19
 		# self.is_in_io should be removed after cleaning up MoinMoin related codes.
@@ -627,8 +627,8 @@ class SXCmdWidget(QWidget):
 		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.sxcmd_widget_bg_color))
 		self.setPalette(palette)
 
-		self.sxcmd_tab_main = SXCmdTab("Main", self)
-		self.sxcmd_tab_advance = SXCmdTab("Advanced", self)
+		self.sxcmd_tab_main = SXCmdTab("Main", helical, self)
+		self.sxcmd_tab_advance = SXCmdTab("Advanced", helical, self)
 		for key in self.sxcmd.dependency_dict:
 			if key not in self.sxcmd.token_dict:
 				continue
@@ -909,7 +909,7 @@ class SXCmdWidget(QWidget):
 					#else: # Do not add this token to command line
 					
 				else:
-					if sxcmd_token.widget.text() == sxcmd_token.default[0]:
+					if sxcmd_token.widget.text() == sxcmd_token.default:
 						### if sxcmd_token.widget.text() == sxcmd_token.default and sxcmd_token.is_required == True:  # Error case
 						if sxcmd_token.is_required == True:
 							QMessageBox.warning(self, "Invalid parameter value", "Token (%s) of command (%s) is required. Please set the value for this." % (sxcmd_token.label, self.sxcmd.get_mode_name_for("human")))
@@ -1855,7 +1855,7 @@ class SXCheckBox(QtGui.QCheckBox):
 
 # ========================================================================================
 class SXCmdTab(QWidget):
-	def __init__(self, name, parent=None):
+	def __init__(self, name, helical, parent=None):
 		super(SXCmdTab, self).__init__(parent)
 
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
@@ -2029,14 +2029,14 @@ class SXCmdTab(QWidget):
 					grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 
 					assert(cmd_token.is_required == False)
-					cmd_token_restore_widget[widget_index] = QPushButton("%s" % cmd_token.restore[0][widget_index])
+					cmd_token_restore_widget[widget_index] = QPushButton("%s" % cmd_token.restore[widget_index][helical][0])
 					cmd_token_restore_widget[widget_index].setStyleSheet(custom_style)
 					cmd_token_restore_widget[widget_index].setToolTip('<FONT>'+default_cmd_token_restore_tooltip+'</FONT>')
 					grid_layout.addWidget(cmd_token_restore_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
 					# cmd_token_widget[widget_index] = SXLineEdit(self)
 					cmd_token_widget[widget_index] = SXLineEdit(cmd_token.key_base)
-					cmd_token_widget[widget_index].setText(cmd_token.restore[widget_index][0])
+					cmd_token_widget[widget_index].setText(cmd_token.restore[widget_index][helical][0])
 					cmd_token_widget[widget_index].setToolTip('<FONT>'+cmd_token.help[widget_index]+'</FONT>')
 					grid_layout.addWidget(cmd_token_widget[widget_index], grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 
@@ -2050,13 +2050,13 @@ class SXCmdTab(QWidget):
 					grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 
 					assert(cmd_token.is_required == False)
-					cmd_token_restore_widget[widget_index] = QPushButton("%s" % cmd_token.restore[widget_index][0])
+					cmd_token_restore_widget[widget_index] = QPushButton("%s" % cmd_token.restore[widget_index][helical][0])
 					cmd_token_restore_widget[widget_index].setStyleSheet(custom_style)
 					cmd_token_restore_widget[widget_index].setToolTip('<FONT>'+default_cmd_token_restore_tooltip+'</FONT>')
 					grid_layout.addWidget(cmd_token_restore_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
 					cmd_token_widget[widget_index] = SXLineEdit(cmd_token.key_base)
-					cmd_token_widget[widget_index].setText(cmd_token.restore[widget_index][0]) # Because default user functions is internal
+					cmd_token_widget[widget_index].setText(cmd_token.restore[widget_index][helical][0]) # Because default user functions is internal
 					cmd_token_widget[widget_index].setToolTip('<FONT>'+cmd_token.help[widget_index]+'</FONT>')
 					grid_layout.addWidget(cmd_token_widget[widget_index], grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 
@@ -2090,10 +2090,7 @@ class SXCmdTab(QWidget):
 					cmd_token_subwidget_right = None
 					cmd_token_calculator_dialog = None
 
-					if cmd_token.restore[0] != cmd_token.restore[1]:
-						restores = cmd_token.restore
-					else:
-						restores = [cmd_token.restore[0]]
+					restores = cmd_token.restore[helical]
 					if cmd_token.type in ("bool", "bool_ignore"):
 						if len(restores) == 1:
 							btn_name = "NO"
@@ -3122,7 +3119,7 @@ class SXCmdTab(QWidget):
 		assert(not sxcmd_token.is_locked)
 		if sxcmd_token.type == "user_func":
 			assert(len(sxcmd_token.widget) == 2 and len(sxcmd_token.restore) == 2 and widget_index < 2)
-			sxcmd_token.widget[widget_index].setText("%s" % sxcmd_token.restore[widget_index][restore_idx])
+			sxcmd_token.widget[widget_index].setText("%s" % sxcmd_token.restore[widget_index][restore_idx][0])
 		else:
 			if sxcmd_token.type in ("bool", "bool_ignore"):
 				try:
@@ -4698,11 +4695,12 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 					n_widgets = 2 # function type has two line edit boxes
 					sxcmd_token.label = [sxcmd_token.label, "Python script for user function"]
 					sxcmd_token.help = [sxcmd_token.help, "Please leave it none/blank if file is not external to SPHIRE"]
-					sxcmd_token.default = [sxcmd_token.default, ["none", "none"]]
+					sxcmd_token.default = sxcmd_token.default.split('|||')
 					if not sxcmd_token.is_locked:
-						sxcmd_token.restore = sxcmd_token.default
+						sxcmd_token.restore = [[sxcmd_token.default, sxcmd_token.default], [["none"], ["none"]]]
 					else:
 						sxcmd_token.restore = [["", ""], ["", ""]]
+					sxcmd_token.default = [sxcmd_token.default[0], "none"]
 				# else: Do nothing for the other types
 
 				# Register this to command token dictionary

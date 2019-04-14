@@ -75,9 +75,9 @@ One can change some parameters (MPI settings have to be the same)
   ; %%--%%group_by : Group name for chunks:Group the particles by the specified header name before splitting them into chunks. (default ptcl_source_image)
   ; %%--%%theta_min : Theta min [degree]:  Minimum out-of-plane rotation value to use for the reference projection angles. Default is the full range from 0 to 180.(default -1)
   ; %%--%%theta_max : Theta max [degree]:  Maximum out-of-plane rotation value to use for the reference projection angles. Default is the full range from 0 to 180.(default -1)
-  ; %%--%%even_angle_method : Even angle method: Method to use for even angle creation (S, M, P). (default S|||M)
+  ; %%--%%even_angle_method : Even angle method: Method to use for even angle creation (S, M, P). (default S|||M|||P)::M;Advanced
   ; %%--%%group_id : Outlier group ID: Group the particles by the header name for outlier detection. By default do not perform outlier detection. (default None)
-  ; %%--%%filament_width : Filament width [px]: This is used to normalize the particles in case of filaments. A rectangular mask will be used instead of a circular one. (default None)
+  ; %%--%%filament_width : Filament width [px]: This is used to normalize the particles in case of filaments. A rectangular mask will be used instead of a circular one. (default none)::none;Main
   ; %%--%%helical_rise : Helical rise [A]: Helical rise used to limit the shift along the helical axis to +-rise/2 (default None)
   ; %%--%%a_criterion : Convergence criterion A value: Convergence criterion multiplication for the criterion A. (default 0.75)
   ; %%--%%limit_improvement : Limit of improvements: The number of consecutive iterations without changes which will be considered convergence. (default 1)

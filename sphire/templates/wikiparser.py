@@ -1046,7 +1046,8 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 						else:
 							# This is not required command token and should have default value
 							# token.is_required = False
-							token.default = default_value
+							default_values = default_value.split('|||')
+							token.default = default_values[0]
 
 							if not token.type:
 								# Type is still empty, meaning no special type is assigned
@@ -1072,7 +1073,18 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 							assert (not token.is_locked)
 							assert (not token.is_reversed)
 						if not token.is_locked:
-							token.restore = token.default
+							if default_value.find("question reversed in GUI") != -1:
+								token.restore[0] = [not token.default]
+								token.restore[1] = [not token.default]
+							elif default_value.find("value reversed in GUI") != -1:
+								token.restore[0] = [not token.default]
+								token.restore[1] = [not token.default]
+							else:
+								default_value = default_value.split('|||')
+								if token.type == 'bool':
+									default_value = [True if entry == 'True' else False for entry in default_value]
+								token.restore[0] = default_value
+								token.restore[1] = default_value
 						target_operator = ":"
 						item_tail = line_buffer.find(target_operator)
 						if item_tail != -1:
@@ -1290,13 +1302,13 @@ def apply_sxsubcmd_config(sxsubcmd_config, sxcmd):
 		if token_edit.default is not None:
 			token.default = token_edit.default
 		if token_edit.restore is not None:
-			token.restore = token_edit.restore
+			token.restore[0] = token_edit.restore
+			token.restore[1] = token_edit.restore
+		elif not token.is_locked:
+			token.restore = token.restore
 		if token_edit.type is not None:
 			token.type = token_edit.type
-		
-		if not token.is_locked:
-			token.restore = token.default
-		
+
 		# Make sure all fields of token are not None
 		if token.key_base is None: sp_global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.key_base should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
 		if token.key_prefix is None: sp_global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.key_prefix should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
@@ -1363,6 +1375,10 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 		output_file.write("; token.is_locked = %s" % token.is_locked)
 		output_file.write("; token.is_reversed = %s" % token.is_reversed)
 		output_file.write("; token.dependency_group = %s" % str([[str(entry) for entry in group_dep] for group_dep in token.dependency_group]))
+		if not isinstance(token.restore[0], list):
+			token.restore[0] = [token.restore[0]]
+		if not isinstance(token.restore[1], list):
+			token.restore[1] = [token.restore[1]]
 		if token.type in ("bool", "bool_ignore"):
 			output_file.write("; token.default = %s" % token.default)
 			output_file.write("; token.restore = %s" % token.restore)
@@ -1370,13 +1386,13 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 			if token.is_required:
 				if token.is_locked:
 					output_file.write("; token.default = \"\"")
-					output_file.write("; token.restore = \"%s\"" % token.restore)
+					output_file.write("; token.restore = %s" % token.restore)
 				else:
 					output_file.write("; token.default = \"\"")
-					output_file.write("; token.restore = \"\"")
+					output_file.write("; token.restore = [[\"\"], [\"\"]]")
 			else:
 				output_file.write("; token.default = \"%s\"" % token.default)
-				output_file.write("; token.restore = \"%s\"" % token.restore)
+				output_file.write("; token.restore = %s" % token.restore)
 		output_file.write("; token.type = \"%s\"" % token.type)
 		# output_file.write("; token.is_in_io = %s" % token.is_in_io)
 
