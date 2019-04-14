@@ -3529,8 +3529,11 @@ class SXConstSetWidget(QWidget):
 					if not cmd_token.is_locked and cmd_token.type in list(self.sxconst_set.dict.keys()):
 						sxconst = self.sxconst_set.dict[cmd_token.type]
 						cmd_token.restore = sxconst.register
-						cmd_token.restore_widget.setText("%s" % cmd_token.restore)
-						cmd_token.widget.setText(cmd_token.restore)
+						try:
+							cmd_token.restore_widget.setText("%s" % cmd_token.restore[0])
+						except:
+							cmd_token.restore_widget.setCurrentIndex(0)
+						cmd_token.widget.setText(cmd_token.restore[0])
 						# print "MRK_DEBUG: %s, %s, %s, %s, %s, %s" % (sxcmd.name, sxcmd.subname, cmd_token.key_base, cmd_token.type, cmd_token.default, cmd_token.restore)
 					elif cmd_token.type == "abs_freq":
 						assert("apix" in list(self.sxconst_set.dict.keys()))
@@ -4505,6 +4508,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		self.helical = False
 		self.sxinfo = None
 		self.sxconst_set = None
 		self.sxcmd_category_list = None
@@ -4518,7 +4522,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		# Construct menu items
 		# --------------------------------------------------------------------------------
 		self.construct_sxinfo()              # Construct application information
-		self.construct_sxconst_set()         # Construct project constant set for project settings
+		self.construct_sxconst_set(self.helical)         # Construct project constant set for project settings
 		self.construct_sxcmd_category_list() # Construct list of categorised sxscript objects (extracted from associated wiki documents)
 
 		# --------------------------------------------------------------------------------
@@ -4620,7 +4624,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		# Store GUI application information as a class data member
 		self.sxinfo = sxinfo
 
-	def construct_sxconst_set(self):
+	def construct_sxconst_set(self, helical):
 		sxconst_set = SXconst_set(); sxconst_set.name = "sxc_project"; sxconst_set.label = "Project Settings"; sxconst_set.short_info = "Set constant parameter values for this project. These constants will be used as default values of associated arguments and options in command settings. However, the project settings here are not required to run commands."
 		sxconst = SXconst(); sxconst.key = "protein"; sxconst.label = "Protein name"; sxconst.help = "a valid string for file names on your OS."; sxconst.register = "MY_PROTEIN"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "apix"; sxconst.label = "Micrograph pixel size [A]"; sxconst.help = ""; sxconst.register = "1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
@@ -4629,7 +4633,8 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxconst = SXconst(); sxconst.key = "radius"; sxconst.label = "Protein particle radius [pixels]"; sxconst.help = ""; sxconst.register = "-1"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "sym"; sxconst.label = "Point-group symmetry"; sxconst.help = "e.g. c1, c4, d5"; sxconst.register = "c1"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "mass"; sxconst.label = "Protein molecular mass [kDa]"; sxconst.help = ""; sxconst.register = "-1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
-		sxconst = SXconst(); sxconst.key = "filament_width"; sxconst.label = "Filament width [pixels]"; sxconst.help = "Width of the filament in case of filamentous processing."; sxconst.register = "-1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+		if helical:
+			sxconst = SXconst(); sxconst.key = "filament_width"; sxconst.label = "Filament width [pixels]"; sxconst.help = "Width of the filament in case of filamentous processing."; sxconst.register = "-1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "config"; sxconst.label = "Imaging configurations"; sxconst.help = "a free-style string for your record. please use it to describe the set of imaging configurations used in this project (e.g. types of microscope, detector, enegy filter, abbration corrector, phase plate, and etc."; sxconst.register = "MY_MICROSCOPE"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 
 		# Store the project constant parameter set as a class data member
