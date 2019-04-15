@@ -53,7 +53,7 @@ One can change some parameters (MPI settings have to be the same)
   ; %%--%%mask3D : 3D mask file: A mask applied to half-map during iterations of the program. If not given, a hard sphere of radius boxsize/2-1 will be used. Ignored in final reconstruction. (default none)
   ; %%--%%symmetry : Point-group symmetry: Point-group symmetry of the refined structure. Supported point groups symmetries are: cn and dn, where n is multiplicity, oct, tet, and icos. Ignored in final reconstruction. (default c1)
   ; %%--%%inires : Starting resolution [A]: Resolution of the initial map used to start the refinement. Ignored in final reconstruction. (default 25.0)
-  ; %%--%%delta : Initial angular sampling step [Degrees]: Initial angular sampling step. Ignored in final reconstruction. (default 7.5)
+  ; %%--%%delta : Initial engular sampling step [Degrees]: Initial angular sampling step. Ignored in final reconstruction. (default 7.5|||15|||3.75|||1.875|||0.9375|||0.46875|||0.234375)::3.75|||15|||7.5|||1.875|||0.9375|||0.46875|||0.234375;Main
   ; %%--%%initialshifts : Read shifts from header: Start refinement using translation parameters located in the input file header to jumpstart the procedure. Specific to standard run mode. (default False value reversed in GUI)
   ; %%--%%skip_prealignment : Skip the 2D pre-alignment step: Indicate if pre-alignment should be omitted.  By default it is performed in order to find initial translation parameters. This accelerates convergence of the program. Do not use 2D pre-alignment if images are already centered. Specific to standard run modes. (default False) : %%--%%initialshifts==False
   ; %%--%%memory_per_node : Memory per node [GB]: User provided information about memory per node in GB (NOT per CPU). By default, it uses 2GB * (number of CPUs per node). Used in all modes. (default -1.0)
@@ -68,17 +68,17 @@ One can change some parameters (MPI settings have to be the same)
   ; %%--%%target_radius : Target particle radius [Pixels]: For 2D prealignment, images will be shrunk or enlarged to this radius. Specific to standard run modes. (default 29)
   ; %%--%%shake : Shake: Shake randomizes grid searches by a factor of (shake x grid step). Ignored in final reconstruction. (default 0.5)
   ; %%--%%small_memory : Keep data in memory: Indicate if data should be kept in memory or not. By default, data will be kept in memory. Ignored in final reconstruction. (default False question reversed in GUI)
-  ; %%--%%ccfpercentage : Correlation peaks to be included [%]: Percentage of correlation peaks to be included. 0.0 corresponds to hard matching. Ignored in final reconstruction. (default 99.9)
+  ; %%--%%ccfpercentage : Correlation peaks to be included [%]: Percentage of correlation peaks to be included. 0.0 corresponds to hard matching. Ignored in final reconstruction. This value will be adjusted during helical refinement. (default 99.9)::10;Main
   ; %%--%%nonorm : Apply image norm correction: Indicate if image norm correction should be applied or not. By default, apply image norm correction. Ignored in final reconstruction. (default False question reversed in GUI)
   ; %%--%%function : Reference preparation function: Specify name of function that the program should use to prepare the reference structure after each iteration. Ignored in final reconstruction. (default do_volume_mask)
-  ; %%--%%function_ai : Logic function: Specify name of function that the program should use to follow the specified logic. (default ai_spa)
-  ; %%--%%group_by : Group name for chunks:Group the particles by the specified header name before splitting them into chunks. (default ptcl_source_image)
-  ; %%--%%theta_min : Theta min [degree]:  Minimum out-of-plane rotation value to use for the reference projection angles. Default is the full range from 0 to 180.(default -1)
-  ; %%--%%theta_max : Theta max [degree]:  Maximum out-of-plane rotation value to use for the reference projection angles. Default is the full range from 0 to 180.(default -1)
-  ; %%--%%even_angle_method : Even angle method: Method to use for even angle creation (S, M, P). (default S)
-  ; %%--%%group_id : Outlier group ID: Group the particles by the header name for outlier detection. By default do not perform outlier detection. (default None)
-  ; %%--%%filament_width : Filament width [px]: This is used to normalize the particles in case of filaments. A rectangular mask will be used instead of a circular one. (default None)
-  ; %%--%%helical_rise : Helical rise [A]: Helical rise used to limit the shift along the helical axis to +-rise/2 (default None)
+  ; %%--%%function_ai : Logic function: Specify name of function that the program should use to follow the specified logic. (default ai_spa|||ai_filament)::ai_filament|||ai_spa;Advanced
+  ; %%--%%group_by : Group name for chunks:Group the particles by the specified header name before splitting them into chunks. (default ptcl_source_image)::filament_id;Main
+  ; %%--%%theta_min : Theta min [degree]:  Minimum out-of-plane rotation value to use for the reference projection angles. Default is the full range from 0 to 180. This value will be adjusted during helical refinement. (default -1)::90;Main
+  ; %%--%%theta_max : Theta max [degree]:  Maximum out-of-plane rotation value to use for the reference projection angles. Default is the full range from 0 to 180. This value will be adjusted during helical refinement. (default -1)::90;Main
+  ; %%--%%even_angle_method : Even angle method: Method to use for even angle creation (S, M, P). (default S|||M|||P)::M|||P|||S;Advanced
+  ; %%--%%group_id : Outlier group ID: Group the particles by the header name for outlier detection. By default do not perform outlier detection. (default none)::filament_id;Main
+  ; %%--%%filament_width : Filament width [px]: This is used to normalize the particles in case of filaments. A rectangular mask will be used instead of a circular one. (default -1.0)::-1.0;Main
+  ; %%--%%helical_rise : Helical rise [A]: Helical rise used to limit the shift along the helical axis to +-rise/2 (default none)::none;Main
   ; %%--%%a_criterion : Convergence criterion A value: Convergence criterion multiplication for the criterion A. (default 0.75)
   ; %%--%%limit_improvement : Limit of improvements: The number of consecutive iterations without changes which will be considered convergence. (default 1)
   ; %%--%%plot_ang_dist : Plot angular distribution: Plot the angular distribution in every iteration. This will take some time for high symmetries.(default False)
@@ -110,7 +110,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_meridien.py
+sphire/bin/sp_meridien.py
 
 \\
 ==== See also ====

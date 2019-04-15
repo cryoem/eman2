@@ -94,7 +94,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_cryolo_train.py
+sphire/bin/sp_cryolo_train.py
 
 \\
 ==== See also ====

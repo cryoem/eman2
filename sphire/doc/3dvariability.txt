@@ -77,7 +77,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_3dvariability.py
+sphire/bin/sp_3dvariability.py
 
 \\
 ==== See also ====

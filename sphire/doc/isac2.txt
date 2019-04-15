@@ -37,17 +37,16 @@ Note: CTF and VPP options cannot be used together.
   ; %%--%%img_per_grp : Images per class: Ideally the number of images per class. In practice this value determines the number of classes //K// = //N// / //img_per_grp//, where //N// is the total number of images in the input stack. (default 200)
   ; %%--%%CTF : CTF phase flipping : Use for cryo datasets. If set to True the data will be phase-flipped using CTF information included in the image headers. Cannot be used together with the VPP option. (default False) : %%--%%VPP==False
   ; %%--%%VPP : Phase Plate data : Use this option if the dataset is taken with a phase plate. Cannot be used together with the CTF option. (default False) : %%--%%CTF==False
-  ; %%--%%filament_width : Filament width [Pixels]: When this is set to a non-default value, ISAC assumes helical data, in which case particle images will be subjected to rectangular masking of the given this value. (default -1)
 
 \\
 === Advanced Parameters ===
-  ; %%--%%xr : Translation search range [Pixels] : The translational search range. Change with care; higher values will incur significantly higher processing costs. (default 1)
+  ; %%--%%xr : Translation search range [Pixels] : The translational search range. Change with care; higher values will incur significantly higher processing costs. (default 1)::0;advanced
   ; %%--%%thld_err : Pixel error threshold [Pixels]: Used as a threshold value when checking cluster stability. The pixel error is defined as the root mean square of distances between corresponding pixels from set of found transformations and their average transformation; it depends linearly on square of radius (parameter //ou//). //units// - //pixels//. (default 0.7)
   ; %%--%%target_radius : Target particle radius [Pixels] : Particle radius used by ISAC2 to process the data. All particle images will be re-scaled to match their particle radius with this radius. (default 29)
   ; %%--%%target_nx : Target particle image size [Pixels] : Image size used by ISAC2 to process the data. particle images will first be resized according to target particle radius (see above) and then cropped or padded to achieve the target image size. When //xr// > 0, the final image size for ISAC2 processing is //target_nx// + //xr// - 1  (default 76)
   ; %%--%%ir : Inner ring [Pixels] : Radius of the inner-most ring when resampling images to polar coordinates. (default 1)
   ; %%--%%rs : Ring step [Pixels] : Radius step size when resampling images to polar coordinates. (default 1)
-  ; %%--%%yr : Y search range [Pixels] : The translational search range in the y direction. Set to the value of //xr// by default. (default -1)
+  ; %%--%%yr : Y search range [Pixels] : The translational search range in the y direction. Set to the value of //xr// by default. (default -1)::
   ; %%--%%ts : Search step [Pixels] : Translational search step. (default 1.0)
   ; %%--%%maxit : Reference-free alignment iterations: The number of iterations for reference-free alignments. (default 30)
   ; %%--%%center_method : Centering method : Method to center global 2D average during the initial prealignment of the data (0: no centering; -1: average shift method; please see function center_2D in sp_utilities.py for methods 1-7). (default -1)
@@ -62,8 +61,9 @@ Note: CTF and VPP options cannot be used together.
   ; %%--%%rand_seed : Seed: Random seed set before calculations. Useful for testing purposes. By default, ISAC2 sets a random seed number. (default none)
   ; %%--%%skip_prealignment : Do pre-alignment: Indicate if pre-alignment should be used or not. Do not use pre-alignment if images are already centered. The //2dalignment// directory will still be generated but the parameters will be zero. By default, do pre-alignment. (default False question reversed in GUI)
   ; %%--%%restart : Restart run: 0: Restart ISAC2 after the last completed main iteration (i.e. the directory must contain //finished// file); //k//: Restart ISAC2 after //k//-th main iteration, it has to be completed (i.e. the directory must contain //finished// file), and higer iterations will be removed; Default: Do not restart. (default -1)
-  ; %%--%%filament_mask_ignore : Ignore filament masking (filament use only): ONLY RELEVANT IF parameter filament_width is set to a non-default value. When processing helical particle images rectangular masking is used (A) to normalize and (B) to mask the actual particle images. The latter can be disabled by setting this flag to True. (default True question reversed in GUI)
   ; %%--%%skip_ordering: Skip ordered class averages: Skip the creation of the ordered class averages. (default False)
+  ; %%--%%filament_width : Filament width [Pixels]: When this is set to a non-default value, ISAC assumes helical data, in which case particle images will be subjected to rectangular masking of the given this value. (default -1)::-1;main
+  ; %%--%%filament_mask_ignore : Ignore filament masking (filament use only): ONLY RELEVANT IF parameter filament_width is set to a non-default value. When processing helical particle images rectangular masking is used (A) to normalize and (B) to mask the actual particle images. The latter can be disabled by setting this flag to True. (default True question reversed in GUI)::
 
 \\
 ===== Output =====
@@ -162,7 +162,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_isac2.py, sparx/bin/sp_isac.py, sparx/bin/isac.py
+sphire/bin/sp_isac2.py, sphire/bin/sp_isac.py, sphire/bin/isac.py
 
 \\
 ==== See also ====

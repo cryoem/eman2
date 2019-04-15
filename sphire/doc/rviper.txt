@@ -8,7 +8,7 @@ Initial 3D Model - RVIPER: Reproducible //ab initio// 3D structure determination
 
 Usage in command line
 
-  sp_rviper.py  stack  directory  --radius=outer_radius  --sym=sym  --n_rv_runs=n_rv_runs  --iteration_start=iteration_start  --n_v_runs=n_v_runs  --npad=npad  --criterion_name=criterion_name  --outlier_index_threshold_method=outlier_index_threshold_method  --angle_threshold=angle_threshold  --outlier_percentile=outlier_percentile  --ir=inner_radius  --rs=ring_step  --xr=x_range  --yr=y_range  --ts=translational_search_step  --delta=angular_step  --center=center_type  --maxit1=max_iter1  --maxit2=max_iter2  --mask3D=mask3D  --moon_elimination=moon_elimination  --L2threshold=L2threshold  --ref_a=ref_a  --n_shc_runs=n_shc_runs  --doga=doga --fl=fl  --aa=aa  --pwreference=pwreference --theta1=theta1 --theta2=theta2 --dpi=dpi
+  sp_rviper.py  stack  directory  --radius=outer_radius  --sym=sym  --n_rv_runs=n_rv_runs  --iteration_start=iteration_start  --n_v_runs=n_v_runs  --npad=npad  --criterion_name=criterion_name  --outlier_index_threshold_method=outlier_index_threshold_method  --angle_threshold=angle_threshold  --outlier_percentile=outlier_percentile  --ir=inner_radius  --rs=ring_step  --xr=x_range  --yr=y_range  --ts=translational_search_step  --delta=angular_step  --center=center_type  --maxit1=max_iter1  --maxit2=max_iter2  --mask3D=mask3D  --moon_elimination=moon_elimination  --L2threshold=L2threshold  --ref_a=ref_a  --n_shc_runs=n_shc_runs  --doga=doga --fl=fl  --aa=aa  --pwreference=pwreference --theta1=theta1 --theta2=theta2 --dpi=dpi --filament_width=-1 --resample_ratio=ISAC_FOLDER
 
 \\
 ===== Typical usage =====
@@ -37,8 +37,8 @@ Since RVIPER uses group of processors working together, it is important for effi
 === Advanced Parameters ===
   ; %%--%%moon_elimination : Eliminate disconnected regions: Used to removed disconnected pieces from the model. As an argument it requires a comma-separated string with the mass in KDa and the pixel size in [A]. (default none)
   ; %%--%%iteration_start : Restarting iteration: Iteration from which to restart the program. 0 means go to the most recent one. (default 0)
-  ; %%--%%n_rv_runs : RVIPER iterations: Corresponds to main### output directory. (default 10)
-  ; %%--%%n_v_runs : Minimum number of VIPER runs per RVIPER iterations: Corresponds to run### output directory. (default 3)
+  ; %%--%%n_rv_runs : RVIPER iterations: Corresponds to main### output directory. (default 10)::1;Advanced
+  ; %%--%%n_v_runs : Minimum number of VIPER runs per RVIPER iterations: Corresponds to run### output directory. (default 3)::3;Advanced
   ; %%--%%criterion_name : Stable projection criterion: Used to decide if the solution is stable, i.e., whether projection images adopt similar orientations in independent runs of the program. Valid options are: '80th percentile',  or 'fastest increase in the last quartile'. (default 80th percentile)
   ; %%--%%outlier_index_threshold_method : Outlier selection method: Used to decide which images to keep. Valid options are: 'discontinuity_in_derivative', 'percentile', or 'angle_measure'. (default discontinuity_in_derivative)
   ; %%--%%angle_threshold : Angle threshold: Threshold used to remove projections if 'angle_measure' is used to decide the outliers. (default 30)
@@ -48,24 +48,24 @@ Since RVIPER uses group of processors working together, it is important for effi
   ; %%--%%xr : X search range [Pixels]: The translational search range in the x direction. Search will +/-xr range in steps of ts. (default 0)
   ; %%--%%yr : Y search range [Pixels]: The translational search range in the y direction. If omitted it will be equal to the x search range. (default 0)
   ; %%--%%ts : Translational search step [Pixels]: The search will be performed in -xr, -xr+ts, 0, xr-ts, xr, can be fractional. (default 1.0)
-  ; %%--%%delta :  Projection angular step [Degrees]: Projection angular step. (default 2.0)
+  ; %%--%%delta :  Projection angular step [Degrees]: Projection angular step. (default 2.0)::0.5;Advanced
   ; %%--%%center : Center 3D template: -1: center of coordinates, 0: no centering; 1: center of gravity (default -1.0)
   ; %%--%%maxit1 : Maximum iterations - GA step: Maximum number of iterations for GA step. (default 400)
   ; %%--%%maxit2 : Maximum iterations - Finish step: Maximum iterations number of for Finish step. (default 50)
   ; %%--%%mask3D : 3D mask: Path to 3D mask file. By default, a spherical mask will be used. (default sphere): %%--%%filament_width==-1
   ; %%--%%L2threshold : GA stop threshold: Defines the maximum relative dispersion of structures' L2 norms. (default 0.03)
-  ; %%--%%ref_a : Projection generation method: Method for generating the quasi-uniformly distributed projection directions. S - Saff algorithm, or P - Penczek 1994 algorithm. (default S)
+  ; %%--%%ref_a : Projection generation method: Method for generating the quasi-uniformly distributed projection directions. S - Saff algorithm, M - Markus 2019 algorithm or P - Penczek 1994 algorithm. (default S|||P|||M)::M|||P|||S;Advanced
   ; %%--%%n_shc_runs : GA population size: This defines the number of quasi-independent structures generated. (same as %%--nruns%% parameter from [[pipeline:viper:sp_viper|sp_viper]]). (default 4)
   ; %%--%%doga : Threshold to start GA: Do GA when the fraction of orientation that changes less than 1.0 degrees is at least this fraction. (default 0.1)
   ; %%--%%fl : Low-pass filter frequency [1/Pixels]: Using a hyperbolic tangent low-pass filter. Specify with absolute frequency. (default 0.25)
   ; %%--%%aa : Low-pass filter fall-off [1/Pixels]: Fall-off of for the hyperbolic tangent low-pass filter. Specify with absolute frequency. (default 0.1)
   ; %%--%%pwreference : Power spectrum reference: Text file containing a 1D reference power spectrum. (default none)
   ; %%--%%npad : Image padding factor: Used by 3D reconstruction algorithm in the program. (default 2)
-  ; %%--%%theta1 : Minimum theta: Lower bound for out-of-plane tilt angle. No tilt corresponds to 90 degrees. (default -1)
-  ; %%--%%theta2 : Maximum theta: Upper bound for out-of-plane tilt angle. No tilt corresponds to 90 degrees. (default -1)
+  ; %%--%%theta1 : Minimum theta: Lower bound for out-of-plane tilt angle. No tilt corresponds to 90 degrees. (default -1)::90;Advanced
+  ; %%--%%theta2 : Maximum theta: Upper bound for out-of-plane tilt angle. No tilt corresponds to 90 degrees. (default -1)::90;Advanced
   ; %%--%%dpi : BILD resolution: Resolution in dpi for angular distribution plot. (default 72)
-  ; %%--%%filament_width : Filament width [Pixels]: When this is set to a non-default value helical data is assumed in which case the input images will be aligned to a mask with this width. (default -1): %%--%%mask3D==sphere
-  ; %%--%%resample_ratio : Resample ratio: Specify a value larger than 0.0. By default, the program does not resample the input map (i.e. resample ratio is 1.0). Use this option maily to restore the original dimensions or pixel size of VIPER or R-VIPER model. Alternatively, specify the path to the output directory of an ISAC2 run. The program automatically extracts the resampling ratio used by the ISAC2 run. (default '1.0'): %%--%%filament_width!=-1 %%--%%mask3D==sphere
+  ; %%--%%filament_width : Filament width [Pixels]: When this is set to a non-default value helical data is assumed in which case the input images will be aligned to a mask with this width. (default -1): %%--%%mask3D==sphere:-1;Main
+  ; %%--%%resample_ratio : Resample ratio: Specify a value larger than 0.0. By default, the program does not resample the input map (i.e. resample ratio is 1.0). Use this option maily to restore the original dimensions or pixel size of VIPER or R-VIPER model. Alternatively, specify the path to the output directory of an ISAC2 run. The program automatically extracts the resampling ratio used by the ISAC2 run. (default '1.0'): %%--%%filament_width!=-1 %%--%%mask3D==sphere:'1.0';Main
 
 \\
 ===== Output =====
@@ -121,7 +121,7 @@ Category 3:: GRIDDING
 
 \\
 ==== Files ====
-sparx/bin/sp_rviper.py
+sphire/bin/sp_rviper.py
 
 \\
 ==== See also ====

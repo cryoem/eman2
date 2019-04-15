@@ -88,7 +88,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_sort3d.py
+sphire/bin/sp_sort3d.py
 
 \\
 ==== See also ====

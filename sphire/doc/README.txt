@@ -181,7 +181,7 @@ ${COMMDNA_TOKEN_TYPE}
 ------------------------------------------------------------------------------------------
 (1) Go to the directory contains the Wiki document parser script.
 
-$ cd ~/EMAN2/src/eman2/sparx/templates/wikiparser.py
+$ cd ~/EMAN2/src/eman2/sphire/templates/wikiparser.py
 
 (2) Execute the Wiki document parser script
 
@@ -196,7 +196,7 @@ If this happens, please edit the Wiki documents.
 
 (3) Copy the generated sp_gui_auto.py to the EMAN2/bin directory of your installation as sp_gui.py.
 
-$ cp ~/EMAN2/src/eman2/sparx/bin/sp_gui_auto.py ~/EMAN2/bin/sp_gui.py
+$ cp ~/EMAN2/src/eman2/sphire/bin/sp_gui_auto.py ~/EMAN2/bin/sp_gui.py
 
 (4) Run sp_gui.py in your project directory
 

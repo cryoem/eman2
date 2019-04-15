@@ -86,7 +86,7 @@ Category 1:: FUNDAMENTALS, UTILITIES, APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_rewindow.py
+sphire/bin/sp_rewindow.py
 
 \\
 ==== See also ====

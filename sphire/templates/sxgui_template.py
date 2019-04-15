@@ -133,8 +133,9 @@ class SXcmd_token(object):
 		self.is_locked = False        # The restore value will be used as the locked value.
 		self.is_reversed = False      # Reversed default value of bool. The flag will be added if the value is same as default 
 		self.default = ""             # Default value
-		self.restore = ""             # Restore value
+		self.restore = [[""], [""]]             # Restore value
 		self.type = ""                # Type of value
+		self.filament_tab = ""                # Type of value
 		# NOTE: Toshio Moriya 2018/01/19
 		# self.is_in_io should be removed after cleaning up MoinMoin related codes.
 		self.is_in_io = False         # <Used only in wikiparser.py> To check consistency between "usage in command line" and list in "== Input ==" and "== Output ==" sections
@@ -355,10 +356,12 @@ class SXLookFeelConst(object):
 			print('Backwards compatibility cannot be guaranteed.')
 		
 		if not current_settings_exist and not older_settings_exist:
-			create_settings_dir = raw_input(
-					"\nSettings directory for current SPHIRE version %s doesn't exist\nWould you like to create a new project directory and continue?\nYou need to run the sphire command in the foreground (without &) to answer this question\n[y/n] " 
-					% SXLookFeelConst.project_dir)
-			if create_settings_dir.lower() == 'n':
+			print("\nSettings directory for current SPHIRE version %s doesn't exist\nWould you like to create a new project directory and continue?\nYou need to run the sphire command in the foreground (without &) to answer this question\n[y/n] "% SXLookFeelConst.project_dir)
+			answer = raw_input()
+			while answer.lower() not in ('y', 'n'):
+				print('Answer needs to be y or n')
+				answer = raw_input()
+			if answer.lower() == 'n':
 				print("\nbye bye")
 				exit()
 		
@@ -488,6 +491,7 @@ class SXPictogramButton(QPushButton):
 		# print "MRK_DEBUG: os.path.exists(logo_file_path) %s" % os.path.exists(pictogram_file_path)
 
 		# Width of pictogram image
+		self.parent = parent
 		pictogram_width = SXLookFeelConst.sxmenu_item_btn_width
 
 		# Style of widget
@@ -520,6 +524,8 @@ class SXMenuItemBtnAreaWidget(QWidget):
 		sxcmd_category_btn_subarea_widget = self.create_sxmenu_item_btn_subarea_widget()
 		misc_func_btn_subarea_widget = self.create_sxmenu_item_btn_subarea_widget()
 		self.add_sxmenu_item_btn_widget(sxconst_set, sxcmd_category_btn_subarea_widget)
+		self.sxconst_set = sxconst_set
+		self.sxcmd_category_list = sxcmd_category_list
 		for sxcmd_category in sxcmd_category_list:
 			if sxcmd_category.name != "sxc_utilities" and sxcmd_category.name != "sxc_movie":
 				self.add_sxmenu_item_btn_widget(sxcmd_category, sxcmd_category_btn_subarea_widget)
@@ -595,7 +601,7 @@ class SXMenuItemBtnAreaWidget(QWidget):
 class SXCmdWidget(QWidget):
 	### process_started = pyqtSignal()
 
-	def __init__(self, sxconst_set, sxcmd, parent = None):
+	def __init__(self, sxconst_set, sxcmd, helical, parent = None):
 		super(SXCmdWidget, self).__init__(parent)
 
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
@@ -608,7 +614,7 @@ class SXCmdWidget(QWidget):
 
 		self.child_application_list = []
 
-		self.gui_settings_file_path = "%s/gui_settings_%s.txt" % (self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir), self.sxcmd.get_mode_name_for("file_path"))
+		self.gui_settings_file_path = "%s/gui_settings_%s_%d.txt" % (self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir), self.sxcmd.get_mode_name_for("file_path"), int(helical))
 
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
@@ -622,8 +628,8 @@ class SXCmdWidget(QWidget):
 		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.sxcmd_widget_bg_color))
 		self.setPalette(palette)
 
-		self.sxcmd_tab_main = SXCmdTab("Main", self)
-		self.sxcmd_tab_advance = SXCmdTab("Advanced", self)
+		self.sxcmd_tab_main = SXCmdTab("Main", helical, self)
+		self.sxcmd_tab_advance = SXCmdTab("Advanced", helical, self)
 		for key in self.sxcmd.dependency_dict:
 			if key not in self.sxcmd.token_dict:
 				continue
@@ -918,7 +924,7 @@ class SXCmdWidget(QWidget):
 						# For now, using line edit box for the other type
 						widget_text = str(sxcmd_token.widget.text())
 ###						if sxcmd_token.type not in ["int", "float", "apix", "ctfwin", "box", "radius", "mass", "displayable_list", "mic_one_list", "any_file_list", "any_image_list", "dir_list"]:
-						if sxcmd_token.type not in ["int", "float", "abs_freq", "apix", "ctfwin", "box", "radius", "mass", "displayable_list", "mic_one_list", "dir_list"]:
+						if sxcmd_token.type not in ["int", "float", "abs_freq", "apix", "ctfwin", "box", "radius", "mass", "displayable_list", "mic_one_list", "dir_list", "filament_width"]:
 							# Always enclose the string value with single quotes (')
 							widget_text = widget_text.strip("\'")  # make sure the string is not enclosed by (')
 							widget_text = widget_text.strip("\"")  # make sure the string is not enclosed by (")
@@ -1850,7 +1856,7 @@ class SXCheckBox(QtGui.QCheckBox):
 
 # ========================================================================================
 class SXCmdTab(QWidget):
-	def __init__(self, name, parent=None):
+	def __init__(self, name, helical, parent=None):
 		super(SXCmdTab, self).__init__(parent)
 
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
@@ -1871,7 +1877,7 @@ class SXCmdTab(QWidget):
 		short_info_row_span = 1; short_info_col_span = 5
 		func_btn_row_span = 1; func_btn_col_span = 2
 		token_label_row_span = 1; token_label_col_span = 4
-		token_widget_row_span = 1; token_widget_col_span = 1
+		token_widget_row_span = 1; token_widget_col_span = 1.5
 		cmd_frame_row_span = 32; cmd_frame_col_span = 7
 
 		title_label_min_width = 180 # title_label_min_width = 150
@@ -2003,8 +2009,11 @@ class SXCmdTab(QWidget):
 			elif cmd_token.type == "abs_freq":
 				cmd_token_abs_freq_list.append(cmd_token)
 			# else: # Do nothing
-			
-			if cmd_token.group == tab_group:
+			curr_group = cmd_token.group
+			if cmd_token.filament_tab and helical:
+				curr_group = cmd_token.filament_tab
+
+			if curr_group == tab_group:
 				# First, handle very special cases
 				if cmd_token.type == "user_func":
 					n_widgets = 2 # function type has two line edit boxes
@@ -2024,18 +2033,30 @@ class SXCmdTab(QWidget):
 					grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 
 					assert(cmd_token.is_required == False)
-					cmd_token_restore_widget[widget_index] = QPushButton("%s" % cmd_token.restore[widget_index])
-					cmd_token_restore_widget[widget_index].setStyleSheet(custom_style)
-					cmd_token_restore_widget[widget_index].setToolTip('<FONT>'+default_cmd_token_restore_tooltip+'</FONT>')
-					grid_layout.addWidget(cmd_token_restore_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
+					restores = cmd_token.restore[widget_index][helical]
+					if len(restores) == 1:
+						cmd_token_restore_widget[widget_index] = QPushButton("%s" % restores[0])
+						cmd_token_restore_widget[widget_index].setStyleSheet(custom_style)
+						cmd_token_restore_widget[widget_index].setToolTip('<FONT>'+default_cmd_token_restore_tooltip+'</FONT>')
+						grid_layout.addWidget(cmd_token_restore_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
+
+						cmd_token_restore_widget[widget_index].clicked.connect(partial(self.handle_restore_widget_event, cmd_token, widget_index))
+					else:
+						cmd_token_restore_widget[widget_index] = QComboBox()
+						cmd_token_restore_widget[widget_index].addItems(restores)
+						cmd_token_restore_widget[widget_index].setEditable(True)
+						cmd_token_restore_widget[widget_index].lineEdit().setReadOnly(True)
+						cmd_token_restore_widget[widget_index].lineEdit().setAlignment(QtCore.Qt.AlignCenter)
+						cmd_token_restore_widget[widget_index].setStyleSheet(custom_style)
+						cmd_token_restore_widget[widget_index].setToolTip('<FONT>'+default_cmd_token_restore_tooltip+'</FONT>')
+						grid_layout.addWidget(cmd_token_restore_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
+						cmd_token_restore_widget[widget_index].activated.connect(partial(self.handle_restore_widget_event, cmd_token, widget_index))
 
 					# cmd_token_widget[widget_index] = SXLineEdit(self)
 					cmd_token_widget[widget_index] = SXLineEdit(cmd_token.key_base)
-					cmd_token_widget[widget_index].setText(cmd_token.restore[widget_index])
+					cmd_token_widget[widget_index].setText(cmd_token.restore[widget_index][helical][0])
 					cmd_token_widget[widget_index].setToolTip('<FONT>'+cmd_token.help[widget_index]+'</FONT>')
 					grid_layout.addWidget(cmd_token_widget[widget_index], grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
-
-					cmd_token_restore_widget[widget_index].clicked.connect(partial(self.handle_restore_widget_event, cmd_token, widget_index))
 
 					grid_row +=  1
 
@@ -2045,13 +2066,13 @@ class SXCmdTab(QWidget):
 					grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 
 					assert(cmd_token.is_required == False)
-					cmd_token_restore_widget[widget_index] = QPushButton("%s" % cmd_token.restore[widget_index])
+					cmd_token_restore_widget[widget_index] = QPushButton("%s" % cmd_token.restore[widget_index][helical][0])
 					cmd_token_restore_widget[widget_index].setStyleSheet(custom_style)
 					cmd_token_restore_widget[widget_index].setToolTip('<FONT>'+default_cmd_token_restore_tooltip+'</FONT>')
 					grid_layout.addWidget(cmd_token_restore_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
 					cmd_token_widget[widget_index] = SXLineEdit(cmd_token.key_base)
-					cmd_token_widget[widget_index].setText(cmd_token.restore[widget_index]) # Because default user functions is internal
+					cmd_token_widget[widget_index].setText(cmd_token.restore[widget_index][helical][0]) # Because default user functions is internal
 					cmd_token_widget[widget_index].setToolTip('<FONT>'+cmd_token.help[widget_index]+'</FONT>')
 					grid_layout.addWidget(cmd_token_widget[widget_index], grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 
@@ -2085,72 +2106,154 @@ class SXCmdTab(QWidget):
 					cmd_token_subwidget_right = None
 					cmd_token_calculator_dialog = None
 
+					restores = cmd_token.restore[helical]
 					if cmd_token.type in ("bool", "bool_ignore"):
-						btn_name = "NO"
-						is_btn_enable = True
-						custom_style = "QPushButton {color:gray; }"
-						if cmd_token.restore:
-							btn_name = "YES"
-						if cmd_token.type in list(parent.sxconst_set.dict.keys()):
-							custom_style = "QPushButton {color:green; }"
-							cmd_token_restore_tooltip = const_cmd_token_restore_tooltip
-						elif cmd_token.is_required:
-							if cmd_token.is_locked:
-								btn_name = "locked"
-								custom_style = "QPushButton {color:blue; }"
-								is_btn_enable = False
-								cmd_token_restore_tooltip = locked_cmd_token_restore_tooltip
-							else:
-								btn_name = "required"
-								custom_style = "QPushButton {color:red; }"
-								is_btn_enable = False
-								cmd_token_restore_tooltip = required_cmd_token_restore_tooltip
-							
-						cmd_token_restore_widget = QPushButton("%s" % btn_name)
-						cmd_token_restore_widget.setStyleSheet(custom_style)
-						cmd_token_restore_widget.setEnabled(is_btn_enable)
-						grid_layout.addWidget(cmd_token_restore_widget, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
+						if len(restores) == 1:
+							btn_name = "NO"
+							is_btn_enable = True
+							custom_style = "QPushButton {color:gray; }"
+							if restores[0]:
+								btn_name = "YES"
+							if cmd_token.type in list(parent.sxconst_set.dict.keys()):
+								custom_style = "QPushButton {color:green; }"
+								cmd_token_restore_tooltip = const_cmd_token_restore_tooltip
+							elif cmd_token.is_required:
+								if cmd_token.is_locked:
+									btn_name = "locked"
+									custom_style = "QPushButton {color:blue; }"
+									is_btn_enable = False
+									cmd_token_restore_tooltip = locked_cmd_token_restore_tooltip
+								else:
+									btn_name = "required"
+									custom_style = "QPushButton {color:red; }"
+									is_btn_enable = False
+									cmd_token_restore_tooltip = required_cmd_token_restore_tooltip
+								
+							cmd_token_restore_widget = QPushButton("%s" % btn_name)
+							cmd_token_restore_widget.setStyleSheet(custom_style)
+							cmd_token_restore_widget.setEnabled(is_btn_enable)
+							grid_layout.addWidget(
+								cmd_token_restore_widget,
+								grid_row,
+								grid_col_origin + token_label_col_span,
+								token_widget_row_span,
+								token_widget_col_span
+								)
+							cmd_token_restore_widget.clicked.connect(partial(self.handle_restore_widget_event, cmd_token))
+						else:
+							custom_style = "QComboBox {color:gray; }"
+							is_btn_enable = True
+							if cmd_token.type in list(parent.sxconst_set.dict.keys()):
+								custom_style = "QComboBox {color:green; }"
+								cmd_token_restore_tooltip = const_cmd_token_restore_tooltip
+							elif cmd_token.is_required:
+								if cmd_token.is_locked:
+									btn_name = "locked"
+									custom_style = "QComboBox {color:blue; }"
+									is_btn_enable = False
+									cmd_token_restore_tooltip = locked_cmd_token_restore_tooltip
+								else:
+									btn_name = "required"
+									custom_style = "QComboBox {color:red; }"
+									is_btn_enable = False
+									cmd_token_restore_tooltip = required_cmd_token_restore_tooltip
+							cmd_token_restore_widget = QComboBox()
+							cmd_token_restore_widget.setEditable(True)
+							cmd_token_restore_widget.lineEdit().setReadOnly(True)
+							cmd_token_restore_widget.lineEdit().setAlignment(QtCore.Qt.AlignCenter)
+
+							cmd_token_restore_widget.addItems(restores)
+							cmd_token_restore_widget.setStyleSheet(custom_style)
+							cmd_token_restore_widget.setEnabled(is_btn_enable)
+							grid_layout.addWidget(
+								cmd_token_restore_widget,
+								grid_row,
+								grid_col_origin + token_label_col_span,
+								token_widget_row_span,
+								token_widget_col_span
+								)
+							cmd_token_restore_widget.activated.connect(partial(self.handle_restore_widget_event, cmd_token))
 
 						# construct new widget(s) for this command token
 						cmd_token_widget = SXCheckBox(cmd_token.key_base)
-						if cmd_token.restore == True:
+						if restores[0] == True:
 							cmd_token_widget.setCheckState(Qt.Checked)
 						else:
 							cmd_token_widget.setCheckState(Qt.Unchecked)
 						cmd_token_widget.setEnabled(not cmd_token.is_locked)
 						grid_layout.addWidget(cmd_token_widget, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 
-						cmd_token_restore_widget.clicked.connect(partial(self.handle_restore_widget_event, cmd_token))
 
 					else:
-						btn_name = "%s" % cmd_token.restore
-						custom_style = "QPushButton {color:gray; }"
-						is_btn_enable = True
-						if cmd_token.type in list(parent.sxconst_set.dict.keys()):
-							custom_style = "QPushButton {color:green; }"
-							cmd_token_restore_tooltip = const_cmd_token_restore_tooltip
-						elif cmd_token.is_required:
-							if cmd_token.is_locked:
-								btn_name = "locked"
-								custom_style = "QPushButton {color:blue; }"
-								is_btn_enable = False
-								cmd_token_restore_tooltip = locked_cmd_token_restore_tooltip
-							else:
-								btn_name = "required"
-								custom_style = "QPushButton {color:red; }"
-								is_btn_enable = False
-								cmd_token_restore_tooltip = required_cmd_token_restore_tooltip
-						cmd_token_restore_widget = QPushButton("%s" % btn_name)
-						cmd_token_restore_widget.setStyleSheet(custom_style)
-						cmd_token_restore_widget.setEnabled(is_btn_enable)
-						grid_layout.addWidget(cmd_token_restore_widget, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
+
+						if len(restores) == 1:
+							btn_name = "%s" % restores[0]
+							custom_style = "QPushButton {color:gray; }"
+							is_btn_enable = True
+							if cmd_token.type in list(parent.sxconst_set.dict.keys()):
+								custom_style = "QPushButton {color:green; }"
+								cmd_token_restore_tooltip = const_cmd_token_restore_tooltip
+							elif cmd_token.is_required:
+								if cmd_token.is_locked:
+									btn_name = "locked"
+									custom_style = "QPushButton {color:blue; }"
+									is_btn_enable = False
+									cmd_token_restore_tooltip = locked_cmd_token_restore_tooltip
+								else:
+									btn_name = "required"
+									custom_style = "QPushButton {color:red; }"
+									is_btn_enable = False
+									cmd_token_restore_tooltip = required_cmd_token_restore_tooltip
+							cmd_token_restore_widget = QPushButton("%s" % btn_name)
+							cmd_token_restore_widget.setStyleSheet(custom_style)
+							cmd_token_restore_widget.setEnabled(is_btn_enable)
+							grid_layout.addWidget(
+								cmd_token_restore_widget,
+								grid_row,
+								grid_col_origin + token_label_col_span,
+								token_widget_row_span,
+								token_widget_col_span
+								)
+							cmd_token_restore_widget.clicked.connect(partial(self.handle_restore_widget_event, cmd_token))
+						else:
+							custom_style = "QComboBox {color:gray; }"
+							is_btn_enable = True
+							if cmd_token.type in list(parent.sxconst_set.dict.keys()):
+								custom_style = "QComboBox {color:green; }"
+								cmd_token_restore_tooltip = const_cmd_token_restore_tooltip
+							elif cmd_token.is_required:
+								if cmd_token.is_locked:
+									btn_name = "locked"
+									custom_style = "QComboBox {color:blue; }"
+									is_btn_enable = False
+									cmd_token_restore_tooltip = locked_cmd_token_restore_tooltip
+								else:
+									btn_name = "required"
+									custom_style = "QComboBox {color:red; }"
+									is_btn_enable = False
+									cmd_token_restore_tooltip = required_cmd_token_restore_tooltip
+							cmd_token_restore_widget = QComboBox()
+							cmd_token_restore_widget.setEditable(True)
+							cmd_token_restore_widget.lineEdit().setReadOnly(True)
+							cmd_token_restore_widget.lineEdit().setAlignment(QtCore.Qt.AlignCenter)
+
+							cmd_token_restore_widget.addItems(restores)
+							cmd_token_restore_widget.setStyleSheet(custom_style)
+							cmd_token_restore_widget.setEnabled(is_btn_enable)
+							grid_layout.addWidget(
+								cmd_token_restore_widget,
+								grid_row,
+								grid_col_origin + token_label_col_span,
+								token_widget_row_span,
+								token_widget_col_span
+								)
+							cmd_token_restore_widget.activated.connect(partial(self.handle_restore_widget_event, cmd_token))
 
 						cmd_token_widget = SXLineEdit(cmd_token.key_base)
-						cmd_token_widget.setText(cmd_token.restore)
+						cmd_token_widget.setText(str(restores[0]))
 						cmd_token_widget.setEnabled(not cmd_token.is_locked)
 						grid_layout.addWidget(cmd_token_widget, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 
-						cmd_token_restore_widget.clicked.connect(partial(self.handle_restore_widget_event, cmd_token))
 
 						if cmd_token.type == "displayable_list":
 							file_format = cmd_token.type
@@ -2764,7 +2867,7 @@ class SXCmdTab(QWidget):
 ###							temp_btn.setMinimumWidth(func_btn_min_width)
 ###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 						else:
-							if cmd_token.type not in ["int", "float", "string", "output", "apix", "ctfwin", "box", "radius", "sym", "mass"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % cmd_token.type, "%s in %s" % (__name__, os.path.basename(__file__)))
+							if cmd_token.type not in ["int", "float", "string", "output", "apix", "ctfwin", "box", "radius", "sym", "mass", "filament_width"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % cmd_token.type, "%s in %s" % (__name__, os.path.basename(__file__)))
 						
 						# if cmd_token.type in ["output", "output_continue", "output_bdb2d_stack"]:
 						# 	# Need to add output info button in future
@@ -3028,19 +3131,52 @@ class SXCmdTab(QWidget):
 		self.set_text_entry_widget_enable_state(self.qsub_script_edit, is_enabled)
 		self.qsub_script_open_btn.setEnabled(is_enabled)
 
-	def handle_restore_widget_event(self, sxcmd_token, widget_index=0):
+	def handle_restore_widget_event(self, sxcmd_token, widget_index=0, restore_idx=0):
 		assert(not sxcmd_token.is_locked)
 		if sxcmd_token.type == "user_func":
 			assert(len(sxcmd_token.widget) == 2 and len(sxcmd_token.restore) == 2 and widget_index < 2)
-			sxcmd_token.widget[widget_index].setText("%s" % sxcmd_token.restore[widget_index])
+			try:
+				text = str(self.sender().text())
+			except AttributeError:
+				if restore_idx == 0:
+					text = str(self.sender().currentText())
+				else:
+					text = str(self.sender().itemText(restore_idx))
+				text = text.strip()
+				self.sender().blockSignals(True)
+				self.sender().setCurrentIndex(0)
+				self.sender().blockSignals(False)
+			sxcmd_token.widget[widget_index].setText(text)
 		else:
 			if sxcmd_token.type in ("bool", "bool_ignore"):
-				if sxcmd_token.restore:
+				try:
+					text = str(self.sender().text())
+				except AttributeError:
+					if restore_idx == 0:
+						text = str(self.sender().currentText())
+					else:
+						text = str(self.sender().itemText(restore_idx))
+					text = text.strip()
+					self.sender().blockSignals(True)
+					self.sender().setCurrentIndex(0)
+					self.sender().blockSignals(False)
+				if text == 'YES':
 					sxcmd_token.widget.setChecked(Qt.Checked)
 				else: # sxcmd_token.restore == False
 					sxcmd_token.widget.setChecked(Qt.Unchecked)
 			else:
-				sxcmd_token.widget.setText("%s" % sxcmd_token.restore)
+				try:
+					text = str(self.sender().text())
+				except AttributeError:
+					if restore_idx == 0:
+						text = str(self.sender().currentText())
+					else:
+						text = str(self.sender().itemText(restore_idx))
+					text = text.strip()
+					self.sender().blockSignals(True)
+					self.sender().setCurrentIndex(0)
+					self.sender().blockSignals(False)
+				sxcmd_token.widget.setText(text)
 				if sxcmd_token.type == "abs_freq":
 					sxcmd_token.calculator_dialog.reflect_external_local_update_abs_freq()
 					for sxcmd_token_other_dialog in sxcmd_token.other_dialog_list:
@@ -3077,7 +3213,7 @@ class SXCmdTab(QWidget):
 # ========================================================================================
 # Command Category Widget (opened by class SXMainWindow)
 class SXCmdCategoryWidget(QWidget):
-	def __init__(self, sxconst_set, sxcmd_category, parent = None):
+	def __init__(self, sxconst_set, sxcmd_category, helical=False, parent = None):
 		super(SXCmdCategoryWidget, self).__init__(parent)
 
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
@@ -3116,7 +3252,7 @@ class SXCmdCategoryWidget(QWidget):
 		# --------------------------------------------------------------------------------
 		# Add SX Commands (sx*.py) associated widgets
 		# --------------------------------------------------------------------------------
-		self.add_sxcmd_widgets()
+		self.add_sxcmd_widgets(helical)
 
 #		# --------------------------------------------------------------------------------
 #		# Load the previously saved parameter setting of this sx command
@@ -3148,7 +3284,7 @@ class SXCmdCategoryWidget(QWidget):
 		# self.grid_layout.setColumnStretch(self.grid_col_origin + self.sxcmd_btn_area_col_span, self.grid_layout.columnStretch(self.grid_col_origin + self.sxcmd_btn_area_col_span) + 1)
 
 	# Add Pipeline SX Commands (sx*.py) associated widgets
-	def add_sxcmd_widgets(self):
+	def add_sxcmd_widgets(self, helical):
 		self.sxcmd_btn_group = QButtonGroup()
 		# self.sxcmd_btn_group.setExclusive(True) # NOTE: 2016/02/18 Toshio Moriya: Without QPushButton.setCheckable(True). This does not do anything. Let manually do this
 
@@ -3195,7 +3331,7 @@ class SXCmdCategoryWidget(QWidget):
 			self.grid_layout.addWidget(sxcmd.btn, self.grid_row, self.grid_col_origin, self.sxcmd_btn_row_span, self.sxcmd_btn_col_span)
 
 			# Create SXCmdWidget for this sx*.py processe
-			sxcmd.widget = SXCmdWidget(self.sxconst_set, sxcmd)
+			sxcmd.widget = SXCmdWidget(self.sxconst_set, sxcmd, helical, self)
 			self.stacked_layout.addWidget(sxcmd.widget)
 
 			# connect widget signals
@@ -3240,15 +3376,16 @@ class SXCmdCategoryWidget(QWidget):
 # ========================================================================================
 # Layout of the project constants parameters widget; owned by the main window
 class SXConstSetWidget(QWidget):
-	def __init__(self, sxconst_set, sxcmd_category_list, parent=None):
+	def __init__(self, sxconst_set, sxcmd_category_list, helical=False, parent=None):
 		super(SXConstSetWidget, self).__init__(parent)
 
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
+		self.parent = parent
 		self.sxconst_set = sxconst_set
 		self.sxcmd_category_list = sxcmd_category_list
 
-		self.gui_settings_file_path = "%s/gui_settings_project.txt" % (SXLookFeelConst.project_dir)
+		self.gui_settings_file_path = "%s/gui_settings_project_%d.txt" % (SXLookFeelConst.project_dir, int(helical))
 
 		# Layout constants and variables
 		global_row_origin = 0; global_col_origin = 0
@@ -3387,6 +3524,26 @@ class SXConstSetWidget(QWidget):
 		btn_layout.addWidget(self.load_consts_btn, btn_grid_row, btn_col_origin + func_btn_col_span, func_btn_row_span, func_btn_col_span)
 
 		btn_grid_row += 1
+		btn_layout.addWidget(QLabel(), btn_grid_row, btn_col_origin, register_btn_row_span, register_btn_col_span)
+
+		btn_grid_row += 1
+
+		# Add a register button
+		custom_style = "QPushButton {color: #68a2c3}"
+		if helical:
+			self.helical_spa_btn = QPushButton("Switch to SPA GUI")
+			self.helical_spa_btn.setToolTip('Switch to the SPA GUI')
+			self.helical_spa_btn.setStyleSheet(custom_style)
+		else:
+			self.helical_spa_btn = QPushButton("Switch to helical GUI")
+			self.helical_spa_btn.setToolTip('Switch to the helical GUI')
+			self.helical_spa_btn.setStyleSheet(custom_style)
+		# make 3D textured push button look
+		self.helical_spa_btn.setMinimumWidth(func_btn_min_width * register_btn_col_span)
+		self.helical_spa_btn.clicked.connect(self.switch_gui)
+		btn_layout.addWidget(self.helical_spa_btn, btn_grid_row, btn_col_origin, register_btn_row_span, register_btn_col_span)
+
+		btn_grid_row += 1
 
 		# Add button grid layout to global layout
 		# global_layout.addLayout(btn_layout, global_grid_row, global_col_origin) # Maybe later :)
@@ -3403,6 +3560,11 @@ class SXConstSetWidget(QWidget):
 		constant_width_layout = QHBoxLayout(self)
 		constant_width_layout.addLayout(constant_height_layout)
 		constant_width_layout.addStretch(1)
+
+	def switch_gui(self):
+		self.parent.helical = not self.parent.helical
+		self.parent.sxmenu_item_widget_stacked_layout_global.setCurrentIndex(self.parent.helical)
+		self.parent.sxmenu_item_widget_stacked_layout[self.parent.helical].setCurrentWidget(self.parent.sxconst_set[self.parent.helical].widget)
 
 	def handle_regster_widget_event(self, sxconst):
 		sxconst.widget.setText(sxconst.register)
@@ -3422,7 +3584,10 @@ class SXConstSetWidget(QWidget):
 					if not cmd_token.is_locked and cmd_token.type in list(self.sxconst_set.dict.keys()):
 						sxconst = self.sxconst_set.dict[cmd_token.type]
 						cmd_token.restore = sxconst.register
-						cmd_token.restore_widget.setText("%s" % cmd_token.restore)
+						try:
+							cmd_token.restore_widget.setText("%s" % cmd_token.restore)
+						except:
+							cmd_token.restore_widget.setCurrentIndex(0)
 						cmd_token.widget.setText(cmd_token.restore)
 						# print "MRK_DEBUG: %s, %s, %s, %s, %s, %s" % (sxcmd.name, sxcmd.subname, cmd_token.key_base, cmd_token.type, cmd_token.default, cmd_token.restore)
 					elif cmd_token.type == "abs_freq":
@@ -4382,114 +4547,129 @@ class SXDialogCalculator(QDialog):
 # Main Window (started by class SXApplication)
 class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
-	def __init__(self, parent = None):
+	def __init__(self, helical, parent = None):
 		super(SXMainWindow, self).__init__(parent)
 
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-		self.sxinfo = None
-		self.sxconst_set = None
-		self.sxcmd_category_list = None
+		self.helical = helical
+		self.sxinfo = []
+		self.sxconst_set = []
+		self.sxcmd_category_list = []
 
 		self.cur_sxmenu_item = None
-		self.sxmenu_item_widget_stacked_layout = None
+		self.sxmenu_item_widget_stacked_layout = []
 
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
 		# --------------------------------------------------------------------------------
 		# Construct menu items
 		# --------------------------------------------------------------------------------
-		self.construct_sxinfo()              # Construct application information
-		self.construct_sxconst_set()         # Construct project constant set for project settings
-		self.construct_sxcmd_category_list() # Construct list of categorised sxscript objects (extracted from associated wiki documents)
+		self.sxinfo.append(self.construct_sxinfo())              # Construct application information
+		self.sxinfo.append(self.construct_sxinfo())              # Construct application information
+		self.sxconst_set.append(self.construct_sxconst_set(0))         # Construct project constant set for project settings
+		self.sxconst_set.append(self.construct_sxconst_set(1))         # Construct project constant set for project settings
+		self.sxcmd_category_list.append(self.construct_sxcmd_category_list()) # Construct list of categorised sxscript objects (extracted from associated wiki documents)
+		self.sxcmd_category_list.append(self.construct_sxcmd_category_list()) # Construct list of categorised sxscript objects (extracted from associated wiki documents)
 
 		# --------------------------------------------------------------------------------
 		# Setup Window Layout
 		# --------------------------------------------------------------------------------
 		background_image_file_path = '{0}sxgui_background.png'.format(get_image_directory())
 
-		# Central widget
-		central_widget = QWidget(self)
-		central_widget.setObjectName('central')
-		central_widget.setStyleSheet(
+		central_widget_global = QWidget(self)
+		central_widget_global.setObjectName('central')
+		central_widget_global.setStyleSheet(
 			'QWidget#central {{background-image: url("{0}")}}'.format(background_image_file_path)
 			)
-		self.setCentralWidget(central_widget)
+		self.setCentralWidget(central_widget_global)
+		self.sxmenu_item_widget_stacked_layout_global = QStackedLayout()
+		central_widget_global.setLayout(self.sxmenu_item_widget_stacked_layout_global)
 
-		# Layout for central widget
-		central_layout = QHBoxLayout(central_widget)
-		central_widget.setLayout(central_layout)
+		for idx in range(2):
+			# Central widget
+			central_widget = QWidget(self)
+			central_widget.setObjectName('central')
+			central_widget.setStyleSheet(
+				'QWidget#central {{background-image: url("{0}")}}'.format(background_image_file_path)
+				)
 
-		# --------------------------------------------------------------------------------
-		# Construct and add a widget for menu item button area (containing all menu item buttons)
-		# --------------------------------------------------------------------------------
-		sxmenu_item_btn_area_widget = SXMenuItemBtnAreaWidget(self.sxconst_set, self.sxcmd_category_list, self.sxinfo, central_widget)
-		central_layout.addWidget(sxmenu_item_btn_area_widget)
+			# Layout for central widget
+			central_layout = QHBoxLayout(central_widget)
+			central_widget.setLayout(central_layout)
 
-		# --------------------------------------------------------------------------------
-		# Construct and add widgets for menu item widget area (containing all menu item widgets)
-		# --------------------------------------------------------------------------------
-		# Stacked layout for sx menu item widgets area
-		self.sxmenu_item_widget_stacked_layout = QStackedLayout()
-		central_layout.addLayout(self.sxmenu_item_widget_stacked_layout, stretch = 1)
+			# --------------------------------------------------------------------------------
+			# Construct and add a widget for menu item button area (containing all menu item buttons)
+			# --------------------------------------------------------------------------------
+			sxmenu_item_btn_area_widget = SXMenuItemBtnAreaWidget(self.sxconst_set[idx], self.sxcmd_category_list[idx], self.sxinfo[idx], central_widget)
+			central_layout.addWidget(sxmenu_item_btn_area_widget)
 
-		# Construct and add a widget for project constants settings
-		self.sxconst_set.widget = SXConstSetWidget(self.sxconst_set, self.sxcmd_category_list)
-		self.sxmenu_item_widget_stacked_layout.addWidget(self.sxconst_set.widget)
+			# --------------------------------------------------------------------------------
+			# Construct and add widgets for menu item widget area (containing all menu item widgets)
+			# --------------------------------------------------------------------------------
+			# Stacked layout for sx menu item widgets area
+			self.sxmenu_item_widget_stacked_layout.append(QStackedLayout())
+			central_layout.addLayout(self.sxmenu_item_widget_stacked_layout[idx], stretch = 1)
 
-		# Construct and add widgets for sx command categories
-		for sxcmd_category in self.sxcmd_category_list:
-			# Create SXCmdCategoryWidget for this command category
-			sxcmd_category.widget = SXCmdCategoryWidget(self.sxconst_set, sxcmd_category)
-			self.sxmenu_item_widget_stacked_layout.addWidget(sxcmd_category.widget)
+			# Construct and add a widget for project constants settings
+			self.sxconst_set[idx].widget = SXConstSetWidget(self.sxconst_set[idx], self.sxcmd_category_list[idx], helical=idx, parent=self)
+			self.sxmenu_item_widget_stacked_layout[idx].addWidget(self.sxconst_set[idx].widget)
 
-		# Construct and add a widget for GUI application information
-		self.sxinfo.widget = SXInfoWidget()
-		self.sxmenu_item_widget_stacked_layout.addWidget(self.sxinfo.widget)
+			# Construct and add widgets for sx command categories
+			for sxcmd_category in self.sxcmd_category_list[idx]:
+				# Create SXCmdCategoryWidget for this command category
+				sxcmd_category.widget = SXCmdCategoryWidget(self.sxconst_set[idx], sxcmd_category, idx)
+				self.sxmenu_item_widget_stacked_layout[idx].addWidget(sxcmd_category.widget)
 
-		# --------------------------------------------------------------------------------
-		# Set up event handler of all menu item buttons
-		# --------------------------------------------------------------------------------
-		for sxcmd_category in self.sxcmd_category_list:
-			sxcmd_category.btn.clicked.connect(partial(self.handle_sxmenu_item_btn_event, sxcmd_category))
-		self.sxconst_set.btn.clicked.connect(partial(self.handle_sxmenu_item_btn_event, self.sxconst_set))
-		self.sxinfo.btn.clicked.connect(partial(self.handle_sxmenu_item_btn_event, self.sxinfo))
+			# Construct and add a widget for GUI application information
+			self.sxinfo[idx].widget = SXInfoWidget()
+			self.sxmenu_item_widget_stacked_layout[idx].addWidget(self.sxinfo[idx].widget)
 
-		# --------------------------------------------------------------------------------
-		# Register project constant parameter settings upon initialization
-		# --------------------------------------------------------------------------------
-		self.sxconst_set.widget.register_const_set()
+			# --------------------------------------------------------------------------------
+			# Set up event handler of all menu item buttons
+			# --------------------------------------------------------------------------------
+			for i, sxcmd_category in enumerate(self.sxcmd_category_list[idx]):
+				sxcmd_category.btn.clicked.connect(partial(self.handle_sxmenu_item_btn_event, sxcmd_category, i))
+			self.sxconst_set[idx].btn.clicked.connect(partial(self.handle_sxmenu_item_btn_event, self.sxconst_set[idx]))
+			self.sxinfo[idx].btn.clicked.connect(partial(self.handle_sxmenu_item_btn_event, self.sxinfo[idx]))
 
-		# --------------------------------------------------------------------------------
-		# Load the previously saved parameter setting of all sx commands
-		# Override the registration of project constant parameter settings with the previously-saved one
-		# --------------------------------------------------------------------------------
-		for sxcmd_category in self.sxcmd_category_list:
-			sxcmd_category.widget.load_previous_session()
+			# --------------------------------------------------------------------------------
+			# Register project constant parameter settings upon initialization
+			# --------------------------------------------------------------------------------
+			self.sxconst_set[idx].widget.register_const_set()
 
-		# --------------------------------------------------------------------------------
-		# Start widget
-		# --------------------------------------------------------------------------------
-		start_widget = QtGui.QWidget()
-		logo_container = QtGui.QWidget()
-		layout_start_widget = QtGui.QHBoxLayout()
-		layout_logo_container = QtGui.QVBoxLayout()
-		logo_container.setStyleSheet('border-image: url("{0}sxgui_pictograph_info.png")'.format(get_image_directory()))
-		logo_container.setFixedSize(100, 100)
-		layout_start_widget.setContentsMargins(0, 0, 0, 20)
+			# --------------------------------------------------------------------------------
+			# Load the previously saved parameter setting of all sx commands
+			# Override the registration of project constant parameter settings with the previously-saved one
+			# --------------------------------------------------------------------------------
+			for sxcmd_category in self.sxcmd_category_list[idx]:
+				sxcmd_category.widget.load_previous_session()
 
-		layout_logo_container.addStretch(1)
-		layout_logo_container.addWidget(logo_container)
-		layout_start_widget.addLayout(layout_logo_container)
-		layout_start_widget.addStretch(1)
-		start_widget.setLayout(layout_start_widget)
-		self.sxmenu_item_widget_stacked_layout.addWidget(start_widget)
+			# --------------------------------------------------------------------------------
+			# Start widget
+			# --------------------------------------------------------------------------------
+			start_widget = QtGui.QWidget()
+			logo_container = QtGui.QWidget()
+			layout_start_widget = QtGui.QHBoxLayout()
+			layout_logo_container = QtGui.QVBoxLayout()
+			logo_container.setStyleSheet('border-image: url("{0}sxgui_pictograph_info.png")'.format(get_image_directory()))
+			logo_container.setFixedSize(100, 100)
+			layout_start_widget.setContentsMargins(0, 0, 0, 20)
 
-		# --------------------------------------------------------------------------------
-		# Display application information upon startup
-		# --------------------------------------------------------------------------------
-		self.sxmenu_item_widget_stacked_layout.setCurrentWidget(start_widget)
+			layout_logo_container.addStretch(1)
+			layout_logo_container.addWidget(logo_container)
+			layout_start_widget.addLayout(layout_logo_container)
+			layout_start_widget.addStretch(1)
+			start_widget.setLayout(layout_start_widget)
+			self.sxmenu_item_widget_stacked_layout[idx].addWidget(start_widget)
+
+			# --------------------------------------------------------------------------------
+			# Display application information upon startup
+			# --------------------------------------------------------------------------------
+			self.sxmenu_item_widget_stacked_layout[idx].setCurrentWidget(start_widget)
+			self.sxmenu_item_widget_stacked_layout_global.addWidget(central_widget)
+		self.sxmenu_item_widget_stacked_layout_global.setCurrentIndex(self.helical)
 
 		# --------------------------------------------------------------------------------
 		# Get focus to main window
@@ -4501,9 +4681,9 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxinfo = SXmenu_item(); sxinfo.name = "sxc_gui_info"; sxinfo.label = "GUI Appliation Information"; sxinfo.short_info = "DUMMY STRING"
 
 		# Store GUI application information as a class data member
-		self.sxinfo = sxinfo
+		return sxinfo
 
-	def construct_sxconst_set(self):
+	def construct_sxconst_set(self, helical):
 		sxconst_set = SXconst_set(); sxconst_set.name = "sxc_project"; sxconst_set.label = "Project Settings"; sxconst_set.short_info = "Set constant parameter values for this project. These constants will be used as default values of associated arguments and options in command settings. However, the project settings here are not required to run commands."
 		sxconst = SXconst(); sxconst.key = "protein"; sxconst.label = "Protein name"; sxconst.help = "a valid string for file names on your OS."; sxconst.register = "MY_PROTEIN"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "apix"; sxconst.label = "Micrograph pixel size [A]"; sxconst.help = ""; sxconst.register = "1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
@@ -4512,10 +4692,12 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxconst = SXconst(); sxconst.key = "radius"; sxconst.label = "Protein particle radius [pixels]"; sxconst.help = ""; sxconst.register = "-1"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "sym"; sxconst.label = "Point-group symmetry"; sxconst.help = "e.g. c1, c4, d5"; sxconst.register = "c1"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "mass"; sxconst.label = "Protein molecular mass [kDa]"; sxconst.help = ""; sxconst.register = "-1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+		if helical:
+			sxconst = SXconst(); sxconst.key = "filament_width"; sxconst.label = "Filament width [pixels]"; sxconst.help = "Width of the filament in case of filamentous processing."; sxconst.register = "-1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "config"; sxconst.label = "Imaging configurations"; sxconst.help = "a free-style string for your record. please use it to describe the set of imaging configurations used in this project (e.g. types of microscope, detector, enegy filter, abbration corrector, phase plate, and etc."; sxconst.register = "MY_MICROSCOPE"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 
 		# Store the project constant parameter set as a class data member
-		self.sxconst_set = sxconst_set
+		return sxconst_set
 
 	def construct_sxcmd_category_list(self):
 		sxcmd_category_list = []
@@ -4540,9 +4722,12 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 					n_widgets = 2 # function type has two line edit boxes
 					sxcmd_token.label = [sxcmd_token.label, "Python script for user function"]
 					sxcmd_token.help = [sxcmd_token.help, "Please leave it none/blank if file is not external to SPHIRE"]
-					sxcmd_token.default = [sxcmd_token.default, "none"]
+					sxcmd_token.default = sxcmd_token.default.split('|||')
 					if not sxcmd_token.is_locked:
-						sxcmd_token.restore = sxcmd_token.default
+						sxcmd_token.restore = [sxcmd_token.restore, [["none"], ["none"]]]
+					else:
+						sxcmd_token.restore = [[[""], [""]], [[""], [""]]]
+					sxcmd_token.default = [sxcmd_token.default[0], "none"]
 				# else: Do nothing for the other types
 
 				# Register this to command token dictionary
@@ -4553,16 +4738,17 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 			sxcmd_category_dict[sxcmd.category].cmd_list.append(sxcmd)
 
 		# Store the constructed lists and dictionary as a class data member
-		self.sxcmd_category_list = sxcmd_category_list
+		return sxcmd_category_list
 
 	def update_qsub_enable_states(self):
 		# Construct and add widgets for sx command categories
-		for sxcmd_category in self.sxcmd_category_list:
-			# Create SXCmdCategoryWidget for this command category
-			for sxcmd in sxcmd_category.cmd_list:
-				sxcmd.widget.sxcmd_tab_main.set_qsub_enable_state()
+		for idx in range(2):
+			for sxcmd_category in self.sxcmd_category_list[idx]:
+				# Create SXCmdCategoryWidget for this command category
+				for sxcmd in sxcmd_category.cmd_list:
+					sxcmd.widget.sxcmd_tab_main.set_qsub_enable_state()
 
-	def handle_sxmenu_item_btn_event(self, sxmenu_item):
+	def handle_sxmenu_item_btn_event(self, sxmenu_item, i=0):
 		assert(isinstance(sxmenu_item, SXmenu_item) == True) # Assuming the sxmenu_item is an instance of class SXmenu_item
 
 		modifiers = QApplication.keyboardModifiers()
@@ -4578,18 +4764,24 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		if self.cur_sxmenu_item != None:
 			self.cur_sxmenu_item.btn.setStyleSheet(self.cur_sxmenu_item.btn.customButtonStyle)
 
-		self.cur_sxmenu_item = sxmenu_item
+		if isinstance(sxmenu_item, SXconst_set):
+			self.cur_sxmenu_item = self.sender().parent.sxconst_set
+		elif isinstance(sxmenu_item, SXcmd_category):
+			self.cur_sxmenu_item = self.sender().parent.sxcmd_category_list[i]
+		else:
+			self.cur_sxmenu_item = sxmenu_item
 
 		if self.cur_sxmenu_item != None:
 			self.cur_sxmenu_item.btn.setStyleSheet(self.cur_sxmenu_item.btn.customButtonStyleClicked)
-			self.sxmenu_item_widget_stacked_layout.setCurrentWidget(self.cur_sxmenu_item.widget)
+			self.sxmenu_item_widget_stacked_layout[self.helical].setCurrentWidget(self.cur_sxmenu_item.widget)
 
 	def closeEvent(self, event):
 		event.ignore() # event.accept()
 
 		# Quit child applications of all sxcmd widgets
-		for sxcmd_category in self.sxcmd_category_list:
-			sxcmd_category.widget.quit_all_child_applications()
+		for idx in range(2):
+			for sxcmd_category in self.sxcmd_category_list[idx]:
+				sxcmd_category.widget.quit_all_child_applications()
 
 		print("bye bye")
 		QtCore.QCoreApplication.instance().quit()
@@ -4605,6 +4797,7 @@ def main():
 	The main SPHIRE GUI application. It is designed as the command generator for the SPHIRE single particle analysis pipeline.
 	"""
 	parser = OptionParser(usage, version=SPARXVERSION)
+	parser.add_option('--helical', action='store_true', default=False, help='Start the GUI in helical mode. This can be changed after the start. (default False)')
 	# No options!!! Does not need to call parser.add_option()
 	
 	(options, args) = parser.parse_args(sys.argv[1:])
@@ -4670,7 +4863,7 @@ def main():
 	SXLookFeelConst.initialise(sxapp, version_string)
 
 	# Define the main window (class SXMainWindow)
-	sxmain_window = SXMainWindow()
+	sxmain_window = SXMainWindow(options.helical)
 	sxmain_window.setWindowTitle("SPHIRE-GUI Main Version {0}".format(version_string))
 	sxmain_window.setMinimumWidth(SXLookFeelConst.sxmain_window_width)
 	sxmain_window.setMinimumHeight(SXLookFeelConst.sxmain_window_height)

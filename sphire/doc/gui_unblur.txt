@@ -61,7 +61,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_gui_unblur.py
+sphire/bin/sp_gui_unblur.py
 
 \\
 ==== See also ====
