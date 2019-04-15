@@ -79,7 +79,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_separate_class.py
+sphire/bin/sp_separate_class.py
 
 \\
 ==== See also ====

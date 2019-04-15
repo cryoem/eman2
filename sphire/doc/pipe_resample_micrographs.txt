@@ -67,7 +67,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_pipe.py
+sphire/bin/sp_pipe.py
 
 \\
 ==== See also ====

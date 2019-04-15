@@ -133,7 +133,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_sort3d_depth.py
+sphire/bin/sp_sort3d_depth.py
 
 \\
 ==== See also ====

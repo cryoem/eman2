@@ -107,7 +107,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_unblur_old.py
+sphire/bin/sp_unblur_old.py
 
 \\
 ==== See also ====

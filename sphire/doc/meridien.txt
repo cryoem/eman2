@@ -110,7 +110,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_meridien.py
+sphire/bin/sp_meridien.py
 
 \\
 ==== See also ====

@@ -162,7 +162,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_isac2.py, sparx/bin/sp_isac.py, sparx/bin/isac.py
+sphire/bin/sp_isac2.py, sphire/bin/sp_isac.py, sphire/bin/isac.py
 
 \\
 ==== See also ====

@@ -87,7 +87,7 @@ Category 1:: FUNDAMENTALS, UTILITIES, APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_window.py
+sphire/bin/sp_window.py
 
 \\
 ==== See also ====

@@ -121,7 +121,7 @@ Category 3:: GRIDDING
 
 \\
 ==== Files ====
-sparx/bin/sp_rviper.py
+sphire/bin/sp_rviper.py
 
 \\
 ==== See also ====

@@ -97,7 +97,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_proj_compare.py
+sphire/bin/sp_proj_compare.py
 
 \\
 ==== See also ====

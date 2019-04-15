@@ -278,7 +278,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_process.py
+sphire/bin/sp_process.py
 
 \\
 ==== See also ====

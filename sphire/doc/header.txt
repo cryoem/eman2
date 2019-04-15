@@ -97,7 +97,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_header.py
+sphire/bin/sp_header.py
 
 \\
 ==== See also ====
