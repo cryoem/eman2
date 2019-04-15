@@ -513,7 +513,7 @@ class SXPictogramButton(QPushButton):
 		self.setToolTip(pictogram_name.upper())
 
 class SXMenuItemBtnAreaWidget(QWidget):
-	def __init__(self, sxconst_set, sxcmd_category_list, sxinfo, parent = None):
+	def __init__(self, sxconst_set, sxcmd_category_list, sxinfo, helical, parent = None):
 		super(SXMenuItemBtnAreaWidget, self).__init__(parent)
 
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
@@ -563,7 +563,10 @@ class SXMenuItemBtnAreaWidget(QWidget):
 		sxmenu_item_btn_area_layout.addStretch(1)
 
 		# Add menu item button for application information
-		sxmenu_item_btn_pictograph_file_path = '{0}sxgui_logo_sphire.png'.format(get_image_directory())
+		if helical:
+			sxmenu_item_btn_pictograph_file_path = '{0}sxgui_logo_sphire_helix.png'.format(get_image_directory())
+		else:
+			sxmenu_item_btn_pictograph_file_path = '{0}sxgui_logo_sphire.png'.format(get_image_directory())
 		sxmenu_item_btn = SXLogoButton(sxmenu_item_btn_pictograph_file_path)
 		sxinfo.btn = sxmenu_item_btn
 
@@ -4602,7 +4605,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 			# --------------------------------------------------------------------------------
 			# Construct and add a widget for menu item button area (containing all menu item buttons)
 			# --------------------------------------------------------------------------------
-			sxmenu_item_btn_area_widget = SXMenuItemBtnAreaWidget(self.sxconst_set[idx], self.sxcmd_category_list[idx], self.sxinfo[idx], central_widget)
+			sxmenu_item_btn_area_widget = SXMenuItemBtnAreaWidget(self.sxconst_set[idx], self.sxcmd_category_list[idx], self.sxinfo[idx], idx, central_widget)
 			central_layout.addWidget(sxmenu_item_btn_area_widget)
 
 			# --------------------------------------------------------------------------------
