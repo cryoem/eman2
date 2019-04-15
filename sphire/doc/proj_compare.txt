@@ -47,7 +47,7 @@ Some particles may have been erroneously assigned to a class, as indiciated by a
   ; %%--%%mode : Comparison method : Choices are: viper, projmatch, and meridien. (default viper)
   ; %%--%%classangles : VIPER - Projection parameter file : Parameter file containing projection angles. Not required if the projection parameters are stored in the header of the input images, which for ISAC2 is generally not the case. In RVIPER, this file is of the form main003/run002/rotated_reduced_params.txt. (default None) : %%--%%mode==viper
   ; %%--%%classselect : VIPER - Image selection file : Input selection containing list of images to be included from the input stack.  For instance, RVIPER, if it finds a stable solution, may exclude some images, and thus their projection angles will be excluded from the parameters file.  The file containing the list of included images will have a name like main003/index_keep_image.txt. (default None) : %%--%%mode==viper
-  ; %%--%%delta : ProjMatch - Sampling angle : Angular-sampling for reference projections. (default 7.5) : %%--%%mode==projmatch
+  ; %%--%%delta : ProjMatch - Sampling angle : Angular-sampling for reference projections. (default 7.5|||15|||3.75|||1.875|||0.9375|||0.46875|||0.234375) : %%--%%mode==projmatch
   ; %%--%%symmetry : ProjMatch - Symmetry : To limit angular projections. (default c1) : %%--%%mode==projmatch
   ; %%--%%partangles : MERIDIEN - Alignment parameter file : Input refinement parameter file. (default None) : %%--%%mode==meridien
   ; %%--%%partselect : MERIDIEN - Particle selection file : Input substack selection file if particles removed before refinement (e.g., Substack/isac_substack_particle_id_list.txt). (default None) : %%--%%mode==meridien
