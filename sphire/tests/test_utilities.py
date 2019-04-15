@@ -24,7 +24,12 @@ from ..libpy import sparx_utilities as fu
 from .sparx_lib import sparx_utilities as oldfu
 from os import path
 from EMAN2_cppwrap import EMData
+from copy import deepcopy
 
+IMAGE_2D, IMAGE_2D_REFERENCE = get_real_data(dim=2)
+IMAGE_3D, STILL_NOT_VALID = get_real_data(dim=3)
+IMAGE_BLANK_2D = fu.model_blank(10, 10)
+IMAGE_BLANK_3D = fu.model_blank(10, 10, 10)
 TOLERANCE = 0.0075
 """
 There are some opened issues in:
@@ -36,6 +41,7 @@ There are some opened issues in:
 6) get_im --> I need an image to test the last case ... similarly the (5)
 7) read_text_row --> I need at least a file to test it
 8) read_text_file --> same situation of 7
+9) estimate_3D_center_MPI -- ask markus how it works
 """
 
 class Test_amoeba(unittest.TestCase):
@@ -233,30 +239,27 @@ class Test_drop_image(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_invalid_type_returns_UnboundLocalError_imgtype_referenced_before_assignment(self):
-        img,NotUsed = get_real_data(dim = 2)
         destination ='output.hdf'
         with self.assertRaises(UnboundLocalError) as cm_new:
-            fu.drop_image(img, destination, itype="invalid")
+            fu.drop_image(IMAGE_2D, destination, itype="invalid")
         with self.assertRaises(UnboundLocalError) as cm_old:
-            oldfu.drop_image(img, destination, itype="invalid")
+            oldfu.drop_image(IMAGE_2D, destination, itype="invalid")
         self.assertEqual(cm_new.exception.message, "local variable 'imgtype' referenced before assignment")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     @unittest.skip("it does not work under nosetests , anyway im not able to test it properly")
     def test_destination_is_not_a_file_returns_error_msg(self):
-        img,NotUsed = get_real_data(dim = 2)
         destination = 3
-        return_new = fu.drop_image(img, destination, itype="h")
-        return_old = oldfu.drop_image(img, destination, itype="h")
+        return_new = fu.drop_image(IMAGE_2D, destination, itype="h")
+        return_old = oldfu.drop_image(IMAGE_2D, destination, itype="h")
         self.assertTrue(return_new is None)
         self.assertTrue(return_old is None)
 
     @unittest.skip("it does not work under nosetests , anyway im not able to test it properly")
-    def test_drop_image_true_should_return_equal_objects1(self):
-        img,NotUsed = get_real_data(dim = 2)
+    def test_drop_image2D_true_should_return_equal_objects1(self):
         destination ='output.hdf'
-        return_new = fu.drop_image(img, destination, itype="h")
-        return_old = oldfu.drop_image(img, destination, itype="h")
+        return_new = fu.drop_image(IMAGE_2D, destination, itype="h")
+        return_old = oldfu.drop_image(IMAGE_2D, destination, itype="h")
 
         if return_new is not None   and  return_old is not None:
             self.assertTrue(return_new, return_old)
@@ -400,23 +403,20 @@ class Test_gauss_edge(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_default_value_2Dreal_img(self):
-        img, not_used=get_real_data(dim = 2)
-        return_new =fu.gauss_edge(img, kernel_size = 7, gauss_standard_dev =3)
-        return_old =oldfu.gauss_edge(img, kernel_size = 7, gauss_standard_dev =3)
+        return_new =fu.gauss_edge(IMAGE_2D, kernel_size = 7, gauss_standard_dev =3)
+        return_old =oldfu.gauss_edge(IMAGE_2D, kernel_size = 7, gauss_standard_dev =3)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_default_value_3Dreal_img(self):
-        img, not_used=get_real_data(dim = 3)
-        return_new =fu.gauss_edge(img, kernel_size = 7, gauss_standard_dev =3)
-        return_old =oldfu.gauss_edge(img, kernel_size = 7, gauss_standard_dev =3)
+        return_new =fu.gauss_edge(IMAGE_3D, kernel_size = 7, gauss_standard_dev =3)
+        return_old =oldfu.gauss_edge(IMAGE_3D, kernel_size = 7, gauss_standard_dev =3)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_null_kernel_size_returns_RuntimeError_InvalidValueException(self):
-        img, not_used=get_real_data(dim = 2)
         with self.assertRaises(RuntimeError) as cm_new:
-            fu.gauss_edge(img, kernel_size = 0, gauss_standard_dev =3)
+            fu.gauss_edge(IMAGE_2D, kernel_size = 0, gauss_standard_dev =3)
         with self.assertRaises(RuntimeError) as cm_old:
-            oldfu.gauss_edge(img, kernel_size = 0, gauss_standard_dev =3)
+            oldfu.gauss_edge(IMAGE_2D, kernel_size = 0, gauss_standard_dev =3)
         msg = cm_new.exception.message.split("'")
         msg_old = cm_old.exception.message.split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
@@ -425,11 +425,10 @@ class Test_gauss_edge(unittest.TestCase):
         self.assertEqual(msg[3], msg_old[3])
 
     def test_negative_kernel_size_returns_RuntimeError_InvalidValueException(self):
-        img, not_used=get_real_data(dim = 2)
         with self.assertRaises(RuntimeError) as cm_new:
-            fu.gauss_edge(img, kernel_size = -2, gauss_standard_dev =3)
+            fu.gauss_edge(IMAGE_2D, kernel_size = -2, gauss_standard_dev =3)
         with self.assertRaises(RuntimeError) as cm_old:
-            oldfu.gauss_edge(img, kernel_size = -2, gauss_standard_dev =3)
+            oldfu.gauss_edge(IMAGE_2D, kernel_size = -2, gauss_standard_dev =3)
         msg = cm_new.exception.message.split("'")
         msg_old = cm_old.exception.message.split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
@@ -450,9 +449,8 @@ class Test_get_image(unittest.TestCase):
 
     def test_returns_input_img(self):
         """ I do not insert all the params because in this case they are not used"""
-        img, not_used = get_real_data(dim=2)
-        return_new = fu.get_image(img)
-        return_old = oldfu.get_image(img)
+        return_new = fu.get_image(IMAGE_2D)
+        return_old = oldfu.get_image(IMAGE_2D)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_None_input_img_returns_new_EMData_with_default_size(self):
@@ -1073,103 +1071,330 @@ class Test_write_text_file(unittest.TestCase):
 
 
 
+class Test_rotate_shift_params(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.rotate_shift_params()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.rotate_shift_params()
+        self.assertEqual(cm_new.exception.message, "rotate_shift_params() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-
-
-@unittest.skip("adnan tests")
-class Test_lib_utilities_compare(unittest.TestCase):
-
-
-    def test_rotate_shift_params_true_should_return_equal_objects(self):
-
+    def test_rotate_shift_params(self):
         paramsin = [[0.25,1.25,0.5]]
         transf  = [0.25, 1.25, 0.5]
-
         return_new = fu.rotate_shift_params(paramsin, transf)
         return_old = oldfu.rotate_shift_params(paramsin, transf)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
 
-        self.assertEqual(return_new, return_old)
+    def test_rotate_shift_params2(self):
+        paramsin = [[0.25,1.25,0,0,0.5]]
+        transf  = [0.25, 1.25, 0.5,.25, 1.25, 0.5]
+        return_new = fu.rotate_shift_params(paramsin, transf)
+        return_old = oldfu.rotate_shift_params(paramsin, transf)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_less_transf_params_returns_IndexError_list_index_out_of_range(self):
+        paramsin = [[0.25,1.25,0,0,0.5]]
+        transf  = [0.25, 1.25, 0.5]
+        with self.assertRaises(IndexError) as cm_new:
+            fu.rotate_shift_params(paramsin, transf)
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.rotate_shift_params(paramsin, transf)
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_less_transf_params2_returns_IndexError_list_index_out_of_range(self):
+        paramsin = [[0.25,1.25,0]]
+        transf  = [0.25, 1.25]
+        with self.assertRaises(IndexError) as cm_new:
+            fu.rotate_shift_params(paramsin, transf)
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.rotate_shift_params(paramsin, transf)
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_less_paramsin_params_returns_IndexError_list_index_out_of_range(self):
+        paramsin = [[0.25]]
+        transf  = [0.25, 1.25, 0.5]
+        with self.assertRaises(IndexError) as cm_new:
+            fu.rotate_shift_params(paramsin, transf)
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.rotate_shift_params(paramsin, transf)
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
 
-    def test_reshape_1d_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.reshape_1d")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
 
-        print(argum[0])
+class Test_reshape_1d(unittest.TestCase):
+    """ values got from 'pickle files/utilities/utilities.reshape_1d'"""
+    input_obj =  [0.999, 0.999, 0.999, 0.999, 0.999, 0.999, 0.999, 0.999, 0.999, 0.9984012789768186, 0.9914368216668327, 0.9878146959140469, 0.9881703862020976, 0.982612488476065, 0.9789244545589472, 0.9747235387045814, 0.9622078763024153, 0.9406924390622574, 0.9300175631598249, 0.8976592373307525, 0.8474726574046705, 0.7942852016327994, 0.8065378605172119, 0.7981892234519837, 0.7980760586172797, 0.7834690256016978, 0.7732854546260584, 0.759479194158529, 0.7302534821351329, 0.735749496632646, 0.7505776906379105, 0.7832464000713297, 0.799354031902547, 0.7829602489012508, 0.7467401462021503, 0.7216741559492451, 0.7573457050470969, 0.7735999645280006, 0.7360206933666649, 0.7074315960216845, 0.6838418535731124, 0.6814918195422979, 0.6604400166044002, 0.6276571502978614, 0.5967298971705947, 0.5924074015096022, 0.6113438607798904, 0.5589193571016572, 0.4169423800381157, 0.33547900293137645, 0.43509084125025116, 0.5143369854093631, 0.4505998230268216, 0.3017867022488365, 0.29393725698240897, 0.3395667841020214, 0.34234494237984336, 0.31531353786458843, 0.3120432449453534, 0.2864549161874622, 0.23450693792899116, 0.20246505335938672, 0.22577560951692183, 0.21569461751208094, 0.21511112191209886, 0.2091532904083915, 0.18334792795777813, 0.1954858454475899, 0.21231959169076153, 0.20199531221828237, 0.21190821007216915, 0.21429959199533707, 0.18398541329970813, 0.20171364365585326, 0.22936964071672247, 0.20705888033218262, 0.2310040684684463, 0.23322049365816364, 0.25365125929269, 0.2687457179832018, 0.252646215129461, 0.24715492782090853, 0.23387479872417344, 0.23315205998051616, 0.2312238364934745, 0.21601984544387764, 0.23373779370670353, 0.21445443670567088, 0.210741700365644, 0.2089851778417197, 0.19984641965828376, 0.18358602895051426, 0.16600398773363803, 0.14936583739921497, 0.14684159823845128, 0.14034187449397328, 0.11227281827686696, 0.09549423222286733, 0.09699040681889236, 0.08368778954783127, 0.07285201615715135, 0.06609239822815444, 0.06712766581830018, 0.06571178890380885, 0.05876124933827422, 0.047775744976412994, 0.04517043724966535, 0.04086780062968338, 0.035162664167093884, 0.02501739454518543, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    length_current = 2* len(input_obj)
+    length_interpolated = 4* len(input_obj)
 
-        (input_object, length_current,Pixel_size_current) = argum[0]
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.reshape_1d()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.reshape_1d()
+        self.assertEqual(cm_new.exception.message, "reshape_1d() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-        return_new = fu.reshape_1d(input_object, length_current,Pixel_size_current)
-        return_old = oldfu.reshape_1d(input_object, length_current,Pixel_size_current)
+    def test_null_list_as_input_obj(self):
+        with self.assertRaises(IndexError) as cm_new:
+            fu.reshape_1d(input_object = [], length_current=self.length_current, length_interpolated=self.length_interpolated, Pixel_size_current = 0., Pixel_size_interpolated = 0.)
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.reshape_1d(input_object = [], length_current=self.length_current, length_interpolated=self.length_interpolated, Pixel_size_current = 0., Pixel_size_interpolated = 0.)
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-        self.assertEqual(return_new, return_old)
+    def test_pickle_file_values(self):
+        return_new = fu.reshape_1d(input_object = self.input_obj, length_current=self.length_current, length_interpolated=self.length_interpolated, Pixel_size_current = 0., Pixel_size_interpolated = 0.)
+        return_old = oldfu.reshape_1d(input_object = self.input_obj , length_current=self.length_current, length_interpolated=self.length_interpolated, Pixel_size_current = 0., Pixel_size_interpolated = 0.)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_null_length_interpolated_pixel_sizes_identical_error_msg(self):
+        return_new = fu.reshape_1d(input_object = self.input_obj, length_current=self.length_current, length_interpolated=0, Pixel_size_current = 0.5, Pixel_size_interpolated = 0.5)
+        return_old = oldfu.reshape_1d(input_object = self.input_obj, length_current=self.length_current, length_interpolated=0, Pixel_size_current = 0.5, Pixel_size_interpolated = 0.5)
+        self.assertEqual(return_new,[])
+        self.assertEqual(return_old, [])
+
+    def test_null_length_current(self):
+        return_new = fu.reshape_1d(input_object = self.input_obj, length_current=0, length_interpolated=self.length_interpolated, Pixel_size_current = 0., Pixel_size_interpolated = 0.)
+        return_old = oldfu.reshape_1d(input_object = self.input_obj, length_current=0, length_interpolated=self.length_interpolated, Pixel_size_current = 0., Pixel_size_interpolated = 0.)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_all_the_values_are_null_or_empty_list_error_msg(self):
+        return_new = fu.reshape_1d(input_object = [], length_current=0, length_interpolated=0, Pixel_size_current = 0., Pixel_size_interpolated = 0.)
+        return_old = oldfu.reshape_1d(input_object = [], length_current=0, length_interpolated=0, Pixel_size_current = 0., Pixel_size_interpolated = 0.)
+        self.assertEqual(return_new, [])
+        self.assertEqual(return_old, [])
+
+    def test_invalid_pixel_sizes_combination_in_null_value_as_length_interpolated_returns_ZeroDivisionError(self):
+        with self.assertRaises(ZeroDivisionError) as cm_new:
+            fu.reshape_1d(input_object = self.input_obj, length_current=self.length_current, length_interpolated=0, Pixel_size_current = 0.3, Pixel_size_interpolated = 0.)
+        with self.assertRaises(ZeroDivisionError) as cm_old:
+            oldfu.reshape_1d(input_object = self.input_obj, length_current=self.length_current, length_interpolated=0, Pixel_size_current = 0.3, Pixel_size_interpolated = 0.)
+        self.assertEqual(cm_new.exception.message, "float division by zero")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
 
-    def test_estimate_3D_center_MPI_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.estimate_3D_center_MPI")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
+@unittest.skip("I m not sure how test them")
+class Test_estimate_3D_center_MPI(unittest.TestCase):
+    """ values got from 'pickle files/utilities/utilities.estimate_3D_center_MPI'"""
+    argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.estimate_3D_center_MPI"))
 
-        print(argum)
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.estimate_3D_center_MPI()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.estimate_3D_center_MPI()
+        self.assertEqual(cm_new.exception.message, "estimate_3D_center_MPI() takes at least 5 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-        (data, nima, myid, number_of_proc, main_node) = argum[0]
-
+    def test_myid_not_identical_to_main_node(self):
+        (data, nima, myid, number_of_proc, main_node) = self.argum[0]
         return_new = fu.estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node)
         return_old = oldfu.estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node)
+        self.assertTrue(numpy.array_equal(return_old, [0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(numpy.array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0]))
 
-        self.assertTrue(return_new, return_old)
-
-
-    def test_rotate_3D_shift_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.rotate_3D_shift")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum)
-
-        (data, shift3d) = argum[0]
-
-        return_new = fu.rotate_3D_shift(data, shift3d)
-        return_old = oldfu.rotate_3D_shift(data, shift3d)
-
-        if return_new is not None and return_old is not None:
-            self.assertTrue(return_new, return_old)
-        else:
-            print('returns None')
+    def test_myid_not_identical_to_main_node1(self):
+        (data, nima, myid, number_of_proc, main_node) = self.argum[0]
+        main_node=myid
+        return_new = fu.estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node)
+        return_old = oldfu.estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node)
+        self.assertTrue(numpy.array_equal(return_old, [0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(numpy.array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0]))
 
 
-    def test_set_arb_params_true_should_return_equal_objects(self):
-        params = "lowpassfilter"
-        par_str = "0.50"
 
-        return_new = fu.set_arb_params(EMData(), params, par_str)
-        return_old = oldfu.set_arb_params(EMData(), params, par_str)
+class Test_rotate_3D_shift(unittest.TestCase):
+    """ values got from 'pickle files/utilities/utilities.rotate_3D_shift'"""
+    argum =get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.rotate_3D_shift"))
+    (data, notUsed) = argum[0]
+    shift3d = [10.1, 0.2, 10.0]
 
-        if return_new is not None and return_old is not None:
-            self.assertTrue(return_new, return_old)
-        else:
-            print('returns None')
-
-
-    def test_get_arb_params_true_should_return_equal_objects(self):
-        params = "lowpassfilter"
-        par_str = "0.50"
-
-        a = EMData()
-        a[params] = par_str
-
-        for i in range(len(par_str)): a.set_attr_dict({par_str[i]: params[i]})
-
-        return_new = fu.get_arb_params(a, par_str)
-        return_old = oldfu.get_arb_params(a, par_str)
-
-        if return_new is not None and return_old is not None:
-            self.assertTrue(return_new, return_old)
-        else:
-            print('returns None')
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.rotate_3D_shift()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.rotate_3D_shift()
+        self.assertEqual(cm_new.exception.message, "rotate_3D_shift() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
 
+    def test_wrong_image(self):
+        data,not_used= get_real_data(dim = 3)
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.rotate_3D_shift([data], self.shift3d)
+        with self.assertRaises(RuntimeError) as cm_old:
+            fu.rotate_3D_shift([data], self.shift3d)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
+        self.assertEqual(msg[3], "The requested key does not exist")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_Nonetype_image(self):
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.rotate_3D_shift([None], self.shift3d)
+        with self.assertRaises(AttributeError) as cm_old:
+            fu.rotate_3D_shift([None], self.shift3d)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_attr'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_pickle_file_values(self):
+        fu_data = deepcopy(self.data)
+        oldfu_data = deepcopy(self.data)
+        return_new = fu.rotate_3D_shift(fu_data, self.shift3d)
+        return_old = oldfu.rotate_3D_shift(oldfu_data, self.shift3d)
+        self.assertEqual(return_new, None)
+        self.assertEqual(return_old, None)
+        for i in range(len(fu_data)):
+            self.assertTrue(numpy.array_equal(fu_data[i].get_attr('xform.projection'), oldfu_data[i].get_attr('xform.projection')))
+            self.assertFalse(numpy.array_equal(self.data[i].get_attr('xform.projection'), fu_data[i].get_attr('xform.projection')))
+
+    def test_returns_IndexError_list_index_out_of_range(self):
+        shift3d=[0,0.1]
+        with self.assertRaises(IndexError) as cm_new:
+            fu.rotate_3D_shift(self.data, shift3d)
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.rotate_3D_shift(self.data, shift3d)
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+
+
+class Test_set_arb_params(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.set_arb_params()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.set_arb_params()
+        self.assertEqual(cm_new.exception.message, "set_arb_params() takes exactly 3 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_with_1Attr(self):
+        fu_img = EMData()
+        oldfu_img = EMData()
+        par_str = "lowpassfilter"
+        params = "0.50"
+        return_new = fu.set_arb_params(fu_img,[params],[par_str])
+        return_old = oldfu.set_arb_params(oldfu_img,[params],[par_str])
+        self.assertEqual(return_new, None)
+        self.assertEqual(return_old, None)
+        self.assertEqual(fu_img.get_attr(par_str), fu_img.get_attr(par_str))
+        self.assertEqual(fu_img.get_attr(par_str),params)
+
+    def test_with_ListAttr(self):
+        fu_img = EMData()
+        oldfu_img = EMData()
+        par_str = ["lowpassfilter","fake_par"]
+        params = ["0.50","3"]
+        return_new = fu.set_arb_params(fu_img,params,par_str)
+        return_old = oldfu.set_arb_params(oldfu_img,params,par_str)
+        self.assertEqual(return_new, None)
+        self.assertEqual(return_old, None)
+        self.assertEqual(fu_img.get_attr(par_str[0]), fu_img.get_attr(par_str[0]))
+        self.assertEqual(fu_img.get_attr(par_str[1]), fu_img.get_attr(par_str[1]))
+        self.assertEqual(fu_img.get_attr(par_str[0]),params[0])
+        self.assertEqual(fu_img.get_attr(par_str[1]), params[1])
+
+    def test_with_BadListAttr(self):
+        fu_img = EMData()
+        oldfu_img = EMData()
+        par_str = ["lowpassfilter","fake_par"]
+        params = ["0.50"]
+        with self.assertRaises(IndexError) as cm_new:
+            fu.set_arb_params(fu_img,params,par_str)
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.set_arb_params(oldfu_img,params,par_str)
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+
+
+class Test_get_arb_params(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.get_arb_params()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.get_arb_params()
+        self.assertEqual(cm_new.exception.message, "get_arb_params() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_with_1Attr(self):
+        return_new = fu.get_arb_params(EMData(),["datatype"])
+        return_old = oldfu.get_arb_params(EMData(),["datatype"])
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, [EMData().get_attr("datatype")])
+
+    def test_with_ListAttr(self):
+        list_of_attribute = ["datatype", "is_complex_ri"]
+        return_new = fu.get_arb_params(EMData(),list_of_attribute)
+        return_old = oldfu.get_arb_params(EMData(),list_of_attribute)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertEqual(return_new[0], EMData().get_attr("datatype"))
+        self.assertEqual(return_new[1], EMData().get_attr("is_complex_ri"))
+
+    def test_notValid_params_returns_RuntimeError_key_doesnot_exist(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.get_arb_params(EMData(),["invalid_param"])
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.get_arb_params(EMData(),["invalid_param"])
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
+        self.assertEqual(msg[3], "The requested key does not exist")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+#todo: all the mpi function
+
+class Test_circumference(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.circumference()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.circumference()
+        self.assertEqual(cm_new.exception.message, "circumference() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_with_default_values_2Dimg(self):
+        return_new = fu.circumference(deepcopy(IMAGE_BLANK_2D), inner = -1, outer = -1)
+        return_old = oldfu.circumference(deepcopy(IMAGE_BLANK_2D), inner = -1, outer = -1)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_with_default_values_3Dimg(self):
+        return_new = fu.circumference(deepcopy(IMAGE_BLANK_3D), inner = -1, outer = -1)
+        return_old = oldfu.circumference(deepcopy(IMAGE_BLANK_3D), inner = -1, outer = -1)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_with_invalid_mask_returns_RuntimeError_ImageFormatException(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.circumference(deepcopy(IMAGE_BLANK_2D), inner =IMAGE_BLANK_2D.get_xsize()+10 , outer = -1)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.circumference(deepcopy(IMAGE_BLANK_2D), inner =IMAGE_BLANK_2D.get_xsize()+10 , outer = -1)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "ImageFormatException")
+        self.assertEqual(msg[1], "Invalid mask")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[1], msg_old[1])
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_with_wrong_outer_value(self):
+        return_new = fu.circumference(deepcopy(IMAGE_BLANK_2D), inner = -1, outer = IMAGE_BLANK_2D.get_xsize()+10 )
+        return_old = oldfu.circumference(deepcopy(IMAGE_BLANK_2D), inner = -1, outer = IMAGE_BLANK_2D.get_xsize()+10 )
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+#@unittest.skip("adnan tests")
+class Test_lib_utilities_compare(unittest.TestCase):
 
     """
       This function test works but takes too much time that is why for the time being it is
