@@ -347,8 +347,8 @@ def sanity_checks(command_args, input_vol):
 			ERROR( "Output mask already exists! Please provide the overwrite option if you want to overwrite the existing mask." )
 
 	if command_args.s_nx is not None and command_args.s_ny is None and command_args.s_ny is None:
-		commands_args.s_ny = command_args.s_nx
-		commands_args.s_nz = command_args.s_nx
+		command_args.s_ny = command_args.s_nx
+		command_args.s_nz = command_args.s_nx
 	elif command_args.s_nx is not None and command_args.s_ny is not None and command_args.s_ny is not None:
 		pass
 	else:
