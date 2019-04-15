@@ -343,7 +343,17 @@ def sanity_checks(command_args, input_vol):
 				)
 			):
 		if not command_args.overwrite:
+
 			ERROR( "Output mask already exists! Please provide the overwrite option if you want to overwrite the existing mask." )
+
+	if command_args.s_nx is not None and command_args.s_ny is None and command_args.s_ny is None:
+		commands_args.s_ny = command_args.s_nx
+		commands_args.s_nz = command_args.s_nx
+	elif command_args.s_nx is not None and command_args.s_ny is not None and command_args.s_ny is not None:
+		pass
+	else:
+		ERROR( "You need to specify s_nx only or s_nx and s_ny and s_nz" )
+
 
 	if command_args.second_mask_shape in ('cylinder', 'sphere'):
 		nx = input_vol.get_xsize()
