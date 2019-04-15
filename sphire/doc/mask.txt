@@ -17,15 +17,15 @@ sp_mask.py exists only in non-MPI version.
 
 Create a binary mask dilated by 2 pixel using the binary threshold from chimera
 
-  sp_maks.py input_volume output_direcory --threshold=0.3 --edge_width=0 --ndilation=1
+  sp_mask.py input_volume output_directory --threshold=0.3 --edge_width=0 --ndilation=1
 
 Create an adapted mask dilated by 2 pixel and a soft edge of 5 pixel using the binary threshold from chimera
 
-  sp_maks.py input_volume output_direcory --threshold=0.3 --edge_width=5 --ndilation=1
+  sp_mask.py input_volume output_directory --threshold=0.3 --edge_width=5 --ndilation=1
 
 Create an adapted mask dilated by 2 pixel and a soft edge of 5 pixel using the binary threshold from chimera and masked by a soft edged cylinder to 80% (e.g. for helical reconstruction with a box size of 300)
 
-  sp_maks.py input_volume output_direcory --threshold=0.3 --edge_width=5 --ndilation=1 --second_mask_shape=cylinder --s_radius=40 --s_nx=240 --s_ny=240 --s_nz=240 --s_ndilation=1 --s_edge_width=5
+  sp_mask.py input_volume output_directory --threshold=0.3 --edge_width=5 --ndilation=1 --second_mask_shape=cylinder --s_radius=40 --s_nx=240 --s_ny=240 --s_nz=240 --s_ndilation=1 --s_edge_width=5
 
 \\
 ===== Input =====
