@@ -139,6 +139,8 @@ def construct_keyword_dict():
 	keyword_dict["main000"]         = SXkeyword_map(0, "dir")                 # destination_directory (contains keyworkd 'directory' but this should be directory type)
 ###	keyword_dict["--use_latest_master_directory"] = SXkeyword_map(0, "bool")                # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
 	keyword_dict["--stack_mode"]                  = SXkeyword_map(0, "bool")                # stack_mode (contains keyworkd 'stack' but this should be bool type)
+	keyword_dict["--use_second_mask"]               = SXkeyword_map(0, "bool")                # --generate_mask (contains keyworkd 'mask' but this should be bool type)
+	keyword_dict["--fill_mask"]               = SXkeyword_map(0, "bool")                # --generate_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--generate_mask"]               = SXkeyword_map(0, "bool")                # --generate_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--binary_mask"]                 = SXkeyword_map(0, "bool")                # --binary_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--symmetrize"]                  = SXkeyword_map(0, "bool")                # --symmetrize (contains keyworkd '--sym' but this should be bool type)
@@ -1081,10 +1083,15 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 								token.restore[1] = [not token.default]
 							else:
 								default_value = default_value.split('|||')
-								if token.type == 'bool':
+								if token.type in ('bool', 'bool_ignore'):
 									default_value = [True if entry == 'True' else False for entry in default_value]
 								token.restore[0] = default_value
 								token.restore[1] = default_value
+							print(token.label)
+							print(token.restore)
+							print(token.default)
+							print(token.type)
+							print()
 						target_operator = ":"
 						item_tail = line_buffer.find(target_operator)
 						if item_tail != -1:
@@ -1120,11 +1127,16 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 							if line_buffer.strip():
 								default_value, tab_filament = line_buffer.split(';')
 								default_value = default_value.split('|||')
-								if token.type == 'bool':
+								if token.type in ('bool', 'bool_ignore'):
 									default_value = [True if entry == 'True' else False for entry in default_value]
 								if not token.is_locked:
 									token.restore[1] = default_value
 								token.filament_tab = tab_filament
+							print(token.label)
+							print(token.restore)
+							print(token.default)
+							print(token.type)
+							print()
 						# Initialise restore value with default value
 						# Ignore the rest of line ...
 						# Register this command token to the list (ordered) and dictionary (unordered)
