@@ -51,10 +51,10 @@ With the --dpi option, one can adjust the quality of the plot.
 === Advanced Parameters ===
 
 	; %%--%%pixel_size : Pixel size [A] : Pixel size of the project (default 1.0)
-	; %%--%%delta : Angular sampling step [Degrees] : Angular step size in degree - Low deltas combined with low symmetry might crash chimera session (default 3.75)
+	; %%--%%delta : Angular sampling step [Degrees] : Angular step size in degree - Low deltas combined with low symmetry might crash chimera session (default 3.75|||15|||7.5|||1.875|||0.9375|||0.46875|||0.234375)
 	; %%--%%box_size : Particle box size [Pixels] : Box size (default 256)
 	; %%--%%particle_radius : Particle radius [Pixels] : Particle radius (default 120)
-	; %%--%%method : Distribution method : Method used to create the reference angles (S or P) (default S)
+	; %%--%%method : Distribution method : Method used to create the reference angles (S or P or M) (default S|||M|||P)::M|||P|||S;Advanced
 	; %%--%%dpi : Plot DPI : Dpi for the legend plot (default 72)
 
 \\

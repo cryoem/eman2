@@ -235,7 +235,7 @@ To concatenate output files,
 
   ; %%--%%balance_angular_distribution : Balance Angular Distribution: Balance angular distribution of projection directions by removing excess particles, as determined by their angular histogram on a coarser grid, as specified by the angular_step option. (default False)
   ; %%--%%max_occupy : Maximum orientations per reference angle: Maximum number of particles per reference angle. (default -1)
-  ; %%--%%angstep : Angular increment: Angular step of reference angles. (default 15.0)
+  ; %%--%%angstep : Angular increment: Angular step of reference angles. (default 3.75|||15|||7.5|||1.875|||0.9375|||0.46875|||0.234375)::
   ; %%--%%symmetry : Point-group symmetry : angular step of reference angles, i.e., number of bins of angular histogram. (default c1)
 
 \\
