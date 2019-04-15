@@ -2033,18 +2033,30 @@ class SXCmdTab(QWidget):
 					grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 
 					assert(cmd_token.is_required == False)
-					cmd_token_restore_widget[widget_index] = QPushButton("%s" % cmd_token.restore[widget_index][helical][0])
-					cmd_token_restore_widget[widget_index].setStyleSheet(custom_style)
-					cmd_token_restore_widget[widget_index].setToolTip('<FONT>'+default_cmd_token_restore_tooltip+'</FONT>')
-					grid_layout.addWidget(cmd_token_restore_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
+					restores = cmd_token.restore[widget_index][helical]
+					if len(restores) == 1:
+						cmd_token_restore_widget[widget_index] = QPushButton("%s" % restores[0])
+						cmd_token_restore_widget[widget_index].setStyleSheet(custom_style)
+						cmd_token_restore_widget[widget_index].setToolTip('<FONT>'+default_cmd_token_restore_tooltip+'</FONT>')
+						grid_layout.addWidget(cmd_token_restore_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
+
+						cmd_token_restore_widget[widget_index].clicked.connect(partial(self.handle_restore_widget_event, cmd_token, widget_index))
+					else:
+						cmd_token_restore_widget[widget_index] = QComboBox()
+						cmd_token_restore_widget[widget_index].addItems(restores)
+						cmd_token_restore_widget[widget_index].setEditable(True)
+						cmd_token_restore_widget[widget_index].lineEdit().setReadOnly(True)
+						cmd_token_restore_widget[widget_index].lineEdit().setAlignment(QtCore.Qt.AlignCenter)
+						cmd_token_restore_widget[widget_index].setStyleSheet(custom_style)
+						cmd_token_restore_widget[widget_index].setToolTip('<FONT>'+default_cmd_token_restore_tooltip+'</FONT>')
+						grid_layout.addWidget(cmd_token_restore_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
+						cmd_token_restore_widget[widget_index].activated.connect(partial(self.handle_restore_widget_event, cmd_token, widget_index))
 
 					# cmd_token_widget[widget_index] = SXLineEdit(self)
 					cmd_token_widget[widget_index] = SXLineEdit(cmd_token.key_base)
 					cmd_token_widget[widget_index].setText(cmd_token.restore[widget_index][helical][0])
 					cmd_token_widget[widget_index].setToolTip('<FONT>'+cmd_token.help[widget_index]+'</FONT>')
 					grid_layout.addWidget(cmd_token_widget[widget_index], grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
-
-					cmd_token_restore_widget[widget_index].clicked.connect(partial(self.handle_restore_widget_event, cmd_token, widget_index))
 
 					grid_row +=  1
 
@@ -3123,7 +3135,18 @@ class SXCmdTab(QWidget):
 		assert(not sxcmd_token.is_locked)
 		if sxcmd_token.type == "user_func":
 			assert(len(sxcmd_token.widget) == 2 and len(sxcmd_token.restore) == 2 and widget_index < 2)
-			sxcmd_token.widget[widget_index].setText("%s" % sxcmd_token.restore[widget_index][restore_idx][0])
+			try:
+				text = str(self.sender().text())
+			except AttributeError:
+				if restore_idx == 0:
+					text = str(self.sender().currentText())
+				else:
+					text = str(self.sender().itemText(restore_idx))
+				text = text.strip()
+				self.sender().blockSignals(True)
+				self.sender().setCurrentIndex(0)
+				self.sender().blockSignals(False)
+			sxcmd_token.widget[widget_index].setText(text)
 		else:
 			if sxcmd_token.type in ("bool", "bool_ignore"):
 				try:
@@ -4701,9 +4724,9 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 					sxcmd_token.help = [sxcmd_token.help, "Please leave it none/blank if file is not external to SPHIRE"]
 					sxcmd_token.default = sxcmd_token.default.split('|||')
 					if not sxcmd_token.is_locked:
-						sxcmd_token.restore = [[sxcmd_token.default, sxcmd_token.default], [["none"], ["none"]]]
+						sxcmd_token.restore = [sxcmd_token.restore, [["none"], ["none"]]]
 					else:
-						sxcmd_token.restore = [["", ""], ["", ""]]
+						sxcmd_token.restore = [[[""], [""]], [[""], [""]]]
 					sxcmd_token.default = [sxcmd_token.default[0], "none"]
 				# else: Do nothing for the other types
 
