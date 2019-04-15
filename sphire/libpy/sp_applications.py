@@ -17590,7 +17590,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 	else:            TXT = False
 
 	if (T0 == 0 and F != 0) or (T0 != 0 and F == 0):
-		ERROR('Ambigues parameters F=%f T0=%f' % (F, T0), 'k_means_main', 1)
+		ERROR('Ambiguous parameters F=%f T0=%f' % (F, T0), 'k_means_main', 1)
 		sys.exit()
 
 	if MPI:

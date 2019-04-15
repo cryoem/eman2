@@ -43,9 +43,6 @@ import os
 import sys
 import mpi
 
-mpi.mpi_init( 0, [] )
-
-
 def main():
 	arglist = []
 	for arg in sys.argv:
@@ -66,12 +63,12 @@ def main():
 	parser.add_option("--xysize",                 type="int",	        default=-1,     help="user expected size at xy direction" )
 	parser.add_option("--zsize",                  type="int",	        default=-1,     help="user expected size at z direction" )
 	parser.add_option("--smearstep",              type="float",	        default=0.0,    help="Rotational smear step (default 0.0, no smear)" )
-	parser.add_option("--interpolation_method",   type ="string",	    default="4nn",  help="4nn, or tril: nearest neighbor, or trillinear interpolation" )
+	parser.add_option("--interpolation_method",   type ="string",	    default="4nn",  help="4nn, or tril: nearest neighbor, or trilinear interpolation" )
 	parser.add_option("--niter",                  type="int",	        default=10,     help="number of iterations for iterative reconstruction" )
 	parser.add_option("--upweighted",             action="store_true",  default=False,  help="apply background noise")
 	parser.add_option("--compensate",             action="store_true",  default=False,  help="compensate in reconstruction")
 	parser.add_option("--chunk_id",               type="int",           default=-1,     help="reconstruct both odd and even groups of particles")
-	parser.add_option("--target_window_size",               type="int",           default=-1,     help=" size of the targeted reconstruction ")
+	parser.add_option("--target_window_size",     type="int",           default=-1,     help=" size of the targeted reconstruction ")
 
 	(options,args) = parser.parse_args(arglist[1:])
 
@@ -107,7 +104,7 @@ def main():
 		 options.sym, options.list, options.group, options.verbose, options.MPI,options.xysize, options.zsize, options.smearstep, options.upweighted, options.compensate,options.chunk_id)
 	elif options.interpolation_method == "tril":
 		if options.MPI is False:
-			ERROR( "Trillinear interpolation reconstruction has MPI version only!" )
+			ERROR( "Trilinear interpolation reconstruction has MPI version only!" )
 			return
 		recons3d_trl_MPI(prj_stack, pid_list, vol_stack, options.CTF, options.snr, 1, options.npad,\
 		 options.sym, options.verbose, options.niter, options.compensate, options.target_window_size)
@@ -120,8 +117,13 @@ def main():
 
 
 if __name__=="__main__":
+	RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
+	if RUNNING_UNDER_MPI:
+		mpi.mpi_init( 0, [] )  # On OS X, there is an error if MPI is initialized and not finalized, hence the conditional
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
 	main()
 	sp_global_def.print_timestamp( "Finish" )
 	mpi.mpi_finalize()
+	if RUNNING_UNDER_MPI:
+		mpi.mpi_finalize()
