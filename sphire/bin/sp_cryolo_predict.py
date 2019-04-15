@@ -185,10 +185,10 @@ def main():
 		if no_split:
 			complete_command.append("--nosplit")
 	subprocess.check_call(complete_command)
+	sp_global_def.write_command(output_dir)
 
 
 if __name__ == "__main__":
 	sp_global_def.print_timestamp( "Start" )
-	sp_global_def.write_command()
 	main()
 	sp_global_def.print_timestamp( "Finish" )
