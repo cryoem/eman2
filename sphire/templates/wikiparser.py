@@ -2362,6 +2362,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(
 		SXcmd_config("../doc/ctf_refine_stack.txt", "DokuWiki", sxcmd_category, sxcmd_role,
 					 is_submittable=True))
+	sxcmd_config_list.append(SXcmd_config("../doc/transphire.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_window"
 
@@ -2523,6 +2524,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/summovie.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/batch.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/transphire.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_utilities"
@@ -2552,6 +2554,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/ctf_refine.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable=True))
 	sxcmd_config_list.append(SXcmd_config("../doc/ctf_refine_stack.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable=True))
+	sxcmd_config_list.append(SXcmd_config("../doc/transphire.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
 
 
 	# sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role))
