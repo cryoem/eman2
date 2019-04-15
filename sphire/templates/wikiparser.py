@@ -1087,11 +1087,6 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 									default_value = [True if entry == 'True' else False for entry in default_value]
 								token.restore[0] = default_value
 								token.restore[1] = default_value
-							print(token.label)
-							print(token.restore)
-							print(token.default)
-							print(token.type)
-							print()
 						target_operator = ":"
 						item_tail = line_buffer.find(target_operator)
 						if item_tail != -1:
@@ -1132,11 +1127,6 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 								if not token.is_locked:
 									token.restore[1] = default_value
 								token.filament_tab = tab_filament
-							print(token.label)
-							print(token.restore)
-							print(token.default)
-							print(token.type)
-							print()
 						# Initialise restore value with default value
 						# Ignore the rest of line ...
 						# Register this command token to the list (ordered) and dictionary (unordered)
