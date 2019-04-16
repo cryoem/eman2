@@ -191,7 +191,7 @@ def main():
 		
 		if options.parallel :
 			from EMAN2PAR import EMTaskCustomer
-			etc=EMTaskCustomer(options.parallel)
+			etc=EMTaskCustomer(options.parallel,"e2symsearch3d.SymAlignTask")
 		
 		symalgorithm = SymALignStrategy( preprocvol, options.sym, options.steps, options.cmp, etc)
 		ret = symalgorithm.execute()
