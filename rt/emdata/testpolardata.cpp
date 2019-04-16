@@ -29,9 +29,6 @@
  * 
  * */
 
-/**
- * $Id$
- */
 #include "emdata.h"
 #include "polardata.h"
 

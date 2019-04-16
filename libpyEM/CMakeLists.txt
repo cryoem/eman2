@@ -90,6 +90,3 @@ add_subdirectory(qtgui)
 
 target_link_libraries(pyUtils2         NumPy)
 target_link_libraries(pyTypeConverter2 NumPy)
-target_link_libraries(pyTransform2     NumPy)
-target_link_libraries(pyAligner2       NumPy)
-target_link_libraries(pyEMData2        NumPy)

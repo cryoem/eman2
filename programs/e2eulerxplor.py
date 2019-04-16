@@ -213,7 +213,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 
 		self.init_lock = True # a lock indicated that we are still in the __init__ function
 		self.au_data = None # This will be a dictionary, keys will be refinement directories, values will be something like available iterations for visual study
-		if len(read_from)==0:
+		if read_from!=None and len(read_from)==0:
 			read_from=None
 		self.readfrom=read_from
 		if self.readfrom:

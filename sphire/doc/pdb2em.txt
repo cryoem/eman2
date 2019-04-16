@@ -1,0 +1,78 @@
+~~NOTOC~~
+
+===== sp_pdb2em =====
+PDB File Conversion: Converts an atomic model stored in a PDB file into a simulated electron density map. 
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_pdb2em.py  input_pdb  output_hdf  --apix=PIXEL_SIZE  --box=BOX_SIZE  --het  --chains=CHAIN_STRING --center=CENTERING_METHOD  --O  --tr0=MATRIX_FILE_PATH  --set_apix_value=PIXEL_SIZE_STRING  --quiet
+
+\\
+===== Typical usage =====
+
+sp_pdb2em does not support MPI.
+
+  sp_pdb2em.py  tRNA.pdb  tRNA.hdf  --apix=2.26  --box=150  --center=c  --O  --quiet  --tr0=<'filename'>  --het
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; input_pdb : Input PDB file: Starting atomic coordinates. (default required string)
+  ; output_hdf : Output map: Specify file path for output map. (default required string)
+
+  ; %%--%%apix : Pixel size of output map [A]: Pixel size of the output map [A]. (default 1.0)
+  ; %%--%%box : Output box size [Voxels]: Specify string of a single value (e.g. '256') to get a cubic box. Alternatively, use 'x,y,z' format to specify demensions of x,y,z-axis (e.g. '128,64,256'). If not given, the program will find the minimum box size fitting the structure. Be aware that this will most likely result in a rectangular box. Note that GUI does not support the default mode. (default required string)
+  ; %%--%%het : Include hetero atoms: Otherwise, the HETATM entries in the PDB file are ignored. (default False)
+  ; %%--%%chains : Chain identifiers: A string list of chain identifiers to include (e.g. 'ABEFG'). By default, all chains will be included. (default none)
+  ; %%--%%center : Center model at the origin: Specifies whether the atomic model should be moved to the origin before generating density map. Available options are: 'c' - Use the geometrical center of atoms; 'a' - Use the center of mass (recommended); 'x,y,z' - Vector to be subtracted from all PDB coordinates. 'n' - No centering, in which case (0,0,0) in the PDB space will map to the center of the EM volume. (default a)
+  ; %%--%%O : Apply additional rotation: This can be used to modify the orientation of the atomic model by using O system of coordinates. (default False)
+  ; %%--%%tr0 : Rotational matrix file: This file must contain the 3x4 transformation matrix to be applied to the PDB coordinates after centering. The translation vector (last column of the matrix) must be specified in Angstrom. (default none)
+  ; %%--%%set_apix_value : Set header pixel size: Set pixel size in header of the ouput map. (default False)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%quiet : Silent mode: Does not print any information to the monitor. Verbose is the default. (default False)
+
+\\
+===== Output =====
+
+\\
+===== Description =====
+The program uses tri-linear interpolation. Electron densities are taken to be equal to atomic masses.
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Pawel A. Penczek
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_pdb2em.py
+
+\\
+==== See also ====
+
+\\
+==== Maturity ====
+Stable:: Has been evaluated and tested. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

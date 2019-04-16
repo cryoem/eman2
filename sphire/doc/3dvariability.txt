@@ -1,0 +1,94 @@
+~~NOTOC~~
+
+===== sp_3dvariability =====
+3D Variability Estimation: Calculate 3D variability using a set of aligned projection images as an input.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_3dvariability.py  prj_stack  --output_dir=DIRECTORY  --var3D=FILE_NAME  --ave3D=FILE_NAME  --img_per_grp=NUM_OF_IMAGES --sym=SYMMETRY  --CTF  --fl=LPF_CUTOFF_FREQ  --aa=LPF_FALLOFF_WIDTH  --symmetrize  --var2D=FILE_NAME  --ave2D=FILE_NAME  --VAR  --no_norm  --npad=PADDING_FACTOR  --decimate=FACTOR  --window=WINDOW_SIZE  --nvec=NUM_OF_EIGENVECTORS  --overhead=OVERHEAD
+
+\\
+===== Typical usage =====
+
+sp_3dvariability exists only in MPI version.
+
+For asymmetric structure:
+
+  mpirun -np 64 sp_3dvariability.py bdb:data --var3D=var_vol.hdf --ave3D=vol.hdf --output_dir=var3d --img_per_grp=100 --CTF 
+
+For structures that have symmetries (e.g. c2):
+
+  sp_3dvariability.py stack --symmetrize --sym=c2
+  mpirun -np 64 sp_3dvariability.py bdb:sdata --var3D=var_vol.hdf --ave3D=vol.hdf --img_per_grp=100 --sym=c2 --CTF --fl=0.4 --aa=0.05  --window=300
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; prj_stack : Input image stack: The images must containt the 3D orientation parameters in the header and optionally CTF information. If the structure has a symmetry higher than c1, please specify the image stack which is prepared by the symmetrization using %%--%%symmetrize option. (default required string)
+
+  ; %%--%%output_dir : Output directory: Specify path to the output directory of 3D Variability. By default, the program uses the current directory. However, GUI requires the path other than the current directory. (default required string)
+  ; %%--%%var3D : Output 3D variability: Specify a file name to indicate if the program should write the reconstructed 3D variability map to the disk. The 3D volume will contain, for each voxel, a measure of the variability in the dataset. Careful, time consuming! (default none)
+  ; %%--%%ave3D : Output 3D average: Specify a file name to indicate if the program should write the reconstructed 3D average map to the disk. The 3D map will be reconstructed from projections averaged within respective angular neighbourhood. It should be used to assess the resolvability and possible artifacts of the variability map. (default none)
+  ; %%--%%img_per_grp : Number of projections: Specify the number of images from the angular neighbourhood that will be used to estimate 2D variance for each projection data. The larger the number the less noisy the estimate, but the lower the resolution. Usage of large number also results in rotational artifacts in variances that will be visible in 3D variability map. (default 100)
+  ; %%--%%sym : Point-group symmetry: If the structure has symmetry higher than c1, the command requires symmetrization of the dataset, using %%--%%symmetrize option, before computing 3D variability. (default c1)
+  ; %%--%%CTF : Use CTF correction: If set to true, CTF correction will be applied using the parameters found in the image headers. (default False value reversed in GUI) 
+  ; %%--%%symmetrize : Symmetrise input stack: Prepare input stack for handling symmetry. Please skip this preparation step if the structure is asymmetrical (i.e. c1), since it is required only when the structure has internal symmetry. Notice this step can be run with only one CPU and there is no MPI version for it. (default False)
+  ; %%--%%overhead : Python overhead memory: User estimates python overhead memory per CPU. The default value is 0.5 GB per CPU. (default 0.5)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%var2D : Output 2D variances: Specify a file name to indicate if the program should write the stack of computed 2D variances to the disk. Useful for debugging. (default none)
+  ; %%--%%ave2D : Output 2D averages: Specify a file name to indicate if the program should write the stack of computed 2D averages to the disk. Useful for debugging. (default none)
+  ; %%--%%VAR : Input stack consists of 2D variances: Stack on input consists of 2D variances. (default False)
+  ; %%--%%no_norm : Apply normalization: Indicate if normalization should be applied or not. By default, apply normalization. (default False question reversed in GUI)
+  ; %%--%%npad : Image padding factor: The number of time to pad the original images. The images will be padded to achieve the original size times this option. (default 2)
+  ; %%--%%decimate : Image decimate factor: Reduce images by this factor and change the pixel size. Specify a non-zero positive float value smaller than 1.0. By default, it does not change size of images. (default 0.25)
+  ; %%--%%fl : Low-pass filter frequency : Stop-band frequency of the low-pass filter to be applied to the images prior to variability calculation but after decimation. Specify it in absolute frequency (%%>%% 0.0 and %%<=%% 0.5). By default, no filtering. (default 0.0)
+  ; %%--%%aa : Low-pass filter fall-off  : Fall-off width of the low-pass filter to be applied to the images prior to variability calculation but after decimation. Specify it in absolute frequency (%%>%% 0.0 and %%<=%% 0.5). 0.01 works in most of cases. Effective only with %%--%%fl %%>%% 0.0 and %%--%%aa %%>%% 0.0 has to be specified. (default 0.0) : %%--%%fl!=0.0
+  ; %%--%%window : Target image size [Pixels]: Window (or clip) images using the specified size without changing pixel size. It is relative to the orignal window size. The target window size cannot be larger than the orignal image size. By default, use the original particle image size. (default 0)
+  ; %%--%%nvec : Number of eigenvectors: By default, no PCA will be calculated. (default 0)
+
+\\
+===== Output =====
+
+\\
+===== Description =====
+The program calculates the variability observed in a collection of image projections. Structures with symmetry require preparing data before calculating the variability. The data preparation step would symmetrise the data and output a bdb:sdata for variability calculation. sp_3dvariability.py can be slow.
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Pawel A. Penczek
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_3dvariability.py
+
+\\
+==== See also ====
+[[pipeline:utilities:sp_header|sp_header]], [[pipeline:sort3d:sp_sort3d_depth|sp_sort3d_depth]], [[pipeline:localres:sp_locres|sp_locres]]
+
+\\
+==== Maturity ====
+Alpha:: Under development
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

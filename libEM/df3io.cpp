@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Grant Tang, 08/06/2010 (gtang@bcm.edu)
  * Copyright (c) 2000-2010 Baylor College of Medicine

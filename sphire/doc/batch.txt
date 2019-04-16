@@ -1,0 +1,78 @@
+~~NOTOC~~
+
+===== sp_batch =====
+Batch Pipeline Execution: Run jobs that wait with the execution on each other.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_batch.py  submission_command  input_run_dir --hold_flag=HOLD_FLAG --first_hold_number=FIRST_HOLD_NUMBER
+\\
+===== Typical usage =====
+
+sp_batch exists only in non-MPI version.
+
+The pipeline directory can be easily added within the GUI.
+
+Run sp_batch locally with bash:
+
+  sp_batch.py bash input_run_dir
+
+Run sp_batch within a SGE/PBS/Torque queuing environment:
+
+  sp_batch.py 'qsub' input_run_dir --hold_flag='-hold_jid'
+
+Run sp_batch within a SGE/PBS/Torque queuing environment waiting for another job with the id 3456:
+
+  sp_batch.py 'qsub' input_run_dir --hold_flag='-hold_jid' --first_hold_number=3456
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; submission_command : Submission command : Submission command, e.g., qsub, qsub -V, sbatch, bash (default required string)
+  ; input_run_dir: Pipeline directory : Directory containin the pipeline submission files (default required string)
+  ; %%--%%hold_flag: Hold flag: Hold flag for the submission command, e.g. -hold_jid=, --wait=, --dependency=afterany:; Default is None and should be used in combination with a local execution with bash (default none)
+  ; %%--%%first_hold_number: First hold number : Wait number for the first job that is submitted. By default, the first job will not wait for others (default none)
+
+\\
+===== Output =====
+Content of the commands in the PIPELINE folder.
+
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Markus Stabrin
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_unblur.py
+
+\\
+==== See also ====
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

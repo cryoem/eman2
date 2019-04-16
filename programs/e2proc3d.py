@@ -28,8 +28,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
-#
-# $Id$
 # todo: verify the processors who have the same names in proc3d
 #	   and proc2d have the same implementation
 #

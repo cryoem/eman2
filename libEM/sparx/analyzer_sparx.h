@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Chao Yang
  * Copyright (c) 2000-2006

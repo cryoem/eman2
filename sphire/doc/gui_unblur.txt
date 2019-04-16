@@ -1,0 +1,78 @@
+~~NOTOC~~
+
+===== sp_gui_unblur =====
+Drift Assessment: Assess micrographs based on drift estimation produced by [[http://grigoriefflab.janelia.org/unblur|Unblur]].
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_gui_unblur.py  inputfile  input_shift_list_file
+
+\\
+===== Typical usage =====
+
+sp_gui_unblur does not support MPI. 
+
+This GUI tool can be run as a stand-alone program or from the SPHIRE GUI.
+
+  sp_gui_unblur.py
+
+  sp_gui_unblur.py 'example-*_shift.txt'
+
+  sp_gui_unblur.py 'example-list'
+
+  sp_gui_unblur.py 'example-*_shift.txt' 'example-list'
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; inputfile : Shift files: A wild card (*) can be used to process multiple shift files. (default none)
+  ; input_shift_list_file : Input shift list file: Extension of input shift list file must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)
+
+\\
+=== Advanced Parameters ===
+
+\\
+===== Output =====
+
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+=== 2016/12/16 Markus Stabrin ===
+We are preparing a detailed descriptions of the usage and features of this tool.
+
+\\
+==== Author / Maintainer ====
+Markus Stabrin
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_gui_unblur.py
+
+\\
+==== See also ====
+[[pipeline:movie:sp_unblur|sp_unblur]] and [[http://grigoriefflab.janelia.org/unblur|Unblur & Summovie]].
+
+\\
+==== Maturity ====
+Alpha:: Under development. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

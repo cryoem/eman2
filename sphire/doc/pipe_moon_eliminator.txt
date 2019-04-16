@@ -1,0 +1,148 @@
+~~NOTOC~~
+
+===== sp_pipe moon_eliminator =====
+Volume Adjustment: Eliminate moons or remove dust from the background of a 3D density map based on the expected molecular mass.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_pipe.py  moon_eliminator  input_volume_path  input_volume_path_2nd  output_directory  --pixel_size=PIXEL_SIZE  --mol_mass=KILODALTON  --use_density_threshold=THRESHOLD  --moon_distance=PIXEL_DISTANCE  --ndilation=DILATION_PIXEL_WIDTH  --edge_width=SIGMA_PIXEL_WIDTH  --resample_ratio=RATIO_OR_DIR_PATH  --box_size=BOX_SIZE  --resampled_shift3d  --shift3d_x=SHIFT3D_X  --shift3d_y=SHIFT3D_Y  --shift3d_z=SHIFT3D_Z  --invert_handedness  --fl=LPF_CUTOFF_FREQ  --aa=LPF_FALLOFF_WIDTH   --outputs_root=FILE_ROOT   --edge_type=SOFT_EDGE_TYPE  --debug
+ 
+\\
+===== Typical usage =====
+
+sp_pipe moon_eliminator does not support MPI. 
+
+There are two modes to run the program:
+
+\\
+__1. Single Volume Mode:__
+
+Create reference 3D structure and 3D mask from R-VIPER 3D model with the resample ratio used in ISAC2 using an expected molecular mass [kDa].
+
+  sp_pipe.py moon_eliminator 'outdir_rviper/main001/average_volume.hdf' 'outdir_pipe_moon_eliminator' --mol_mass=1400 --pixel_size=1.12 --resample_ratio='outdir_isac2' --box_size=352
+
+Create reference 3D structure and 3D mask from R-VIPER 3D model with the resample ratio used in ISAC2 using ad-hoc density threshold instead of the expected molecular mass [kDa].
+
+  sp_pipe.py moon_eliminator 'outdir_rviper/main001/average_volume.hdf' 'outdir_pipe_moon_eliminator' --mol_mass=1400 --pixel_size=1.12 --use_density_threshold=13.2 --resample_ratio='outdir_isac2' --box_size=352
+
+Create reference 3D structure and 3D mask from post-refined MERIDIEN 3D model using the expected molecular mass [kDa].
+
+  sp_pipe.py moon_eliminator 'outdir_postrefiner/postrefine3d.hdf' 'outdir_pipe_moon_eliminator' --mol_mass=1400 --pixel_size=1.12
+
+\\
+__2. Halfset Volumes Mode:__
+
+Create reference 3D structure and 3D mask from halfset unfiltered maps produced by MERIDIEN, using the expected molecular mass [kDa].
+
+  sp_pipe.py moon_eliminator 'outdir_meridien/vol_0_unfil_025.hdf' 'outdir_meridien/vol_0_unfil_025.hdf' 'outdir_pipe_moon_eliminator' --mol_mass=1400 --pixel_size=1.12
+
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; input_volume_path : Input volume path: Path to input volume file containing the 3D density map. (default required string)
+  ; output_directory : Output directory: The results will be written here. It cannot be an existing one. (default required string)
+
+  ; %%--%%pixel_size : Output pixel size [A]: The original pixel size of dataset. This must be the pixel size after resampling when resample_ratio != 1.0. That is, it will be the pixel size of the output map. (default required float)
+  ; %%--%%use_mol_mass : Use molecular mass : GUI OPTION ONLY - Define if one want to use the molecular mass option as a masking threshold. (default False) : %%--%%use_density_threshold==none
+  ; %%--%%mol_mass : Molecular mass [kDa]: The estimated molecular mass of the target particle in kilodalton. (default required float) : %%--%%use_mol_mass==True
+  ; %%--%%use_density_threshold : Use ad-hoc density threshold: Use user-provided ad-hoc density threshold, instead of computing the value from the molecular mass. Below this density value, the data is assumed not to belong to the main body of the particle density. (default none) : %%--%%use_mol_mass==False
+  ; %%--%%moon_distance : Distance to the nearest moon [Pixels]: The moons further than this distance from the density surface will be elminated. The value smaller than the default is not recommended because it is difficult to avoid the stair-like gray level change at the edge of the density surface. (default 3.0)
+  ; %%--%%resample_ratio : Resample ratio: Specify a value larger than 0.0. By default, the program does not resample the input map (i.e. resample ratio is 1.0). Use this option maily to restore the original dimensions or pixel size of VIPER or R-VIPER model. Alternatively, specify the path to the output directory of an ISAC2 run. The program automatically extracts the resampling ratio used by the ISAC2 run. (default '1.0')
+  ; %%--%%box_size : Output box size [Pixels]: The x, y, and z dimensions of cubic area to be windowed from input 3D volume for output 3D volumes. This must be the box size after resampling when resample_ratio != 1.0. (default none)
+  ; %%--%%invert_handedness : Invert handedness: Invert the handedness of the 3D map. (default False)
+  ; %%--%%fl : Low-pass filter resolution [A]: >0.0: low-pass filter to the value in Angstrom; =-1.0: no low-pass filter. The program applies this low-pass filter before the moon elimination. (default -1.0)
+
+\\
+=== Advanced Parameters ===
+  ; input_volume_path_2nd : Second input volume path: Path to second input volume file containing the 3D density map. Use this option to create a mask from the sum of two MERIDIEN half-set maps. (default none)
+  ; %%--%%ndilation : Dilation width [Pixels]: The pixel width to dilate the 3D binary volume corresponding to the specified molecular mass or density threshold prior to softening the edge. By default, it is set to half of --moon_distance so that the voxels with 1.0 values in the mask are same as the hard-edged molecular-mass binary volume. (default -1.0)
+  ; %%--%%edge_width : Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking.(default 1)
+  ; %%--%%edge_type : Soft-edge type: The type of soft-edge for moon-eliminator 3D mask and a moon-eliminated soft-edged 3D mask. Available methods are (1) 'cosine' for cosine soft-edged (used in PostRefiner) and (2) 'gauss' for gaussian soft-edge. (default cosine)
+  ; %%--%%outputs_root : Root name of outputs: Specify the root name of all outputs. It cannot be empty string or only white spaces. (default vol3d)
+  ; %%--%%resampled_shift3d : Providing resampled 3D shifts: Use this option when you are providing the resampled 3D shifts (using pixel size of outputs) when %%--%%resample_ratio!=1.0. By default, the program assums the provided shifts are not resampled. (default False)
+  ; %%--%%shift3d_x : 3D x-shift [Pixels]: 3D x-shift value. (default 0)
+  ; %%--%%shift3d_y : 3D y-shift [Pixels]: 3D y-shift value. (default 0)
+  ; %%--%%shift3d_z : 3D z-shift [Pixels]: 3D z-shift value. (default 0)
+  ; %%--%%aa : Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off in absolute frequency. The program applies this low-pass filter before the moon elimination. Effective only when %%--%%fl > 0.0. (default 0.1) : %%--%%fl!=-1.0
+  ; %%--%%debug : Run with debug mode: Mainly for developers. (default False)
+
+\\
+===== Output =====
+=== List of output Files ===
+|| **File Name** || **Discription** ||
+|| *_ref_before_moon_elimination.hdf || File containing the 3D reference map before moon elimination (i.e., the 3D map just before applying moon elimination.). ||
+|| *_ref_moon_eliminated.hdf || File containing the moon eliminated 3D reference. ||
+|| *_mask_moon_elminator.hdf || File containing the moon elminator 3D mask. ||
+|| *_bin_mol_mass.hdf || File containing the 3D bainary corresponding to the molecular mass. ||
+|| *_mask_moon_eliminated.hdf || File containing the moon eliminated 3D mask. ||
+
+\\
+===== Description =====
+This command executes the following processes:
+  - Extract resample ratio from ISAC run directory if necessary (mainly for R-VIPER models).
+  - Resample and window the map if necessary (mainly for R-VIPER models)
+  - Shift 3D map if necessary.
+  - Invert the handedness if necessary.
+  - Apply low-pass filter to the input map before the moon elimination if necessary.
+  - Save reference 3D map before eliminating the moons.
+  - Create reference 3D map by eliminating the moons from the input map and save the results.
+  - Create 3D mask from the 3D binary corresponding to the molecular mass and save the result if necessary 
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+=== 2018/06/18 Toshio Moriya ===
+
+Wish
+  * Add options for 3D rotation of the map.
+
+=== 2018/06/18 Toshio Moriya ===
+
+Tips about balancing settings of moon_distance, dilation, and edge_sigma options for Gaussian soft-edge.
+  * moon_distance 
+    * In principle, shorter moon_distance is better (e.g. 3[Pixels] is better than 6[Pixels]).
+    * If moon_distance is too long, the moons will be connected and creates strange low density shape at the edge of the moon_distance.
+    * On the other hand, if it is too short, soft-edge will have the stair-like gray level change because of quantization or digitization.
+  * ndilation
+    * Setting dilation to half of moon_distance generates mask where the voxels with 1.0 values are same as the hard-edged molecular-mass binary map (default behaviour).
+    * Setting dilation to smaller than half of moon_distance generates mask where the voxels with 1.0 values are smaller than the hard-edged molecular-mass binary map.
+  * edge_sigma
+    * In principle, smaller edge_sigma is better.
+    * However, edge_sigma must be at least larger than 1[pixel]. 
+    * If not, the density distribution of moon eliminator 3D mask won't be smooth (spiky) because of quantization or digitization.
+    * In addition, moon-eliminated reference 3D map will have a strange dent near zero.
+
+\\
+==== Author / Maintainer ====
+Felipe Merino and Toshio Moriya
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_pipe.py
+
+\\
+==== See also ====
+[[pipeline:viper:sp_rviper|sp_rviper]], [[pipeline:viper:sp_viper|sp_viper]], [[pipeline:isac:sp_isac2|sp_isac2]], [[pipeline:utilities:sp_process|sp_process]], [[pipeline:meridien:sp_meridien|sp_meridien]], [[pipeline:sort3d:sp_sort3d_depth|sp_sort3d_depth]], and [[pipeline:localres:sp_filterlocal|sp_filterlocal]].
+
+\\
+==== Maturity ====
+Alpha:: Under development.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

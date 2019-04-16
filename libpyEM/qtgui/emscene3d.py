@@ -3009,15 +3009,16 @@ class EMQTreeWidgetItem(QtWidgets.QTreeWidgetItem):
 	Subclass of QTreeWidgetItem
 	adds functionality
 	"""
+
 	def __init__(self, qstring, item3d, parentnode):
 		QtWidgets.QTreeWidgetItem.__init__(self, [qstring])
 		self.name = ''.join(qstring)
 		self.item3d = weakref.ref(item3d)
 		if parentnode: self.parent = weakref.ref(parentnode)
 		else: self.parent = None
-		self.setCheckState(0, QtCore.Qt.Unchecked)
 		self.visible = QtGui.QIcon(QtGui.QPixmap(visibleicon))
 		self.invisible = QtGui.QIcon(QtGui.QPixmap(invisibleicon))
+		self.setCheckState(0, QtCore.Qt.Unchecked)
 		self.getVisibleState()
 		self.setToolTip(0, 'Click on the checkbox to select\nMiddle click to edit\nRight click to toogle visible')
 	

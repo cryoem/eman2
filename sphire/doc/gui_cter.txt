@@ -1,0 +1,69 @@
+~~NOTOC~~
+
+===== sp_gui_cter =====
+CTF Assessment: GUI tool to assess and sort micrographs according to their CTF parameters estimated by [[pipeline:cter:sp_cter|sp_cter]].
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_gui_cter.py  cter_ctf_file 
+
+\\
+===== Typical usage =====
+
+sp_gui_cter GUI tool can be run as a stand-alone program or run from the SPHIRE GUI.
+
+  sp_gui_cter.py  outdir_cter/partres.txt
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; cter_ctf_file : File containing CTF parameters: This file is produced by sp_cter and normally called partres.txt. (default none)
+
+\\
+=== Advanced Parameters ===
+
+\\
+===== Output =====
+
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+=== 2017/12/07 Toshio Moriya ===
+The format of ''partres.txt'' is changed. The old format is also supported for now, but will be removed in near future. Please also refer [[pipeline:cter:sp_cter|sp_cter]].
+
+\\
+==== Author / Maintainer ====
+Toshio Moriya
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_gui_cter.py
+
+\\
+==== See also ====
+[[pipeline:cter:sp_cter|sp_cter]], [[pipeline:window:sp_window|sp_window]]
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

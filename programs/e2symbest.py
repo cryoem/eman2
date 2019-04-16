@@ -33,8 +33,6 @@ from __future__ import division
 #
 #
 
-# $Id$
-
 
 from past.utils import old_div
 from builtins import range

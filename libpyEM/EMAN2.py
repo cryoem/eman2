@@ -95,8 +95,6 @@ from EMAN2jsondb import JSDict,js_open_dict,js_close_dict,js_remove_dict,js_list
 #except:
 #	HOMEDB=None
 
-Vec3f.__str__=lambda x:"Vec3f"+str(x.as_list())
-
 XYData.__len__=XYData.get_size
 
 # Who is using this? Transform3D is deprecated use the Transform insteand

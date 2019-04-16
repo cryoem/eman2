@@ -1,0 +1,116 @@
+~~NOTOC~~
+
+===== sp_compute_isac_avg =====
+Beautifier: Perform local 2D alignment of ISAC2 2D clustering results using the original pixel size and full CTF correction.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_compute_isac_avg.py  --stack=FILE_PATH  --isac_dir=DIRECTORY_PATH  --output_dir=DIRECTORY_PATH  --pixel_size=PIXEL_SIZE  --radius=PARTICLE_PIXEL_RADIUS  --pw_adjustment=METHOD_OR_FILE_PATH  --fl=CUTOFF_FREQ_METHOD  --noctf  --local_alignment  --B_start=LOWER_RESOLUTION_BOUND  --Bfactor=B_FACTOR  --xr=PIXEL_RANGE  --ts=PIXEL_STEP  --fh=HIGH_FREQ_SERACH_LIMIT  --maxit=MAX_ITERS  --navg=NUM_OF_AVERAGES
+
+\\
+===== Typical usage =====
+
+sp_compute_isac_avg.py exists only in MPI version. 
+
+There are four methods to adjust the power spectrum of resultant average images, as specified by option pw_adjustment.
+
+\\ __1. Adjust to analytical model (default method):__
+  mpirun -np 48 sp_compute_isac_avg.py --stack=bdb:data --isac_dir=outdir_isac --output_dir=outdir_beautify2d --radius=120
+
+\\ __2. Adjust to B-factor:__
+  mpirun -np 48 sp_compute_isac_avg.py --stack=bdb:data --isac_dir=outdir_isac --output_dir=outdir_beautify2d --radius=120 --pw_adjustment=bfactor --Bfactor=40.0 --fl=0.2
+
+\\ __2. Adjust to rotational average:__
+  mpirun -np 48 sp_compute_isac_avg.py --stack=bdb:data --isac_dir=outdir_isac --output_dir=outdir_beautify2d --radius=120 --pw_adjustment=rot_avg_1d_pw_spectrum.txt
+
+\\ __4. No adjustment:__
+  mpirun -np 48 sp_compute_isac_avg.py --stack=bdb:data --isac_dir=outdir_isac --output_dir=outdir_beautify2d --radius=120 --pw_adjustment=no_adjustment
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; %%--%%stack : Original image stack: Data stack that used for the associated ISAC2 run. The particle images in this stack are used to create the full-sized class averages. (default required string)
+  ; %%--%%isac_dir : ISAC2 run directory: Path to the output directory of the associated ISAC2 run. This is the input directory for this command. (default required string)
+  ; %%--%%output_dir : Output directory: This automatically-created output directory will contain results. By default, the program uses sharpen_DATA_AND_TIME for the name. If this is the same as ISAC2 run directory, the program automatically creates sharpen subdirectory under the ISAC2 run directory. (default none)
+  ; %%--%%pixel_size : Pixel size [A]: The pixel size of particle images in input particle stack for the associated ISAC2 run. Use 1.0 in case of negative stain data. (default -1.0)
+  ; %%--%%radius : Particle radius [Pixels]: There is no default radius. (default -1)
+  ; %%--%%noctf : CTF correction: Indicate if full CTF correction should be applied or not. Always use the CTF correction for cryo data, but not for negative stained data. By default, do full CTF correction. (default False question reversed in GUI) 
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%local_alignment : Local alignment: Indicate if local alignment should be applied or not. (default False value reversed in GUI)
+  ; %%--%%fl : Low-pass filter frequency [1/Pixel]: Cutoff frequency of low-pass filter. =-1.0, do not apply the low-pass filter; =0.0, apply low pass filter to initial ISAC2 resolution; =1.0, to resolution after local alignment; else use user-provided cutoff in absolute frequency (>0.0 and <=0.45). (default -1.0)
+  ; %%--%%pw_adjustment : Power spectrum adjustment method: Specify the method for the power spectrum (PWS) adjustment of 2-D averages to enhance averages. ='analytical_model' adjusts PWS to an analytic model; ='bfactor' adjusts PWS using B-factor; ='FILE_PATH' adjusts PWS to rotationally averaged 1D power spectrum stored in the text file; ='no_adjustment' skips adjustment. (default analytical_model)
+  ; %%--%%B_start : Lower bound for B-factor estimation [A]: Lower resolution bound of power spectrum for B-factor estimation. Specific to adjust to B-factor method. (default 45.0)
+  ; %%--%%Bfactor : Use ad-hoc B-factor [A^2]: Skip the automatic estimation and use user-provided ad-hoc B-factor (e.g. 25.0[A^2]) for the enhancement. By default, the program automatically estimates B-factor. Specific to adjust to B-factor method. (default -1.0)
+
+  ; %%--%%xr : Local search range [Pixels]: Translational search range for local alignment. (default -1.0) : %%--%%local_alignment==True
+  ; %%--%%ts : Local search step [Pixels]: Translational search step for local alignment. (default 1.0) : %%--%%local_alignment==True
+  ; %%--%%fh : High frequency search limit [1/Pixel]: High frequency search limit in absolute frequency for local alignment. (default -1.0) : %%--%%local_alignment==True
+  ; %%--%%maxit : Local alignment iterations: The number of iterations for local aligment. (default 5) : %%--%%local_alignment==True
+  ; %%--%%navg : Number of averages: The number of averages to be process, starting from the first image. By default, uses all ISAC2 average images. (default 1000000)
+
+\\
+===== Output =====
+=== Important Output Files ===
+|| **File Name** || **Discription** ||
+|| class_averages.hdf || Computed averages in original image size. Each average has attributes "members" and "n_objects" in the image header. ||
+|| ordered_class_averages.hdf || Sorted version of class_averages.hdf. Averaged images are sorted by their similarity and re-arranged in a cyclic manner. ||
+|| params_avg_*.txt || 2D alignment parameters computed by ISAC2. ||
+|| init_isac_params.txt || 2D alignment parameters of all particles computed by ISAC2. ||
+|| ali2d_local_params_avg_*.txt || 2D alignment parameters computed by local alignment of this program. ||
+|| ali2d_local_params*.txt || 2D alignment parameters of all particles computed by local alignment of this program. ||
+|| FH_list.txt || Initial ISAC2 resolution and resolution after local alignment. ||
+
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+Not published yet.
+
+\\
+==== Developer Notes ====
+=== 2018/07/10 Toshio Moriya ===
+Reflected the interface changes.
+
+- Added Options
+  ; %%--%%pw_adjustment : Power spectrum adjustment method: Specify the method for the power spectrum (PWS) adjustment of 2-D averages to enhance averages. ='analytical_model' adjusts PWS to an analytic model; ='bfactor' adjusts PWS using B-factor; ='FILE_PATH' adjusts PWS to rotationally averaged 1D power spectrum stored in the text file; ='no_adjustment' skips adjustment. (default analytical_model)
+
+- Removed Options
+  ; %%--%%B_enhance : Adjust to B-factor: Adjust the power spectrum of resultant average images using B-factor to enhance averages. Specific to adjust to B-factor method. (default False)
+  ; %%--%%adjust_to_given_pw2 : Adjust to rotational average: Adjust the power spectrum of resultant average images to the user-provided 1-D reference power spectrum. Specific to adjust to rotational average method. (default False)
+  ; %%--%%adjust_to_analytic_model : Adjust to analytical model: Adjust the power spectrum of resultant average images to an analytical model. Specific to adjust to analytical model. (default False)
+  ; %%--%%no_adjustment : No adjustment: Do not adjust the power spectrum of resultant average images. Use this option to skip all power spectrum adjustment methods and simply compute class averages with the original pixel size. Specific to no adjustment method. (default False)
+
+\\
+==== Author / Maintainer ====
+Zhong Huang
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_compute_isac_avg.py
+
+\\
+==== See also ====
+[[pipeline:isac:sp_isac2|sp_isac2]]
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

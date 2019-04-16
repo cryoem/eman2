@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
  * Copyright (c) 2000-2006 The University of Texas - Houston Medical School
@@ -12365,13 +12361,14 @@ EMData *Util::pad(EMData* img,int new_nx, int new_ny, int new_nz, int x_offset, 
 
 void Util::colreverse(float* beg, float* end, int nx) {
 	float* tmp = new float[nx];
+
 	int n = (end - beg)/nx;
 	int nhalf = n/2;
 	for (int i = 0; i < nhalf; i++) {
 		// swap col i and col n-1-i
-		memcpy(tmp, beg+i*nx, nx*sizeof(float));
-		memcpy(beg+i*nx, beg+(n-1-i)*nx, nx*sizeof(float));
-		memcpy(beg+(n-1-i)*nx, tmp, nx*sizeof(float));
+		memcpy(tmp, beg+(size_t)i*(size_t)nx, nx*sizeof(float));
+		memcpy(beg+i*nx, beg+(size_t)(n-1-i)*(size_t)nx, nx*sizeof(float));
+		memcpy(beg+(size_t)(n-1-i)*(size_t)nx, tmp, nx*sizeof(float));
 	}
 	delete[] tmp;
 }

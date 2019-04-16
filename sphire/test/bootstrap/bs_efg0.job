@@ -1,0 +1,22 @@
+#PBS -r n -l cput=100:00:00 -l walltime=100:00:00
+#PBS -q workq
+#PBS -l nodes=32:ppn=2
+cd /garibaldi/people-a/jbrown/sparx/test/EFG-ALL-2/run1
+cp $PBS_NODEFILE nodelist
+uniq nodelist > singlenodelist
+
+foreach i (`uniq nodelist`)
+    ssh $i rm -f "/scratch/jbrown/*.garibaldi/*"
+    ssh $i df | grep sda5 >> /garibaldi/people-a/jbrown/sparx/test/EFG-ALL-2/run1/diskusage
+end
+
+mpirun -machinefile singlenodelist -np 32 ../../bootstrap/bootstrap_genbuf.py ../efg-all-ctfed.hdf 4 $PBSTMPDIR/tmpslice
+
+mpirun -machinefile $PBS_NODEFILE -np 64 ../../bootstrap/bootstrap_nnctf_2.py -i ../efg-all-ctfed.hdf -vp $PBSTMPDIR/bs_efg_vol -sp status -n 10240 -media $PBSTMPDIR/tmpslice -npad 4 -snr 2.0 -sign 1
+
+foreach i (`uniq nodelist`)
+    ssh $i cp "$PBSTMPDIR/bs_noise_model_vol*.hdf" /garibaldi/people-a/jbrown/sparx/test/EFG-ALL-2/run1/
+end
+
+touch done
+

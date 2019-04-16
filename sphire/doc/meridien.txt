@@ -1,0 +1,127 @@
+~~NOTOC~~
+
+===== sp_meridien =====
+3D Refinement: Performs 3D structure refinement using a quasi-maximum likelihood approach.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_meridien.py  stack  output_directory  initial_volume  --do_final=MERIDIEN_ITERATION_ID  --local_refinement  --radius=particle_radius  --mask3D=MASK3D  --symmetry=SYMMETRY  --inires=INITIAL_RESOLUTION  --delta=DELTA  --xr=XR  --ts=TS  --initialshifts  --skip_prealignment  --memory_per_node=MEMORY_PER_NODE  --center_method=CENTER_METHOD  --target_radius=TARGET_RADIUS  --an=ANGULAR_NEIGHBORHOOD  --shake=SHAKE  --small_memory  --ccfpercentage=CCFPERCENTAGE  --nonorm  --function=USER_FUNCTION --function_ai=USER_FUNCTION_AI --group_by=GROUP_BY --theta_min=THETA_MIN --theta_max=THETA_MAX --even_angle_method=EVEN_ANGLE_METHOD --group_id=GROUP_ID --filament_width=FILAMENT_WIDTH --helical_rise=HELICAL_RISE --a_criterion=A_CRITERION --limit_improvement=LIMIT_IMPROVEMENT --plot_ang_dist=PLOT_ANG_DIST --main000=MAIN000
+
+
+\\
+===== Typical usage =====
+
+sp_meridien exists only in MPI version (Running MPI version does not require --MPI flag).
+
+There are five ways to run the program:
+
+\\ __1. Standard default run:__
+\\ The standard refinement starts from exhaustive searches, uses initial reference structure
+  mpirun -np 64 --hostfile four_nodes.txt  sp_meridien.py  bdb:sparx_stack vton1 mask15.hdf --sym=c5  --initialshifts  --radius=120  --mask3D=mask15.hdf    >1ovotn &
+
+\\ __2. Restart after the last fully finished iteration:__
+One can change some parameters (MPI settings have to be the same)
+  mpirun -np 64 --hostfile four_nodes.txt  sp_meridien.py  vton1 --radius=100 >2ovotn &
+
+\\ __3. Local refinement:__
+\\  Local refinement starts from user-provided orientation parameters, delta has to be <= 3.75
+  mpirun -np 64 --hostfile four_nodes.txt sp_meridien.py --local_refinement bdb:sparx_stack   vton3 --delta=1.875 --xr=2.0  --inires=5.5  --sym=c5  --radius=120  --mask3D=mask15.hdf >5ovotn &
+
+\\ __4. Restart of local refinement after the last fully finished iteration.:__
+\\  One can change some parameters (MPI settings have to be the same)
+  mpirun -np 64 --hostfile four_nodes.txt  sp_meridien.py --local_refinement  vton3  --xr=0.6 >6ovotn &
+
+\\ __5. Final reconstruction only:__
+\\ Do only final reconstruction using a fully finished iteration of meridien (here number 21).
+  mpirun -np 64 sp_meridien.py --do_final=21  meridien_outdir
+
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; stack : Input image stack: Input image stack. Required for new runs, not for restarts. (default none)
+  ; output_directory : Output directory: The results will be written here. If not given, the program will use name master_DATA_AND_TIME. For standard continuation run, local refinement from iteration, and final reconstruction only, the directory must exist and further iterations will be written to this directory. (default none)
+  ; initial_volume : Initial 3D reference: The 3D reference used in the initial iteration of 3D refinement. Required only for new runs. (default none)
+
+  ; %%--%%do_final : Iteration number: Specify the iteration which to perform final reconstruction. By setting to 0, program searches for the iteration which had best resolution, then performs correponding final reconstruction. Value must be zero or positive. (default -1)
+  ; %%--%%local_refinement : Perform local refinement: Perform local refinement starting from user-provided orientation parameters stored in the header of input image stack. (default False)
+
+  ; %%--%%radius : Particle radius [Pixels]: Outer particle radius in pixels < int(boxsize/2)-1. Ignored in final reconstruction. (default -1) 
+  ; %%--%%mask3D : 3D mask file: A mask applied to half-map during iterations of the program. If not given, a hard sphere of radius boxsize/2-1 will be used. Ignored in final reconstruction. (default none)
+  ; %%--%%symmetry : Point-group symmetry: Point-group symmetry of the refined structure. Supported point groups symmetries are: cn and dn, where n is multiplicity, oct, tet, and icos. Ignored in final reconstruction. (default c1)
+  ; %%--%%inires : Starting resolution [A]: Resolution of the initial map used to start the refinement. Ignored in final reconstruction. (default 25.0)
+  ; %%--%%delta : Initial engular sampling step [Degrees]: Initial angular sampling step. Ignored in final reconstruction. (default 7.5|||15|||3.75|||1.875|||0.9375|||0.46875|||0.234375)::3.75|||15|||7.5|||1.875|||0.9375|||0.46875|||0.234375;Main
+  ; %%--%%initialshifts : Read shifts from header: Start refinement using translation parameters located in the input file header to jumpstart the procedure. Specific to standard run mode. (default False value reversed in GUI)
+  ; %%--%%skip_prealignment : Skip the 2D pre-alignment step: Indicate if pre-alignment should be omitted.  By default it is performed in order to find initial translation parameters. This accelerates convergence of the program. Do not use 2D pre-alignment if images are already centered. Specific to standard run modes. (default False) : %%--%%initialshifts==False
+  ; %%--%%memory_per_node : Memory per node [GB]: User provided information about memory per node in GB (NOT per CPU). By default, it uses 2GB * (number of CPUs per node). Used in all modes. (default -1.0)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%xr : Search range [Pixels]: Range for translation search in both directions. Search is +/-xr. It can be fractional. Ignored in final reconstruction. (default 5.0) 
+  ; %%--%%ts : Search step size [Pixels]: Step size of translation search in both directions. Search is within a circle of radius xr on a grid with steps ts. It can be fractional. (default 1.0)
+  ; %%--%%ts : Search step size [Pixels]: Step size of translation search in both directions. Search is within a circle of radius xr on a grid with steps ts. It can be fractional. (default 1.0)
+  ; %%--%%an : Angular neighborhood: Angular neighborhood for local search. Used only in Local Refinement mode. Ignored in final reconstruction. (default -1.0)
+  ; %%--%%center_method : Centering method: Method for centering averages during initial 2D prealignment of data (0: no centering; -1: average shift method; For 1-7, see center_2D in utilities.py). Specific to standard run modes. (default -1)
+  ; %%--%%target_radius : Target particle radius [Pixels]: For 2D prealignment, images will be shrunk or enlarged to this radius. Specific to standard run modes. (default 29)
+  ; %%--%%shake : Shake: Shake randomizes grid searches by a factor of (shake x grid step). Ignored in final reconstruction. (default 0.5)
+  ; %%--%%small_memory : Keep data in memory: Indicate if data should be kept in memory or not. By default, data will be kept in memory. Ignored in final reconstruction. (default False question reversed in GUI)
+  ; %%--%%ccfpercentage : Correlation peaks to be included [%]: Percentage of correlation peaks to be included. 0.0 corresponds to hard matching. Ignored in final reconstruction. This value will be adjusted during helical refinement. (default 99.9)::10;Main
+  ; %%--%%nonorm : Apply image norm correction: Indicate if image norm correction should be applied or not. By default, apply image norm correction. Ignored in final reconstruction. (default False question reversed in GUI)
+  ; %%--%%function : Reference preparation function: Specify name of function that the program should use to prepare the reference structure after each iteration. Ignored in final reconstruction. (default do_volume_mask)
+  ; %%--%%function_ai : Logic function: Specify name of function that the program should use to follow the specified logic. (default ai_spa|||ai_filament)::ai_filament|||ai_spa;Advanced
+  ; %%--%%group_by : Group name for chunks:Group the particles by the specified header name before splitting them into chunks. (default ptcl_source_image)::filament_id;Main
+  ; %%--%%theta_min : Theta min [degree]:  Minimum out-of-plane rotation value to use for the reference projection angles. Default is the full range from 0 to 180. This value will be adjusted during helical refinement. (default -1)::90;Main
+  ; %%--%%theta_max : Theta max [degree]:  Maximum out-of-plane rotation value to use for the reference projection angles. Default is the full range from 0 to 180. This value will be adjusted during helical refinement. (default -1)::90;Main
+  ; %%--%%even_angle_method : Even angle method: Method to use for even angle creation (S, M, P). (default S|||M|||P)::M|||P|||S;Advanced
+  ; %%--%%group_id : Outlier group ID: Group the particles by the header name for outlier detection. By default do not perform outlier detection. (default none)::filament_id;Main
+  ; %%--%%filament_width : Filament width [px]: This is used to normalize the particles in case of filaments. A rectangular mask will be used instead of a circular one. (default -1.0)::-1.0;Main
+  ; %%--%%helical_rise : Helical rise [A]: Helical rise used to limit the shift along the helical axis to +-rise/2 (default none)::none;Main
+  ; %%--%%a_criterion : Convergence criterion A value: Convergence criterion multiplication for the criterion A. (default 0.75)
+  ; %%--%%limit_improvement : Limit of improvements: The number of consecutive iterations without changes which will be considered convergence. (default 1)
+  ; %%--%%plot_ang_dist : Plot angular distribution: Plot the angular distribution in every iteration. This will take some time for high symmetries.(default False)
+  ; %%--%%main000 : Main000 folder: Main000 folder of a previous refinement to presever chunk and group information. By default it will assign new chunks and groups. (default none)
+
+\\
+===== Output =====
+
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Markus Stabrin
+Pawel A. Penczek
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_meridien.py
+
+\\
+==== See also ====
+References to relevant other routines.
+
+\\
+==== Maturity ====
+Alpha:: Fully developed.
+
+\\
+==== Bugs ====
+Glitches possible.
+
+\\

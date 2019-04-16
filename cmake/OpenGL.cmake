@@ -24,7 +24,6 @@ message_var(OPENGL_LIBRARIES)
 if(OpenGL_FOUND AND NOT TARGET OpenGL)
 	add_library(OpenGL INTERFACE)
 	add_library(OpenGL::OpenGL ALIAS OpenGL)
-	target_link_libraries(OpenGL INTERFACE OpenGL::GL OpenGL::GLU)
 	set_target_properties(OpenGL PROPERTIES
 						  INTERFACE_COMPILE_DEFINITIONS USE_OPENGL
 						  )

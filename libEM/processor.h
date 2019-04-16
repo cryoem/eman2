@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -9634,6 +9630,3 @@ correction is not possible, this will allow you to approximate the correction to
 }
 
 #endif	//eman_filter_h__
-
-/* vim: set ts=4 noet: */
-

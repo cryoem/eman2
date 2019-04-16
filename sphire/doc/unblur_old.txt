@@ -1,0 +1,124 @@
+~~NOTOC~~
+
+===== sp_unblur_old =====
+Unblur 1.0.2 (Pre cisTEM): Align frames of micrograph movies with [[http://grigoriefflab.janelia.org/unblur|Unblur & Summovie]].
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_unblur_old.py  unblur_path  input_micrograph_pattern  output_directory  --summovie_path=SUMMOVIE_PATH  --selection_list=SELECTION_LIST  --nr_frames=NUM_OF_FRAMES  --pixel_size=PIXEL_SIZE  --voltage=VOLTAGE  --exposure_per_frame=EXPOSURE  --pre_exposure=EXPOSURE  --nr_threads=NUM_OF_THREADS  --save_frames  --skip_dose_filter  --expert_mode  --shift_initial=SHIFT  --shift_radius=SHIFT_RADISU  --b_factor=B_FACTOR  --fourier_vertical=VERTICAL_MASK  --fourier_horizontal=HORIZONTAL_MASK  --shift_threshold=SHIFT_THRESHOLD  --iterations=ITERATIONS  --dont_restore_noise  --verbose
+
+\\
+===== Typical usage =====
+
+sp_unblur_old exists only in non-MPI version.
+
+Run Unblur with dose-filtering, and then run Summovie without dose-filtering.
+
+  sp_unblur_old.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur --summovie_path=~/my_app/summovie --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0 --voltage=300.0 --pre_exposure=0.0 --nr_threads=1
+
+Run Unblur with dose-filtering, and then run Summovie without dose-filtering with selection list.
+
+  sp_unblur_old.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur --summovie_path=~/my_app/summovie --selection_list=selected_micrograph_file --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0 --voltage=300.0 --pre_exposure=0.0 --nr_threads=1
+
+Run Unblur without dose-filtering.
+
+  sp_unblur_old.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur --nr_frames=25 --pixel_size=1.19 --skip_dose_filter --nr_threads=1
+
+Run Unblur without dose-filtering, and save the frames.
+
+  sp_unblur_old.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur --nr_frames=25 --pixel_size=1.19 --skip_dose_filter --save_frames --nr_threads=1
+
+Run Unblur with dose-filtering, and then run Summovie without dose-filtering with all options.
+
+  sp_unblur_old.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur --summovie_path=~/my_app/summovie --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0 --voltage=300.0 --pre_exposure=0.0 --save_frames --expert_mode --shift_initial=2.0 --shift_radius=200.0 --b_factor=1500.0 --fourier_vertical=1 --fourier_horizontal=1 --shift_threshold=0.1 --iterations=10 --verbose --nr_threads=1
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; unblur_path : Unblur executable path: Specify the file path of Unblur executable. (This argument is specific to SPHIRE, and not directly used by Unblur and Summovie executables.) (default required string)
+  ; input_micrograph_pattern : Input movie path pattern: Specify path pattern of input micrograph movies with a wild card (*).. The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sp_gui.py automatically adds single quotes (')). bdb files cannot be selected as input micrograph movies. (This argument is specific to SPHIRE, and not directly used by Unblur and Summovie executables.) (default required string)
+  ; output_directory : Output directory: The results will be written here. It cannot be an existing one. (This argument is specific to SPHIRE, and not directly used by Unblur and Summovie executables.) (default required string)
+
+  ; %%--%%summovie_path : Summovie executable path: Specify the file path of Summovie executable. (This option is specific to SPHIRE, and not directly used by Unblur and Summovie executables.) (default none)
+  ; %%--%%selection_list : Movie selection file: Specify a name of micrograph movie selection list text file. The file extension must be '.txt'. If this is not provided, all files matched with the micrograph movie name pattern will be processed. (This option is specific to SPHIRE, and not directly used by Unblur and Summovie executables.) (default none)
+  ; %%--%%nr_frames : Number of movie frames: The number of movie frames in each input micrograph. (default 3)
+  ; %%--%%pixel_size : Pixel size [A]: The pixel size of input micrographs. (default required float)
+  ; %%--%%voltage : Microscope voltage [kV]: The acceleration voltage of microscope used for imaging. Will be ignored when %%--%%skip_dose_filter option is used. (default 300.0) : %%--%%skip_dose_filter==True
+  ; %%--%%exposure_per_frame : Per frame exposure [e/A^2]: The electron dose per frame in e/A^2. Will be ignored when %%--%%skip_dose_filter option is used. (default 2.0) : %%--%%skip_dose_filter==True
+  ; %%--%%pre_exposure : Pre-exposure [e/A^2]: The electron does in e/A^2 used for exposure prior to imaging. Will be ignored when %%--%%skip_dose_filter option is used. (default 0.0) : %%--%%skip_dose_filter==True
+  ; %%--%%nr_threads : Number of threads: The number of threads Unblur can use. The higher the faster, but it requires larger memory. (default 1)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%save_frames : Save aligned movie frames: Save aligned movie frames. This option slows down the process. (default False)
+  ; %%--%%skip_dose_filter : Apply dose filter: Indicate if dose filter should be applied or not. With this option, %%--%%voltage, %%--%%exposure_per_frame, and %%--%%pre_exposure will be ignored. By default, apply dose filter. (default False question reversed in GUI)
+  ; %%--%%expert_mode : Use expert mode: Requires %%--%%initial_shift, %%--%%shift_radius, %%--%%b_factor, %%--%%fourier_vertical, %%--%%fourier_horizontal, %%--%%shift_threshold, %%--%%iterations, %%--%%dont_restore_noise, and %%--%%verbosity options. (default False)
+  ; %%--%%shift_initial : Minimum shift for initial search [A]: Effective only when %%--%%expert_mode option is used. (default 2.0) : %%--%%expert_mode==True
+  ; %%--%%shift_radius : Outer radius shift limit [A]: Effective only when %%--%%expert_mode option is used. (default 200.0) : %%--%%expert_mode==True
+  ; %%--%%b_factor : Apply B-factor to images [A^2]: Effective only when %%--%%expert_mode option is used. (default 1500.0) : %%--%%expert_mode==True
+  ; %%--%%fourier_vertical : Vertical Fourier central mask size: The half-width of central vertical line of Fourier mask. Effective only when %%--%%expert_mode option is used. (default 1) : %%--%%expert_mode==True
+  ; %%--%%fourier_horizontal : Horizontal Fourier central mask size: The half-width of central horizontal line of Fourier mask. Effective only when %%--%%expert_mode option is used. (default 1) : %%--%%expert_mode==True
+  ; %%--%%shift_threshold : Termination shift threshold: Effective only when %%--%%expert_mode option is used. (default 0.1) : %%--%%expert_mode==True
+  ; %%--%%iterations : Maximum iterations: Effective only when %%--%%expert_mode option is used. (default 10) : %%--%%expert_mode==True
+  ; %%--%%dont_restore_noise : Restore noise power: Indicate if noise power should be restored or not. By default, restore noise power. Effective only when %%--%%expert_mode option is used. (default False question reversed in GUI) : %%--%%expert_mode==True
+  ; %%--%%verbose : Verbose: Effective only when %%--%%expert_mode option is used. (default False) : %%--%%expert_mode==True
+
+\\
+===== Output =====
+The program automatically creates the following subdirectories in the specified output directory.
+
+\\ __Run without dose-filtering__:
+  * Sum files will be written to the ''corrsum'' directory.
+  * Log files will be written to the ''logfiles'' directory.
+  * Aligned frames will be written to the ''corrsum'' directory.
+  * Shift files  will be written to the ''shift'' directory.
+  * FRC files will be written to the ''frc'' directory.
+
+\\ __Run with dose-filtering (as without dose-filtering plus)__:
+  * Dose filtered sum files will be written to the ''corrsum_dose_filtered'' directory.
+  * Log files will be written to the ''logfiles'' directory.
+  * Dose filtered aligned frames will be written to the ''corrsum_dose_filtered'' directory.
+  * Shift files  will be written to the ''shift'' directory.
+  * FRC files will be written to the ''frc'' directory.
+
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+[[http://grigoriefflab.janelia.org/unblur|Unblur & Summovie]]
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Markus Stabrin
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_unblur_old.py
+
+\\
+==== See also ====
+[[pipeline:movie:sp_gui_unblur|sp_gui_unblur]]
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

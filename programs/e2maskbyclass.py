@@ -44,7 +44,7 @@ from sys import argv,exit
 def maskfile(jsd,n,fsp,classes,masks,clsmap,options):
 
 	fspout=fsp.rsplit(".",1)[0].split("__")[0]+"__ctf_flip_masked.hdf"
-	fspbout=fsp.rsplit(".",1)[0].split("__")[0]+"__ctf_flip_bispec.hdf"
+	fspbout=fsp.rsplit(".",1)[0].split("__")[0]+"__ctf_flip_invar.hdf"
 
 	for i in range(len(clsmap)):
 		ptcl=EMData(fsp,i)
@@ -58,6 +58,10 @@ def maskfile(jsd,n,fsp,classes,masks,clsmap,options):
 			ptcl.mult(alim)
 
 		ptcl.write_image(fspout,i)
+
+		if options.redoharmonic:
+			bspec=ptcl.process("math.harmonicpow:fp=1")
+			bspec.write_image(fspbout,i)
 
 		if options.redobispec:
 			bspec=ptcl.process("math.bispectrum.slice",{"fp":bispec_invar_parm[1],"size":bispec_invar_parm[0]})
@@ -85,6 +89,7 @@ once complete, bispectra can be recomputed based on the masked particles, or the
 	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer.", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--nofullresok",action="store_true",help="Overrides the requirement that the class-averages be made from _fullres particle images.",default=False)
 	parser.add_argument("--redobispec",action="store_true",help="Recomputes bispectra from masked particles",default=False)
+	parser.add_argument("--redoharmonic",action="store_true",help="Recomputes harmonic power from masked particles",default=False)
 	parser.add_argument("--gui",action="store_true",help="Permits interactive adjustment of mask parameters",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="tuning[True]")
 # 	parser.add_argument("--iter",type=int,help="Iteration number within path. Default = start a new iteration",default=0)
 # 	parser.add_argument("--goldstandard",type=float,help="If specified, will phase randomize the even and odd references past the specified resolution (in A, not 1/A)",default=0)

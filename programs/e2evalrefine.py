@@ -564,9 +564,9 @@ def main():
 
 		# write actual classes
 		nameg = "sets/pf{}_good_{}".format(rfnnum,cptcl[0].replace("_even","").replace("sets/",""))
-		namegb=nameg.split("__")[0]+"__ctf_flip_bispec.lst"
+		namegb=nameg.split("__")[0]+"__ctf_flip_invar.lst"
 		nameb = "sets/pf{}_bad_{}".format(rfnnum,cptcl[0].replace("_even","").replace("sets/",""))
-		namebb=nameb.split("__")[0]+"__ctf_flip_bispec.lst"
+		namebb=nameb.split("__")[0]+"__ctf_flip_invar.lst"
 		try: os.unlink(nameg)
 		except: pass
 		try: os.unlink(nameb)
@@ -585,10 +585,10 @@ def main():
 		outg.close()
 		
 		open(namegb,"w").write(open(nameg,"r").read())		# copy the file
-		launch_childprocess("e2proclst.py {} --retype ctf_flip_bispec".format(namegb))
+		launch_childprocess("e2proclst.py {} --retype ctf_flip_invar".format(namegb))
 		
 		open(namebb,"w").write(open(nameb,"r").read())		# copy the file
-		launch_childprocess("e2proclst.py {} --retype ctf_flip_bispec".format(namebb))
+		launch_childprocess("e2proclst.py {} --retype ctf_flip_invar".format(namebb))
 		
 		print("{}/{} kept as good".format(ngood,len(quals)))
 
@@ -866,6 +866,7 @@ def main():
 				targetres=jsparm["targetres"]
 				speed=jsparm["speed"]
 				bispec="bispec" if jsparm.getdefault("bispec",False) else " "
+				if bispec==" ": bispec="invar" if jsparm.getdefault("invar",False) else " "
 				nptcl=EMUtil.get_image_count(str(jsparm["input"][0]))+EMUtil.get_image_count(str(jsparm["input"][1]))
 
 				print("{path}\t{nptcl} ptcls\t{niter} iter\t{cores} cores\t{h:02d}:{m:02d} walltime\t{cpuh:1.1f} CPU-h\t{cpuhpi:1.2f} CPU-h/it\t{bs} box\t{targ:1.1f} targetres\tspd={speed} {bispec}".format(

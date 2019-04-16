@@ -1,0 +1,77 @@
+~~NOTOC~~
+
+===== sp_pipe isac_substack =====
+ISAC2 Stack Subset: Create a virtual subset stack consisting of particles acounted for by ISAC2 by retrieving particle numbers associated with the ISAC2 or Beautifier class averages. The command also saves a selection file containing the retrieved original image numbers and 2D alignment parameters. In addition, it stores the 2D alignment parameters to the stack header.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_pipe.py  isac_substack  input_bdb_stack_path  input_run_dir  output_directory  --isac_class_avgs_path=FILE_PATH  --substack_basename=SUBSTACK_BASENAME
+
+\\
+===== Typical usage =====
+
+sp_pipe isac_substack does not support MPI. 
+
+  sp_pipe.py isac_substack 'bdb:outdir_window#data' 'outdir_pipe_sac_substack' --isac_class_avgs_path='ordered_class_averages_selected.hdf'
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; input_bdb_stack_path : Input bdb image stack: Specify the same bdb image stack used for the associated ISAC2 run. (default required string)
+  ; input_run_dir : ISAC2 or Beautifier run output directory: Specify output directory of an ISAC2 or Beautifier run as an input to this command. From this directory, the program extracts the shrink ratio and 2D alignment parameters of the ISAC2 run or local 2D alignment parameters of the Beautifier run. (default required string)
+  ; output_directory : Output directory: The results will be written here. It cannot be an existing one. (default required string)
+
+  ; %%--%%isac_class_avgs_path : ISAC2 or Beautifier class averages path: Specify path to a file containg ISAC2 or Beautifier class averages. The class averages can be fullset or selected subset, as long as they are associated with the input bdb image stack and contain class member information stored in the headers. By default, the program uses the same default name of ordered class averages in ISAC2 or Beautifier (i.e. ordered_class_averages.hdf). (default none)
+  ; %%--%%substack_basename : Stack subset basename: Specify the basename of ISAC2 stack subset file. It cannot be empty string or only white spaces. (default isac_substack)
+
+\\
+=== Advanced Parameters ===
+
+\\
+===== Output =====
+
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+=== 2018/01/13 Toshio Moriya ===
+The following options are not implemented yet.
+  ; %%--%%isac_class_id : ISAC2 class average ID: Retrieve only particle members of the specifed ISAC2 class. By default, retrieve from all classes. (default -1)
+  ; %%--%%no_virtual_stack : Do not create virtual stack: Use this option to create only the particle ID list text file associated with the ISAC2 class averages. (default False)
+  ; %%--%%no_import_align2d : Do not import alignment:  (default False)
+
+\\
+==== Author / Maintainer ====
+Toshio Moriya
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_pipe.py
+
+\\
+==== See also ====
+[[pipeline:isac:sp_isac2|sp_isac2]]
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

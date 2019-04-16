@@ -1,0 +1,104 @@
+~~NOTOC~~
+
+===== sp_window =====
+Particle Extraction: Window particles from micrographs using the particle coordinates.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_window.py  input_micrograph_pattern  input_coordinates_pattern  input_ctf_params_source  output_directory  --selection_list=SELECTION_TEXT_FILE  --coordinates_format=FORMAT_NAME  --box_size=SIZE  --skip_invert  --limit_ctf  --astigmatism_error=ERROR_THRESHOLD  --resample_ratio=RATIO  --check_consistency ---filament_width=FILAMENT_WIDTH
+
+\\
+===== Typical usage =====
+
+sp_window exists in both MPI and non-MPI versions (Running MPI version does not require --MPI flag). 
+
+There are several modes to run the program:
+
+\\ __1. All Micrographs Mode - Process all micrographs in a directory:__
+\\ Specify path pattern of input micrographs and coordinates files with a wild card (*).. The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sp_gui.py automatically adds single quotes (')). The substring at the variable part must be same between a associated pair of input micrograph and coordinates file. bdb files cannot be selected as input micrographs. Next, specify the source of CTF paramters. For cryo data, this should be the file produced by sp_cter and normally called partres.txt. For negative staining data, it should be the pixel size [A/Pixels] of input micrographs. Finally, specify output directory where all outputs should be saved. In this mode, all micrographs matching the path pattern will be processed.
+  mpirun  -np  32  sp_window.py  './mic*.hdf'  'info/mic*_info.json'  outdir_cter/partres/partres.txt  particles  --coordinates_format=eman2  --box_size=64
+
+\\ __2. Selected Micrographs Mode - Process all micrographs in a selection list file:__
+\\ In addition input micrographs path pattern, coordinates files path pattern, CTF paramters source, and output directry, specify a name of micrograph selection list text file using --selection_list option. In this mode, only micrographs in the selection list which matches the file name part of the pattern (ignoring the directory paths) will be processed. If a micrograph name in the selection list does not exists in the directory specified by the micrograph path pattern, processing of the micrograph will be skipped.
+  mpirun  -np  32  sp_window.py  './mic*.hdf'  'info/mic*_info.json'  outdir_cter/partres/partres.txt  particles  --selection_list=mic_list.txt  --coordinates_format=eman2  --box_size=64
+
+\\ __3. Single Micrograph Mode - Process a single micrograph:__
+\\ In addition input micrographs path pattern, coordinates files path pattern, CTF paramters source, and output directry, specify a single micrograph name using --selection_list option. In this mode, only the specified single micrograph will be processed. If this micrograph name does not matches the file name part of the pattern (ignoring the directory paths), the process will exit without processing it. If this micrograph name matches the file name part of the pattern but does not exists in the directory which specified by the micrograph path pattern, again the process will exit without processing it.
+  sp_window.py  './mic*.hdf'  'info/mic*_info.json'  outdir_cter/partres/partres.txt  particles  --selection_list=mic0.hdf  --coordinates_format=eman2  --box_size=64
+
+\\ __4. For Negative Staining Dataset:__
+\\ Set the pixel size [A/Pixels] as the source of CTF paramters and use --skip_invert.
+  mpirun  -np  32  sp_window.py  './mic*.hdf'  'info/mic*_info.json'  5.2  particles  --coordinates_format=eman2  --box_size=64  --skip_invert
+
+\\ **NOTE:** Please remember to adjust box_size also when setting resample_ratio < 0.1.
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; input_micrograph_pattern : Input micrograph path pattern: Specify path pattern of input micrographs with a wild card (*).. The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sp_gui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated pair of input micrograph and coordinates file. bdb files cannot be selected as input micrographs. (default required string)
+  ; input_coordinates_pattern : Input coordinates path pattern: Specify path pattern of input coordinates files with a wild card (*).. The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sp_gui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated pair of input micrograph and coordinates file. (default required string)
+  ; input_ctf_params_source : CTF parameters source: Specify the file produced by sp_cter and normally called partres.txt for cryo data. For negative staining data, enter pixel size [A/Pixels]. (default required string)
+  ; output_directory : Output directory: The results will be written here. It cannot be an existing one. (default required string)
+
+  ; %%--%%selection_list : Micrograph selection file: Specify a name of micrograph selection list text file for Selected Micrographs Mode. The file extension must be '.txt'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. (default none)
+  ; %%--%%coordinates_format : Coordinate file format: Allowed values are 'sphire', 'eman1', 'eman2', 'cryolo'','cryolo_helical_segmented' or 'spider'. The sphire, eman2, and spider formats use the particle center as coordinates. The eman1 format uses the lower left corner of the box as coordinates. (default cryolo)
+  ; %%--%%box_size : Particle box size [Pixels]: The x and y dimensions of square area to be windowed. The box size after resampling is assumed when resample_ratio < 1.0. (default 256)
+  ; %%--%%skip_invert : Invert image contrast: Indicate if image contrast should be inverted or not. Do not invert for negative staining data. By default, the image contrast will be inverted for cryo data. (default False question reversed in GUI)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%limit_ctf : Use CTF limit filter: Frequencies where CTF oscillations cannot be properly modeled with the resampled pixel size will be discarded in the images with the appropriate low-pass filter. This flag has no effect when the CTER CTF File is not specified by the CTF paramters source argument. (default False)
+  ; %%--%%astigmatism_error : Astigmatism error limit [Degrees]: Set astigmatism to zero for all micrographs where the angular error computed by sp_cter is larger than the desired value. This parameter has no effect when the CTER CTF File is not specified by the CTF paramters source argument. (default 360.0)
+  ; %%--%%resample_ratio : Image size reduction factor (<1): Use a value between 0.0 and 1.0 (excluding 0.0). The new pixel size will be automatically recalculated and stored in CTF paramers when resample_ratio < 1.0 is used. (default 1.0)
+  ; %%--%%check_consistency : Check consistency of inputs: Create a text file containing the list of inconsistent Micrograph ID entries (i.e. inconsist_mic_list_file.txt). (default False)
+  ; %%--%%filament_width : Filament width : Filament width for the creation of the rectangular mask. When -1 is selected it uses one third of the box size. (default -1)::-1;Main
+\\
+===== Output =====
+Inside the output directory, the program will write a local bdb stack image for each micrograph. The files are named micrograph name with "_ptcls" suffix. For example, ''particles/EMAN2DB/mic0_ptcls.bdb'' or ''bdb:particles#mic0_ptcls'' 
+
+\\
+===== Description =====
+This command executes the following processes:
+  - Takes micrographs and coordinates as input and writes the particle images to a local stack.
+  - Normalization is done by subtracting the average of the region outside of a circle with radius half the box size.
+  - Micrographs are applied a Gaussian high-pass filter equivalent to the box size.
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+=== 2017/12/07 Toshio Moriya ===
+The format of ''partres.txt'' is changed. The old format is also supported for now, but will be removed in near future. Please also refer [[pipeline:cter:sp_cter|sp_cter]].
+
+\\
+==== Author / Maintainer ====
+Toshio Moriya
+
+\\
+==== Keywords ====
+Category 1:: FUNDAMENTALS, UTILITIES, APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_window.py
+
+\\
+==== See also ====
+[[pipeline:cter:sp_cter|sp_cter]] and [[pipeline:window:e2boxer_old|e2boxer_old]]
+
+\\
+==== Maturity ====
+Stable:: Has been evaluated and tested. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

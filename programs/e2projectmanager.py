@@ -901,6 +901,8 @@ class EMProjectManager(QtWidgets.QMainWindow):
 				self.expertbutton.setDown(False)
 		else:
 			self.expertbutton.setEnabled(False)
+			
+		
 
 class EMPopen(subprocess.Popen):
 	"""
@@ -2139,6 +2141,38 @@ of different conventions. To use e2projectmanager with an older project, you wil
 first upgrade the project with e2projectupdate21.py. You can still use the e2display.py
 GUI directly to browse the contents of old-style projects.""")
 		sys.exit(1)
+
+	try: sets=os.listdir("sets")
+	except: sets=[]
+	
+	# fix naming convention for 2.3
+	bis=[i for i in sets if "_bispec" in i]
+	inv=[i for i in sets if "_invar" in i]
+	if len(bis)>0 and len(bis)>len(inv):
+		print("""Warning: detected a pre EMAN2.3 project (_bispec files are now named _invar). The project is being updated
+for the new convention in a semi-backwards compatible way. If there are any issues, you may want to run e2ctf_auto
+with output_only, and regenerate any sets/""")
+		for ii in bis:
+			try:
+				rpl=ii.replace("_bispec","_invar")
+				i="sets/"+ii
+				if not os.path.exists("sets/"+rpl) :
+#					print("rename",i,"sets/"+rpl)
+#					print("link",rpl,i)			# may fail in some cases
+					os.rename(i,"sets/"+rpl)
+					os.symlink(rpl,i)			# may fail in some cases
+			except: pass
+		
+		# all _bispec particles
+		bis=[("particles/"+i,i.replace("_bispec","_invar")) for i in os.listdir("particles") if "_bispec" in i]
+		for i in bis:
+			try:
+				if not os.path.exists("particles/"+i[1]):
+#					print("rename",i[0],"particles/"+i[1])
+#					print("link",i[1],i[0])			# may fail in some cases
+					os.rename(i[0],"particles/"+i[1])
+					os.symlink(i[1],i[0])			# may fail in some cases
+			except: pass
 
 	from eman2_gui.emapplication import EMApp
 	app = EMApp()

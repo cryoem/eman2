@@ -1,0 +1,113 @@
+~~NOTOC~~
+
+===== sp_proj_compare =====
+Compare Re-projections : Compare re-projections to class averages.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  	sp_proj_compare.py stack input_volume outdir --mode=viper --classangles=angles_file --classselect=img_selection_file --prjmethod=interpolation_method --delta=angular_increment --matchshift=shift_range --matchrad=outer_radius --matchstep=ring_step --symmetry=optional_symmetry --partangles=refinement_params --partselect=substack_select --refineshift=shift_range --outliers=max_angle_diff --refinerad=outer_radius --refinestep=ring_step --align=2d_alignment_method --display --verbose
+
+
+\\
+===== Typical usage =====
+
+sp_proj_compare compares re-projections of a 3D reconstruction to 2D images, typically class averages. There are three methods for this comparison:
+
+\\ __1. Use projections angles from VIPER/RVIPER __:
+
+  sp_proj_compare.py Class2D/best.hdf Initial3D/main001/run002/rotated_volume.hdf Compare --mode viper --classangles Initial3D/main001/run002/rotated_reduced_params.txt --classselect Initial3D/main001/index_keep_images.txt
+
+Note 1: The projection angles are not required if present in the image header.  When in doubt, include this file explicitly.
+
+Note 2: RVIPER, if it finds a stable solution, may exclude some images, and thus their projection angles will be excluded from the parameters file.  The file containing the list of included images will have a name like main003/index_keep_image.txt.
+
+\\ __2. Run a simple iteration of projection-matching__:
+
+  sp_proj_compare.py Class2D/best.hdf Initial3D/main001/average_volume.hdf Compare/ProjMatch --mode=projmatch --delta 7.5
+
+\\ __3. Use the orientation parameters from refinement__:
+
+  sp_proj_compare.py Class2D/best.hdf Initial3D/main001/average_volume.hdf Compare/Meridien --mode=meridien --partangles Refine3D/final_params_037.txt --partselect Substack/isac_substack_particle_id_list.txt --outliers=15
+
+The projection angle for a class will be calculated by taking the vector sum of the projection angles of the particles belonging to that class.  
+
+The set of classified particles may be different from the set of refined particles -- for example when a substack is generated from a selection of good class averages -- and thus the particle numbers will not match.  The particle-selection file -- e.g., Substack/isac_substack_particle_id_list.txt -- will allow mapping of the particle number during classification to that during refinement.
+
+Some particles may have been erroneously assigned to a class, as indiciated by a large angular distance between their projection angles and the average.  Such particles can be excluded from the calculation of the average angles with the --outliers option. Furthermore, a list of the remaining included particles will be written to the files OUTPUT_DIRECTORY/Byclass/goodpartsclass###.txt.
+  
+\\
+===== Input =====
+=== Main Parameters ===
+  ; stack : Input images stack : Set of 2D images to be compared. (default required string)
+  ; input_volume : Input volume : Reconstruction for which re-projections will be computed. In RVIPER, this file is of the form main003/run002/rotated_volume.hdf. (default required string)
+  ; outdir : Output directory : Directory where outputs will be written. (default required string)
+  ; %%--%%mode : Comparison method : Choices are: viper, projmatch, and meridien. (default viper)
+  ; %%--%%classangles : VIPER - Projection parameter file : Parameter file containing projection angles. Not required if the projection parameters are stored in the header of the input images, which for ISAC2 is generally not the case. In RVIPER, this file is of the form main003/run002/rotated_reduced_params.txt. (default None) : %%--%%mode==viper
+  ; %%--%%classselect : VIPER - Image selection file : Input selection containing list of images to be included from the input stack.  For instance, RVIPER, if it finds a stable solution, may exclude some images, and thus their projection angles will be excluded from the parameters file.  The file containing the list of included images will have a name like main003/index_keep_image.txt. (default None) : %%--%%mode==viper
+  ; %%--%%delta : ProjMatch - Sampling angle : Angular-sampling for reference projections. (default 7.5|||15|||3.75|||1.875|||0.9375|||0.46875|||0.234375) : %%--%%mode==projmatch
+  ; %%--%%symmetry : ProjMatch - Symmetry : To limit angular projections. (default c1) : %%--%%mode==projmatch
+  ; %%--%%partangles : MERIDIEN - Alignment parameter file : Input refinement parameter file. (default None) : %%--%%mode==meridien
+  ; %%--%%partselect : MERIDIEN - Particle selection file : Input substack selection file if particles removed before refinement (e.g., Substack/isac_substack_particle_id_list.txt). (default None) : %%--%%mode==meridien
+  ; %%--%%outliers : MERIDIEN - Outlier angle : Particles differing from average Euler angle by more than this threshold (in degrees) will be excluded from average calculation, by default keeps all. (default None) : %%--%%mode==meridien
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%prjmethod : Interpolation method : Valid choices are trilinear, gridding, and nn. (default trilinear)
+  ; %%--%%display : e2display : Automatically pops up a window with the output montage. (default False) 
+  ; %%--%%verbose : verbose : Writes additional messages to the terminal during execution. (default False)
+  ; %%--%%matchshift : ProjMatch - Maximum shift : Maximum shift to allow during translation alignment, pixels. (default 2) : %%--%%mode==projmatch
+  ; %%--%%matchrad : ProjMatch - Outer radius : Outer alignment radius, defaults to automatically-determined. (default None) : %%--%%mode==projmatch
+  ; %%--%%matchstep : ProjMatch - Radius step size : Alignment radius step size. (default 1) : %%--%%mode==projmatch
+  ; %%--%%refinerad : MERIDIEN - Outer radius : Outer alignment radius, defaults to automatically-determined. (default None) : %%--%%mode==meridien
+  ; %%--%%refineshift : MERIDIEN - Maximum shift : Maximum shift to allow during translation alignment, pixels. (default 2) : %%--%%mode==meridien
+  ; %%--%%refinestep : MERIDIEN - Radius step size : Alignment radius step size. (default 1) : %%--%%mode==meridien
+  ; %%--%%align : MERIDIEN - Alignment method : Valid choices are apsh and scf. (default apsh) : %%--%%mode==meridien
+  
+\\
+===== Output =====
+  ; angles.txt : Text file of projection parameters of input images.
+  ; proj.hdf : Stack of re-projections of input 3D reconstruction.
+  ; comp-proj-reproj.hdf : Comparison of re-projections and 2D images.
+ 
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+As an input_volume, RVIPER's main003/average_volume.hdf also worked for me.  
+
+VIPER (as opposed to RVIPER) includes all class averages, so an image selection file shouldn't be needed.
+
+\\
+==== Author / Maintainer ====
+Tapu Shaikh
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_proj_compare.py
+
+\\
+==== See also ====
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

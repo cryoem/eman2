@@ -1,0 +1,74 @@
+~~NOTOC~~
+
+===== sp_filterlocal =====
+3D Local Filter: Locally filter maps according to the local resolution determined by [[pipeline:localres:sp_locres|sp_locres]].
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_filterlocal.py  input_volume  locres_volume  maskfile  outputfile  --radius=PARTICLE_RADIUS  --falloff=falloff  --MPI
+
+\\
+===== Typical usage =====
+
+sp_locres exists in for both MPI and non-MPI versions.
+
+  mpirun -np 32 sp_filterlocal.py refinementdir/main002/vol0.hdf locres.hdf locfilt.hdf --radius=28 --MPI
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; input_volume : Input volume: Path to input volume file containing the 3D density map. (default required string)
+  ; locres_volume : Local resolution file: Path to volume file containing the local resolution estimate produced by [[pipeline:localres:sp_locres|sp_locres]]. (default required string)
+  ; maskfile : 3D mask: Defines the region where the local filtering should be applied. (default none)
+  ; outputfile : Output volume: Path to output volume file contained locally-filtered 3D density map. (default required string)
+
+  ; %%--%%radius : Mask radius [Pixels]: In case no mask is provided, a hard sphere will be used. Use radius of the particle. (default -1)
+  ; %%--%%falloff : Low-pass filter fall-off [1/Pixels]: The program uses a tangent low-pass filter. Specify with absolute frequency. (default 0.1)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%MPI : Use MPI: (default False)
+
+\\
+===== Output =====
+
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Pawel A. Penczek
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_filterlocal.py
+
+\\
+==== See also ====
+[[pipeline:meridien:sp_meridien|sp_meridien]], [[[pipeline:utilities:sp_process|sp_process]], and [[pipeline:localres:sp_locres|sp_locres]].
+
+\\
+==== Maturity ====
+Stable:: Has been evaluated and tested. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

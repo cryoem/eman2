@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: David Woolford, 07/25/2007 (woolford@bcm.edu)
  * Copyright (c) 2000-2007 Baylor College of Medicine

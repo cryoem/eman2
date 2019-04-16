@@ -1,0 +1,95 @@
+~~NOTOC~~
+
+===== sp_separate_class =====
+Separate Into Classes : Separates stacks of particle images into stacks for each class.
+
+\\
+===== Usage =====
+
+Usage in command line:
+
+  sp_separate_class.py input_class_avgs input_image_stack output_directory --filt=filter_radius --pxsz=pixel_size --shrink=shrink_factor --verbose
+  
+  
+\\
+===== Typical usage =====
+
+The purpose of sp_separate_class.py is to: 
+
+  : extract particle-membership information from a stack of class averages
+  : write particle-membership lists for each class, and
+  : write separate stacks for each class, with an option to low-pass filter and/or downsample the images
+
+\\ __1. Standard usage: create separate stacks for each class__:
+
+  sp_separate_class.py input_class_avgs input_image_stack output_directory 
+
+\\ __2. Apply a low-pass filter to the image stacks__:
+
+  sp_separate_class.py input_class_avgs input_image_stack output_directory --filt=filter_radius --pxsz=pixel_size
+
+Filter radius is in units of Angstroms. If pxsz parameter is not specified, program will assume units of pixels^-1.
+
+\\ __3. Downsample output image stack__:
+
+  sp_separate_class.py input_class_avgs input_image_stack output_directory --shrink=shrink_factor
+  
+\\
+===== Input =====
+=== Main Parameters ===
+  ; input_class_avgs : Input class averages : Set of 2D class averages, with particle-membership information in header. (default required string)
+  ; input_image_stack : Input particles : Particle image stack. (default required string)
+  ; output_directory : Output directory : Directory where outputs will be written. (default required string)
+  ; %%--%%filt : Filter radius : Gaussian low-pass filter radius, Angstroms if pxsz specified below, else pixels^-1. (default None)
+  ; %%--%%pxsz : Pixel size : Angstroms per pixel, might be downsampled already by ISAC2. (default None)
+  ; %%--%%shrink : Downsampling factor : Downsampling factor, e.g., 6 -> 1/6 original size. (default None)
+  ; %%--%%verbose : Verbose : Writes additional messages to the terminal during execution. (default False)
+  
+\\
+=== Advanced Parameters ===
+
+\\
+===== Output =====
+  ; classmap.txt : Class-to-particle lookup table, one file for all classes
+  ; docclass???.txt : List of particles for each class, one file per class
+  ; EMAN2DB/stkclass_???.bdb : Virtual stacks of particles for each class
+  ; EMAN2DB/stkflt_???.bdb : (Optional) virtual stacks of filtered particles for each class
+ 
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+  : Should allow filter types other than Gaussian low-pass
+  : Should offer option to write aligned images
+
+\\
+==== Author / Maintainer ====
+Tapu Shaikh
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_separate_class.py
+
+\\
+==== See also ====
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

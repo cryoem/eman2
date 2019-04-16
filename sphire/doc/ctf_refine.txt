@@ -1,0 +1,73 @@
+~~NOTOC~~
+
+===== sp_ctf_refine meridien =====
+CTF refine (Meridien): Refine the defocus per particle
+
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_ctf_refine.py meridien path_to_input_stack output_directory refinement_dir  --mask=path_to_mask --range=defocus_range --delta=defocus_delta --resolution=nominal_resolution --apix=pixelsize --number_part=NUMBER_PARTICLES
+
+\\
+===== Typical usage =====
+
+Before doing defocus refinement, you should have reached ~4 angstrom.
+sp_ctf_refine.py exists only in non-MPI version.
+
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; path_to_input_stack : Input stack path  : Path to input stack. (default required)
+  ; output_directory : Output directory : Folder to output files etc. (default required)
+  ; refinement_dir : Meridien directory : Path to Merdien directory.  (default required)
+  ; %%--%%mask : Path to mask : Path to mask used. (default none)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%range : Defocus search range [um] : Search range +- around the current defocus value. (default 0.15)
+  ; %%--%%delta : Defocus search delta [um] : Finest search delta. (default 0.0025)
+  ; %%--%%resolution : Nominal resolution [A] : Nominal resolution of the reconstruction. (default None)
+  ; %%--%%apix : Pixel size [A] : Pixel size in Angstroms. (default None) : %%--%%resolution!=None
+  ; %%--%%number_part : Number of particles : Number of particles to process. Mainly for debugging. (default none)
+
+\\
+===== Output =====
+It will write a virtual stack with updated defocus information in the header. Furthermore it
+creates plot for error in the your output directory
+
+\\
+=== List of Output Files ===
+- A virtual stack with updated header information
+- particle_results.txt: list with PARTICLE_ID,ERROR,NEW_DEFOCUS,SIGNIFICANCE
+- error_cdf.png: Plot of the error distribution
+- img folder: One image per micrograph containing defocus and error maps
+
+
+\\
+==== Method ====
+-
+
+\\
+==== Developer Notes ====
+=== 2019/02/21 Thorsten Wagner ===
+  * Initial creation of the document
+
+\\
+==== Reference ====
+-
+
+\\
+==== Author / Maintainer ====
+Thorsten Wagner
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_ctf_refine.py

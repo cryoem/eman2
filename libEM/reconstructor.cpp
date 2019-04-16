@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -2414,7 +2410,7 @@ int BackProjectionReconstructor::insert_slice(const EMData* const input, const T
 // 	transform->set_trans(0,0,0);
 // 	transform->invert();
 
-	tmp->transform(t.inverse());
+	tmp->transform(t.inverse());		// This was incorrect. inverse() was missing
 	image->add(*tmp);
 
 // 	if(transform) {delete transform; transform=0;}
@@ -6258,5 +6254,3 @@ void file_store::restart( )
 
     m_ihandle->seekg( 0, std::ios::beg );
 }
-
-/* vim: set ts=4 noet: */

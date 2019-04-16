@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Tao Ju, 5/16/2007 <taoju@cs.wustl.edu>, code ported by Grant Tang
  * Copyright (c) 2000-2006 Baylor College of Medicine

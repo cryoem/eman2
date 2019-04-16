@@ -1,0 +1,202 @@
+~~NOTOC~~
+
+===== sp_cter =====
+CTF Estimation: Automated estimation of CTF parameters with error assessment, including Volta phase shift.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_cter.py  input_image_path  output_directory  --selection_list=SELECTION_TEXT_FILE  --wn=CTF_WINDOW_SIZE --apix=PIXEL_SIZE  --Cs=CS  --voltage=VOLTAGE  --ac=AMP_CONTRAST  --f_start=FREA_START  --f_stop=FREQ_STOP  --kboot=KBOOT  --overlap_x=OVERLAP_X  --overlap_y=OVERLAP_Y  --edge_x=EDGE_X  --edge_y=EDGE_Y  --check_consistency  --stack_mode  --debug_mode  --vpp  --defocus_min=DEFOCUS_MIN  --defocus_max=DEFOCUS_MAX  --defocus_step=DEFOCUS_STEP  --phase_min=PHASE_MIN    --phase_max=PHASE_MAX  --phase_step==PHASE_STEP  --pap --pws
+
+\\
+===== Typical usage =====
+
+sp_cter exists in for both MPI and non-MPI versions (Running MPI version does not require --MPI flag). 
+\\ The program supports the phase shift estimation which induced by phase plate (e.g. Volta Phase Plate) with --vpp option. Please note that cter stores the estimated phase shift as amplitude contrast. By default, amplitude is used for the CTF model fitting but user can select power spectrum with --pap option (traditional method).
+
+\\ __All Micrographs Mode - Process all micrographs in a directory:__
+\\ Specify a list of input micrographs using a wild card (*), here called input micrographs path pattern. Running from the command line requires enclosing the string by single quotes (\') or double quotes (\"). sp_gui.py will automatically adds single quotes to the string. bdb files cannot be selected as input micrographs. Then, specify output directory where all outputs should be saved. In this mode, all micrographs matching the path pattern will be processed.
+
+  mpirun -np 16 sp_cter.py './mic*.hdf' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0
+
+\\ __Selected Micrographs Mode - Process all micrographs in a selection list file:__
+\\ In addition to input micrographs path pattern and output directry arguments, specify a name of micrograph selection list text file using --selection_list option (e.g. output of sp_gui_unblur.py or sp_gui_cter.py). The file extension must be ".txt". In this mode, only micrographs in the selection list which matches the file name part of the pattern (ignoring the directory paths) will be processed. If a micrograph name in the selection list does not exists in the directory specified by the micrograph path pattern, processing of the micrograph will be skipped.
+
+  mpirun -np 16 sp_cter.py './mic*.hdf' outdir_cter --selection_list=mic_list.txt --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0
+
+\\ __Single Micrograph Mode - Process a single micrograph:__
+\\ One can specify a single micrograph name using --selection_list option. In this mode, only the specified single micrograph will be processed. If this micrograph name does not matches the file name part of the pattern (ignoring the directory paths), the process will exit without processing it. If this micrograph name matches the file name part of the pattern but does not exists in the directory which specified by the micrograph path pattern, again the process will exit without processing it. Use single processor for this mode.
+
+  sp_cter.py './mic*.hdf' outdir_cter --selection_list=mic0.hdf --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0
+
+\\ __Stack Mode - ProcessProcess a particle stack (Not supported by SPHIRE GUI)):__
+\\ Use --stack_mode option, then specify the path of particle stack file (without wild card "*") and output directory as arguments. This mode ignores --selection_list, --wn --overlap_x, --overlap_y, --edge_x, and --edge_y options. Use single processor for this mode. Not supported by SPHIRE GUI (sp_gui.py). 
+
+  sp_cter.py bdb:stack outdir_cter --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --stack_mode
+
+\\ __All Micrographs Mode with Phase-Shift Estimation:__
+\\ defocus_min, defocus_max, defocus_step, phase_min, phase_max, and phase_step options are only applicable with --vpp option.
+
+  mpirun -np 16 sp_cter.py './mic*.hdf' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --vpp --defocus_min=0.3 --defocus_max=9.0 --defocus_step=0.1 --phase_min=5.0 --phase_max=175.0 --phase_step=5
+
+\\ __All Micrographs Mode with the CTF model fitting to power spectrum:__
+
+  mpirun -np 16 sp_cter.py './mic*.hdf' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --pap
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; input_image_path : Input micrograph path pattern: Specify input micrographs path pattern with a wild card (*) for any of Micrograph Modes. Images in bdb format cannot be used as input micrographs. In an advanced option, a particle stack file path can also be given using --stack_mode. However, Stack Mode is not supported by sp_gui. (default required string)
+  ; output_directory : Output directory: The CTF parameters (partres file), rotationally averaged power spectra (rotinf), and micrograph thumbnails (thumb files) will be written here. It cannot be an existing one. (default required string)
+
+  ; %%--%%selection_list : Micrograph selection file: Specify path of a micrograph selection list text file for Selected Micrographs Mode. The file extension must be '.txt'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. (default none)
+  ; %%--%%apix : Pixel size [A]: The pixel size of input micrograph(s) or images in input particle stack. (default -1.0)
+  ; %%--%%Cs : Microscope spherical aberration (Cs) [mm]: The spherical aberration (Cs) of microscope used for imaging. (default 2.0)
+  ; %%--%%voltage : Microscope voltage [kV]: The acceleration voltage of microscope used for imaging. (default 300.0)
+  ; %%--%%ac : Amplitude contrast [%]: The amplitude contrast is in the range of 7% - 14%. The value  depends on the thickness of the ice embedding the particles, among other factors. (default 10.0)
+  ; %%--%%f_start : Lowest resolution [A]: Lowest resolution used in the CTF estimation. Determined automatically if not given. (default -1.0)
+  ; %%--%%f_stop : Highest resolution [A]: Highest resolution used in the CTF estimation. Determined automatically if not given. (default -1.0)
+\\
+=== Advanced Parameters ===
+  ; %%--%%wn : CTF window size [Pixels]: The window size should be slightly larger than particle box size. This will be ignored in Stack Mode. (default 512)
+  ; %%--%%kboot : Number of CTF estimates per micrograph: Used for error assessment. (default 16)
+  ; %%--%%overlap_x : X overlap [%]: Overlap between micrograph windows in the x direction. This will be ignored in Stack Mode. (default 50)
+  ; %%--%%overlap_y : Y overlap [%]: Overlap between micrograph windows in the y direction. This will be ignored in Stack Mode. (default 50)
+  ; %%--%%edge_x : Edge x [pixels]: Specifies micrograph exclusion margin in the x direction. This will be ignored in Stack Mode. (default 0)
+  ; %%--%%edge_y : Edge y [pixels]: Specifies micrograph exclusion margin in the y direction. This will be ignored in Stack Mode. (default 0)
+  ; %%--%%check_consistency : Check consistency of inputs: Create a text file containing the list of inconsistent Micrograph ID entries (i.e. inconsist_mic_list_file.txt). (default False)
+  ; %%--%%stack_mode : Use stack mode: Use a stack as the input. Please set the file path of a stack as the first argument and output directory for the second argument. This is an advanced option. Not supported by sp_gui. (default False)
+  ; %%--%%debug_mode : Enable debug mode: Print out debug information. (default False)
+  ; %%--%%vpp : Volta Phase Plate Dataset: UNDER DEVELOPMENT! Estimate phase shift. (default False)
+  ; %%--%%defocus_min : Minimum defocus search [um]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 0.3) : %%--%%vpp==True
+  ; %%--%%defocus_max : Maximum defocus search [um]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 9.0) : %%--%%vpp==True
+  ; %%--%%defocus_step : Defocus search step [um]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 0.1) : %%--%%vpp==True
+  ; %%--%%phase_min : Minimum phase search [degrees]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 5.0) : %%--%%vpp==True
+  ; %%--%%phase_max : Maximum phase search [degrees]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 175.0) : %%--%%vpp==True
+  ; %%--%%phase_step : Phase search step [degrees]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 5.0) : %%--%%vpp==True
+  ; %%--%%pap : Use PW spectrum: UNDER DEVELOPMENT! Use power spectrum for CTF parameter search instead of amplitude. (default False)
+  ; %%--%%pws : Skip calculation of 2D power spectra: Will write periodograms to disk. (default False question reversed in GUI)
+
+\\
+===== Output =====
+After successful execution, sp_cter will create in the output_directory:
+
+  - A CTF parameters file, written to ''partres.txt''
+  - A list of rotationally averaged power spectra, written to ''pwrot/*_rotinf.txt''.
+  - A collection of micrographs Thumbnails (512 x 512 pixels), written to ''micthumb/*_thumb.hdf''.
+
+The CTF parameter file, ''partres.txt'', contains 22 columns with the following information:
+
+|| **Column** || **Parameter** ||
+|| 1 || Image defocus [um] ||
+|| 2 || Microscope spherical aberration [mm] ||
+|| 3 || Microscope voltage [kV] ||
+|| 4 || Pixel size [A] ||
+|| 5 || B-factor [A%%^%%2] ||
+|| 6 || Amplitude contrast [%] (it can include estimated Volta phase shift) ||
+|| 7 || Astigmatism amplitude [um] ||
+|| 8 || Astigmatism angle [degrees] ||
+|| 9 || Standard deviation of defocus [um] ||
+|| 10 || Standard deviation of total amplitude contrast [%] ||
+|| 11 || Standard deviation of astigmatism amplitude [um] ||
+|| 12 || Standard deviation of astigmatism angle [degrees] ||
+|| 13 || Coefficient of variation of defocus [%] ||
+|| 14 || Coefficient of variation of astigmatism amplitude [%] ||
+|| 15 || Frequency at which the signal drops by 50% due to estimated error of defocus alone [1/A] ||
+|| 16 || Frequency at which the signal drops by 50% due to estimated error of defocus and astigmatism [1/A] ||
+|| 17 || Frequency at which the CTF cannot be correctly represented in a discrete form (pixel size is too large) [1/A] ||
+|| 18 || NOT IMPLEMENTED YET! Maximum frequency limit (visual-impression-based)[A] ||
+|| 19 || NOT IMPLEMENTED YET! Reserved spot for other means of maximum frequency limit or error criterion. Possibly originated from external program ||
+|| 20 || Constant amplitude contrast [%], which is provided by user as a input of CTER and does not include estimated Volta phase shift ||
+|| 21 || Volta phase shift [degrees] ||
+|| 22 || Micrograph name ||
+
+The rotationally averaged power spectra or amplitude (rotinf.txt files) will be written to the pwrot directory. These files contain 6 columns with the following information:
+
+|| **Column** || **Parameter** ||
+|| 1 || Line number ||
+|| 2 || Spatial frequency [1/A] ||
+|| 3 || Experimental rotational average without considering astigmatism ||
+|| 4 || Fitted rotational average without considering astigmatism ||
+|| 5 || Experimental rotational average including astigmatism ||
+|| 6 || Fitted rotational average including astigmatism ||
+
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+=== Attachments ===
+80S ribosome determined using 35,198 projection images collected with a 300 kV Tecnai Polara (FEI) equipped with the K2 Summit DED camera.  Resolution of the the large subunit is 3.84 Å (using FSC with 0.5 cut-off criterion). [[attachment:80SK2.mrc.gz]] (''Warning'': file size is 21MB.)
+
+\\
+==== Developer Notes ====
+=== 2017/12/07 Toshio Moriya ===
+The format of ''partres.txt'' is changed. The old format below is also supported for now but will be removed in near future.
+
+In the new format above, 
+
+== REMOVED: ==
+  * #15 in old: Mean difference between the experimental rotational averages calculated with and without considering astigmatism.
+
+== ADDED: ==
+  * #18 in new: Maximum frequency limit (visual-impression-based)[A].
+  * #19 in new: Reserved spot for other means of maximum frequency limit or error criterion.
+  * #20 in new: Constant amplitude contrast [%] .
+  * #21 in new: Volta phase shift [degrees].
+
+The old format of the CTF parameter file, ''partres.txt'', contains 19 columns with the following information:
+
+|| **Column** || **Parameter** ||
+|| 1 || Image defocus [um] ||
+|| 2 || Microscope spherical aberration [mm] ||
+|| 3 || Microscope voltage [kV] ||
+|| 4 || Pixel size [A] ||
+|| 5 || B-factor [A%%^%%2] ||
+|| 6 || Amplitude contrast [%] ||
+|| 7 || Astigmatism amplitude [um] ||
+|| 8 || Astigmatism angle [degrees] ||
+|| 9 || Standard deviation of defocus [um] ||
+|| 10 || Standard deviation of amplitude contrast [%] ||
+|| 11 || Standard deviation of astigmatism amplitude [um] ||
+|| 12 || Standard deviation of astigmatism angle [degrees] ||
+|| 13 || Coefficient of variation of defocus [%] ||
+|| 14 || Coefficient of variation of astigmatism amplitude [%] ||
+|| 15 || Mean difference between the experimental rotational averages calculated with and without considering astigmatism. The subtraction is only performed at frequencies where the CTF model has a local minimum or maximum. ||
+|| 16 || Frequency at which the signal drops by 50% due to estimated error of defocus alone [1/A] ||
+|| 17 || Frequency at which the signal drops by 50% due to estimated error of defocus and astigmatism [1/A] ||
+|| 18 || Frequency at which the CTF oscillation can no longer be modelled correctly due the pixel size of the image [1/A] ||
+|| 19 || Micrograph name ||
+
+\\
+==== Author / Maintainer ====
+Pawel A. Penczek and Toshio Moriya
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_cter.py
+
+\\
+==== See also ====
+[[pipeline:cter:sp_gui_cter|sp_gui_cter]], [[pipeline:window:sp_window|sp_window]]
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

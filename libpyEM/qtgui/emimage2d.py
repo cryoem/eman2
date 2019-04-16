@@ -92,6 +92,7 @@ class EMImage2DWidget(EMGLWidget):
 
 		self.fftorigincenter = E2getappval("emimage2d","origincenter")
 		if self.fftorigincenter == None : self.fftorigincenter=False
+		emshape.pixelratio=self.devicePixelRatio()	# not optimal. Setting this factor globally, but should really be per-window
 
 		#sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy(7),QtWidgets.QSizePolicy.Policy(7))
 		#sizePolicy.setHorizontalStretch(7)
@@ -1378,6 +1379,7 @@ class EMImage2DWidget(EMGLWidget):
 				elif s.shape[0][:3]!="scr":
 #					print "shape",s.shape
 					GL.glPushMatrix()		# The push/pop here breaks the 'scr*' shapes !
+					print(self.devicePixelRatio())
 					s.draw()		# No need for coordinate transform any more
 					GL.glPopMatrix()
 #					GLUtil.colored_rectangle(s.shape[1:8],alpha)

@@ -1,0 +1,71 @@
+~~NOTOC~~
+
+===== sp_cryolo_boxmanager =====
+crYOLO - boxmanager:  Displays boxfiles on images. Allows creation of new training data for crYOLO.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_cryolo_boxmanager.py --cryolo_bm_path=PATH_TO_CRYOLO_EXECUTEABLE --target_dir=target_dir --box_dir=box_dir
+
+\\
+===== Typical usage =====
+
+
+
+\\ __1. Open images
+
+  sp_cryolo_boxmanager.py --target_dir=images_dir
+
+\\ __2. Open images and show boxes
+
+  sp_cryolo_boxmanager.py --target_dir=images_dir --box_dir=box_dir
+
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; %%--%%cryolo_bm_path : crYOLO boxmanager executable: Path to crYOLO boxmanager executable (default none)
+  ; %%--%%target_dir : Input image directory: Path to input images (default none)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%box_dir : Annotation directory: Path to annotation data like .box or .star files (default none)
+
+\\
+===== Output =====
+
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Thorsten Wagner
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== See also ====
+
+\\
+==== Maturity ====
+Stable:: Works for most people, has been tested; test cases/examples available.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\
