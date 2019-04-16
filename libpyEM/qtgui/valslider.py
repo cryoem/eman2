@@ -34,6 +34,8 @@ from __future__ import division
 
 from past.utils import old_div
 import sys, math, weakref
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL.GL import *
 from OpenGL import GLU
 from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL

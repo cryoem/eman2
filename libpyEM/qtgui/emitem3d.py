@@ -34,6 +34,8 @@ from __future__ import absolute_import
 #
 
 from builtins import object
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL import GL
 from PyQt5 import QtCore, QtGui, QtWidgets
 from EMAN2 import Transform, Vec4f, Vec3f

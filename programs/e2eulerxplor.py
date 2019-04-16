@@ -36,6 +36,8 @@ from __future__ import division
 from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_check_dict
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
