@@ -3473,7 +3473,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	
 	
 	int curiter=-1;
-	int sexp_start=5;
+	int sexp_start=4;
 	if (params.has_key("initxform")){
 		const vector< Transform > xfs=params["initxform"];
 		for (unsigned int i=0; i<nsoln; i++){
@@ -3482,7 +3482,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		sexp_start=6;
 		curiter=0;
 		for (int i=0; i<nsoln*3; i++) {
-			s_step[i]/=4.0;
+			s_step[i]/=8.0;
 		}
 	}
 
