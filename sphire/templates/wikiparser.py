@@ -1076,11 +1076,11 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 							assert (not token.is_reversed)
 						if not token.is_locked:
 							if default_value.find("question reversed in GUI") != -1:
-								token.restore[0] = [not token.default]
-								token.restore[1] = [not token.default]
+								token.restore[0] = [token.default]
+								token.restore[1] = [token.default]
 							elif default_value.find("value reversed in GUI") != -1:
-								token.restore[0] = [not token.default]
-								token.restore[1] = [not token.default]
+								token.restore[0] = [token.default]
+								token.restore[1] = [token.default]
 							else:
 								default_value = default_value.split('|||')
 								if token.type in ('bool', 'bool_ignore'):
