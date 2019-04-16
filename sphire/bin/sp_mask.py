@@ -441,7 +441,8 @@ def main():
 		allow_disconnected=command_args.allow_disconnected,
 		mode=mode,
 		do_approx=command_args.do_old,
-		do_fill=command_args.fill_mask
+		do_fill=command_args.fill_mask,
+		do_print=True,
 		)
 
 	# Create a second mask based on the filtered volume
@@ -449,6 +450,7 @@ def main():
 	s_density_threshold = 1
 	s_nsigma = 1.0
 	if command_args.second_mask is not None:
+		sxprint('Prepare second mask')
 		s_mask = sp_utilities.get_im(command_args.second_mask)
 		density_threshold = -9999.0
 		nsigma = 1.0
@@ -464,6 +466,7 @@ def main():
 		else:
 			assert False
 	elif command_args.second_mask_shape is not None:
+		sxprint('Prepare second mask')
 		nx = mask_first.get_xsize()
 		ny = mask_first.get_ysize()
 		nz = mask_first.get_zsize()
@@ -477,13 +480,21 @@ def main():
 			s_nx = command_args.s_nx
 			s_ny = command_args.s_ny
 			s_nz = command_args.s_nz
-			s_mask = sp_utilities.model_cylinder(s_radius, s_nx, s_ny, s_nz)
+			try:
+				s_mask = sp_utilities.model_cylinder(s_radius, s_nx, s_ny, s_nz)
+			except RuntimeError as e:
+				sp_global_def.sxprint('An error occured! Please check the error log')
+				raise
 		elif command_args.second_mask_shape == 'sphere':
 			s_radius = command_args.s_radius
 			s_nx = command_args.s_nx
 			s_ny = command_args.s_ny
 			s_nz = command_args.s_nz
-			s_mask = sp_utilities.model_circle(s_radius, s_nx, s_ny, s_nz)
+			try:
+				s_mask = sp_utilities.model_circle(s_radius, s_nx, s_ny, s_nz)
+			except RuntimeError as e:
+				sp_global_def.sxprint('An error occured! Please check the error log')
+				raise
 		else:
 			assert False
 		s_mask = sp_utilities.pad(s_mask, nx, ny, nz, 0)
@@ -508,15 +519,18 @@ def main():
 			allow_disconnected=command_args.s_allow_disconnected,
 			mode=mode,
 			do_approx=command_args.s_do_old,
-			do_fill=command_args.s_fill_mask
+			do_fill=command_args.s_fill_mask,
+			do_print=True,
 			)
 		if command_args.s_invert:
 			s_mask = 1 - s_mask
+		sxprint('Write outputs.')
 		mask_first.write_image(output_prefix + '_mask_first.hdf')
 		s_mask.write_image(output_prefix + '_mask_second.hdf')
 		masked_combined = mask_first * s_mask
 		masked_combined.write_image(output_prefix + '_mask.hdf')
 	else:
+		sxprint('Write outputs.')
 		mask_first.write_image(output_prefix + '_mask.hdf')
 
 
