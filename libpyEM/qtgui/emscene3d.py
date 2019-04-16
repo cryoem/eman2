@@ -52,6 +52,8 @@ import pickle
 from .valslider import ValSlider, EMLightControls, CameraControls, EMSpinWidget, EMQTColorWidget, EMANToolButton
 import weakref
 
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL import GLU
 from OpenGL.GL import *
 from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL

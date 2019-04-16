@@ -64,6 +64,8 @@ def safe_float(x):
 
 from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
 from PyQt5.QtCore import Qt
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU
 from OpenGL.GL import *
 import OpenGL.GL as gl

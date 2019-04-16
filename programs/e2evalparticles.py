@@ -40,6 +40,8 @@ from eman2_gui.emimagemx import EMImageMXWidget
 import sys
 from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
 from PyQt5.QtCore import Qt
+#import OpenGL
+#OpenGL.ERROR_CHECKING = False
 #from OpenGL import GL,GLU,GLUT
 from eman2_gui.emapplication import EMApp
 import os
