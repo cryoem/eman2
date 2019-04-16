@@ -268,7 +268,7 @@ class SptAlignTask(JSTask):
 
 		#print(fsp, i, c[0])
 		callback(100)
-		print(i,c[0]["xform.align3d"])
+		#print(i,c[0]["xform.align3d"])
 		return (fsp,i,c[0])
 		
 
