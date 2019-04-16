@@ -1698,7 +1698,7 @@ class SXCmdWidget(QWidget):
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "params_drift_txt":
-			name = QFileDialog.getOpenFileName(self, "Select drift shift parameters file", SXLookFeelConst.file_dialog_dir, "Drift shift parameters files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select drift shift parameters file", SXLookFeelConst.file_dialog_dir, "MotionCor2|cisTEM Unblur (*.log);;Drift shift parameters files (*.txt);;All files (*)", options = QFileDialog.DontUseNativeDialog)
 			if isinstance(name, tuple):
 				file_path = str(name[0])
 			else:
