@@ -24,8 +24,8 @@ ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 """
 change it when you run the tests with your path.In this folder I copied 'TcdA1-0010_frames.mrc' got from the sphire tutorial i.e.: 'SphireDemoResults/CorrectedSums/corrsum':
 """
-ABSOLUTE_PATH_TO_MRC_FOLDER= "/home/lusnig/Downloads/mrc_files_for_unit_test"
-ABSOLUTE_PATH_TO_STACK="bdb:/home/lusnig/Downloads/SphireDemoResults/Class2D/stack_ali2d"
+ABSOLUTE_PATH_TO_MRC_FOLDER= "/home/adnan/PycharmProjects/eman2/sphire/tests/corrsum/"
+ABSOLUTE_PATH_TO_STACK="bdb:/home/adnan/PycharmProjects/eman2/sphire/tests/Class2D/stack_ali2d"
 TOLERANCE = 0.0075
 
 IMAGE_2D, IMAGE_2D_REFERENCE = get_real_data(dim=2)
@@ -1604,29 +1604,71 @@ class Test_adaptive_mask(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_2dimg_default_values(self):
-        return_new = fu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
-        return_old = oldfu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
+
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], " surface_mask is only applicable to 3-D volume")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[1], msg_old[1])
+
 
     def test_2dimg_no_threshold_null_sigma(self):
-        return_new = fu.adaptive_mask(IMAGE_2D, nsigma = 0, threshold = -9999.0, ndilation = 3, edge_width = 5)
-        return_old = oldfu.adaptive_mask(IMAGE_2D, nsigma = 0, threshold = -9999.0, ndilation = 3, edge_width = 5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.adaptive_mask(IMAGE_2D, nsigma = 0, threshold = -9999.0, ndilation = 3, edge_width = 5)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.adaptive_mask(IMAGE_2D, nsigma = 0, threshold = -9999.0, ndilation = 3, edge_width = 5)
+
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], " surface_mask is only applicable to 3-D volume")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[1], msg_old[1])
 
     def test_2dimg_no_threshold_negative_sigma(self):
-        return_new = fu.adaptive_mask(IMAGE_2D, nsigma = -10, threshold = -9999.0, ndilation = 3, edge_width = 5)
-        return_old = oldfu.adaptive_mask(IMAGE_2D, nsigma = -10, threshold = -9999.0, ndilation = 3, edge_width = 5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.adaptive_mask(IMAGE_2D, nsigma = -10, threshold = -9999.0, ndilation = 3, edge_width = 5)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.adaptive_mask(IMAGE_2D, nsigma = -10, threshold = -9999.0, ndilation = 3, edge_width = 5)
+
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], " surface_mask is only applicable to 3-D volume")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[1], msg_old[1])
 
     def test_2dimg_no_dilation(self):
-        return_new = fu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0,  ndilation = 0, edge_width = 5)
-        return_old = oldfu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0,  ndilation = 0, edge_width = 5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0,  ndilation = 0, edge_width = 5)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0,  ndilation = 0, edge_width = 5)
+
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], " surface_mask is only applicable to 3-D volume")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[1], msg_old[1])
 
     def test_2dimg_negative_dilation(self):
-        return_new = fu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0,  ndilation = -2, edge_width = 5)
-        return_old = oldfu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0,  ndilation = -2, edge_width = 5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0,  ndilation = -2, edge_width = 5)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0,  ndilation = -2, edge_width = 5)
+
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], " surface_mask is only applicable to 3-D volume")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[1], msg_old[1])
 
     def test_2dimg_negative_edge_width_crashes_because_signal11SIGSEV(self):
         """
@@ -1637,9 +1679,18 @@ class Test_adaptive_mask(unittest.TestCase):
         self.assertTrue(True)
 
     def test_2dimg_null_edge_width(self):
-        return_new = fu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width=0)
-        return_old = oldfu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0, ndilation = 3 ,edge_width=0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width=0)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.adaptive_mask(IMAGE_2D, nsigma = 1.0, threshold = -9999.0, ndilation = 3 ,edge_width=0)
+
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], " surface_mask is only applicable to 3-D volume")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[1], msg_old[1])
 
     def test_3dimg_default_values(self):
         return_new = fu.adaptive_mask(IMAGE_3D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
@@ -1680,29 +1731,74 @@ class Test_adaptive_mask(unittest.TestCase):
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_img_blank2D_default_values(self):
-        return_new = fu.adaptive_mask(IMAGE_BLANK_2D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
-        return_old = oldfu.adaptive_mask(IMAGE_BLANK_2D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.adaptive_mask(IMAGE_BLANK_2D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.adaptive_mask(IMAGE_BLANK_2D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
+
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], " surface_mask is only applicable to 3-D volume")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[1], msg_old[1])
 
     def test_img_blank2D_no_threshold_null_sigma(self):
-        return_new = fu.adaptive_mask(IMAGE_BLANK_2D, nsigma = 0, threshold = -9999.0, ndilation = 3, edge_width = 5)
-        return_old = oldfu.adaptive_mask(IMAGE_BLANK_2D, nsigma = 0, threshold = -9999.0, ndilation = 3, edge_width = 5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.adaptive_mask(IMAGE_BLANK_2D, nsigma = 0, threshold = -9999.0, ndilation = 3, edge_width = 5)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.adaptive_mask(IMAGE_BLANK_2D, nsigma = 0, threshold = -9999.0, ndilation = 3, edge_width = 5)
+
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], " surface_mask is only applicable to 3-D volume")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[1], msg_old[1])
 
     def test_img_blank2D_no_threshold_negative_sigma(self):
-        return_new = fu.adaptive_mask(IMAGE_BLANK_2D, nsigma = -10, threshold = -9999.0, ndilation = 3, edge_width = 5)
-        return_old = oldfu.adaptive_mask(IMAGE_BLANK_2D, nsigma = -10, threshold = -9999.0, ndilation = 3, edge_width = 5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.adaptive_mask(IMAGE_BLANK_2D, nsigma = -10, threshold = -9999.0, ndilation = 3, edge_width = 5)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.adaptive_mask(IMAGE_BLANK_2D, nsigma = -10, threshold = -9999.0, ndilation = 3, edge_width = 5)
+
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], " surface_mask is only applicable to 3-D volume")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[1], msg_old[1])
 
     def test_img_blank2D_no_dilation(self):
-        return_new = fu.adaptive_mask(IMAGE_BLANK_2D, nsigma = 1.0, threshold = -9999.0,  ndilation = 0, edge_width = 5)
-        return_old = oldfu.adaptive_mask(IMAGE_BLANK_2D, nsigma = 1.0, threshold = -9999.0,  ndilation = 0, edge_width = 5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.adaptive_mask(IMAGE_BLANK_2D, nsigma = 1.0, threshold = -9999.0,  ndilation = 0, edge_width = 5)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.adaptive_mask(IMAGE_BLANK_2D, nsigma = 1.0, threshold = -9999.0,  ndilation = 0, edge_width = 5)
+
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], " surface_mask is only applicable to 3-D volume")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[1], msg_old[1])
 
     def test_img_blank2D_negative_dilation(self):
-        return_new = fu.adaptive_mask(IMAGE_BLANK_2D, nsigma = 1.0, threshold = -9999.0,  ndilation = -2, edge_width = 5)
-        return_old = oldfu.adaptive_mask(IMAGE_BLANK_2D, nsigma = 1.0, threshold = -9999.0,  ndilation = -2, edge_width = 5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.adaptive_mask(IMAGE_BLANK_2D, nsigma = 1.0, threshold = -9999.0,  ndilation = -2, edge_width = 5)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.adaptive_mask(IMAGE_BLANK_2D, nsigma = 1.0, threshold = -9999.0,  ndilation = -2, edge_width = 5)
+
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], " surface_mask is only applicable to 3-D volume")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[1], msg_old[1])
 
     def test_img_blank2D_negative_edge_width_crashes_because_signal11SIGSEV(self):
         """
@@ -1713,9 +1809,18 @@ class Test_adaptive_mask(unittest.TestCase):
         self.assertTrue(True)
 
     def test_img_blank2D_null_edge_width(self):
-        return_new = fu.adaptive_mask(IMAGE_BLANK_2D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width=0)
-        return_old = oldfu.adaptive_mask(IMAGE_BLANK_2D, nsigma = 1.0, threshold = -9999.0, ndilation = 3 ,edge_width=0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.adaptive_mask(IMAGE_BLANK_2D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width=0)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.adaptive_mask(IMAGE_BLANK_2D, nsigma = 1.0, threshold = -9999.0, ndilation = 3 ,edge_width=0)
+
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], " surface_mask is only applicable to 3-D volume")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[1], msg_old[1])
 
     def test_img_blank3D_default_values(self):
         return_new = fu.adaptive_mask(IMAGE_BLANK_3D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
@@ -2298,7 +2403,7 @@ class Test_cter_pap(unittest.TestCase):
     i_stop = -1
     selection_list = 'TcdA1-0011_frames_sum.mrc'
     input_image_path = path.join(ABSOLUTE_PATH_TO_MRC_FOLDER, "TcdA1-*_frames_sum.mrc")
-    output_directory = path.join(ABSOLUTE_PATH_TO_MRC_FOLDER, "cter_mrk_results")
+    output_directory = path.join(ABSOLUTE_PATH_TO_MRC_FOLDER, "cter_mrk/results")
 
     def test_all_the_conditions(self,return_new=None,return_old=None, skip=True):
         if skip is False:

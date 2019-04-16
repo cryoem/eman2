@@ -151,7 +151,7 @@ class Test_ali2d_single_iter(unittest.TestCase):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         return_new = fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, -5, -5, xrng, yrng, step, nomirror = False, mode="F", CTF=False, random_method="", ali_params="xform.align2d", delta = 0.0)
         return_old = oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, -5, -5, xrng, yrng, step, nomirror = False, mode="F", CTF=False, random_method="", ali_params="xform.align2d", delta = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.allclose(return_new, return_old), TOLERANCE, equal_nan = True)
 
     def test_NOmirror_mode_H_WITHCTF_randomMethod_SHC_ArgumentError_in_Util_shc_function(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
