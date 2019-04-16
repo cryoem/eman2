@@ -214,12 +214,15 @@ def main():
 	E2end(logid)
 	
 def do_match(jsd, m, o, img):
-	e=m.copy()
-	e.transform(o)
-	cf=img.calc_ccf(e)
-	cf.process_inplace("xform.phaseorigin.tocenter")
-	jsd.put(cf)
 
+	for i in [0,1]:
+		e=m.copy()
+		e.transform(o)
+		cf=img.calc_ccf(e)
+		cf.process_inplace("xform.phaseorigin.tocenter")
+		jsd.put(cf)
+		o.rotate(Transform({"type":"eman","alt":180}))
+		
 def run(cmd):
 	print(cmd)
 	launch_childprocess(cmd)
