@@ -69,7 +69,7 @@ class EMParallelProject3D(object):
 		self.modeln=modeln
 
 		from EMAN2PAR import EMTaskCustomer
-		self.etc=EMTaskCustomer(options.parallel)
+		self.etc=EMTaskCustomer(options.parallel, module="e2project3d.EMProject3DTaskDC")
 		print("Precache ",fsp)
 		self.etc.precache([fsp])
 

@@ -525,7 +525,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[]):
 		#print(ids,projs)
 		jsd.put((pid, threed, projs))
 
-	return threed
+	return
 	
 
 

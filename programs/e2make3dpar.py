@@ -48,6 +48,7 @@ import math
 import random
 import traceback
 import numpy as np
+from EMAN2jsondb import JSTask
 
 def get_usage():
 	progname = os.path.basename(sys.argv[0])
@@ -121,6 +122,8 @@ def main():
 	parser.add_argument("--postprocess", metavar="processor_name(param1=value1:param2=value2)", type=str, action="append", help="postprocessor to be applied to the 3D volume once the reconstruction is completed. There can be more than one postprocessor, and they are applied in the order in which they are specified. See e2help.py processors for a complete list of available processors.")
 	parser.add_argument("--apix",metavar="A/pix",type=float,help="A/pix value for output, overrides automatic values",default=None)
 
+	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default=None)
+	
 	# Database Metadata storage
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -249,33 +252,96 @@ def main():
 		niter=1
 	#########################################################
 	# The actual reconstruction
+	
+	if options.parallel!=None:
+		par=options.parallel.split(':')
+		if par[0].startswith("thread"):
+			options.parallel=None
+			options.threads=int(par[1])
+		elif par[0]=="mpi":
+			nthr=int(par[1])
+			ppt=len(data)/nthr
+			if ppt>16:
+				print("Inserting {:.1f} images per thread...".format(ppt))
+				### prepare some options
+				options.padvol3=padvol
+				
+			else:
+				print("Too few images in input ({:.1f} images per thread). Switching back to threading".format(ppt))
+				options.parallel=None
+				options.threads=nthr
+		else:
+			
+			options.parallel=None
+			
 
 	for it in range(niter):
-		threads=[threading.Thread(target=reconstruct,args=(data[i::options.threads],recon,options.preprocess,options.pad,
-				options.fillangle,options.altedgemask,max(options.verbose-1,0),options.input.endswith(".lst"))) for i in range(options.threads)]
+		
+		if options.parallel:
+			print("running in mpi mode. This is experimental, so please switch back to threading if anything goes wrong...")
+			
+		
+			from EMAN2PAR import EMTaskCustomer
+			etc=EMTaskCustomer(options.parallel, module="e2make3dpar.Make3dTask")
+			num_cpus = etc.cpu_est()
+			
+			print("{} total CPUs available".format(num_cpus))
+			
+			
+			tasks=[data[i::num_cpus] for i in range(num_cpus)]
+			
+			
+			print("{} jobs".format(len(tasks)))
 
-		if it==0:
-			if options.seedmap!=None :
-				seed=EMData(options.seedmap)
-		#		seed.process_inplace("normalize.edgemean")
-				seed.clip_inplace(Region(old_div((nx-padvol[0]),2),old_div((ny-padvol[1]),2),old_div((nslice-padvol[2]),2),padvol[0],padvol[1],padvol[2]))
-				seed.do_fft_inplace()
-				if options.seedweightmap==None:  recon.setup_seed(seed,options.seedweight)
-				else:
-					seedweightmap=EMData(seedweightmap,0)
-					recon.setup_seedandweights(seed,seedweightmap)
-			else : recon.setup()
+			tids=[]
+			for t in tasks:
+				task = Make3dTask(t, options)
+				tid=etc.send_task(task)
+				tids.append(tid)
+
+			while 1:
+				st_vals = etc.check_task(tids)
+				#print("{:.1f}/{} finished".format(np.mean(st_vals), 100))
+				#print(tids)
+				if np.min(st_vals) == 100: break
+				time.sleep(5)
+
+			#dics=[0]*nptcl
+			
+			angs={}
+			avgr=Averagers.get("mean.tomo")
+			for i in tids:
+				ret=etc.get_results(i)[1]
+				avgr.add_image(ret)
+				
+			output=avgr.finish()
+			
 		else:
-			recon.setup_seed(output,1.0)
+			threads=[threading.Thread(target=reconstruct,args=(data[i::options.threads],recon,options.preprocess,options.pad,
+					options.fillangle,options.altedgemask,max(options.verbose-1,0),options.input.endswith(".lst"))) for i in range(options.threads)]
 
-		for i,t in enumerate(threads):
-			if options.verbose>1: print("started thread ",i)
-			t.start()
+			if it==0:
+				if options.seedmap!=None :
+					seed=EMData(options.seedmap)
+			#		seed.process_inplace("normalize.edgemean")
+					seed.clip_inplace(Region(old_div((nx-padvol[0]),2),old_div((ny-padvol[1]),2),old_div((nslice-padvol[2]),2),padvol[0],padvol[1],padvol[2]))
+					seed.do_fft_inplace()
+					if options.seedweightmap==None:  recon.setup_seed(seed,options.seedweight)
+					else:
+						seedweightmap=EMData(seedweightmap,0)
+						recon.setup_seedandweights(seed,seedweightmap)
+				else : recon.setup()
+			else:
+				recon.setup_seed(output,1.0)
 
-		for t in threads: t.join()
+			for i,t in enumerate(threads):
+				if options.verbose>1: print("started thread ",i)
+				t.start()
 
-#		output = recon.finish(it==niter-1)		# only return real-space on the final pass
-		output = recon.finish(True)
+			for t in threads: t.join()
+
+	#		output = recon.finish(it==niter-1)		# only return real-space on the final pass
+			output = recon.finish(True)
 
 		if options.verbose:
 			print("Iteration ",it)
@@ -603,6 +669,52 @@ def reconstruct(data,recon,preprocess,pad,fillangle,altmask,verbose=0, lstinput=
 
 
 	return
+
+
+
+class Make3dTask(JSTask):
+	
+	
+	def __init__(self, inp, options):
+		
+		data={"data":inp}
+		JSTask.__init__(self,"Make3d",data,{},"")
+		self.options=options
+	
+	
+	def execute(self, callback):
+		
+		callback(0)
+		data=self.data["data"]
+		options=self.options
+		
+		a = {
+			"size":options.padvol3,
+			"sym":options.sym,
+			"mode":options.mode,
+			"usessnr":options.usessnr,
+			"verbose":options.verbose-1
+			}
+		if options.savenorm!=None : a["savenorm"]=options.savenorm
+		recon=Reconstructors.get("fourier", a)
+		recon.setup()
+		reconstruct(
+			data,
+			recon,
+			options.preprocess,
+			options.pad,
+			options.fillangle,
+			options.altedgemask,
+			max(options.verbose-1,0),
+			options.input.endswith(".lst")
+			)
+		
+		output = recon.finish(True)
+		
+		callback(100)
+		
+		return output
+
 
 if __name__=="__main__":
 	main()

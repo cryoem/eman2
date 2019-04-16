@@ -472,7 +472,8 @@ def remove_beads(imgs_500, imgout, ttparams, options):
 	threed.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./100})
 	threed.process_inplace("filter.highpass.gauss",{"cutoff_freq":1./50})
 	threed.process_inplace("normalize")
-	
+	if options.writetmp:
+		threed.write_image(os.path.join(options.tmppath, "tomo_rmbead.hdf"))
 	
 	vthr=options.rmbeadthr
 	img=threed.numpy().T.copy()
@@ -483,7 +484,7 @@ def remove_beads(imgs_500, imgout, ttparams, options):
 	idx=np.arange(1,nlb, dtype=int)
 	
 	sm=np.array(sciimg.sum(img, lb, idx))/vthr
-	idx=idx[sm>8]
+	idx=idx[sm>6]
 	cnt=np.array(sciimg.center_of_mass(img, lb, idx))
 	
 	
@@ -509,29 +510,43 @@ def remove_beads(imgs_500, imgout, ttparams, options):
 			os.remove(fname)
 		except:
 			pass
-	
-	for i, pk in enumerate(pts):
-		if smp[i]["minimum"]>-vthr:
-			continue
+	pad=good_boxsize(options.bxsz*2)
+	for n, tpm in enumerate(tpms):
+		
+		plst=[]
+		for i, pk in enumerate(pts):
+			if smp[i]["minimum"]>-vthr:
+				continue
 			
-		for n, tpm in enumerate(tpms):
 			pxf=get_xf_pos(tpm, pk)
 			
-			pad=good_boxsize(options.bxsz*2)
-			pxf=[int(round(pxf[0]))+nx//2-pad//2, int(round(pxf[1]))+ny//2-pad//2,0]
 			
+			pxf=[int(round(pxf[0]))+nx//2-pad//2, int(round(pxf[1]))+ny//2-pad//2]
 			
+			if min(pxf)<pad*.8 or min(nx-pxf[0], ny-pxf[1])<pad*.8:
+				continue
+			
+			if len(plst)>0:
+				dst=scidist.cdist(plst, [pxf])
+				if np.min(dst)<pad/3:
+					continue
+			plst.append(pxf)
 			e=imgout[n].get_clip(Region(pxf[0], pxf[1], pad, pad))
+			e["nid"]=n
+			e["pid"]=i
 			
 			
 			m=e.process("normalize.edgemean")
+			m.process_inplace("filter.highpass.gauss",{"cutoff_pixels":4})
+			m.process_inplace("mask.soft",{"outer_radius":pad//3, "width":pad//4})
+			m.mult(-1)
+			m.process_inplace("threshold.belowtozero")
 			m.mult(m)
-			#m.process_inplace("threshold.belowtozero")
 			m.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./100})
 			m.add(-1)
-			
 			m.process_inplace("threshold.belowtozero")
 			
+			m.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./100})
 			if m["maximum"]>0:
 				m.mult(5./m["maximum"])
 			else:
@@ -539,7 +554,7 @@ def remove_beads(imgs_500, imgout, ttparams, options):
 				
 			m.process_inplace("threshold.clampminmax",{"maxval":1})
 			
-			if m["mean"]>0.6:
+			if m["mean"]>0.2:
 				continue
 			
 			m.process_inplace("mask.soft",{"outer_radius":int(pad*.3),"width":8})
@@ -548,21 +563,24 @@ def remove_beads(imgs_500, imgout, ttparams, options):
 			
 			a1=m.copy()
 			a1.to_zero()
+			#a1.add(a0["mean_nonzero"])
 			a1.process_inplace("math.addnoise",{"noise":1})
-			a1=a1-a1["mean"]+a0["mean"]
+			a1.process_inplace("normalize")
 			
-			if m["mean"]>0.05:
-				a1.process_inplace("filter.matchto",{"to":e})
-			else:
-				a1.process_inplace("filter.matchto",{"to":a0})
+			a1=a1*a0["sigma_nonzero"]+a0["mean_nonzero"]
+			
+			#if m["mean"]>0.05:
+				#a1.process_inplace("filter.matchto",{"to":e})
+			#else:
+				#a1.process_inplace("filter.matchto",{"to":a0})
 			a1.mult(m)
 			
 			e1=a0+a1    
 			
 			if options.writetmp:
-				e.write_image(fname,-1)
+				e.process("normalize").write_image(fname,-1)
 				m.write_image(fname,-1)
-				e1.write_image(fname,-1)
+				e1.process("normalize").write_image(fname,-1)
 			
 			
 			imgout[n].insert_clip(e1, pxf)
@@ -985,6 +1003,8 @@ def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[], clip
 	for t in thrds: t.join()
 
 	threed=recon.finish(True)
+	
+	threed.process_inplace("math.gausskernelfix",{"gauss_width":4.0})
 	threed.process_inplace("normalize")
 	threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.filterto})
 	#print(threed["nx"], threed["ny"], threed["nz"])

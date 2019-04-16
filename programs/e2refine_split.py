@@ -129,7 +129,7 @@ def main():
 
 	# Initialize parallelism
 	from EMAN2PAR import EMTaskCustomer
-	etc=EMTaskCustomer(options.parallel)
+	etc=EMTaskCustomer(options.parallel, "e2refine_split.ClassSplitTask")
 
 	# Empty image to pad classes file
 	zero=EMData(str(ptcls[0]),0)
