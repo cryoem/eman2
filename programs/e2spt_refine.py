@@ -50,6 +50,7 @@ def main():
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="")
 	parser.add_argument("--radref", type=str,help="reference for real space radial correction", default="")
 	parser.add_argument("--refine",action="store_true",help="local refinement from xform.init in header.",default=False)
+	parser.add_argument("--localnorm",action="store_true",help="local normalization. do not use yet....",default=False)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -132,14 +133,17 @@ def main():
 		
 		if options.radref!="":
 			for f in [even, odd]:
-				e=EMData(f).process("normalize")
+				e=EMData(f)
 				rf=EMData(options.radref).process("normalize")
-				rf=rf.align("translational",e)
+				#rf=rf.align("translational",e)
+				
+				e.process_inplace("filter.matchto",{"to":rf})
+				e.process_inplace("normalize")
 
 				radrf=rf.calc_radial_dist(rf["nx"]//2, 0.0, 1.0,1)
 				rade=e.calc_radial_dist(e["nx"]//2, 0.0, 1.0,1)
-				rmlt=np.array(radrf)/np.array(rade)
-				rmlt[0]=1
+				rmlt=np.sqrt(np.array(radrf)/np.array(rade))
+				#rmlt[0]=1
 				rmlt=from_numpy(rmlt.copy())
 				er=e.mult_radial(rmlt)
 				er.write_image(f)
@@ -162,6 +166,7 @@ def main():
 		if options.localfilter:
 			s+=" --tophat local "
 			
+		#s+=" --tophat global "
 		#if options.gaussz>0:
 			#s+=" --m3dpostprocess filter.lowpass.gaussz:cutoff_freq={}".format(options.gaussz)
 			
@@ -169,8 +174,9 @@ def main():
 		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --mass {} --restarget {} --threads {} --sym {} {} {} ".format(even, odd, os.path.join(options.path, "threed_{:02d}.hdf".format(itr)), itr, options.mass, curres, options.threads, options.sym, msk, s)
 		run(ppcmd)
 		
-		#for f in [even, odd]:
-			#run("e2proc3d.py {} {} --process normalize --process normalize.local:threshold=1:radius=10".format(f,f))
+		if options.localnorm:
+			for f in [even, odd]:
+				run("e2proc3d.py {} {} --process normalize --process normalize.local:threshold=1:radius=16".format(f,f))
 			
 		ref=os.path.join(options.path, "threed_{:02d}.hdf".format(itr))
 		fsc=np.loadtxt(os.path.join(options.path, "fsc_masked_{:02d}.txt".format(itr)))

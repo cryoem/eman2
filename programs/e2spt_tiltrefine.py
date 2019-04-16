@@ -120,6 +120,8 @@ def main():
 	jd["path"] = oldpath
 	jd["iter"] = itr
 	jd["output"] = path
+	
+	options.ptclkeep=1.0
 
 	if fromspt:
 		sptparms = os.path.join(oldpath,"0_spt_params.json")
@@ -133,6 +135,12 @@ def main():
 		jd["sym"] = oldjd["sym"]
 		jd["localfilter"]=oldjd["localfilter"]
 		jd["mask"]=oldjd["mask"]
+		if oldjd.has_key("radref"):
+			jd["radref"]=oldjd["radref"]
+			
+		if fromspt:
+			options.ptclkeep=oldjd["pkeep"]
+			
 		oldjd.close()
 	else:
 		print("Cannot find {}. exit.".format(sptparms))
@@ -172,7 +180,16 @@ def main():
 		
 		lst=[LSXFile(m, False) for m in lname]
 		n3d=len(list(js.keys()))
-		#for ii in range(n3d):
+		if options.ptclkeep<1.0:
+			score=[]
+			for k in list(js.keys()):
+				score.append(float(js[k]["score"]))
+		
+			simthr=np.sort(score)[int(len(score)*options.ptclkeep)]
+			print("removing bad particles...")
+			
+		else:
+			simthr=10000
 			
 		for ky in js.keys():
 			
@@ -183,6 +200,9 @@ def main():
 			#ky="('{}', {})".format(src, ii)
 			dic=js[ky]
 			xali=dic["xform.align3d"]
+			scr=float(dic["score"])
+			if scr>simthr:
+				continue
 			
 			if "__even" in src:
 				eo=0
@@ -347,16 +367,20 @@ def main():
 		even=os.path.join(path, "threed_{:02d}_even.hdf".format(itr+1))
 		odd=os.path.join(path, "threed_{:02d}_odd.hdf".format(itr+1))
 		if jd.has_key("radref") and jd["radref"]!="":
-			print("doing radial correction")
+			rfname=str(jd["radref"])
+			print("doing radial correction with {}".format(rfname))
 			for f in [even, odd]:
-				e=EMData(f).process("normalize")
-				rf=EMData(options.radref).process("normalize")
-				rf=rf.align("translational",e)
+				e=EMData(f)
+				rf=EMData(rfname).process("normalize")
+				#rf=rf.align("translational",e)
+				
+				e.process_inplace("filter.matchto",{"to":rf})
+				e.process_inplace("normalize")
 
 				radrf=rf.calc_radial_dist(rf["nx"]//2, 0.0, 1.0,1)
 				rade=e.calc_radial_dist(e["nx"]//2, 0.0, 1.0,1)
-				rmlt=np.array(radrf)/np.array(rade)
-				rmlt[0]=1
+				rmlt=np.sqrt(np.array(radrf)/np.array(rade))
+				#rmlt[0]=1
 				rmlt=from_numpy(rmlt.copy())
 				er=e.mult_radial(rmlt)
 				er.write_image(f)
