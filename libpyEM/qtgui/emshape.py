@@ -41,6 +41,7 @@ import warnings
 
 from libpyGLUtils2 import *
 
+pixelratio=1.0
 
 def initCircle():
 	"""Call this static function once to initialize necessary display lists"""
@@ -149,7 +150,7 @@ class EMShape(object):
 		
 		if s[0]=="rect":
 			assert self.shape[8] >= 0
-			GL.glLineWidth(s[8])
+			GL.glLineWidth(s[8]*pixelratio)
 			#if  self.isanimated:
 				#v1 = d2s(s[4],s[5])
 				#v2 = d2s(s[6],s[7])
@@ -170,7 +171,7 @@ class EMShape(object):
 		
 		if s[0]=="rect4point":
 			assert self.shape[12] >= 0
-			GL.glLineWidth(s[12])
+			GL.glLineWidth(s[12]*pixelratio)
 			
 			GL.glBegin(GL.GL_LINE_LOOP)
 			GL.glColor(*col)
@@ -193,7 +194,7 @@ class EMShape(object):
 			pt0 = (s[4], s[5]) #first coordinate
 			pt1 = (s[6], s[7]) #second coordinate
 			width = s[8] #width
-			GL.glLineWidth(s[9])
+			GL.glLineWidth(s[9]*pixelratio)
 			#l_vect = (pt1[0]-pt0[0], pt1[1]-pt2[0]) #vector parallel to a longer side -- length vector
 			w_vect = ( -(pt1[1]-pt0[1]), pt1[0]-pt0[0] ) #vector parallel to a shorter side -- width vector
 			mag = sqrt(w_vect[0]**2 + w_vect[1]**2)
@@ -206,7 +207,7 @@ class EMShape(object):
 			v4 = ( pt1[0]-w_uvect[0]*width/2.0, pt1[1]-w_uvect[1]*width/2.0 )
 
 			#rectangle
-			GL.glLineWidth(1)
+			GL.glLineWidth(pixelratio)
 			GL.glBegin(GL.GL_LINE_LOOP)
 			GL.glColor(*col)
 			GL.glVertex(*d2s(*v1))
@@ -223,7 +224,7 @@ class EMShape(object):
 					
 		elif s[0]=="rectpoint":
 			assert self.shape[8] >= 0
-			GL.glLineWidth(s[8])
+			GL.glLineWidth(s[8]*pixelratio)
 			GL.glPointSize(s[8])
 			
 			#rectangle
@@ -245,7 +246,7 @@ class EMShape(object):
 			
 		elif s[0]=="rcirclepoint":
 			assert self.shape[8] >= 0
-			GL.glLineWidth(s[8])
+			GL.glLineWidth(s[8]*pixelratio)
 			GL.glPointSize(s[8])
 			
 			#midpoint
@@ -267,7 +268,7 @@ class EMShape(object):
 		elif s[0]=="rcircle":
 			v2=d2s(s[6],s[7])
 			assert self.shape[8] >= 0
-			GL.glLineWidth(s[8])
+			GL.glLineWidth(s[8]*pixelratio)
 			
 			GL.glPushMatrix()
 			GL.glColor(*col)
@@ -290,7 +291,7 @@ class EMShape(object):
 #			print "A line ",d2s(s[4],s[5]),d2s(s[6],s[7])
 			GL.glColor(*col)
 			assert self.shape[8] >= 0
-			GL.glLineWidth(s[8])
+			GL.glLineWidth(s[8]*pixelratio)
 			GL.glBegin(GL.GL_LINES)
 			GL.glVertex(*d2s(s[4],s[5]))
 			GL.glVertex(*d2s(s[6],s[7]))
@@ -316,7 +317,7 @@ class EMShape(object):
 		
 		elif s[0]=="linemask":
 			assert self.shape[12] >= 0
-			GL.glLineWidth(s[12])
+			GL.glLineWidth(s[12]*pixelratio)
 			GL.glColor(*col)
 			GL.glBegin(GL.GL_LINE_LOOP)
 			GL.glVertex(*d2s(s[4],s[5]))
@@ -349,7 +350,7 @@ class EMShape(object):
 				#GL.glColor(1.,1.,1.)
 				#GL.glTranslate(v[0],v[1],0)
 				#GL.glScalef(s[7]/100.0/sc,s[7]/100.0/sc,s[7]/100.0/sc)
-				#GL.glLineWidth(-s[8])
+				#GL.glLineWidth(-s[8]*pixelratio)
 				#w=104.76*len(s[6])
 				#GL.glBegin(GL.GL_QUADS)
 				#GL.glVertex(-10.,-33.0)
@@ -365,7 +366,7 @@ class EMShape(object):
 				#GL.glTranslate(v[0],v[1],0)
 ##				GL.glScalef(s[7]/100.0,s[7]/100.0,s[7]/100.0)
 				#GL.glScalef(s[7]/100.0/sc,s[7]/100.0/sc,s[7]/100.0/sc)
-				#GL.glLineWidth(fabs(s[8]))
+				#GL.glLineWidth(fabs(s[8])*pixelratio)
 				#for i in s[6]:
 					#GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_ROMAN,ord(i))
 			GL.glPopMatrix()
@@ -374,7 +375,7 @@ class EMShape(object):
 #			print s[6],v
 			GL.glPushMatrix()
 			GL.glColor(*col)
-			GL.glLineWidth(s[7])
+			GL.glLineWidth(s[7]*pixelratio)
 			GL.glTranslate(v[0],v[1],0)
 #			GL.glScalef(s[6]*(v2[0]-v[0]),s[6]*(v2[1]-v[1]),1.0)
 			GL.glScalef(s[6],s[6],1.0)
@@ -384,7 +385,7 @@ class EMShape(object):
 #			print s[6],v,v2
 			GL.glPushMatrix()
 			GL.glColor(*col)
-			GL.glLineWidth(s[9])
+			GL.glLineWidth(s[9]*pixelratio)
 			GL.glTranslate(v[0],v[1],0)
 			GL.glScalef((v2[0]-v[0]),(v2[1]-v[1]),1.0)
 			GL.glRotatef(s[8],0,0,1.0)
@@ -400,7 +401,7 @@ class EMShape(object):
 				y1 = int( round(s[5]) )
 				x2 = int( round(s[6]) )
 				y2 = int( round(s[7]) )
-				GL.glLineWidth(s[8])
+				GL.glLineWidth(s[8]*pixelratio)
 				GL.glBegin(GL.GL_LINE_LOOP)
 				GL.glColor(*col)
 				GL.glVertex(x1,y1)
@@ -415,7 +416,7 @@ class EMShape(object):
 				y2 = int( round(s[7]) )
 				GL.glColor(*col)
 				assert self.shape[8] >= 0
-				GL.glLineWidth(s[8])
+				GL.glLineWidth(s[8]*pixelratio)
 				GL.glBegin(GL.GL_LINES)
 				GL.glVertex(x1,y1)
 				GL.glVertex(x2,y2)
@@ -472,7 +473,7 @@ class EMShape(object):
 				y1 = int( round(s[5]) )
 
 				GL.glColor(*col)
-				GL.glLineWidth(s[7])
+				GL.glLineWidth(s[7]*pixelratio)
 				GL.glTranslate(x1,y1,0)
 				GL.glScalef(s[6],s[6],s[6])
 				GL.glCallList(EMShape.dlists)
