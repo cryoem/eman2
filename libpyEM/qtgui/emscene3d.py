@@ -793,7 +793,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.firstlight.enableLighting()
         
 	def paintGL(self):
-		if self.reset_camera: self.camera.update()
+		#if self.reset_camera: self.camera.update()
+		self.camera.update()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)		
 		glColor3f(1.0, 1.0, 1.0)	# Default color is white
 		#Call rendering
@@ -1137,7 +1138,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 				if  self.zrotate: # The lowest 5% of the screen is reserved from the Z spin virtual slider
 					self.updateMatrices([old_div(dx,self.camera.getViewPortWidthScaling()),0,0,-1], "rotate")
 				else:
-					self.updateMatrices([old_div(magnitude,self.camera.getViewPortWidthScaling()),old_div(-dy,magnitude),old_div(-dx,magnitude),0], "rotate")
+					self.updateMatrices([magnitude/self.camera.getViewPortWidthScaling(),-dy/magnitude,-dx/magnitude,0], "rotate")
 			except ValueError: pass
 			except ZeroDivisionError: pass
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "selection") and not event.modifiers()&Qt.ControlModifier:
@@ -1174,7 +1175,6 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		# Originally the wheel sclaed by zoom the viewport, but that caused all sorts of issues, so I now just scale the SG
 		# The 25 is a fudge factor that controls the speed of scaling, lower if slower scaling
-		self.cameraNeedsanUpdate()
 		if event.angleDelta().y() > 0:
 			if self.camera.getUseOrtho():
 				self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()+old_div((self.camera.getPseudoFovyWidth()+self.camera.getWidth()),25))
@@ -1186,6 +1186,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			else:
 				self.camera.setFovy(self.camera.getFovy()-1.0)
 		self.updateSG()
+		self.cameraNeedsanUpdate()
 			
 			
 	def mouseDoubleClickEvent(self,event):
@@ -1624,7 +1625,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.camera.useOrtho(self.camera.getZclip(disregardvv=True))
 		else:
 			objectsize = 50
-			self.camera.usePrespective(objectsize, 0.25, 60.0)
+			self.camera.usePerspective(objectsize, 0.25, 60.0)
 		try:
 			self.camera.setCapColor(*dictionary["CAPCOLOR"])
 			self.camera.setCappingMode(dictionary["CAPPINGMODE"])
@@ -1894,7 +1895,7 @@ class EMCamera(object):
 		if usingortho:
 			self.useOrtho(zclip)
 		else:
-			self.usePrespective(boundingbox, screenfraction, fovy)
+			self.usePerspective(boundingbox, screenfraction, fovy)
 
 	def update(self, width=None, height=None):
 		"""
@@ -1954,15 +1955,15 @@ class EMCamera(object):
 		"""
 		Set the orthographic projection matrix. Volume view origin (0,0) is center of screen
 		"""
-		glOrtho(old_div(-self.width,2), old_div(self.width,2), old_div(-self.height,2), old_div(self.height,2), self.near, self.far)
+		glOrtho(-self.width//2, self.width//2, -self.height//2, self.height//2, self.near, self.far)
 		
 	def setPerspectiveProjectionMatrix(self):
 		"""
 		Set the perspective projection matrix. Volume view origin (0,0) is center of screen
 		"""
-		GLU.gluPerspective(self.fovy, (old_div(float(self.width),float(self.height))), self.near, self.far)
+		GLU.gluPerspective(self.fovy, (float(self.width)/float(self.height)), self.near, self.far)
 			
-	def usePrespective(self, boundingbox, screenfraction, fovy=60.0):
+	def usePerspective(self, boundingbox, screenfraction, fovy=60.0):
 		""" 
 		@param boundingbox: The dimension of the bounding for the object to be rendered
 		@param screenfraction: The fraction of the screen height to occupy
@@ -2668,7 +2669,7 @@ class EMInspector3D(QtWidgets.QWidget):
 		"""
 		objectsize = 50
 		if self.orthoradio.isChecked(): self.scenegraph().camera.useOrtho(self.scenegraph().camera.getZclip(disregardvv=True))
-		if self.perspectiveradio.isChecked(): self.scenegraph().camera.usePrespective(objectsize, 0.25, 60.0)
+		if self.perspectiveradio.isChecked(): self.scenegraph().camera.usePerspective(objectsize, 0.25, 60.0)
 		self.scenegraph().updateSG()
 		
 	def getUtilsWidget(self):
@@ -3270,7 +3271,7 @@ class GLdemo(QtWidgets.QWidget):
 		QtWidgets.QWidget.__init__(self)
 		
 		self.widget = EMScene3D()
-		#self.widget.camera.usePrespective(50, 0.5)
+		#self.widget.camera.usePerspective(50, 0.5)
 		self.cube = EMCube(50.0)
 		self.widget.addChild(self.cube)    # Something to Render something..... (this could just as well be one of Ross's SGnodes)
 		self.sphere = EMSphere(50.0)
