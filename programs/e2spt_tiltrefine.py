@@ -30,7 +30,8 @@ def main():
 
 	parser.add_argument("--maxalt", type=float,help="max altitude to insert to volume", default=90.0, guitype='floatbox',row=1, col=0,rowspan=1, colspan=1)	
 	parser.add_argument("--nogs", action="store_true", default=False ,help="skip gold standard...", guitype='boolbox',row=2, col=1,rowspan=1, colspan=1)
-	parser.add_argument("--localfilter", type=int, default=-1 ,help="use tophat local. specify 0 or 1 to overwrite the setting in the spt refinement")
+	#parser.add_argument("--localfilter", type=int, default=-1 ,help="use tophat local. specify 0 or 1 to overwrite the setting in the spt refinement")
+	parser.add_argument("--tophat", type=str, default="auto" ,help="auto: same as spt refinement; local; global;")
 	parser.add_argument("--mask", type=str, default="None" ,help="Refinement masking. default is the same as the spt refinement. Use Auto for automasking, None for keeping the same masking as spt refinement",guitype='strbox',row=3, col=0,rowspan=1, colspan=2)	
 
 	parser.add_argument("--threads", type=int,help="Number of CPU threads to use. Default is 12.", default=12, guitype='intbox',row=2, col=2,rowspan=1, colspan=1)
@@ -63,7 +64,7 @@ def main():
 		for f in sorted(os.listdir(oldpath)):
 			if "particle_parms" in f:
 				itrstr = f[15:].split(".")[0]
-				if os.path.isfile("{}/threed_{}.hdf".format(oldpath,itrstr)):
+				if os.path.isfile(os.path.join(oldpath,"threed_{}.hdf".format(itrstr))):
 					itr = int(itrstr)
 	else:
 		for f in sorted(os.listdir(oldpath)):
@@ -79,7 +80,7 @@ def main():
 	
 	path = make_path(options.output)
 	
-	if not os.path.isfile("{}/threed_{:02d}.hdf".format(oldpath,itr)):
+	if not os.path.isfile(os.path.join(oldpath,"threed_{:02d}.hdf".format(itr))):
 		print("Could not locate {}/threed_{:02d}.hdf".format(oldpath,itr))
 		print("Please specify the iteration number (--iter) of a completed subtomogram refinement.")
 		sys.exit(1)
@@ -113,12 +114,14 @@ def main():
 	
 	bxsz=e["nx"]
 	apix=e["apix_x"]
-	jd = js_open_dict("{}/0_subtlt_params.json".format(path))
+	jd = js_open_dict(os.path.join(path, "0_subtlt_params.json"))
 	jd.update(vars(options))
 	jd["cmd"] = " ".join(sys.argv)
 	jd["path"] = oldpath
 	jd["iter"] = itr
 	jd["output"] = path
+	
+	options.ptclkeep=1.0
 
 	if fromspt:
 		sptparms = os.path.join(oldpath,"0_spt_params.json")
@@ -132,6 +135,12 @@ def main():
 		jd["sym"] = oldjd["sym"]
 		jd["localfilter"]=oldjd["localfilter"]
 		jd["mask"]=oldjd["mask"]
+		if oldjd.has_key("radref"):
+			jd["radref"]=oldjd["radref"]
+			
+		if fromspt:
+			options.ptclkeep=oldjd["pkeep"]
+			
 		oldjd.close()
 	else:
 		print("Cannot find {}. exit.".format(sptparms))
@@ -144,10 +153,10 @@ def main():
 			jd["mask"]=options.mask
 	
 	
-	if options.localfilter==0:
-		jd["localfilter"]=False
-	elif options.localfilter==1:
-		jd["localfilter"]=True
+	#if options.localfilter==0:
+		#jd["localfilter"]=False
+	#elif options.localfilter==1:
+		#jd["localfilter"]=True
 		
 	if len(options.sym)>0:
 		jd["sym"]=options.sym
@@ -171,7 +180,16 @@ def main():
 		
 		lst=[LSXFile(m, False) for m in lname]
 		n3d=len(list(js.keys()))
-		#for ii in range(n3d):
+		if options.ptclkeep<1.0:
+			score=[]
+			for k in list(js.keys()):
+				score.append(float(js[k]["score"]))
+		
+			simthr=np.sort(score)[int(len(score)*options.ptclkeep)]
+			print("removing bad particles...")
+			
+		else:
+			simthr=10000
 			
 		for ky in js.keys():
 			
@@ -182,6 +200,9 @@ def main():
 			#ky="('{}', {})".format(src, ii)
 			dic=js[ky]
 			xali=dic["xform.align3d"]
+			scr=float(dic["score"])
+			if scr>simthr:
+				continue
 			
 			if "__even" in src:
 				eo=0
@@ -209,18 +230,20 @@ def main():
 
 	if options.buildsetonly: return
 
+	from EMAN2PAR import EMTaskCustomer
+	
 	for itr in range(0,options.niters):
 
-		from EMAN2PAR import EMTaskCustomer
+		
 
 		for eo in ["even", "odd"]:
 			
 			if options.nogs:
-				threedname="{}/threed_{:02d}.hdf".format(path, itr)
+				threedname=os.path.join(path, "threed_{:02d}.hdf".format(itr))
 			else:
-				threedname="{}/threed_{:02d}_{}.hdf".format(path, itr, eo)
+				threedname=os.path.join(path, "threed_{:02d}_{}.hdf".format(itr, eo))
 			
-			lstname="{}/ali_ptcls_{:02d}_{}.lst".format(path, itr, eo)
+			lstname=os.path.join(path, "ali_ptcls_{:02d}_{}.lst".format(itr, eo))
 			lst=LSXFile(lstname, True)
 			m=EMData(threedname)
 			
@@ -233,7 +256,8 @@ def main():
 				pinfo.append(lst.read(i))
 			lst=None
 			
-			etc=EMTaskCustomer(options.parallel)
+			print("Initializing parallelism...")
+			etc=EMTaskCustomer(options.parallel, module="e2spt_tiltrefine.SptTltRefineTask")
 			num_cpus = etc.cpu_est()
 			
 			print("{} total CPUs available".format(num_cpus))
@@ -281,7 +305,7 @@ def main():
 			#allscr-=np.min(allscr)-1e-5
 			#allscr/=np.max(allscr)
 
-			lname="{}/ali_ptcls_{:02d}_{}.lst".format(path, itr+1, eo)
+			lname=os.path.join(path, "ali_ptcls_{:02d}_{}.lst".format(itr+1, eo))
 			try: os.remove(lname)
 			except: pass
 			lout=LSXFile(lname, False)
@@ -294,14 +318,19 @@ def main():
 			lout=None
 
 			pb=options.padby
-			threedout="{}/threed_{:02d}_{}.hdf".format(path, itr+1, eo)
-			cmd="e2make3dpar.py --input {inp} --output {out} --pad {pd} --padvol {pdv} --threads {trd} --outsize {bx} --apix {apx} --mode gauss_var --keep {kp} --sym {sm}".format(
+			threedout=os.path.join(path, "threed_{:02d}_{}.hdf".format(itr+1, eo))
+			
+			if options.parallel.startswith("mpi"):
+				m3dpar="--parallel {}".format(options.parallel)
+			else:
+				m3dpar=""
+			cmd="e2make3dpar.py --input {inp} --output {out} --pad {pd} --padvol {pdv} --threads {trd} --outsize {bx} --apix {apx} --mode gauss_2 --keep {kp} --sym {sm} {par}".format(
 				inp=lname, 
 				out=threedout,
-				bx=bxsz, pd=int(bxsz*pb), pdv=int(bxsz*pb), apx=apix, kp=options.keep, sm=jd["sym"], trd=options.threads)
+				bx=bxsz, pd=int(bxsz*pb), pdv=int(bxsz*pb), apx=apix, kp=options.keep, sm=jd["sym"], trd=options.threads,par=m3dpar)
 			
 			run(cmd)
-			run("e2proc3d.py {} {}".format(threedout, "{}/threed_raw_{}.hdf".format(path, eo)))
+			run("e2proc3d.py {} {}".format(threedout, os.path.join(path, "threed_raw_{}.hdf".format(eo))))
 
 		s = ""
 		
@@ -310,8 +339,16 @@ def main():
 				s += " --align"
 		if jd.has_key("setsf"):
 			s += " --setsf {}".format(jd['setsf']) #options.setsf)
-		if jd.has_key("localfilter"):
+		
+		s+=" --tophat global"
+		
+		if options.tophat=="auto" and jd.has_key("localfilter"):
 			s += " --tophat local"
+		elif options.tophat=="local":
+			s += " --tophat local"
+		elif options.tophat=="global":
+			s += " --tophat global"
+			
 		msk = jd["mask"] #{}/mask_tight.hdf".format(path)
 		if len(msk)>0:
 			if os.path.isfile(msk):
@@ -326,11 +363,31 @@ def main():
 		fsc=np.loadtxt(os.path.join(path, "fsc_masked_{:02d}.txt".format(itr)))
 		rs=1./fsc[fsc[:,1]<0.3, 0][0]
 		curres=rs*.5
+		
+		even=os.path.join(path, "threed_{:02d}_even.hdf".format(itr+1))
+		odd=os.path.join(path, "threed_{:02d}_odd.hdf".format(itr+1))
+		if jd.has_key("radref") and jd["radref"]!="":
+			rfname=str(jd["radref"])
+			print("doing radial correction with {}".format(rfname))
+			for f in [even, odd]:
+				e=EMData(f)
+				rf=EMData(rfname).process("normalize")
+				#rf=rf.align("translational",e)
+				
+				e.process_inplace("filter.matchto",{"to":rf})
+				e.process_inplace("normalize")
+
+				radrf=rf.calc_radial_dist(rf["nx"]//2, 0.0, 1.0,1)
+				rade=e.calc_radial_dist(e["nx"]//2, 0.0, 1.0,1)
+				rmlt=np.sqrt(np.array(radrf)/np.array(rade))
+				#rmlt[0]=1
+				rmlt=from_numpy(rmlt.copy())
+				er=e.mult_radial(rmlt)
+				er.write_image(f)
+		
 
 		#os.system("rm {}/mask*.hdf {}/*unmasked.hdf".format(path, path))
-		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --restarget {} --threads {} --sym {} --mass {} {}".format(
-			os.path.join(path, "threed_{:02d}_even.hdf".format(itr+1)), 
-			os.path.join(path, "threed_{:02d}_odd.hdf".format(itr+1)), 
+		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --restarget {} --threads {} --sym {} --mass {} {}".format(even, odd, 
 			os.path.join(path, "threed_{:02d}.hdf".format(itr+1)), itr+1, curres, options.threads, jd["sym"], jd["mass"], s)
 		run(ppcmd)
 
@@ -365,6 +422,7 @@ class SptTltRefineTask(JSTask):
 		for i, infos in enumerate(self.data["info"]):
 			ii=infos[0]
 			info=infos[1]
+			#print(ii, info)
 			ptcl=EMData(info[1],info[0])
 			a=data["ref"]
 			

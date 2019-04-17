@@ -72,7 +72,7 @@ def main():
 
 	if options.parallel:
 		from EMAN2PAR import EMTaskCustomer
-		etc=EMTaskCustomer(options.parallel)
+		etc=EMTaskCustomer(options.parallel,"e2erasefiducials.EraseGold2DTask")
 
 	if options.coords:
 		try:

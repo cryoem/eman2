@@ -35,6 +35,8 @@ from __future__ import division
 from past.utils import old_div
 from builtins import range
 from builtins import object
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLUT
 from math import *
 import warnings

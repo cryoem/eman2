@@ -38,6 +38,8 @@ from past.utils import old_div
 from builtins import range
 from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
 from PyQt5.QtCore import Qt
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from .valslider import ValSlider,ValBox,StringBox

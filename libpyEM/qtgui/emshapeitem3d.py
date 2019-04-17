@@ -44,6 +44,8 @@ from libpyGLUtils2 import FTGLFontMode
 import math
 from .valslider import EMQTColorWidget, ValSlider, EMSpinWidget
 
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
