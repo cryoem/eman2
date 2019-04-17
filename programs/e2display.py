@@ -43,6 +43,8 @@ from eman2_gui.emscene3d import EMScene3D
 import os
 import sys
 
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL import GL, GLU, GLUT
 from PyQt5.QtCore import Qt
 

@@ -139,7 +139,7 @@ def main():
 	# parallelism
 	from EMAN2PAR import EMTaskCustomer			# we need to put this here to avoid a circular reference
 
-	etc=EMTaskCustomer(options.parallel)
+	etc=EMTaskCustomer(options.parallel, module="e2initialmodel.InitMdlTask")
 	pclist=[particles_name]
 
 	etc.precache(pclist)		# make sure the input particles are precached on the compute nodes

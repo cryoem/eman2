@@ -1410,7 +1410,7 @@ def main(args):
 
 	# main process broadcasts path to ISAC master directory
 	if( li > 0 ):
-		Blockdata["masterdir"] = mpi.mpi_bcast(Blockdata["masterdir"],li,MPI_CHAR,Blockdata["main_node"],mpi.MPI_COMM_WORLD)
+		Blockdata["masterdir"] = mpi.mpi_bcast(Blockdata["masterdir"],li,mpi.MPI_CHAR,Blockdata["main_node"],mpi.MPI_COMM_WORLD)
 		Blockdata["masterdir"] = string.join(Blockdata["masterdir"],"")
 
 	# add stack_ali2d path to blockdata

@@ -62,7 +62,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_pdb2em.py
+sphire/bin/sp_pdb2em.py
 
 \\
 ==== See also ====

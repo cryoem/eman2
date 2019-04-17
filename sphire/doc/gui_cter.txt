@@ -52,7 +52,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_gui_cter.py
+sphire/bin/sp_gui_cter.py
 
 \\
 ==== See also ====

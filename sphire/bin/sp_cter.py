@@ -44,10 +44,7 @@ from     sp_utilities  import if_error_then_all_processes_exit_program
 from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, mpi_barrier, MPI_COMM_WORLD
 import mpi
 
-mpi.mpi_init( 0, [] )
-
 sp_global_def.BATCH = True
-
 
 def main():
 	program_name = os.path.basename(sys.argv[0])
@@ -273,7 +270,11 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 	return
 
 if __name__ == "__main__":
+	RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
+	if RUNNING_UNDER_MPI:
+		mpi.mpi_init( 0, [] )  # On OS X, there is an error if MPI is initialized and not finalized, hence the conditional
 	sp_global_def.print_timestamp( "Start" )
 	main()
 	sp_global_def.print_timestamp( "Finish" )
-	mpi.mpi_finalize()
+	if RUNNING_UNDER_MPI:
+		mpi.mpi_finalize()

@@ -439,7 +439,7 @@ def main():
 	# Options for balance_angular distribution
 	parser.add_option('--balance_angular_distribution', action="store_true",  default=False,         help='balance an angular distribution')
 	parser.add_option('--max_occupy',			type='int',           default=1,                     help='maximum number of angular orientations per reference angle (default 1)')
-	parser.add_option('--angstep',				type='float',         default=15.0,                  help='angular step of reference angles, i.e., number of bins of angular histogram) (default 15.0)')
+	parser.add_option('--angstep',				type='float',         default=3.75,                  help='angular step of reference angles, i.e., number of bins of angular histogram) (default 3.75)')
 
 	(options, args) = parser.parse_args()
 

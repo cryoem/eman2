@@ -59,7 +59,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_sphire2relion.py
+sphire/bin/sp_sphire2relion.py
 
 \\
 ==== See also ====

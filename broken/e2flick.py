@@ -41,6 +41,8 @@ import os
 #from optparse import OptionParser
 #from PyQt5 import QtCore, QtGui, QtOpenGL
 #from PyQt5.QtCore import Qt
+#import OpenGL
+#OpenGL.ERROR_CHECKING = False
 #from OpenGL import GL,GLU,GLUT
 
 

@@ -165,7 +165,7 @@ def main():
 		
 		if options.parallel:
 			from EMAN2PAR import EMTaskCustomer
-			etc=EMTaskCustomer(options.parallel)
+			etc=EMTaskCustomer(options.parallel,"e2spt_preproc.Preproc3DTask")
 			pclist=[options.input]
 
 			etc.precache(pclist)

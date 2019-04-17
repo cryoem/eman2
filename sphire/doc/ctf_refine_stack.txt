@@ -75,4 +75,4 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_ctf_refine.py
+sphire/bin/sp_ctf_refine.py

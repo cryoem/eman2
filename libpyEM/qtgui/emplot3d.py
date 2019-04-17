@@ -64,6 +64,8 @@ def safe_float(x):
 
 from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
 from PyQt5.QtCore import Qt
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU
 from OpenGL.GL import *
 import OpenGL.GL as gl
@@ -71,6 +73,7 @@ import OpenGL.arrays.vbo as glvbo
 from math import *
 from EMAN2 import *
 import sys
+from . import emshape
 from .emshape import *
 import weakref
 from pickle import dumps,loads
@@ -117,6 +120,7 @@ class EMPlot3DWidget(EMGLWidget):
 
 		EMGLWidget.__init__(self, parent=parent, winid=winid)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
+		emshape.pixelratio=self.devicePixelRatio()
 
 		self.axes={}
 		self.pparm={}			# color,line,linetype,linewidth,sym,symtype,symsize

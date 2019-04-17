@@ -8,6 +8,8 @@ from EMAN2 import *
 from EMAN2_utils import *
 import numpy as np
 import weakref
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from PyQt5.QtCore import Qt

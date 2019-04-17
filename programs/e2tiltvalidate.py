@@ -168,10 +168,10 @@ def main():
 	# Initialize parallelism if being used
 	if options.parallel :
 		from EMAN2PAR import EMTaskCustomer
-		etc=EMTaskCustomer(options.parallel)
+		etc=EMTaskCustomer(options.parallel,"e2tiltvalidate.CompareToTiltTask")
 	else:
 		from EMAN2PAR import EMTaskCustomer
-		etc=EMTaskCustomer("thread:1")
+		etc=EMTaskCustomer("thread:1", "e2tiltvalidate.CompareToTiltTask")
 		#etc.precache(pclist)
 	
 	# Otherwise compute tilt distances from data

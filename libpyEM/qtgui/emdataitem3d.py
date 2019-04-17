@@ -49,6 +49,8 @@ import os.path
 import sys
 from .valslider import ValSlider, EMLightControls, CameraControls, EMSpinWidget, EMQTColorWidget, EMANToolButton
 
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL import GL
 from OpenGL.GL import *
 from OpenGL.GLU import *

@@ -57,7 +57,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_filterlocal.py
+sphire/bin/sp_filterlocal.py
 
 \\
 ==== See also ====

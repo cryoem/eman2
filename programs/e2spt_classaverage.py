@@ -533,7 +533,7 @@ def main():
 			print("\n\n(e2spt_classaverage)(main) - INITIALIZING PARALLELISM!")
 			print("\n\n")
 			from EMAN2PAR import EMTaskCustomer
-			etc=EMTaskCustomer(options.parallel)
+			etc=EMTaskCustomer(options.parallel, "e2spt_classaverage.Align3DTask")
 			pclist=[options.input]
 	
 			#if options.ref: 
