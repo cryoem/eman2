@@ -7071,6 +7071,7 @@ def load_tracker_from_json(file_name):
 	tracker = load_object_from_json(file_name)
 	try:
 		if tracker['constants']['stack_prior'] is not None:
+			tracker['constants']['stack_prior_dtype'] = [tuple(entry) for entry in tracker['constants']['stack_prior_dtype']]
 			tracker['constants']['stack_prior'] = np.genfromtxt(
 				tracker['constants']['stack_prior'],
 				dtype=tracker['constants']['stack_prior_dtype']
@@ -7206,7 +7207,7 @@ def reduce_shifts(sx, sy, img):
 		except AttributeError:
 			pass
 		else:
-			rise = Tracker['constants']['helical_rise'] / float(Tracker['constant']['pixel_size'])
+			rise = Tracker['constants']['helical_rise'] / float(Tracker['constants']['pixel_size'])
 			rise_half = rise / 2.0
 			point = np.array([sx, sy])
 			rot_point = np.dot(rot_matrix(rotation_angle), point.T)
