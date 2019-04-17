@@ -7453,7 +7453,9 @@ def main():
 				Constants['stack_prior'] = None
 				Constants['stack_prior_fmt'] = None
 				Constants['stack_prior_dtype'] = None
+				Constants['apply_prior'] = None
 			else:
+				Constants['apply_prior'] = True
 				Constants['stack_prior'] = sp_helix_sphire.import_sphire_stack(args[0], options.group_id)
 				Constants['stack_prior_fmt'] = prior_stack_fmt(Constants['stack_prior'])
 				Constants['stack_prior_dtype'] = Constants['stack_prior'].dtype.descr
