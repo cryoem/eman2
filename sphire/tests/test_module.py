@@ -6,6 +6,8 @@ List:
 3) get_data_3d --> create a list of 3d EMdata image
 4) get_arg_from_pickle_file --> returns the values saved in a given pickle file
 5) remove_dir --> removed a given directory with its files
+6) remove_list_of_file --> removed a given lists of files
+7) returns_values_in_file --> read the file and give back the text
 """
 
 import numpy
@@ -96,14 +98,15 @@ def remove_list_of_file(l):
         if path.isfile(f):
             remove(f)
 
-def returns_values_in_file(f):
+def returns_values_in_file(f, mode = 'r'):
     """
     read a file and returns all its lines
     :param f: path to file
+    :param mode: how open the file. Default: read file
     :return: contained values
     """
     if path.isfile(f):
-        f1 = open(f, 'r')
+        f1 = open(f, mode)
         values_f1 = f1.readlines()
         f1.close()
         return values_f1
