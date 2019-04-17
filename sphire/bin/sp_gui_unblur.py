@@ -3676,9 +3676,7 @@ class SXDriftUnblur(QMainWindow, Ui_MSMainWidget):
                 for name in sorted(self.listChecked):
                     arrCurrentEntry = self.arrData[self.arrData[self.dFile] == name]
                     micName = arrCurrentEntry[self.dMic][0]\
-                        .split('/')[-1]\
-                        .replace('_temp.mrc', '_sum.mrc')\
-                        .replace('_frames.mrc', '_sum.mrc')
+                        .split('/')[-1]
                     w.write(
                         '{:s}\n'.format(
                             micName
@@ -3697,9 +3695,7 @@ class SXDriftUnblur(QMainWindow, Ui_MSMainWidget):
                             self.arrData[self.dFile] == name
                             ]
                     micName = arrCurrentEntry[self.dMic][0]\
-                        .split('/')[-1]\
-                        .replace('_temp.mrc', '_sum.mrc')\
-                        .replace('_frames.mrc', '_sum.mrc')
+                        .split('/')[-1]
                     w.write(
                         '{:s}\n'.format(
                             micName
