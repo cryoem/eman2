@@ -16166,11 +16166,11 @@ def extract_value( s ):
 	return s 
 
 def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, rand_alpha=False, fimport=None, 
-	   fexport=None, fprint=False, backup=False, suffix='_backup', restore=False, delete=False, consecutive=False):
+	   fexport=None, fprint=False, backup=False, suffix='_backup', restore=False, delete=False, consecutive=False, idx_list=None):
 	from string    import split
 	from sp_utilities import write_header, file_type, generate_ctf
 	from random    import random, randint
-	from sp_utilities import set_params2D, get_params2D, set_params3D, get_params3D, set_params_proj, get_params_proj, set_ctf, get_ctf
+	from sp_utilities import set_params2D, get_params2D, set_params3D, get_params3D, set_params_proj, get_params_proj, set_ctf, get_ctf, read_text_file
 	from EMAN2 import Vec2f
 
 	if set == 0.0: doset = False
@@ -16187,8 +16187,15 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 
 	params = split(params)
 
+	if idx_list != None:
+		fidx = read_text_file(idx_list)
+	else:
+		fidx = None
 	if fimport != None: fimp = open(fimport, 'r')
 	if fexport != None: fexp = open(fexport, 'w')
+	if idx_list and not fimport:
+		sxprint('Error: list option can only be used in combination with an import file')
+		return
 
 	nimage = EMUtil.get_image_count(stack)
 	ext = file_type(stack)
@@ -16197,6 +16204,11 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 		DB = db_open_dict(stack)
 	for i in range(nimage):
 		if fimport != None:
+			if fidx:
+				try:
+					i = fidx[i]
+				except IndexError:
+					continue
 			line = fimp.readline()
 			if len(line)==0 :
 				sxprint("Error: file " + fimport + " has only " + str(i) + " lines, while there are " + str(nimage) + " images in the file.")
@@ -16270,7 +16282,15 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 						EMUtil.write_hdf_attribute(stack, "xform.align3d", t, i)
 					il+=8	
 				elif p[:len('members')] == "members":
-					EMUtil.write_hdf_attribute(stack, "members", line.strip(), i)
+					if ext == "bdb":
+						DB.set_attr(i, "members", line.strip())
+					elif ext == "hdf":
+						EMUtil.write_hdf_attribute(stack, "members", line.strip(), i)
+				elif p.startswith("ISAC_SPLIT_"):
+					if ext == "bdb":
+						DB.set_attr(i, p.strip(), line.strip())
+					elif ext == "hdf":
+						EMUtil.write_hdf_attribute(stack, p.strip(), line.strip(), i)
 				elif p == "ctf":
 					if len(parmvalues) < il+6:
 						sxprint("Not enough parameters!")
