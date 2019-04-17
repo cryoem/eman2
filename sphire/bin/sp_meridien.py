@@ -7141,7 +7141,7 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 	# Calculate outliers
 	if(blockdata["myid"] == blockdata["main_node"] ):
 		# Calculate priors
-		outliers, new_param, new_index = sp_helix_fundamentals.calculate_priors(
+		outliers, new_params, new_index = sp_helix_fundamentals.calculate_priors(
 			tracker=Tracker,
 			params_file=params_file,
 			index_file=chunk_file,
