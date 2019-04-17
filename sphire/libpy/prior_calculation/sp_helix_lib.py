@@ -118,7 +118,7 @@ def import_data_sphire(tracker, group_id, symclass, params_file=None, index_file
     prior_tracker['data_n'] = 'data_n'
 
     prior_tracker[group_id] = group_id
-    if group_id in original_stack_dtype.names and 'filament' not in group_id:
+    if group_id in original_stack.dtype.names and 'filament' not in group_id:
         prior_tracker['segment_id'] = "data_n"
     elif "filament" in original_stack.dtype.names and \
             "data_n" in original_stack.dtype.names and \
