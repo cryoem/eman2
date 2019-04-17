@@ -7148,7 +7148,7 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 			group_id=Tracker['constants']['group_id'],
 			typ='sphire',
 			tol_psi=Tracker['prior']['tol_psi'],
-			tol_theta=Tracker['prior']['tol_theat'],
+			tol_theta=Tracker['prior']['tol_theta'],
 			tol_filament=Tracker['prior']['tol_filament'],
 			tol_std=Tracker['prior']['tol_std'],
 			tol_mean=Tracker['prior']['tol_mean'],
