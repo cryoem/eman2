@@ -7175,6 +7175,7 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 		if Tracker['prior']['force_outlier'] is not None:
 			shutil.copy(params_file, '{0}_old'.format(params_file))
 			shutil.copy(new_params, params_file)
+			outliers = outliers.tolist()
 		else:
 			outliers = [0] * len_data
 
