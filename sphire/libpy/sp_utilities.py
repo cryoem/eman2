@@ -7781,7 +7781,7 @@ def prepare_ptp(data_list, K):
 
 
 def print_dict(dict, theme):
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	line = ''
 	sxprint((line + theme))
 	spaces = "                           "
 	for key, value in sorted(dict.items()):
