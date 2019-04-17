@@ -6982,7 +6982,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			params = read_text_row(os.path.join(Tracker["directory"],"params-chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_row(os.path.join(Tracker["directory"],"params-chunk_1_%03d.txt"%(Tracker["mainiteration"])))
 			try:
-				outlier_params = read_text_row(os.path.join(Tracker["directory"],"outlier-params-chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_row(os.path.join(Tracker["directory"],"outlier-params-chunk_1_%03d.txt"%(Tracker["mainiteration"])))
+				outlier_params = read_text_file(os.path.join(Tracker["directory"],"outlier-params-chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_file(os.path.join(Tracker["directory"],"outlier-params-chunk_1_%03d.txt"%(Tracker["mainiteration"])))
 			except IOError:
 				outlier_params = [0] * len(params)
 			li     = read_text_file(os.path.join(Tracker["directory"],"chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_file(os.path.join(Tracker["directory"],"chunk_1_%03d.txt"%(Tracker["mainiteration"])))
@@ -7017,7 +7017,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		ctfs_outlier = []
 		groups_outlier = []
 		for idx, entry in enumerate(outlier_params):
-			if entry == 0:
+			if int(entry) == 0:
 				params_outlier.append(params[idx])
 				ctfs_outlier.append(ctfs[idx])
 				groups_outlier.append(particle_groups[idx])

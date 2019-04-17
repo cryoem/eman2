@@ -140,15 +140,15 @@ def prepare_output(tracker, file_name, file_name_old):
     if isinstance(tracker, basestring):
         output_name = default_name
     elif isinstance(tracker, dict):
-        if tracker['constants']['apply_prior']:
-            if tracker['state'] == 'RESTRICTED' or tracker['state'] == 'FINAL':
-                shutil.move(file_name_old, file_name)
-                output_name = file_name_old
-            else:
-                output_name = default_name
+        #if tracker['constants']['apply_prior']:
+        #    if tracker['state'] == 'RESTRICTED' or tracker['state'] == 'FINAL':
+        #        shutil.move(file_name_old, file_name)
+        #        output_name = file_name_old
+        #    else:
+        #        output_name = default_name
 
-        else:
-            output_name = default_name
+        #else:
+        output_name = default_name
     else:
         print('Tracker instance "{0}" not known!'.format(type(tracker)))
         assert(False)
