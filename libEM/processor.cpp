@@ -10000,7 +10000,7 @@ void FFTProcessor::process_inplace(EMData* image)
 		}
 	}
 }
-
+/*
 void RadialProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
@@ -10079,6 +10079,9 @@ void RadialProcessor::process_inplace(EMData * image)
 
 	image->update();
 }
+*/
+
+
 
 void ReverseProcessor::process_inplace(EMData *image)
 {

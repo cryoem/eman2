@@ -151,7 +151,7 @@ def main():
 		print("\n\n(e2tvrecon.py) INITIALIZING PARALLELISM\n\n")
 		
 	from EMAN2PAR import EMTaskCustomer
-	etc=EMTaskCustomer(options.parallel)
+	etc=EMTaskCustomer(options.parallel, "e2tvrecon.TVReconTask")
 
 	tasks=[]
 	nimgs = len( tiltangles )

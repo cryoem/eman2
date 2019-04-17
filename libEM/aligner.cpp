@@ -3448,11 +3448,16 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	float apix=(float)this_img->get_attr("apix_x");
 	int ny=this_img->get_ysize();
 	float preferori=params.set_default("wt_ori",-1.0);
-	if (to->has_attr("xform.curve")==false)
-		preferori=-1;
 	Transform *pfxf=0;
+	
+	if (to->has_attr("xform.init")==false && to->has_attr("xform.curve")==false)
+		preferori=-1;
 	if (preferori>0){
-		pfxf=(Transform*) to->get_attr("xform.curve");
+		if (to->has_attr("xform.init"))
+			pfxf=(Transform*) to->get_attr("xform.init");
+		if (to->has_attr("xform.curve"))
+			pfxf=(Transform*) to->get_attr("xform.curve");
+		
 	}
 //	int downsample=floor(ny/20);		// Minimum shrunken box size is 20^3
 
@@ -3461,13 +3466,29 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	vector<float> s_step(nsoln*3,7.5f);
 	vector<Transform> s_xform(nsoln);
 	if (verbose>0) printf("%d solutions\n",nsoln);
+	
+	
+	int curiter=-1;
+	int sexp_start=4;
+	if (params.has_key("initxform")){
+		const vector< Transform > xfs=params["initxform"];
+		for (unsigned int i=0; i<nsoln; i++){
+			s_xform[i].set_params(xfs[i].get_params("eman"));
+		}
+		sexp_start=6;
+		curiter=0;
+		for (int i=0; i<nsoln*3; i++) {
+			s_step[i]/=8.0;
+		}
+	}
 
 
 //	float dstep[3] = {7.5,7.5,7.5};		// we take  steps for each of the 3 angles, may be positive or negative
 	string axname[] = {"az","alt","phi"};
 	int lastss=24;
 	// We start with 32^3, 64^3 ...
-	for (int sexp=4; sexp<10; sexp++) {
+	for (int sexp=sexp_start; sexp<10; sexp++) {
+		curiter++;
 // 	for (int sexp=4; sexp<5; sexp++) {
 		int ss=pow(2.0,sexp);
 		if (ss==16) ss=24;		// 16 may be too small, but 32 takes too long...
@@ -3521,7 +3542,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		}
 
 		// This is for the first loop, we do a full search in a heavily downsampled space
-		if (s_coverage[0]==0.0f) {
+		if (curiter==0){ //s_coverage[0]==0.0f) {
 			// Genrate points on a sphere in an asymmetric unit
 			if (verbose>1) printf("stage 1 - ang step %1.2f\n",astep);
 			Dict d;

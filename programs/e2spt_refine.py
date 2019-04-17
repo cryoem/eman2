@@ -48,7 +48,9 @@ def main():
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="")
-
+	parser.add_argument("--radref", type=str,help="reference for real space radial correction", default="")
+	parser.add_argument("--refine",action="store_true",help="local refinement from xform.init in header.",default=False)
+	parser.add_argument("--localnorm",action="store_true",help="local normalization. do not use yet....",default=False)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -96,7 +98,9 @@ def main():
 			gd=" --goldstandard {}".format(options.goldstandard)
 		if options.goldcontinue or (options.goldstandard>0 and itr>1):
 			gd=" --goldcontinue".format(options.goldstandard)
-			
+		
+		if options.refine:
+			gd+=" --refine"
 		#curres=0
 		#cmd="e2spt_align.py {} {} --threads {} --path {} --iter {} --sym {} --wtori {} {}".format(ptcls, ref,  options.threads, options.path, itr, options.sym, options.wtori, gd)
 		cmd="e2spt_align.py {} {} --parallel {} --path {} --iter {} --sym {} --wtori {} {}".format(ptcls, ref,  options.parallel, options.path, itr, options.sym, options.wtori, gd)
@@ -124,6 +128,26 @@ def main():
 		
 		run("e2spt_average.py --threads {} --path {} --sym {} --skippostp {}".format(options.threads, options.path, options.sym, s))
 		
+		even=os.path.join(options.path, "threed_{:02d}_even.hdf".format(itr))
+		odd=os.path.join(options.path, "threed_{:02d}_odd.hdf".format(itr))
+		
+		if options.radref!="":
+			for f in [even, odd]:
+				e=EMData(f)
+				rf=EMData(options.radref).process("normalize")
+				#rf=rf.align("translational",e)
+				
+				e.process_inplace("filter.matchto",{"to":rf})
+				e.process_inplace("normalize")
+
+				radrf=rf.calc_radial_dist(rf["nx"]//2, 0.0, 1.0,1)
+				rade=e.calc_radial_dist(e["nx"]//2, 0.0, 1.0,1)
+				rmlt=np.sqrt(np.array(radrf)/np.array(rade))
+				#rmlt[0]=1
+				rmlt=from_numpy(rmlt.copy())
+				er=e.mult_radial(rmlt)
+				er.write_image(f)
+		
 		msk=options.mask
 		if len(msk)>0:
 			if os.path.isfile(msk):
@@ -142,13 +166,18 @@ def main():
 		if options.localfilter:
 			s+=" --tophat local "
 			
+		#s+=" --tophat global "
 		#if options.gaussz>0:
 			#s+=" --m3dpostprocess filter.lowpass.gaussz:cutoff_freq={}".format(options.gaussz)
 			
-		os.system("rm {}/mask*.hdf {}/*unmasked.hdf".format(options.path, options.path))
-		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --mass {} --restarget {} --threads {} --sym {} {} {} ".format(os.path.join(options.path, "threed_{:02d}_even.hdf".format(itr)), os.path.join(options.path, "threed_{:02d}_odd.hdf".format(itr)), os.path.join(options.path, "threed_{:02d}.hdf".format(itr)), itr, options.mass, curres, options.threads, options.sym, msk, s)
+		#os.system("rm {}/mask*.hdf {}/*unmasked.hdf".format(options.path, options.path))
+		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --mass {} --restarget {} --threads {} --sym {} {} {} ".format(even, odd, os.path.join(options.path, "threed_{:02d}.hdf".format(itr)), itr, options.mass, curres, options.threads, options.sym, msk, s)
 		run(ppcmd)
 		
+		if options.localnorm:
+			for f in [even, odd]:
+				run("e2proc3d.py {} {} --process normalize --process normalize.local:threshold=1:radius=16".format(f,f))
+			
 		ref=os.path.join(options.path, "threed_{:02d}.hdf".format(itr))
 		fsc=np.loadtxt(os.path.join(options.path, "fsc_masked_{:02d}.txt".format(itr)))
 		rs=1./fsc[fsc[:,1]<0.3, 0][0]

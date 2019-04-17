@@ -34,6 +34,8 @@ from __future__ import division
 
 from past.utils import old_div
 import sys, math, weakref
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL.GL import *
 from OpenGL import GLU
 from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
@@ -1132,11 +1134,12 @@ class CameraControls(QtOpenGL.QGLWidget):
 		#print self.scenegraph().camera.getClipNear()
 		self.near_clipping = origin + old_div((self.scenegraph().camera.getClipNear() + self.scenegraph().camera.getZclip()),self.scale)
 		self.far_clipping = origin + old_div((self.scenegraph().camera.getClipFar() + self.scenegraph().camera.getZclip()),self.scale)
+		glLineWidth(2*self.devicePixelRatio())
 		glBegin(GL_LINES)
-		glVertex(self.near_clipping, old_div(-self.height,2.2), 0)
-		glVertex(self.near_clipping, old_div(self.height,2.2), 0)
-		glVertex(self.far_clipping, old_div(-self.height,2.2), 0)
-		glVertex(self.far_clipping, old_div(self.height,2.2), 0)
+		glVertex(self.near_clipping, -self.height/2.2, 0)
+		glVertex(self.near_clipping, self.height/2.2, 0)
+		glVertex(self.far_clipping, -self.height/2.2, 0)
+		glVertex(self.far_clipping, self.height/2.2, 0)
 		glEnd()
 		
 	def _drawZslice(self):

@@ -651,7 +651,7 @@ def allvsall(options,preproc):
 		print("\n(e2spt_hac.py) (allvsall) Initializing parallelism")
 		if options.parallel:							# Initialize parallelism if being used
 			from EMAN2PAR import EMTaskCustomer
-			etc=EMTaskCustomer(options.parallel)
+			etc=EMTaskCustomer(options.parallel,"e2spt_hac.Align3DTaskAVSA")
 			pclist=[options.input]
 			etc.precache(pclist)
 		tasks = []
