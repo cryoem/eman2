@@ -182,7 +182,7 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
         initial_id_list = read_text_file(initial_id_file)
         for iparti in range(0, 2 ** (depth_order + 1), 2):
             reassign = [initial_id_list, None]
-			partition_per_box_per_layer_list.append(reassign)
+            partition_per_box_per_layer_list.append(reassign)
     else:
         partition_per_box_per_layer_list = 0
     partition_per_box_per_layer_list = wrap_mpi_bcast(partition_per_box_per_layer_list, Blockdata["main_node"])
@@ -308,7 +308,7 @@ def depth_box_initialization(box_dir, input_list1, input_list2, log_file):
         for one in input_list1:
             if one[0] not in groups: groups.append(one[0])  # safe in speed when the number of groups is not large.
         number_of_groups = len(groups)
-		if Blockdata["myid"] == Blockdata["main_node"]:
+        if Blockdata["myid"] == Blockdata["main_node"]:
             msg = "Number of groups found in initialization: %d, the largest possible number of groups: %d" % (
             number_of_groups, total_stack // img_per_grp)
             log_file.add(msg)
@@ -1254,7 +1254,7 @@ def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", lo
     global_mean = 0.0
     for ir in range(K):
         global_mean += sum(replicas[ir])
-		avgs.append(sum(replicas[ir]) / float(len(replicas[ir])))
+        avgs.append(sum(replicas[ir]) / float(len(replicas[ir])))
 
     summed_squared_elements = 0.0
     summed_squared_elements_within_groups = [None for i in range(K)]
@@ -1336,16 +1336,16 @@ def check_3dmask(log_main):
 
 def import_data(log_main):
     global Tracker, Blockdata
-	# Two typical sorting scenarios
-	# 1. import data and refinement parameters from meridien refinement;
-	# 2. given data stack and xform.projection/ctf in header(For simulated test data);
-	import_from_relion_refinement = 0
-	import_from_sparx_refinement = 0
+    # Two typical sorting scenarios
+    # 1. import data and refinement parameters from meridien refinement;
+    # 2. given data stack and xform.projection/ctf in header(For simulated test data);
+    import_from_relion_refinement = 0
+    import_from_sparx_refinement = 0
     import_from_data_stack = 0
     total_stack = 0
     if Tracker["constants"]["refinement_method"] == "SPARX":  # Senario one
         import_from_sparx_refinement = get_input_from_sparx_ref3d(log_main)
-		Tracker["smearing"] = True
+        Tracker["smearing"] = True
     else:  # Senario three, sorting from a given data stack, general cases
         import_from_data_stack = get_input_from_datastack(log_main)
         Tracker["constants"]["hardmask"] = True
@@ -2115,7 +2115,7 @@ def get_data_prep_compare_rec3d(partids, partstack, return_real=False, preshift=
         # FT
         image = fft(image)
         cimage = fft(cimage)
-		if Tracker["constants"]["CTF"]:
+        if Tracker["constants"]["CTF"]:
             ctf_params = image.get_attr("ctf")
             image = fdecimate(image, Tracker["nxinit"] * npad, Tracker["nxinit"] * npad, 1, False, False)
             cimage = fdecimate(cimage, Tracker["nxinit"] * npad, Tracker["nxinit"] * npad, 1, False, False)
@@ -2213,7 +2213,7 @@ def get_shrink_data_final(nxinit, procid, original_data=None, oldparams=None, \
     for im in range(nima):
         phi, theta, psi, sx, sy, wnorm = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], \
 										 oldparams[im][4], oldparams[im][7]
-		if preshift:
+        if preshift:
             sx = int(round(sx))
             sy = int(round(sy))
             data[im] = cyclic_shift(original_data[im], sx, sy)
@@ -3435,7 +3435,7 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
             any.sort()
             score1 = float(len(any)) * 100. / float(len(ptp1[newindeces[index_of_any][0]]))
             score2 = float(len(any)) * 100. / float(len(ptp2[newindeces[index_of_any][1]]))
-			score3 = float((np.intersect1d(ptp1[newindeces[index_of_any][0]], ptp2[newindeces[index_of_any][1]])).size) \
+            score3 = float((np.intersect1d(ptp1[newindeces[index_of_any][0]], ptp2[newindeces[index_of_any][1]])).size) \
                      / float(
                 (np.union1d(ptp1[newindeces[index_of_any][0]], ptp2[newindeces[index_of_any][1]])).size) * 100.
             if (score3 > gave[index_of_any] + Tracker["constants"]["random_group_elimination_threshold"] * gvar[
@@ -3513,7 +3513,7 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
             minimum_group_size = bcast_number_to_all(minimum_group_size, Blockdata["main_node"], MPI_COMM_WORLD)
             return minimum_group_size, maximum_group_size, new_index, unaccounted_list, bad_clustering, stop_generation, stat_list
         else:
-			if Blockdata["myid"] == Blockdata["main_node"]:
+            if Blockdata["myid"] == Blockdata["main_node"]:
                 bad_clustering = 1
                 log_main.add(
                     'There are no clusters larger than the user provided minimum group size %d.' % Tracker["constants"][
@@ -3559,7 +3559,7 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
                 freq_cutoff_dict3 = convert_json_fromunicode(json.load(fout))
                 fout.close()
                 freq_cutoff_dict3 = {}
-			except:
+            except:
 				freq_cutoff_dict3 = {}
             ncluster = 0
             for im in range(len(newindeces)):
@@ -3627,8 +3627,8 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
                         ncluster += 1
                     except:
                         pass
-				fout = open(os.path.join(gendir, "freq_cutoff.json"), 'w')
-				json.dump(freq_cutoff_dict3, fout)
+                fout = open(os.path.join(gendir, "freq_cutoff.json"), 'w')
+                json.dump(freq_cutoff_dict3, fout)
                 fout.close()
                 log_main.add(
                     '================================================================================================================\n')
@@ -4012,7 +4012,7 @@ def get_orien_assignment_mpi(angle_step, partids, params, log_main):
     mpi_barrier(MPI_COMM_WORLD)
     orien_group_assignment = wrap_mpi_bcast(orien_group_assignment, Blockdata["main_node"], MPI_COMM_WORLD)
     ptls_in_orien_groups = [None for iref in range(len(refa_vecs))]
-	for iorien in range(len(refa_vecs)):
+    for iorien in range(len(refa_vecs)):
 		if iorien % Blockdata["nproc"] == Blockdata["myid"]: ptls_in_orien_groups[iorien] = findall_dict(iorien,
                                                                                                          orien_group_assignment)
     mpi_barrier(MPI_COMM_WORLD)
@@ -4269,7 +4269,7 @@ def steptwo_mpi(tvol, tweight, treg, cfsc=None, regularized=True, color=0):
             Util.reg_weights(tweight, treg, it)
             del it
         else:
-			limitres = 2 * min(Tracker["constants"]["nnxo"] // 2, Tracker["maxfrad"])
+            limitres = 2 * min(Tracker["constants"]["nnxo"] // 2, Tracker["maxfrad"])
             maxr2 = limitres ** 2
 		#  Iterative weights
         if (Tracker["constants"]["symmetry"] != "c1"):
@@ -4929,8 +4929,7 @@ def get_input_from_sparx_ref3d(log_main):  # case one
                                                 "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 
     if Blockdata["myid"] == Blockdata["main_node"]:
-		if os.path.exists(
-				os.path.join(Tracker["constants"]["refinement_dir"], "main%03d" % selected_iter, "bckgnoise.hdf")):
+        if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main%03d" % selected_iter, "bckgnoise.hdf")):
             copyfile(os.path.join(Tracker["constants"]["refinement_dir"], "main%03d" % selected_iter, "bckgnoise.hdf"), \
                      os.path.join(Tracker["constants"]["masterdir"], "bckgnoise.hdf"))
         else:
@@ -5448,14 +5447,14 @@ def do3d_sorting_groups_rec3d(iteration, masterdir, log_main):
                     tvol2 = recv_EMData(sub_main_node_list[index_of_colors], tag, MPI_COMM_WORLD)
                     tvol2.write_image(
                         os.path.join(Tracker["directory"], "vol_unfiltered_0_grp%03d.hdf" % index_of_group))
-					del tvol2
-				mpi_barrier(MPI_COMM_WORLD)
-			mpi_barrier(MPI_COMM_WORLD)
+                    del tvol2
+                mpi_barrier(MPI_COMM_WORLD)
+            mpi_barrier(MPI_COMM_WORLD)
 
             for im in range(len(big_loop_colors[iloop])):
                 index_of_group = big_loop_groups[iloop][im]
                 index_of_colors = big_loop_colors[iloop][im]
-				Clusterdir = os.path.join(Tracker["directory"], "Cluster%d" % index_of_group, "main%03d" % iteration)
+                Clusterdir = os.path.join(Tracker["directory"], "Cluster%d" % index_of_group, "main%03d" % iteration)
                 if (Blockdata["myid"] == Blockdata["last_node"]):
                     tvol2 = get_im(os.path.join(Clusterdir, "tempdir", "tvol_1_%03d.hdf" % iteration))
                     tweight2 = get_im(os.path.join(Clusterdir, "tempdir", "tweight_1_%03d.hdf" % iteration))
@@ -5610,7 +5609,7 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, partial_rec3d, iteration):
 																				   (2 * Tracker["nxinit"] + 3),
 																				   Tracker["nosmearing"])
 
-		if (Blockdata["myid"] == Blockdata["last_node"]):
+        if (Blockdata["myid"] == Blockdata["last_node"]):
             tvol.set_attr("is_complex", 0)
             tvol.write_image(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf" % index_of_groups))
             tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf" % index_of_groups))
@@ -6000,7 +5999,7 @@ def recons3d_trl_struct_group_MPI(myid, main_node, prjlist, random_subset, group
                     data = [None] * nshifts
                     for ii in range(len(tdir)):
                         #  Find the number of times given projection direction appears on the list, it is the number of different shifts associated with it.
-						lshifts = findall(tdir[ii], ipsiandiang)
+                        lshifts = findall(tdir[ii], ipsiandiang)
                         toprab = 0.0
                         for ki in range(len(lshifts)):  toprab += probs[lshifts[ki]]
                         recdata = EMData(nny, nny, 1, False)
@@ -6020,18 +6019,17 @@ def recons3d_trl_struct_group_MPI(myid, main_node, prjlist, random_subset, group
                         r.insert_slice(recdata, Transform(
                             {"type": "spider", "phi": refang[iang][0], "theta": refang[iang][1],
                              "psi": refang[iang][2] + ipsi * delta}), toprab * avgnorm / norm_per_particle[im])
-			else:
-				if prjlist[im].get_attr("chunk_id") == random_subset:
+            else:
+                if prjlist[im].get_attr("chunk_id") == random_subset:
                     if nosmearing:
                         bckgn = prjlist[im].get_attr("bckgnoise")
                         ct = prjlist[im].get_attr("ctf")
                         prjlist[im].set_attr_dict({"bckgnoise": bckgn, "ctf": ct})
-						[phi, theta, psi, s2x, s2y] = get_params_proj(prjlist[im], xform="xform.projection")
-                        r.insert_slice(prjlist[im],
-                                       Transform({"type": "spider", "phi": phi, "theta": theta, "psi": psi}), 1.0)
+                        [phi, theta, psi, s2x, s2y] = get_params_proj(prjlist[im], xform="xform.projection")
+                        r.insert_slice(prjlist[im],Transform({"type": "spider", "phi": phi, "theta": theta, "psi": psi}), 1.0 )
                     else:
-						if Tracker["constants"]["nsmear"] <= 0.0:
-							numbor = len(paramstructure[im][2])
+                        if Tracker["constants"]["nsmear"] <= 0.0:
+                            numbor = len(paramstructure[im][2])
                         else:
                             numbor = 1
                         ipsiandiang = [paramstructure[im][2][i][0] / 1000 for i in range(numbor)]
@@ -6176,7 +6174,7 @@ def do3d_sorting_groups_fsc_only_iter(data, paramstructure, norm_per_particle, i
                 elif Blockdata["myid_on_node"] == Blockdata["no_of_processes_per_group"] - 2:
                     tag = 7007
                     shrank0 = recv_EMData(1, tag, Blockdata["shared_comm"])
-					cfsc = fsc(shrank0, shrank1)[1]
+                    cfsc = fsc(shrank0, shrank1)[1]
                     write_text_row(cfsc,
                                    os.path.join(Tracker["directory"], "fsc_driver_chunk1_grp%03d_iter%03d.txt") % (
                                    index_of_group, iteration))
@@ -6198,21 +6196,21 @@ def do3d_sorting_groups_fsc_only_iter(data, paramstructure, norm_per_particle, i
                 Tracker = wrap_mpi_bcast(Tracker, Blockdata["no_of_processes_per_group"] - 1, Blockdata["shared_comm"])
                 if (Blockdata["myid_on_node"] == 0):
                     res_05[index_of_group] = Tracker["fsc05"]
-					res_143[index_of_group] = Tracker["fsc143"]
-				mpi_barrier(Blockdata["shared_comm"])
+                    res_143[index_of_group] = Tracker["fsc143"]
+                mpi_barrier(Blockdata["shared_comm"])
             mpi_barrier(Blockdata["shared_comm"])
     mpi_barrier(MPI_COMM_WORLD)
     keepgoing = bcast_number_to_all(keepgoing, source_node=Blockdata["main_node"],
                                     mpi_comm=MPI_COMM_WORLD)  # always check
     Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
-	if not keepgoing: ERROR("do3d_sorting_groups_trl_iter  %s" % os.path.join(Tracker["directory"], "tempdir"),
+    if not keepgoing: ERROR("do3d_sorting_groups_trl_iter  %s" % os.path.join(Tracker["directory"], "tempdir"),
                             "do3d_sorting_groups_trl_iter", 1, Blockdata["myid"])
     return
 
 
 def do3d_sorting_group_insertion_random_two_for_fsc(data, sparamstructure, snorm_per_particle):
     global Tracker, Blockdata
-	if (Blockdata["myid"] == Blockdata["nodes"][0]):
+    if (Blockdata["myid"] == Blockdata["nodes"][0]):
         if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")): os.mkdir(
             os.path.join(Tracker["directory"], "tempdir"))
     for index_of_groups in range(Tracker["number_of_groups"]):
@@ -6751,7 +6749,7 @@ def copy_results(log_file, all_gen_stat_list):
             NACC = 0
             for ig1, value in list(Tracker["generation"].items()):
                 ig = atoi('%s' % ig1)
-                for ic in range(value): \
+                for ic in range(value):
                     cluster_file = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d" % ig,
                                                 "Cluster_%03d.txt" % ic)
                     copyfile(cluster_file,
