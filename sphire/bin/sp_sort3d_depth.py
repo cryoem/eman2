@@ -3,7 +3,7 @@
 #
 #  08/26/2016
 #  New version of sort3D.
-#  
+#
 from __future__ import print_function
 
 from builtins import range
@@ -27,7 +27,7 @@ Nomenclatures in sorting intermediate results:
 NACC:  total number of accounted
 NUACC: number of unaccounted
 MGU:   user defined minimum_grp_size  
-MGR:   random group size
+MGR:   random group siz
 K:     number of groups
 
 """
