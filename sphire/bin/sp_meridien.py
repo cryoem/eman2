@@ -6982,7 +6982,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			params = read_text_row(os.path.join(Tracker["directory"],"params-chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_row(os.path.join(Tracker["directory"],"params-chunk_1_%03d.txt"%(Tracker["mainiteration"])))
 			try:
-				outlier_params = read_text_row(os.path.join(Tracker["directory"],"outlier-params-chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_row(os.path.join(Tracker["directory"],"outlier-params-chunk_1_%03d.txt"%(Tracker["mainiteration"])))
+				outlier_params = read_text_file(os.path.join(Tracker["directory"],"outlier-params-chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_file(os.path.join(Tracker["directory"],"outlier-params-chunk_1_%03d.txt"%(Tracker["mainiteration"])))
 			except IOError:
 				outlier_params = [0] * len(params)
 			li     = read_text_file(os.path.join(Tracker["directory"],"chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_file(os.path.join(Tracker["directory"],"chunk_1_%03d.txt"%(Tracker["mainiteration"])))
@@ -7017,7 +7017,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		ctfs_outlier = []
 		groups_outlier = []
 		for idx, entry in enumerate(outlier_params):
-			if entry == 0:
+			if int(entry) == 0:
 				params_outlier.append(params[idx])
 				ctfs_outlier.append(ctfs[idx])
 				groups_outlier.append(particle_groups[idx])
@@ -7071,6 +7071,7 @@ def load_tracker_from_json(file_name):
 	tracker = load_object_from_json(file_name)
 	try:
 		if tracker['constants']['stack_prior'] is not None:
+			tracker['constants']['stack_prior_dtype'] = [tuple(entry) for entry in tracker['constants']['stack_prior_dtype']]
 			tracker['constants']['stack_prior'] = np.genfromtxt(
 				tracker['constants']['stack_prior'],
 				dtype=tracker['constants']['stack_prior_dtype']
@@ -7140,14 +7141,14 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 	# Calculate outliers
 	if(blockdata["myid"] == blockdata["main_node"] ):
 		# Calculate priors
-		outliers, new_param, new_index = sp_helix_fundamentals.calculate_priors(
+		outliers, new_params, new_index = sp_helix_fundamentals.calculate_priors(
 			tracker=Tracker,
 			params_file=params_file,
 			index_file=chunk_file,
 			group_id=Tracker['constants']['group_id'],
 			typ='sphire',
 			tol_psi=Tracker['prior']['tol_psi'],
-			tol_theta=Tracker['prior']['tol_theat'],
+			tol_theta=Tracker['prior']['tol_theta'],
 			tol_filament=Tracker['prior']['tol_filament'],
 			tol_std=Tracker['prior']['tol_std'],
 			tol_mean=Tracker['prior']['tol_mean'],
@@ -7174,6 +7175,7 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 		if Tracker['prior']['force_outlier'] is not None:
 			shutil.copy(params_file, '{0}_old'.format(params_file))
 			shutil.copy(new_params, params_file)
+			outliers = outliers.tolist()
 		else:
 			outliers = [0] * len_data
 
@@ -7206,7 +7208,7 @@ def reduce_shifts(sx, sy, img):
 		except AttributeError:
 			pass
 		else:
-			rise = Tracker['constants']['helical_rise'] / float(Tracker['constant']['pixel_size'])
+			rise = Tracker['constants']['helical_rise'] / float(Tracker['constants']['pixel_size'])
 			rise_half = rise / 2.0
 			point = np.array([sx, sy])
 			rot_point = np.dot(rot_matrix(rotation_angle), point.T)
@@ -7452,7 +7454,9 @@ def main():
 				Constants['stack_prior'] = None
 				Constants['stack_prior_fmt'] = None
 				Constants['stack_prior_dtype'] = None
+				Constants['apply_prior'] = None
 			else:
+				Constants['apply_prior'] = True
 				Constants['stack_prior'] = sp_helix_sphire.import_sphire_stack(args[0], options.group_id)
 				Constants['stack_prior_fmt'] = prior_stack_fmt(Constants['stack_prior'])
 				Constants['stack_prior_dtype'] = Constants['stack_prior'].dtype.descr

@@ -16,6 +16,7 @@ from    optparse    import OptionParser
 from    numpy       import array
 from    sp_logger      import Logger, BaseLogger_Files
 from    sp_morphology  import 	get_shrink_3dmask
+from time import strftime, localtime
 
 import mpi
 
@@ -220,7 +221,7 @@ def main():
 		import sp_user_functions
 		user_func = sp_user_functions.factory[Tracker["constants"]["user_func"]]
 		if(myid == main_node):
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			line = ''
 			sxprint((line+"Initialization of 3-D sorting"))
 			a = get_im(Tracker["orgstack"])
 			nnxo = a.get_xsize()
