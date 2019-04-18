@@ -6588,8 +6588,8 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 				else:
 					tvol1 = steptwo_mpi(tvol1, tweight1, treg, None, False , color = Blockdata["node_volume"][0])
 				if( Blockdata["myid_on_node"] == 0):
-					if iproc ==0: tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil_%03d.hdf"%(iproc, final_iter)))
-					else: tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"],         "vol_%d_unfil_%03d.hdf"%(iproc, final_iter)))
+					if iproc ==0: tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil_%03d.hdf"%(iproc, Tracker['mainiteration'])))
+					else: tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"],         "vol_%d_unfil_%03d.hdf"%(iproc, Tracker['mainiteration'])))
 				mpi_barrier(MPI_COMM_WORLD)
 		else:
 			if(Blockdata["myid"] == Blockdata["main_shared_nodes"][1]):
