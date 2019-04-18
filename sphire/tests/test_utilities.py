@@ -2764,7 +2764,115 @@ class Test_findall(unittest.TestCase):
 
 
 
+class Test_class_iterImagesList(unittest.TestCase):
+    list_of_imgs = [IMAGE_2D,IMAGE_3D,IMAGE_BLANK_2D,IMAGE_BLANK_3D,IMAGE_2D_REFERENCE]
 
+    def test_invalid_init(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.iterImagesList()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.iterImagesList()
+        self.assertEqual(cm_new.exception.message, "__init__() takes at least 2 arguments (1 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_valid_init(self):
+        fu_obj = fu.iterImagesList(self.list_of_imgs, list_of_indexes = None)
+        oldfu_obj = oldfu.iterImagesList(self.list_of_imgs, list_of_indexes = None)
+        self.assertEqual(type(fu_obj).__name__ , "iterImagesList")
+        self.assertEqual(type(fu_obj).__name__, type(oldfu_obj).__name__)
+
+    def test_valid_init2(self):
+        fu_obj = fu.iterImagesList(self.list_of_imgs, list_of_indexes = [1,2])
+        oldfu_obj = oldfu.iterImagesList(self.list_of_imgs, list_of_indexes = [1,2])
+        self.assertEqual(type(fu_obj).__name__ , "iterImagesList")
+        self.assertEqual(type(fu_obj).__name__, type(oldfu_obj).__name__)
+
+    def test_wrong_init_list_of_index_leads_IndexError(self):
+        with self.assertRaises(IndexError) as cm_new:
+            fu.iterImagesList(self.list_of_imgs, list_of_indexes = [1,2,7])
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.iterImagesList(self.list_of_imgs, list_of_indexes = [1,2,7])
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_iterNo(self):
+        fu_obj = fu.iterImagesList(self.list_of_imgs, list_of_indexes=None)
+        oldfu_obj = oldfu.iterImagesList(self.list_of_imgs, list_of_indexes=None)
+        self.assertEqual(fu_obj.iterNo(),oldfu_obj.iterNo())
+        self.assertEqual(fu_obj.iterNo(), -1)
+
+    def test_imageIndex(self):
+        """ since the position is -1 it is returning the index of the last image hence 4"""
+        fu_obj = fu.iterImagesList(self.list_of_imgs, list_of_indexes=None)
+        oldfu_obj = oldfu.iterImagesList(self.list_of_imgs, list_of_indexes=None)
+        self.assertEqual(fu_obj.imageIndex(), oldfu_obj.imageIndex())
+        self.assertEqual(fu_obj.imageIndex(), 4)
+
+    def test_image(self):
+        """ since the position is -1 it is returning the last image hence the 4th"""
+        fu_obj = fu.iterImagesList(self.list_of_imgs, list_of_indexes=None)
+        oldfu_obj = oldfu.iterImagesList(self.list_of_imgs, list_of_indexes=None)
+        fu_img=fu_obj.image()
+        oldfu_img=oldfu_obj.image()
+        expectedimg=self.list_of_imgs[fu_obj.imageIndex()]
+        self.assertTrue(numpy.array_equal(fu_img.get_3dview(), oldfu_img.get_3dview()))
+        self.assertTrue(numpy.array_equal(fu_img.get_3dview(), expectedimg.get_3dview()))
+
+    def test_goToNext(self):
+        fu_obj = fu.iterImagesList(self.list_of_imgs, list_of_indexes=None)
+        oldfu_obj = oldfu.iterImagesList(self.list_of_imgs, list_of_indexes=None)
+
+        """ I'm testing all the data in the obj in order to test the return False"""
+        fu_counter =0
+        while fu_obj.goToNext():       # I'm , implicitly, testing the return True
+            self.assertEqual(fu_obj.iterNo(), fu_counter)
+            fu_counter += 1
+
+        oldfu_counter =0
+        while oldfu_obj.goToNext():
+            self.assertEqual(oldfu_obj.iterNo(), oldfu_counter)
+            oldfu_counter += 1
+
+        """ no more img in the object"""
+        self.assertFalse(fu_obj.goToNext())
+        self.assertFalse(oldfu_obj.goToNext())
+
+        """ check if both of the classes tested all the images"""
+        self.assertTrue(fu_counter, oldfu_counter)
+        self.assertTrue(fu_counter, len(self.list_of_imgs))
+
+    def test_goToPrev(self):
+        fu_obj = fu.iterImagesList(self.list_of_imgs, list_of_indexes=None)
+        oldfu_obj = oldfu.iterImagesList(self.list_of_imgs, list_of_indexes=None)
+        """At the beginning there is no previous image"""
+        self.assertFalse(fu_obj.goToPrev())
+        self.assertFalse(oldfu_obj.goToPrev())
+        self.assertEqual(fu_obj.iterNo(),oldfu_obj.iterNo())
+        self.assertEqual(fu_obj.iterNo(), -1)
+
+        """ We are on the first image, it means that we have still no previous image"""
+        fu_obj.goToNext()
+        oldfu_obj.goToNext()
+        self.assertEqual(fu_obj.iterNo(),oldfu_obj.iterNo())
+        self.assertEqual(fu_obj.iterNo(), 0)
+
+        self.assertFalse(fu_obj.goToPrev())
+        self.assertFalse(oldfu_obj.goToPrev())
+        self.assertEqual(fu_obj.iterNo(),oldfu_obj.iterNo())
+        self.assertEqual(fu_obj.iterNo(), -1)
+
+        """ We are on the second image, it means that we have an previous image"""
+        fu_obj.goToNext()
+        oldfu_obj.goToNext()
+        fu_obj.goToNext()
+        oldfu_obj.goToNext()
+        self.assertEqual(fu_obj.iterNo(),oldfu_obj.iterNo())
+        self.assertEqual(fu_obj.iterNo(), 1)
+
+        self.assertTrue(fu_obj.goToPrev())
+        self.assertTrue(oldfu_obj.goToPrev())
+        self.assertEqual(fu_obj.iterNo(),oldfu_obj.iterNo())
+        self.assertEqual(fu_obj.iterNo(), 0)
 
 
 @unittest.skip("sasa")
