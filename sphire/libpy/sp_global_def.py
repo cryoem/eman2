@@ -104,6 +104,22 @@ def write_command(output_folder=None):
 			with open(os.path.join(output_folder, 'command.txt'), 'a+') as the_command:
 				the_command.write(command)
 
+		global SXPRINT_LOG_EXISTS, SXPRINT_CMD_SKIP
+		if not SXPRINT_CMD_SKIP:
+			if not SXPRINT_LOG_EXISTS:
+				try:
+					os.makedirs(SXPRINT_LOG_PATH)
+				except OSError:
+					pass
+				SXPRINT_LOG_EXISTS = True
+
+			try:
+				with open( SXPRINT_CMD, "a+" ) as f:
+					f.write(command)
+			except IOError:
+				print('Permission denied! Could not write to {0}.'.format(SXPRINT_LOG_PATH))
+				SXPRINT_CMD_SKIP = True
+
 		sxprint(command)
 
 
@@ -279,6 +295,7 @@ IS_LOGFILE_OPEN = False
 SXPRINT_LOG_PATH = "SPHIRE_LOG_HISTORY"
 SXPRINT_LOG_EXISTS = os.path.exists(SXPRINT_LOG_PATH)
 SXPRINT_LOG_SKIP = False
+SXPRINT_CMD_SKIP = False
 try:
 	init_func = re.search( "([^/]*).py", sys._getframe(len(inspect.stack())-1).f_code.co_filename ).group(1)
 except AttributeError:
@@ -286,4 +303,5 @@ except AttributeError:
 
 SXPRINT_LOG = os.path.join( SXPRINT_LOG_PATH, get_timestamp(file_format=True) + "_" + init_func + ".log" )
 SXPRINT_LOG_SYNC = False # denotes whether SXPRINT_LOG has been synchronized across mpi processes
+SXPRINT_CMD = os.path.join( SXPRINT_LOG_PATH, 'commands.txt')
 

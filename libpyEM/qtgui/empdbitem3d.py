@@ -43,6 +43,8 @@ from libpyGLUtils2 import GLUtil
 import os
 import sys
 
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from PyQt5 import QtCore, QtGui, QtWidgets

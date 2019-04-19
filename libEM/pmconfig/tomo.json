@@ -124,7 +124,7 @@
     "CHILDREN":[
       {
         "PROGRAM": "e2spt_tomoctf.py",
-        "NAME": "CTF correction",
+        "NAME": "CTF estimation",
         "CHILDREN": []
       },
       {

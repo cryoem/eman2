@@ -1,6 +1,39 @@
 #!/usr/bin/env python
 from __future__ import print_function
 #
+# Author: Markus Stabrin 01/01/2019 (markus.stabrin@mpi-dortmund.mpg.de)
+# Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
+# Copyright (c) 2018-2019 MPI Dortmund
+# Copyright (c) 2000-2006 The University of Texas - Houston Medical School
+#
+# This software is issued under a joint BSD/GNU license. You may use the
+# source code in this file under either license. However, note that the
+# complete EMAN2 and SPARX software packages have some GPL dependencies,
+# so you are responsible for compliance with the licenses of these packages
+# if you opt to use BSD licensing. The warranty disclaimer below holds
+# in either instance.
+#
+# This complete copyright notice must be included in any revised version of the
+# source code. Additional authorship citations may be added, but existing
+# author citations must be preserved.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+#
+#
+
 #  09/09/2016
 #  
 #  CPU subgroup
@@ -5063,6 +5096,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	##eat = 0.0
 	lima = 0  #  total counter of images
 	#  PROCESSING OF CONES
+	keep_checking_keepfirst = False
 	for icone in range(max_number_of_cones):
 		mpi_barrier(MPI_COMM_WORLD)
 		if( icone < number_of_cones ):  #  This is executed for individual number of cones, some nodes may have fewer.
@@ -5200,7 +5234,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 
 				###print("  CONA1    ",Blockdata["myid"],lima)
-				if( lima == 1 and procid == 0):
+				if( lima == 1 and procid == 0) or keep_checking_keepfirst:
 					###print("  CONA2    ",Blockdata["myid"])
 					if( lenass > 0):
 						###print("   CICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
@@ -5298,8 +5332,12 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					###print("  STARTING7    ",Blockdata["myid"],keepf)
 					keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
 					if(keepf == 0):
-						ERROR( "Too few images to estimate keepfirst", myid=Blockdata["myid"] )
-						return
+						keepf = 3
+						ERROR( "Too few images to estimate keepfirst, try with the next particle.", myid=Blockdata["myid"], action=0 )
+						keep_checking_keepfirst = True
+					else:
+						keep_checking_keepfirst = False
+						#return
 					###print("  STARTING8    ",Blockdata["myid"],keepf)
 					Tracker["keepfirst"] = int(keepf)
 					###if( Blockdata["myid"] == 0 ):  sxprint("  keepfirst first ",Tracker["keepfirst"])
@@ -5913,7 +5951,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 			Tracker["directory"] = temp
 			mpi_barrier(Blockdata["subgroup_comm"])
 			try:
-				outlier_params = read_text_row(os.path.join(Tracker["directory"],"outlier-params-chunk_%01d_%03d.txt"%(procid, Tracker["mainiteration"])))
+				outlier_params = read_text_file(os.path.join(Tracker["directory"],"outlier-params-chunk_%01d_%03d.txt"%(procid, Tracker["mainiteration"])))[im_start:im_end]
 			except IOError:
 				outlier_params = [0] * len(oldparams[procid])
 			original_data_outlier = []
@@ -5921,7 +5959,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 			norm_per_particle_outlier = []
 			oldparamstructure_outlier = []
 			for idx, entry in enumerate(outlier_params):
-				if entry == 0:
+				if int(entry) == 0:
 					original_data_outlier.append(original_data[procid][idx])
 					oldparams_outlier.append(oldparams[procid][idx])
 					norm_per_particle_outlier.append(norm_per_particle[procid][idx])
@@ -6550,8 +6588,8 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 				else:
 					tvol1 = steptwo_mpi(tvol1, tweight1, treg, None, False , color = Blockdata["node_volume"][0])
 				if( Blockdata["myid_on_node"] == 0):
-					if iproc ==0: tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil_%03d.hdf"%(iproc, final_iter)))
-					else: tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"],         "vol_%d_unfil_%03d.hdf"%(iproc, final_iter)))
+					if iproc ==0: tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil_%03d.hdf"%(iproc, Tracker['mainiteration'])))
+					else: tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"],         "vol_%d_unfil_%03d.hdf"%(iproc, Tracker['mainiteration'])))
 				mpi_barrier(MPI_COMM_WORLD)
 		else:
 			if(Blockdata["myid"] == Blockdata["main_shared_nodes"][1]):
@@ -6944,7 +6982,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			params = read_text_row(os.path.join(Tracker["directory"],"params-chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_row(os.path.join(Tracker["directory"],"params-chunk_1_%03d.txt"%(Tracker["mainiteration"])))
 			try:
-				outlier_params = read_text_row(os.path.join(Tracker["directory"],"outlier-params-chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_row(os.path.join(Tracker["directory"],"outlier-params-chunk_1_%03d.txt"%(Tracker["mainiteration"])))
+				outlier_params = read_text_file(os.path.join(Tracker["directory"],"outlier-params-chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_file(os.path.join(Tracker["directory"],"outlier-params-chunk_1_%03d.txt"%(Tracker["mainiteration"])))
 			except IOError:
 				outlier_params = [0] * len(params)
 			li     = read_text_file(os.path.join(Tracker["directory"],"chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_file(os.path.join(Tracker["directory"],"chunk_1_%03d.txt"%(Tracker["mainiteration"])))
@@ -6979,7 +7017,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		ctfs_outlier = []
 		groups_outlier = []
 		for idx, entry in enumerate(outlier_params):
-			if entry == 0:
+			if int(entry) == 0:
 				params_outlier.append(params[idx])
 				ctfs_outlier.append(ctfs[idx])
 				groups_outlier.append(particle_groups[idx])
@@ -7033,6 +7071,7 @@ def load_tracker_from_json(file_name):
 	tracker = load_object_from_json(file_name)
 	try:
 		if tracker['constants']['stack_prior'] is not None:
+			tracker['constants']['stack_prior_dtype'] = [tuple(entry) for entry in tracker['constants']['stack_prior_dtype']]
 			tracker['constants']['stack_prior'] = np.genfromtxt(
 				tracker['constants']['stack_prior'],
 				dtype=tracker['constants']['stack_prior_dtype']
@@ -7102,14 +7141,14 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 	# Calculate outliers
 	if(blockdata["myid"] == blockdata["main_node"] ):
 		# Calculate priors
-		outliers, new_param, new_index = sp_helix_fundamentals.calculate_priors(
+		outliers, new_params, new_index = sp_helix_fundamentals.calculate_priors(
 			tracker=Tracker,
 			params_file=params_file,
 			index_file=chunk_file,
 			group_id=Tracker['constants']['group_id'],
 			typ='sphire',
 			tol_psi=Tracker['prior']['tol_psi'],
-			tol_theta=Tracker['prior']['tol_theat'],
+			tol_theta=Tracker['prior']['tol_theta'],
 			tol_filament=Tracker['prior']['tol_filament'],
 			tol_std=Tracker['prior']['tol_std'],
 			tol_mean=Tracker['prior']['tol_mean'],
@@ -7136,6 +7175,7 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 		if Tracker['prior']['force_outlier'] is not None:
 			shutil.copy(params_file, '{0}_old'.format(params_file))
 			shutil.copy(new_params, params_file)
+			outliers = outliers.tolist()
 		else:
 			outliers = [0] * len_data
 
@@ -7168,7 +7208,7 @@ def reduce_shifts(sx, sy, img):
 		except AttributeError:
 			pass
 		else:
-			rise = Tracker['constants']['helical_rise'] / float(Tracker['constant']['pixel_size'])
+			rise = Tracker['constants']['helical_rise'] / float(Tracker['constants']['pixel_size'])
 			rise_half = rise / 2.0
 			point = np.array([sx, sy])
 			rot_point = np.dot(rot_matrix(rotation_angle), point.T)
@@ -7414,7 +7454,9 @@ def main():
 				Constants['stack_prior'] = None
 				Constants['stack_prior_fmt'] = None
 				Constants['stack_prior_dtype'] = None
+				Constants['apply_prior'] = None
 			else:
+				Constants['apply_prior'] = True
 				Constants['stack_prior'] = sp_helix_sphire.import_sphire_stack(args[0], options.group_id)
 				Constants['stack_prior_fmt'] = prior_stack_fmt(Constants['stack_prior'])
 				Constants['stack_prior_dtype'] = Constants['stack_prior'].dtype.descr

@@ -38,6 +38,8 @@ from builtins import range
 from builtins import object
 from EMAN2 import PDBReader, get_image_directory
 from libpyGLUtils2 import *
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from .emglobjects import EM3DModel, get_default_gl_colors, EMViewportDepthTools, Camera2

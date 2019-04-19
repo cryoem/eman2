@@ -175,6 +175,8 @@ def maskparmgui(classes):
 	try:
 		from eman2_gui.emapplication import EMApp
 		from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+		import OpenGL
+		OpenGL.ERROR_CHECKING = False
 		from OpenGL import GL,GLUT
 		from eman2_gui.valslider import ValSlider,CheckBox
 		from eman2_gui.emimagemx import EMImageMXWidget

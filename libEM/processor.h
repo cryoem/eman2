@@ -8811,10 +8811,12 @@ correction is not possible, this will allow you to approximate the correction to
 	 *@param table a radial table for multiplication
 	 *@exception ImageFormatException this filter only apply to real image
 	 * */
-	class RadialProcessor : public Processor
+
+	
+	class RadialProcessor : public CircularMaskProcessor
 	{
 	public:
-		void process_inplace(EMData * image);
+// 		RadialProcessor():{}
 
 		string get_name() const
 		{
@@ -8825,7 +8827,12 @@ correction is not possible, this will allow you to approximate the correction to
 		{
 			return new RadialProcessor();
 		}
-
+		
+		void set_params(const Dict & new_params)
+		{
+			CircularMaskProcessor::set_params(new_params);
+			table = params["table"];;
+		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -8837,8 +8844,27 @@ correction is not possible, this will allow you to approximate the correction to
 		{
 			return "Multiply a real-space image by a radial function. 1 value / pixel, extending to corner. Missing values -> 0.";
 		}
-
 		static const string NAME;
+	protected:
+		void process_dist_pixel(float *pixel, float dist) const
+		{
+			
+// 			vector<float> table = params["table"];
+			int tsize = table.size();
+			float d = sqrt(dist);
+			if (d>tsize-1) return;
+			
+			int ir = int(d);
+			float df = d - float(ir);
+			
+			float f = table[ir] + df*(table[ir+1]-table[ir]);
+// 			printf("%f\t%d\t%f\t%f\t%f\n",d, ir, f, *pixel, *pixel*f);
+			
+			*pixel=*pixel * f;
+		}
+		vector<float> table;
+
+		
 	};
 
 	/**Bins pixel values, similar to calculating a histogram. The histogram is comprised

@@ -90,7 +90,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_viper.py
+sphire/bin/sp_viper.py
 
 \\
 ==== See also ====

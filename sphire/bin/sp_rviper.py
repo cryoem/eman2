@@ -649,11 +649,36 @@ output_directory: directory name into which the output files will be written.  I
 	parser.add_option("--outlier_index_threshold_method",type="string",        default='discontinuity_in_derivative',help="method that decides which images to keep: discontinuity_in_derivative, other options:percentile, angle_measure (default discontinuity_in_derivative)")
 	parser.add_option("--angle_threshold",       type="int",           default=30,         help="angle threshold for projection removal if using 'angle_measure': (default 30)")
 	parser.add_option( "--filament_width",       type="int",          default=-1,    help="When this is set to a non-default value helical data is assumed in which case the input images will be aligned to a mask with this width. (Default: -1)" )
-	parser.add_option( "--isac_shrink_ratio",       type="float",          default=1,    help="ISAC shrink ratio used to resample the filament_width to the input class averages. (Default 1)" )
+	parser.add_option( "--resample_ratio",       type="string",          default='1.0',    help="Specify a value larger than 0.0. By default, the program does not resample the input map (i.e. resample ratio is 1.0). Use this option maily to restore the original dimensions or pixel size of VIPER or R-VIPER model. Alternatively, specify the path to the output directory of an ISAC2 run. The program automatically extracts the resampling ratio used by the ISAC2 run. (default '1.0')")
 	
 
 	required_option_list = ['radius']
 	(options, args) = parser.parse_args(sys.argv[1:])
+
+	try:
+		float(options.resample_ratio)
+	except ValueError:
+		isac_shrink_file = open(os.path.join(options.resample_ratio, "README_shrink_ratio.txt"), "r")
+		isac_shrink_lines = isac_shrink_file.readlines()
+		isac_shrink_ratio = float(isac_shrink_lines[5])  # 6th line: shrink ratio (= [target particle radius]/[particle radius]) used in the ISAC run
+		isac_radius = float(isac_shrink_lines[6])        # 7th line: particle radius at original pixel size used in the ISAC run
+		isac_shrink_file.close()
+		if(myid == main_node):
+			sxprint(" ")
+			sxprint("ISAC2 run directory path is specified with --resample_ratio option...")
+			sxprint("Extracted parameter values")
+			sxprint("  ISAC shrink ratio    : {}".format(isac_shrink_ratio))
+			sxprint("  ISAC particle radius : {}".format(isac_radius))
+		options.resample_ratio = isac_shrink_ratio
+	else:
+		options.resample_ratio = float(options.resample_ratio)
+		if(myid == main_node):
+			if options.resample_ratio != 1.0:
+				sxprint(" ")
+				sxprint("Resample ratio {} is specified with --resample_ratio option...".format(options.resample_ratio))
+			else:
+				sxprint(" ")
+				sxprint("Resample ratio is {}. The program does not resample the input volume...".format(options.resample_ratio))
 
 	options.CTF = False
 	options.snr = 1.0
@@ -817,7 +842,7 @@ output_directory: directory name into which the output files will be written.  I
 			mask_dim = first_proj.get_xsize()
 			mask = util.model_rotated_rectangle2D(
 				radius_long=mask_dim, # long  edge of the rectangular mask
-				radius_short=int( options.filament_width * options.isac_shrink_ratio + 0.5 )//2, # short edge of the rectangular mask
+				radius_short=int( options.filament_width * options.resample_ratio + 0.5 )//2, # short edge of the rectangular mask
 				nx=mask_dim,
 				ny=mask_dim,
 				angle=90

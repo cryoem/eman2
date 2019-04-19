@@ -34,16 +34,16 @@ for writing the box files. Optionally one can specify the confidence threshold a
 
 \\
 === Advanced Parameters ===
-  ; %%--%%confidence_threshold : Confidence threshold [0-1] : Confidence threshold for picking. Particles with a confidence threshold lower than this value will be discarded. (default 0.3)
-  ; %%--%%gpu : GPUs : List of GPUs to use, separated by commas if more than one. If no GPU is present, be sure to supply the non-GPU executable. (default 0)
-  ; %%--%%gpu_fraction: GPU memory fraction : Specify the fraction of memory per GPU used by crYOLO during prediction. Only values between 0.0 and 1.0 are allowed. (default 1.0)
-  ; %%--%%num_cpu: Number of CPUs : Number of CPUs used during prediction. By default it will use half of the available CPUs. (default -1)
-  ; %%--%%filament_mode : Filament mode [Yes/No] : Check if you want to use the filament mode. (default False)
-  ; %%--%%filament_width : Filament width [Pixel] : Width of your filament in pixel. (default 100) : %%--%%filament_mode==True
-  ; %%--%%min_box_per_filament : Minimum number of boxes per filament : Specifies the minimum number of boxes per filament. (default 6) : %%--%%filament_mode==True
-  ; %%--%%box_distance : Box distance : Distance between two boxes in pixels. (default -1) : %%--%%filament_mode==True
-  ; %%--%%nosplit: Don't split curved filaments : If checked, the filament mode does not split curved filaments. (default False) :  %%--%%filament_mode==True
-  ; %%--%%nomerging: Don't merge filaments : If checked, the filament mode does not merge filaments. (default False) : %%--%%filament_mode==True
+  ; %%--%%confidence_threshold : Confidence threshold [0-1] : Confidence threshold for picking. Particles with a confidence threshold lower than this value will be discarded. (default 0.3)::
+  ; %%--%%gpu : GPUs : List of GPUs to use, separated by commas if more than one. If no GPU is present, be sure to supply the non-GPU executable. (default 0)::
+  ; %%--%%gpu_fraction: GPU memory fraction : Specify the fraction of memory per GPU used by crYOLO during prediction. Only values between 0.0 and 1.0 are allowed. (default 1.0)::
+  ; %%--%%num_cpu: Number of CPUs : Number of CPUs used during prediction. By default it will use half of the available CPUs. (default -1)::
+  ; %%--%%filament_mode : Filament mode [Yes/No] : Check if you want to use the filament mode. (default False)::True;Main
+  ; %%--%%filament_width : Filament width [Pixel] : Width of your filament in pixel. (default 100) : %%--%%filament_mode==True:100;Main
+  ; %%--%%min_box_per_filament : Minimum number of boxes per filament : Specifies the minimum number of boxes per filament. (default 6) : %%--%%filament_mode==True:6;Main
+  ; %%--%%box_distance : Box distance : Distance between two boxes in pixels. (default -1) : %%--%%filament_mode==True:-1;Main
+  ; %%--%%nosplit: Don't split curved filaments : If checked, the filament mode does not split curved filaments. (default False) :  %%--%%filament_mode==True:
+  ; %%--%%nomerging: Don't merge filaments : If checked, the filament mode does not merge filaments. (default False) : %%--%%filament_mode==True:
 
 
 
@@ -84,7 +84,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sp_cryolo_predict.py
+sphire/bin/sp_cryolo_predict.py
 
 \\
 ==== See also ====

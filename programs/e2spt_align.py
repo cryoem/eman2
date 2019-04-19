@@ -80,8 +80,19 @@ This program will take an input stack of subtomograms and a reference volume, an
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default=None)
+	parser.add_argument("--refine",action="store_true",help="local refinement from xform.init in header.",default=False)
 
 	(options, args) = parser.parse_args()
+	
+	#task=SptAlignTask(0,1,2,options)
+	#from pickle import dumps,loads,dump,load
+	#f=open("task.tmp",'w')
+	#dump(task,f)
+	#f.close()
+	#print(task)
+	
+	
+	#return
 
 	if options.path == None:
 		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="spt_" and len(i)==6 and str.isdigit(i[-2:])]
@@ -126,7 +137,7 @@ This program will take an input stack of subtomograms and a reference volume, an
 	ref[1]=ref[1].do_fft()
 	ref[1].process_inplace("xform.phaseorigin.tocorner")
 
-	angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
+	
 	jsd=queue.Queue(0)
 
 	n=-1
@@ -147,7 +158,7 @@ This program will take an input stack of subtomograms and a reference volume, an
 
 
 	from EMAN2PAR import EMTaskCustomer
-	etc=EMTaskCustomer(options.parallel)
+	etc=EMTaskCustomer(options.parallel, module="e2spt_align.SptAlignTask")
 	num_cpus = etc.cpu_est()
 	
 	#tasks=tasks[:24]
@@ -168,11 +179,15 @@ This program will take an input stack of subtomograms and a reference volume, an
 		time.sleep(5)
 
 	#dics=[0]*nptcl
+	
+	angs={}
 	for i in tids:
 		ret=etc.get_results(i)[1]
 		fsp,n,d=ret
 		angs[(fsp,n)]=d
 		
+	js=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
+	js.update(angs)
 
 	del etc
 	
@@ -230,15 +245,30 @@ class SptAlignTask(JSTask):
 		callback(0)
 		b=EMData(fsp,i).do_fft()
 		b.process_inplace("xform.phaseorigin.tocorner")
+		aligndic={"verbose":0,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0, "maxres":options.maxres,"wt_ori":options.wtori}
+		
+		if options.refine and b.has_attr("xform.init"):
+			options.nsoln=16
+			astep=8.0
+			xfs=[]
+			initxf=b["xform.init"].get_params("eman")
+			for ii in range(options.nsoln):
+				d={"type":"eman","tx":initxf["tx"], "ty":initxf["ty"]}
+				for ky in ["alt", "az", "phi"]:
+					d[ky]=initxf[ky]+(ii>0)*np.random.randn()*astep
+					xfs.append(Transform(d))
+					
+			aligndic["initxform"]=xfs
+		
 
 		# we align backwards due to symmetry
 		if options.verbose>2 : print("Aligning: ",fsp,i)
-		c=ref.xform_align_nbest("rotate_translate_3d_tree",b,{"verbose":0,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0, "maxres":options.maxres,"wt_ori":options.wtori},options.nsoln)
+		c=ref.xform_align_nbest("rotate_translate_3d_tree",b, aligndic, options.nsoln)
 		for cc in c : cc["xform.align3d"]=cc["xform.align3d"].inverse()
 
 		#print(fsp, i, c[0])
 		callback(100)
-		
+		#print(i,c[0]["xform.align3d"])
 		return (fsp,i,c[0])
 		
 

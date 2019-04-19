@@ -1525,7 +1525,7 @@ def adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_wi
 	mask = Util.soft_edge(mask, edge_width, mode)
 	return mask
 
-def adaptive_mask_scipy(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5, mode = "C", allow_disconnected=False, nerosion = 0, do_approx=False, do_fill=False):
+def adaptive_mask_scipy(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5, mode = "C", allow_disconnected=False, nerosion = 0, do_approx=False, do_fill=False, do_print=False):
 	"""
 		Name
 			adaptive_mask - create a mask from a given image.
@@ -1560,17 +1560,31 @@ def adaptive_mask_scipy(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, e
 		#	s1 = [threshold, s1[0], s1[1], 0.0]
 		# new s1[3] is calculated nsigma corresponding to user-provided threshold
 
+	if do_print:
+		sp_global_def.sxprint('Binarize volume')
 	mask = binarize(vol, bin_threshold)
 	
 	if not allow_disconnected:
+		if do_print:
+			sp_global_def.sxprint('Get biggest cluster')
 		mask = Util.get_biggest_cluster(mask)
+	if ndilation:
+		if do_print:
+			sp_global_def.sxprint('Do dilation')
 	for i in range(ndilation):
 		mask = dilation(mask)
+	if nerosion:
+		if do_print:
+			sp_global_def.sxprint('Do erosion')
 	for i in range(nerosion):
 		mask = erosion(mask)
 	if do_fill: 
+		if do_print:
+			sp_global_def.sxprint('Fill cavities')
 		mask = fill_cavities(mask)
 	if edge_width > 0:
+		if do_print:
+			sp_global_def.sxprint('Create soft_edge')
 		mask = soft_edge(mask, edge_width, mode, do_approx)
 	return mask
 

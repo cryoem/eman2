@@ -60,6 +60,7 @@ def main():
 	parser.add_option("--restore",     action="store_true", default=False,   help="restore parameters")
 	parser.add_option("--delete",      action="store_true", default=False,   help="delete parameters")
 	parser.add_option("--consecutive", action="store_true", default=False,   help="set selected parameter to consecutive integers starting from 0")
+	parser.add_option("--list", type="string", default=None,   help="Indices list containing the same amount of rows as the import file")
 
 	(options,args) = parser.parse_args( arglist[1:] )
 
@@ -82,7 +83,7 @@ def main():
 		disable_bdb_cache()
 	from sp_applications import header
 	header(args[0], options.params, options.zero, options.one, options.set, options.randomize, options.rand_alpha, options.fimport, options.fexport, \
-	options.fprint, options.backup, options.suffix, options.restore, options.delete, options.consecutive)
+		options.fprint, options.backup, options.suffix, options.restore, options.delete, options.consecutive, options.list)
 	if not options.fprint:
 		sp_global_def.print_timestamp( "Finish" )
 

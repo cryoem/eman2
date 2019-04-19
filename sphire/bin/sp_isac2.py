@@ -238,11 +238,12 @@ def normalize_particle_images( aligned_images, shrink_ratio, target_radius, targ
 		if new_dim > target_dim:
 			aligned_images[im] = E2.Util.window( aligned_images[im], target_dim, target_dim, 1 )
 		
+		current_dim = aligned_images[im].get_xsize()
 		# create custom masks for filament particle images
 		if filament_width != -1:
-			mask = util.model_rotated_rectangle2D( radius_long=int( np.sqrt(2*new_dim**2) )//2, # long  edge of the rectangular mask
+			mask = util.model_rotated_rectangle2D( radius_long=int( np.sqrt(2*current_dim**2) )//2, # long  edge of the rectangular mask
 													  radius_short=int( filament_width*shrink_ratio+0.5 )//2, # short edge of the rectangular mask
-													  nx=new_dim, ny=new_dim, angle=aligned_images[im].get_attr("segment_angle") )
+													  nx=current_dim, ny=current_dim, angle=aligned_images[im].get_attr("segment_angle") )
 
 		# normalize using mean of the data and variance of the noise
 		p = E2.Util.infomask( aligned_images[im], mask, False )
@@ -1329,6 +1330,7 @@ def parse_parameters( prog_name, usage, args ):
 
 	parser.add_option( "--filament_width",       type="int",          default=-1,    help="When this is set to a non-default value helical data is assumed in which case particle images will be masked with a rectangular mask. (Default: -1)" )
 	parser.add_option( "--filament_mask_ignore", action="store_true", default=False, help="Only relevant when parameter \'--filament_width\' is set. When set to False a rectangular mask is used to (a) normalize and (b) to mask the particle images. The latter can be disabled by setting this flag to True. (Default: False)" )
+	parser.add_option( "--skip_ordering", action="store_true", default=False, help="Skip the ordered class_averages creation. (Default: False)" )
 
 	return parser.parse_args(args)
 
@@ -1408,7 +1410,7 @@ def main(args):
 
 	# main process broadcasts path to ISAC master directory
 	if( li > 0 ):
-		Blockdata["masterdir"] = mpi.mpi_bcast(Blockdata["masterdir"],li,MPI_CHAR,Blockdata["main_node"],mpi.MPI_COMM_WORLD)
+		Blockdata["masterdir"] = mpi.mpi_bcast(Blockdata["masterdir"],li,mpi.MPI_CHAR,Blockdata["main_node"],mpi.MPI_COMM_WORLD)
 		Blockdata["masterdir"] = string.join(Blockdata["masterdir"],"")
 
 	# add stack_ali2d path to blockdata
@@ -1856,7 +1858,9 @@ def main(args):
 
 	mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 	if( Blockdata["myid"] == 0 ):
-		if( os.path.exists(os.path.join(Blockdata["masterdir"],"class_averages.hdf")) ):
+		if options.skip_ordering:
+			pass
+		elif( os.path.exists(os.path.join(Blockdata["masterdir"],"class_averages.hdf")) ):
 			cmd = "{} {} {} {} {} {} {} {} {} {}".format( "sp_chains.py", 
 														  os.path.join(Blockdata["masterdir"],"class_averages.hdf"),
 														  os.path.join(Blockdata["masterdir"],"junk.hdf"),

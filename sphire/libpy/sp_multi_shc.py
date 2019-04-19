@@ -1363,6 +1363,9 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 			method = ali3d_options.ref_a
 		else:
 			method = "S"
+
+		if not hasattr(ali3d_options, 'filament_width'):
+			ali3d_options.filament_width = -1
 		
 		prms = symmetry_class.even_angles(float(ali3d_options.delta), theta1=theta1, theta2=theta2, method=method)
 		write_text_row(prms, log.prefix + "initangles.txt")
@@ -2326,7 +2329,7 @@ def do_volume(data, options, iter, mpi_comm):
 		import types
 		nx = vol.get_xsize()
 		if options.filament_width != -1:
-			mask3D = model_cylinder(int(options.filament_width*options.isac_shrink_ratio+0.5)//2, nx, nx, nx)
+			mask3D = model_cylinder(int(options.filament_width*options.resample_ratio+0.5)//2, nx, nx, nx)
 			options.mask3D = mask3D
 		elif(options.mask3D == None):
 			last_ring   = int(options.ou)

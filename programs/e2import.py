@@ -469,6 +469,8 @@ with the same name, you should specify only the .hed files (no renaming is neces
 					
 				if options.invert:
 					cmd+=" --mult -1 --process normalize "
+					
+				cmd+=" --process normalize "
 				#if options.tomoseg_auto:
 				#	cmd+=" --process filter.lowpass.gauss:cutoff_abs=.25 --process filter.highpass.gauss:cutoff_pixels=5 --process normalize --process threshold.clampminmax.nsigma:nsigma=3 "
 				#cmd+=options.preprocess

@@ -39,6 +39,8 @@ from __future__ import division
 from past.utils import old_div
 from builtins import range
 from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
