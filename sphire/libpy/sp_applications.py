@@ -16193,8 +16193,8 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 		fidx = None
 	if fimport != None: fimp = open(fimport, 'r')
 	if fexport != None: fexp = open(fexport, 'w')
-	if idx_list and not fimport:
-		sxprint('Error: list option can only be used in combination with an import file')
+	if idx_list and not fimport and not fexport:
+		sxprint('Error: list option can only be used in combination with an import/export file')
 		return
 
 	nimage = EMUtil.get_image_count(stack)
@@ -16321,6 +16321,11 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 					il+=1
 
 		else:
+			if fidx:
+				try:
+					i = fidx[i]
+				except IndexError:
+					continue
 			for p in params:
 
 				if zero:

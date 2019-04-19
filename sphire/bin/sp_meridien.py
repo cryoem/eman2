@@ -5951,7 +5951,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 			Tracker["directory"] = temp
 			mpi_barrier(Blockdata["subgroup_comm"])
 			try:
-				outlier_params = read_text_row(os.path.join(Tracker["directory"],"outlier-params-chunk_%01d_%03d.txt"%(procid, Tracker["mainiteration"])))
+				outlier_params = read_text_file(os.path.join(Tracker["directory"],"outlier-params-chunk_%01d_%03d.txt"%(procid, Tracker["mainiteration"])))[im_start:im_end]
 			except IOError:
 				outlier_params = [0] * len(oldparams[procid])
 			original_data_outlier = []
@@ -5959,7 +5959,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 			norm_per_particle_outlier = []
 			oldparamstructure_outlier = []
 			for idx, entry in enumerate(outlier_params):
-				if entry == 0:
+				if int(entry) == 0:
 					original_data_outlier.append(original_data[procid][idx])
 					oldparams_outlier.append(oldparams[procid][idx])
 					norm_per_particle_outlier.append(norm_per_particle[procid][idx])
@@ -6588,8 +6588,8 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 				else:
 					tvol1 = steptwo_mpi(tvol1, tweight1, treg, None, False , color = Blockdata["node_volume"][0])
 				if( Blockdata["myid_on_node"] == 0):
-					if iproc ==0: tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil_%03d.hdf"%(iproc, final_iter)))
-					else: tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"],         "vol_%d_unfil_%03d.hdf"%(iproc, final_iter)))
+					if iproc ==0: tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil_%03d.hdf"%(iproc, Tracker['mainiteration'])))
+					else: tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"],         "vol_%d_unfil_%03d.hdf"%(iproc, Tracker['mainiteration'])))
 				mpi_barrier(MPI_COMM_WORLD)
 		else:
 			if(Blockdata["myid"] == Blockdata["main_shared_nodes"][1]):

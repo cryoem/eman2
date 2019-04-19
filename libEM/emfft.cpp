@@ -217,9 +217,19 @@ fftwf_plan EMfft::EMfftw3_cache::get_plan(const int rank_in, const int x, const 
 	{
 		if ( r2c_flag == EMAN2_REAL_2_COMPLEX )
 			plan = fftwf_plan_dft_r2c(rank_in, dims + (3 - rank_in), real_data, complex_data, FFTW_ESTIMATE);
-		else // r2c_flag == EMAN2_COMPLEX_2_REAL, this is guaranteed by the error checking at the beginning of the function
+		else if ( r2c_flag == EMAN2_COMPLEX_2_REAL) 
 			plan = fftwf_plan_dft_c2r(rank_in, dims + (3 - rank_in), complex_data, real_data, FFTW_ESTIMATE);
-	}
+		else {
+			// This ONLY makes plans for inplace 2D/3D C->C Forward
+			float *tmp=(float *)malloc(sizeof(float)*x*2*y*z);
+			memcpy(tmp,complex_data,sizeof(float)*x*2*y*z);
+			// technically FFTW_ESTIMATE isn't supposed to mess with the input data, but the manual advises playing it safe
+			plan = fftwf_plan_dft(rank_in, dims + (3 - rank_in), complex_data, complex_data, FFTW_FORWARD, FFTW_ESTIMATE);  // in place!
+			memcpy(complex_data,tmp,sizeof(float)*x*2*y*z);
+			free(tmp);
+
+		}
+		}
 
 	if (fftwplans[EMFFTW3_CACHE_SIZE-1] != NULL )
 	{
@@ -337,17 +347,18 @@ int EMfft::complex_to_complex_1d_inplace(std::complex<float> *complex_data, int 
 	fftwf_plan plan = plan_cache.get_plan(1,n/2,1,1,EMAN2_COMPLEX_2_COMPLEX,1,(fftwf_complex *) complex_data,NULL);
 	fftwf_execute_dft(plan, (fftwf_complex *) complex_data,(fftwf_complex *) complex_data);
 #else
-	fftwf_plan p;
-	fftwf_complex *in=(fftwf_complex *) complex_data_in;
-	fftwf_complex *out=(fftwf_complex *) complex_data_out;
-	int mrt = Util::MUTEX_LOCK(&fft_mutex);
-	// This shouldn't be unsafe with FFTW_ESTIMATE?
-	p=fftwf_plan_dft_1d(n/2,(fftwf_complex *) complex_data,(fftwf_complex *) complex_data, FFTW_FORWARD, FFTW_ESTIMATE);
-	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
-	fftwf_execute(p);
-	mrt = Util::MUTEX_LOCK(&fft_mutex);
-	fftwf_destroy_plan(p);
-	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
+	printf("ERROR: 1-D in place C2C FFT broken without caching");
+// 	fftwf_plan p;
+// 	fftwf_complex *in=(fftwf_complex *) complex_data_in;
+// 	fftwf_complex *out=(fftwf_complex *) complex_data_out;
+// 	int mrt = Util::MUTEX_LOCK(&fft_mutex);
+// 	// This shouldn't be unsafe with FFTW_ESTIMATE?
+// 	p=fftwf_plan_dft_1d(n/2,(fftwf_complex *) complex_data,(fftwf_complex *) complex_data, FFTW_FORWARD, FFTW_ESTIMATE);
+// 	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
+// 	fftwf_execute(p);
+// 	mrt = Util::MUTEX_LOCK(&fft_mutex);
+// 	fftwf_destroy_plan(p);
+// 	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
 #endif
 	return 0;
 }
@@ -384,6 +395,27 @@ int EMfft::complex_to_complex_1d_b(float *complex_data_in, float *complex_data_o
 	return 0;
 }
 
+int EMfft::complex_to_complex_2d_inplace(std::complex<float> *complex_data, int nx,int ny)
+{
+#ifdef FFTW_PLAN_CACHING
+	fftwf_plan plan = plan_cache.get_plan(2,nx/2,ny,1,EMAN2_COMPLEX_2_COMPLEX,1,(fftwf_complex *) complex_data,NULL);
+	fftwf_execute_dft(plan, (fftwf_complex *) complex_data,(fftwf_complex *) complex_data);
+#else
+	printf("ERROR: 2-D in place C2C FFT broken without caching");
+// 	fftwf_plan p;
+// 	fftwf_complex *in=(fftwf_complex *) complex_data_in;
+// 	fftwf_complex *out=(fftwf_complex *) complex_data_out;
+// 	int mrt = Util::MUTEX_LOCK(&fft_mutex);
+// 	// This shouldn't be unsafe with FFTW_ESTIMATE?
+// 	p=fftwf_plan_dft(n/2,(fftwf_complex *) complex_data,(fftwf_complex *) complex_data, FFTW_FORWARD, FFTW_ESTIMATE);
+// 	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
+// 	fftwf_execute(p);
+// 	mrt = Util::MUTEX_LOCK(&fft_mutex);
+// 	fftwf_destroy_plan(p);
+// 	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
+#endif
+	return 0;
+}
 
 int EMfft::complex_to_complex_nd(float *in, float *out, int nx,int ny,int nz)
 {
