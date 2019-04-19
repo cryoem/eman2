@@ -751,7 +751,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		QtOpenGL.QGLFormat().setDepth(True)
 		self.setSelectedItem(True)			# The root is selected by default
 		self.currentselecteditem = self
-		self.camera = EMCamera(1.0, 500.0)		# Default near,far
+		self.camera = EMCamera(1.0, 500.0, devpixratio=self.devicePixelRatio())		# Default near,far
 		self.clearcolor = [0.0, 0.0, 0.0, 0.0]		# Back ground color	
 		self.main_3d_inspector = None			# No inspector by default
 		self.apix = None				# No angstrom per pixel to begin with
@@ -1874,7 +1874,7 @@ class EMLight(object):
 		
 class EMCamera(object):
 	"""Implmentation of the camera"""
-	def __init__(self, near, far, usingortho=True, fovy=60.0, boundingbox=50.0, screenfraction=0.5):
+	def __init__(self, near, far, usingortho=True, fovy=60.0, boundingbox=50.0, screenfraction=0.5,devpixratio=1.0):
 		"""
 		@param fovy: The field of view angle
 		@param near: The volume view near position
@@ -1891,6 +1891,7 @@ class EMCamera(object):
 		self.setCappingMode(False)
 		self.setCapColor(*(get_default_gl_colors()["bluewhite"]['ambient']))
 		self.setLinkingMode(False)
+		self.devpixratio=devpixratio
 		zclip = old_div((self.near-self.far),2.0)	# Puts things in the center of the viewing volume
 		if usingortho:
 			self.useOrtho(zclip)
@@ -1955,7 +1956,7 @@ class EMCamera(object):
 		"""
 		Set the orthographic projection matrix. Volume view origin (0,0) is center of screen
 		"""
-		glOrtho(-self.width//2, self.width//2, -self.height//2, self.height//2, self.near, self.far)
+		glOrtho(-self.width/(2*self.devpixratio), self.width/(2*self.devpixratio), -self.height/(2*self.devpixratio), self.height/(2*self.devpixratio), self.near, self.far)
 		
 	def setPerspectiveProjectionMatrix(self):
 		"""
