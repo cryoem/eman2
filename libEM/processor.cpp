@@ -13408,67 +13408,67 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 	// it will perform better than the 2-D FFT approach now implemented for "fp" below (previously had been 1D FFT)
 	// It isn't clear that there is really any reason that the radial function needs to be a bessel function
 	// because of the caching of the basis images, this is only threadsafe when the same sized images are used
-	if (params.has_key("fb")) {
-		printf("WARNING: fb mode not fully implemented yet\n");
-		int hn=(int)params.get("fb");
-		for (int hn=1; hn<6; hn++) {
-		complex<float> I(0,1);
-		// we precompute the basis vectors for the rotational functions
-		if (HPPjn[4]==NULL || HPPjn[4]->get_xsize()!=nx ) {
-			for (int i=0; i<12; i++) {
-				if (HPProt[i]==NULL) HPProt[i]=new EMData(nx,ny,1);
-				else HPProt[i]->set_size(nx,ny,1);
-				HPProt[i]->to_zero();
-				HPProt[i]->set_complex(1);
-				HPProt[i]->set_ri(1);
-				HPProt[i]->set_fftpad(1);  // this is kind of meaningless in this context
-				for (int x=0; x<nx/2; x++) {
-					for (int y=-ny/2; y<ny/2; y++) {
-						float ang=atan2(y,x);		// apparently ok with y=x=0
-						HPProt[i]->set_complex_at(x,y,0,(complex<float>)std::exp((complex<float>)I*ang*float(i+2)));
-					}
-				}
-				HPProt[i]->write_image("tstrot.hdf",i);
-			}
-			for (int i=0; i<5; i++) {
-				if (HPPjn[i]==NULL) HPPjn[i]=new EMData(nx,ny,1);
-				else HPPjn[i]->set_size(nx,ny,1);
-				HPPjn[i]->to_zero();
-				HPPjn[i]->set_complex(1);
-				HPPjn[i]->set_ri(1);
-				HPPjn[i]->set_fftpad(1);  // this is kind of meaningless in this context
-				for (int x=0; x<nx/2; x++) {
-					for (int y=-ny/2; y<ny/2; y++) {
-						float r=Util::hypot_fast(x,y);
-						HPPjn[i]->set_complex_at(x,y,0,(complex<float>)jnf(i,r/2.0f));
-					}
-				}
-				HPPjn[i]->write_image("tstjn.hdf",i);
-			}
-		}
-		
-		trns->set_size(nx,ny,1);
-		xyz=trns->get_size();
-		// translational only single
-		for (int jx=0; jx<nx/2; jx++) {
-			for (int jy=-ny/2; jy<ny/2; jy++) {
-				if (Util::hypot_fast(jx,jy)<3.0f*hn) { 
-					trns->set_complex_at(jx,jy,0,(complex<float>)0);
-					continue;
-				}
-				complex<double> v1 = (complex<double>)cimage->get_complex_at(jx,jy);
-				complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx/(float)hn,jy/(float)hn);
-				trns->set_complex_at(jx,jy,0,(complex<float>)(v1*std::pow(std::conj(v2),(float)hn)));
-			}
-		}
-		// rescale components to have linear amplitude WRT the original FFT, without changing phase
-		trns->ri2ap();
-		for (size_t i=0; i<xyz; i+=2) {
-			trns->set_value_at_index(i,pow(trns->get_value_at_index(i),float(1.0/(hn+1))));
-		}
-		trns->ap2ri();
-		}
-	}
+// 	if (params.has_key("fb")) {
+// 		printf("WARNING: fb mode not fully implemented yet\n");
+// 		int hn=(int)params.get("fb");
+// 		for (int hn=1; hn<6; hn++) {
+// 		complex<float> I(0,1);
+// 		// we precompute the basis vectors for the rotational functions
+// 		if (HPPjn[4]==NULL || HPPjn[4]->get_xsize()!=nx ) {
+// 			for (int i=0; i<12; i++) {
+// 				if (HPProt[i]==NULL) HPProt[i]=new EMData(nx,ny,1);
+// 				else HPProt[i]->set_size(nx,ny,1);
+// 				HPProt[i]->to_zero();
+// 				HPProt[i]->set_complex(1);
+// 				HPProt[i]->set_ri(1);
+// 				HPProt[i]->set_fftpad(1);  // this is kind of meaningless in this context
+// 				for (int x=0; x<nx/2; x++) {
+// 					for (int y=-ny/2; y<ny/2; y++) {
+// 						float ang=atan2(y,x);		// apparently ok with y=x=0
+// 						HPProt[i]->set_complex_at(x,y,0,(complex<float>)std::exp((complex<float>)I*ang*float(i+2)));
+// 					}
+// 				}
+// 				HPProt[i]->write_image("tstrot.hdf",i);
+// 			}
+// 			for (int i=0; i<5; i++) {
+// 				if (HPPjn[i]==NULL) HPPjn[i]=new EMData(nx,ny,1);
+// 				else HPPjn[i]->set_size(nx,ny,1);
+// 				HPPjn[i]->to_zero();
+// 				HPPjn[i]->set_complex(1);
+// 				HPPjn[i]->set_ri(1);
+// 				HPPjn[i]->set_fftpad(1);  // this is kind of meaningless in this context
+// 				for (int x=0; x<nx/2; x++) {
+// 					for (int y=-ny/2; y<ny/2; y++) {
+// 						float r=Util::hypot_fast(x,y);
+// 						HPPjn[i]->set_complex_at(x,y,0,(complex<float>)jnf(i,r/2.0f));
+// 					}
+// 				}
+// 				HPPjn[i]->write_image("tstjn.hdf",i);
+// 			}
+// 		}
+// 		
+// 		trns->set_size(nx,ny,1);
+// 		xyz=trns->get_size();
+// 		// translational only single
+// 		for (int jx=0; jx<nx/2; jx++) {
+// 			for (int jy=-ny/2; jy<ny/2; jy++) {
+// 				if (Util::hypot_fast(jx,jy)<3.0f*hn) { 
+// 					trns->set_complex_at(jx,jy,0,(complex<float>)0);
+// 					continue;
+// 				}
+// 				complex<double> v1 = (complex<double>)cimage->get_complex_at(jx,jy);
+// 				complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx/(float)hn,jy/(float)hn);
+// 				trns->set_complex_at(jx,jy,0,(complex<float>)(v1*std::pow(std::conj(v2),(float)hn)));
+// 			}
+// 		}
+// 		// rescale components to have linear amplitude WRT the original FFT, without changing phase
+// 		trns->ri2ap();
+// 		for (size_t i=0; i<xyz; i+=2) {
+// 			trns->set_value_at_index(i,pow(trns->get_value_at_index(i),float(1.0/(hn+1))));
+// 		}
+// 		trns->ap2ri();
+// 		}
+// 	}
 	// This generates rotational & translational invariants
 	if (params.has_key("fp")) {
 		int fp=(int)params.get("fp");
