@@ -16282,10 +16282,11 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 						EMUtil.write_hdf_attribute(stack, "xform.align3d", t, i)
 					il+=8	
 				elif p[:len('members')] == "members":
+					members = [int(entry) for entry in line.strip('[]\n \t').split(',')]
 					if ext == "bdb":
-						DB.set_attr(i, "members", line.strip())
+						DB.set_attr(i, "members", members)
 					elif ext == "hdf":
-						EMUtil.write_hdf_attribute(stack, "members", line.strip(), i)
+						EMUtil.write_hdf_attribute(stack, "members", members, i)
 				elif p.startswith("ISAC_SPLIT_"):
 					if ext == "bdb":
 						DB.set_attr(i, p.strip(), line.strip())
