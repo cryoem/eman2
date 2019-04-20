@@ -751,7 +751,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		QtOpenGL.QGLFormat().setDepth(True)
 		self.setSelectedItem(True)			# The root is selected by default
 		self.currentselecteditem = self
-		self.camera = EMCamera(1.0, 500.0, devpixratio=self.devicePixelRatio())		# Default near,far
+		self.camera = EMCamera(1.0, 500.0)		# Default near,far
 		self.clearcolor = [0.0, 0.0, 0.0, 0.0]		# Back ground color	
 		self.main_3d_inspector = None			# No inspector by default
 		self.apix = None				# No angstrom per pixel to begin with
@@ -1874,7 +1874,7 @@ class EMLight(object):
 		
 class EMCamera(object):
 	"""Implmentation of the camera"""
-	def __init__(self, near, far, usingortho=True, fovy=60.0, boundingbox=50.0, screenfraction=0.5,devpixratio=1.0):
+	def __init__(self, near, far, usingortho=True, fovy=60.0, boundingbox=50.0, screenfraction=0.5):
 		"""
 		@param fovy: The field of view angle
 		@param near: The volume view near position
@@ -1891,7 +1891,6 @@ class EMCamera(object):
 		self.setCappingMode(False)
 		self.setCapColor(*(get_default_gl_colors()["bluewhite"]['ambient']))
 		self.setLinkingMode(False)
-		self.devpixratio=devpixratio
 		zclip = old_div((self.near-self.far),2.0)	# Puts things in the center of the viewing volume
 		if usingortho:
 			self.useOrtho(zclip)
@@ -1908,6 +1907,10 @@ class EMCamera(object):
 		if height: self.height = height
 		self.aspectratio = old_div(float(self.height),float(self.width))
 		if self.usingortho:
+			# this deals with maxviewport better than the previous solution
+			# the whole pseudofov concept is really messed up. Needs a complete rethink
+			if self.width+2*self.pseudofovy>=self.maxviewport[0] :
+				self.pseudofovy=(self.maxviewport[0]-self.width)//2-1
 			self.setViewPort(-self.pseudofovy, int(-self.pseudofovy*self.aspectratio), int(self.width+2*self.getPseudoFovyWidth()), int(self.height+2*self.getPseudoFovyHeight()))
 			glMatrixMode(GL_PROJECTION)
 			glLoadIdentity()
@@ -1936,6 +1939,7 @@ class EMCamera(object):
 		"""Set the viewport subject to openGL constraitns """
 		if (vpwidth < self.maxviewport[0] and vpheight < self.maxviewport[1]):
 			glViewport(x, y, vpwidth, vpheight)
+	#		print(x,y,vpwidth, vpheight)
 		
 	def setCameraPosition(self, sfactor=1):
 		"""
@@ -1956,7 +1960,7 @@ class EMCamera(object):
 		"""
 		Set the orthographic projection matrix. Volume view origin (0,0) is center of screen
 		"""
-		glOrtho(-self.width/(2*self.devpixratio), self.width/(2*self.devpixratio), -self.height/(2*self.devpixratio), self.height/(2*self.devpixratio), self.near, self.far)
+		glOrtho(-self.width//2, self.width//2, -self.height//2, self.height//2, self.near, self.far)
 		
 	def setPerspectiveProjectionMatrix(self):
 		"""
@@ -2027,13 +2031,15 @@ class EMCamera(object):
 		"""
 		Set PseudoFovy, a sort of fovy for orthogramphic projections, do bounds checking
 		"""
-		if ((self.width+2*pseudofovy) > 0 and (self.height+2*pseudofovy) > 0):
-			if ((int(self.width+2*pseudofovy) < self.maxviewport[0] and int(self.height+2*pseudofovy*self.aspectratio) < self.maxviewport[1]) or pseudofovy < self.pseudofovy): 
-				self.pseudofovy = pseudofovy # negative viewport values are not acceptable
-			else:
-				# Set to max zoom
-				self.pseudofovy = old_div((self.maxviewport[0] - self.width),2)
+		#if ((self.width+2*pseudofovy) > 0 and (self.height+2*pseudofovy) > 0):
+		if ((int(self.width+pseudofovy) < self.maxviewport[0] and int(self.height+pseudofovy*self.aspectratio) < self.maxviewport[1]) or pseudofovy < self.pseudofovy): 
+			self.pseudofovy = pseudofovy
+		else:
+			# Set to max zoom
+			self.pseudofovy = (self.maxviewport[0] - self.width)
 	
+		#print(pseudofovy,self.pseudofovy,self.maxviewport)
+
 	def getPseudoFovyWidth(self):
 		"""
 		Return PseudoFovy, a sort of fovy for orthogramphic projections
