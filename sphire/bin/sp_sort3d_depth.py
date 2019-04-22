@@ -4889,18 +4889,22 @@ def get_input_from_sparx_ref3d(log_main):  # case one
     # Check orgstack, set correct path
 
     if Blockdata["myid"] == Blockdata["main_node"]:
-        refinement_dir_path, refinement_dir_name = os.path.split(Tracker["constants"]["refinement_dir"])
-        if Tracker_refinement["constants"]["stack"][0:4] == "bdb:":
-            refinement_stack = "bdb:" + os.path.join(refinement_dir_path, Tracker_refinement["constants"]["stack"][4:])
-        else:
-            refinement_stack = os.path.join(refinement_dir_path,
-                                            Tracker_refinement["constants"]["stack"])  # very rare case
-
-        if not Tracker["constants"]["orgstack"]: Tracker["constants"]["orgstack"] = refinement_stack
+        Tracker["constants"]["orgstack"] = Tracker_refinement["constants"]["stack"]
         try:
             image = get_im(Tracker["constants"]["orgstack"], 0)
         except:
-            import_from_sparx_refinement = 0
+            refinement_dir_path, refinement_dir_name = os.path.split(Tracker["constants"]["refinement_dir"])
+            if Tracker_refinement["constants"]["stack"][0:4] == "bdb:":
+                refinement_stack = "bdb:" + os.path.join(refinement_dir_path, Tracker_refinement["constants"]["stack"][4:])
+            else:
+                refinement_stack = os.path.join(refinement_dir_path,
+                                                Tracker_refinement["constants"]["stack"])  # very rare case
+
+            if not Tracker["constants"]["orgstack"]: Tracker["constants"]["orgstack"] = refinement_stack
+            try:
+                image = get_im(Tracker["constants"]["orgstack"], 0)
+            except:
+                import_from_sparx_refinement = 0
         try:
             total_stack = EMUtil.get_image_count(Tracker["constants"]["orgstack"])
         except:
