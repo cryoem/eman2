@@ -996,14 +996,14 @@ def compute_noise(image_size):
                 if tsd.get_value_at(k, i) > 0.0: prj[k] = tsd.get_value_at(k, i)
             Blockdata["bckgnoise"].append(prj)
         for i in range(len(Blockdata["bckgnoise"])): Blockdata["unrolldata"].append(
-            Util.unroll1dpw(ny, Blockdata["bckgnoise"][i]))
+            Util.unroll1dpw(ny, ny, Blockdata["bckgnoise"][i]))
     else:  # from datastack and relion
         temp_image = model_blank(image_size, image_size)
         temp_image = fft(temp_image)
         nx = temp_image.get_xsize()
         ny = temp_image.get_ysize()
         Blockdata["bckgnoise"] = [1.0] * nx
-        Blockdata["unrolldata"] = Util.unroll1dpw(ny, nx * [1.0])
+        Blockdata["unrolldata"] = Util.unroll1dpw(ny, ny, nx * [1.0])
     return
 
 
