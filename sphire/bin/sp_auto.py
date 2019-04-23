@@ -32,67 +32,116 @@ from __future__ import division
 #
 
 
+import os
+import sys
 import re
 import argparse
 import collections as co
 
+import sp_global_def
+
 
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=lambda prog: argparse.ArgumentDefaultsHelpFormatter(prog, width=9999))
+    parser.add_argument('output_directory', help='Output directory to store the outputs')
+
+    group = parser.add_argument_group('MPI settings (required)')
+    group.add_argument('--mpi_procs', type=int, default=2, help='Number of processors to use.')
+    group.add_argument('--mpi_submission_command', type=str, default='sbatch', help='Submission command, e.g. sbatch, qsub, ...')
+    group.add_argument('--mpi_submission_template', type=str, default='TEMPLATES/submit.sh', help='Submission template.')
 
     group = parser.add_argument_group('Global settings (required)')
-    group.add_argument('--apix', type=float, default=1.0, help='Pixel size in A/pixel.')
-    group.add_argument('--mol_mass', type=float, default=250.0, help='Molecular mass of the protein in kDa. Used to calculate the masking density threshold.')
-    group.add_argument('--particle_radius', type=int, default=80, help='Particle radius in pixels. Used for normalization.')
-    group.add_argument('--box_size', type=int, default=200, help='Particle box size in pixels.')
-    group.add_argument('--symmetry', type=str, default='c1', help='Symmetry of the particle.')
-    group.add_argument('--voltage', type=float, default=300.0, help='Microscope voltage in kV.')
+    group.add_argument('--apix', dest='XXX_SP_PIXEL_SIZE_XXX', type=float, default=1.0, help='Pixel size in A/pixel.')
+    group.add_argument('--mol_mass', dest='XXX_SP_MOL_MASS_XXX', type=float, default=250.0, help='Molecular mass of the protein in kDa. Used to calculate the masking density threshold.')
+    group.add_argument('--radius', dest='XXX_SP_PARTICLE_RADIUS_XXX', type=int, default=80, help='Particle radius in pixels. Used for normalization.')
+    group.add_argument('--box_size', dest='XXX_SP_BOX_SIZE_XXX', type=int, default=200, help='Particle box size in pixels.')
+    group.add_argument('--symmetry', dest='XXX_SP_SYMMETRY_XXX', type=str, default='c1', help='Symmetry of the particle.')
+    group.add_argument('--voltage', dest='XXX_SP_VOLTAGE_XXX', type=float, default=300.0, help='Microscope voltage in kV.')
     group.add_argument('--negative_stain', action='store_true', default=False, help='Input is negative stain.')
     group.add_argument('--phase_plate', action='store_true', default=False, help='Input is phase_plate.')
+    group.add_argument('--fill_rviper_mask', action='store_true', default=False, help='Fill RVIPER mask.')
 
     group = parser.add_argument_group('Unblur settings (required to run movie alignment)')
-    group.add_argument('--unblur_path', type=str, default='/Unblur/executable', help='Path pointing to the unblur executable.')
-    group.add_argument('--unblur_mic_pattern', type=str, default='Movies/*.mrc', help='Pattern of the micrographs to use for motion correction.')
-    group.add_argument('--unblur_exp_per_frame', type=float, default=2.5, help='Exposure per frame. Used for dose adjustment.')
-    group.add_argument('--unblur_gain_file', type=str, default='/Gain/file.mrc', help='File containing the information for gain correction. Not required if the movies are already gain corrected.')
+    group.add_argument('--unblur_path', dest='XXX_SP_UNBLUR_PATH_XXX', type=str, default=None, help='Path pointing to the unblur executable.')
+    group.add_argument('--unblur_mic_pattern', dest='XXX_SP_UNBLUR_MICROGRAPH_PATTERN_XXX', type=str, default=None, help='Pattern of the micrographs to use for motion correction.')
+    group.add_argument('--unblur_exp_per_frame', dest='XXX_SP_UNBLUR_EXP_PER_FRAME_XXX', type=float, default=None, help='Exposure per frame. Used for dose adjustment.')
+    group.add_argument('--unblur_gain_file', dest='XXX_SP_UNBLUR_GAIN_FILE_XXX', type=str, default=None, help='File containing the information for gain correction. Not required if the movies are already gain corrected.')
 
     group = parser.add_argument_group('Unblur settings (optional)')
     group.add_argument('--skip_unblur', action='store_true', default=False, help='Do not run motion correction')
-    group.add_argument('--unblur_output_dir', type=str, default='00a_UNBLUR', help='Unblur output directory.')
-    group.add_argument('--unblur_first_frame', type=int, default=0, help='First frame to use for motion correction.')
-    group.add_argument('--unblur_last_frame', type=int, default=-1, help='Last frame to use for motion correction. -1 means last frame.')
-    group.add_argument('--unblur_addition', type=str, default='', help='Additional parameters that are not part of the required ones.')
+    group.add_argument('--unblur_output_dir', dest='XXX_SP_UNBLUR_OUTPUT_DIR_XXX', type=str, default='00a_UNBLUR', help='Unblur output directory.')
+    group.add_argument('--unblur_addition', dest='XXX_SP_UNBLUR_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
     group = parser.add_argument_group('CTER settings (required to run CTF estimation)')
-    group.add_argument('--cter_cs', type=float, default=2.7, help='Spherical aberration of the microscope.')
+    group.add_argument('--cter_cs', dest='XXX_SP_CTER_CS_XXX', type=float, default=2.7, help='Spherical aberration of the microscope.')
 
     group = parser.add_argument_group('CTER settings (optional)')
     group.add_argument('--skip_cter', action='store_true', default=False, help='Do not run CTF estimation.')
-    group.add_argument('--cter_output_dir', type=str, default='01a_CTER', help='CTER output directory.')
-    group.add_argument('--cter_mic_pattern', type=str, default='Mics/*.mrc', help='Micrograph pattern in case unblur is skipped.')
-    group.add_argument('--cter_window_size', type=int, default=1024, help='CTF estimation window size.')
-    group.add_argument('--cter_addition', type=str, default='', help='Additional parameters that are not part of the required ones.')
+    group.add_argument('--cter_output_dir', dest='XXX_SP_CTER_OUTPUT_DIR_XXX', type=str, default='01a_CTER', help='CTER output directory.')
+    group.add_argument('--cter_mic_pattern', dest='XXX_SP_CTER_MICROGRAPH_PATTERN_XXX', type=str, default='Mics/*.mrc', help='Micrograph pattern in case unblur is skipped.')
+    group.add_argument('--cter_window_size', dest='XXX_SP_CTER_WINDOW_SIZE', type=int, default=1024, help='CTF estimation window size.')
+    group.add_argument('--cter_addition', dest='XXX_SP_CTER_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
     group = parser.add_argument_group('CRYOLO settings (required to run particle picking)')
-    group.add_argument('--cryolo_predict_path', type=str, default='/Path/cryolo_predict.py', help='Path to the cryolo predict executable.')
-    group.add_argument('--cryolo_config_path', type=str, default='/Path/config', help='Path to the cryolo config Path')
-    group.add_argument('--cryolo_gpu', type=str, default='0', help='Cryolo GPU list.')
+    group.add_argument('--cryolo_predict_path', dest='XXX_SP_CRYOLO_PREDICT_PATH_XXX', type=str, default='/Path/cryolo_predict.py', help='Path to the cryolo predict executable.')
+    group.add_argument('--cryolo_config_path', dest='XXX_SP_CRYOLO_CONFIG_PATH_XXX', type=str, default='/Path/config', help='Path to the cryolo config Path')
+    group.add_argument('--cryolo_gpu', dest='XXX_SP_CRYOLO_GPU_XXX', type=str, default='0', help='Cryolo GPU list.')
 
     group = parser.add_argument_group('CRYOLO settings (optional)')
     group.add_argument('--skip_cryolo', action='store_true', default=False, help='Do not run particle picking.')
-    group.add_argument('--cryolo_output_dir', type=str, default='02a_CRYOLO_PREDICT', help='CRYOLO output directory.')
-    group.add_argument('--cryolo_mic_pattern', type=str, default='Mics/*.mrc', help='Micrograph pattern in case unblur is skipped.')
-    group.add_argument('--cryolo_addition', type=str, default='', help='Additional parameters that are not part of the required ones.')
+    group.add_argument('--cryolo_output_dir', dest='XXX_SP_CRYOLO_OUTPUT_DIR_XXX', type=str, default='02a_CRYOLO_PREDICT', help='CRYOLO output directory.')
+    group.add_argument('--cryolo_mic_path', dest='XXX_SP_CRYOLO_MICROGRAPH_PATH_XXX', type=str, default='Mics/*.mrc', help='Micrograph pattern in case unblur is skipped.')
+    group.add_argument('--cryolo_addition', dest='XXX_SP_CRYOLO_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
     group = parser.add_argument_group('WINDOW settings (optional)')
     group.add_argument('--skip_window', action='store_true', default=False, help='Do not run particle extraction.')
-    group.add_argument('--window_box_pattern', type=str, default='Boxes/*.box', help='Window box file pattern.')
-    group.add_argument('--window_mic_pattern', type=str, default='Mics/*.mrc', help='Window mrc file pattern.')
-    group.add_argument('--window_partres', type=str, default='CTER/partres.txt', help='CTER partres file. In case of negative stain put this value to the pixel size.')
-    group.add_argument('--window_output_dir', type=str, default='02b_WINDOW', help='Window output directory.')
-    group.add_argument('--window_addition', type=str, default='', help='Additional parameters that are not part of the required ones.')
+    group.add_argument('--window_box_pattern', dest='XXX_SP_WINDOW_BOX_PATTERN_XXX', type=str, default='Boxes/*.box', help='Window box file pattern.')
+    group.add_argument('--window_mic_pattern', dest='XXX_SP_WINDOW_MICROGRAPH_PATTERN_XXX', type=str, default='Mics/*.mrc', help='Window mrc file pattern.')
+    group.add_argument('--window_partres', dest='XXX_SP_WINDOW_PARTRES_XXX', type=str, default='CTER/partres.txt', help='CTER partres file. In case of negative stain put this value to the pixel size.')
+    group.add_argument('--window_output_dir', dest='XXX_SP_WINDOW_OUTPUT_DIR_XXX', type=str, default='02b_WINDOW', help='Window output directory.')
+    group.add_argument('--window_addition', dest='XXX_SP_WINDOW_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
-    return parser.parse_args()
+    group = parser.add_argument_group('ISAC2 settings (required to run 2d classification)')
+    group.add_argument('--isac2_img_per_grp', dest='XXX_SP_ISAC_IMG_PER_GRP_XXX', type=int, default=100, help='Img per group for the ISAC run.')
+
+    group = parser.add_argument_group('ISAC2 settings (optional)')
+    group.add_argument('--skip_isac2', action='store_true', default=False, help='Do not run 2d classification.')
+    group.add_argument('--isac2_input_stack', dest='XXX_SP_ISAC_STACK_XXX', type=str, default='bdb:path#stack', help='Path to the Input stack for ISAC')
+    group.add_argument('--isac2_output_dir', dest='XXX_SP_ISAC_OUTPUT_DIR_XXX', type=str, default='03a_ISAC', help='ISAC2 output directory.')
+    group.add_argument('--isac2_addition', dest='XXX_SP_ISAC_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
+
+    group = parser.add_argument_group('Substack ISAC2 settings (optional)')
+    group.add_argument('--substack_output_dir', dest='XXX_SP_SUBSTACK_OUTPUT_DIR_XXX', type=str, default='03b_SUBSTACK', help='Substack ISAC2 output directory.')
+
+    group = parser.add_argument_group('RVIPER settings (optional)')
+    group.add_argument('--skip_rviper', action='store_true', default=False, help='Do not run 3d ab-initio reconstruction.')
+    group.add_argument('--rviper_input_stack', dest='XXX_SP_RVIPER_INPUT_STACK_XXX', type=str, default='bdb:path#stack', help='Path to the input stack for RVIPER')
+    group.add_argument('--rviper_output_dir', dest='XXX_SP_RVIPER_OUTPUT_DIR_XXX', type=str, default='04a_RVIPER', help='RVIPER output directory.')
+    group.add_argument('--rviper_addition', dest='XXX_SP_RVIPER_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
+
+    group = parser.add_argument_group('RVIPER volume adjustment settings (optional)')
+    group.add_argument('--skip_adjust_rviper', action='store_true', default=False, help='Skip adjusting a volume.')
+    group.add_argument('--adjust_rviper_resample', dest='XXX_SP_ADJUSTMENT_RESAMPLE_RATIO_XXX', type=str, default='bdb:path#stack', help='Resample ratio for RVIPER.')
+    group.add_argument('--adjust_rviper_output_dir', dest='XXX_SP_ADJUSTMENT_OUTPUT_DIR_XXX', type=str, default='04b_RVIPER_ADJUSTMENT', help='RVIPER volume adjustment output directory.')
+    group.add_argument('--adjust_rviper_addition', dest='XXX_SP_ADJUSTMENT_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
+
+    group = parser.add_argument_group('RVIPER mask settings (optional)')
+    group.add_argument('--skip_mask_rviper', action='store_true', default=False, help='Skip creating a mask.')
+    group.add_argument('--mask_rviper_ndilation', dest='XXX_SP_MASK_RVIPER_NDILAITON_XXX', type=int, default=3, help='Number of dilations of the mask. 1 Dilation adds about 2 pixel to the binary volume.')
+    group.add_argument('--mask_rviper_soft_edge', dest='XXX_SP_MASK_RVIPER_SOFT_EDGE_XXX', type=int, default=10, help='Number of pixels for the soft edge.')
+    group.add_argument('--mask_rviper_output_dir', dest='XXX_SP_MASK_RVIPER_OUTPUT_DIR_XXX', type=str, default='04c_RVIPER_MASK', help='RVIPER mask output directory.')
+    group.add_argument('--mask_rviper_addition', dest='XXX_SP_MASK_RVIPER_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
+
+    group = parser.add_argument_group('Meridien settings (optional)')
+    group.add_argument('--skip_meridien', action='store_true', default=False, help='Do not run 3d refinement.')
+    group.add_argument('--meridien_input_volume', dest='XXX_SP_MERIDIEN_INPUT_VOLUME_XXX', type=str, default='ref_vol.hdf', help='Path to the ref_vol.hdf file')
+    group.add_argument('--meridien_input_mask', dest='XXX_SP_MERIDIEN_INPUT_MASK_XXX', type=str, default='mask.hdf', help='Path to the mask.hdf file')
+    group.add_argument('--meridien_input_stack', dest='XXX_SP_MERIDIEN_INPUT_STACK_XXX', type=str, default='bdb:path#stack', help='Path to the Input stack for Meridien')
+    group.add_argument('--meridien_output_dir', dest='XXX_SP_MERIDIEN_OUTPUT_DIR', type=str, default='05a_MERIDIEN', help='Meridien output directory.')
+    group.add_argument('--meridien_addition', dest='XXX_SP_MERIDIEN_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
+
+    args = parser.parse_args()
+    return args
 
 
 def get_unblur_cmd(status_dict, **kwargs):
@@ -105,8 +154,6 @@ def get_unblur_cmd(status_dict, **kwargs):
     cmd.append('--voltage=XXX_SP_VOLTAGE_XXX')
     cmd.append('--exposure_per_frame=XXX_SP_UNBLUR_EXP_PER_FRAME_XXX')
     cmd.append('--gain_file=XXX_SP_UNBLUR_GAIN_FILE_XXX')
-    cmd.append('--first_frame=XXX_SP_UNBLUR_FIRST_FRAME_XXX')
-    cmd.append('--last_frame=XXX_SP_UNBLUR_LAST_FRAME_XXX')
     cmd.append('XXX_SP_UNBLUR_ADDITION_XXX')
     return cmd
 
@@ -139,7 +186,7 @@ def get_cryolo_predict(status_dict, **kwargs):
     elif status_dict['do_cter']:
         cmd.append('XXX_SP_CTER_MICROGRAPH_PATTERN_XXX')
     else:
-        cmd.append('XXX_SP_CRYOLO_MICROGRAPH_PATTERN_XXX')
+        cmd.append('XXX_SP_CRYOLO_MICROGRAPH_PATH_XXX')
     cmd.append('XXX_SP_CRYOLO_OUTPUT_DIR_XXX')
     cmd.append('XXX_SP_CRYOLO_PREDICT_PATH_XXX')
     cmd.append('--gpu=XXX_SP_CRYOLO_GPU_XXX')
@@ -155,7 +202,7 @@ def get_window(status_dict, negative_stain, **kwargs):
     elif status_dict['do_cter']:
         cmd.append('XXX_SP_CTER_MICROGRAPH_PATTERN_XXX')
     elif status_dict['do_cryolo']:
-        cmd.append('XXX_SP_CRYOLO_MICROGRAPH_PATTERN_XXX')
+        cmd.append('XXX_SP_CRYOLO_MICROGRAPH_PATH_XXX/*.mrc')
     else:
         cmd.append('XXX_SP_WINDOW_MICROGRAPH_PATTERN_XXX')
 
@@ -225,7 +272,7 @@ def get_rviper(status_dict, **kwargs):
 
 def get_adjustment(status_dict, **kwargs):
     cmd = []
-    if status_dict['do_rviper']:
+    if status_dict['do_rviper'] and status_dict['do_adjustment_rviper']:
         cmd.append('sp_pipe.py')
         cmd.append('moon_elimination')
         cmd.append('XXX_SP_RVIPER_OUTPUT_DIR_XXX/main001/run000/refvol2.hdf')
@@ -241,7 +288,7 @@ def get_adjustment(status_dict, **kwargs):
 
 def get_mask_rviper(status_dict, fill_rviper_mask, **kwargs):
     cmd = []
-    if status_dict['do_rviper']:
+    if status_dict['do_rviper'] and status_dict['do_mask_rviper'] and status_dict['do_adjustment_rviper']:
         cmd.append('sp_mask.py')
         cmd.append('XXX_SP_ADJUSTMENT_OUTPUT_DIR_XXX/vol3d_ref_moon_eliminated.hdf')
         cmd.append('XXX_SP_MASK_RVIPER_OUTPUT_DIR_XXX')
@@ -268,7 +315,10 @@ def get_meridien(status_dict, **kwargs):
         cmd.append('XXX_SP_MERIDIEN_INPUT_VOLUME_XXX')
     cmd.append('--radius=XXX_SP_PARTICLE_RADIUS_XXX')
     cmd.append('--symmetry=XXX_SP_SYMMETRY_XXX')
-    cmd.append('--mask3D=XXX_SP_MASK_RVIPER_OUTPUT_DIR_XXX/sxmask_mask.hdf')
+    if status_dict['do_mask_rviper']:
+        cmd.append('--mask3D=XXX_SP_MASK_RVIPER_OUTPUT_DIR_XXX/sxmask_mask.hdf')
+    else:
+        cmd.append('--mask3D=XXX_SP_MERIDIEN_INPUT_MASK_XXX')
     if status_dict['do_isac2']:
         cmd.append('--initialshifts')
         cmd.append('--skip_prealignment')
@@ -338,9 +388,7 @@ def get_defaults():
 
     default_dict['XXX_SP_UNBLUR_ADDITION_XXX'] = ''
     default_dict['XXX_SP_UNBLUR_EXP_PER_FRAME_XXX'] = '2.5'
-    default_dict['XXX_SP_UNBLUR_FIRST_FRAME_XXX'] = '0'
     default_dict['XXX_SP_UNBLUR_GAIN_FILE_XXX'] = '/Path/to/Gain'
-    default_dict['XXX_SP_UNBLUR_LAST_FRAME_XXX'] = '-1'
     default_dict['XXX_SP_UNBLUR_MICROGRAPH_PATTERN_XXX'] = '/PATTERN*.mrc'
     default_dict['XXX_SP_UNBLUR_OUTPUT_DIR_XXX'] = '00a_UNBLUR'
     default_dict['XXX_SP_UNBLUR_PATH_XXX'] = '/Path/to/unblur'
@@ -354,6 +402,10 @@ def get_defaults():
 
 
 def main(args_as_dict):
+    if os.path.exists(args_as_dict['output_directory']):
+        sp_global_def.sxprint('Output directory already exists! Please choose another one.')
+        sys.exit(1)
+
     #show_variables()
     function_dict = co.OrderedDict()
     function_dict['do_unblur'] = get_unblur_cmd
@@ -362,30 +414,22 @@ def main(args_as_dict):
     function_dict['do_window'] = get_window
     function_dict['do_isac2'] = get_isac2
     function_dict['do_rviper'] = get_rviper
-    function_dict['do_adjustment'] = get_adjustment
+    function_dict['do_adjustment_rviper'] = get_adjustment
     function_dict['do_mask_rviper'] = get_mask_rviper
     function_dict['do_meridien'] = get_meridien
 
     do_dict = {}
-    do_dict['do_unblur'] = True
-    do_dict['do_cter'] = True
-    do_dict['do_cryolo'] = True
-    do_dict['do_window'] = True
-    do_dict['do_isac2'] = True
-    do_dict['do_rviper'] = True
-    do_dict['do_adjustment'] = True
-    do_dict['do_mask_rviper'] = True
-    do_dict['do_meridien'] = True
+    for key, value in args_as_dict.items():
+        if key.startswith('skip') and isinstance(value, bool):
+            do_dict[key.replace('skip', 'do')] = bool(not value)
 
-    phase_plate = False
-    negative_stain = False
-    fill_rviper_mask = False
+    phase_plate = args_as_dict['phase_plate']
+    negative_stain = args_as_dict['negative_stain']
+    fill_rviper_mask = args_as_dict['fill_rviper_mask']
 
-    mpi_procs = 96
-    mpi_submission = 'test_submission.sh'
-    out_submission = 'out_submission.sh'
-
-    default_replaces = get_defaults()
+    mpi_procs = args_as_dict['mpi_procs']
+    mpi_submission = args_as_dict['mpi_submission_template']
+    out_submission = '{0}/submission_script.sh'.format(args_as_dict['output_directory'])
 
     cmds = []
     for key in function_dict:
@@ -396,15 +440,26 @@ def main(args_as_dict):
         lines = read.readlines()
     found_lines = []
     for idx, entry in enumerate(lines):
-        if 'XXX_SXMPI_NPROC_XXX' in entry and 'XXX_SXCMD_LINE_XXX' in entry and 'mpirun' in entry:
+        if 'XXX_SXCMD_LINE_XXX' in entry and 'mpirun' in entry:
             found_lines.append(idx)
+
+    if not found_lines:
+        sp_global_def.sxprint('Could not find a suitable command line for exchange.')
+        sp_global_def.sxprint('The line should contain XXX_SXMPI_NPROC_XXX and XXX_SXCMD_LINE_XXX.')
+        sys.exit(1)
+
     line = lines[found_lines[-1]].replace('{', '{{').replace('}', '}}').replace('XXX_SXMPI_NPROC_XXX', str(mpi_procs)).replace('XXX_SXCMD_LINE_XXX', '{0}')
     final_line = '\n'.join([line.format(' '.join(entry)) for entry in cmds])
 
-    for key, value in default_replaces.items():
-        final_line = final_line.replace(key, value)
+    for key, value in args_as_dict.items():
+        if key.startswith('XXX'):
+            if 'OUTPUT_DIR' in key:
+                value = os.path.join(args_as_dict['output_directory'], value)
+            final_line = final_line.replace(key, str(value))
     lines[found_lines[-1]] = final_line
 
+    os.mkdir(args_as_dict['output_directory'])
+    sp_global_def.write_command(args_as_dict['output_directory'])
     with open(out_submission, 'w') as w:
         w.write('\n'.join(lines))
 

@@ -140,6 +140,7 @@ def construct_keyword_dict():
 ###	keyword_dict["--use_latest_master_directory"] = SXkeyword_map(0, "bool")                # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
 	keyword_dict["--stack_mode"]                  = SXkeyword_map(0, "bool")                # stack_mode (contains keyworkd 'stack' but this should be bool type)
 	keyword_dict["--use_second_mask"]               = SXkeyword_map(0, "bool")                # --generate_mask (contains keyworkd 'mask' but this should be bool type)
+	keyword_dict["--skip_mask_rviper"]               = SXkeyword_map(0, "bool")                # --generate_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--fill_mask"]               = SXkeyword_map(0, "bool")                # --generate_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--generate_mask"]               = SXkeyword_map(0, "bool")                # --generate_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--binary_mask"]                 = SXkeyword_map(0, "bool")                # --binary_mask (contains keyworkd 'mask' but this should be bool type)
@@ -236,6 +237,7 @@ def construct_keyword_dict():
 
 	keyword_dict["--apix"]                        = SXkeyword_map(2, "apix")                # --apix=pixel_size, --apix, --apix=PIXEL_SIZE
 	keyword_dict["--pixel_size"]                  = SXkeyword_map(2, "apix")                # --pixel_size=PIXEL_SIZE
+	keyword_dict["--cter_window_size"]                          = SXkeyword_map(2, "ctfwin")              # --wn
 	keyword_dict["--wn"]                          = SXkeyword_map(2, "ctfwin")              # --wn
 	keyword_dict["--box"]                         = SXkeyword_map(2, "box")                 # --box=box_size, --box_size=box_size, --boxsize=BOX_SIZE
 	keyword_dict["--rb_box_size"]                 = SXkeyword_map(2, "box")                 # --rb_box_size=BOX_SIZE
@@ -2556,6 +2558,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/ctf_refine.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable=True))
 	sxcmd_config_list.append(SXcmd_config("../doc/ctf_refine_stack.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable=True))
+	sxcmd_config_list.append(SXcmd_config("../doc/auto.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/transphire.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
 
 
