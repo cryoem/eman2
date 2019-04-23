@@ -184,6 +184,7 @@ def main():
 			complete_command.append("--nomerging")
 		if no_split:
 			complete_command.append("--nosplit")
+	sp_global_def.write_command()
 	subprocess.check_call(complete_command)
 	sp_global_def.write_command(output_dir)
 

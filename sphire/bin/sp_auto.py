@@ -182,6 +182,7 @@ def get_cter_cmd(status_dict, phase_plate, **kwargs):
 
 def get_cryolo_predict(status_dict, **kwargs):
 	cmd = []
+	cmd.append('sp_cryolo_predict.py')
 	cmd.append('XXX_SP_CRYOLO_CONFIG_PATH_XXX')
 	if status_dict['do_unblur']:
 		cmd.append('XXX_SP_UNBLUR_OUTPUT_DIR_XXX/corrsum_dw')
@@ -446,8 +447,8 @@ def main(args_as_dict):
 	mpi_submission = args_as_dict['mpi_submission_template']
 	out_submission = '{0}/submission_script.sh'.format(args_as_dict['output_directory'])
 
-	prev_line = 'echo {0}\n'
-	check_line = "if [[ ${{?}} != 0 ]]; then echo '{0}: Failure!'; exit 1; else echo '{0}: Success!'; fi\n"
+	prev_line = ' echo $(date) {0}\n'
+	check_line = "if [[ ${{?}} != 0 ]]; then echo $(date) '{0}: Failure!'; exit 1; else echo $(date) '{0}: Success!'; fi\n"
 
 	cmds = []
 	for key in function_dict:
@@ -486,6 +487,7 @@ def main(args_as_dict):
 
 	for key, value in args_as_dict.items():
 		if key.startswith('XXX'):
+			final_line = final_line.replace('\'XXX_SP_WINDOW_OUTPUT_DIR_XXX/mpi_proc_*\'', 'XXX_SP_WINDOW_OUTPUT_DIR_XXX/mpi_proc_*')
 			if 'OUTPUT_DIR' in key:
 				value = os.path.join(args_as_dict['output_directory'], value)
 			final_line = final_line.replace(key, str(value))
