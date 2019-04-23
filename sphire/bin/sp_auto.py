@@ -62,6 +62,7 @@ def parse_args():
 	group.add_argument('--negative_stain', action='store_true', default=False, help='Input is negative stain.')
 	group.add_argument('--phase_plate', action='store_true', default=False, help='Input is phase_plate.')
 	group.add_argument('--fill_rviper_mask', action='store_true', default=False, help='Fill RVIPER mask.')
+	group.add_argument('--memory_per_node', dest='XXX_SP_MEMORY_PER_NODE_XXX', type=float, default=-1, help='Available memory per node.')
 
 	group = parser.add_argument_group('Unblur settings (required to run movie alignment)')
 	group.add_argument('--unblur_path', dest='XXX_SP_UNBLUR_PATH_XXX', type=str, default=None, help='Path pointing to the unblur executable.')
@@ -324,6 +325,7 @@ def get_meridien(status_dict, **kwargs):
 		cmd.append('XXX_SP_MERIDIEN_INPUT_VOLUME_XXX')
 	cmd.append('--radius=XXX_SP_PARTICLE_RADIUS_XXX')
 	cmd.append('--symmetry=XXX_SP_SYMMETRY_XXX')
+	cmd.append('--memory_per_node=XXX_SP_MEMORY_PER_NODE_XXX')
 	if status_dict['do_mask_rviper']:
 		cmd.append('--mask3D=XXX_SP_MASK_RVIPER_OUTPUT_DIR_XXX/sxmask_mask.hdf')
 	else:
