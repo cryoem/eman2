@@ -53,6 +53,15 @@ There are some opened issues in:
                 --> since set_params_proj has the same kind of input we are not able to discriminate them when we call the function. anyway It does not set the values
 14) set_params3D --> if you use xform=xform.align2d it works, but the output is somethiong that we do not really want to have. It does not set the values
 15) set_params_proj --> I need an image with key 'xform.projection' to finish these tests because the associated pickle file has not it
+16) The following functions concern the sending data in the process and are difficult or even not possible to test deeply
+    -) reduce_EMData_to_root
+    -) bcast_compacted_EMData_all_to_all
+    -) gather_compacted_EMData_to_root
+    -) bcast_EMData_to_all
+    -) send_EMData
+    -) recv_EMData
+    -) recv_attr_dict
+    -) send_attr_dict
 """
 
 class Test_amoeba(unittest.TestCase):
@@ -1314,7 +1323,7 @@ class Test_set_arb_params(unittest.TestCase):
         self.assertEqual(fu_img.get_attr(par_str[0]),params[0])
         self.assertEqual(fu_img.get_attr(par_str[1]), params[1])
 
-    def test_with_BadListAttr(self):
+    def test_with_BadListAttr_returns_IndexError_list_index_out_of_range(self):
         fu_img = EMData()
         oldfu_img = EMData()
         par_str = ["lowpassfilter","fake_par"]
@@ -1364,7 +1373,443 @@ class Test_get_arb_params(unittest.TestCase):
         self.assertEqual(msg[3], msg_old[3])
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-#todo: all the mpi function
+
+
+class Test_reduce_EMData_to_root(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.reduce_EMData_to_root()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.reduce_EMData_to_root()
+        self.assertEqual(cm_new.exception.message, "reduce_EMData_to_root() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_NoneType_as_img_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        return_new = fu.reduce_EMData_to_root(None, myid=74, main_node=0, comm = -1)
+        return_old = oldfu.reduce_EMData_to_root(None, myid=74, main_node=0, comm = -1)
+        self.assertEqual(return_new, return_old)
+        """
+
+    def test_default_values(self):
+        data = deepcopy(IMAGE_2D_REFERENCE)
+        return_new = fu.reduce_EMData_to_root(data, myid=74, main_node=0, comm = -1)
+        return_old = oldfu.reduce_EMData_to_root(data, myid=74, main_node=0, comm = -1)
+        self.assertTrue(numpy.array_equal(IMAGE_2D_REFERENCE.get_3dview(), data.get_3dview()))
+        self.assertEqual(return_new, return_old)
+        self.assertTrue(return_new is None)
+
+    def test_with_MPI_COMM_WORLD(self):
+        data = deepcopy(IMAGE_2D_REFERENCE)
+        return_new = fu.reduce_EMData_to_root(data, myid=74, main_node=0, comm = MPI_COMM_WORLD)
+        return_old = oldfu.reduce_EMData_to_root(data, myid=74, main_node=0, comm = MPI_COMM_WORLD)
+        self.assertTrue(numpy.array_equal(IMAGE_2D_REFERENCE.get_3dview(), data.get_3dview()))
+        self.assertEqual(return_new, return_old)
+        self.assertTrue(return_new is None)
+
+
+
+class Test_bcast_compacted_EMData_all_to_all(unittest.TestCase):
+    """
+    It does not matter which of my images I-ll use, I got always the following typeerror:
+    Error
+Traceback (most recent call last):
+  File "/home/lusnig/SPHIRE_1_1/lib/python2.7/unittest/case.py", line 329, in run
+    testMethod()
+  File "/home/lusnig/EMAN2/eman2/sphire/tests/test_utilities.py", line 1451, in test_bcast_compacted_EMData_all_to_all_true_should_return_equal_objects
+    return_new = fu.bcast_compacted_EMData_all_to_all(list_of_em_objects, myid)
+  File "/home/lusnig/EMAN2/eman2/sphire/libpy/sparx_utilities.py", line 1105, in bcast_compacted_EMData_all_to_all
+    em_dict = dict_received["em_dict"]
+TypeError: 'NoneType' object has no attribute '__getitem__'
+    """
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.bcast_compacted_EMData_all_to_all()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.bcast_compacted_EMData_all_to_all()
+        self.assertEqual(cm_new.exception.message, "bcast_compacted_EMData_all_to_all() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_with_NoneType_data_returns_TypeError_NoneType_obj_hasnot_attribute__getitem__(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.bcast_compacted_EMData_all_to_all([None,None], myid=74,  comm = -1)
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.bcast_compacted_EMData_all_to_all([None,None], myid=74, comm = -1)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute '__getitem__'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_wrong_image(self):
+        data = [deepcopy(IMAGE_3D),deepcopy(IMAGE_3D)]
+        with self.assertRaises(TypeError) as cm_new:
+            fu.bcast_compacted_EMData_all_to_all(data, myid=74,  comm = -1)
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.bcast_compacted_EMData_all_to_all(data, myid=74,  comm = -1)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute '__getitem__'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+
+
+class Test_gather_compacted_EMData_to_root(unittest.TestCase):
+    argum = get_arg_from_pickle_file(os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.gather_compacted_EMData_to_root"))
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.gather_compacted_EMData_to_root()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.gather_compacted_EMData_to_root()
+        self.assertEqual(cm_new.exception.message, "gather_compacted_EMData_to_root() takes at least 3 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_pickle_file_values(self):
+        (no_of_emo, list_of_emo, myid) = self.argum[0]
+        return_new = fu.gather_compacted_EMData_to_root(no_of_emo, list_of_emo, myid, comm=-1)
+        return_old = oldfu.gather_compacted_EMData_to_root(no_of_emo, list_of_emo, myid, comm=-1)
+        self.assertEqual(return_new, return_old)
+
+    def test_with_MPI_COMM_WORLD(self):
+        (no_of_emo, list_of_emo, myid) = self.argum[0]
+        return_new = fu.gather_compacted_EMData_to_root(no_of_emo, list_of_emo, myid, comm=MPI_COMM_WORLD)
+        return_old = oldfu.gather_compacted_EMData_to_root(no_of_emo, list_of_emo, myid, comm=MPI_COMM_WORLD)
+        self.assertEqual(return_new, return_old)
+        self.assertTrue(return_new is None)
+
+    def test_pickle_file_values_wrong_number_of_number_of_all_em_objects_distributed_across_processes(self):
+        (no_of_emo, list_of_emo, myid) = self.argum[0]
+        return_new = fu.gather_compacted_EMData_to_root(0, list_of_emo, myid,  comm=-1)
+        return_old = oldfu.gather_compacted_EMData_to_root(0, list_of_emo, myid, comm=-1)
+        self.assertEqual(return_new, return_old)
+        self.assertTrue(return_new is None)
+
+    def test_NoneType_as_img_returns_IndexError_list_index_out_of_range(self):
+        (no_of_emo, list_of_emo, myid) = self.argum[0]
+        with self.assertRaises(IndexError) as cm_new:
+            fu.gather_compacted_EMData_to_root(no_of_emo, [], myid, comm=-1)
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.gather_compacted_EMData_to_root(no_of_emo, [], myid, comm=-1)
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+
+
+class Test_bcast_EMData_to_all(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.bcast_EMData_to_all()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.bcast_EMData_to_all()
+        self.assertEqual(cm_new.exception.message, "bcast_EMData_to_all() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_with_default_values(self):
+        tavg = deepcopy(IMAGE_2D_REFERENCE)
+        return_new = fu.bcast_EMData_to_all(tavg, myid = 11, source_node =0, comm= -1)
+        return_old = oldfu.bcast_EMData_to_all(tavg, myid= 11, source_node = 0, comm= -1)
+        self.assertTrue(numpy.array_equal(IMAGE_2D_REFERENCE.get_3dview(), tavg.get_3dview()))
+        self.assertEqual(return_new, return_old)
+        self.assertTrue(return_new is None)
+
+    def test_with_myid_equal_sourcenode_default_valuqes(self):
+        tavg = deepcopy(IMAGE_2D_REFERENCE)
+        return_new = fu.bcast_EMData_to_all(tavg, myid= 0, source_node =0, comm= -1)
+        return_old = oldfu.bcast_EMData_to_all(tavg, myid= 0, source_node =0, comm= -1)
+        self.assertTrue(numpy.array_equal(IMAGE_2D_REFERENCE.get_3dview(), tavg.get_3dview()))
+        self.assertEqual(return_new, return_old)
+        self.assertTrue(return_new is None)
+
+    def test_with_MPI_COMM_WORLD(self):
+        tavg = deepcopy(IMAGE_2D_REFERENCE)
+        return_new = fu.bcast_EMData_to_all(tavg, myid= 11, source_node =0, comm= MPI_COMM_WORLD)
+        return_old = oldfu.bcast_EMData_to_all(tavg, myid= 11, source_node =0, comm= MPI_COMM_WORLD)
+        self.assertTrue(numpy.array_equal(IMAGE_2D_REFERENCE.get_3dview(), tavg.get_3dview()))
+        self.assertEqual(return_new, return_old)
+        self.assertTrue(return_new is None)
+
+    def test_NoneType_as_img_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        return_new = fu.bcast_EMData_to_all(None, 11, source_node =0, comm= -1)
+        return_old = oldfu.bcast_EMData_to_all(None, 11, source_node =0, comm= -1)
+        self.assertEqual(return_new, return_old)
+        """
+
+
+
+class Test_send_EMData(unittest.TestCase):
+    #argum = get_arg_from_pickle_file(os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.send_EMData"))
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.send_EMData()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.send_EMData()
+        self.assertEqual(cm_new.exception.message, "send_EMData() takes at least 3 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_NoneType_as_img_crashes_because_signal11SIGSEV(self):
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.send_EMData(None, 0, 0)
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.send_EMData(None, 0, 0)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    """  Can only be tested on the mpi. Wait too long on normal workstation"""
+    # def test_send_EMData_true_should_return_equal_objects(self):
+    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.send_EMData")
+    #     with open(filepath, 'rb') as rb:
+    #         argum = pickle.load(rb)
+    #
+    #     print(argum[0])
+    #
+    #     (img, dst, tag, comm) = argum[0]
+    #     tag = 0
+    #
+    #     return_new = fu.send_EMData(img, dst, tag)
+    #     mpi_barrier(MPI_COMM_WORLD)
+    #
+    #     return_old = oldfu.send_EMData(img, dst, tag)
+    #     mpi_barrier(MPI_COMM_WORLD)
+    #
+    #     self.assertEqual(return_new, return_old)
+
+
+
+class Test_recv_EMData(unittest.TestCase):
+    #argum = get_arg_from_pickle_file(os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.recv_EMData"))
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.recv_EMData()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.recv_EMData()
+        self.assertEqual(cm_new.exception.message, "recv_EMData() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    """  Can only be tested on the mpi. Wait too long on normal workstation"""
+    # def test_recv_EMData_true_should_return_equal_objects(self):
+    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.recv_EMData")
+    #     with open(filepath, 'rb') as rb:
+    #         argum = pickle.load(rb)
+    #
+    #     print(argum[0])
+    #
+    #     (src, tag,comm) = argum[0]
+    #     tag = 0
+    #
+    #     return_new = fu.recv_EMData(src, tag)
+    #     mpi_barrier(MPI_COMM_WORLD)
+    #
+    #     return_old = oldfu.recv_EMData(src, tag)
+    #     mpi_barrier(MPI_COMM_WORLD)
+    #
+    #     self.assertEqual(return_new, return_old)
+
+
+
+
+class Test_bcast_number_to_all(unittest.TestCase):
+
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.bcast_number_to_all()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.bcast_number_to_all()
+        self.assertEqual(cm_new.exception.message, "bcast_number_to_all() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_number_to_send_is_null(self):
+        return_new = fu.bcast_number_to_all(number_to_send = 0, source_node = 0, mpi_comm = -1)
+        return_old = oldfu.bcast_number_to_all(number_to_send = 0, source_node = 0, mpi_comm = -1)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, 0)
+
+    def test_with_MPI_COMM_WORLD(self):
+        return_new = fu.bcast_number_to_all(number_to_send = 0, source_node = 0, mpi_comm = MPI_COMM_WORLD)
+        return_old = oldfu.bcast_number_to_all(number_to_send = 0, source_node = 0, mpi_comm = MPI_COMM_WORLD)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, 0)
+
+    def test_number_to_send_is_not_null(self):
+        return_new = fu.bcast_number_to_all(number_to_send = 3, source_node = 0, mpi_comm = -1)
+        return_old = oldfu.bcast_number_to_all(number_to_send = 3, source_node = 0, mpi_comm = -1)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, 3)
+
+    def test_invalid_number_to_send_error_msg(self):
+        return_new = fu.bcast_number_to_all(number_to_send = None, source_node = 0, mpi_comm = -1)
+        return_old = oldfu.bcast_number_to_all(number_to_send = None, source_node = 0, mpi_comm = -1)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, None)
+
+
+class Test_bcast_list_to_all(unittest.TestCase):
+    myid = 74
+    source_node =0
+    list_to_send = [1,2]
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.bcast_list_to_all()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.bcast_list_to_all()
+        self.assertEqual(cm_new.exception.message, "bcast_list_to_all() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_with_empty_list(self):
+        return_new = fu.bcast_list_to_all([], myid = self.myid, source_node =self.source_node, mpi_comm= -1)
+        return_old = oldfu.bcast_list_to_all([], myid= self.myid, source_node = self.source_node, mpi_comm= -1)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new,[]))
+
+    def test_defualt_values(self):
+        return_new = fu.bcast_list_to_all(self.list_to_send, myid = self.myid, source_node =self.source_node, mpi_comm= -1)
+        return_old = oldfu.bcast_list_to_all(self.list_to_send, myid= self.myid, source_node = self.source_node, mpi_comm= -1)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new,[]))
+
+    def test_defualt_values_with_MPI_COMM_WORLD(self):
+        return_new = fu.bcast_list_to_all(self.list_to_send, myid = self.myid, source_node =self.source_node, mpi_comm= MPI_COMM_WORLD)
+        return_old = oldfu.bcast_list_to_all(self.list_to_send, myid= self.myid, source_node = self.source_node, mpi_comm= MPI_COMM_WORLD)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new,[]))
+
+    def test_myid_equal_sourcenode(self):
+        return_new = fu.bcast_list_to_all(self.list_to_send, myid = self.source_node, source_node =self.source_node, mpi_comm= MPI_COMM_WORLD)
+        return_old = oldfu.bcast_list_to_all(self.list_to_send, myid= self.source_node, source_node = self.source_node, mpi_comm= MPI_COMM_WORLD)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new,self.list_to_send))
+
+    def test_myid_equal_sourcenode_and_wrong_type_in_listsender_returns_ValueError(self):
+        list_to_send=[IMAGE_2D]
+        with self.assertRaises(ValueError) as cm_new:
+            fu.bcast_list_to_all(list_to_send, myid = self.source_node, source_node =self.source_node, mpi_comm= MPI_COMM_WORLD)
+        with self.assertRaises(ValueError) as cm_old:
+            oldfu.bcast_list_to_all(list_to_send, myid= self.source_node, source_node = self.source_node, mpi_comm= MPI_COMM_WORLD)
+        self.assertEqual(cm_new.exception.message, "setting an array element with a sequence.")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_wrong_type_in_listsender(self):
+        list_to_send=[IMAGE_2D]
+        return_new = fu.bcast_list_to_all(list_to_send, myid = self.myid, source_node =self.source_node, mpi_comm= MPI_COMM_WORLD)
+        return_old = oldfu.bcast_list_to_all(list_to_send, myid= self.myid, source_node = self.source_node, mpi_comm= MPI_COMM_WORLD)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new,[]))
+
+
+
+class Test_recv_attr_dict(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.recv_attr_dict()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.recv_attr_dict()
+        self.assertEqual(cm_new.exception.message, "recv_attr_dict() takes at least 7 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+
+
+class Test_send_attr_dict(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.send_attr_dict()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.send_attr_dict()
+        self.assertEqual(cm_new.exception.message, "send_attr_dict() takes at least 5 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+
+
+class Test_recv_attr_dict_bdb(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.recv_attr_dict_bdb()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.recv_attr_dict_bdb()
+        self.assertEqual(cm_new.exception.message, "recv_attr_dict_bdb() takes at least 7 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+
+
+class Test_print_begin_msg(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.print_begin_msg()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.print_begin_msg()
+        self.assertEqual(cm_new.exception.message, "print_begin_msg() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_print_begin_msg(self):
+        return_new = fu.print_begin_msg("test_pgr", onscreen=False)
+        return_old = oldfu.print_begin_msg("test_pgr", onscreen=False)
+        self.assertEqual(return_new,return_old)
+        self.assertTrue(return_new is None)
+
+    def test_print_begin_msg_onscreen_True(self):
+        return_new = fu.print_begin_msg("test_pgr", onscreen=True)
+        return_old = oldfu.print_begin_msg("test_pgr", onscreen=True)
+        self.assertEqual(return_new,return_old)
+        self.assertTrue(return_new is None)
+
+
+
+class Test_print_end_msg(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.print_end_msg()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.print_end_msg()
+        self.assertEqual(cm_new.exception.message, "print_end_msg() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_print_end_msg(self):
+        return_new = fu.print_end_msg("test_pgr", onscreen=False)
+        return_old = oldfu.print_end_msg("test_pgr", onscreen=False)
+        self.assertEqual(return_new,return_old)
+        self.assertTrue(return_new is None)
+
+    def test_print_end_msg_onscreen_True(self):
+        return_new = fu.print_end_msg("test_pgr", onscreen=True)
+        return_old = oldfu.print_end_msg("test_pgr", onscreen=True)
+        self.assertEqual(return_new,return_old)
+        self.assertTrue(return_new is None)
+
+
+
+class Test_print_msg(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.print_msg()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.print_msg()
+        self.assertEqual(cm_new.exception.message, "print_msg() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_print_msg(self):
+        return_new = fu.print_msg("test_pgr")
+        return_old = oldfu.print_msg("test_pgr")
+        self.assertEqual(return_new,return_old)
+        self.assertTrue(return_new is None)
+
+
+
+class Test_read_fsc(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.read_fsc()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.read_fsc()
+        self.assertEqual(cm_new.exception.message, "read_fsc() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_write_text_row(self):
+        data=[[1,1,1,1],[2,2,2,2],[3,3,3,3]]
+        f=path.join(ABSOLUTE_PATH, "filefu.txt")
+        fu.write_text_file(data, f)
+        return_new = fu.read_fsc(f)
+        return_old = oldfu.read_fsc(f)
+        remove_list_of_file([f])
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, data))
+
+
 
 class Test_circumference(unittest.TestCase):
     def test_wrong_number_params_too_few_parameters(self):
@@ -2873,6 +3318,7 @@ class Test_class_iterImagesList(unittest.TestCase):
         self.assertTrue(oldfu_obj.goToPrev())
         self.assertEqual(fu_obj.iterNo(),oldfu_obj.iterNo())
         self.assertEqual(fu_obj.iterNo(), 0)
+
 
 
 @unittest.skip("sasa")
