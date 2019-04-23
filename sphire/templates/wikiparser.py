@@ -1944,27 +1944,29 @@ def add_sxcmd_subconfig_sort3d_depth_shared_sorting(token_edit_list):
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("radius"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("sym"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("img_per_grp"); token_edit_list.append(token_edit)
-	#token_edit = SXcmd_token(); token_edit.initialize_edit("img_per_grp_split_rate"); token_edit_list.append(token_edit)
-	#token_edit = SXcmd_token(); token_edit.initialize_edit("minimum_grp_size"); token_edit_list.append(token_edit)
-	#token_edit = SXcmd_token(); token_edit.initialize_edit("do_swap_au"); token_edit_list.append(token_edit)
-	#token_edit = SXcmd_token(); token_edit.initialize_edit("swap_ratio"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("img_per_grp_split_rate"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("minimum_grp_size"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("do_swap_au"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("swap_ratio"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("overhead"); token_edit_list.append(token_edit)
+	# token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("overhead"); token_edit_list.append(token_edit)
 
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("depth_order"); token_edit_list.append(token_edit)
-	#token_edit = SXcmd_token(); token_edit.initialize_edit("stop_mgskmeans_percentage"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("stop_mgskmeans_percentage"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("nsmear"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("orientation_groups"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("not_include_unaccounted"); token_edit_list.append(token_edit)
 ###	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("shake"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("notapplybckgnoise"); token_edit_list.append(token_edit)
-	#token_edit = SXcmd_token(); token_edit.initialize_edit("random_group_elimination_threshold"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("num_core_set"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("nstep"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("use_umat"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("not_freeze_groups"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("compute_on_the_fly"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("check_smearing"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("random_group_elimination_threshold"); token_edit_list.append(token_edit)
+	# token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("nsmear"); token_edit_list.append(token_edit)
+	# token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("num_core_set"); token_edit_list.append(token_edit)
+	# token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("nstep"); token_edit_list.append(token_edit)
+	# token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("use_umat"); token_edit_list.append(token_edit)
+	# token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("not_freeze_groups"); token_edit_list.append(token_edit)
+	# token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("compute_on_the_fly"); token_edit_list.append(token_edit)
+	# token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("check_smearing"); token_edit_list.append(token_edit)
+	# token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("depth_order"); token_edit_list.append(token_edit)
 
 
 ### # NOTE: 2018/01/08 Toshio Moriya
@@ -2480,7 +2482,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_role = "sxr_alt"
 	if is_dev_mode:
 		sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d()))
-	#sxcmd_comfig_list.append(SXcmd_config("../doc/sort3d_depth.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_stack()))
+	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_stack()))
 ### # NOTE: 2018/01/08 Toshio Moriya
 ### # post-refiner embedded sort3d_depth is removed recently.
 ###	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_postrefiner()))
