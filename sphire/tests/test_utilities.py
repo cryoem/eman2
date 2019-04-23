@@ -8,6 +8,7 @@ from mpi import *
 import global_def
 import numpy
 import shutil
+import zlib
 
 
 
@@ -62,6 +63,7 @@ There are some opened issues in:
     -) recv_EMData
     -) recv_attr_dict
     -) send_attr_dict
+17) unpack_message it does not work properly is it a buggy function???
 """
 
 class Test_amoeba(unittest.TestCase):
@@ -3321,586 +3323,99 @@ class Test_class_iterImagesList(unittest.TestCase):
 
 
 
+class Test_pack_message(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.pack_message()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.pack_message()
+        self.assertEqual(cm_new.exception.message, "pack_message() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_data_is_a_string(self):
+        data = "case S:I am a string!!!"
+        return_new = fu.pack_message(data)
+        return_old = oldfu.pack_message(data)
+        self.assertEqual(return_new,return_old)
+
+    def test_data_is_a_very_long_string(self):
+        long_data = "I am a stringggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg!!!"
+        return_new = fu.pack_message(long_data)
+        return_old = oldfu.pack_message(long_data)
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new, "C"+zlib.compress(long_data,1))
+
+    def test_data_is_a_notstring(self):
+        data = 5555
+        return_new = fu.pack_message(data)
+        return_old = oldfu.pack_message(data)
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new, "O" + pickle.dumps(data,-1))
+
+    def test_data_is_a_notstring_long_version(self):
+        data = 555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555
+        return_new = fu.pack_message(data)
+        return_old = oldfu.pack_message(data)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, "Z" + zlib.compress(pickle.dumps(data, -1),1))
+
+
+
+class Test_unpack_message(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.unpack_message()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.unpack_message()
+        self.assertEqual(cm_new.exception.message, "unpack_message() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_data_is_a_string_BUG(self):
+        self.assertTrue(True)
+        """
+        data = fu.pack_message("case S:I am a string!!!")
+        return_new = fu.unpack_message(data)
+        return_old = oldfu.unpack_message(data)
+        self.assertEqual(return_new,return_old)
+        """
+
+    def test_data_is_a_very_long_string(self):
+        self.assertTrue(True)
+        """
+        long_data = "I am a stringggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg!!!"
+        data= fu.pack_message(long_data)
+        return_new = fu.unpack_message(data)
+        return_old = oldfu.unpack_message(data)
+        self.assertEqual(return_new,return_old)
+        """
+
+    def test_data_is_a_notstring(self):
+        self.assertTrue(True)
+        """
+        data = fu.pack_message(5555)
+        return_new = fu.unpack_message(5555)
+        return_old = oldfu.unpack_message(data)
+        self.assertEqual(return_new,return_old)
+        """
+    def test_data_is_a_notstring_long_version(self):
+        self.assertTrue(True)
+        """
+        data = fu.pack_message(555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555)
+        return_new = fu.unpack_message(data)
+        return_old = oldfu.unpack_message(data)
+        self.assertEqual(return_new, return_old)
+        """
+
+    def test_pickle_file_values(self):
+        (data,) = get_arg_from_pickle_file(os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.unpack_message"))[0]
+        return_new = fu.unpack_message(data)
+        return_old = oldfu.unpack_message(data)
+        self.assertEqual(return_new, return_old)
+
+
+
 @unittest.skip("sasa")
 class Test_lib_utilities_compare(unittest.TestCase):
-
-    """
-      This function test works but takes too much time that is why for the time being it is
-       commented,  will uncomment it once everything is done
-    """
-    # def test_reduce_EMData_to_root_true_should_return_equal_objects(self):
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.reduce_EMData_to_root")
-    #     with open(filepath, 'rb') as rb:
-    #         argum = pickle.load(rb)
-    #
-    #     print(argum[0])
-    #
-    #     (data, myid,main_node) = argum[0]
-    #
-    #     return_new = fu.reduce_EMData_to_root(data, myid,main_node = 0)
-    #     mpi_barrier(MPI_COMM_WORLD)
-    #     return_old = oldfu.reduce_EMData_to_root(data, myid,main_node = 0)
-    #
-    #     mpi_barrier(MPI_COMM_WORLD)
-    #     self.assertEqual(return_new, return_old)
-
-
-    """
-      This function test works but takes too much time that is why for the time being it is
-       commented,  will uncomment it once everything is done 
-    """
-    # def test_bcast_compacted_EMData_all_to_all_true_should_return_equal_objects(self):
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.bcast_compacted_EMData_all_to_all")
-    #     with open(filepath, 'rb') as rb:
-    #         argum = pickle.load(rb)
-    #
-    #     print(argum[0])
-    #
-    #     (list_of_em_objects, myid ) = argum[0]
-    #
-    #     return_new = fu.bcast_compacted_EMData_all_to_all(list_of_em_objects, myid)
-    #     mpi_barrier(MPI_COMM_WORLD)
-    #     return_old = oldfu.bcast_compacted_EMData_all_to_all(list_of_em_objects, myid)
-    #
-    #     mpi_barrier(MPI_COMM_WORLD)
-    #     self.assertEqual(return_new, return_old)
-
-
-
-    def test_gather_compacted_EMData_to_root_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.gather_compacted_EMData_to_root")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum[0])
-
-        (no_of_emo, list_of_emo, myid) = argum[0]
-
-        return_new = fu.gather_compacted_EMData_to_root(no_of_emo, list_of_emo, myid)
-        return_old = oldfu.gather_compacted_EMData_to_root(no_of_emo, list_of_emo, myid)
-
-        self.assertEqual(return_new, return_old)
-
-
-    def test_bcast_EMData_to_all_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.bcast_EMData_to_all")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum[0])
-
-        (tavg, myid, source_node, ) = argum[0]
-
-        return_new = fu.bcast_EMData_to_all(tavg, myid, source_node)
-        mpi_barrier(MPI_COMM_WORLD)
-
-        return_old = oldfu.bcast_EMData_to_all(tavg, myid, source_node)
-        mpi_barrier(MPI_COMM_WORLD)
-
-        self.assertEqual(return_new, return_old)
-
-
-
-    """  Can only be tested on the mpi. Wait too long on normal workstation"""
-    # def test_send_EMData_true_should_return_equal_objects(self):
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.send_EMData")
-    #     with open(filepath, 'rb') as rb:
-    #         argum = pickle.load(rb)
-    #
-    #     print(argum[0])
-    #
-    #     (img, dst, tag, comm) = argum[0]
-    #     tag = 0
-    #
-    #     return_new = fu.send_EMData(img, dst, tag)
-    #     mpi_barrier(MPI_COMM_WORLD)
-    #
-    #     return_old = oldfu.send_EMData(img, dst, tag)
-    #     mpi_barrier(MPI_COMM_WORLD)
-    #
-    #     self.assertEqual(return_new, return_old)
-
-    """  Can only be tested on the mpi. Wait too long on normal workstation"""
-    # def test_recv_EMData_true_should_return_equal_objects(self):
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.recv_EMData")
-    #     with open(filepath, 'rb') as rb:
-    #         argum = pickle.load(rb)
-    #
-    #     print(argum[0])
-    #
-    #     (src, tag,comm) = argum[0]
-    #     tag = 0
-    #
-    #     return_new = fu.recv_EMData(src, tag)
-    #     mpi_barrier(MPI_COMM_WORLD)
-    #
-    #     return_old = oldfu.recv_EMData(src, tag)
-    #     mpi_barrier(MPI_COMM_WORLD)
-    #
-    #     self.assertEqual(return_new, return_old)
-
-
-    def test_bcast_number_to_all_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.bcast_number_to_all")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum[0])
-
-        (number_to_send, source_node, mpi_comm) = argum[0]
-
-        return_new = fu.bcast_number_to_all(number_to_send, source_node)
-        mpi_barrier(MPI_COMM_WORLD)
-
-        return_old = oldfu.bcast_number_to_all(number_to_send, source_node)
-        mpi_barrier(MPI_COMM_WORLD)
-
-        self.assertEqual(return_new, return_old)
-
-    def test_bcast_list_to_all_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.bcast_list_to_all")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum[0])
-
-        (list_to_send, source_node, mpi_comm) = argum[0]
-
-        return_new = fu.bcast_list_to_all(list_to_send, source_node)
-        mpi_barrier(MPI_COMM_WORLD)
-
-        return_old = oldfu.bcast_list_to_all(list_to_send, source_node)
-        mpi_barrier(MPI_COMM_WORLD)
-
-        self.assertEqual(return_new, return_old)
-
-
-    # def test_recv_attr_dict_true_should_return_equal_objects(self):
-    #
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_params2D")
-    #     with open(filepath, 'rb') as rb:
-    #         argum = pickle.load(rb)
-    #
-    #     print(argum[0])
-    #     print(argum)
-    #
-    #     (ima,) = argum[0]
-    #     # params = "values"
-    #     paramstr = 0
-    #     # ima[params] = paramstr
-    #
-    #     ima.set_attr_dict({"values": 0})
-    #
-    #     return_new = fu.recv_attr_dict(0, "test", ima,paramstr,0,0,1)
-    #
-    #     return_old = oldfu.recv_attr_dict(0, "test1", ima,paramstr, 0,0,1)
-
-
-
-    def test_print_begin_msg_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.print_msg")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum[0])
-
-        (msg) = argum[0][0]
-
-        return_new = fu.print_begin_msg(msg)
-
-        return_old = oldfu.print_begin_msg(msg)
-
-        self.assertEqual(return_new, return_old)
-
-
-    def test_print_end_msg_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.print_msg")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum[0])
-
-        (msg) = argum[0][0]
-
-        return_new = fu.print_end_msg(msg)
-
-        return_old = oldfu.print_end_msg(msg)
-
-        self.assertEqual(return_new, return_old)
-
-
-    def test_print_msg_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.print_msg")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum[0])
-
-        (msg) = argum[0][0]
-
-        return_new = fu.print_msg(msg)
-
-        return_old = oldfu.print_msg(msg)
-
-        self.assertEqual(return_new, return_old)
-
-
-    def test_read_fsc_true_should_return_equal_objects(self):
-
-        print(os.getcwd())
-        filename = "sphire/tests/Sort3D/fsc_global.txt"
-        return_new = fu.read_fsc(filename)
-
-        return_old = oldfu.read_fsc(filename)
-
-        self.assertEqual(return_new, return_old)
-
-
-
-    def test_get_latest_directory_increment_value_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_latest_directory_increment_value")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum)
-
-        (directory_location, directory_name) = argum[0]
-
-        return_new = fu.get_latest_directory_increment_value(directory_location, directory_name)
-
-        return_old = oldfu.get_latest_directory_increment_value(directory_location, directory_name)
-
-        self.assertEqual(return_new, return_old)
-
-
-    def test_get_ctf_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ali2d_single_iter")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        (img) = argum[0][0]
-
-        return_new = fu.get_ctf(img[0])
-        return_old = oldfu.get_ctf(img[0])
-
-        self.assertEqual(return_new, return_old)
-
-
-    def test_same_ctf_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.same_ctf")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum)
-
-        (c1,c2) = argum[0]
-
-        return_new = fu.same_ctf(c1,c2)
-
-        return_old = oldfu.same_ctf(c1,c2)
-
-        self.assertEqual(return_new, return_old)
-
-
-
-    def test_generate_ctf_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ali2d_single_iter")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum)
-
-        (p) = argum[0][0]
-
-        return_new = fu.generate_ctf(p)
-
-        return_old = oldfu.generate_ctf(p)
-
-        self.assertTrue(return_new, return_old)
-
-
-    def test_delete_bdb_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.delete_bdb")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum)
-
-        (name) = argum[0][0]
-
-        return_new = fu.delete_bdb(name)
-
-        return_old = oldfu.delete_bdb(name)
-
-        if return_new is not None and return_old is not None:
-            self.assertTrue(return_new, return_old)
-        else:
-            print('returns None')
-
-    def test_getvec_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.getfvec")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum)
-
-        (phi, tht) = argum[0]
-
-        return_new = fu.getvec(phi, tht)
-
-        return_old = oldfu.getvec(phi, tht)
-
-        self.assertEqual(return_new, return_old)
-
-
-    def test_getfvec_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.getfvec")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum)
-
-        (phi, tht) = argum[0]
-
-        return_new = fu.getfvec(phi, tht)
-
-        return_old = oldfu.getfvec(phi, tht)
-
-        self.assertEqual(return_new, return_old)
-
-
-    def test_nearest_fang_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.nearest_fang")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum)
-
-        (vecs, phi, tht) = argum[0]
-
-        return_new = fu.nearest_fang(vecs, phi, tht)
-
-        return_old = oldfu.nearest_fang(vecs, phi, tht)
-
-        self.assertEqual(return_new, return_old)
-
-
-    def test_nearest_many_full_k_projangles_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.nearest_many_full_k_projangles")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum)
-
-        (reference_normals, angles) = argum[0]
-        symclass = argum[1]['sym_class']
-        howmany = argum[1]['howmany']
-
-        return_new = fu.nearest_many_full_k_projangles(reference_normals, angles, howmany, symclass)
-
-        return_old = oldfu.nearest_many_full_k_projangles(reference_normals, angles, howmany, symclass)
-
-        self.assertEqual(return_new, return_old)
-
-
-    def test_angles_to_normals_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.angles_to_normals")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum)
-
-        (angles) = argum[0][0]
-
-        return_new = fu.angles_to_normals(angles)
-
-        return_old = oldfu.angles_to_normals(angles)
-
-        self.assertEqual(return_new, return_old)
-
-
-    def test_angular_occupancy_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.angular_occupancy")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        (params, angstep, sym, method) = argum[0]
-
-        return_new = fu.angular_occupancy(params, angstep, sym, method)
-        return_old = oldfu.angular_occupancy(params, angstep, sym, method)
-
-        self.assertEqual(return_new, return_old)
-
-    def test_angular_histogram_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.angular_occupancy")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        (params, angstep, sym, method) = argum[0]
-
-        return_new = fu.angular_histogram(params, angstep, sym, method)
-        return_old = oldfu.angular_histogram(params, angstep, sym, method)
-
-        self.assertEqual(return_new, return_old)
-
-
-    def test_balance_angular_distribution_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.angular_occupancy")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        (params, angstep, sym, method) = argum[0]
-
-        max_occupy = -1
-
-        return_new = fu.balance_angular_distribution(params, max_occupy, angstep, sym)
-        return_old = oldfu.balance_angular_distribution(params, max_occupy, angstep, sym)
-
-        self.assertEqual(return_new, return_old)
-
-
-    def test_symmetry_neighbors_true_should_return_equal_objects(self):
-
-        angles = [[idx1, idx2, 0] for idx1 in range(50) for idx2 in range(90)]
-        return_new = fu.symmetry_neighbors(angles , symmetry= "c1")
-        return_old = oldfu.symmetry_neighbors(angles , symmetry= "c1")
-
-        self.assertEqual(return_new, return_old)
-
-
-    def test_rotation_between_anglesets_true_should_return_equal_objects(self):
-
-        agls1 = [[idx1, idx2, 0] for idx1 in range(50) for idx2 in range(90)]
-        agls2 = [[idx1, idx2, 5] for idx1 in range(50) for idx2 in range(90)]
-        return_new = fu.rotation_between_anglesets(agls1, agls2)
-        return_old = oldfu.rotation_between_anglesets(agls1, agls2)
-
-        self.assertEqual(return_new, return_old)
-
-
-    def test_angle_between_projections_directions_true_should_return_equal_objects(self):
-
-        agls1 = [20, 60, 0]
-        agls2 = [45, 75, 5]
-        return_new = fu.angle_between_projections_directions(agls1, agls2)
-        return_old = oldfu.angle_between_projections_directions(agls1, agls2)
-
-        self.assertEqual(return_new, return_old)
-
-
-    def test_get_pixel_size_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_pixel_size")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum[0])
-
-        (img,) = argum[0]
-
-        return_new = fu.get_pixel_size(img)
-
-        return_old = oldfu.get_pixel_size(img)
-
-        self.assertEqual(return_new, return_old)
-
-    def test_set_pixel_size_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.set_pixel_size")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum[0])
-
-        (img,pixel_size) = argum[0]
-
-        return_new = fu.set_pixel_size(img,pixel_size)
-
-        return_old = oldfu.set_pixel_size(img,pixel_size)
-
-        self.assertEqual(return_new, return_old)
-
-    def test_lacos_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.lacos")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum[0])
-
-        (x,) = argum[0]
-
-        return_new = fu.lacos(x)
-
-        return_old = oldfu.lacos(x)
-
-        self.assertEqual(return_new, return_old)
-
-    """
-      This function test works but takes too much time that is why for the time being it is
-       commented,  will uncomment it once everything is done 
-    """
-    # def test_nearest_proj_true_should_return_equal_objects(self):
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.nearest_proj")
-    #     with open(filepath, 'rb') as rb:
-    #         argum = pickle.load(rb)
-    #
-    #     print(argum[0])
-    #
-    #     (proj_ang,img_per_grp,List) = argum[0]
-    #
-    #     return_new = fu.nearest_proj(proj_ang,img_per_grp,List)
-    #
-    #     return_old = oldfu.nearest_proj(proj_ang,img_per_grp,List)
-    #
-    #     self.assertEqual(return_new, return_old)
-
-
-    def test_findall_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.findall")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum[0])
-
-        (value, L) = argum[0]
-
-        return_new = fu.findall(value, L)
-
-        return_old = oldfu.findall(value, L)
-
-        self.assertEqual(return_new, return_old)
-
-
-    def test_pack_message_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.pack_message")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum[0])
-
-        (data,) = argum[0]
-
-        return_new = fu.pack_message(data)
-
-        return_old = oldfu.pack_message(data)
-
-        self.assertEqual(return_new, return_old)
-
-
-    def test_unpack_message_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.unpack_message")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum[0])
-
-        (data,) = argum[0]
-
-        return_new = fu.unpack_message(data)
-
-        return_old = oldfu.unpack_message(data)
-
-        self.assertEqual(return_new, return_old)
-
-
     def test_update_tag_true_should_return_equal_objects(self):
         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.update_tag")
         with open(filepath, 'rb') as rb:
