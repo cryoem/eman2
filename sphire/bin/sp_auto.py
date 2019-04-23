@@ -283,7 +283,7 @@ def get_adjustment(status_dict, **kwargs):
 	cmd = []
 	if status_dict['do_rviper'] and status_dict['do_adjust_rviper']:
 		cmd.append('sp_pipe.py')
-		cmd.append('moon_elimination')
+		cmd.append('moon_eliminator')
 		cmd.append('XXX_SP_RVIPER_OUTPUT_DIR_XXX/main001/run000/refvol2.hdf')
 		cmd.append('XXX_SP_ADJUSTMENT_OUTPUT_DIR_XXX')
 		cmd.append('--pixel_size=XXX_SP_PIXEL_SIZE_XXX')
