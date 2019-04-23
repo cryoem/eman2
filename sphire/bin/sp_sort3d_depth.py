@@ -82,7 +82,7 @@ if (Blockdata["no_of_groups"] > 1):
     Blockdata["node_volume"] = [Blockdata["no_of_groups"] - 2, Blockdata["no_of_groups"] - 1]
 # Blockdata["nodes"] = [Blockdata["no_of_groups"]-2, Blockdata["no_of_groups"]-1]  # For 3D stuff take last two nodes
 else:
-	Blockdata["node_volume"] = [0, 0]
+    Blockdata["node_volume"] = [0, 0]
 #  We need two CPUs for processing of volumes, they are taken to be main CPUs on each volume
 #  We have to send the two myids to all nodes so we can identify main nodes on two selected groups.
 if (Blockdata["no_of_groups"] > 1):
@@ -147,7 +147,7 @@ def create_zero_group():
     if (MPI_COMM_NULL != Blockdata["group_zero_comm"]):
         Blockdata["group_zero_size"] = mpi_comm_size(Blockdata["group_zero_comm"])
         Blockdata["group_zero_myid"] = mpi_comm_rank(Blockdata["group_zero_comm"])
-	#  "nodes" are zero nodes on subgroups on the two "node_volume" that compute backprojection
+    #  "nodes" are zero nodes on subgroups on the two "node_volume" that compute backprojection
     # Blockdata["nodes"] = [Blockdata["node_volume"][0]*Blockdata["ncpuspernode"], Blockdata["node_volume"][1]*Blockdata["ncpuspernode"]]
     mpi_barrier(MPI_COMM_WORLD)
     return
@@ -294,7 +294,7 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
             log_main.add(' ')
             log_main.add(
                 '================================================================================================================')
-	return partition_per_box_per_layer_list, bad_clustering, stat_list
+    return partition_per_box_per_layer_list, bad_clustering, stat_list
 
 
 def depth_box_initialization(box_dir, input_list1, input_list2, log_file):
@@ -1854,9 +1854,9 @@ def get_shrink_data_sorting(partids, partstack, return_real=False, preshift=True
         except:
             phi, theta, psi, sx, sy, chunk_id, particle_group_id = partstack[lpartids[im]][0], partstack[lpartids[im]][
                 1], \
-																   partstack[lpartids[im]][2], partstack[lpartids[im]][
+                                                                   partstack[lpartids[im]][2], partstack[lpartids[im]][
                                                                        3], partstack[lpartids[im]][4], \
-																   partstack[lpartids[im]][5], -1
+                                                                   partstack[lpartids[im]][5], -1
         if preshift:  # always true
             data[im] = fshift(data[im], sx, sy)
             sx = 0.0
@@ -2071,7 +2071,7 @@ def get_data_prep_compare_rec3d(partids, partstack, return_real=False, preshift=
         bcast_EMData_to_all(focus3d, Blockdata["myid"], Blockdata["main_node"])
         focus3d = prep_vol(focus3d, 1, 1)
     #  Preprocess the data
-    #  mask2D    =	model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+    #  mask2D    =    model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
     nima = image_end - image_start
     cdata = [None] * nima
     rdata = [None] * nima
@@ -2169,21 +2169,21 @@ def get_shrink_data_final(nxinit, procid, original_data=None, oldparams=None, \
                           return_real=False, preshift=False, apply_mask=True, nonorm=False, npad=1):
     global Tracker, Blockdata
     """
-	This function will read from stack a subset of images specified in partids
-	   and assign to them parameters from partstack with optional CTF application and shifting of the data.
-	So, the lengths of partids and partstack are the same.
-	  The read data is properly distributed among MPI threads.
+    This function will read from stack a subset of images specified in partids
+       and assign to them parameters from partstack with optional CTF application and shifting of the data.
+    So, the lengths of partids and partstack are the same.
+      The read data is properly distributed among MPI threads.
 
-	Flow of data:
-	1. Read images, if there is enough memory, keep them as original_data.
-	2. Read current params
-	3.  Apply shift
-	4.  Normalize outside of the radius
-	5.  Do noise substitution and cosine mask.  (Optional?)
-	6.  Shrink data.
-	7.  Apply CTF.
+    Flow of data:
+    1. Read images, if there is enough memory, keep them as original_data.
+    2. Read current params
+    3.  Apply shift
+    4.  Normalize outside of the radius
+    5.  Do noise substitution and cosine mask.  (Optional?)
+    6.  Shrink data.
+    7.  Apply CTF.
 
-	"""
+    """
     # from fundamentals import resample
     from sp_utilities import get_im, model_gauss_noise, set_params_proj, get_params_proj
     from sp_fundamentals import fdecimate, fshift, fft
@@ -2212,7 +2212,7 @@ def get_shrink_data_final(nxinit, procid, original_data=None, oldparams=None, \
     data = [None] * nima
     for im in range(nima):
         phi, theta, psi, sx, sy, wnorm = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], \
-										 oldparams[im][4], oldparams[im][7]
+                                         oldparams[im][4], oldparams[im][7]
         if preshift:
             sx = int(round(sx))
             sy = int(round(sy))
@@ -2341,11 +2341,11 @@ def read_data_for_sorting(partids, partstack, previous_partstack):
                                                                           partstack[lpartids[im]][7]
         except:
             phi, theta, psi, sx, sy, chunk_id, particle_group_id, mnorm = partstack[lpartids[im]][0], \
-																		  partstack[lpartids[im]][1], \
-																		  partstack[lpartids[im]][2], \
-																		  partstack[lpartids[im]][3], \
-																		  partstack[lpartids[im]][4], \
-																		  partstack[lpartids[im]][5], -1, 1.
+                                                                          partstack[lpartids[im]][1], \
+                                                                          partstack[lpartids[im]][2], \
+                                                                          partstack[lpartids[im]][3], \
+                                                                          partstack[lpartids[im]][4], \
+                                                                          partstack[lpartids[im]][5], -1, 1.
         sx1, sy1 = previous_partstack[lpartids[im]][3], previous_partstack[lpartids[im]][4]
         set_params_proj(image, [phi, theta, psi, 0.0, 0.0])
         image.set_attr("chunk_id", chunk_id)
@@ -3207,8 +3207,8 @@ def fill_no_large_groups_and_unaccounted_to_m_and_rcluster_mpi( \
             for ic in range(len(clusters)):
                 shuffle(clusters[ic])
                 if len(clusters[ic]) > avg_size:
-					unaccounted_list += clusters[ic][avg_size:]
-					del clusters[ic][avg_size:]
+                    unaccounted_list += clusters[ic][avg_size:]
+                    del clusters[ic][avg_size:]
             shuffle(unaccounted_list)
         else:
             unaccounted_list = 0
@@ -3560,7 +3560,7 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
                 fout.close()
                 freq_cutoff_dict3 = {}
             except:
-				freq_cutoff_dict3 = {}
+                freq_cutoff_dict3 = {}
             ncluster = 0
             for im in range(len(newindeces)):
                 try:
@@ -3948,8 +3948,8 @@ def reassign_ptls_in_orien_groups(assigned_ptls_in_groups, matched_pairs):
 
 def findall_dict(value, L, start=0):
     """
-	 return a list of all indices of a value on the list L beginning from position start
-	"""
+     return a list of all indices of a value on the list L beginning from position start
+    """
     positions = []
     lL = len(L) - 1
     i = start - 1
@@ -4013,7 +4013,7 @@ def get_orien_assignment_mpi(angle_step, partids, params, log_main):
     orien_group_assignment = wrap_mpi_bcast(orien_group_assignment, Blockdata["main_node"], MPI_COMM_WORLD)
     ptls_in_orien_groups = [None for iref in range(len(refa_vecs))]
     for iorien in range(len(refa_vecs)):
-		if iorien % Blockdata["nproc"] == Blockdata["myid"]: ptls_in_orien_groups[iorien] = findall_dict(iorien,
+        if iorien % Blockdata["nproc"] == Blockdata["myid"]: ptls_in_orien_groups[iorien] = findall_dict(iorien,
                                                                                                          orien_group_assignment)
     mpi_barrier(MPI_COMM_WORLD)
 
@@ -4271,7 +4271,7 @@ def steptwo_mpi(tvol, tweight, treg, cfsc=None, regularized=True, color=0):
         else:
             limitres = 2 * min(Tracker["constants"]["nnxo"] // 2, Tracker["maxfrad"])
             maxr2 = limitres ** 2
-		#  Iterative weights
+        #  Iterative weights
         if (Tracker["constants"]["symmetry"] != "c1"):
             tvol = tvol.symfvol(Tracker["constants"]["symmetry"], limitres)
             tweight = tweight.symfvol(Tracker["constants"]["symmetry"], limitres)
@@ -4402,10 +4402,10 @@ def steptwo_mpi_filter(tvol, tweight, treg, cfsc=None, cutoff_freq=0.45, aa=0.01
 def recons3d_4nnsorting_MPI(myid, main_node, prjlist, random_subset, CTF=True, upweighted=True, mpi_comm=None,
                             target_size=-1):
     """
-		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
-		Input
-			list_of_prjlist: list of lists of projections to be included in the reconstruction
-	"""
+        recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
+        Input
+            list_of_prjlist: list of lists of projections to be included in the reconstruction
+    """
     from sp_utilities import reduce_EMData_to_root, random_string, get_im, findall, model_blank, info, get_params_proj
     from sp_filter import filt_table
     from sp_reconstruction import insert_slices_pdf
@@ -4442,7 +4442,7 @@ def recons3d_4nnsorting_MPI(myid, main_node, prjlist, random_subset, CTF=True, u
             r.insert_slice(prjlist[im], Transform({"type": "spider", "phi": phi, "theta": theta, "psi": psi}), 1.0)
         else:
             if prjlist[im].get_attr("chunk_id") == random_subset:
-                # try:	bckgn = prjlist[im].get_attr("bckgnoise")
+                # try:    bckgn = prjlist[im].get_attr("bckgnoise")
                 bckgn = target_size * [1.]
                 if prjlist[im].get_attr("is_complex") == 0: prjlist[im] = fft(prjlist[im])
                 prjlist[im].set_attr_dict({"padffted": 1, "is_complex": 1})
@@ -4463,10 +4463,10 @@ def recons3d_4nnsorting_MPI(myid, main_node, prjlist, random_subset, CTF=True, u
 def recons3d_4nnsorting_group_MPI(myid, main_node, prjlist, random_subset, group_ID, CTF=True, upweighted=True,
                                   mpi_comm=None, target_size=-1):
     """
-		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
-		Input
-			list_of_prjlist: list of lists of projections to be included in the reconstruction
-	"""
+        recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
+        Input
+            list_of_prjlist: list of lists of projections to be included in the reconstruction
+    """
     from sp_utilities import reduce_EMData_to_root, random_string, get_im, findall
     from EMAN2 import Reconstructors
     from sp_utilities import model_blank, info
@@ -4774,7 +4774,7 @@ def do3d_sorting_groups_trl_iter(data, iteration):
                                         color=index_of_colors)  # has to be False!!!
                     del tweight2, treg2
                 # if( Blockdata["myid_on_node"] == 0):
-                #	tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
+                #    tvol2 = cosinemask(tvol2, radius = Tracker["constants"]["radius"])
                 mpi_barrier(Blockdata["shared_comm"])
             mpi_barrier(MPI_COMM_WORLD)
             for im in range(len(big_loop_colors[iloop])):
@@ -4924,7 +4924,7 @@ def get_input_from_sparx_ref3d(log_main):  # case one
                                        "params_%03d.txt" % selected_iter)):
             copyfile(os.path.join(Tracker["constants"]["refinement_dir"], "main%03d" % selected_iter, \
                                   "params_%03d.txt" % selected_iter),
-					 os.path.join(Tracker["constants"]["masterdir"], "sparx_refinement_params.txt"))
+                     os.path.join(Tracker["constants"]["masterdir"], "sparx_refinement_params.txt"))
         else:
             import_from_sparx_refinement = 0
         Tracker["constants"]["selected_iter"] = selected_iter
@@ -5116,11 +5116,11 @@ def get_input_from_sparx_ref3d(log_main):  # case one
     if Tracker["constants"]["minimum_grp_size"] == -1:
         Tracker["constants"]["minimum_grp_size"] = Tracker["constants"]["total_stack"] // Tracker["constants"][
             "img_per_grp"] * (100 // Blockdata["symclass"].nsym)
-	# else:
-	#	if Tracker["constants"]["minimum_grp_size"] < Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*(100//Blockdata["symclass"].nsym):
-    #		Tracker["constants"]["minimum_grp_size"] = Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*(100//Blockdata["symclass"].nsym)
-    #		if(Blockdata["myid"] == Blockdata["main_node"]):
-    #			log_main.add("User provided minimum_grp_size is replaced by %d"%Tracker["constants"]["minimum_grp_size"])
+    # else:
+    #    if Tracker["constants"]["minimum_grp_size"] < Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*(100//Blockdata["symclass"].nsym):
+    #        Tracker["constants"]["minimum_grp_size"] = Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*(100//Blockdata["symclass"].nsym)
+    #        if(Blockdata["myid"] == Blockdata["main_node"]):
+    #            log_main.add("User provided minimum_grp_size is replaced by %d"%Tracker["constants"]["minimum_grp_size"])
     if Tracker["constants"]["minimum_grp_size"] > Tracker["constants"]["img_per_grp"]:
         ERROR("User provided img_per_grp is smaller than minimum_grp_size", "get_input_from_sparx_ref3d", 1,
               Blockdata["myid"])
@@ -5180,12 +5180,12 @@ def get_input_from_datastack(log_main):  # Case three
         Tracker["constants"]["minimum_grp_size"] = Tracker["constants"]["total_stack"] // Tracker["constants"][
             "img_per_grp"] * (100 // Blockdata["symclass"].nsym)
     """
-	else:
-		if Tracker["constants"]["minimum_grp_size"] < Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*(100//Blockdata["symclass"].nsym):
-			Tracker["constants"]["minimum_grp_size"] = Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*(100//Blockdata["symclass"].nsym)
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				log_main.add("User provided minimum_grp_size is replaced by %d"%Tracker["constants"]["minimum_grp_size"])
-	"""
+    else:
+        if Tracker["constants"]["minimum_grp_size"] < Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*(100//Blockdata["symclass"].nsym):
+            Tracker["constants"]["minimum_grp_size"] = Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*(100//Blockdata["symclass"].nsym)
+            if(Blockdata["myid"] == Blockdata["main_node"]):
+                log_main.add("User provided minimum_grp_size is replaced by %d"%Tracker["constants"]["minimum_grp_size"])
+    """
     if Tracker["constants"]["minimum_grp_size"] > Tracker["constants"]["img_per_grp"]:
         ERROR("User provided img_per_grp is smaller than minimum_grp_size", "get_input_from_sparx_ref3d", 1,
               Blockdata["myid"])
@@ -5607,11 +5607,11 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, partial_rec3d, iteration):
                                                                                            Tracker["nosmearing"])
         else:
             tvol, tweight, trol = recons3d_trl_struct_group_nofsc_shifted_data_MPI(Blockdata["myid"],
-																				   Blockdata["last_node"], srdata, \
-																				   index_of_groups, None,
-																				   Tracker["constants"]["CTF"],
-																				   (2 * Tracker["nxinit"] + 3),
-																				   Tracker["nosmearing"])
+                                                                                   Blockdata["last_node"], srdata, \
+                                                                                   index_of_groups, None,
+                                                                                   Tracker["constants"]["CTF"],
+                                                                                   (2 * Tracker["nxinit"] + 3),
+                                                                                   Tracker["nosmearing"])
 
         if (Blockdata["myid"] == Blockdata["last_node"]):
             tvol.set_attr("is_complex", 0)
@@ -5750,9 +5750,9 @@ def recons3d_trl_struct_group_nofsc_shifted_data_partial_MPI(myid, main_node, np
                                                              fftvol_file, weight_file, mpi_comm=None, CTF=True,
                                                              target_size=-1, nosmearing=False):
     """
-		partial rec3d for re-assigned images
-		reconstructor nn4_ctfws
-	"""
+        partial rec3d for re-assigned images
+        reconstructor nn4_ctfws
+    """
     from sp_utilities import reduce_EMData_to_root, random_string, get_im, findall, info, model_blank
     from EMAN2 import Reconstructors
     from sp_filter import filt_table
@@ -5876,9 +5876,9 @@ def recons3d_trl_struct_group_nofsc_shifted_data_partial_MPI(myid, main_node, np
 def recons3d_trl_struct_group_nofsc_shifted_data_MPI(myid, main_node, prjlist, group_ID, mpi_comm=None, CTF=True,
                                                      target_size=-1, nosmearing=False):
     """
-	  rec3d for pre-shifted data list
-	  reconstructor nn4_ctfw
-	"""
+      rec3d for pre-shifted data list
+      reconstructor nn4_ctfw
+    """
     from sp_utilities import reduce_EMData_to_root, random_string, get_im, findall, info, model_blank
     from EMAN2 import Reconstructors
     from sp_filter import filt_table
@@ -5935,10 +5935,10 @@ def recons3d_trl_struct_group_MPI(myid, main_node, prjlist, random_subset, group
                                   norm_per_particle=None, \
                                   upweighted=True, mpi_comm=None, CTF=True, target_size=-1, nosmearing=False):
     """
-		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
-		Input
-			list_of_prjlist: list of lists of projections to be included in the reconstruction
-	"""
+        recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
+        Input
+            list_of_prjlist: list of lists of projections to be included in the reconstruction
+    """
     global Tracker, Blockdata
     from sp_utilities import reduce_EMData_to_root, random_string, get_im, findall, model_blank, info
     from EMAN2 import Reconstructors
@@ -6249,9 +6249,9 @@ def recons3d_4nnsorting_group_fsc_MPI(myid, main_node, prjlist, fsc_half, random
                                       norm_per_particle, \
                                       CTF=True, upweighted=True, mpi_comm=None, target_size=-1):
     ##      with smearing
-    #####	recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
-    ####	Input
-    ####	list_of_prjlist: list of lists of projections to be included in the reconstruction
+    #####    recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
+    ####    Input
+    ####    list_of_prjlist: list of lists of projections to be included in the reconstruction
     global Tracker, Blockdata
     from sp_utilities import reduce_EMData_to_root, random_string, get_im, findall, model_blank, info, get_params_proj
     from EMAN2 import Reconstructors
