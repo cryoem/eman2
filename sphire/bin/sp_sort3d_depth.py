@@ -7082,7 +7082,11 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
                     my_pids = os.path.join(work_dir, 'indexes_next_generation.txt')
                     if Blockdata["myid"] == Blockdata["main_node"]:
                         write_text_file(output_list[0][1], my_pids)
-                        write_text_row(stat_list, os.path.join(work_dir, 'gen_rep.txt'))
+                        if stat_list:
+                            write_text_row(stat_list, os.path.join(work_dir, 'gen_rep.txt'))
+                        else:
+                            with open(os.path.join(work_dir, 'gen_rep.txt'), 'w'):
+                                pass
                         mark_sorting_state(work_dir, True, log_main)
                     mpi_barrier(MPI_COMM_WORLD)
                 keepsorting = check_sorting(nuacc, keepsorting, log_main)
