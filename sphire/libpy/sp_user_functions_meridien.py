@@ -307,6 +307,18 @@ def ai_filament( Tracker, fff, anger, shifter, do_local, chout = False):
 	if fff:
 		ai_string = "  AI: Tracker[nxstep], TR[currentres], Tracker[fsc143], l05, l01, fff[Tracker[nxinit]//2-1]:",Tracker["nxstep"],Tracker["currentres"],Tracker["fsc143"], l05, l01,fff[Tracker["nxinit"]//2-1]
 
+	if Tracker['state'] != 'RESTRICTED':
+		Tracker['constants']['do_rotate'] = False
+		if Tracker['state'] == 'EXHAUSTIVE':
+			Tracker["prior"]["force_outlier"] = True
+		else:
+			Tracker["prior"]["force_outlier"] = False
+	else:
+		Tracker['constants']['do_rotate'] = True
+		Tracker["ccfpercentage"] = min(Tracker["ccfpercentage"]+20, 99.9)
+		Tracker["prior"]["force_outlier"] = False
+
+
 	if Tracker["mainiteration"] == 1 and not do_local:
 		Tracker["state"] = "INITIAL"
 
@@ -352,6 +364,8 @@ def ai_filament( Tracker, fff, anger, shifter, do_local, chout = False):
 
 		if Tracker["mainiteration"] > 3 or not do_local:
 			Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
+			if Tracker["state"] == "PRIMARY":
+				Tracker["state"] = "EXHAUSTIVE"
 
 		if(Tracker["state"] == "FINAL" or Tracker["state"] == "RESTRICTED"):
 			Tracker["large_at_Nyquist"] = bool(fff[Tracker["nxinit"]//2] > 0.1 or fff[Tracker["nxinit"]//2-1] > 0.2)
@@ -421,7 +435,7 @@ def ai_filament( Tracker, fff, anger, shifter, do_local, chout = False):
 		Tracker["nxinit"] = int(tmp)
 		Tracker["changed_delta"] = False
 		#  decide angular step and translations
-		if Tracker["no_improvement"] >= Tracker["constants"]["limit_improvement"] and Tracker["no_params_changes"] >= Tracker["constants"]["limit_changes"] and not Tracker["large_at_Nyquist"]:
+		if (Tracker["no_improvement"] >= Tracker["constants"]["limit_improvement"] and Tracker["no_params_changes"] >= Tracker["constants"]["limit_changes"] and not Tracker["large_at_Nyquist"]) or (Tracker['state'] == "EXHAUSTIVE" and Tracker['mainiteration'] >= 6):
 			if( Tracker["delta"] < Tracker['constants']['a_criterion']*Tracker["acc_rot"] ):#<<<----it might cause converge issues when shake is 0.0
 				if Tracker["state"] == "PRIMARY LOCAL":
 					step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
@@ -439,9 +453,8 @@ def ai_filament( Tracker, fff, anger, shifter, do_local, chout = False):
 						sp_global_def.sxprint("Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
 			else:
 				step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
-				if do_local:
-					step_range = min(step_range, Tracker['xr'])
-					step = min(step, Tracker['ts'])
+				step_range = min(step_range, Tracker['xr'])
+				step = min(step, Tracker['ts'])
 				if chout:
 					sp_global_def.sxprint("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
 				Tracker["xr"] = step_range
@@ -450,6 +463,9 @@ def ai_filament( Tracker, fff, anger, shifter, do_local, chout = False):
 				Tracker["changed_delta"] = True
 				if Tracker["delta"] <= 3.75/2.0 or do_local:  #  MOVE DOWN TO RESTRICTED
 					Tracker["an"]		= 6*Tracker["delta"]
+					Tracker["theta_min"] = 40
+					Tracker["theta_max"] = 140
+					Tracker["constants"]["shake"] = 0.5
 					if Tracker["delta"] <= numpy.degrees(numpy.arctan(0.25/Tracker["constants"]["radius"])):
 						Tracker["state"] = "FINAL"
 					else:

@@ -58,7 +58,7 @@ def import_sphire_params(input_file, symclass):
     dtype = dtype_import + [('source_n', '<i8')]
 
     data_import = np.genfromtxt(input_file, dtype=dtype_import)
-    reduced_angles = np.array(symclass.reduce_anglesets(data_import[['phi', 'theta', 'psi']].view(np.float64).reshape(data_import.shape + (-1,)), inc_mirror=0))
+    reduced_angles = symclass.reduce_anglesets(data_import[['phi', 'theta', 'psi']].view(np.float64).reshape(data_import.shape + (-1,)), inc_mirror=0, tolistconv=False)
     data_import['phi'] = reduced_angles[:, 0]
     data_import['theta'] = reduced_angles[:, 1]
     data_import['psi'] = reduced_angles[:, 2]
