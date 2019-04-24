@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 from __future__ import print_function
 #
+# Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
+# Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
+# Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
+# Author: Toshio Moriya 2019 (toshio.moriya@kek.jp)
 # Author: Wei Zhang, 01/22/2007 (Wei.zhang@uth.tmc.edu)
+#
+# Copyright (c) 2019 Max Planck Institute of Molecular Physiology
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
 #
 # This software is issued under a joint BSD/GNU license. You may use the

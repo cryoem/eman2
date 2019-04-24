@@ -5,7 +5,13 @@ from __future__ import print_function
 # ipython --gui=qt -i e2_real.py
 # otherwise it is normally run via the e2.py script
 #
+# Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
+# Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
+# Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
+# Author: Toshio Moriya 2019 (toshio.moriya@kek.jp)
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
+#
+# Copyright (c) 2019 Max Planck Institute of Molecular Physiology
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
