@@ -155,8 +155,8 @@ def parse_args():
 
 	group = parser.add_argument_group('Sharpening Meridien settings (optional)')
 	group.add_argument('--skip_sharpening_meridien', action='store_true', default=False, help='Skip creating a mask.')
-	group.add_argument('--sharpening_meridien_ndilation', dest='XXX_SP_SHARPENING_MERIDIEN_NDILAITON_XXX', type=int, default=1, help='Number of dilations of the mask. 1 Dilation adds about 2 pixel to the binary volume.')
-	group.add_argument('--sharpening_meridien_soft_edge', dest='XXX_SP_SHARPENING_MERIDIEN_SOFT_EDGE_XXX', type=int, default=8, help='Number of pixels for the soft edge.')
+	group.add_argument('--sharpening_meridien_ndilation', dest='XXX_SP_SHARPENING_MERIDIEN_NDILAITON_XXX', type=int, default=2, help='Number of dilations of the mask. 1 Dilation adds about 2 pixel to the binary volume.')
+	group.add_argument('--sharpening_meridien_soft_edge', dest='XXX_SP_SHARPENING_MERIDIEN_SOFT_EDGE_XXX', type=int, default=1, help='Number of pixels for the soft edge.')
 	group.add_argument('--sharpening_meridien_output_dir', dest='XXX_SP_SHARPENING_MERIDIEN_OUTPUT_DIR_XXX', type=str, default='05b_SHARPENING', help='Sharpening output directory.')
 	group.add_argument('--sharpening_meridien_addition', dest='XXX_SP_SHARPENING_MERIDIEN_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
@@ -173,8 +173,8 @@ def parse_args():
 	group.add_argument('--restack_meridien_output_dir', dest='XXX_SP_RESTACK_MERIDIEN_OUTPUT_DIR_XXX', type=str, default='05e_RESTACK_MERIDIEN', help='Restacking output directory.')
 	group.add_argument('--restack_meridien_addition', dest='XXX_SP_RESTACK_MERIDIEN_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
-	group.add_argument('--restack_sharpening_ndilation', dest='XXX_SP_RESTACK_SHARPENING_NDILAITON_XXX', type=int, default=1, help='Number of dilations of the mask. 1 Dilation adds about 2 pixel to the binary volume.')
-	group.add_argument('--restack_sharpening_soft_edge', dest='XXX_SP_RESTACK_SHARPENING_SOFT_EDGE_XXX', type=int, default=8, help='Number of pixels for the soft edge.')
+	group.add_argument('--restack_sharpening_ndilation', dest='XXX_SP_RESTACK_SHARPENING_NDILAITON_XXX', type=int, default=2, help='Number of dilations of the mask. 1 Dilation adds about 2 pixel to the binary volume.')
+	group.add_argument('--restack_sharpening_soft_edge', dest='XXX_SP_RESTACK_SHARPENING_SOFT_EDGE_XXX', type=int, default=1, help='Number of pixels for the soft edge.')
 	group.add_argument('--restack_sharpening_output_dir', dest='XXX_SP_RESTACK_SHARPENING_OUTPUT_DIR_XXX', type=str, default='05f_RESTACK_SHARPENING', help='Restacking output directory.')
 	group.add_argument('--restack_sharpening_addition', dest='XXX_SP_RESTACK_SHARPENING_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
@@ -186,8 +186,8 @@ def parse_args():
 	group.add_argument('--ctf_meridien_output_dir', dest='XXX_SP_CTF_MERIDIEN_OUTPUT_DIR_XXX', type=str, default='05h_CTF_MERIDIEN', help='Restacking output directory.')
 	group.add_argument('--ctf_meridien_addition', dest='XXX_SP_CTF_MERIDIEN_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
-	group.add_argument('--ctf_sharpening_ndilation', dest='XXX_SP_CTF_SHARPENING_NDILAITON_XXX', type=int, default=1, help='Number of dilations of the mask. 1 Dilation adds about 2 pixel to the binary volume.')
-	group.add_argument('--ctf_sharpening_soft_edge', dest='XXX_SP_CTF_SHARPENING_SOFT_EDGE_XXX', type=int, default=8, help='Number of pixels for the soft edge.')
+	group.add_argument('--ctf_sharpening_ndilation', dest='XXX_SP_CTF_SHARPENING_NDILAITON_XXX', type=int, default=2, help='Number of dilations of the mask. 1 Dilation adds about 2 pixel to the binary volume.')
+	group.add_argument('--ctf_sharpening_soft_edge', dest='XXX_SP_CTF_SHARPENING_SOFT_EDGE_XXX', type=int, default=1, help='Number of pixels for the soft edge.')
 	group.add_argument('--ctf_sharpening_output_dir', dest='XXX_SP_CTF_SHARPENING_OUTPUT_DIR_XXX', type=str, default='05i_CTF_SHARPENING', help='Restacking output directory.')
 	group.add_argument('--ctf_sharpening_addition', dest='XXX_SP_CTF_SHARPENING_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
@@ -513,6 +513,7 @@ def get_ctf_refine(status_dict, **kwargs):
 	cmd = []
 	if status_dict['do_meridien'] and status_dict['do_ctf_refine'] and status_dict['do_restack']:
 		cmd.append('sp_ctf_refine.py')
+		cmd.append('meridien')
 		cmd.append('bdb:XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX#stack')
 		cmd.append('XXX_SP_CTF_REFINE_OUTPUT_DIR_XXX')
 		cmd.append('XXX_SP_RESTACK_MERIDIEN_OUTPUT_DIR_XXX')
@@ -527,7 +528,7 @@ def get_ctf_meridien(status_dict, **kwargs):
 	cmd = []
 	if status_dict['do_meridien'] and status_dict['do_restack']:
 		cmd.append('sp_meridien.py')
-		cmd.append('bdb:XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX#stack')
+		cmd.append('bdb:XXX_SP_CTF_REFINE_OUTPUT_DIR_XXX#ctf_refined')
 		cmd.append('XXX_SP_CTF_MERIDIEN_OUTPUT_DIR_XXX')
 		cmd.append('XXX_SP_RESTACK_SHARPENING_OUTPUT_DIR_XXX/vol_combined.hdf')
 		cmd.append('--skip_prealignment')
@@ -748,6 +749,7 @@ def main(args_as_dict):
 		'--import=$(ls XXX_SP_MERIDIEN_OUTPUT_DIR/final_params_*.txt)',
 		'--import=$(ls XXX_SP_RESTACK_MERIDIEN_OUTPUT_DIR_XXX/final_params_*.txt)',
 		'XXX_SP_RESTACK_MERIDIEN_OUTPUT_DIR_XXX/vol_*_unfil_*.hdf',
+		'XXX_SP_CTF_MERIDIEN_OUTPUT_DIR_XXX/vol_*_unfil_*.hdf'
 		)
 
 	for key, value in args_as_dict.items():
