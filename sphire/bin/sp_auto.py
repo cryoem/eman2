@@ -533,6 +533,8 @@ def main(args_as_dict):
 				final_line = final_line.replace('\'{0}\''.format(entry), entry)
 			if 'OUTPUT_DIR' in key:
 				value = os.path.join(args_as_dict['output_directory'], value)
+			if '_ADDITION_XXX' in key:
+				value = '\' \''.join(value.split(' '))
 			final_line = final_line.replace(key, str(value))
 	lines[found_lines[-1]] = final_line.replace(" ''", '').replace('\';\'', ';')
 
