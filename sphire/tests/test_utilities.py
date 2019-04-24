@@ -28,6 +28,11 @@ from os import path
 from EMAN2_cppwrap import EMData
 from copy import deepcopy
 import EMAN2db
+try:
+    from StringIO import StringIO   # python2 case
+except:
+    from io import StringIO         # python3 case. You will get an erorr because 'sys.stdout.write(msg)' presents in the library not in the test!!
+import sys
 
 IMAGE_2D, IMAGE_2D_REFERENCE = get_real_data(dim=2)
 IMAGE_3D, STILL_NOT_VALID = get_real_data(dim=3)
@@ -63,7 +68,13 @@ There are some opened issues in:
     -) recv_EMData
     -) recv_attr_dict
     -) send_attr_dict
+    -) wrap_mpi_send
+    -) wrap_mpi_recv
+    -) wrap_mpi_bcast
+    -) wrap_mpi_gatherv
+    -) wrap_mpi_split
 17) unpack_message it does not work properly is it a buggy function???
+18) 'update_tag' returns, in both of the implementations 'return 123456'. i'm not going to test it
 """
 
 class Test_amoeba(unittest.TestCase):
@@ -1730,6 +1741,7 @@ class Test_recv_attr_dict_bdb(unittest.TestCase):
 
 
 class Test_print_begin_msg(unittest.TestCase):
+    """ see https://wrongsideofmemphis.com/2010/03/01/store-standard-output-on-a-variable-in-python/"""
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.print_begin_msg()
@@ -1739,20 +1751,36 @@ class Test_print_begin_msg(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_print_begin_msg(self):
+        old_stdout = sys.stdout
+        print_new = StringIO()
+        sys.stdout = print_new
         return_new = fu.print_begin_msg("test_pgr", onscreen=False)
+        print_old = StringIO()
+        sys.stdout = print_old
         return_old = oldfu.print_begin_msg("test_pgr", onscreen=False)
         self.assertEqual(return_new,return_old)
         self.assertTrue(return_new is None)
+        self.assertEqual(print_new.getvalue(), print_old.getvalue())
+        sys.stdout = old_stdout
 
     def test_print_begin_msg_onscreen_True(self):
+        old_stdout = sys.stdout
+        print_new = StringIO()
+        sys.stdout = print_new
         return_new = fu.print_begin_msg("test_pgr", onscreen=True)
+        print_old = StringIO()
+        sys.stdout = print_old
         return_old = oldfu.print_begin_msg("test_pgr", onscreen=True)
         self.assertEqual(return_new,return_old)
         self.assertTrue(return_new is None)
+        self.assertEqual(print_new.getvalue(), print_old.getvalue())
+        sys.stdout = old_stdout
+
 
 
 
 class Test_print_end_msg(unittest.TestCase):
+    """ see https://wrongsideofmemphis.com/2010/03/01/store-standard-output-on-a-variable-in-python/"""
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.print_end_msg()
@@ -1762,20 +1790,35 @@ class Test_print_end_msg(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_print_end_msg(self):
+        old_stdout = sys.stdout
+        print_new = StringIO()
+        sys.stdout = print_new
         return_new = fu.print_end_msg("test_pgr", onscreen=False)
+        print_old = StringIO()
+        sys.stdout = print_old
         return_old = oldfu.print_end_msg("test_pgr", onscreen=False)
         self.assertEqual(return_new,return_old)
         self.assertTrue(return_new is None)
+        self.assertEqual(print_new.getvalue(), print_old.getvalue())
+        sys.stdout = old_stdout
 
     def test_print_end_msg_onscreen_True(self):
+        old_stdout = sys.stdout
+        print_new = StringIO()
+        sys.stdout = print_new
         return_new = fu.print_end_msg("test_pgr", onscreen=True)
+        print_old = StringIO()
+        sys.stdout = print_old
         return_old = oldfu.print_end_msg("test_pgr", onscreen=True)
         self.assertEqual(return_new,return_old)
         self.assertTrue(return_new is None)
+        self.assertEqual(print_new.getvalue(), print_old.getvalue())
+        sys.stdout = old_stdout
 
 
 
 class Test_print_msg(unittest.TestCase):
+    """ see https://wrongsideofmemphis.com/2010/03/01/store-standard-output-on-a-variable-in-python/"""
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.print_msg()
@@ -1785,10 +1828,17 @@ class Test_print_msg(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_print_msg(self):
+        old_stdout = sys.stdout
+        print_new = StringIO()
+        sys.stdout = print_new
         return_new = fu.print_msg("test_pgr")
+        print_old = StringIO()
+        sys.stdout = print_old
         return_old = oldfu.print_msg("test_pgr")
         self.assertEqual(return_new,return_old)
         self.assertTrue(return_new is None)
+        self.assertEqual(print_new.getvalue(), print_old.getvalue())
+        sys.stdout = old_stdout
 
 
 
@@ -3414,39 +3464,44 @@ class Test_unpack_message(unittest.TestCase):
 
 
 
-@unittest.skip("sasa")
-class Test_lib_utilities_compare(unittest.TestCase):
-    def test_update_tag_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.update_tag")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
+class Test_wrap_mpi_send(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.wrap_mpi_send()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.wrap_mpi_send()
+        self.assertEqual(cm_new.exception.message, "wrap_mpi_send() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-        print(argum[0])
-
-        (communicator, target_rank) = argum[0]
-
-        return_new = fu.update_tag(communicator, target_rank)
-
-        return_old = oldfu.update_tag(communicator, target_rank)
-
+    def test_default_value(self):
+        """ values got via pickle files/utilities/utilities.wrap_mpi_send"""
+        return_new = fu.wrap_mpi_send(data = [9], destination = 0, communicator = None)
+        return_old = oldfu.wrap_mpi_send(data =[9], destination = 0, communicator = None)
         self.assertEqual(return_new, return_old)
 
-
-    def test_wrap_mpi_send_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.wrap_mpi_send")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum[0])
-
-        (data, destination,communicator) = argum[0]
-
-        return_new = fu.wrap_mpi_send(data, destination)
-
-        return_old = oldfu.wrap_mpi_send(data, destination)
-
+    def test_with_MPI_COMM_WORLD(self):
+        return_new = fu.wrap_mpi_send(data = [9], destination = 0, communicator = MPI_COMM_WORLD)
+        return_old = oldfu.wrap_mpi_send(data =[9], destination = 0, communicator = MPI_COMM_WORLD)
         self.assertEqual(return_new, return_old)
 
+    def test_invalid_communicator_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        return_new = fu.wrap_mpi_send(data = [9], destination = 0, communicator = -1)
+        return_old = oldfu.wrap_mpi_send(data =[9], destination = 0, communicator = -1)
+        self.assertEqual(return_new, return_old)
+        """
+
+
+
+class Test_wrap_mpi_recv(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.wrap_mpi_recv()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.wrap_mpi_recv()
+        self.assertEqual(cm_new.exception.message, "wrap_mpi_recv() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     "Can only test on cluster , cannot work on workstation"
     # def test_wrap_mpi_recv_true_should_return_equal_objects(self):
@@ -3466,61 +3521,114 @@ class Test_lib_utilities_compare(unittest.TestCase):
     #     self.assertEqual(return_new, return_old)
 
 
-    def test_wrap_mpi_bcast_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.wrap_mpi_bcast")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
 
-        print(argum[0])
+class Test_wrap_mpi_bcast(unittest.TestCase):
+    """ Since i cannot create value using 'pack_message' without getting an error from 'unpack_message' I cannot test it deeply"""
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.wrap_mpi_bcast()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.wrap_mpi_bcast()
+        self.assertEqual(cm_new.exception.message, "wrap_mpi_bcast() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-        (data, root, communicator) = argum[0]
+    def test_None_data(self):
+        """ values got via pickle files/utilities/utilities.wrap_mpi_send"""
+        return_new = fu.wrap_mpi_bcast(None, root=0, communicator= None)
+        return_old = oldfu.wrap_mpi_bcast(None, root=0, communicator= None)
+        self.assertEqual(return_new, return_old)
+        self.assertTrue(return_new is None)
 
-        return_new = fu.wrap_mpi_bcast(data, root)
-
-        return_old = oldfu.wrap_mpi_bcast(data, root)
-
+    def test_with_MPI_COMM_WORLD(self):
+        return_new = fu.wrap_mpi_bcast(data = [9], root = 0, communicator = MPI_COMM_WORLD)
+        return_old = oldfu.wrap_mpi_bcast(data =[9], root= 0, communicator = MPI_COMM_WORLD)
         self.assertEqual(return_new, return_old)
 
-
-    def test_wrap_mpi_gatherv_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.wrap_mpi_gatherv")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum[0])
-
-        (data, root, communicator) = argum[0]
-
-        return_new = fu.wrap_mpi_gatherv(data, root)
-
-        return_old = oldfu.wrap_mpi_gatherv(data, root)
-
+    def test_invalid_communicator_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        return_new = fu.wrap_mpi_bcast(data = [9], root = 0, communicator = -1)
+        return_old = oldfu.wrap_mpi_bcast(data =[9], root= 0, communicator = -1)
         self.assertEqual(return_new, return_old)
+        """
 
 
-    def test_get_colors_and_subsets_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_colors_and_subsets")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
 
-        print(argum[0])
+class Test_wrap_mpi_gatherv(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.wrap_mpi_gatherv()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.wrap_mpi_gatherv()
+        self.assertEqual(cm_new.exception.message, "wrap_mpi_gatherv() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-        (main_node, mpi_comm, my_rank, shared_comm, sh_my_rank, masters) = argum[0]
+    def test_with_pickle_file_values(self):
+        """ values got via pickle files/utilities/utilities.wrap_mpi_gatherv"""
+        return_new = fu.wrap_mpi_gatherv(data = [45,3], root = 0, communicator= None)
+        return_old = oldfu.wrap_mpi_gatherv(data= [45,3], root = 0, communicator= None)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
 
-        mpi_comm = MPI_COMM_WORLD
+    def test_with_MPI_COMM_WORLD(self):
+        """ values got via pickle files/utilities/utilities.wrap_mpi_gatherv"""
+        return_new = fu.wrap_mpi_gatherv(data = [45,3], root = 0, communicator= MPI_COMM_WORLD)
+        return_old = oldfu.wrap_mpi_gatherv(data= [45,3], root = 0, communicator= MPI_COMM_WORLD)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_invalid_communicator_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        return_new = fu.wrap_mpi_gatherv(data = [45,3], root = 0, communicator= -1)
+        return_old = oldfu.wrap_mpi_gatherv(data= [45,3], root = 0, communicator= -1)
+        self.assertEqual(return_new, return_old)
+        """
+
+
+
+class Test_get_colors_and_subsets(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.get_colors_and_subsets()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.get_colors_and_subsets()
+        self.assertEqual(cm_new.exception.message, "get_colors_and_subsets() takes exactly 6 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_mainMode_equal_my_rank(self):
         main_node = 0
-        my_rank = mpi_comm_rank(mpi_comm)
-        mpi_size = mpi_comm_size(mpi_comm)
-        shared_comm = mpi_comm_split_type(mpi_comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL)
+        my_rank = mpi_comm_rank(MPI_COMM_WORLD)
+        shared_comm = mpi_comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL)
         sh_my_rank = mpi_comm_rank(shared_comm)
-        masters = mpi_comm_split(mpi_comm, sh_my_rank == main_node, my_rank)
-        shared_comm = mpi_comm_split_type(mpi_comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL)
+        masters = mpi_comm_split(MPI_COMM_WORLD, sh_my_rank == main_node, my_rank)
+        shared_comm = mpi_comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL)
+        return_new = fu.get_colors_and_subsets(main_node, MPI_COMM_WORLD, my_rank, shared_comm, sh_my_rank,masters)
+        return_old = oldfu.get_colors_and_subsets(main_node, MPI_COMM_WORLD, my_rank, shared_comm, sh_my_rank,masters)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
 
-        return_new = fu.get_colors_and_subsets(main_node, mpi_comm, my_rank, shared_comm, sh_my_rank,masters)
+    def test_mainMode_not_equal_my_rank_returns_TypeError_obj_Nonetype_hasnot_len(self):
+        main_node = 0
+        my_rank = mpi_comm_rank(MPI_COMM_WORLD)
+        shared_comm = mpi_comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL)
+        sh_my_rank = mpi_comm_rank(shared_comm)
+        masters = mpi_comm_split(MPI_COMM_WORLD, sh_my_rank == main_node, my_rank)
+        shared_comm = mpi_comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL)
+        with self.assertRaises(TypeError) as cm_new:
+            fu.get_colors_and_subsets(main_node, MPI_COMM_WORLD, my_rank, shared_comm, sh_my_rank+1,masters)
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.get_colors_and_subsets(main_node, MPI_COMM_WORLD, my_rank, shared_comm, sh_my_rank+1,masters)
+        self.assertEqual(cm_new.exception.message, "object of type 'NoneType' has no len()")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-        return_old = oldfu.get_colors_and_subsets(main_node, mpi_comm, my_rank, shared_comm, sh_my_rank,masters)
 
-        self.assertEqual(return_new, return_old)
+class Test_wrap_mpi_split(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.wrap_mpi_split()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.wrap_mpi_split()
+        self.assertEqual(cm_new.exception.message, "wrap_mpi_split() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
 
         """ Can only be tested in mpi not on workstation   """
     # def test_wrap_mpi_split_true_should_return_equal_objects(self):
@@ -3538,83 +3646,203 @@ class Test_lib_utilities_compare(unittest.TestCase):
     #
     #     self.assertEqual(return_new, return_old)
 
-    def test_eliminate_moons_true_should_return_equal_objects(self):
 
-        volume = fu.model_gauss(0.25,12,12,12)
+class Test_get_dist(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.get_dist()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.get_dist()
+        self.assertEqual(cm_new.exception.message, "get_dist() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-
-        moon_params = []
-        moon_params.append(0.5)
-        moon_params.append(1.45)
-
-        return_new = fu.eliminate_moons(volume, moon_params)
-
-        return_old = oldfu.eliminate_moons(volume, moon_params)
-
+    def test_get_dist(self):
+        return_new = fu.get_dist(c1=[2,4],c2=[5,1])
+        return_old = oldfu.get_dist([2, 4], [5, 1])
         self.assertEqual(return_new, return_old)
 
-
-    def test_get_dist_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_dist")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum[0])
-
-        (c1, c2) = argum[0]
-
-        return_new = fu.get_dist(c1, c2)
-
-        return_old = oldfu.get_dist(c1, c2)
-
-        self.assertEqual(return_new, return_old)
+    def test_returns_IndexError_list_index_out_of_range(self):
+        with self.assertRaises(IndexError) as cm_new:
+            fu.get_dist(c1=[2],c2=[5])
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.get_dist(c1=[2],c2=[5])
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
 
-    def test_combinations_of_n_taken_by_k_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.combinations_of_n_taken_by_k")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
 
-        print(argum[0])
+class Test_eliminate_moons(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.eliminate_moons()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.eliminate_moons()
+        self.assertEqual(cm_new.exception.message, "eliminate_moons() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-        (n, k) = argum[0]
+    def test_real_case_IMAGE_3D(self):
+        moon_params = [0.4,0.7]
+        return_new = fu.eliminate_moons(deepcopy(IMAGE_3D), moon_params)
+        return_old = oldfu.eliminate_moons(deepcopy(IMAGE_3D), moon_params)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-        return_new = fu.combinations_of_n_taken_by_k(n, k)
+    def test_real_case_IMAGE_3D_no_change(self):
+        v = fu.model_gauss(0.25,12,12,12)
+        moon_params = [-1,-1]
+        return_new = fu.eliminate_moons(deepcopy(v), moon_params)
+        return_old = oldfu.eliminate_moons(deepcopy(v), moon_params)
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(numpy.array_equal(return_new.get_3dview(), v.get_3dview()))
 
-        return_old = oldfu.combinations_of_n_taken_by_k(n, k)
-
-        self.assertEqual(return_new, return_old)
-
-
-    def test_cmdexecute_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.cmdexecute")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        # print(argum[0])
-
-        (cmd,) = argum[0]
-
-        dirname = cmd.split(' ')[1]
-
-        current_path = os.getcwd()
-        if os.path.isdir(dirname):
-            print('directory exits')
-            print('removing it')
-            shutil.rmtree(dirname)
-
-        return_new = fu.cmdexecute(cmd)
-
-        if os.path.isdir(dirname):
-            print('directory exits')
-            print('removing it')
-            shutil.rmtree(dirname)
-
-        return_old = oldfu.cmdexecute(cmd)
-
-        self.assertEqual(return_new, return_old)
+    def test_returns_IndexError_list_index_out_of_range(self):
+        moon_params = [0.4]
+        with self.assertRaises(IndexError) as cm_new:
+            fu.eliminate_moons(deepcopy(IMAGE_3D), moon_params)
+        with self.assertRaises(IndexError) as cm_old:
+            fu.eliminate_moons(deepcopy(IMAGE_3D), moon_params)
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
 
+    def test_real_case_IMAGE_2D_returns_RuntimeError_the_img_should_be_a_3D_img(self):
+        moon_params = [0.4,0.7]
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.eliminate_moons(deepcopy(IMAGE_2D), moon_params)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.eliminate_moons(deepcopy(IMAGE_2D), moon_params)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], "The image should be 3D")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[1], msg_old[1])
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_img_returns_RuntimeError_the_img_should_be_a_3D_img(self):
+        moon_params = [0.4,0.7]
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.eliminate_moons(EMData(), moon_params)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.eliminate_moons(EMData(), moon_params)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], "The image should be 3D")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[1], msg_old[1])
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_NoneType_img_returns_AttributeError_NoneType_obj_hasnot_attribute_find_3d_threshold(self):
+        moon_params = [0.4,0.7]
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.eliminate_moons(None, moon_params)
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.eliminate_moons(None, moon_params)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'find_3d_threshold'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+
+
+class Test_combinations_of_n_taken_by_k(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.combinations_of_n_taken_by_k()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.combinations_of_n_taken_by_k()
+        self.assertEqual(cm_new.exception.message, "combinations_of_n_taken_by_k() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_combinations_of_n_taken_by_k(self):
+        return_new = fu.combinations_of_n_taken_by_k(5,3)
+        return_old = oldfu.combinations_of_n_taken_by_k(5,3)
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new, 10)
+
+
+
+class Test_cmdexecute(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.cmdexecute()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.cmdexecute()
+        self.assertEqual(cm_new.exception.message, "cmdexecute() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_correct_cmd_without_printing_on_success(self):
+        return_new = fu.cmdexecute("ls", False)
+        return_old = oldfu.cmdexecute("ls", False)
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new, None)
+
+    def test_correct_cmd_with_printing_on_success(self):
+        return_new = fu.cmdexecute("ls", True)
+        return_old = oldfu.cmdexecute("ls", True)
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new, 1)
+
+    def test_wrong_cmd(self):
+        return_new = fu.cmdexecute("quack", True)
+        return_old = oldfu.cmdexecute("quack", True)
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new, 0)
+
+
+
+
+class Test_string_found_in_file(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.string_found_in_file()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.string_found_in_file()
+        self.assertEqual(cm_new.exception.message, "string_found_in_file() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_file_not_found_returns_IOError(self):
+        with self.assertRaises(IOError) as cm_new:
+            fu.string_found_in_file("search smth", "not_a_file.txt")
+        with self.assertRaises(IOError) as cm_old:
+            oldfu.string_found_in_file("search smth", "not_a_file.txt")
+        self.assertEqual(cm_new.exception.strerror, "No such file or directory")
+        self.assertEqual(cm_new.exception.strerror, cm_old.exception.strerror)
+
+    def test_found_value(self):
+        f = "f.txt"
+        data=[["hallo",1,1,1],[2,2,2,2],[3,3,3,3]]
+        path_to_file = path.join(ABSOLUTE_PATH, f)
+        fu.write_text_row(data, path_to_file)
+        return_new = fu.string_found_in_file("hallo", path_to_file)
+        return_old = oldfu.string_found_in_file("hallo", path_to_file)
+        remove_list_of_file([f])
+        self.assertEqual(return_new,return_old)
+        self.assertTrue(return_new)
+
+    def test_notfound_value(self):
+        f = "f.txt"
+        data=[["ds",1,1,1],[2,2,2,2],[3,3,3,3]]
+        path_to_file = path.join(ABSOLUTE_PATH, f)
+        fu.write_text_row(data, path_to_file)
+        return_new = fu.string_found_in_file("hallo", path_to_file)
+        return_old = oldfu.string_found_in_file("hallo", path_to_file)
+        remove_list_of_file([f])
+        self.assertEqual(return_new,return_old)
+        self.assertFalse(return_new)
+
+
+
+
+
+
+
+
+
+
+
+
+
+@unittest.skip("sasa")
+class Test_lib_utilities_compare(unittest.TestCase):
     def test_if_error_then_all_processes_exit_program_true_should_return_equal_objects(self):
         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.if_error_then_all_processes_exit_program")
         with open(filepath, 'rb') as rb:
