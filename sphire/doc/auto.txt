@@ -94,9 +94,9 @@ sp_auto.py output_directory --mpi_procs=MPI_PROCS --mpi_job_name=MPI_JOB_NAME --
   ; %%--%%mask_rviper_addition: MASK_RVIPER addititions: Optional additional arguments. (default none): %%--%%skip_mask_rviper==False %%--%%skip_adjustment_rviper==False
 
   ; %%--%%skip_meridien: Skip MERIDIEN: Skip the movie alignment in case that you already have aligned movies. (default False)
-  ; %%--%%meridien_input_volume: MERIDIEN input volume: Input volume path. (default none): %%--%%skip_meridien==False %%--%%skip_adjust_rviper==False
-  ; %%--%%meridien_input_stack: MERIDIEN input stack: Inpust particle stack. (default none): %%--%%skip_meridien==False %%--%%skip_isac2==False
-  ; %%--%%meridien_input_mask: MERIDIEN input mask: 3D Mask file. (default none): %%--%%skip_meridien==False %%--%%skip_mask_rviper==False
+  ; %%--%%meridien_input_volume: MERIDIEN input volume: Input volume path. (default none): %%--%%skip_meridien==False %%--%%skip_adjust_rviper==True
+  ; %%--%%meridien_input_stack: MERIDIEN input stack: Inpust particle stack. (default none): %%--%%skip_meridien==False %%--%%skip_isac2==True
+  ; %%--%%meridien_input_mask: MERIDIEN input mask: 3D Mask file. (default none): %%--%%skip_meridien==False %%--%%skip_mask_rviper==True
   ; %%--%%meridien_output_dir: MERIDIEN output name: Name of the output directory. (default 05a_MERIDIEN): %%--%%skip_meridien==False
   ; %%--%%meridien_addition: MERIDIEN addititions: Optional additional arguments. (default none): %%--%%skip_meridien==False
 
