@@ -474,8 +474,8 @@ def main(args_as_dict):
 	mpi_submission = args_as_dict['mpi_submission_template']
 	out_submission = '{0}/submission_script.sh'.format(args_as_dict['output_directory'])
 
-	prev_line = ' echo $(date) {0}\n'
-	check_line = "if [[ ${{?}} != 0 ]]; then echo $(date) '{0}: Failure!'; exit 1; else echo $(date) '{0}: Success!'; fi\n"
+    prev_line = ' echo $(date): {0}\n'
+    check_line = "if [[ ${{?}} != 0 ]]; then echo $(date): '{0}: Failure!'; exit 1; else echo $(date): '{0}: Success!'; fi\n"
 
 	cmds = []
 	dict_idx_dict = {}
