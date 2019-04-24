@@ -5343,7 +5343,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
 					if(keepf == 0):
 						keepf = 3
-						ERROR( "Too few images to estimate keepfirst, try with the next particle.", myid=Blockdata["myid"], action=0 )
+						#ERROR( "Too few images to estimate keepfirst, try with the next particle.", myid=Blockdata["myid"], action=0 )
 						keep_checking_keepfirst = True
 					else:
 						keep_checking_keepfirst = False
@@ -6817,7 +6817,9 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			procid=procid
 			)
 		outliers[procid] = outlier_list
-		if Tracker['prior']['apply_prior'] or Tracker['prior']['force_outlier']:
+		if Tracker['prior']['apply_prior']:
+			pass
+		elif Tracker['prior']['force_outlier']:
 			pass
 		else:
 			outlier_list = [0 for _ in outlier_list]
@@ -7204,7 +7206,13 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 			shutil.copy(params_file, '{0}_old'.format(params_file))
 			shutil.copy(new_params, params_file)
 			outliers = outliers.tolist()
+		elif Tracker['prior']['apply_prior']:
+			outliers = outliers.tolist()
 		else:
+			outliers = [0] * len_data
+
+		if 100*no_outliers/float(len_data) > 30:
+			sxprint('Number of outliers too large! Do not discard outlier!')
 			outliers = [0] * len_data
 
 		np.savetxt(outlier_file, outliers)
