@@ -59,6 +59,7 @@ def parse_args():
 	group.add_argument('--box_size', dest='XXX_SP_BOX_SIZE_XXX', type=int, default=200, help='Particle box size in pixels.')
 	group.add_argument('--symmetry', dest='XXX_SP_SYMMETRY_XXX', type=str, default='c1', help='Symmetry of the particle.')
 	group.add_argument('--voltage', dest='XXX_SP_VOLTAGE_XXX', type=float, default=300.0, help='Microscope voltage in kV.')
+	group.add_argument('--mtf', dest='XXX_SP_MTF_XXX', type=str, default='', help='MTF file for the sharpening step')
 	group.add_argument('--negative_stain', action='store_true', default=False, help='Input is negative stain.')
 	group.add_argument('--phase_plate', action='store_true', default=False, help='Input is phase_plate.')
 	group.add_argument('--fill_rviper_mask', action='store_true', default=False, help='Fill RVIPER mask.')
@@ -144,6 +145,14 @@ def parse_args():
 	group.add_argument('--meridien_output_dir', dest='XXX_SP_MERIDIEN_OUTPUT_DIR', type=str, default='05a_MERIDIEN', help='Meridien output directory.')
 	group.add_argument('--meridien_addition', dest='XXX_SP_MERIDIEN_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
+	group = parser.add_argument_group('Sharpening Meridien settings (optional)')
+	group.add_argument('--skip_sharpening_meridien', action='store_true', default=False, help='Skip creating a mask.')
+	group.add_argument('--sharpening_meridien_ndilation', dest='XXX_SP_SHARPENING_MERIDIEN_NDILAITON_XXX', type=int, default=1, help='Number of dilations of the mask. 1 Dilation adds about 2 pixel to the binary volume.')
+	group.add_argument('--sharpening_meridien_soft_edge', dest='XXX_SP_SHARPENING_MERIDIEN_SOFT_EDGE_XXX', type=int, default=8, help='Number of pixels for the soft edge.')
+	group.add_argument('--sharpening_meridien_output_dir', dest='XXX_SP_SHARPENING_MERIDIEN_OUTPUT_DIR_XXX', type=str, default='05b_SHARPENING', help='RVIPER mask output directory.')
+	group.add_argument('--sharpening_meridien_addition', dest='XXX_SP_SHARPENING_MERIDIEN_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
+
+
 	args = parser.parse_args()
 	return args
 
@@ -187,8 +196,6 @@ def get_cryolo_predict(status_dict, **kwargs):
 	cmd.append('XXX_SP_CRYOLO_CONFIG_PATH_XXX')
 	if status_dict['do_unblur']:
 		cmd.append('XXX_SP_UNBLUR_OUTPUT_DIR_XXX/corrsum_dw')
-	elif status_dict['do_cter']:
-		cmd.append('XXX_SP_CTER_MICROGRAPH_PATTERN_XXX')
 	else:
 		cmd.append('XXX_SP_CRYOLO_MICROGRAPH_PATH_XXX')
 	cmd.append('XXX_SP_CRYOLO_MODEL_PATH_XXX')
@@ -292,6 +299,7 @@ def get_adjustment(status_dict, **kwargs):
 			cmd.append('--resample_ratio=XXX_SP_ISAC_OUTPUT_DIR_XXX')
 		else:
 			cmd.append('--resample_ratio=XXX_SP_ADJUSTMENT_RESAMPLE_RATIO_XXX')
+		cmd.append('--box_size=XXX_SP_BOX_SIZE_XXX')
 		cmd.append('--mol_mass=XXX_SP_MOL_MASS_XXX')
 		cmd.append('XXX_SP_ADJUSTMENT_ADDITION_XXX')
 	return cmd
@@ -334,6 +342,22 @@ def get_meridien(status_dict, **kwargs):
 		cmd.append('--initialshifts')
 		cmd.append('--skip_prealignment')
 	cmd.append('XXX_SP_MERIDIEN_ADDITION_XXX')
+	return cmd
+
+def get_sharpening_meridien(status_dict, **kwargs):
+	cmd = []
+	if status_dict['do_meridien']:
+		cmd.append('sp_process.py')
+		cmd.append('--combinemaps')
+		cmd.append('XXX_SP_MERIDIEN_OUTPUT_DIR/vol_*_unfil_*.hdf')
+		cmd.append('--output_dir=XXX_SP_SHARPENING_MERIDIEN_OUTPUT_DIR_XXX')
+		cmd.append('--pixel_size=XXX_SP_PIXEL_SIZE_XXX')
+		cmd.append('--do_adaptive_mask')
+		cmd.append('--mol_mass=XXX_SP_MOL_MASS_XXX')
+		cmd.append('--ndilation=XXX_SP_SHARPENING_MERIDIEN_NDILAITON_XXX')
+		cmd.append('--edge_width=XXX_SP_SHARPENING_MERIDIEN_SOFT_EDGE_XXX')
+		cmd.append('--mtf=XXX_SP_MTF_XXX')
+		cmd.append('XXX_SP_SHARPENING_MERIDIEN_ADDITION_XXX')
 	return cmd
 
 
@@ -431,6 +455,7 @@ def main(args_as_dict):
 	function_dict['do_adjust_rviper'] = [get_adjustment, False]
 	function_dict['do_mask_rviper'] = [get_mask_rviper, False]
 	function_dict['do_meridien'] = [get_meridien, True]
+	function_dict['do_sharpening_meridien'] = [get_sharpening_meridien, False]
 
 	do_dict = {}
 	for key, value in args_as_dict.items():
@@ -453,13 +478,23 @@ def main(args_as_dict):
 	check_line = "if [[ ${{?}} != 0 ]]; then echo $(date) '{0}: Failure!'; exit 1; else echo $(date) '{0}: Success!'; fi\n"
 
 	cmds = []
+	dict_idx_dict = {}
+	running_idx = 0
+	current_idx = 0
 	for key in function_dict:
 		if do_dict[key]:
 			cmds.append(prev_line.format(key))
+			dict_idx_dict[running_idx] = current_idx
+			running_idx+=1
 			return_value = [entry for entry in function_dict[key][0](phase_plate=phase_plate, negative_stain=negative_stain, fill_rviper_mask=fill_rviper_mask, status_dict=do_dict) if entry.strip()]
 			return_value.insert(0, [function_dict[key][1], key])
 			cmds.append(return_value)
+			dict_idx_dict[running_idx] = current_idx
+			running_idx+=1
 			cmds.append(check_line.format(key))
+			dict_idx_dict[running_idx] = current_idx
+			running_idx+=1
+			current_idx+=1
 
 	with open(mpi_submission) as read:
 		lines = read.readlines()
@@ -477,19 +512,25 @@ def main(args_as_dict):
 	line_no_mpi = '\'{0}\' >>{1}_out.txt 2>>{1}_err.txt\n'
 
 	final_line = '\n'.join([
-		line.format('\' \''.join(entry[1:]), os.path.join(args_as_dict['output_directory'], entry[0][1]))
+		line.format('\' \''.join(entry[1:]), os.path.join(args_as_dict['output_directory'], '{0:04d}_{1}'.format(dict_idx_dict[idx], entry[0][1])))
 		if isinstance(entry, list) and entry[0][0]
 		else
-			line_no_mpi.format('\' \''.join(entry[1:]), os.path.join(args_as_dict['output_directory'], entry[0][1]))
+			line_no_mpi.format('\' \''.join(entry[1:]), os.path.join(args_as_dict['output_directory'], '{0:04d}_{1}'.format(dict_idx_dict[idx], entry[0][1])))
 		if isinstance(entry, list)
 		else
 			entry
-		for entry in cmds
+		for idx, entry in enumerate(cmds)
 		])
+
+	remove_quote_list = (
+		'XXX_SP_WINDOW_OUTPUT_DIR_XXX/mpi_proc_*',
+		'XXX_SP_MERIDIEN_OUTPUT_DIR/vol_*_unfil_*.hdf'
+		)
 
 	for key, value in args_as_dict.items():
 		if key.startswith('XXX'):
-			final_line = final_line.replace('\'XXX_SP_WINDOW_OUTPUT_DIR_XXX/mpi_proc_*\'', 'XXX_SP_WINDOW_OUTPUT_DIR_XXX/mpi_proc_*')
+			for entry in remove_quote_list:
+				final_line = final_line.replace('\'{0}\''.format(entry), entry)
 			if 'OUTPUT_DIR' in key:
 				value = os.path.join(args_as_dict['output_directory'], value)
 			final_line = final_line.replace(key, str(value))
