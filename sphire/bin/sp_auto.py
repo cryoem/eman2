@@ -52,6 +52,7 @@ import sp_global_def
 def parse_args():
 	parser = argparse.ArgumentParser(formatter_class=lambda prog: argparse.ArgumentDefaultsHelpFormatter(prog, width=9999))
 	parser.add_argument('output_directory', help='Output directory to store the outputs')
+	parser.add_argument('--dry_run', action='store_true', default=False, help='Do not execute the submission script.')
 
 	group = parser.add_argument_group('MPI settings (required)')
 	group.add_argument('--mpi_procs', type=int, default=2, help='Number of processors to use.')
@@ -156,8 +157,39 @@ def parse_args():
 	group.add_argument('--skip_sharpening_meridien', action='store_true', default=False, help='Skip creating a mask.')
 	group.add_argument('--sharpening_meridien_ndilation', dest='XXX_SP_SHARPENING_MERIDIEN_NDILAITON_XXX', type=int, default=1, help='Number of dilations of the mask. 1 Dilation adds about 2 pixel to the binary volume.')
 	group.add_argument('--sharpening_meridien_soft_edge', dest='XXX_SP_SHARPENING_MERIDIEN_SOFT_EDGE_XXX', type=int, default=8, help='Number of pixels for the soft edge.')
-	group.add_argument('--sharpening_meridien_output_dir', dest='XXX_SP_SHARPENING_MERIDIEN_OUTPUT_DIR_XXX', type=str, default='05b_SHARPENING', help='RVIPER mask output directory.')
+	group.add_argument('--sharpening_meridien_output_dir', dest='XXX_SP_SHARPENING_MERIDIEN_OUTPUT_DIR_XXX', type=str, default='05b_SHARPENING', help='Sharpening output directory.')
 	group.add_argument('--sharpening_meridien_addition', dest='XXX_SP_SHARPENING_MERIDIEN_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
+
+	group = parser.add_argument_group('RESTACK settings (optional)')
+	group.add_argument('--skip_restack', action='store_true', default=False, help='Skip restacking.')
+	group.add_argument('--restack_output_dir', dest='XXX_SP_RESTACK_OUTPUT_DIR_XXX', type=str, default='05c_RESTACK', help='Restacking output directory.')
+	group.add_argument('--restack_addition', dest='XXX_SP_RESTACK_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
+
+	group.add_argument('--restack_window_output_dir', dest='XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX', type=str, default='05d_RESTACK_WINDOW', help='Restacking output directory.')
+	group.add_argument('--restack_window_mic_pattern', dest='XXX_SP_RESTACK_WINDOW_MICROGRAPH_PATTERN_XXX', type=str, default=None, help='Micrograph pattern for restacking.')
+	group.add_argument('--restack_window_partres', dest='XXX_SP_RESTACK_PARTRES_XXX', type=str, default=None, help='Partres file')
+	group.add_argument('--restack_window_addition', dest='XXX_SP_RESTACK_WINDOW_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
+
+	group.add_argument('--restack_meridien_output_dir', dest='XXX_SP_RESTACK_MERIDIEN_OUTPUT_DIR_XXX', type=str, default='05e_RESTACK_MERIDIEN', help='Restacking output directory.')
+	group.add_argument('--restack_meridien_addition', dest='XXX_SP_RESTACK_MERIDIEN_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
+
+	group.add_argument('--restack_sharpening_ndilation', dest='XXX_SP_RESTACK_SHARPENING_NDILAITON_XXX', type=int, default=1, help='Number of dilations of the mask. 1 Dilation adds about 2 pixel to the binary volume.')
+	group.add_argument('--restack_sharpening_soft_edge', dest='XXX_SP_RESTACK_SHARPENING_SOFT_EDGE_XXX', type=int, default=8, help='Number of pixels for the soft edge.')
+	group.add_argument('--restack_sharpening_output_dir', dest='XXX_SP_RESTACK_SHARPENING_OUTPUT_DIR_XXX', type=str, default='05f_RESTACK_SHARPENING', help='Restacking output directory.')
+	group.add_argument('--restack_sharpening_addition', dest='XXX_SP_RESTACK_SHARPENING_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
+
+	group = parser.add_argument_group('CTF_REFINE settings (optional)')
+	group.add_argument('--skip_ctf_refine', action='store_true', default=False, help='Skip CTF refinement.')
+	group.add_argument('--ctf_refine_output_dir', dest='XXX_SP_CTF_REFINE_OUTPUT_DIR_XXX', type=str, default='05g_CTF_REFINE', help='Restacking output directory.')
+	group.add_argument('--ctf_refine_addition', dest='XXX_SP_CTF_REFINE_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
+
+	group.add_argument('--ctf_meridien_output_dir', dest='XXX_SP_CTF_MERIDIEN_OUTPUT_DIR_XXX', type=str, default='05h_CTF_MERIDIEN', help='Restacking output directory.')
+	group.add_argument('--ctf_meridien_addition', dest='XXX_SP_CTF_MERIDIEN_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
+
+	group.add_argument('--ctf_sharpening_ndilation', dest='XXX_SP_CTF_SHARPENING_NDILAITON_XXX', type=int, default=1, help='Number of dilations of the mask. 1 Dilation adds about 2 pixel to the binary volume.')
+	group.add_argument('--ctf_sharpening_soft_edge', dest='XXX_SP_CTF_SHARPENING_SOFT_EDGE_XXX', type=int, default=8, help='Number of pixels for the soft edge.')
+	group.add_argument('--ctf_sharpening_output_dir', dest='XXX_SP_CTF_SHARPENING_OUTPUT_DIR_XXX', type=str, default='05i_CTF_SHARPENING', help='Restacking output directory.')
+	group.add_argument('--ctf_sharpening_addition', dest='XXX_SP_CTF_SHARPENING_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
 
 	args = parser.parse_args()
@@ -368,6 +400,167 @@ def get_sharpening_meridien(status_dict, **kwargs):
 	return cmd
 
 
+def get_restack_import_params(status_dict, **kwargs):
+	cmd = []
+	if status_dict['do_meridien'] and status_dict['do_restack']:
+		cmd.append('sp_header.py')
+		if status_dict['do_isac2']:
+			cmd.append('bdb:XXX_SP_SUBSTACK_OUTPUT_DIR_XXX/isac_substack')
+		else:
+			cmd.append('XXX_SP_MERIDIEN_INPUT_STACK_XXX')
+		cmd.append('--import=$(ls XXX_SP_MERIDIEN_OUTPUT_DIR/final_params_*.txt)')
+		cmd.append('--params=xform.projection')
+	return cmd
+
+def get_restack_box_files(status_dict, **kwargs):
+	cmd = []
+	if status_dict['do_meridien'] and status_dict['do_restack']:
+		cmd.append('sp_pipe.py')
+		cmd.append('restacking')
+		if status_dict['do_isac2']:
+			cmd.append('bdb:XXX_SP_SUBSTACK_OUTPUT_DIR_XXX/isac_substack')
+		else:
+			cmd.append('XXX_SP_MERIDIEN_INPUT_STACK_XXX')
+		cmd.append('XXX_SP_RESTACK_OUTPUT_DIR_XXX')
+		cmd.append('--reboxing')
+		cmd.append('--rb_box_size=XXX_SP_BOX_SIZE_XXX')
+		cmd.append('XXX_SP_RESTACK_ADDITION_XXX')
+	return cmd
+
+def get_restack_window(status_dict, **kwargs):
+	cmd = []
+	if status_dict['do_meridien'] and status_dict['do_restack']:
+		cmd.append('sp_window.py')
+		if status_dict['do_unblur']:
+			cmd.append('XXX_SP_UNBLUR_OUTPUT_DIR_XXX/corrsum_dw/*.mrc')
+		elif status_dict['do_cter']:
+			cmd.append('XXX_SP_CTER_MICROGRAPH_PATTERN_XXX')
+		elif status_dict['do_cryolo']:
+			cmd.append('XXX_SP_CRYOLO_MICROGRAPH_PATH_XXX/*.mrc')
+		elif status_dict['do_window']:
+			cmd.append('XXX_SP_WINDOW_MICROGRAPH_PATTERN_XXX')
+		else:
+			cmd.append('XXX_SP_RESTACK_WINDOW_MICROGRAPH_PATTERN_XXX')
+		if status_dict['do_cter']:
+			cmd.append('XXX_SP_CTER_OUTPUT_DIR_XXX/partres.txt')
+		elif status_dict['do_window']:
+			cmd.append('XXX_SP_WINDOW_PARTRES_XXX')
+		else:
+			cmd.append('XXX_SP_RESTACK_PARTRES_XXX')
+
+		cmd.append('XXX_SP_RESTACK_OUTPUT_DIR_XXX/centered/*_centered.box')
+
+		if status_dict['do_isac2']:
+			cmd.append('bdb:XXX_SP_SUBSTACK_OUTPUT_DIR_XXX/isac_substack')
+		else:
+			cmd.append('XXX_SP_MERIDIEN_INPUT_STACK_XXX')
+
+		cmd.append('XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX')
+		cmd.append('XXX_SP_RESTACK_WINDOW_ADDITION_XXX')
+	return cmd
+
+def get_restack_stack(status_dict, **kwargs):
+	cmd = []
+	cmd.append('e2bdb.py')
+	cmd.append('XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX/mpi_proc_*')
+	cmd.append('--makevstack=bdb:XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX/stack')
+	return cmd
+
+
+def get_restack_meridien(status_dict, **kwargs):
+	cmd = []
+	if status_dict['do_meridien'] and status_dict['do_restack']:
+		cmd.append('sp_meridien.py')
+		cmd.append('bdb:XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX#stack')
+		cmd.append('XXX_SP_RESTACK_MERIDIEN_OUTPUT_DIR_XXX')
+		cmd.append('XXX_SP_SHARPENING_MERIDIEN_OUTPUT_DIR_XXX/vol_combined.hdf')
+		cmd.append('--skip_prealignment')
+		cmd.append('--inires=10')
+		cmd.append('--delta=3.75')
+		cmd.append('--radius=XXX_SP_PARTICLE_RADIUS_XXX')
+		cmd.append('--mask3D=XXX_SP_SHARPENING_MERIDIEN_OUTPUT_DIR_XXX/vol_adaptive_mask.hdf')
+		cmd.append('--symmetry=XXX_SP_SYMMETRY_XXX')
+		cmd.append('--memory_per_node=XXX_SP_MEMORY_PER_NODE_XXX')
+		cmd.append('XXX_SP_RESTACK_MERIDIEN_ADDITION_XXX')
+	return cmd
+
+
+def get_restack_sharpening(status_dict, **kwargs):
+	cmd = []
+	if status_dict['do_meridien']:
+		cmd.append('sp_process.py')
+		cmd.append('--combinemaps')
+		cmd.append('XXX_SP_RESTACK_MERIDIEN_OUTPUT_DIR_XXX/vol_*_unfil_*.hdf')
+		cmd.append('--output_dir=XXX_SP_RESTACK_SHARPENING_OUTPUT_DIR_XXX')
+		cmd.append('--pixel_size=XXX_SP_PIXEL_SIZE_XXX')
+		cmd.append('--do_adaptive_mask')
+		cmd.append('--mol_mass=XXX_SP_MOL_MASS_XXX')
+		cmd.append('--ndilation=XXX_SP_RESTACK_SHARPENING_NDILAITON_XXX')
+		cmd.append('--edge_width=XXX_SP_RESTACK_SHARPENING_SOFT_EDGE_XXX')
+		cmd.append('--mtf=XXX_SP_MTF_XXX')
+		cmd.append('XXX_SP_RESTACK_SHARPENING_ADDITION_XXX')
+	return cmd
+
+
+def get_ctf_import_params(status_dict, **kwargs):
+	cmd = []
+	if status_dict['do_meridien'] and status_dict['do_ctf_refine'] and status_dict['do_restack']:
+		cmd.append('sp_header.py')
+		cmd.append('bdb:XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX#stack')
+		cmd.append('--import=$(ls XXX_SP_RESTACK_MERIDIEN_OUTPUT_DIR_XXX/final_params_*.txt)')
+		cmd.append('--params=xform.projection')
+	return cmd
+
+
+def get_ctf_refine(status_dict, **kwargs):
+	cmd = []
+	if status_dict['do_meridien'] and status_dict['do_ctf_refine'] and status_dict['do_restack']:
+		cmd.append('sp_ctf_refine.py')
+		cmd.append('bdb:XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX#stack')
+		cmd.append('XXX_SP_CTF_REFINE_OUTPUT_DIR_XXX')
+		cmd.append('XXX_SP_RESTACK_MERIDIEN_OUTPUT_DIR_XXX')
+		cmd.append('--mask=XXX_SP_SHARPENING_MERIDIEN_OUTPUT_DIR_XXX/vol_adaptive_mask.hdf')
+		cmd.append('--apix=XXX_SP_PIXEL_SIZE_XXX')
+		cmd.append('--resolution=3')
+		cmd.append('XXX_SP_CTF_REFINE_ADDITION_XXX')
+	return cmd
+
+
+def get_ctf_meridien(status_dict, **kwargs):
+	cmd = []
+	if status_dict['do_meridien'] and status_dict['do_restack']:
+		cmd.append('sp_meridien.py')
+		cmd.append('bdb:XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX#stack')
+		cmd.append('XXX_SP_CTF_MERIDIEN_OUTPUT_DIR_XXX')
+		cmd.append('XXX_SP_RESTACK_SHARPENING_OUTPUT_DIR_XXX/vol_combined.hdf')
+		cmd.append('--skip_prealignment')
+		cmd.append('--inires=10')
+		cmd.append('--delta=3.75')
+		cmd.append('--radius=XXX_SP_PARTICLE_RADIUS_XXX')
+		cmd.append('--mask3D=XXX_SP_RESTACK_SHARPENING_OUTPUT_DIR_XXX/vol_adaptive_mask.hdf')
+		cmd.append('--symmetry=XXX_SP_SYMMETRY_XXX')
+		cmd.append('--memory_per_node=XXX_SP_MEMORY_PER_NODE_XXX')
+		cmd.append('XXX_SP_CTF_MERIDIEN_ADDITION_XXX')
+	return cmd
+
+
+def get_ctf_sharpening(status_dict, **kwargs):
+	cmd = []
+	if status_dict['do_meridien']:
+		cmd.append('sp_process.py')
+		cmd.append('--combinemaps')
+		cmd.append('XXX_SP_CTF_MERIDIEN_OUTPUT_DIR_XXX/vol_*_unfil_*.hdf')
+		cmd.append('--output_dir=XXX_SP_CTF_SHARPENING_OUTPUT_DIR_XXX')
+		cmd.append('--pixel_size=XXX_SP_PIXEL_SIZE_XXX')
+		cmd.append('--do_adaptive_mask')
+		cmd.append('--mol_mass=XXX_SP_MOL_MASS_XXX')
+		cmd.append('--ndilation=XXX_SP_CTF_SHARPENING_NDILAITON_XXX')
+		cmd.append('--edge_width=XXX_SP_CTF_SHARPENING_SOFT_EDGE_XXX')
+		cmd.append('--mtf=XXX_SP_MTF_XXX')
+		cmd.append('XXX_SP_CTF_SHARPENING_ADDITION_XXX')
+	return cmd
+
+
 def show_variables():
 	with open(__file__) as r:
 		lines = r.readlines()
@@ -463,15 +656,37 @@ def main(args_as_dict):
 	function_dict['do_mask_rviper'] = [get_mask_rviper, False]
 	function_dict['do_meridien'] = [get_meridien, True]
 	function_dict['do_sharpening_meridien'] = [get_sharpening_meridien, False]
+	function_dict['do_restack_import_params'] = [get_restack_import_params, False]
+	function_dict['do_restack_box_files'] = [get_restack_box_files, False]
+	function_dict['do_restack_window'] = [get_restack_window, True]
+	function_dict['do_restack_stack'] = [get_restack_stack, False]
+	function_dict['do_restack_meridien'] = [get_restack_meridien, True]
+	function_dict['do_restack_sharpening'] = [get_restack_sharpening, False]
+	function_dict['do_ctf_refine_import_params'] = [get_ctf_import_params, False]
+	function_dict['do_ctf_refine'] = [get_ctf_refine, False]
+	function_dict['do_ctf_refine_meridien'] = [get_ctf_meridien, False]
+	function_dict['do_ctf_refine_sharpening'] = [get_ctf_sharpening, False]
 
 	do_dict = {}
 	for key, value in args_as_dict.items():
 		if key.startswith('skip') and isinstance(value, bool):
 			do_dict[key.replace('skip', 'do')] = bool(not value)
+
 			if key == 'skip_window':
 				do_dict['{0}_stack'.format(key.replace('skip', 'do'))] = bool(not value)
 			elif key == 'skip_isac2':
 				do_dict['{0}_substack'.format(key.replace('skip', 'do'))] = bool(not value)
+			elif key == 'skip_restack':
+				do_dict['{0}_import_params'.format(key.replace('skip', 'do'))] = bool(not value)
+				do_dict['{0}_box_files'.format(key.replace('skip', 'do'))] = bool(not value)
+				do_dict['{0}_window'.format(key.replace('skip', 'do'))] = bool(not value)
+				do_dict['{0}_stack'.format(key.replace('skip', 'do'))] = bool(not value)
+				do_dict['{0}_meridien'.format(key.replace('skip', 'do'))] = bool(not value)
+				do_dict['{0}_sharpening'.format(key.replace('skip', 'do'))] = bool(not value)
+			elif key == 'skip_ctf_refine':
+				do_dict['{0}_import_params'.format(key.replace('skip', 'do'))] = bool(not value)
+				do_dict['{0}_meridien'.format(key.replace('skip', 'do'))] = bool(not value)
+				do_dict['{0}_sharpening'.format(key.replace('skip', 'do'))] = bool(not value)
 
 	phase_plate = args_as_dict['phase_plate']
 	negative_stain = args_as_dict['negative_stain']
@@ -531,7 +746,11 @@ def main(args_as_dict):
 
 	remove_quote_list = (
 		'XXX_SP_WINDOW_OUTPUT_DIR_XXX/mpi_proc_*',
-		'XXX_SP_MERIDIEN_OUTPUT_DIR/vol_*_unfil_*.hdf'
+		'XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX/mpi_proc_*',
+		'XXX_SP_MERIDIEN_OUTPUT_DIR/vol_*_unfil_*.hdf',
+		'--import=$(ls XXX_SP_MERIDIEN_OUTPUT_DIR/final_params_*.txt)',
+		'--import=$(ls XXX_SP_RESTACK_MERIDIEN_OUTPUT_DIR_XXX/final_params_*.txt)',
+		'XXX_SP_RESTACK_MERIDIEN_OUTPUT_DIR_XXX/vol_*_unfil_*.hdf',
 		)
 
 	for key, value in args_as_dict.items():
@@ -549,7 +768,8 @@ def main(args_as_dict):
 	sp_global_def.write_command(args_as_dict['output_directory'])
 	with open(out_submission, 'w') as w:
 		w.write(''.join(lines).replace('XXX_SXMPI_NPROC_XXX', str(mpi_procs)).replace('XXX_SXMPI_JOB_NAME_XXX', args_as_dict['mpi_job_name']))
-	sp_global_def.sxprint(subprocess.check_output([args_as_dict['mpi_submission_command'], out_submission]))
+	if not args_as_dict['dry_run']:
+		sp_global_def.sxprint(subprocess.check_output([args_as_dict['mpi_submission_command'], out_submission]))
 
 
 if __name__ == '__main__':
