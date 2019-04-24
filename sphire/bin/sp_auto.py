@@ -441,6 +441,9 @@ def get_restack_window(status_dict, **kwargs):
 			cmd.append('XXX_SP_WINDOW_MICROGRAPH_PATTERN_XXX')
 		else:
 			cmd.append('XXX_SP_RESTACK_WINDOW_MICROGRAPH_PATTERN_XXX')
+
+		cmd.append('XXX_SP_RESTACK_OUTPUT_DIR_XXX/centered/*_centered.box')
+
 		if status_dict['do_cter']:
 			cmd.append('XXX_SP_CTER_OUTPUT_DIR_XXX/partres.txt')
 		elif status_dict['do_window']:
@@ -448,14 +451,8 @@ def get_restack_window(status_dict, **kwargs):
 		else:
 			cmd.append('XXX_SP_RESTACK_PARTRES_XXX')
 
-		cmd.append('XXX_SP_RESTACK_OUTPUT_DIR_XXX/centered/*_centered.box')
-
-		if status_dict['do_isac2']:
-			cmd.append('bdb:XXX_SP_SUBSTACK_OUTPUT_DIR_XXX/isac_substack')
-		else:
-			cmd.append('XXX_SP_MERIDIEN_INPUT_STACK_XXX')
-
 		cmd.append('XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX')
+		cmd.append('--box_size=XXX_SP_BOX_SIZE_XXX')
 		cmd.append('XXX_SP_RESTACK_WINDOW_ADDITION_XXX')
 	return cmd
 
