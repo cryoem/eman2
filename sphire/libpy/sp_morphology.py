@@ -2412,6 +2412,10 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 	totresi = []
 	missing_img_names = []
 	rejected_img_names = []
+	if stack == None:
+		img_type = "Micrograph"
+	else:
+		img_type = "Stack"
 	for ifi in range(set_start, set_end):
 		img_type = ""
 		img_name = ""
