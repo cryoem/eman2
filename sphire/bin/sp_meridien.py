@@ -7211,7 +7211,7 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 		else:
 			outliers = [0] * len_data
 
-		if 100*no_outliers/float(len_data) > 30:
+		if 100*no_outliers/float(len_data) < 40:
 			sxprint('Number of outliers too large! Do not discard outlier!')
 			outliers = [0] * len_data
 
