@@ -1,10 +1,16 @@
 #! /usr/bin/env python
 from __future__ import print_function
 #
-# Author 2016  Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
-# Copyright (C) 2019 Max planck institute for molecular physiology, Dortmund
+# Author: Markus Stabrin 2016-2019 (markus.stabrin@mpi-dortmund.mpg.de)
+# Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
+# Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
+# Author: Tapu Shaikh 2019 (tapu.shaikh@mpi-dortmund.mpg.de)
+# Author: Adnan Ali 2019 (adnan.ali@mpi-dortmund.mpg.de)
+# Author: Luca Lusnig 2019 (luca.lusnig@mpi-dortmund.mpg.de)
+# Author: Toshio Moriya 2019 (toshio.moriya@kek.jp)
 #
-
+# Copyright (c) 2016-2019 Max Planck Institute of Molecular Physiology
+#
 # source code in this file under either license. However, note that the
 # complete EMAN2 and SPARX software packages have some GPL dependencies,
 # so you are responsible for compliance with the licenses of these packages

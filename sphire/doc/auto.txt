@@ -1,0 +1,179 @@
+~~NOTOC~~
+
+===== sp_auto =====
+Auto SPHIRE: Run SPHIRE up to 3D refinement in an autmoated manner
+
+\\
+===== Usage =====
+
+Usage in command line
+
+sp_auto.py output_directory --mpi_procs=MPI_PROCS --mpi_job_name=MPI_JOB_NAME --mpi_submission_command=MPI_SUBMISSION_COMMAND --mpi_submission_template=MPI_SUBMISSION_TEMPLATE --apix=XXX_SP_PIXEL_SIZE_XXX --mol_mass=XXX_SP_MOL_MASS_XXX --radius=XXX_SP_PARTICLE_RADIUS_XXX --box_size=XXX_SP_BOX_SIZE_XXX --symmetry=XXX_SP_SYMMETRY_XXX --voltage=XXX_SP_VOLTAGE_XXX --mtf=XXX_SP_MTF_XXX --negative_stain --phase_plate --fill_rviper_mask --memory_per_node=XXX_SP_MEMORY_PER_NODE_XXX --unblur_path=XXX_SP_UNBLUR_PATH_XXX --unblur_mic_pattern=XXX_SP_UNBLUR_MICROGRAPH_PATTERN_XXX --unblur_exp_per_frame=XXX_SP_UNBLUR_EXP_PER_FRAME_XXX --unblur_gain_file=XXX_SP_UNBLUR_GAIN_FILE_XXX --skip_unblur --unblur_output_dir=XXX_SP_UNBLUR_OUTPUT_DIR_XXX --unblur_addition=XXX_SP_UNBLUR_ADDITION_XXX --cter_cs=XXX_SP_CTER_CS_XXX --skip_cter --cter_output_dir=XXX_SP_CTER_OUTPUT_DIR_XXX --cter_mic_pattern=XXX_SP_CTER_MICROGRAPH_PATTERN_XXX --cter_window_size=XXX_SP_CTER_WINDOW_SIZE --cter_addition=XXX_SP_CTER_ADDITION_XXX --cryolo_predict_path=XXX_SP_CRYOLO_PREDICT_PATH_XXX --cryolo_config_path=XXX_SP_CRYOLO_CONFIG_PATH_XXX --cryolo_model_path=XXX_SP_CRYOLO_MODEL_PATH_XXX --cryolo_gpu=XXX_SP_CRYOLO_GPU_XXX --skip_cryolo --cryolo_output_dir=XXX_SP_CRYOLO_OUTPUT_DIR_XXX --cryolo_mic_path=XXX_SP_CRYOLO_MICROGRAPH_PATH_XXX --cryolo_addition=XXX_SP_CRYOLO_ADDITION_XXX --skip_window --window_box_pattern=XXX_SP_WINDOW_BOX_PATTERN_XXX --window_mic_pattern=XXX_SP_WINDOW_MICROGRAPH_PATTERN_XXX --window_partres=XXX_SP_WINDOW_PARTRES_XXX --window_output_dir=XXX_SP_WINDOW_OUTPUT_DIR_XXX --window_addition=XXX_SP_WINDOW_ADDITION_XXX --isac2_img_per_grp=XXX_SP_ISAC_IMG_PER_GRP_XXX --skip_isac2 --isac2_input_stack=XXX_SP_ISAC_STACK_XXX --isac2_output_dir=XXX_SP_ISAC_OUTPUT_DIR_XXX --isac2_addition=XXX_SP_ISAC_ADDITION_XXX --substack_output_dir=XXX_SP_SUBSTACK_OUTPUT_DIR_XXX --skip_rviper --rviper_input_stack=XXX_SP_RVIPER_INPUT_STACK_XXX --rviper_output_dir=XXX_SP_RVIPER_OUTPUT_DIR_XXX --rviper_addition=XXX_SP_RVIPER_ADDITION_XXX --skip_adjust_rviper --adjust_rviper_resample=XXX_SP_ADJUSTMENT_RESAMPLE_RATIO_XXX --adjust_rviper_output_dir=XXX_SP_ADJUSTMENT_OUTPUT_DIR_XXX --adjust_rviper_addition=XXX_SP_ADJUSTMENT_ADDITION_XXX --skip_mask_rviper --mask_rviper_ndilation=XXX_SP_MASK_RVIPER_NDILAITON_XXX --mask_rviper_soft_edge=XXX_SP_MASK_RVIPER_SOFT_EDGE_XXX --mask_rviper_output_dir=XXX_SP_MASK_RVIPER_OUTPUT_DIR_XXX --mask_rviper_addition=XXX_SP_MASK_RVIPER_ADDITION_XXX --skip_meridien --meridien_input_volume=XXX_SP_MERIDIEN_INPUT_VOLUME_XXX --meridien_input_mask=XXX_SP_MERIDIEN_INPUT_MASK_XXX --meridien_input_stack=XXX_SP_MERIDIEN_INPUT_STACK_XXX --meridien_output_dir=XXX_SP_MERIDIEN_OUTPUT_DIR --meridien_addition=XXX_SP_MERIDIEN_ADDITION_XXX --skip_sharpening_meridien --sharpening_meridien_ndilation=XXX_SP_SHARPENING_MERIDIEN_NDILAITON_XXX --sharpening_meridien_soft_edge=XXX_SP_SHARPENING_MERIDIEN_SOFT_EDGE_XXX --sharpening_meridien_output_dir=XXX_SP_SHARPENING_MERIDIEN_OUTPUT_DIR_XXX --sharpening_meridien_addition=XXX_SP_SHARPENING_MERIDIEN_ADDITION_XXX --skip_restack --restack_output_dir=XXX_SP_RESTACK_OUTPUT_DIR_XXX --restack_addition=XXX_SP_RESTACK_ADDITION_XXX --restack_window_output_dir=XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX --restack_window_mic_pattern=XXX_SP_RESTACK_WINDOW_MICROGRAPH_PATTERN_XXX --restack_window_partres=XXX_SP_RESTACK_PARTRES_XXX --restack_window_addition=XXX_SP_RESTACK_WINDOW_ADDITION_XXX --restack_meridien_output_dir=XXX_SP_RESTACK_MERIDIEN_OUTPUT_DIR_XXX --restack_meridien_addition=XXX_SP_RESTACK_MERIDIEN_ADDITION_XXX --restack_sharpening_ndilation=XXX_SP_RESTACK_SHARPENING_NDILAITON_XXX --restack_sharpening_soft_edge=XXX_SP_RESTACK_SHARPENING_SOFT_EDGE_XXX --restack_sharpening_output_dir=XXX_SP_RESTACK_SHARPENING_OUTPUT_DIR_XXX --restack_sharpening_addition=XXX_SP_RESTACK_SHARPENING_ADDITION_XXX --skip_ctf_refine --ctf_refine_output_dir=XXX_SP_CTF_REFINE_OUTPUT_DIR_XXX --ctf_refine_addition=XXX_SP_CTF_REFINE_ADDITION_XXX --ctf_meridien_output_dir=XXX_SP_CTF_MERIDIEN_OUTPUT_DIR_XXX --ctf_meridien_addition=XXX_SP_CTF_MERIDIEN_ADDITION_XXX --ctf_sharpening_ndilation=XXX_SP_CTF_SHARPENING_NDILAITON_XXX --ctf_sharpening_soft_edge=XXX_SP_CTF_SHARPENING_SOFT_EDGE_XXX --ctf_sharpening_output_dir=XXX_SP_CTF_SHARPENING_OUTPUT_DIR_XXX --ctf_sharpening_addition=XXX_SP_CTF_SHARPENING_ADDITION_XXX
+
+\\
+===== Typical usage =====
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; output_directory : Output directory: The results will be written here. If not given, the program will use name master_DATA_AND_TIME. For standard continuation run, local refinement from iteration, and final reconstruction only, the directory must exist and further iterations will be written to this directory. (default required string)
+  ; %%--%%apix : Pixel size [A]: The pixel size of input micrographs. (default 1.0)
+  ; %%--%%mol_mass : Molecular mass [kDa]: The molecular mass of the protein in kilo Dalton. (default 250)
+  ; %%--%%radius : Particle radius [Pixels]: Outer particle radius in pixels < int(boxsize/2)-1. (default 80)
+  ; %%--%%box_size : Particle box size [Pixels]: Particle box size. (default 80)
+  ; %%--%%symmetry : Symmetry: Symmetry of the protein. (default c1)
+  ; %%--%%voltage : Microscope voltage [kV]: The acceleration voltage of microscope used for imaging. (default 300.0)
+  ; %%--%%negative_stain : Is neg. stain data set: Check if the data set is collected via negative stain. (default False):%%--%%phase_plate==False
+  ; %%--%%phase_plate : Is VPP data set: Check if the data set is collected with a phase plate. (default False):%%--%%negative_stain==False
+  ; %%--%%fill_rviper_mask : Fill the mask for 3D refinement: Check if you do not want to fill the mask for the first 3D refinement. (default True question reversed in GUI)
+  ; %%--%%mtf : MTF file: Path to the MTF file of the used detector. (default none)
+  ; %%--%%memory_per_node : Memory per node [GB]: Available memory per node. (default -1)
+
+  ; %%--%%unblur_path : Unblur executable: Path to the unblur executable. (default none): %%--skip_unblur==False
+  ; %%--%%unblur_mic_pattern : Unblur micrograph patten: Micrograph pattern containing the wildcard character *. (default none): %%--skip_unblur==False
+  ; %%--%%unblur_exp_per_frame : Unblur exposure per frame [e/A^2]: Exposure per frame for dose adjustment. (default none): %%--skip_unblur==False
+  ; %%--%%unblur_gain_file : Unblur gain file: Path to the gain file. (default none): %%--skip_unblur==False
+
+  ; %%--%%cter_cs : CTER spherical aberration (Cs) [mm]: Spherical aberration of the microscope. (default 2.7): %%--skip_cter==False
+
+  ; %%--%%cryolo_predict_path : CrYOLO predict path: Path to the CrYOLO precict executable. (default none): %%--skip_cryolo==False
+  ; %%--%%cryolo_model_path : CrYOLO model path: Path to the CrYOLO model file. (default none): %%--skip_cryolo==False
+  ; %%--%%cryolo_config_path : CrYOLO config path: Path to the CrYOLO config file. (default none): %%--skip_cryolo==False
+  ; %%--%%cryolo_gpu : CrYOLO GPUs: Numbers of the GPUs to use seperated by commas. -1 is used for the CPU version. (default 0): %%--skip_cryolo==False
+
+  ; %%--%%isac2_img_per_grp : ISAC2 images per group: Number of images per group. (default 100): %%--skip_isac2==False
+
+  ; %%--%%mpi_procs : MPI processors: Number of processors you want to use for auto SPHIRE. (default 2)
+  ; %%--%%mpi_job_name : MPI job name: Name of the submission job. (default auto_sphire)
+  ; %%--%%mpi_submission_command: MPI Submission command: Submission command to execute the Auto SPHIRE job (default sbatch)
+  ; %%--%%mpi_submission_template: MPI Submission script template: Template to submit the job to a queue. (default msgui_template.sh)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%skip_unblur: Skip UNBLUR: Skip the movie alignment in case that you already have aligned movies. (default False)
+  ; %%--%%unblur_output_dir: UNBLUR output name: Name of the output directory. (default UNBLUR): %%--%%skip_unblur==False
+  ; %%--%%unblur_addition: UNBLUR addititions: Optional additional arguments. (default none): %%--%%skip_unblur==False
+
+  ; %%--%%skip_cter: Skip CTER: Skip the movie alignment in case that you already have aligned movies. (default False)
+  ; %%--%%cter_mic_pattern: CTER input pattern: Pattern of the cter input pattern. (default none): %%--%%skip_unblur==True %%--%%skip_cter==False
+  ; %%--%%cter_window_size: CTER window size: Window size for the CTF estimation. (default 1024): %%--%%skip_cter==False
+  ; %%--%%cter_output_dir: CTER output name: Name of the output directory. (default CTER): %%--%%skip_cter==False
+  ; %%--%%cter_addition: CTER addititions: Optional additional arguments. (default none): %%--%%skip_cter==False
+
+  ; %%--%%skip_cryolo: Skip CrYOLO: Skip the movie alignment in case that you already have aligned movies. (default False)
+  ; %%--%%cryolo_mic_path: CRYOLO micrograph path: Path of the cryolo input images. (default none): %%--%%skip_unblur==True %%--%%skip_cryolo==False
+  ; %%--%%cryolo_output_dir: CRYOLO output name: Name of the output directory. (default CRYOLO_PREDICT): %%--%%skip_cryolo==False
+  ; %%--%%cryolo_addition: CRYOLO addititions: Optional additional arguments. (default none): %%--%%skip_cryolo==False
+
+  ; %%--%%skip_window: Skip WINDOW: Skip the movie alignment in case that you already have aligned movies. (default False)
+  ; %%--%%window_box_pattern: WINDOW input box pattern: Pattern of the box files. (default none): %%--%%skip_cryolo==True %%--s%%kip_window==False
+  ; %%--%%window_mic_pattern: WINDOW input micrograph pattern: Pattern of the input micrograph files. (default none): %%--%%skip_unblur==True %%--%%skip_window==False
+  ; %%--%%window_partres: WINDOW partres file: Path to the partres file. In case of negative stain use the pixel size value. (default none): %%--%%skip_cter==True %%--%%skip_window==False
+  ; %%--%%window_output_dir: WINDOW output name: Name of the output directory. (default WINDOW): %%--%%skip_window==False
+  ; %%--%%window_addition: WINDOW addititions: Optional additional arguments. (default none): %%--%%skip_window==False
+
+  ; %%--%%skip_isac2: Skip ISAC2: Skip the movie alignment in case that you already have aligned movies. (default False)
+  ; %%--%%isac2_input_stack: ISAC2 input stack: Stack used for ISAC2 (default none): %%--%%skip_window==True %%--%%skip_isac2==False
+  ; %%--%%isac2_output_dir: ISAC2 output name: Name of the output directory. (default ISAC): %%--%%skip_isac2==False
+  ; %%--%%isac2_addition: ISAC2 addititions: Optional additional arguments.  (default none): %%--%%skip_isac2==False
+  ; %%--%%substack_output_dir: ISAC2 substack output name: Name of the output directory for the ISAC substack. (default SUBSTACK): %%--%%skip_isac2==False
+
+  ; %%--%%skip_rviper: Skip RVIPER: Skip the movie alignment in case that you already have aligned movies. (default False)
+  ; %%--%%rviper_input_stack: RVIPER input stack: Stack used for RVIPER (default none): %%--%%skip_isac2==True %%--%%skip_rviper==False
+  ; %%--%%rviper_output_dir: RVIPER output name: Name of the output directory. (default RVIPER): %%--%%skip_rviper==False
+  ; %%--%%rviper_addition: RVIPER Addititions: Optional additional arguments. (default none): %%--%%skip_rviper==False
+
+  ; %%--%%skip_adjust_rviper: Skip ADJUST_RVIPER: Skip the movie alignment in case that you already have aligned movies. (default False)
+  ; %%--%%adjust_rviper_resample: ADJUST_RVIPER resample ratio: Resample ratio or ISAC directory (default none): %%--%%skip_adjust_rviper==False %%--%%skip_isac2==True
+  ; %%--%%adjust_rviper_output_dir: ADJUST_RVIPER output name: Name of the output directory. (default RVIPER_ADJUSTMENT): %%--%%skip_adjust_rviper==False
+  ; %%--%%adjust_rviper_addition: ADJUST_RVIPER addititions: Optional additional arguments. (default none): %%--%%skip_adjust_rviper==False
+
+  ; %%--%%skip_mask_rviper: Skip MASK_RVIPER: Skip the movie alignment in case that you already have aligned movies. (default False): %%--%%skip_adjustment_rviper==False
+  ; %%--%%mask_rviper_ndilation: MASK_RVIPER ndilation: Number of dilations. (default 3): %%--%%skip_mask_rviper==False %%--%%skip_adjustment_rviper==False
+  ; %%--%%mask_rviper_soft_edge: MASK_RVIPER soft edge: Number of pixels for the soft edge. (default 10): %%--%%skip_mask_rviper==False %%--%%skip_adjustment_rviper==False
+  ; %%--%%mask_rviper_output_dir: MASK_RVIPER output name: Name of the output directory. (default RVIPER_MASK): %%--%%skip_mask_rviper==False %%--%%skip_adjustment_rviper==False
+  ; %%--%%mask_rviper_addition: MASK_RVIPER addititions: Optional additional arguments. (default none): %%--%%skip_mask_rviper==False %%--%%skip_adjustment_rviper==False
+
+  ; %%--%%skip_meridien: Skip MERIDIEN: Skip the movie alignment in case that you already have aligned movies. (default False)
+  ; %%--%%meridien_input_volume: MERIDIEN input volume: Input volume path. (default none): %%--%%skip_meridien==False %%--%%skip_adjust_rviper==True
+  ; %%--%%meridien_input_stack: MERIDIEN input stack: Inpust particle stack. (default none): %%--%%skip_meridien==False %%--%%skip_isac2==True
+  ; %%--%%meridien_input_mask: MERIDIEN input mask: 3D Mask file. (default none): %%--%%skip_meridien==False %%--%%skip_mask_rviper==True
+  ; %%--%%meridien_output_dir: MERIDIEN output name: Name of the output directory. (default MERIDIEN): %%--%%skip_meridien==False
+  ; %%--%%meridien_addition: MERIDIEN addititions: Optional additional arguments. (default none): %%--%%skip_meridien==False
+
+  ; %%--%%skip_sharpening_meridien: Skip SHARPENING_MERIDIEN: Skip the movie alignment in case that you already have aligned movies. (default False): %%--%%skip_meridien==False
+  ; %%--%%sharpening_meridien_ndilation: SHARPENING_MERIDIEN ndilation: Number of dilations. (default 2): %%--%%skip_sharpening_meridien==False %%--%%skip_meridien==False
+  ; %%--%%sharpening_meridien_soft_edge: SHARPENING_MERIDIEN soft edge: Number of pixels for the soft edge. (default 1): %%--%%skip_sharpening_meridien==False %%--%%skip_meridien==False
+  ; %%--%%sharpening_meridien_output_dir: SHARPENING_MERIDIEN output name: Name of the output directory. (default SHARPENING): %%--%%skip_sharpening_meridien==False %%--%%skip_meridien==False
+  ; %%--%%sharpening_meridien_addition: SHARPENING_MERIDIEN additions: Optional additional arguments. (default none): %%--%%skip_sharpening_meridien==False %%--%%skip_meridien==False
+
+  ; %%--%%skip_restack: Skip RESTACKING: Skip restacking.(default False): %%--%%skip_meridien==False
+  ; %%--%%restack_output_dir: RESTACKING output name: Restacking output directory.(default RESTACK): %%--%%skip_meridien==False %%--%%skip_restack==False
+  ; %%--%%restack_addition: RESTACKING additions: Additional parameters that are not part of the required ones.(default none): %%--%%skip_meridien==False %%--%%skip_restack==False
+
+  ; %%--%%restack_window_output_dir: RESTACKING_WINDOW output dir: Restacking output directory.(default RESTACK_WINDOW): %%--%%skip_meridien==False %%--%%skip_restack==False
+  ; %%--%%restack_window_mic_pattern: RESTACKING_WINDOW mic pattern: Micrograph pattern for restacking.(default none): %%--%%skip_meridien==False %%--%%skip_restack==False
+  ; %%--%%restack_window_partres: RESTACKING_WINDOW partres file: Partres file(default none): %%--%%skip_meridien==False %%--%%skip_restack==False
+  ; %%--%%restack_window_addition: RESTACKING_WINDOW additions: Additional parameters that are not part of the required ones.(default none): %%--%%skip_meridien==False %%--%%skip_restack==False
+
+  ; %%--%%restack_meridien_output_dir: RESTACKING_MERIDIEN output dir: Restacking output directory.(default RESTACK_MERIDIEN): %%--%%skip_meridien==False %%--%%skip_restack==False
+  ; %%--%%restack_meridien_addition: RESTACKING_MERIDIEN additions: Additional parameters that are not part of the required ones.(default none): %%--%%skip_meridien==False %%--%%skip_restack==False
+
+  ; %%--%%restack_sharpening_ndilation: RESTACKING_SHARPENING ndilation: Number of dilations of the mask. 1 Dilation adds about 2 pixel to the binary volume.(default 2): %%--%%skip_meridien==False %%--%%skip_restack==False
+  ; %%--%%restack_sharpening_soft_edge: RESTACKING_SHARPENING soft edge: Number of pixels for the soft edge.(default 1): %%--%%skip_meridien==False %%--%%skip_restack==False
+  ; %%--%%restack_sharpening_output_dir: RESTACKING_SHARPENING output dir: Restacking output directory.(default RESTACK_SHARPENING): %%--%%skip_meridien==False %%--%%skip_restack==False
+  ; %%--%%restack_sharpening_addition: RESTACKING_SHARPENING additions: Additional parameters that are not part of the required ones.(default none): %%--%%skip_meridien==False %%--%%skip_restack==False
+
+  ; %%--%%skip_ctf_refine: Skip CTF_REFINE: Skip CTF refinement.(default False)
+  ; %%--%%ctf_refine_output_dir: CTF_REFINE output name: Restacking output directory.(default CTF_REFINE)
+  ; %%--%%ctf_refine_addition: CTF_REFINE additions: Additional parameters that are not part of the required ones.(default none)
+
+  ; %%--%%ctf_meridien_output_dir: CTF_MERIDIEN output name: Restacking output directory.(default CTF_MERIDIEN)
+  ; %%--%%ctf_meridien_addition: CTF_MERIDIEN additions: Additional parameters that are not part of the required ones.(default none)
+
+  ; %%--%%ctf_sharpening_ndilation: CTF_SHARPENING ndilation: Number of dilations of the mask. 1 Dilation adds about 2 pixel to the binary volume.(default 2)
+  ; %%--%%ctf_sharpening_soft_edge: CTF_SHARPENING soft edge: Number of pixels for the soft edge.(default 1)
+  ; %%--%%ctf_sharpening_output_dir: CTF_SHARPENING output name: Restacking output directory.(default CTF_SHARPENING)
+  ; %%--%%ctf_sharpening_addition: CTF_SHARPENING additions: Additional parameters that are not part of the required ones.(default none)
+\\
+===== Output =====
+
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Markus Stabrin
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_auto.py
+
+\\
+==== See also ====
+References to relevant other routines.
+
+\\
+==== Maturity ====
+Alpha:: Fully developed.
+
+\\
+==== Bugs ====
+Glitches possible.
+
+\\
+
+

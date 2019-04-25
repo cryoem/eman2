@@ -2,9 +2,15 @@
 from __future__ import print_function
 from __future__ import division
 #
-# Copyright (C) 2019 Max planck institute for molecular physiology, Dortmund
-# Authors:
-# 2019 - Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
+# Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
+# Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
+# Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
+# Author: Tapu Shaikh 2019 (tapu.shaikh@mpi-dortmund.mpg.de)
+# Author: Adnan Ali 2019 (adnan.ali@mpi-dortmund.mpg.de)
+# Author: Luca Lusnig 2019 (luca.lusnig@mpi-dortmund.mpg.de)
+# Author: Toshio Moriya 2019 (toshio.moriya@kek.jp)
+#
+# Copyright (c) 2019 Max Planck Institute of Molecular Physiology
 #
 
 # source code in this file under either license. However, note that the
@@ -346,12 +352,12 @@ def sanity_checks(command_args, input_vol):
 
 			ERROR( "Output mask already exists! Please provide the overwrite option if you want to overwrite the existing mask." )
 
-	if command_args.s_nx is not None and command_args.s_ny is None and command_args.s_ny is None:
+	if command_args.s_nx is not None and command_args.s_ny is None and command_args.s_ny is None and command_args.second_mask_shape:
 		command_args.s_ny = command_args.s_nx
 		command_args.s_nz = command_args.s_nx
-	elif command_args.s_nx is not None and command_args.s_ny is not None and command_args.s_ny is not None:
+	elif command_args.s_nx is not None and command_args.s_ny is not None and command_args.s_ny is not None and command_args.second_mask_shape:
 		pass
-	else:
+	elif command_args.second_mask_shape:
 		ERROR( "You need to specify s_nx only or s_nx and s_ny and s_nz" )
 
 

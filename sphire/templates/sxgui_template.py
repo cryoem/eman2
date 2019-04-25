@@ -1,9 +1,15 @@
 #!/usr/bin/env python
 from __future__ import print_function
 #
-# Authors:
-# Toshio Moriya, 11/11/2015 (toshio.moriya@mpi-dortmund.mpg.de)
-# Markus Stabrin, 09/06/2016 (markus.stabrin@mpi-dortmund.mpg.de)
+# Author: Markus Stabrin 2016-2019 (markus.stabrin@mpi-dortmund.mpg.de)
+# Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
+# Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
+# Author: Tapu Shaikh 2019 (tapu.shaikh@mpi-dortmund.mpg.de)
+# Author: Adnan Ali 2019 (adnan.ali@mpi-dortmund.mpg.de)
+# Author: Luca Lusnig 2019 (luca.lusnig@mpi-dortmund.mpg.de)
+# Author: Toshio Moriya 2015-2019 (toshio.moriya@kek.jp)
+#
+# Copyright (c) 2015-2019 Max Planck Institute of Molecular Physiology
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -4862,7 +4868,7 @@ def main():
 	sxapp.setStyleSheet("QToolTip {font-size:%dpt;}" % (new_point_size));
 
 	# Initialise a singleton class for look & feel constants
-	version_string = '1.2_rc9'
+	version_string = '1.2'
 	SXLookFeelConst.initialise(sxapp, version_string)
 
 	# Define the main window (class SXMainWindow)

@@ -239,8 +239,8 @@ class ValSlider(QtWidgets.QWidget):
 		else:
 			try:
 				if (self.intonly) :
-					if self.value==int(float(x)+.5) : return
-					self.value=int(float(x)+.5)
+					if self.value==int(round(float(x))) : return
+					self.value=int(round(float(x)))
 				else : 
 					self.value=float(x)
 #				print "new text ",self.value

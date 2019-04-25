@@ -1,8 +1,15 @@
 #!/usr/bin/env python
 from __future__ import print_function
 # sxgui_meridien for analysing meridien outputs.
-# Author 2017  Thorsten Wagner (thorsten.wagner@mpi-dortmund.mpg.de)
-# Copyright (C) 2017 Max planck institute for molecular physiology, Dortmund
+# Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
+# Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
+# Author: Thorsten Wagner 2017-2019 (thorsten.wagner@mpi-dortmund.mpg.de)
+# Author: Tapu Shaikh 2019 (tapu.shaikh@mpi-dortmund.mpg.de)
+# Author: Adnan Ali 2019 (adnan.ali@mpi-dortmund.mpg.de)
+# Author: Luca Lusnig 2019 (luca.lusnig@mpi-dortmund.mpg.de)
+# Author: Toshio Moriya 2019 (toshio.moriya@kek.jp)
+#
+# Copyright (c) 2017-2019 Max Planck Institute of Molecular Physiology
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
