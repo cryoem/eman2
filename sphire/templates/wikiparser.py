@@ -172,7 +172,6 @@ def construct_keyword_dict():
 	keyword_dict["main000"]         = SXkeyword_map(0, "dir")                 # destination_directory (contains keyworkd 'directory' but this should be directory type)
 ###	keyword_dict["--use_latest_master_directory"] = SXkeyword_map(0, "bool")                # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
 	keyword_dict["--stack_mode"]                  = SXkeyword_map(0, "bool")                # stack_mode (contains keyworkd 'stack' but this should be bool type)
-	keyword_dict["--use_second_mask"]               = SXkeyword_map(0, "bool")                # --generate_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--skip_mask_rviper"]               = SXkeyword_map(0, "bool")                # --generate_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--fill_mask"]               = SXkeyword_map(0, "bool")                # --generate_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--generate_mask"]               = SXkeyword_map(0, "bool")                # --generate_mask (contains keyworkd 'mask' but this should be bool type)
@@ -188,6 +187,8 @@ def construct_keyword_dict():
 	keyword_dict["--use_mol_mass"]                = SXkeyword_map(0, "bool_ignore")                # if one wants to use the --mol_mass=KILODALTON
 	keyword_dict["--s_use_mol_mass"]                = SXkeyword_map(0, "bool_ignore")                # if one wants to use the --mol_mass=KILODALTON
 	keyword_dict["--use_second_mask"]             = SXkeyword_map(0, "bool_ignore")                # if one wants to use the --mol_mass=KILODALTON
+	keyword_dict["--second_mask_shape"]             = SXkeyword_map(0, "string")                # if one wants to use the --mol_mass=KILODALTON
+	keyword_dict["--s_fill_mask"]             = SXkeyword_map(0, "bool")                # if one wants to use the --mol_mass=KILODALTON
 	keyword_dict["--mask_threshold"]              = SXkeyword_map(0, "float")               # --mask_threshold=MASK_THRESHOLD (contains keyworkd 'mask' but this should be bool type)
 	# Use priority 1 for output
 	keyword_dict["output"]                        = SXkeyword_map(1, "output")              # output_hdf, output_directory, outputfile, outputfile, --output=OUTPUT, output_stack, output_file
@@ -223,6 +224,7 @@ def construct_keyword_dict():
 	keyword_dict["--chunk"]                       = SXkeyword_map(2, "select_data2d_stack") # --chunk0=CHUNK0_FILE_NAME, --chunk1=CHUNK1_FILE_NAME
 	keyword_dict["--ctref_subset"]                = SXkeyword_map(2, "select_data2d_stack") # --ctref_subset=selection_file_path
 	keyword_dict["--list"]                        = SXkeyword_map(2, "select_data2d_stack") # --list
+	keyword_dict["--exlist"]                        = SXkeyword_map(2, "select_data2d_stack") # --list
 ###	keyword_dict["--subset"]                      = SXkeyword_map(2, "select_data2d_stack") # --subset=subset_file_path
 	keyword_dict["input_shift_list_file"]         = SXkeyword_map(2, "select_drift_params") # input_shift_list_file
 ###	keyword_dict["--resample_ratio_source"]       = SXkeyword_map(2, "params_any_txt")      # --resample_ratio_source
@@ -309,6 +311,18 @@ def construct_keyword_dict():
 	keyword_dict["--delta"] = SXkeyword_map(2, "float")
 	keyword_dict["--resolution"] = SXkeyword_map(2, "float")
 	keyword_dict["--number_part"] = SXkeyword_map(2, "int")
+
+	keyword_dict["gain"] = SXkeyword_map(2, "mic_one")
+	keyword_dict["unblur_mic_pattern"] = SXkeyword_map(1, "mic_stack")
+	keyword_dict["_mic_pattern"] = SXkeyword_map(2, "mic_one")
+	keyword_dict["cryolo_mic_path"] = SXkeyword_map(2, "dir")
+	keyword_dict["rviper_input_stack"] = SXkeyword_map(0, "data2d_one")
+	keyword_dict["--skip_restack"] = SXkeyword_map(0, "bool")
+	keyword_dict["_partres"]       = SXkeyword_map(2, "params_cter_txt")     # input_ctf_params_source
+	keyword_dict["_box_pattern"]       = SXkeyword_map(2, "params_coords_any")     # input_ctf_params_source
+	keyword_dict["_ndilation"]       = SXkeyword_map(0, "int")     # input_ctf_params_source
+	keyword_dict["_soft_edge"]       = SXkeyword_map(0, "int")     # input_ctf_params_source
+	keyword_dict["_addition"]       = SXkeyword_map(0, "string")     # input_ctf_params_source
 	# NOTE: 2018/02/06 Toshio Moriya
 	# Low-pass filter fall-off width does not make sense to convert to resolution [A] directly. 
 	# It might make more sense to compute Angstrom range from the given cutoff, falloff width, and pixel size
@@ -2409,11 +2423,11 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_window_makevstack()))
 
 	sxcmd_role = "sxr_alt"
-	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer_old.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_boxer_old(), is_submittable = False))
-	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_boxer(), is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/cryolo_train.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_restacking.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/rewindow.txt", "DokuWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/cryolo_train.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer_old.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_boxer_old(), is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_boxer(), is_submittable = False))
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
