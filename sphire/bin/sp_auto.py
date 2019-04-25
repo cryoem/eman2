@@ -365,7 +365,7 @@ def get_meridien(status_dict, **kwargs):
 		cmd.append('bdb:XXX_SP_SUBSTACK_OUTPUT_DIR_XXX/isac_substack')
 	else:
 		cmd.append('XXX_SP_MERIDIEN_INPUT_STACK_XXX')
-	cmd.append('XXX_SP_MERIDIEN_OUTPUT_DIR')
+	cmd.append('XXX_SP_MERIDIEN_OUTPUT_DIR_XXX')
 	if status_dict['do_rviper']:
 		cmd.append('XXX_SP_ADJUSTMENT_OUTPUT_DIR_XXX/vol3d_ref_moon_eliminated.hdf')
 	else:
@@ -388,7 +388,7 @@ def get_sharpening_meridien(status_dict, **kwargs):
 	if status_dict['do_meridien']:
 		cmd.append('sp_process.py')
 		cmd.append('--combinemaps')
-		cmd.append('XXX_SP_MERIDIEN_OUTPUT_DIR/vol_*_unfil_*.hdf')
+		cmd.append('XXX_SP_MERIDIEN_OUTPUT_DIR_XXX/vol_*_unfil_*.hdf')
 		cmd.append('--output_dir=XXX_SP_SHARPENING_MERIDIEN_OUTPUT_DIR_XXX')
 		cmd.append('--pixel_size=XXX_SP_PIXEL_SIZE_XXX')
 		cmd.append('--do_adaptive_mask')
@@ -408,7 +408,7 @@ def get_restack_import_params(status_dict, **kwargs):
 			cmd.append('bdb:XXX_SP_SUBSTACK_OUTPUT_DIR_XXX/isac_substack')
 		else:
 			cmd.append('XXX_SP_MERIDIEN_INPUT_STACK_XXX')
-		cmd.append('--import=$(ls XXX_SP_MERIDIEN_OUTPUT_DIR/final_params_*.txt)')
+		cmd.append('--import=$(ls XXX_SP_MERIDIEN_OUTPUT_DIR_XXX/final_params_*.txt)')
 		cmd.append('--params=xform.projection')
 	return cmd
 
@@ -611,7 +611,7 @@ def get_defaults():
 	default_dict['XXX_SP_MERIDIEN_ADDITION_XXX'] = ''
 	default_dict['XXX_SP_MERIDIEN_INPUT_STACK_XXX'] = 'bdb:stack'
 	default_dict['XXX_SP_MERIDIEN_INPUT_VOLUME_XXX'] = 'input_volume'
-	default_dict['XXX_SP_MERIDIEN_OUTPUT_DIR'] = '05a_MERIDIEN'
+	default_dict['XXX_SP_MERIDIEN_OUTPUT_DIR_XXX'] = '05a_MERIDIEN'
 
 	default_dict['XXX_SP_RVIPER_ADDITION_XXX'] = ''
 	default_dict['XXX_SP_RVIPER_INPUT_STACK_XXX'] = 'bdb:classes'
