@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 from __future__ import print_function
 #
+# Author: Pawel A.Penczek 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
 # Author: Toshio Moriya 10/20/2016 (toshio.moriya@mpi-dortmund.mpg.de)
 # Author: T. Durmaz 08/29/2014 (tunay.durmaz@uth.tmc.edu)
+# Copyright (c) 2000-2019 The University of Texas - Houston Medical School
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
-# complete EMAN2 and SPHIRE software packages have some GPL dependencies,
+# complete EMAN2 and SPARX software packages have some GPL dependencies,
 # so you are responsible for compliance with the licenses of these packages
 # if you opt to use BSD licensing. The warranty disclaimer below holds
 # in either instance.
@@ -28,6 +30,8 @@ from __future__ import print_function
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+#
 
 from __future__ import print_function
 from builtins import range
