@@ -1590,6 +1590,7 @@ class GUIBoxer(QtWidgets.QWidget):
 			try: color=self.boxcolors[self.mmode]
 			except: color=self.boxcolors["unknown"]
 			self.wimage.add_shape("tmpbox",EMShape(("rect",color[0],color[1],color[2],self.tmpbox[0]-boxsize2,self.tmpbox[1]-boxsize2,self.tmpbox[0]+boxsize2,self.tmpbox[1]+boxsize2,2)))
+			self.wimage.add_shape("tmpcir",EMShape(("circle",color[0],color[1],color[2],self.tmpbox[0],self.tmpbox[1],ptclsize//2,2)))
 			self.wimage.update()
 		elif self.mmode == "manual" :
 			self.curbox=0
@@ -1626,6 +1627,7 @@ class GUIBoxer(QtWidgets.QWidget):
 			try: color=self.boxcolors[self.mmode]
 			except: color=self.boxcolors["unknown"]
 			self.wimage.add_shape("tmpbox",EMShape(("rect",color[0],color[1],color[2],self.tmpbox[0]-boxsize2,self.tmpbox[1]-boxsize2,self.tmpbox[0]+boxsize2,self.tmpbox[1]+boxsize2,2)))
+			self.wimage.add_shape("tmpcir",EMShape(("circle",color[0],color[1],color[2],self.tmpbox[0],self.tmpbox[1],ptclsize//2,2)))
 			self.wimage.update()
 		elif self.mmode=="manual":
 			if m==self.lastloc : return
@@ -1638,7 +1640,8 @@ class GUIBoxer(QtWidgets.QWidget):
 	def imgmouseup(self,event,m) :
 #		m=self.wimage.scr_to_img((event.x(),event.y()))
 		if not self.downbut&Qt.LeftButton : return
-		boxsize2=self.vbbsize.getValue()//2
+		boxsize=self.vbbsize.getValue()
+		boxsize2=boxsize//2
 		ptclsize=self.vbbpsize.getValue()
 		if boxsize2<4 : return
 		
@@ -1652,7 +1655,8 @@ class GUIBoxer(QtWidgets.QWidget):
 			self.tmpbox=(b[0]+m[0]-self.lastloc[0],b[1]+m[1]-self.lastloc[1],self.mmode)
 			self.lastloc=m
 			self.wimage.del_shape("tmpbox")
-			boxim=self.micrograph.get_clip(Region(self.tmpbox[0]-boxsize2,self.tmpbox[1]-boxsize2,boxsize2*2,boxsize2*2))
+			self.wimage.del_shape("tmpcir")
+			boxim=self.micrograph.get_clip(Region(self.tmpbox[0]-boxsize2,self.tmpbox[1]-boxsize2,boxsize,boxsize))
 			boxim["ptcl_source_coord"]=(self.tmpbox[0],self.tmpbox[1])
 			if self.mmode == "refgood" : 
 				self.goodrefs.append(boxim)

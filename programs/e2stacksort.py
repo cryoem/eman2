@@ -123,7 +123,7 @@ def main():
 		b=sortstackptcl(a,options.nsort)
 		if options.reverse : b.reverse()
 	elif options.bispec:
-		b=sortstackbispec(a,options.verbose)
+		b=sortstackbispec(a,options.center,options.verbose)
 	elif options.bykurtosis:
 		b=sortstackkurt(a,options.nsort)
 		if options.reverse : b.reverse()
@@ -154,7 +154,7 @@ def main():
 
 	E2end(E2n)
 
-def sortstackbispec(stack,verbose):
+def sortstackbispec(stack,center,verbose):
 	"uses bispectra to both sort and rotationally align a stack"
 	import numpy as np
 	
@@ -186,6 +186,9 @@ def sortstackbispec(stack,verbose):
 	for i in range(1,n):
 		ret.append(stack[srt[i]].align("rotational_bispec",ret[-1]))
 			
+	if center:
+		for im in ret: im.process_inplace("xform.centerofmass")
+		
 	return ret
 
 def sortstackiter(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,center,mask):
