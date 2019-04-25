@@ -2,6 +2,7 @@
 from __future__ import print_function
 #
 # Author: Pawel A.Penczek 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
+# Please do not copy or modify this file without written consent of the author.
 # Author: Toshio Moriya 10/20/2016 (toshio.moriya@mpi-dortmund.mpg.de)
 # Author: T. Durmaz 08/29/2014 (tunay.durmaz@uth.tmc.edu)
 # Copyright (c) 2000-2019 The University of Texas - Houston Medical School
