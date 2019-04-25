@@ -150,7 +150,7 @@ def parse_args():
 	group.add_argument('--meridien_input_volume', dest='XXX_SP_MERIDIEN_INPUT_VOLUME_XXX', type=str, default='ref_vol.hdf', help='Path to the ref_vol.hdf file')
 	group.add_argument('--meridien_input_mask', dest='XXX_SP_MERIDIEN_INPUT_MASK_XXX', type=str, default='mask.hdf', help='Path to the mask.hdf file')
 	group.add_argument('--meridien_input_stack', dest='XXX_SP_MERIDIEN_INPUT_STACK_XXX', type=str, default='bdb:path#stack', help='Path to the Input stack for Meridien')
-	group.add_argument('--meridien_output_dir', dest='XXX_SP_MERIDIEN_OUTPUT_DIR', type=str, default='MERIDIEN', help='Meridien output directory.')
+	group.add_argument('--meridien_output_dir', dest='XXX_SP_MERIDIEN_OUTPUT_DIR_XXX', type=str, default='MERIDIEN', help='Meridien output directory.')
 	group.add_argument('--meridien_addition', dest='XXX_SP_MERIDIEN_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
 	group = parser.add_argument_group('Sharpening Meridien settings (optional)')
@@ -734,8 +734,8 @@ def main(args_as_dict):
 	remove_quote_list = (
 		'XXX_SP_WINDOW_OUTPUT_DIR_XXX/mpi_proc_*',
 		'XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX/mpi_proc_*',
-		'XXX_SP_MERIDIEN_OUTPUT_DIR/vol_*_unfil_*.hdf',
-		'--import=$(ls XXX_SP_MERIDIEN_OUTPUT_DIR/final_params_*.txt)',
+		'XXX_SP_MERIDIEN_OUTPUT_DIR_XXX/vol_*_unfil_*.hdf',
+		'--import=$(ls XXX_SP_MERIDIEN_OUTPUT_DIR_XXX/final_params_*.txt)',
 		'--import=$(ls XXX_SP_RESTACK_MERIDIEN_OUTPUT_DIR_XXX/final_params_*.txt)',
 		'XXX_SP_RESTACK_MERIDIEN_OUTPUT_DIR_XXX/vol_*_unfil_*.hdf',
 		'XXX_SP_CTF_MERIDIEN_OUTPUT_DIR_XXX/vol_*_unfil_*.hdf'
