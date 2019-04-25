@@ -236,6 +236,7 @@ def construct_keyword_dict():
 	keyword_dict["--params_3d_index_file"]		  = SXkeyword_map(2, "params_any_txt")
 	keyword_dict["--params_3d_chunk_file_0"] 	  = SXkeyword_map(2, "params_any_txt")
 	keyword_dict["--params_3d_chunk_file_1"] 	  = SXkeyword_map(2, "params_any_txt")
+	keyword_dict["--mpi_submission_template"] 	  = SXkeyword_map(2, "params_any_txt")
 	keyword_dict["input_coordinates_pattern"]     = SXkeyword_map(2, "params_coords_any")   # input_coordinates_pattern
 	keyword_dict["input_rebox_pattern"]           = SXkeyword_map(2, "params_rebox_rbx")    # input_rebox_pattern
 	keyword_dict["input_ctf_params_source"]       = SXkeyword_map(2, "params_cter_txt")     # input_ctf_params_source
