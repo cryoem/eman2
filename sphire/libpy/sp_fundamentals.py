@@ -2023,7 +2023,7 @@ class symclass(object):
 		condstat = numpy.zeros(numpy.shape(angles)[0], dtype = bool  )
 
 		phi = angles[:,0]
-		phi_0 =   phi >= 0.0
+		phi_0 = phi >= 0.0
 		phi_ld_br_inmirr_0 = phi < self.brackets[inc_mirror][0]
 		phi_ld_br_1_0 = phi < self.brackets[inc_mirror][0]
 		theta = numpy.round(angles[:, 1], self.round)
@@ -2037,6 +2037,10 @@ class symclass(object):
 			condstat[theta_180] = True
 			condstat[theta_0] = True
 			condstat[~phi_0 & ~phi_ld_br_inmirr_0 & ~theta_ldeq_br_incmirr_1 & ~theta_180  & ~theta_0] = False
+			if int(self.sym[1:]) == 1 and inc_mirror == 0:
+				theta_90 = theta == 90
+				phi_ge_180 = phi >= 180
+				condstat[theta_90 & phi_ge_180] = False
 
 		elif self.sym[0] == "d" and (old_div(self.nsym, 2)) % 2 == 0:
 			condstat[phi_0 & phi_ld_br_inmirr_0 & theta_ldeq_br_incmirr_1] = True

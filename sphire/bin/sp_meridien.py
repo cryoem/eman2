@@ -958,7 +958,10 @@ def get_refangs_and_shifts():
 		theta2=Tracker['theta_max'],
 		method=Tracker['constants']['even_angle_method'],
 		)
-	refang = Blockdata["symclass"].reduce_anglesets( rotate_params(refang, [-0.5*Tracker["delta"], -0.5*Tracker["delta"], -0.5*Tracker["delta"]]) )
+	if Tracker['constants']['do_rotate']:
+		refang = Blockdata["symclass"].reduce_anglesets( rotate_params(refang, [-0.5*Tracker["delta"], -0.5*Tracker["delta"], -0.5*Tracker["delta"]]) )
+	else:
+		refang = Blockdata["symclass"].reduce_anglesets( refang )
 
 	"""
 	if(Tracker["delta"] == 15.0):  refang = read_text_row("refang15.txt")
@@ -5340,7 +5343,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
 					if(keepf == 0):
 						keepf = 3
-						ERROR( "Too few images to estimate keepfirst, try with the next particle.", myid=Blockdata["myid"], action=0 )
+						#ERROR( "Too few images to estimate keepfirst, try with the next particle.", myid=Blockdata["myid"], action=0 )
 						keep_checking_keepfirst = True
 					else:
 						keep_checking_keepfirst = False
@@ -5613,7 +5616,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					norm_per_particle[im] = np.sum(cod1[:lit]*cod3[:lit]) + accumulatepw[im][reachpw]
 					###print("   CNORMPERPARTICLE  ",Blockdata["myid"],im,norm_per_particle[im])
 
-					for iln in range(lit):
+					for iln in range(min(lit, len(cod2))):
 						newpar[im][2].append([int(cod2[iln]), float(cod1[iln])])
 						#  CONTROLPRINTOUT   if( Blockdata["myid"] == Blockdata["main_node"] and icnm<5):
 						#	#print("  NEWPAR%04d  "%im,iln,newpar[im][2][-1])
@@ -5957,9 +5960,12 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 				    myid = Blockdata["subgroup_myid"], mpi_comm = comm)
 			Tracker["directory"] = temp
 			mpi_barrier(Blockdata["subgroup_comm"])
-			try:
-				outlier_params = read_text_file(os.path.join(Tracker["directory"],"outlier-params-chunk_%01d_%03d.txt"%(procid, Tracker["mainiteration"])))[im_start:im_end]
-			except IOError:
+			if Tracker['prior']['apply_prior'] or Tracker['prior']['force_outlier']:
+				try:
+					outlier_params = read_text_file(os.path.join(Tracker["directory"],"outlier-params-chunk_%01d_%03d.txt"%(procid, Tracker["mainiteration"])))[im_start:im_end]
+				except IOError:
+					outlier_params = [0] * len(oldparams[procid])
+			else:
 				outlier_params = [0] * len(oldparams[procid])
 			original_data_outlier = []
 			oldparams_outlier = []
@@ -5971,6 +5977,9 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 					oldparams_outlier.append(oldparams[procid][idx])
 					norm_per_particle_outlier.append(norm_per_particle[procid][idx])
 					oldparamstructure_outlier.append(oldparamstructure[procid][idx])
+			total_left_particles = wrap_mpi_gatherv(norm_per_particle_outlier, Blockdata["main_node"], MPI_COMM_WORLD)
+			if Blockdata['myid'] == Blockdata['main_node']: 
+				sp_global_def.sxprint('Use {0} particles for final reconstruction!'.format(len(total_left_particles)))
 			projdata[procid] = get_shrink_data(
 				Tracker["constants"]["nnxo"],
 				procid,
@@ -6695,8 +6704,13 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 
 		rangle        = shakenumber*Tracker["delta"]
 		rshift        = shakenumber*Tracker["ts"]
-		refang        = Blockdata["symclass"].reduce_anglesets( rotate_params(refang, [-rangle,-rangle,-rangle]) )
-		coarse_angles = Blockdata["symclass"].reduce_anglesets( rotate_params(coarse_angles, [-rangle,-rangle,-rangle]) )
+		if Tracker['constants']['do_rotate']:
+			refang        = Blockdata["symclass"].reduce_anglesets( rotate_params(refang, [-rangle,-rangle,-rangle]) )
+			coarse_angles = Blockdata["symclass"].reduce_anglesets( rotate_params(coarse_angles, [-rangle,-rangle,-rangle]) )
+		else:
+			refang        = Blockdata["symclass"].reduce_anglesets( refang )
+			coarse_angles = Blockdata["symclass"].reduce_anglesets( coarse_angles )
+
 		shakegrid(rshifts, rshift)
 		shakegrid(coarse_shifts, rshift)
 
@@ -6803,6 +6817,12 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			procid=procid
 			)
 		outliers[procid] = outlier_list
+		if Tracker['prior']['apply_prior']:
+			pass
+		elif Tracker['prior']['force_outlier']:
+			pass
+		else:
+			outlier_list = [0 for _ in outlier_list]
 
 		original_outlier = []
 		newparams_outlier = []
@@ -6814,6 +6834,9 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 				newparams_outlier.append(newparamstructure[procid][idx])
 				oldparams_outlier.append(oldparams[procid][idx])
 				norm_outlier.append(norm_per_particle[procid][idx])
+		total_left_particles = wrap_mpi_gatherv(norm_outlier, Blockdata["main_node"], MPI_COMM_WORLD)
+		if Blockdata['myid'] == Blockdata['main_node']: 
+			sp_global_def.sxprint('Use {0} particles for reconstruction!'.format(len(total_left_particles)))
 
 		if Tracker["changed_delta"]:
 			org_nxinit        = Tracker["nxinit"]
@@ -7140,7 +7163,6 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 	if not tracker['constants']['group_id']:
 		return [0] * (im_end - im_start), None
 
-
 	# Print to screen
 	if(blockdata["myid"] == blockdata["main_node"]):
 		sxprint("Executed successfully: ", "Prior calculation")
@@ -7165,6 +7187,7 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 			window_size=Tracker['prior']['window_size'],
 			remove_outlier=Tracker['prior']['remove_outlier'],
 			symclass=Blockdata['symclass'],
+			plot=Tracker['prior']['plot'],
 			)
 
 		# Print to screen
@@ -7179,11 +7202,17 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 			100*no_outliers/float(len_data),
 			len_data
 			))
-		if Tracker['prior']['force_outlier'] is not None:
+		if Tracker['prior']['force_outlier']:
 			shutil.copy(params_file, '{0}_old'.format(params_file))
 			shutil.copy(new_params, params_file)
 			outliers = outliers.tolist()
+		elif Tracker['prior']['apply_prior']:
+			outliers = outliers.tolist()
 		else:
+			outliers = [0] * len_data
+
+		if 100*no_outliers/float(len_data) < 40:
+			sxprint('Number of outliers too large! Do not discard outlier!')
 			outliers = [0] * len_data
 
 		np.savetxt(outlier_file, outliers)
@@ -7418,6 +7447,20 @@ def main():
 
 		if not restart_mode: #<<<-------Fresh run
 			#  Constant settings of the project
+			Prior = {}
+			Prior['tol_psi'] = 30
+			Prior['tol_theta'] = 15
+			Prior['tol_filament'] = 0.2
+			Prior['tol_std'] = 1
+			Prior['tol_mean'] = 30
+			Prior['outlier_method'] = 'deg'
+			Prior['prior_method'] = 'running'
+			Prior['force_outlier'] = False
+			Prior['remove_outlier'] = False
+			Prior['apply_prior'] = False
+			Prior['window_size'] = 3
+			Prior['plot'] = True
+
 			Constants		       			        = {}
 			Constants["stack"]             			= args[0]
 			Constants["rs"]                			= 1
@@ -7458,27 +7501,17 @@ def main():
 			Constants["do_local"]			    = do_continuation_mode
 			Constants["plot_ang_dist"]			    = options.plot_ang_dist
 			if options.group_id is None:
-				Constants['stack_prior'] = None
-				Constants['stack_prior_fmt'] = None
-				Constants['stack_prior_dtype'] = None
-				Constants['apply_prior'] = None
+				Constants['stack_prior'] = False
+				Constants['stack_prior_fmt'] = False
+				Constants['stack_prior_dtype'] = False
+				Constants['do_rotate'] = True
 			else:
-				Constants['apply_prior'] = True
+				Prior['force_outlier'] = False
+				Prior['apply_prior'] = False
+				Constants['do_rotate'] = False
 				Constants['stack_prior'] = sp_helix_sphire.import_sphire_stack(args[0], options.group_id)
 				Constants['stack_prior_fmt'] = prior_stack_fmt(Constants['stack_prior'])
 				Constants['stack_prior_dtype'] = Constants['stack_prior'].dtype.descr
-
-			Prior = {}
-			Prior['tol_psi'] = 30
-			Prior['tol_theta'] = 15
-			Prior['tol_filament'] = 0.2
-			Prior['tol_std'] = 1
-			Prior['tol_mean'] = 30
-			Prior['outlier_method'] = 'deg'
-			Prior['prior_method'] = 'running'
-			Prior['force_outlier'] = False
-			Prior['remove_outlier'] = False
-			Prior['window_size'] = 3
 
 			#
 			#  The program will use three different meanings of x-size
