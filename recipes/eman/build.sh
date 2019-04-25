@@ -12,7 +12,7 @@ LDFLAGS=${LDFLAGS/-Wl,-dead_strip_dylibs/}
 LDFLAGS=${LDFLAGS/-Wl,-pie/}
 CXXFLAGS=${CXXFLAGS/-std=c++17/-std=c++14}
 
-cmake $SRC_DIR
+cmake $SRC_DIR -DENABLE_WARNINGS=OFF
 
 make -j${CPU_COUNT}
 make install
