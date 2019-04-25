@@ -7501,13 +7501,13 @@ def main():
 			Constants["do_local"]			    = do_continuation_mode
 			Constants["plot_ang_dist"]			    = options.plot_ang_dist
 			if options.group_id is None:
-				Constants['stack_prior'] = False
-				Constants['stack_prior_fmt'] = False
-				Constants['stack_prior_dtype'] = False
+				Constants['stack_prior'] = None
+				Constants['stack_prior_fmt'] = None
+				Constants['stack_prior_dtype'] = None
 				Constants['do_rotate'] = True
 			else:
 				Prior['force_outlier'] = False
-				Prior['apply_prior'] = False
+				Prior['apply_prior'] = True
 				Constants['do_rotate'] = False
 				Constants['stack_prior'] = sp_helix_sphire.import_sphire_stack(args[0], options.group_id)
 				Constants['stack_prior_fmt'] = prior_stack_fmt(Constants['stack_prior'])

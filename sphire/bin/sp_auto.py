@@ -81,7 +81,7 @@ def parse_args():
 
 	group = parser.add_argument_group('Unblur settings (optional)')
 	group.add_argument('--skip_unblur', action='store_true', default=False, help='Do not run motion correction')
-	group.add_argument('--unblur_output_dir', dest='XXX_SP_UNBLUR_OUTPUT_DIR_XXX', type=str, default='00a_UNBLUR', help='Unblur output directory.')
+	group.add_argument('--unblur_output_dir', dest='XXX_SP_UNBLUR_OUTPUT_DIR_XXX', type=str, default='UNBLUR', help='Unblur output directory.')
 	group.add_argument('--unblur_addition', dest='XXX_SP_UNBLUR_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
 	group = parser.add_argument_group('CTER settings (required to run CTF estimation)')
@@ -89,7 +89,7 @@ def parse_args():
 
 	group = parser.add_argument_group('CTER settings (optional)')
 	group.add_argument('--skip_cter', action='store_true', default=False, help='Do not run CTF estimation.')
-	group.add_argument('--cter_output_dir', dest='XXX_SP_CTER_OUTPUT_DIR_XXX', type=str, default='01a_CTER', help='CTER output directory.')
+	group.add_argument('--cter_output_dir', dest='XXX_SP_CTER_OUTPUT_DIR_XXX', type=str, default='CTER', help='CTER output directory.')
 	group.add_argument('--cter_mic_pattern', dest='XXX_SP_CTER_MICROGRAPH_PATTERN_XXX', type=str, default='Mics/*.mrc', help='Micrograph pattern in case unblur is skipped.')
 	group.add_argument('--cter_window_size', dest='XXX_SP_CTER_WINDOW_SIZE', type=int, default=1024, help='CTF estimation window size.')
 	group.add_argument('--cter_addition', dest='XXX_SP_CTER_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
@@ -102,7 +102,7 @@ def parse_args():
 
 	group = parser.add_argument_group('CRYOLO settings (optional)')
 	group.add_argument('--skip_cryolo', action='store_true', default=False, help='Do not run particle picking.')
-	group.add_argument('--cryolo_output_dir', dest='XXX_SP_CRYOLO_OUTPUT_DIR_XXX', type=str, default='02a_CRYOLO_PREDICT', help='CRYOLO output directory.')
+	group.add_argument('--cryolo_output_dir', dest='XXX_SP_CRYOLO_OUTPUT_DIR_XXX', type=str, default='CRYOLO_PREDICT', help='CRYOLO output directory.')
 	group.add_argument('--cryolo_mic_path', dest='XXX_SP_CRYOLO_MICROGRAPH_PATH_XXX', type=str, default='Mics/*.mrc', help='Micrograph pattern in case unblur is skipped.')
 	group.add_argument('--cryolo_addition', dest='XXX_SP_CRYOLO_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
@@ -111,7 +111,7 @@ def parse_args():
 	group.add_argument('--window_box_pattern', dest='XXX_SP_WINDOW_BOX_PATTERN_XXX', type=str, default='Boxes/*.box', help='Window box file pattern.')
 	group.add_argument('--window_mic_pattern', dest='XXX_SP_WINDOW_MICROGRAPH_PATTERN_XXX', type=str, default='Mics/*.mrc', help='Window mrc file pattern.')
 	group.add_argument('--window_partres', dest='XXX_SP_WINDOW_PARTRES_XXX', type=str, default='CTER/partres.txt', help='CTER partres file. In case of negative stain put this value to the pixel size.')
-	group.add_argument('--window_output_dir', dest='XXX_SP_WINDOW_OUTPUT_DIR_XXX', type=str, default='02b_WINDOW', help='Window output directory.')
+	group.add_argument('--window_output_dir', dest='XXX_SP_WINDOW_OUTPUT_DIR_XXX', type=str, default='WINDOW', help='Window output directory.')
 	group.add_argument('--window_addition', dest='XXX_SP_WINDOW_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
 	group = parser.add_argument_group('ISAC2 settings (required to run 2d classification)')
@@ -120,29 +120,29 @@ def parse_args():
 	group = parser.add_argument_group('ISAC2 settings (optional)')
 	group.add_argument('--skip_isac2', action='store_true', default=False, help='Do not run 2d classification.')
 	group.add_argument('--isac2_input_stack', dest='XXX_SP_ISAC_STACK_XXX', type=str, default='bdb:path#stack', help='Path to the Input stack for ISAC')
-	group.add_argument('--isac2_output_dir', dest='XXX_SP_ISAC_OUTPUT_DIR_XXX', type=str, default='03a_ISAC', help='ISAC2 output directory.')
+	group.add_argument('--isac2_output_dir', dest='XXX_SP_ISAC_OUTPUT_DIR_XXX', type=str, default='ISAC', help='ISAC2 output directory.')
 	group.add_argument('--isac2_addition', dest='XXX_SP_ISAC_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
 	group = parser.add_argument_group('Substack ISAC2 settings (optional)')
-	group.add_argument('--substack_output_dir', dest='XXX_SP_SUBSTACK_OUTPUT_DIR_XXX', type=str, default='03b_SUBSTACK', help='Substack ISAC2 output directory.')
+	group.add_argument('--substack_output_dir', dest='XXX_SP_SUBSTACK_OUTPUT_DIR_XXX', type=str, default='SUBSTACK', help='Substack ISAC2 output directory.')
 
 	group = parser.add_argument_group('RVIPER settings (optional)')
 	group.add_argument('--skip_rviper', action='store_true', default=False, help='Do not run 3d ab-initio reconstruction.')
 	group.add_argument('--rviper_input_stack', dest='XXX_SP_RVIPER_INPUT_STACK_XXX', type=str, default='bdb:path#stack', help='Path to the input stack for RVIPER')
-	group.add_argument('--rviper_output_dir', dest='XXX_SP_RVIPER_OUTPUT_DIR_XXX', type=str, default='04a_RVIPER', help='RVIPER output directory.')
+	group.add_argument('--rviper_output_dir', dest='XXX_SP_RVIPER_OUTPUT_DIR_XXX', type=str, default='RVIPER', help='RVIPER output directory.')
 	group.add_argument('--rviper_addition', dest='XXX_SP_RVIPER_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
 	group = parser.add_argument_group('RVIPER volume adjustment settings (optional)')
 	group.add_argument('--skip_adjust_rviper', action='store_true', default=False, help='Skip adjusting a volume.')
 	group.add_argument('--adjust_rviper_resample', dest='XXX_SP_ADJUSTMENT_RESAMPLE_RATIO_XXX', type=str, default='bdb:path#stack', help='Resample ratio for RVIPER.')
-	group.add_argument('--adjust_rviper_output_dir', dest='XXX_SP_ADJUSTMENT_OUTPUT_DIR_XXX', type=str, default='04b_RVIPER_ADJUSTMENT', help='RVIPER volume adjustment output directory.')
+	group.add_argument('--adjust_rviper_output_dir', dest='XXX_SP_ADJUSTMENT_OUTPUT_DIR_XXX', type=str, default='RVIPER_ADJUSTMENT', help='RVIPER volume adjustment output directory.')
 	group.add_argument('--adjust_rviper_addition', dest='XXX_SP_ADJUSTMENT_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
 	group = parser.add_argument_group('RVIPER mask settings (optional)')
 	group.add_argument('--skip_mask_rviper', action='store_true', default=False, help='Skip creating a mask.')
 	group.add_argument('--mask_rviper_ndilation', dest='XXX_SP_MASK_RVIPER_NDILAITON_XXX', type=int, default=3, help='Number of dilations of the mask. 1 Dilation adds about 2 pixel to the binary volume.')
 	group.add_argument('--mask_rviper_soft_edge', dest='XXX_SP_MASK_RVIPER_SOFT_EDGE_XXX', type=int, default=10, help='Number of pixels for the soft edge.')
-	group.add_argument('--mask_rviper_output_dir', dest='XXX_SP_MASK_RVIPER_OUTPUT_DIR_XXX', type=str, default='04c_RVIPER_MASK', help='RVIPER mask output directory.')
+	group.add_argument('--mask_rviper_output_dir', dest='XXX_SP_MASK_RVIPER_OUTPUT_DIR_XXX', type=str, default='RVIPER_MASK', help='RVIPER mask output directory.')
 	group.add_argument('--mask_rviper_addition', dest='XXX_SP_MASK_RVIPER_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
 	group = parser.add_argument_group('Meridien settings (optional)')
@@ -150,45 +150,45 @@ def parse_args():
 	group.add_argument('--meridien_input_volume', dest='XXX_SP_MERIDIEN_INPUT_VOLUME_XXX', type=str, default='ref_vol.hdf', help='Path to the ref_vol.hdf file')
 	group.add_argument('--meridien_input_mask', dest='XXX_SP_MERIDIEN_INPUT_MASK_XXX', type=str, default='mask.hdf', help='Path to the mask.hdf file')
 	group.add_argument('--meridien_input_stack', dest='XXX_SP_MERIDIEN_INPUT_STACK_XXX', type=str, default='bdb:path#stack', help='Path to the Input stack for Meridien')
-	group.add_argument('--meridien_output_dir', dest='XXX_SP_MERIDIEN_OUTPUT_DIR', type=str, default='05a_MERIDIEN', help='Meridien output directory.')
+	group.add_argument('--meridien_output_dir', dest='XXX_SP_MERIDIEN_OUTPUT_DIR', type=str, default='MERIDIEN', help='Meridien output directory.')
 	group.add_argument('--meridien_addition', dest='XXX_SP_MERIDIEN_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
 	group = parser.add_argument_group('Sharpening Meridien settings (optional)')
 	group.add_argument('--skip_sharpening_meridien', action='store_true', default=False, help='Skip creating a mask.')
 	group.add_argument('--sharpening_meridien_ndilation', dest='XXX_SP_SHARPENING_MERIDIEN_NDILAITON_XXX', type=int, default=2, help='Number of dilations of the mask. 1 Dilation adds about 2 pixel to the binary volume.')
 	group.add_argument('--sharpening_meridien_soft_edge', dest='XXX_SP_SHARPENING_MERIDIEN_SOFT_EDGE_XXX', type=int, default=1, help='Number of pixels for the soft edge.')
-	group.add_argument('--sharpening_meridien_output_dir', dest='XXX_SP_SHARPENING_MERIDIEN_OUTPUT_DIR_XXX', type=str, default='05b_SHARPENING', help='Sharpening output directory.')
+	group.add_argument('--sharpening_meridien_output_dir', dest='XXX_SP_SHARPENING_MERIDIEN_OUTPUT_DIR_XXX', type=str, default='SHARPENING', help='Sharpening output directory.')
 	group.add_argument('--sharpening_meridien_addition', dest='XXX_SP_SHARPENING_MERIDIEN_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
 	group = parser.add_argument_group('RESTACK settings (optional)')
 	group.add_argument('--skip_restack', action='store_true', default=False, help='Skip restacking.')
-	group.add_argument('--restack_output_dir', dest='XXX_SP_RESTACK_OUTPUT_DIR_XXX', type=str, default='05c_RESTACK', help='Restacking output directory.')
+	group.add_argument('--restack_output_dir', dest='XXX_SP_RESTACK_OUTPUT_DIR_XXX', type=str, default='RESTACK', help='Restacking output directory.')
 	group.add_argument('--restack_addition', dest='XXX_SP_RESTACK_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
-	group.add_argument('--restack_window_output_dir', dest='XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX', type=str, default='05d_RESTACK_WINDOW', help='Restacking output directory.')
+	group.add_argument('--restack_window_output_dir', dest='XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX', type=str, default='RESTACK_WINDOW', help='Restacking output directory.')
 	group.add_argument('--restack_window_mic_pattern', dest='XXX_SP_RESTACK_WINDOW_MICROGRAPH_PATTERN_XXX', type=str, default=None, help='Micrograph pattern for restacking.')
 	group.add_argument('--restack_window_partres', dest='XXX_SP_RESTACK_PARTRES_XXX', type=str, default=None, help='Partres file')
 	group.add_argument('--restack_window_addition', dest='XXX_SP_RESTACK_WINDOW_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
-	group.add_argument('--restack_meridien_output_dir', dest='XXX_SP_RESTACK_MERIDIEN_OUTPUT_DIR_XXX', type=str, default='05e_RESTACK_MERIDIEN', help='Restacking output directory.')
+	group.add_argument('--restack_meridien_output_dir', dest='XXX_SP_RESTACK_MERIDIEN_OUTPUT_DIR_XXX', type=str, default='RESTACK_MERIDIEN', help='Restacking output directory.')
 	group.add_argument('--restack_meridien_addition', dest='XXX_SP_RESTACK_MERIDIEN_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
 	group.add_argument('--restack_sharpening_ndilation', dest='XXX_SP_RESTACK_SHARPENING_NDILAITON_XXX', type=int, default=2, help='Number of dilations of the mask. 1 Dilation adds about 2 pixel to the binary volume.')
 	group.add_argument('--restack_sharpening_soft_edge', dest='XXX_SP_RESTACK_SHARPENING_SOFT_EDGE_XXX', type=int, default=1, help='Number of pixels for the soft edge.')
-	group.add_argument('--restack_sharpening_output_dir', dest='XXX_SP_RESTACK_SHARPENING_OUTPUT_DIR_XXX', type=str, default='05f_RESTACK_SHARPENING', help='Restacking output directory.')
+	group.add_argument('--restack_sharpening_output_dir', dest='XXX_SP_RESTACK_SHARPENING_OUTPUT_DIR_XXX', type=str, default='RESTACK_SHARPENING', help='Restacking output directory.')
 	group.add_argument('--restack_sharpening_addition', dest='XXX_SP_RESTACK_SHARPENING_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
 	group = parser.add_argument_group('CTF_REFINE settings (optional)')
 	group.add_argument('--skip_ctf_refine', action='store_true', default=False, help='Skip CTF refinement.')
-	group.add_argument('--ctf_refine_output_dir', dest='XXX_SP_CTF_REFINE_OUTPUT_DIR_XXX', type=str, default='05g_CTF_REFINE', help='Restacking output directory.')
+	group.add_argument('--ctf_refine_output_dir', dest='XXX_SP_CTF_REFINE_OUTPUT_DIR_XXX', type=str, default='CTF_REFINE', help='Restacking output directory.')
 	group.add_argument('--ctf_refine_addition', dest='XXX_SP_CTF_REFINE_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
-	group.add_argument('--ctf_meridien_output_dir', dest='XXX_SP_CTF_MERIDIEN_OUTPUT_DIR_XXX', type=str, default='05h_CTF_MERIDIEN', help='Restacking output directory.')
+	group.add_argument('--ctf_meridien_output_dir', dest='XXX_SP_CTF_MERIDIEN_OUTPUT_DIR_XXX', type=str, default='CTF_MERIDIEN', help='Restacking output directory.')
 	group.add_argument('--ctf_meridien_addition', dest='XXX_SP_CTF_MERIDIEN_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
 	group.add_argument('--ctf_sharpening_ndilation', dest='XXX_SP_CTF_SHARPENING_NDILAITON_XXX', type=int, default=2, help='Number of dilations of the mask. 1 Dilation adds about 2 pixel to the binary volume.')
 	group.add_argument('--ctf_sharpening_soft_edge', dest='XXX_SP_CTF_SHARPENING_SOFT_EDGE_XXX', type=int, default=1, help='Number of pixels for the soft edge.')
-	group.add_argument('--ctf_sharpening_output_dir', dest='XXX_SP_CTF_SHARPENING_OUTPUT_DIR_XXX', type=str, default='05i_CTF_SHARPENING', help='Restacking output directory.')
+	group.add_argument('--ctf_sharpening_output_dir', dest='XXX_SP_CTF_SHARPENING_OUTPUT_DIR_XXX', type=str, default='CTF_SHARPENING', help='Restacking output directory.')
 	group.add_argument('--ctf_sharpening_addition', dest='XXX_SP_CTF_SHARPENING_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
 
 
@@ -731,17 +731,6 @@ def main(args_as_dict):
 	line = lines[found_lines[-1]].replace('{', '{{').replace('}', '}}').replace('XXX_SXMPI_NPROC_XXX', str(mpi_procs)).replace('XXX_SXCMD_LINE_XXX', '\'{0}\' >> {1}_out.txt 2>>{1}_err.txt')
 	line_no_mpi = '\'{0}\' >>{1}_out.txt 2>>{1}_err.txt\n'
 
-	final_line = '\n'.join([
-		line.format('\' \''.join(entry[1:]), os.path.join(args_as_dict['output_directory'], '{0:04d}_{1}'.format(dict_idx_dict[idx], entry[0][1])))
-		if isinstance(entry, list) and entry[0][0]
-		else
-			line_no_mpi.format('\' \''.join(entry[1:]), os.path.join(args_as_dict['output_directory'], '{0:04d}_{1}'.format(dict_idx_dict[idx], entry[0][1])))
-		if isinstance(entry, list)
-		else
-			entry
-		for idx, entry in enumerate(cmds)
-		])
-
 	remove_quote_list = (
 		'XXX_SP_WINDOW_OUTPUT_DIR_XXX/mpi_proc_*',
 		'XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX/mpi_proc_*',
@@ -752,12 +741,31 @@ def main(args_as_dict):
 		'XXX_SP_CTF_MERIDIEN_OUTPUT_DIR_XXX/vol_*_unfil_*.hdf'
 		)
 
+	final_lines = []
+	output_folder_dict = {}
+	for idx, entry in enumerate(cmds):
+		if isinstance(entry, list) and entry[0][0]:
+			tmp = line.format('\' \''.join(entry[1:]), os.path.join(args_as_dict['output_directory'], '{0:04d}_{1}'.format(dict_idx_dict[idx], entry[0][1])))
+		elif isinstance(entry, list):
+			tmp = line_no_mpi.format('\' \''.join(entry[1:]), os.path.join(args_as_dict['output_directory'], '{0:04d}_{1}'.format(dict_idx_dict[idx], entry[0][1])))
+		else:
+			tmp = entry
+		for entry in remove_quote_list:
+			tmp = tmp.replace('\'{0}\''.format(entry), entry)
+		for key, value in args_as_dict.items():
+			if '_OUTPUT_DIR_' in key and key in tmp:
+				if key in output_folder_dict:
+					value = output_folder_dict[key]
+				else:
+					value = os.path.join(args_as_dict['output_directory'], '{0:04d}_{1}'.format(dict_idx_dict[idx], value))
+					output_folder_dict[key] = value
+				tmp = tmp.replace(key, value)
+		final_lines.append(tmp)
+	final_line = '\n'.join(final_lines)
+
+
 	for key, value in args_as_dict.items():
 		if key.startswith('XXX'):
-			for entry in remove_quote_list:
-				final_line = final_line.replace('\'{0}\''.format(entry), entry)
-			if 'OUTPUT_DIR' in key:
-				value = os.path.join(args_as_dict['output_directory'], value)
 			if '_ADDITION_XXX' in key:
 				value = '\' \''.join(value.split(' '))
 			final_line = final_line.replace(key, str(value))
