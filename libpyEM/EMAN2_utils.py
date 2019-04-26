@@ -249,7 +249,19 @@ def fsincurrentdir():
 	import os
 	c = os.getcwd()
 	findir = os.listdir(c)
+	findir.sort()
 	return findir
+
+
+def fisindir(f):
+	"""Checks whether a file is in the current directory
+	Author: Jesus Montoya, jgalaz@gmail.com, April 2019
+	"""
+	fs=fsincurrentdir()
+	result=False
+	if f in fs:
+		result=True
+	return result
 
 
 def fileisimage(f):
