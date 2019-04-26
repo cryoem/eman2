@@ -1,8 +1,16 @@
 from __future__ import print_function
 
 """
+# Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
+# Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
+# Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
+# Author: Tapu Shaikh 2019 (tapu.shaikh@mpi-dortmund.mpg.de)
+# Author: Adnan Ali 2019 (adnan.ali@mpi-dortmund.mpg.de)
+# Author: Luca Lusnig 2019 (luca.lusnig@mpi-dortmund.mpg.de)
+# Author: Toshio Moriya 2019 (toshio.moriya@kek.jp)
 Author: Pawel A.Penczek, 2006-09-09 (Pawel.A.Penczek@uth.tmc.edu)
-Author: Fabian Schoenfeld, 2019-02-07 (fabian.schoenfeld@mpi-dortmund.mpg.de)
+#
+# Copyright (c) 2019 Max Planck Institute of Molecular Physiology
 
 Copyright (c) 2000-2006 The University of Texas - Houston Medical School This 
 software is issued under a joint BSD/GNU license. You may use the source code 
@@ -279,7 +287,7 @@ CACHE_DISABLE = False
 
 #________________________________________ System settings: please do not change
 
-SPARXVERSION = "SPHIRE v1.2 [rc6] (GitHub: " + DATESTAMP + ")"
+SPARXVERSION = "SPHIRE v1.2 (GitHub: " + DATESTAMP + ")"
 SPARX_MPI_TAG_UNIVERSAL = 123456
 SPARX_DOCUMENTATION_WEBSITE = "http://sparx-em.org/sparxwiki/"
 

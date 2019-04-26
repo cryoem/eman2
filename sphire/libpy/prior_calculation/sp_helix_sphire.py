@@ -1,3 +1,39 @@
+"""
+# Author: Markus Stabrin 2017-2019 (markus.stabrin@mpi-dortmund.mpg.de)
+# Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
+# Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
+# Author: Tapu Shaikh 2019 (tapu.shaikh@mpi-dortmund.mpg.de)
+# Author: Adnan Ali 2019 (adnan.ali@mpi-dortmund.mpg.de)
+# Author: Luca Lusnig 2019 (luca.lusnig@mpi-dortmund.mpg.de)
+# Author: Toshio Moriya 2019 (toshio.moriya@kek.jp)
+#
+# Copyright (c) 2017-2019 Max Planck Institute of Molecular Physiology
+
+this software is issued under a joint bsd/gnu license. you may use the
+source code in this file under either license. however, note that the
+complete eman2 and sphire software packages have some gpl dependencies,
+so you are responsible for compliance with the licenses of these packages
+if you opt to use bsd licensing. the warranty disclaimer below holds
+in either instance.
+
+this complete copyright notice must be included in any revised version of the
+source code. additional authorship citations may be added, but existing
+author citations must be preserved.
+
+this program is free software; you can redistribute it and/or modify
+it under the terms of the gnu general public license as published by
+the free software foundation; either version 2 of the license, or
+(at your option) any later version.
+
+this program is distributed in the hope that it will be useful,
+but without any warranty; without even the implied warranty of
+merchantability or fitness for a particular purpose. see the
+gnu general public license for more details.
+
+you should have received a copy of the gnu general public license
+along with this program; if not, write to the free software
+foundation, inc., 59 temple place, suite 330, boston, ma  02111-1307 usa
+"""
 import sp_sparx as sp
 import numpy as np
 import shutil
@@ -58,7 +94,7 @@ def import_sphire_params(input_file, symclass):
     dtype = dtype_import + [('source_n', '<i8')]
 
     data_import = np.genfromtxt(input_file, dtype=dtype_import)
-    reduced_angles = np.array(symclass.reduce_anglesets(data_import[['phi', 'theta', 'psi']].view(np.float64).reshape(data_import.shape + (-1,)), inc_mirror=0))
+    reduced_angles = symclass.reduce_anglesets(data_import[['phi', 'theta', 'psi']].view(np.float64).reshape(data_import.shape + (-1,)), inc_mirror=0, tolistconv=False)
     data_import['phi'] = reduced_angles[:, 0]
     data_import['theta'] = reduced_angles[:, 1]
     data_import['psi'] = reduced_angles[:, 2]

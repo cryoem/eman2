@@ -116,7 +116,7 @@ def main():
 				rt=0
 
 			eg=16
-			msk.process_inplace("mask.zeroedge3d",{"x0":eg,"x1":eg,"y0":eg,"y1":eg,"z0":eg,"z1":eg})
+			msk.process_inplace("mask.zeroedge3d",{"x0":eg,"x1":eg,"y0":eg,"y1":eg})
 			msk.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.1})
 			msk.rotate(0,0,-rt)
 			

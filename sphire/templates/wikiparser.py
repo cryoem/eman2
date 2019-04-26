@@ -1,9 +1,42 @@
 #!/usr/bin/env python
 from __future__ import print_function
 #
+# Author: Markus Stabrin 2016-2019 (markus.stabrin@mpi-dortmund.mpg.de)
+# Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
+# Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
+# Author: Tapu Shaikh 2019 (tapu.shaikh@mpi-dortmund.mpg.de)
+# Author: Adnan Ali 2019 (adnan.ali@mpi-dortmund.mpg.de)
+# Author: Luca Lusnig 2019 (luca.lusnig@mpi-dortmund.mpg.de)
+# Author: Toshio Moriya 2015-2019 (toshio.moriya@kek.jp)
 #
-# Author: Toshio Moriya 12/11/2015 (toshio.moriya@mpi-dortmund.mpg.de)
-# ========================================================================================
+# Copyright (c) 2015-2019 Max Planck Institute of Molecular Physiology
+#
+# This software is issued under a joint BSD/GNU license. You may use the
+# source code in this file under either license. However, note that the
+# complete EMAN2 and SPHIRE software packages have some GPL dependencies,
+# so you are responsible for compliance with the licenses of these packages
+# if you opt to use BSD licensing. The warranty disclaimer below holds
+# in either instance.
+#
+# This complete copyright notice must be included in any revised version of the
+# source code. Additional authorship citations may be added, but existing
+# author citations must be preserved.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+#
 
 import copy
 import sp_global_def
@@ -139,7 +172,7 @@ def construct_keyword_dict():
 	keyword_dict["main000"]         = SXkeyword_map(0, "dir")                 # destination_directory (contains keyworkd 'directory' but this should be directory type)
 ###	keyword_dict["--use_latest_master_directory"] = SXkeyword_map(0, "bool")                # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
 	keyword_dict["--stack_mode"]                  = SXkeyword_map(0, "bool")                # stack_mode (contains keyworkd 'stack' but this should be bool type)
-	keyword_dict["--use_second_mask"]               = SXkeyword_map(0, "bool")                # --generate_mask (contains keyworkd 'mask' but this should be bool type)
+	keyword_dict["--skip_mask_rviper"]               = SXkeyword_map(0, "bool")                # --generate_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--fill_mask"]               = SXkeyword_map(0, "bool")                # --generate_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--generate_mask"]               = SXkeyword_map(0, "bool")                # --generate_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--binary_mask"]                 = SXkeyword_map(0, "bool")                # --binary_mask (contains keyworkd 'mask' but this should be bool type)
@@ -154,6 +187,8 @@ def construct_keyword_dict():
 	keyword_dict["--use_mol_mass"]                = SXkeyword_map(0, "bool_ignore")                # if one wants to use the --mol_mass=KILODALTON
 	keyword_dict["--s_use_mol_mass"]                = SXkeyword_map(0, "bool_ignore")                # if one wants to use the --mol_mass=KILODALTON
 	keyword_dict["--use_second_mask"]             = SXkeyword_map(0, "bool_ignore")                # if one wants to use the --mol_mass=KILODALTON
+	keyword_dict["--second_mask_shape"]             = SXkeyword_map(0, "string")                # if one wants to use the --mol_mass=KILODALTON
+	keyword_dict["--s_fill_mask"]             = SXkeyword_map(0, "bool")                # if one wants to use the --mol_mass=KILODALTON
 	keyword_dict["--mask_threshold"]              = SXkeyword_map(0, "float")               # --mask_threshold=MASK_THRESHOLD (contains keyworkd 'mask' but this should be bool type)
 	# Use priority 1 for output
 	keyword_dict["output"]                        = SXkeyword_map(1, "output")              # output_hdf, output_directory, outputfile, outputfile, --output=OUTPUT, output_stack, output_file
@@ -189,6 +224,7 @@ def construct_keyword_dict():
 	keyword_dict["--chunk"]                       = SXkeyword_map(2, "select_data2d_stack") # --chunk0=CHUNK0_FILE_NAME, --chunk1=CHUNK1_FILE_NAME
 	keyword_dict["--ctref_subset"]                = SXkeyword_map(2, "select_data2d_stack") # --ctref_subset=selection_file_path
 	keyword_dict["--list"]                        = SXkeyword_map(2, "select_data2d_stack") # --list
+	keyword_dict["--exlist"]                        = SXkeyword_map(2, "select_data2d_stack") # --list
 ###	keyword_dict["--subset"]                      = SXkeyword_map(2, "select_data2d_stack") # --subset=subset_file_path
 	keyword_dict["input_shift_list_file"]         = SXkeyword_map(2, "select_drift_params") # input_shift_list_file
 ###	keyword_dict["--resample_ratio_source"]       = SXkeyword_map(2, "params_any_txt")      # --resample_ratio_source
@@ -200,6 +236,7 @@ def construct_keyword_dict():
 	keyword_dict["--params_3d_index_file"]		  = SXkeyword_map(2, "params_any_txt")
 	keyword_dict["--params_3d_chunk_file_0"] 	  = SXkeyword_map(2, "params_any_txt")
 	keyword_dict["--params_3d_chunk_file_1"] 	  = SXkeyword_map(2, "params_any_txt")
+	keyword_dict["--mpi_submission_template"] 	  = SXkeyword_map(2, "params_any_txt")
 	keyword_dict["input_coordinates_pattern"]     = SXkeyword_map(2, "params_coords_any")   # input_coordinates_pattern
 	keyword_dict["input_rebox_pattern"]           = SXkeyword_map(2, "params_rebox_rbx")    # input_rebox_pattern
 	keyword_dict["input_ctf_params_source"]       = SXkeyword_map(2, "params_cter_txt")     # input_ctf_params_source
@@ -236,6 +273,7 @@ def construct_keyword_dict():
 
 	keyword_dict["--apix"]                        = SXkeyword_map(2, "apix")                # --apix=pixel_size, --apix, --apix=PIXEL_SIZE
 	keyword_dict["--pixel_size"]                  = SXkeyword_map(2, "apix")                # --pixel_size=PIXEL_SIZE
+	keyword_dict["--cter_window_size"]                          = SXkeyword_map(2, "ctfwin")              # --wn
 	keyword_dict["--wn"]                          = SXkeyword_map(2, "ctfwin")              # --wn
 	keyword_dict["--box"]                         = SXkeyword_map(2, "box")                 # --box=box_size, --box_size=box_size, --boxsize=BOX_SIZE
 	keyword_dict["--rb_box_size"]                 = SXkeyword_map(2, "box")                 # --rb_box_size=BOX_SIZE
@@ -274,6 +312,18 @@ def construct_keyword_dict():
 	keyword_dict["--delta"] = SXkeyword_map(2, "float")
 	keyword_dict["--resolution"] = SXkeyword_map(2, "float")
 	keyword_dict["--number_part"] = SXkeyword_map(2, "int")
+
+	keyword_dict["gain"] = SXkeyword_map(2, "mic_one")
+	keyword_dict["unblur_mic_pattern"] = SXkeyword_map(1, "mic_stack")
+	keyword_dict["_mic_pattern"] = SXkeyword_map(2, "mic_one")
+	keyword_dict["cryolo_mic_path"] = SXkeyword_map(2, "dir")
+	keyword_dict["rviper_input_stack"] = SXkeyword_map(0, "data2d_one")
+	keyword_dict["--skip_restack"] = SXkeyword_map(0, "bool")
+	keyword_dict["_partres"]       = SXkeyword_map(2, "params_cter_txt")     # input_ctf_params_source
+	keyword_dict["_box_pattern"]       = SXkeyword_map(2, "params_coords_any")     # input_ctf_params_source
+	keyword_dict["_ndilation"]       = SXkeyword_map(0, "int")     # input_ctf_params_source
+	keyword_dict["_soft_edge"]       = SXkeyword_map(0, "int")     # input_ctf_params_source
+	keyword_dict["_addition"]       = SXkeyword_map(0, "string")     # input_ctf_params_source
 	# NOTE: 2018/02/06 Toshio Moriya
 	# Low-pass filter fall-off width does not make sense to convert to resolution [A] directly. 
 	# It might make more sense to compute Angstrom range from the given cutoff, falloff width, and pixel size
@@ -1942,27 +1992,29 @@ def add_sxcmd_subconfig_sort3d_depth_shared_sorting(token_edit_list):
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("radius"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("sym"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("img_per_grp"); token_edit_list.append(token_edit)
-	#token_edit = SXcmd_token(); token_edit.initialize_edit("img_per_grp_split_rate"); token_edit_list.append(token_edit)
-	#token_edit = SXcmd_token(); token_edit.initialize_edit("minimum_grp_size"); token_edit_list.append(token_edit)
-	#token_edit = SXcmd_token(); token_edit.initialize_edit("do_swap_au"); token_edit_list.append(token_edit)
-	#token_edit = SXcmd_token(); token_edit.initialize_edit("swap_ratio"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("img_per_grp_split_rate"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("minimum_grp_size"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("do_swap_au"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("swap_ratio"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("overhead"); token_edit_list.append(token_edit)
+	# token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("overhead"); token_edit_list.append(token_edit)
 
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("depth_order"); token_edit_list.append(token_edit)
-	#token_edit = SXcmd_token(); token_edit.initialize_edit("stop_mgskmeans_percentage"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("stop_mgskmeans_percentage"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("nsmear"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("orientation_groups"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("not_include_unaccounted"); token_edit_list.append(token_edit)
 ###	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("shake"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("notapplybckgnoise"); token_edit_list.append(token_edit)
-	#token_edit = SXcmd_token(); token_edit.initialize_edit("random_group_elimination_threshold"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("num_core_set"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("nstep"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("use_umat"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("not_freeze_groups"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("compute_on_the_fly"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("check_smearing"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("random_group_elimination_threshold"); token_edit_list.append(token_edit)
+	# token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("nsmear"); token_edit_list.append(token_edit)
+	# token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("num_core_set"); token_edit_list.append(token_edit)
+	# token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("nstep"); token_edit_list.append(token_edit)
+	# token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("use_umat"); token_edit_list.append(token_edit)
+	# token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("not_freeze_groups"); token_edit_list.append(token_edit)
+	# token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("compute_on_the_fly"); token_edit_list.append(token_edit)
+	# token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("check_smearing"); token_edit_list.append(token_edit)
+	# token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("depth_order"); token_edit_list.append(token_edit)
 
 
 ### # NOTE: 2018/01/08 Toshio Moriya
@@ -2372,11 +2424,11 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_window_makevstack()))
 
 	sxcmd_role = "sxr_alt"
-	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer_old.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_boxer_old(), is_submittable = False))
-	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_boxer(), is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/cryolo_train.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_restacking.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/rewindow.txt", "DokuWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/cryolo_train.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer_old.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_boxer_old(), is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_boxer(), is_submittable = False))
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
@@ -2478,7 +2530,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_role = "sxr_alt"
 	if is_dev_mode:
 		sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d()))
-	#sxcmd_comfig_list.append(SXcmd_config("../doc/sort3d_depth.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_stack()))
+	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_stack()))
 ### # NOTE: 2018/01/08 Toshio Moriya
 ### # post-refiner embedded sort3d_depth is removed recently.
 ###	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_postrefiner()))
@@ -2556,6 +2608,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/ctf_refine.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable=True))
 	sxcmd_config_list.append(SXcmd_config("../doc/ctf_refine_stack.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable=True))
+	sxcmd_config_list.append(SXcmd_config("../doc/auto.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/transphire.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
 
 
