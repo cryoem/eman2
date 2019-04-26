@@ -316,17 +316,20 @@ def ai_filament( Tracker, fff, anger, shifter, do_local, chout = False):
 	if fff:
 		ai_string = "  AI: Tracker[nxstep], TR[currentres], Tracker[fsc143], l05, l01, fff[Tracker[nxinit]//2-1]:",Tracker["nxstep"],Tracker["currentres"],Tracker["fsc143"], l05, l01,fff[Tracker["nxinit"]//2-1]
 
-	if Tracker['state'] != 'RESTRICTED':
-		Tracker['constants']['do_rotate'] = False
-		if Tracker['state'] == 'EXHAUSTIVE':
-			Tracker["ccfpercentage"] = min(Tracker["ccfpercentage"]+0.1, 0.5)
-			Tracker["prior"]["force_outlier"] = True
-		else:
-			Tracker["prior"]["force_outlier"] = False
-	else:
+	if Tracker['state'] == 'RESTRICTED':
 		Tracker['constants']['do_rotate'] = True
 		Tracker["ccfpercentage"] = min(Tracker["ccfpercentage"]+0.2, 0.999)
+		Tracker["prior"]["force_outlier"] = True
+		Tracker["prior"]["apply_prior"] = True
+	elif Tracker['state'] == 'EXHAUSTIVE':
+		Tracker["ccfpercentage"] = 0
+		Tracker['constants']['do_rotate'] = False
 		Tracker["prior"]["force_outlier"] = False
+		Tracker["prior"]["apply_prior"] = True
+	else:
+		Tracker['constants']['do_rotate'] = False
+		Tracker["prior"]["force_outlier"] = False
+		Tracker["prior"]["apply_prior"] = True
 
 
 	if Tracker["mainiteration"] == 1 and not do_local:
@@ -374,8 +377,6 @@ def ai_filament( Tracker, fff, anger, shifter, do_local, chout = False):
 
 		if Tracker["mainiteration"] > 3 or not do_local:
 			Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
-			#if Tracker["state"] == "PRIMARY":
-			#	Tracker["state"] = "EXHAUSTIVE"
 
 		if(Tracker["state"] == "FINAL" or Tracker["state"] == "RESTRICTED"):
 			Tracker["large_at_Nyquist"] = bool(fff[Tracker["nxinit"]//2] > 0.1 or fff[Tracker["nxinit"]//2-1] > 0.2)
@@ -469,24 +470,24 @@ def ai_filament( Tracker, fff, anger, shifter, do_local, chout = False):
 					sp_global_def.sxprint("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
 				Tracker["xr"] = step_range
 				Tracker["ts"] = step
+				Tracker["delta"] /= 2.0
+				Tracker["changed_delta"] = True
 				if Tracker["state"] == 'PRIMARY':
+					Tracker["delta"] *= 2.0
 					Tracker["state"] = "EXHAUSTIVE"
-				else:
-					Tracker["delta"] /= 2.0
-					Tracker["changed_delta"] = True
-					if Tracker["delta"] <= 3.75/2.0 or do_local:  #  MOVE DOWN TO RESTRICTED
-						Tracker["an"]		= 6*Tracker["delta"]
-						Tracker["theta_min"] = 40
-						Tracker["theta_max"] = 140
-						Tracker["constants"]["shake"] = 0.5
-						if Tracker["delta"] <= numpy.degrees(numpy.arctan(0.25/Tracker["constants"]["radius"])):
-							Tracker["state"] = "FINAL"
-						else:
-							Tracker["state"] = "RESTRICTED"
+				elif Tracker["delta"] <= 3.75/2.0 or do_local:  #  MOVE DOWN TO RESTRICTED
+					Tracker["an"]		= 6*Tracker["delta"]
+					Tracker["theta_min"] = 40
+					Tracker["theta_max"] = 140
+					Tracker["constants"]["shake"] = 0.5
+					if Tracker["delta"] <= numpy.degrees(numpy.arctan(0.25/Tracker["constants"]["radius"])):
+						Tracker["state"] = "FINAL"
 					else:
-						Tracker["an"] = -1
-						if Tracker["state"] == "PRIMARY":
-							Tracker["state"] = "EXHAUSTIVE"
+						Tracker["state"] = "RESTRICTED"
+				else:
+					Tracker["an"] = -1
+					if Tracker["state"] == "PRIMARY":
+						Tracker["state"] = "EXHAUSTIVE"
 				if chout:
 					sp_global_def.sxprint("  IN AI there was reset due to no changes, adjust stuff  ",Tracker["no_improvement"],Tracker["no_params_changes"],Tracker["delta"],Tracker["xr"],Tracker["ts"], Tracker["state"])
 				# check convergence before reset

@@ -5960,7 +5960,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 				    myid = Blockdata["subgroup_myid"], mpi_comm = comm)
 			Tracker["directory"] = temp
 			mpi_barrier(Blockdata["subgroup_comm"])
-			if Tracker['prior']['apply_prior'] or Tracker['prior']['force_outlier']:
+			if Tracker['prior']['apply_prior']:
 				try:
 					outlier_params = read_text_file(os.path.join(Tracker["directory"],"outlier-params-chunk_%01d_%03d.txt"%(procid, Tracker["mainiteration"])))[im_start:im_end]
 				except IOError:
@@ -7154,6 +7154,7 @@ def get_image_statistics(image, mask, invert):
 			ny=image.get_ysize(),
 			angle=image.get_attr('segment_angle'),
 			)
+
 	return Util.infomask(image, mask2d, invert)
 
 
