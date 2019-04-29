@@ -145,6 +145,8 @@ def main():
 			sys.exit(1)
 
 		program = which("MotionCor2") #distutils.spawn.find_executable("MotionCor2")
+		if program==None:
+			program = which("motioncor2")
 		
 	if program == None:
 		print("Could not locate '{}'. Please check that the program is installed and available within your PATH environment variable.".format(options.program.split("_")[1]))
