@@ -5829,10 +5829,12 @@ def cerrs(params, ctfs, particle_groups):
 	acc_trans = mpi_reduce(acc_trans, 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
 	acc_rot = mpi_bcast(acc_rot, 1, MPI_FLOAT, Blockdata["main_node"], MPI_COMM_WORLD)
 	acc_trans = mpi_bcast(acc_trans, 1, MPI_FLOAT, Blockdata["main_node"], MPI_COMM_WORLD)
+	len_params = mpi_reduce(len(params), 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
+	len_params = mpi_bcast(len_params, 1, MPI_FLOAT, Blockdata["main_node"], MPI_COMM_WORLD)
 
 	acc_rot = float(acc_rot[0])
 	acc_trans = float(acc_trans[0])
-	n_trials = Blockdata["nproc"]*len(params)
+	n_trials = float(len_params[0])
 
 	acc_rot /= n_trials
 	acc_trans /= n_trials
@@ -7212,7 +7214,7 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 		else:
 			outliers = [0] * len_data
 
-		if 100*no_outliers/float(len_data) < 40:
+		if 100*no_outliers/float(len_data) < 15:
 			sxprint('Number of outliers too large! Do not discard outlier!')
 			outliers = [0] * len_data
 
