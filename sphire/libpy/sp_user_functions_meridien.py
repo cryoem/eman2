@@ -316,22 +316,6 @@ def ai_filament( Tracker, fff, anger, shifter, do_local, chout = False):
 	if fff:
 		ai_string = "  AI: Tracker[nxstep], TR[currentres], Tracker[fsc143], l05, l01, fff[Tracker[nxinit]//2-1]:",Tracker["nxstep"],Tracker["currentres"],Tracker["fsc143"], l05, l01,fff[Tracker["nxinit"]//2-1]
 
-	if Tracker['state'] == 'RESTRICTED':
-		Tracker['constants']['do_rotate'] = True
-		Tracker["ccfpercentage"] = min(Tracker["ccfpercentage"]+0.2, 0.999)
-		Tracker["prior"]["force_outlier"] = True
-		Tracker["prior"]["apply_prior"] = True
-	elif Tracker['state'] == 'EXHAUSTIVE':
-		Tracker["ccfpercentage"] = 0
-		Tracker['constants']['do_rotate'] = False
-		Tracker["prior"]["force_outlier"] = False
-		Tracker["prior"]["apply_prior"] = True
-	else:
-		Tracker['constants']['do_rotate'] = False
-		Tracker["prior"]["force_outlier"] = False
-		Tracker["prior"]["apply_prior"] = True
-
-
 	if Tracker["mainiteration"] == 1 and not do_local:
 		Tracker["state"] = "INITIAL"
 
@@ -374,6 +358,15 @@ def ai_filament( Tracker, fff, anger, shifter, do_local, chout = False):
 
 		if Tracker["mainiteration"] == 2 and not do_local:
 			Tracker["state"] = "PRIMARY"
+		elif Tracker["mainiteration"] == 6 and not do_local and Tracker['state'] == 'PRIMARY':
+			Tracker["state"] = "EXHAUSTIVE"
+		elif Tracker["mainiteration"] == 12 and not do_local and Tracker['state'] == 'EXHAUSTIVE' and Tracker['delta'] <= 3.75:
+			Tracker["state"] = "RESTRICTED"
+			Tracker["an"]		= 6*Tracker["delta"]
+			Tracker["theta_min"] = 40
+			Tracker["theta_max"] = 140
+			Tracker["constants"]["shake"] = 0.5
+			Tracker["delta"] /= 2.0
 
 		if Tracker["mainiteration"] > 3 or not do_local:
 			Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
@@ -441,8 +434,7 @@ def ai_filament( Tracker, fff, anger, shifter, do_local, chout = False):
 		if chout:
 			sp_global_def.sxprint("  IN AI: nxstep, large at Nyq, outcoming current res, adjusted current, inc, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
 
-		if do_local:
-			tmp = max(tmp, Tracker['nxinit'])
+		tmp = max(tmp, Tracker['nxinit'])
 		Tracker["nxinit"] = int(tmp)
 		Tracker["changed_delta"] = False
 		#  decide angular step and translations
@@ -499,6 +491,23 @@ def ai_filament( Tracker, fff, anger, shifter, do_local, chout = False):
 				Tracker["no_params_changes"]	= 0
 				Tracker["anger"]				= 1.0e23
 				Tracker["shifter"]				= 1.0e23
+
+	if Tracker['state'] == 'RESTRICTED':
+		Tracker['constants']['do_rotate'] = True
+		Tracker["ccfpercentage"] = min(Tracker["ccfpercentage"]+0.2, 0.999)
+		Tracker["prior"]["force_outlier"] = True
+		Tracker["prior"]["apply_prior"] = True
+	elif Tracker['state'] == 'EXHAUSTIVE':
+		Tracker["ccfpercentage"] = 0.3
+		Tracker['constants']['do_rotate'] = False
+		Tracker["prior"]["force_outlier"] = False
+		Tracker["prior"]["apply_prior"] = True
+	else:
+		Tracker['constants']['do_rotate'] = False
+		Tracker["prior"]["force_outlier"] = False
+		Tracker["prior"]["apply_prior"] = True
+
+
 	return keepgoing
 
 from builtins import range
