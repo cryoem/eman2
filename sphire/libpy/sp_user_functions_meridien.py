@@ -495,7 +495,7 @@ def ai_filament( Tracker, fff, anger, shifter, do_local, chout = False):
 	if Tracker['state'] == 'RESTRICTED':
 		Tracker['constants']['do_rotate'] = True
 		Tracker["ccfpercentage"] = min(Tracker["ccfpercentage"]+0.2, 0.999)
-		Tracker["prior"]["force_outlier"] = True
+		Tracker["prior"]["force_outlier"] = False
 		Tracker["prior"]["apply_prior"] = True
 	elif Tracker['state'] == 'EXHAUSTIVE':
 		Tracker["ccfpercentage"] = 0.3
