@@ -10,7 +10,7 @@ PROGS_DIR="${MYDIR}/../programs"
 progs=$(find "${PROGS_DIR}" -name 'e2*.py' -print0 | while read -d '' prog; do basename "$prog"; done)
 progs_exclude=$(cat "${MYDIR}"/programs_no_test.txt | awk '{print $1}')
 
-echo; echo "Removing programs from test list..."
+echo -e "\nRemoving programs from test list..."
 for f in ${progs_exclude[@]};do
     echo "... $f"
     progs=( ${progs[@]/$f} )
@@ -28,8 +28,7 @@ for prog in ${progs[@]};do
     fi
 done
 
-echo
-echo "Total failed programs: ${#failed_progs[@]} / ${#progs[@]}"
+echo -e "\nTotal failed programs: ${#failed_progs[@]} / ${#progs[@]}"
 for prog in ${failed_progs[@]};do
     echo ${prog}
 done
