@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -xe
+
 source ${PREFIX}/bin/activate
 
 mkdir ${PREFIX}/install_logs

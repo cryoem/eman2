@@ -128,7 +128,9 @@ This program will take an input stack of subtomograms and a reference volume, an
 
 		if options.goldstandard>0 :
 			ref[0].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":old_div(1.0,options.goldstandard)})
+			ref[0].process_inplace("filter.lowpass.tophat",{"cutoff_freq":old_div(1.0,options.goldstandard)})
 			ref[1].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":old_div(1.0,options.goldstandard)})
+			ref[1].process_inplace("filter.lowpass.tophat",{"cutoff_freq":old_div(1.0,options.goldstandard)})
 			ref[0].write_image("{}/align_ref.hdf".format(options.path),0)
 			ref[1].write_image("{}/align_ref.hdf".format(options.path),1)
 
@@ -183,8 +185,11 @@ This program will take an input stack of subtomograms and a reference volume, an
 	angs={}
 	for i in tids:
 		ret=etc.get_results(i)[1]
-		fsp,n,d=ret
-		angs[(fsp,n)]=d
+		fsp,n,dic=ret
+		if len(dic)==1:
+			angs[(fsp,n)]=dic[0]
+		else:
+			angs[(fsp,n)]=dic
 		
 	js=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
 	js.update(angs)
@@ -247,18 +252,19 @@ class SptAlignTask(JSTask):
 		b.process_inplace("xform.phaseorigin.tocorner")
 		aligndic={"verbose":0,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0, "maxres":options.maxres,"wt_ori":options.wtori}
 		
-		if options.refine and b.has_attr("xform.init"):
-			options.nsoln=16
-			astep=8.0
+		if options.refine and b.has_attr("xform.align3d"):
+			
+			astep=1.0
 			xfs=[]
-			initxf=b["xform.init"].get_params("eman")
-			for ii in range(options.nsoln):
-				d={"type":"eman","tx":initxf["tx"], "ty":initxf["ty"]}
+			initxf=b["xform.align3d"].get_params("eman")
+			for ii in range(16):
+				d={"type":"eman","tx":0, "ty":0}
 				for ky in ["alt", "az", "phi"]:
 					d[ky]=initxf[ky]+(ii>0)*np.random.randn()*astep
-					xfs.append(Transform(d))
+				xfs.append(Transform(d))
 					
 			aligndic["initxform"]=xfs
+			aligndic["maxshift"]=10
 		
 
 		# we align backwards due to symmetry
@@ -267,9 +273,10 @@ class SptAlignTask(JSTask):
 		for cc in c : cc["xform.align3d"]=cc["xform.align3d"].inverse()
 
 		#print(fsp, i, c[0])
-		callback(100)
+		#callback(100)
 		#print(i,c[0]["xform.align3d"])
-		return (fsp,i,c[0])
+		
+		return (fsp,i,c)
 		
 
 

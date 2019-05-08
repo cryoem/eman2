@@ -588,6 +588,7 @@ class EMArgumentParser(argparse.ArgumentParser):
 			if "urange" in kwargs: del kwargs["urange"]
 			if "choicelist" in kwargs: del kwargs["choicelist"]
 			if "filecheck" in kwargs: del kwargs["filecheck"]
+			if "infolabel" in kwargs: del kwargs["infolabel"]
 			if "mode" in kwargs: del kwargs["mode"]
 			if "browser" in kwargs: del kwargs["browser"]
 			if "dirbasename" in kwargs: del kwargs["dirbasename"]

@@ -1,6 +1,15 @@
 #
 from __future__ import print_function
+# Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
+# Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
+# Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
+# Author: Tapu Shaikh 2019 (tapu.shaikh@mpi-dortmund.mpg.de)
+# Author: Adnan Ali 2019 (adnan.ali@mpi-dortmund.mpg.de)
+# Author: Luca Lusnig 2019 (luca.lusnig@mpi-dortmund.mpg.de)
+# Author: Toshio Moriya 2019 (toshio.moriya@kek.jp)
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
+#
+# Copyright (c) 2019 Max Planck Institute of Molecular Physiology
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -2014,7 +2023,7 @@ class symclass(object):
 		condstat = numpy.zeros(numpy.shape(angles)[0], dtype = bool  )
 
 		phi = angles[:,0]
-		phi_0 =   phi >= 0.0
+		phi_0 = phi >= 0.0
 		phi_ld_br_inmirr_0 = phi < self.brackets[inc_mirror][0]
 		phi_ld_br_1_0 = phi < self.brackets[inc_mirror][0]
 		theta = numpy.round(angles[:, 1], self.round)
@@ -2028,6 +2037,10 @@ class symclass(object):
 			condstat[theta_180] = True
 			condstat[theta_0] = True
 			condstat[~phi_0 & ~phi_ld_br_inmirr_0 & ~theta_ldeq_br_incmirr_1 & ~theta_180  & ~theta_0] = False
+			if int(self.sym[1:]) == 1 and inc_mirror == 0:
+				theta_90 = theta == 90
+				phi_ge_180 = phi >= 180
+				condstat[theta_90 & phi_ge_180] = False
 
 		elif self.sym[0] == "d" and (old_div(self.nsym, 2)) % 2 == 0:
 			condstat[phi_0 & phi_ld_br_inmirr_0 & theta_ldeq_br_incmirr_1] = True

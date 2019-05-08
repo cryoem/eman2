@@ -37,6 +37,7 @@ from past.utils import old_div
 from builtins import range
 import os
 from EMAN2 import *
+from EMAN2_utils import *
 #from time import time
 
 
@@ -283,14 +284,14 @@ def main():
 	'''
 	If no crashes till now, make the directory where to create the database where the results will be stored
 	'''
-	from e2spt_classaverage import sptmakepath
-	options = sptmakepath (options, 'sptctf')
+	#from e2spt_classaverage import sptmakepath
+	options = makepath (options, 'sptctf')
 	
 	
 	'''
 	Store used parameters in a text file
 	'''
-	from e2spt_classaverage import writeParameters
+	#from e2spt_classaverage import writeParameters
 	cmdwp = writeParameters(options,'e2spt_ctf.py', 'sptctf')
 	
 	xs = []

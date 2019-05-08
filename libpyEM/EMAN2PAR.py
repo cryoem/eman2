@@ -40,7 +40,7 @@ standard_library.install_aliases()
 from builtins import range
 from builtins import object
 
-import os, getpass, socket, subprocess, threading, time,select,shutil, traceback, random,_thread
+import os, getpass, socket, subprocess, threading, time,select,shutil, traceback, random,_thread, queue
 from pickle import dumps,loads,dump,load
 
 from EMAN2jsondb import JSTask,JSTaskQueue,js_open_dict
@@ -92,6 +92,10 @@ class EMTaskCustomer(object):
 			try: self.scratchdir=target.split(":")[2]
 			except: self.scratchdir="/tmp"
 			self.handler=EMLocalTaskHandler(self.maxthreads,self.scratchdir, module)
+		elif self.servtype=="thread_sm":
+			self.maxthreads=int(target.split(":")[1])
+			self.handler=EMSharedMemoryLocalTaskHandler(self.maxthreads)
+		
 		elif self.servtype=="mpi":
 			self.maxthreads=int(target.split(":")[1])
 			try: self.scratchdir=origtarget.split(":")[2]
@@ -103,15 +107,15 @@ class EMTaskCustomer(object):
 				else: self.cache=False
 			except: self.cache=False
 			self.handler=EMMpiTaskHandler(self.maxthreads,self.scratchdir, module)
-		else : raise Exception("Only 'dc', 'thread' and 'mpi' servertypes currently supported")
+		else : raise Exception("Only 'thread' and 'mpi' servertypes currently supported")
 
 	def __del__(self):
-		if self.servtype=="thread" :
-			print("Cleaning up thread server. Please wait.")
-			self.handler.stop()
-		elif self.servtype=="mpi" :
-			print("Stopping MPI. Please wait.")
-			self.handler.stop()
+		#if self.servtype=="thread" :
+			#print("Cleaning up thread server. Please wait.")
+		self.handler.stop()
+		#elif self.servtype=="mpi" :
+			#print("Stopping MPI. Please wait.")
+			#self.handler.stop()
 			#except: print("Error: MPI environment was never established, cannot clean it up")
 	
 
@@ -137,15 +141,18 @@ class EMTaskCustomer(object):
 		"""Returns an estimate of the number of available CPUs based on the number
 		of different nodes we have talked to. Doesn't handle multi-core machines as
 		separate entities yet. If wait is set, it will not return until ncpu > 1"""
-		if self.servtype =="thread" : return self.maxthreads
-		if self.servtype =="mpi" : return self.maxthreads-1
+		
+		if self.servtype =="mpi" : 
+			return self.maxthreads-1
+		else:
+			return self.maxthreads
 
 
 	def new_group(self):
 		"""request a new group id from the server for use in grouping subtasks"""
-		if self.servtype in ("thread","mpi"):
-			self.groupn+=1
-			return self.groupn
+		#if self.servtype in ("thread","mpi"):
+		self.groupn+=1
+		return self.groupn
 
 
 	def send_tasks(self,tasks):
@@ -156,11 +163,11 @@ class EMTaskCustomer(object):
 			try: task.user=getpass.getuser()
 			except: task.user="anyone"
 
-		if self.servtype in ("thread","mpi"):
-			return [self.handler.add_task(t) for t in tasks]
+		#if self.servtype in ("thread","mpi"):
+		return [self.handler.add_task(t) for t in tasks]
 
 
-		raise Exception("Unknown server type")
+		#raise Exception("Unknown server type")
 
 	def send_task(self,task):
 		"""Send a task to the server. Returns a taskid."""
@@ -168,24 +175,24 @@ class EMTaskCustomer(object):
 		try: task.user=getpass.getuser()
 		except: task.user="anyone"
 
-		if self.servtype in ("thread","mpi"):
-			return self.handler.add_task(task)
+		#if self.servtype in ("thread","mpi"):
+		return self.handler.add_task(task)
 
-		raise Exception("Unknown server type")
+		#raise Exception("Unknown server type")
 
 	def check_task(self,taskid_list):
 		"""Check on the status of a list of tasks. Returns a list of ints, -1 to 100. -1 for a task
 		that hasn't been started. 0-99 for tasks that have begun, but not completed. 100 for completed tasks."""
-		if self.servtype in ("thread","mpi") :
-			return self.handler.check_task(taskid_list)
+		#if self.servtype in ("thread","mpi") :
+		return self.handler.check_task(taskid_list)
 
-		raise Exception("Unknown server type")
+		#raise Exception("Unknown server type")
 
 	def get_results(self,taskid,retry=True):
 		"""Get the results for a completed task. Returns a tuple (task object,dictionary}."""
 
-		if self.servtype in ("thread","mpi") :
-			return self.handler.get_results(taskid)
+		#if self.servtype in ("thread","mpi") :
+		return self.handler.get_results(taskid)
 
 
 
@@ -604,6 +611,100 @@ class EMMpiClient(object):
 
 #######################
 # Here we define the classes for local threaded parallelism
+class EMSharedMemoryLocalTaskHandler(object):
+	"""Local threaded Taskserver. This runs as a thread in the 'Customer' and executes tasks. Not a
+	subclass of EMTaskHandler for efficient local processing and to avoid data name translation."""
+	lock=threading.Lock()
+	allrunning = {}	# Static dict of running local tasks. Used for killing thses task upon parent kill
+	def __init__(self,nthreads=2):
+		self.maxthreads=nthreads
+		#print("max thread : {}".format(nthreads))
+		self.jobs=[]
+		self.threads=[]
+		self.thr=threading.Thread(target=self.run)
+		self.thr.start()
+
+	def stop(self):
+		#print("stop")
+		return
+
+	def add_task(self,task):
+		EMLocalTaskHandler.lock.acquire()
+		if not isinstance(task,JSTask) : raise Exception("Non-task object passed to EMLocalTaskHandler for execution")
+	
+		self.jobs.append([-1, task, None]) ### progress, task, result
+		#print("adding task {}".format(len(self.jobs)-1))
+		
+		EMLocalTaskHandler.lock.release()
+		return len(self.jobs)-1
+
+	def check_task(self,id_list):
+		
+		ret=[self.jobs[i][0] for i in id_list]
+			
+			
+		return ret
+
+	def get_results(self,taskid):
+		
+		task=self.jobs[taskid][0]
+		results=self.jobs[taskid][2]
+
+		return (task,results)
+	
+	def callback(self, idx, prog):
+		self.jobs[idx][0]=prog
+		#print("task {} prog {}".format(idx, prog))
+		
+	def run(self):
+		curthread=threading.active_count()
+		thrtolaunch=0
+		while 1:
+			if len(self.jobs)==0:
+				#print('no job yet...')
+				time.sleep(1)
+				continue
+			
+			if (threading.active_count()>=curthread+self.maxthreads) : 
+				
+				#print('sleeping...{}/{} used'.format(threading.active_count(), curthread+self.maxthreads))
+				
+				#print([j[0] for j in self.jobs])
+				time.sleep(1)
+				continue
+				
+			minprog=min([j[0] for j in self.jobs])
+			if (minprog>=0): 
+				#print('all jobs running...', minprog)
+				if minprog==100:
+					break
+				time.sleep(1)
+				continue
+			
+			for idx, job in enumerate(self.jobs):
+				if job[0]<0: ### to launch
+					job[0]=0
+					#print("start job {}".format(idx))
+					
+					def execute(i):
+						callback=lambda c: self.callback(i, c)
+						ret=job[1].execute(callback)
+						self.jobs[i][0]=100
+						self.jobs[i][2]=ret
+						return
+						
+					thrd=threading.Thread(target=execute, args=[idx])
+					thrd.start()
+					self.threads.append(thrd)
+					break
+				
+			
+		#print("all done")
+
+
+
+
+# Here we define the classes for local threaded parallelism
 class EMLocalTaskHandler(object):
 	"""Local threaded Taskserver. This runs as a thread in the 'Customer' and executes tasks. Not a
 	subclass of EMTaskHandler for efficient local processing and to avoid data name translation."""
@@ -715,6 +816,7 @@ class EMLocalTaskHandler(object):
 
 
 
+#######################
 
 
 	#def pathtocache(self,path):

@@ -21,8 +21,7 @@ def main():
 
 	parser.add_argument("--niter", type=int,help="Number of iterations", default=5, guitype='intbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
-	#parser.add_argument("--gaussz", type=float,help="Extra gauss filter at z direction", default=-1, guitype='floatbox',row=4, col=2,rowspan=1, colspan=1, mode="model")
-
+	
 	parser.add_argument("--mass", type=float,help="mass", default=500.0, guitype='floatbox',row=5, col=0,rowspan=1, colspan=1, mode="model")
 	#parser.add_argument("--tarres", type=float,help="target resolution", default=10, guitype='floatbox',row=5, col=1,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--localfilter", action="store_true", default=False ,help="use tophat local", guitype='boolbox',row=5, col=2,rowspan=1, colspan=1, mode="model")
@@ -34,12 +33,7 @@ def main():
 
 	parser.add_argument("--pkeep", type=float,help="fraction of particles to keep", default=0.8, guitype='floatbox',row=8, col=0,rowspan=1, colspan=1, mode="model")
 
-	#parser.add_argument("--tkeep", type=float,help="fraction of tilt to keep. only used when tltrefine is specified. default is 0.5", default=0.5, guitype='floatbox',row=8, col=1,rowspan=1, colspan=1, mode="model")
-
 	parser.add_argument("--maxtilt",type=float,help="Explicitly zeroes data beyond specified tilt angle. Assumes tilt axis exactly on Y and zero tilt in X-Y plane. Default 90 (no limit).",default=90.0, guitype='floatbox',row=8, col=2,rowspan=1, colspan=1, mode="model")
-
-	#parser.add_argument("--tltrefine", action="store_true", default=False ,help="refine individual subtilts", guitype='boolbox',row=9, col=0,rowspan=1, colspan=1, mode="model")
-	#parser.add_argument("--tltrefine_unmask", action="store_true", default=False ,help="use unmasked maps for tilt refinement", guitype='boolbox',row=9, col=1,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=9, col=0,rowspan=1, colspan=1, mode="model")
 
@@ -48,15 +42,40 @@ def main():
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="")
-	parser.add_argument("--radref", type=str,help="reference for real space radial correction", default="")
 	parser.add_argument("--refine",action="store_true",help="local refinement from xform.init in header.",default=False)
 	parser.add_argument("--localnorm",action="store_true",help="local normalization. do not use yet....",default=False)
+	parser.add_argument("--resume",action="store_true",help="local normalization. do not use yet....",default=False)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	ptcls=args[0]
 	ref=options.reference
 
+	if options.resume:
+		try:
+			itr=int(ref[-6:-4])
+		except:
+			print("Can only resume using previous threed_xx.hdf as reference")
+			return
+		
+		options.path=os.path.dirname(ref)
+		print("Work in path {}".format(options.path))
+		startitr=itr+1
+		try:
+			fsc=np.loadtxt(os.path.join(options.path, "fsc_masked_{:02d}.txt".format(itr)))
+			rs=1./fsc[fsc[:,1]<0.3, 0][0]
+		except:
+			rs=20
+		curres=rs
+		if curres>20.:
+			curres=20
+		print("Start resolution {:.1f}".format(curres))
+		
+	else:
+		curres=20
+		startitr=1
+		
+		
 	if options.path==None: options.path = make_path("spt") 
 	if options.parallel=="":
 		options.parallel="thread:{}".format(options.threads)
@@ -74,6 +93,8 @@ def main():
 	js.update(vars(options))
 	js.close()
 	
+	
+	
 	ep=EMData(ptcls,0)
 	
 	if options.goldcontinue==False:
@@ -89,12 +110,12 @@ def main():
 			ref="{}/model_input.hdf".format(options.path)
 		
 	
-	curres=40.
-	for itr in range(1,options.niter+1):
+	for itr in range(startitr,options.niter+startitr):
 		
 		#### generate alignment command first
 		gd=""
 		if options.goldstandard>0 and itr==1:
+			curres=options.goldstandard
 			gd=" --goldstandard {}".format(options.goldstandard)
 		if options.goldcontinue or (options.goldstandard>0 and itr>1):
 			gd=" --goldcontinue".format(options.goldstandard)
@@ -102,8 +123,8 @@ def main():
 		if options.refine:
 			gd+=" --refine"
 		#curres=0
-		#cmd="e2spt_align.py {} {} --threads {} --path {} --iter {} --sym {} --wtori {} {}".format(ptcls, ref,  options.threads, options.path, itr, options.sym, options.wtori, gd)
-		cmd="e2spt_align.py {} {} --parallel {} --path {} --iter {} --sym {} --wtori {} {}".format(ptcls, ref,  options.parallel, options.path, itr, options.sym, options.wtori, gd)
+
+		cmd="e2spt_align.py {} {} --parallel {} --path {} --iter {} --sym {} --wtori {} --nsoln 1 {}".format(ptcls, ref,  options.parallel, options.path, itr, options.sym, options.wtori, gd)
 		
 		#### in case e2spt_align get segfault....
 		ret=1
@@ -131,22 +152,12 @@ def main():
 		even=os.path.join(options.path, "threed_{:02d}_even.hdf".format(itr))
 		odd=os.path.join(options.path, "threed_{:02d}_odd.hdf".format(itr))
 		
-		if options.radref!="":
-			for f in [even, odd]:
-				e=EMData(f)
-				rf=EMData(options.radref).process("normalize")
-				#rf=rf.align("translational",e)
-				
-				e.process_inplace("filter.matchto",{"to":rf})
-				e.process_inplace("normalize")
-
-				radrf=rf.calc_radial_dist(rf["nx"]//2, 0.0, 1.0,1)
-				rade=e.calc_radial_dist(e["nx"]//2, 0.0, 1.0,1)
-				rmlt=np.sqrt(np.array(radrf)/np.array(rade))
-				#rmlt[0]=1
-				rmlt=from_numpy(rmlt.copy())
-				er=e.mult_radial(rmlt)
-				er.write_image(f)
+		
+		for f in [even, odd]:
+			e=EMData(f)
+			e.del_attr("xform.align3d")
+			e.write_image(f)
+		
 		
 		msk=options.mask
 		if len(msk)>0:

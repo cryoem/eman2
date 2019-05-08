@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.9)
 PROJECT(EMAN
-		VERSION 2.22
+		VERSION 2.3
 		LANGUAGES CXX
 		)
 
@@ -102,7 +102,7 @@ OPTION(ENABLE_MEMDEBUG "enable memory debug support of objects" OFF)
 OPTION(ENABLE_MEMDEBUG2 "enable memory debug support of EMData" OFF)
 OPTION(ENABLE_BOUNDS_CHECKING "enable bounds checking support" OFF)
 OPTION(ENABLE_RT "enable RT support" ON)
-
+OPTION(ENABLE_WARNINGS "display warnings during compilation" ON)
 OPTION(ENABLE_IOCACHE "enable ImageIO caching" OFF)
 
 #flags for optimization level. You can only turn one of following option to ON, or leave all of them to OFF.
@@ -119,12 +119,26 @@ ELSE()
 	OPTION(ENABLE_OPTIMIZE_OSX "enable OSX support" OFF)
 ENDIF()
 
+if(NOT WIN32)
+	set(WARNING_FLAGS_ON  "-W -Wall")
+	set(WARNING_FLAGS_OFF "-w")
+else()
+	set(WARNING_FLAGS_ON  "")    # Default for VS2008 is /W3, highest is /W4
+	set(WARNING_FLAGS_OFF "/W0")
+endif()
+
+if(ENABLE_WARNINGS)
+	add_definitions(${WARNING_FLAGS_ON})
+else()
+	add_definitions(${WARNING_FLAGS_OFF})
+endif()
+
 IF(ENABLE_MEMDEBUG)
-	ADD_DEFINITIONS(-DMEMDEBUG -W -Wall)
+	ADD_DEFINITIONS(-DMEMDEBUG)
 ENDIF()
 
 IF(ENABLE_MEMDEBUG2)
-	ADD_DEFINITIONS(-DMEMDEBUG2 -W -Wall)
+	ADD_DEFINITIONS(-DMEMDEBUG2)
 ENDIF()
 
 IF(ENABLE_V4L2)
@@ -136,7 +150,7 @@ IF(ENABLE_BOUNDS_CHECKING)
 ENDIF()
 
 IF(ENABLE_DEBUG)
-	SET (OPT_FLAGS "-DDEBUG -O2 -g -ansi -Wall -W -fno-inline")
+	SET (OPT_FLAGS "-DDEBUG -O2 -g -ansi -fno-inline")
 ELSEIF(ENABLE_PROFILE)
 	SET (OPT_FLAGS "-O2 -ansi -march=native -m64 -ffast-math -pipe")
 	OPTION(ENABLE_DEBUG "enable debug support" OFF)
@@ -178,13 +192,13 @@ IF(CMAKE_SYSTEM MATCHES "OSF1-V*")
 ENDIF()
 
 IF(CMAKE_COMPILER_IS_GNUCXX)
-#	SET(EMAN_CXX_FLAGS "-Wall -Werror" CACHE INTERNAL "EMAN CXX FLAGS")
+#	SET(EMAN_CXX_FLAGS " " CACHE INTERNAL "EMAN CXX FLAGS")
 	IF(ENABLE_DEBUG)
-		SET(EMAN_CXX_FLAGS "-g -Wall -W -Wcast-qual -Wwrite-strings" CACHE INTERNAL "EMAN CXX FLAGS")
+		SET(EMAN_CXX_FLAGS "-g -Wcast-qual -Wwrite-strings" CACHE INTERNAL "EMAN CXX FLAGS")
 		SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -g")
 		SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -g")
 	ELSE()
-		SET(EMAN_CXX_FLAGS "-Wall" CACHE INTERNAL "EMAN CXX FLAGS")
+		SET(EMAN_CXX_FLAGS "" CACHE INTERNAL "EMAN CXX FLAGS")
 	ENDIF()
 	SET(PLATFORMLIB "/usr/lib64" CACHE INTERNAL "lib64")
 	SET(EMAN_CXX_FLAGS "${EMAN_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0" CACHE INTERNAL "EMAN CXX FLAGS")

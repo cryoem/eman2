@@ -1386,7 +1386,7 @@ class EMImage2DWidget(EMGLWidget):
 				elif s.shape[0][:3]!="scr":
 #					print "shape",s.shape
 					GL.glPushMatrix()		# The push/pop here breaks the 'scr*' shapes !
-					#print(self.devicePixelRatio())
+
 					s.draw()		# No need for coordinate transform any more
 					GL.glPopMatrix()
 #					GLUtil.colored_rectangle(s.shape[1:8],alpha)

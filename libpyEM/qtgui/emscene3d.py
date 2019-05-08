@@ -1911,6 +1911,10 @@ class EMCamera(object):
 		if height: self.height = height
 		self.aspectratio = old_div(float(self.height),float(self.width))
 		if self.usingortho:
+			# this deals with maxviewport better than the previous solution
+			# the whole pseudofov concept is really messed up. Needs a complete rethink
+			if self.width+2*self.pseudofovy>=self.maxviewport[0] :
+				self.pseudofovy=(self.maxviewport[0]-self.width)//2-1
 			self.setViewPort(-self.pseudofovy, int(-self.pseudofovy*self.aspectratio), int(self.width+2*self.getPseudoFovyWidth()), int(self.height+2*self.getPseudoFovyHeight()))
 			glMatrixMode(GL_PROJECTION)
 			glLoadIdentity()
@@ -1939,6 +1943,7 @@ class EMCamera(object):
 		"""Set the viewport subject to openGL constraitns """
 		if (vpwidth < self.maxviewport[0] and vpheight < self.maxviewport[1]):
 			glViewport(x, y, vpwidth, vpheight)
+	#		print(x,y,vpwidth, vpheight)
 		
 	def setCameraPosition(self, sfactor=1):
 		"""
@@ -2030,13 +2035,15 @@ class EMCamera(object):
 		"""
 		Set PseudoFovy, a sort of fovy for orthogramphic projections, do bounds checking
 		"""
-		if ((self.width+2*pseudofovy) > 0 and (self.height+2*pseudofovy) > 0):
-			if ((int(self.width+2*pseudofovy) < self.maxviewport[0] and int(self.height+2*pseudofovy*self.aspectratio) < self.maxviewport[1]) or pseudofovy < self.pseudofovy): 
-				self.pseudofovy = pseudofovy # negative viewport values are not acceptable
-			else:
-				# Set to max zoom
-				self.pseudofovy = old_div((self.maxviewport[0] - self.width),2)
+		#if ((self.width+2*pseudofovy) > 0 and (self.height+2*pseudofovy) > 0):
+		if ((int(self.width+pseudofovy) < self.maxviewport[0] and int(self.height+pseudofovy*self.aspectratio) < self.maxviewport[1]) or pseudofovy < self.pseudofovy): 
+			self.pseudofovy = pseudofovy
+		else:
+			# Set to max zoom
+			self.pseudofovy = (self.maxviewport[0] - self.width)
 	
+		#print(pseudofovy,self.pseudofovy,self.maxviewport)
+
 	def getPseudoFovyWidth(self):
 		"""
 		Return PseudoFovy, a sort of fovy for orthogramphic projections

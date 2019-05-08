@@ -79,7 +79,7 @@ def main():
 				print("ERROR: coordinates file must be in .txt format")
 				sys.exit(1)
 	except:
-		pass
+		pas
 
 	if options.input:
 		cfile = options.input

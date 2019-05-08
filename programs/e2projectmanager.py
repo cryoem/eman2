@@ -1732,7 +1732,7 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 			if option['guitype'] == 'header':
 				widget = PMHeaderWidget(option['name'], option['title'])
 			if option['guitype'] == 'filebox':
-				widget = PMFileNameWidget(option['name'], self.getDefault(option), self.getSharingMode(option), self.getBrowser(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True),checkfileexist=self.getFileCheck(option))
+				widget = PMFileNameWidget(option['name'], self.getDefault(option), self.getSharingMode(option), self.getBrowser(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True),checkfileexist=self.getFileCheck(option), infolabels=self.getInfoLabels(option))
 			if option['guitype'] == 'dirbox':
 				widget = PMDirectoryWidget(option['name'], option['dirbasename'], self.getDefault(option), self.getSharingMode(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
 			if option['guitype'] == 'symbox':
@@ -1828,6 +1828,13 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 		filecheck = True
 		if 'filecheck' in option: filecheck = option['filecheck']
 		return filecheck
+	
+	
+	def getInfoLabels(self, option):
+		infolabel = False
+		if 'infolabel' in option: infolabel = option['infolabel']
+		return infolabel
+	
 
 	def getSharingMode(self, option):
 		""" Returns whether or not the widget desires DB sharing with other modes """

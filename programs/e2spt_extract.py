@@ -40,7 +40,8 @@ def main():
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Re-extraction from spt", row=10, col=0, rowspan=1, colspan=1, mode="extract")
 
 	parser.add_argument("--jsonali", type=str,help="re-extract particles using a particle_param_xx json file from a spt alignment", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=11, col=0,rowspan=1, colspan=2, mode="extract")
-	parser.add_argument("--alioffset", type=str,help="coordinate offset when re-extract particles. (x,y,z)", default="0,0,0", guitype='strbox', row=12, col=0,rowspan=1, colspan=1, mode="extract")
+	#parser.add_argument("--alioffset", type=str,help="coordinate offset when re-extract particles. (x,y,z)", default="0,0,0", guitype='strbox', row=12, col=0,rowspan=1, colspan=1, mode="extract")
+	parser.add_argument("--postxf", type=str,help="a file listing post transforms", default="")
 
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
@@ -51,19 +52,20 @@ def main():
 	
 	if len(options.jsonali)>0:
 		print("re-extracting particles based on previous alignment. Ignoring particle/tomogram input...")
-		try:
-			offset=list(float(i) for i in options.alioffset.split(','))
-		except:
-			offset=(0,0,0)
+		#try:
+			#offset=list(float(i) for i in options.alioffset.split(','))
+		#except:
+			#offset=(0,0,0)
 		
-		print("extracting {} sub-particles per particle, with offset".format(len(offset)//3))
-		print(np.array(offset).reshape((-1,3)))
-		allxfs=parse_json(options.jsonali, offset)
+		#print("extracting {} sub-particles per particle, with offset".format(len(offset)//3))
+		#print(np.array(offset).reshape((-1,3)))
+		allxfs=parse_json(options.jsonali, options.postxf)
 		for fname in allxfs.keys():
 			#### it seems options is changed inplace somewhere...
 			(options, args) = parser.parse_args()
 			do_extraction(fname, options, allxfs[fname])
-			#return
+		
+		return
 	
 	
 
@@ -193,7 +195,11 @@ def do_extraction(pfile, options, xfs=[]):
 					pts[:,:3]*=scale
 					pts[:,2]-=zshift
 				
-				lab="curve"
+				if options.newlabel=="":
+					lab="curve"
+				else:
+					lab=options.newlabel
+					
 				if options.shrink>1:
 					lab+="_bin{:d}".format(options.shrink)
 				outname=str(base_name(pfile)+"__"+lab+".hdf")
@@ -231,6 +237,7 @@ def do_extraction(pfile, options, xfs=[]):
 						continue
 						
 				bxs=np.array([[b[0], b[1], b[2]] for b in boxes if b[5]==int(ky)], dtype=float)
+				if len(bxs)==0: continue
 				
 				if "apix_unbin" in js:
 					bxs/=options.shrink
@@ -374,10 +381,10 @@ def do_extraction(pfile, options, xfs=[]):
 					pji+=1
 				threed["class_ptcl_src"]=options.output2d
 				threed["class_ptcl_idxs"]=pjids
-				if options.rmbeadthr>0:
-					#### give up maintaining the order since there are empty particles...
-					pid=-1
-				threed.write_image(options.output, pid)
+				#if options.rmbeadthr>0:
+				#### give up maintaining the order since there are empty particles...
+				#pid=-1
+				threed.write_image(options.output, -1)
 				ndone+=1
 				#if ndone%10==0:
 				sys.stdout.write("\r{}/{} finished.".format(ndone, nptcl))
@@ -447,6 +454,10 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[]):
 			tydf=ty-tyint
 
 			e=m.get_clip(Region(txint-pad//2, tyint-pad//2, pad, pad), fill=0)
+			
+			e.process_inplace("mask.zeroedgefill",{"nonzero":1})		# This tries to deal with particles that were boxed off the edge of the micrograph
+			if e.has_attr("hadzeroedge") and e["hadzeroedge"]!=0:
+				continue
 
 			e.mult(-1)
 			e.process_inplace("normalize.edgemean")
@@ -456,9 +467,21 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[]):
 			
 			if options.rmbeadthr>0:
 				er=e.process("filter.lowpass.gauss",{"cutoff_freq":0.01})
-				er.process_inplace("normalize")
-				if er["maximum"]>options.rmbeadthr:
+				er.process_inplace("filter.highpass.gauss",{"cutoff_pixels":3})
+				er.process_inplace("threshold.binary",{"value":options.rmbeadthr})
+				er.process_inplace("mask.addshells.gauss",{"val1":e["nx"]//40,"val2":e["nx"]//25})
+				
+				if er["mean"]>0.1: 
+					### too many beads. better just remove this subtilt
 					continue
+				
+				e.mult(1-er)
+				e.mult(1-er)
+				noise=e.copy()
+				noise.to_zero()
+				noise.process_inplace("math.addnoise",{"noise":1})
+				noise.process_inplace("normalize")
+				e.add(noise*er)
 				
 			rot=Transform({"type":"xyz","xtilt":float(tpm[4]),"ytilt":float(tpm[3])})
 			p1=rot.transform(pos.tolist())
@@ -486,8 +509,8 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[]):
 				
 				e=fft1.do_ift()
 				e["ctf"]=ctf
-				if options.dotest:
-					print(tpm[3], pz, dz, defocus[nid]-dz)
+				#if options.dotest:
+					#print(tpm[3], pz, dz, defocus[nid]-dz)
 			
 
 			xform=Transform({"type":"xyz","ytilt":tpm[3],"xtilt":tpm[4], "ztilt":tpm[2], "tx":txdf, "ty":tydf})
@@ -507,7 +530,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[]):
 			e1=recon.preprocess_slice(e0, trans)
 			recon.insert_slice(e1,xform,1)
 
-		if len(projs)<2:
+		if len(projs)<len(imgs)/5:
 			#### too many bad 2D particles
 			continue
 		else:
@@ -521,7 +544,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[]):
 		threed["model_id"]=pid
 		
 		if tf_dir:
-			threed["xform.init"]=tf_dir
+			threed["xform.align3d"]=tf_dir
 		#print(ids,projs)
 		jsd.put((pid, threed, projs))
 
@@ -545,22 +568,35 @@ def get_xf_pos(tpm, pk):
 
 
 #### parse a json file from spt_align to re-extract particles
-def parse_json(jsfile, offset=(0,0,0)):
+def parse_json(jsfile, xffile=""):
 	js=js_open_dict(jsfile)
 	coord=[]
 	allxfs={}
+	
+	postxfs=[]
+	if xffile!="":
+		f=open(xffile,'r')
+		lines=f.readlines()
+		f.close()
+		for l in lines:
+			postxfs.append(Transform(eval(l)))
+	else:
+		postxfs.append(Transform())
+	
 	
 	for ky in js.keys():
 		src, ii = eval(ky)
 		e=EMData(src, ii, True)
 		tomo=e["class_ptcl_src"]
 		dic=js[ky]
+		dxf=dic["xform.align3d"]
 		c=e["ptcl_source_coord"]
-		for o in range(len(offset)//3):
-			ali=dic["xform.align3d"]
-			ali.translate(offset[o*3+0], offset[o*3+1], offset[o*3+2])
+		for xf in postxfs:
+			ali=Transform(dxf)
+			ali=xf.inverse()*ali
 			a=ali.inverse()
 			a.translate(c[0], c[1], c[2])
+			#print(a)
 			
 			if allxfs.has_key(tomo):
 				allxfs[tomo].append(a)
@@ -568,7 +604,7 @@ def parse_json(jsfile, offset=(0,0,0)):
 				allxfs[tomo]=[a]
 			
 	js.close()
-	
+	#print(len(allxfs))
 	return allxfs
 	
 
