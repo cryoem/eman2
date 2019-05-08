@@ -1089,6 +1089,10 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			QtWidgets.qApp.setOverrideCursor(self.crosshaircursor)
 		if event.buttons()&Qt.MidButton or (event.buttons()&Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.showInspector()
+			
+		if (event.buttons()&Qt.LeftButton and event.modifiers()&Qt.ControlModifier and event.modifiers()&Qt.ShiftModifier):
+			### so one can open it from a linux remote controlled by a mac...
+			self.showInspector()
 	
 	def _insert_shape(self, name, node, clearsel=True):
 		""" Helper function for mousePressEvent to reduce code duplication"""
