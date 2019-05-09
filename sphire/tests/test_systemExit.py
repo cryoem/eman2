@@ -5,12 +5,13 @@ from ..libpy import sparx_morphology as fu
 from .sparx_lib import sparx_morphology as oldfu
 
 from ..libpy import sparx_utilities
+from .sparx_lib import sparx_utilities as oldsparx_utilities
 
 
 import unittest
 
 from test_module import get_data, remove_dir,get_real_data
-
+import numpy
 from os import path, mkdir
 
 from mpi import *
@@ -284,5 +285,28 @@ class Test_MORPHOLOGY(unittest.TestCase):
             mpi_barrier(MPI_COMM_WORLD)
             fu.cter_mrk(self.input_image_path, self.output_directory, selection_list=None, wn=self.wn, pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0, check_consistency=False, stack_mode=True, debug_mode=False, program_name="cter_vpp() in morphology.py", RUNNING_UNDER_MPI=True, main_mpi_proc=0, my_mpi_proc_id=0, n_mpi_procs=1)
         remove_dir(self.output_directory)
+        self.assertEqual(cm_new.exception.code, None)
+        self.assertEqual(cm_new.exception.code, cm_old.exception.code)
+
+
+
+class Test_UTILITIES(unittest.TestCase):
+    def test_error_img_per_group_larger_than_the_number_of_particles_exit(self):
+        proj_angles=[]
+        for i in range(9):
+            i=+0.1
+            proj_angles.append([i/2, i/5,i/4,i/3, i])
+        proj_angles.sort()
+        proj_angles_list = numpy.full((9, 4), 0.0, dtype=numpy.float32)
+        for i in range(9):
+            proj_angles_list[i][0] = proj_angles[i][1]
+            proj_angles_list[i][1] = proj_angles[i][2]
+            proj_angles_list[i][2] = proj_angles[i][3]
+            proj_angles_list[i][3] = proj_angles[i][4]
+
+        with self.assertRaises(SystemExit) as cm_new:
+            sparx_utilities.nearest_proj(proj_angles_list)
+        with self.assertRaises(SystemExit) as cm_old:
+            oldsparx_utilities.nearest_proj(proj_angles_list)
         self.assertEqual(cm_new.exception.code, None)
         self.assertEqual(cm_new.exception.code, cm_old.exception.code)

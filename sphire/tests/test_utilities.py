@@ -7,7 +7,6 @@ import os
 from mpi import *
 import global_def
 import numpy
-import shutil
 import zlib
 
 
@@ -18,20 +17,22 @@ global_def.MPI = True
 
 ABSOLUTE_PATH = os.path.dirname(os.path.realpath(__file__))
 
-
 import unittest
-from test_module import get_arg_from_pickle_file, get_real_data, remove_list_of_file, returns_values_in_file
+from test_module import get_arg_from_pickle_file, get_real_data, remove_list_of_file, returns_values_in_file,remove_dir
 from ..libpy import sparx_utilities as fu
 from .sparx_lib import sparx_utilities as oldfu
 from ..libpy import sparx_fundamentals
 from os import path
-from EMAN2_cppwrap import EMData
+from EMAN2_cppwrap import EMData,EMUtil
+
 from copy import deepcopy
 import EMAN2db
+import json
+import random
 try:
     from StringIO import StringIO   # python2 case
 except:
-    from io import StringIO         # python3 case. You will get an erorr because 'sys.stdout.write(msg)' presents in the library not in the test!!
+    from io import StringIO         # python3 case. You will get an error because 'sys.stdout.write(msg)' presents in the library not in the test!!
 import sys
 
 IMAGE_2D, IMAGE_2D_REFERENCE = get_real_data(dim=2)
@@ -39,6 +40,13 @@ IMAGE_3D, STILL_NOT_VALID = get_real_data(dim=3)
 IMAGE_BLANK_2D = fu.model_blank(10, 10)
 IMAGE_BLANK_3D = fu.model_blank(10, 10, 10)
 TOLERANCE = 0.0075
+TRACKER = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask"))[0][0][1]
+ABSOLUTE_PATH_TO_ADNAN_TEST_FILES= "/home/lusnig/Downloads/adnan4testing" # 4ADNAN: it is your 'sphire/tests' folder
+
+"""
+pickle files stored under smb://billy.storage.mpi-dortmund.mpg.de/abt3/group/agraunser/transfer/Adnan/pickle files
+"""
+
 """
 There are some opened issues in:
 1) drop_image --> How may I really test it
@@ -58,7 +66,7 @@ There are some opened issues in:
 13) set_params2D --> if you use xform=xform.align3d it works, but the output is somethiong that we do not really want to have. It does not set the values
                 --> since set_params_proj has the same kind of input we are not able to discriminate them when we call the function. anyway It does not set the values
 14) set_params3D --> if you use xform=xform.align2d it works, but the output is somethiong that we do not really want to have. It does not set the values
-15) set_params_proj --> I need an image with key 'xform.projection' to finish these tests because the associated pickle file has not it
+15) set_params_proj --> I need an image with key 'xform.projection' to finish these tests because the associated pickle file has not it --> dovrebbero essere quelle in pickle files/multi_shc/multi_shc.ali3d_multishc
 16) The following functions concern the sending data in the process and are difficult or even not possible to test deeply
     -) reduce_EMData_to_root
     -) bcast_compacted_EMData_all_to_all
@@ -70,12 +78,23 @@ There are some opened issues in:
     -) send_attr_dict
     -) wrap_mpi_send
     -) wrap_mpi_recv
-    -) wrap_mpi_bcast
     -) wrap_mpi_gatherv
     -) wrap_mpi_split
 17) unpack_message it does not work properly is it a buggy function???
 18) 'update_tag' returns, in both of the implementations 'return 123456'. i'm not going to test it
+19) how we can test 'if_error_then_all_processes_exit_program'? 
+20) sample_down_1D_curve --> I need a file with the curve values
+21) test_print_upper_triangular_matrix --> which variable is the third parameter??")
+22) get_shrink_data_huang,recons_mref --> the file gave me does not work see the reasons in the test
+23) do_two_way_comparison -->  I cannot run the Adnan reference test. I had to insert random data --> I cannot test it deeply,
+24) Test_get_stat_proj.test_myid_not_the_same_value_as_main_Node_TypeError is it due to a bad implemntation?
+
 """
+
+
+
+
+
 
 class Test_amoeba(unittest.TestCase):
     argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.amoeba"))
@@ -88,7 +107,7 @@ class Test_amoeba(unittest.TestCase):
     def function_lessParam():
         return 0
 
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.amoeba()
         with self.assertRaises(TypeError) as cm_old:
@@ -117,7 +136,7 @@ class Test_amoeba(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, "wrongfunction() got an unexpected keyword argument 'data'")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-    def test_amoeba_with_function_lessParam(self):
+    def test_amoeba_with_function_lessParam_TypeError(self):
         (var, scale, func, ftolerance, xtolerance, itmax , data) = self.argum[0]
         with self.assertRaises(TypeError) as cm_new:
             fu.amoeba (var, scale, self.function_lessParam, ftolerance, xtolerance, itmax , None)
@@ -137,10 +156,9 @@ class Test_amoeba(unittest.TestCase):
 
 
 
-
 class Test_compose_transform2(unittest.TestCase):
 
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.compose_transform2()
         with self.assertRaises(TypeError) as cm_old:
@@ -184,7 +202,7 @@ class Test_compose_transform2(unittest.TestCase):
 
 class Test_compose_transform3(unittest.TestCase):
 
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.compose_transform3()
         with self.assertRaises(TypeError) as cm_old:
@@ -229,7 +247,7 @@ class Test_compose_transform3(unittest.TestCase):
 
 class Test_combine_params2(unittest.TestCase):
     """ I did not use the 'pickle files/utilities/utilities.combine_params2' values because they are all 0 values"""
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.combine_params2()
         with self.assertRaises(TypeError) as cm_old:
@@ -246,7 +264,7 @@ class Test_combine_params2(unittest.TestCase):
 
 class Test_inverse_transform2(unittest.TestCase):
     """ I did not use the 'pickle files/utilities/utilities.inverse_transform2' values because they are all 0 values"""
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.inverse_transform2()
         with self.assertRaises(TypeError) as cm_old:
@@ -263,7 +281,7 @@ class Test_inverse_transform2(unittest.TestCase):
 
 """ How may I REALLY test it?"""
 class Test_drop_image(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.drop_image()
         with self.assertRaises(TypeError) as cm_old:
@@ -382,7 +400,7 @@ class Test_even_angles(unittest.TestCase):
 
 
 class Test_even_angles_cd(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.even_angles_cd()
         with self.assertRaises(TypeError) as cm_old:
@@ -419,7 +437,7 @@ class Test_even_angles_cd(unittest.TestCase):
 
 
 class Test_gauss_edge(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.gauss_edge()
         with self.assertRaises(TypeError) as cm_old:
@@ -472,7 +490,7 @@ class Test_gauss_edge(unittest.TestCase):
 
 
 class Test_get_image(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.get_image()
         with self.assertRaises(TypeError) as cm_old:
@@ -519,7 +537,7 @@ class Test_get_image(unittest.TestCase):
 
 
 
-class Test_get_ima(unittest.TestCase):
+class Test_get_im(unittest.TestCase):
     img_list = get_real_data(dim=2)
 
     def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(self):
@@ -530,7 +548,7 @@ class Test_get_ima(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute '__getitem__'")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.get_im()
         with self.assertRaises(TypeError) as cm_old:
@@ -554,7 +572,7 @@ class Test_get_ima(unittest.TestCase):
 
 
 class Test_get_image_data(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.get_image_data()
         with self.assertRaises(TypeError) as cm_old:
@@ -575,7 +593,7 @@ class Test_get_image_data(unittest.TestCase):
 
 
 class Test_get_symt(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.get_symt()
         with self.assertRaises(TypeError) as cm_old:
@@ -597,7 +615,7 @@ class Test_get_symt(unittest.TestCase):
 
 
 class Test_get_input_from_string(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.get_input_from_string()
         with self.assertRaises(TypeError) as cm_old:
@@ -628,7 +646,7 @@ class Test_get_input_from_string(unittest.TestCase):
 
 
 class Test_model_circle(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.model_circle()
         with self.assertRaises(TypeError) as cm_old:
@@ -691,7 +709,7 @@ class Test_model_circle(unittest.TestCase):
 
 
 class Test_model_gauss(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.model_gauss()
         with self.assertRaises(TypeError) as cm_old:
@@ -758,7 +776,7 @@ class Test_model_gauss(unittest.TestCase):
 
 
 class Test_model_gauss_noise(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.model_gauss_noise()
         with self.assertRaises(TypeError) as cm_old:
@@ -817,7 +835,7 @@ class Test_model_gauss_noise(unittest.TestCase):
 
 
 class Test_model_blank(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.model_blank()
         with self.assertRaises(TypeError) as cm_old:
@@ -874,7 +892,7 @@ class Test_model_blank(unittest.TestCase):
 
 
 class Test_peak_search(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.peak_search()
         with self.assertRaises(TypeError) as cm_old:
@@ -920,7 +938,7 @@ class Test_peak_search(unittest.TestCase):
 
 
 class Test_pad(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.pad()
         with self.assertRaises(TypeError) as cm_old:
@@ -1003,7 +1021,7 @@ class Test_pad(unittest.TestCase):
 
 
 class Test_chooseformat(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.chooseformat()
         with self.assertRaises(TypeError) as cm_old:
@@ -1027,7 +1045,7 @@ class Test_chooseformat(unittest.TestCase):
 
 
 class Test_read_text_row(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.read_text_row()
         with self.assertRaises(TypeError) as cm_old:
@@ -1046,7 +1064,7 @@ class Test_read_text_row(unittest.TestCase):
 
 
 class Test_write_text_row(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.write_text_row()
         with self.assertRaises(TypeError) as cm_old:
@@ -1066,7 +1084,7 @@ class Test_write_text_row(unittest.TestCase):
 
 
 class Test_read_text_file(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.read_text_file()
         with self.assertRaises(TypeError) as cm_old:
@@ -1085,7 +1103,7 @@ class Test_read_text_file(unittest.TestCase):
 
 
 class Test_write_text_file(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.write_text_file()
         with self.assertRaises(TypeError) as cm_old:
@@ -1105,7 +1123,7 @@ class Test_write_text_file(unittest.TestCase):
 
 
 class Test_rotate_shift_params(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.rotate_shift_params()
         with self.assertRaises(TypeError) as cm_old:
@@ -1165,7 +1183,7 @@ class Test_reshape_1d(unittest.TestCase):
     length_current = 2* len(input_obj)
     length_interpolated = 4* len(input_obj)
 
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.reshape_1d()
         with self.assertRaises(TypeError) as cm_old:
@@ -1217,7 +1235,7 @@ class Test_estimate_3D_center_MPI(unittest.TestCase):
     """ values got from 'pickle files/utilities/utilities.estimate_3D_center_MPI'"""
     argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.estimate_3D_center_MPI"))
 
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.estimate_3D_center_MPI()
         with self.assertRaises(TypeError) as cm_old:
@@ -1248,7 +1266,7 @@ class Test_rotate_3D_shift(unittest.TestCase):
     (data, notUsed) = argum[0]
     shift3d = [10.1, 0.2, 10.0]
 
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.rotate_3D_shift()
         with self.assertRaises(TypeError) as cm_old:
@@ -1262,7 +1280,7 @@ class Test_rotate_3D_shift(unittest.TestCase):
         with self.assertRaises(RuntimeError) as cm_new:
             fu.rotate_3D_shift([data], self.shift3d)
         with self.assertRaises(RuntimeError) as cm_old:
-            fu.rotate_3D_shift([data], self.shift3d)
+            oldfu.rotate_3D_shift([data], self.shift3d)
         msg = cm_new.exception.message.split("'")
         msg_old = cm_old.exception.message.split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
@@ -1275,7 +1293,7 @@ class Test_rotate_3D_shift(unittest.TestCase):
         with self.assertRaises(AttributeError) as cm_new:
             fu.rotate_3D_shift([None], self.shift3d)
         with self.assertRaises(AttributeError) as cm_old:
-            fu.rotate_3D_shift([None], self.shift3d)
+            oldfu.rotate_3D_shift([None], self.shift3d)
         self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_attr'")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
@@ -1302,7 +1320,7 @@ class Test_rotate_3D_shift(unittest.TestCase):
 
 
 class Test_set_arb_params(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.set_arb_params()
         with self.assertRaises(TypeError) as cm_old:
@@ -1351,7 +1369,7 @@ class Test_set_arb_params(unittest.TestCase):
 
 
 class Test_get_arb_params(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.get_arb_params()
         with self.assertRaises(TypeError) as cm_old:
@@ -1389,7 +1407,7 @@ class Test_get_arb_params(unittest.TestCase):
 
 
 class Test_reduce_EMData_to_root(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.reduce_EMData_to_root()
         with self.assertRaises(TypeError) as cm_old:
@@ -1436,7 +1454,7 @@ Traceback (most recent call last):
     em_dict = dict_received["em_dict"]
 TypeError: 'NoneType' object has no attribute '__getitem__'
     """
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.bcast_compacted_EMData_all_to_all()
         with self.assertRaises(TypeError) as cm_old:
@@ -1465,7 +1483,7 @@ TypeError: 'NoneType' object has no attribute '__getitem__'
 
 class Test_gather_compacted_EMData_to_root(unittest.TestCase):
     argum = get_arg_from_pickle_file(os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.gather_compacted_EMData_to_root"))
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.gather_compacted_EMData_to_root()
         with self.assertRaises(TypeError) as cm_old:
@@ -1505,7 +1523,7 @@ class Test_gather_compacted_EMData_to_root(unittest.TestCase):
 
 
 class Test_bcast_EMData_to_all(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.bcast_EMData_to_all()
         with self.assertRaises(TypeError) as cm_old:
@@ -1549,7 +1567,7 @@ class Test_bcast_EMData_to_all(unittest.TestCase):
 
 class Test_send_EMData(unittest.TestCase):
     #argum = get_arg_from_pickle_file(os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.send_EMData"))
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.send_EMData()
         with self.assertRaises(TypeError) as cm_old:
@@ -1588,7 +1606,7 @@ class Test_send_EMData(unittest.TestCase):
 
 class Test_recv_EMData(unittest.TestCase):
     #argum = get_arg_from_pickle_file(os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.recv_EMData"))
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.recv_EMData()
         with self.assertRaises(TypeError) as cm_old:
@@ -1620,7 +1638,7 @@ class Test_recv_EMData(unittest.TestCase):
 
 class Test_bcast_number_to_all(unittest.TestCase):
 
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.bcast_number_to_all()
         with self.assertRaises(TypeError) as cm_old:
@@ -1657,7 +1675,7 @@ class Test_bcast_list_to_all(unittest.TestCase):
     myid = 74
     source_node =0
     list_to_send = [1,2]
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.bcast_list_to_all()
         with self.assertRaises(TypeError) as cm_old:
@@ -1708,7 +1726,7 @@ class Test_bcast_list_to_all(unittest.TestCase):
 
 
 class Test_recv_attr_dict(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.recv_attr_dict()
         with self.assertRaises(TypeError) as cm_old:
@@ -1719,7 +1737,7 @@ class Test_recv_attr_dict(unittest.TestCase):
 
 
 class Test_send_attr_dict(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.send_attr_dict()
         with self.assertRaises(TypeError) as cm_old:
@@ -1730,7 +1748,7 @@ class Test_send_attr_dict(unittest.TestCase):
 
 
 class Test_recv_attr_dict_bdb(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.recv_attr_dict_bdb()
         with self.assertRaises(TypeError) as cm_old:
@@ -1742,7 +1760,7 @@ class Test_recv_attr_dict_bdb(unittest.TestCase):
 
 class Test_print_begin_msg(unittest.TestCase):
     """ see https://wrongsideofmemphis.com/2010/03/01/store-standard-output-on-a-variable-in-python/"""
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.print_begin_msg()
         with self.assertRaises(TypeError) as cm_old:
@@ -1781,7 +1799,7 @@ class Test_print_begin_msg(unittest.TestCase):
 
 class Test_print_end_msg(unittest.TestCase):
     """ see https://wrongsideofmemphis.com/2010/03/01/store-standard-output-on-a-variable-in-python/"""
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.print_end_msg()
         with self.assertRaises(TypeError) as cm_old:
@@ -1819,7 +1837,7 @@ class Test_print_end_msg(unittest.TestCase):
 
 class Test_print_msg(unittest.TestCase):
     """ see https://wrongsideofmemphis.com/2010/03/01/store-standard-output-on-a-variable-in-python/"""
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.print_msg()
         with self.assertRaises(TypeError) as cm_old:
@@ -1843,7 +1861,7 @@ class Test_print_msg(unittest.TestCase):
 
 
 class Test_read_fsc(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.read_fsc()
         with self.assertRaises(TypeError) as cm_old:
@@ -1864,7 +1882,7 @@ class Test_read_fsc(unittest.TestCase):
 
 
 class Test_circumference(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.circumference()
         with self.assertRaises(TypeError) as cm_old:
@@ -1903,7 +1921,7 @@ class Test_circumference(unittest.TestCase):
 
 
 class Test_write_headers(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.write_headers()
         with self.assertRaises(TypeError) as cm_old:
@@ -1967,7 +1985,7 @@ class Test_write_headers(unittest.TestCase):
 
 
 class Test_write_header(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.write_header()
         with self.assertRaises(TypeError) as cm_old:
@@ -2024,7 +2042,7 @@ class Test_write_header(unittest.TestCase):
 
 
 class Test_file_type(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.file_type()
         with self.assertRaises(TypeError) as cm_old:
@@ -2050,7 +2068,7 @@ class Test_file_type(unittest.TestCase):
 
 class Test_get_params2D(unittest.TestCase):
     argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_params2D"))
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.get_params2D()
         with self.assertRaises(TypeError) as cm_old:
@@ -2121,7 +2139,7 @@ class Test_get_params2D(unittest.TestCase):
 class Test_set_params2D(unittest.TestCase):
     argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_params2D"))
     params=[1,2,3,4,5]
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.set_params2D()
         with self.assertRaises(TypeError) as cm_old:
@@ -2134,18 +2152,18 @@ class Test_set_params2D(unittest.TestCase):
         fu_img = deepcopy(ima)
         fu2_img = deepcopy(ima)
         fu.set_params2D(fu_img, self.params, xform="xform.align2d")
-        fu.set_params2D(fu2_img, self.params, xform="xform.projection")     # is not setting the params
+        oldfu.set_params2D(fu2_img, self.params, xform="xform.projection")     # is not setting the params
         self.assertFalse(numpy.array_equal(fu.get_params2D(fu_img), oldfu.get_params2D(fu2_img)))
-        self.assertFalse(numpy.array_equal(fu.get_params2D(fu_img), fu.get_params2D(ima)))
+        self.assertFalse(numpy.array_equal(fu.get_params2D(fu_img), oldfu.get_params2D(ima)))
 
     def test_set_params2D_using_wrongxform2(self):
         (ima,) = self.argum[0]
         fu_img = deepcopy(ima)
         fu2_img = deepcopy(ima)
         fu.set_params2D(fu_img, self.params, xform="xform.projection")       # is not setting the params
-        fu.set_params2D(fu2_img, self.params, xform="xform.projection")      # is not setting the params
+        oldfu.set_params2D(fu2_img, self.params, xform="xform.projection")      # is not setting the params
         self.assertTrue(numpy.array_equal(fu.get_params2D(fu_img), oldfu.get_params2D(fu2_img)))
-        self.assertTrue(numpy.array_equal(fu.get_params2D(fu_img), fu.get_params2D(ima)))
+        self.assertTrue(numpy.array_equal(fu.get_params2D(fu_img), oldfu.get_params2D(ima)))
 
     def test_set_params2D(self):
         (ima,) = self.argum[0]
@@ -2154,7 +2172,7 @@ class Test_set_params2D(unittest.TestCase):
         fu.set_params2D(fu_img, self.params, xform="xform.align2d")
         oldfu.set_params2D(oldfu_img, self.params, xform="xform.align2d")
         self.assertTrue(numpy.array_equal(fu.get_params2D(fu_img), oldfu.get_params2D(oldfu_img)))
-        self.assertFalse(numpy.array_equal(fu.get_params2D(fu_img), fu.get_params2D(ima)))
+        self.assertFalse(numpy.array_equal(fu.get_params2D(fu_img), oldfu.get_params2D(ima)))
 
     def test_less_params(self):
         (ima,) = self.argum[0]
@@ -2175,7 +2193,7 @@ class Test_set_params2D(unittest.TestCase):
         fu.set_params2D(fu_img, self.params, xform="xform.align3d")          # is not setting the params
         oldfu.set_params2D(oldfu_img, self.params, xform="xform.align3d")    # is not setting the params
         self.assertTrue(numpy.array_equal(fu.get_params2D(fu_img), oldfu.get_params2D(oldfu_img)))
-        self.assertTrue(numpy.array_equal(fu.get_params2D(fu_img), fu.get_params2D(ima)))
+        self.assertTrue(numpy.array_equal(fu.get_params2D(fu_img), oldfu.get_params2D(ima)))
 
     def test_wrong_input_img(self):
         # I called it wrong image just because in the 'get_params2D' there was an error due to the missing xform key
@@ -2185,7 +2203,7 @@ class Test_set_params2D(unittest.TestCase):
         fu.set_params2D(fu_img, self.params, xform="xform.align2d")
         oldfu.set_params2D(oldfu_img, self.params, xform="xform.align2d")
         self.assertTrue(numpy.array_equal(fu.get_params2D(fu_img), oldfu.get_params2D(oldfu_img)))
-        self.assertFalse(numpy.array_equal(fu.get_params2D(fu_img), fu.get_params2D(ima)))
+        self.assertFalse(numpy.array_equal(fu.get_params2D(fu_img), oldfu.get_params2D(ima)))
 
     def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(self):
         with self.assertRaises(AttributeError) as cm_new:
@@ -2200,7 +2218,7 @@ class Test_set_params2D(unittest.TestCase):
 
 
 class Test_get_params3D(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.get_params3D()
         with self.assertRaises(TypeError) as cm_old:
@@ -2254,7 +2272,7 @@ class Test_get_params3D(unittest.TestCase):
 
 class Test_set_params3D(unittest.TestCase):
     params=[1,2,3,4,5,6,7,8]
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.set_params2D()
         with self.assertRaises(TypeError) as cm_old:
@@ -2268,7 +2286,7 @@ class Test_set_params3D(unittest.TestCase):
         fu.set_params3D(fu_img, self.params, xform="xform.align3d")
         oldfu.set_params3D(oldfu_img, self.params, xform="xform.align3d")
         self.assertTrue(numpy.array_equal(fu.get_params3D(fu_img), oldfu.get_params3D(oldfu_img)))
-        self.assertFalse(numpy.array_equal(fu.get_params3D(fu_img), fu.get_params3D(IMAGE_3D)))
+        self.assertFalse(numpy.array_equal(fu.get_params3D(fu_img), oldfu.get_params3D(IMAGE_3D)))
 
     def test_less_params(self):
         fu_img = deepcopy(IMAGE_3D)
@@ -2286,7 +2304,7 @@ class Test_set_params3D(unittest.TestCase):
         fu.set_params3D(fu_img, self.params, xform="xform.align2d")
         oldfu.set_params3D(oldfu_img, self.params, xform="xform.align2d")
         self.assertTrue(numpy.array_equal(fu.get_params3D(fu_img), oldfu.get_params3D(oldfu_img)))
-        #self.assertFalse(numpy.array_equal(fu.get_params3D(fu_img), fu.get_params3D(IMAGE_3D)))
+        #self.assertFalse(numpy.array_equal(fu.get_params3D(fu_img), oldfu.get_params3D(IMAGE_3D)))
 
     def test_wrong_input_img(self):
         # I called it wrong image just because in the 'get_params2D' there was an error due to the missing xform key
@@ -2295,7 +2313,7 @@ class Test_set_params3D(unittest.TestCase):
         fu.set_params3D(fu_img, self.params, xform="xform.align3d")
         oldfu.set_params3D(oldfu_img, self.params, xform="xform.align3d")
         self.assertTrue(numpy.array_equal(fu.get_params3D(fu_img), oldfu.get_params3D(oldfu_img)))
-        self.assertFalse(numpy.array_equal(fu.get_params3D(fu_img), fu.get_params3D(IMAGE_3D)))
+        self.assertFalse(numpy.array_equal(fu.get_params3D(fu_img), oldfu.get_params3D(IMAGE_3D)))
 
     def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(self):
         with self.assertRaises(AttributeError) as cm_new:
@@ -2307,14 +2325,9 @@ class Test_set_params3D(unittest.TestCase):
 
 
 
-
-
-
-
-
 class Test_get_params_proj(unittest.TestCase):
     argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_params_proj"))
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.get_params_proj()
         with self.assertRaises(TypeError) as cm_old:
@@ -2385,7 +2398,7 @@ class Test_get_params_proj(unittest.TestCase):
 class Test_set_params_proj(unittest.TestCase):
     params=[1,2,3,4,5]
 
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.set_params_proj()
         with self.assertRaises(TypeError) as cm_old:
@@ -2406,7 +2419,7 @@ class Test_set_params_proj(unittest.TestCase):
         fu_img = deepcopy(IMAGE_2D)
         fu2_img = deepcopy(IMAGE_2D)
         fu.set_params_proj(fu_img, self.params, xform="xform.align2d")       # is not setting the params
-        fu.set_params_proj(fu2_img, self.params, xform="xform.align2d")      # is not setting the params
+        oldfu.set_params_proj(fu2_img, self.params, xform="xform.align2d")      # is not setting the params
         with self.assertRaises(RuntimeError) as cm_new:
             fu.get_params_proj(fu_img, xform="xform.projection")
         with self.assertRaises(RuntimeError) as cm_old:
@@ -2449,7 +2462,7 @@ class Test_set_params_proj(unittest.TestCase):
 
 
 class Test_get_ctf(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.get_ctf()
         with self.assertRaises(TypeError) as cm_old:
@@ -2486,7 +2499,7 @@ class Test_get_ctf(unittest.TestCase):
 
 class Test_same_ctf(unittest.TestCase):
     params = [1,2,3,4,5,6]
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.same_ctf()
         with self.assertRaises(TypeError) as cm_old:
@@ -2495,16 +2508,16 @@ class Test_same_ctf(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_same_ctf(self):
-        self.assertTrue(fu.same_ctf(fu.generate_ctf(self.params),fu.generate_ctf(self.params)))
+        self.assertTrue(fu.same_ctf(fu.generate_ctf(self.params),oldfu.generate_ctf(self.params)))
 
     def test_not_same_ctf(self):
-        self.assertFalse(fu.same_ctf(fu.generate_ctf(self.params),fu.generate_ctf([0,1,2,3,4,5])))
+        self.assertFalse(fu.same_ctf(fu.generate_ctf(self.params),oldfu.generate_ctf([0,1,2,3,4,5])))
 
 
 
 class Test_generate_ctf(unittest.TestCase):
     """ params = [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle] """
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.generate_ctf()
         with self.assertRaises(TypeError) as cm_old:
@@ -2525,7 +2538,7 @@ class Test_generate_ctf(unittest.TestCase):
 
 
 class Test_delete_bdb(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.delete_bdb()
         with self.assertRaises(TypeError) as cm_old:
@@ -2536,7 +2549,7 @@ class Test_delete_bdb(unittest.TestCase):
 
 
 class Test_disable_bdb_cache(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.disable_bdb_cache(3)
         with self.assertRaises(TypeError) as cm_old:
@@ -2557,7 +2570,7 @@ class Test_disable_bdb_cache(unittest.TestCase):
 
 
 class Test_getvec(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.getvec()
         with self.assertRaises(TypeError) as cm_old:
@@ -2577,7 +2590,7 @@ class Test_getvec(unittest.TestCase):
 
 
 class Test_getfvec(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.getfvec()
         with self.assertRaises(TypeError) as cm_old:
@@ -2597,7 +2610,7 @@ class Test_getfvec(unittest.TestCase):
 
 
 class Test_nearest_fang(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.nearest_fang()
         with self.assertRaises(TypeError) as cm_old:
@@ -2625,7 +2638,7 @@ class Test_nearest_many_full_k_projangles(unittest.TestCase):
     angles = [[41.921590970437258, 91.23979851375101, 333.346436124961, -0.0, -0.0]]
     howmany = 47
     symclass = sparx_fundamentals.symclass("c1")
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.nearest_many_full_k_projangles()
         with self.assertRaises(TypeError) as cm_old:
@@ -2672,7 +2685,7 @@ class Test_assign_projdirs_f(unittest.TestCase):
     projdirs =  [[0.0, 0.0, 1.0], [0.6804220676422119, 0.6526213884353638, 0.3333333432674408], [-0.4104178845882416, 0.8487909436225891, 0.3333333432674408], [-0.9340742230415344, -0.12803982198238373, 0.3333333432674408], [-0.16687190532684326, -0.927923858165741, 0.3333333432674408], [0.8309417366981506, -0.4454488158226013, 0.3333333432674408], [8.742277657347586e-08, 7.64274186065882e-15, -1.0], [0.9340742230415344, 0.12803970277309418, -0.3333333134651184], [0.16687177121639252, 0.927923858165741, -0.3333333134651184], [-0.8309418559074402, 0.44544869661331177, -0.3333333134651184], [-0.6804221272468567, -0.652621328830719, -0.3333333134651184], [0.41041797399520874, -0.8487908840179443, -0.3333333134651184]]
     refdirs = [[0.0, 0.0, 0.66], [0.44907856464385987, 0.4307301163673401, 0.22000000655651095], [-0.27087580382823945, 0.5602020227909088, 0.22000000655651095], [-0.6164889872074127, -0.08450628250837326, 0.22000000655651095], [-0.11013545751571656, -0.6124297463893891, 0.22000000655651095], [0.5484215462207794, -0.2939962184429169, 0.22000000655651095], [5.7699032538494066e-08, 5.044209628034821e-15, -0.66], [0.6164889872074127, 0.08450620383024215, -0.21999998688697817], [0.11013536900281906, 0.6124297463893891, -0.21999998688697817], [-0.5484216248989106, 0.2939961397647858, -0.21999998688697817], [-0.44907860398292543, -0.43073007702827454, -0.21999998688697817], [0.2708758628368378, -0.5602019834518432, -0.21999998688697817]]
 
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.assign_projdirs_f()
         with self.assertRaises(TypeError) as cm_old:
@@ -2744,7 +2757,7 @@ class Test_assign_projdirs_f(unittest.TestCase):
 
 
 class Test_angles_to_normals(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.angles_to_normals()
         with self.assertRaises(TypeError) as cm_old:
@@ -2770,7 +2783,7 @@ class Test_angular_occupancy(unittest.TestCase):
     params = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.angular_occupancy"))[0][0]
     angstep = 15 # i change it becuase the lower value got from the pickle file leads each test to run for more than 10 sec, nov less than 1
 
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.angular_occupancy()
         with self.assertRaises(TypeError) as cm_old:
@@ -2852,7 +2865,7 @@ class Test_angular_histogram(unittest.TestCase):
     params = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.angular_occupancy"))[0][0]
     angstep = 15 # i change it becuase the lower value got from the pickle file leads each test to run for more than 10 sec, nov less than 1
 
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.angular_histogram()
         with self.assertRaises(TypeError) as cm_old:
@@ -2943,7 +2956,7 @@ class Test_balance_angular_distribution(unittest.TestCase):
     params = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.angular_occupancy"))[0][0]
     angstep = 15 # i change it becuase the lower value got from the pickle file leads each test to run for more than 10 sec, nov less than 1
 
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.balance_angular_distribution()
         with self.assertRaises(TypeError) as cm_old:
@@ -3005,7 +3018,7 @@ class Test_balance_angular_distribution(unittest.TestCase):
 
 class Test_symmetry_neighbors(unittest.TestCase):
     angles = [[0.0, 0.0, 1.0], [0.6804220676422119, 0.6526213884353638, 0.3333333432674408], [-0.4104178845882416, 0.8487909436225891, 0.3333333432674408], [-0.9340742230415344, -0.12803982198238373, 0.3333333432674408], [-0.16687190532684326, -0.927923858165741, 0.3333333432674408], [0.8309417366981506, -0.4454488158226013, 0.3333333432674408], [8.742277657347586e-08, 7.64274186065882e-15, -1.0], [0.9340742230415344, 0.12803970277309418, -0.3333333134651184], [0.16687177121639252, 0.927923858165741, -0.3333333134651184], [-0.8309418559074402, 0.44544869661331177, -0.3333333134651184], [-0.6804221272468567, -0.652621328830719, -0.3333333134651184], [0.41041797399520874, -0.8487908840179443, -0.3333333134651184]]
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.symmetry_neighbors()
         with self.assertRaises(TypeError) as cm_old:
@@ -3063,7 +3076,7 @@ class Test_rotation_between_anglesets(unittest.TestCase):
     agls1 =  [[0.0, 0.0, 1.0], [0.6804220676422119, 0.6526213884353638, 0.3333333432674408], [-0.4104178845882416, 0.8487909436225891, 0.3333333432674408], [-0.9340742230415344, -0.12803982198238373, 0.3333333432674408], [-0.16687190532684326, -0.927923858165741, 0.3333333432674408], [0.8309417366981506, -0.4454488158226013, 0.3333333432674408], [8.742277657347586e-08, 7.64274186065882e-15, -1.0], [0.9340742230415344, 0.12803970277309418, -0.3333333134651184], [0.16687177121639252, 0.927923858165741, -0.3333333134651184], [-0.8309418559074402, 0.44544869661331177, -0.3333333134651184], [-0.6804221272468567, -0.652621328830719, -0.3333333134651184], [0.41041797399520874, -0.8487908840179443, -0.3333333134651184]]
     agls2 = [[0.0, 0.0, 0.66], [0.44907856464385987, 0.4307301163673401, 0.22000000655651095], [-0.27087580382823945, 0.5602020227909088, 0.22000000655651095], [-0.6164889872074127, -0.08450628250837326, 0.22000000655651095], [-0.11013545751571656, -0.6124297463893891, 0.22000000655651095], [0.5484215462207794, -0.2939962184429169, 0.22000000655651095], [5.7699032538494066e-08, 5.044209628034821e-15, -0.66], [0.6164889872074127, 0.08450620383024215, -0.21999998688697817], [0.11013536900281906, 0.6124297463893891, -0.21999998688697817], [-0.5484216248989106, 0.2939961397647858, -0.21999998688697817], [-0.44907860398292543, -0.43073007702827454, -0.21999998688697817], [0.2708758628368378, -0.5602019834518432, -0.21999998688697817]]
 
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.rotation_between_anglesets()
         with self.assertRaises(TypeError) as cm_old:
@@ -3095,7 +3108,7 @@ class Test_rotation_between_anglesets(unittest.TestCase):
 
 
 class Test_angle_between_projections_directions(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.angle_between_projections_directions()
         with self.assertRaises(TypeError) as cm_old:
@@ -3138,7 +3151,7 @@ class Test_angle_between_projections_directions(unittest.TestCase):
 
 
 class Test_get_pixel_size(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.get_pixel_size()
         with self.assertRaises(TypeError) as cm_old:
@@ -3172,7 +3185,7 @@ class Test_get_pixel_size(unittest.TestCase):
 
 
 class Test_set_pixel_size(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.set_pixel_size()
         with self.assertRaises(TypeError) as cm_old:
@@ -3215,7 +3228,7 @@ class Test_set_pixel_size(unittest.TestCase):
 
 
 class Test_lacos(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.lacos()
         with self.assertRaises(TypeError) as cm_old:
@@ -3240,7 +3253,7 @@ class Test_lacos(unittest.TestCase):
 class Test_findall(unittest.TestCase):
     l = [1,2,3,4,5,5,5,4,3,2,1]
 
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.findall()
         with self.assertRaises(TypeError) as cm_old:
@@ -3374,7 +3387,7 @@ class Test_class_iterImagesList(unittest.TestCase):
 
 
 class Test_pack_message(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.pack_message()
         with self.assertRaises(TypeError) as cm_old:
@@ -3412,7 +3425,7 @@ class Test_pack_message(unittest.TestCase):
 
 
 class Test_unpack_message(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.unpack_message()
         with self.assertRaises(TypeError) as cm_old:
@@ -3465,7 +3478,7 @@ class Test_unpack_message(unittest.TestCase):
 
 
 class Test_wrap_mpi_send(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.wrap_mpi_send()
         with self.assertRaises(TypeError) as cm_old:
@@ -3495,7 +3508,7 @@ class Test_wrap_mpi_send(unittest.TestCase):
 
 
 class Test_wrap_mpi_recv(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.wrap_mpi_recv()
         with self.assertRaises(TypeError) as cm_old:
@@ -3523,8 +3536,8 @@ class Test_wrap_mpi_recv(unittest.TestCase):
 
 
 class Test_wrap_mpi_bcast(unittest.TestCase):
-    """ Since i cannot create value using 'pack_message' without getting an error from 'unpack_message' I cannot test it deeply"""
-    def test_wrong_number_params_too_few_parameters(self):
+    """ Values got running Test_get_sorting_params_refine.test_default_case"""
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.wrap_mpi_bcast()
         with self.assertRaises(TypeError) as cm_old:
@@ -3539,10 +3552,11 @@ class Test_wrap_mpi_bcast(unittest.TestCase):
         self.assertEqual(return_new, return_old)
         self.assertTrue(return_new is None)
 
-    def test_with_MPI_COMM_WORLD(self):
-        return_new = fu.wrap_mpi_bcast(data = [9], root = 0, communicator = MPI_COMM_WORLD)
-        return_old = oldfu.wrap_mpi_bcast(data =[9], root= 0, communicator = MPI_COMM_WORLD)
-        self.assertEqual(return_new, return_old)
+    def test_default_case(self):
+        attr_value_list = [[0, 27.84771510918482, 49.09925034711038, 236.702241194244, 0.0, 0.0], [1, 54.496982231553545, 150.6989385443887, 95.77312314162165, 0.0, 0.0],[2, 67.0993779295224, 52.098986136572584, 248.45843717750148, 0.0, 0.0]]
+        return_new = fu.wrap_mpi_bcast(data = attr_value_list, root = 0, communicator = MPI_COMM_WORLD)
+        return_old = oldfu.wrap_mpi_bcast(data =attr_value_list, root= 0, communicator = MPI_COMM_WORLD)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
 
     def test_invalid_communicator_crashes_because_signal11SIGSEV(self):
         self.assertTrue(True)
@@ -3555,7 +3569,7 @@ class Test_wrap_mpi_bcast(unittest.TestCase):
 
 
 class Test_wrap_mpi_gatherv(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.wrap_mpi_gatherv()
         with self.assertRaises(TypeError) as cm_old:
@@ -3586,7 +3600,7 @@ class Test_wrap_mpi_gatherv(unittest.TestCase):
 
 
 class Test_get_colors_and_subsets(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.get_colors_and_subsets()
         with self.assertRaises(TypeError) as cm_old:
@@ -3621,7 +3635,7 @@ class Test_get_colors_and_subsets(unittest.TestCase):
 
 
 class Test_wrap_mpi_split(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.wrap_mpi_split()
         with self.assertRaises(TypeError) as cm_old:
@@ -3648,7 +3662,7 @@ class Test_wrap_mpi_split(unittest.TestCase):
 
 
 class Test_get_dist(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.get_dist()
         with self.assertRaises(TypeError) as cm_old:
@@ -3672,7 +3686,7 @@ class Test_get_dist(unittest.TestCase):
 
 
 class Test_eliminate_moons(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.eliminate_moons()
         with self.assertRaises(TypeError) as cm_old:
@@ -3699,7 +3713,7 @@ class Test_eliminate_moons(unittest.TestCase):
         with self.assertRaises(IndexError) as cm_new:
             fu.eliminate_moons(deepcopy(IMAGE_3D), moon_params)
         with self.assertRaises(IndexError) as cm_old:
-            fu.eliminate_moons(deepcopy(IMAGE_3D), moon_params)
+            oldfu.eliminate_moons(deepcopy(IMAGE_3D), moon_params)
         self.assertEqual(cm_new.exception.message, "list index out of range")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
@@ -3744,7 +3758,7 @@ class Test_eliminate_moons(unittest.TestCase):
 
 
 class Test_combinations_of_n_taken_by_k(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.combinations_of_n_taken_by_k()
         with self.assertRaises(TypeError) as cm_old:
@@ -3761,7 +3775,7 @@ class Test_combinations_of_n_taken_by_k(unittest.TestCase):
 
 
 class Test_cmdexecute(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.cmdexecute()
         with self.assertRaises(TypeError) as cm_old:
@@ -3789,9 +3803,8 @@ class Test_cmdexecute(unittest.TestCase):
 
 
 
-
 class Test_string_found_in_file(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters(self):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.string_found_in_file()
         with self.assertRaises(TypeError) as cm_old:
@@ -3831,46 +3844,66 @@ class Test_string_found_in_file(unittest.TestCase):
 
 
 
+class Test_get_latest_directory_increment_value(unittest.TestCase):
+    start_value = 1
+    folder_name = 'd'
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.get_latest_directory_increment_value()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.get_latest_directory_increment_value()
+        self.assertEqual(cm_new.exception.message, "get_latest_directory_increment_value() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-
-
-
-
-
-
-
-
-
-@unittest.skip("sasa")
-class Test_lib_utilities_compare(unittest.TestCase):
-    def test_if_error_then_all_processes_exit_program_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.if_error_then_all_processes_exit_program")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        print(argum[0])
-
-        (error_status,) = argum[0]
-
-        return_new = fu.if_error_then_all_processes_exit_program(error_status)
-
-        return_old = oldfu.if_error_then_all_processes_exit_program(error_status)
-
+    def test_nothing_to_count(self):
+        return_new = fu.get_latest_directory_increment_value(ABSOLUTE_PATH, self.folder_name, start_value = self.start_value, myformat = "%03d")
+        return_old = oldfu.get_latest_directory_increment_value(ABSOLUTE_PATH, self.folder_name, start_value = self.start_value, myformat = "%03d")
         self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new,self.start_value)
+
+    def test_count_something(self):
+        os.mkdir(path.join(ABSOLUTE_PATH, self.folder_name+"001"))
+        os.mkdir(path.join(ABSOLUTE_PATH, self.folder_name + "002"))
+        return_new = fu.get_latest_directory_increment_value(ABSOLUTE_PATH, "/"+self.folder_name,start_value=self.start_value, myformat="%03d")
+        return_old = oldfu.get_latest_directory_increment_value(ABSOLUTE_PATH, "/" + self.folder_name,start_value=self.start_value, myformat="%03d")
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new,2)
+        remove_dir(path.join(ABSOLUTE_PATH, self.folder_name+"001"))
+        remove_dir(path.join(ABSOLUTE_PATH, self.folder_name + "002"))
 
 
 
+class Test_if_error_then_all_processes_exit_program(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.if_error_then_all_processes_exit_program()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.if_error_then_all_processes_exit_program()
+        self.assertEqual(cm_new.exception.message, "if_error_then_all_processes_exit_program() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+
+
+class Test_get_shrink_data_huang(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.get_shrink_data_huang()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.get_shrink_data_huang()
+        self.assertEqual(cm_new.exception.message, "get_shrink_data_huang() takes at least 7 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    @unittest.skip("it cannot find something in the ADNAN file")
     def test_get_shrink_data_huang_true_should_return_equal_objects(self):
-
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        Tracker = argum[0][0][1]
+        """
+        I got
+        RuntimeError: FileAccessException at /home/lusnig/EMAN2/eman2/libEM/emdata_metadata.cpp:240: error with '/home/lusnig/Downloads/adnan4testing/Substack/EMAN2DB/../../Particles/mpi_proc_000/EMAN2DB/TcdA1-0011_frames_sum_ptcls_352x352x1': 'cannot access file '/home/lusnig/Downloads/adnan4testing/Substack/EMAN2DB/../../Particles/mpi_proc_000/EMAN2DB/TcdA1-0011_frames_sum_ptcls_352x352x1'' caught
+        """
+        Tracker = deepcopy(TRACKER)
         Tracker["constants"]["log_main"] = "logging"
         Tracker["constants"]["myid"] = 0
         Tracker["constants"]["main_node"] = 0
-        Tracker["constants"]["stack"] = "bdb:sphire/tests/Substack/sort3d_substack_002"
+        Tracker["constants"]["stack"] = 'bdb:' + path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES, 'Substack/sort3d_substack_002')
         Tracker["applyctf"] = True
         ids = []
         for i in range(1227):
@@ -3879,8 +3912,8 @@ class Test_lib_utilities_compare(unittest.TestCase):
         myid = 0
         m_node = 0
         nproc = 1
-        partids = "sphire/tests/Sort3D/indexes_010.txt"
-        partstack = "sphire/tests/Sort3D/params_010.txt"
+        partids = path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES, "Sort3D/indexes_010.txt")
+        partstack =  path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES, "Sort3D/params_010.txt")
         nxinit = 2
 
         return_new = fu.get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, m_node, nproc)
@@ -3890,322 +3923,909 @@ class Test_lib_utilities_compare(unittest.TestCase):
         self.assertTrue(numpy.allclose(return_new[0][0].get_3dview(), return_old[0][0].get_3dview(), 0.5))
 
 
-    def test_getindexdata_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.getindexdata")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
+class Test_getindexdata(unittest.TestCase):
+    """ nproc and myid valeus got from "pickle files/utilities/utilities.getindexdata"""
+    nproc = 95
+    myid = 22
+    stack = 'bdb:' + path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES, 'VIPER/best_000')
+    partids = path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES, 'VIPER/main001/this_iteration_index_keep_images.txt')
+    partstack = path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES, 'VIPER//main001/run000/rotated_reduced_params.txt')
 
-        print(argum[0])
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.getindexdata()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.getindexdata()
+        self.assertEqual(cm_new.exception.message, "getindexdata() takes exactly 5 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-        (stack, partids, partstack, myid, nproc) = argum[0]
-
-        stack = 'bdb:sphire/tests/VIPER/best_000'
-        partids = 'sphire/tests/VIPER/main001/this_iteration_index_keep_images.txt'
-        partstack = 'sphire/tests/VIPER//main001/run000/rotated_reduced_params.txt'
-
-        return_new = fu.getindexdata(stack, partids, partstack, myid, nproc)
-
-        return_old = oldfu.getindexdata(stack, partids, partstack, myid, nproc)
-
+    def test_nproc_greater_than_ndata(self):
+        return_new = fu.getindexdata(self.stack, self.partids, self.partstack, self.myid, self.nproc)
+        return_old = oldfu.getindexdata(self.stack, self.partids, self.partstack, self.myid, self.nproc)
         self.assertTrue(numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
 
-    def test_convert_json_fromunicode_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.convert_json_fromunicode")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
+    def test_nproc_and_myid_greater_than_ndata_(self):
+        return_new = fu.getindexdata(self.stack, self.partids, self.partstack, 100, self.nproc)
+        return_old = oldfu.getindexdata(self.stack, self.partids, self.partstack, 100, self.nproc)
+        self.assertTrue(numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
 
-        print(argum[0])
+    def test_nproc_lower_than_ndata(self):
+        return_new = fu.getindexdata(self.stack, self.partids, self.partstack, self.myid, nproc= 10)
+        return_old = oldfu.getindexdata(self.stack, self.partids, self.partstack, self.myid, nproc= 10)
+        self.assertTrue(numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
 
-        (data,) = argum[0]
 
+
+class Test_store_value_of_simple_vars_in_json_file(unittest.TestCase):
+    f= path.join(ABSOLUTE_PATH, "fu.json")
+    f_old = path.join(ABSOLUTE_PATH, "oldfu.json")
+    var_to_save= {'string_var': 'var1', 'integer_var': 7, 'bool_var': False, 'list_var': [2,3,4]}
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.store_value_of_simple_vars_in_json_file()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.store_value_of_simple_vars_in_json_file()
+        self.assertEqual(cm_new.exception.message, "store_value_of_simple_vars_in_json_file() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_default_value(self):
+        fu.store_value_of_simple_vars_in_json_file(filename =  self.f, local_vars = self.var_to_save, exclude_list_of_vars = [], write_or_append = "w",	vars_that_will_show_only_size = [])
+        oldfu.store_value_of_simple_vars_in_json_file(filename =  self.f_old, local_vars = self.var_to_save, exclude_list_of_vars = [], write_or_append = "w",	vars_that_will_show_only_size = [])
+        self.assertEqual(returns_values_in_file(self.f), returns_values_in_file(self.f_old))
+        self.assertTrue(fu.string_found_in_file(self.var_to_save.keys()[0], self.f))
+        self.assertTrue(oldfu.string_found_in_file(self.var_to_save.keys()[0], self.f_old))
+        remove_list_of_file([self.f,self.f_old])
+
+    def test_exclude_a_variable(self):
+        var=self.var_to_save.keys()[0]
+        fu.store_value_of_simple_vars_in_json_file(filename =  self.f, local_vars = self.var_to_save, exclude_list_of_vars = [var], write_or_append = "w",	vars_that_will_show_only_size = [])
+        oldfu.store_value_of_simple_vars_in_json_file(filename =  self.f_old, local_vars = self.var_to_save, exclude_list_of_vars = [var], write_or_append = "w",	vars_that_will_show_only_size = [])
+        self.assertEqual(returns_values_in_file(self.f), returns_values_in_file(self.f_old))
+        self.assertFalse(fu.string_found_in_file(var, self.f))
+        self.assertFalse(oldfu.string_found_in_file(var, self.f_old))
+        remove_list_of_file([self.f,self.f_old])
+
+    def test_onlySize_a_variable(self):
+        var= 'list_var'
+        fu.store_value_of_simple_vars_in_json_file(filename =  self.f, local_vars = self.var_to_save, exclude_list_of_vars = [], write_or_append = "w",	vars_that_will_show_only_size = [var])
+        oldfu.store_value_of_simple_vars_in_json_file(filename =  self.f_old, local_vars = self.var_to_save, exclude_list_of_vars = [], write_or_append = "w",	vars_that_will_show_only_size = [var])
+        self.assertEqual(returns_values_in_file(self.f), returns_values_in_file(self.f_old))
+        self.assertTrue(fu.string_found_in_file("<type 'list'> with length: 3", self.f))
+        self.assertTrue(oldfu.string_found_in_file("<type 'list'> with length: 3", self.f_old))
+        remove_list_of_file([self.f, self.f_old])
+
+
+
+class Test_convert_json_fromunicode(unittest.TestCase):
+    f= path.join(ABSOLUTE_PATH, "f.json")
+    var_to_save= {'string_var': 'var1', 'integer_var': 7, 'bool_var': False, 'list_var': [2,3,4]}
+
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.convert_json_fromunicode()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.convert_json_fromunicode()
+        self.assertEqual(cm_new.exception.message, "convert_json_fromunicode() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_with_loaded_jsonFile(self):
+        fu.store_value_of_simple_vars_in_json_file(filename=self.f, local_vars=self.var_to_save,exclude_list_of_vars=[], write_or_append="w",vars_that_will_show_only_size=[])
+        with open(self.f, 'r') as f1:
+            values=json.load( f1)
+
+        return_new = fu.convert_json_fromunicode(values)
+        return_old = oldfu.convert_json_fromunicode(values)
+        self.assertDictEqual(return_new,return_old)
+        remove_list_of_file([self.f])
+
+    def test_with_string(self):
+        data = "ciaone"
         return_new = fu.convert_json_fromunicode(data)
-
         return_old = oldfu.convert_json_fromunicode(data)
-
         self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, data)
 
 
-    def test_get_sorting_attr_stack_should_return_equal_object(self):
 
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/multi_shc/multi_shc.ali3d_multishc")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
+class Test_get_sorting_attr_stack(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.get_sorting_attr_stack()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.get_sorting_attr_stack()
+        self.assertEqual(cm_new.exception.message, "get_sorting_attr_stack() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-        (stack, ref_vol, ali3d_options, symmetry_class) = argum[0]
+    def test_default_case(self):
+        stack = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/multi_shc/multi_shc.ali3d_multishc"))[0][0]
         for i in range(len(stack)):
             stack[i].set_attr("group",i)
+        self.assertTrue(numpy.array_equal(fu.get_sorting_attr_stack(stack), oldfu.get_sorting_attr_stack(stack)))
 
-        return_new = fu.get_sorting_attr_stack(stack)
-        return_old = oldfu.get_sorting_attr_stack(stack)
+    def test_empty_stack(self):
+        return_new=fu.get_sorting_attr_stack([])
+        self.assertTrue(numpy.array_equal(return_new, oldfu.get_sorting_attr_stack([])))
+        self.assertTrue(numpy.array_equal(return_new, []))
 
-        self.assertEqual(return_new, return_old)
-
-
-    def test_get_sorting_params_refine_should_return_equal_object(self):
-
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/multi_shc/multi_shc.ali3d_multishc")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        (stack, ref_vol, ali3d_options, symmetry_class) = argum[0]
+    def test_wrong_images_in_the_stack_RunTimeError(self):
+        stack=[IMAGE_2D,IMAGE_2D]
         for i in range(len(stack)):
             stack[i].set_attr("group",i)
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.get_sorting_attr_stack(stack)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.get_sorting_attr_stack(stack)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
+        self.assertEqual(msg[3], "The requested key does not exist")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
 
-        Tracker = argum[0][0][1]
-        Tracker["constants"]["log_main"] = "logging"
+class Test_get_sorting_params_refine(unittest.TestCase):
+    stack = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/multi_shc/multi_shc.ali3d_multishc"))[0][0]
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.get_sorting_params_refine()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.get_sorting_params_refine()
+        self.assertEqual(cm_new.exception.message, "get_sorting_params_refine() takes exactly 3 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_default_case(self):
+        for i in range(len(self.stack)):
+            self.stack[i].set_attr("group",i)
+        Tracker = deepcopy(TRACKER)
         Tracker["constants"]["myid"] = 0
         Tracker["constants"]["main_node"] = 0
-        Tracker["constants"]["stack"] = "bdb:sphire/tests/Substack/sort3d_substack_002"
-        Tracker["applyctf"] = True
         Tracker["constants"]["nproc"] = 1
+        return_new = fu.get_sorting_params_refine(Tracker, self.stack, len(self.stack))
+        return_old = oldfu.get_sorting_params_refine(Tracker, self.stack, len(self.stack))
+        self.assertTrue(numpy.array_equal(return_new, return_old))
 
-        return_new = fu.get_sorting_params_refine(Tracker, stack, 95)
-        return_old = oldfu.get_sorting_params_refine(Tracker, stack, 95)
+    def returns_too_ndata_vlaue_respect_the_number_of_data_IndexError_list_index_out_of_range(self):
+        for i in range(len(self.stack)):
+            self.stack[i].set_attr("group",i)
+        Tracker = deepcopy(TRACKER)
+        Tracker["constants"]["myid"] = 0
+        Tracker["constants"]["main_node"] = 0
+        Tracker["constants"]["nproc"] = 1
+        with self.assertRaises(IndexError) as cm_new:
+            fu.get_sorting_params_refine(Tracker, self.stack, len(self.stack)+11)
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.get_sorting_params_refine(Tracker, self.stack, len(self.stack)+11)
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-        self.assertEqual(return_new, return_old)
+    def test_empty_stack(self):
+        stack=[]
+        Tracker = deepcopy(TRACKER)
+        Tracker["constants"]["myid"] = 0
+        Tracker["constants"]["main_node"] = 0
+        Tracker["constants"]["nproc"] = 1
+        return_new = fu.get_sorting_params_refine(Tracker, stack, len(stack))
+        return_old = oldfu.get_sorting_params_refine(Tracker, stack, len(stack))
+        self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_parsing_sorting_params_should_return_equal_object(self):
+    def test_wrong_images_in_the_stack_RunTimeError(self):
+        stack=[IMAGE_2D,IMAGE_2D]
+        for i in range(len(stack)):
+            stack[i].set_attr("group",i)
+        Tracker = deepcopy(TRACKER)
+        Tracker["constants"]["myid"] = 0
+        Tracker["constants"]["main_node"] = 0
+        Tracker["constants"]["nproc"] = 1
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.get_sorting_params_refine(Tracker, stack, len(stack))
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.get_sorting_params_refine(Tracker, stack, len(stack))
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
+        self.assertEqual(msg[3], "The requested key does not exist")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-        sorting_list = []
 
-        sorting_list.append(numpy.arange(10))
-        sorting_list.append(numpy.arange(10))
 
-        return_new = fu.parsing_sorting_params(sorting_list)
-        return_old = oldfu.parsing_sorting_params(sorting_list)
+class Test_parsing_sorting_params(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.parsing_sorting_params()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.parsing_sorting_params()
+        self.assertEqual(cm_new.exception.message, "parsing_sorting_params() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-        self.assertEqual(return_new[0], return_old[0])
+    def test_empty_list(self):
+        return_new = fu.parsing_sorting_params([])
+        return_old = oldfu.parsing_sorting_params([])
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_typeerror_int_hasnot_attribute__get_item__(self):
+        l=[1,2,3,4,5]
+        with self.assertRaises(TypeError) as cm_new:
+            fu.parsing_sorting_params(l)
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.parsing_sorting_params(l)
+        self.assertEqual(cm_new.exception.message, "'int' object has no attribute '__getitem__'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_default_values(self):
+        l=[[1,2,3,4,5],[1,21,31,41,51]]
+        return_new = fu.parsing_sorting_params(l)
+        return_old = oldfu.parsing_sorting_params(l)
+        self.assertTrue(numpy.array_equal(return_new[0], return_old[0]))
         self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
 
-    # def test_get_initial_ID_should_return_equal_object(self):
-    #
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask")
-    #     with open(filepath, 'rb') as rb:
-    #         argum = pickle.load(rb)
-    #
-    #     Tracker = argum[0][0][1]
-    #
-    #     return_new = fu.get_initial_ID(Tracker["two_way_stable_member"][istable], Tracker["full_ID_dict"])
-    #     return_old = oldfu.get_initial_ID(Tracker["two_way_stable_member"][istable], Tracker["full_ID_dict"])
-    #
-    #     self.assertEqual(return_new, return_old)
 
 
-    def test_convertasi_true_should_return_equal_objects(self):
+class Test_fill_in_mpi_list(unittest.TestCase):
+    """ Values got running Test_get_sorting_params_refine.test_default_case"""
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.fill_in_mpi_list()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.fill_in_mpi_list()
+        self.assertEqual(cm_new.exception.message, "fill_in_mpi_list() takes exactly 4 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-        K = 7
+    def test_default_case(self):
+        total_attr_value_list=[[],[],[]]
+        attr_value_list = [[0, 27.84771510918482, 49.09925034711038, 236.702241194244, 0.0, 0.0], [1, 54.496982231553545, 150.6989385443887, 95.77312314162165, 0.0, 0.0], [2, 67.0993779295224, 52.098986136572584, 248.45843717750148, 0.0, 0.0]]
+        return_new = fu.fill_in_mpi_list(mpi_list = deepcopy(total_attr_value_list), data_list = attr_value_list, index_start = 0 ,index_end = len(total_attr_value_list))
+        return_old = oldfu.fill_in_mpi_list(mpi_list = deepcopy(total_attr_value_list), data_list = attr_value_list, index_start = 0 ,index_end = len(total_attr_value_list))
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_index_start_negative_returns_IndexError_list_index_out_of_range(self):
+        total_attr_value_list=[[],[],[]]
+        attr_value_list = [[0, 27.84771510918482, 49.09925034711038, 236.702241194244, 0.0, 0.0], [1, 54.496982231553545, 150.6989385443887, 95.77312314162165, 0.0, 0.0], [2, 67.0993779295224, 52.098986136572584, 248.45843717750148, 0.0, 0.0]]
+        with self.assertRaises(IndexError) as cm_new:
+            fu.fill_in_mpi_list(mpi_list=deepcopy(total_attr_value_list), data_list=attr_value_list, index_start=0-1,index_end=len(total_attr_value_list))
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.fill_in_mpi_list(mpi_list=deepcopy(total_attr_value_list), data_list=attr_value_list, index_start=-1,index_end=len(total_attr_value_list))
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+    def test_index_end_too_high_returns_IndexError_list_index_out_of_range(self):
+        total_attr_value_list=[[],[],[]]
+        attr_value_list = [[0, 27.84771510918482, 49.09925034711038, 236.702241194244, 0.0, 0.0], [1, 54.496982231553545, 150.6989385443887, 95.77312314162165, 0.0, 0.0], [2, 67.0993779295224, 52.098986136572584, 248.45843717750148, 0.0, 0.0]]
+        with self.assertRaises(IndexError) as cm_new:
+            fu.fill_in_mpi_list(mpi_list=deepcopy(total_attr_value_list), data_list=attr_value_list, index_start=0,index_end=len(total_attr_value_list)+2)
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.fill_in_mpi_list(mpi_list=deepcopy(total_attr_value_list), data_list=attr_value_list, index_start=0,index_end=len(total_attr_value_list)+2)
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_less_values_in_attr_value_list_returns_IndexError_list_index_out_of_range(self):
+        total_attr_value_list=[[],[],[]]
+        attr_value_list = [ [1, 54.496982231553545, 150.6989385443887, 95.77312314162165, 0.0, 0.0], [2, 67.0993779295224, 52.098986136572584, 248.45843717750148, 0.0, 0.0]]
+        with self.assertRaises(IndexError) as cm_new:
+            fu.fill_in_mpi_list(mpi_list=deepcopy(total_attr_value_list), data_list=attr_value_list, index_start=0, index_end=len(total_attr_value_list))
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.fill_in_mpi_list(mpi_list=deepcopy(total_attr_value_list), data_list=attr_value_list, index_start=0, index_end=len(total_attr_value_list))
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_too_values_in_attr_value_list(self):
+        total_attr_value_list=[[],[],[]]
+        attr_value_list = [[0, 27.84771510918482, 49.09925034711038, 236.702241194244, 0.0, 0.0], [1, 54.496982231553545, 150.6989385443887, 95.77312314162165, 0.0, 0.0], [2, 67.0993779295224, 52.098986136572584, 248.45843717750148, 0.0, 0.0]]
+        return_new = fu.fill_in_mpi_list(mpi_list = deepcopy(total_attr_value_list), data_list = attr_value_list, index_start = 0 ,index_end = len(total_attr_value_list))
+        return_old = oldfu.fill_in_mpi_list(mpi_list = deepcopy(total_attr_value_list), data_list = attr_value_list, index_start = 0 ,index_end = len(total_attr_value_list))
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+
+
+class Test_sample_down_1D_curve(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.sample_down_1D_curve()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.sample_down_1D_curve()
+        self.assertEqual(cm_new.exception.message, "sample_down_1D_curve() takes exactly 3 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_default_case(self):
+        return_new = fu.sample_down_1D_curve(nxinit=100, nnxo=180, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES,"Sort3D/fsc_halves.txt"))
+        return_old = oldfu.sample_down_1D_curve(nxinit=100, nnxo=180, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES,"Sort3D/fsc_halves.txt"))
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_null_nxinit_returns_ZeroDivisionError(self):
+        with self.assertRaises(ZeroDivisionError) as cm_new:
+            fu.sample_down_1D_curve(nxinit=0, nnxo=180, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES,"Sort3D/fsc_halves.txt"))
+        with self.assertRaises(ZeroDivisionError) as cm_old:
+            oldfu.sample_down_1D_curve(nxinit=0, nnxo=180, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES,"Sort3D/fsc_halves.txt"))
+        self.assertEqual(cm_new.exception.message, "float division by zero")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_null_nnxo_returns_ZeroDivisionError(self):
+        with self.assertRaises(ZeroDivisionError) as cm_new:
+            fu.sample_down_1D_curve(nxinit=100, nnxo=0, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES,"Sort3D/fsc_halves.txt"))
+        with self.assertRaises(ZeroDivisionError) as cm_old:
+            oldfu.sample_down_1D_curve(nxinit=100, nnxo=0, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES,"Sort3D/fsc_halves.txt"))
+        self.assertEqual(cm_new.exception.message, "float division by zero")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_file_not_found(self):
+        with self.assertRaises(IOError) as cm_new:
+            fu.sample_down_1D_curve(nxinit=100, nnxo=180, pspcurv_nnxo_file="filenotfound.txt")
+        with self.assertRaises(IOError) as cm_old:
+            oldfu.sample_down_1D_curve(nxinit=100, nnxo=180, pspcurv_nnxo_file="filenotfound.txt")
+        self.assertEqual(cm_new.exception.strerror, "No such file or directory")
+        self.assertEqual(cm_new.exception.strerror, cm_old.exception.strerror)
+
+
+
+class Test_get_initial_ID(unittest.TestCase):
+    full_ID_dict = {0: 'ciao_0', 1: 'ciao_1', 2: 'ciao_2', 3: 'ciao_3'}
+
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.get_initial_ID()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.get_initial_ID()
+        self.assertEqual(cm_new.exception.message, "get_initial_ID() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_valid_list_dict(self):
+        part_list = [0,1,2]
+        return_new  = fu.get_initial_ID(part_list, self.full_ID_dict)
+        return_old = oldfu.get_initial_ID(part_list, self.full_ID_dict)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_empty_list(self):
+        return_new  = fu.get_initial_ID([], self.full_ID_dict)
+        return_old = oldfu.get_initial_ID([], self.full_ID_dict)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, []))
+
+    def test_invalid_value_in_list_KeyError(self):
+        part_list = [0, 1, 20]
+        with self.assertRaises(KeyError) as cm_new:
+            fu.get_initial_ID(part_list, self.full_ID_dict)
+        with self.assertRaises(KeyError) as cm_old:
+            oldfu.get_initial_ID(part_list, self.full_ID_dict)
+        self.assertEqual(cm_new.exception.message, 20)
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_dict_KeyError(self):
+        part_list = [0, 1, 20]
+        with self.assertRaises(KeyError) as cm_new:
+            fu.get_initial_ID(part_list, {})
+        with self.assertRaises(KeyError) as cm_old:
+            oldfu.get_initial_ID(part_list, {})
+        self.assertEqual(cm_new.exception.message, 0)
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+
+
+class Test_print_upper_triangular_matrix(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.print_upper_triangular_matrix()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.print_upper_triangular_matrix()
+        self.assertEqual(cm_new.exception.message, "print_upper_triangular_matrix() takes exactly 3 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    @unittest.skip("which variable is the third parameter??")
+    def test_print_upper_triangular_matrix(self):
+        log_new =[]
+        log_old = []
+        size =4
+        data=[]
+        for i in range(size):
+            for j in range(size):
+                data.append((i,j*j))
+        fu.print_upper_triangular_matrix(data,size,log_new)
+        oldfu.print_upper_triangular_matrix(data, size, log_old)
+
+
+
+class Test_convertasi(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.convertasi()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.convertasi()
+        self.assertEqual(cm_new.exception.message, "convertasi() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_list(self):
+        return_new = fu.convertasi([],3)
+        return_old = oldfu.convertasi([],3)
+        self.assertTrue(numpy.allclose(return_new, return_old))
+
+    def test_default_case(self):
         asig = [0,1,2,3,4,5,6]
-
-        return_new = fu.convertasi(asig,K)
-        return_old = oldfu.convertasi(asig,K)
-
+        return_new = fu.convertasi(asig,7)
+        return_old = oldfu.convertasi(asig,7)
         self.assertEqual(return_new, return_old)
 
 
-    def test_prepare_ptp_true_should_return_equal_objects(self):
 
+class Test_prepare_ptp(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.prepare_ptp()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.prepare_ptp()
+        self.assertEqual(cm_new.exception.message, "prepare_ptp() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_list(self):
+        return_new = fu.prepare_ptp([],3)
+        return_old = oldfu.prepare_ptp([],3)
+        self.assertTrue(numpy.allclose(return_new, return_old))
+
+    def test_default_case(self):
         K = 7
         data_list = [[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6]]
-
         return_new = fu.prepare_ptp(data_list, K)
         return_old = oldfu.prepare_ptp(data_list, K)
-
         self.assertEqual(return_new, return_old)
 
 
-    def test_get_resolution_mrk01_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/statistics/statistics.fsc")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
 
-        (img1, img2) = argum[0]
-        volume = []
-        volume.append(img1)
-        volume.append(img2)
+class Test_print_dict(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.print_dict()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.print_dict()
+        self.assertEqual(cm_new.exception.message, "print_dict() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-        fscoutputdir = "sphire/tests/Sort3D"
-        mask_option = "sphire/tests/Sharpening/vol_adaptive_mask.hdf"
+    def test_print_dict(self):
+        dic = {'0': 'ciao_0', '1': 'ciao_1'}
+        old_stdout = sys.stdout
+        print_new = StringIO()
+        sys.stdout = print_new
+        return_new = fu.print_dict(dic, "title")
+        print_old = StringIO()
+        sys.stdout = print_old
+        return_old = oldfu.print_dict(dic, "title")
+        self.assertEqual(return_new,return_old)
+        self.assertTrue(return_new is None)
+        self.assertEqual(print_new.getvalue(), print_old.getvalue())
+        sys.stdout = old_stdout
 
-        return_new = fu.get_resolution_mrk01(volume, 0.5,0.15,fscoutputdir,mask_option)
-        return_old = oldfu.get_resolution_mrk01(volume, 0.5,0.15,fscoutputdir,mask_option)
+    def test_error_key_type(self):
+        dic = {0: 'ciao_0', 1: 'ciao_1', 2: 'ciao_2', 3: 'ciao_3'}
+        with self.assertRaises(TypeError) as cm_new:
+            fu.print_dict(dic, " Test_print_dict.test_error_key_type")
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.print_dict(dic, " Test_print_dict.test_error_key_type")
+        self.assertEqual(cm_new.exception.message, "cannot concatenate 'str' and 'int' objects")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-        self.assertEqual(return_new, return_old)
 
 
-    def test_partition_to_groups_true_should_return_equal_objects(self):
+class Test_get_resolution_mrk01(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.get_resolution_mrk01()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.get_resolution_mrk01()
+        self.assertEqual(cm_new.exception.message, "get_resolution_mrk01() takes exactly 5 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
+    def test_radi_not_integer(self):
+        v = [IMAGE_2D,IMAGE_2D_REFERENCE]
+        return_new = fu.get_resolution_mrk01(deepcopy(v), 0.5,0.15,ABSOLUTE_PATH, None)
+        return_old = oldfu.get_resolution_mrk01(deepcopy(v), 0.5,0.15,ABSOLUTE_PATH,None)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+        remove_list_of_file([path.join(ABSOLUTE_PATH,"fsc.txt")])
+
+    def test_radi_integer_no_mask(self):
+        v = [IMAGE_3D,IMAGE_3D]
+        return_new = fu.get_resolution_mrk01(deepcopy(v), 1,IMAGE_3D.get_xsize(),ABSOLUTE_PATH, None)
+        return_old = oldfu.get_resolution_mrk01(deepcopy(v), 1,IMAGE_3D.get_xsize(),ABSOLUTE_PATH,None)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+        remove_list_of_file([path.join(ABSOLUTE_PATH, "fsc.txt")])
+
+    def test_radi_integer_with_mask(self):
+        v = [IMAGE_3D,IMAGE_3D]
+        mask_option = [fu.model_circle(1,IMAGE_3D.get_xsize(),IMAGE_3D.get_ysize(),IMAGE_3D.get_zsize())]
+        return_new = fu.get_resolution_mrk01(deepcopy(v), 1,None,ABSOLUTE_PATH, mask_option)
+        return_old = oldfu.get_resolution_mrk01(deepcopy(v), 1,None,ABSOLUTE_PATH,mask_option)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+        remove_list_of_file([path.join(ABSOLUTE_PATH, "fsc.txt")])
+
+    def test_with_invalid_mask_returns_RuntimeError_ImageFormatException(self):
+        v = [IMAGE_3D,IMAGE_3D]
+        mask_option = [fu.model_circle(1,IMAGE_3D.get_xsize()+10,IMAGE_3D.get_ysize(),IMAGE_3D.get_zsize())]
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.get_resolution_mrk01(deepcopy(v), 1,None,ABSOLUTE_PATH, mask_option)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.get_resolution_mrk01(deepcopy(v), 1,None,ABSOLUTE_PATH,mask_option)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "ImageFormatException")
+        self.assertEqual(msg[1], "can not multiply images that are not the same size")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[1], msg_old[1])
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+
+
+class Test_partition_to_groups(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.partition_to_groups()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.partition_to_groups()
+        self.assertEqual(cm_new.exception.message, "partition_to_groups() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_list(self):
+        return_new = fu.partition_to_groups([],3)
+        return_old = oldfu.partition_to_groups([],3)
+        self.assertTrue(numpy.allclose(return_new, return_old))
+
+    def test_default_case(self):
         K = 7
         data_list = [[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6]]
-
         return_new = fu.partition_to_groups(data_list, K)
         return_old = oldfu.partition_to_groups(data_list, K)
-
         self.assertEqual(return_new, return_old)
 
 
-    def test_partition_independent_runs_true_should_return_equal_objects(self):
 
+class Test_partition_independent_runs(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.partition_independent_runs()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.partition_independent_runs()
+        self.assertEqual(cm_new.exception.message, "partition_independent_runs() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_list(self):
+        return_new = fu.partition_independent_runs([],3)
+        return_old = oldfu.partition_independent_runs([],3)
+        self.assertDictEqual(return_new,return_old)
+        self.assertEqual(return_new, {})
+
+    def test_default_case(self):
         K = 7
         data_list = [[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6]]
-
         return_new = fu.partition_independent_runs(data_list, K)
         return_old = oldfu.partition_independent_runs(data_list, K)
-
         self.assertEqual(return_new, return_old)
 
 
-    def test_merge_groups_true_should_return_equal_objects(self):
 
-        K = 7
+class Test_merge_groups(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.merge_groups()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.merge_groups()
+        self.assertEqual(cm_new.exception.message, "merge_groups() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_list(self):
+        return_new = fu.merge_groups([])
+        return_old = oldfu.merge_groups([])
+        self.assertTrue(numpy.allclose(return_new, return_old))
+
+    def test_default_case(self):
         data_list = [[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6]]
-
         return_new = fu.merge_groups(data_list)
         return_old = oldfu.merge_groups(data_list)
-
         self.assertEqual(return_new, return_old)
 
 
-    def test_save_alist_true_should_return_equal_objects(self):
 
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
+class Test_save_alist(unittest.TestCase):
+    filename_new = "listfile.txt"
+    filename_old = "listfile2.txt"
+    data_list = [[0, 1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5, 6]]
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.save_alist()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.save_alist()
+        self.assertEqual(cm_new.exception.message, "save_alist() takes exactly 3 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-        Tracker = argum[0][0][1]
-
-        Tracker["this_dir"] = "sphire/tests/Sharpening/"
+    def test_create_files(self):
+        Tracker = deepcopy(TRACKER)
+        Tracker["this_dir"] = ABSOLUTE_PATH
         Tracker["constants"]["log_main"] = "logging"
         Tracker["constants"]["myid"] = "myid"
         Tracker["constants"]["main_node"] = "myid"
 
-        filename = "listfile.txt"
-        data_list = [[0, 1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5, 6]]
+        fu.save_alist(Tracker, self.filename_new, self.data_list)
+        oldfu.save_alist(Tracker,self.filename_old, self.data_list)
+        self.assertEqual(returns_values_in_file(path.join(ABSOLUTE_PATH,self.filename_new)),returns_values_in_file(path.join(ABSOLUTE_PATH,self.filename_old)))
+        remove_list_of_file([path.join(ABSOLUTE_PATH,self.filename_new),path.join(ABSOLUTE_PATH,self.filename_old)])
 
-        return_new = fu.save_alist(Tracker,filename,data_list)
-        return_old = oldfu.save_alist(Tracker,filename,data_list)
+    def test_no_create_files(self):
+        Tracker = deepcopy(TRACKER)
+        Tracker["this_dir"] = ABSOLUTE_PATH
+        Tracker["constants"]["log_main"] = "logging"
+        Tracker["constants"]["myid"] = "myid"
+        Tracker["constants"]["main_node"] = "different myid"
 
+        fu.save_alist(Tracker, self.filename_new, self.data_list)
+        oldfu.save_alist(Tracker, self.filename_old, self.data_list)
+
+        self.assertFalse(path.isfile(path.join(ABSOLUTE_PATH, self.filename_new)))
+        self.assertFalse(path.isfile(path.join(ABSOLUTE_PATH, self.filename_old)))
+
+
+
+class Test_margin_of_error(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.margin_of_error()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.margin_of_error()
+        self.assertEqual(cm_new.exception.message, "margin_of_error() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_default_case(self):
+        return_new = fu.margin_of_error(0.2,0.1)
+        return_old = oldfu.margin_of_error(0.2,0.1)
         self.assertEqual(return_new, return_old)
 
-    def test_margin_of_error_true_should_return_equal_objects(self):
 
-        return_new = fu.margin_of_error(0,1)
-        return_old = oldfu.margin_of_error(0,1)
+class Test_do_two_way_comparison(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.do_two_way_comparison()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.do_two_way_comparison()
+        self.assertEqual(cm_new.exception.message, "do_two_way_comparison() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
+    def test_defaault_case(self):
+        Tracker = deepcopy(TRACKER)
+        Tracker["this_dir"] = ABSOLUTE_PATH
+        Tracker["constants"]["log_main"] = "logging"
+        Tracker["constants"]["myid"] = 0
+        Tracker["constants"]["main_node"] = 1
+        Tracker["this_total_stack"] = 10
+        Tracker["number_of_groups"] = 4
+        Tracker["constants"]["indep_runs"]  = 4
+        Tracker['full_ID_dict'] = {0: 0, 1: 1, 2:2, 3: 3}
+        Tracker["partition_dict"]    = [[0,1,2,3],[0,1,2,3],[0,1,2,3],[0,1,2,3]]
+        Tracker["chunk_dict"] = [0, 1, 2, 3]
+        Tracker["P_chunk0"] = 0.2
+        Tracker["constants"]["smallest_group"] = 2
+        Tracker2 = deepcopy(Tracker)
+        return_new = fu.do_two_way_comparison(Tracker)
+        return_old = oldfu.do_two_way_comparison(Tracker2)
         self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, None)
+        self.assertTrue(numpy.array_equal(Tracker["score_of_this_comparison"], Tracker2["score_of_this_comparison"]))
 
-    # def test_do_two_way_comparison_true_should_return_equal_objects(self):
-    #
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask")
-    #     with open(filepath, 'rb') as rb:
-    #         argum = pickle.load(rb)
-    #
-    #     Tracker = argum[0][0][1]
-    #
-    #     Tracker["this_dir"] = "sphire/tests/Sharpening/"
-    #     Tracker["constants"]["log_main"] = "logging"
-    #     Tracker["constants"]["myid"] = 0
-    #     Tracker["constants"]["main_node"] = 1
-    #     Tracker["this_total_stack"] = "bdb:sphire/tests/Substack/sort3d_substack_002"
-    #     Tracker["number_of_groups"] = 4
-    #     Tracker["constants"]["indep_runs"]  = 4
-    #     Tracker["partition_dict"]    = [0,1,2,3]
-    #
-    #
-    #     return_new = fu.do_two_way_comparison(Tracker)
-    #     return_old = oldfu.do_two_way_comparison(Tracker)
-    #
-    #     self.assertEqual(return_new, return_old)
 
-    def test_counting_projections_true_should_return_equal_objects(self):
+class Test_select_two_runs(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.select_two_runs()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.select_two_runs()
+        self.assertEqual(cm_new.exception.message, "select_two_runs() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-        delta = 0.5
+    def test_default_case(self):
+        summed_scores = [0,1,2,3,4]
+        two_way_dict = [3.2,1.43,54,32,543]
+        return_new = fu.select_two_runs(summed_scores,two_way_dict)
+        return_old = oldfu.select_two_runs(summed_scores,two_way_dict)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_returns_IndexError_list_index_out_of_range(self):
+        summed_scores = [0,1,2,3,4]
+        two_way_dict = [3.2]
+        with self.assertRaises(IndexError) as cm_new:
+            fu.select_two_runs(summed_scores,two_way_dict)
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.select_two_runs(summed_scores,two_way_dict)
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_summed_scores_empty_returns_IndexError_list_index_out_of_range(self):
+        summed_scores = []
+        two_way_dict = [3.2]
+        with self.assertRaises(IndexError) as cm_new:
+            fu.select_two_runs(summed_scores,two_way_dict)
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.select_two_runs(summed_scores,two_way_dict)
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_two_way_dict_empty_returns_IndexError_list_index_out_of_range(self):
+        summed_scores = [0,1,2,3,4]
+        two_way_dict = []
+        with self.assertRaises(IndexError) as cm_new:
+            fu.select_two_runs(summed_scores,two_way_dict)
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.select_two_runs(summed_scores,two_way_dict)
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+
+
+class Test_counting_projections(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.counting_projections()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.counting_projections()
+        self.assertEqual(cm_new.exception.message, "counting_projections() takes exactly 3 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_ali3d_params_empty(self):
+        return_new = fu.counting_projections(delta = 0.5, ali3d_params =[], image_start = 1)
+        return_old = oldfu.counting_projections(delta = 0.5, ali3d_params =[], image_start = 1)
+        self.assertDictEqual(return_new,return_old)
+
+    def test_default_case(self):
         ali3d_params  = [[idx1, idx2, 0 , 0.25, 0.25] for idx1 in range(2) for idx2 in range(2)]
-        image_start = 1
-
-        return_new = fu.counting_projections(delta, ali3d_params, image_start)
-        print("one function call done")
-        return_old = oldfu.counting_projections(delta, ali3d_params, image_start)
-        print("second function call done")
-        self.assertEqual(return_new, return_old)
-
-    def test_unload_dict_true_should_return_equal_objects(self):
-
-        delta = 0.5
-        ali3d_params  = [[idx1, idx2, 0 , 0.25, 0.25] for idx1 in range(2) for idx2 in range(2)]
-        image_start = 1
-        sampled = fu.counting_projections(delta, ali3d_params,image_start)
-
-        return_new = fu.unload_dict(sampled)
-        return_old = oldfu.unload_dict(sampled)
-        self.assertEqual(return_new, return_old)
-
-
-    def test_unload_dict_true_should_return_equal_objects(self):
-
-        delta = 0.5
-        ali3d_params  = [[idx1, idx2, 0 , 0.25, 0.25] for idx1 in range(2) for idx2 in range(2)]
-        image_start = 1
-        sampled = fu.counting_projections(delta, ali3d_params,image_start)
-        dicto = fu.unload_dict(sampled)
-
-        return_new = fu.load_dict(sampled, dicto)
-        return_old = oldfu.load_dict(sampled, dicto)
-        self.assertEqual(return_new, return_old)
+        return_new = fu.counting_projections(delta = 0.5, ali3d_params =ali3d_params, image_start = 1)
+        return_old = oldfu.counting_projections(delta = 0.5, ali3d_params =ali3d_params, image_start = 1)
+        self.assertDictEqual(return_new,return_old)
 
 
 
+class Test_unload_dict(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.unload_dict()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.unload_dict()
+        self.assertEqual(cm_new.exception.message, "unload_dict() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-    """
-      This function test works but takes too much time that is why for the time being it is
-       commented,  will uncomment it once everything is done 
-    """
-    # def test_get_stat_proj_true_should_return_equal_objects(self):
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask")
-    #     with open(filepath, 'rb') as rb:
-    #         argum = pickle.load(rb)
-    #
-    #     Tracker = argum[0][0][1]
-    #     Tracker["constants"]["nproc"] = 1
-    #     Tracker["constants"]["myid"] = 0
-    #     Tracker["constants"]["main_node"] = 0
-    #
-    #     delta = 0.5
-    #     this_ali3d = "sphire/tests/VIPER/main001/run000/rotated_reduced_params.txt"
-    #
-    #     return_new = fu.get_stat_proj(Tracker,delta,this_ali3d)
-    #     return_old = oldfu.get_stat_proj(Tracker,delta,this_ali3d)
-    #     self.assertEqual(return_new, return_old)
+    def test_default_case(self):
+        dict_angles = {(0.64764598050589606, 53.04857999805229) : [], (10.262155636450808, 97.18016191759037) : [], (100.75772287892256, 50.274472062413594) : [], (101.11458591875028, 44.457078732458605) : []}
+        return_new = fu.unload_dict(dict_angles)
+        return_old = oldfu.unload_dict(dict_angles)
+        self.assertTrue(numpy.allclose(return_new, return_old))
+
+    def test_empty_dict(self):
+        return_new = fu.unload_dict({})
+        return_old = oldfu.unload_dict({})
+        self.assertTrue(numpy.allclose(return_new, return_old))
 
 
-    def test_create_random_list_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
 
-        Tracker = argum[0][0][1]
+class Test_load_dict(unittest.TestCase):
+    ali3d_params = [[idx1, idx2, 0, 0.25, 0.25] for idx1 in range(2) for idx2 in range(2)]
+    sampled = fu.counting_projections(delta=0.5, ali3d_params=ali3d_params, image_start=1)
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.load_dict()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.load_dict()
+        self.assertEqual(cm_new.exception.message, "load_dict() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_default_case(self):
+        d = fu.unload_dict(self.sampled)
+        return_new = fu.load_dict(deepcopy(self.sampled), d)
+        return_old = oldfu.load_dict(deepcopy(self.sampled), d)
+        self.assertDictEqual(return_new,return_old)
+
+    def test_empty_unloaded_dict_angles(self):
+        return_new = fu.load_dict(deepcopy(self.sampled), [])
+        return_old = oldfu.load_dict(deepcopy(self.sampled), [])
+        self.assertDictEqual(return_new,return_old)
+
+    def test_dict_angle_main_node(self):
+        d = fu.unload_dict([])
+        return_new = fu.load_dict([], d)
+        return_old = oldfu.load_dict([], d)
+        self.assertTrue(numpy.array_equal(return_new,return_old))
+        self.assertEqual(return_new, [])
+
+    def test_empty_all(self):
+        return_new = fu.load_dict({}, [])
+        return_old = oldfu.load_dict({}, [])
+        self.assertDictEqual(return_new,return_old)
+
+
+
+class Test_get_stat_proj(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.get_stat_proj()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.get_stat_proj()
+        self.assertEqual(cm_new.exception.message, "get_stat_proj() takes exactly 3 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_myid_same_value_as_main_Node(self):
+        Tracker = deepcopy(TRACKER)
         Tracker["constants"]["nproc"] = 1
         Tracker["constants"]["myid"] = 0
         Tracker["constants"]["main_node"] = 0
-        Tracker["total_stack"] = "stack"
-        Tracker["constants"]["seed"] = 1.4
-        Tracker["constants"]["indep_runs"] = 2
-        Tracker["this_data_list"] = [2,3,5]
+        this_ali3d = path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES,"VIPER/main001/run000/rotated_reduced_params.txt")
+        Tracker2 = deepcopy(Tracker)
 
-        return_new = fu.create_random_list(Tracker)
-        return_old = oldfu.create_random_list(Tracker)
+        return_new = fu.get_stat_proj(Tracker,delta = 5,this_ali3d=this_ali3d)
+        return_old = oldfu.get_stat_proj(Tracker2,delta = 5,this_ali3d=this_ali3d)
+        self.assertDictEqual(return_new,return_old)
+
+    def test_myid_not_the_same_value_as_main_Node_TypeError(self):
+        Tracker = deepcopy(TRACKER)
+        Tracker["constants"]["nproc"] = 1
+        Tracker["constants"]["myid"] = 1
+        Tracker["constants"]["main_node"] = 0
+        this_ali3d = path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES, "VIPER/main001/run000/rotated_reduced_params.txt")
+        Tracker2 = deepcopy(Tracker)
+
+        with self.assertRaises(TypeError) as cm_new:
+            fu.get_stat_proj(Tracker,delta = 5,this_ali3d=this_ali3d)
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.get_stat_proj(Tracker2,delta = 5,this_ali3d=this_ali3d)
+        self.assertEqual(cm_new.exception.message, "object of type 'int' has no len()")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+
+
+
+
+class Test_create_random_list(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.create_random_list()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.create_random_list()
+        self.assertEqual(cm_new.exception.message, "create_random_list() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_default_case(self):
+        Tracker_new = deepcopy(TRACKER)
+        Tracker_new["constants"]["nproc"] = 1
+        Tracker_new["constants"]["myid"] = 0
+        Tracker_new["constants"]["main_node"] = 0
+        Tracker_new["total_stack"] = "stack"
+        Tracker_new["constants"]["seed"] = 1.4
+        Tracker_new["constants"]["indep_runs"] = 2
+        Tracker_new["this_data_list"] = [2,3,5]
+
+        Tracker_old = deepcopy(Tracker_new)
+
+        return_new = fu.create_random_list(Tracker_new)
+        return_old = oldfu.create_random_list(Tracker_old)
+        self.assertEqual(return_new, None)
         self.assertEqual(return_new, return_old)
+        self.assertTrue(numpy.array_equal(Tracker_new["this_indep_list"],Tracker_old["this_indep_list"]))
+
+    def test_wrong_Tracker_KeyError(self):
+        Tracker_new = deepcopy(TRACKER)
+        Tracker_old = deepcopy(TRACKER)
+        with self.assertRaises(KeyError) as cm_new:
+            fu.create_random_list(Tracker_new)
+        with self.assertRaises(KeyError) as cm_old:
+            oldfu.create_random_list(Tracker_old)
+        self.assertEqual(cm_new.exception.message, 'myid')
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
 
+
+
+
+class Test_recons_mref(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.recons_mref()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.recons_mref()
+        self.assertEqual(cm_new.exception.message, "recons_mref() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    @unittest.skip('same problem that we have in get_shrink_data_huang')
     def test_recons_mref_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
-
-        Tracker = argum[0][0][1]
+        Tracker =  deepcopy(TRACKER)
         Tracker["constants"]["nproc"] = 1
         Tracker["constants"]["myid"] = 0
         Tracker["constants"]["main_node"] = 0
@@ -4213,99 +4833,290 @@ class Test_lib_utilities_compare(unittest.TestCase):
         Tracker["constants"]["nnxo"] = 4  # roi
         Tracker["this_particle_list"] = [[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6]]
         Tracker["nxinit"] = 1
-        Tracker["constants"]["partstack"] = 'sphire/tests/VIPER//main001/run000/rotated_reduced_params.txt'
-        Tracker["this_dir"] = "sphire/tests/Particles/"
-        Tracker["constants"]["stack"] = 'bdb:sphire/tests/Class2D/stack_ali2d'
+        Tracker["constants"]["partstack"] =  path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES, "VIPER/main001/run000/rotated_reduced_params.txt")
+        Tracker["this_dir"] =  ABSOLUTE_PATH
+        Tracker["constants"]["stack"] =  path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES, "Class2D/stack_ali2d")
         Tracker["applyctf"] = False
         Tracker["chunk_dict"] = [0, 1, 2, 3, 4, 5, 6]
         Tracker["constants"]["sym"] = "c1"
-
+        Tracker2 = deepcopy(Tracker)
         return_new = fu.recons_mref(Tracker)
-        return_old = oldfu.recons_mref(Tracker)
+        return_old = oldfu.recons_mref(Tracker2)
         self.assertTrue(return_new[0], return_old[0])
 
 
 
-    def test_apply_low_pass_filter_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
 
-        Tracker = argum[0][0][1]
+class Test_apply_low_pass_filter(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.apply_low_pass_filter()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.apply_low_pass_filter()
+        self.assertEqual(cm_new.exception.message, "apply_low_pass_filter() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_default_case(self):
+        Tracker = deepcopy(TRACKER )
         Tracker["low_pass_filter"] = 0.087
+        return_new = fu.apply_low_pass_filter(refvol= [deepcopy(IMAGE_2D),deepcopy(IMAGE_2D)],Tracker=Tracker)
+        return_old = oldfu.apply_low_pass_filter(refvol=  [deepcopy(IMAGE_2D),deepcopy(IMAGE_2D)],Tracker=Tracker)
+        for i,j in zip(return_new,return_old):
+            self.assertTrue(numpy.array_equal(i.get_3dview(), j.get_3dview()))
 
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/projection.prgl")
-        with open(filepath, 'rb') as rb:
-            argum = pickle.load(rb)
+    def test_wrong_Tracker_KeyError(self):
+        Tracker = deepcopy(TRACKER )
+        with self.assertRaises(KeyError) as cm_new:
+            fu.apply_low_pass_filter(refvol= [deepcopy(IMAGE_2D),deepcopy(IMAGE_2D)],Tracker=Tracker)
+        with self.assertRaises(KeyError) as cm_old:
+            oldfu.apply_low_pass_filter(refvol= [deepcopy(IMAGE_2D),deepcopy(IMAGE_2D)],Tracker=Tracker)
+        self.assertEqual(cm_new.exception.message, 'low_pass_filter')
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-        (volft, params, interpolation_method, return_real) = argum[0]
-
-        refvol = [volft,volft]
-
-        return_new = fu.apply_low_pass_filter(refvol,Tracker)
-        return_old = oldfu.apply_low_pass_filter(refvol,Tracker)
-        self.assertEqual(return_new, return_old)
-
-
-
-    def test_count_chunk_members_true_should_return_equal_objects(self):
-
-        chunk_dict =  [0,1,2,3,4,5,6]
-        one_class = [0,1,2,3,4,5,6]
-
-        return_new = fu.count_chunk_members(chunk_dict, one_class)
-        return_old = oldfu.count_chunk_members(chunk_dict, one_class)
-        self.assertEqual(return_new, return_old)
+    def test_refvol_empty(self):
+        Tracker = deepcopy(TRACKER )
+        Tracker["low_pass_filter"] = 0.087
+        return_new = fu.apply_low_pass_filter(refvol=  [],Tracker=Tracker)
+        return_old = oldfu.apply_low_pass_filter(refvol=  [],Tracker=Tracker)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertEqual(return_new, [])
 
 
-    def test_get_groups_from_partition_true_should_return_equal_objects(self):
-        final_list = []
+class Test_get_groups_from_partition(unittest.TestCase):
+    list_of_particles = [random.randint(0, 1000) for i in range(100)]
+    group_list = [0, 1]
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.get_groups_from_partition()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.get_groups_from_partition()
+        self.assertEqual(cm_new.exception.message, "get_groups_from_partition() takes exactly 3 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-        final_list.append(numpy.arange(10))
-        final_list.append(numpy.arange(10))
+    def test_default_value(self):
+        return_new = fu.get_groups_from_partition(partition =self.group_list, initial_ID_list = self.list_of_particles, number_of_groups = 2)
+        return_old = oldfu.get_groups_from_partition(partition = self.group_list, initial_ID_list =self.list_of_particles, number_of_groups = 2)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
 
-        this_data_list_file = "sphire/tests/Sort3D/chunk_0.txt"
+    def test_empty_initial_ID_list_KeyError(self):
+        with self.assertRaises(KeyError) as cm_new:
+            fu.get_groups_from_partition(partition =self.group_list, initial_ID_list = [], number_of_groups = 2)
+        with self.assertRaises(KeyError) as cm_old:
+            oldfu.get_groups_from_partition(partition =self.group_list, initial_ID_list = [], number_of_groups = 2)
+        self.assertEqual(cm_new.exception.message, 0)
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-        # final_list = sparx_utilities.get_sorting_params_refine(Tracker, data, total_nima)
-        group_list, ali3d_params_list = fu.parsing_sorting_params(final_list)
-        list_of_particles = fu.read_text_file(this_data_list_file)
-        return_new = fu.get_groups_from_partition(group_list, list_of_particles, 2)
-        return_old = oldfu.get_groups_from_partition(group_list, list_of_particles, 2)
-        self.assertEqual(return_new, return_old)
+    def test_empty_partition_list_KeyError(self):
+        return_new = fu.get_groups_from_partition(partition =[], initial_ID_list = self.list_of_particles, number_of_groups = 2)
+        return_old = oldfu.get_groups_from_partition(partition = [], initial_ID_list =self.list_of_particles, number_of_groups = 2)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
 
-    def test_get_complementary_elements_true_should_return_equal_objects(self):
 
+
+class Test_get_complementary_elements(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.get_complementary_elements()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.get_complementary_elements()
+        self.assertEqual(cm_new.exception.message, "get_complementary_elements() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_defalut_case(self):
         sub_data_list = [1,2,2]
         total_list = [1,2,2,4,5,6]
-
         return_new = fu.get_complementary_elements(total_list,sub_data_list)
         return_old = oldfu.get_complementary_elements(total_list,sub_data_list)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_total_list_less_data_than_sub_data_list_error_msg(self):
+        sub_data_list = [1,2,2]
+        total_list = [1,2]
+        return_new = fu.get_complementary_elements(total_list,sub_data_list)
+        return_old = oldfu.get_complementary_elements(total_list,sub_data_list)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, []))
+
+
+
+class Test_update_full_dict(unittest.TestCase):
+    leftover_list = {0: 'ciao_10', 1: 'ciao_11'}
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.update_full_dict()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.update_full_dict()
+        self.assertEqual(cm_new.exception.message, "update_full_dict() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_default_case(self):
+        Tracker_new = deepcopy(TRACKER)
+        Tracker_new['full_ID_dict'] = {10: 'ciao_0', 11: 'ciao_1', 2: 'ciao_2', 3: 'ciao_3'}
+        Tracker_old = deepcopy(Tracker_new)
+        return_new = fu.update_full_dict(self.leftover_list,Tracker_new)
+        return_old = oldfu.update_full_dict(self.leftover_list,Tracker_old)
+        self.assertEqual(return_new, None)
+        self.assertEqual(return_new, return_old)
+        self.assertDictEqual(Tracker_new['full_ID_dict'] ,Tracker_old['full_ID_dict'] )
+
+    def test_no_full_ID_dict_in_tracker(self):
+        Tracker_new = deepcopy(TRACKER)
+        Tracker_old = deepcopy(Tracker_new)
+        return_new = fu.update_full_dict(self.leftover_list,Tracker_new)
+        return_old = oldfu.update_full_dict(self.leftover_list,Tracker_old)
+        self.assertEqual(return_new, None)
+        self.assertEqual(return_new, return_old)
+        self.assertDictEqual(Tracker_new['full_ID_dict'] ,Tracker_old['full_ID_dict'] )
+        self.assertDictEqual(Tracker_new['full_ID_dict'],self.leftover_list)
+
+
+
+class Test_count_chunk_members(unittest.TestCase):
+    chunk_dict = [0, 1, 2, 3, 4, 5, 6]
+    one_class = [0, 1, 2, 3, 4, 5, 6]
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.count_chunk_members()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.count_chunk_members()
+        self.assertEqual(cm_new.exception.message, "count_chunk_members() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_default_case(self):
+        return_new = fu.count_chunk_members(self.chunk_dict, self.one_class)
+        return_old = oldfu.count_chunk_members(self.chunk_dict, self.one_class)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_one_class_empty(self):
+        return_new = fu.count_chunk_members(self.chunk_dict, [])
+        return_old = oldfu.count_chunk_members(self.chunk_dict, [])
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_all_empty(self):
+        return_new = fu.count_chunk_members([], [])
+        return_old = oldfu.count_chunk_members([], [])
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_chunk_dict_empty_returns_IndexError_list_index_out_of_range(self):
+        with self.assertRaises(IndexError) as cm_new:
+            fu.count_chunk_members([], self.one_class)
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.count_chunk_members([], self.one_class)
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+
+
+class Test_remove_small_groups(unittest.TestCase):
+    chunk_dict = [[0, 1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5, 6]]
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.remove_small_groups()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.remove_small_groups()
+        self.assertEqual(cm_new.exception.message, "remove_small_groups() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_default_case(self):
+        return_new = fu.remove_small_groups(self.chunk_dict, 2)
+        return_old = oldfu.remove_small_groups(self.chunk_dict, 2)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_too_many_minimum_number_of_objects_in_a_group(self):
+        return_new = fu.remove_small_groups(self.chunk_dict, 20)
+        return_old = oldfu.remove_small_groups(self.chunk_dict, 20)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, [[], []] ))
+
+    def test_empty_chunk_dict(self):
+        return_new = fu.remove_small_groups([], 2)
+        return_old = oldfu.remove_small_groups([], 2)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_minimum_number_of_objects_in_a_group_is_zero(self):
+        return_new = fu.remove_small_groups(self.chunk_dict, 0)
+        return_old = oldfu.remove_small_groups(self.chunk_dict, 0)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+
+class Test_get_number_of_groups(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.get_number_of_groups()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.get_number_of_groups()
+        self.assertEqual(cm_new.exception.message, "get_number_of_groups() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_default_case(self):
+        return_new = fu.get_number_of_groups(total_particles = 1500, number_of_images_per_group = 5)
+        return_old = oldfu.get_number_of_groups(total_particles = 1500, number_of_images_per_group = 5)
         self.assertEqual(return_new, return_old)
 
-    def test_remove_small_groups_true_should_return_equal_objects(self):
+    def test_null_number_of_images_per_group_returns_ZeroDivisionError(self):
+        with self.assertRaises(ZeroDivisionError) as cm_new:
+            fu.get_number_of_groups(total_particles = 1500, number_of_images_per_group = 0)
+        with self.assertRaises(ZeroDivisionError) as cm_old:
+            oldfu.get_number_of_groups(total_particles = 1500, number_of_images_per_group = 0)
+        self.assertEqual(cm_new.exception.message, "float division by zero")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-        chunk_dict =  [[0,1,2,3,4,5,6],[0,1,2,3,4,5,6],[0,1,2,3,4,5,6]]
-        one_class = [0,1,2,3,4,5,6]
-
-        return_new = fu.remove_small_groups(chunk_dict, 3)
-        return_old = oldfu.remove_small_groups(chunk_dict, 3)
+    def test_total_particles_null(self):
+        return_new = fu.get_number_of_groups(total_particles = 0, number_of_images_per_group = 5)
+        return_old = oldfu.get_number_of_groups(total_particles = 0, number_of_images_per_group = 5)
         self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, 0)
 
 
-    def test_get_number_of_groups_true_should_return_equal_objects(self):
 
-        return_new = fu.get_number_of_groups(500, 5)
-        return_old = oldfu.get_number_of_groups(500, 5)
-        self.assertEqual(return_new, return_old)
+class Test_tabessel(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.tabessel()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.tabessel()
+        self.assertEqual(cm_new.exception.message, "tabessel() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_default_case(self):
+        return_new = fu.tabessel(None, None, nbel = 5000)
+        return_old = oldfu.tabessel(None, None, nbel = 5000)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_null_nbel(self):
+        return_new = fu.tabessel(None, None, nbel = 0)
+        return_old = oldfu.tabessel(None, None, nbel = 0)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, []))
 
 
-    def test_tabessel_true_should_return_equal_objects(self):
 
-        return_new = fu.tabessel(5,4)
-        return_old = oldfu.tabessel(5, 4)
-        self.assertEqual(return_new, return_old)
+class Test_nearest_proj(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.nearest_proj()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.nearest_proj()
+        self.assertEqual(cm_new.exception.message, "nearest_proj() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-
+    def test_default_value(self):
+        """ I calculated the value looking in the code of bin/sx3dvariability.py"""
+        proj_angles=[]
+        for i in range(900):
+            i=+0.1
+            proj_angles.append([i/2, i/5,i/4,i/3, i])
+        proj_angles.sort()
+        proj_angles_list = numpy.full((900, 4), 0.0, dtype=numpy.float32)
+        for i in range(900):
+            proj_angles_list[i][0] = proj_angles[i][1]
+            proj_angles_list[i][1] = proj_angles[i][2]
+            proj_angles_list[i][2] = proj_angles[i][3]
+            proj_angles_list[i][3] = proj_angles[i][4]
+        return_new1,return_new2 = fu.nearest_proj(proj_angles_list)
+        return_old1,return_old2 = oldfu.nearest_proj(proj_angles_list)
+        self.assertTrue(numpy.array_equal(return_new1, return_old1))
+        self.assertTrue(numpy.array_equal(return_new2, return_old2))
 
 if __name__ == '__main__':
     unittest.main()
