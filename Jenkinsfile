@@ -11,7 +11,7 @@ def getJobType() {
 }
 
 def notifyGitHub(status) {
-    if(JOB_TYPE == "push") {
+    if(JOB_TYPE == "push" || NOTIFY_GITHUB == "true") {
         if(status == 'PENDING') { message = 'Building...' }
         if(status == 'SUCCESS') { message = 'Build succeeded!' }
         if(status == 'FAILURE') { message = 'Build failed!' }
@@ -24,12 +24,29 @@ def notifyGitHub(status) {
 }
 
 def notifyEmail() {
-    if(JOB_TYPE == "push") {
+    if(JOB_TYPE == "push" || NOTIFY_EMAIL == "true") {
         emailext(to: "$GIT_AUTHOR_EMAIL",  
                  subject: '[JenkinsCI/$PROJECT_NAME] ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER - $BUILD_STATUS!',
                  body: '''${SCRIPT, template="groovy-text.template"}''',
                  attachLog: true
                  )
+    }
+}
+
+def selectNotifications() {
+    if(env.JOB_TYPE == 'manual') {
+        def result = input(message: 'Select notifications:',
+                           parameters :
+                                   [booleanParam(defaultValue: false, description: 'Notify GitHub?', name: 'notify_github'),
+                                    booleanParam(defaultValue: false, description: 'Email author?',  name: 'notify_email')]
+                           )
+                 
+        env.NOTIFY_GITHUB = result.notify_github
+        env.NOTIFY_EMAIL  = result.notify_email
+    }
+    else {
+        env.NOTIFY_GITHUB = true
+        env.NOTIFY_EMAIL  = true
     }
 }
 
@@ -111,9 +128,9 @@ pipeline {
   }
   
   stages {
-    // Stages triggered by GitHub pushes
-    stage('notify-pending') {
+    stage('init') {
       steps {
+        selectNotifications()
         notifyGitHub('PENDING')
         sh 'env | sort'
       }
