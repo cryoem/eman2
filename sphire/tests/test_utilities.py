@@ -54,8 +54,6 @@ There are some opened issues in:
 4) find --> it seems to be not used
 5) get_image --> I need an image to test the last 2 cases: get_image(path_to_img) and get_image(path_to_img, im=1)
 6) get_im --> I need an image to test the last case ... similarly the (5)
-7) read_text_row --> I need at least a file to test it
-8) read_text_file --> same situation of 7
 9) estimate_3D_center_MPI -- ask markus how it works
 10) write_headers --> in .bdb case are not working under linux. Take a look to the code for seeing their comments
         --> if the file exists it overwrites it without a warning message. will we have to insert this message?
@@ -156,7 +154,6 @@ class Test_amoeba(unittest.TestCase):
 
 
 class Test_compose_transform2(unittest.TestCase):
-
     def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.compose_transform2()
@@ -1060,6 +1057,12 @@ class Test_read_text_row(unittest.TestCase):
         self.assertEqual(cm_new.exception.strerror, "No such file or directory")
         self.assertEqual(cm_new.exception.strerror, cm_old.exception.strerror)
 
+    def test_default_case(self):
+        partids = path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, 'Initial3D/main001/this_iteration_index_keep_images.txt')
+        return_new = fu.read_text_row(partids)
+        return_old = oldfu.read_text_row(partids)
+        self.assertTrue(return_new == return_old)
+
 
 
 class Test_write_text_row(unittest.TestCase):
@@ -1098,6 +1101,12 @@ class Test_read_text_file(unittest.TestCase):
             oldfu.read_text_file("no_file.txt")
         self.assertEqual(cm_new.exception.strerror, "No such file or directory")
         self.assertEqual(cm_new.exception.strerror, cm_old.exception.strerror)
+
+    def test_default_case(self):
+        partids = path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, 'Initial3D/main001/this_iteration_index_keep_images.txt')
+        return_new = fu.read_text_file(partids)
+        return_old = oldfu.read_text_file(partids)
+        self.assertTrue(return_new == return_old)
 
 
 
