@@ -9,26 +9,24 @@ from ..libpy import sparx_utilities
 import numpy
 import unittest
 
-from test_module import get_data, get_data_3d, remove_dir, get_arg_from_pickle_file,get_real_data
+from test_module import get_data, get_data_3d, remove_dir, get_arg_from_pickle_file,get_real_data,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER
 
 from EMAN2_cppwrap import EMData, EMAN2Ctf
 from copy import  deepcopy
-from os import path
+from os import path,mkdir
+from shutil import copyfile
 
 from mpi import *
 mpi_init(0, [])
 
 
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
+ABSOLUTE_PATH_TO_MRC_FOLDER= path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "CorrectedSums/corrsum/")
 
-"""
-change it when you run the tests with your path.In this folder I copied 'TcdA1-0010_frames.mrc' got from the sphire tutorial i.e.: 'SphireDemoResults/CorrectedSums/corrsum':
-"""
+""" I'll copy a .mrc file to this temp folder from the 'SphireDemoResults' files in order to test quickly the 'cter' function."""
+ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER= path.join(ABSOLUTE_PATH, "mrc_files_for_unit_test")
 
-#ABSOLUTE_PATH_TO_MRC_FOLDER= "/home/adnan/PycharmProjects/eman2/sphire/tests/corrsum/"
-#ABSOLUTE_PATH_TO_STACK="bdb:/home/adnan/PycharmProjects/eman2/sphire/tests/Class2D/stack_ali2d"
-ABSOLUTE_PATH_TO_MRC_FOLDER= "/home/lusnig/Downloads/mrc_files_for_unit_test"
-ABSOLUTE_PATH_TO_STACK="bdb:/home/lusnig/Downloads/SphireDemoResults/Class2D/stack_ali2d"
+ABSOLUTE_PATH_TO_STACK="bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Class2D/stack_ali2d")
 TOLERANCE = 0.0075
 
 IMAGE_2D, IMAGE_2D_REFERENCE = get_real_data(dim=2)
@@ -66,6 +64,18 @@ There are some opened issues in:
 """
 #todo: Furthemore in the 8,9 in all the cases where the output is 'None' the function saved the results in a huge output file. We'd check them. HOW????
 
+
+def create_setup_mrc():
+    original_file = path.join(ABSOLUTE_PATH_TO_MRC_FOLDER,"TcdA1-0011_frames_sum.mrc")
+    if not path.isdir(ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER):
+        mkdir(ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER)
+    if path.isfile(original_file):
+        copyfile(original_file, path.join(ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER,"TcdA1-0011_frames_sum.mrc"))
+    else:
+        print("WARNING: cannot find the file '"+original_file+"'. The following classes of test will not work:\n\tTest_cter_mrk\n\tTest_cter_pap\n\tTest_cter_vpp")
+
+def clean_setup_mrc():
+    remove_dir(ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER)
 
 """
 pickle files stored under smb://billy.storage.mpi-dortmund.mpg.de/abt3/group/agraunser/transfer/Adnan/pickle files
@@ -2290,9 +2300,14 @@ class Test_compute_bfactor(unittest.TestCase):
 
 
 class Test_cter_mrk(unittest.TestCase):
-    """
-    1) Since the process finishes with an not-specified exit code, we cannot test it uniquely
-    """
+
+    @classmethod
+    def setUpClass(cls):
+        create_setup_mrc()
+
+    @classmethod
+    def tearDownClass(cls):
+        clean_setup_mrc()
 
     """ default params got from sxcter.py and Test_defocusgett"""
     defocus = 1
@@ -2303,8 +2318,8 @@ class Test_cter_mrk(unittest.TestCase):
     i_start = 0.048
     i_stop = -1
     selection_list = 'TcdA1-0011_frames_sum.mrc'
-    input_image_path = path.join(ABSOLUTE_PATH_TO_MRC_FOLDER, "TcdA1-*_frames_sum.mrc")
-    output_directory = path.join(ABSOLUTE_PATH_TO_MRC_FOLDER, "cter_mrk_results")
+    input_image_path = path.join(ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "TcdA1-*_frames_sum.mrc")
+    output_directory = path.join(ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "cter_mrk_results")
 
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -2400,6 +2415,13 @@ class Test_cter_mrk(unittest.TestCase):
 class Test_cter_pap(unittest.TestCase):
     """ Since a bug we cannot test the stackMode --> https://gitlab.gwdg.de/sphire/sphire_issues/issues/115"""
 
+    @classmethod
+    def setUpClass(cls):
+        create_setup_mrc()
+
+    @classmethod
+    def tearDownClass(cls):
+        clean_setup_mrc()
     """ default params got from sxcter.py and Test_defocusgett"""
     defocus = 1
     cs = 2
@@ -2409,8 +2431,8 @@ class Test_cter_pap(unittest.TestCase):
     i_start = 0.048
     i_stop = -1
     selection_list = 'TcdA1-0011_frames_sum.mrc'
-    input_image_path = path.join(ABSOLUTE_PATH_TO_MRC_FOLDER, "TcdA1-*_frames_sum.mrc")
-    output_directory = path.join(ABSOLUTE_PATH_TO_MRC_FOLDER, "cter_mrk_results")
+    input_image_path = path.join(ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "TcdA1-*_frames_sum.mrc")
+    output_directory = path.join(ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "cter_mrk_results")
 
     def test_all_the_conditions(self,return_new=None,return_old=None, skip=True):
         if skip is False:
@@ -2511,6 +2533,15 @@ class Test_cter_pap(unittest.TestCase):
 
 
 class Test_cter_vpp(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        create_setup_mrc()
+
+    @classmethod
+    def tearDownClass(cls):
+        clean_setup_mrc()
+
     """ default params got from sxcter.py and Test_defocusgett"""
     defocus = 1
     cs = 2
@@ -2521,8 +2552,8 @@ class Test_cter_vpp(unittest.TestCase):
     i_stop = -1
     vpp_options = [0.3, 9.0, 0.1, 5.0, 175.0, 5.0]
     selection_list = 'TcdA1-0011_frames_sum.mrc'
-    input_image_path = path.join(ABSOLUTE_PATH_TO_MRC_FOLDER, "TcdA1-*_frames_sum.mrc")
-    output_directory = path.join(ABSOLUTE_PATH_TO_MRC_FOLDER, "cter_mrk_results")
+    input_image_path = path.join(ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "TcdA1-*_frames_sum.mrc")
+    output_directory = path.join(ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "cter_mrk_results")
 
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:

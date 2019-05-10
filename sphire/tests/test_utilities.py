@@ -18,7 +18,7 @@ global_def.MPI = True
 ABSOLUTE_PATH = os.path.dirname(os.path.realpath(__file__))
 
 import unittest
-from test_module import get_arg_from_pickle_file, get_real_data, remove_list_of_file, returns_values_in_file,remove_dir
+from test_module import get_arg_from_pickle_file, get_real_data, remove_list_of_file, returns_values_in_file,remove_dir,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER
 from ..libpy import sparx_utilities as fu
 from .sparx_lib import sparx_utilities as oldfu
 from ..libpy import sparx_fundamentals
@@ -41,7 +41,6 @@ IMAGE_BLANK_2D = fu.model_blank(10, 10)
 IMAGE_BLANK_3D = fu.model_blank(10, 10, 10)
 TOLERANCE = 0.0075
 TRACKER = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask"))[0][0][1]
-ABSOLUTE_PATH_TO_ADNAN_TEST_FILES= "/home/lusnig/Downloads/adnan4testing" # 4ADNAN: it is your 'sphire/tests' folder
 
 """
 pickle files stored under smb://billy.storage.mpi-dortmund.mpg.de/abt3/group/agraunser/transfer/Adnan/pickle files
@@ -3903,7 +3902,7 @@ class Test_get_shrink_data_huang(unittest.TestCase):
         Tracker["constants"]["log_main"] = "logging"
         Tracker["constants"]["myid"] = 0
         Tracker["constants"]["main_node"] = 0
-        Tracker["constants"]["stack"] = 'bdb:' + path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES, 'Substack/sort3d_substack_002')
+        Tracker["constants"]["stack"] = 'bdb:' + path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, 'Substack/sort3d_substack_002')
         Tracker["applyctf"] = True
         ids = []
         for i in range(1227):
@@ -3912,8 +3911,8 @@ class Test_get_shrink_data_huang(unittest.TestCase):
         myid = 0
         m_node = 0
         nproc = 1
-        partids = path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES, "Sort3D/indexes_010.txt")
-        partstack =  path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES, "Sort3D/params_010.txt")
+        partids = path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Refine3D-Substack-Local_001/main010/indexes_010.txt")
+        partstack =  path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Refine3D-Substack-Local_001/main010/params_010.txt")
         nxinit = 2
 
         return_new = fu.get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, m_node, nproc)
@@ -3927,9 +3926,9 @@ class Test_getindexdata(unittest.TestCase):
     """ nproc and myid valeus got from "pickle files/utilities/utilities.getindexdata"""
     nproc = 95
     myid = 22
-    stack = 'bdb:' + path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES, 'VIPER/best_000')
-    partids = path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES, 'VIPER/main001/this_iteration_index_keep_images.txt')
-    partstack = path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES, 'VIPER//main001/run000/rotated_reduced_params.txt')
+    stack = 'bdb:' + path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, 'Initial3D/best_000')
+    partids = path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, 'Initial3D/main001/this_iteration_index_keep_images.txt')
+    partstack = path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, 'Initial3D//main001/run000/rotated_reduced_params.txt')
 
     def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -4228,23 +4227,23 @@ class Test_sample_down_1D_curve(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_default_case(self):
-        return_new = fu.sample_down_1D_curve(nxinit=100, nnxo=180, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES,"Sort3D/fsc_halves.txt"))
-        return_old = oldfu.sample_down_1D_curve(nxinit=100, nnxo=180, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES,"Sort3D/fsc_halves.txt"))
+        return_new = fu.sample_down_1D_curve(nxinit=100, nnxo=180, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Sharpening-after-meridien/fsc_halves.txt"))
+        return_old = oldfu.sample_down_1D_curve(nxinit=100, nnxo=180, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Sharpening-after-meridien/fsc_halves.txt"))
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
     def test_null_nxinit_returns_ZeroDivisionError(self):
         with self.assertRaises(ZeroDivisionError) as cm_new:
-            fu.sample_down_1D_curve(nxinit=0, nnxo=180, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES,"Sort3D/fsc_halves.txt"))
+            fu.sample_down_1D_curve(nxinit=0, nnxo=180, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Sharpening-after-meridien/fsc_halves.txt"))
         with self.assertRaises(ZeroDivisionError) as cm_old:
-            oldfu.sample_down_1D_curve(nxinit=0, nnxo=180, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES,"Sort3D/fsc_halves.txt"))
+            oldfu.sample_down_1D_curve(nxinit=0, nnxo=180, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Sharpening-after-meridien/fsc_halves.txt"))
         self.assertEqual(cm_new.exception.message, "float division by zero")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_null_nnxo_returns_ZeroDivisionError(self):
         with self.assertRaises(ZeroDivisionError) as cm_new:
-            fu.sample_down_1D_curve(nxinit=100, nnxo=0, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES,"Sort3D/fsc_halves.txt"))
+            fu.sample_down_1D_curve(nxinit=100, nnxo=0, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Sharpening-after-meridien/fsc_halves.txt"))
         with self.assertRaises(ZeroDivisionError) as cm_old:
-            oldfu.sample_down_1D_curve(nxinit=100, nnxo=0, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES,"Sort3D/fsc_halves.txt"))
+            oldfu.sample_down_1D_curve(nxinit=100, nnxo=0, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Sharpening-after-meridien/fsc_halves.txt"))
         self.assertEqual(cm_new.exception.message, "float division by zero")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
@@ -4747,7 +4746,7 @@ class Test_get_stat_proj(unittest.TestCase):
         Tracker["constants"]["nproc"] = 1
         Tracker["constants"]["myid"] = 0
         Tracker["constants"]["main_node"] = 0
-        this_ali3d = path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES,"VIPER/main001/run000/rotated_reduced_params.txt")
+        this_ali3d = path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,'Initial3D//main001/run000/rotated_reduced_params.txt')
         Tracker2 = deepcopy(Tracker)
 
         return_new = fu.get_stat_proj(Tracker,delta = 5,this_ali3d=this_ali3d)
@@ -4759,7 +4758,7 @@ class Test_get_stat_proj(unittest.TestCase):
         Tracker["constants"]["nproc"] = 1
         Tracker["constants"]["myid"] = 1
         Tracker["constants"]["main_node"] = 0
-        this_ali3d = path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES, "VIPER/main001/run000/rotated_reduced_params.txt")
+        this_ali3d = path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, 'Initial3D//main001/run000/rotated_reduced_params.txt')
         Tracker2 = deepcopy(Tracker)
 
         with self.assertRaises(TypeError) as cm_new:
@@ -4833,9 +4832,9 @@ class Test_recons_mref(unittest.TestCase):
         Tracker["constants"]["nnxo"] = 4  # roi
         Tracker["this_particle_list"] = [[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6]]
         Tracker["nxinit"] = 1
-        Tracker["constants"]["partstack"] =  path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES, "VIPER/main001/run000/rotated_reduced_params.txt")
+        Tracker["constants"]["partstack"] =  path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, 'Initial3D//main001/run000/rotated_reduced_params.txt')
         Tracker["this_dir"] =  ABSOLUTE_PATH
-        Tracker["constants"]["stack"] =  path.join(ABSOLUTE_PATH_TO_ADNAN_TEST_FILES, "Class2D/stack_ali2d")
+        Tracker["constants"]["stack"] =  path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Class2D/stack_ali2d")
         Tracker["applyctf"] = False
         Tracker["chunk_dict"] = [0, 1, 2, 3, 4, 5, 6]
         Tracker["constants"]["sym"] = "c1"

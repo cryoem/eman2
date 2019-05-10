@@ -17,8 +17,14 @@ from cPickle import load as pickle_load
 from os import path,remove
 from shutil import rmtree
 
+""" 
+In order to run automatically all the tests download the precalculated results from the tutorial page http://sphire.mpg.de/wiki/doku.php?id=downloads:sphire_1_0.
+or directly from http://sphire.mpg.de/wiki/doku.php?id=downloads:sphire_1_0
+And set the variable 'ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER' to its path on your HD
+"""
 
-#argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.align2d_scf"))
+ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER = "/home/lusnig/Downloads/SphireDemoResults"
+
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 
 def get_real_data(dim =2):
