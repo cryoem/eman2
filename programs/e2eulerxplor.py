@@ -175,7 +175,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		glMatrixMode(GL_PROJECTION)
 		glPushMatrix()
 		glLoadIdentity()
-		gluPickMatrix(event.x(),v[-1]-event.y(),5,5,v)
+		gluPickMatrix(event.x()*self.get_gl_widget().devicePixelRatio(),v[-1]-event.y()*self.get_gl_widget().devicePixelRatio(),5,5,v)
 		self.get_gl_widget().load_perspective()
 		glMatrixMode(GL_MODELVIEW)
 		glInitNames()
