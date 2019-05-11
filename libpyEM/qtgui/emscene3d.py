@@ -1877,7 +1877,7 @@ class EMLight(object):
 		self.setGlobalAmbient(self.colorglobalambient[0], self.colorglobalambient[1], self.colorglobalambient[2], self.colorglobalambient[3])
 		
 class EMCamera(object):
-	"""Implmentation of the camera"""
+	"""Implementation of the camera"""
 	def __init__(self, near, far, usingortho=True, fovy=60.0, boundingbox=50.0, screenfraction=0.5):
 		"""
 		@param fovy: The field of view angle
@@ -1905,7 +1905,7 @@ class EMCamera(object):
 		"""
 		@param width: The width of the window in pixels
 		@param height: The height of the window in pixels
-		updates the camera and viewport after windowresize
+		updates the camera and viewport after window resize
 		"""
 		if width: self.width = width
 		if height: self.height = height
@@ -1940,7 +1940,7 @@ class EMCamera(object):
 		self.setPseudoFovy(old_div((self.width*self.width),(2*dims)) - (old_div(self.width,2)))
 		
 	def setViewPort(self, x, y, vpwidth, vpheight):
-		"""Set the viewport subject to openGL constraitns """
+		"""Set the viewport subject to openGL constraints """
 		if (vpwidth < self.maxviewport[0] and vpheight < self.maxviewport[1]):
 			glViewport(x, y, vpwidth, vpheight)
 	#		print(x,y,vpwidth, vpheight)
@@ -1991,7 +1991,7 @@ class EMCamera(object):
 		
 	def getUseOrtho(self):
 		"""
-		Returns the projectrion state
+		Returns the projection state
 		"""
 		return self.usingortho
 		
@@ -2033,7 +2033,7 @@ class EMCamera(object):
 		
 	def setPseudoFovy(self, pseudofovy):
 		"""
-		Set PseudoFovy, a sort of fovy for orthogramphic projections, do bounds checking
+		Set PseudoFovy, a sort of fovy for orthographic projections, do bounds checking
 		"""
 		#if ((self.width+2*pseudofovy) > 0 and (self.height+2*pseudofovy) > 0):
 		if ((int(self.width+pseudofovy) < self.maxviewport[0] and int(self.height+pseudofovy*self.aspectratio) < self.maxviewport[1]) or pseudofovy < self.pseudofovy): 
@@ -2046,25 +2046,25 @@ class EMCamera(object):
 
 	def getPseudoFovyWidth(self):
 		"""
-		Return PseudoFovy, a sort of fovy for orthogramphic projections
+		Return PseudoFovy, a sort of fovy for orthographic projections
 		"""
 		return self.pseudofovy
 	
 	def getPseudoFovyHeight(self):
 		"""
-		Return PseudoFovy, a sort of fovy for orthogramphic projections
+		Return PseudoFovy, a sort of fovy for orthographic projections
 		"""
 		return self.pseudofovy*self.aspectratio
 		
 	def getViewPortWidthScaling(self):
 		"""
-		Return the scaling nesssary to insert move from the viewport to the actual viewport. Need this b/c of the crazy scaling scheme
+		Return the scaling necessary to insert move from the viewport to the actual viewport. Need this b/c of the crazy scaling scheme
 		"""
 		return old_div(float(self.getWidth()),float(self.getWidth() + 2*self.getPseudoFovyWidth()))
 		
 	def getViewPortHeightScaling(self):
 		"""
-		Return the scaling nesssary to insert move from the viewport to the actual viewport. Need this b/c of the crazy scaling scheme
+		Return the scaling necessary to insert move from the viewport to the actual viewport. Need this b/c of the crazy scaling scheme
 		"""
 		return old_div(float(self.getHeight()),float(self.getHeight() + 2*self.getPseudoFovyHeight()))
 		
@@ -2214,7 +2214,7 @@ class EMInspector3D(QtWidgets.QWidget):
 				if selecteditem: self.scenegraph().setCurrentSelection(selecteditem)
 			except:
 				pass
-			# Unsure unqiue selection
+			# Unsure unique selection
 			self.ensureUniqueTreeLevelSelection(selecteditem)
 			
 	def ensureUniqueTreeLevelSelection(self, item):
