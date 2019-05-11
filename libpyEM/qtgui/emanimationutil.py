@@ -256,7 +256,7 @@ class SingleValueIncrementAnimation(Animatable):
 
 class TranslationAnimation(Animatable):
 	'''
-	Animates from 3D oint one point to another
+	Animates from one 3D point to another
 	'''
 	def __init__(self,target,start,end):
 		Animatable.__init__(self)
