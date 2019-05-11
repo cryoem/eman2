@@ -120,7 +120,7 @@ def askFileExists() :
 
 
 class EMFileType(object) :
-	"""This is a base class for handling interaction with files of different types. It includes a number of excution methods common to
+	"""This is a base class for handling interaction with files of different types. It includes a number of execution methods common to
 	several different subclasses"""
 
 	# A class dictionary keyed by EMDirEntry filetype string with value beign a single subclass of EMFileType. filetype strings are unique
@@ -164,7 +164,7 @@ class EMFileType(object) :
 
 	@staticmethod
 	def isValid(path, header) :
-		"""Returns (size, n, dim) if the referenced path is a file of this type, false if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."""
+		"""Returns (size, n, dim) if the referenced path is a file of this type, false if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
 
 		return False
 
@@ -512,7 +512,7 @@ class EMTextFileType(EMFileType) :
 
 	@staticmethod
 	def isValid(path, header) :
-		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."""
+		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
 
 		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
 
@@ -549,7 +549,7 @@ class EMHTMLFileType(EMFileType) :
 
 	@staticmethod
 	def isValid(path, header) :
-		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."""
+		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
 
 		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
 		if not "<html>" in header.lower() : return False # For the moment, we demand an <html> tag somewhere in the first 4k
@@ -599,7 +599,7 @@ class EMPlotFileType(EMFileType) :
 
 	@staticmethod
 	def isValid(path, header) :
-		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."""
+		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
 
 		if not isprint(header) : return False
 
@@ -854,7 +854,7 @@ class EMFolderFileType(EMFileType) :
 		return "Folder"
 	@staticmethod
 	def isValid(path, header) :
-		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."""
+		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
 
 		return False
 
@@ -880,7 +880,7 @@ class EMJSONFileType(EMFileType) :
 
 	@staticmethod
 	def isValid(path, header) :
-		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."""
+		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
 
 		if path[-5:] == ".json" and header.strip()[0] == "{" : return (humansize(os.stat(path).st_size), "-", "-")
 		else : return None
@@ -925,7 +925,7 @@ class EMBdbFileType(EMFileType) :
 
 	@staticmethod
 	def isValid(path, header) :
-		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."""
+		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
 
 		return False
 
@@ -1047,7 +1047,7 @@ class EMImageFileType(EMFileType) :
 
 	@staticmethod
 	def isValid(path, header) :
-		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."""
+		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
 
 		return False
 
@@ -1122,7 +1122,7 @@ class EMStackFileType(EMFileType) :
 
 	@staticmethod
 	def isValid(path, header) :
-		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."""
+		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
 
 		return False
 
@@ -1207,7 +1207,7 @@ class EMPDBFileType(EMFileType):
 	def isValid(path, header) :
 		"""
 		Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. 
-		The first 4k block of data from the file is provided as well to avoid unnecesary file access.
+		The first 4k block of data from the file is provided as well to avoid unnecessary file access.
 		"""
 		proper_exts = ['pdb','ent']
 		ext = os.path.basename(path).split('.')[-1]
@@ -1485,8 +1485,8 @@ class EMDirEntry(object) :
 		return len(self.__children)
 
 	def fillChildNames(self) :
-		"""Makes sure that __children contains at LEAST a list of names. This function needs to reimplmented to make derived browsers, 
-		NOTE!!!! You must have nimg implmented in your reimplmentation (I know this is a bad design....)"""
+		"""Makes sure that __children contains at LEAST a list of names. This function needs to reimplemented to make derived browsers, 
+		NOTE!!!! You must have nimg implemented in your reimplementation (I know this is a bad design....)"""
 
 		if self.__children == None :
 			if not os.path.isdir(self.filepath) :
@@ -1651,7 +1651,7 @@ class EMDirEntry(object) :
 
 			return 1
 
-		# we do this this way because there are so many possible image file exensions, and sometimes
+		# we do this this way because there are so many possible image file extensions, and sometimes
 		# people use a non-standard one (esp for MRC files)
 
 		try : self.nimg = EMUtil.get_image_count(self.path())
@@ -1934,7 +1934,7 @@ class EMInfoPane(QtWidgets.QWidget) :
 
 		QtWidgets.QWidget.__init__(self, parent)
 
-		# self.setTitle("e2dispaly.py Information Pane")
+		# self.setTitle("e2display.py Information Pane")
 
 		self.setWindowTitle("e2display.py Information Pane") # Jesus
 
@@ -1947,7 +1947,7 @@ class EMInfoPane(QtWidgets.QWidget) :
 	def display(self, target) :
 		"""display information for the target EMDirEntry with EMFileType ftype"""
 
-		# self.setTitle("e2dispaly.py Information Pane")
+		# self.setTitle("e2display.py Information Pane")
 
 		self.target = target
 		self.setWindowTitle("e2display.py Information Pane") # Jesus
@@ -2671,7 +2671,7 @@ class EMStackInfoPane(EMInfoPane) :
 		QtWidgets.QWidget.__init__(self, parent)
 
 		# self.setWindowTitle("e2display.py Information Pane") # Jesus
-		# self.setTitle("e2dispaly.py Information Pane")
+		# self.setTitle("e2display.py Information Pane")
 
 		self.gbl = QtWidgets.QGridLayout(self)
 
@@ -3106,7 +3106,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 
 		self.gbl.addLayout(self.wtoolhbl2, 1, 0, 1, 2)
 
-		### Central verticalregion has bookmarks and tree
+		### Central vertical region has bookmarks and tree
 		# Bookmarks implemented with a toolbar in a frame
 
 		self.wbookmarkfr = QtWidgets.QFrame()
@@ -3206,7 +3206,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		self.setsmode = setsmode	# The sets mode is used when selecting bad particles
 		self.curmodel = None	# The current data model displayed in the tree
 		self.curpath = None	# The path represented by the current data model
-		self.curft = None		# a fileType instance for the currently hilighted object
+		self.curft = None		# a fileType instance for the currently highlighted object
 		self.curactions = []	# actions returned by the filtetype. Cached for speed
 #		self.models = {}		# Cached models to avoid a lot of rereading (not sure if this is really worthwhile)
 		self.pathstack = []	# A stack of previous viewed paths
@@ -3230,7 +3230,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		self.updthread = threading.Thread(target = self.updateDetails)	# The actual thread
 		self.updlist = []				# List of QModelIndex items in need of updating
 		self.redrawlist = []			# List of QModelIndex items in need of redisplay
-		self.needresize = 0			# Used to resize column widths occaisonally
+		self.needresize = 0			# Used to resize column widths occasionally
 		self.expanded = set()			# We get multiple expand events for each path element, so we need to keep track of which ones we've updated
 
 		self.setPath(startpath)	# start in the local directory
@@ -3273,7 +3273,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 # 				print "### ", de.internalPointer().path()
 
 	def updateDetailsDisplay(self) :
-		"""Since we can't do GUI updates from a thread, this is a timer event to update the display after the beckground thread
+		"""Since we can't do GUI updates from a thread, this is a timer event to update the display after the background thread
 		gets the details for each item"""
 
 		if self.needresize > 0 :
