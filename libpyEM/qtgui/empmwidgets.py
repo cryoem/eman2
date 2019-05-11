@@ -124,7 +124,7 @@ class PMBaseWidget(QtWidgets.QWidget):
 		return self.errormessage
 
 class PMIntEntryWidget(PMBaseWidget):
-	""" A Widget for geting Int values. Type and range is checked """
+	""" A Widget for getting Int values. Type and range is checked """
 
 	@staticmethod
 	def copyWidget(widget):
@@ -162,8 +162,8 @@ class PMIntEntryWidget(PMBaseWidget):
 			self._confirm_bounds()
 		except ValueError:
 			self.intbox.setText("")
-			self.setErrorMessage("Invalid type, Int neeeded in %s"%self.getName())
-			if self.isVisible() and not quiet: self.pmmessage.emit("Invalid type, Int neeeded in %s"%self.getName())
+			self.setErrorMessage("Invalid type, Int needed in %s"%self.getName())
+			if self.isVisible() and not quiet: self.pmmessage.emit("Invalid type, Int needed in %s"%self.getName())
 
 	def _confirm_bounds(self):
 		if self.lrange != None and (self.value < self.lrange):
@@ -184,7 +184,7 @@ class PMIntEntryWidget(PMBaseWidget):
 		self.intbox.setEnabled(state)
 
 class PMShrinkEntryWidget(PMIntEntryWidget):
-	""" A widget for shink options. If this entry is set to <= 1 then no argument is returned """
+	""" A widget for shrink options. If this entry is set to <= 1 then no argument is returned """
 
 	@staticmethod
 	def copyWidget(widget):
@@ -207,8 +207,8 @@ class PMShrinkEntryWidget(PMIntEntryWidget):
 		except ValueError:
 			self.value = self.lrange - 1
 			self.intbox.setText(str(self.lrange-1))
-			self.setErrorMessage("Invalid type, Int neeeded in %s"%self.getName())
-			if self.isVisible() and not quiet: self.pmmessage.emit("Invalid type, Int neeeded in %s"%self.getName())
+			self.setErrorMessage("Invalid type, Int needed in %s"%self.getName())
+			if self.isVisible() and not quiet: self.pmmessage.emit("Invalid type, Int needed in %s"%self.getName())
 
 	def _confirm_bounds(self):
 		if self.lrange != None and (self.value < self.lrange):
@@ -219,7 +219,7 @@ class PMShrinkEntryWidget(PMIntEntryWidget):
 		self.noarg = False
 
 class PMFloatEntryWidget(PMBaseWidget):
-	""" A Widget for geting Float values. Type and range is checked """
+	""" A Widget for getting Float values. Type and range is checked """
 
 	@staticmethod
 	def copyWidget(widget):
@@ -278,7 +278,7 @@ class PMFloatEntryWidget(PMBaseWidget):
 		self.floatbox.setEnabled(state)
 
 class PMStringEntryWidget(PMBaseWidget):
-	""" A Widget for geting String values. Type is checked """
+	""" A Widget for getting String values. Type is checked """
 
 	@staticmethod
 	def copyWidget(widget):
@@ -305,7 +305,7 @@ class PMStringEntryWidget(PMBaseWidget):
 		self.string = str(self.stringbox.text())
 
 	def getValue(self):
-		# What to do with None tpye values? For strings, just set None to "". This should be equivilent
+		# What to do with None type values? For strings, just set None to "". This should be equivalent
 		return self.string
 
 	def setValue(self, string, quiet=False):
@@ -340,7 +340,7 @@ class PMHeaderWidget(PMBaseWidget):
 		self.setErrorMessage(None)
 
 	def getArgument(self):
-		""" Obvioulsy the hear does give an argument """
+		""" Obviously the header does give an argument """
 		return None
 
 class PMBoolWidget(PMBaseWidget):
