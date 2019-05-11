@@ -131,7 +131,7 @@ class ColumnGraphics(object):
 class MixedColor(object):
 	def __init__(self,color1,color2):
 		self.color1 = color1 # the color of the smallest column, for example
-		self.color2 = color2 # the color of the largeset column, for example
+		self.color2 = color2 # the color of the largest column, for example
 		
 		self.a1 = self.color1["ambient"]
 		self.a2 = self.color2["ambient"]
@@ -285,7 +285,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 		self.width_scale = 1.0 # a with scale factor for points on the unit sphere
 		self.height_scale = 1.0 # a height scale factor for points on the unit sphere
 		self.arc_width_scale = 0.2 # The width of the great arcs 
-		self.force_update = True  # Force update everything - causes a couple of dispay lists to be regenerated
+		self.force_update = True  # Force update everything - causes a couple of display lists to be regenerated
 #		
 		self.display_euler = True # Display sphere points flag
 		self.display_tri = False # Display asymm unit triangles flag
@@ -322,7 +322,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 		self.log_scale = False # Stores whether or not the cylinder height (score) is shown in log scale
 		self.current_cylinder_score = None # stores which header attribute is being used to scale the heights of the cylinders
 	
-		self.mirror_eulers = False # If True the drawn Eulers are are also rendered on the opposite side of the sphere - see make_sym_dl_list. e2eulerxplor turns this to True. Also useful for verifying that we have accurately demarcated the non mirror redundant portion of thhe asymmetric unit
+		self.mirror_eulers = False # If True the drawn Eulers are are also rendered on the opposite side of the sphere - see make_sym_dl_list. e2eulerxplor turns this to True. Also useful for verifying that we have accurately demarcated the non mirror redundant portion of the asymmetric unit
 
 		self.initialized = True
 	def __del__(self):
@@ -718,7 +718,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 #		print "EM3DSymModel.closeEvent()!"
 #		self.close_image_display()
 
-# Added capibility to read Euler angle files, Ryan style	
+# Added capability to read Euler angle files, Ryan style	
 	def generate_current_display_list(self,force=False): 
 		self.init_basic_shapes()
 		
@@ -787,7 +787,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 			if self.flatten>0.0 :
 				glPushMatrix()
 				d = p.get_rotation("eman")
-				# this is the tranpose, which is then converted from a right hand coordinate system (EMAN2) into a left hand coordinate system (OpenGL)
+				# this is the transpose, which is then converted from a right hand coordinate system (EMAN2) into a left hand coordinate system (OpenGL)
 				# hence there are no negative signs
 				glRotate(d["az"],0,0,1)
 				glTranslate(0,-(1.0-cos(d["alt"]*pi/180.0))*self.radius,0)
@@ -804,7 +804,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 			else:
 				glPushMatrix()
 				d = p.get_rotation("eman")
-				# this is the tranpose, which is then converted from a right hand coordinate system (EMAN2) into a left hand coordinate system (OpenGL)
+				# this is the transpose, which is then converted from a right hand coordinate system (EMAN2) into a left hand coordinate system (OpenGL)
 				# hence there are no negative signs
 				glRotate(d["az"],0,0,1)
 				glRotate(d["alt"],1,0,0)
@@ -841,7 +841,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 				else :
 					glPushMatrix()
 					d = s.get_rotation("eman")
-					# this is the tranpose, which is then converted from a right hand coordinate system (EMAN2) into a left hand coordinate system (OpenGL)
+					# this is the transpose, which is then converted from a right hand coordinate system (EMAN2) into a left hand coordinate system (OpenGL)
 					# hence there are no negative signs
 					glRotate(d["az"],0,0,1)
 					glRotate(d["alt"],1,0,0)
@@ -891,7 +891,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 			try:
 				ff=open(f,'r')
 			except:
-				print('couldnt read',f) 
+				print("couldn't read",f) 
 				return
 			lines=ff.readlines()
 			self.tracedata = []
@@ -1274,7 +1274,7 @@ class EMSymViewerWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 class SparseSymChoicesWidgets(object):
 	'''
-	An encapsulation of the most basic of symmetry inspector widgits
+	An encapsulation of the most basic of symmetry inspector widgets
 	Used by both EMSymChoiceDialog and EMSymInspector
 	'''
 	def __init__(self,widget,target):
