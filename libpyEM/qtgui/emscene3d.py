@@ -732,7 +732,7 @@ rulericon = [
 
 class EMScene3D(EMItem3D, EMGLWidget):
 	"""
-	Widget for rendering 3D objects. Uses a scne graph for rendering
+	Widget for rendering 3D objects. Uses a scene graph for rendering
 	"""
 	sgmousepress = QtCore.pyqtSignal(float, float)
 	sgmousemove = QtCore.pyqtSignal(float, float)
@@ -756,7 +756,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.main_3d_inspector = None			# No inspector by default
 		self.apix = None				# No angstrom per pixel to begin with
 		self.item_inspector = None			# Get the inspector GUI
-		self.reset_camera = False			# Toogle flag to deterine if the clipping plane has changed and needs redrawing
+		self.reset_camera = False			# Toggle flag to determine if the clipping plane has changed and needs redrawing
 		self.zslicemode = False				# Set to true when making a Z slice
 		#self.SGactivenodeset = SGactivenodeset		# A set of all active nodes (currently not used)
 		self.scalestep = scalestep			# The scale factor stepsize
@@ -780,7 +780,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		
 	def getEvalString(self):
 		"""
-		Retrun a string that after eval can reinstatiate the object
+		Return a string that after eval can reinstantiate the object
 		"""
 		return "SG"
 		
@@ -863,7 +863,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		glMatrixMode(GL_MODELVIEW)
 		glPushMatrix()
 		glLoadIdentity()
-		self.camera.setCameraPosition(sfactor=1) # Factor of two to compensate for the samera already being set
+		self.camera.setCameraPosition(sfactor=1) # Factor of two to compensate for the camera already being set
 		self.render()
 		glPopMatrix()
 		
@@ -878,7 +878,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 	
 	def selectArea(self, xi, xf, yi, yf, togglearea=True):
 		"""
-		Set an area for selection. Need to switch bewteen viewport coords, where (0,0 is bottom left) to
+		Set an area for selection. Need to switch between viewport coords, where (0,0 is bottom left) to
 		volume view coords where 
 0,0) is center of the screen.
 		"""
@@ -914,7 +914,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			glMaterialfv(GL_FRONT, GL_SPECULAR, [0.0,0.0,0.0,1.0])
 			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0,1.0,0.0,1.0])
 			glBegin(GL_LINE_LOOP)
-			# set the box just in front of the cliping plane
+			# set the box just in front of the clipping plane
 			z = -self.camera.getClipNear() - self.camera.getZclip()
 			sfw = self.camera.getViewPortWidthScaling()
 			sfh = self.camera.getViewPortHeightScaling()
@@ -929,7 +929,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 	
 	def _IsAncestorSelected(self, item):
 		"""
-		If an Ancestor is selected don't deselct by selecting a decendant
+		If an Ancestor is selected don't deselect by selecting a descendant
 		"""
 		if item.getSelectedAncestorNodes():
 			return True
@@ -979,7 +979,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 	
 	def clearSelection(self):
 		"""
-		Clear all slected itemstodeselect
+		Clear all selected items to deselect
 		"""
 		for selected in self.getAllSelectedNodes():
 			selected.setSelectedItem(False)
@@ -1100,7 +1100,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		node.setSelectedItem(True)
 		node.setHiddenSelected(self.getHiddenSelected()) # inherit hidden state from SG
 		self.insertNewNode(name, node)
-		node.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform()) # so the object is not modied by parent transform upon insertion
+		node.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform()) # so the object is not modified by parent transform upon insertion
 		
 	def _gettransformbasedonscreen(self, event, rescale=True):
 		""" Helper function to for mousePressEvent"""
@@ -1137,7 +1137,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
 			magnitude = math.sqrt(dx*dx + dy*dy)
 			# We want to remove the effect of self.camera.getViewPortWidthScaling() for rotation. For everything else the effect is desired
-			#Check to see if the cursor is in the 'virtual slider pannel'
+			#Check to see if the cursor is in the 'virtual slider panel'
 			try:
 				if  self.zrotate: # The lowest 5% of the screen is reserved from the Z spin virtual slider
 					self.updateMatrices([old_div(dx,self.camera.getViewPortWidthScaling()),0,0,-1], "rotate")
