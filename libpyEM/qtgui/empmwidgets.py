@@ -384,7 +384,7 @@ class PMBoolWidget(PMBaseWidget):
 			return ""
 
 class PMFileNameWidget(PMBaseWidget):
-	""" A Widget for geting filenames. Type is checked """
+	""" A Widget for getting filenames. Type is checked """
 	pmfilename = QtCore.pyqtSignal(str)
 	@staticmethod
 	def copyWidget(widget):
@@ -442,7 +442,7 @@ class PMFileNameWidget(PMBaseWidget):
 		# Check to see if the file exists
 		filename = str(filename)
 		if filename.upper() == "NONE": filename=""	# If none is passed set to blank
-		# Posional arguments must be space delimted for multiple files, whereas options must be comma delimted
+		# Positional arguments must be space delimited for multiple files, whereas options must be comma delimited
 		if not self.getPositional():
 			filename = filename.replace(" ",",")
 		# In some cases a file is optional
@@ -461,7 +461,7 @@ class PMFileNameWidget(PMBaseWidget):
 		self.pmfilename.emit(self.getValue())
 
 	def _checkfiles(self, filename):
-		# Posional arguments must be space delimted for multiple files, whereas options must be comma delimted
+		# Positional arguments must be space delimited for multiple files, whereas options must be comma delimited
 		if self.getPositional():
 			files = filename.split()
 		else:
@@ -505,7 +505,7 @@ class PMFileNameWidget(PMBaseWidget):
 		if self.isVisible() and not quiet: self.pmmessage.emit("File '%s' from field '%s' does not exist"%(filename,self.getName()))
 
 class PMDirectoryWidget(PMBaseWidget):
-	""" A Widget for display dircories of a certian type """
+	""" A Widget for display directories of a certain type """
 
 	@staticmethod
 	def copyWidget(widget):
@@ -532,7 +532,7 @@ class PMDirectoryWidget(PMBaseWidget):
 	def updateDirs(self):
 		for idx in range(self.combobox.count()):
 			self.combobox.removeItem(self.combobox.count()-1)
-		# This extra code allows use to have more than one type of directory
+		# This extra code allows us to have more than one type of directory
 		patterns = self.dirbasename.split("|")
 		dirs = []
 		for pattern in patterns:
@@ -581,7 +581,7 @@ class PMComboWidget(PMBaseWidget):
 
 	def getValue(self):
 		if str(self.combobox.currentText()) == "None":
-			# In the e2 programs we actually need to specify None otherwise default behaviour will be implmented
+			# In the e2 programs we actually need to specify None otherwise default behaviour will be implemented
 			return "None"
 		return self.datatype(self.combobox.currentText())
 
@@ -634,7 +634,7 @@ class PMComboParamsWidget(PMBaseWidget):
 	def getValue(self):
 		""" Return the value. Concatenate if necessary """
 		if str(self.combobox.currentText()) == "None":
-			# In the e2 programs we actually need to specify None otherwise default behaviour will be implmented
+			# In the e2 programs we actually need to specify None otherwise default behaviour will be implemented
 			return "None"
 		if self.params.text() == "":
 			return str(self.combobox.currentText())
@@ -745,7 +745,7 @@ class PMAutoMask3DWidget(PMBaseWidget):
 		self.params.append(PMFloatEntryWidget("Threshold", 0.8, mode))
 		self.params.append(PMIntEntryWidget("Radius", 30, mode))
 		self.params.append(PMIntEntryWidget("Mask Dilations", 5, mode))
-		self.params.append(PMIntEntryWidget("Gaussian Dialations", 5, mode))
+		self.params.append(PMIntEntryWidget("Gaussian Dilations", 5, mode))
 		self.params.append(PMIntEntryWidget("NMax", 30, mode))
 		gridbox.addWidget(self.automask3dbool, 0, 0)
 		gridbox.addWidget(self.params[0], 1, 0)
@@ -802,7 +802,7 @@ class PMAutoMask3DWidget(PMBaseWidget):
 
 class PMTableBase(PMBaseWidget):
 	""" A base widget for making tables. To make a table class subclass this base and add a line to PMGUIWidget in e2projectmanager.py
-	inorder to instatiate it using directions from an e2program. See Wiki for more info """
+	inorder to instantiate it using directions from an e2program. See Wiki for more info """
 	def __init__(self, name, mode, postional=False, initdefault=None):
 		PMBaseWidget.__init__(self, name, mode)
 		self.setPositional(postional)
@@ -815,16 +815,16 @@ class PMTableBase(PMBaseWidget):
 		self.setLayout(gridbox)
 
 	def updateTable(self):
-		""" Update FSC table. You must implment this function to build the table"""
-		raise NotImplementedError("Sub class must reimplemnt 'getValue' function")
+		""" Update FSC table. You must implement this function to build the table"""
+		raise NotImplementedError("Sub class must reimplement 'getValue' function")
 
 	def getValue(self):
-		""" must implment this to, to return a value from the table """
-		raise NotImplementedError("Sub class must reimplemnt 'getValue' function")
+		""" must implement this to, to return a value from the table """
+		raise NotImplementedError("Sub class must reimplement 'getValue' function")
 
 	def setValue(self):
-		""" must implemnt this function to set a value in the table """
-		raise NotImplementedError("Sub class must reimplemnt 'getValue' function")
+		""" must implement this function to set a value in the table """
+		raise NotImplementedError("Sub class must reimplement 'getValue' function")
 
 class PMFSCTableWidget(PMTableBase):
 	""" A widget for generating FSC tables"""
