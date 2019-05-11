@@ -79,7 +79,7 @@ def clamp(x0,val,x1):
 class ValSlider(QtWidgets.QWidget):
 	"""The valslider class represents a connected text widget and horizontal slider.
 	showenable - if -1, no enable box shown, if 0, shown unchecked, if 1 shown and checked
-	setValue(float) - to programatically change the value
+	setValue(float) - to programmatically change the value
 	emit valueChanged(float)
 	"""
 	enableChanged = QtCore.pyqtSignal(int)
@@ -732,7 +732,7 @@ class RangeSlider(QtWidgets.QWidget):
 class EMSpinWidget(QtWidgets.QWidget):
 	"""
 	Widget for a unbounded spin box using left and right arrow keys. When the value is changed
-	valueChanged(int) is emited
+	valueChanged(int) is emitted
 	@param value is the starting value
 	@param coeff is controls the exponential growth rate when the arrow is held down
 	@param maxarrowwidth is the size of the arrow buttons
@@ -920,7 +920,7 @@ def singleton(cls):
 @singleton
 class EMQtColorDialog(QtWidgets.QColorDialog):
 	"""
-	The Is to create a non-modal color dialog. Only one color dialog is allowed at once, so I use the singltion pattern
+	This is to create a non-modal color dialog. Only one color dialog is allowed at once, so I use the singleton pattern
 	"""
 	canceled = QtCore.pyqtSignal()
 
@@ -937,8 +937,8 @@ class EMQtColorDialog(QtWidgets.QColorDialog):
 
 class EMLightControls(QtOpenGL.QGLWidget):
 	"""
-	Widget to set the postion of a light in 3D. When the light position is moved  it emits
-	its position in spherical corridinants (theta and phi) as the signal: lightPositionMoved
+	Widget to set the position of a light in 3D. When the light position is moved  it emits
+	its position in spherical coordinates (theta and phi) as the signal: lightPositionMoved
 	Its position can be set via: setAngularPosition
 	@param light, the glLight the this widget uses
 	"""
@@ -1069,9 +1069,9 @@ class EMLightControls(QtOpenGL.QGLWidget):
 		
 class CameraControls(QtOpenGL.QGLWidget):
 	"""
-	Widget to set the camera position. When clipping planes are moved a farMoved(float) or nearMoved(float) signal is emmited.
+	Widget to set the camera position. When clipping planes are moved a farMoved(float) or nearMoved(float) signal is emitted.
 	This widget is an observer of the Camera object (used in the Scenegraph). To update call updateWidget
-	@param scenegraph, the scenegraph this widget oberrves
+	@param scenegraph, the scenegraph this widget observes
 	"""
 	farMoved = QtCore.pyqtSignal(float)
 	nearMoved = QtCore.pyqtSignal(float)
@@ -1181,7 +1181,7 @@ class CameraControls(QtOpenGL.QGLWidget):
 		
 class EMANToolButton(QtWidgets.QToolButton):
 	"""
-	This widget is a toolbutton that is toogleable. Only one button can be down at any given point.
+	This widget is a toolbutton that is toggleable. Only one button can be down at any given point.
 	The only weakness is only one of these button groups can be used at any given time. It is possible 
 	to fix this, but when I need such functionality
 	"""
