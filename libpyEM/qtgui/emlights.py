@@ -57,7 +57,7 @@ import weakref # for EMLightsInspector
 
 class EMLightsDrawer(object):
 	'''
-	Base clase, works with EMLightsInspectorBase
+	Base class, works with EMLightsInspectorBase
 	'''
 	def __init__(self):
 		
@@ -449,7 +449,7 @@ class EMLightsDrawer(object):
 		# this function implements mouse interactive rotation
 		# [x,y] is the vector generating by the mouse movement (in the plane of the screen)
 		# Rotation occurs about the vector 90 degrees to [x,y,0]
-		# The amount of rotation is linealy proportional to the length of [x,y]
+		# The amount of rotation is linearly proportional to the length of [x,y]
 		
 		if self.current_mouse_mode not in ["directional", "point source"]:
 			raise NotImplementedError
@@ -462,7 +462,7 @@ class EMLightsDrawer(object):
 		rotaxis_y = cos(theta)
 		rotaxis_z = 0
 		length = sqrt(x*x + y*y)
-		# motiondull is a magic number - things rotate more if they are closer and slower if they are far away in this appproach
+		# motiondull is a magic number - things rotate more if they are closer and slower if they are far away in this approach
 		# This magic number could be overcome using a strategy based on the results of get_render_dims_at_depth
 		angle = 4*fac*length/pi # the four is just because I liked the feel of it
 		
@@ -1020,7 +1020,7 @@ class EMLightsInspectorBase(object):
 					spot_cutoff = glGetLightfv(l,GL_SPOT_CUTOFF)
 					if spot_cutoff > 90: glLightfv(l,GL_SPOT_CUTOFF,90)
 				else:
-					# make sure that it's directionaly
+					# make sure that it's directionally
 					if pos[3] != 0:
 						pos[3] = 0
 						glLightfv(l,GL_POSITION,pos)
