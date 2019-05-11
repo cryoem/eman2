@@ -44,7 +44,7 @@ import os, getpass, socket, subprocess, threading, time,select,shutil, traceback
 from pickle import dumps,loads,dump,load
 
 from EMAN2jsondb import JSTask,JSTaskQueue,js_open_dict
-from EMAN2 import test_image,EMData,abs_path,local_datetime,EMUtil,Util,get_platform
+from EMAN2 import test_image,EMData,abs_path,local_datetime,EMUtil,Util,get_platform, e2getinstalldir
 
 DBUG=False		# If set will dump a bunch of debugging output, normally should be False
 
@@ -703,7 +703,7 @@ class EMLocalTaskHandler(object):
 					cmd+=" --loadmodule={}".format(self.module)
 					
 				if get_platform() == 'Windows':
-					cmd="python {}\\bin\\".format(os.getenv('EMAN2DIR'))+cmd
+					cmd="python {}\\bin\\".format(e2getinstalldir())+cmd
 					
 				proc=subprocess.Popen(cmd, shell=True)
 				self.running.append((proc,self.nextid))
