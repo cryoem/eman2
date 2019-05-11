@@ -2238,7 +2238,7 @@ class EMInspector3D(QtWidgets.QWidget):
 
 	def _recursiveAdd(self, parentitem, parentnode,depth=0):
 		"""
-		Helper function to laod the SG
+		Helper function to load the SG
 		"""
 		for child in parentnode.getChildren():
 			if not child.getLabel(): child.setLabel(child.name)
@@ -2260,7 +2260,7 @@ class EMInspector3D(QtWidgets.QWidget):
 		Add a node (item3d) to the TreeWidget if not parent node, otherwise add a child to parent node
 		We need to get a GUI for the treeitem. The treeitem and the GUI need know each other so they can talk
 		The Treeitem also needs to know the node, so it can talk to the node.
-		You can think of this as a three way conversation (the alterative it to use a mediator, but that is not worth it w/ only three players)
+		You can think of this as a three way conversation (the alternative it to use a mediator, but that is not worth it w/ only three players)
 		"""
 		tree_item = EMQTreeWidgetItem(name, item3d, parentitem)	# Make a QTreeItem widget, and let the TreeItem talk to the scenegraph node and its GUI
 		item3d.setEMQTreeWidgetItem(tree_item)				# Reference to the EMQTreeWidgetItem
@@ -2302,7 +2302,7 @@ class EMInspector3D(QtWidgets.QWidget):
 		"""
 		self.stacked_widget.setCurrentWidget(item.item3d().getItemInspector())
 		item.setSelectionState(item.checkState(0))
-		# This code is to prevent both decendents and childer from being selected....
+		# This code is to prevent both descendants and children from being selected....
 		if item.checkState(0) == QtCore.Qt.Checked: self.ensureUniqueTreeLevelSelection(item.item3d())
 		if not item.item3d().isSelectedItem(): item.item3d().getItemInspector().updateItemControls() # This is too update a widget, translation and rotation may change in parent nodes change
 		self.scenegraph().setCurrentSelection(item.item3d())
@@ -2685,7 +2685,7 @@ class EMInspector3D(QtWidgets.QWidget):
 		
 	def getUtilsWidget(self):
 		"""
-		Return the utilites widget
+		Return the utilities widget
 		"""
 		uwidget = QtWidgets.QWidget()
 		uvbox = QtWidgets.QVBoxLayout()
@@ -2788,7 +2788,7 @@ class EMInspector3D(QtWidgets.QWidget):
 		
 	def updateInspector(self):
 		"""
-		Update Inspector,is called whenever the scence changes
+		Update Inspector,is called whenever the scene changes
 		"""
 		#tool buttons
 		if self.scenegraph().getMouseMode() == "selection": self.selectiontool.setDown(True)
@@ -2864,7 +2864,7 @@ class EMInspector3D(QtWidgets.QWidget):
 
 class EMSGNodeInspector(EMItem3DInspector):
 	"""
-	Inspector for the SG node, allows special fucntionality for the SG node
+	Inspector for the SG node, allows special functionality for the SG node
 	"""
 	def __init__(self, name, item3d):
 		EMItem3DInspector.__init__(self, name, item3d)
@@ -2878,7 +2878,7 @@ class EMSGNodeInspector(EMItem3DInspector):
 			self.addTab(tabwidget, "misc")
 		
 	def addExtraTabAllObjects(self,gridbox):
-		self.getthresh = QtWidgets.QLabel("Iso-threshod")
+		self.getthresh = QtWidgets.QLabel("Iso-threshold")
 		self.isothr_box=QtWidgets.QLineEdit("0.0")
 		gridbox.addWidget(self.getthresh, 1, 0, 1, 1)
 		gridbox.addWidget(self.isothr_box, 1, 1, 1, 1)
@@ -2942,7 +2942,7 @@ class EMSGNodeInspector(EMItem3DInspector):
 			# Use modulo arith to distribute
 			if hasattr(child, 'getBoundingBoxDimensions'):
 				dims = child.getBoundingBoxDimensions()
-				# distribute alogn X not matter what the SG root matrix
+				# distribute along X not matter what the SG root matrix
 				self._set_transformSTDCorrd(child, math.pow(-1,(count%2))*distcount*dims[0], 0.0, 0.0)
 				if (count + 1) % 2: distcount += 1
 				count += 1
@@ -3034,11 +3034,11 @@ class EMQTreeWidgetItem(QtWidgets.QTreeWidgetItem):
 		self.invisible = QtGui.QIcon(QtGui.QPixmap(invisibleicon))
 		self.setCheckState(0, QtCore.Qt.Unchecked)
 		self.getVisibleState()
-		self.setToolTip(0, 'Click on the checkbox to select\nMiddle click to edit\nRight click to toogle visible')
+		self.setToolTip(0, 'Click on the checkbox to select\nMiddle click to edit\nRight click to toggle visible')
 	
 	def setSelectionState(self, state):
 		""" 
-		Toogle selection state on and off
+		Toggle selection state on and off
 		"""
 		if state == QtCore.Qt.Checked:
 			self.item3d().setSelectedItem(True)
@@ -3048,7 +3048,7 @@ class EMQTreeWidgetItem(QtWidgets.QTreeWidgetItem):
 		
 	def toggleVisibleState(self):
 		""" 
-		Toogle visible state on and off
+		Toggle visible state on and off
 		"""
 		self.item3d().setVisibleItem(not self.item3d().isVisibleItem())
 		self.getVisibleState()
