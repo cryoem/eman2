@@ -1161,7 +1161,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			
 	def mouseReleaseEvent(self, event):
 		"""
-		Qt event handler. Returns the cursor to arrow unpon mouse button release
+		Qt event handler. Returns the cursor to arrow upon mouse button release
 		"""
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "app"):
 			self.sgmouserelease.emit([event.x(), event.y()])
@@ -1175,9 +1175,9 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			
 	def wheelEvent(self, event):
 		"""
-		QT event handler. Scales the SG upon wheel movement, does so by chaning fovy or orthographic equilivant
+		QT event handler. Scales the SG upon wheel movement, does so by changing fovy or orthographic equivalent
 		"""
-		# Originally the wheel sclaed by zoom the viewport, but that caused all sorts of issues, so I now just scale the SG
+		# Originally the wheel scaled by zoom the viewport, but that caused all sorts of issues, so I now just scale the SG
 		# The 25 is a fudge factor that controls the speed of scaling, lower if slower scaling
 		if event.angleDelta().y() > 0:
 			if self.camera.getUseOrtho():
@@ -1341,7 +1341,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			
 	def setMouseMode(self, mousemode):
 		"""
-		Sets the mouse mode, used by the inpsector
+		Sets the mouse mode, used by the inspector
 		"""
 		self.mousemode = mousemode
 		
@@ -1366,7 +1366,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		oldfar = self.camera.getClipFar()
 		self.zslicemode = True
 		# We want to see the full volume data rather than a clip, so move clipping planes to BIG
-		# BIG is a bit differnt for perspective and orthgraphic volumes
+		# BIG is a bit different for perspective and orthographic volumes
 		if self.camera.usingortho:
 			self.camera.setClipNear(-1000)
 			self.camera.setClipFar(1000)
@@ -1500,10 +1500,10 @@ class EMScene3D(EMItem3D, EMGLWidget):
 	def insertNewNode(self, name, node, parentnode=None, parentidx=None):
 		"""
 		Insert a new node in the SG, also takes care of inspector
-		if parent node is sepcified the node is inserted as a child of the parent
-		This function should be used to add nodes to the tree b/c it detemines where in the tree the node should be inserted
+		if parent node is specified the node is inserted as a child of the parent
+		This function should be used to add nodes to the tree b/c it determines where in the tree the node should be inserted
 		@param name The node name
-		@param node the node iteslf
+		@param node the node itself
 		@param parentnode, the parent node if there is one
 		@param the index to insert the child in. NOne, means append child to end of children 
 		"""
@@ -1538,7 +1538,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		
 		self.makeCurrent()
 		# Clear old tree
-		children = tuple(self.getChildren()) # Need to create immutable so that list chaos does not ensue with prunnig down the list
+		children = tuple(self.getChildren()) # Need to create immutable so that list chaos does not ensue with pruning down the list
 		for child in children:
 			self.removeChild(child)
 		
@@ -1644,13 +1644,13 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		
 	def cameraNeedsanUpdate(self):
 		"""
-		Tell the SG to restet the camera
+		Tell the SG to reset the camera
 		"""
 		self.reset_camera = True
 		
 	def setClearColor(self, r, g, b, a=0.0):
 		"""
-		Set the background colorambient
+		Set the background color ambient
 		"""
 		self.clearcolor = [r, g, b, a]
 		glClearColor(r, g, b, a)
@@ -1739,7 +1739,7 @@ class EMLight(object):
 		"""
 		@type light: GL_LIGHTX, where 0 =< X <= 8
 		@param light: an OpenGL light
-		The light properties are set to reasnonale defaults.
+		The light properties are set to reasonable defaults.
 		"""
 		self.light = light
 		self.setAmbient(0.3, 0.3, 0.3, 1.0)		# Default ambient color is light grey
@@ -1790,7 +1790,7 @@ class EMLight(object):
 		@param g: the green component of the diffuse and specular light
 		@param b: the blue component of the diffuse and specular light
 		@param a: the alpha component of the diffuse and specular light
-		Set the specualr light color
+		Set the specular light color
 		"""
 		self.colorspecular = [r, g, b, a]
 		glLightfv(self.light, GL_SPECULAR, self.colorspecular)
@@ -1801,7 +1801,7 @@ class EMLight(object):
 		@param y: The y component of the light position
 		@param z: The z component of the light position
 		@param w: The w component of the light position
-		Set the light position, in gomogenious corrds
+		Set the light position, in homogeneous coords
 		"""
 		self.position = [x, y, z, w]
 		glLightfv(self.light, GL_POSITION, self.position)
@@ -1810,7 +1810,7 @@ class EMLight(object):
 		"""
 		@param theta: The theta component of the light position in spherical coords
 		@param phi: The theta component of the light position in spherical coords
-		Set the light position in sphericla coords. This is only used by the lightwidget in the inspector
+		Set the light position in spherical coords. This is only used by the lightwidget in the inspector
 		"""
 		z = math.sin(math.radians(theta + 90))*math.cos(math.radians(phi))
 		y = math.sin(math.radians(theta + 90))*math.sin(math.radians(phi))
@@ -1820,7 +1820,7 @@ class EMLight(object):
 		
 	def getAngularPosition(self):
 		"""
-		Retun the light position as spherical coords
+		Return the light position as spherical coords
 		"""
 		return self.angularposition
 		
