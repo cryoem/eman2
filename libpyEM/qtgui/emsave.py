@@ -257,7 +257,7 @@ class EMSingleImageSaveDialog(EMFileSaver):
 			self.__item.write_image(out_file, -1)
 		except:
 			msg = QtWidgets.QMessageBox()
-			msg.setText("An exception occured while writing %s, please try again" %out_file)
+			msg.setText("An exception occurred while writing %s, please try again" %out_file)
 			msg.exec_()
 			tmp_file_object.remove_tmp_file()
 			return 1
@@ -460,7 +460,7 @@ class EMStackSaveDialog(EMFileSaver):
 			try:
 				d.write_image(out_file,-1)
 			except:
-				msg.setText("An exception occured while writing %s, please try again" %out_file)
+				msg.setText("An exception occurred while writing %s, please try again" %out_file)
 				msg.exec_()
 				tmp_file_object.remove_tmp_file()
 				progress.close()
@@ -753,7 +753,7 @@ class EMImagicTmpFileHandle(EMTmpFileHandleBase):
 	def __init__(self,file_name):
 		'''
 		@param file_name the name of the file that which is being overwritten
-		@exception if either the .hed or .img file corrsponding to the old_file_name does not exist on the file system
+		@exception if either the .hed or .img file corresponding to the old_file_name does not exist on the file system
 		@exception if the old_file_name is not an imagic file
 		'''
 		
