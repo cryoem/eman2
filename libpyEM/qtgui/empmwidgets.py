@@ -33,10 +33,10 @@ from __future__ import division
 #
 #
 
-# These are widgets that e2projectmanger instatiates to make a GUI interface for the e2 programs.There should be enough widgets to represent
-# just about any e2program, but if you feel the desire to make a new one, just subclass PMBaseWidget, and implemnt getValue and setValue.
-# You may also need to reimplemnt getArgument (which returns the argument used in calling the e2program), if the default will not work for you.
-# In addition, you'll need to add a line in the class PMGUIWidget (e2projectmanager) to instatiate the widget based on the value of 'guitype'
+# These are widgets that e2projectmanager instantiates to make a GUI interface for the e2 programs.There should be enough widgets to represent
+# just about any e2program, but if you feel the desire to make a new one, just subclass PMBaseWidget, and implement getValue and setValue.
+# You may also need to reimplement getArgument (which returns the argument used in calling the e2program), if the default will not work for you.
+# In addition, you'll need to add a line in the class PMGUIWidget (e2projectmanager) to instantiate the widget based on the value of 'guitype'
 
 from past.utils import old_div
 from builtins import range
@@ -51,7 +51,7 @@ from .empmtabwidgets import *
 from functools import reduce
 
 class PMComboBox(QtWidgets.QComboBox):
-	""" Reimplment the QComboBox to remove wheel widget activation """
+	""" Reimplement the QComboBox to remove wheel widget activation """
 	def __init__(self):
 		QtWidgets.QComboBox.__init__(self)
 
@@ -76,22 +76,22 @@ class PMBaseWidget(QtWidgets.QWidget):
 
 	def getValue(self):
 		""" Get the value for this widget """
-		raise NotImplementedError("Sub class must reimplemnt 'getValue' function")
+		raise NotImplementedError("Sub class must reimplement 'getValue' function")
 
 	def setValue(self, value, quiet=False):
 		""" Set the value for this widget """
-		raise NotImplementedError("Sub class must reimplemnt 'setValue' function")
+		raise NotImplementedError("Sub class must reimplement 'setValue' function")
 
 	def getName(self):
 		""" Return the name of this widget """
 		return self.name
 
 	def setPositional(self, position):
-		""" Set whether or not this is a postional argument """
+		""" Set whether or not this is a positional argument """
 		self.postional = position
 
 	def getPositional(self):
-		""" Return true is this is a positional argument rather than an option """
+		""" Return true if this is a positional argument rather than an option """
 		return self.postional
 
 	def setMode(self, mode):
@@ -103,13 +103,13 @@ class PMBaseWidget(QtWidgets.QWidget):
 		return self.mode
 
 	def getArgument(self):
-		# If the value is None or blank then do not yeild an option. Obviously this will nver happen for Int bool or float
+		# If the value is None or blank then do not yield an option. Obviously this will never happen for int, bool or float
 		if str(self.getValue()) == "" or self.noarg:
 			return ""
 		elif  str(self.getValue()).upper() == "NONE" and not self.returnNone:
 			return ""
 		else:
-			""" There are two sorts of arguments: Posional and optional """
+			""" There are two sorts of arguments: Positional and optional """
 			if self.getPositional():
 				return str(self.getValue())
 			else:
