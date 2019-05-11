@@ -33,7 +33,7 @@ from __future__ import division
 #
 #
 
-# These classes are subclasses of EMBrowserWidget to provide additonal models to represent various types of files in the GUI.
+# These classes are subclasses of EMBrowserWidget to provide additional models to represent various types of files in the GUI.
 
 from past.utils import old_div
 from EMAN2 import *
@@ -45,7 +45,7 @@ from .embrowser import EMBrowserWidget, EMFileItemModel, EMDirEntry, nonone, saf
 
 
 class EMRefine2dTable(EMBrowserWidget):
-	""" Widgewt to display refinement directories """
+	""" Widget to display refinement directories """
 	def __init__(self, withmodal=False, multiselect=False):
 		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=".")
 
@@ -60,7 +60,7 @@ class EMRefine2dModel(EMFileItemModel):
 
 
 class EMValidateTable(EMBrowserWidget):
-	""" Widgewt to display refinement directories """
+	""" Widget to display refinement directories """
 	def __init__(self, withmodal=False, multiselect=False):
 		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=".")
 
@@ -75,7 +75,7 @@ class EMValidateModel(EMFileItemModel):
 
 
 class EMRefineTable(EMBrowserWidget):
-	""" Widgewt to display refinement directories """
+	""" Widget to display refinement directories """
 	def __init__(self, withmodal=False, multiselect=False):
 		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=".")
 
@@ -162,7 +162,7 @@ class EMModelsEntry(EMDirEntry):
 		# Should only be this:
 		self.filetype="Image"
 
-		# get image counts Needed for get info. Requiring this in in a reimplemeted function is a bad design... I din't do this :)
+		# get image counts Needed for get info. Requiring this in in a reimplemented function is a bad design... I din't do this :)
 		try:
 			self.nimg = EMUtil.get_image_count(self.path())
 		except:
@@ -388,7 +388,7 @@ class EMParticlesEntry(EMDirEntry):
 			if a:
 				self.particledim = a.get_xsize()
 
-			# get partivle set type
+			# get particle set type
 			try:
 				self.typ = str(self.path().split('_ctf_')[1])
 			except:
@@ -550,7 +550,7 @@ class EMCTFParticlesEntry(EMDirEntry):
 			if a:
 				self.particledim = a.get_xsize()
 
-			# get partivle set type
+			# get particle set type
 			try:
 				self.typ = str(self.path().split('_ctf_')[1])
 			except:
