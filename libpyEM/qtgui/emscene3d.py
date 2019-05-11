@@ -3112,14 +3112,14 @@ class NodeEditDialog(QtWidgets.QDialog):
 	
 class NodeDialog(QtWidgets.QDialog):
 	"""
-	Generate a dialog to add or remove node. If reome is chosen 'item' node is removed
+	Generate a dialog to add or remove node. If remove is chosen 'item' node is removed
 	If add node is chosen, a node is inserted just below this node.
 	"""
 	def __init__(self, inspector, item):
 		QtWidgets.QDialog.__init__(self)
 		self.item = item
 		self.inspector = weakref.ref(inspector)
-		self.setWindowTitle('Node Controler')
+		self.setWindowTitle('Node Controller')
 		self.setMaximumWidth(300)
 		self.transformgroup = {}
 		vbox = QtWidgets.QVBoxLayout(self)
@@ -3261,8 +3261,8 @@ class NodeDialog(QtWidgets.QDialog):
 		
 		insertion_node.setLabel(node_name)
 		self.inspector().scenegraph().insertNewNode(node_name, insertion_node, parentnode=parentnode)
-		insertion_node.setTransform(insertion_node.getParentMatrixProduct().inverse()*insertion_node.getTransform()) # Move to standard coordinatre system
-		insertion_node.getTransform().set_scale(1.0)	# The scale can be adverly affected by the above line of code. This may or may not be optimal I'll have to think about it....
+		insertion_node.setTransform(insertion_node.getParentMatrixProduct().inverse()*insertion_node.getTransform()) # Move to standard coordinate system
+		insertion_node.getTransform().set_scale(1.0)	# The scale can be adversely affected by the above line of code. This may or may not be optimal I'll have to think about it....
 		#if reverttrans: insertion_node.getTransform().set_trans(float(d[0].text()),float(d[1].text()),float(d[2].text()))
 		self.inspector().updateSceneGraph()
 		self.done(0)
