@@ -107,6 +107,9 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		# Update the project are construction
 		self.updateProject()
 
+	def mousePressEvent(self, event):
+		self.setFocus()
+	
 	def closeEvent(self, event):
 		""" Upon PM close, close the taskmanager and the logbook """
 		E2saveappwin("e2projectmanager","main",self)
@@ -493,6 +496,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		hbox = QtWidgets.QHBoxLayout()
 		self.cancelbutton = QtWidgets.QPushButton("Cancel")
 		self.launchbutton = QtWidgets.QPushButton("Launch")
+		self.launchbutton.setFocusPolicy(Qt.StrongFocus)
 		hbox.addWidget(self.cancelbutton)
 		hbox.addWidget(self.launchbutton)
 		hbox.setContentsMargins(4,4,4,4)
