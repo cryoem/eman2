@@ -59,8 +59,6 @@ import traceback
 import weakref
 
 
-
-#---------------------------------------------------------------------------
 def display_error(msg) :
 	"""Displays an error message, in gui and on terminal."""
 
@@ -120,7 +118,6 @@ def askFileExists() :
 	elif box.clickedButton() == b2 : return "overwrite"
 	else : return "cancel"
 
-#---------------------------------------------------------------------------
 
 class EMFileType(object) :
 	"""This is a base class for handling interaction with files of different types. It includes a number of excution methods common to
@@ -503,7 +500,6 @@ class EMFileType(object) :
 		else:
 			os.system("e2filtertool.py %s &"%self.path)
 
-#---------------------------------------------------------------------------
 
 class EMTextFileType(EMFileType) :
 	"""FileType for files containing normal ASCII text"""
@@ -591,7 +587,6 @@ class EMHTMLFileType(EMFileType) :
 		else : 
 			print("Sorry, I don't know how to run Firefox on this platform")
 
-#---------------------------------------------------------------------------
 
 class EMPlotFileType(EMFileType) :
 	"""FileType for files containing normal ASCII text"""
@@ -848,7 +843,6 @@ class EMPlotFileType(EMFileType) :
 		target.raise_()
 
 
-#---------------------------------------------------------------------------
 
 class EMFolderFileType(EMFileType) :
 	"""FileType for Folders"""
@@ -874,8 +868,6 @@ class EMFolderFileType(EMFileType) :
 		"""Returns a list of (name, callback) tuples detailing the operations the user can call on the current file"""
 
 		return []
-
-#---------------------------------------------------------------------------
 
 class EMJSONFileType(EMFileType) :
 	"""FileType for JSON files"""
@@ -921,7 +913,6 @@ class EMJSONFileType(EMFileType) :
 
 		return []
 
-#---------------------------------------------------------------------------
 
 class EMBdbFileType(EMFileType) :
 	"""FileType for Folders"""
@@ -1020,7 +1011,6 @@ class EMBdbFileType(EMFileType) :
 			os.system("/Applications/Chimera.app/Contents/MacOS/chimera /tmp/vol.hdf&")
 		else : print("Sorry, I don't know how to run Chimera on this platform")
 
-#---------------------------------------------------------------------------
 
 class EMImageFileType(EMFileType) :
 	"""FileType for files containing a single 2-D image"""
@@ -1120,7 +1110,6 @@ class EMImageFileType(EMFileType) :
 			os.system("/Applications/Chimera.app/Contents/MacOS/chimera /tmp/vol.hdf&")
 		else : print("Sorry, I don't know how to run Chimera on this platform")
 
-#---------------------------------------------------------------------------
 
 class EMStackFileType(EMFileType) :
 	"""FileType for files containing a set of 1-3D images"""
@@ -1191,7 +1180,6 @@ class EMStackFileType(EMFileType) :
 			os.system("/Applications/Chimera.app/Contents/MacOS/chimera /tmp/vol.hdf&")
 		else : print("Sorry, I don't know how to run Chimera on this platform")
 
-#---------------------------------------------------------------------------
 
 class EMPDBFileType(EMFileType):
 	
@@ -1323,7 +1311,6 @@ class EMPDBFileType(EMFileType):
 		else:
 			print("Sorry, I don't know how to run Chimera on this platform")
 
-#---------------------------------------------------------------------------
 
 # These are set all together at the end rather than after each class for efficiency
 
@@ -1357,7 +1344,6 @@ EMFileType.extbyft = {
 
 EMFileType.alltocheck = (EMPlotFileType, EMPDBFileType, EMTextFileType)
 
-#---------------------------------------------------------------------------
 
 class EMDirEntry(object) :
 	"""Represents a directory entry in the filesystem"""
@@ -1730,8 +1716,6 @@ class EMDirEntry(object) :
 			except : pass
 		return 1
 
-#---------------------------------------------------------------------------
-
 def nonone(val) :
 	"""Returns '-' for None, otherwise the string representation of the passed value"""
 
@@ -1750,8 +1734,6 @@ def humansize(val) :
 	elif val > 1000000 : return "%d m"%(old_div(val,1000000))
 	elif val > 1000 : return "%d k"%(old_div(val,1000))
 	return str(val)
-
-#---------------------------------------------------------------------------
 
 class EMFileItemModel(QtCore.QAbstractItemModel) :
 	"""This ItemModel represents the local filesystem. We don't use the normal filesystem item model because we want
@@ -1934,7 +1916,6 @@ class EMFileItemModel(QtCore.QAbstractItemModel) :
 		if index.internalPointer().fillDetails() :
 			self.dataChanged.emit(index, self.createIndex(index.row(), 5, index.internalPointer()))
 
-#---------------------------------------------------------------------------
 
 class myQItemSelection(QtCore.QItemSelectionModel) :
 	"""For debugging"""
@@ -1942,8 +1923,6 @@ class myQItemSelection(QtCore.QItemSelectionModel) :
 	def select(self, tl, br) :
 		print(tl.indexes()[0].row(), tl.indexes()[0].column(), int(br))
 		QtCore.QItemSelectionModel.select(self, tl, QtCore.QItemSelectionModel.SelectionFlags(QtCore.QItemSelectionModel.ClearAndSelect+QtCore.QItemSelectionModel.Rows))
-
-#---------------------------------------------------------------------------
 
 class EMInfoPane(QtWidgets.QWidget) :
 	"""Subclasses of this class will be used to display information about specific files. Each EMFileType class will return the
@@ -2054,8 +2033,6 @@ class EMTextInfoPane(EMInfoPane) :
 		try : open(self.target.path(), "w").write(str(self.text.toPlainText()))
 		except : QtWidgets.QMessageBox.warning(self, "Error !", "File write failed")
 
-#---------------------------------------------------------------------------
-
 class EMHTMLInfoPane(EMInfoPane) :
 	def __init__(self, parent = None) :
 		QtWidgets.QWidget.__init__(self, parent)
@@ -2127,8 +2104,6 @@ class EMHTMLInfoPane(EMInfoPane) :
 		try : open(self.target.path(), "w").write(str(self.text.toHtml()))
 		except : QtWidgets.QMessageBox.warning(self, "Error !", "File write failed")
 
-#---------------------------------------------------------------------------
-
 class EMPDBInfoPane(EMInfoPane) :
 	def __init__(self, parent = None) :
 		QtWidgets.QWidget.__init__(self, parent)
@@ -2186,8 +2161,6 @@ class EMPDBInfoPane(EMInfoPane) :
 		try : open(self.target.path(), "w").write(str(self.text.toPlainText()))
 		except : QtWidgets.QMessageBox.warning(self, "Error !", "File write failed")
 
-#---------------------------------------------------------------------------
-
 class EMPlotInfoPane(EMInfoPane) :
 	def __init__(self, parent = None) :
 		QtWidgets.QWidget.__init__(self, parent)
@@ -2237,8 +2210,6 @@ class EMPlotInfoPane(EMInfoPane) :
 		if len(data) == 2500 :
 			self.plotdata.setVerticalHeaderItem(2500, QtWidgets.QTableWidgetItem("..."))
 
-#---------------------------------------------------------------------------
-
 class EMFolderInfoPane(EMInfoPane) :
 	def __init__(self, parent = None) :
 		QtWidgets.QWidget.__init__(self, parent)
@@ -2249,8 +2220,6 @@ class EMFolderInfoPane(EMInfoPane) :
 		"""display information for the target EMDirEntry"""
 
 		self.target = target
-
-#---------------------------------------------------------------------------
 
 class EMBDBInfoPane(EMInfoPane) :
 	maxim = 500
@@ -2450,8 +2419,6 @@ class EMBDBInfoPane(EMInfoPane) :
 			self.wheadtree.resizeColumnToContents(0)
 		else : parent.addChildren(itms)
 
-#---------------------------------------------------------------------------
-
 class EMJSONInfoPane(EMInfoPane) :
 	def __init__(self, parent = None) :
 		QtWidgets.QWidget.__init__(self, parent)
@@ -2631,7 +2598,6 @@ class EMJSONInfoPane(EMInfoPane) :
 			self.wheadtree.resizeColumnToContents(0)
 		else : parent.addChildren(itms)
 
-#---------------------------------------------------------------------------
 
 class EMImageInfoPane(EMInfoPane) :
 	maxim = 500
@@ -2696,8 +2662,6 @@ class EMImageInfoPane(EMInfoPane) :
 			self.wheadtree.addTopLevelItems(itms)
 			self.wheadtree.resizeColumnToContents(0)
 		else : parent.addChildren(itms)
-
-#---------------------------------------------------------------------------
 
 class EMStackInfoPane(EMInfoPane) :
 	module_closed = QtCore.pyqtSignal()
@@ -2923,8 +2887,6 @@ class EMStackInfoPane(EMInfoPane) :
 			self.wheadtree.resizeColumnToContents(0)
 		else : parent.addChildren(itms)
 
-#---------------------------------------------------------------------------
-
 class EMInfoWin(QtWidgets.QWidget) :
 	"""The info window"""
 	winclosed = QtCore.pyqtSignal()
@@ -3030,8 +2992,6 @@ class SortSelTree(QtWidgets.QTreeView) :
 
 #		for i in sel : self.selectionModel().select(i, QtCore.QItemSelectionModel.ClearAndSelect)
 #		self.update()
-
-#---------------------------------------------------------------------------
 
 class EMBrowserWidget(QtWidgets.QWidget) :
 	"""This widget is a file browser for EMAN2. In addition to being a regular file browser, it supports:

@@ -58,7 +58,6 @@ class EMRefine2dModel(EMFileItemModel):
 		regex = re.compile('^r2d')
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMDirEntry, dirregex=regex)
 
-########################################################################################################################
 
 class EMValidateTable(EMBrowserWidget):
 	""" Widgewt to display refinement directories """
@@ -74,7 +73,6 @@ class EMValidateModel(EMFileItemModel):
 		regex = re.compile('^TiltValidate')
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMDirEntry, dirregex=regex)
 
-########################################################################################################################
 
 class EMRefineTable(EMBrowserWidget):
 	""" Widgewt to display refinement directories """
@@ -90,7 +88,6 @@ class EMRefineModel(EMFileItemModel):
 		regex = re.compile('^refine|^frealign')
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMDirEntry, dirregex=regex)
 
-########################################################################################################################
 
 class EMModelsTable(EMBrowserWidget):
 	""" Widget to display junk from e2boxercache """
@@ -188,7 +185,6 @@ class EMModelsEntry(EMDirEntry):
 
 		return 1
 
-################################################################################################################
 
 class EMSetsTable(EMBrowserWidget):
 	""" Widget to display junk from e2boxercache """
@@ -281,7 +277,6 @@ class EMSetsEntry(EMDirEntry):
 
 		return True
 
-###########################################################################################################################
 
 class EMParticlesTable(EMBrowserWidget):
 	""" Widget to display junk from e2boxercache """
@@ -403,7 +398,6 @@ class EMParticlesEntry(EMDirEntry):
 
 		return 1
 
-###########################################################################################################################
 
 class EMCTFParticlesTable(EMBrowserWidget):
 	""" Widget to display junk from e2boxercache """
@@ -567,7 +561,6 @@ class EMCTFParticlesEntry(EMDirEntry):
 
 		return True
 
-#####################################################################################################################
 
 class EMCTFcorrectedParticlesTable(EMCTFParticlesTable):
 	""" Widget to display junk from e2boxercache. Same as EMCTFParticlesTable, but only displays CTF corrected  """
@@ -587,7 +580,6 @@ class EMCTFcorrectedParticlesEntry(EMCTFParticlesEntry):
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMCTFParticlesEntry.__init__(self,root,name,i,parent=None,hidedot=True,dirregex=dirregex)
 
-######################################################################################################################
 
 class EMParticlesEditTable(EMBrowserWidget):
 	""" Widget to display junk from e2boxercache """
@@ -669,7 +661,6 @@ class EMParticlesEditEntry(EMCTFParticlesEntry):
 	def fillDetails(self):
 		super(EMParticlesEditEntry, self).fillDetails()
 
-#######################################################################################################################
 
 class EMBoxesTable(EMBrowserWidget):
 	""" Widget to display junk from e2boxercache """
@@ -769,7 +760,6 @@ class EMBoxesEntry(EMDirEntry):
 
 		return 1
 
-#############################################################################################################################
 
 class EMTomoBoxesTable(EMBrowserWidget):
 	""" Widget to display junk from e2boxercache """
@@ -868,7 +858,6 @@ class EMTomoBoxesEntry(EMDirEntry):
 
 		return 1
 
-#############################################################################################################################
 
 class EMRCTBoxesTable(EMBrowserWidget):
 	""" Widget to display junk from e2boxercache """
@@ -977,7 +966,6 @@ class EMRCTBoxesEntry(EMDirEntry):
 
 		return 1
 
-#################################################################################################################################
 
 class EMSubTomosTable(EMBrowserWidget):
 	""" Widget to display Raw Data """
@@ -1037,7 +1025,6 @@ class EMSubTomosEntry(EMDirEntry):
 		# Maybe add code to cache results.....
 		super(EMSubTomosEntry, self).fillDetails()
 
-#################################################################################################################################
 
 class EMRawDataTable(EMBrowserWidget):
 	""" Widget to display Raw Data """
@@ -1191,8 +1178,6 @@ class EMRawDataEntry(EMDirEntry):
 
 		return 1
 
-
-#################################################################################################################################
 
 class EMTomogramTable(EMBrowserWidget):
 	""" Widget to display Raw Data """
