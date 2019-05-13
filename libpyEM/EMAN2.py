@@ -78,13 +78,6 @@ try:
 	os.putenv("LC_ALL","en_US.UTF-8")
 except: pass
 
-# Read relative path written by CMake and use that to get EMAN2DIR
-this_file_dirname = os.path.dirname(__file__)
-with open(os.path.join(this_file_dirname, 'eman2dir_relative_path_to_sp_dir'), 'r') as f:
-	eman2dir_relative_path_to_sp_dir = f.readline().strip()
-
-os.environ["EMAN2DIR"] = os.path.abspath(os.path.join(this_file_dirname, eman2dir_relative_path_to_sp_dir))
-
 # This block attempts to open the standard EMAN2 database interface
 # if it fails, it sets db to None. Applications can then alter their
 # behavior appropriately
@@ -373,11 +366,17 @@ This function will return a list of lists containing all currently set applicati
 	return ret2+ret
 
 def e2getinstalldir() :
-	"""platform independent path with '/'"""
-	url=os.getenv("EMAN2DIR")
-	if(sys.platform == 'win32'):
-		url=url.replace("\\","/")
-	return url
+	"""Final path needs to be computed relative to a path within the installation.
+	 An alternative could be to get the installation directory from cmake,
+	 but cmake is not run during binary installations."""
+	
+	this_file_dirname = os.path.dirname(__file__)
+	if get_platform() != "Windows":
+		rel_path = '../../../'
+	else:
+		rel_path = '../../Library/'
+	
+	return os.path.abspath(os.path.join(this_file_dirname, rel_path))
 
 def numbered_path(prefix,makenew):
 	"""Finds the next numbered path to use for a given prefix. ie- prefix='refine' if refine_01/EMAN2DB
@@ -1789,7 +1788,7 @@ def get_3d_font_renderer():
 		font_renderer.set_depth(2)
 		pfm = get_platform()
 		if pfm in ["Linux","Darwin"]:
-			font_renderer.set_font_file_name(os.getenv("EMAN2DIR")+"/fonts/DejaVuSerif.ttf")
+			font_renderer.set_font_file_name(e2getinstalldir()+"/fonts/DejaVuSerif.ttf")
 		elif pfm == "Windows":
 			font_renderer.set_font_file_name("C:\\WINDOWS\\Fonts\\arial.ttf")
 		else:

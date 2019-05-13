@@ -439,7 +439,7 @@ def isac_substack(args):
 		sxprint("Registering 2D alignment parameters of this Beautifier run...")
 		for accounted_img_id in range(n_accounted_img):
 			local_total_param2d = accounted_local_total_align2d_list[accounted_img_id]
-			if len(local_total_param2d) != n_idx_beautifier_align2d:
+			if len(local_total_param2d) not in (n_idx_beautifier_align2d, n_idx_beautifier_align2d-1):
 				ERROR("Invalid number of columns {} at entry #{} in {}. It should be {}. The parameter file might be corrupted. Please consider to rerun ISAC.".format(len(local_total_param2d), accounted_img_id, accounted_local_total_align2d_path, n_idx_beautifier_align2d), where=subcommand_name) # action=1 - fatal error, exit
 			if local_total_param2d[idx_beautifier_align2d_mirror] == -1: # An Unaccounted Particle
 				ERROR("Invalid alignment parameters of an unaccounted particle is detected at entry #{} in {}. The parameter files might be corrupted. Please consider to rerun Beautifier.".format(accounted_img_id, accounted_local_total_align2d_path), where=subcommand_name) # action=1 - fatal error, exit
@@ -449,8 +449,11 @@ def isac_substack(args):
 			sx                = float(local_total_param2d[idx_beautifier_align2d_tx])
 			sy                = float(local_total_param2d[idx_beautifier_align2d_ty])
 			mirror            = int(local_total_param2d[idx_beautifier_align2d_mirror])
-			scale             = float(local_total_param2d[idx_beautifier_align2d_scale])
-			
+			try:
+				scale             = float(local_total_param2d[idx_beautifier_align2d_scale])
+			except IndexError:
+				scale = 1
+
 			fullstack_total_align2d_list[fullstack_img_id] = [alpha, sx, sy, mirror]
 			accounted_total_align2d_list.append([fullstack_img_id, alpha, sx, sy, mirror, scale])
 
