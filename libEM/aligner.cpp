@@ -3028,7 +3028,7 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 		
 		curiter=0;
 		for (int i=0; i<nsoln*3; i++) {
-			s_step[i]=2.0;
+			s_step[i]=0.5;
 		}
 	}
 	
