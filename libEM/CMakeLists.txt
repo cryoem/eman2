@@ -107,13 +107,7 @@ else()
 	target_link_libraries(EM2 m)
 endif()
 
-find_package(GSL REQUIRED)
-if(WIN32)
-	set_target_properties(GSL::gsl
-						  PROPERTIES
-						  INTERFACE_COMPILE_DEFINITIONS GSL_DLL
-						  )
-endif()
+include(${CMAKE_SOURCE_DIR}/cmake/GSL.cmake)
 
 target_link_libraries(EM2 GSL::gsl GSL::gslcblas)
 
