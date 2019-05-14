@@ -7224,7 +7224,7 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 		outliers = 0
 
 	# Distribute outlier list to all processes
-	outliers = bcast_list_to_all(outliers, blockdata["myid"], blockdata["nodes"][0])
+	outliers = bcast_list_to_all(outliers, blockdata["myid"], blockdata["main_node"])
 
 	# Get the node specific outlier information
 	outliers_node = outliers[im_start:im_end]
