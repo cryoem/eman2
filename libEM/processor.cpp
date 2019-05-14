@@ -3789,7 +3789,11 @@ void SigmaZeroEdgeProcessor::process_inplace(EMData * image)
 		for (y=1; y<ny; y++) { if (d[corn-y*nx]!=d[corn]) break; }
 		if (y==ny) zval=d[corn];
 
-		if (zval!=9.99e23f) { image->set_attr("hadzeroedge",1); printf("zeroedge %f\n",zval); }
+		if (zval!=9.99e23f) { 
+			image->set_attr("hadzeroedge",1); 
+// 			printf("zeroedge %f\n",zval); 
+			
+		}
 		else image->set_attr("hadzeroedge",0);
 
 		// This tries to detect images where the edges have been filled with the nearest non-zero value. The filter does nothing, but we set the tag.
@@ -8030,7 +8034,8 @@ void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *ima
 	if ((nmax)<3) throw InvalidParameterException("Insufficient structure factor data for SetSFProcessor to be meaningful");
 
 	int i;
-	for (i=0; i<nmax; i++) {
+	radial_mask[0]=1;
+	for (i=1; i<nmax; i++) {
 //		if (radial_mask[i]>0)
 //		{
 //			radial_mask[i]= sqrt(n*sf->get_yatx(i/(apix*2.0f*n),false)/radial_mask[i]);
@@ -8039,6 +8044,7 @@ void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *ima
 			radial_mask[i]= sqrt((ny*ny*ny)*sf->get_yatx(i/(apix*ny))/radial_mask[i]);
 		}
 		else if (i>0) radial_mask[i]=radial_mask[i-1];	// For points where the existing power spectrum was 0
+	
 	}
 
 	// Continue to use a fixed factor after we run out of 'sf' values

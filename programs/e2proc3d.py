@@ -430,7 +430,7 @@ def main():
 				if options.verbose>1 : print("setsf -> ",options.setsf)
 				sf=XYData()
 				sf.read_file(options.setsf)
-				data.process_inplace("filter.setstrucfac",{"apix":apix,"strucfac":sf})
+				data.process_inplace("filter.setstrucfac",{"apix":data["apix_x"],"strucfac":sf})
 				#dataf = data.do_fft()
 				#curve = dataf.calc_radial_dist(ny, 0, 0.5,True)
 				#filt=[]

@@ -53,7 +53,7 @@ logid=None
 def load_module(module):
 	fname, cls=module.split('.')
 	#print("import {} from {}".format(cls, fname))
-	sys.path.append(os.path.join(os.getenv("EMAN2DIR"),"bin"))
+	sys.path.append(os.path.join(e2getinstalldir(),"bin"))
 	mod=__import__(fname, fromlist=[cls])
 	setattr(sys.modules["__main__"], cls, getattr(mod,cls))
 

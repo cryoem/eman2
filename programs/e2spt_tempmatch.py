@@ -57,9 +57,10 @@ def main():
 		
 		print("Locating reference-like particles in {} (File {}/{})".format(imgname,filenum+1,len(args)))
 		img=EMData(imgname)
-		nbin=int(img["nx"]//500)
-		print("Will shrink tomogram by {}".format(nbin))
-		img.process_inplace("math.meanshrink",{'n':nbin})
+		nbin=int(img["nx"]//450)
+		if nbin>1:
+			print("Will shrink tomogram by {}".format(nbin))
+			img.process_inplace("math.meanshrink",{'n':nbin})
 		tomo=img.copy()
 		img.mult(-1)
 		img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4})
@@ -98,7 +99,7 @@ def main():
 				ccc.process_inplace("math.max", {"with":cf})
 				ndone+=1
 				#if ndone%10==0:
-				sys.stdout.write("\r{}/{} finished.".format(ndone, len(oris)))
+				sys.stdout.write("\r{}/{} finished.".format(ndone, 2*len(oris)))
 				sys.stdout.flush()
 		print("")
 
@@ -119,7 +120,7 @@ def main():
 			msk.process_inplace("mask.zeroedge3d",{"x0":eg,"x1":eg,"y0":eg,"y1":eg})
 			msk.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.1})
 			msk.rotate(0,0,-rt)
-			
+			#msk.write_image("edgemask.hdf")
 			cbin.mult(msk)
 		
 		if options.rmgold:
@@ -135,9 +136,7 @@ def main():
 		
 		cbin.process_inplace("threshold.belowtozero")
 		cbin.process_inplace("normalize.edgemean")
-		cbin.write_image("ccc.hdf")
-		#cbin.write_image("tmp0.hdf")
-		#msk.write_image("tmp1.hdf")
+		
 		cc=cbin.numpy().copy()
 		cshp=cc.shape
 		ccf=cc.flatten()

@@ -1920,6 +1920,7 @@ namespace EMAN
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
+				d.put("maxshift", EMObject::INT,"maximum shift allowed");
 				d.put("sym", EMObject::STRING,"The symmtery to use as the basis of the spherical sampling. Default is c1 (no symmetry)");
 				d.put("sigmathis", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
 				d.put("sigmato", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
@@ -1935,7 +1936,7 @@ namespace EMAN
 			static const string NAME;
 
 		private:
-			bool testort(EMData *small_this, EMData *small_to,vector<float> &sigmathisv,vector<float> &sigmatov, vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd, float preferori, Transform *pfxf) const;
+			bool testort(EMData *small_this, EMData *small_to,vector<float> &sigmathisv,vector<float> &sigmatov, vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd, float preferori, Transform *pfxf, int maxshift) const;
 
 	};
 

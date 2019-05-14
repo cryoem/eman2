@@ -133,7 +133,20 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 		keys=[i for i in keys if eval(i)[1] in plist]
 		if options.verbose : print("{}/{} particles based on list file".format(len(keys),len(list(angs.keys()))))
 	
-	keys=[k for k in keys if angs[k]["score"]<=options.simthr and inrange(options.minalt,angs[k]["xform.align3d"].get_params("eman")["alt"],options.maxalt)]
+	
+	newkey=[]
+	newang={}
+	for k in keys:
+		val=angs[k]
+		if type(val)==list:
+			val=val[0]
+			
+		if val["score"]<=options.simthr and inrange(options.minalt,val["xform.align3d"].get_params("eman")["alt"],options.maxalt):
+			newkey.append(k)
+			newang[k]=val
+			
+	keys=newkey
+	angs=newang
 	if options.verbose : print("{}/{} particles after filters".format(len(keys),len(list(angs.keys()))))
 																		 
 
@@ -194,13 +207,14 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	cmd="e2proc3d.py {evenfile} {path}/fsc_unmasked_{itr:02d}.txt --calcfsc={oddfile}".format(path=options.path,itr=options.iter,evenfile=evenfile,oddfile=oddfile)
 	launch_childprocess(cmd)
 	
-	# final volume at this point is Wiener filtered
-	launch_childprocess("e2proc3d.py {combfile} {combfile} --process=filter.wiener.byfsc:fscfile={path}/fsc_unmasked_{itr:02d}.txt:snrmult=2".format(path=options.path,itr=options.iter,combfile=combfile))
-
 	#### skip post process in case we want to do this elsewhere...
 	if options.skippostp:
 		E2end(logid)
 		return
+	
+	# final volume at this point is Wiener filtered
+	launch_childprocess("e2proc3d.py {combfile} {combfile} --process=filter.wiener.byfsc:fscfile={path}/fsc_unmasked_{itr:02d}.txt:snrmult=2".format(path=options.path,itr=options.iter,combfile=combfile))
+
 	
 	# New version of automasking based on a more intelligent interrogation of the volume
 	vol=EMData(combfile)

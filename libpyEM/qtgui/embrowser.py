@@ -447,6 +447,7 @@ class EMFileType(object) :
 		"""Show a single 3-D volume as a 2-D image"""
 
 		brws.busy()
+		print(self.path)
 
 		data = EMData(self.path,1)
 
@@ -473,7 +474,17 @@ class EMFileType(object) :
 			else : data = EMData.read_images(self.path)
 		else : data = EMData(self.path)
 
-		target = EMImage2DWidget(data)
+		modifiers = QtWidgets.QApplication.keyboardModifiers()
+		if modifiers == QtCore.Qt.ShiftModifier:
+			print("rotate x")
+			target = EMImage2DWidget()
+			target.set_data(data, xyz=0)
+		if modifiers == QtCore.Qt.ControlModifier:
+			print("rotate y")
+			target = EMImage2DWidget()
+			target.set_data(data, xyz=1)
+		else:
+			target = EMImage2DWidget(data)
 		brws.view2d.append(target)
 
 		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
@@ -1663,15 +1674,18 @@ class EMDirEntry(object) :
 		# we have an image file
 
 		if self.nimg > 0 :
-			try : tmp = EMData(self.path(), 0, True)		# try to read an image header for the file
+			try : 
+				tmp = EMData(self.path(), 0, True)		# try to read an image header for the file
 			except :
-				for i in range(1, 10) :
-					try : tmp = EMData(self.path(), i, True)
-					except : continue
-					break
-				if i == 9 :
-					print("Error: all of the first 10 images are missing ! : ",self.path())
-					return
+				print("Error: first image missing ! : ",self.path())
+				return 0
+				#for i in range(1, 10) :
+					#try : tmp = EMData(self.path(), i, True)
+					#except : continue
+					#break
+				#if i == 9 :
+					#print("Error: all of the first 10 images are missing ! : ",self.path())
+					#return 0
 
 			if tmp["ny"] == 1 : self.dim = str(tmp["nx"])
 			elif tmp["nz"] == 1 : self.dim = "%d x %d"%(tmp["nx"], tmp["ny"])

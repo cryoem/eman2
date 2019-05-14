@@ -43,7 +43,7 @@ def main():
 	parser.add_argument("--mask", type=str,help="Mask file to be applied to initial model", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0,rowspan=1, colspan=2, mode="model")
 
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--gaussz", type=float,help="Extra gauss filter at z direction", default=-1, guitype='floatbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--gaussz", type=float,help="Extra gauss filter at z direction", default=-1)
 
 	parser.add_argument("--filterto", type=float,help="Fiter map to frequency after each iteration. Default is 0.02", default=.02, guitype='floatbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
 

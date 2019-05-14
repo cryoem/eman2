@@ -383,7 +383,7 @@ class EMImage2DWidget(EMGLWidget):
 	def get_data(self):
 		return self.data
 
-	def set_data(self,incoming_data,file_name="",retain_current_settings=True, keepcontrast=False):
+	def set_data(self,incoming_data,file_name="",retain_current_settings=True, keepcontrast=False, xyz=2):
 		"""You may pass a single 2D image or a list of images"""
 		from .emimagemx import EMDataListCache,EMLightWeightParticleCache
 		#if self.data != None and self.file_name != "":
@@ -403,11 +403,16 @@ class EMImage2DWidget(EMGLWidget):
 			needresize=False
 
 		fourier = False
+		if xyz==0:
+			incoming_data.transform(Transform({"type":"xyz", "xtilt":90}))
+		elif xyz==1:
+			incoming_data.transform(Transform({"type":"xyz", "ytilt":90}))
 
 		# it's a 3D image
 		if not isinstance(data,list) and not isinstance(data,EMDataListCache) and not isinstance(data,EMLightWeightParticleCache) and data.get_zsize() != 1:
 			data = []
-			for z in range(incoming_data.get_zsize()):
+			shp=[incoming_data.get_xsize(), incoming_data.get_ysize(), incoming_data.get_zsize()]
+			for z in range(shp[xyz]):
 				image = incoming_data.get_clip(Region(0,0,z,incoming_data.get_xsize(),incoming_data.get_ysize(),1))
 				data.append(image)
 
@@ -1381,7 +1386,7 @@ class EMImage2DWidget(EMGLWidget):
 				elif s.shape[0][:3]!="scr":
 #					print "shape",s.shape
 					GL.glPushMatrix()		# The push/pop here breaks the 'scr*' shapes !
-#					print(self.devicePixelRatio())
+
 					s.draw()		# No need for coordinate transform any more
 					GL.glPopMatrix()
 #					GLUtil.colored_rectangle(s.shape[1:8],alpha)
