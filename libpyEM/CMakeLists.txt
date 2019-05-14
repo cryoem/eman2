@@ -11,9 +11,9 @@ function(ADD_PYSTE_LIB libname)
 			PROPERTIES
 			PREFIX lib
 			SUFFIX ${suffix}
+			LINK_LIBRARIES "EM2;Boost::python"
 			)
 	
-	target_link_libraries(${libname} EM2 Boost::python)
 	install(TARGETS ${libname} DESTINATION ${SP_DIR})
 endfunction()
 

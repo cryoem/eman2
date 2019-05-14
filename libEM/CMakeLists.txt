@@ -85,6 +85,8 @@ if(WIN32)
 	target_compile_definitions(EM2 PUBLIC _CRT_SECURE_NO_WARNINGS _SCL_SECURE_NO_WARNINGS)
 endif()
 
+target_link_libraries(EM2 HDF5::HDF5 GSL::gsl GSL::gslcblas)
+
 install(TARGETS EM2
 		DESTINATION ${SP_DIR}
 		)
@@ -102,8 +104,6 @@ if(WIN32 OR ENABLE_FFTW3)
     target_link_libraries(EM2 FFTW3::FFTW3)
 endif()
 
-target_link_libraries(EM2 GSL::gsl GSL::gslcblas)
-
 option(ENABLE_TIFF "enable TIFF support" ON)
 if(ENABLE_TIFF)
 	include(${CMAKE_SOURCE_DIR}/cmake/TIFF.cmake)
@@ -115,8 +115,6 @@ if(ENABLE_JPEG)
 	include(${CMAKE_SOURCE_DIR}/cmake/JPEG.cmake)
     target_link_libraries(EM2 JPEG::JPEG)
 endif()
-
-target_link_libraries(EM2 HDF5::HDF5)
 
 option(ENABLE_PNG "enable PNG support" ON)
 if(ENABLE_PNG)
