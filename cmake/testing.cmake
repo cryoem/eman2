@@ -13,8 +13,6 @@ add_test(NAME test-EMAN2DIR
 		 COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_EMAN2DIR.py
 		 )
 
-find_package(Nosetests)
-
 if(NOT WIN32)
 	add_test(NAME nose-tests
 			COMMAND ${NOSETESTS_EXECUTABLE} -vv --exe -m "^test_*" -e "^test_image_" -e "test_main" -e "test_result" -e "test_boxing" -a \!broken

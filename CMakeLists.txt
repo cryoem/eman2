@@ -67,8 +67,7 @@ set(CMAKE_INSTALL_PREFIX ${EMAN_PREFIX} CACHE PATH "installation prefix" FORCE)
 set(CMAKE_PREFIX_PATH    ${EMAN_PREFIX} ${EMAN_PREFIX}/..)
 message_var(CMAKE_PREFIX_PATH)
 
-find_package(Python REQUIRED)
-find_package(NumPy  REQUIRED)
+include(cmake/find_all.cmake)
 
 set(CMAKE_INSTALL_RPATH "${SP_DIR};${EMAN_PREFIX_LIB}")
 
@@ -247,9 +246,6 @@ IF(ENABLE_EMAN_CUDA)
 	INCLUDE_DIRECTORIES(${CUDA_TOOLKIT_INCLUDE})
 	ADD_SUBDIRECTORY(libEM/cuda)
 ENDIF()
-
-# Find Boost
-include(cmake/Boost.cmake)
 
 ADD_SUBDIRECTORY(libEM)
 ADD_SUBDIRECTORY(libpyEM)

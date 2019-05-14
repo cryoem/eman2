@@ -107,8 +107,6 @@ else()
 	target_link_libraries(EM2 m)
 endif()
 
-include(${CMAKE_SOURCE_DIR}/cmake/GSL.cmake)
-
 target_link_libraries(EM2 GSL::gsl GSL::gslcblas)
 
 option(ENABLE_TIFF "enable TIFF support" ON)
@@ -123,7 +121,6 @@ if(ENABLE_JPEG)
     target_link_libraries(EM2 JPEG::JPEG)
 endif()
 
-include(${CMAKE_SOURCE_DIR}/cmake/HDF5.cmake)
 target_link_libraries(EM2 HDF5::HDF5)
 
 option(ENABLE_PNG "enable PNG support" ON)
