@@ -76,7 +76,7 @@ def main():
 	parser.add_argument("--tag", type=str, default='', help="When supplying --angles, tag the output projection with a string provided through --tag")
 	parser.add_argument("--transformsfile", type=str, default='', help="A text files containing lines with one triplet of az,alt,phi values each, representing the transforms to use to project a single volume supplied.")
 	
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness.")
 
 	(options, args) = parser.parse_args()	
 	

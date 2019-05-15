@@ -92,7 +92,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 	parser.add_argument("--exlist",type=str,help="Specify the name of a file with a list of images to exclude in creation of virtual stacks. Please see source for details.",default=None)
 	parser.add_argument("--restore",type=str,help="Write changes in the derived virtual stack back to the original stack",default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--checkctf",action="store_true",help="Verfies that all images in the file contain CTF information, and gives some basic statistics",default=False)
+	parser.add_argument("--checkctf",action="store_true",help="Verifies that all images in the file contain CTF information, and gives some basic statistics",default=False)
 
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <init>,<step>[,<max>]. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")
 	(options, args) = parser.parse_args()
@@ -553,7 +553,7 @@ def db_cleanup(force=False):
 		print("""
 *******************
 
-A serious error occured in the database cache. This normally happens if you try to access a corrupt database file. Please follow the following steps to minimize the chance of data loss:
+A serious error occurred in the database cache. This normally happens if you try to access a corrupt database file. Please follow the following steps to minimize the chance of data loss:
 1. run "db_recover -h %s"   (note, this may be called db4.8_recover or something similar if not using the EMAN2 binary distribution)
 2. run e2bdb.py -c again
 3. If you are aware which image file caused this error to occur in the first place, you can try accessing it again. If it triggers this same failure, repeat steps 1 and 2 then manually delete the offending image database inside the EMAN2DB directory"""%path)

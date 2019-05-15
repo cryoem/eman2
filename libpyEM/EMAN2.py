@@ -90,7 +90,7 @@ from EMAN2jsondb import JSDict,js_open_dict,js_close_dict,js_remove_dict,js_list
 
 XYData.__len__=XYData.get_size
 
-# Who is using this? Transform3D is deprecated use the Transform insteand
+# Who is using this? Transform3D is deprecated use the Transform instead
 #Transform3D.__str__=lambda x:"Transform3D(\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g)\nPretrans:%s\nPosttrans:%s"%(x.at(0,0),x.at(0,1),x.at(0,2),x.at(1,0),x.at(1,1),x.at(1,2),x.at(2,0),x.at(2,1),x.at(2,2),str(x.get_pretrans()),str(x.get_posttrans()))
 
 try:
@@ -551,12 +551,12 @@ class EMArgumentParser(argparse.ArgumentParser):
 		# This stuff is to make argparser masquerade as optparser
 		if version:
 			self.add_argument('--version', action='version', version=version)
-		self.add_argument("postionalargs", nargs="*")
+		self.add_argument("positionalargs", nargs="*")
 
 	def parse_args(self):
-		""" Masquerade as optpaser parse options """
+		""" Masquerade as optparser parse options """
 		parsedargs = argparse.ArgumentParser.parse_args(self)
-		return (parsedargs, parsedargs.postionalargs)
+		return (parsedargs, parsedargs.positionalargs)
 
 	def add_pos_argument(self, **kwargs):
 		""" Add a position argument, needed only for the GUI """
@@ -969,7 +969,7 @@ def kill_process(pid):
 
 def launch_childprocess(cmd,handle_err=0):
 	'''
-	Convenience function to lauch child processes
+	Convenience function to launch child processes
 	'''
 	p = subprocess.Popen(str(cmd)+" --ppid=%d"%os.getpid(), shell=True)
 
@@ -1103,7 +1103,7 @@ def num_cpus():
 		return cores
 
 	else:
-		print("error, in num_cpus - uknown platform string:",platform_string," - returning 2")
+		print("error, in num_cpus - unknown platform string:",platform_string," - returning 2")
 		return 2
 
 def gimme_image_dimensions2D( imagefilename ):
@@ -1448,7 +1448,7 @@ def remove_directories_from_name(file_name,ntk=0):
 def name_has_no_tag(file_name):
 	'''
 	A convenient way of asking if the file name in has no tag. i.e.
-	/home/tmp.jpg would have a tag but /home/tmp would not. Ofcourse
+	/home/tmp.jpg would have a tag but /home/tmp would not. Of course
 	this function will return true if the argument is the name of a
 	folder, but that was not the original intended use
 	'''

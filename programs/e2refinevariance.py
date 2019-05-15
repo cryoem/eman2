@@ -53,7 +53,7 @@ def main():
 	# Updated to EMAN2.1 by Muyuan Chen, on Dec 8th, 2014
 	
 	#options associated with e2refinevariance.py
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--shrink3d",type=int,help="Shrink the class-averages and make a downsampled variance map",default=0)
 	parser.add_argument("--reslimit",type=float,help="Low-pass filter the individual maps to target the variance to the specified resolution in A. Variance maps cannot be filtered as a post-processing operation. Default = 10",default=10.0)
 	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of the image containing the particle data")

@@ -441,7 +441,7 @@ class EMMpiClient(object):
 			self.log("Said HELO back")
 
 			self.rankjobs=[-1 for i in range(self.nrank)]		# Each element is a rank, and indicates which job that rank is currently running (-1 if idle)
-			self.rankjobs[0]=-2					# this makes sure we don't try to send a job to ourself
+			self.rankjobs[0]=-2					# this makes sure we don't try to send a job to ourselves
 			self.maxjob=-1						# current highest job number waiting for execution
 			self.nextjob=1						# next job waiting to run
 			self.status={}						# status of each job

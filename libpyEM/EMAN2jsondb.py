@@ -69,7 +69,7 @@ def js_open_dict(url):
 If opened. Writes to JDB dictionaries may be somewhat inefficient due to the lack of a good model (as BDB has) for
 multithreaded access. Default behavior is to write the entire dictionary to disk when any element is changed. File
 locking is attempted to avoid conflicts, but may not work in all situations. read-only access is a meaningless concept
-because file pointers are not held open beyond discrete transations. While it is possible to store images in JSON files
+because file pointers are not held open beyond discrete transitions. While it is possible to store images in JSON files
 it is not recommended due to inefficiency, and making files which are difficult to read."""
 
 	if url[-5:]!=".json" :
@@ -102,7 +102,7 @@ def js_remove_dict(url):
 
 def js_check_dict(url,readonly=True):
 	"""Checks for the existence of the named JSON file and insures that it can be opened for reading [and writing].
-It does not check the contents of the file, just for its exsistence and permissions."""
+It does not check the contents of the file, just for its existence and permissions."""
 
 	if url==None : return False
 	if url[-5:]!=".json" :
@@ -504,7 +504,7 @@ class JSTask(object):
 		self.options=options	# dictionary of options
 		self.wait_for=None		# in the active queue, this identifies an exited class which needs to be rerun when all wait_for jobs are complete
 		self.failcount=0		# Number of times this task failed to reach completion after starting
-		self.errors=[]			# a list of errors (strings) that occured during task execution. Normally empty !
+		self.errors=[]			# a list of errors (strings) that occurred during task execution. Normally empty !
 		self.ppid = os.getpid()		# Rrcords the PID to send to to children as PPID (sent to e2parallel.py)
 
 	def to_jsondict(self):
@@ -679,7 +679,7 @@ of the path is stored as self.normpath"""
 				mt=os.stat(self.normpath).st_mtime		# if it still doesn't exist, then the _tmp file may be an orphan
 			except:
 				if mt2!=None :
-					# recover an orphaned js file (caused by interupt during write)
+					# recover an orphaned js file (caused by interrupt during write)
 					os.rename(self.normpath[:-5]+"_tmp.json",self.normpath)
 					mt=mt2
 					mt2=None

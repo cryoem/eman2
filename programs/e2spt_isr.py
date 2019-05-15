@@ -54,7 +54,7 @@ def main():
 	
 	parser.add_argument('--input',type=str,default='',help="""Comma separated files in .ali, .st .hdf format of the aligned subtiltseries.""")
 	
-	parser.add_argument('--inputstem',type=str,default='',help="""Alternative to supplying --input. This is a string common to multiple files to be processed in the CURERENT directory. The common string doesn't need to be at a particular location in the filenames. For example, a series of files "tiltA.hdf, tiltB.hdf, tiltC.hdf" could have either 'hdf', '.hdf', 't,','ti', 'til', 'tilt', etc., as a common string. The key is to choose a string shared ONLY by the files of interest. The files should be multiple subtiltseries in .hdf format; each file should correspond to an individual subtiltseries for a different particle: That is, each file should be a subtiltseries corresponding to an individual subtomogram, as extracted by e2spt_subtilt.py, or as simulated by e2spt_simulation.py""")
+	parser.add_argument('--inputstem',type=str,default='',help="""Alternative to supplying --input. This is a string common to multiple files to be processed in the CURRENT directory. The common string doesn't need to be at a particular location in the filenames. For example, a series of files "tiltA.hdf, tiltB.hdf, tiltC.hdf" could have either 'hdf', '.hdf', 't,','ti', 'til', 'tilt', etc., as a common string. The key is to choose a string shared ONLY by the files of interest. The files should be multiple subtiltseries in .hdf format; each file should correspond to an individual subtiltseries for a different particle: That is, each file should be a subtiltseries corresponding to an individual subtomogram, as extracted by e2spt_subtilt.py, or as simulated by e2spt_simulation.py""")
 
 	parser.add_argument('--inputdir',type=str,default='',help="""Alternative to --input and --inputstem. Path to a directory containing individual subtiltseries stacks.""")
 	
@@ -62,7 +62,7 @@ def main():
 		
 	parser.add_argument("--ppid", type=int, help="Default=1. Set the PID of the parent process, used for cross platform PPID",default=-1)
 
-	parser.add_argument("--verbose", "-v", type=int, default=0, help="Default 0. Verbose level [0-9], higner number means higher level of verboseness",dest="verbose", action="store", metavar="n")
+	parser.add_argument("--verbose", "-v", type=int, default=0, help="Default 0. Verbose level [0-9], higher number means higher level of verboseness",dest="verbose", action="store", metavar="n")
 
 	parser.add_argument("--reconstructor", type=str,default="fourier:mode=gauss_2",help="""Default=fourier:mode=gauss_2. The reconstructor to use to reconstruct the tilt series into a tomogram. Type 'e2help.py reconstructors' at the command line to see all options and parameters available. To specify the interpolation scheme for the fourier reconstructor, specify 'mode'. Options are 'nearest_neighbor', 'gauss_2', 'gauss_3', 'gauss_5'. For example --reconstructor=fourier:mode=gauss_5 """)
 	

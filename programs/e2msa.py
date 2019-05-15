@@ -85,7 +85,7 @@ handled this way."""
 	parser.add_argument("--normalize",action="store_true",help="Perform a careful normalization of input images before MSA. Otherwise normalization is not modified until after mean subtraction.",default=False)
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <init>,<step>[,last]. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	#parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
 	#parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1)

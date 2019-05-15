@@ -19,7 +19,7 @@ def main():
   parser = EMArgumentParser(usage=usage,version=EMANVERSION)
   parser.add_argument("--input",dest="input",default=None,type=str,help="particles data") #need this input as particles set 
   parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-  parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness") 
+  parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness") 
   parser.add_argument("--parallel",type=str,help="Parallelism string",default=None)
  
   global options

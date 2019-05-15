@@ -61,7 +61,7 @@ import numpy as np
 class EMDataItem3D(EMItem3D):
 	"""
 	This class is the scene graph node that has a reference to an EMData object. Though it has an orientation, it can not be displayed directly.
-	Instead, its children are displayable, and are sized, postioned, and oriented relative to this node.
+	Instead, its children are displayable, and are sized, positioned, and oriented relative to this node.
 	"""
 	name = "Data"
 
@@ -112,7 +112,7 @@ class EMDataItem3D(EMItem3D):
 		self.renderBoundingBox = False
 
 	def setSelectedItem(self, is_selected):
-		""" Set SG apix to curent selection"""
+		""" Set SG apix to current selection"""
 		EMItem3D.setSelectedItem(self, is_selected)
 		sg = self.getRootNode()
 		try:

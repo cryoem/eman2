@@ -1,8 +1,8 @@
 /* JSON file to make the particle import wizard */
 [
   {
-    "TITLE":"e2ctf geneate SF Wizard",
-    "INST":"This Wizard is to Help users from e2ctf in generate structure factor mode. The purpose is to genrate a 1D profile spherically averaged structure factor intensities. This is achieved by simultaniously fitting multiple power spectra. You must simultaniously fit al test 3-4 powser spectra otherwise the problem become underdetermined at your SF results will be ambiguous.",
+    "TITLE":"e2ctf generate SF Wizard",
+    "INST":"This Wizard is to Help users from e2ctf in generate structure factor mode. The purpose is to generate a 1D profile spherically averaged structure factor intensities. This is achieved by simultaneously fitting multiple power spectra. You must simultaneously fit al test 3-4 power spectra otherwise the problem becomes underdetermined at your SF results will be ambiguous.",
     "WIDGETS":[]
   },
   {

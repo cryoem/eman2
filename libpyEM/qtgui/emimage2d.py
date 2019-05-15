@@ -137,7 +137,7 @@ class EMImage2DWidget(EMGLWidget):
 
 		self.shapes={}				# dictionary of shapes to draw, see add_shapes
 		self.shapechange=1			# Set to 1 when shapes need to be redrawn
-		self.active=(None,0,0,0)	# The active shape and a hilight color (n,r,g,b)
+		self.active=(None,0,0,0)	# The active shape and a highlight color (n,r,g,b)
 
 		self.extras = []			# an empty set of extras - other images that can be rendered over this one
 
@@ -1281,7 +1281,7 @@ class EMImage2DWidget(EMGLWidget):
 		#context = OpenGL.contextdata.getContext(None)
 		#print "Image2D context is", context,"display list is",self.shapelist
 
-		# make our own cirle rather than use gluDisk or somesuch
+		# make our own circle rather than use gluDisk or somesuch
 		emshape.EMShape.font_renderer=self.font_renderer		# Important !  Each window has to have its own font_renderer. Only one context active at a time, so this is ok.
 		glNewList(self.shapelist,GL_COMPILE)
 

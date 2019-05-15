@@ -256,7 +256,7 @@ class EMVolumeModel(EM3DModel):
 		glPopMatrix()
 
 		# this is the accumulation buffer version of the volume model - it was for testing purposes
-		# and is left here commented out incase anyone wants to investigate it in the future
+		# and is left here commented out in case anyone wants to investigate it in the future
 		#glPushMatrix()
 		#glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-self.data.get_zsize()/2.0)
 		#glScalef(self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize())

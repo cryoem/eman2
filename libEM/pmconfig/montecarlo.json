@@ -2,12 +2,12 @@
 [
   {
     "TITLE":"e2montecarlo Wizard",
-    "INST":"This Wizard is to help EM users fill in the GUI to run e2montecarlo, which generates ab initio 3D reconstructions via a conbinted Monte Carlo and simulated annealing algorithm. This program is CUDA accelerated and if you have CUDA you can expect upto 20 fold speedup. This program is not yet parallized, but will be in the future.",
+    "INST":"This Wizard is to help EM users fill in the GUI to run e2montecarlo, which generates ab initio 3D reconstructions via a conbinted Monte Carlo and simulated annealing algorithm. This program is CUDA accelerated and if you have CUDA you can expect up to 20 fold speedup. This program is not yet parallelized, but will be in the future.",
     "WIDGETS":[]
   },
   {
     "TITLE":"Select the class averages",
-    "INST":"Enter the class average stack to use for ab initio reconstructon. Ideally these class averages should have high SNR. You need to remove any junk class averages to improve results. The number of class averages should be minimal as the dimensionality of this problem increases as ca number increases. Also choose the filename of the output 3D an initio model.",
+    "INST":"Enter the class average stack to use for ab initio reconstruction. Ideally these class averages should have high SNR. You need to remove any junk class averages to improve results. The number of class averages should be minimal as the dimensionality of this problem increases as ca number increases. Also choose the filename of the output 3D an initio model.",
     "WIDGETS":[
       "classavg",
       "output"
@@ -23,7 +23,7 @@
   },
   {
     "TITLE":"Simulated annealing steps",
-    "INST":"Select the number of simulated annealing steps. This is the number of trials at a given temperature (100 is good). Next select the number of tempeatures, 'numtemps' (10 is fine)",
+    "INST":"Select the number of simulated annealing steps. This is the number of trials at a given temperature (100 is good). Next select the number of temperatures, 'numtemps' (10 is fine)",
     "WIDGETS":[
       "numsasteps",
       "numtemps"
@@ -31,7 +31,7 @@
   },
   {
     "TITLE":"Select annealing speed",
-    "INST":"Select initial temperature 'initemp'. For this program 0.2 (Kelvin) is fine. Next select the cooling speed 'cooling'. The colling is exponetial, and (2.0) is a good choice, in my experience",
+    "INST":"Select initial temperature 'initemp'. For this program 0.2 (Kelvin) is fine. Next select the cooling speed 'cooling'. The colling is exponential, and (2.0) is a good choice, in my experience",
     "WIDGETS":[
       "initemp",
       "cooling"

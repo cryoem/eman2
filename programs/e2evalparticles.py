@@ -64,7 +64,7 @@ def main():
 	parser.add_header(name="runeval", help='Click Launch to launch the particle evaluation interface', title="### Click Launch to run e2evalparticles ###", row=0, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive use (default=True)",default=True)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 
