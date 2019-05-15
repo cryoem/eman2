@@ -86,7 +86,7 @@ def main():
 	parser.add_argument("--tiltstep", type=int, default=0, help="Default=None. Angular step size between images in the tiltseries.")
 	parser.add_argument("--tltfile", type=str,default='',help="""Default=None. Name of .tlt or .rawtlt file (typically from IMOD or serialEM) with the tilt angles.""")
 
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness.")
 
 	(options, args) = parser.parse_args()	
 	

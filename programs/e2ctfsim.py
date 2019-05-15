@@ -66,7 +66,7 @@ A simple CTF simulation program.
 	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=5, col=1, rowspan=1, colspan=1, mode='autofit')
 	parser.add_argument("--samples",type=int,help="Number of samples in the plotted curve",default=256)
 	parser.add_argument("--apply",type=str,default=None,help="A 2-D image file which the CTF will be applied to in real-time")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 

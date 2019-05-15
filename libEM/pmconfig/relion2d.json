@@ -14,7 +14,7 @@
   },
   {
     "TITLE":"Relion2D Run Options",
-    "INST":"How many interations would you like Relion to run for and how many classes do you wish it to refine into",
+    "INST":"How many iterations would you like Relion to run for and how many classes do you wish it to refine into",
     "WIDGETS":[
       "numiter",
       "numclasses"
@@ -42,7 +42,7 @@
   },
   {
     "TITLE":"Relion Options 2",
-    "INST":"The regparam is a regularisation parameter (values higher than 1 give more weight to the data).  The healpix is the angular sampling (before oversampling).  The oversampling represents the value for adaptive oversampling to speed up calculations (0=no oversampling, 1=2x, 2=4x etc)",
+    "INST":"The regparam is a regularization parameter (values higher than 1 give more weight to the data).  The healpix is the angular sampling (before oversampling).  The oversampling represents the value for adaptive oversampling to speed up calculations (0=no oversampling, 1=2x, 2=4x etc)",
     "WIDGETS":[
       "regparam",
       "imagemaskd",

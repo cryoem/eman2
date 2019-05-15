@@ -125,7 +125,7 @@ def main():
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=14, col=1, rowspan=1, colspan=1,mode="boxing")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--device", type=str, help="For Convnet training only. Pick a device to use. chose from cpu, gpu, or gpuX (X=0,1,...) when multiple gpus are available. default is cpu",default="cpu",guitype='strbox', row=14, col=2, rowspan=1, colspan=1,mode="boxing")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 	
@@ -384,7 +384,7 @@ def write_particles(files,boxsize,verbose):
 ##########
 
 class boxerByRef(QtCore.QObject):
-	"""Simple reference-based cross-corrlation picker with exhaustive rotational search"""
+	"""Simple reference-based cross-correlation picker with exhaustive rotational search"""
 	@staticmethod
 	def setup_gui(gridlay,boxerwindow=None):
 		boxerByRef.threshold=ValSlider(None,(0.1,8),"Threshold",1.5,90)

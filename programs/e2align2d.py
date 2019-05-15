@@ -52,7 +52,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_argument("--output", type=str, help="The name of the output class stack", default=None)
-	parser.add_argument("--ref", type=str, help="Reference imageimage to use for alignment. Required", default=None)
+	parser.add_argument("--ref", type=str, help="Reference image to use for alignment. Required", default=None)
 	parser.add_argument("--refn", type=int, help="Number of the reference image in 'ref'. Default=0", default=0)
 	parser.add_argument("--align",type=str,help="This is the aligner used to align particles to the previous class average. Default is None.", default="rotate_translate_flip")
 	parser.add_argument("--aligncmp",type=str,help="The comparitor used for the --align aligner. Default is dot.",default="ccc")
@@ -60,7 +60,7 @@ def main():
 	parser.add_argument("--raligncmp",type=str,help="The comparitor used by the second stage aligner.",default="ccc")
 	parser.add_argument("--cmp",type=str,help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes, strongly linked to the keep argument.", default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	
 	(options, args) = parser.parse_args()

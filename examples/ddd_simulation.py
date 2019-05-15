@@ -22,7 +22,7 @@ def main():
 	parser.add_argument("--noiseseed", type=int, help="Random seed to use for noise",default=2015)
 	parser.add_argument("--noise", type=float, help="Amount of noise to add",default=1.0)
 	parser.add_argument("--showfig",action="store_true",default=False,help="Show translations quiver plot")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	if options.frames1 > options.frames:

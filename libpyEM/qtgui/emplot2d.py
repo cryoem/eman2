@@ -951,7 +951,7 @@ lc is the cursor selection point in plot coords"""
 
 class EMPolarPlot2DWidget(EMGLWidget):
 	"""
-	A QT widget for plotting ploar plots:
+	A QT widget for plotting polar plots:
 	"""
 	clusterStats = QtCore.pyqtSignal(list)
 
@@ -986,7 +986,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		self.datap = None
 		self.setDataLabelsColor('#00ff00')
 		self.scattercolor = None	# IF set to none default colors are used
-		self.pointsizes = None		# Defalt is to use consta sizes. Overrides constant size
+		self.pointsizes = None		# Default is to use const sizes. Overrides constant size
 		self.yticklabels = True		# Default is to draw Y tick labels
 		self.xticklabels = True		# Default is to draw X tick labels
 
@@ -1131,7 +1131,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 #		self.add_shape("Circle",EMShape(("scrcircle",0,1,0,data[0][best], self.height()-data[1][best], self.valradius,2.0)))
 #		self.updateGL()
 #		print data[0][best], data[1][best]
-		#print "This point correpsonds to image: %s"%bestpoint
+		#print "This point corresponds to image: %s"%bestpoint
 #		self.emit(QtCore.SIGNAL("pointIdentity(int)"), bestpoint)
 
 	def mouseMoveEvent(self, event):
@@ -1215,7 +1215,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 
 	def set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=-1,symtype=-1,symsize=4,radcut=-1,datapoints=None):
 		"""
-		Reimplemtation to set polar data
+		Reimplementation to set polar data
 		see set_data in EMPlot2DWidget for details
 		"""
 		if len(input_data) != 2:
@@ -1290,7 +1290,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 
 	def render(self):
 		"""
-		Reimplmentation to plot a plor plot
+		Reimplementation to plot a polar plot
 		"""
 
 		if not self.data : return
@@ -1575,7 +1575,7 @@ class EMPlot2DStatsInsp(QtWidgets.QWidget):
 	def printSummary(self):
 		"""Computes and plots a polynomial fit (of order N) for the current x and y axes"""
 		insp=self.target().get_inspector()				# inspector
-		name=str(insp.setlist.currentItem().text())		# currently hilighted item
+		name=str(insp.setlist.currentItem().text())		# currently highlighted item
 		data=self.target().data[name]					# data set we will operate on
 		rnd=self.wnround.getValue()
 
@@ -1719,7 +1719,7 @@ class EMPlot2DRegrInsp(QtWidgets.QWidget):
 		norm = str(self.wcomb_norm.currentText())
 		npts = self.wnpts.getValue()
 		insp = self.target().get_inspector() # inspector
-		name=str(insp.setlist.currentItem().text())	# currently hilighted items
+		name=str(insp.setlist.currentItem().text())	# currently highlighted items
 
 		try:
 			xaxes=[int(i) for i in xaxes.split(",")]
@@ -1873,7 +1873,7 @@ class EMPlot2DClassInsp(QtWidgets.QWidget):
 	def doMakeSet(self):
 		"""Saves selected plots as new .lst files in sets/ if 'comment' field contains image specifiers"""
 		insp=self.target().get_inspector()				# inspector
-		names=[str(i.text()) for i in insp.setlist.selectedItems()]		# currently hilighted items
+		names=[str(i.text()) for i in insp.setlist.selectedItems()]		# currently highlighted items
 		lsx={}
 
 		nums=set()
@@ -1881,7 +1881,7 @@ class EMPlot2DClassInsp(QtWidgets.QWidget):
 		for name in names:
 			try: num=int(name.rsplit("_",1)[1])
 			except:
-				QtWidgets.QMessageBox.warning(self,"Error","Please hilight sets with names ending in _# !")
+				QtWidgets.QMessageBox.warning(self,"Error","Please highlight sets with names ending in _# !")
 				return
 			if num in nums:
 				QtWidgets.QMessageBox.warning(self, "Error","Please select only one group of sets at a time !")
@@ -1915,7 +1915,7 @@ class EMPlot2DClassInsp(QtWidgets.QWidget):
 		axes=self.wnax.getValue()		# selected axes
 		axnorm=self.wcbaxnorm.getValue()
 		insp=self.target().get_inspector()				# inspector
-		name=str(insp.setlist.currentItem().text())		# currently hilighted item
+		name=str(insp.setlist.currentItem().text())		# currently highlighted item
 		data=self.target().data[name]					# data set we will operate on
 		try: comments=self.target().comments[name]		# comments for copying to results
 		except: comments=None
@@ -1971,7 +1971,7 @@ class EMPlot2DClassInsp(QtWidgets.QWidget):
 		vals=self.wnval.getValue()								# values
 		thresh_type=str(self.wcomb_threshtype.currentText())	# type of threshold to perform
 		insp=self.target().get_inspector()						# inspector
-		name=str(insp.setlist.currentItem().text())				# currently hilighted item
+		name=str(insp.setlist.currentItem().text())				# currently highlighted item
 		data=self.target().data[name]							# data set we will operate on
 		try: comments=self.target().comments[name]				# comments for copying to results
 		except: comments=None
@@ -2107,7 +2107,7 @@ class DragListWidget(QtWidgets.QListWidget):
 
 	def keyPressEvent(self,event):
 		if event.key() == Qt.Key_Backspace:
-			name=str(self.currentItem().text())		# currently hilighted item
+			name=str(self.currentItem().text())		# currently highlighted item
 			self.datasource().target().set_data(None,key=name)
 		else: QtWidgets.QListWidget.keyPressEvent(self,event)
 

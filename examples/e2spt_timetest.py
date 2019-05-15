@@ -122,7 +122,7 @@ def main():
 
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--path",type=str,default='spt_time_test',help="Directory to store results in. The default is a numbered series of directories containing the prefix 'spt_time_test'; for example, spt_time_test_01 will be the directory by default if 'spt_time_test_00' already exists.")
 	parser.add_argument("--noplot", action='store_true', help="To run jobs on a cluster or other interfaces that don't support plotting, turn this option on.",default=False)
 	

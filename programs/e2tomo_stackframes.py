@@ -60,7 +60,7 @@ def main():
 
 	parser.add_argument('--twodstack', action='store_true', default=False, help="""default=False (not used). Produces a stack of 2D images (Z number of images of X,Y size under the same "virutal stack" file name). By default, the output stack will be a 3D stack (a single image of size X,Y,Z, where Z is equal to the number of stacked frames).""")
 
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")	
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness.")	
 
 	(options, args) = parser.parse_args()
 	

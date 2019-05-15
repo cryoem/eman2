@@ -69,7 +69,7 @@ def main():
 	
 	parser.add_argument("--translation",type=str,default='',help="""Three comma separated coordinates x,y,z, to translate the masks by before writing them out.""")
 	
-	parser.add_argument("--verbose", "-v", help="""verbose level [0-9], higner number means higher level of verboseness. Default=0.""",dest="verbose", action="store", metavar="n",type=int, default=0)
+	parser.add_argument("--verbose", "-v", help="""verbose level [0-9], higher number means higher level of verboseness. Default=0.""",dest="verbose", action="store", metavar="n",type=int, default=0)
 
 	(options, args) = parser.parse_args()	
 	

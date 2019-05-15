@@ -63,7 +63,7 @@ def main():
 	parser.add_argument("--tomothickness", type=int, help="""Lentgth of the 'short' direction in the tomogram whence the cooridates came from. Must be in the same scale as the coordinates file supplied through --coords. This parameter is required if --rotx is used.""", default=0)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	

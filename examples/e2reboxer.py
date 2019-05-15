@@ -50,7 +50,7 @@ This is normally used to change the particle box-size.
 	parser.add_argument("--invert",action="store_true",help="Extracted images are multiplied by -1 ",default=False)
 	parser.add_argument("--shiftxy", type=str, help="Specify a dx,dy to be applied to each box. Database will also be updated. Not normally required to retain centering.",default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 

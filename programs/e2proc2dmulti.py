@@ -83,7 +83,7 @@ def main():
 	parser.add_argument("--selfcl", metavar="steps mode", type=int, nargs=2,
 					help="Output file will be a 180x180 self-common lines map for each image.")
 	parser.add_argument("--translate", type=str, action="append", help="Translate by x,y pixels")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higner number means higher level of verboseness",default=0)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higher number means higher level of verboseness",default=0)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--writejunk", action="store_true", help="Writes the image even if its sigma is 0.", default=False)
 	

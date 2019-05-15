@@ -86,7 +86,7 @@ def main():
 		
 	parser.add_argument("--ppid", type=int, help="""Set the PID of the parent process, used for cross platform PPID""",default=-1)
 	
-	parser.add_argument("--verbose", "-v", default=0, help="""default=0. Verbose level [0-9], higner number means higher level of verboseness""",dest="verbose", action="store", metavar="n", type=int)
+	parser.add_argument("--verbose", "-v", default=0, help="""default=0. Verbose level [0-9], higher number means higher level of verboseness""",dest="verbose", action="store", metavar="n", type=int)
 	
 	(options, args) = parser.parse_args()
 	
