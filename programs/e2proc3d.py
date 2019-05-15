@@ -97,6 +97,7 @@ def main():
 	parser.add_option("--apix", type="float", default=None, help="Default=None (not used). A/pixel for S scaling. Also sets/resets the apix of an image to this value.")
 	parser.add_option("--append", action="store_true", help="Append output image, i.e., do not write inplace.")
 	parser.add_option("--average", action="store_true", help="Computes the average of a stack of 3D volumes", default=False)	
+	parser.add_option("--avg_byxf", action="store_true", help="Transform each volume by xform.align3d in its header before computing the average", default=False)	
 	parser.add_option("--averager", type="string", default="mean", help="Averager used for --average and --sym options")
 
 	parser.add_option("--calcfsc", type="string", metavar="with input", help="Calculate a FSC curve between two models. Output is a txt file. This option is the name of the second volume.")
@@ -310,7 +311,10 @@ def main():
 		avgr = Averagers.get(avg_dict[0],avg_dict[1])
 		
 		for i in range(n0,n1+1,n2):
-			avgr.add_image( EMData(infile,i) )
+			a=EMData(infile,i)
+			if options.avg_byxf and a.has_attr("xform.align3d"):
+				a.transform(a["xform.align3d"])
+			avgr.add_image(a)
 			if options.verbose:
 				print("Added ptcl %d / %d" %( i+1, old_div((n1-n0),n2) + 1))
 		avg=avgr.finish()
