@@ -143,12 +143,14 @@ EMData* EMNumPy::numpy2em(const python::numeric::array& array)
 		void* array_data = PyArray_DATA(array_ptr);
 		memcpy(temparray, array_data, (size_t)nx*ny*nz*sizeof(float));
 		image = new EMData((float*)temparray, nx, ny, nz);
+		free(array_data);
 	}
 	else {
 		PyArrayObject * array_ptr2 = (PyArrayObject*) PyArray_Cast(array_ptr, NPY_FLOAT32); //
 		void* array_data2 = PyArray_DATA(array_ptr2);
 		memcpy(temparray, array_data2, (size_t)nx*ny*nz*sizeof(float));
 		image = new EMData((float*)temparray, nx, ny, nz);
+		free(array_data2);
 	}
 
 	image->update();
