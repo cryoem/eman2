@@ -1003,6 +1003,8 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 			# if our first point (between the origin and the first 0) is too high, we readjust it once
 			bs=[self.fft1d[i]-parms[1].background[i] for i in range(fz)]
+			if len(bs)==0:
+				return
 			if min(bs)<0 :
 				mv=(bs[0],self.fft1d[0],0)
 				for i in range(1,fz): mv=min(mv,(bs[i],self.fft1d[i],i))
