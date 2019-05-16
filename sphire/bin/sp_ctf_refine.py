@@ -42,6 +42,7 @@
 # pylint: disable=C0330
 import argparse
 import sp_statistics
+import sp_utilities
 import time
 import multiprocessing
 import os
@@ -153,8 +154,8 @@ def create_mask(size, index_particle_pixels, fraction_size=0.25):
 		index_particle_pixels[1][rand_pixel_selection],
 	)
 	mask[rand_pixel_selection] = 1.0
-	mask = EMAN2.EMNumPy.numpy2em(mask)
-	return mask
+	return_mask = sp_utilities.numpy2em_python(mask)
+	return return_mask
 
 
 def find_index_best_projection(particle_image, reprojections, mask):
