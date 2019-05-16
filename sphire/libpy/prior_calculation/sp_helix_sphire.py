@@ -66,7 +66,7 @@ def import_sphire_stack(stack_path, group_id):
             data = sp.EMUtil.get_all_attributes(stack_path, entry[0])
         except KeyError:
             bad_idx.append(idx)
-            if 'filament' in group_id:
+            if 'filament' in entry[0]:
                 filament_count -= 1
                 if filament_count == 0:
                     print('Group_id', group_id, 'needs to be present in the stack header!')
