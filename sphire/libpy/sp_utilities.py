@@ -9525,6 +9525,8 @@ def numpy2em_python(numpy_array):
 	EMData object
 	"""
 	shape = numpy_array.shape[::-1]
+	if len(shape) == 1:
+		shape = (shape[0], 1)
 	return_array = EMAN2.EMData(*shape)
 	return_view = EMNumPy.em2numpy(return_array)
 	return_view[...] = numpy_array
