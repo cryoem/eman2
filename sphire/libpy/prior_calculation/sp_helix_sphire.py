@@ -34,6 +34,7 @@ you should have received a copy of the gnu general public license
 along with this program; if not, write to the free software
 foundation, inc., 59 temple place, suite 330, boston, ma  02111-1307 usa
 """
+import sys
 import sp_sparx as sp
 import numpy as np
 import shutil
@@ -55,25 +56,25 @@ def import_sphire_stack(stack_path, group_id):
             is_in_dtype = True
             break
     if not is_in_dtype:
+        try:
+            data = sp.EMUtil.get_all_attributes(stack_path, group_id)
+        except KeyError:
+            print('Group_id', group_id, 'needs to be present in the stack header!')
+            sys.exit(1)
+        else:
+            dtype = type(data)
         dtype_list.append((group_id, '|S200'))
 
     imported_data = []
-    is_filament = True
     bad_idx = []
-    filament_count = 2
     for idx, entry in enumerate(dtype_list):
         try:
             data = sp.EMUtil.get_all_attributes(stack_path, entry[0])
         except KeyError:
             bad_idx.append(idx)
-            if 'filament' in entry[0]:
-                filament_count -= 1
-                if filament_count == 0:
-                    print('Group_id', group_id, 'needs to be present in the stack header!')
-                    exit(1)
-            elif entry[0] == group_id:
+            if entry[0] == group_id:
                 print('Group_id', group_id, 'needs to be present in the stack header!')
-                exit(1)
+                sys.exit(1)
         else:
             imported_data.append(data)
     for idx in reversed(bad_idx):
