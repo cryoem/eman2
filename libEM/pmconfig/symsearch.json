@@ -2,7 +2,7 @@
 [
   {
     "TITLE":"e2symsearch3d Wizard",
-    "INST":"This Wizard is to Help EM users fill in the GUI to run e2symsearch3d.py, which aligns a 3D model to it's, specified, symmetry axis. This is accomplished via a combined Monte Carlo and  simplex multidimensional minimization algorithm. This works for 3D model and in some cases individual subtomogram (esp pahse plate data)",
+    "INST":"This Wizard is to Help EM users fill in the GUI to run e2symsearch3d.py, which aligns a 3D model to it's, specified, symmetry axis. This is accomplished via a combined Monte Carlo and  simplex multidimensional minimization algorithm. This works for 3D model and in some cases individual subtomogram (esp phase plate data)",
     "WIDGETS":[]
   },
   {

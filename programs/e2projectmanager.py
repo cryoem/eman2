@@ -44,17 +44,17 @@ from eman2_gui.valslider import EMQTColorWidget
 from eman2_gui.embrowser import EMBrowserWidget
 
 class EMProjectManager(QtWidgets.QMainWindow):
-	""" The EM Project Manager is a QT application to provide a GUI for EMAN2 job managment.
+	""" The EM Project Manager is a QT application to provide a GUI for EMAN2 job management.
 	See the wiki for more details. For documentation see the EMAN2 WIKI """
 	def __init__(self):
 		QtWidgets.QMainWindow.__init__(self)
-		# default PM attributes
+		# Default PM attributes
 		self.pm_cwd = os.getcwd()
 		self.pn_project_name_default='Unknown'
 		self.pm_icon = self.pm_icon_default = get_image_directory() + "EMAN2Icon.png"
 		self.setWindowIcon(QtGui.QIcon(QtGui.QPixmap(pmicon)))
 
-		# Set Defaults
+		# Set defaults
 		self.notebook = None
 		self.taskmanager = None
 		self.wikipage = None
@@ -73,7 +73,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		centralwidget = QtWidgets.QWidget()
 		vsplitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
 
-		# Make the tiltebars
+		# Make the titlebars
 		grid = QtWidgets.QGridLayout()
 		grid.addWidget(self.makeTilteBarWidget(), 0, 0, 1, 3)
 		#grid.addWidget(workflowcontrollabel, 1,0)
@@ -96,7 +96,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		# Make status bar
 		self.statusbar = EMAN2StatusBar("Welcome to the EMAN2 Project Manager","font-weight:bold;")
 		centralwidget.setLayout(grid)
-		# Add splitter to adjust statsus bar
+		# Add splitter to adjust status bar
 		vsplitter.addWidget(centralwidget)
 		vsplitter.addWidget(self.statusbar)
 		vsplitter.setSizes([1000,100])
@@ -104,9 +104,12 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		self.setCentralWidget(vsplitter)
 		E2loadprojtype("e2projectmanager","main",self)
 		E2loadappwin("e2projectmanager","main",self)
-		#Update the project are construction
+		# Update the project are construction
 		self.updateProject()
 
+	def mousePressEvent(self, event):
+		self.setFocus()
+	
 	def closeEvent(self, event):
 		""" Upon PM close, close the taskmanager and the logbook """
 		E2saveappwin("e2projectmanager","main",self)
@@ -124,7 +127,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 	def _load_icons(self):
 		"""
-		Load icons used for the tree. Additonal icons can be added using icons.json
+		Load icons used for the tree. Additional icons can be added using icons.json
 		"""
 		self.icons = {}
 		EMAN2DIR = e2getinstalldir()
@@ -167,7 +170,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		editproject.triggered.connect(self._on_editproject)
 		projectmenu.addAction(editproject)
 		# Options
-		#optionsmenu = menubar.addMenu('&Options')
+		# optionsmenu = menubar.addMenu('&Options')
 
 		# Utils
 		utilsmenu = menubar.addMenu('&Utilities')
@@ -280,7 +283,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 	def makeStackedWidget(self):
 		"""
-		This is the stacked widget to manage the tree types. To Add modes, do so here. Be sure to add the mode to the combo box in function: makeModeWidget
+		This is the stacked widget to manage the tree types. To add modes, do so here. Be sure to add the mode to the combo box in function: makeModeWidget
 		"""
 		self.tree_stacked_widget = QtWidgets.QStackedWidget()
 		self.tree_stacked_widget.setMinimumWidth(300)
@@ -294,7 +297,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		"""
 		Make a stacked widget
 		When a python script is called for the first time a GUI widget is made and added to the stack
-		The First Widget on the stack is the blank widget, the rest are e2program widgets
+		The first widget on the stack is the blank widget, the rest are e2program widgets
 		"""
 		self.gui_stacked_widget = QtWidgets.QStackedWidget()
 		# Set the initial height of the browser
@@ -308,10 +311,10 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 	def makeGUIToolButtons(self):
 		"""
-		Get get ToolBar widget
+		Get ToolBar widget
 		"""
 		toolwidget = QtWidgets.QFrame()
-		#toolwidget.setFrameShape(QtWidgets.QFrame.StyledPanel)
+		# toolwidget.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		tbox = QtWidgets.QVBoxLayout()
 		self.browsebutton = QtWidgets.QToolButton()
 		self.browsebutton.setIcon(QtGui.QIcon(QtGui.QPixmap(browseicon)))
@@ -325,7 +328,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		self.logbutton.setToolTip("Display the note book")
 		self.logbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(noteicon)))
 		self.taskmanagerbutton = PMToolButton()
-		self.taskmanagerbutton.setToolTip("Diaplay the task manager")
+		self.taskmanagerbutton.setToolTip("Display the task manager")
 		self.taskmanagerbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(taskicon)))
 		tbox.addWidget(self.browsebutton)
 		tbox.addWidget(self.helpbutton)
@@ -455,10 +458,10 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 	def _on_expertmodechanged(self, state):
 		"""
-		Change the GUI upon expert mode toogling
+		Change the GUI upon expert mode toggling
 		"""
 		if self.gui_stacked_widget.currentIndex() >= 1:	# First widget in the stack is the blank widget
-			self.setProgramExpertMode(int(state)+1)	# If we are able to set the state, then button is avaialble(state = 0), hence we toggle betwen '1', availible and OFF or '2', availible and ON
+			self.setProgramExpertMode(int(state)+1)	# If we are able to set the state, then button is available (state = 0), hence we toggle between '1', available and OFF or '2', available and ON
 			self._set_GUI(self.getProgram(), self.getProgramMode())
 
 	def loadWiki(self):
@@ -479,7 +482,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		wizarddata = json.loads(data)
 		jsonfile.close()
 
-		# Now load the wizard (Wizard is modal)
+		# Now load the wizard (wizard is modal)
 		self.wizard = EMWizard(wizarddata, self.gui_stacked_widget.currentWidget().guiwidget)
 		self.wizard.show()
 
@@ -493,6 +496,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		hbox = QtWidgets.QHBoxLayout()
 		self.cancelbutton = QtWidgets.QPushButton("Cancel")
 		self.launchbutton = QtWidgets.QPushButton("Launch")
+		self.launchbutton.setFocusPolicy(Qt.StrongFocus)
 		hbox.addWidget(self.cancelbutton)
 		hbox.addWidget(self.launchbutton)
 		hbox.setContentsMargins(4,4,4,4)
@@ -514,7 +518,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 	def _on_cmd_cancel(self):
 		"""
-		'cancel' the present form'. This just pulls up the blank screen and updates the project
+		Cancel the present form. This just pulls up the blank screen and updates the project
 		"""
 		self.clearE2Interface()
 
@@ -524,7 +528,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		"""
 		if self.gui_stacked_widget.currentIndex() == 0: return	# No cmd to run
 
-		# Else Run the command
+		# Else run the command
 		cmd = self.gui_stacked_widget.currentWidget().getCommand()
 		if self.launchScript(cmd):
 			self.clearE2Interface()
@@ -593,14 +597,14 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 	def _add_children(self, toplevel, widgetitem):
 		"""
-		recursive helper function for loadTree
+		Recursive helper function for loadTree
 		"""
 		for child in toplevel["CHILDREN"]:
 			qtreewidget = PMQTreeWidgetItem([child["NAME"]])
 			if "ICON" in  child: qtreewidget.setIcon(0, self.icons[child["ICON"]])
-			# optional program
+			# Optional program
 			if "PROGRAM" in child: qtreewidget.setProgram(child["PROGRAM"])
-			# optional table to diaply rather than a program
+			# Optional table to display rather than a program
 			if "TABLE" in child: qtreewidget.setTable(child["TABLE"])
 			# Optional mode for the program to run in. The default is to have no mode
 			if "MODE" in child: qtreewidget.setMode(child["MODE"])
@@ -620,13 +624,13 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		"""
 		Load a workflow tree from a JSON file
 		@param filename The JSON filename
-		@param treename The name of the QTreWidget
-		@param treewidgetdict the dictionary containing the QtreeWidgets
+		@param treename The name of the QTreeWidget
+		@param treewidgetdict the dictionary containing the QTreeWidgets
 		"""
 		try:
 			jsonfile = open(filename, 'r')
 		except:
-			self.statusbar.setMessage("Can't open configureation file '%s'"%filename,"color:red;")
+			self.statusbar.setMessage("Can't open configuration file '%s'"%filename,"color:red;")
 			return
 		data = jsonfile.read()
 		data = self.json_strip_comments(data)
@@ -639,9 +643,9 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		for toplevel in tree:
 			qtreewidget = PMQTreeWidgetItem([toplevel["NAME"]])
 			if "ICON" in toplevel: qtreewidget.setIcon(0, self.icons[toplevel["ICON"]])
-			# optional program
+			# Optional program
 			if "PROGRAM" in toplevel: qtreewidget.setProgram(toplevel["PROGRAM"])
-			# optional table to diaply rather than a program
+			# Optional table to display rather than a program
 			if "TABLE" in toplevel: qtreewidget.setTable(toplevel["TABLE"])
 			# Optional mode for the program to run in. The default is to have no mode
 			if "MODE" in toplevel: qtreewidget.setMode(toplevel["MODE"])
@@ -669,7 +673,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		return data
 
 	def _tree_widget_click(self, item, col):
-		# Display the progrma GUI
+		# Display the program GUI
 		if item.getProgram():
 			self._set_GUI(item.getProgram(), item.getMode())
 			self.updateProject()
@@ -691,7 +695,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		programfile = program
 		# Need a widget for each program for each mode
 		if self.getProgramExpertMode() == 2:
-			program = "Expert"+program+mode# There is a separate widget for the advanced mode
+			program = "Expert"+program+mode # There is a separate widget for the advanced mode
 		else:
 			program = program+mode
 		# Only generate the GUI widget once.....
@@ -700,7 +704,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 			self.gui_stacked_widget.setCurrentIndex(self.stackedWidgetHash[program])
 			self.gui_stacked_widget.widget(self.stackedWidgetHash[program]).updateWidget()
 		else:
-			# OR make the widget
+			# Or make the widget
 			self.stackedWidgetHash[program] = self.gui_stacked_widget.count()
 			guioptions = self._read_e2program(programfile, mode)
 			# Now actually make the widget
@@ -710,7 +714,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 	def _read_e2program(self, e2program, mode):
 		"""
-		This a a pseudo import function to load paser info
+		This a pseudo import function to load parser info
 		"""
 		parser = EMArgumentParser()
 		try:
@@ -724,7 +728,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		modedefre = re.compile("%s\[([\w\.\(\)\']*)\]"%mode,flags=re.I)
 		defaultre = re.compile("default\s*=\s*[^,]*")
 
-		# Read line and do preprocessing(set mode defaults if desired)
+		# Read line and do preprocessing (set mode defaults if desired)
 		for line in f:
 			if mode:
 				if not re.search(moderegex, line): continue	# If we are running the program in a mode, then only eval mode lines
@@ -750,13 +754,13 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 	def getCurrentTree(self):
 		"""
-		Return Current Tree
+		Return current tree
 		"""
 		return self.tree_stacked_widget.currentWidget()
 
 	def getProgram(self):
 		"""
-		return the current program
+		Return the current program
 		"""
 		try:
 			return self.tree_stacked_widget.currentWidget().currentItem().getProgram()
@@ -765,7 +769,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 	def getProgramMode(self):
 		"""
-		return the current mode of the current program
+		Return the current mode of the current program
 		"""
 		try:
 			return self.tree_stacked_widget.currentWidget().currentItem().getMode()
@@ -774,7 +778,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 	def getProgramNoteLevel(self):
 		"""
-		return the program note level, used for noting
+		Return the program note level, used for noting
 		"""
 		try:
 			return self.tree_stacked_widget.currentWidget().currentItem().getNoteLevel()
@@ -801,7 +805,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 	def getProgramExpertMode(self):
 		"""
-		Return expert mode 0 = not available, 1 = availble but not used, 2 = available and used
+		Return expert mode 0 = not available, 1 = available but not used, 2 = available and used
 		"""
 		try:
 			return self.tree_stacked_widget.currentWidget().currentItem().getExpertMode()
@@ -850,7 +854,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 			return ""
 
 	def getPMCWD(self):
-		""" return the CWD that the pm is working in """
+		""" Return the CWD that the pm is working in """
 		return self.pm_cwd
 
 	def changeDirectory(self, directory):
@@ -859,19 +863,19 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		"""
 		os.chdir(directory)
 		self.pm_cwd = directory
-		# update widget to reflect new CWD
+		# Update widget to reflect new CWD
 		if self.gui_stacked_widget.currentIndex() > 0:
 			self.gui_stacked_widget.currentWidget().updateWidget()
 
 	def updateProject(self):
 		"""
-		Update the Project. Make sure buttons, DB, title and icon observe the PM state
+		Update the project. Make sure buttons, DB, title and icon observe the PM state
 		"""
-		# Set Name, use db value, otherwise whatever the default is set to
+		# Set name, use db value, otherwise whatever the default is set to
 		self.pn_project_name = self.pm_projects_db.setdefault("project_name", dfl=self.pn_project_name_default)
 		self.PMProjectNameBanner.setText("Project Name: "+self.pn_project_name)
 
-		# Set Icon, use db value, otherwise whatever the default is set to
+		# Set icon, use db value, otherwise whatever the default is set to
 		self.pm_icon = self.pm_projects_db.setdefault("project_icon", dfl=self.pm_icon_default)
 		self.PMIcon.setIcon(self.pm_icon)
 
@@ -906,7 +910,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 class EMPopen(subprocess.Popen):
 	"""
-	This was originally done to implement realtime STDOUT feed to the PM statusbar. UNfortunaly this caused Broken Pipe errors causing PM to crash. I am experimenting with named pipes
+	This was originally done to implement realtime STDOUT feed to the PM statusbar. Unfortunately this caused Broken Pipe errors causing PM to crash. I am experimenting with named pipes
 	but this is still a work in progress
 	"""
 	def __init__(self, args, bufsize=0, executable=None,stdin=None, stdout=None, stderr=None,preexec_fn=None, close_fds=False, shell=False,cwd=None, env=None, universal_newlines=False,startupinfo=None, creationflags=0):
@@ -932,13 +936,13 @@ class EMPopen(subprocess.Popen):
 				print("\n\nDONE\n\n")
 				break
 
-			# A HACK to prevent broken pipes(this may be a bit buggy, but it fixes an appaernt bug in subprocess module
+			# A HACK to prevent broken pipes (this may be a bit buggy), but it fixes an apparent bug in subprocess module
 			# Some sort of syncronization issue
 			time.sleep(0.1)
 
 class EMAN2StatusBar(QtWidgets.QTextEdit):
 	"""
-	The Stats bar for PM
+	The status bar for PM
 	"""
 	def __init__(self, text, style):
 		QtWidgets.QTextEdit.__init__(self)
@@ -963,7 +967,7 @@ class EMAN2StatusBar(QtWidgets.QTextEdit):
 
 class PMIcon(QtWidgets.QLabel):
 	"""
-	The Icon manager for PM
+	The icon manager for PM
 	"""
 	def __init__(self, image, parent=None):
 		QtWidgets.QLabel.__init__(self, ("<img src=\"%s\" />")%image, parent)
@@ -1101,8 +1105,8 @@ class TheHelp(QtWidgets.QWidget):
 		return tbwidget
 
 	def _helpchange(self, idx):
-		self.helpcb.setCurrentIndex(idx)
 		""" Read in documenation info from the dump_.*_list() functions. Should reflect what is in the C dicts """
+		self.helpcb.setCurrentIndex(idx)
 		helpdict =  self.helptopics[idx][1]
 		helpdoc = "<B><H3>Listed below is a list of EMAN2 <I>%s</I></H3></B><BR>"%self.helptopics[idx][0]
 
@@ -1119,7 +1123,7 @@ class TheHelp(QtWidgets.QWidget):
 		self.textbox.setHtml(helpdoc)
 
 	def hideEvent(self, event):
-		""" This remebers the geometry when we hide the widget """
+		""" This remembers the geometry when we hide the widget """
 		QtWidgets.QWidget.hideEvent(self, event)
 		self.widgetgeometry = self.geometry()
 
@@ -1136,7 +1140,7 @@ class NoteBook(QtWidgets.QWidget):
 	"""
 	The Notebook for PM. The note book will reflect top levels jobs run, even if they were run on the command line. This class needs some work, b/c the notebook exhibits some funny font and color
 	behaviour. This is probably because the cursor is not a strict observer of the NoteBook state.
-	When jobs are laucned the command is recorded in this widget. In addition this widget saves its text as an HTML file named. pmnotes.html in the local project directory
+	When jobs are launched the command is recorded in this widget. In addition this widget saves its text as an HTML file named. pmnotes.html in the local project directory
 	"""
 	def __init__(self, pm):
 		QtWidgets.QWidget.__init__(self)
@@ -1307,7 +1311,7 @@ class NoteBook(QtWidgets.QWidget):
 		self.close()
 
 	def hideEvent(self, event):
-		""" This remebers the geometry when we hide the widget """
+		""" This remembers the geometry when we hide the widget """
 		QtWidgets.QWidget.hideEvent(self, event)
 		self.widgetgeometry = self.geometry()
 
@@ -1375,8 +1379,8 @@ class PMTextEdit(QtWidgets.QTextEdit):
 
 class TaskManager(QtWidgets.QWidget):
 	"""
-	The Task manager for PM, unlike e2workflow.py, this actualy works. Well sort of... Is uses a SIGTERM soft kill, which when it works is nice because EMAN2 jobs are
-	processed by EMAN2 eveent handlers, thus producing clean kills. Oftern though the job completely ignores SIGTERM and keeps on humming. Perhaps SIGTERM shoudl
+	The Task manager for PM, unlike e2workflow.py, this actualy works. Well sort of... It uses a SIGTERM soft kill, which when it works is nice because EMAN2 jobs are
+	processed by EMAN2 eveent handlers, thus producing clean kills. Often though the job completely ignores SIGTERM and keeps on humming. Perhaps SIGTERM should
 	be replaced with SIGKILL to hard kill it. Downside is that the kill could be dirty and corrupt. On the up side your jobs will actually be killed!
 	"""
 	def __init__(self, pm):
@@ -1429,15 +1433,15 @@ class TaskManager(QtWidgets.QWidget):
 			# This means the task must be done
 			if tsk[1][4]=="/" or "crashed" in tsk[1]: return False
 
-			# or not running
+			# Or not running
 			if '/' in tsk[2] : pid=int(tsk[2].split("/")[0])
 			else : pid=int(tsk[2])
 
 			if os.name=="posix":
-				# don't do this on windows (may actually kill the process)
+				# Don't do this on windows (may actually kill the process)
 				os.kill(pid,0)			# raises an exception if doesn't exist
 			else :
-				# not a good approach, but the best we have right now on windows
+				# Not a good approach, but the best we have right now on windows
 				tm=time.localtime()
 				mon=int(tsk[0][5:7])
 				yr=int(tsk[0][:4])
@@ -1475,7 +1479,7 @@ class TaskManager(QtWidgets.QWidget):
 
 			# if we get here, then we have a (probably) active task
 
-			# This contains (file location,process id, status, command name)
+			# This contains (file location, process id, status, command name)
 			ppid = None
 			if '/' in tsk[2]:
 				ids = tsk[2].split("/")
@@ -1500,7 +1504,7 @@ class TaskManager(QtWidgets.QWidget):
 		else:
 			try:
 				if os.stat(self.pm().getPMCWD()+"/.eman2log.txt").st_mtime < self.last_update:
-					# see if any jobs have crashed, if not then do nothing
+					# See if any jobs have crashed, if not then do nothing
 					self.tasks=[i for i in self.tasks if self.check_task(self.prevfin,i)]
 					self.update_list()
 					return
@@ -1517,7 +1521,7 @@ class TaskManager(QtWidgets.QWidget):
 			# Go through existing entries and see if they've finished
 			self.tasks=[i for i in self.tasks if self.check_task(fin,i)]
 
-			# now check for new entries
+			# Now check for new entries
 			fin.seek(self.lastpos)
 			self.parse_new_commands(fin)
 		# Update the list
@@ -1577,11 +1581,11 @@ class TaskManager(QtWidgets.QWidget):
 					for task in self.tasks:
 						if curppid == task[5]: 
 							#### processes share the same parent
-							print("killing self process", task[1])
+							print("Killing self process", task[1])
 							os.kill(task[1], killsig)
 							self._recursivekill(task[1], killsig)
 					## now parent
-					print("KIlling parent")
+					print("Killing parent")
 					os.kill(curppid,killsig)
 					
 				## The PID Mafia occurs below: # Kill all children and siblings
@@ -1606,7 +1610,7 @@ class TaskManager(QtWidgets.QWidget):
 				self._recursivekill(task[1])
 
 	def hideEvent(self, event):
-		""" This remebers the geometry when we hide the widget """
+		""" This remembers the geometry when we hide the widget """
 		QtWidgets.QWidget.hideEvent(self, event)
 		self.widgetgeometry = self.geometry()
 
@@ -1646,7 +1650,7 @@ class PMQListWidgetItem(QtWidgets.QListWidgetItem):
 
 class PMProgramWidget(QtWidgets.QTabWidget):
 	"""
-	Creates a program interface for each e2 program, for each mode, etc. This is a tab widget and there are three tabs, a GUI tab, a comand line tab and a help tab
+	Creates a program interface for each e2 program, for each mode, etc. This is a tab widget and there are three tabs, a GUI tab, a command line tab and a help tab
 	"""
 	def __init__(self, options, program, pm, mode):
 		QtWidgets.QTabWidget.__init__(self)
@@ -1689,7 +1693,7 @@ class PMProgramWidget(QtWidgets.QTabWidget):
 				self.pm().statusbar.setMessage("Error(s) in GUI parameters. Please fix....","color:red;")
 				return None
 		else:
-			self.pm().statusbar.setMessage("Error Can't launch from help menu","color:red;")
+			self.pm().statusbar.setMessage("Error: Can't launch from help menu","color:red;")
 			return None
 
 	def _on_tabchange(self, idx):
@@ -1708,13 +1712,13 @@ class PMProgramWidget(QtWidgets.QTabWidget):
 class PMGUIWidget(QtWidgets.QScrollArea):
 	"""
 	Creates a GUI widget using a dict derived from the e2program options. Instances of this widget are added to the QStackedWidget on the right hand side of the PM.
-	When the user clicks on a leaf node in the workflow tree an instace of this class is created, if it doesn't already exists, and added to the stckedwidget. If it
+	When the user clicks on a leaf node in the workflow tree an instance of this class is created, if it doesn't already exist, and added to the stackedwidget. If it
 	already exists, then it is rendered visible.
 	"""
 	def __init__(self, options, program, pm, mode):
 		QtWidgets.QScrollArea.__init__(self)
 		self.errorstate = False
-		# I need both an ordered list and an associavite means of accessing the widgets
+		# I need both an ordered list and an associative means of accessing the widgets
 		self.widgetlist = []
 		self.widgethash = {}
 		self.cwd  = pm.pm_cwd	# The working directory that were in
@@ -1723,7 +1727,7 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 		self.pm = weakref.ref(pm)
 		self.mode = mode
 
-		# loop through options (a list of dicts) and generate the GUI widget
+		# Loop through options (a list of dicts) and generate the GUI widget
 		gridbox = QtWidgets.QGridLayout()
 		for option in options:
 			"""create the correct widget type"""
@@ -1787,7 +1791,7 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 		return colspan
 
 	def getDefault(self, option, nodb = False):
-		""" return the default value according to the folowing rules"""
+		""" Return the default value according to the following rules"""
 		# If there is a DB and its usage is desired the default will be the DB value
 		k=option['name']+self.getSharingMode(option)
 		if not nodb and k in self.db: return self.db[k]	# Return the default if it exists in the DB
@@ -1797,13 +1801,13 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 		return default
 
 	def getLRange(self, option):
-		""" Return the Lower range if it exists"""
+		""" Return the lower range if it exists"""
 		lrange = None
 		if 'lrange' in option: lrange = option['lrange']
 		return lrange
 
 	def getURange(self, option):
-		""" Return the Upper range if it exists"""
+		""" Return the upper range if it exists"""
 		urange = None
 		if 'urange' in option: urange = option['urange']
 		return urange
@@ -1820,7 +1824,7 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 
 	def getPositional(self, option):
 		# See if the arugment is positional or not
-		positional = False	# Defult if not provided
+		positional = False	# Default if not provided
 		if 'positional' in option: positional = option['positional']
 		return positional
 
@@ -1851,19 +1855,19 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 		return browser
 
 	def getreturnNone(self, option):
-		""" Sets whether or not we will actuall return None as an argument or leave it blank. Only some args can accpt None, others crash if this is input """
+		""" Sets whether or not we will actually return None as an argument or leave it blank. Only some args can accept None, others crash if this is input """
 		if 'returnNone' in option:
 			return True
 		else:
 			return False
 
 	def updateWidget(self):
-		# reload the DB if necessary (when projects are changed)
+		# Reload the DB if necessary (when projects are changed)
 		thiscwd = self.pm().pm_cwd
 		if thiscwd != self.cwd:
 			self.cwd = thiscwd
 			self.db = js_open_dict("{}/info/pm/{}.json".format(str(self.cwd),self.program))
-		# Might enable serval dbs to be loaded, but we will implment this later
+		# Might enable serval dbs to be loaded, but we will implement this later
 		for widget in self.widgetlist:
 			# If this is not a value holding widget continue (bool widget, herader, etc)
 			if widget.getArgument() == None: continue
@@ -1877,7 +1881,7 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 		args = re.findall('\s[^-]{2}\S*',cmd)
 		widgethash = dict(self.widgethash)	# Make a copy of the widget hash
 
-		#process
+		# Process
 		for option in options:
 			ov = option.split('=', 1)
 			if ov[0][3:] not in self.widgethash:
@@ -1889,26 +1893,26 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 			else:
 				self._setValueJournaling(self.widgethash[ov[0][3:]], True)
 			#self.widgethash[ov[0][2:]].setValue(True)
-			# pop the widget off a copy of the hash
+			# Pop the widget off a copy of the hash
 			del(widgethash[ov[0][3:]])
 
 		posargs = []
-		# now do the widgets which are not listed in the above list
+		# Now do the widgets which are not listed in the above list
 		for name,widget in list(widgethash.items()):
 			if isinstance(widget, PMHeaderWidget):
 				continue
 			if isinstance(widget, PMBoolWidget):
 				self._setValueJournaling(widget, False)
 				continue
-			#process arguments, if postional widget
+			# Process arguments, if positional widget
 			if widget.getPositional():
 				posargs.append(widget)
 				continue
 
-			# otherwise set to none	because the user deleted it
+			# Otherwise set to none	because the user deleted it
 			self._setValueJournaling(widget, '')
 
-		#loop through pos args. The stadard is that ither there is one arg per widget or one widget and many args
+		# Loop through pos args. The standard is that either there is one arg per widget or one widget and many args
 		if len(posargs) == len(args):
 			for posarg in posargs:
 				self._setValueJournaling(posarg, (args.pop())[1:])
@@ -1925,7 +1929,7 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 
 
 	def getCommand(self):
-		""" Loop and check for errors and set the DB. If errors are encountered, then Retrun None """
+		""" Loop and check for errors and set the DB. If errors are encountered, then return None """
 		self.errorstate = False
 		args = self.program
 		for widget in self.widgetlist:
@@ -1957,7 +1961,7 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 
 class PMQTreeWidgetItem(QtWidgets.QTreeWidgetItem):
 	"""
-	Custon QTreeWidget for PM, holds a bunch of properites relating to the e2program(or table) it represnsts.
+	Custom QTreeWidget for PM, holds a bunch of properties relating to the e2program (or table) it represents.
 	"""
 	def __init__(self, qstring):
 		QtWidgets.QTreeWidgetItem.__init__(self, qstring)
@@ -2005,7 +2009,7 @@ class PMQTreeWidgetItem(QtWidgets.QTreeWidgetItem):
 		return self.wikipage
 
 	def setWizardFile(self, wizardfile):
-		""" set the wizard file """
+		""" Set the wizard file """
 		self.wizardfile = wizardfile
 
 	def getWizardFile(self):
@@ -2014,9 +2018,9 @@ class PMQTreeWidgetItem(QtWidgets.QTreeWidgetItem):
 	def setExpertMode(self, state):
 		"""
 		Sets the expert mode state
-		0 = not avialable
+		0 = not available
 		1 = available, but turned off
-		2 = avaialble and turned on
+		2 = available and turned on
 		"""
 		self.exmodestate = state
 
@@ -2024,7 +2028,7 @@ class PMQTreeWidgetItem(QtWidgets.QTreeWidgetItem):
 		return self.exmodestate
 
 class PMToolButton(QtWidgets.QToolButton):
-	""" Create a toogle button """
+	""" Create a toggle button """
 	stateChanged = QtCore.pyqtSignal(bool)
 
 	def __init__(self):
@@ -2055,15 +2059,15 @@ class ProjectDialog(QtWidgets.QDialog):
 		frame = QtWidgets.QFrame()
 		frame.setFrameStyle(QtWidgets.QFrame.StyledPanel)
 		grid = QtWidgets.QGridLayout()
-		# add intro
+		# Add intro
 		textbox = QtWidgets.QTextEdit("")
-		textbox.setHtml("Welcome to the EMAN2 project manager. Please add project specific paramters below. For Questions email: <a href='mailto:sludtke@bcm.edu'>sludtke@bcm.edu<\a>")
+		textbox.setHtml("Welcome to the EMAN2 project manager. Please add project specific parameters below. For questions email: <a href='mailto:sludtke@bcm.edu'>sludtke@bcm.edu<\a>")
 		textbox.setMaximumHeight(66)
 		textbox.setReadOnly(True)
 		textbox.viewport().setCursor(QtCore.Qt.ArrowCursor)
 
 		grid.addWidget(textbox, 0, 0, 1, 2)
-		# add pm name and icon
+		# Add pm name and icon
 		project_name_label = QtWidgets.QLabel("Project Name")
 		self.project_name = QtWidgets.QLineEdit()
 		self.project_name.setMinimumWidth(minwidth)
@@ -2152,7 +2156,7 @@ GUI directly to browse the contents of old-style projects.""")
 	try: sets=os.listdir("sets")
 	except: sets=[]
 	
-	# fix naming convention for 2.3
+	# Fix naming convention for 2.3
 	bis=[i for i in sets if "_bispec" in i]
 	inv=[i for i in sets if "_invar" in i]
 	if len(bis)>0 and len(bis)>len(inv):
@@ -2170,7 +2174,7 @@ with output_only, and regenerate any sets/""")
 					os.symlink(rpl,i)			# may fail in some cases
 			except: pass
 		
-		# all _bispec particles
+		# All _bispec particles
 		bis=[("particles/"+i,i.replace("_bispec","_invar")) for i in os.listdir("particles") if "_bispec" in i]
 		for i in bis:
 			try:

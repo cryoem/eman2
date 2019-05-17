@@ -14,7 +14,7 @@
   },
   {
     "TITLE":"Select box params",
-    "INST":"'box_type' indicates the EMAN2 box database you want to importr into. There are three choice: 'boxes' for convension boxes, 'untilted' and 'tilted' for boxes that correspond to untilted and tilted micrograph pairs. Also in 'extension' list the file extension of the microgrpahs that the boxes to be imported came from.",
+    "INST":"'box_type' indicates the EMAN2 box database you want to import into. There are three choice: 'boxes' for convension boxes, 'untilted' and 'tilted' for boxes that correspond to untilted and tilted micrograph pairs. Also in 'extension' list the file extension of the micrographs that the boxes to be imported came from.",
     "WIDGETS":[
       "box_type",
       "extension"

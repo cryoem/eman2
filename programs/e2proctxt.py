@@ -47,7 +47,7 @@ Simple manipulations of text files conatining multi-column data, as would be use
 	####################
 	parser.add_argument("--merge",type=str,help="Merge several files into a single output. All inputs must have the same number of rows. Row comments stripped.",default=None)
 	parser.add_argument("--sortcomment",action="store_true",default=False,help="Sorts rows based on per-row comment (after #) before merging")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higner number means higher level of verboseness",default=1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higher number means higher level of verboseness",default=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 

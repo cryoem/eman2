@@ -1,7 +1,7 @@
 /* JSON file to make the tomogram import wizard */
 [
   {
-    "TITLE":"e2wedge Wizard for subtoograms",
+    "TITLE":"e2wedge Wizard for subtomograms",
     "INST":"This Wizard is to Help users launch e2wedge for examining and finding the missing wedge.",
     "WIDGETS":[]
   },

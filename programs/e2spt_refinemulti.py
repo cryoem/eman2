@@ -216,7 +216,7 @@ def main():
 
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	parser.add_argument("--plots", action='store_true', help="""Turn this option on to generate a plot of the ccc scores both during model generation with e2spt_classaverage.py or e2spt_hac.py and for refinement results of e2spt_refinemulti.py. Running on a cluster or via ssh remotely might not support plotting.""",default=False)
 	

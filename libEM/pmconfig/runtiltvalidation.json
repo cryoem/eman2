@@ -16,7 +16,7 @@
   },
   {
     "TITLE":"e2tiltvalidation options",
-    "INST": "The maximum tilt angle is the maximum allowed tilt angle allowed and computed angle above this threshold will be rejected. The quaternion checkbox, specifies that queernion mathematics are used for tilt axis/angle computation. Othervise, matrix mathematics are used.",
+    "INST": "The maximum tilt angle is the maximum allowed tilt angle allowed and computed angle above this threshold will be rejected. The quaternion checkbox, specifies that queernion mathematics are used for tilt axis/angle computation. Otherwise, matrix mathematics are used.",
     "WIDGETS":[
       "maxtiltangle",
       "quaternion"
@@ -24,7 +24,7 @@
   },
   {
     "TITLE":"e2tiltvalidation options",
-    "INST":"Please enter the symmetry of the volume you are validatibg and the parallism you wish to use",
+    "INST":"Please enter the symmetry of the volume you are validating and the parallelism you wish to use",
     "WIDGETS":[
       "sym",
       "parallel"
@@ -32,7 +32,7 @@
   },
   {
     "TITLE":"e2project options",
-    "INST":"Please enter the angluar projection spacing. The finer the spacing the more accurant your alignments will be",
+    "INST":"Please enter the angular projection spacing. The finer the spacing the more accurate your alignments will be",
     "WIDGETS":[
       "delta"
     ]
@@ -55,7 +55,7 @@
   },
   {
     "TITLE":"e2tiltvalidation options",
-    "INST":"Please enter the similarity refiement aligner, and comparitor to use for this aligner",
+    "INST":"Please enter the similarity refinement aligner, and comparitor to use for this aligner",
     "WIDGETS":[
       "simralign",
       "simraligncmp"

@@ -55,7 +55,7 @@ def main():
 	parser.add_argument("--listoptions",action="store_true", default=False, help="List all currently set user application preferences")
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higner number means higher level of verboseness",default=1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higher number means higher level of verboseness",default=1)
 
 
 	(options, args) = parser.parse_args()

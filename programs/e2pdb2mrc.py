@@ -82,7 +82,7 @@ def main():
 	parser.add_argument("--quiet",action="store_true",default=False,help="Verbose is the default")
 	parser.add_argument("--model", type=int,default=None, help="Extract only a single numbered model from a multi-model PDB")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--quick", action="store_true", help="Use a slight approximation to the Gaussian during insertion. Does not support B-factors.",default=False)
 	parser.add_argument("--addpdbbfactor", action="store_true", help="Use the bfactor/temperature factor as the atom blurring radius, equivalent to Gaussian lowpass with 1/e width at 1/bfactor",default=False)
 	parser.add_argument("--omit", type=float, help="Randomly omit this percentage of atoms in the output map.",default=0.0)

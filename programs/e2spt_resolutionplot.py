@@ -89,7 +89,7 @@ def main():
 	parser.add_argument("--polydegree",type=int, help="Degree of the polynomial to fit.", default=None)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID.",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	parser.add_argument("--plotonly",type=str, help="""FSC curves to plot in separate plots. Skips fsc curve generation. Provide .txt. files separated by commas --plotonly=file1.txt,file2.txt,file3.txt etc...""", default=None)
 

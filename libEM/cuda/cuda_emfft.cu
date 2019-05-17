@@ -9,7 +9,7 @@ const int EMCUDA_FFT_CACHE_SIZE = 8;
 int EMCUDA_FFT_DD_CACHE_NUM_PLANS = -1;
 
 // This struct is the device to device cufft plan cache. This is useful when your data exists solely on the GPU
-// In an ideal world the cufft_hh_plan_cache would have one of these as a variable (a lot of copying is occuring)
+// In an ideal world the cufft_hh_plan_cache would have one of these as a variable (a lot of copying is occurring)
 struct cufft_dd_plan_cache {
 	int rank; // Store the rank of the plan
 	int plan_dims[3]; // Store the dimensions of the plan (always in 3D, if dimensions are "unused" they are taken to be 1)

@@ -425,6 +425,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[]):
 			drs=drs.tolist()
 			tf_dir=Transform()
 			tf_dir.set_rotation(drs)
+			tf_dir.invert()
 
 		else:
 			tf_dir=None
@@ -579,7 +580,8 @@ def parse_json(jsfile, xffile=""):
 		lines=f.readlines()
 		f.close()
 		for l in lines:
-			postxfs.append(Transform(eval(l)))
+			if len(l)>3:
+				postxfs.append(Transform(eval(l)))
 	else:
 		postxfs.append(Transform())
 	

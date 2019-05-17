@@ -114,7 +114,7 @@ def main():
 	parser.add_argument("--seedweight", type=float, default=1.0, help="If seedmap specified, this is how strongly the seedmap will bias existing values. 1 is default, and is equivalent to a one particle weight.")
 	parser.add_argument("--seedweightmap", type=str, default=None, help="Specify a full map of weights for the seed. This must be in the same format as the --savenorm output map.")
 
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer. This is the only parallelism supported by e2make3dpar", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--preprocess", metavar="processor_name(param1=value1:param2=value2)", type=str, action="append", help="preprocessor to be applied to the projections prior to 3D insertion. There can be more than one preprocessor and they are applied in the order in which they are specifed. Applied before padding occurs. See e2help.py processors for a complete list of available processors.")

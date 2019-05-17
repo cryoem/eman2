@@ -3022,7 +3022,7 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 		for (unsigned int i=0; i<nsoln; i++){
 			s_xform[i].set_params(xfs[i].get_params("eman"));
 		}
-		sexp_start=int(1.443*std::log(ny-1))-1;
+		sexp_start=int(1.443*std::log(float(ny-1)))-1;
 		if (sexp_start<4) sexp_start=4;
 		
 		

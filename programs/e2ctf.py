@@ -76,7 +76,7 @@ minimum of ~20 percent padding around the particles is required for background e
 of another particle into the box in some cases. Particles should be reasonably well centered. Can also optionally phase
 flip and Wiener filter particles. Wiener filtration comes after phase-flipping, so if phase flipping is performed Wiener
 filtered particles will also be phase-flipped. Note that both operations are performed on oversampled images if specified,
-but this will produce phase-flipped images which are irreversable, so, while oversampling can be useful for fitting, it
+but this will produce phase-flipped images which are irreversible, so, while oversampling can be useful for fitting, it
 is not recommended for phase-flipping.
 
 Increasing padding during the particle picking process will improve the accuracy of phase-flipping, particularly for
@@ -145,7 +145,7 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--dbds",type=str,default=None,help="Obsolete option for old e2workflow. Present only to provide warning messages.")
 	parser.add_argument("--source_image",type=str,default=None,help="Filters particles only with matching ptcl_source_image parameters in the header")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 
@@ -348,7 +348,7 @@ def init_sfcurve(opt):
 
 def get_gui_arg_img_sets(filenames):
 	'''
-	returns the img_sets list required to intialize the GUI correctly. Each set has
+	returns the img_sets list required to initialize the GUI correctly. Each set has
 	filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual,bg_1d_low,"ctf_microbox"
 	'''
 
@@ -660,7 +660,7 @@ def pspec_and_ctf_fit(options,debug=False):
 	project_db = js_open_dict("info/project.json")
 	try: project_db.update({ "global.microscope_voltage":options.voltage, "global.microscope_cs":options.cs, "global.apix":apix })
 	except:
-		print("ERROR: apix not found. This probably means that no CTF curves were sucessfully fit !")
+		print("ERROR: apix not found. This probably means that no CTF curves were successfully fit !")
 
 	return img_sets
 
@@ -840,7 +840,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 		ctf=default_ctf			# otherwise a CTF without SNR parameters inherited from the whole frame could wind up in the particles !!!  1/24/18
 		if storeparm :
 			if stackfile[-4:].lower()!=".hdf" and stackfile[:4].lower()!="bdb:" :
-				if i==0: print("Warning, --storeparm option ignored. Input paticle stack must be HDF or BDB for this option to work.")
+				if i==0: print("Warning, --storeparm option ignored. Input particle stack must be HDF or BDB for this option to work.")
 			else :
 				ctf=default_ctf		# otherwise we're stuck with the values in the file forever
 				im1["ctf"]=ctf
@@ -1019,7 +1019,7 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 	"""This routine will read the images from the specified file, optionally edgenormalize,
 	then apply a gaussian mask with the specified radius then compute the average 2-D power
 	spectrum for the stack. It will also compute the average 2-D power spectrum using 1-mask + edge
-	apotization to get an appoximate 'background' power spectrum. 2-D results returned as a 2-D FFT
+	apotization to get an approximate 'background' power spectrum. 2-D results returned as a 2-D FFT
 	intensity/0 image. 1-D results returned as a list of floats. If source_image is provided, then it
 	will only read particles with ptcl_source_image set to the specified value.
 
@@ -1884,7 +1884,7 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,phaseplate,apix,bgad
 		#if s0==s1 : s0=int(.03/ds)
 	#if verbose: print "Minimum at 1/%1.1f 1/A (%1.4f), highest s considered 1/%1.1f 1/A (%1.4f)"%(1.0/(s0*ds),s0*ds,1.0/(s1*ds),s1*ds)
 
-	## we now have a range from the first minimia to ~6 A. Adjust it to include a bit of data closer to the origin
+	## we now have a range from the first minima to ~6 A. Adjust it to include a bit of data closer to the origin
 	#for i in range(s0,s0*2/3,-1):
 		#if bglowsub[i]>bglowsub[i-1] : break
 	#s0m=s0									# save for a defocus estimate
@@ -1928,7 +1928,7 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,phaseplate,apix,bgad
 		#tot,tota,totb=0,0,0
 		#zroa,zrob=0,0
 		#for s in range(s0,s1):
-			## This is basicaly a dot product of the reference curve vs the simulation
+			## This is basically a dot product of the reference curve vs the simulation
 			#a=(cc[s]**2)				# ctf curve ^2
 			#b=bglowsub[s]					# bg subtracted intensity
 			#tot+=a*b
@@ -1941,7 +1941,7 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,phaseplate,apix,bgad
 				##zrob+=1.0
 
 		#tot/=sqrt(tota*totb)	# correct if we want a normalized dot product
-##		tot/=tota				# funnny 'normalization' which seems to help bring out the more likely peaks
+##		tot/=tota				# funny 'normalization' which seems to help bring out the more likely peaks
 ##		if zrob==0 : continue
 ##		tot*=-(zroa/zrob)
 
@@ -2138,7 +2138,7 @@ def ctf_cmp_a(parms,data):
 	ctf.defocus=parms[0]
 	ctf.bfactor=parms[1]
 	cc=ctf.compute_1d(len(bgsub)*2,ds,Ctf.CtfType.CTF_AMP)	# this is for the error calculation
-	s0=old_div(s0*3,2)			# This should be roughlythe position of the first zero
+	s0=old_div(s0*3,2)			# This should be roughly the position of the first zero
 	s0a=max(3,old_div(s0,4))		# This is a lower s0 which will include some of the low resolution structure factor region
 
 	# make a complete CTF curve over 0,s1 range
@@ -2925,7 +2925,7 @@ class GUIctf(QtWidgets.QWidget):
 		if n>1:
 			self.ptcldata=EMData.read_images(self.data[val][0],list(range(0,min(20,n))))
 			im=sum(self.ptcldata)
-			im.mult(4.0/len(self.ptcldata))	# 4 compensatess for noise averaging
+			im.mult(4.0/len(self.ptcldata))	# 4 compensates for noise averaging
 			self.ptcldata.insert(0,im)
 			self.guirealim.set_data(self.ptcldata)
 		else : self.guirealim.set_data([EMData()])

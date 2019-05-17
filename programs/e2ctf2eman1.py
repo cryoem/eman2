@@ -270,7 +270,7 @@ def calcnoise( n0, n1, n2, n3, ds, e2bg ) :
 	  e1bg          1D EMAN1 background curve
 	"""
 	
-	# Calcalate noise curve
+	# Calculate noise curve
 	e1bg = [ ]
 	for i in range( len( e2bg ) ) :
 		s = ds * i
@@ -601,7 +601,7 @@ def write_snrmap( outputfile, intsnr, ds ) :
 	  ds   Frequency sampling
 	"""
 	
-	# Import plotting libaries
+	# Import plotting libraries
 	import matplotlib
 	import numpy as np
 	import matplotlib.cm as cm

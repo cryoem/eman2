@@ -71,7 +71,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 
 	parser.add_argument("--basislist","-z",type=str,help="List of basis vectors to use, comma delimited.",default=None)
 
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	#parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
@@ -228,7 +228,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 					sys.stdout.flush()
 				im=EMData(args[2],i)
 				
-				# find the best orienteation from the similarity matrix, and apply the transformation
+				# find the best orientation from the similarity matrix, and apply the transformation
 				best=(1.0e23,0,0,0,0)
 				
 				for j in range(simmx.get_xsize()): 
@@ -283,7 +283,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 					sys.stdout.flush()
 				im=EMData(args[2],i)
 				
-				# find the best orienteation from the similarity matrix, and apply the transformation
+				# find the best orientation from the similarity matrix, and apply the transformation
 				best=(1.0e23,0,0,0,0)
 				
 				for j in range(simmx.get_xsize()): 
@@ -295,7 +295,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				if maskfile!=None : im*=maskfile
 				if options.normalize!=None:
 					try: im.process_inplace(options.normalize)
-					except: print("Warning: Normazation failed")
+					except: print("Warning: Normalization failed")
 				if mean!=None : im-=mean
 				
 				proj=EMData(len(basis),1,1)

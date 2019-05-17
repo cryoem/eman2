@@ -61,7 +61,7 @@ def main():
 		stored on the header of a subtomogram stack""")
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness.")
 
 	parser.add_argument("--saveali",action="store_true", default=False,help="""If set, will save the 
 		aligned particle volumes.""")

@@ -49,7 +49,7 @@ import traceback
 # 
 # 
 # The STAR file is represented as a dictionary-like abstraction of the physical file on disk. 
-# Changes to the abstract object will be syncronized with the file when only explicitly requested.
+# Changes to the abstract object will be synchronized with the file when only explicitly requested.
 # The entire file is kept in RAM, and the file is only re-read from disk if 'readfile()' is
 # explicitly called (which will overwrite any changes in memory). 
 #
@@ -120,7 +120,7 @@ If not set, it will read the first block encountered. Value should be of the for
 				key=spl[0][1:]
 				
 				if len(spl)==2:				# value on the same line
-					if spl[1][0] in ("'",'"') : self[key]=spl[1:-1]		# we assume the last non-whitespace character is the ending delimeter
+					if spl[1][0] in ("'",'"') : self[key]=spl[1:-1]		# we assume the last non-whitespace character is the ending delimiter
 					else:
 						try: val=int(spl[1])
 						except: 

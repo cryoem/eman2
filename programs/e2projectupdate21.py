@@ -59,7 +59,7 @@ to place the EMAN2.1 copy.
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--yes",action="store_true",help="This will skip the 'are you sure' question, and proceed with the conversion",default=False)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	(options, args) = parser.parse_args()
 
 	if not os.path.exists("EMAN2DB/project.bdb") :
