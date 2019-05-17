@@ -16,7 +16,9 @@ import sp_filter
 import mpi
 import sp_applications
 
+import sp_fundamentals
 
+from scipy import fftpack
 
 
 location =os.getcwd()
@@ -208,26 +210,26 @@ def get_all_reduce_ptcl_imgs(frames_i, maski, nxx, nyy, part_cord, ctf_para, cen
         for i in range(2*cen_zz):
             crop_imgs.append(Util.window(frames_i, nxx, nyy, 1, part_cord[j][0] - cen_xx,
                                          part_cord[j][1] - cen_yy, i - cen_zz))
-            st = Util.infomask(crop_imgs[i], None, False)  # find statistics of the image returns avg, std, min, max
-            Util.mul_scalar(crop_imgs[i], -1.0)
-            crop_imgs[i] += 2 * st[0]  # st[0]-> avergage  , shifting the negative range to positive
-
-            st = Util.infomask(crop_imgs[i], maski, False)
-            crop_imgs[i] -= st[0]  # st[0]-> avergage
-            crop_imgs[i] /= st[1]  # st[1]-> standard deviation
-
+            # st = Util.infomask(crop_imgs[i], None, False)  # find statistics of the image returns avg, std, min, max
+            # Util.mul_scalar(crop_imgs[i], -1.0)
+            # crop_imgs[i] += 2 * st[0]  # st[0]-> avergage  , shifting the negative range to positive
+            #
+            # st = Util.infomask(crop_imgs[i], maski, False)
+            # crop_imgs[i] -= st[0]  # st[0]-> avergage
+            # crop_imgs[i] /= st[1]  # st[1]-> standard deviation
+            #
             # st = Util.infomask(crop_imgs[i], maski, False)
             # crop_imgs[i] -= st[0]  # st[0]-> avergage
             # crop_imgs[i] = sp_filter.filt_ctf(crop_imgs[i], ctf_para[j], binary=False)
-
-            st = Util.infomask(crop_imgs[i], maski, False)
-            crop_imgs[i] -= st[0]  # st[0]-> avergage
-            crop_imgs[i] = sp_filter.filt_ctf(crop_imgs[i], ctf_para[j], binary=True)
-
-            st = Util.infomask(crop_imgs[i], maski, False)
-            crop_imgs[i] -= st[0]  # st[0]-> avergage
-            st = Util.infomask(crop_imgs[i], maski, False)
-            crop_imgs[i] /= st[1]  # st[1]-> standard deviation
+            #
+            # st = Util.infomask(crop_imgs[i], maski, False)
+            # crop_imgs[i] -= st[0]  # st[0]-> avergage
+            # crop_imgs[i] = sp_filter.filt_ctf(crop_imgs[i], ctf_para[j], binary=True)
+            #
+            # st = Util.infomask(crop_imgs[i], maski, False)
+            # crop_imgs[i] -= st[0]  # st[0]-> avergage
+            # st = Util.infomask(crop_imgs[i], maski, False)
+            # crop_imgs[i] /= st[1]  # st[1]-> standard deviation
         particle_imgs_in_movie.append(crop_imgs)
     return particle_imgs_in_movie
 
@@ -257,8 +259,8 @@ def fitthecurve(data, inital_guess):
     return [data[0], expo, coeff, var_matrix]
 
 
-def fitfunc(x, a, b,c):
-    return -a * np.exp(c + (4*b * (np.array(x)*np.array(x))))
+def fitfunc(x, a, b,c,d ):
+    return -a * np.exp(c + (4*b * (np.array(x)*np.array(x)))) + d
 
 
 def fitslopefunc(x, m,c):
@@ -279,10 +281,11 @@ for micro in enumerate(movie_names[ima_start:ima_end]):
 fsc_values = []
 fsc_avgs = []
 frequencies = []
+fsc_s_all = []
 
 
 for micro in enumerate(movie_names[ima_start:ima_end]):
-    micro = (0, '/home/adnan/PycharmProjects/DoseWeighting/MOVIES/TcdA1-0013_frames.mrc')
+    # micro = (0, '/home/adnan/PycharmProjects/DoseWeighting/MOVIES/TcdA1-0013_frames.mrc')
     frames = return_images_from_movie(micro[1], show_first = False)
 
     """
@@ -308,23 +311,22 @@ for micro in enumerate(movie_names[ima_start:ima_end]):
     ref_project_2D_ptcl_all = get_2D_project_for_all_ptcl_from_reference(volft, project_params, show = False) #Projection of 3D volume in 2-D for all the particles in all frames in one movie
     mask = sp_utilities.model_circle(nx[0] / 2, nx[0], nx[0])  # nx/2 is for the radius
     for i in range(len(ref_project_2D_ptcl_all)):
-        st = Util.infomask(ref_project_2D_ptcl_all[i], mask, False)
-        ref_project_2D_ptcl_all[i]-= st[0]  # st[0]-> average
-        ref_project_2D_ptcl_all[i] /= st[1]  # st[1]-> standard deviation
+        # st = Util.infomask(ref_project_2D_ptcl_all[i], mask, False)
+        # ref_project_2D_ptcl_all[i]-= st[0]  # st[0]-> average
+        # ref_project_2D_ptcl_all[i] /= st[1]  # st[1]-> standard deviation
 
-        st = Util.infomask(ref_project_2D_ptcl_all[i], mask, False)
-        ref_project_2D_ptcl_all[i] -= st[0]  # st[0]-> avergage
-        ref_project_2D_ptcl_all[i] = sp_filter.filt_ctf(ref_project_2D_ptcl_all[i], ctf_params[i], binary=False)
+        # st = Util.infomask(ref_project_2D_ptcl_all[i], mask, False)
+        # ref_project_2D_ptcl_all[i] -= st[0]  # st[0]-> avergage
+        # ref_project_2D_ptcl_all[i] = sp_filter.filt_ctf(ref_project_2D_ptcl_all[i], ctf_params[i], binary=False)
 
-        st = Util.infomask(ref_project_2D_ptcl_all[i], mask, False)
-        ref_project_2D_ptcl_all[i] -= st[0]  # st[0]-> avergage
+        # st = Util.infomask(ref_project_2D_ptcl_all[i], mask, False)
+        # ref_project_2D_ptcl_all[i] -= st[0]  # st[0]-> avergage
         ref_project_2D_ptcl_all[i] = sp_filter.filt_ctf(ref_project_2D_ptcl_all[i], ctf_params[i], binary=True)
 
     """
     Extracting particle image from the movie data. First getting the particle cordinates from the dictionary and then 
     creating a window around to extract the same particle from each frame
     """
-
     cen_x = frames.get_xsize() // 2
     cen_y = frames.get_ysize() // 2
     cen_z = frames.get_zsize() // 2
@@ -336,7 +338,6 @@ for micro in enumerate(movie_names[ima_start:ima_end]):
     """
     Calculating the fourier shell correlation of all the particle images with respect to 2-D reference projection of 3-D volume
     """
-
     fsc_s = []
     for i in range (zsize):
         fsc_frames = []
@@ -367,21 +368,19 @@ for micro in enumerate(movie_names[ima_start:ima_end]):
             # print(idx, p)
         fsc_final_avg.append(avv)
 
-
-    # fsc_final_avg.append(fsc_final[21])
-    # fsc_final_avg.append(fsc_final[22])
-    # fsc_final_avg.append(fsc_final[23])
-
     fsc_values.append(fsc_final)
     fsc_avgs.append(fsc_final_avg)
     frequencies.append(fsc_s[0][0][0])
+    # fsc_s_all.append(fsc_s)
+
+
 
 
 
 fsc_values_per_micrograph = sp_utilities.wrap_mpi_gatherv(fsc_values, 0, mpi.MPI_COMM_WORLD)
 fsc_avgs_per_micrograph = sp_utilities.wrap_mpi_gatherv(fsc_avgs, 0, mpi.MPI_COMM_WORLD)
 freq_per_micrograph = sp_utilities.wrap_mpi_gatherv(frequencies, 0, mpi.MPI_COMM_WORLD)
-
+# raw_fsc_values =  sp_utilities.wrap_mpi_gatherv(fsc_s_all, 0 , mpi.MPI_COMM_WORLD)
 
 print(np.array(fsc_values_per_micrograph).shape)
 print(np.array(fsc_avgs_per_micrograph).shape)
@@ -411,6 +410,11 @@ if my_mpi_proc_id == main_mpi_proc:
     wb.close()
 
 
+    # with open(str(no_of_micrographs) + '_Micrograph_raw_fsc_values', 'wb') as wb:
+    #     for value in raw_fsc_values:
+    #         pickle.dump(value, wb)
+    # wb.close()
+
 
 print("I am finish")
 
@@ -424,6 +428,9 @@ mpi.mpi_finalize()
 fsc_values_per_micrograph = []
 fsc_avgs_per_micrograph = []
 freq_per_micrograph = []
+
+
+fsc_all_data_per_micrograph = []
 
 with open(location + '/sphire/bin/' + str(no_of_micrographs) + '_Micrograph_plot_values', 'rb') as rb:
     while True:
@@ -453,22 +460,36 @@ with open(location + '/sphire/bin/' + str(no_of_micrographs) + '_Micrograph_freq
 rb.close()
 
 
+# with open(location + '/sphire/bin/' + str(no_of_micrographs) + '_Micrograph_raw_fsc_values', 'rb') as rb:
+#     while True:
+#         try:
+#             fsc_all_data_per_micrograph.append(pickle.load(rb))
+#         except EOFError:
+#             break
+# rb.close()
+
+
+
+
+
+
 print(np.array(fsc_values_per_micrograph).shape)
 print(np.array(fsc_avgs_per_micrograph).shape)
 print(np.array(freq_per_micrograph).shape)
+# print(np.array(fsc_all_data_per_micrograph).shape)
 
 fsc_values_per_micrograph = np.array(fsc_values_per_micrograph)
 fsc_avgs_per_micrograph = np.array(fsc_avgs_per_micrograph)
 freq_per_micrograph = np.array(freq_per_micrograph)
+# fsc_all_data_per_micrograph = np.array(fsc_all_data_per_micrograph)
+
 
 
 fsc_sum_per_frame = []
 for frames_ind in range(fsc_values_per_micrograph.shape[1]):
-    print("Applying averaging for Frame_", frames_ind)
     fsc_sum =  [entry / len(fsc_values_per_micrograph) for entry in fsc_values_per_micrograph[0][frames_ind]]
     for micrograph in fsc_values_per_micrograph[1:]:
         for ind , values in enumerate(micrograph[frames_ind]):
-            print("Applying averaging for Micrograph_",frames_ind, ind)
             fsc_sum[ind] += values/len(fsc_values_per_micrograph)
     fsc_sum_per_frame.append(fsc_sum)
 
@@ -476,41 +497,60 @@ for frames_ind in range(fsc_values_per_micrograph.shape[1]):
 
 fsc_sum_avg_per_frame = []
 for frames_ind in range(fsc_avgs_per_micrograph.shape[1]):
-    print("Applying averaging for Frame_", frames_ind)
     fsc_sum =  [entry / len(fsc_avgs_per_micrograph) for entry in fsc_avgs_per_micrograph[0][frames_ind]]
     for micrograph in fsc_avgs_per_micrograph[1:]:
         for ind , values in enumerate(micrograph[frames_ind]):
-            print("Applying averaging for Micrograph_",frames_ind, ind)
             fsc_sum[ind] += values/len(fsc_avgs_per_micrograph)
     fsc_sum_avg_per_frame.append(fsc_sum)
 
 
 
 # fsc_sum_per_frame = []
-# for frames_ind in range(fsc_avgs_per_micrograph.shape[1]):
-#     fsc_sum =  [entry / len(fsc_avgs_per_micrograph) for entry in fsc_avgs_per_micrograph[0][frames_ind]]
-#     for micrograph in fsc_avgs_per_micrograph[1:]:
+# for frames_ind in range(fsc_values_per_micrograph.shape[1]):
+#     fsc_sum =  [entry / len(fsc_values_per_micrograph) for entry in fsc_values_per_micrograph[0][frames_ind]]
+#     for micrograph in fsc_values_per_micrograph[1:]:
 #         for ind in range( np.array(micrograph).shape[1]  ):
-#             fsc_sum[ind] += micrograph[frames_ind][ind]/len(fsc_avgs_per_micrograph)
+#             fsc_sum[ind] += micrograph[frames_ind][ind]/len(fsc_values_per_micrograph)
 #     fsc_sum_per_frame.append(fsc_sum)
 
-B_values = []
-coeff_list = []
-offset_start =1
-offset_end  = 110
-window_len = 6
 
+
+
+B_values = []
+C_values = []
+coeff_list = []
+offset_start = 5
+offset_end  = 110
+window_len = 1
+
+
+
+fsc_sum_per_frame = np.array(fsc_sum_per_frame)[:] * -1
+fsc_sum_avg_per_frame = np.array(fsc_sum_avg_per_frame)[:] * -1
 
 
 for i in range (len(fsc_sum_per_frame)):
     print(i)
     data_x = freq_per_micrograph[0][offset_start:offset_end]
-    data_y = fsc_sum_avg_per_frame[i]
+    data_y = smooth(fsc_sum_per_frame[i],window_len)
     data_y = data_y[offset_start:offset_end]
-    data_y[data_y <= 0] = 0.0000000001
-    coeff, var_matrix = curve_fit(fitfunc, data_x, data_y)
+    # data_y[data_y <= 0] = 0.0000000001
+    coeff, var_matrix = curve_fit(fitfunc, data_x, data_y, p0 =[-0.15, -75, 0.25, 0.035]  ) #bounds=[[-0.20,  -300  ,-400 ], [-0.05, 0 , 400]]
     B_values.append(coeff[1])
+    C_values.append(coeff[2])
     coeff_list.append(coeff)
+
+
+
+
+i = 14
+fitcurv = fitfunc(freq_per_micrograph[0][offset_start:offset_end], *coeff_list[i])
+plt.figure()
+plt.plot(freq_per_micrograph[0][offset_start:offset_end], smooth(fsc_sum_per_frame[i][offset_start:offset_end], window_len), label= 'Orig_' + str(i))
+plt.plot(freq_per_micrograph[0][offset_start:offset_end], fitcurv, label='fit_' + str(i))
+plt.legend()
+plt.show()
+
 
 
 i = 0
@@ -526,18 +566,250 @@ if my_mpi_proc_id == main_mpi_proc:
                 print(i)
                 fitcurv = fitfunc(freq_per_micrograph[0][offset_start:offset_end], *coeff_list[i])
                 col.plot(freq_per_micrograph[0][offset_start:offset_end], smooth(fsc_sum_per_frame[i][offset_start:offset_end], window_len), label= 'Orig_' + str(i))
-                col.plot(freq_per_micrograph[0][offset_start:offset_end], smooth(fsc_sum_avg_per_frame[i][offset_start:offset_end], window_len), label= 'Avg_' + str(i))
+                # col.plot(freq_per_micrograph[0][offset_start:offset_end], smooth(fsc_sum_avg_per_frame[i][offset_start:offset_end], window_len), label= 'Avg_' + str(i))
                 col.plot(freq_per_micrograph[0][offset_start:offset_end], fitcurv, label='fit_' + str(i))
                 i+= 1
                 col.legend()
                 # col.set_yscale('log')
-
-    plt.tight_layout()
     # fig.savefig(str(no_of_micrographs) + "_Micrograph_averaged" + ".pdf", dpi=1000)
     plt.show()
 
 
 
+
+    i = 0
+    offset_end = 176
+    fig , ax = plt.subplots(nrows = 4, ncols=6 )
+    for row in ax:
+        for col in row:
+            if i < len(fsc_sum_avg_per_frame):
+                print(i)
+                data_x = np.array(freq_per_micrograph[0][offset_start:offset_end])
+                data_y = smooth(fsc_sum_per_frame[i][offset_start:offset_end], window_len)
+                data_y[data_y <= 0] = data_y[data_y <= 0] * -1
+                data_y = np.log(data_y)
+                data_x = data_x* data_x
+                # coeff, var_matrix = curve_fit(fitfunc(), data_x[offset_start:offset_end], data_y[offset_start:offset_end], p0 = coeff_list[i])
+                coeff, var_matrix = curve_fit(fitslopefunc, data_x[offset_start:offset_end], data_y[offset_start:offset_end])
+                col.plot(data_x[offset_start:offset_end] ,  data_y[offset_start:offset_end], label= 'Orig_' + str(i))
+                col.plot(data_x[offset_start:offset_end] ,  fitslopefunc(data_x[offset_start:offset_end], *coeff), label='fit_' + str(i))
+                i+= 1
+                col.legend()
+    plt.show()
+
+
+
+"""
+
+frames_range = 24
+freq_range = len(freq_per_micrograph[0][offset_start:offset_end])
+iterations = 5
+
+
+c_list = [np.random.random() for i in range(frames_range)]
+b_list = [np.random.random() for i in range(frames_range)]
+d_list = [np.random.random() for i in range(freq_range)]
+
+
+for i in range(iterations):
+    for f in range (frames_range):
+        data_x = np.array(freq_per_micrograph[0][offset_start:offset_end])
+        data_y = smooth(fsc_sum_per_frame[f][offset_start:offset_end], window_len)
+        data_y[data_y <= 0] = data_y[data_y <= 0] * -1
+        data_y = np.log(data_y)
+        data_x = data_x * data_x
+
+        for k in range (freq_range):
+            estim_d = lambda x, param_d : np.log(param_d) + c_list[f] + 4 * b_list[f] * x
+            coeff , covar = curve_fit(estim_d,  data_x , data_y )
+            d_list[k] = coeff[0]
+
+        print("f", f)
+        estim_bc = lambda x, param_c, param_b :  np.log(d_list) + param_c + 4 * param_b * x
+        coeff, covar = curve_fit(estim_bc,  data_x , data_y)
+        c_list[f] = coeff[0]
+        b_list[f] = coeff[1]
+
+
+
+
+plt.figure()
+for f in range (2):
+    data_xx = np.array(freq_per_micrograph[0][offset_start:offset_end])
+    data_yy = smooth(fsc_sum_per_frame[f][offset_start:offset_end], window_len)
+    data_yy[data_yy <= 0] = data_yy[data_yy <= 0] * -1
+    data_yy = np.log(data_yy)
+    data_xx = data_xx * data_xx
+
+
+    estim_d = lambda x: np.log(d_list[0]) + c_list[f] + 4 * b_list[f] * x
+    plt.plot(data_xx, estim_d(data_xx), label='1_{0}'.format(f))
+    plt.plot(data_xx, data_yy, label='2_{0}'.format(f))
+
+plt.legend()
+
+
+"""
+
+"""
+
+frames_range = 24
+freq_range = len(freq_per_micrograph[0][offset_start:offset_end])
+iterations = 5
+
+
+c_list = [np.random.random() for i in range(frames_range)]
+b_list = [np.random.random() for i in range(frames_range)]
+d_list = [np.random.random() for i in range(freq_range)]
+
+
+for i in range(iterations):
+    for f in range (frames_range):
+        data_x = np.array(freq_per_micrograph[0][offset_start:offset_end])
+        data_y = smooth(fsc_sum_per_frame[f][offset_start:offset_end], window_len)
+        data_y[data_y <= 0] = data_y[data_y <= 0] * -1
+        # data_y = np.log(data_y)
+        # data_x = data_x * data_x
+
+        for k in range (freq_range):
+            estim_d = lambda x, param_d :  param_d * np.exp(c_list[f] + 4 * b_list[f] * np.array(x)*np.array(x))
+            coeff , covar = curve_fit(estim_d,  data_x , data_y )
+            d_list[k] = coeff[0]
+
+        print("f", f)
+        estim_bc = lambda x, param_c, param_b :  d_list * np.exp(param_c + 4 * param_b * np.array(x)*np.array(x))
+        coeff, covar = curve_fit(estim_bc,  data_x , data_y)
+        c_list[f] = coeff[0]
+        b_list[f] = coeff[1]
+
+
+plt.figure()
+for f in range (2):
+    data_xx = np.array(freq_per_micrograph[0][offset_start:offset_end])
+    data_yy = smooth(fsc_sum_per_frame[f][offset_start:offset_end], window_len)
+    data_yy[data_yy <= 0] = data_yy[data_yy <= 0] * -1
+    # data_yy = np.log(data_yy)
+    # data_xx = data_xx * data_xx
+
+
+    estim_d = lambda x: d_list[0] * np.exp(c_list[f] + 4 * b_list[f] * np.array(x) * np.array(x))
+    plt.plot(data_xx, estim_d(data_xx), label='1_{0}'.format(f))
+    plt.plot(data_xx, data_yy, label='2_{0}'.format(f))
+
+plt.legend()
+
+"""
+
+
+#%%
+offset_start = 0
+offset_end = -1
+frames_range = 24
+freq_range = len(freq_per_micrograph[0][offset_start:offset_end])
+N_ITER =5
+
+
+
+c_list = np.array([np.random.random() for i in range(frames_range)])
+b_list = np.array([np.random.random() for i in range(frames_range)])
+d_list = np.array([np.random.random() for i in range(freq_range)])
+
+FCC_FITTED = np.zeros((frames_range,freq_range))
+
+myk = []
+for k_abs in range(freq_range):
+        k = k_abs*1.0/freq_range
+        myk.append(k)
+
+
+for iteration in range(N_ITER):
+    for k_index, k in enumerate(myk):
+        fcc_per_k = fsc_sum_per_frame[:,k_index]
+        f_d = lambda u,d: d * np.exp(c_list[u] + 4*b_list[u]*k**2)
+        popt, pconv = curve_fit(f_d, np.arange(frames_range).tolist(), fcc_per_k)
+        d_list[k_index] = popt[0]
+
+    for f in range(frames_range):
+        fcc_per_f =   fsc_sum_per_frame[f,:]
+        f_c_b = lambda u,c,b: d_list[u] * np.exp(c + 4*b*(np.array(u)*1.0/freq_range)**2)
+        fcc_per_f[fcc_per_f <= 0 ] = 0.01
+        popt, pconv = curve_fit(f_c_b, range(freq_range), fcc_per_f[offset_start:offset_end], bounds = ((-np.inf,-np.inf), (np.inf,-50) ) )
+        c_list[f] = popt[0]
+        b_list[f] = popt[1]
+
+
+
+for f in range(frames_range):
+    for k_abs in range(freq_range):
+        k = k_abs*1.0/freq_range
+        FCC_FITTED[f,k_abs] = d_list[k_abs] * np.exp(c_list[f] + 4*b_list[f]*k**2)
+
+
+i= 0
+fig , ax = plt.subplots(nrows = 4, ncols=6 )
+for row in ax:
+    for col in row:
+        if i < len(fsc_sum_avg_per_frame):
+            col.plot(freq_per_micrograph[0][offset_start:offset_end], smooth(fsc_sum_per_frame[i][offset_start:offset_end], window_len), label= 'Orig_' + str(i))
+            col.plot(freq_per_micrograph[0][offset_start:offset_end],  FCC_FITTED[i], label='fit_' + str(i))
+            i+= 1
+            col.legend()
+plt.show()
+
+
+freq_k = freq_per_micrograph[0].tolist()
+freq_k.extend((np.arange(0.50 +  0.0111473913, 0.70 + 0.0111473913, 0.0111473913)))
+
+freq_k = np.array(freq_k)
+
+sum =[]
+weight_per_frame = []
+sum_k = np.zeros(np.shape(freq_k))
+for j in range(frames_range):
+    sum_k += np.exp(np.array(c_list)[j] + 4 * np.array(b_list)[j] * freq_k ** 2)
+
+for i in range (frames_range):
+    weight_per_frame.append(np.divide(np.exp(np.array(c_list)[i] + 4 * np.array(b_list)[i] * freq_k**2) , np.array(sum_k)))
+
+
+plt.figure()
+plt.plot(freq_k, weight_per_frame[0])
+plt.xlabel('frequencies')
+plt.ylabel('weights')
+
+
+plt.figure()
+plt.imshow(weight_per_frame[::-1])
+plt.colorbar()
+
+
+plt.figure()
+plt.plot(np.arange(frames_range),b_list, 'o-',label = 'B-factors')
+plt.legend()
+
+plt.figure()
+plt.plot(np.arange(frames_range),c_list, 'o-', label = 'C_values')
+plt.legend()
+
+plt.figure()
+plt.plot(np.arange(freq_range), d_list, 'o-', label = 'D_values')
+plt.legend()
+
+
+
+
+
+
+#%%
+
+plt.figure()
+plt.plot(np.arange(24), B_values, 'o-')
+plt.legend()
+plt.xlabel('Frames', fontsize = 24)
+plt.ylabel('B-Factor', fontsize = 24)
+plt.xticks(fontsize = 24)
+plt.yticks(fontsize = 24)
+plt.show()
 
 
 # i = 0
@@ -557,22 +829,168 @@ if my_mpi_proc_id == main_mpi_proc:
 #             col.legend()
 #
 # plt.show()
-
-
-
-
 # """
+
+
+
+# freq_k = freq_per_micrograph[0].tolist()
+# freq_k.extend((np.arange(0.50 +  0.0111473913, 0.70 + 0.0111473913, 0.0111473913)))
+#
+
+# freq_k.extend((np.arange(0.50 +  0.00284091, 0.70 +  0.00284091, 0.00284091)))
+
+# freq_k = np.array(freq_k)
+# sum =[]
+# weight_per_frame = []
+# for i in range (len(B_values)):
+#     sum_k = np.zeros(np.shape(freq_k))
+#     for j in range( len(B_values)):
+#         if j==i:
+#             pass
+#         else:
+#             sum_k += np.exp(C_values[j] + 4 * B_values[j] * freq_k * freq_k)
+#
+#     weight_per_frame.append(np.divide(np.exp(C_values[i] + 4 * B_values[i] * freq_k * freq_k) , sum_k))
+
+
+
+# plt.figure()
+# plt.plot(freq_k, weight_per_frame[0])
+# plt.xlabel('frequencies')
+# plt.ylabel('weights')
+
+
 
 
 #%%
 
+def zero_pad(img, size_new):
+    pad_extends = []
+    dif_shape_y = size_new[0] - img.shape[0]
+    dif_shape_x = size_new[1] - img.shape[1]
+
+    pad_extends.append((dif_shape_y // 2, dif_shape_y // 2 + dif_shape_y % 2))
+    pad_extends.append((dif_shape_x // 2, dif_shape_x // 2 + dif_shape_x % 2))
+
+    padded = np.pad(img, pad_extends, "symmetric")
+
+    return padded, pad_extends
+
+
+def next_power_of2(number):
+    return int(np.power(2, np.ceil(np.log2(number))))
 
 
 
+micro = (0, '/home/adnan/PycharmProjects/DoseWeighting/MOVIES/TcdA1-0013_frames.mrc')
+frames = return_images_from_movie(micro[1], show_first = False)
+
+cen_x = frames.get_xsize() // 2
+cen_y = frames.get_ysize() // 2
+cen_z = frames.get_zsize() // 2
+
+
+stackfilename = "bdb:/home/adnan/PycharmProjects/DoseWeighting/Substack/isac_substack"
+no_of_imgs, ptcl_source_images, project_params_all, particle_coordinates_all, ctf_params_all, nx_all, ny_all, nz_all = read_all_attributes_from_stack(stackfilename)
+project_params, particle_coordinates, ctf_params, nx, ny, nz = find_particles_info_from_movie(stackfilename, micro[1], \
+                                                                                              no_of_imgs,
+                                                                                              ptcl_source_images,
+                                                                                              project_params_all,
+                                                                                              particle_coordinates_all,
+                                                                                              ctf_params_all, nx_all,
+                                                                                              ny_all, nz_all,
+                                                                                              show_first=False)
+
+mask = sp_utilities.model_circle(nx[0] / 2, nx[0], nx[0])
+
+particle_imgs = get_all_reduce_ptcl_imgs(frames, mask, nx[0], ny[0], particle_coordinates, ctf_params, cen_x, cen_y, cen_z)
+
+particle_imgs = np.array(particle_imgs).swapaxes(0,1)
 
 
 
+# four_img = sp_fundamentals.fft(particle_imgs[0][0], npad = 1)
+#
+#
+# plt.figure()
+# plt.imshow(four_img.real().get_2dview() ,cmap = plt.get_cmap('Greys'))
+# plt.colorbar()
 
+# four_img_new_1 = sp_fundamentals.prepf(particle_imgs[0][0], npad = 1)
+#
+#
+# plt.figure()
+# plt.imshow(four_img_new_1.real().get_2dview() ,cmap = plt.get_cmap('Greys'))
+# plt.colorbar()
+
+
+# four_img_new_2 = scipy.fft(particle_imgs[0][0].get_2dview())
+#
+#
+#
+# plt.figure()
+# plt.imshow(four_img_new_2.real ,cmap = plt.get_cmap('Greys'))
+# plt.colorbar()
+
+img = particle_imgs[0][0].get_2dview()
+
+# next_shape_y = next_power_of2(img.shape[0])
+# next_shape_x = next_power_of2(img.shape[1])
+# new_image_size = (next_shape_y, next_shape_x)
+# padded, pad_extends = zero_pad(img, new_image_size)
+
+
+four_img_new_3 = np.fft.fft2(img)
+
+four_img_new_3  = np.fft.fftshift(four_img_new_3)
+
+
+plt.figure()
+plt.imshow(four_img_new_3.real ,cmap = plt.get_cmap('Greys'))
+plt.colorbar()
+plt.clim(-4000,4000)
+
+
+# mask = np.arange(352* 352).reshape((352,352))
+#
+# indices = np.array(zip(*np.where(mask==mask)))
+
+
+mask = np.zeros((352,352))
+
+row, col = np.meshgrid(range(352), range(352), indexing = 'ij')
+for i in range(np.shape(row)[0]):
+    for j in range(np.shape(col)[0]):
+        mask[i][j] = np.sqrt((row[i][j] - np.shape(row)[0]/2)**2   + (col[i][j] - np.shape(col)[0]/2)**2 )
+
+
+# mask_norm = (mask / np.max(mask)) * 0.5
+
+
+normal_to = mask[ mask.shape[0]/2][mask.shape[1]-1]
+
+
+mask_norm = (mask / normal_to) * 0.5
+
+
+plt.figure()
+plt.imshow(mask_norm)
+plt.colorbar()
+
+
+index_frame = 0
+mask_applied = np.zeros((352,352))
+for i in range (mask.shape[0]):
+    for j in range(mask.shape[1]):
+        near_value = (np.abs(weight_per_frame[index_frame] - mask_norm[i][j])).argmin()
+        mask_applied[i][j] = weight_per_frame[index_frame][near_value]
+
+
+plt.figure()
+plt.imshow(mask_applied,cmap = plt.get_cmap('Greys'))
+plt.colorbar()
+
+#%%
 
 
 # i = 0

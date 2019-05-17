@@ -10,7 +10,11 @@ import numpy
 import copy
 import math
 
-from sparx.libpy import fundamentals as fu
+
+import os
+
+print("Path directory is ",os.getcwd())
+from sphire.libpy import sp_fundamentals as fu
 import fundamentals as oldfu
 
 
