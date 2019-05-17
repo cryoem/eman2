@@ -117,7 +117,7 @@ def main():
 #		print("\nError! No good invariants found for refs. Please rerun CTF generate output and set building.")
 #		sys.exit(1)
 
-        	if options.invartype=="bispec" :
+		if options.invartype=="bispec" :
 			com="e2proc2dpar.py {inp} {out} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process mask.soft:outer_radius={maskrad}:width={maskw} --process math.bispectrum.slice:size={bssize}:fp={bsdepth} --threads {threads}".format(
 			inp=args[0],out=refsbsfs,maskrad=int(refs[0]["nx"]//2.2),maskw=int(refs[0]["nx"]//15),bssize=bispec_invar_parm[0],bsdepth=bispec_invar_parm[1],threads=options.threads)
 			if options.msamode!=None :
@@ -391,4 +391,4 @@ def run(command):
 
 
 if __name__ == "__main__":
-    main()
+	main()
