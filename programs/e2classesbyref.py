@@ -88,13 +88,13 @@ def main():
 	options.cmp=parsemodopt(options.cmp)
 
 	if options.invartype=="auto" :
-			try: 
-				project=js_open_dict("info/project.json")
-				options.invartype=str(project["global.invariant_type"])
-			except: 
-				traceback.print_exc()
-				print("Warning: no project invariant type spectified, using bispectrum")
-				options.invartype="bispec"
+		try: 
+			project=js_open_dict("info/project.json")
+			options.invartype=str(project["global.invariant_type"])
+		except: 
+			traceback.print_exc()
+			print("Warning: no project invariant type spectified, using bispectrum")
+			options.invartype="bispec"
 
 	
 	E2n=E2init(sys.argv, options.ppid)
