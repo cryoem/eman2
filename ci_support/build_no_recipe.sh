@@ -4,8 +4,6 @@ set -xe
 
 MYDIR="$(cd "$(dirname "$0")"; pwd -P)"
 
-bash "${MYDIR}/../tests/future_import_tests.sh"
-
 if [ -n "${TRAVIS}" ];then
     source ci_support/setup_conda.sh
 
