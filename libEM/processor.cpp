@@ -13265,7 +13265,7 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 	// Decide how large the harmonic invariant will be
 	int nx=cimage->get_xsize();
 	int ny=cimage->get_ysize();
-	int naz=(int)params.set_default("size",image->get_ysize());
+	int naz=(int)params.set_default("size",image->get_ysize())/2;
 	
 	// Compute a translational invariant for a single harmonic
 	EMData* trns=new EMData(naz*2,ny/2,1);
@@ -13300,18 +13300,20 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 		
 		// Here is the actual hn code
 		if (hn<1) throw InvalidParameterException("Invalid parameter, hn<1");
-		int rn = (int)params.set_default("rn",-1);
+		int rn = 0;
 		// rotational/translational single. If rn==0, special case where polar coordinate version of translational invariant is generated
-		if (rn>=0) {
+		if (params.has_key("rn")) {
+			rn=params.get("rn");
+
 			// Start with the translational invariant in Fourier space in a radial coordinate system
 			for (int ja=0; ja<naz; ja++) {
-				float si=sin(float(2.0*M_PI*ja/naz));
-				float co=cos(float(2.0*M_PI*ja/naz));
+				float si=sin(float(2.0*M_PI*(ja+0.5)/naz));
+				float co=cos(float(2.0*M_PI*(ja+0.5)/naz));
 				for (int jr=3*hn; jr<ny/2; jr++) {			// This is cryoEM specific, we have bad values near the origin
 					float jx=co*jr;
 					float jy=si*jr;
-					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
-					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx/(float)hn,jy/(float)hn);
+					complex<double> v1 = (complex<double>)cimage->get_complex_at_3ginterp(jx,jy);
+					complex<double> v2 = (complex<double>)cimage->get_complex_at_3ginterp(jx/(float)hn,jy/(float)hn);
 					trns->set_complex_at_idx(ja,jr,0,(complex<float>)(v1*std::pow(std::conj(v2),(float)hn)));
 				}
 			}
@@ -13324,7 +13326,16 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 			trns->ap2ri();
 			
 			// Only if rn is defined
-			if (rn>0) {
+			if (rn==0) {
+				complex<float> *tmp = (complex<float>*)EMfft::fftmalloc(naz*2);
+				for (int jy=3*hn;  jy<ny/2; jy++) {
+					memcpy((void*)tmp,(void*)(trns->get_data()+jy*naz*2),naz*2*sizeof(float));
+					EMfft::complex_to_complex_1d_inplace(tmp,naz*2);
+					memcpy((void*)(trns->get_data()+jy*naz*2),(void*)tmp,naz*2*sizeof(float));
+				}
+				EMfft::fftfree((float *)tmp);
+			}
+			else if (rn>=0) {
 				// Now we do the 1-D FFTs on the lines of the translational invariant
 				complex<float> *tmp = (complex<float>*)EMfft::fftmalloc(naz*2);
 				for (int jy=3*hn;  jy<ny/2; jy++) {
