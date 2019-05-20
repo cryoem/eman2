@@ -255,7 +255,7 @@ def class_postproc(options,it,invmode):
 	if invmode=="bispec" :
 		run("e2proc2dpar.py {}/classes_{:02d}.hdf {}/classes_fp_{:02d}.hdf --process math.bispectrum.slice:fp={}:size={} --threads {}".format(options.path,it,options.path,it,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
 	else:
-		run("e2proc2dpar.py {}/classes_{:02d}.hdf {}/classes_fp_{:02d}.hdf --process math.harmonicpow:fp=1 --threads {}".format(options.path,it,options.path,it,options.threads))
+		run("e2proc2dpar.py {}/classes_{:02d}.hdf {}/classes_fp_{:02d}.hdf --process math.harmonicpow:fp=4 --threads {}".format(options.path,it,options.path,it,options.threads))
 		
 	run("e2stacksort.py %s/classes_fp_%02d.hdf %s/classes_fp_%02d.hdf %s/classes_%02d.hdf %s/classes_%02d.hdf --simcmp=ccc --seqalicen"%(options.path,it,options.path,it,options.path,it,options.path,it))
 	

@@ -412,7 +412,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 		print("Phase-flipped output files:\n__ctf_flip_lp12 - masked, downsampled, filtered to 12 A resolution\n__ctf_flip_lp5 - masked, downsampled, filtered to 5 A resolution\n__ctf_flip_fullres - masked, full sampling")
 
 	if options.invartype=="bispec" : pp4="math.bispectrum.slice:size={bssz}:fp={bsfp}".format(bssz=bispec_invar_parm[0],bsfp=bispec_invar_parm[1])
-	elif options.invartype=="harmonic" : pp4="math.harmonicpow:fp=1"
+	elif options.invartype=="harmonic" : pp4="math.harmonicpow:fp=4"
 	com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} --proctag invar --phaseflipproc filter.highpass.gauss:cutoff_freq=0.01 --phaseflipproc2 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc3 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc4 {pp4} {extrapad} --threads {threads} ".format(
 		maskrad=maskrad4,maskwid=maskwid4,invert=invert,minqual=options.minqual,extrapad=extrapad,pp4=pp4,threads=options.threads,missingonly=missingonly)
 	if options.verbose: print(com)

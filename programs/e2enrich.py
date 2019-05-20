@@ -73,7 +73,7 @@ def enrich(thr,jsd,imfile,lsx,proj,nenrich,redoinvar,i0,i1,verbose):
 			if redoinvar=="bispec":
 				bspec=avg.process("math.bispectrum.slice",{"fp":bispec_invar_parm[1],"size":bispec_invar_parm[0]})
 			elif redoinvar=="harmonic":
-				bspec=avg.process("math.harmonicpow",{"fp":1})
+				bspec=avg.process("math.harmonicpow",{"fp":4})
 			ret.append((avg,af.split("__")[0]+"__ctf_flip_enrich{}.hdf".format(nenrich),an,bspec,af.split("__")[0]+"__ctf_flip_invar.hdf"))
 		else:
 			ret.append((avg,af.split("__")[0]+"__ctf_flip_enrich{}.hdf".format(nenrich),an))
