@@ -86,7 +86,7 @@ const string AmpweightFourierProcessor::NAME = "filter.ampweight";
 const string Axis0FourierProcessor::NAME = "filter.xyaxes0";
 const string ConvolutionProcessor::NAME = "math.convolution";
 const string BispecSliceProcessor::NAME = "math.bispectrum.slice";
-const string HarmonicPowProcessor::NAME = "math.harmonicpow";
+const string HarmonicProcessor::NAME = "math.harmonic";
 const string XGradientProcessor::NAME = "math.edge.xgradient";
 const string YGradientProcessor::NAME = "math.edge.ygradient";
 const string ZGradientProcessor::NAME = "math.edge.zgradient";
@@ -450,7 +450,7 @@ template <> Factory < Processor >::Factory()
 
 	force_add<ConvolutionProcessor>();
 	force_add<BispecSliceProcessor>();
-	force_add<HarmonicPowProcessor>();
+	force_add<HarmonicProcessor>();
 
 	force_add<NormalizeStdProcessor>();
 	force_add<NormalizeUnitProcessor>();
@@ -13249,12 +13249,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	return(ret);
 }
 
-const int NHARMROOT = 5;
-const unsigned int harmbase[NHARMROOT] = {3,4,5,7,11}; // 2 is excluded to to the need to avoid very low resolution, so we use 4 instead
-const unsigned int harmbaser[NHARMROOT] = {2,3,4,5,6}; // for rotation, all of the terms should be safe?  We also get negative frequencies which may not be conjugate
-EMData *HPProt[12] = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
-EMData *HPPjn[5] = {NULL,NULL,NULL,NULL,NULL};
-EMData* HarmonicPowProcessor::process(const EMData * const image) {
+EMData* HarmonicProcessor::process(const EMData * const image) {
 	if (image->get_zsize()!=1 || image->is_complex()) throw ImageDimensionException("Only 2-D real images supported");
 
 	EMData *cimage = NULL;
@@ -13408,31 +13403,28 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 	}
 	if (params.has_key("rfp")) {
 		int rfp=(int)params.get("rfp");
-		trns->set_size(naz*2,ny/4,1);
-		xyz=trns->get_size();
-		// We deal with each radial line at a time 
 		for (int ja=0; ja<naz; ja++) {
-			float si=sin(float(2.0*M_PI*ja/naz));
-			float co=cos(float(2.0*M_PI*ja/naz));
-			int rc=0; 								// This counts the number of components we've generated for the current angle
-			// outer loop is for the harmonic index, each cycle we generate one harmonic for each root
-			for (int hn=2; hn<ny/6; hn++) {
-				// inner loop is for the roots of each harmonic
-				if (rc>=ny/4) break;			// this is the maximum number of components we generate in the output
-				for (int j=0; j<NHARMROOT; j++) {
-					int jr=harmbase[j]*hn;
-					if (rc>=ny/4 || jr>=ny/2) break;			// this is the maximum number of components we generate in the output, and we need to stay within the image
+			float si=sin(float(2.0*M_PI*(ja+0.5)/naz));
+			float co=cos(float(2.0*M_PI*(ja+0.5)/naz));
+			int y=0;		// This is where the results go
+			// Start at r=3 due to bad CryoEM values near the origin. 
+			// Go to 1/2 Nyquist because high resolution values are less invariant due to interpolaton
+			for (int jr=5; jr<ny/4; jr++) {
+				// Innermost loop is hn (radial harmonic coefficient) to group similar values together
+				for (int hn=1; hn<=rfp; hn++) {
 					float jx=co*jr;
 					float jy=si*jr;
-					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
-					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx/(float)hn,jy/(float)hn);
-					v1*=std::pow(std::conj(v2),(float)hn);						// This is the invariant
-					v1=std::polar(std::pow(std::abs(v1),1.0/(hn+1.0)),std::arg(v1));	// rescale the amplitude without changing the phase
-					trns->set_complex_at_idx(ja,rc,0,(complex<float>)v1);
-					rc++;
-//					if (rc==0) printf("%d %d %d %d %f %f\n",ja,hn,j,rc,jx,jy);
+					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
+					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx*hn,jy*hn);
+					v1*=std::pow(std::conj(v2),(double)hn);
+					v1=std::polar(std::pow(std::abs(v1),1.0/(hn+1.0))/ny,std::arg(v1));
+					trns->set_complex_at_idx(ja,y,0,(complex<float>)v1);
+					y++;
+					if (y>=ny/2) break;
 				}
+				if (y>=ny/2) break;
 			}
+		// rescale components to have linear amplitude WRT the original FFT, without changing phase
 		}
 		delete cimage;
 		trns->set_attr("is_harmonic_rfp",(int)rfp);
