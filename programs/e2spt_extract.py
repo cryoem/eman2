@@ -40,6 +40,9 @@ def main():
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Re-extraction from spt", row=10, col=0, rowspan=1, colspan=1, mode="extract")
 
 	parser.add_argument("--jsonali", type=str,help="re-extract particles using a particle_param_xx json file from a spt alignment", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=11, col=0,rowspan=1, colspan=2, mode="extract")
+	parser.add_argument("--mindist", type=float,help="minimum distance between particles in A. for reextraction only", default=-1)
+	parser.add_argument("--keep", type=float,help="fraction of particles to keep fron previous alignment. for reextraction only.", default=.9)
+
 	#parser.add_argument("--alioffset", type=str,help="coordinate offset when re-extract particles. (x,y,z)", default="0,0,0", guitype='strbox', row=12, col=0,rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--postxf", type=str,help="a file listing post transforms", default="")
 
@@ -59,7 +62,7 @@ def main():
 		
 		#print("extracting {} sub-particles per particle, with offset".format(len(offset)//3))
 		#print(np.array(offset).reshape((-1,3)))
-		allxfs=parse_json(options.jsonali, options.postxf)
+		allxfs=parse_json(options)
 		for fname in allxfs.keys():
 			#### it seems options is changed inplace somewhere...
 			(options, args) = parser.parse_args()
@@ -569,11 +572,24 @@ def get_xf_pos(tpm, pk):
 
 
 #### parse a json file from spt_align to re-extract particles
-def parse_json(jsfile, xffile=""):
-	js=js_open_dict(jsfile)
+def parse_json(options):
+	xffile=options.postxf
+	js=js_open_dict(options.jsonali)
 	coord=[]
 	allxfs={}
 	
+	
+	#### sort by score 
+	keys=sorted(js.keys())
+	score=[js[k]["score"] for k in keys]
+	srt=np.argsort(score)
+	
+	print("Reading {} particles. Score from {:.2f} to {:.2f}".format(len(score), min(score), max(score)))
+	if options.keep<1:
+		srt=srt[:int(len(score)*options.keep)+1]
+		print("Removing particles with score above {:.2f}. Keeping {} particles.".format(score[srt[-1]], len(srt)))
+	keys=[keys[i] for i in srt]
+		
 	postxfs=[]
 	if xffile!="":
 		f=open(xffile,'r')
@@ -582,31 +598,55 @@ def parse_json(jsfile, xffile=""):
 		for l in lines:
 			if len(l)>3:
 				postxfs.append(Transform(eval(l)))
+				
+		print("Extracting {} sub-particles per original particle".format(len(postxfs)))
 	else:
 		postxfs.append(Transform())
 	
-	
-	for ky in js.keys():
+	nptcl=0
+	nexclude=0
+	for ky in keys:
 		src, ii = eval(ky)
 		e=EMData(src, ii, True)
 		tomo=e["class_ptcl_src"]
 		dic=js[ky]
 		dxf=dic["xform.align3d"]
 		c=e["ptcl_source_coord"]
+		
+		ptcls=[]
 		for xf in postxfs:
 			ali=Transform(dxf)
 			ali=xf.inverse()*ali
 			a=ali.inverse()
 			a.translate(c[0], c[1], c[2])
-			#print(a)
 			
-			if allxfs.has_key(tomo):
-				allxfs[tomo].append(a)
+			
+			if options.mindist>0 and allxfs.has_key(tomo):
+				pos=np.array([x.get_trans() for x in allxfs[tomo]])
+				p0=np.array(a.get_trans())
+				mindst=np.min(np.linalg.norm(pos-p0, axis=1))
+				mindst*=e["apix_x"]
+				
+				if mindst<options.mindist:
+					nexclude+=1
+					continue
+			
+			ptcls.append(a)
+			nptcl+=1
+
+		
+		if len(ptcls)>0:
+			
+			if allxfs.has_key(tomo):	
+				allxfs[tomo].extend(ptcls)
 			else:
-				allxfs[tomo]=[a]
+				allxfs[tomo]=ptcls
+				
+				
+			
 			
 	js.close()
-	#print(len(allxfs))
+	print("Writing {} particles, excluding {} particles too close to each other.".format(nptcl, nexclude))
 	return allxfs
 	
 
