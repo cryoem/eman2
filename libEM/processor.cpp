@@ -13255,17 +13255,21 @@ const unsigned int harmbaser[NHARMROOT] = {2,3,4,5,6}; // for rotation, all of t
 EMData *HPProt[12] = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
 EMData *HPPjn[5] = {NULL,NULL,NULL,NULL,NULL};
 EMData* HarmonicPowProcessor::process(const EMData * const image) {
-	if (image->get_zsize()!=1) throw ImageDimensionException("Only 2-D images supported");
+	if (image->get_zsize()!=1 || image->is_complex()) throw ImageDimensionException("Only 2-D real images supported");
 
 	EMData *cimage = NULL;
-	if (image->is_complex()) cimage = image->copy();
-	else cimage = image->do_fft();
+//	if (image->is_complex()) cimage = image->copy();
+//	else cimage = image->do_fft();
+	int s1=image->get_ysize();
+	EMData *im2=image->get_clip(Region(-s1*3/2,-s1*3/2,s1*4,s1*4));
+	cimage=im2->do_fft();
+	delete im2;
 	cimage->process_inplace("xform.phaseorigin.tocorner");
 	
 	// Decide how large the harmonic invariant will be
-	int nx=cimage->get_xsize();
-	int ny=cimage->get_ysize();
-	int naz=(int)params.set_default("size",image->get_ysize())/2;
+//	int nx=cimage->get_xsize();
+	int ny=cimage->get_ysize()/4;
+	int naz=(int)params.set_default("size",ny)/2;
 	
 	// Compute a translational invariant for a single harmonic
 	EMData* trns=new EMData(naz*2,ny/2,1);
@@ -13309,11 +13313,15 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 			for (int ja=0; ja<naz; ja++) {
 				float si=sin(float(2.0*M_PI*(ja+0.5)/naz));
 				float co=cos(float(2.0*M_PI*(ja+0.5)/naz));
-				for (int jr=3*hn; jr<ny/2; jr++) {			// This is cryoEM specific, we have bad values near the origin
-					float jx=co*jr;
-					float jy=si*jr;
-					complex<double> v1 = (complex<double>)cimage->get_complex_at_3ginterp(jx,jy);
-					complex<double> v2 = (complex<double>)cimage->get_complex_at_3ginterp(jx/(float)hn,jy/(float)hn);
+				for (int jr=3; jr<ny/2 && jr*hn<ny*2; jr++) {			// This is cryoEM specific, we have bad values near the origin
+// 					float jx=co*jr;
+// 					float jy=si*jr;
+// 					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
+// 					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx/(float)hn,jy/(float)hn);
+ 					int jx=co*jr;
+ 					int jy=si*jr;
+					complex<double> v2 = (complex<double>)cimage->get_complex_at(jx,jy);
+					complex<double> v1 = (complex<double>)cimage->get_complex_at(jx*hn,jy*hn);
 					trns->set_complex_at_idx(ja,jr,0,(complex<float>)(v1*std::pow(std::conj(v2),(float)hn)));
 				}
 			}
@@ -13366,17 +13374,17 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 		}
 		// With no rotational component
 		else {
-			trns->set_size(nx,ny,1);
+			trns->set_size(ny,ny,1);
 			xyz=trns->get_size();
 			// translational only single
-			for (int jx=0; jx<nx/2; jx++) {
-				for (int jy=-ny/2; jy<ny/2; jy++) {
-					if (Util::hypot_fast(jx,jy)<3.0f*hn) { 
+			for (int jx=0; jx<ny/2 && jx*hn<ny*2; jx++) {
+				for (int jy=max(-ny/2,-ny*2/hn); jy<ny/2 && jy*hn<ny*2; jy++) {
+					if (Util::hypot_fast(jx,jy)<2.5f) { 
 						trns->set_complex_at(jx,jy,0,(complex<float>)0);
 						continue;
 					}
-					complex<double> v1 = (complex<double>)cimage->get_complex_at(jx,jy);
-					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx/(float)hn,jy/(float)hn);
+					complex<double> v2 = (complex<double>)cimage->get_complex_at(jx,jy);
+					complex<double> v1 = (complex<double>)cimage->get_complex_at(jx*hn,jy*hn);
 					trns->set_complex_at(jx,jy,0,(complex<float>)(v1*std::pow(std::conj(v2),(float)hn)));
 				}
 			}
