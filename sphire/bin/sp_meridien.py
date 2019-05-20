@@ -5849,6 +5849,11 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 
 	final_dir = Tracker["directory"]
 	if(Blockdata["subgroup_myid"] > -1):
+		this_color = 1
+	else:
+		this_color = 0
+	subgroup_comm = mpi_comm_split(MPI_COMM_WORLD, this_color, Blockdata['myid']
+	if(Blockdata["subgroup_myid"] > -1):
 		# load datastructure, read data, do two reconstructions(stepone, steptwo)
 		if final_iter ==-1: final_iter = Tracker["constants"]["best"]  
 		carryon = 1
@@ -5975,7 +5980,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 					oldparams_outlier.append(oldparams[procid][idx])
 					norm_per_particle_outlier.append(norm_per_particle[procid][idx])
 					oldparamstructure_outlier.append(oldparamstructure[procid][idx])
-			total_left_particles = wrap_mpi_gatherv(norm_per_particle_outlier, Blockdata["main_node"], MPI_COMM_WORLD)
+			total_left_particles = wrap_mpi_gatherv(norm_per_particle_outlier, Blockdata["main_node"], subgroup_comm)
 			if Blockdata['myid'] == Blockdata['main_node']: 
 				sp_global_def.sxprint('Use {0} particles for final reconstruction!'.format(len(total_left_particles)))
 			projdata[procid] = get_shrink_data(
