@@ -157,6 +157,7 @@ def main():
 			e=EMData(f)
 			e.del_attr("xform.align3d")
 			e.write_image(f)
+			e.write_image(f.replace("threed_{:02d}_".format(itr), "threed_raw_"))
 		
 		
 		msk=options.mask
