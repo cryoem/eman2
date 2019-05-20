@@ -128,9 +128,9 @@ This program will take an input stack of subtomograms and a reference volume, an
 
 		if options.goldstandard>0 :
 			ref[0].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":old_div(1.0,options.goldstandard)})
-			ref[0].process_inplace("filter.lowpass.tophat",{"cutoff_freq":old_div(1.0,options.goldstandard)})
+			ref[0].process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,options.goldstandard)})
 			ref[1].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":old_div(1.0,options.goldstandard)})
-			ref[1].process_inplace("filter.lowpass.tophat",{"cutoff_freq":old_div(1.0,options.goldstandard)})
+			ref[1].process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,options.goldstandard)})
 			ref[0].write_image("{}/align_ref.hdf".format(options.path),0)
 			ref[1].write_image("{}/align_ref.hdf".format(options.path),1)
 
@@ -254,17 +254,17 @@ class SptAlignTask(JSTask):
 		
 		if options.refine and b.has_attr("xform.align3d"):
 			
-			astep=1.0
+			astep=3.0
 			xfs=[]
 			initxf=b["xform.align3d"].get_params("eman")
 			for ii in range(16):
 				d={"type":"eman","tx":0, "ty":0}
 				for ky in ["alt", "az", "phi"]:
-					d[ky]=initxf[ky]+(ii>0)*np.random.randn()*astep
+					d[ky]=initxf[ky]+(ii>0)*np.random.randn()*astep/np.pi*2
 				xfs.append(Transform(d))
 					
 			aligndic["initxform"]=xfs
-			aligndic["maxshift"]=10
+			aligndic["maxshift"]=b["ny"]/16
 		
 
 		# we align backwards due to symmetry
