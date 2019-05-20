@@ -885,7 +885,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 				out2["apix_z"] = ctf.apix
 				# we take a sequence of processor option 2-tuples
 				for op in phaseproc[1:]:
-					if op[0] in ("math.bispectrum.slice","math.harmonicpow")  and extrapad:
+					if op[0] in ("math.bispectrum.slice","math.harmonic")  and extrapad:
 						pad=good_size(out2["ny"]*1.25)
 						out2.clip_inplace(Region((-(pad-out2["nx"])//2),(-(pad-out2["ny"])//2),pad,pad))
 					if op[0] in outplaceprocs: out2=out2.process(op[0],op[1])
