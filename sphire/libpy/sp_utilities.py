@@ -8998,7 +8998,7 @@ def angular_distribution(params_file, output_folder, prefix, method, pixel_size,
 		return None
 	else:
 		if do_print:
-			sxprint('Most values are valid')
+			sxprint('Values are valid')
 
 	try:
 		os.makedirs(output_folder)
