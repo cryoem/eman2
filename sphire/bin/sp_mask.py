@@ -78,7 +78,7 @@ def parse_command_line():
 	parser.add_argument(
 		'--prefix',
 		type=str,
-		default='sxmask',
+		default='sp_mask',
 		help='Prefix for the produced files'
 		)
 	parser.add_argument(
