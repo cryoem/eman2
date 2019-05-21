@@ -77,7 +77,7 @@ sp_cter exists in for both MPI and non-MPI versions (Running MPI version does no
   ; %%--%%phase_max : Maximum phase search [degrees]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 175.0) : %%--%%vpp==True
   ; %%--%%phase_step : Phase search step [degrees]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 5.0) : %%--%%vpp==True
   ; %%--%%pap : Use PW spectrum: UNDER DEVELOPMENT! Use power spectrum for CTF parameter search instead of amplitude. (default False)
-  ; %%--%%pws : Skip calculation of 2D power spectra: Will write periodograms to disk. (default False question reversed in GUI)
+  ; %%--%%pws : Calculate 2D power spectra: Will write periodograms to disk. (default True question reversed in GUI)
 
 \\
 ===== Output =====
