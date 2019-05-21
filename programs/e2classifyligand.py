@@ -70,7 +70,7 @@ Typical usage:
 e2classifyligand.py sets/myset_even.lst refine_01/classmx_04_even.hdf refine_01/projections_04_even.hdf --ref1 ref3d1.hdf --ref2 ref3d2.hdf --cmp=ccc --plotout=cmp.txt --pairmask --splitparticles -v 1
 """
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ref1",type=str,default=None,help="Rather than using a mask, ref1/ref2 permit using a pair of volumes for classification.")
 	parser.add_argument("--ref2",type=str,default=None,help="Rather than using a mask, ref1/ref2 permit using a pair of volumes for classification.")
 	parser.add_argument("--pairmask",action="store_true",default=False,help="Will use the ref1/ref2 pair to generate a mask which is applied after subtracting ref1 from the particle")

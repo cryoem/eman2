@@ -7,9 +7,13 @@ installer_filename: eman2.win.exe   # [win]
 
 channels:
     - https://repo.anaconda.com/pkgs/main
-    - https://repo.anaconda.com/pkgs/free
     - https://repo.anaconda.com/pkgs/msys2          # [win]
     - file:///place_holder_conda_prefix/conda-bld
+
+channels_remap:
+  -
+      src: file:///place_holder_conda_prefix/conda-bld
+      dest: eman-build-machine
 
 keep_pkgs: True
 ignore_duplicate_files: True

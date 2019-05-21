@@ -72,7 +72,7 @@ def main():
         parser.add_argument("--invartype",choices=["auto","bispec","harmonic"],help="Which type of invariants to generate: (bispec,harmonic)",default="auto")
 
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on the local computer")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -116,7 +116,7 @@ def main():
 			com="e2proc2dpar.py {inp} {out} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process mask.soft:outer_radius={maskrad}:width={maskw} --process math.bispectrum.slice:size={bssize}:fp={bsdepth} --threads {threads}".format(
 			inp=args[0],out=refsbsfs,maskrad=int(refs[0]["nx"]//2.2),maskw=int(refs[0]["nx"]//15),bssize=bispec_invar_parm[0],bsdepth=bispec_invar_parm[1],threads=options.threads)
 		else:
-			com="e2proc2dpar.py {inp} {out} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process mask.soft:outer_radius={maskrad}:width={maskw} --process math.harmonicpow:fp=1 --threads {threads}".format(
+			com="e2proc2dpar.py {inp} {out} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process mask.soft:outer_radius={maskrad}:width={maskw} --process math.harmonic:fp=4 --threads {threads}".format(
 			inp=args[0],out=refsbsfs,maskrad=int(refs[0]["nx"]//2.2),maskw=int(refs[0]["nx"]//15),threads=options.threads)
 
 		run(com)
@@ -276,7 +276,7 @@ def clsfn(jsd,refs,refsbs_org,ptclfs,ptclbsfs,options,grp,n0,n1):
 			# note that with purectf=1 this is replacing the image entirely
 			ctfim=ptcl.process("math.simulatectf",{"voltage":ctf.voltage,"cs":ctf.cs,"defocus":ctf.defocus,"bfactor":ctf.bfactor,"ampcont":ctf.ampcont,"apix":ctf.apix,"phaseflip":0,"purectf":1})
 			if ptclbs.has_attr("is_harmonic_fp"):
-				dfmod=ctfim.process("math.harmonicpow",{"fp":1})
+				dfmod=ctfim.process("math.harmonic",{"fp":4})
 			else:
 				dfmod=ctfim.process("math.bispectrum.slice",{"size":bispec_invar_parm[0],"fp":bispec_invar_parm[1]})
 			#print(ctfim["nx"],dfmod["nx"],refsbs_org[0]["nx"])

@@ -51,7 +51,7 @@ def main():
 	Usually the two models are shrunk down to speed things up, then a global exhaustive 
 	search is down by the refine.3d.sphere and then this rough alignment is refined using
 	refine.3d using the full size maps. The refiner is much quicker than the global aligner
-	as it uses a simplex algoritm to bring the alignment downhill, but if your inital global
+	as it uses a simplex algorithm to bring the alignment downhill, but if your initial global
 	alignment is too rough then the refiner might get stuck in a local minima."""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -63,10 +63,10 @@ def main():
 	parser.add_argument("--maskfoff",type=float,default=0.1,help="Fall offf of the Gaussian mask, default=0.1")
 	parser.add_argument("--nsolns",type=int,default=1,help="number of peaks in the global search to refine, default=1.0")
 	parser.add_argument("--famps",type=float,default=1,help="fraction of Fourier amps to exclude from recons. 0 means that this option is not used, default=0.0")
-	parser.add_argument("--prec",type=float,default=0.01,help="Precison to determine what solutions are the 'same' used only statistics output, default=0.01")
+	parser.add_argument("--prec",type=float,default=0.01,help="Precision to determine what solutions are the 'same' used only statistics output, default=0.01")
 	parser.add_argument("--cuda",action="store_true", help="Use CUDA for the alignment step.",default=False)
-	#options form the sphere alinger
-	parser.add_argument("--delta",type=float,default=30.0,help="step size for the orrientation generator, default=30.0")
+	#options form the sphere aligner
+	parser.add_argument("--delta",type=float,default=30.0,help="step size for the orientation generator, default=30.0")
 	parser.add_argument("--dphi",type=float,default=30.0,help="step size for the inplane angle phi, default=30.0")
 	parser.add_argument("--phi0",type=float,default=0.0,help="lower bound for the inplane angle phi, default=0.0")
 	parser.add_argument("--phi1",type=float,default=359.0,help="Upper bound for the inplane angle phi, default=359.0")
@@ -75,7 +75,7 @@ def main():
 	parser.add_argument("--cmp",type=str,default='ccc',help="comparitor and params to use for the 3D refiner, default='ccc'")
 	parser.add_argument("--dotrans",type=int,default=1,help="Do translational search, default=1")
 	#options associated with  the simplex 3D refiner
-	parser.add_argument("--ralign",type=str,default='refine_3d:spin_coeff=1',help="aligner to use for refine alignement, default='refine_3d:spin_coeff=1'")
+	parser.add_argument("--ralign",type=str,default='refine_3d:spin_coeff=1',help="aligner to use for refine alignment, default='refine_3d:spin_coeff=1'")
 	parser.add_argument("--rcmp",type=str,default='ccc',help="comparitor and params to use for the 3D refiner, default='ccc'")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose","-v",type=int,default=0,help="Level of verboseness, default=0")
@@ -154,7 +154,7 @@ def main():
 	fixed.set_attr('UCSF.chimera',1)
 	fixed.write_image('filtered_fixed.mrc')
 
-	# IF the dot product is being used then we need to normalize, othrwise the Quaternion aligner will crash
+	# IF the dot product is being used then we need to normalize, otherwise the Quaternion aligner will crash
 	if options.cmp[0] == "dot":
 		cmpdict = options.cmp[1]
 		cmpdict['normalize'] = 1

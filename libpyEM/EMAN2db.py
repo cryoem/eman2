@@ -124,9 +124,9 @@ def cuda_exit():
 		pass
 
 def parallel_process_exit():
-	# Compete HACK to prevent EMAN2DB creation if one deosn't already exisit. Need to do this b/c when anything in EMAN2PAR gets improted, and EMAN2DB is created!!!
+	# Compete HACK to prevent EMAN2DB creation if one doesn't already exist. Need to do this b/c when anything in EMAN2PAR gets imported, and EMAN2DB is created!!!
 	if os.access('EMAN2DB',os.R_OK):
-		# Kill any running process from e2paralle.py running on localhost. If none are running nothing happens
+		# Kill any running process from e2parallel.py running on localhost. If none are running nothing happens
 		from EMAN2PAR import EMLocalTaskHandler
 		for proc in list(EMLocalTaskHandler.allrunning.values()):
 			proc.terminate()
@@ -927,7 +927,7 @@ class EMAN2DB(object):
 	open_db=staticmethod(open_db)
 
 	def __init__(self,path=None):
-		"""path points to the directory containin the EMAN2DB subdirectory. None implies the current working directory"""
+		"""path points to the directory containing the EMAN2DB subdirectory. None implies the current working directory"""
 		global BDB_CACHE_DISABLE
 		#if recover: xtraflags=db.DB_RECOVER
 #		if not path : path=e2getcwd()
@@ -979,7 +979,7 @@ class EMAN2DB(object):
 					self.dbenv.open("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"),envopenflags)
 			except:
 				try:
-					print("""Cache open failed. Retyring one time.""")
+					print("""Cache open failed. Retrying one time.""")
 					# retry once
 					time.sleep(2)
 					if(sys.platform != 'win32'):
@@ -1221,7 +1221,7 @@ class DBDict(object):
 #		print "Init ",name,file,path
 
 	def close_one(self):
-		"""Will select and close any excess open databases. Closure is based on the number of times it has been repoened and the
+		"""Will select and close any excess open databases. Closure is based on the number of times it has been reopened and the
 		time it was last used."""
 		if not DBDict.closelock.acquire(False) : return
 
@@ -1344,7 +1344,7 @@ class DBDict(object):
 #		return len(self.bdb)
 
 	def put(self,key,val,txn=None):
-		"""This performs the bdb.put function with some error detection and retry capabilites.
+		"""This performs the bdb.put function with some error detection and retry capabilities.
 Retrying should not be necessary, but we have been completely unable to figure out the cause
 of these occasional errors"""
 		n=0

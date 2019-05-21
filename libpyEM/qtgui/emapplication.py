@@ -346,7 +346,7 @@ class EMApp(QtWidgets.QApplication):
 	
 		if self.tmr != None:
 			print("can't start a timer, already have one running. Call stop_timer first")
-			#FIXME, add support for mutliple timers
+			#FIXME, add support for multiple timers
 			return
 	
 		self.tmr=QtCore.QTimer()

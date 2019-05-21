@@ -67,7 +67,7 @@ def main():
 	parser.add_argument("--kill",action="store_true",default=False,help="This will kill an existing server instance before any other operations.")
 	parser.add_argument("--ssh",type=str,help="Connect to a remote ssh server",default=None)
 	parser.add_argument("--emen2",type=str,help="Connect to a remote EMEN2 server",default=None)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 

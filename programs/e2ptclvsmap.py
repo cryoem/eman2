@@ -74,7 +74,7 @@ gold-standard refinement."""
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default=None, guitype='strbox', row=24, col=0, rowspan=1, colspan=2, mode="refinement[thread:4]")
 	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement[4]")
 	parser.add_argument("--path", default=None, type=str,help="The name of a directory where results are placed. Default = create new ptclmap_xx")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 

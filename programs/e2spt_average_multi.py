@@ -96,7 +96,7 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	parser.add_argument("--shrinkcompare",type=int,help="Shrink factor for classification only (for speed)",default=0)
 	parser.add_argument("--sym",type=str,help="Symmetry of the input. Must be aligned in standard orientation to work properly.",default="c1")
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder containing current results (default = highest spt_XX)")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--noali", action="store_true", default=False ,help="Skip translational alignment.")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)

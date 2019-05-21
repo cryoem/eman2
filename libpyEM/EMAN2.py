@@ -69,7 +69,7 @@ T=Transform({"type":"2d","alpha":0})
 bispec_invar_parm=(32,10)
 
 # These are processors which don't support in-place operation
-outplaceprocs=["math.bispectrum.slice","math.harmonicpow"]
+outplaceprocs=["math.bispectrum.slice","math.harmonic"]
 
 # Without this, in many countries Qt will set things so "," is used as a decimal
 # separator by sscanf and other functions, which breaks CTF reading and some other things
@@ -77,13 +77,6 @@ try:
 	os.putenv("LC_CTYPE","en_US.UTF-8")
 	os.putenv("LC_ALL","en_US.UTF-8")
 except: pass
-
-# Read relative path written by CMake and use that to get EMAN2DIR
-this_file_dirname = os.path.dirname(__file__)
-with open(os.path.join(this_file_dirname, 'eman2dir_relative_path_to_sp_dir'), 'r') as f:
-	eman2dir_relative_path_to_sp_dir = f.readline().strip()
-
-os.environ["EMAN2DIR"] = os.path.abspath(os.path.join(this_file_dirname, eman2dir_relative_path_to_sp_dir))
 
 # This block attempts to open the standard EMAN2 database interface
 # if it fails, it sets db to None. Applications can then alter their
@@ -97,7 +90,7 @@ from EMAN2jsondb import JSDict,js_open_dict,js_close_dict,js_remove_dict,js_list
 
 XYData.__len__=XYData.get_size
 
-# Who is using this? Transform3D is deprecated use the Transform insteand
+# Who is using this? Transform3D is deprecated use the Transform instead
 #Transform3D.__str__=lambda x:"Transform3D(\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g)\nPretrans:%s\nPosttrans:%s"%(x.at(0,0),x.at(0,1),x.at(0,2),x.at(1,0),x.at(1,1),x.at(1,2),x.at(2,0),x.at(2,1),x.at(2,2),str(x.get_pretrans()),str(x.get_posttrans()))
 
 try:
@@ -373,11 +366,17 @@ This function will return a list of lists containing all currently set applicati
 	return ret2+ret
 
 def e2getinstalldir() :
-	"""platform independent path with '/'"""
-	url=os.getenv("EMAN2DIR")
-	if(sys.platform == 'win32'):
-		url=url.replace("\\","/")
-	return url
+	"""Final path needs to be computed relative to a path within the installation.
+	 An alternative could be to get the installation directory from cmake,
+	 but cmake is not run during binary installations."""
+	
+	this_file_dirname = os.path.dirname(__file__)
+	if get_platform() != "Windows":
+		rel_path = '../../../'
+	else:
+		rel_path = '../../Library/'
+	
+	return os.path.abspath(os.path.join(this_file_dirname, rel_path))
 
 def numbered_path(prefix,makenew):
 	"""Finds the next numbered path to use for a given prefix. ie- prefix='refine' if refine_01/EMAN2DB
@@ -552,12 +551,12 @@ class EMArgumentParser(argparse.ArgumentParser):
 		# This stuff is to make argparser masquerade as optparser
 		if version:
 			self.add_argument('--version', action='version', version=version)
-		self.add_argument("postionalargs", nargs="*")
+		self.add_argument("positionalargs", nargs="*")
 
 	def parse_args(self):
-		""" Masquerade as optpaser parse options """
+		""" Masquerade as optparser parse options """
 		parsedargs = argparse.ArgumentParser.parse_args(self)
-		return (parsedargs, parsedargs.postionalargs)
+		return (parsedargs, parsedargs.positionalargs)
 
 	def add_pos_argument(self, **kwargs):
 		""" Add a position argument, needed only for the GUI """
@@ -588,6 +587,7 @@ class EMArgumentParser(argparse.ArgumentParser):
 			if "urange" in kwargs: del kwargs["urange"]
 			if "choicelist" in kwargs: del kwargs["choicelist"]
 			if "filecheck" in kwargs: del kwargs["filecheck"]
+			if "infolabel" in kwargs: del kwargs["infolabel"]
 			if "mode" in kwargs: del kwargs["mode"]
 			if "browser" in kwargs: del kwargs["browser"]
 			if "dirbasename" in kwargs: del kwargs["dirbasename"]
@@ -969,7 +969,7 @@ def kill_process(pid):
 
 def launch_childprocess(cmd,handle_err=0):
 	'''
-	Convenience function to lauch child processes
+	Convenience function to launch child processes
 	'''
 	p = subprocess.Popen(str(cmd)+" --ppid=%d"%os.getpid(), shell=True)
 
@@ -1103,7 +1103,7 @@ def num_cpus():
 		return cores
 
 	else:
-		print("error, in num_cpus - uknown platform string:",platform_string," - returning 2")
+		print("error, in num_cpus - unknown platform string:",platform_string," - returning 2")
 		return 2
 
 def gimme_image_dimensions2D( imagefilename ):
@@ -1448,7 +1448,7 @@ def remove_directories_from_name(file_name,ntk=0):
 def name_has_no_tag(file_name):
 	'''
 	A convenient way of asking if the file name in has no tag. i.e.
-	/home/tmp.jpg would have a tag but /home/tmp would not. Ofcourse
+	/home/tmp.jpg would have a tag but /home/tmp would not. Of course
 	this function will return true if the argument is the name of a
 	folder, but that was not the original intended use
 	'''
@@ -1788,7 +1788,7 @@ def get_3d_font_renderer():
 		font_renderer.set_depth(2)
 		pfm = get_platform()
 		if pfm in ["Linux","Darwin"]:
-			font_renderer.set_font_file_name(os.getenv("EMAN2DIR")+"/fonts/DejaVuSerif.ttf")
+			font_renderer.set_font_file_name(e2getinstalldir()+"/fonts/DejaVuSerif.ttf")
 		elif pfm == "Windows":
 			font_renderer.set_font_file_name("C:\\WINDOWS\\Fonts\\arial.ttf")
 		else:

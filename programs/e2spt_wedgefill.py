@@ -71,7 +71,7 @@ def main():
 	#parser.add_argument("--path",type=str,default='spttransformplot',help="""Directory to store results in. The default is a numbered series of directories containing the prefix 'spttransformplot'; for example, spttransformplot_02 will be the directory by default if 'spttransformplot_01' already exists.""")
 	parser.add_argument("--ppid", type=int, default=-1, help="Set the PID of the parent process, used for cross platform PPID")
 	parser.add_argument("--subset",type=int,default=0,help="""Default=0 (not used). Plot only this substet of transforms from the hdf stack or json file provided.""")
-	parser.add_argument("--verbose", "-v", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness", dest="verbose", action="store", metavar="n")
+	parser.add_argument("--verbose", "-v", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness", dest="verbose", action="store", metavar="n")
 	
 	(options, args) = parser.parse_args()	
 

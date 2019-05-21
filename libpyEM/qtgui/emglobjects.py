@@ -310,14 +310,14 @@ class EMViewportDepthTools2(object):
 	and this is not trivial (but not difficult) to do, considering that the
 	mouse events are always in terms of the viewport, but the texture mapped
 	widget is somewhere in 3D space. The function eye_coords_dif is primarily
-	for positioning the widgits in 3D space (translation), whereas the 
+	for positioning the widgets in 3D space (translation), whereas the 
 	mouseinwin function is specifically for mapping the mouse event coordinates
-	into the widgit's transformed coordinate system.
+	into the widget's transformed coordinate system.
 
 	This class also provides important collision detection functionality - it
-	does this by mapping the corners of the (widgit mapped) polygon to the viewport,
-	and then determing if the (mouse) coordinate is within this area. Mapping 
-	polygon vertices to the veiwport is done using gluUnproject, whereas converting
+	does this by mapping the corners of the (widget mapped) polygon to the viewport,
+	and then determining if the (mouse) coordinate is within this area. Mapping 
+	polygon vertices to the viewport is done using gluUnproject, whereas converting
 	viewport coordinates into polygon coordinates is done doing something similar to
 	gluProject (the opposite operation).
 
@@ -326,7 +326,7 @@ class EMViewportDepthTools2(object):
 	to the viewport - this causes the loss of depth information
 	
 	The only important behaviour expected of something that uses this class is
-	1 - you must call update() just before you draw the textured widgit polygon
+	1 - you must call update() just before you draw the textured widget polygon
 	other object (i.e. when the contents of the OpenGL modelview matrix reflect 
 	all of the operations that are applied before rendering)
 	2 - you should call set_update_P_inv() if the OpenGL projection matrix is altered,
@@ -608,7 +608,7 @@ class EMViewportDepthTools2(object):
 		#PM_inv = numpy.matrixmultiply(P_inv,M_inv)
 		PM_inv = self.P_inv*M_inv
 		
-		# If the widget is planar (which obviosuly holds), and along z=0, then the following holds
+		# If the widget is planar (which obviously holds), and along z=0, then the following holds
 		zNDC1 = old_div((PM_inv[0,2]*xNDC1 + PM_inv[1,2]*yNDC1 + PM_inv[3,2]),(-PM_inv[2,2]))
 		if ( maintaindepth == False):
 			zNDC2 = old_div((PM_inv[0,2]*xNDC2 + PM_inv[1,2]*yNDC2 + PM_inv[3,2]),(-PM_inv[2,2]))
@@ -654,7 +654,7 @@ class EMViewportDepthTools2(object):
 		#PM_inv = numpy.matrixmultiply(P_inv,M_inv)
 		PM_inv = self.P_inv*M_inv
 		
-		# If the widget is planar (which obviosuly holds), and along z=0, then the following holds
+		# If the widget is planar (which obviously holds), and along z=0, then the following holds
 		zNDC = old_div((PM_inv[0,2]*xNDC + PM_inv[1,2]*yNDC + PM_inv[3,2]),(-PM_inv[2,2]))
 	
 		# We need zprime, which is really 'eye_z' in OpenGL lingo
@@ -678,14 +678,14 @@ class EMViewportDepthTools(object):
 	and this is not trivial (but not difficult) to do, considering that the
 	mouse events are always in terms of the viewport, but the texture mapped
 	widget is somewhere in 3D space. The function eye_coords_dif is primarily
-	for positioning the widgits in 3D space (translation), whereas the 
+	for positioning the widgets in 3D space (translation), whereas the 
 	mouseinwin function is specifically for mapping the mouse event coordinates
-	into the widgit's transformed coordinate system.
+	into the widget's transformed coordinate system.
 
 	This class also provides important collision detection functionality - it
 	does this by mapping the corners of the (widgit mapped) polygon to the viewport,
-	and then determing if the (mouse) coordinate is within this area. Mapping 
-	polygon vertices to the veiwport is done using gluUnproject, whereas converting
+	and then determining if the (mouse) coordinate is within this area. Mapping 
+	polygon vertices to the viewport is done using gluUnproject, whereas converting
 	viewport coordinates into polygon coordinates is done doing something similar to
 	gluProject (the opposite operation).
 
@@ -698,7 +698,7 @@ class EMViewportDepthTools(object):
 	other object (i.e. when the contents of the OpenGL modelview matrix reflect 
 	all of the operations that are applied before rendering)
 	2 - you should call set_update_P_inv() if the OpenGL projection matrix is altered,
-	this typically happens when resizeGL is called in the root widgit.
+	this typically happens when resizeGL is called in the root widget.
 	"""
 	def __init__(self, parent):
 		
@@ -971,7 +971,7 @@ class EMViewportDepthTools(object):
 		#PM_inv = numpy.matrixmultiply(P_inv,M_inv)
 		PM_inv = self.P_inv*M_inv
 		
-		# If the widget is planar (which obviosuly holds), and along z=0, then the following holds
+		# If the widget is planar (which obviously holds), and along z=0, then the following holds
 		zNDC1 = old_div((PM_inv[0,2]*xNDC1 + PM_inv[1,2]*yNDC1 + PM_inv[3,2]),(-PM_inv[2,2]))
 		if ( maintaindepth == False):
 			zNDC2 = old_div((PM_inv[0,2]*xNDC2 + PM_inv[1,2]*yNDC2 + PM_inv[3,2]),(-PM_inv[2,2]))
@@ -1017,7 +1017,7 @@ class EMViewportDepthTools(object):
 		#PM_inv = numpy.matrixmultiply(P_inv,M_inv)
 		PM_inv = self.P_inv*M_inv
 		
-		# If the widget is planar (which obviosuly holds), and along z=0, then the following holds
+		# If the widget is planar (which obviously holds), and along z=0, then the following holds
 		zNDC = old_div((PM_inv[0,2]*xNDC + PM_inv[1,2]*yNDC + PM_inv[3,2]),(-PM_inv[2,2]))
 	
 		# We need zprime, which is really 'eye_z' in OpenGL lingo
@@ -1241,7 +1241,7 @@ class Camera2(object):
 		glTranslate(self.cam_x, self.cam_y, self.cam_z)
 	
 	def position(self,norot=False):
-		# position the camera, regualar OpenGL movement.
+		# position the camera, regular OpenGL movement.
 		if (self.debug):
 			print("Camera translational position",self.cam_x,self.cam_y,self.cam_z)
 		glTranslate(self.cam_x, self.cam_y, self.cam_z)
@@ -1295,7 +1295,7 @@ class Camera2(object):
 		# this function implements mouse interactive rotation
 		# [x,y] is the vector generating by the mouse movement (in the plane of the screen)
 		# Rotation occurs about the vector 90 degrees to [x,y,0]
-		# The amount of rotation is linealy proportional to the length of [x,y]
+		# The amount of rotation is linearly proportional to the length of [x,y]
 		
 		if ( x == 0 and y == 0): return
 		
@@ -1329,7 +1329,7 @@ class Camera2(object):
 				rotaxis_z = sin(theta)
 			
 			length = sqrt(x*x + y*y)
-			# motiondull is a magic number - things rotate more if they are closer and slower if they are far away in this appproach
+			# motiondull is a magic number - things rotate more if they are closer and slower if they are far away in this approach
 			# This magic number could be overcome using a strategy based on the results of get_render_dims_at_depth
 			angle = old_div(fac*length,self.motiondull)*pi
 			
@@ -1599,7 +1599,7 @@ class Camera(object):
 		# this function implements mouse interactive rotation
 		# [x,y] is the vector generating by the mouse movement (in the plane of the screen)
 		# Rotation occurs about the vector 90 degrees to [x,y,0]
-		# The amount of rotation is linealy proportional to the length of [x,y]
+		# The amount of rotation is linearly proportional to the length of [x,y]
 		
 		if ( x == 0 and y == 0): return
 		
@@ -1610,7 +1610,7 @@ class Camera(object):
 		rotaxis_z = 0
 		
 		length = sqrt(x*x + y*y)
-		# 8.0 is a magic number - things rotate more if they are closer and slower if they are far away in this appproach
+		# 8.0 is a magic number - things rotate more if they are closer and slower if they are far away in this approach
 		# Or does it?
 		# This magic number could be overcome using a strategy based on the results of get_render_dims_at_depth
 		angle = length/8.0*pi
@@ -2011,7 +2011,7 @@ class EM3DModel(QtCore.QObject):
 		self.bcscreen = EMBrightContrastScreen()
 		
 		self.name = None # a name variable, accessed by set and get
-#		self.rand = None # a rand varaible
+#		self.rand = None # a rand variable
 		self.cam = None # should be a camera, either Camera or Camera2
 #		self.cube = False # whether a cube should be drawn
 		

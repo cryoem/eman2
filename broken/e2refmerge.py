@@ -59,7 +59,7 @@ def main():
 
 	parser.add_argument("--nmerged",type=int,help="Number of merged references to generate. Default = sqrt(#proj*nbest)",default=0)
 	parser.add_argument("--nbest",type=int,help="This will associate each projection with the best N merged references",default=3)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	#parser.add_argument("--apix", "-A", type="float", help="A/voxel", default=1.0)

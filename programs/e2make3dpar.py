@@ -114,7 +114,7 @@ def main():
 	parser.add_argument("--seedweight", type=float, default=1.0, help="If seedmap specified, this is how strongly the seedmap will bias existing values. 1 is default, and is equivalent to a one particle weight.")
 	parser.add_argument("--seedweightmap", type=str, default=None, help="Specify a full map of weights for the seed. This must be in the same format as the --savenorm output map.")
 
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer. This is the only parallelism supported by e2make3dpar", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--preprocess", metavar="processor_name(param1=value1:param2=value2)", type=str, action="append", help="preprocessor to be applied to the projections prior to 3D insertion. There can be more than one preprocessor and they are applied in the order in which they are specifed. Applied before padding occurs. See e2help.py processors for a complete list of available processors.")
@@ -274,12 +274,23 @@ def main():
 			
 			options.parallel=None
 			
+	
+	if options.seedmap!=None :
+		seed=EMData(options.seedmap)
+		seed.clip_inplace(Region(old_div((nx-padvol[0]),2),old_div((ny-padvol[1]),2),old_div((nslice-padvol[2]),2),padvol[0],padvol[1],padvol[2]))
+		seed.do_fft_inplace()
+	else:
+		seed=None
+		
+
 
 	for it in range(niter):
 		
 		if options.parallel:
 			print("running in mpi mode. This is experimental, so please switch back to threading if anything goes wrong...")
 			
+			if it>0:
+				seed=output
 		
 			from EMAN2PAR import EMTaskCustomer
 			etc=EMTaskCustomer(options.parallel, module="e2make3dpar.Make3dTask")
@@ -295,7 +306,7 @@ def main():
 
 			tids=[]
 			for t in tasks:
-				task = Make3dTask(t, options)
+				task = Make3dTask(t, seed, options)
 				tid=etc.send_task(task)
 				tids.append(tid)
 
@@ -315,6 +326,7 @@ def main():
 				avgr.add_image(ret)
 				
 			output=avgr.finish()
+			del etc
 			
 		else:
 			threads=[threading.Thread(target=reconstruct,args=(data[i::options.threads],recon,options.preprocess,options.pad,
@@ -322,11 +334,12 @@ def main():
 
 			if it==0:
 				if options.seedmap!=None :
-					seed=EMData(options.seedmap)
+					#seed=EMData(options.seedmap)
 			#		seed.process_inplace("normalize.edgemean")
-					seed.clip_inplace(Region(old_div((nx-padvol[0]),2),old_div((ny-padvol[1]),2),old_div((nslice-padvol[2]),2),padvol[0],padvol[1],padvol[2]))
-					seed.do_fft_inplace()
-					if options.seedweightmap==None:  recon.setup_seed(seed,options.seedweight)
+					#seed.clip_inplace(Region(old_div((nx-padvol[0]),2),old_div((ny-padvol[1]),2),old_div((nslice-padvol[2]),2),padvol[0],padvol[1],padvol[2]))
+					#seed.do_fft_inplace()
+					if options.seedweightmap==None:  
+						recon.setup_seed(seed,options.seedweight)
 					else:
 						seedweightmap=EMData(seedweightmap,0)
 						recon.setup_seedandweights(seed,seedweightmap)
@@ -675,9 +688,9 @@ def reconstruct(data,recon,preprocess,pad,fillangle,altmask,verbose=0, lstinput=
 class Make3dTask(JSTask):
 	
 	
-	def __init__(self, inp, options):
+	def __init__(self, inp, seed, options):
 		
-		data={"data":inp}
+		data={"data":inp,"seed":seed}
 		JSTask.__init__(self,"Make3d",data,{},"")
 		self.options=options
 	
@@ -686,18 +699,36 @@ class Make3dTask(JSTask):
 		
 		callback(0)
 		data=self.data["data"]
+		seed=self.data["seed"]
 		options=self.options
 		
-		a = {
-			"size":options.padvol3,
-			"sym":options.sym,
-			"mode":options.mode,
-			"usessnr":options.usessnr,
-			"verbose":options.verbose-1
-			}
-		if options.savenorm!=None : a["savenorm"]=options.savenorm
-		recon=Reconstructors.get("fourier", a)
-		recon.setup()
+		
+		
+		if options.iterative:
+			
+			a = {"size":options.padvol3,"sym":options.sym,"verbose":options.verbose-1}
+			if options.savenorm!=None : 
+				a["savenorm"]=options.savenorm
+			recon=Reconstructors.get("fourier_iter", a)
+			if seed==None:
+				recon.setup()
+			else:
+				recon.setup_seed(seed,1.0)
+
+		else :
+			a = {
+				"size":options.padvol3,
+				"sym":options.sym,
+				"mode":options.mode,
+				"usessnr":options.usessnr,
+				"verbose":options.verbose-1
+				}
+			if options.savenorm!=None : 
+				a["savenorm"]=options.savenorm
+			recon=Reconstructors.get("fourier", a)
+			recon.setup()
+			
+			
 		reconstruct(
 			data,
 			recon,

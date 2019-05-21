@@ -378,7 +378,7 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 	// Get a object that calculates all the interesting variables associated with the clip inplace operation
 	ClipInplaceVariables civ(prev_nx, prev_ny, prev_nz, new_nx, new_ny, new_nz, x0, y0, z0);
 
-	get_data(); // Do this here to make sure rdata is up to date, applicable if GPU stuff is occuring
+	get_data(); // Do this here to make sure rdata is up to date, applicable if GPU stuff is occurring
 	// Double check to see if any memory shifting even has to occur
 	if ( x0 > prev_nx || y0 > prev_ny || z0 > prev_nz || civ.x_iter == 0 || civ.y_iter == 0 || civ.z_iter == 0)
 	{

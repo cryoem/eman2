@@ -371,7 +371,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 		else: return str(selected_items[0].text())
 
 	def cmp_changed(self,s):
-		"When a new comapartor string is selected"
+		"When a new comparator string is selected"
 		self.target().set_cmp(s)
 #		self.target.regen_dl()
 	

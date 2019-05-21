@@ -142,7 +142,7 @@ def get_database_entry(image_name,key,dfl=None):
 
 def set_database_entry(image_name,key,value):
 	'''
-	write a key/object pair to the Image Database Dictionary associat
+	write a key/object pair to the Image Database Dictionary associate
 	'''
 	db = js_open_dict(info_name(image_name))
 	db[key] = value
@@ -239,7 +239,7 @@ class ScaledExclusionImage(object):
 
 			# the order in which you clip and scale is dependent on whether or not scale is > 1
 			if scale > 1:
-				# if it's greater than one than clip (enlargen the image) first
+				# if it's greater than one than clip (enlarge the image) first
 				self.image.clip_inplace(r)
 				# then scale the pixels
 				self.image.scale(old_div(float(xsize),float(oldxsize)))
@@ -313,7 +313,7 @@ class EMBox(object):
 		'''
 		static - use this function to register a box color with a particular EMBox.type attribute
 		This is critical - if you don't register your unique box type using this function you'll
-		get a runttime error
+		get a runtime error
 		@param box_type a string such as "manual" or "swarm_auto", or "swarm_ref", etc
 		@param box_color an RGB list [R,G,B] (floats)
 		@param force something you'd set to True if you want to force the overwrite of the old color (previously stored)
@@ -543,7 +543,7 @@ class EMBoxingTool(object):
 		Called whenever the current file being studied is changed, the active_tool parameter tells the
 		tool (this object) whether or not it is the current active tool
 		@param file_name a string which is a full file name
-		@param avtive_tool a bool indicating whether or not this tool is the active one
+		@param active_tool a bool indicating whether or not this tool is the active one
 		'''
 		pass
 
@@ -1680,7 +1680,7 @@ class EMBoxerModuleVitals(object):
 	def get_exclusion_image(self, mark_boxes=False):
 		'''
 		@mark_boxes if true the exclusion image is copied and the locations of the current boxes are painted in as excluded regions
-		This is useful for autoboxers - they  obviously dont want to box any region that already has a box in it (such as a manual box,
+		This is useful for autoboxers - they  obviously don't want to box any region that already has a box in it (such as a manual box,
 		or a previously autoboxed box)
 		'''
 		exc_image = ScaledExclusionImageCache.get_image(self.current_file(),self.get_subsample_rate())

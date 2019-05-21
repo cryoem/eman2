@@ -128,7 +128,7 @@ def main():
 
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel. The default is 4, and our alignment routine requires 2+ threads. Using more threads will result in faster processing times.", guitype='intbox', row=28, col=0, rowspan=1, colspan=1, mode="align,tomo")
 
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=4, help="verbose level [0-9], higner number means higher level of verboseness",guitype="intbox",row=28,col=1,rowspan=1,colspan=1,mode="align,tomo")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=4, help="verbose level [0-9], higher number means higher level of verboseness",guitype="intbox",row=28,col=1,rowspan=1,colspan=1,mode="align,tomo")
 	parser.add_argument("--debug", default=False, action="store_true", help="run with debugging output")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 

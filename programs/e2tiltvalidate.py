@@ -90,7 +90,7 @@ def main():
 	parser.add_argument("--simralign",type=str,help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine\', 0)', row=17, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--simraligncmp",type=str,help="The name and parameters of the comparitor used by the second stage aligner. (default=dot).",default="dot", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=18, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--parallel",type=str,help="Parallelism string",default=None, guitype='strbox', row=9, col=0, rowspan=1, colspan=2, mode="analysis")
-	parser.add_argument("--verbose", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness", guitype='intbox', row=19, col=0, rowspan=1, colspan=1, mode="analysis")
+	parser.add_argument("--verbose", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness", guitype='intbox', row=19, col=0, rowspan=1, colspan=1, mode="analysis")
 	# "gui" mode options
 	parser.add_argument("--path", type=str,help="The folder the results are placed", default="", guitype='dirbox', dirbasename='TiltValidate', row=0, col=0,rowspan=1, colspan=2, mode="gui")
 	parser.add_argument("--radcut", type = float, default=-1, help="For use in the GUI, truncate the polar plot after R. -1 = no truncation", guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="gui")

@@ -59,7 +59,7 @@ indicating its position in the movie.
 	parser.add_argument("--useset", type=str, help="If a set is specified as input, only the specific particles in that set will be extracted. Warning, the resulting movie-particle stacks will have missing images.",default=None)
 	parser.add_argument("--invert",action="store_true",help="Extracted images are multiplied by -1 ",default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 

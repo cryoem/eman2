@@ -103,7 +103,7 @@ def main():
 	parser.add_argument("--mode", type=str, default="gauss_5", help="Fourier reconstruction 'mode' to use. The default should not normally be changed. default='gauss_5'")
 	parser.add_argument("--noradcor", action="store_true",default=False, help="Normally a radial correction will be applied based on the --mode used. This option disables that correction.")
 
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer. This is the only parallelism supported by e2make3dpar", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--preprocess", metavar="processor_name(param1=value1:param2=value2)", type=str, action="append", help="preprocessor to be applied to the projections prior to 3D insertion. There can be more than one preprocessor and they are applied in the order in which they are specifed. Applied before padding occurs. See e2help.py processors for a complete list of available processors.")

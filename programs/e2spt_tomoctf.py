@@ -251,7 +251,7 @@ def main():
 		allscr=np.array(allscr)
 		#print(allscr)
 		amp, df= np.array(np.where(allscr==np.min(allscr))).T[0]
-		print("ID {}, angle {:.1f}, defocus {:.1f}, phase shift {:.0f}".format(it, tltparams[it,3],  defrg[df], pshift[amp]))
+		print("ID {}, angle {:.1f}, defocus {:.2f}, phase shift {:.0f}".format(it, tltparams[it,3],  defrg[df], pshift[amp]))
 		dfs.append(defrg[df])
 		ctfparams[it]=[pshift[amp], defrg[df]]
 
@@ -267,7 +267,7 @@ def main():
 			dfsel=abs(defrg-np.mean(dfs))<searchrg
 			
 			
-			print("We will search defocus range {:.1f} to {:.1f} for the rest images.".format(np.min(defrg[dfsel]), np.max(defrg[dfsel])))
+			print("We will search defocus range {:.2f} to {:.2f} for the rest images.".format(np.min(defrg[dfsel]), np.max(defrg[dfsel])))
 			
 			exclude=np.where(dfsel==False)[0]
 			
