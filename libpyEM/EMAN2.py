@@ -69,7 +69,7 @@ T=Transform({"type":"2d","alpha":0})
 bispec_invar_parm=(32,10)
 
 # These are processors which don't support in-place operation
-outplaceprocs=["math.bispectrum.slice","math.harmonicpow"]
+outplaceprocs=["math.bispectrum.slice","math.harmonic"]
 
 # Without this, in many countries Qt will set things so "," is used as a decimal
 # separator by sscanf and other functions, which breaks CTF reading and some other things

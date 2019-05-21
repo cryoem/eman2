@@ -86,7 +86,7 @@ const string AmpweightFourierProcessor::NAME = "filter.ampweight";
 const string Axis0FourierProcessor::NAME = "filter.xyaxes0";
 const string ConvolutionProcessor::NAME = "math.convolution";
 const string BispecSliceProcessor::NAME = "math.bispectrum.slice";
-const string HarmonicPowProcessor::NAME = "math.harmonicpow";
+const string HarmonicProcessor::NAME = "math.harmonic";
 const string XGradientProcessor::NAME = "math.edge.xgradient";
 const string YGradientProcessor::NAME = "math.edge.ygradient";
 const string ZGradientProcessor::NAME = "math.edge.zgradient";
@@ -450,7 +450,7 @@ template <> Factory < Processor >::Factory()
 
 	force_add<ConvolutionProcessor>();
 	force_add<BispecSliceProcessor>();
-	force_add<HarmonicPowProcessor>();
+	force_add<HarmonicProcessor>();
 
 	force_add<NormalizeStdProcessor>();
 	force_add<NormalizeUnitProcessor>();
@@ -13249,12 +13249,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	return(ret);
 }
 
-const int NHARMROOT = 5;
-const unsigned int harmbase[NHARMROOT] = {3,4,5,7,11}; // 2 is excluded to to the need to avoid very low resolution, so we use 4 instead
-const unsigned int harmbaser[NHARMROOT] = {2,3,4,5,6}; // for rotation, all of the terms should be safe?  We also get negative frequencies which may not be conjugate
-EMData *HPProt[12] = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
-EMData *HPPjn[5] = {NULL,NULL,NULL,NULL,NULL};
-EMData* HarmonicPowProcessor::process(const EMData * const image) {
+EMData* HarmonicProcessor::process(const EMData * const image) {
 	if (image->get_zsize()!=1 || image->is_complex()) throw ImageDimensionException("Only 2-D real images supported");
 
 	EMData *cimage = NULL;
@@ -13269,7 +13264,7 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 	// Decide how large the harmonic invariant will be
 //	int nx=cimage->get_xsize();
 	int ny=cimage->get_ysize()/4;
-	int naz=(int)params.set_default("size",ny)/2;
+	int naz=Util::calc_best_fft_size((int)params.set_default("size",ny));
 	
 	// Compute a translational invariant for a single harmonic
 	EMData* trns=new EMData(naz*2,ny/2,1);
@@ -13314,14 +13309,14 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 				float si=sin(float(2.0*M_PI*(ja+0.5)/naz));
 				float co=cos(float(2.0*M_PI*(ja+0.5)/naz));
 				for (int jr=3; jr<ny/2 && jr*hn<ny*2; jr++) {			// This is cryoEM specific, we have bad values near the origin
-// 					float jx=co*jr;
-// 					float jy=si*jr;
-// 					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
-// 					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx/(float)hn,jy/(float)hn);
- 					int jx=co*jr;
- 					int jy=si*jr;
-					complex<double> v2 = (complex<double>)cimage->get_complex_at(jx,jy);
-					complex<double> v1 = (complex<double>)cimage->get_complex_at(jx*hn,jy*hn);
+					float jx=co*jr;
+					float jy=si*jr;
+					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
+					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx*hn,jy*hn);
+//  					int jx=co*jr;
+//  					int jy=si*jr;
+// 					complex<double> v2 = (complex<double>)cimage->get_complex_at(jx,jy);
+// 					complex<double> v1 = (complex<double>)cimage->get_complex_at(jx*hn,jy*hn);
 					trns->set_complex_at_idx(ja,jr,0,(complex<float>)(v1*std::pow(std::conj(v2),(float)hn)));
 				}
 			}
@@ -13336,7 +13331,7 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 			// Only if rn is defined
 			if (rn==0) {
 				complex<float> *tmp = (complex<float>*)EMfft::fftmalloc(naz*2);
-				for (int jy=3*hn;  jy<ny/2; jy++) {
+				for (int jy=3;  jy<ny/2; jy++) {
 					memcpy((void*)tmp,(void*)(trns->get_data()+jy*naz*2),naz*2*sizeof(float));
 					EMfft::complex_to_complex_1d_inplace(tmp,naz*2);
 					memcpy((void*)(trns->get_data()+jy*naz*2),(void*)tmp,naz*2*sizeof(float));
@@ -13346,17 +13341,22 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 			else if (rn>=0) {
 				// Now we do the 1-D FFTs on the lines of the translational invariant
 				complex<float> *tmp = (complex<float>*)EMfft::fftmalloc(naz*2);
-				for (int jy=3*hn;  jy<ny/2; jy++) {
+				for (int jy=3;  jy<ny/2; jy++) {
 					// While it might seem a good idea to do inplace 1D transforms for each row, the potential memory
 					// alignment change for each row could cause bad things to happen
 					memcpy((void*)tmp,(void*)(trns->get_data()+jy*naz*2),naz*2*sizeof(float));
 					EMfft::complex_to_complex_1d_inplace(tmp,naz*2);
 					for (int jx=0; jx<naz; jx++) {
-						float l=jx/float(rn);
-						float frc=l-floor(l);
-						int li=(int)l;
-						complex<float> v1 = tmp[jx];
-						complex<float> v2 = Util::linear_interpolate_cmplx(tmp[li],tmp[li+1],frc);
+// 						float l=jx/float(rn);
+// 						float frc=l-floor(l);
+// 						int li=(int)l;
+//						complex<float> v2 = Util::linear_interpolate_cmplx(tmp[li],tmp[li+1],frc);
+						if (jx*rn>naz) {
+							trns->set_complex_at_idx(jx,jy,0,0.0f);
+							continue;
+						}
+						complex<float> v2 = tmp[jx];
+						complex<float> v1 = tmp[jx*rn];
 						trns->set_complex_at_idx(jx,jy,0,v1*std::pow(std::conj(v2),(float)rn));
 					}
 	//				memcpy((void*)(trns->get_data()+jy*naz*2),(void*)tmp,naz*2*sizeof(float));
@@ -13403,110 +13403,95 @@ EMData* HarmonicPowProcessor::process(const EMData * const image) {
 	}
 	if (params.has_key("rfp")) {
 		int rfp=(int)params.get("rfp");
-		trns->set_size(naz*2,ny/4,1);
-		xyz=trns->get_size();
-		// We deal with each radial line at a time 
 		for (int ja=0; ja<naz; ja++) {
-			float si=sin(float(2.0*M_PI*ja/naz));
-			float co=cos(float(2.0*M_PI*ja/naz));
-			int rc=0; 								// This counts the number of components we've generated for the current angle
-			// outer loop is for the harmonic index, each cycle we generate one harmonic for each root
-			for (int hn=2; hn<ny/6; hn++) {
-				// inner loop is for the roots of each harmonic
-				if (rc>=ny/4) break;			// this is the maximum number of components we generate in the output
-				for (int j=0; j<NHARMROOT; j++) {
-					int jr=harmbase[j]*hn;
-					if (rc>=ny/4 || jr>=ny/2) break;			// this is the maximum number of components we generate in the output, and we need to stay within the image
+			float si=sin(float(2.0*M_PI*(ja+0.5)/naz));
+			float co=cos(float(2.0*M_PI*(ja+0.5)/naz));
+			int y=0;		// This is where the results go
+			// Start at r=3 due to bad CryoEM values near the origin. 
+			// Go to 1/2 Nyquist because high resolution values are less invariant due to interpolaton
+			for (int jr=5; jr<ny/4; jr++) {
+				// Innermost loop is hn (radial harmonic coefficient) to group similar values together
+				for (int hn=1; hn<=rfp; hn++) {
 					float jx=co*jr;
 					float jy=si*jr;
-					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
-					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx/(float)hn,jy/(float)hn);
-					v1*=std::pow(std::conj(v2),(float)hn);						// This is the invariant
-					v1=std::polar(std::pow(std::abs(v1),1.0/(hn+1.0)),std::arg(v1));	// rescale the amplitude without changing the phase
-					trns->set_complex_at_idx(ja,rc,0,(complex<float>)v1);
-					rc++;
-//					if (rc==0) printf("%d %d %d %d %f %f\n",ja,hn,j,rc,jx,jy);
+					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
+					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx*hn,jy*hn);
+					v1*=std::pow(std::conj(v2),(double)hn);
+					v1=std::polar(std::pow(std::abs(v1),1.0/(hn+1.0))/ny,std::arg(v1));
+					trns->set_complex_at_idx(ja,y,0,(complex<float>)v1);
+					y++;
+					if (y>=ny/2) break;
 				}
+				if (y>=ny/2) break;
 			}
+		// rescale components to have linear amplitude WRT the original FFT, without changing phase
 		}
 		delete cimage;
 		trns->set_attr("is_harmonic_rfp",(int)rfp);
 //		trns->set_complex(0);
 		return(trns);
 	}
-	// This generates rotational & translational invariants
+
+	// Rotational & Translational invariant, fp specifies the maximum harmonic (R&T) to include
 	if (params.has_key("fp")) {
-		int fp=(int)params.get("fp");
-		trns->set_size(naz*2,ny/4,1);
-		xyz=trns->get_size();
-		// We deal with each radial line at a time 
+		int fp=(int)params.set_default("fp",4);
+		// Start with the translational invariant in Fourier space in a radial coordinate system
 		for (int ja=0; ja<naz; ja++) {
-			float si=sin(float(2.0*M_PI*ja/naz));
-			float co=cos(float(2.0*M_PI*ja/naz));
-			int rc=0; 								// This counts the number of components we've generated for the current angle
-			// outer loop is for the harmonic index, each cycle we generate one harmonic for each root
-			for (int hn=2; hn<ny/6; hn++) {
-				// inner loop is for the roots of each harmonic
-				if (rc>=ny/4) break;			// this is the maximum number of components we generate in the output
-				for (int j=0; j<NHARMROOT; j++) {
-					int jr=harmbase[j]*hn;
-					if (rc>=ny/4 || jr>=ny/2) break;			// this is the maximum number of components we generate in the output, and we need to stay within the image
+			float si=sin(float(2.0*M_PI*(ja+0.5)/naz));
+			float co=cos(float(2.0*M_PI*(ja+0.5)/naz));
+			int y=0;		// This is where the results go
+			// Start at r=3 due to bad CryoEM values near the origin. 
+			// Go to 1/2 Nyquist because high resolution values are less invariant due to interpolaton
+			for (int jr=3; jr<ny/4; jr++) {
+				// Innermost loop is hn (radial harmonic coefficient) to group similar values together
+				for (int hn=1; hn<=fp; hn++) {
 					float jx=co*jr;
 					float jy=si*jr;
-					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
-					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx/(float)hn,jy/(float)hn);
-					v1*=std::pow(std::conj(v2),(float)hn);						// This is the invariant
-					v1=std::polar(std::pow(std::abs(v1),1.0/(hn+1.0)),std::arg(v1));	// rescale the amplitude without changing the phase
-					trns->set_complex_at_idx(ja,rc,0,(complex<float>)v1);
-					rc++;
+					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
+					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx*hn,jy*hn);
+					v1*=std::pow(std::conj(v2),(double)hn);
+					v1=std::polar(std::pow(std::abs(v1),1.0/(hn+1.0))/ny,std::arg(v1));
+					trns->set_complex_at_idx(ja,y,0,(complex<float>)v1);
+					y++;
+					if (y>=ny/2) break;
 				}
+				if (y>=ny/2) break;
 			}
+		// rescale components to have linear amplitude WRT the original FFT, without changing phase
 		}
-		// Now we do the 1-D FFTs on the lines of the translational invariant and build a rotational invariant
+		
+		// This holds a copy for doing the 1D FFTs efficiently
 		complex<float> *tmp = (complex<float>*)EMfft::fftmalloc(naz*2);
-		for (int jy=0;  jy<ny/4; jy++) {
-			// While it might seem a good idea to do inplace 1D transforms for each row, the potential memory
-			// alignment change for each row could cause bad things to happen
+		// One horizontal line at a time
+		for (int jy=0;  jy<ny/2; jy++) {
+			// Now we do the 1-D FFTs on the lines of the translational invariant
 			memcpy((void*)tmp,(void*)(trns->get_data()+jy*naz*2),naz*2*sizeof(float));
 			EMfft::complex_to_complex_1d_inplace(tmp,naz*2);
-			
-			// now we generate our rotationally invariant line from the fft
-			// Note that here we group all of the harmonics of a particular order, and include the "1" harmonic,
-			// which would be a power spectrum, except that we took the FFT of a complex function, so Friedel symmetry may not exist
-			if (fp>=0) {
-				int rc=0;
-				for (int b=1; b<naz/2; b++) {		// this is normally naz/2, by using 3/8 we ignore really high frequency components and gain higher harmonic bands
-					if (rc>=naz) break;
-					// The first component is different since it uses a single frequency
-					for (int j=0; j<NHARMROOT;  j++) {
-						if (rc>=naz) break;
-						int hn=harmbaser[j];
-						int i=b*hn;
-						// rather than taking a complex conjugate we make use of the negative frequencies, and we pair both ways
-						// the conjugate on the second term may not be optimal? Not positive...
-						complex<double>v1=((complex<double>)std::pow(std::conj(tmp[b]),hn))*((complex<double>)tmp[i])+((complex<double>)std::conj(std::pow(std::conj(tmp[naz-b]),hn))*((complex<double>)tmp[naz-i]));
-						v1=std::polar(std::pow(std::abs(v1),1.0/(hn+1.0)),std::arg(v1));	// rescale the amplitude without changing the phase
-						trns->set_complex_at_idx(rc/2,jy,0,(complex<float>)v1);
-						rc+=2;
-					}
+			int x=0;		// output x coordinate
+			// outer loop over base rotational frequency
+			for (int jx=0; jx<naz/2; jx++) {
+				// inner loop over rotational harmonic coefficients
+				complex<double> v2 = tmp[jx];
+				for (int rn=1; rn<=fp; rn++) {
+					if (jx*rn>=naz) break;
+					complex<double> v1 = tmp[jx*rn];
+					v1*=std::pow(std::conj(v2),(double)rn);
+					v1=std::polar(std::pow(std::abs(v1),1.0/(rn+1.0))/naz,std::arg(v1));
+					trns->set_complex_at_idx(x,jy,0,(complex<float>)v1);
+					x++;
+					if (x>=naz/2) break;
 				}
+				if (x>=naz/2) break;
 			}
-			// mostly for debugging, puts the FFT directly in the result. If other negative fp values are
-			// specified, then the unmodified translational invariant in polar coordinates is generated
-			if (fp==-1) memcpy((void*)(trns->get_data()+jy*naz*2),(void*)tmp,naz*2*sizeof(float));
-			
-			// This produces something which works better with PCA
-//			memcpy((void*)tmp,(void*)(trns->get_data()+jy*naz*2),naz*2*sizeof(float));
-//			EMfft::complex_to_real_1d((float*)tmp,trns->get_data()+jy*naz*2,naz*2-2);
-			
 		}
 		EMfft::fftfree((float *)tmp);
 
+
 		delete cimage;
-		EMData *ret=trns->get_clip(Region(0,0,naz*2,ny/4));
+		EMData *ret=trns->get_clip(Region(0,0,min(naz,fp*naz/2),min(ny/2,fp*(ny/4-3))));
 		delete trns;
 		ret->set_attr("is_harmonic_fp",(int)fp);
-//		ret->set_complex(0);
+		ret->set_complex(0);
 		return(ret);
 	}
 	

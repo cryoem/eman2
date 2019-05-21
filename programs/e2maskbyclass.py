@@ -60,7 +60,7 @@ def maskfile(jsd,n,fsp,classes,masks,clsmap,options):
 		ptcl.write_image(fspout,i)
 
 		if options.redoharmonic:
-			bspec=ptcl.process("math.harmonicpow:fp=1")
+			bspec=ptcl.process("math.harmonic:fp=4")
 			bspec.write_image(fspbout,i)
 
 		if options.redobispec:

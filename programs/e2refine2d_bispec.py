@@ -166,7 +166,7 @@ def main():
 	if not os.path.exists(fpfile):
 		print("ERROR: no _invar file found. Please run e2ctf_auto.py in your standard EMAN2 project folder. This program will not work with standalone stack files.")
 		sys.exit(1)
-		#print("WARNING: ",fpfile," not found. Computing bispectra. This will slow processing. ")
+		#print("WARNING: ",fpfile," not found. Computing invariants. This will slow processing. ")
 		#fpfile=options.path+"/input_bispec.hdf"
 		#run("e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_pixels=2 --process math.bispectrum.slice:fp={}:size={} --threads {}".format(options.input,fpfile,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
 	else:
@@ -255,12 +255,12 @@ def class_postproc(options,it,invmode):
 	if invmode=="bispec" :
 		run("e2proc2dpar.py {}/classes_{:02d}.hdf {}/classes_fp_{:02d}.hdf --process math.bispectrum.slice:fp={}:size={} --threads {}".format(options.path,it,options.path,it,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
 	else:
-		run("e2proc2dpar.py {}/classes_{:02d}.hdf {}/classes_fp_{:02d}.hdf --process math.harmonicpow:fp=1 --threads {}".format(options.path,it,options.path,it,options.threads))
+		run("e2proc2dpar.py {}/classes_{:02d}.hdf {}/classes_fp_{:02d}.hdf --process math.harmonic:fp=4 --threads {}".format(options.path,it,options.path,it,options.threads))
 		
 	run("e2stacksort.py %s/classes_fp_%02d.hdf %s/classes_fp_%02d.hdf %s/classes_%02d.hdf %s/classes_%02d.hdf --simcmp=ccc --seqalicen"%(options.path,it,options.path,it,options.path,it,options.path,it))
 	
 	if options.alignsort:
-		run("e2stacksort.py %s/classes_%02d.hdf %s/classes_sort_%02d.hdf --bispec"%(options.path,it,options.path,it))
+		run("e2stacksort.py %s/classes_%02d.hdf %s/classes_sort_%02d.hdf --invar"%(options.path,it,options.path,it))
 
 
 def get_classaverage_extras(options):
