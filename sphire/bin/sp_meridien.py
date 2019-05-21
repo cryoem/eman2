@@ -5852,7 +5852,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 		this_color = 1
 	else:
 		this_color = 0
-	subgroup_comm = mpi_comm_split(MPI_COMM_WORLD, this_color, Blockdata['myid']
+	subgroup_comm = mpi_comm_split(MPI_COMM_WORLD, this_color, Blockdata['myid'])
 	if(Blockdata["subgroup_myid"] > -1):
 		# load datastructure, read data, do two reconstructions(stepone, steptwo)
 		if final_iter ==-1: final_iter = Tracker["constants"]["best"]  
