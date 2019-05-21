@@ -4702,7 +4702,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxconst = SXconst(); sxconst.key = "sym"; sxconst.label = "Point-group symmetry"; sxconst.help = "e.g. c1, c4, d5"; sxconst.register = "c1"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "mass"; sxconst.label = "Protein molecular mass [kDa]"; sxconst.help = ""; sxconst.register = "-1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		if helical:
-			sxconst = SXconst(); sxconst.key = "filament_width"; sxconst.label = "Filament width [pixels]"; sxconst.help = "Width of the filament in case of filamentous processing."; sxconst.register = "-1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+			sxconst = SXconst(); sxconst.key = "filament_width"; sxconst.label = "Filament width [pixels]"; sxconst.help = "Width of the filament in case of filamentous processing."; sxconst.register = "-1"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "config"; sxconst.label = "Imaging configurations"; sxconst.help = "a free-style string for your record. please use it to describe the set of imaging configurations used in this project (e.g. types of microscope, detector, enegy filter, abbration corrector, phase plate, and etc."; sxconst.register = "MY_MICROSCOPE"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 
 		# Store the project constant parameter set as a class data member

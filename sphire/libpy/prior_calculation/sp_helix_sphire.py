@@ -34,6 +34,7 @@ you should have received a copy of the gnu general public license
 along with this program; if not, write to the free software
 foundation, inc., 59 temple place, suite 330, boston, ma  02111-1307 usa
 """
+import sys
 import sp_sparx as sp
 import numpy as np
 import shutil
@@ -55,25 +56,25 @@ def import_sphire_stack(stack_path, group_id):
             is_in_dtype = True
             break
     if not is_in_dtype:
+        try:
+            data = sp.EMUtil.get_all_attributes(stack_path, group_id)
+        except KeyError:
+            print('Group_id', group_id, 'needs to be present in the stack header!')
+            sys.exit(1)
+        else:
+            dtype = type(data)
         dtype_list.append((group_id, '|S200'))
 
     imported_data = []
-    is_filament = True
     bad_idx = []
-    filament_count = 2
     for idx, entry in enumerate(dtype_list):
         try:
             data = sp.EMUtil.get_all_attributes(stack_path, entry[0])
         except KeyError:
             bad_idx.append(idx)
-            if 'filament' in group_id:
-                filament_count -= 1
-                if filament_count == 0:
-                    print('Group_id', group_id, 'needs to be present in the stack header!')
-                    exit(1)
-            elif entry[0] == group_id:
+            if entry[0] == group_id:
                 print('Group_id', group_id, 'needs to be present in the stack header!')
-                exit(1)
+                sys.exit(1)
         else:
             imported_data.append(data)
     for idx in reversed(bad_idx):
@@ -92,12 +93,17 @@ def import_sphire_params(input_file, symclass):
 
     dtype_import = [('phi', '<f8'), ('theta', '<f8'), ('psi', '<f8'), ('shift_x', '<f8'), ('shift_y', '<f8'), ('err1', '<f8'), ('err2', '<f8'), ('norm', '<f8')]
     dtype = dtype_import + [('source_n', '<i8')]
+    #dtype = dtype_import + [('source_n', '<i8'), ('phi_old', '<f8'), ('theta_old', '<f8'), ('psi_old', '<f8')]
 
     data_import = np.genfromtxt(input_file, dtype=dtype_import)
-    reduced_angles = symclass.reduce_anglesets(data_import[['phi', 'theta', 'psi']].view(np.float64).reshape(data_import.shape + (-1,)), inc_mirror=0, tolistconv=False)
-    data_import['phi'] = reduced_angles[:, 0]
-    data_import['theta'] = reduced_angles[:, 1]
-    data_import['psi'] = reduced_angles[:, 2]
+    #reduced_angles = symclass.reduce_anglesets(data_import[['phi', 'theta', 'psi']].view(np.float64).reshape(data_import.shape + (-1,)), inc_mirror=0, tolistconv=False)
+
+    #data['phi_old'] = data_import['phi']
+    #data['theta_old'] = data_import['theta']
+    #data['psi_old'] = data_import['psi']
+    #data_import['phi'] = reduced_angles[:, 0]
+    #data_import['theta'] = reduced_angles[:, 1]
+    #data_import['psi'] = reduced_angles[:, 2]
 
     data = np.empty(len(data_import), dtype=dtype)
     data['source_n'] = np.arange(len(data))

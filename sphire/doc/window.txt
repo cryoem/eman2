@@ -54,7 +54,7 @@ There are several modes to run the program:
   ; %%--%%astigmatism_error : Astigmatism error limit [Degrees]: Set astigmatism to zero for all micrographs where the angular error computed by sp_cter is larger than the desired value. This parameter has no effect when the CTER CTF File is not specified by the CTF paramters source argument. (default 360.0)
   ; %%--%%resample_ratio : Image size reduction factor (<1): Use a value between 0.0 and 1.0 (excluding 0.0). The new pixel size will be automatically recalculated and stored in CTF paramers when resample_ratio < 1.0 is used. (default 1.0)
   ; %%--%%check_consistency : Check consistency of inputs: Create a text file containing the list of inconsistent Micrograph ID entries (i.e. inconsist_mic_list_file.txt). (default False)
-  ; %%--%%filament_width : Filament width : Filament width for the creation of the rectangular mask. When -1 is selected it uses one third of the box size. (default -1)::-1;Main
+  ; %%--%%filament_width : Filament width [Pixels] : Filament width for the creation of the rectangular mask. If -1 is selected, no mask will be applied. (default -1)::-1;Main
 \\
 ===== Output =====
 Inside the output directory, the program will write a local bdb stack image for each micrograph. The files are named micrograph name with "_ptcls" suffix. For example, ''particles/EMAN2DB/mic0_ptcls.bdb'' or ''bdb:particles#mic0_ptcls'' 

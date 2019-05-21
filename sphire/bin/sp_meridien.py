@@ -3846,7 +3846,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	#Blockdata['symclass_coarse'].set_angles(coarse_angles)
 	Blockdata['symclass_coarse'].set_angles(coarse_angles)
 	Blockdata['symclass_coarse'].build_kdtree()
-	#normals_set = angles_to_normals(coarse_angles)
+	normals_set = angles_to_normals(coarse_angles)
 	Blockdata["angle_set"] = coarse_angles
 	if( n_coarse_ang <= numberofrefs_inmem ):
 		number_of_cones = 1
@@ -3863,7 +3863,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 			for m in q:
 				#print " m ",m,len(angles)
 
-				assignments_of_refangles_to_angles[m] = [entry for entry in Blockdata['symclass_coarse'].find_nearest_neighbors(oldparams[m], Tracker["an"]) if not entry < 0]
+				assignments_of_refangles_to_angles[m] = find_assignments_of_refangles_to_angles(normals_set, oldparams[m], Tracker["an"])
 				assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
 
 			assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
@@ -3929,7 +3929,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					for m in q:
 						#print " m ",m,len(angles)
 
-						assignments_of_refangles_to_angles[m] = [entry for entry in Blockdata['symclass_coarse'].find_nearest_neighbors(oldparams[m], Tracker["an"]) if not entry < 0]
+						assignments_of_refangles_to_angles[m] = find_assignments_of_refangles_to_angles(normals_set, oldparams[m], Tracker["an"])
 						#if Blockdata["myid"] == 0:  sxprint( "assignments_of_refangles_to_angles[m] ", Blockdata["color"],i,m,assignments_of_refangles_to_angles[m])
 						assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
 
@@ -4906,7 +4906,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	#  number of references that will fit into one mode
 	Blockdata['symclass_coarse'].set_angles(coarse_angles)
 	Blockdata['symclass_coarse'].build_kdtree()
-	#normals_set = angles_to_normals(coarse_angles)
+	normals_set = angles_to_normals(coarse_angles)
 	Blockdata["angle_set"] = coarse_angles
 	if( n_coarse_ang <= numberofrefs_inmem ):
 		number_of_cones = 1
@@ -4923,7 +4923,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 			for m in q:
 				#print " m ",m,len(angles)
 
-				assignments_of_refangles_to_angles[m] = [entry for entry in Blockdata['symclass_coarse'].find_nearest_neighbors(oldparams[m], Tracker["an"]) if not entry < 0]
+				assignments_of_refangles_to_angles[m] = find_assignments_of_refangles_to_angles(normals_set, oldparams[m], Tracker["an"])
 				assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
 
 			assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
@@ -4989,7 +4989,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					for m in q:
 						#print " m ",m,len(angles)
 
-						assignments_of_refangles_to_angles[m] = [entry for entry in Blockdata['symclass_coarse'].find_nearest_neighbors(oldparams[m], Tracker["an"]) if not entry < 0]
+						assignments_of_refangles_to_angles[m] = find_assignments_of_refangles_to_angles(normals_set, oldparams[m], Tracker["an"])
 						#if Blockdata["myid"] == 0:  sxprint( "assignments_of_refangles_to_angles[m] ", Blockdata["color"],i,m,assignments_of_refangles_to_angles[m])
 						assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
 
@@ -5106,7 +5106,6 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	##eat = 0.0
 	lima = 0  #  total counter of images
 	#  PROCESSING OF CONES
-	keep_checking_keepfirst = False
 	for icone in range(max_number_of_cones):
 		mpi_barrier(MPI_COMM_WORLD)
 		if( icone < number_of_cones ):  #  This is executed for individual number of cones, some nodes may have fewer.
@@ -5244,7 +5243,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 
 				###print("  CONA1    ",Blockdata["myid"],lima)
-				if( lima == 1 and procid == 0) or keep_checking_keepfirst:
+				if( lima == 1 and procid == 0):
 					###print("  CONA2    ",Blockdata["myid"])
 					if( lenass > 0):
 						###print("   CICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
@@ -5324,8 +5323,8 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 
 						###print("  STARTING4    ",Blockdata["myid"],lit,keepf)
-					#  Turn into percentage of all possible
-					keepf = [int(float(keepf*100)/float(keepfirst))]
+						#  Turn into percentage of all possible
+						keepf = [int(float(keepf*100)/float(keepfirst))]
 					###mpi_barrier(MPI_COMM_WORLD)
 					###print("  STARTING5    ",Blockdata["myid"],keepf,MPI_COMM_WORLD)
 					mpi_barrier(MPI_COMM_WORLD)
@@ -5344,9 +5343,6 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					if(keepf == 0):
 						keepf = 3
 						#ERROR( "Too few images to estimate keepfirst, try with the next particle.", myid=Blockdata["myid"], action=0 )
-						keep_checking_keepfirst = True
-					else:
-						keep_checking_keepfirst = False
 						#return
 					###print("  STARTING8    ",Blockdata["myid"],keepf)
 					Tracker["keepfirst"] = int(keepf)
@@ -5829,10 +5825,12 @@ def cerrs(params, ctfs, particle_groups):
 	acc_trans = mpi_reduce(acc_trans, 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
 	acc_rot = mpi_bcast(acc_rot, 1, MPI_FLOAT, Blockdata["main_node"], MPI_COMM_WORLD)
 	acc_trans = mpi_bcast(acc_trans, 1, MPI_FLOAT, Blockdata["main_node"], MPI_COMM_WORLD)
+	len_params = mpi_reduce(len(params), 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
+	len_params = mpi_bcast(len_params, 1, MPI_FLOAT, Blockdata["main_node"], MPI_COMM_WORLD)
 
 	acc_rot = float(acc_rot[0])
 	acc_trans = float(acc_trans[0])
-	n_trials = Blockdata["nproc"]*len(params)
+	n_trials = float(len_params[0])
 
 	acc_rot /= n_trials
 	acc_trans /= n_trials
@@ -5850,6 +5848,11 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 	global Tracker, Blockdata
 
 	final_dir = Tracker["directory"]
+	if(Blockdata["subgroup_myid"] > -1):
+		this_color = 1
+	else:
+		this_color = 0
+	subgroup_comm = mpi_comm_split(MPI_COMM_WORLD, this_color, Blockdata['myid'])
 	if(Blockdata["subgroup_myid"] > -1):
 		# load datastructure, read data, do two reconstructions(stepone, steptwo)
 		if final_iter ==-1: final_iter = Tracker["constants"]["best"]  
@@ -5960,7 +5963,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 				    myid = Blockdata["subgroup_myid"], mpi_comm = comm)
 			Tracker["directory"] = temp
 			mpi_barrier(Blockdata["subgroup_comm"])
-			if Tracker['prior']['apply_prior'] or Tracker['prior']['force_outlier']:
+			if Tracker['prior']['apply_prior']:
 				try:
 					outlier_params = read_text_file(os.path.join(Tracker["directory"],"outlier-params-chunk_%01d_%03d.txt"%(procid, Tracker["mainiteration"])))[im_start:im_end]
 				except IOError:
@@ -5977,7 +5980,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 					oldparams_outlier.append(oldparams[procid][idx])
 					norm_per_particle_outlier.append(norm_per_particle[procid][idx])
 					oldparamstructure_outlier.append(oldparamstructure[procid][idx])
-			total_left_particles = wrap_mpi_gatherv(norm_per_particle_outlier, Blockdata["main_node"], MPI_COMM_WORLD)
+			total_left_particles = wrap_mpi_gatherv(norm_per_particle_outlier, Blockdata["main_node"], subgroup_comm)
 			if Blockdata['myid'] == Blockdata['main_node']: 
 				sp_global_def.sxprint('Use {0} particles for final reconstruction!'.format(len(total_left_particles)))
 			projdata[procid] = get_shrink_data(
@@ -7154,6 +7157,7 @@ def get_image_statistics(image, mask, invert):
 			ny=image.get_ysize(),
 			angle=image.get_attr('segment_angle'),
 			)
+
 	return Util.infomask(image, mask2d, invert)
 
 
@@ -7211,7 +7215,7 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 		else:
 			outliers = [0] * len_data
 
-		if 100*no_outliers/float(len_data) < 40:
+		if 100*no_outliers/float(len_data) < 15:
 			sxprint('Number of outliers too large! Do not discard outlier!')
 			outliers = [0] * len_data
 
@@ -7221,7 +7225,7 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 		outliers = 0
 
 	# Distribute outlier list to all processes
-	outliers = bcast_list_to_all(outliers, blockdata["myid"], blockdata["nodes"][0])
+	outliers = bcast_list_to_all(outliers, blockdata["myid"], blockdata["main_node"])
 
 	# Get the node specific outlier information
 	outliers_node = outliers[im_start:im_end]
