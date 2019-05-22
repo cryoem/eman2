@@ -172,19 +172,18 @@ def preload_images(micrographs, img_buffer):
     :return: None
     '''
 
-    offset = 0
-    last_index = -1
     while True:
         index = GUI.fileList.row(GUI.fileList.currentItem())
-        if last_index != -1:
-            if index - last_index == 1:
-                offset = offset - 1
-            elif index - last_index != 0:
-                offset = 0
-
-        if len(img_buffer) < IMG_BUFFER_SIZE and (index + offset) < len(micrographs):
-            start = time.time()
-            filename = str(micrographs[index + offset])
+        max_index = index + IMG_BUFFER_SIZE + 1
+        if max_index > len(micrographs):
+            max_index = len(micrographs)
+        should_be_inside = set(range(index + 1, max_index))
+        is_inside = set([tuble[1] for tuble in img_buffer])
+        load = should_be_inside - is_inside
+        if len(img_buffer) == 0:
+            load.add(index)
+        for index_to_load in load:
+            filename = str(micrographs[index_to_load])
             image = EMAN2.EMData(filename)
 
             fft_img = image.do_fft()
@@ -195,15 +194,45 @@ def preload_images(micrographs, img_buffer):
             fft_img.process_inplace("xform.fourierorigin.tocenter")
             fft_img = fft_img.get_fft_amplitude()
 
-            img_buffer.append((filename, index + offset, image, fft_img))
-            end = time.time()
-            print("Put new image:", filename, "Current index", index, "Image+offset:",
-                  index + offset, "offset", offset, "time", end - start)
-            offset = offset + 1
+            img_buffer.append((filename, index_to_load, image, fft_img))
+            print("Put new image:", filename)
+        time.sleep(1)
 
+        '''
+
+        if last_index != -1:
+                if index - last_index == 1:
+                        offset=offset-1
+                        if offset == -1:
+                            offset=0
+                elif index - last_index !=0:
+                        offset = 0
+
+        if len(img_buffer)<IMG_BUFFER_SIZE and (index+offset)<len(micrographs):
+                start = time.time()
+                filename = str(micrographs[index+offset])
+                image = EMAN2.EMData(filename)
+
+                fft_img = image.do_fft()
+
+                fft_img.set_value_at(0, 0, 0, 0)
+                fft_img.set_value_at(1, 0, 0, 0)
+                fft_img.process_inplace("xform.phaseorigin.tocorner")
+                fft_img.process_inplace("xform.fourierorigin.tocenter")
+                fft_img = fft_img.get_fft_amplitude()
+
+                img_buffer.append((filename,index+offset,image, fft_img))
+                end = time.time()
+                print("Put new image:", filename, "Current index", index, "Image+offset:",
+                      index + offset, "offset", offset, "time", end-start)
+                offset=offset+1
         else:
-            time.sleep(1)
+                time.sleep(1)
+        if offset > IMG_BUFFER_SIZE:
+            print("Reset offset")
+            offset = 0
         last_index = index
+        '''
 
 
 def buttonLoad_clicked():
