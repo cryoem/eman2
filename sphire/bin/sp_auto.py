@@ -374,7 +374,7 @@ def get_meridien(status_dict, **kwargs):
 	cmd.append('--symmetry=XXX_SP_SYMMETRY_XXX')
 	cmd.append('--memory_per_node=XXX_SP_MEMORY_PER_NODE_XXX')
 	if status_dict['do_mask_rviper']:
-		cmd.append('--mask3D=XXX_SP_MASK_RVIPER_OUTPUT_DIR_XXX/sxmask_mask.hdf')
+		cmd.append('--mask3D=XXX_SP_MASK_RVIPER_OUTPUT_DIR_XXX/sp_mask_mask.hdf')
 	else:
 		cmd.append('--mask3D=XXX_SP_MERIDIEN_INPUT_MASK_XXX')
 	if status_dict['do_isac2']:
