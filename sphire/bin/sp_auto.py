@@ -352,6 +352,7 @@ def get_mask_rviper(status_dict, fill_rviper_mask, **kwargs):
 		cmd.append('--mol_mass=XXX_SP_MOL_MASS_XXX')
 		cmd.append('--ndilation=XXX_SP_MASK_RVIPER_NDILAITON_XXX')
 		cmd.append('--edge_width=XXX_SP_MASK_RVIPER_SOFT_EDGE_XXX')
+		cmd.append('--pixel_size=XXX_SP_PIXEL_SIZE_XXX')
 		if fill_rviper_mask:
 			cmd.append('--fill_mask')
 		cmd.append('XXX_SP_MASK_RVIPER_ADDITION_XXX')
