@@ -1909,6 +1909,8 @@ class EMCamera(object):
 		"""
 		if width: self.width = width
 		if height: self.height = height
+		if not (hasattr(self, "height") and hasattr(self, "width")):
+			return
 		self.aspectratio = old_div(float(self.height),float(self.width))
 		if self.usingortho:
 			# this deals with maxviewport better than the previous solution

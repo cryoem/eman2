@@ -94,7 +94,7 @@ def main():
 		pv=pfit[:,ie]
 		psrt=np.sort(pv[abs(pv-np.mean(pv))<np.std(pv)*2])
 		rg=np.arange(n)*(len(psrt)-1)/(n-1)
-		rg=psrt[rg]
+		rg=psrt[rg.astype(int)]
 		tfile=os.path.join(options.path,"traj_it{:02d}eg{:02d}.hdf".format(options.iter, ie))
 		if os.path.isfile(tfile):
 			os.remove(tfile)
