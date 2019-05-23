@@ -31,7 +31,9 @@ def alifn(jsd,fsp,i,a,options):
 
 def main():
 
-	usage=" "
+	usage="""prog <particle stack>
+	Generate initial model from subtomogram particles using stochastic gradient descent.
+	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_pos_argument(name="particles",help="Specify particles to use to generate an initial model.", default="", guitype='filebox', browser="EMSetsTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=2, mode="model")
@@ -43,7 +45,7 @@ def main():
 	parser.add_argument("--mask", type=str,help="Mask file to be applied to initial model", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0,rowspan=1, colspan=2, mode="model")
 
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--gaussz", type=float,help="Extra gauss filter at z direction", default=-1)
+	#parser.add_argument("--gaussz", type=float,help="Extra gauss filter at z direction. seems useless...", default=-1)
 
 	parser.add_argument("--filterto", type=float,help="Fiter map to frequency after each iteration. Default is 0.02", default=.02, guitype='floatbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
 
@@ -151,8 +153,8 @@ def main():
 				avgr.add_image(p)
 			avg=avgr.finish()
 			avg.process_inplace('filter.lowpass.gauss', {"cutoff_freq":filterto})
-			if options.gaussz>0:
-				avg.process_inplace('filter.lowpass.gauss', {"cutoff_freq":options.gaussz})
+			#if options.gaussz>0:
+				#avg.process_inplace('filter.lowpass.gauss', {"cutoff_freq":options.gaussz})
 			avg.process_inplace('normalize.edgemean')
 			if options.applysym:
 				avg.process_inplace("xform.applysym",{"sym":options.sym,"averager":"mean.tomo"})

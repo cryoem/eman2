@@ -154,7 +154,8 @@ def compute_score(pm, ps, options, sign=-1, fitting=True):
 
 def main():
 	
-	usage=" "
+	usage="""prog  <tilt series 1> <tilt seires 2> ... [options]
+	CTF estimation for tilt series. The tomogram reconstruction needs to be done with e2tomogram.py. This will only estimate CTF parameters and write the information in the corresponding info files. Actual per particle CTF correction will be done at the particle extraction step."""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_pos_argument(name="tiltseries",help="Specify tiltseries you want to apply CTF correction.", default="", guitype='filebox', browser="EMTiltseriesTable(withmodal=True,multiselect=True)", row=0, col=0,rowspan=1, colspan=3, mode="model")
 	parser.add_argument("--alltiltseries", action="store_true",help="Use all tilt series in the folder. Acceptable file extensions include hdf, mrc, mrcs, st.", default=False,guitype='boolbox',row=1, col=0, rowspan=1, colspan=1,mode="model")
