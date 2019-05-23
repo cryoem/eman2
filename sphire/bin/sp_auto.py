@@ -663,7 +663,7 @@ def main(args_as_dict):
 	function_dict['do_restack_sharpening'] = [get_restack_sharpening, False]
 	function_dict['do_ctf_refine_import_params'] = [get_ctf_import_params, False]
 	function_dict['do_ctf_refine'] = [get_ctf_refine, False]
-	function_dict['do_ctf_refine_meridien'] = [get_ctf_meridien, False]
+	function_dict['do_ctf_refine_meridien'] = [get_ctf_meridien, True]
 	function_dict['do_ctf_refine_sharpening'] = [get_ctf_sharpening, False]
 
 	do_dict = {}
