@@ -114,10 +114,6 @@ def main():
 
 	E2end(logid)
 	
-def run(cmd):
-	print cmd
-	launch_childprocess(cmd)
-	
 	
 if __name__ == '__main__':
 	main()
