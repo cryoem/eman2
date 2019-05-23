@@ -42,6 +42,8 @@ def main():
 	parser.add_argument("--jsonali", type=str,help="re-extract particles using a particle_param_xx json file from a spt alignment", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=11, col=0,rowspan=1, colspan=2, mode="extract")
 	parser.add_argument("--mindist", type=float,help="minimum distance between particles in A. for reextraction only", default=-1)
 	parser.add_argument("--keep", type=float,help="fraction of particles to keep fron previous alignment. for reextraction only.", default=.9)
+	parser.add_argument("--postproc", type=str,help="processor after 3d particle reconstruction", default="")
+	parser.add_argument("--postmask", type=str,help="masking after 3d particle reconstruction. The mask is transformed if json ", default="")
 
 	#parser.add_argument("--alioffset", type=str,help="coordinate offset when re-extract particles. (x,y,z)", default="0,0,0", guitype='strbox', row=12, col=0,rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--postxf", type=str,help="a file listing post transforms", default="")
@@ -318,6 +320,11 @@ def do_extraction(pfile, options, xfs=[]):
 			m.process_inplace("math.fft.resample",{"n":options.shrink})
 		m.process_inplace("normalize")
 	ntlt=len(imgs)
+	
+	if options.postmask!="":
+		pmask=EMData(options.postmask)
+	else:
+		pmask=None
 		
 	try: os.mkdir("particles3d")
 	except: pass
@@ -354,7 +361,7 @@ def do_extraction(pfile, options, xfs=[]):
 			
 		for tid in range(0,nptcl,batchsz):
 			ids=list(range(tid, min(tid+batchsz, nptcl)))
-			jobs.append([jsd, ids, imgs, ttparams, pinfo, options, ctf, tltkeep])
+			jobs.append([jsd, ids, imgs, ttparams, pinfo, options, ctf, tltkeep, pmask])
 		
 		
 		thrds=[threading.Thread(target=make3d,args=(i)) for i in jobs]
@@ -399,7 +406,7 @@ def do_extraction(pfile, options, xfs=[]):
 	
 	
 
-def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[]):
+def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mask=None):
 	ppos, outname, boxsz=pinfo
 	
 	bx=boxsz*2
@@ -546,10 +553,24 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[]):
 		threed["ptcl_source_coord"]=pos.tolist()
 		threed["file_twod"]=options.output2d
 		threed["model_id"]=pid
+		threed.process_inplace("normalize.edgemean")
 		
 		if tf_dir:
 			threed["xform.align3d"]=tf_dir
-		#print(ids,projs)
+		
+		if options.postproc!="":
+			(filtername, param_dict) = parsemodopt(options.postproc)
+			threed.process_inplace(filtername, param_dict)
+			
+		if mask:
+			if tf_dir:
+				m=mask.copy()
+				m.transform(tf_dir.inverse())
+				threed.mult(m)
+			else:
+				threed.mult(mask)
+			
+		
 		jsd.put((pid, threed, projs))
 
 	return
