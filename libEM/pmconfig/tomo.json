@@ -170,32 +170,17 @@
         "CHILDREN": []
       },
       {
-        "PROGRAM": "e2spt_pcasplit.py",
-        "NAME": "PCA-based classification",
-        "CHILDREN": []
-      },
-      {
-        "PROGRAM": "e2spt_classify.py",
-        "NAME": "Multi-reference refinement",
-        "MODE": "multi",
-        "CHILDREN": []
-      },
-      {
-        "PROGRAM": "e2spt_mapptclstotomo.py",
-        "NAME": "Map particles to tomograms",
-        "CHILDREN": []
-      },
-      {
-        "NAME": "Extract from IMOD",
+        "NAME": "Classification",
         "CHILDREN": [
           {
-            "PROGRAM": "e2spt_subtilt_from_imod.py",
-            "NAME": "Extract 2D particles",
+            "PROGRAM": "e2spt_pcasplit.py",
+            "NAME": "PCA-based classification",
             "CHILDREN": []
           },
           {
-            "PROGRAM": "e2spt_make3d.py",
-            "NAME": "Reconstruction from 2D particles",
+            "PROGRAM": "e2spt_classify.py",
+            "NAME": "Multi-reference refinement",
+            "MODE": "multi",
             "CHILDREN": []
           }
         ]
@@ -216,6 +201,11 @@
           "NAME": "Evaluate SPT refinements",
           "CHILDREN": []
         },
+        {
+          "PROGRAM": "e2spt_mapptclstotomo.py",
+          "NAME": "Map particles to tomograms",
+          "CHILDREN": []
+	},
         {
           "PROGRAM": "e2spt_stat.py",
           "NAME": "Calc quality vs. reference",
