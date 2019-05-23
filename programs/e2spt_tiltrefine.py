@@ -17,7 +17,8 @@ from shutil import copy2
 
 def main():
 	
-	usage=" "
+	usage="""prog --path <path to previous spt or subtlt refinement> [options]
+	This program will run subtilt refinement based on previous subtomogram or subtilt refinement."""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	#parser.add_header(name="orblock0", help='Just a visual separation', title="Inputs", row=0, col=1, rowspan=1, colspan=3, mode="model")
@@ -382,7 +383,7 @@ def main():
 			s += " --setsf {}".format(jd['setsf']) #options.setsf)
 		
 		
-		if options.tophat=="auto" and jd.has_key("localfilter"):
+		if options.tophat=="auto" and jd.has_key("localfilter") and jd["localfilter"]==True:
 			s += " --tophat local"
 		elif options.tophat=="local":
 			s += " --tophat local"
