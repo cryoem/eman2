@@ -1925,7 +1925,7 @@ namespace EMAN
 				d.put("sigmathis", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
 				d.put("sigmato", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
 				d.put("maxres", EMObject::FLOAT,"maximum resolution to compare");
-				d.put("wt_ori", EMObject::FLOAT,"weight for using the given orientation. default is -1, i.e. unused.");
+				d.put("maxang", EMObject::FLOAT,"maximum angle from initial rotation.");
 				d.put("initxform", EMObject::TRANSFORMARRAY,"An array of Transforms storing the starting positions.");
 
 // 				d.put("initxform", EMObject::TRANSFORM,"The Transform storing the starting position. If unspecified the identity matrix is used");
@@ -1936,7 +1936,7 @@ namespace EMAN
 			static const string NAME;
 
 		private:
-			bool testort(EMData *small_this, EMData *small_to,vector<float> &sigmathisv,vector<float> &sigmatov, vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd, float preferori, Transform *pfxf, int maxshift) const;
+			bool testort(EMData *small_this, EMData *small_to,vector<float> &sigmathisv,vector<float> &sigmatov, vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd, float maxang, Transform initxf, int maxshift) const;
 
 	};
 

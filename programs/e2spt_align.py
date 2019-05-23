@@ -51,7 +51,7 @@ def alifn(jsd,fsp,i,a,options):
 
 	# we align backwards due to symmetry
 	if options.verbose>2 : print("Aligning: ",fsp,i)
-	c=a.xform_align_nbest("rotate_translate_3d_tree",b,{"verbose":0,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0, "maxres":options.maxres,"wt_ori":options.wtori},options.nsoln)
+	c=a.xform_align_nbest("rotate_translate_3d_tree",b,{"verbose":0,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0, "maxres":options.maxres},options.nsoln)
 	for cc in c : cc["xform.align3d"]=cc["xform.align3d"].inverse()
 
 	jsd.put((fsp,i,c[0]))
@@ -75,12 +75,14 @@ This program will take an input stack of subtomograms and a reference volume, an
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder where results should be stored, following standard naming conventions (default = spt_XX)")
 	parser.add_argument("--sym",type=str,default="c1",help="Symmetry of the input. Must be aligned in standard orientation to work properly.")
 	parser.add_argument("--maxres",type=float,help="Maximum resolution to consider in alignment (in A, not 1/A)",default=0)
-	parser.add_argument("--wtori",type=float,help="Weight for using the prior orientation in the particle header. default is -1, i.e. not used.",default=-1)
+	#parser.add_argument("--wtori",type=float,help="Weight for using the prior orientation in the particle header. default is -1, i.e. not used.",default=-1)
 	parser.add_argument("--nsoln",type=int,help="number of solutions to keep at low resolution for the aligner",default=1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default=None)
 	parser.add_argument("--refine",action="store_true",help="local refinement from xform.init in header.",default=False)
+	parser.add_argument("--maxang",type=float,help="Maximum angular difference for the refine mode. default is 30",default=30)
+
 
 	(options, args) = parser.parse_args()
 	
@@ -250,21 +252,36 @@ class SptAlignTask(JSTask):
 		callback(0)
 		b=EMData(fsp,i).do_fft()
 		b.process_inplace("xform.phaseorigin.tocorner")
-		aligndic={"verbose":0,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0, "maxres":options.maxres,"wt_ori":options.wtori}
+		aligndic={"verbose":0,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0, "maxres":options.maxres}
 		
 		if options.refine and b.has_attr("xform.align3d"):
+			ntry=16
+			initxf=b["xform.align3d"]
+			xfs=[initxf]
+			for ii in range(ntry-1):
+				v=np.random.rand(3)-0.5
+				nrm=np.linalg.norm(v)
+				if nrm>0:
+					v=v/nrm
+				else:
+					v=(0,0,1)
+				xf=Transform({"type":"spin", "n1":v[0], "n2":v[1], "n3":v[2],
+						"omega":options.maxang*np.random.randn()/6.0})
+				xfs.append(xf*initxf)
 			
-			astep=3.0
-			xfs=[]
-			initxf=b["xform.align3d"].get_params("eman")
-			for ii in range(16):
-				d={"type":"eman","tx":0, "ty":0}
-				for ky in ["alt", "az", "phi"]:
-					d[ky]=initxf[ky]+(ii>0)*np.random.randn()*astep/np.pi*2
-				xfs.append(Transform(d))
+			
+			#astep=3.0
+			#xfs=[]
+			#initxf=b["xform.align3d"].get_params("eman")
+			#for ii in range(16):
+				#d={"type":"eman","tx":0, "ty":0}
+				#for ky in ["alt", "az", "phi"]:
+					#d[ky]=initxf[ky]+(ii>0)*np.random.randn()*astep/np.pi*2
+				#xfs.append(Transform(d))
 					
 			aligndic["initxform"]=xfs
-			aligndic["maxshift"]=b["ny"]/16
+			aligndic["maxshift"]=b["ny"]/10
+			aligndic["maxang"]=options.maxang
 		
 
 		# we align backwards due to symmetry

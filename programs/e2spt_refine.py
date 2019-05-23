@@ -10,7 +10,9 @@ from EMAN2_utils import *
 
 def main():
 	
-	usage=" "
+	usage="""prog <particle stack> --ref <reference> [options]
+	Iterative subtomogram refinement.  
+	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_pos_argument(name="particles",help="Specify particles to use to generate an initial model.", default="", guitype='filebox', browser="EMSetsTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=3, mode="model")
 	parser.add_argument("--reference","--ref",help="""3D reference for initial model generation. No reference is used by default.""", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=1, col=0,rowspan=1, colspan=3, mode="model")
@@ -22,8 +24,7 @@ def main():
 	parser.add_argument("--niter", type=int,help="Number of iterations", default=5, guitype='intbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
 	
-	parser.add_argument("--mass", type=float,help="mass", default=500.0, guitype='floatbox',row=5, col=0,rowspan=1, colspan=1, mode="model")
-	#parser.add_argument("--tarres", type=float,help="target resolution", default=10, guitype='floatbox',row=5, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--mass", type=float,help="mass. default -1 will skip by mass normalization", default=-1, guitype='floatbox',row=5, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--localfilter", action="store_true", default=False ,help="use tophat local", guitype='boolbox',row=5, col=2,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--goldstandard", type=int,help="initial resolution for gold standard refinement", default=-1, guitype='intbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
@@ -38,7 +39,7 @@ def main():
 	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=9, col=0,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--path", type=str,help="Specify name of refinement folder. Default is spt_XX.", default=None)#, guitype='strbox', row=10, col=0,rowspan=1, colspan=3, mode="model")
-	parser.add_argument("--wtori",type=float,help="Weight for using the prior orientation in the particle header. default is -1, i.e. not used.",default=-1)
+	parser.add_argument("--maxang",type=float,help="maximum anglular difference in refine mode.",default=30)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="")
@@ -89,9 +90,14 @@ def main():
 	options.input_ptcls=ptcls
 	options.input_ref=ref
 	options.cmd=' '.join(sys.argv)
-	js=js_open_dict("{}/0_spt_params.json".format(options.path))
-	js.update(vars(options))
-	js.close()
+	for i in range(10):
+		fm="{}/{}_spt_params.json".format(options.path, i)
+		if not os.path.isfile(fm):
+			js=js_open_dict(fm)
+			js.update(vars(options))
+			js.close()
+			break
+		
 	
 	
 	
@@ -121,10 +127,10 @@ def main():
 			gd=" --goldcontinue".format(options.goldstandard)
 		
 		if options.refine:
-			gd+=" --refine"
+			gd+=" --refine --maxang {:.1f}".format(options.maxang)
 		#curres=0
 
-		cmd="e2spt_align.py {} {} --parallel {} --path {} --iter {} --sym {} --wtori {} --nsoln 1 {}".format(ptcls, ref,  options.parallel, options.path, itr, options.sym, options.wtori, gd)
+		cmd="e2spt_align.py {} {} --parallel {} --path {} --iter {} --sym {} --nsoln 1 {}".format(ptcls, ref,  options.parallel, options.path, itr, options.sym, gd)
 		
 		#### in case e2spt_align get segfault....
 		ret=1
