@@ -3334,7 +3334,11 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 			ftc = obj.fileTypeClass()
 	
 			if ftc != None :
-				self.curft = ftc(obj.path())
+				if os.path.exists(obj.path()):
+					self.curft = ftc(obj.path())
+				else:
+					print("Error: file {} does not exist...".format(obj.path()))
+					return
 				
 #				if self.setsmode : self.curft.setSetsDB(re.sub(r'_ctf_flip$|_ctf_wiener$', '', obj.path()))	# If we want to enable bad particle picking (treat ctf and raw data bads as same)
 
