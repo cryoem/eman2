@@ -37,6 +37,7 @@ from __future__ import division
 from builtins import range
 import os
 from EMAN2 import *
+from EMAN2_utils import *
 		 
 import sys
 import numpy
@@ -89,7 +90,7 @@ def main():
 	t=[]
 	tags=[]
 
-	formats=['.hdf','.mrc','.mrcs','.st','.ali','.rec']
+	formats=emformats()
 	
 	originaloutput = options.output
 
@@ -157,8 +158,8 @@ def main():
 		
 	
 def fixer(fyle, options):	
-	formats=['.hdf','.mrc','.mrcs','.st','.ali','.rec']
-	nonhdfformats = ['.mrc','.mrcs','.st','.ali','.rec']
+	formats=emformats()
+	nonhdfformats = emformats(nonhdf=True)
 	
 	if options.output:
 		#print "options output isa", options.output
@@ -187,6 +188,11 @@ def fixer(fyle, options):
 		print("\n(e2fixheader)(fixer) reading --refheader from", options.refheader)
 	
 	n = 1
+	
+	#filename, file_extension = os.path.splitext(fyle)
+	#if file_extension == '.tif' or file_extension == '.TIF' or file_extension == '.tiff' or file_extension == '.TIFF':
+
+
 	if fyle[-4:] == '.hdf' or fyle[-5:] == '.mrcs':
 		n = EMUtil.get_image_count( fyle )
 	
@@ -206,7 +212,7 @@ def fixer(fyle, options):
 		#print("\n(e2fixheader)(fixer) and imgHdr is", imgHdr)
 		
 		existingps = imgHdr.get_attr_dict()
-		print("\n(e2fixheader)(fixer) existingps are", existingps)
+		print("\n(e2fixheader)(fixer) existing parameters are", existingps)
 		
 		aux1 = 0
 		aux2 = 0
