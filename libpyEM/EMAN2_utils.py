@@ -221,7 +221,7 @@ def make_path(suffix):
 
 def findfs(stem=''):
 	"""
-	"Returns a sorted list with the files in the current directory that contain the string(s) indicated by 'id'
+	"Returns a sorted list with the files in the current directory that contain the string(s) indicated by 'stem'
 	To find files with more than one string, use *. 
 	For example stem=id1*id2 will find files with "id1" and "id2" in them, regardless of where these strings occur in the filename
 	Author: Jesus Montoya, jgalaz@gmail.com, April 2019
