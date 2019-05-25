@@ -314,14 +314,14 @@ def sptfixformat( options ):
 
 	elif '.mrc' in options.input[-4:]:
 		hdfmodel = options.path + '/' + os.path.basename(options.input).replace('.mrc','_MODEL.hdf')
-		cmdmrc2hdf = 'e2proc3d.py ' + mrcmodel + ' ' + hdfmodel
+		cmdmrc2hdf = 'e2proc3d.py ' + options.input + ' ' + hdfmodel
 		
 		runcmd(options,cmdmrc2hdf)
 		options.input = hdfmodel
 	
 	elif '.mrcs' in options.input[-5:]:
 		hdfmodel = options.path + '/' + os.path.basename(options.input).replace('.mrcs','_MODEL.hdf')
-		cmdmrc2hdf = 'e2proc3d.py ' + mrcmodel + ' ' + hdfmodel
+		cmdmrc2hdf = 'e2proc3d.py ' + options.input + ' ' + hdfmodel
 		
 		runcmd(options,cmdmrc2hdf)
 		options.input = hdfmodel 		
