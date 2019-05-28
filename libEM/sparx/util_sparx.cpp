@@ -12263,6 +12263,7 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_offset
 
 	EMData* wind = img->copy_empty_head();
 	wind->set_size(new_nx, new_ny, new_nz);
+
 	float *outp=wind->get_data();
 	float *inp=img->get_data();
 
