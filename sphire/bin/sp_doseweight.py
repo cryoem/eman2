@@ -26,7 +26,7 @@ location =os.getcwd()
 RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
 
 
-no_of_micrographs = 5
+no_of_micrographs = 112
 main_mpi_proc = 0
 if RUNNING_UNDER_MPI:
     pass  # IMPORTIMPORTIMPORT from mpi import mpi_init
@@ -122,6 +122,7 @@ def return_images_from_movie(movie_name, show_first = False):
     print("X dimension of image in the movie", mov_imgs[0].get_xsize())
     print("X dimension of image in the movie", mov_imgs[0].get_ysize())
     return mov_imgs[0]
+
 
 
 """
@@ -260,30 +261,12 @@ creating a window around to extract the same particle from each frame
 """
 #----------------------- Particle cordinate
 def get_all_reduce_ptcl_imgs(frames_i, maski, nxx, nyy, part_cord, ctf_para, cen_xx, cen_yy, cen_zz, no_invert=True):
-    # if no_invert == True:
-    #     particle_imgs_in_movie = []
-    #     for j in range(len(part_cord)):
-    #         crop_imgs = []
-    #         for i in range(2*cen_zz):
-    #             # print(i, part_cord[j][0] - int(sx[i]), nxx, part_cord[j][1] - int(sy[i]), nyy, cen_xx, cen_yy, cen_zz, int(sx[i]) , int(sy[i])  )
-    #             crop_imgs.append(Util.window(frames_i, nxx, nyy, 1, part_cord[j][0] - cen_xx,
-    #                                          part_cord[j][1] - cen_yy , i - cen_zz))
-    #         particle_imgs_in_movie.append(crop_imgs)
-    # else:
     particle_imgs_in_movie = []
     for j in range(len(part_cord)):
         crop_imgs = []
         for i in range(2*cen_zz):
-            # print(i, part_cord[j][0] - int(sx[i]), nxx, part_cord[j][1] - int(sy[i]), nyy, cen_xx, cen_yy, cen_zz, int(sx[i]) , int(sy[i])  )
             box_img = Util.window(frames_i, nxx, nyy, 1, part_cord[j][0] - cen_xx,
                                          part_cord[j][1] - cen_yy , i - cen_zz)
-            st = Util.infomask(box_img, maski, False)
-            Util.mul_scalar(box_img, -1.0)
-            box_img += 2 * st[0]
-
-            st = Util.infomask(box_img, maski, False)
-            box_img -= st[0]
-            box_img /= st[1]
 
             crop_imgs.append(box_img)
             del box_img
@@ -294,59 +277,89 @@ def get_all_reduce_ptcl_imgs(frames_i, maski, nxx, nyy, part_cord, ctf_para, cen
     return particle_imgs_in_movie
 
 
+def get_all_reduce_ptcl_imgs_modified(movie_name, nxx, nyy, part_cord, cen_xx, cen_yy, cen_zz,
+                                      b_list_i, c_list_i, mask_applied, sum_k):
 
-def get_fscs_all_particles(frames_i, refer,  maski, nxx, nyy, part_cord, ctf_para, cen_xx, cen_yy, cen_zz, no_invert=True):
-    # if no_invert == True:
+    """Getting dimension information"""
+    current_frame = EMData()
+    current_frame.read_image(movie_name, 0)
+    xsize = current_frame.get_xsize()
+    ysize = current_frame.get_ysize()
+    zsize = current_frame.get_zsize()
+    particle_imgs_in_movie = []
+
+    for i in range(zsize):
+        current_frame.read_image(movie_name, i)
+        weights_mask = get_weight_values([b_list_i[i]], [c_list_i[i]], mask_applied)
+        np.divide(weights_mask, sum_k, out=weights_mask)
+
+        """Apply Fourier Transform"""
+        four_img = np.fft.fft2(current_frame.get_2dview())
+        four_img2 = np.fft.fftshift(four_img)
+        np.multiply(four_img2, weights_mask[0], out=four_img2)
+        doseweight_framesi = np.fft.ifftshift(four_img2)
+        doseweight_framesi = np.fft.ifft2( doseweight_framesi ).real
+
+        numpy2em_python(doseweight_framesi, out=current_frame)
+
+        del four_img
+        del four_img2
+        del doseweight_framesi
+
+        crop_imgs = []
+        for j in range(len(part_cord)):
+            box_img = Util.window(current_frame, nxx, nyy, 1, part_cord[j][0] - cen_xx,
+                                             part_cord[j][1] - cen_yy , 0 ) #i - cen_zz
+            crop_imgs.append(box_img)
+            del box_img
+
+        particle_imgs_in_movie.append(crop_imgs)
+        del crop_imgs
+
+    return particle_imgs_in_movie
+
+
+
+def get_fscs_all_particles(frames_i, refer,  nxx, nyy, part_cord, cen_xx, cen_yy, cen_zz):
     fsc_vali = []
     fsc_freqi = []
     for j in range(len(part_cord)):
         fsc_frames_vali = []
         fsc_frames_freqi = []
         for i in range(2*cen_zz):
-            # print(i, part_cord[j][0] - int(sx[i]), nxx, part_cord[j][1] - int(sy[i]), nyy, cen_xx, cen_yy, cen_zz, int(sx[i]) , int(sy[i])  )
             ptcl = Util.window(frames_i, nxx, nyy, 1, part_cord[j][0] - cen_xx,
                                          part_cord[j][1] - cen_yy , i - cen_zz)
 
-            fsc_frames_vali.append(sp_statistics.fsc(ptcl, ref_project_2D_ptcl_all[j])[0])
-            fsc_frames_freqi.append(sp_statistics.fsc(ptcl, ref_project_2D_ptcl_all[j])[1])
+            fsc_frames_vali.append(sp_statistics.fsc(ptcl, refer[j])[1])
+            fsc_frames_freqi.append(sp_statistics.fsc(ptcl, refer[j])[0])
 
         fsc_vali.append(fsc_frames_vali)
         fsc_freqi.append(fsc_frames_freqi)
 
     return fsc_vali, fsc_freqi
 
+def get_fscs_all_particles_modified(movie_name, refer,  maski, nxx, nyy, part_cord, ctf_para,
+                                    cen_xx, cen_yy, cen_zz, zsize):
+    # if no_invert == True:
+    fsc_vali = []
+    fsc_freqi = []
 
-# def apply_fft_on_particles(frames_i, nxx,nyy,part_cord, cen_xx,cen_yy,cen_zz,b_list, c_list, d_list):
-#     particle_imgs_in_mic = []
-#     for j in range(len(part_cord)):
-#         crop_imgs = []
-#         for i in range(2*cen_zz):
-#             # print(i, part_cord[j][0] - int(sx[i]), nxx, part_cord[j][1] - int(sy[i]), nyy, cen_xx, cen_yy, cen_zz, int(sx[i]) , int(sy[i])  )
-#             box_img = Util.window(frames_i, nxx, nyy, 1, part_cord[j][0] - cen_xx,
-#                                          part_cord[j][1] - cen_yy , i - cen_zz)
-#
-#
-#             st = Util.infomask(box_img, maski, False)
-#             Util.mul_scalar(box_img, -1.0)
-#             box_img += 2 * st[0]
-#
-#             st = Util.infomask(box_img, maski, False)
-#             box_img -= st[0]
-#             box_img /= st[1]
-#
-#
-#             shape = (box_img.get_xsize(), box_img.get_ysize())
-#             mask_applied_per_box = create_mask(*shape)
-#             weights_mask_per_box = get_weight_values(b_list, c_list, d_list, mask_applied_per_box)
-#             sum_k = weights_mask_per_box.sum(axis=0)
-#             np.divide(weights_mask_per_box, sum_k, out=weights_mask)
-#
-#
-#
-#             crop_imgs.append(box_img)
-#     #
-#             particle_imgs_in_mic.append(crop_imgs)
+    for i in range(zsize):
+        current_frame.read_image(movie_name, i)
+        fsc_frames_vali = []
+        fsc_frames_freqi = []
+        for j in range(len(part_cord)):
 
+            ptcl = Util.window(current_frame, nxx, nyy, 1, part_cord[j][0] - cen_xx,
+                                         part_cord[j][1] - cen_yy ,0)
+
+            fsc_frames_vali.append(sp_statistics.fsc(ptcl, refer[j])[1])
+            fsc_frames_freqi.append(sp_statistics.fsc(ptcl, refer[j])[0])
+
+        fsc_vali.append(fsc_frames_vali)
+        fsc_freqi.append(fsc_frames_freqi)
+
+    return fsc_vali, fsc_freqi
 
 
 def moving_avg_filter(fsc_curve):
@@ -473,18 +486,11 @@ def calculate_bfactor(fsc_array):
 
     return FCC_FITTED, b_list, c_list, d_list
 
-def get_weight_values(b_list, c_list, d_list, freq_k):
+def get_weight_values(b_list, c_list, freq_k):
     a = np.multiply.outer(4 * np.array(b_list), freq_k ** 2)
     np.add(a.T, np.array(c_list), out=a.T)
     np.exp(a.T, out=a.T)
     return a
-
-    # a = np.multiply.outer(4 * np.array(b_list), freq_k ** 2).T
-    # a += np.array(c_list)
-    # return np.exp(a.T)
-
-    # return np.exp((np.multiply.outer(4 * np.array(b_list), freq_k ** 2).T + np.array(c_list)).T)
-
 
 #%%
 
@@ -560,9 +566,6 @@ for micro in enumerate(movie_names[ima_start:ima_end]):
     cen_y = frames.get_ysize() // 2
     cen_z = frames.get_zsize() // 2
 
-    # particle_imgs = get_all_reduce_ptcl_imgs( frames, mask, nx[0], ny[0], particle_coordinates, ctf_params, cen_x, cen_y, cen_z)
-
-
     fsc_val, fsc_freq = get_fscs_all_particles( frames,ref_project_2D_ptcl_all, mask, nx[0], ny[0], particle_coordinates, ctf_params, cen_x, cen_y, cen_z)
 
     fsc_val = np.array(fsc_val).swapaxes(0, 1)
@@ -573,18 +576,6 @@ for micro in enumerate(movie_names[ima_start:ima_end]):
     """
     Calculating the fourier shell correlation of all the particle images with respect to 2-D reference projection of 3-D volume
     """
-    # fsc_freq = []
-    # fsc_val = []
-    # for i in range (zsize):
-    #     fsc_frames_freq = []
-    #     fsc_frames_val = []
-    #     for j in range(len(particle_imgs)):
-    #         fsc_frames_freq.append(sp_statistics.fsc(particle_imgs[j][i], ref_project_2D_ptcl_all[j])[0])
-    #         fsc_frames_val.append(np.array(sp_statistics.fsc(particle_imgs[j][i], ref_project_2D_ptcl_all[j]))[1])
-    #     fsc_freq.append(fsc_frames_freq)
-    #     fsc_val.append(fsc_frames_val)
-
-
     fsc_final = []
     for i in range (zsize):
         fsc_sum = [entry/len(fsc_val[i]) for entry in fsc_val[i][0]]
@@ -611,6 +602,10 @@ for micro in enumerate(movie_names[ima_start:ima_end]):
     frequencies.append(fsc_freq[0][0])
     fsc_raw_all.append(np.array(fsc_val))
 
+    fsc_values_per_micrograph =fsc_values
+    freq_per_micrograph =frequencies
+    fsc_avgs_per_micrograph = fsc_avgs
+
     del fsc_final
     del fsc_final_avg
     del fsc_freq
@@ -620,7 +615,6 @@ for micro in enumerate(movie_names[ima_start:ima_end]):
     del mask
 
 del volft
-
 
 
 print("Everything is deleted")
@@ -635,16 +629,13 @@ del fsc_values
 del fsc_avgs
 del frequencies
 del fsc_raw_all
-# print(np.array(fsc_values_per_micrograph).shape)
-# print(np.array(fsc_avgs_per_micrograph).shape)
-# print(np.array(freq_per_micrograph).shape)
+
 
 mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 """
 Writing data in pickle files
 
 """
-
 #%%
 
 """
@@ -761,17 +752,7 @@ if main_mpi_proc == my_mpi_proc_id :
         fsc_sum_per_frame.append(fsc_sum)
 
 
-
-    # fsc_sum_avg_per_frame = []
-    # for frames_ind in range(fsc_avgs_per_micrograph.shape[1]):
-    #     fsc_sum =  [entry / len(fsc_avgs_per_micrograph) for entry in fsc_avgs_per_micrograph[0][frames_ind]]
-    #     for micrograph in fsc_avgs_per_micrograph[1:]:
-    #         for ind , values in enumerate(micrograph[frames_ind]):
-    #             fsc_sum[ind] += values/len(fsc_avgs_per_micrograph)
-    #     fsc_sum_avg_per_frame.append(fsc_sum)
-
     fsc_sum_per_frame = np.array(fsc_sum_per_frame)[:] * -1
-    # fsc_sum_avg_per_frame = np.array(fsc_sum_avg_per_frame)[:] * -1
 
     FCC_FITTED, b_list, c_list, d_list = calculate_bfactor(fsc_sum_per_frame)
 
@@ -827,6 +808,11 @@ d_list = sp_utilities.bcast_list_to_all(d_list, my_mpi_proc_id, main_mpi_proc, m
 """
 
 #%%
+print("Creating mask for all images, Start")
+shape = (4096, 4096)
+mask_applied = create_mask(*shape)
+sum_k = get_weight_values(b_list, c_list, mask_applied).sum(axis=0)
+print("Creating mask for all images, Finish")
 
 for micro in enumerate(movie_names[ima_start:ima_end]):
 
@@ -834,6 +820,7 @@ for micro in enumerate(movie_names[ima_start:ima_end]):
         b_list = sp_utilities.bcast_list_to_all(b_list, my_mpi_proc_id, main_mpi_proc, mpi.MPI_COMM_WORLD)
         c_list = sp_utilities.bcast_list_to_all(c_list, my_mpi_proc_id, main_mpi_proc, mpi.MPI_COMM_WORLD)
         d_list = sp_utilities.bcast_list_to_all(d_list, my_mpi_proc_id, main_mpi_proc, mpi.MPI_COMM_WORLD)
+
 # micro = (0, '/home/adnan/PycharmProjects/DoseWeighting/MOVIES/TcdA1-0100_frames.mrc')
 
     frames = return_images_from_movie(micro[1], show_first = False)
@@ -869,25 +856,13 @@ for micro in enumerate(movie_names[ima_start:ima_end]):
                                                                                                   show_first=False)
 
 
-    print("Creating mask for all images, Start")
-    # mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
-    # if main_mpi_proc == my_mpi_proc_id :
-    shape = (frames.get_xsize(), frames.get_ysize())
-    mask_applied  = create_mask(*shape)
-    weights_mask = get_weight_values(b_list, c_list, d_list, mask_applied)
-    sum_k = weights_mask.sum(axis=0)
-    np.divide(weights_mask, sum_k, out=weights_mask)
-
-    # mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-
-
-    del sum_k
-    del mask_applied
-
-
-    print("Creating mask for all images, Finish")
-    # mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+    del no_of_imgs
+    del ptcl_source_images
+    del project_params_all
+    del particle_coordinates_all
+    del ctf_params_all
+    del project_params
 
 
     doseweight_frames = np.zeros(frames.get_3dview().shape)
@@ -908,25 +883,28 @@ for micro in enumerate(movie_names[ima_start:ima_end]):
         del doseweight_framesi
     print("Fourier transform ends")
 
-    # end2 = time.time()
     del frames
-    del weights_mask
-    # del b_list
-    # del c_list
-    # del d_list
 
-    print("deleting frames and weights mask")
-
-    # print("time it took with loop ", end2 - start2)
+   
+    print("deleting frames")
 
     mask = sp_utilities.model_circle(nx[0] / 2, nx[0], nx[0])
     frames_in_em_form = EMData(xsize, ysize, zsize )
     numpy2em_python(doseweight_frames, out = frames_in_em_form)
     particle_imgs_dosed = get_all_reduce_ptcl_imgs(frames_in_em_form, mask, nx[0], ny[0], particle_coordinates, ctf_params, cen_x, cen_y, cen_z, no_invert=False)
 
+
     ave_particle_dosed = []
     for i in range(len(particle_imgs_dosed)):
         ave_particle_dosed.append(sum(particle_imgs_dosed[i]) / zsize)
+
+        st = Util.infomask(ave_particle_dosed[i], mask, False)
+        Util.mul_scalar(ave_particle_dosed[i], -1.0)
+        ave_particle_dosed[i] += 2 * st[0]
+
+        st = Util.infomask(ave_particle_dosed[i], mask, False)
+        ave_particle_dosed[i] -= st[0]
+        ave_particle_dosed[i] /= st[1]
 
 
     del frames_in_em_form
@@ -940,7 +918,6 @@ for micro in enumerate(movie_names[ima_start:ima_end]):
 
     local_mrc_path = stack_absolute_path + micro[1].split('.')[0].split('/')[-1] + "_ptcls.mrcs"
 
-    # mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
     local_bdb_stack = db_open_dict(local_stack_path)
     old_stack = db_open_dict(stackfilename, ro=True)
@@ -961,18 +938,52 @@ for micro in enumerate(movie_names[ima_start:ima_end]):
     del local_bdb_stack
     del old_stack
     del ave_particle_dosed
-    # del b_list
-    # del c_list
-    # del d_list
-
-
-
+    del source_n_ind
 
 mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 mpi.mpi_finalize()
 
 #%%
 
+
+# stackfileold = "bdb:/home/adnan/PycharmProjects/DoseWeighting/Substack/isac_substack"
+# boxid_old = EMUtil.get_all_attributes(stackfileold, "ptcl_source_box_id")
+# attrib_old= read_all_attributes_from_stack(stackfileold)
+# no_of_imgs_old = attrib_old[0]
+# ptcl_source_images_old = attrib_old[1]
+#
+#
+# stackfilenew = "bdb:/home/adnan/PycharmProjects/DoseWeighting/all_particles_v1"
+# boxid_new = np.array(EMUtil.get_all_attributes(stackfilenew, "ptcl_source_box_id"))
+# ptcl_source_images_new = np.array(EMUtil.get_all_attributes(stackfilenew, 'ptcl_source_image'))
+#
+# chunks_loc = "/home/adnan/PycharmProjects/DoseWeighting/chunks/"
+# chunck0_file = chunks_loc + "chunk_0_000.txt"
+# chunck1_file = chunks_loc + "chunk_1_000.txt"
+#
+# chunck0 = np.loadtxt(chunck0_file)
+# chunck1 = np.loadtxt(chunck1_file)
+#
+#
+#
+# new_chunck0 = []
+# for i in chunck0:
+#     i = int(i)
+#     print(i)
+#     img_idx = np.where((ptcl_source_images_old[i] == ptcl_source_images_new) & (boxid_old[i] == boxid_new))[0]
+#     new_chunck0.append(int(img_idx))
+#
+# new_chunck1 = [index for index in range(boxid_new.shape[0]) if index not in new_chunck0]
+#
+#
+#
+# np.savetxt(chunks_loc + "polish_chuck_0_000.txt", new_chunck0, fmt = '% 4d')
+# np.savetxt(chunks_loc + "polish_chuck_1_000.txt", new_chunck1, fmt = '% 4d')
+#
+
+
+
+#%%
 
 """
 
