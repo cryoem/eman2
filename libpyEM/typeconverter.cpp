@@ -40,6 +40,7 @@
 #include "emdata.h"
 
 namespace python = boost::python;
+namespace np = boost::python::numpy;
 
 using namespace EMAN;
 
