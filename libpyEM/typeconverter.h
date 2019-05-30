@@ -46,8 +46,6 @@
 #include <boost/python.hpp>
 #include <boost/python/numpy.hpp>
 
-#include <numpy/ndarrayobject.h>
-
 #include <vector>
 #include <map>
 #include <string>
