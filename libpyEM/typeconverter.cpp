@@ -68,23 +68,11 @@ np::ndarray EMNumPy::em2numpy(const EMData *const image)
 
 EMData* EMNumPy::numpy2em(const np::ndarray& array)
 {
-	if (!PyArray_Check(array.ptr())) {
-		PyErr_SetString(PyExc_ValueError, "expected a PyArrayObject");
-		return 0;
-	}
-
-	PyArrayObject * array_ptr = (PyArrayObject*) array.ptr();
-//	Py_INCREF(array_ptr);	//this is for letting EMData take the ownership of the data array
-	int ndim = PyArray_NDIM(array_ptr); //array_ptr->descr->nd;
-	char data_type = PyArray_DESCR(array_ptr)->type; //array_ptr->descr->type;
-
-	npy_intp * dims_ptr = (npy_intp*)PyArray_DIMS(array_ptr);
+	int ndim = array.get_nd();
 
 #if defined (__LP64__) //is it a 64-bit platform?
-	//long * dims_ptr = (long*) PyArray_DIMS(array_ptr); //array_ptr->dimensions;
 	long nx=1, ny=1, nz=1;
 #else	//for 32 bit platform
-	//int * dims_ptr = (int*) PyArray_DIMS(array_ptr); //->dimensions;
 	int nx=1, ny=1, nz=1;
 #endif // defined (__LP64__)
 
@@ -93,32 +81,32 @@ EMData* EMNumPy::numpy2em(const np::ndarray& array)
 		return 0;
 	}
 
-	if (ndim == 1) {
-		nx = dims_ptr[0];
-	}
-	else if (ndim == 2) {
-		ny = dims_ptr[0];
-		nx = dims_ptr[1];
-	}
-	else if (ndim == 3) {
-		nz = dims_ptr[0];
-		ny = dims_ptr[1];
-		nx = dims_ptr[2];
+	switch(ndim) {
+		case 1:
+			nx = array.shape(0);
+			break;
+		case 2:
+			ny = array.shape(0);
+			nx = array.shape(1);
+			break;
+		case 3:
+			nz = array.shape(0);
+			ny = array.shape(1);
+			nx = array.shape(2);
 	}
 
-	EMData* image = 0;
+	np::dtype data_type = array.get_dtype();
 	float * temparray = new float[(size_t)nx*ny*nz];
-	if(data_type == 'f') {
-		void* array_data = PyArray_DATA(array_ptr);
-		memcpy(temparray, array_data, (size_t)nx*ny*nz*sizeof(float));
-		image = new EMData((float*)temparray, nx, ny, nz);
+	
+	if(string(python::extract<char const *>(python::str(array.get_dtype()))) == "float32") {
+		float *array_data = reinterpret_cast<float *>(array.get_data());
+		std::copy(array_data, array_data + nx * ny * nz, reinterpret_cast<float *>(temparray));
 	}
 	else {
-		PyArrayObject * array_ptr2 = (PyArrayObject*) PyArray_Cast(array_ptr, NPY_FLOAT32); //
-		void* array_data2 = PyArray_DATA(array_ptr2);
-		memcpy(temparray, array_data2, (size_t)nx*ny*nz*sizeof(float));
-		image = new EMData((float*)temparray, nx, ny, nz);
+		double *array_data = reinterpret_cast<double *>(array.get_data());
+		std::copy(array_data, array_data + nx * ny * nz, reinterpret_cast<float *>(temparray));
 	}
+	EMData* image = new EMData((float*)temparray, nx, ny, nz);
 
 	image->update();
 	return image;
