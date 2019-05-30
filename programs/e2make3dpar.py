@@ -252,11 +252,11 @@ def main():
 		niter=1
 	#########################################################
 	# The actual reconstruction
-	
+	options.padvol3=padvol
 	if options.parallel!=None:
 		par=options.parallel.split(':')
 		if par[0].startswith("thread"):
-			options.parallel=None
+			#options.parallel=None
 			options.threads=int(par[1])
 		elif par[0]=="mpi":
 			nthr=int(par[1])
@@ -264,7 +264,7 @@ def main():
 			if ppt>16:
 				print("Inserting {:.1f} images per thread...".format(ppt))
 				### prepare some options
-				options.padvol3=padvol
+				
 				
 			else:
 				print("Too few images in input ({:.1f} images per thread). Switching back to threading".format(ppt))
@@ -319,13 +319,25 @@ def main():
 
 			#dics=[0]*nptcl
 			
-			angs={}
-			avgr=Averagers.get("mean.tomo")
+			output=EMData(padvol[0], padvol[1], padvol[2])
+			normvol=EMData(padvol[0]//2+1, padvol[1], padvol[2])
+			output.to_zero()
+			output.do_fft_inplace()
+			
+			normvol.to_zero()
 			for i in tids:
-				ret=etc.get_results(i)[1]
-				avgr.add_image(ret)
+				threed, norm=etc.get_results(i)[1]
+				threed.process_inplace("math.multamplitude", {"amp":norm})
+				output.add(threed)
+				normvol.add(norm)
 				
-			output=avgr.finish()
+			normvol.process_inplace("math.reciprocal")
+			output.process_inplace("math.multamplitude", {"amp":normvol})
+			
+			output.do_ift_inplace()
+			output.depad()
+			output.process_inplace("xform.phaseorigin.tocenter")
+			
 			del etc
 			
 		else:
@@ -702,13 +714,13 @@ class Make3dTask(JSTask):
 		seed=self.data["seed"]
 		options=self.options
 		
-		
+		padvol=options.padvol3
+		normvol=EMData(padvol[0]//2+1, padvol[1], padvol[2])
 		
 		if options.iterative:
 			
-			a = {"size":options.padvol3,"sym":options.sym,"verbose":options.verbose-1}
-			if options.savenorm!=None : 
-				a["savenorm"]=options.savenorm
+			a = {"size":padvol,"sym":options.sym,"verbose":options.verbose-1}
+			a["normout"]=normvol
 			recon=Reconstructors.get("fourier_iter", a)
 			if seed==None:
 				recon.setup()
@@ -717,14 +729,17 @@ class Make3dTask(JSTask):
 
 		else :
 			a = {
-				"size":options.padvol3,
+				"size":padvol,
 				"sym":options.sym,
 				"mode":options.mode,
 				"usessnr":options.usessnr,
 				"verbose":options.verbose-1
 				}
-			if options.savenorm!=None : 
-				a["savenorm"]=options.savenorm
+				
+			
+			
+			a["normout"]=normvol
+			
 			recon=Reconstructors.get("fourier", a)
 			recon.setup()
 			
@@ -740,11 +755,11 @@ class Make3dTask(JSTask):
 			options.input.endswith(".lst")
 			)
 		
-		output = recon.finish(True)
+		output = recon.finish(False)
 		
 		callback(100)
 		
-		return output
+		return (output, normvol)
 
 
 if __name__=="__main__":
