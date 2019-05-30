@@ -35,9 +35,9 @@ def main():
 	
 	parser.add_argument("--niters", type=int,help="Run this many iterations. Default is 4.", default=4, guitype='intbox',row=3, col=0,rowspan=1, colspan=1)
 
-	parser.add_argument("--keep", type=float,help="propotion of tilts to keep. default is 0.5", default=0.5, guitype='floatbox',row=3, col=1,rowspan=1, colspan=1)
+	parser.add_argument("--keep", type=float,help="propotion of tilts to keep. default is 0.8", default=0.8, guitype='floatbox',row=3, col=1,rowspan=1, colspan=1)
 
-	parser.add_argument("--maxalt", type=float,help="max altitude to insert to volume", default=90.0, guitype='floatbox',row=3, col=2,rowspan=1, colspan=1)	
+	parser.add_argument("--maxalt", type=float,help="max altitude to insert to volume", default=45.0, guitype='floatbox',row=3, col=2,rowspan=1, colspan=1)	
 	
 	parser.add_argument("--mask", type=str, default="Auto" ,help="Refinement and reprojection masking.",guitype='strbox',row=4, col=0,rowspan=1, colspan=2)	
 	
@@ -56,8 +56,8 @@ def main():
 	parser.add_argument("--reprj_clip", type=int, default=-1 ,help="clip after reprojection")
 
 	parser.add_argument("--tophat", type=str, default="auto" ,help="Filter option for refine_postprocess. auto: same as spt refinement; local; global;")
-	parser.add_argument("--refineastep", type=float,help="Mean angular variation for refine alignment", default=2.)
-	parser.add_argument("--refinentry", type=int,help="number of starting points for refine alignment", default=16)
+	parser.add_argument("--refineastep", type=float,help="Mean angular variation for refine alignment", default=1.)
+	parser.add_argument("--refinentry", type=int,help="number of starting points for refine alignment", default=8)
 	parser.add_argument("--maxshift", type=int,help="maximum shift allowed", default=8)
 
 
@@ -67,6 +67,8 @@ def main():
 	parser.add_argument("--localnorm",action="store_true",help="local normalization. do not use yet....",default=False)
 	parser.add_argument("--sym", type=str,help="symmetry. will use symmetry from spt refinement by default", default="c1")
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
+	parser.add_argument("--transonly", action="store_true", default=False ,help="only refine translation")
+
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -362,13 +364,16 @@ def main():
 			else:
 				threedname=os.path.join(path, "threed_{:02d}_{}.hdf".format(itr, eo))
 			
-			lstname=os.path.join(path, "ali_ptcls_{:02d}_{}.lst".format(itr, eo))
+			lstname=os.path.join(path, "ali_ptcls_00_{}.lst".format(eo))
 			lname=os.path.join(path, "ali_ptcls_{:02d}_{}.lst".format(itr+1, eo))
 			threedout=os.path.join(path, "threed_{:02d}_{}.hdf".format(itr+1, eo))
 			
 			cmd="e2spt_tiltrefine_oneiter.py --ptclin {} --ptclout {} --ref {} --threedout {} --keep {} --threads {} --parallel {} --refineastep {} --refinentry {} --maxshift {} --padby {} --sym {}".format(lstname, lname, threedname, threedout,  options.keep, options.threads, options.parallel, options.refineastep, options.refinentry, options.maxshift, options.padby, jd["sym"])
 			if options.debug: 
 				cmd+=" --debug"
+				
+			if options.transonly: 
+				cmd+=" --transonly"
 				
 			run(cmd)
 			
@@ -414,9 +419,7 @@ def main():
 		odd=os.path.join(path, "threed_{:02d}_odd.hdf".format(itr+1))
 
 
-		#os.system("rm {}/mask*.hdf {}/*unmasked.hdf".format(path, path))
-		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --restarget {} --threads {} --sym {} --mass {} {}".format(even, odd, 
-			os.path.join(path, "threed_{:02d}.hdf".format(itr+1)), itr+1, curres, options.threads, jd["sym"], jd["mass"], s)
+		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --restarget {} --threads {} --sym {} --mass {} {}".format(even, odd, os.path.join(path, "threed_{:02d}.hdf".format(itr+1)), itr+1, curres, options.threads, jd["sym"], jd["mass"], s)
 		run(ppcmd)
 		
 		if options.localnorm:

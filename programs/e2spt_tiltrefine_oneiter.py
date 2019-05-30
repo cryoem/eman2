@@ -35,8 +35,9 @@ def main():
 	parser.add_argument("--debug", action="store_true", default=False ,help="Turn on debug mode. This will only process a small subset of the data (threads * 8 particles)")
 	
 
+	parser.add_argument("--transonly", action="store_true", default=False ,help="only refine translation")
 	parser.add_argument("--refineastep", type=float,help="Mean angular variation for refine alignment", default=2.)
-	parser.add_argument("--refinentry", type=int,help="number of starting points for refine alignment", default=32)
+	parser.add_argument("--refinentry", type=int,help="number of starting points for refine alignment", default=4)
 	parser.add_argument("--maxshift", type=int,help="maximum shift allowed", default=8)
 
 
@@ -166,33 +167,48 @@ class SptTltRefineTask(JSTask):
 		for i, infos in enumerate(self.data["info"]):
 			ii=infos[0]
 			info=infos[1]
-			#print(ii, info)
-			#ptcl=EMData(info[1],info[0])
-			a=data["ref"]
 			
-			nxf=options.refinentry
-			astep=options.refineastep
-			xfs=[]
-			initxf=eval(info[-1])
-			for i in range(nxf):
-				d={"type":"eman","tx":initxf["tx"], "ty":initxf["ty"]}
-				for ky in ["alt", "az", "phi"]:
-					d[ky]=initxf[ky]+(i>0)*np.random.randn()*astep/np.pi*2
-				xfs.append(Transform(d))
-					
-			alignpm={"verbose":0,"sym":options.sym,"maxshift":options.maxshift,"initxform":xfs}
-		
+			a=data["ref"]
 			b=EMData(info[1],info[0])
+			
 			if b["ny"]!=a["ny"]: # box size mismatch. simply clip the box
 				b=b.get_clip(Region((b["nx"]-a["ny"])/2, (b["ny"]-a["ny"])/2, a["ny"],a["ny"]))
 				
+			
+			initxf=eval(info[-1])
+			
+			if options.transonly:
+				xf=Transform({"type":"eman","tx":initxf["tx"], "ty":initxf["ty"], "alt":initxf["alt"],"az":initxf["az"],"phi":initxf["phi"]})
+				pj=a.project("standard", xf)
+				c=b.align("translational", pj, {"intonly":0, "maxshift":options.maxshift})
+				trans=c["xform.align2d"].get_trans()
+				xf.translate(-trans)
+				scr=c.cmp("frc",pj)
+				r={"idx":ii,"xform.align3d":xf, "score":scr}
+				print(ii, (initxf["tx"], initxf["ty"]), trans)
 				
-			b=b.do_fft()
-			b.process_inplace("xform.phaseorigin.tocorner")
-			c=b.xform_align_nbest("rotate_translate_2d_to_3d_tree",a, alignpm, 1)
+				
+			else:
+			
+				nxf=options.refinentry
+				astep=options.refineastep
+				xfs=[]
+				
+				for i in range(nxf):
+					d={"type":"eman","tx":initxf["tx"], "ty":initxf["ty"]}
+					for ky in ["alt", "az", "phi"]:
+						d[ky]=initxf[ky]+(i>0)*np.random.randn()*astep/np.pi*2
+					xfs.append(Transform(d))
+						
+				alignpm={"verbose":0,"sym":options.sym,"maxshift":options.maxshift,"initxform":xfs, "maxang":astep*2.}
+				print("lenxfs:", len(xfs))
+			
+				b=b.do_fft()
+				b.process_inplace("xform.phaseorigin.tocorner")
+				c=b.xform_align_nbest("rotate_translate_2d_to_3d_tree",a, alignpm, 1)
 
-			xf=c[0]["xform.align3d"]
-			r={"idx":ii,"xform.align3d":xf, "score":c[0]["score"]}
+				xf=c[0]["xform.align3d"]
+				r={"idx":ii,"xform.align3d":xf, "score":c[0]["score"]}
 			
 			#print(ii,info, r)
 			callback(float(i/len(self.data["info"])))
