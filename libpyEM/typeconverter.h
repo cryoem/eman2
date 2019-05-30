@@ -68,22 +68,22 @@ using std::endl;
 
 namespace EMAN {
 
-	python::numeric::array make_numeric_array(const float *const data, vector<npy_intp> dims);
-	python::numeric::array make_numeric_complex_array(const std::complex<float> *const data,vector<npy_intp> dims);
+	np::ndarray make_numeric_array(const float *const data, vector<npy_intp> dims);
+	np::ndarray make_numeric_complex_array(const std::complex<float> *const data,vector<npy_intp> dims);
 
 	class EMNumPy {
 	public:
 		/** Get an EMData image's pixel data as a numeric numpy array.
 		 * The array and EMData image share the same memory block.
 		 */
-		static python::numeric::array em2numpy(const EMData *const image);
+		static np::ndarray em2numpy(const EMData *const image);
 
 		/** Create an EMData image from a numeric numpy array.
 		 * returned EMData object will take the ownership of the numpy array data.
 		 * Note: the array size is (nz,ny,nx) corresponding to image (nx,ny,nz).
 		 */
-		static EMData* numpy2em(const python::numeric::array& array);
-		static EMData* assign_numpy_to_emdata(const python::numeric::array& array);
+		static EMData* numpy2em(const np::ndarray& array);
+		static EMData* assign_numpy_to_emdata(const np::ndarray& array);
 
 		/** Create an EMData image from a numeric numpy array.
 		 * The destructor is necessary to set rdata data member of EMData to 0 (Null)
@@ -102,7 +102,7 @@ namespace EMAN {
 		 * (2) the emdata_buffer is owned by this EMNumPy object.
 		 * Therefore, the Python does not call delete on emdata_buffer upon the assignment.
 		 */
-		EMData* register_numpy_to_emdata(const python::numeric::array& array);
+		EMData* register_numpy_to_emdata(const np::ndarray& array);
 
 		/** Unregister memory allocated and owned by a numeric numpy array to the EMData buffer.
 		 * Make sure to pair this with register_numpy_to_emdata()
@@ -215,7 +215,7 @@ namespace EMAN {
 			}
 
 			const float * data = (const float*)marray.data();
-			python::numeric::array numarray = make_numeric_array(data, dims);
+			np::ndarray numarray = make_numeric_array(data, dims);
 
 			return python::incref(numarray.ptr());
 		}
@@ -237,7 +237,7 @@ namespace EMAN {
 			}
 
 			const std::complex<float> * data = (const std::complex<float>*)mcarray.data();
-			python::numeric::array numarray = make_numeric_complex_array(data, dims);
+			np::ndarray numarray = make_numeric_complex_array(data, dims);
 
 			return python::incref(numarray.ptr());
 		}
