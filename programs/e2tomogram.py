@@ -311,8 +311,8 @@ def main():
 	
 	#### image scale, m3diter, fidkeep
 	#### refinement sequence []:global tilt axis, 0:tx, 1:ty, 2:tilt axis, 3: tilt, 4: off axis tilt
-	scaleiter=[(imgs_500, itnum[0], options.pkkeep*.8, [[0,1], [], [0,1],[], [0,1]]),
-			   (imgs_1k, itnum[1], options.pkkeep*.9, [[0,1],[], [0,1],[3],[4],[2],[0,1]]),
+	scaleiter=[(imgs_500, itnum[0], options.pkkeep, [[0,1], [], [0,1],[], [0,1]]),
+			   (imgs_1k, itnum[1], options.pkkeep, [[0,1],[], [0,1],[3],[4],[2],[0,1]]),
 			   (imgs_2k, itnum[2], options.pkkeep, [[0,1],[], [0,1],[3],[4],[2],[0,1]]),
 			   (imgs_4k, itnum[3], options.pkkeep, [[0,1], [0,1],[3],[4],[2],[0,1]])]
 	
@@ -381,6 +381,9 @@ def main():
 					allparams=np.hstack([ttparams.flatten(), pks.flatten()])
 					ttparams=xdrift_correction(imgs_, allparams, options)
 					allparams=np.hstack([ttparams.flatten(), pks.flatten()])
+					if options.writetmp:
+						make_samples(imgs_, allparams, options,
+							outname=os.path.join(path,"samples_xdrift.hdf"), refinepos=True);
 
 			#### Now actually refine the alignment parameters using the landmarks.
 			for idx in rfseq:
@@ -396,8 +399,7 @@ def main():
 		if options.writetmp:
 			#### make sample output and aligned tilt series
 			make_samples(imgs_, allparams, options, outname=name_sample, refinepos=False);
-			#make_ali(imgs_2k, ttparams, options, outname=name_ali)
-
+			
 		#### a final round to calculate the average loss per tilt
 		ptclpos=ali_ptcls(imgs_, allparams, options, outname=name_ptclali, doali=True)
 		loss0=np.zeros(num)
@@ -1301,31 +1303,31 @@ def make_samples(imgs, allparams, options, refinepos=False, outname=None, errtlt
 
 
 #### find center of landmark subtomogram. 
-def get_center(img, lowres=True):
+def get_center(img, lowres=True, maxshift=64):
 	e=img.copy()
-	bx=old_div(e["nx"],2)
+	bx=e["nx"]/2
 	e.mult(-1)
 	#### low resolution mode: use peak
 	if lowres:
 		e.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.01})
 		e.process_inplace("mask.gaussian",{"outer_radius":bx*.5})
-		pk=e.calc_max_location()
 		if e["sigma"]==0:
-			pk=[bx,bx]
+			pk=[0,0]
+		else:
+			pk=bx-np.array(e.calc_max_location())
 
 	#### high resolution mode: use center of mass
 	else:
 		e.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.01})
 		e.process_inplace("mask.gaussian",{"outer_radius":bx*.5})
 		e.process_inplace("normalize")
-		pk=e.calc_center_of_mass(2)
-		if np.isnan(pk).any():
-			pk=[bx,bx]
+		pk=bx-np.array(e.calc_center_of_mass(2))[:2]
+		if np.isnan(pk).any() or np.linalg.norm(pk)>maxshift:
+			### give up if there is too much drift for center of mass...
+			pk=[0,0]
 
 
-	tx=[bx-pk[0], bx-pk[1]]
-
-	return tx
+	return pk
 
 #### this is the main function that calculate the offset of landmarks in tilt series given images and alignment parameters 
 def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
@@ -1363,8 +1365,8 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
 		for ii,nid in enumerate(nrange):
 			#### start from center tilt and go both directions
 			pxf=get_xf_pos(ttparams[nid], pks[pid])
-			pxf[0]+=old_div(nx,2)
-			pxf[1]+=old_div(ny,2)
+			pxf[0]+=nx/2
+			pxf[1]+=ny/2
 
 			if nid!=zeroid:
 				tlast=trans[nrange[ii-1]]
@@ -1380,21 +1382,18 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
 			ts=[0,0]
 			if doali:# and nid!=zeroid:
 				#### still get the center of particle differently at low and high res mode
-				tx=get_center(e, lowres)
+				tx=get_center(e, lowres, maxshift=8)
 				trans[nid]=tlast+np.array([tx[0], tx[1]])
-				
-				if nid!=zeroid:
-					if outname:
-						xf=Transform({"type":"2d","tx":pxf[0]-tx[0],"ty":pxf[1]-tx[1]})
-						e=imgs[nid].get_rotated_clip(xf,(bx*2,bx*2,1)).process("normalize")
-						e["apix_x"]=e["apix_y"]=e["apix_z"]=imgs[0]["apix_x"]
+			else:
+				tx=[0,0]
 
 			if outname:
-				e["score"]=trans[nid].tolist()
+				e["score"]=[tx[0], tx[1]]#trans[nid].tolist()
 				e["pid"]=pid
 				e["nid"]=nid
 				e.write_image(outname, nid+pid*num)
-			ppos[nid]=np.array(pxf-trans[nid]-[old_div(nx,2), old_div(ny,2)])
+			#ppos[nid]=np.array(pxf-trans[nid]-[nx/2, ny/2])
+			ppos[nid]=np.array(get_xf_pos(ttparams[nid], pks[pid]))-tlast-[tx[0], tx[1]]
 
 		ptclpos.append(ppos)
 
@@ -1415,12 +1414,13 @@ def refine_one_iter(imgs, allparams, options, idx=[]):
 	if len(idx)==0:
 		#### this refines the global rotation around z axis 
 		res=minimize(global_rot, 0, (ptclpos, apms, options), method='Powell',options={'ftol': 1e-4, 'disp': False, "maxiter":30})
+		res=res.x*1
 		print("refine global tilt_z {:.2f}, loss {:.2f} -> {:.2f}".format(
-			float(res.x)*.5, float(global_rot(0,ptclpos,apms, options)),
-			float(global_rot(res.x,ptclpos,apms, options))))
-		ttparams[:,2]-=res.x*.5
+			float(res), float(global_rot(0,ptclpos,apms, options)),
+			float(global_rot(res,ptclpos,apms, options))))
+		ttparams[:,2]-=res
 		pkc=pks.copy()
-		r=res.x*np.pi/180.
+		r=res*np.pi/180.
 		rotmat=np.array([[np.cos(r), -np.sin(r)], [np.sin(r), np.cos(r)]])
 		pkc[:,:2]=np.dot(pkc[:,:2],rotmat)
 		pks=pkc
@@ -1435,9 +1435,10 @@ def refine_one_iter(imgs, allparams, options, idx=[]):
 			tminit=np.zeros(len(idx))
 			#### simply call a scipy minimizer. Powell seem to work fine.
 			res=minimize(get_loss_pm, tminit,(nid,apms, options, idx, ptclpos) , method='Powell',options={'ftol': 1e-3, 'disp': False, "maxiter":10})
-			ttpm_new[nid, idx]+=res.x*.5
-			loss[nid]=get_loss_pm(res.x*.5, nid, apms, options, idx, ptclpos)
-			loss0[nid]=get_loss_pm(tminit, nid, apms, options, idx, ptclpos)
+			res=res.x*1
+			ttpm_new[nid, idx]+=res
+			loss[nid]=get_loss_pm(res, nid, apms, options, idx, ptclpos, False)
+			loss0[nid]=get_loss_pm(tminit, nid, apms, options, idx, ptclpos, False)
 
 		ipm=[pmlabel[i] for i in idx]
 		print("refine {}, loss: {:.2f} -> {:.2f}".format(ipm, np.mean(loss0), np.mean(loss)))
@@ -1447,16 +1448,23 @@ def refine_one_iter(imgs, allparams, options, idx=[]):
 	return allparams
 
 #### function for scipy optimizer
-def get_loss_pm(pm, nid, apms, options, idx=[2,3,4], ptclpos=[]):
+def get_loss_pm(pm, nid, apms, options, idx=[2,3,4], ptclpos=[], refine=True):
 	ttparams, pks=get_params(apms, options)
 	tpm=ttparams[nid].copy()
 	tpm[idx]+=pm
 	ps=np.array([get_xf_pos(tpm, p) for p in pks])
 	dst=np.sqrt(np.sum((ps-ptclpos[:,nid])**2, axis=1))
 	dst=np.mean(dst[np.argsort(dst)[:int(len(dst)*options.fidkeep)]])
+	dst=dst*options.apix_init/10.
+	### put some penalty on large rotation difference
+	#if refine:
+	diff=np.mean((tpm[[2,3,4]]-ttparams[nid][[2,3,4]])**2)
+	dst+=diff*1.
+	#print(diff)
+		
 
 	#### return distance in nm
-	return dst*options.apix_init/10.
+	return dst
 
 #### function for scipy optimizer for global rotation
 def global_rot(rt, ptclpos, allpms, options):
