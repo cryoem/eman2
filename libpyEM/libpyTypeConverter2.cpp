@@ -42,6 +42,7 @@
 
 // Using =======================================================================
 using namespace boost::python;
+namespace np = boost::python::numpy;
 
 #if PY_MAJOR_VERSION >= 3
 int
@@ -71,6 +72,7 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 
     init_numpy();
 	python::numeric::array::set_module_and_type("numpy", "ndarray");
+	np::initialize();
 
 
 	EMAN::vector_to_python<int>();
