@@ -63,18 +63,18 @@ def calc_all_scr(curve, allctf, zlist, bxsz, exclude=[]):
 		
 		bsub=curve.copy()
 		bsub[:, z0:z1]-=bg
-		for iz in range(1, len(zz)):
-			if zz[iz-1]>=z1: break
-			c=bsub[:,zz[iz-1]:zz[iz]]
-			mx=np.max(c, axis=1)
-			m0=(mx<=0)
-			mx[m0]=1
-			mx=1./mx
-			mx[m0]=0
-			c*=mx[:, None]
+		#for iz in range(1, len(zz)):
+			#if zz[iz-1]>=z1: break
+			#c=bsub[:,zz[iz-1]:zz[iz]]
+			#mx=np.max(c, axis=1)
+			#m0=(mx<=0)
+			#mx[m0]=1
+			#mx=1./mx
+			#mx[m0]=0
+			#c*=mx[:, None]
 
 		bsub=bsub[:, z0:z1]
-		bsub[bsub<0]*=0.001
+		bsub[bsub<0]*=0.1
 		scr=-np.dot(bsub,cf[z0:z1])/(np.sum(cf[z0:z1]))
 #		 scr=np.mean((bsub-cf[z0:z1])**2, axis=1)
 		allscr[i]=scr
@@ -109,7 +109,7 @@ def compute_score(pm, ps, options, sign=-1, fitting=True):
 	
 		zz=np.round(zzf).astype(int)
 		z0=zz[0]
-		z1=zz[zz>bxsz/2*.8]
+		z1=zz[zz>bxsz/2*.7]
 		if len(z1)>0:
 			z1=z1[0]
 		else:
@@ -124,14 +124,14 @@ def compute_score(pm, ps, options, sign=-1, fitting=True):
 		
 
 		if fitting:
-			bsub[bsub<0]*=0.001
-			for iz in range(1, len(zz)):
-				if zz[iz-1]>=z1: break
-				c=bsub[zz[iz-1]:zz[iz]]
-#				 if len(c)==0: continue
-				mx=np.max(c)
-				if mx>0:
-					c/=mx/np.max(cf[zz[iz-1]:zz[iz]])
+			bsub[bsub<0]*=0.1
+			#for iz in range(1, len(zz)):
+				#if zz[iz-1]>=z1: break
+				#c=bsub[zz[iz-1]:zz[iz]]
+##				 if len(c)==0: continue
+				#mx=np.max(c)
+				#if mx>0:
+					#c/=mx/np.max(cf[zz[iz-1]:zz[iz]])
 			bsub=bsub[z0:z1]
 			scr=-np.dot(bsub,cf[z0:z1])/(np.sum(cf[z0:z1]))
 			allscr.append(scr)
@@ -181,7 +181,7 @@ def main():
 	if options.alltiltseries:
 		fld="tiltseries/"
 		args=[fld+f for f in os.listdir(fld) if (
-			f.endswith(".hdf") or f.endswith(".mrc") or f.endswith(".mrcs") or f.endswith(".st"))]
+			f.endswith(".hdf") or f.endswith(".mrc") or f.endswith(".mrcs") or f.endswith(".lst") or f.endswith(".st"))]
 	
 	if len(args)==1:
 		print("Reading tilt series {}...".format(args[0]))
@@ -293,7 +293,8 @@ def main():
 		
 		print("{}, {:.2f}".format(imgi, tpm[3]))
 	
-	
+	dfs=[]
+	exclude=[]
 	tltsrt=np.argsort(abs(tltparams[:,3]))	
 	if options.checkhand:
 		print("Checking handedness of the tomogram. Will NOT write metadata output...")
@@ -305,10 +306,38 @@ def main():
 		print("Comparing current hand vs flipped hand..")
 		for it in tltsrt:
 			
+			allrd, pzus=powerspecs[it]
 			for si in [0,1]:
-				scr=[compute_score((d, np.mean(pshift)), powerspecs[it], options, signs[si]) for d in defrg]
-				scores[si].append(np.mean(scr)-np.min(scr))
-				dfs[si].append(defrg[np.argmin(scr)])
+				allscr=[]
+				for ic, ctf in enumerate(allctf):
+					scr=calc_all_scr(allrd, ctf, zlist[ic], box, exclude)
+					idxsft=np.round(signs[si]*np.array(pzus)/defstep).astype(int)
+					stilt=np.zeros(len(defrg))+np.inf
+					for i,df in enumerate(defrg):
+						idx=idxsft+i
+						outb=(idx<0)+(idx>=len(defrg))
+						idx[outb]=0
+				
+						s=scr[idx, np.arange(scr.shape[1])].copy()
+						sinf=np.isinf(s)
+						s[outb]=np.max(s)
+						sval=s[np.isinf(s)==0]
+
+						stilt[i]=np.sum(sval)/len(s)
+					
+					allscr.append(stilt)
+					
+				allscr=np.array(allscr)
+				amp, df= np.array(np.where(allscr==np.min(allscr))).T[0]
+				pm=(defrg[df], pshift[amp])
+				
+				scores[si].append((np.mean(allscr)-np.min(allscr))*100)
+				dfs[si].append(pm[0])
+				
+			#for si in [0,1]:
+				#scr=[compute_score((d, np.mean(pshift)), powerspecs[it], options, signs[si]) for d in defrg]
+				#scores[si].append((np.mean(scr)-np.min(scr))*100)
+				#dfs[si].append(defrg[np.argmin(scr)])
 				
 			print("ID {}, angle {:.1f}, defocus {:.1f} vs {:.1f}, score {:.3f} vs {:.3f}".format(it, tltparams[it,3], dfs[0][-1], dfs[1][-1], scores[0][-1], scores[1][-1]))
 		
@@ -334,8 +363,7 @@ def main():
 		print("Using first {} images near center tilt to estimate defocus range...".format(nref))
 	else:
 		print("Estimating defocus...")
-	dfs=[]
-	exclude=[]
+
 	ctfparams=np.zeros((len(tltparams), 2))
 	for it in tltsrt:
 		allrd, pzus=powerspecs[it]

@@ -9433,6 +9433,34 @@ correction is not possible, this will allow you to approximate the correction to
 	};
 
 	
+	class AmpMultProcessor:public Processor
+	{
+	public:
+		virtual void process_inplace(EMData * image);
+		virtual EMData* process(const EMData* const image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new AmpMultProcessor();
+		}
+		string get_desc() const
+		{
+			return "Multiply amplitude image. For reconstruction normalization.";
+		}
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("verbose", EMObject::INT, "Verbose");
+			d.put("amp", EMObject::EMDATA, "Amplitude to multiply.");
+			return d;
+		}
+		static const string NAME;
+	};
+	
 	
 	class PolyMaskProcessor:public CoordinateProcessor
 	{

@@ -1864,6 +1864,7 @@ namespace EMAN
 //				d.put("sigmathis", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
 //				d.put("sigmato", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
 				d.put("initxform", EMObject::TRANSFORMARRAY,"An array of Transforms storing the starting positions.");
+				d.put("maxang", EMObject::FLOAT,"maximum angle from initial rotation.");
 				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
 				return d;
 			}
@@ -1871,7 +1872,7 @@ namespace EMAN
 			static const string NAME;
 
 		private:
-			bool testort(EMData *small_this, EMData *small_to,vector<float> &s_score,vector<Transform> &s_xform,int i,Dict &upd,int maxshift) const;
+			bool testort(EMData *small_this, EMData *small_to,vector<float> &s_score,vector<Transform> &s_xform,int i,Dict &upd, Transform initxf, int maxshift, int maxang) const;
 
 	};
 

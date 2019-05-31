@@ -322,7 +322,7 @@ const string FixSignProcessor::NAME = "math.fixmode";
 const string ZThicknessProcessor::NAME = "misc.zthick";
 const string ReplaceValuefromListProcessor::NAME = "misc.colorlabel";
 const string PolyMaskProcessor::NAME = "mask.poly";
-
+const string AmpMultProcessor::NAME = "math.multamplitude";
 //#ifdef EMAN2_USING_CUDA
 //const string CudaMultProcessor::NAME = "cuda.math.mult";
 //const string CudaCorrelationProcessor::NAME = "cuda.correlate";
@@ -611,6 +611,7 @@ template <> Factory < Processor >::Factory()
 	force_add<ZThicknessProcessor>();
 	force_add<ReplaceValuefromListProcessor>();
 	force_add<PolyMaskProcessor>();
+	force_add<AmpMultProcessor>();
 
 //#ifdef EMAN2_USING_CUDA
 //	force_add<CudaMultProcessor>();
@@ -14791,6 +14792,42 @@ void ZThicknessProcessor::process_inplace(EMData *image)
 
 }
 
+
+EMData* AmpMultProcessor::process(const EMData* const image)
+{
+	EMData* proc = image->copy();
+	proc->process_inplace("math.multamplitude",params);
+	return proc;
+}
+
+void AmpMultProcessor::process_inplace(EMData *image)
+{
+	EMData *amp=params["amp"];
+	float* data = image->get_data();
+	float* mult = amp->get_data();
+	
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+
+	
+	
+	int anx = amp->get_xsize();
+	int any = amp->get_ysize();
+	int anz = amp->get_zsize();
+	
+	if  (( (nx==anx*2) && (ny==any) && (nz==anz) )==false)
+		throw InvalidParameterException("AmpMultProcessor: amplitude image size mismatch...");
+
+	int sz=nx*ny*nz;
+	
+	for (int i=0; i<sz; i++){
+		data[i]*=mult[i/2];
+	}
+	
+	image->update();
+
+}
 #ifdef SPARX_USING_CUDA
 
 /* CLASS MPICUDA_kmeans processor

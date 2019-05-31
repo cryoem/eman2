@@ -417,7 +417,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 		defocus, phase, voltage, cs=ctfinfo
 		ctf=EMAN2Ctf()
 		ctf.from_dict({
-			"defocus":1.0, "voltage":voltage, "bfactor":50., "cs":cs,"ampcont":0, "apix":apix})
+			"defocus":1.0, "voltage":voltage, "bfactor":0., "cs":cs,"ampcont":0, "apix":apix})
 	
 	for pid in ids:
 		
@@ -532,7 +532,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			e["tilt_id"]=nid
 			e["file_threed"]=options.output
 			e["ptcl_source_coord_3d"]=pos.tolist()
-			e.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.45})
+			#e.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.45})
 			projs.append(e)
 			
 			sz=e["nx"]
