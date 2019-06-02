@@ -69,7 +69,7 @@ using std::endl;
 namespace EMAN {
 
     template <class T>
-	np::ndarray make_numeric_array(T * data, vector<npy_intp> dims)
+	np::ndarray make_numeric_array(T * data, vector<int> dims)
     {
         python::tuple shape;
         python::tuple stride;
@@ -229,7 +229,7 @@ namespace EMAN {
 	{
 		static PyObject* convert(boost::multi_array_ref<T, NumDims> const & marray)
 		{
-			vector<npy_intp> dims;
+			vector<int> dims;
 			const size_t * shape = marray.shape();
 			int ndim = marray.num_dimensions();
 			for (int i = ndim-1; i >= 0; i--) {
