@@ -108,7 +108,8 @@ def main():
 	# else: # Do nothing
 	
 	# Make sure main window is shown, raised, and activated upon startup.
-	gui = SXGuiCter(use_ctffind=options.ctffind, pwrot_dir=options.pwrot_dir, power2d_dir=options.power2d_dir, micthumb_dir=options.micthumb_dir)
+	####gui = SXGuiCter(use_ctffind=options.ctffind, pwrot_dir=options.pwrot_dir, power2d_dir=options.power2d_dir, micthumb_dir=options.micthumb_dir)
+	gui = SXGuiCter(options)
 	gui.show()
 	gui.raise_()
 	gui.activateWindow()
@@ -317,7 +318,8 @@ class SXThresholdMap:
 		return info
 	
 class SXGuiCter(QWidget):
-	def __init__(self, use_ctffind=None, pwrot_dir='pwrot', power2d_dir='power2d', micthumb_dir='micthumb'):
+	####def __init__(self, use_ctffind=None, pwrot_dir='pwrot', power2d_dir='power2d', micthumb_dir='micthumb'):
+	def __init__(self, options):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
 		'data' is a list of (filename,ctf,im_1d,bg_1d,quality)
 		'parms' is [box size,ctf,box coord,set of excluded boxnums,quality,oversampling]
@@ -342,13 +344,7 @@ class SXGuiCter(QWidget):
 		# 
 		self.round_ndigits = 15
 		
-		# CTFFIND-override options
-		self.use_ctffind = use_ctffind
-		self.pwrot_dir = pwrot_dir
-		self.power2d_dir = power2d_dir
-		self.micthumb_dir = micthumb_dir
-		self.set_ctffind()  # CTFFIND extensions hardwired by CTFFIND
-		
+		self.set_ctffind(options)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory()+"sparxicon.png"))
 		self.installEventFilter(self)  # Necessary for self.eventFilter()
 		
@@ -394,11 +390,18 @@ class SXGuiCter(QWidget):
 		self.timer.timeout.connect(self.timeOut)
 		self.timer.start(100)
 		
-	def set_ctffind(self):
+	def set_ctffind(self, options):
+		self.use_ctffind = options.use_ctffind
+		self.pwrot_dir = options.pwrot_dir
+		self.power2d_dir = options.power2d_dir
+		self.micthumb_dir = options.micthumb_dir
+		
 		if not self.use_ctffind:
 			self.pwrot_suffix = '_rotinf.txt'
 			self.power2d_suffix = '_pws.hdf'
 			self.micthumb_suffix = '_thumb.hdf'
+		
+		# CTFFIND extensions hardwired by CTFFIND
 		else:
 			self.pwrot_suffix = "_avrot.txt"  # '_rotinftxt'
 			self.power2d_suffix = '.mrc'  # '_pws.hdf'
@@ -1041,8 +1044,8 @@ class SXGuiCter(QWidget):
 		self.add_centered_label("<b>Save Selection:</b>", saveloadlayout)
 		
 		# Prefix for output files
-		self.vfilesuffix = StringBox(self,None,"Trial00")
-		self.add_label_with_textbox("File Suffix", self.vfilesuffix, saveloadlayout)
+		self.vfileprefix = StringBox(self,None,"Trial00")
+		self.add_label_with_textbox("File Prefix", self.vfileprefix, saveloadlayout)
 		
 		saveloadlayout.addStretch(1)
 		
@@ -2507,12 +2510,12 @@ class SXGuiCter(QWidget):
 		assert os.path.basename(self.cter_partres_file_path).find("partres") != -1, "MRK_DEBUG"
 		assert self.cter_partres_file_path[-1*len(".txt"):] == ".txt", "MRK_DEBUG"
 		
-		file_suffix = self.vfilesuffix.getValue()
-		file_path_out_select = os.path.join(os.path.dirname(self.cter_partres_file_path), "%s_partres_select.txt" % (file_suffix))
-		file_path_out_discard = os.path.join(os.path.dirname(self.cter_partres_file_path), "%s_partres_discard.txt" % (file_suffix))
-		file_path_out_mic_select = os.path.join(os.path.dirname(self.cter_partres_file_path), "%s_micrographs_select.txt" % (file_suffix))
-		file_path_out_mic_discard = os.path.join(os.path.dirname(self.cter_partres_file_path), "%s_micrographs_discard.txt" % (file_suffix))
-		file_path_out_thresholds = os.path.join(os.path.dirname(self.cter_partres_file_path), "%s_thresholds.txt" % (file_suffix))
+		file_prefix = self.vfileprefix.getValue()
+		file_path_out_select = os.path.join(os.path.dirname(self.cter_partres_file_path), "%s_partres_select.txt" % (file_prefix))
+		file_path_out_discard = os.path.join(os.path.dirname(self.cter_partres_file_path), "%s_partres_discard.txt" % (file_prefix))
+		file_path_out_mic_select = os.path.join(os.path.dirname(self.cter_partres_file_path), "%s_micrographs_select.txt" % (file_prefix))
+		file_path_out_mic_discard = os.path.join(os.path.dirname(self.cter_partres_file_path), "%s_micrographs_discard.txt" % (file_prefix))
+		file_path_out_thresholds = os.path.join(os.path.dirname(self.cter_partres_file_path), "%s_thresholds.txt" % (file_prefix))
 		
 		existing_file_path = None
 		if os.path.exists(file_path_out_select):
