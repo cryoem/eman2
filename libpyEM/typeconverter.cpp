@@ -44,7 +44,7 @@ namespace np = boost::python::numpy;
 
 using namespace EMAN;
 
-np::ndarray EMAN::make_numeric_array(const float *const data, vector<npy_intp> dims)
+np::ndarray EMAN::make_numeric_array(float * data, vector<npy_intp> dims)
 {
 	python::object obj(python::handle<>(PyArray_SimpleNewFromData(dims.size(),&dims[0],
 	                                                              NPY_FLOAT32, (char*)data)));
