@@ -6168,6 +6168,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				#from utilities import write_text_file
 				#write_text_file([range(ni), supe[:ni],pwrot2[:ni]],"fifi.txt")
 				
+				mask = model_circle(istop - 1, wn, wn) * (model_blank(wn, wn, 1, 1.0) - model_circle(istart, wn, wn))
 				draw_power2d(img_basename_root, qse, [defc,Cs,voltage,pixel_size,0.0,wgh, bd1, cd1], 
 					mask=mask, outdir=outpower2d, radius_1a=ibec)
 				
