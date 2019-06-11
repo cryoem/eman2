@@ -95,6 +95,8 @@ def main():
 	parser.add_option("--micthumb_dir", default='micthumb', help="directory for micrograph thumbnails (default: micthumb)")
 
 	(options, args) = parser.parse_args(sys.argv[1:])
+	####print('options', options)
+	####sys.exit()
 	
 	if len(args) > 2:
 		print("see usage " + usage)
@@ -391,7 +393,7 @@ class SXGuiCter(QWidget):
 		self.timer.start(100)
 		
 	def set_ctffind(self, options):
-		self.use_ctffind = options.use_ctffind
+		self.use_ctffind = options.ctffind
 		self.pwrot_dir = options.pwrot_dir
 		self.power2d_dir = options.power2d_dir
 		self.micthumb_dir = options.micthumb_dir
