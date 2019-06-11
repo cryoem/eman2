@@ -2378,14 +2378,14 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 	if my_mpi_proc_id == main_mpi_proc:
 		# Make output directory
 		if not os.path.exists(output_directory):
-			os.mkdir(output_directory)
-		os.mkdir(outpwrot)
+			os.makedirs(output_directory)
+		os.makedirs(outpwrot)
 		if stack == None: 
-			os.mkdir(outmicthumb)
+			os.makedirs(outmicthumb)
 		if debug_mode:
-			os.mkdir(outravg)
+			os.makedirs(outravg)
 		if not os.path.exists(outpower2d):
-			os.mkdir(outpower2d)
+			os.makedirs(outpower2d)
 		sp_global_def.write_command(output_directory)
 	
 	if RUNNING_UNDER_MPI:
@@ -3437,14 +3437,14 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 	if my_mpi_proc_id == main_mpi_proc:
 		# Make output directory
 		if not os.path.exists(output_directory):
-			os.mkdir(output_directory)
-		os.mkdir(outpwrot)
+			os.makedirs(output_directory)
+		os.makedirs(outpwrot)
 		if stack == None: 
-			os.mkdir(outmicthumb)
+			os.makedirs(outmicthumb)
 		if debug_mode:
-			os.mkdir(outravg)
+			os.makedirs(outravg)
 		if not os.path.exists(outpower2d): 
-			os.mkdir(outpower2d)
+			os.makedirs(outpower2d)
 		sp_global_def.write_command(output_directory)
 	
 	if RUNNING_UNDER_MPI:
@@ -5827,14 +5827,14 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 	if my_mpi_proc_id == main_mpi_proc:
 		# Make output directory
 		if not os.path.exists(output_directory):
-			os.mkdir(output_directory)
-		os.mkdir(outpwrot)
+			os.makedirs(output_directory)
+		os.makedirs(outpwrot)
 		if stack == None: 
-			os.mkdir(outmicthumb)
+			os.makedirs(outmicthumb)
 		if debug_mode:
-			os.mkdir(outravg)
+			os.makedirs(outravg)
 		####if not os.path.exists(outpower2d): 
-		os.mkdir(outpower2d)
+		os.makedirs(outpower2d)
 		sp_global_def.write_command(output_directory)
 	
 	if RUNNING_UNDER_MPI:
