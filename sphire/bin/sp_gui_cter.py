@@ -2201,7 +2201,6 @@ class SXGuiCter(QWidget):
 		
 		# now set the new threshold
 		selected_hist_param.unapply_threshold_lower = threshold_lower
-		print('newThresholdLower', threshold_lower)
 		
 		self.needredisp=True
 	
