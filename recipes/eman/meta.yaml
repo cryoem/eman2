@@ -6,32 +6,26 @@ source:
     path: {{ RECIPE_DIR }}/../..
 
 requirements:
-    {% set reqs_host = [
-            "msinttypes",  # [win]
-            "python 3.6.*",
-            "boost 1.66.*",
-            "fftw-mpi",
-            "numpy 1.13.*",
-            "ftgl",
-            "freetype",
-            "gsl",
-            "hdf5 1.8.18",
-            "jpeg",
-            "libtiff 4.0.9",
-            "libpng 1.6.36",
-            "zlib",
-    ] %}
-    
     build:
         - cmake 3.14.*
         - {{ compiler('cxx') }}
         - {{ cdt('mesa-libgl-devel') }}      # [linux]
 
     host:
-        {% for req in reqs_host %}
-        - {{ req }}
-        {% endfor %}
-        - libglu      # [linux]
+        - msinttypes       # [win]
+        - python    3.6.*
+        - boost     1.66.*
+        - fftw-mpi
+        - numpy     1.13.*
+        - ftgl
+        - freetype
+        - gsl
+        - hdf5      1.8.18
+        - jpeg
+        - libtiff   4.0.9
+        - libpng    1.6.36
+        - zlib
+        - libglu           # [linux]
     
 test:
   requires:
