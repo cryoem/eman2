@@ -16,9 +16,8 @@ requirements:
             "freetype",
             "gsl",
             "hdf5 1.8.18",
-            "jpeg 9b",
-            "libtiff 4.0.9",             # [not win]
-            "libtiff 4.0.9 hafacce9_0",  # [win]
+            "jpeg",
+            "libtiff 4.0.9",
             "libpng 1.6.36",
             "zlib",
     ] %}
