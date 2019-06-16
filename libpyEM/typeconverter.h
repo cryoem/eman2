@@ -68,25 +68,26 @@ using std::endl;
 
 namespace EMAN {
 
-    np::ndarray make_numeric_array(float * data, vector<npy_intp> dims)
+    template <class T>
+	np::ndarray make_numeric_array(T * data, vector<npy_intp> dims)
     {
         python::tuple shape;
         python::tuple stride;
-        np::dtype dt = np::dtype::get_builtin<float>();
+        np::dtype dt = np::dtype::get_builtin<T>();
 
         switch(dims.size()) {
             case 2:
                 shape = python::make_tuple(dims[0], dims[1]);
-                stride = python::make_tuple(sizeof(float) * dims[1],
-                                            sizeof(float));
+                stride = python::make_tuple(sizeof(T) * dims[1],
+                                            sizeof(T));
 
                 return np::from_data(data, dt, shape, stride, python::object());
 
             case 3:
                 shape = python::make_tuple(dims[0], dims[1], dims[2]);
-                stride = python::make_tuple(sizeof(float) * dims[2] * dims[1],
-                                            sizeof(float) * dims[2],
-                                            sizeof(float));
+                stride = python::make_tuple(sizeof(T) * dims[2] * dims[1],
+                                            sizeof(T) * dims[2],
+                                            sizeof(T));
 
                 return np::from_data(data, dt, shape, stride, python::object());
         }
