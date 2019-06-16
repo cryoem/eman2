@@ -44,15 +44,6 @@ namespace np = boost::python::numpy;
 
 using namespace EMAN;
 
-np::ndarray EMAN::make_numeric_complex_array(const std::complex<float> *const data,
-                                                        vector<npy_intp> dims)
-{
-	python::object obj(python::handle<>(PyArray_SimpleNewFromData(dims.size(),&dims[0],
-	                                                              NPY_CFLOAT, (char*)data)));
-
-	return python::extract<np::ndarray>(obj);
-}
-
 np::ndarray EMNumPy::em2numpy(const EMData *const image)
 {
 	float * data = image->get_data();

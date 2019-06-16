@@ -93,8 +93,6 @@ namespace EMAN {
         }
     }
 
-    np::ndarray make_numeric_complex_array(const std::complex<float> *const data,vector<npy_intp> dims);
-
 	class EMNumPy {
 	public:
 		/** Get an EMData image's pixel data as a numeric numpy array.
@@ -261,7 +259,7 @@ namespace EMAN {
 			}
 
 			const std::complex<float> * data = (const std::complex<float>*)mcarray.data();
-			np::ndarray numarray = make_numeric_complex_array(data, dims);
+			np::ndarray numarray = make_numeric_array(data, dims);
 
 			return python::incref(numarray.ptr());
 		}
