@@ -172,8 +172,8 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 
 	EMAN::MArrayND_to_python<float, 2>();
 	EMAN::MArrayND_to_python<float, 3>();
-	EMAN::MCArrayND_to_python<2>();
-	EMAN::MCArrayND_to_python<3>();
+	EMAN::MArrayND_to_python<std::complex<float>, 2>();
+	EMAN::MArrayND_to_python<std::complex<float>, 3>();
 
 }
 

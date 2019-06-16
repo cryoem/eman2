@@ -244,30 +244,6 @@ namespace EMAN {
 	};
 
 
-	template<std::size_t NumDims>
-	struct MCArrayND_to_python : python::to_python_converter<
-			boost::multi_array_ref<std::complex<float>, NumDims>,
-			MCArrayND_to_python<NumDims> >
-	{
-		static PyObject* convert(boost::multi_array_ref<std::complex<float>, NumDims> const & mcarray)
-		{
-			vector<npy_intp> dims;
-			const size_t * shape = mcarray.shape();
-			int ndim = mcarray.num_dimensions();
-			for (int i = ndim-1; i >= 0; i--) {
-				dims.push_back(shape[i]);
-			}
-
-			const std::complex<float> * data = (const std::complex<float>*)mcarray.data();
-			np::ndarray numarray = make_numeric_array(data, dims);
-
-			return python::incref(numarray.ptr());
-		}
-	};
-
-
-
-
 	template <class T>
 	struct vector_from_python
 	{
