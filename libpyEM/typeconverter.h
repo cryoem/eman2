@@ -224,12 +224,12 @@ namespace EMAN {
 		static PyObject* convert(EMObject const& emobj);
 	};
 
-	template<std::size_t NumDims>
+	template<class T, std::size_t NumDims>
 	struct MArrayND_to_python : python::to_python_converter<
-			boost::multi_array_ref<float, NumDims>,
-			MArrayND_to_python<NumDims> >
+			boost::multi_array_ref<T, NumDims>,
+			MArrayND_to_python<T, NumDims> >
 	{
-		static PyObject* convert(boost::multi_array_ref<float, NumDims> const & marray)
+		static PyObject* convert(boost::multi_array_ref<T, NumDims> const & marray)
 		{
 			vector<npy_intp> dims;
 			const size_t * shape = marray.shape();
@@ -238,7 +238,7 @@ namespace EMAN {
 				dims.push_back(shape[i]);
 			}
 
-			float * data = (float*)marray.data();
+			T * data = (T*)marray.data();
 			np::ndarray numarray = make_numeric_array(data, dims);
 
 			return python::incref(numarray.ptr());

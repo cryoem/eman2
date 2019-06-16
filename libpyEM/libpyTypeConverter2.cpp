@@ -170,8 +170,8 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 	implicitly_convertible<EMAN::EMAN1Ctf*, EMAN::Ctf*>();
 	implicitly_convertible<EMAN::EMAN2Ctf*, EMAN::Ctf*>();
 
-	EMAN::MArrayND_to_python<2>();
-	EMAN::MArrayND_to_python<3>();
+	EMAN::MArrayND_to_python<float, 2>();
+	EMAN::MArrayND_to_python<float, 3>();
 	EMAN::MCArrayND_to_python<2>();
 	EMAN::MCArrayND_to_python<3>();
 
