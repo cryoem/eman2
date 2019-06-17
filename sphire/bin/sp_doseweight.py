@@ -20,7 +20,7 @@ import sp_fundamentals
 
 from scipy.optimize import curve_fit
 from scipy import fftpack
-
+from scipy import interpolate
 
 location =os.getcwd()
 RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
@@ -425,46 +425,55 @@ def create_mask (xlen, ylen):
     return kernel_mask
 
 
-def calculate_bfactor(fsc_array):
+def calculate_bfactor(fsc_array,freq_per_micrograph):
 
-    offset_start = 0
-    offset_end = -1
     frames_range = 24
-    window_len = 1
-    freq_range = len(freq_per_micrograph[0][offset_start:offset_end])
-    N_ITER =5
+    freq_range = len(freq_per_micrograph[0])
+    N_ITER =25
 
-    c_list = np.array([np.random.random() for i in range(frames_range)])
-    b_list = np.array([np.random.random() for i in range(frames_range)])
-    d_list = np.array([np.random.random() for i in range(freq_range)])
+    shift = 10
+    # myk = np.array(range(freq_range)) * 1.0 / (2*freq_range)
+    # myk = myk[shift:]
 
-    FCC_FITTED = np.zeros((frames_range,freq_range))
+    FCC_FITTED = np.zeros((frames_range, freq_range - shift))
 
-    myk = []
-    for k_abs in range(freq_range):
-            k = k_abs*1.0/freq_range
-            myk.append(k)
+    # fsc_final_orig = np.zeros((frames_range, len(myk)))
+
+    # for i in range(frames_range):
+    #     f = interpolate.interp1d(freq_per_micrograph[0], fsc_array[i], kind = 'cubic')
+    #     fsc_final_orig[i] = f(myk)
+
+    fsc_final_orig = fsc_array[:,shift:]
+    myk = freq_per_micrograph[0][shift:]
+
+    dk = np.average(fsc_final_orig, axis=0)
+
+    b_list = np.zeros(frames_range)
+    c_list = np.zeros(frames_range)
+    d_list = dk # np.zeros(freq_range)
 
 
     for iteration in range(N_ITER):
-        for k_index, k in enumerate(myk):
-            fcc_per_k = fsc_array[:,k_index]
-            f_d = lambda u,d: d * np.exp(c_list[u] + 4*b_list[u]*k**2)
-            popt, pconv = curve_fit(f_d, np.arange(frames_range).tolist(), fcc_per_k)
-            d_list[k_index] = popt[0]
-
         for f in range(frames_range):
-            fcc_per_f =   fsc_array[f,:]
-            f_c_b = lambda u,c,b: d_list[u] * np.exp(c + 4*b*(np.array(u)*1.0/freq_range)**2)
-            fcc_per_f[fcc_per_f <= 0 ] = 0.01
-            popt, pconv = curve_fit(f_c_b, range(freq_range), fcc_per_f[offset_start:offset_end], bounds = ((-np.inf,-np.inf), (np.inf,-50) ) )
+            fcc_per_f = fsc_final_orig[f, :]
+            f_c_b = lambda u, c, b: np.multiply(d_list[u], np.exp(c + (4 * b * (myk ** 2))))
+            fcc_per_f[fcc_per_f <= 0] = 0.01
+            popt, pconv = curve_fit(f_c_b, range(len(myk)), fcc_per_f, p0=(0.45, -85),
+                                    bounds=((-20.95, -400), (20, -50)))  # bounds=((-np.inf, -np.inf), (np.inf, -50))
             c_list[f] = popt[0]
             b_list[f] = popt[1]
 
+        for k_index, k in enumerate(myk):
+            fcc_per_k = fsc_final_orig[:, k_index]
+            fcc_per_k[fcc_per_k <= 0] = 0.01
+            f_d = lambda u, d: d * np.exp(c_list[u] + np.multiply(4 * b_list[u], k ** 2))
+            popt, pconv = curve_fit(f_d, np.arange(frames_range).tolist(), fcc_per_k, p0=(0.50), bounds=(0, 5))
+            d_list[k_index] = popt[0]
+
 
     for f in range(frames_range):
-        for k_abs in range(freq_range):
-            k = k_abs*1.0/freq_range
+        for k_abs in range(len(myk)):
+            k = myk[k_abs] #k_abs*1.0/2*freq_range
             FCC_FITTED[f,k_abs] = d_list[k_abs] * np.exp(c_list[f] + 4*b_list[f]*k**2)
 
     return FCC_FITTED, b_list, c_list, d_list
@@ -648,18 +657,18 @@ if my_mpi_proc_id == main_mpi_proc:
     wb.close()
 
 
-    del fsc_values_per_micrograph
-    del fsc_avgs_per_micrograph
-    del freq_per_micrograph
-    del fsc_raw
+    # del fsc_values_per_micrograph
+    # del fsc_avgs_per_micrograph
+    # del freq_per_micrograph
+    # del fsc_raw
 
-
+"""
 print("I am finish")
 #
-"""
+
 
 #%%
-"""
+
 fsc_values_per_micrograph = []
 fsc_avgs_per_micrograph = []
 freq_per_micrograph = []
@@ -715,11 +724,12 @@ freq_per_micrograph = np.array(freq_per_micrograph)
 
 # fsc_raw = np.array(fsc_raw[0])
 
-"""
+
 
 #%%
 
 if main_mpi_proc == my_mpi_proc_id :
+
     fsc_values_per_micrograph = np.array(fsc_values_per_micrograph)
     fsc_avgs_per_micrograph = np.array(fsc_avgs_per_micrograph)
     freq_per_micrograph = np.array(freq_per_micrograph)
@@ -735,7 +745,7 @@ if main_mpi_proc == my_mpi_proc_id :
 
     fsc_sum_per_frame = np.array(fsc_sum_per_frame)[:] * -1
 
-    FCC_FITTED, b_list, c_list, d_list = calculate_bfactor(fsc_sum_per_frame)
+    FCC_FITTED, b_list, c_list, d_list = calculate_bfactor(fsc_sum_per_frame,freq_per_micrograph)
 
     b_list = [float(val) for val in b_list]
     c_list = [float(val) for val in c_list]
@@ -888,40 +898,40 @@ mpi.mpi_finalize()
 #%%
 
 
-# stackfileold = "bdb:/home/adnan/PycharmProjects/DoseWeighting/Substack/isac_substack"
-# boxid_old = EMUtil.get_all_attributes(stackfileold, "ptcl_source_box_id")
-# attrib_old= read_all_attributes_from_stack(stackfileold)
-# no_of_imgs_old = attrib_old[0]
-# ptcl_source_images_old = attrib_old[1]
-#
-#
-# stackfilenew = "bdb:/home/adnan/PycharmProjects/DoseWeighting/all_particles_v2"
-# boxid_new = np.array(EMUtil.get_all_attributes(stackfilenew, "ptcl_source_box_id"))
-# ptcl_source_images_new = np.array(EMUtil.get_all_attributes(stackfilenew, 'ptcl_source_image'))
-#
-# chunks_loc = "/home/adnan/PycharmProjects/DoseWeighting/chunks/"
-# chunck0_file = chunks_loc + "chunk_0_000.txt"
-# chunck1_file = chunks_loc + "chunk_1_000.txt"
-#
-# chunck0 = np.loadtxt(chunck0_file)
-# chunck1 = np.loadtxt(chunck1_file)
-#
-#
-#
-# new_chunck0 = []
-# for i in chunck0:
-#     i = int(i)
-#     print(i)
-#     img_idx = np.where((ptcl_source_images_old[i] == ptcl_source_images_new) & (boxid_old[i] == boxid_new))[0]
-#     new_chunck0.append(int(img_idx))
-#
-# new_chunck1 = [index for index in range(boxid_new.shape[0]) if index not in new_chunck0]
-#
-#
-#
-# np.savetxt(chunks_loc + "polish_chuck_0_000.txt", new_chunck0, fmt = '% 4d')
-# np.savetxt(chunks_loc + "polish_chuck_1_000.txt", new_chunck1, fmt = '% 4d')
-#
+stackfileold = "bdb:/home/adnan/PycharmProjects/DoseWeighting/Substack/isac_substack"
+boxid_old = EMUtil.get_all_attributes(stackfileold, "ptcl_source_box_id")
+attrib_old= read_all_attributes_from_stack(stackfileold)
+no_of_imgs_old = attrib_old[0]
+ptcl_source_images_old = attrib_old[1]
+
+
+stackfilenew = "bdb:/home/adnan/PycharmProjects/DoseWeighting/all_particlesv5"
+boxid_new = np.array(EMUtil.get_all_attributes(stackfilenew, "ptcl_source_box_id"))
+ptcl_source_images_new = np.array(EMUtil.get_all_attributes(stackfilenew, 'ptcl_source_image'))
+
+chunks_loc = "/home/adnan/PycharmProjects/DoseWeighting/chunks/"
+chunck0_file = chunks_loc + "chunk_0_000.txt"
+chunck1_file = chunks_loc + "chunk_1_000.txt"
+
+chunck0 = np.loadtxt(chunck0_file)
+chunck1 = np.loadtxt(chunck1_file)
+
+
+
+new_chunck0 = []
+for i in chunck0:
+    i = int(i)
+    print(i)
+    img_idx = np.where((ptcl_source_images_old[i] == ptcl_source_images_new) & (boxid_old[i] == boxid_new))[0]
+    new_chunck0.append(int(img_idx))
+
+new_chunck1 = [index for index in range(boxid_new.shape[0]) if index not in new_chunck0]
+
+
+
+np.savetxt(chunks_loc + "polish_chuck_0_000.txt", new_chunck0, fmt = '% 4d')
+np.savetxt(chunks_loc + "polish_chuck_1_000.txt", new_chunck1, fmt = '% 4d')
+
 
 
 
