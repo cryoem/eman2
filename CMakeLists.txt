@@ -8,6 +8,10 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+if(CMAKE_COMPILER_IS_GNUCXX AND "${CMAKE_CXX_COMPILER_VERSION}" LESS 5)
+	message(FATAL_ERROR "\nExpected GCC compiler minimum version: 5\nFound GCC version: ${CMAKE_CXX_COMPILER_VERSION}")
+endif()
+
 include(cmake/functions.cmake)
 
 OPTION(DEBUG_CMAKE_TARGETS "enable debug output for cmake target properties" OFF)
