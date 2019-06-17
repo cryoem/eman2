@@ -4,6 +4,10 @@ PROJECT(EMAN
 		LANGUAGES CXX
 		)
 
+if(CMAKE_COMPILER_IS_GNUCXX AND "${CMAKE_CXX_COMPILER_VERSION}" LESS 5)
+	message(FATAL_ERROR "\nExpected GCC compiler minimum version: 5\nFound GCC version: ${CMAKE_CXX_COMPILER_VERSION}")
+endif()
+
 include(cmake/functions.cmake)
 
 OPTION(DEBUG_CMAKE_TARGETS "enable debug output for cmake target properties" OFF)
