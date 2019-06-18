@@ -8,7 +8,7 @@ Compare Re-projections : Compare re-projections to class averages.
 
 Usage in command line
 
-  	sp_proj_compare.py stack input_volume outdir --mode=viper --classangles=angles_file --classselect=img_selection_file --prjmethod=interpolation_method --delta=angular_increment --matchshift=shift_range --matchrad=outer_radius --matchstep=ring_step --symmetry=optional_symmetry --partangles=refinement_params --partselect=substack_select --refineshift=shift_range --outliers=max_angle_diff --refinerad=outer_radius --refinestep=ring_step --align=2d_alignment_method --display --verbose
+  	sp_proj_compare.py stack input_volume outdir --mode=viper --classangles=angles_file --classselect=img_selection_file --prjmethod=interpolation_method --delta=angular_increment --matchshift=shift_range --matchrad=outer_radius --matchstep=ring_step --symmetry=optional_symmetry --partangles=refinement_params --partselect=substack_select --refineshift=shift_range --outliers=max_angle_diff --refinerad=outer_radius --refinestep=ring_step --align=2d_alignment_method --display
 
 
 \\
@@ -57,7 +57,6 @@ Some particles may have been erroneously assigned to a class, as indiciated by a
 === Advanced Parameters ===
   ; %%--%%prjmethod : Interpolation method : Valid choices are trilinear, gridding, and nn. (default trilinear|||gridding|||nn)
   ; %%--%%display : e2display : Automatically pops up a window with the output montage. (default False) 
-  ; %%--%%verbose : verbose : Writes additional messages to the terminal during execution. (default False)
   ; %%--%%matchshift : ProjMatch - Maximum shift : Maximum shift to allow during translation alignment, pixels. (default 2) : %%--%%mode==projmatch
   ; %%--%%matchrad : ProjMatch - Outer radius : Outer alignment radius, defaults to automatically-determined. (default None) : %%--%%mode==projmatch
   ; %%--%%matchstep : ProjMatch - Radius step size : Alignment radius step size. (default 1) : %%--%%mode==projmatch
