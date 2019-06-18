@@ -72,7 +72,7 @@ To use angles stored in the image header:
 %s <input_imgs> <input_volume>
 General, required command-line parameters:
   1. Input image stack
-  2. Input volume to be projected
+  2. Input volume to be projected, same dimension as images
 Outputs:
   docangles.txt : Projection angles applied to input model
   comp-proj-reproj.hdf : Stack of reprojections (numbered 0,2,4...) and averages (numbered 1,3,5...)
@@ -110,7 +110,7 @@ Parameters:
   --refinestep : Alignment radius step size (default 1)
   --align : Alignment method: apsh (default) or scf
 
-Modified 2019-03-23
+Modified 2019-06-17
 
 """ % ((__file__,)*5)
 	
@@ -352,6 +352,8 @@ def main_proj_compare(classavgstack, reconfile, outdir, options, mode='viper', p
 			
 			# Update class-averages
 			classavgstack = newclasses
+	
+	sxprint('Using mode %s\n' % mode)
 	
 	# align de novo to reference map
 	if mode=='projmatch':

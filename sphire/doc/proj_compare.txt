@@ -42,7 +42,7 @@ Some particles may have been erroneously assigned to a class, as indiciated by a
 ===== Input =====
 === Main Parameters ===
   ; stack : Input image stack : Set of 2D images to be compared, i.e., class averages. (default required string)
-  ; input_volume : Input volume : Reconstruction for which re-projections will be computed. In RVIPER, this file is of the form main003/run002/rotated_volume.hdf. (default required string)
+  ; input_volume : Input volume : Reconstruction for which re-projections will be computed. In RVIPER, this file is of the form main003/run002/rotated_volume.hdf. This volume must have the same dimensions as the input images. (default required string)
   ; outdir : Output directory : Directory where outputs will be written. (default required string)
   ; %%--%%mode : Comparison method : Choices are: viper, projmatch, and meridien. (default viper|||projmatch|||meridien)
   ; %%--%%classangles : VIPER - Projection parameter file : Parameter file containing projection angles. Not required if the projection parameters are stored in the header of the input images, which for ISAC2 is generally not the case. In RVIPER, this file is of the form main003/run002/rotated_reduced_params.txt. (default None) : %%--%%mode==viper
