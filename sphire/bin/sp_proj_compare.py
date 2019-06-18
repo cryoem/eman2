@@ -774,7 +774,8 @@ def mode_meridien(reconfile, classavgstack, classdocs, partangles, selectdoc, ma
 		classnum = int(classexample[0][-3:])
 		
 		# Initial average
-		[avg_phi_init, avg_theta_init] = average_angles(partangleslist, classdoc, selectdoc=selectdoc)
+		[avg_phi_init, avg_theta_init] = average_angles(partangleslist, classdoc, selectdoc=selectdoc, 
+				log=log, verbose=verbose)
 		
 		# Look for outliers
 		if outliers:
@@ -813,7 +814,9 @@ def mode_meridien(reconfile, classavgstack, classdocs, partangles, selectdoc, ma
 				outerradius=outerrad, maxshift=maxshift, ringstep=ringstep)
 			
 		outalignlist.append([ang_align2d, sxs, sys, mirrorflag, 1])
-		msg = "Particle list %s: ang_align2d=%s sx=%s sy=%s mirror=%s\n" % (classdoc, ang_align2d, sxs, sys, mirrorflag)
+		msg = "Particle list %s: ang_align2d=%s sx=%s sy=%s mirror=%s" % (classdoc, ang_align2d, sxs, sys, mirrorflag)
+		if outliers: 
+			msg += "\n"
 		print_log_msg(msg, log, verbose)
 		
 		# Check for mirroring
@@ -962,6 +965,7 @@ def compare_projs(reconfile, classavgstack, inputanglesdoc, outdir, interpolatio
 	nx = recondata.get_xsize()
 	
 	# Check whether dimension is odd (prgl does something weird if so. --Tapu)
+	padYN = False
 	if nx % 2 != 0:
 		from sp_utilities import pad
 		
