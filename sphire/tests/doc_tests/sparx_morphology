@@ -531,26 +531,26 @@ It returns -fastigmatism3
         fupw_pap(args, data)
 It returns -fastigmatism3_pap
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-img_blank3D
-IMAGE_BLANK_2D
+
 ################################################################################################################################################################################################################################################
         ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
 		dimage --> img
-		crefim --> img di riferimento
-		xrng -->
-		yrng -->
-		step --> Step da usare nei range di intervallo
-		numr --> vettore contenente tutte le info per l'interpolazione 2D polare
-		mode --> tipo di interpolazione puo' essere F(full circle interpolation) o H (half ...)
-		cnx, cny --> sono i centri predefiniti usati da "Util.Polar2Dm" (see https://blake.grid.bcm.edu/eman2/doxygen_html/util__sparx_8cpp_source.html ln2410)
-		deltapsi --> Usato nel calcolo della crosscorrelazione in LIBem/SPARX/UTIL_SPARX.CPP Util::Crosrng_e. Rappresenta la variazione angolare tra una crosscorrelazione e l'altra
-determina rotazione e traslazione tra i data e l'immagine di riferimento (cimage). No mirror. Interpolazione quadratic
+		crefim --> reference img
+		xrng --> X search range
+		yrng --> Y search range
+		step --> Step used to change the search range
+		numr --> vector containing all the infos for the polar 2D interpolation
+		mode --> type of interpolation F(full circle interpolation) o H (half ...)
+		cnx, cny --> predefined cener used in "Util.Polar2Dm" (see https://blake.grid.bcm.edu/eman2/doxygen_html/util__sparx_8cpp_source.html ln2410)
+		deltapsi --> Represent the angular variation between two correlations. Used in the calculation of crosscorrelation in LIBem/SPARX/UTIL_SPARX.CPP Util::Crosrng_e.
+
+Defines rotation and traslation between the data and the reference image (cimage). No mirror. Interpolazione quadratic
 1) cimage = EMAN2_cppwrap.Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
 2) EMAN2_cppwrap.Util.Frngs(cimage, numr)
 3) EMAN2_cppwrap.Util.Normalize_ring(cimage, numr, 0)
 4 retvals = EMAN2_cppwrap.Util.Crosrng_e(crefim, cimage, numr, 0, deltapsi)
 
 The same of sparx_alignment.ornq" but it normalizes the ring before calculating the crosscorrelation (i.e. the point 3)
-determina rotazione e traslazione tra i data e l'immagine di riferimento (cimage) e valore massimo (peak) di correlazione associato all'angolo restituito "ang". No mirror. Interpolazione quadratic
+Defines rotation and traslation between the data and the reference image (cimage) and the max value (peak) of correlation associated at the returned angle (ang). No mirror. quadratic interpolation
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
