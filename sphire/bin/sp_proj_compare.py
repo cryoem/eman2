@@ -110,7 +110,7 @@ Parameters:
   --refinestep : Alignment radius step size (default 1)
   --align : Alignment method: apsh (default) or scf
 
-Modified 2019-06-17
+Modified 2019-06-18
 
 """ % ((__file__,)*5)
 	
@@ -955,8 +955,20 @@ def compare_projs(reconfile, classavgstack, inputanglesdoc, outdir, interpolatio
 		compstack : Stack of comparisons between input image stack (even-numbered (starts from 0)) and input volume (odd-numbered)
 	"""
 	
+	nimg1   = EMAN2.EMUtil.get_image_count(classavgstack)
+	angleslist = read_text_row(inputanglesdoc)
+	
 	recondata = EMAN2.EMData(reconfile)
 	nx = recondata.get_xsize()
+	
+	# Check whether dimension is odd (prgl does something weird if so. --Tapu)
+	if nx % 2 != 0:
+		from sp_utilities import pad
+		
+		padYN = True
+		nx = nx + 1
+		print_log_msg("WARNING! Inputs have odd dimension, padding to %s" % nx, log, verbose)
+		recondata = pad(recondata, nx, nx, nx, background='circumference')
 
 	# Resample reference
 	reconprep = prep_vol(recondata, npad=2, interpolation_method=interpolation_method)
@@ -968,13 +980,13 @@ def compare_projs(reconfile, classavgstack, inputanglesdoc, outdir, interpolatio
 	mask.write_image(os.path.join(outdir, 'maskalign.hdf'))
 	compstack = os.path.join(outdir, 'comp-proj-reproj.hdf')
 	
-	# Number of images may have changed
-	nimg1   = EMAN2.EMUtil.get_image_count(classavgstack)
-	angleslist = read_text_row(inputanglesdoc)
-	
 	for imgnum in range(nimg1):
 		# Get class average
 		classimg = get_im(classavgstack, imgnum)
+		
+		# Pad if necessary
+		if padYN:
+			classimg = pad(classimg, nx, nx, background='circumference')
 		
 		# Compute re-projection
 		prjimg = prgl(reconprep, angleslist[imgnum], interpolation_method=1, return_real=False)
