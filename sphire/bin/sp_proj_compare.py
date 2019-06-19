@@ -315,6 +315,12 @@ def main_proj_compare(classavgstack, reconfile, outdir, options, mode='viper', p
 			sxprint(msg)
 			exit()
 	
+	# Check whether dimension is odd (prep_vol and/or prgl does something weird if so. --Tapu)
+	if voldim % 2 != 0:
+		padYN = True
+		voldim = voldim + 1
+		print_log_msg("WARNING! Inputs have odd dimension, will pad to %s" % voldim, log, verbose)
+		
 	#  Here if you want to be fancy, there should be an option to chose the projection method,
 	#  the mechanism can be copied from sxproject3d.py  PAP
 	if prjmethod=='trilinear':
@@ -331,6 +337,8 @@ def main_proj_compare(classavgstack, reconfile, outdir, options, mode='viper', p
 	# Set output directory and log file name
 	log, verbose = prepare_outdir_log(outdir, verbose)
 
+	sxprint('Using mode %s\n' % mode)
+	
 	# In case class averages include discarded images, apply selection file
 	if mode == 'viper':
 		if selectdoc:
@@ -352,8 +360,6 @@ def main_proj_compare(classavgstack, reconfile, outdir, options, mode='viper', p
 			
 			# Update class-averages
 			classavgstack = newclasses
-	
-	sxprint('Using mode %s\n' % mode)
 	
 	# align de novo to reference map
 	if mode=='projmatch':
@@ -768,10 +774,12 @@ def mode_meridien(reconfile, classavgstack, classdocs, partangles, selectdoc, ma
 	partangleslist = read_text_row(partangles)
 	
 	# Loop through class lists
-	for classdoc in classdoclist:  # [classdoclist[32]]:  # 
+	for classidx, classdoc in enumerate(classdoclist):  # [classdoclist[32]]:  # 
 		# Strip out three-digit filenumber
 		classexample = os.path.splitext(classdoc)
 		classnum = int(classexample[0][-3:])
+		goodpartdoc = goodclassparttemplate.format(classnum)
+		sxprint('Index %s, particle list %s' % (classidx, goodpartdoc) )
 		
 		# Initial average
 		[avg_phi_init, avg_theta_init] = average_angles(partangleslist, classdoc, selectdoc=selectdoc, 
@@ -781,7 +789,7 @@ def mode_meridien(reconfile, classavgstack, classdocs, partangles, selectdoc, ma
 		if outliers:
 			[avg_phi_final, avg_theta_final] = average_angles(partangleslist, classdoc, selectdoc=selectdoc,
 					init_angles=[avg_phi_init, avg_theta_init], threshold=outliers, 
-					goodpartdoc=goodclassparttemplate.format(classnum), log=log, verbose=verbose)
+					goodpartdoc=goodpartdoc, log=log, verbose=verbose)
 		else:
 			[avg_phi_final, avg_theta_final] = [avg_phi_init, avg_theta_init]
 		
@@ -830,6 +838,7 @@ def mode_meridien(reconfile, classavgstack, classdocs, partangles, selectdoc, ma
 						0,0,-ang_align2d, 0,0, 0,1))
 		# compose_transform3: returns phi,theta,psi, tx,ty,tz, scale
 		
+		####print_log_msg("Particle list %s: combinedparams %s" % (classdoc, combinedparams), log, verbose)  #### DIAGNOSTIC
 		outangleslist.append(combinedparams)
 	# End class-loop
 	
@@ -971,7 +980,7 @@ def compare_projs(reconfile, classavgstack, inputanglesdoc, outdir, interpolatio
 		
 		padYN = True
 		nx = nx + 1
-		print_log_msg("WARNING! Inputs have odd dimension, padding to %s" % nx, log, verbose)
+		print_log_msg("Padding volume and images to %s" % nx, log, verbose)
 		recondata = pad(recondata, nx, nx, nx, background='circumference')
 
 	# Resample reference
