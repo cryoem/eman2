@@ -104,6 +104,17 @@ OPTION(ENABLE_OPTIMIZE_MACHINE "Optimize code for this specific computer (typ 5-
 OPTION(ENABLE_OPTIMIZE_PHI "Optimize code for the Intel compiler on the PHI" OFF)
 OPTION(ENABLE_OPTIMIZE_WINDOWS_VC "Windows visual c++ specific optimization" OFF)
 
+set(optimization_options
+		ENABLE_DEBUG
+		ENABLE_PROFILE
+		ENABLE_OPTIMIZE_X86_64
+		ENABLE_OPTIMIZE_MACHINE
+		ENABLE_OPTIMIZE_PHI
+		ENABLE_OPTIMIZE_WINDOWS_VC
+	)
+
+check_if_options_on_greater_than("${optimization_options}" 1)
+
 IF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
 	OPTION(ENABLE_OPTIMIZE_OSX "enable OSX support" ON)
 ELSE()
