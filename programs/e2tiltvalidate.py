@@ -457,47 +457,6 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False, col
 
 	from eman2_gui.emimage2d import EMImage2DWidget
 	from eman2_gui.emapplication import EMApp
-	r = []
-	theta = []
-	datap = []
-	zaxis = []
-	
-	try:
-		tpdb = js_open_dict("%s/perparticletilts.json"%path)
-		tplist = tpdb["particletilt_list"]
-		maxcolorval = max(tplist, key=lambda x: x[3])[3]
-
-		for tp in tplist:
-			if tp[3] > planethres:	# if the out of plane threshold is too much
-				continue
-			if plotdatalabels: datap.append(tp[0])
-			r.append(tp[1])
-			theta.append(math.radians(tp[2]))
-			# Color the Z axis out of planeness
-			zaxis.append(computeRGBcolor(tp[3],0,maxcolorval))
-		tpdb.close()
-	except:
-		print("Couldn't load tp from DB, not showing polar plot")
-	data = None	
-	try:
-		data = EMData("%s/contour.hdf"%path)
-	except:
-		print("Couldn't open contour plot")
-	
-	if not data and not (theta and r): return
-	app = EMApp()
-	if theta and r:
-		plot = EMValidationPlot()
-		plot.set_data((theta,r),50,radcut,datap)
-		# Color by Z axis if desired
-		if plotzaxiscolor: plot.set_scattercolor([zaxis])
-		plot.set_datalabelscolor(color)
-		plot.show()
-	if data:
-		image = EMImage2DWidget(data)
-		image.show()
-	app.exec_()
-
 	# Compute a RGB value to represent a data range. Basically convert Hue to GSB with I=0.33 and S=1.0
 	def computeRGBcolor(value, minval, maxval):
 		# Normalize from 0 to 1
@@ -587,5 +546,46 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False, col
 		def set_scattercolor(self, color):
 			self.polarplot.setScatterColor(color)
 		
+	r = []
+	theta = []
+	datap = []
+	zaxis = []
+	
+	try:
+		tpdb = js_open_dict("%s/perparticletilts.json"%path)
+		tplist = tpdb["particletilt_list"]
+		maxcolorval = max(tplist, key=lambda x: x[3])[3]
+
+		for tp in tplist:
+			if tp[3] > planethres:	# if the out of plane threshold is too much
+				continue
+			if plotdatalabels: datap.append(tp[0])
+			r.append(tp[1])
+			theta.append(math.radians(tp[2]))
+			# Color the Z axis out of planeness
+			zaxis.append(computeRGBcolor(tp[3],0,maxcolorval))
+		tpdb.close()
+	except:
+		print("Couldn't load tp from DB, not showing polar plot")
+	data = None	
+	try:
+		data = EMData("%s/contour.hdf"%path)
+	except:
+		print("Couldn't open contour plot")
+	
+	if not data and not (theta and r): return
+	app = EMApp()
+	if theta and r:
+		plot = EMValidationPlot()
+		plot.set_data((theta,r),50,radcut,datap)
+		# Color by Z axis if desired
+		if plotzaxiscolor: plot.set_scattercolor([zaxis])
+		plot.set_datalabelscolor(color)
+		plot.show()
+	if data:
+		image = EMImage2DWidget(data)
+		image.show()
+	app.exec_()
+
 if __name__ == "__main__":
 	main()
