@@ -40,6 +40,7 @@ test:
   
   source_files:
     - examples/mpi_test.py
+    - programs/
     - tests/
     - rt/pyem/
 
