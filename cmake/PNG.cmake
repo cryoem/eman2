@@ -1,6 +1,6 @@
 find_package(PNG REQUIRED)
 
-message_var(PNG_LIBRARIES)
+cmake_print_variables(PNG_LIBRARIES)
 
 if(PNG_FOUND)
 	set_target_properties(PNG::PNG

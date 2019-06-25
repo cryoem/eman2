@@ -1,7 +1,7 @@
 CHECK_REQUIRED_LIB(DJBFFT fftc4.h fftr4.h "" "")
 
-message_var(DJBFFT_INCLUDE_PATH)
-message_var(DJBFFT_LIBRARY)
+cmake_print_variables(DJBFFT_INCLUDE_PATH)
+cmake_print_variables(DJBFFT_LIBRARY)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(DJBFFT
