@@ -125,20 +125,21 @@ def main():
 	
 	data=[]
 	wgs=[]
+	keys=[]
 	
 	### to clip fourier space based on resolution
 	sz=threed["nx"]
 	freq=np.fft.fftfreq(sz, threed["apix_x"])[:sz//2]
 	clip=sz//2-np.argmax(freq>1./options.maxres)
-	
-	for i in range(nptcl):
+	n=EMUtil.get_image_count(pname)
+	for i in range(n):
 		
-		sys.stdout.write("\r   {}/{} particles".format(i+1,nptcl))
+		sys.stdout.write("\r   {}/{} particles".format(len(data),nptcl))
 		sys.stdout.flush()
 
 		
 		k="('{}', {})".format(pname, i)
-	#	 if js.has_key(k)==False: continue
+		if js.has_key(k)==False: continue
 		xf=js[k]['xform.align3d']
 		e=EMData(pname, i)
 		e.transform(xf)
@@ -166,6 +167,7 @@ def main():
 		ef[wdg]=0
 		data.append(ef.flatten())
 		wgs.append(wdg.flatten())
+		keys.append(k)
 
 	js.close()
 	data=np.array(data)
@@ -303,11 +305,11 @@ def main():
 	
 	js0=js_open_dict(parmsfile)
 
-	pname=eval(js.keys()[0])[0]
+	#pname=eval(js.keys()[0])[0]
 	dics=[{} for i in range(kmeans.n_clusters)]
 	for i in range(nptcl):
 		if lb[i]>=0:
-			k="('{}', {})".format(pname, i)
+			k=keys[i]
 			dics[lb[i]][k]=js0[k]
 			
 	js0.close()
