@@ -42,13 +42,13 @@ from __future__ import print_function
 import os
 import EMAN2
 from EMAN2 import EMData
-#from EMAN2 import EMUtil, EMArgumentParser, EMANVERSION
+from EMAN2 import EMUtil  # EMArgumentParser, EMANVERSION
 from sp_applications import header, project3d, mref_ali2d
 from sp_utilities import get_im, write_header, model_circle, read_text_row, set_params2D, write_text_row, set_params_proj, compose_transform3, model_blank
 from sp_statistics import ccc
 from sp_fundamentals import rops_table, fft, rot_shift2D
 from sp_projection import prep_vol, prgl
-from math import sqrt, degrees, atan2
+from math import sqrt, degrees, atan2, ceil, log10
 from sp_filter import filt_table
 import sp_global_def
 from datetime import datetime
@@ -110,7 +110,7 @@ Parameters:
   --refinestep : Alignment radius step size (default 1)
   --align : Alignment method: apsh (default) or scf
 
-Modified 2019-06-18
+Modified 2019-06-25
 
 """ % ((__file__,)*5)
 	
@@ -164,6 +164,11 @@ def parse_command_line():
 		'--verbose', "-v", 
 		action="store_true", 
 		help='Increase verbosity')
+
+	parser.add_argument(
+		'--debug', 
+		action="store_true", 
+		help='Write additional debugging information')
 
 	group_viper = parser.add_argument_group(
 		title='VIPER options (--mode=viper)',
@@ -263,7 +268,7 @@ def parse_command_line():
 
 def main_proj_compare(classavgstack, reconfile, outdir, options, mode='viper', prjmethod='trilinear', 
 			 classangles=None, partangles=None, selectdoc=None, 
-			 verbose=False, displayYN=False):
+			 verbose=False, displayYN=False, debug=False):
 	"""
 	Main function overseeing various projection-comparison modes.
 	
@@ -430,14 +435,21 @@ def main_proj_compare(classavgstack, reconfile, outdir, options, mode='viper', p
 			classdir = os.path.join(outdir, 'Byclass')
 			if not os.path.isdir(classdir): os.makedirs(classdir)
 			
+			# Make sure enough digits
+			num_imgs   = EMUtil.get_image_count(classavgstack)
+			num_digits = ceil(log10(num_imgs) )
+			if debug:
+				msg = 'Number of images %s, number of digits allocated %s' % (num_imgs, num_digits)
+				print_log_msg(msg, log, verbose)
+			
 			if options.outliers: 
-				goodclassparttemplate = os.path.join(classdir, 'goodpartsclass{0:03d}.txt')
+				goodclassparttemplate = os.path.join(classdir, 'goodpartsclass{{0:0{0}d}}.txt'.format(num_digits) )
 			else:
 				goodclassparttemplate = None
 		
 			if not options.classdocs:
 				classmap = os.path.join(classdir, 'classmap.txt')
-				classdoc = os.path.join(classdir, 'docclass{0:03d}.txt')
+				classdoc = os.path.join(classdir, 'docclass{{0:0{0}d}}.txt'.format(num_digits) )
 				options.classdocs = os.path.join(classdir, 'docclass*.txt')
 				
 				# Separate particles by class
@@ -446,7 +458,7 @@ def main_proj_compare(classavgstack, reconfile, outdir, options, mode='viper', p
 		mode_meridien(reconfile, classavgstack, options.classdocs, partangles, selectdoc, options.refineshift, options.refinerad, 
 				classangles, outaligndoc, interpolation_method=method_num, outliers=options.outliers,
 				goodclassparttemplate=goodclassparttemplate, alignopt=options.align, ringstep=options.refinestep, 
-				log=log, verbose=verbose)
+				log=log, verbose=verbose, debug=debug)
 		
 	# Import Euler angles
 	print_log_msg("Importing parameter information into %s from %s" % (classavgstack, classangles), log, verbose)
@@ -758,7 +770,7 @@ def vomq(classavgstack, classmap, classdoc, log=None, verbose=False):
 def mode_meridien(reconfile, classavgstack, classdocs, partangles, selectdoc, maxshift, outerrad, 
 					outanglesdoc, outaligndoc, interpolation_method=1, outliers=None, 
 					goodclassparttemplate=None, alignopt='apsh', ringstep=1, 
-					log=None, verbose=False):
+					log=None, verbose=False, debug=False):
 	
 	# Resample reference
 	recondata = EMAN2.EMData(reconfile)
@@ -773,13 +785,16 @@ def mode_meridien(reconfile, classavgstack, classdocs, partangles, selectdoc, ma
 	classdoclist = glob.glob(classdocs)
 	partangleslist = read_text_row(partangles)
 	
+	# Allocate number of digits for class number
+	num_imgs   = EMUtil.get_image_count(classavgstack)
+	num_digits = ceil(log10(num_imgs) )
+	
 	# Loop through class lists
 	for classidx, classdoc in enumerate(classdoclist):  # [classdoclist[32]]:  # 
-		# Strip out three-digit filenumber
+		# Strip out filenumber
 		classexample = os.path.splitext(classdoc)
-		classnum = int(classexample[0][-3:])
-		goodpartdoc = goodclassparttemplate.format(classnum)
-		sxprint('Index %s, particle list %s' % (classidx, goodpartdoc) )
+		classnum = int(classexample[0][-num_digits:])  # number of digits in class number
+		sxprint('Index %s, class number %s' % (classidx, classnum) )
 		
 		# Initial average
 		[avg_phi_init, avg_theta_init] = average_angles(partangleslist, classdoc, selectdoc=selectdoc, 
@@ -787,6 +802,7 @@ def mode_meridien(reconfile, classavgstack, classdocs, partangles, selectdoc, ma
 		
 		# Look for outliers
 		if outliers:
+			goodpartdoc = goodclassparttemplate.format(classnum)
 			[avg_phi_final, avg_theta_final] = average_angles(partangleslist, classdoc, selectdoc=selectdoc,
 					init_angles=[avg_phi_init, avg_theta_init], threshold=outliers, 
 					goodpartdoc=goodpartdoc, log=log, verbose=verbose)
@@ -823,7 +839,7 @@ def mode_meridien(reconfile, classavgstack, classdocs, partangles, selectdoc, ma
 			
 		outalignlist.append([ang_align2d, sxs, sys, mirrorflag, 1])
 		msg = "Particle list %s: ang_align2d=%s sx=%s sy=%s mirror=%s" % (classdoc, ang_align2d, sxs, sys, mirrorflag)
-		if outliers: 
+		if outliers and not debug: 
 			msg += "\n"
 		print_log_msg(msg, log, verbose)
 		
@@ -838,7 +854,8 @@ def mode_meridien(reconfile, classavgstack, classdocs, partangles, selectdoc, ma
 						0,0,-ang_align2d, 0,0, 0,1))
 		# compose_transform3: returns phi,theta,psi, tx,ty,tz, scale
 		
-		####print_log_msg("Particle list %s: combinedparams %s" % (classdoc, combinedparams), log, verbose)  #### DIAGNOSTIC
+		if debug:
+			print_log_msg("Particle list %s: combinedparams %s\n" % (classdoc, combinedparams), log, verbose)
 		outangleslist.append(combinedparams)
 	# End class-loop
 	
@@ -1115,8 +1132,8 @@ if __name__ == "__main__":
 	options = parse_command_line()
 	
 	##print args, options  # (Everything is in options.)
-	#print options  
-	#print('LOGFILE',global_def.LOGFILE)
+	#print('options', options)
+	#print('LOGFILE', sp_global_def.LOGFILE)
 	#exit()
 	
 	# If output directory not specified, write to same directory as class averages
@@ -1138,5 +1155,5 @@ if __name__ == "__main__":
 
 	main_proj_compare(options.classavgs, options.vol3d, outdir, options, mode=options.mode, prjmethod=options.prjmethod, 
 			  classangles=options.classangles, partangles=options.partangles, selectdoc=selectdoc, 
-			  verbose=options.verbose, displayYN=options.display)
+			  verbose=options.verbose, displayYN=options.display, debug=options.debug)
 	sp_global_def.print_timestamp( "Finish" )
