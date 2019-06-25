@@ -8450,6 +8450,7 @@ EMData* DirectionalSumProcessor::process(const EMData* const image ) {
 	if (nz==1) {
 		if (dir=="x") {
 			ret->set_size(ny,1,1);
+			ret->set_attr("apix_x",image->get_attr("apix_y"));
 			for (int y=0; y<ny; y++) {
 				double sm=0;
 				for (int x=0; x<nx; x++) sm+=image->get_value_at(x,y);
@@ -8459,6 +8460,7 @@ EMData* DirectionalSumProcessor::process(const EMData* const image ) {
 		}
 		else if (dir=="y") {
 			ret->set_size(nx,1,1);
+			ret->set_attr("apix_x",image->get_attr("apix_x"));
 			for (int x=0; x<nx; x++) {
 				double sm=0;
 				for (int y=0; y<ny; y++) sm+=image->get_value_at(x,y);
@@ -8475,6 +8477,8 @@ EMData* DirectionalSumProcessor::process(const EMData* const image ) {
 	// compress one of the dimensions
 	if ( dir == "x" ) {
 		ret->set_size(nz,ny);
+		ret->set_attr("apix_x",image->get_attr("apix_z"));
+		ret->set_attr("apix_y",image->get_attr("apix_y"));
 
 		// bounds checks
 		if (a0<0) a0+=nx;
@@ -8494,6 +8498,8 @@ EMData* DirectionalSumProcessor::process(const EMData* const image ) {
 	}
 	else if ( dir == "y" ) {
 		ret->set_size(nx,nz);
+		ret->set_attr("apix_x",image->get_attr("apix_x"));
+		ret->set_attr("apix_y",image->get_attr("apix_z"));
 
 		// bounds checks
 		if (a0<0) a0+=ny;
@@ -8513,6 +8519,8 @@ EMData* DirectionalSumProcessor::process(const EMData* const image ) {
 	}
 	else if ( dir == "z" ) {
 		ret->set_size(nx,ny);
+		ret->set_attr("apix_x",image->get_attr("apix_x"));
+		ret->set_attr("apix_y",image->get_attr("apix_y"));
 
 		// bounds checks
 		if (a0<0) a0+=nz;
