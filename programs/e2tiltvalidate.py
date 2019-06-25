@@ -74,7 +74,7 @@ def main():
 	parser.add_argument("--maxtiltangle", type=float, help="Maximum tiltangle permitted when finding tilt distances", default=180.0, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="analysis")
 	parser.add_argument("--quaternion",action="store_true",help="Use Quaterions for tilt distance computation",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='analysis')
 	parser.add_argument("--sym",  type=str,help="The recon symmetry", default="c1", guitype='symbox', row=5, col=0, rowspan=1, colspan=1, mode="analysis")
-	parser.add_argument("--docontourplot",action="store_true",help="Compute a contour plot",default=False, guitype='boolbox',row=6,col=0, rowspan=1, colspan=1, expert=True, mode="analysis") 
+	parser.add_argument("--docontourplot",action="store_true",help="Compute a contour plot",default=False, guitype='boolbox',row=6,col=0, rowspan=1, colspan=1, expert=True, mode="analysis")
 	parser.add_argument("--tiltrange", type=int,help="The angular tiltrange to search",default=15, guitype='intbox', row=6, col=1, rowspan=1, colspan=1, expert=True, mode="analysis")
 	parser.add_argument("--align", type=str,help="The name of a aligner to be used in comparing the aligned images",default="translational", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', expert=True, row=7, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--cmp", type=str,help="The name of a 'cmp' to be used in comparing the aligned images",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', expert=True, row=8, col=0, rowspan=1, colspan=2, mode="analysis")
@@ -128,7 +128,7 @@ def main():
 	options.align=parsemodopt(options.align)
 	
 	# Make a new dir for each run
-	if not options.path : 
+	if not options.path :
 		#options.path=numbered_path("TiltValidate",True)
 		# Create the run directory structure if it does not exist
 		i = 1
@@ -214,11 +214,11 @@ def main():
 	simmx= EMData.read_images("%s/simmx.hdf"%options.path)
 	simmx_tilt= EMData.read_images("%s/simmx_tilt.hdf"%options.path)
 	projections = EMData.read_images("%s/projections_00.hdf"%options.path)
-	volume = EMData() 
+	volume = EMData()
 	volume.read_image(options.volume) # I don't know why I cant EMData.read_image.......
 	
 	# Generate tilts from data
-	tiltgenerator.findtilts_fromdata(simmx, simmx_tilt, projections, volume, untiltimgs, tiltimgs) 
+	tiltgenerator.findtilts_fromdata(simmx, simmx_tilt, projections, volume, untiltimgs, tiltimgs)
 	
 	if options.docontourplot:
 		# Make contour plot to validate each particle
@@ -366,7 +366,7 @@ class ComputeTilts(object):
 		if anglefound:
 			#self.test.write("The best angle is %f with a tiltaxis of %f\n"%(besttiltangle,besttiltaxis))
 			rot = untilt_euler_xform.get_rotation('eman')
-			self.eulersfile.write("%d 2 %3.2f %3.2f\n"%(imgnum, rot['alt'], rot['az'])) 
+			self.eulersfile.write("%d 2 %3.2f %3.2f\n"%(imgnum, rot['alt'], rot['az']))
 			self.particletilt_list.append([imgnum, besttiltangle,besttiltaxis,bestinplane])
 			return [besttiltangle,besttiltaxis,bestinplane]
 		else:
@@ -416,7 +416,7 @@ class CompareToTiltTask(JSTask):
 				score = tiltalign.cmp(self.options.cmp[0], testprojection, self.options.cmp[1])
 				scoremx.set_value_at(rotx+self.tiltrange, roty+self.tiltrange, score)
 		scoremx.write_image("%s/scorematrix.hdf"%self.options.path, self.imgnum)
-		# Denoise the contiur plot, I need to experiment around with this
+		# Denoise the contour plot, I need to experiment around with this
 		radius = 4
 		scoremx_blur = scoremx.process('eman1.filter.median',{'radius':radius})
 		scoremx_blur = scoremx_blur.get_clip(Region(radius, radius, scoremx_blur.get_xsize() - radius*2, scoremx_blur.get_ysize() - radius*2))
@@ -427,14 +427,14 @@ class CompareToTiltTask(JSTask):
 jsonclasses["CompareToTiltTask"]=CompareToTiltTask.from_jsondict
 
 def run(command):
-	"Execute a command with optional verbose output"		    
+	"Execute a command with optional verbose output"
 	print(command)
 	error = launch_childprocess(command)
 	if error==11 :
-		pass		    
+		pass
 #		print "Segfault running %s\nNormal on some platforms, ignoring"%command
-	elif error : 
-		print("Error running:\n%s"%command)		    
+	elif error :
+		print("Error running:\n%s"%command)
 		exit(1)
 
 
@@ -457,47 +457,6 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False, col
 
 	from eman2_gui.emimage2d import EMImage2DWidget
 	from eman2_gui.emapplication import EMApp
-	r = []
-	theta = []
-	datap = []
-	zaxis = []
-	
-	try:
-		tpdb = js_open_dict("%s/perparticletilts.json"%path)
-		tplist = tpdb["particletilt_list"]
-		maxcolorval = max(tplist, key=lambda x: x[3])[3]
-
-		for tp in tplist:
-			if tp[3] > planethres:	# if the out of plane threshold is too much
-				continue
-			if plotdatalabels: datap.append(tp[0])
-			r.append(tp[1])
-			theta.append(math.radians(tp[2]))
-			# Color the Z axis out of planeness
-			zaxis.append(computeRGBcolor(tp[3],0,maxcolorval))
-		tpdb.close()
-	except:
-		print("Couldn't load tp from DB, not showing polar plot")
-	data = None	
-	try:
-		data = EMData("%s/contour.hdf"%path)
-	except:
-		print("Couldn't open contour plot")
-	
-	if not data and not (theta and r): return
-	app = EMApp()
-	if theta and r:
-		plot = EMValidationPlot()
-		plot.set_data((theta,r),50,radcut,datap)
-		# Color by Z axis if desired
-		if plotzaxiscolor: plot.set_scattercolor([zaxis])
-		plot.set_datalabelscolor(color)
-		plot.show()
-	if data:
-		image = EMImage2DWidget(data)
-		image.show()
-	app.exec_()
-
 	# Compute a RGB value to represent a data range. Basically convert Hue to GSB with I=0.33 and S=1.0
 	def computeRGBcolor(value, minval, maxval):
 		# Normalize from 0 to 1
@@ -531,13 +490,13 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False, col
 			self.polarplot.setMinimumWidth(50)
 			self.resize(480,580)
 			
-			meanAngLabel = QtWidgets.QLabel("Mean Tilt Angle") 
+			meanAngLabel = QtWidgets.QLabel("Mean Tilt Angle")
 			self.meanAngle = QtWidgets.QLineEdit("")
-			meanAxisLabel = QtWidgets.QLabel("Mean Tilt Axis") 
+			meanAxisLabel = QtWidgets.QLabel("Mean Tilt Axis")
 			self.meanAxis = QtWidgets.QLineEdit("")
-			rmsdAngLabel = QtWidgets.QLabel("RMSD Tilt Angle") 
+			rmsdAngLabel = QtWidgets.QLabel("RMSD Tilt Angle")
 			self.rmsdAngle = QtWidgets.QLineEdit("")
-			rmsdAxisLabel = QtWidgets.QLabel("RMSD Tilt Axis") 
+			rmsdAxisLabel = QtWidgets.QLabel("RMSD Tilt Axis")
 			self.rmsdAxis = QtWidgets.QLineEdit("")
 			pointsLabel = QtWidgets.QLabel("Num points")
 			self.points = QtWidgets.QLineEdit("")
@@ -587,5 +546,46 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False, col
 		def set_scattercolor(self, color):
 			self.polarplot.setScatterColor(color)
 		
+	r = []
+	theta = []
+	datap = []
+	zaxis = []
+	
+	try:
+		tpdb = js_open_dict("%s/perparticletilts.json"%path)
+		tplist = tpdb["particletilt_list"]
+		maxcolorval = max(tplist, key=lambda x: x[3])[3]
+
+		for tp in tplist:
+			if tp[3] > planethres:	# if the out of plane threshold is too much
+				continue
+			if plotdatalabels: datap.append(tp[0])
+			r.append(tp[1])
+			theta.append(math.radians(tp[2]))
+			# Color the Z axis out of planeness
+			zaxis.append(computeRGBcolor(tp[3],0,maxcolorval))
+		tpdb.close()
+	except:
+		print("Couldn't load tp from DB, not showing polar plot")
+	data = None
+	try:
+		data = EMData("%s/contour.hdf"%path)
+	except:
+		print("Couldn't open contour plot")
+	
+	if not data and not (theta and r): return
+	app = EMApp()
+	if theta and r:
+		plot = EMValidationPlot()
+		plot.set_data((theta,r),50,radcut,datap)
+		# Color by Z axis if desired
+		if plotzaxiscolor: plot.set_scattercolor([zaxis])
+		plot.set_datalabelscolor(color)
+		plot.show()
+	if data:
+		image = EMImage2DWidget(data)
+		image.show()
+	app.exec_()
+
 if __name__ == "__main__":
 	main()

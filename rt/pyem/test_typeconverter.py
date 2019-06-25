@@ -316,9 +316,6 @@ class TestTypeConverter(unittest.TestCase):
         for i in range(n):
             self.assertEqual(e.get_value_at(i, 0), i)
 
-    if platform.system() == "Windows":
-        test_numpy2em.broken = True
-         
         #test the float64 data(Python float) convert to float32(EMData float)     
     def test_numpy2em2(self):
         """test numpy2em for float64 ........................"""
@@ -329,9 +326,6 @@ class TestTypeConverter(unittest.TestCase):
         diff = numpy.max(numpy.max(n2 - n1))
         self.assertAlmostEqual(diff, 0, 3)
 
-    if platform.system() == "Windows":
-        test_numpy2em2.broken = True
-        
     def test_em2numpy2(self):
         """test em2numpy again .............................."""
         imgfile1 = "test_em2numpy2_1.mrc"

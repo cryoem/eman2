@@ -9,7 +9,7 @@ mkdir ${PREFIX}/install_logs
 conda info -a > ${PREFIX}/install_logs/info_log.txt 2>&1
 conda list    > ${PREFIX}/install_logs/list_log.txt 2>&1
 
-conda install --force-reinstall pytz -y
+conda install --force-reinstall pytz backports backports.functools_lru_cache filelock tqdm -y
 conda install eman-deps=14.1 -c cryoem -c defaults -c conda-forge -y | tee ${PREFIX}/install_logs/install_log.txt 2>&1
 
 cat <<EOF

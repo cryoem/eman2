@@ -4309,7 +4309,7 @@ void ZeroEdgePlaneProcessor::process_inplace(EMData * image)
 	int y0=params["y0"];
 	int y1=params.set_default("y1",y0);
 	int z0=params["z0"];
-	int z1=params.set_default("z1",z1);
+	int z1=params.set_default("z1",z0);
 
 	size_t row_size = nx * sizeof(float);
 	size_t nxy = nx * ny;
