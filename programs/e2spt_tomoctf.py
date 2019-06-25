@@ -21,7 +21,7 @@ def calc_ctf(defocus, bxsz=256, voltage=300, cs=4.7, apix=1. ,phase=0.):
 	
 	for df in defocus:
 		ctf.defocus=df
-		cv.append(ctf.compute_1d(bxsz,ds,Ctf.CtfType.CTF_INTEN))
+		cv.append(abs(np.array(ctf.compute_1d(bxsz,ds,Ctf.CtfType.CTF_AMP))))
 	return np.array(cv)
 
 
@@ -54,12 +54,14 @@ def calc_all_scr(curve, allctf, zlist, bxsz, exclude=[]):
 			continue
 
 		z0=zz[0]
-		z1=np.minimum(zz[-1], int(bxsz/2*.7))
+		z1=np.minimum(zz[-1], int(bxsz/2*.5))
 
-		if z1-z0<bxsz/10: continue
+		if z1-z0<10: continue
 
 		bg=np.array([np.interp(np.arange(z0, z1), zz, p[zz]) for p in curve])
 
+		if len(curve.shape)==1:
+			continue
 		
 		bsub=curve.copy()
 		bsub[:, z0:z1]-=bg
@@ -74,7 +76,7 @@ def calc_all_scr(curve, allctf, zlist, bxsz, exclude=[]):
 			#c*=mx[:, None]
 
 		bsub=bsub[:, z0:z1]
-		bsub[bsub<0]*=0.1
+		#bsub[bsub<0]*=0.1
 		scr=-np.dot(bsub,cf[z0:z1])/(np.sum(cf[z0:z1]))
 #		 scr=np.mean((bsub-cf[z0:z1])**2, axis=1)
 		allscr[i]=scr
@@ -101,21 +103,23 @@ def compute_score(pm, ps, options, sign=-1, fitting=True):
 		
 		ctf.set_phase(phase*np.pi/180.)
 		ctf.defocus=df0 + sign*pz
-		cf=np.array(ctf.compute_1d(bxsz,ds,Ctf.CtfType.CTF_INTEN))
+		cf=abs(np.array(ctf.compute_1d(bxsz,ds,Ctf.CtfType.CTF_AMP)))
 #		 zz=argrelextrema(cf, np.less)[0]
 		zzf=np.array([ctf.zero(i)/ds for i in range(len(cf)/2)])
 		zzf=zzf[zzf<bxsz/2]
 		cv=np.interp(zzf, np.arange(len(curve)), curve)
 	
 		zz=np.round(zzf).astype(int)
+		if len(zz)==0:  continue
 		z0=zz[0]
-		z1=zz[zz>bxsz/2*.7]
+		z1=zz[zz>bxsz/2*.8]
 		if len(z1)>0:
 			z1=z1[0]
 		else:
 			z1=zz[-1]
 
 		z1=min(z1, zz[np.append(True, np.diff(zz)>2)][-1])
+		if z1-z0<10: continue
 		
 		bg=np.interp(np.arange(bxsz//2), zzf, cv)
 
@@ -124,7 +128,7 @@ def compute_score(pm, ps, options, sign=-1, fitting=True):
 		
 
 		if fitting:
-			bsub[bsub<0]*=0.1
+			#bsub[bsub<0]*=0.1
 			#for iz in range(1, len(zz)):
 				#if zz[iz-1]>=z1: break
 				#c=bsub[zz[iz-1]:zz[iz]]
@@ -142,13 +146,16 @@ def compute_score(pm, ps, options, sign=-1, fitting=True):
 			y=(-np.log(np.sqrt(y))*4)/(srg[ev]**2)
 			bf=np.mean(y)
 			ctf.bfactor=bf
-			cf=np.array(ctf.compute_1d(bxsz,ds,Ctf.CtfType.CTF_INTEN))
+			cf=abs(np.array(ctf.compute_1d(bxsz,ds,Ctf.CtfType.CTF_AMP)))
 			allcurves.append((bsub, cf, curve))
 		
 		
 
 	if fitting:
-		return np.mean(allscr)
+		if len(allscr)==0:
+			return 10
+		else:
+			return np.mean(allscr)
 	else:
 		return allcurves
 
@@ -379,23 +386,38 @@ def main():
 				idx[outb]=0
 		
 				s=scr[idx, np.arange(scr.shape[1])].copy()
+				if len(s)==0:
+					stilt[i]=1
+					continue
 				sinf=np.isinf(s)
 				s[outb]=np.max(s)
 				sval=s[np.isinf(s)==0]
 
-				stilt[i]=np.sum(sval)/len(s)
+				if len(sval)==0:
+					stilt[i]=1
+				else:
+					stilt[i]=np.sum(sval)/len(s)
 			
 			allscr.append(stilt)
 			
 		allscr=np.array(allscr)
 		#print(allscr)
-		amp, df= np.array(np.where(allscr==np.min(allscr))).T[0]
-		pm=(defrg[df], pshift[amp])
+		if np.min(allscr)>0.8:
+			if len(exclude)>0:
+				d=np.mean(defrg[dfsel])
+			else:
+				d=np.mean(defrg)
+			pm=(d, np.mean(pshift))
+			
+		else:
+			amp, df= np.array(np.where(allscr==np.min(allscr))).T[0]
+			
+			pm=(defrg[df], pshift[amp])
 		if options.refine:
-			res=minimize(compute_score, pm, (powerspecs[it], options),method='Nelder-Mead',options={'xtol': 1e-3, 'disp': False, "maxiter":30})
+			res=minimize(compute_score, pm, (powerspecs[it], options),method='Nelder-Mead',options={'xtol': 1e-3, 'disp': False, "maxiter":10})
 			pm=res.x
 		
-		print("ID {}, angle {:.1f}, defocus {:.3f}, phase shift {:.1f}".format(it, tltparams[it,3], pm[0], pm[1]))
+		print("ID {}, angle {:.1f}, defocus {:.3f}, phase shift {:.1f}, score {:.1f}".format(it, tltparams[it,3], pm[0], pm[1], np.min(allscr)*1000))
 		dfs.append(pm[0])
 		ctfparams[it]=[pm[1], pm[0]]
 
@@ -407,7 +429,7 @@ def main():
 				print ("Warning: variance of defocus estimation is larger than normal. Something may be wrong...")
 				#return
 			
-			searchrg=min(max(np.std(dfs)*3, 3), 1.5)
+			searchrg=min(max(np.std(dfs)*3, 3), 1.0)
 			dfsel=abs(defrg-np.mean(dfs))<searchrg
 			
 			
