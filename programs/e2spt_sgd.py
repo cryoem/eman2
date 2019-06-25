@@ -156,8 +156,8 @@ def main():
 			#if options.gaussz>0:
 				#avg.process_inplace('filter.lowpass.gauss', {"cutoff_freq":options.gaussz})
 			avg.process_inplace('normalize.edgemean')
-			if options.applysym:
-				avg.process_inplace("xform.applysym",{"sym":options.sym,"averager":"mean.tomo"})
+			#if options.applysym:
+				#avg.process_inplace("xform.applysym",{"sym":options.sym,"averager":"mean.tomo"})
 			
 			if options.fourier:
 				avgft=avg.do_fft()
@@ -184,8 +184,12 @@ def main():
 			
 			ref0=ref.copy()
 			if options.mask:
+				if os.path.isfile(options.mask):
 				
-				ref0.process_inplace("mask.fromfile", {"filename": options.mask})
+					ref0.process_inplace("mask.fromfile", {"filename": options.mask})
+				else:
+					pdict=parsemodopt(options.mask)
+					ref0.process_inplace(pdict[0], pdict[1])
 
 			#ref.write_image(tmpout,-1)
 			ref0.write_image(os.path.join(path,"output.hdf"))
@@ -200,8 +204,9 @@ def main():
 		jspm=None
 		#### if symmetry exist, first align to symmetry axis
 		if options.sym!="c1" and options.reference==None:
-			ref=sym_search(ref, options.sym)
-		
+			ref=sym_search(ref, options)
+		if options.applysym:
+			ref.process_inplace("xform.applysym", {"averager":"mean.tomo", "sym":options.sym})
 		ref.write_image("{}/threed_{:02d}.hdf".format(path, itr), 0)
 
 	#ref.write_image(os.path.join(path,"output.hdf"))
@@ -209,10 +214,10 @@ def main():
 	E2end(logid)
 
 
-def sym_search(e, sym):
+def sym_search(e, options):
 	print("Align to symmetry axis...")
 	ntry=20
-
+	sym=options.sym
 	s=parsesym(sym)
 	oris=s.gen_orientations("rand",{"n":ntry, "phitoo":True})
 	jsd=queue.Queue(0)
@@ -227,9 +232,9 @@ def sym_search(e, sym):
 	scr=[a["score"] for a in alis]
 	im=np.argmin(scr)
 	a=alis[im]
+	a.process_inplace("normalize.edgemean")
 	a.process_inplace("xform.centerofmass")
-	#if options.applysym:
-	#a.process_inplace("xform.applysym", {"averager":"mean.tomo", "sym":sym})
+	
 	#outname=fname[:-4]+"_sym.hdf"
 	#a.write_image(outname)
 	return a
@@ -254,6 +259,8 @@ def make_ref(fname, options):
 		avgr=Averagers.get("mean.tomo")
 		for i in range(options.batchsize):
 			p=EMData(fname, idx[i])
+			p.process_inplace('normalize.edgemean')
+			p.process_inplace('xform.centerofmass')
 			p.transform(xfs[i])
 			avgr.add_image(p)
 		ref=avgr.finish()
@@ -263,6 +270,8 @@ def make_ref(fname, options):
 			ref.process_inplace("math.fft.resample",{"n":options.shrink})
 		#ref.process_inplace("xform.applysym",{"sym":options.sym})
 		ref.process_inplace('normalize.edgemean')
+		ref.process_inplace('xform.centerofmass')
+		ref.process_inplace("mask.soft",{"outer_radius":-4})
 		ref.write_image(rfile)
 	else:
 		er=EMData(options.reference)
