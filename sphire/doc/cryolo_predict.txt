@@ -13,7 +13,7 @@ Usage in command line
 \\
 ===== Typical usage =====
 
-To pick with crYOLO one have to specifiy the config file, the target folder containing the images and the output folder
+To pick with crYOLO, one has to specify the config file, the target folder containing the images and the output folder
 for writing the box files. Optionally one can specify the confidence threshold and which GPUs should be used.
 
 \\ __Prediction__:
@@ -25,7 +25,7 @@ for writing the box files. Optionally one can specify the confidence threshold a
 \\
 ===== Input =====
 === Main Parameters ===
-  ; %%--%%cryolo_predict_path : crYOLO predict executable : Path to the crYOLO prediction executeable (default none)
+  ; %%--%%cryolo_predict_path : crYOLO predict executable : Path to the crYOLO prediction executable (default none)
   ; config_path : Config file: Path of the crYOLO config file.  (default required)
   ; target_dir : Image directory  : Folder which contain all images. (default none)
   ; model_path : Model path : Path to the trained model. (default required)
