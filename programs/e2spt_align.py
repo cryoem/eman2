@@ -80,8 +80,11 @@ This program will take an input stack of subtomograms and a reference volume, an
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default=None)
-	parser.add_argument("--refine",action="store_true",help="local refinement from xform.init in header.",default=False)
+	parser.add_argument("--refine",action="store_true",help="local refinement from xform.align3d in header.",default=False)
+	
+	parser.add_argument("--randphi",action="store_true",help="randomize phi during refine alignment",default=False)
 	parser.add_argument("--maxang",type=float,help="Maximum angular difference for the refine mode. default is 30",default=30)
+	parser.add_argument("--maxshift",type=float,help="Maximum shift for the refine mode. default is 16",default=-1)
 
 
 	(options, args) = parser.parse_args()
@@ -142,7 +145,7 @@ This program will take an input stack of subtomograms and a reference volume, an
 	ref[1].process_inplace("xform.phaseorigin.tocorner")
 
 	
-	jsd=queue.Queue(0)
+	#jsd=queue.Queue(0)
 
 	n=-1
 	#### check if even/odd split exists
@@ -193,8 +196,12 @@ This program will take an input stack of subtomograms and a reference volume, an
 		else:
 			angs[(fsp,n)]=dic
 		
-	js=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
+	out="{}/particle_parms_{:02d}.json".format(options.path,options.iter)
+	if os.path.isfile(out):
+		os.remove(out)
+	js=js_open_dict(out)
 	js.update(angs)
+	js.close()
 
 	del etc
 	
@@ -255,10 +262,16 @@ class SptAlignTask(JSTask):
 		aligndic={"verbose":0,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0, "maxres":options.maxres}
 		
 		if options.refine and b.has_attr("xform.align3d"):
-			ntry=16
+			ntry=8
 			initxf=b["xform.align3d"]
 			xfs=[initxf]
 			for ii in range(ntry-1):
+				if options.randphi:
+					ixf=initxf.get_params("eman")
+					ixf["phi"]=np.random.rand()*360.
+					ixf=Transform(ixf)
+				else:
+					ixf=initxf
 				v=np.random.rand(3)-0.5
 				nrm=np.linalg.norm(v)
 				if nrm>0:
@@ -266,8 +279,8 @@ class SptAlignTask(JSTask):
 				else:
 					v=(0,0,1)
 				xf=Transform({"type":"spin", "n1":v[0], "n2":v[1], "n3":v[2],
-						"omega":options.maxang*np.random.randn()/6.0})
-				xfs.append(xf*initxf)
+						"omega":options.maxang*np.random.randn()/3.0})
+				xfs.append(xf*ixf)
 			
 			
 			#astep=3.0
@@ -280,9 +293,14 @@ class SptAlignTask(JSTask):
 				#xfs.append(Transform(d))
 					
 			aligndic["initxform"]=xfs
-			aligndic["maxshift"]=b["ny"]/10
+			if options.maxshift<0:
+				options.maxshift=16
+			aligndic["maxshift"]=options.maxshift
 			aligndic["maxang"]=options.maxang
 		
+		else:
+			if options.maxshift>0:
+				aligndic["maxshift"]=options.maxshift
 
 		# we align backwards due to symmetry
 		if options.verbose>2 : print("Aligning: ",fsp,i)
