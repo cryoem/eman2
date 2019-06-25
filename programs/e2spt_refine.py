@@ -45,7 +45,9 @@ def main():
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="")
 	parser.add_argument("--refine",action="store_true",help="local refinement from xform.init in header.",default=False)
 	parser.add_argument("--localnorm",action="store_true",help="local normalization. do not use yet....",default=False)
-	parser.add_argument("--resume",action="store_true",help="local normalization. do not use yet....",default=False)
+	parser.add_argument("--resume",action="store_true",help="resume from previous run",default=False)
+	
+	parser.add_argument("--masktight", type=str,help="Mask_tight file", default="")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -157,14 +159,29 @@ def main():
 		
 		even=os.path.join(options.path, "threed_{:02d}_even.hdf".format(itr))
 		odd=os.path.join(options.path, "threed_{:02d}_odd.hdf".format(itr))
+		combine=os.path.join(options.path, "threed_{:02d}.hdf".format(itr))
 		
-		
+		if options.setsf==None:
+			#### do a simple amplitute correction when no sf provided
+			data=EMData(combine)
+			bxsz=data["nx"]
+			apix=data["apix_x"]
+			dataf = data.do_fft()
+			curve = dataf.calc_radial_dist((data["ny"]//2), 0, 1.0, False)
+			curve=np.array([i/dataf["nx"]*dataf["ny"]*dataf["nz"] for i in curve])
+			s=np.arange(len(curve))*1./(apix*bxsz)
+			sf=XYData()
+			sf.set_xy_list(s.tolist(), curve.tolist())
+			
+			
 		for f in [even, odd]:
 			e=EMData(f)
 			e.del_attr("xform.align3d")
-			e.write_image(f)
 			e.write_image(f.replace("threed_{:02d}_".format(itr), "threed_raw_"))
-		
+			if options.setsf==None:
+				e.process_inplace("filter.setstrucfac",{"apix":e["apix_x"],"strucfac":sf})
+			e.write_image(f)
+			
 		
 		msk=options.mask
 		if len(msk)>0:
@@ -172,8 +189,13 @@ def main():
 				msk=" --automask3d mask.fromfile:filename={}".format(msk)
 			else:
 				msk=" --automask3d {}".format(msk)
-		#msk=" --automask3d mask.fromfile:filename=Subtomograms/atpase_mask.hdf"
-		#msk=" --automask3d mask.cylinder:outer_radius=14:phirange=360:zmax=50.0:zmin=14.0 --automask3d2 mask.addshells.gauss:val1=0:val2=8"
+
+		if len(options.masktight)>0:
+			if os.path.isfile(options.masktight):
+				msk+=" --automask3dtight mask.fromfile:filename={}".format(msk)
+			else:
+				msk+=" --automask3dtight {}".format(options.masktight)
+
 		s=""
 		if options.goldstandard>0:
 			s+=" --align"
@@ -184,11 +206,6 @@ def main():
 		if options.localfilter:
 			s+=" --tophat local "
 			
-		#s+=" --tophat global "
-		#if options.gaussz>0:
-			#s+=" --m3dpostprocess filter.lowpass.gaussz:cutoff_freq={}".format(options.gaussz)
-			
-		#os.system("rm {}/mask*.hdf {}/*unmasked.hdf".format(options.path, options.path))
 		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --mass {} --restarget {} --threads {} --sym {} {} {} ".format(even, odd, os.path.join(options.path, "threed_{:02d}.hdf".format(itr)), itr, options.mass, curres, options.threads, options.sym, msk, s)
 		run(ppcmd)
 		
@@ -204,29 +221,6 @@ def main():
 		if curres>40.:
 			curres=40
 		
-		# if options.tltrefine:# and itr%2==0:
-			
-		# 	os.system("rm {}/mask*.hdf {}/*unmasked.hdf".format(options.path, options.path))
-		# 	cmd="e2spt_tltrefine.py --path {} --iter {} --threads {} --sym {} --maxres {} --keep {}".format(options.path, itr, options.threads, options.sym, rs, options.tkeep)
-		# 	if options.tltrefine_unmask:
-		# 		cmd+=" --unmask "
-		# 	run(cmd)
-		# 	#ppcmd=ppcmd.replace("threed_{:02d}".format(itr), "threed_{:02d}_ali".format(itr))
-		# 	run(ppcmd)
-		# 	for eo in ["", "_even", "_odd"]:
-		# 		os.rename("{}/threed_{:02d}{}.hdf".format(options.path, itr, eo), 
-		# 				"{}/threed_{:02d}_ali{}.hdf".format(options.path, itr, eo))
-		# 	refnew=os.path.join(options.path, "threed_{:02d}_ali.hdf".format(itr))
-		# 	if os.path.isfile(refnew):
-		# 		ref=refnew
-		# 		fscs=[os.path.join(options.path,f) for f in os.listdir(options.path) if f.startswith("fsc") and f.endswith("{:02d}.txt".format(itr))]
-		# 		for f in fscs:
-		# 			os.rename(f, f[:-4]+"_ali.txt")
-		# 	else:
-		# 		print("tilt refinement failed for some reason...")
-		# 		return
-			
-	
 
 	E2end(logid)
 	
