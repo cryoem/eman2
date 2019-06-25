@@ -352,6 +352,7 @@ def get_mask_rviper(status_dict, fill_rviper_mask, **kwargs):
 		cmd.append('--mol_mass=XXX_SP_MOL_MASS_XXX')
 		cmd.append('--ndilation=XXX_SP_MASK_RVIPER_NDILAITON_XXX')
 		cmd.append('--edge_width=XXX_SP_MASK_RVIPER_SOFT_EDGE_XXX')
+		cmd.append('--pixel_size=XXX_SP_PIXEL_SIZE_XXX')
 		if fill_rviper_mask:
 			cmd.append('--fill_mask')
 		cmd.append('XXX_SP_MASK_RVIPER_ADDITION_XXX')
@@ -374,7 +375,7 @@ def get_meridien(status_dict, **kwargs):
 	cmd.append('--symmetry=XXX_SP_SYMMETRY_XXX')
 	cmd.append('--memory_per_node=XXX_SP_MEMORY_PER_NODE_XXX')
 	if status_dict['do_mask_rviper']:
-		cmd.append('--mask3D=XXX_SP_MASK_RVIPER_OUTPUT_DIR_XXX/sxmask_mask.hdf')
+		cmd.append('--mask3D=XXX_SP_MASK_RVIPER_OUTPUT_DIR_XXX/sp_mask_mask.hdf')
 	else:
 		cmd.append('--mask3D=XXX_SP_MERIDIEN_INPUT_MASK_XXX')
 	if status_dict['do_isac2']:
@@ -662,7 +663,7 @@ def main(args_as_dict):
 	function_dict['do_restack_sharpening'] = [get_restack_sharpening, False]
 	function_dict['do_ctf_refine_import_params'] = [get_ctf_import_params, False]
 	function_dict['do_ctf_refine'] = [get_ctf_refine, False]
-	function_dict['do_ctf_refine_meridien'] = [get_ctf_meridien, False]
+	function_dict['do_ctf_refine_meridien'] = [get_ctf_meridien, True]
 	function_dict['do_ctf_refine_sharpening'] = [get_ctf_sharpening, False]
 
 	do_dict = {}
