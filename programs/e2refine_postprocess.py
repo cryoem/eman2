@@ -67,6 +67,8 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--automaskexpand", default=-1, type=int,help="Default=boxsize/20. Specify number of voxels to expand mask before soft edge. Only used if automask3d not specified." )
 	parser.add_argument("--automask3d", default=None, type=str,help="Default=auto. Specify as a processor, eg - mask.auto3d:threshold=1.1:radius=30:nshells=5:nshellsgauss=5." )
+	parser.add_argument("--automask3dtight", default=None, type=str,help="replace the mask_tight. only used when automask3d is specified" )
+
 	parser.add_argument("--automask3d2", default=None, type=str,help="Default=None. Specify as a processor. This will be applied to the mask produced by the first automask." )
 	parser.add_argument("--underfilter",action="store_true",default=False,help="This will shift the computed Wiener filter to be about 10%% more resolution than has been achieved.")
 	parser.add_argument("--sym", dest="sym", type=str,default="c1", help="Symmetry so we can decide how to align the particle.")
@@ -292,6 +294,10 @@ def main():
 			mask.process_inplace(amask3d[0],amask3d[1])
 			if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
 			mask.write_image("{path}mask.hdf".format(path=path),0)
+			
+			if options.automask3dtight!=None:
+				amask3dtight=parsemodopt(options.automask3dtight)
+				mask.process_inplace(amask3dtight[0],amask3dtight[1])
 
 #			mask.process_inplace("morph.erode.binary",{"k":2})
 			mask.write_image("{path}mask_tight.hdf".format(path=path),0)
