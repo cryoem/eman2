@@ -1018,7 +1018,7 @@ class SXCmdWidget(QWidget):
 						if np > 1:
 							cmd_line = line
 						else:
-							cmd_line = "XXX_SXCMD_LINE_XXX"
+							cmd_line = "XXX_SXCMD_LINE_XXX " + line.split('XXX_SXCMD_LINE_XXX')[-1]
 						cmd_line = cmd_line.replace("XXX_SXCMD_LINE_XXX", sxcmd_line)
 						if cmd_line.find("XXX_SXMPI_NPROC_XXX") != -1:
 							cmd_line = cmd_line.replace("XXX_SXMPI_NPROC_XXX", str(np))
@@ -1035,7 +1035,7 @@ class SXCmdWidget(QWidget):
 					if np > 1:
 						cmd_line = "mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX"
 					else:
-						cmd_line = "XXX_SXCMD_LINE_XXX"
+						cmd_line = "XXX_SXCMD_LINE_XXX " + line.split('XXX_SXCMD_LINE_XXX')[-1]
 				if cmd_line.find("XXX_SXMPI_NPROC_XXX") != -1:
 					cmd_line = cmd_line.replace("XXX_SXMPI_NPROC_XXX", str(np))
 				if cmd_line.find("XXX_SXCMD_LINE_XXX") != -1:
@@ -2957,7 +2957,6 @@ class SXCmdTab(QWidget):
 
 			# self.mpi_nproc_edit = QLineEdit(self)
 			self.mpi_nproc_edit = QLineEdit()
-			self.mpi_nproc_edit.setText("1")
 			self.mpi_nproc_edit.setToolTip('<FONT>'+"Number of processors to use. default is single processor mode"+'</FONT>')
 			submit_layout.addWidget(self.mpi_nproc_edit, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
@@ -2994,6 +2993,12 @@ class SXCmdTab(QWidget):
 
 			# If MPI is not supported, disable this widget
 			self.set_text_entry_widget_enable_state(self.mpi_nproc_edit, self.sxcmdwidget.sxcmd.mpi_support)
+			if not self.mpi_nproc_edit.isEnabled():
+				self.mpi_nproc_edit.setText("1")
+			elif 'SPHIRE_NPROC' in os.environ:
+				self.mpi_nproc_edit.setText(os.environ['SPHIRE_NPROC'])
+			else:
+				self.mpi_nproc_edit.setText("1")
 			self.set_text_entry_widget_enable_state(self.mpi_cmd_line_edit, self.sxcmdwidget.sxcmd.mpi_support)
 
 			# Add gui components for queue submission (qsub)
@@ -3005,7 +3010,14 @@ class SXCmdTab(QWidget):
 			self.qsub_enable_checkbox = QCheckBox("")
 			if is_qsub_enabled == True:
 				self.qsub_enable_checkbox.setCheckState(Qt.Checked)
-			else: # assert(is_qsub_enabled == False)
+			elif not self.sxcmdwidget.sxcmd.is_submittable:
+				self.qsub_enable_checkbox.setCheckState(Qt.Unchecked)
+			elif 'SPHIRE_ENABLE_QSUB' in os.environ: # assert(is_qsub_enabled == False)
+				if os.environ['SPHIRE_ENABLE_QSUB'].lower() == 'true':
+					self.qsub_enable_checkbox.setCheckState(Qt.Checked)
+				else:
+					self.qsub_enable_checkbox.setCheckState(Qt.Unchecked)
+			else:
 				self.qsub_enable_checkbox.setCheckState(Qt.Unchecked)
 			self.qsub_enable_checkbox.setToolTip('<FONT>'+"Submit job to queue"+'</FONT>')
 			self.qsub_enable_checkbox.stateChanged.connect(self.set_qsub_enable_state) # To control enable state of the following qsub related widgets
@@ -5876,7 +5888,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sp_recons3d_n"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "3D Reconstruction"; sxcmd.short_info = "3D Reconstruction using nearest-neighbor interpolation."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_sort3d"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sp_recons3d_n"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "3D Reconstruction"; sxcmd.short_info = "3D Reconstruction using nearest-neighbor interpolation."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True; sxcmd.category = "sxc_sort3d"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "prj_stack"; token.key_prefix = ""; token.label = "Input stack"; token.help = "Stack of projections "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "bdb2d_stack"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "output_volume"; token.key_prefix = ""; token.label = "Output volume"; token.help = "Output reconstructed volume file "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "output"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "sym"; token.key_prefix = "--"; token.label = "Symmetry"; token.help = "Symmetry. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "c1"; token.restore = [['c1'], ['c1']]; token.type = "sym"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
@@ -6335,7 +6347,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sp_recons3d_n"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "3D Reconstruction"; sxcmd.short_info = "3D Reconstruction using nearest-neighbor interpolation."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_utilities"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sp_recons3d_n"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "3D Reconstruction"; sxcmd.short_info = "3D Reconstruction using nearest-neighbor interpolation."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True; sxcmd.category = "sxc_utilities"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "prj_stack"; token.key_prefix = ""; token.label = "Input stack"; token.help = "Stack of projections "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "bdb2d_stack"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "output_volume"; token.key_prefix = ""; token.label = "Output volume"; token.help = "Output reconstructed volume file "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "output"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "sym"; token.key_prefix = "--"; token.label = "Symmetry"; token.help = "Symmetry. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "c1"; token.restore = [['c1'], ['c1']]; token.type = "sym"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
