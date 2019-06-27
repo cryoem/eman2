@@ -22,6 +22,7 @@ export CPU_COUNT=2
 
 conda info -a
 conda list
+conda list --explicit
 conda render recipes/eman
 conda build purge-all
 
