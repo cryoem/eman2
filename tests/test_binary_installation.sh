@@ -13,4 +13,5 @@ bash "${installer_file}" -bp ${binary_loc}
 source ${binary_loc}/bin/activate root
 conda info -a
 conda list
+conda list --explicit
 bash "${MYDIR}/run_tests_from_binary.sh"
