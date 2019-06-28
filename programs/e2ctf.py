@@ -456,7 +456,7 @@ def write_e2ctf_output(options):
 			if wienerout : print("Wiener image out: ",wienerout, end=' ')
 			print("  defocus=",ctf.defocus)
 
-			process_stack(filename,phaseout,phasehpout,phasesmout,wienerout,phaseprocout,options.extrapad,not options.nonorm,options.oversamp,ctf,invert=options.invert,storeparm=options.storeparm,source_image=options.source_image,zero_ok=options.zerook)
+			process_stack(filename,phaseout,phasehpout,phasesmout,wienerout,phaseprocout,options.extrapad,not options.nonorm,options.oversamp,ctf,invert=options.invert,storeparm=options.storeparm,source_image=options.source_image,zero_ok=options.zerook,verbose=options.verbose)
 
 			if logid : E2progress(logid,old_div(float(i+1),len(options.filenames)))
 
@@ -759,7 +759,7 @@ def env_cmp(sca,envelopes):
 
 	return ret
 
-def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=None,phaseproc=None,extrapad=False,edgenorm=True,oversamp=1,default_ctf=None,invert=False,storeparm=False,source_image=None,zero_ok=False):
+def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=None,phaseproc=None,extrapad=False,edgenorm=True,oversamp=1,default_ctf=None,invert=False,storeparm=False,source_image=None,zero_ok=False,verbose=0):
 	"""Will phase-flip and/or Wiener filter particles in a file based on their stored CTF parameters.
 	phaseflip should be the path for writing the phase-flipped particles
 	wiener should be the path for writing the Wiener filtered (and possibly phase-flipped) particles
@@ -808,6 +808,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 
 	js_parms.close()
 
+	nbad=0
 	for i in range(n):
 		if source_image!=None :
 			im1=EMData()
@@ -824,7 +825,8 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 
 		# If we detected a zero edge, we mark the particle as bad
 		if not zero_ok and im1.has_attr("hadzeroedge") and im1["hadzeroedge"]!=0:
-			print("Particle outside of micrograph detected, marking as bad ({},{})".format(stackfile,i))
+			if verbose>1 : print("Particle outside of micrograph detected, marking as bad ({},{})".format(stackfile,i))
+			nbad+=1
 			js=js_open_dict(info_name(stackfile))
 			try:
 				s=js["sets"]
@@ -973,6 +975,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 	#if phaseflip and phaseflip[:4]=="bdb:" : db_close_dict(phaseflip)
 
 	db_close_dict(stackfile)	# this is safe even for non bdb: files
+	if nbad>0 : print(nbad," bad particles (extending outside image) identified in ",stackfile)
 
 	return
 

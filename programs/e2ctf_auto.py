@@ -172,7 +172,7 @@ Strongly suggest refitting CTF from frames with e2rawdata.py with revised parame
 			sys.exit(1)
 
 	if options.invartype=="auto" :
-		try: options.invartype=str(project(["global.invartype"]))
+		try: options.invartype=str(project(["global.invariant_type"]))
 		except: 
 			print("Warning: no project invariant type spectified, using bispectrum")
 			options.invartype="bispec"

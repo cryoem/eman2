@@ -141,7 +141,7 @@ def main():
 			thrds[rd[0]].join()
 			thrds[rd[0]]=None
 			
-			if options.verbose>1:
+			if options.verbose>0:
 				print("{} done with {} ptcls. ".format(rd[0],len(rd[1])), end=' ')
 
 

@@ -68,8 +68,10 @@ def main():
 	parser.add_argument("--classmx",type=str,help="Store results in a classmx_xx.hdf style file",default=None)
 	parser.add_argument("--classinfo",type=str,help="Store results in a classinfo_xx.json style file",default=None)
 	parser.add_argument("--classes",type=str,help="Generate class-averages directly. No bad particle exclusion or iteration. Specify filename.",default=None)
-	parser.add_argument("--averager",type=str,help="Averager to use for class-averages",default="ctf.weight")	
-        parser.add_argument("--invartype",choices=["auto","bispec","harmonic"],help="Which type of invariants to generate: (bispec,harmonic)",default="auto")
+	parser.add_argument("--averager",type=str,help="Averager to use for class-averages",default="ctf.weight")
+	parser.add_argument("--invartype",choices=["auto","bispec","harmonic"],help="Which type of invariants to generate: (bispec,harmonic)",default="auto")
+	parser.add_argument("--msamode",type=str,help="Enable MSA based classification, default=disabled, typically 'pca', see e2msa.py --mode option for full list",default=None)
+	parser.add_argument("--nbasisfp",type=int,default=12,help="Only used in MSA mode. Number of MSA basis vectors to use when classifying particles, default=12")
 
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on the local computer")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
@@ -85,11 +87,14 @@ def main():
 	options.raligncmp=parsemodopt(options.raligncmp)
 	options.cmp=parsemodopt(options.cmp)
 
-        if options.invartype=="auto" :
-                try: options.invartype=str(project(["global.invartype"]))
-                except: 
-                        print("Warning: no project invariant type spectified, using bispectrum")
-                        options.invartype="bispec"
+	if options.invartype=="auto" :
+			try: 
+				project=js_open_dict("info/project.json")
+				options.invartype=str(project["global.invariant_type"])
+			except: 
+				traceback.print_exc()
+				print("Warning: no project invariant type spectified, using bispectrum")
+				options.invartype="bispec"
 
 	
 	E2n=E2init(sys.argv, options.ppid)
@@ -101,7 +106,7 @@ def main():
 
 	# get refs and invariants
 	refs=EMData.read_images(args[0])
-	refsbsfs=args[0].rsplit(".")[0]+"_invar.hdf"
+	refsbsfs=args[0].rsplit(".")[0]+"_invar.hdf"		# this starts out as a filename, then gets turned into a list of images later
 	try:
 		nrefbs=EMUtil.get_image_count(refsbsfs)
 		if nrefbs!=len(refs) :
@@ -115,14 +120,16 @@ def main():
         	if options.invartype=="bispec" :
 			com="e2proc2dpar.py {inp} {out} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process mask.soft:outer_radius={maskrad}:width={maskw} --process math.bispectrum.slice:size={bssize}:fp={bsdepth} --threads {threads}".format(
 			inp=args[0],out=refsbsfs,maskrad=int(refs[0]["nx"]//2.2),maskw=int(refs[0]["nx"]//15),bssize=bispec_invar_parm[0],bsdepth=bispec_invar_parm[1],threads=options.threads)
+			if options.msamode!=None :
+				print("WARNING: --msamode only supported for harmonic invariants, disabling")
+				options.msamode=None
 		else:
 			com="e2proc2dpar.py {inp} {out} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process mask.soft:outer_radius={maskrad}:width={maskw} --process math.harmonic:fp=4 --threads {threads}".format(
 			inp=args[0],out=refsbsfs,maskrad=int(refs[0]["nx"]//2.2),maskw=int(refs[0]["nx"]//15),threads=options.threads)
 
+
 		run(com)
 	
-	refsbs=EMData.read_images(refsbsfs)
-	#refsbs=[i.process("filter.highpass.gauss",{"cutoff_freq":0.01}).process("normalize.edgemean").process("math.bispectrum.slice:size=32:fp=6") for i in refs]
 	
 	# Find particle invariants
 	if "__ctf_flip" in args[1]:
@@ -140,6 +147,47 @@ def main():
 	else:
 		if "even" in args[1]: bsfs=args[1].split("_even")[0]+"_invar_even.lst"
 		elif "odd" in args[1]: bsfs=args[1].split("_odd")[0]+"_invar_odd.lst"
+		
+	if options.msamode!=None:
+		path=os.path.dirname(args[0])
+		# Tried using basis defined by particles, but that seemed to have issues with rare orientations
+		#basisname=bsfs.replace("_invar_","_invar_basis_").replace(".lst",".hdf")
+		#projname= bsfs.replace("_invar_","_invar_proj_").replace(".lst",".hdf")
+		#refprojname=args[0].rsplit(".")[0]+"_invar_proj.hdf"
+		basisname=refsbsfs.replace("_invar","_invar_basis")
+		if "even" in bsfs : eo="_even"
+		else: eo="_odd"
+		projname= "{}/ptcl_invar_proj{}.hdf".format(path,eo)
+		refprojname=args[0].rsplit(".")[0]+"_invar_proj.hdf"
+		
+		try: 
+			nbasis=EMUtil.get_image_count(basisname)
+			nproj=EMUtil.get_image_count(projname)
+		except: 
+			nbasis=0
+			nproj=0
+		
+		#if nproj==nptcl and nbasis==options.nbasisfp:
+			#if (options.verbose>0) : print("Existing ptcl_proj.hdf and ptcl_basis.hdf found. Skipping generation.")
+		#else:
+		# subspace is defined by the data not by the references
+#			com="e2msa.py {} {} --nbasis {} --mode {} -v 1".format(bsfs,basisname,options.nbasisfp,options.msamode)
+#			com="e2msa.py {} {} --nbasis {} --mode {} --nomeansub -v 1".format(bsfs,basisname,options.nbasisfp,options.msamode)
+		com="e2msa.py {} {} --nbasis {} --mode {} --nomeansub -v 1".format(refsbsfs,basisname,options.nbasisfp,options.msamode)
+		run(com)
+		# project particles into subspace, this doesn't change from one iteration to the next
+#			com="e2basis.py project {} {} {} --mean1".format(basisname,bsfs,projname)
+		com="e2basis.py project {} {} {} ".format(basisname,bsfs,projname)
+		run(com)
+
+		# project the references into the subspace defined by the data
+#		com="e2basis.py project {} {} {} --mean1".format(basisname,refsbsfs,refprojname)
+		com="e2basis.py project {} {} {} --normproj".format(basisname,refsbsfs,refprojname)
+		run(com)
+		refsbs=EMData.read_images(refprojname)
+	else:
+		refsbs=EMData.read_images(refsbsfs)
+		#refsbs=[i.process("filter.highpass.gauss",{"cutoff_freq":0.01}).process("normalize.edgemean").process("math.bispectrum.slice:size=32:fp=6") for i in refs]
 		
 	### initialize output files
 	
@@ -160,7 +208,10 @@ def main():
 	
 	jsd=queue.Queue(0)
 	# these start as arguments, but get replaced with actual threads
-	thrds=[(jsd,refs,refsbs,args[1],bsfs,options,i,i*npt,min(i*npt+npt,N)) for i in range(old_div(N,npt)+1)]
+	if options.msamode!=None:
+		thrds=[(jsd,refs,refsbs,args[1],projname,options,i,i*npt,min(i*npt+npt,N)) for i in range(old_div(N,npt)+1)]
+	else:
+		thrds=[(jsd,refs,refsbs,args[1],bsfs,options,i,i*npt,min(i*npt+npt,N)) for i in range(old_div(N,npt)+1)]
 	
 	# standard thread execution loop
 	thrtolaunch=0
@@ -274,15 +325,18 @@ def clsfn(jsd,refs,refsbs_org,ptclfs,ptclbsfs,options,grp,n0,n1):
 		if fabs(ctf.defocus-lastdf)>0.1: 
 #			print "New DF {} -> {}   ( {} -> {} )".format(lastdf,ctf.defocus,lastdfn,i)
 			# note that with purectf=1 this is replacing the image entirely
-			ctfim=ptcl.process("math.simulatectf",{"voltage":ctf.voltage,"cs":ctf.cs,"defocus":ctf.defocus,"bfactor":ctf.bfactor,"ampcont":ctf.ampcont,"apix":ctf.apix,"phaseflip":0,"purectf":1})
-			if ptclbs.has_attr("is_harmonic_fp"):
-				dfmod=ctfim.process("math.harmonic",{"fp":4})
-			else:
+			refsbs=[im.copy() for im in refsbs_org]
+			if ptclbs.has_attr("is_bispec_fp"):
+				ctfim=ptcl.process("math.simulatectf",{"voltage":ctf.voltage,"cs":ctf.cs,"defocus":ctf.defocus,"bfactor":ctf.bfactor,"ampcont":ctf.ampcont,"apix":ctf.apix,"phaseflip":0,"purectf":1})
 				dfmod=ctfim.process("math.bispectrum.slice",{"size":bispec_invar_parm[0],"fp":bispec_invar_parm[1]})
+				for im in refsbs: im.mult(dfmod)
+			else:
+				# It appears that due to the rotational correlation, the harmonic fp's are not impacted much by CTF in a way that would impact classification
+				#dfmod=ctfim.process("math.harmonic",{"fp":4})
+				dfmod=None
+			
 			#print(ctfim["nx"],dfmod["nx"],refsbs_org[0]["nx"])
 			#print(ctfim["ny"],dfmod["ny"],refsbs_org[0]["ny"])
-			refsbs=[im.copy() for im in refsbs_org]
-			for im in refsbs: im.mult(dfmod)
 #			print "New DF done ",ctf.defocus
 			lastdf=ctf.defocus
 			lastdfn=i
