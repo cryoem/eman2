@@ -27,7 +27,7 @@ if(GIT_EXECUTABLE)
 	# git-describe output: <tag>-<num-of-commits-since-tag>-g<hash>
 	string(REGEX REPLACE
 		   "^.*-.*-g" ""
-		   EMAN_GITHASH ${EMAN_GITHASH}
+		   EMAN_GITHASH "${EMAN_GITHASH}"
 		   )
 endif()
 
