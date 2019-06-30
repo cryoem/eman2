@@ -370,31 +370,6 @@ float pysdot( int n, np::ndarray& x, int incx, np::ndarray& y, int incy )
     return sdot_( &n, fx, &incx, fy, &incy );
 }
 
-void readarray( object& f, np::ndarray& x, int size)
-{
-#ifdef IS_PY3K
-	extern PyTypeObject PyIOBase_Type;
-	if(!PyObject_IsInstance(f.ptr(), (PyObject *)&PyIOBase_Type) )
-#else
-	if( !PyFile_Check(f.ptr()) )
-#endif	//IS_PY3K
-    {
-        std::cout << "Error: expecting a file object" << std::endl;
-        return;
-    }
-
-#ifdef IS_PY3K
-	int fd = PyObject_AsFileDescriptor( f.ptr() );
-	FILE*  fh = fdopen(fd, "r");
-#else
-    FILE*  fh = PyFile_AsFile( f.ptr() );
-#endif	//IS_PY3K
-    float* fx = get_fptr( x );
-
-    fread( fx, sizeof(float), size, fh );
-}
-
-
 // k_means_cont_table_ is locate to util_sparx.cpp
 int pyk_means_cont_table(np::ndarray& group1, np::ndarray& group2, np::ndarray& stb, long int s1, long int s2, int flag) {
     int* pt_group1 = get_iptr(group1);
@@ -761,7 +736,6 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.def("sgemv",  &pysgemv, args("trans", "m", "n", "alpha", "a", "lda", "x", "incx", "beta", "y", "incy"), "")
 		.def("saxpy",  &pysaxpy, args("n", "alpha", "x", "incx", "y", "incy"), "")
 		.def("sdot",   &pysdot, args("n", "x", "incx", "y", "incy"), "")
-		.def("readarray", &readarray, args("f", "x", "size"), "")
 		.def("k_means_cont_table", &pyk_means_cont_table, args("group1", "group2", "stb", "s1", "s2", "flag"), "k_means_cont_table_ is locate to util_sparx.cpp\nhelper to create the contengency table for partition matching (k-means)\nflag define is the list of stable obj must be store to stb, but the size st\nmust be know before. The trick is first start without the flag to get number\nof elements stable, then again with the flag to get the list. This avoid to\nhave two different functions for the same thing.")
 		.def("bb_enumerateMPI", &pybb_enumerateMPI, args("parts", "classDims", "nParts", "nClasses", "T", "nguesses", "LARGEST_CLASS","J","max_branching","stmult","branchfunc", "LIM"), "bb_enumerateMPI is locate in util_sparx.cpp\nK is the number of classes in each partition (should be the same for all partitions)\nthe first element of each class is its original index in the partition, and second is dummy var\nMPI: if nTop <= 0, then initial prune is called, and the pruned partitions are returned in a 1D array.\nThe first element is reserved for max_levels (the size of the smallest\npartition after pruning).\nif nTop > 0, then partitions are assumed to have been pruned, where only dummy variables of un-pruned partitions are set to 1, and findTopLargest is called\nto find the top weighted matches. The matches, where each match is preceded by its cost, is returned in a one dimensional vector.\nessentially the same as bb_enumerate but with the option to do mpi version.")
 		.def("Normalize_ring", &EMAN::Util::Normalize_ring, args("ring", "numr", "norm_by_square"), "")
@@ -1061,7 +1035,6 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.staticmethod("snrm2")
 		.staticmethod("saxpy")
 		.staticmethod("sdot")
-		.staticmethod("readarray")
 		.staticmethod("k_means_cont_table")
 		.staticmethod("bb_enumerateMPI")
 		.staticmethod("Normalize_ring")
