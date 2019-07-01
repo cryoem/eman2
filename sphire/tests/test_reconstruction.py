@@ -41,6 +41,10 @@ There are some opened issues in:
 8) Test_prepare_recons_ctf are crashing using di 'PRJLIST' beacause 'half.insert_slice(data[i], xform_proj )' ...maybe changing the image we get no crash ... WHICH ONE?
                 --> in practice all the cases with param 'half_start'<len(data)                
 9) Test_rec3D_MPI -->same problem as (8) when  set  odd_start=0 becuase it is used as 'half_start' when it calls 'prepare_recons_ctf'
+10) Test_rec3D_two_chunks_MPI: 
+    a) How can I create a valid mask?
+    b) where can I find a valid file with for  the fsc curve"
+    c) how can I reach the nproc !+ 1? --> I have to use mpi_comm !=MPI_COMM_WORLD. But I got always MPI_ERRORS_ARE_FATAL
 """
 class Test_insert_slices(unittest.TestCase):
     size = 76
@@ -1040,6 +1044,8 @@ class Test_rec3D_MPI_noCTF(unittest.TestCase):
 
 
 class Test_prepare_recons_ctf_two_chunks(unittest.TestCase):
+    data,option, not_used = get_arg_from_pickle_file(os.path.join(ABSOLUTE_PATH, "pickle files/multi_shc/multi_shc.do_volume"))[0]
+
     def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.prepare_recons_ctf_two_chunks()
@@ -1048,9 +1054,191 @@ class Test_prepare_recons_ctf_two_chunks(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, "prepare_recons_ctf_two_chunks() takes at least 7 arguments (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
+    def test_None_data_returns_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.prepare_recons_ctf_two_chunks(100, None, snr =1 , symmetry="c1", myid=0 , main_node_half=0, chunk_ID =2, npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.5)
+            mpi_barrier(MPI_COMM_WORLD)
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.prepare_recons_ctf_two_chunks(100, None, snr =1 , symmetry="c1", myid=0 , main_node_half=0, chunk_ID =2,  npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.5)
+            mpi_barrier(MPI_COMM_WORLD)
+        self.assertEqual(cm_new.exception.message, "object of type 'NoneType' has no len()")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_image_data_returns_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.prepare_recons_ctf_two_chunks(100, EMData(), snr =1 , symmetry="c1", myid=0 , main_node_half=0, chunk_ID =2, npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.5)
+            mpi_barrier(MPI_COMM_WORLD)
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.prepare_recons_ctf_two_chunks(100, EMData(), snr =1 , symmetry="c1", myid=0 , main_node_half=0, chunk_ID =2,  npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.5)
+            mpi_barrier(MPI_COMM_WORLD)
+        self.assertEqual(cm_new.exception.message, "object of type 'EMData' has no len()")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_image_data_returns_RunTimeError(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.prepare_recons_ctf_two_chunks(100, [EMData()], snr =1 , symmetry="c1", myid=0 , main_node_half=0, chunk_ID =2, npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.5)
+            mpi_barrier(MPI_COMM_WORLD)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.prepare_recons_ctf_two_chunks(100, [EMData()], snr =1 , symmetry="c1", myid=0 , main_node_half=0, chunk_ID =2,  npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.5)
+            mpi_barrier(MPI_COMM_WORLD)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
+        self.assertEqual(msg[1] + msg[2] + msg[3] + msg[4], "chunk_id: The requested key does not exist caught\n")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[1] + msg[2] + msg[3] + msg[4], msg_old[1] + msg_old[2] + msg_old[3] + msg_old[4])
+
+    def test_invalid_symmetry_returns_RunTimeError(self):
+        d = deepcopy(self.data)
+        nx = d[0].get_xsize()
+        d[0].set_attr("chunk_id", 0)
+
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.prepare_recons_ctf_two_chunks(nx, d, snr=1, symmetry="not_valid", myid=0, main_node_half=0, chunk_ID=2,
+                                             npad=self.option.npad, mpi_comm=MPI_COMM_WORLD, smearstep=0.5)
+        mpi_barrier(MPI_COMM_WORLD)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.prepare_recons_ctf_two_chunks(nx, d, snr=1, symmetry="not_valid", myid=0, main_node_half=0,
+                                                chunk_ID=2, npad=self.option.npad, mpi_comm=MPI_COMM_WORLD,
+                                                smearstep=0.5)
+        mpi_barrier(MPI_COMM_WORLD)
+
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
+        self.assertEqual(msg[1] + msg[2] + msg[3] + msg[4], "not_valid: No such an instance existing caught\n")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[1] + msg[2] + msg[3] + msg[4], msg_old[1] + msg_old[2] + msg_old[3] + msg_old[4])
+
+    def test_negative_size_returns_RuntimeError(self):
+        d = deepcopy(self.data)
+        sym = self.option.sym
+        sym = sym[0].lower() + sym[1:]
+        d[0].set_attr("chunk_id", 0)
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.prepare_recons_ctf_two_chunks(-10, d, snr =1 , symmetry=sym, myid=0 , main_node_half=0, chunk_ID =2, npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.prepare_recons_ctf_two_chunks(-10, d, snr =1 , symmetry=sym, myid=0 , main_node_half=0, chunk_ID =2,  npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], "x size <= 0")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_zero_chunk_ID_crashes_because_signal11SIGSEV(self):
+        """
+        d = deepcopy(self.data)
+        sym = self.option.sym
+        sym = sym[0].lower() + sym[1:]
+        nx = d[0].get_xsize()
+        d[0].set_attr("chunk_id", 0)
+
+        return_new = fu.prepare_recons_ctf_two_chunks(nx, d, snr =1 , symmetry=sym, myid=0 , main_node_half=0, chunk_ID =0, npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_old = oldfu.prepare_recons_ctf_two_chunks(nx, d, snr =1 , symmetry=sym, myid=0 , main_node_half=0, chunk_ID =0,  npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        self.assertEqual(returns_values_in_file(return_old[0]), returns_values_in_file(return_new[0]))
+        self.assertEqual(returns_values_in_file(return_old[1]), returns_values_in_file(return_new[1]))
+        remove_list_of_file(list(return_new) + list(return_old) + [name.replace("fftvol","weight") for name in return_new+return_old])
+        """
+        self.assertTrue(True)
+
+    def test_prepare_recons_ctf_two_chunks_pickle_case(self):
+        d = deepcopy(self.data)
+        sym = self.option.sym
+        sym = sym[0].lower() + sym[1:]
+        nx = d[0].get_xsize()
+        d[0].set_attr("chunk_id", 0)
+
+        return_new = fu.prepare_recons_ctf_two_chunks(nx, d, snr =1 , symmetry=sym, myid=0 , main_node_half=0, chunk_ID =2, npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_old = oldfu.prepare_recons_ctf_two_chunks(nx, d, snr =1 , symmetry=sym, myid=0 , main_node_half=0, chunk_ID =2,  npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        self.assertEqual(returns_values_in_file(return_old[0]), returns_values_in_file(return_new[0]))
+        self.assertEqual(returns_values_in_file(return_old[1]), returns_values_in_file(return_new[1]))
+        remove_list_of_file(list(return_new) + list(return_old) + [name.replace("fftvol","weight") for name in return_new+return_old])
+
+    @unittest.skip("skip MPI_ERR_ROOT: invalid root")
+    def test_different_node(self):
+        d = deepcopy(self.data)
+        sym = self.option.sym
+        sym = sym[0].lower() + sym[1:]
+        nx = d[0].get_xsize()
+        d[0].set_attr("chunk_id", 0)
+
+        return_new = fu.prepare_recons_ctf_two_chunks(nx, d, snr =1 , symmetry=sym, myid=0 , main_node_half=1, chunk_ID =2, npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_old = oldfu.prepare_recons_ctf_two_chunks(nx, d, snr =1 , symmetry=sym, myid=0 , main_node_half=1, chunk_ID =2,  npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        self.assertEqual(return_old,return_new)
+        self.assertTrue(return_new is None)
+
+    def test_positive_smearstep(self):
+        d = deepcopy(self.data)
+        sym = self.option.sym
+        sym = sym[0].lower() + sym[1:]
+        nx = d[0].get_xsize()
+        d[0].set_attr("chunk_id", 0)
+
+        return_new = fu.prepare_recons_ctf_two_chunks(nx, d, snr =1 , symmetry=sym, myid=0 , main_node_half=0, chunk_ID =2, npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.5)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_old = oldfu.prepare_recons_ctf_two_chunks(nx, d, snr =1 , symmetry=sym, myid=0 , main_node_half=0, chunk_ID =2,  npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.5)
+        mpi_barrier(MPI_COMM_WORLD)
+        self.assertEqual(returns_values_in_file(return_old[0]), returns_values_in_file(return_new[0]))
+        self.assertEqual(returns_values_in_file(return_old[1]), returns_values_in_file(return_new[1]))
+        remove_list_of_file(list(return_new) + list(return_old) + [name.replace("fftvol","weight") for name in return_new+return_old])
+
+    def test_zero_size(self):
+        d = deepcopy(self.data)
+        sym = self.option.sym
+        sym = sym[0].lower() + sym[1:]
+        d[0].set_attr("chunk_id", 0)
+        return_new = fu.prepare_recons_ctf_two_chunks(0, d, snr =1 , symmetry=sym, myid=0 , main_node_half=0, chunk_ID =2, npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_old = oldfu.prepare_recons_ctf_two_chunks(0, d, snr =1 , symmetry=sym, myid=0 , main_node_half=0, chunk_ID =2,  npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        self.assertEqual(returns_values_in_file(return_old[0]), returns_values_in_file(return_new[0]))
+        self.assertEqual(returns_values_in_file(return_old[1]), returns_values_in_file(return_new[1]))
+        remove_list_of_file(list(return_new) + list(return_old) + [name.replace("fftvol","weight") for name in return_new+return_old])
+
+    def test_zero_snr(self):
+        d = deepcopy(self.data)
+        sym = self.option.sym
+        sym = sym[0].lower() + sym[1:]
+        nx = d[0].get_xsize()
+        d[0].set_attr("chunk_id", 0)
+
+        return_new = fu.prepare_recons_ctf_two_chunks(nx, d, snr =0 , symmetry=sym, myid=0 , main_node_half=0, chunk_ID =2, npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_old = oldfu.prepare_recons_ctf_two_chunks(nx, d, snr =0 , symmetry=sym, myid=0 , main_node_half=0, chunk_ID =2,  npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        self.assertEqual(returns_values_in_file(return_old[0]), returns_values_in_file(return_new[0]))
+        self.assertEqual(returns_values_in_file(return_old[1]), returns_values_in_file(return_new[1]))
+        remove_list_of_file(list(return_new) + list(return_old) + [name.replace("fftvol","weight") for name in return_new+return_old])
+
+    def test_negative_snr(self):
+        d = deepcopy(self.data)
+        sym = self.option.sym
+        sym = sym[0].lower() + sym[1:]
+        nx = d[0].get_xsize()
+        d[0].set_attr("chunk_id", 0)
+
+        return_new = fu.prepare_recons_ctf_two_chunks(nx, d, snr =-10 , symmetry=sym, myid=0 , main_node_half=0, chunk_ID =2, npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_old = oldfu.prepare_recons_ctf_two_chunks(nx, d, snr =-10 , symmetry=sym, myid=0 , main_node_half=0, chunk_ID =2,  npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        self.assertEqual(returns_values_in_file(return_old[0]), returns_values_in_file(return_new[0]))
+        self.assertEqual(returns_values_in_file(return_old[1]), returns_values_in_file(return_new[1]))
+        remove_list_of_file(list(return_new) + list(return_old) + [name.replace("fftvol","weight") for name in return_new+return_old])
+
 
 
 class Test_rec3D_two_chunks_MPI(unittest.TestCase):
+    data, option, not_used = get_arg_from_pickle_file(os.path.join(ABSOLUTE_PATH, "pickle files/multi_shc/multi_shc.do_volume"))[0]
+
     def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.rec3D_two_chunks_MPI()
@@ -1058,6 +1246,81 @@ class Test_rec3D_two_chunks_MPI(unittest.TestCase):
             oldfu.rec3D_two_chunks_MPI()
         self.assertEqual(cm_new.exception.message, "rec3D_two_chunks_MPI() takes at least 1 argument (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_None_data_returns_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.rec3D_two_chunks_MPI(None, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, finfo=None, index=-1, npad = self.option.npad, mpi_comm=MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.rec3D_two_chunks_MPI(None, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, finfo=None, index=-1, npad = self.option.npad, mpi_comm=MPI_COMM_WORLD, smearstep = 0.0)
+        self.assertEqual(cm_new.exception.message, "object of type 'NoneType' has no len()")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_image_data_returns_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.rec3D_two_chunks_MPI(EMData(), snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, finfo=None, index=-1, npad = self.option.npad, mpi_comm=MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.rec3D_two_chunks_MPI(EMData(), snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, finfo=None, index=-1, npad = self.option.npad, mpi_comm=MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        self.assertEqual(cm_new.exception.message, "object of type 'EMData' has no len()")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_image_data_print_warning_message(self):
+        return_new = fu.rec3D_two_chunks_MPI([EMData()], snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, finfo=None, index=-1, npad = self.option.npad, mpi_comm=MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_old = oldfu.rec3D_two_chunks_MPI([EMData()], snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, finfo=None, index=-1, npad = self.option.npad, mpi_comm=MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        self.assertTrue(numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
+        self.assertEqual(return_new[1], return_old[1])
+        self.assertTrue(numpy.allclose(return_new[0].get_3dview(), sparx_utilities.model_blank( 2, 2, 2 ).get_3dview(), 0.0000001, equal_nan=True))
+        self.assertEqual(return_new[1] , None)
+
+    @unittest.skip("skip I cannot find a correct mask")
+    def test_with_mask(self):
+        d = deepcopy(self.data)
+        d[0].set_attr("chunk_id", 2)
+        nx = d[0].get_xsize()
+        ny = d[0].get_ysize()
+        nz = d[0].get_zsize()
+        mask = sparx_utilities.model_circle(nx // 2 - 1, ny // 2 - 1, nz)
+        return_new = fu.rec3D_two_chunks_MPI(d, snr = 1.0, symmetry = "c1", mask3D = mask, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, finfo=None, index=-1, npad = self.option.npad, mpi_comm=MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_old = oldfu.rec3D_two_chunks_MPI(d, snr = 1.0, symmetry = "c1", mask3D = mask, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, finfo=None, index=-1, npad = self.option.npad, mpi_comm=MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        self.assertTrue(numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
+        self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
+
+    def test_with_invalid3Dmask_returns_RuntimeError(self):
+        d = deepcopy(self.data)
+        d[0].set_attr("chunk_id", 2)
+        nx = d[0].get_xsize()
+        mask = sparx_utilities.model_circle(nx // 2 - 1, nx, nx)
+
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.rec3D_two_chunks_MPI(d, snr = 1.0, symmetry = "c1", mask3D = mask, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, finfo=None, index=-1, npad = self.option.npad, mpi_comm=MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.rec3D_two_chunks_MPI(d, snr = 1.0, symmetry = "c1", mask3D = mask, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, finfo=None, index=-1, npad = self.option.npad, mpi_comm=MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], "The dimension of the image does not match the dimension of the mask!")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[1], msg_old[1])
+
+    def test_rec3D_two_chunks_MPI_with_pickle_file_value(self):
+        d = deepcopy(self.data)
+        d[0].set_attr("chunk_id", 2)
+
+        return_new = fu.rec3D_two_chunks_MPI(d, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, finfo=None, index=-1, npad = self.option.npad, mpi_comm=MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_old = oldfu.rec3D_two_chunks_MPI(d, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, finfo=None, index=-1, npad = self.option.npad, mpi_comm=MPI_COMM_WORLD, smearstep = 0.0)
+        mpi_barrier(MPI_COMM_WORLD)
+        self.assertTrue(numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
+        self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
+
 
 
 
