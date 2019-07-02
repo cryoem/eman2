@@ -150,16 +150,16 @@ class MainWindow(QMainWindow):
     def myKeyPressEvent(self, buttonSignal):
         if GUI.fileList.count() > 0:
             if buttonSignal.key() == Qt.Key_Right:
-                print "Right"
+                print("Right")
                 arrowKeyRight_clicked()
             elif buttonSignal.key() == Qt.Key_Left:
-                print "Left"
+                print("Left")
                 arrowKeyLeft_clicked()
             elif buttonSignal.key() == Qt.Key_Up:
-                print "Up"
+                print("Up")
                 arrowKeyUp_clicked()
             elif buttonSignal.key() == Qt.Key_Down:
-                print "Down!"
+                print("Down!")
                 arrowKeyDown_clicked()
 
 
@@ -248,7 +248,7 @@ def buttonLoad_clicked():
         # item = QListWidgetItem(filePath)
         # item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled | Qt.ItemIsSelectable)
         # url = QUrl.fromLocalFile(filePath)
-        print "Path", filePath
+        print("Path", filePath)
         filename = QFileInfo(filePath).fileName()
         item = QListWidgetItem(filename)
         item.setCheckState(Qt.Checked)

@@ -72,7 +72,7 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 			print("mv %s %s" % (newclasses, renamefile))
 		
 		cmd7="e2proc2d.py %s %s --list=%s" % (classavgstack, newclasses, selectdoc)
-		print cmd7
+		print(cmd7)
 		os.system(cmd7)
 		
 		# Update class-averages
@@ -81,20 +81,20 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 	# Import Euler angles
 	if inangles:
 		cmd6 = "sxheader.py %s --params=xform.projection --import=%s" % (classavgstack, inangles)
-		print cmd6
+		print(cmd6)
 		header(classavgstack, 'xform.projection', fimport=inangles)
 	
 	try:
 		header(classavgstack, 'xform.projection', fexport=outangles)
 		cmd1 = "sxheader.py %s --params=xform.projection --export=%s" % (classavgstack, outangles) 
-		print cmd1
+		print(cmd1)
 	except RuntimeError:
 		print("\nERROR!! No projection angles found in class-average stack header!\n")
 		print('Usage:', USAGE)
 		exit()
 	
 	#cmd2="sxproject3d.py %s %s --angles=%s" % (recon, projstack, outangles)
-	#print cmd2
+	#print(cmd2)
 	#os.system(cmd2)
 	
 	#  Here if you want to be fancy, there should be an option to chose the projection method,
@@ -141,7 +141,7 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 		prjimg = fft(filt_table(prjimg, table))  # match FFT amplitdes of re-projection and class average
 
 		cccoeff = ccc(prjimg, classimg, mask)
-		#print imgnum, cccoeff
+		#print(imgnum, cccoeff)
 		classimg.set_attr_dict({'cross-corr':cccoeff})
 		prjimg.set_attr_dict({'cross-corr':cccoeff})
 		prjimg.write_image(outstack,2*imgnum)
@@ -160,7 +160,7 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 			prjimg.set_attr_dict({'mean-cross-corr':meanccc})
 			write_header(outstack,prjimg,imgnum)
 		if (imgnum % 100) == 0:
-			print imgnum
+			print(imgnum)
 	
 	# e2proc2d appends to existing files, so delete existing output
 	if os.path.exists(normstack):
@@ -172,13 +172,13 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 	#  Why would you want to do it?  If you do, it should have been done during ccc calculations,
 	#  otherwise what is see is not corresponding to actual data, thus misleading.  PAP
 	#cmd5="e2proc2d.py %s %s --process=normalize" % (outstack, normstack)
-	#print cmd5
+	#print(cmd5)
 	#os.system(cmd5)
 	
 	# Optionally pop up e2display
 	if displayYN:
 		cmd8 = "e2display.py %s" % outstack
-		print cmd8
+		print(cmd8)
 		os.system(cmd8)
 	
 	print("Done!")
