@@ -36,17 +36,17 @@ if(GIT_EXECUTABLE)
 	if(NOT "${EMAN_GITDIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
 		set(EMAN_GITHASH "NOT-INSTALLED-FROM-GIT-REPO")
 	else()
-	execute_process(COMMAND ${GIT_EXECUTABLE} describe --always --dirty
-					WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-					OUTPUT_VARIABLE EMAN_GITHASH
-					OUTPUT_STRIP_TRAILING_WHITESPACE
-					)
-	
-	# git-describe output: <tag>-<num-of-commits-since-tag>-g<hash>
-	string(REGEX REPLACE
-		   "^.*-.*-g" ""
-		   EMAN_GITHASH "${EMAN_GITHASH}"
-		   )
+		execute_process(COMMAND ${GIT_EXECUTABLE} describe --always --dirty
+						WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+						OUTPUT_VARIABLE EMAN_GITHASH
+						OUTPUT_STRIP_TRAILING_WHITESPACE
+						)
+		
+		# git-describe output: <tag>-<num-of-commits-since-tag>-g<hash>
+		string(REGEX REPLACE
+			   "^.*-.*-g" ""
+			   EMAN_GITHASH "${EMAN_GITHASH}"
+			   )
 	endif()
 endif()
 
