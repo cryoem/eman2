@@ -47,6 +47,7 @@ If the test continues to fail you found a bug
 """
 
 """
+In all the tests miss the case with a complex image. where can we find one of them?
 There are some opened issues in:
 1) rotavg_ctf --> for definition it'll process a 2D image ... should we impede a 3D img as input?
 2) adaptive_mask --> it'll process a 3D image ... should we impede a 2D img as input?

@@ -19,6 +19,7 @@ MASK = sparx_utilities.model_circle(2, 5, 5)
 
 
 """
+In all the tests miss the case with a complex image. where can we find one of them?
 There are some opened issues in:
 1) fit_tanh: with 'low' too high leads to a bug that leads to a TypeError situation. see "test_tooHighLow_leads_TypeError" 
 2) I'm not able to test 'Test_filterlocal' beacuse it lead always to an indexError due to the may_node !=myid
