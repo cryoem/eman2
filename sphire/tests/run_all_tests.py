@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-FILE_LIST_NOSE_TEST = ["test_morphology.py","test_projection.py","test_reconstruction.py","test_utilities.py", "test_alignment.py", "test_filter.py"]
+FILE_LIST_NOSE_TEST = ["test_morphology.py","test_projection.py","test_reconstruction.py","test_utilities.py", "test_alignment.py", "test_filter.py", "test_fundamentals.py"]
 CURRENT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 # in order to be able to run it from pycharm too, we have to specify the whole path of the commands. change them with your own path or set to FALSE and run it from the commandLine
