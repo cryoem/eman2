@@ -88,8 +88,12 @@ def main():
 	This GUI application is designed for the evaluation of micrographs using the parameters outputed by CTER.
 	"""
 	parser = OptionParser(usage, version=SPARXVERSION)
-	# No options!!! Does not need to call parser.add_option()
 	
+	parser.add_option("--ctffind", action="store_true", default=False, help="apply CTF correction")
+	parser.add_option("--pwrot_dir", default='pwrot', help="directory for 1D profiles (default: pwrot)")
+	parser.add_option("--power2d_dir", default='power2d', help="directory for 2D power spectra (default: power2d)")
+	parser.add_option("--micthumb_dir", default='micthumb', help="directory for micrograph thumbnails (default: micthumb)")
+
 	(options, args) = parser.parse_args(sys.argv[1:])
 	
 	if len(args) > 2:
@@ -104,7 +108,7 @@ def main():
 	# else: # Do nothing
 	
 	# Make sure main window is shown, raised, and activated upon startup.
-	gui = SXGuiCter()
+	gui = SXGuiCter(use_ctffind=options.ctffind, pwrot_dir=options.pwrot_dir, power2d_dir=options.power2d_dir, micthumb_dir=options.micthumb_dir)
 	gui.show()
 	gui.raise_()
 	gui.activateWindow()
@@ -313,8 +317,7 @@ class SXThresholdMap:
 		return info
 	
 class SXGuiCter(QWidget):
-# 	def __init__(self, cter_ctf_file = None):
-	def __init__(self):
+	def __init__(self, use_ctffind=None, pwrot_dir='pwrot', power2d_dir='power2d', micthumb_dir='micthumb'):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
 		'data' is a list of (filename,ctf,im_1d,bg_1d,quality)
 		'parms' is [box size,ctf,box coord,set of excluded boxnums,quality,oversampling]
@@ -338,6 +341,13 @@ class SXGuiCter(QWidget):
 		# usually taken to be 15 for practical purposes
 		# 
 		self.round_ndigits = 15
+		
+		# CTFFIND-override options
+		self.use_ctffind = use_ctffind
+		self.pwrot_dir = pwrot_dir
+		self.power2d_dir = power2d_dir
+		self.micthumb_dir = micthumb_dir
+		self.set_ctffind()  # CTFFIND extensions hardwired by CTFFIND
 		
 		self.setWindowIcon(QtGui.QIcon(get_image_directory()+"sparxicon.png"))
 		self.installEventFilter(self)  # Necessary for self.eventFilter()
@@ -384,6 +394,18 @@ class SXGuiCter(QWidget):
 		self.timer.timeout.connect(self.timeOut)
 		self.timer.start(100)
 		
+	def set_ctffind(self):
+		if not self.use_ctffind:
+			self.pwrot_suffix = '_rotinf.txt'
+			self.power2d_suffix = '_pws.hdf'
+			self.micthumb_suffix = '_thumb.hdf'
+		else:
+			self.pwrot_suffix = "_avrot.txt"  # '_rotinftxt'
+			self.power2d_suffix = '.mrc'  # '_pws.hdf'
+			
+			#### # Thumbnails not generated
+			####self.micthumb_suffix = '.mrc'
+	
 	def build_cter_params(self):
 		self.cter_params = OrderedDict()
 		
@@ -506,14 +528,22 @@ class SXGuiCter(QWidget):
 	def build_rot1d_indices(self):
 		self.rot1d_indices = OrderedDict()
 		
-		self.add_rot1d_indices('cter_id')
-		self.add_rot1d_indices('freq')
-		self.add_rot1d_indices('exp_no_astig')
-		self.add_rot1d_indices('fit_no_astig')
-		self.add_rot1d_indices('exp_with_astig')
-		self.add_rot1d_indices('fit_with_astig')
-		self.add_rot1d_indices('exp_background')
-		self.add_rot1d_indices('fit_envelope')
+		if not self.use_ctffind:
+			self.add_rot1d_indices('cter_id')
+			self.add_rot1d_indices('freq')
+			self.add_rot1d_indices('exp_no_astig')
+			self.add_rot1d_indices('fit_no_astig')
+			self.add_rot1d_indices('exp_with_astig')
+			self.add_rot1d_indices('fit_with_astig')
+			self.add_rot1d_indices('exp_background')
+			self.add_rot1d_indices('fit_envelope')
+		else:
+			self.add_rot1d_indices('freq')
+			self.add_rot1d_indices('exp_no_astig')
+			self.add_rot1d_indices('exp_with_astig')
+			self.add_rot1d_indices('fit_with_astig')
+			self.add_rot1d_indices('ccf_exp_fit')
+			self.add_rot1d_indices('sigma_squared')
 		
 		return len(self.rot1d_indices)
 		
@@ -524,12 +554,18 @@ class SXGuiCter(QWidget):
 	def build_graph_map(self):
 		self.graph_map = OrderedDict()
 		
-		self.add_graph_map("exp_no_astig",   "Exp. No Astig (Black)")
-		self.add_graph_map("fit_no_astig",   "Fit. No Astig (Blue)")
-		self.add_graph_map("exp_with_astig", "Exp. with Astig (Red)")
-		self.add_graph_map("fit_with_astig", "Fit. with Astig (Green)")
-		self.add_graph_map("exp_background", "Exp. Enhanced (Olive)")
-		self.add_graph_map("fit_envelope",   "Fit. Enhanced (Cyan)")
+		if not self.use_ctffind:
+			self.add_graph_map("exp_no_astig",   "Exp. No Astig (Black)")
+			self.add_graph_map("fit_no_astig",   "Fit. No Astig (Blue)")
+			self.add_graph_map("exp_with_astig", "Exp. with Astig (Red)")
+			self.add_graph_map("fit_with_astig", "Fit. with Astig (Green)")
+			self.add_graph_map("exp_background", "Exp. Enhanced (Olive)")
+			self.add_graph_map("fit_envelope",   "Fit. Enhanced (Cyan)")
+		else:
+			self.add_graph_map("exp_with_astig", "Exp. with Astig (Black)")
+			self.add_graph_map("fit_with_astig", "Fit. with Astig (Blue)")
+			self.add_graph_map("ccf_exp_fit",    "Exp. CC. Fitted (Red)")
+			self.add_graph_map("sigma_squared",  "Sigma*2 Noise (Green)")
 		
 		return len(self.graph_map)
 		
@@ -1031,6 +1067,7 @@ class SXGuiCter(QWidget):
 		
 		for item in self.graph_map:
 			self.graph_map[item].item_widget.valueChanged.connect(self.updatePlotVisibility)
+
 			
 		self.vbplotfixscale.valueChanged.connect(self.newPlotFixScale)
 		self.pbrefreshgraphs.clicked[bool].connect(self.refreshGraphs)
@@ -1043,6 +1080,10 @@ class SXGuiCter(QWidget):
 		self.cbsortselect.valueChanged.connect(self.newSortSelect)
 		self.pbreapplysort.clicked[bool].connect(self.reapplySort)
 		
+		for (param, curr_hist_params) in self.hist_params.items():
+			curr_hist_params.unapply_widget_lower.valueChanged.connect(self.newThresholdLower)
+			curr_hist_params.unapply_widget_upper.valueChanged.connect(self.newThresholdUpper)
+			
 		self.shist.currentIndexChanged[int].connect(self.newHistogramRow)
 		self.sthresholdcontrol.currentIndexChanged[int].connect(self.newThresholdControl)
 		self.cbsyncsort.valueChanged.connect(self.newSyncSort)
@@ -1361,7 +1402,7 @@ class SXGuiCter(QWidget):
 		self.pbloadthresholdset.setEnabled(True)
 		self.pbsaveselection.setEnabled(True)
 		
-		cter_pwrot_dir = os.path.join(os.path.dirname(self.cter_partres_file_path), "pwrot")
+		cter_pwrot_dir = os.path.join(os.path.dirname(self.cter_partres_file_path), self.pwrot_dir)
 		if os.path.exists(cter_pwrot_dir):
 			# if not self.cbrotavgdisplay.getEnabled(): # MRK_NOTE: 2017/11/22 Toshio Moriya: This method does not work as I expected
 			self.cbrotavgdisplay.setEnabled(True)
@@ -1372,7 +1413,7 @@ class SXGuiCter(QWidget):
 		else:
 			QMessageBox.warning(None,"Warning",
 							 "Cannot find \"%s\" sub-directory associated with specified CTER partres file (%s). Please check your project directory. \n\nPower spectrum rotational average plots display option is disabled for this session." 
-							 % (cter_pwrot_dir, self.cter_partres_file_path))
+							 % (self.pwrot_dir, self.cter_partres_file_path))
 
 			# if self.cbrotavgdisplay.getEnabled(): # MRK_NOTE: 2017/11/22 Toshio Moriya: This method does not work as I expected
 			self.cbrotavgdisplay.setEnabled(False)
@@ -1382,7 +1423,7 @@ class SXGuiCter(QWidget):
 			# Error message of this condition should be displayed at the end of this function for smooth visual presentation
 			# QMessageBox.warning(None,"Warning","Cannot find \"%s\" sub-directory associated with specified CTER partres file (%s). Please check your project directory. \n\nPower spectrum rotational average plots display option is disabled for this session." % (cter_pwrot_dir, self.cter_partres_file_path))
 		
-		cter_micthumb_dir = os.path.join(os.path.dirname(self.cter_partres_file_path), "micthumb")
+		cter_micthumb_dir = os.path.join(os.path.dirname(self.cter_partres_file_path), self.micthumb_dir)
 		# print "MRK_DEBUG: cter_micthumb_dir = \"%s\" in readCterPartresFile() "% (cter_micthumb_dir)
 		if os.path.exists(cter_micthumb_dir):
 			# if not self.cbmicthumbdisplay.getEnabled(): # MRK_NOTE: 2016/03/22 Toshio Moriya: This method does not work as I expected
@@ -1583,26 +1624,40 @@ class SXGuiCter(QWidget):
 			return
 		assert os.path.exists(self.cter_pwrot_file_path), "MRK_DEBUG"
 		
-		# Now update the plots
-		self.rotinf_table = read_text_file(self.cter_pwrot_file_path, ncol=-1)
-		ncols = len(self.rotinf_table)  # old rotinf file has 6 columns, 8 with baseline-fitting
-		
-		# Subtract background and apply envelope
-		if ncols == 6:
-			if not self.checkedpwrot:
-				self.checkedpwrot = True
-			newCurveList = self.fitSpline()
-			self.rotinf_table = self.rotinf_table + newCurveList
-		
-		# Spatial frequency
-		spFreqList = self.rotinf_table[ self.rot1d_indices['freq'] ]
-		
-		# Loop through power-spectrum profiles
-		for index, (item, graph) in enumerate(self.graph_map.items()):
-			columnValues = self.rotinf_table[graph.idx_rotinf]
-			self.wplotrotavgcoarse.set_data((spFreqList,columnValues), graph.item_name, quiet=False, color=index, linetype=0)
-			self.wplotrotavgfine.set_data((spFreqList, columnValues),  graph.item_name, quiet=False, color=index, linetype=0)
+		if not self.use_ctffind:
+			# Now update the plots
+			self.rotinf_table = read_text_file(self.cter_pwrot_file_path, ncol=-1)
+			ncols = len(self.rotinf_table)  # old rotinf file has 6 columns, 8 with baseline-fitting
 			
+			# Subtract background and apply envelope
+			if ncols == 6:
+				if not self.checkedpwrot:
+					self.checkedpwrot = True
+				newCurveList = self.fitSpline()
+				self.rotinf_table = self.rotinf_table + newCurveList
+			
+			# Spatial frequency
+			spFreqList = self.rotinf_table[ self.rot1d_indices['freq'] ]
+			
+			# Loop through power-spectrum profiles
+			for index, (item, graph) in enumerate(self.graph_map.items()):
+				columnValues = self.rotinf_table[graph.idx_rotinf]
+				self.wplotrotavgcoarse.set_data((spFreqList,columnValues), graph.item_name, quiet=False, color=index, linetype=0)
+				self.wplotrotavgfine.set_data((spFreqList, columnValues),  graph.item_name, quiet=False, color=index, linetype=0)
+		else:
+			# Now update the plots
+			file_object = open(self.cter_pwrot_file_path, 'r')
+			self.rotinf_table = file_object.readlines()[5:]  # skip lines 1-5
+			ncols = 6
+			
+			# Spatial frequency
+			spFreqList = [float(i) for i in self.rotinf_table[0].split()]  # str by default
+			
+			# Loop through power-spectrum profiles
+			for index, (item, graph) in enumerate(self.graph_map.items()):
+				columnValues = [float(i) for i in self.rotinf_table[graph.idx_rotinf].split()]  # str by default
+				self.wplotrotavgcoarse.set_data((spFreqList,columnValues), graph.item_name, quiet=False, color=index, linetype=0)
+				self.wplotrotavgfine.set_data((spFreqList, columnValues),  graph.item_name, quiet=False, color=index, linetype=0)
 		
 		# NOTE: 2016/01/02 Toshio Moriya
 		# Disable manual rescale for now and use autoscale
@@ -1938,7 +1993,7 @@ class SXGuiCter(QWidget):
 		if self.wfft == None: return # it's closed/not visible
 		if self.cter_fft_file_path == None: 
 			# Try directory of partres file
-			pwsdir = os.path.join(os.path.dirname(self.cter_partres_file_path), "power2d")
+			pwsdir = os.path.join(os.path.dirname(self.cter_partres_file_path), self.power2d_dir)
 			return
 		
 		if not os.path.exists(self.cter_fft_file_path):
@@ -1971,7 +2026,7 @@ class SXGuiCter(QWidget):
 		
 		if not os.path.exists(self.cter_fft_file_path):
 			assert not self.wfft.isVisible(), "MRK_DEBUG"
-			pwsdir = os.path.join(os.path.dirname(self.cter_partres_file_path), "power2d")
+			pwsdir = os.path.join(os.path.dirname(self.cter_partres_file_path), self.power2d_dir)
 			QMessageBox.warning(None,"Warning",
 							 "Cannot find \"%s\" sub-directory associated with specified CTER partres file (%s). Please check your project directory. \n\nPower-spectrum display option is disabled for this session." 
 							 % (pwsdir, self.cter_partres_file_path))
@@ -2001,9 +2056,9 @@ class SXGuiCter(QWidget):
 		
 		# Generate associated micthumb & pwrot file path of current entry
 		mic_basename_root = os.path.splitext(os.path.basename(new_cter_mic_file_path))[0]
-		new_cter_micthumb_file_path = os.path.join(os.path.dirname(self.cter_partres_file_path), "micthumb", "%s_thumb.hdf" % (mic_basename_root))
-		new_cter_pwrot_file_path = os.path.join(os.path.dirname(self.cter_partres_file_path), "pwrot", "%s_rotinf.txt" % (mic_basename_root))
-		new_cter_fft_file_path = os.path.join(os.path.dirname(self.cter_partres_file_path), "power2d", "%s_pws.hdf" % (mic_basename_root))
+		new_cter_micthumb_file_path = os.path.join(os.path.dirname(self.cter_partres_file_path), self.micthumb_dir, mic_basename_root + self.micthumb_suffix)
+		new_cter_pwrot_file_path = os.path.join(os.path.dirname(self.cter_partres_file_path), self.pwrot_dir, mic_basename_root + self.pwrot_suffix)
+		new_cter_fft_file_path = os.path.join(os.path.dirname(self.cter_partres_file_path), self.power2d_dir, mic_basename_root + self.power2d_suffix)
 			
 		# Changing row does not always change the pwrot file path after resorting of the cter entry list
 		# If same, skip the following processes
@@ -2141,6 +2196,7 @@ class SXGuiCter(QWidget):
 		
 		# now set the new threshold
 		selected_hist_param.unapply_threshold_lower = threshold_lower
+		print('newThresholdLower', threshold_lower)
 		
 		self.needredisp=True
 	
@@ -2577,8 +2633,6 @@ class SXGuiCter(QWidget):
 		self.busy = False
 		
 	def eventFilter(self, source, event):
-		####import inspect
-		####print('eventFilter called by', inspect.stack()[1][3])
 		if event.type() == QtCore.QEvent.WindowStateChange:
 			if self.windowState() & QtCore.Qt.WindowMinimized:
 				assert self.isMinimized() == True, "MRK_DEBUG"
