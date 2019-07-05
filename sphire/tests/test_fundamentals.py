@@ -1695,6 +1695,8 @@ def get_data(num):
         data_list.append(a)
     return data_list
 
+
+@unittest.skip("original adnan")
 class Test_lib_compare(unittest.TestCase):
     def test_ccf_true_should_return_equal_objects(self):
         a, b = get_data(2)

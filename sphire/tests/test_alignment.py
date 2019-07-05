@@ -31,6 +31,7 @@ There are some opened issues in:
 3) shc  --> all the tests are failing. Even I used some random value from another pickle file it'd work
 4) ormq_fast --> it seems to be never used in the whole project. I avoid to test it
 5) multalign2d_scf and align2d_scf could have a bug. See in their classes my comments and run the tests to get the error message
+6) Test_parabl there are not real case unitest since the output is always a null vector
 """
 
 
@@ -95,6 +96,7 @@ class Test_ali2d_single_iter(unittest.TestCase):
         return_new = fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="H", CTF=True, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
         return_old = oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="H", CTF=True, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, (-14.731135129928589, 4.656862832605839, 0)))
 
     def test_empty_list_fourier_weight_crashes_because_signal11SIGSEV(self):
         """
@@ -148,10 +150,12 @@ class Test_ali2d_single_iter(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_negative_center_warning_msg_shift_of_paricle_too_large(self):
+        # I cannot run unit test because it returns random values
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         return_new = fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, -5, -5, xrng, yrng, step, nomirror = False, mode="F", CTF=False, random_method="", ali_params="xform.align2d", delta = 0.0)
         return_old = oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, -5, -5, xrng, yrng, step, nomirror = False, mode="F", CTF=False, random_method="", ali_params="xform.align2d", delta = 0.0)
         self.assertTrue(numpy.allclose(return_old, return_new, atol=TOLERANCE))
+
 
     def test_NOmirror_mode_H_WITHCTF_randomMethod_SHC_ArgumentError_in_Util_shc_function(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -238,41 +242,48 @@ class Test_ali2d_single_iter(unittest.TestCase):
         return_new = fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="H", CTF=True, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
         return_old = oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="H", CTF=True, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new,(-11.895780010148883, 3.155013743788004, 0)))
         
     def test_NOmirror_mode_H_NOCTF_randomMethod_SCF(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         return_new = fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="h", CTF=False, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
         return_old = oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="h", CTF=False, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new,(-11.895780010148883, 3.155013743788004, 0)))
 
     def test_NOmirror_mode_F_NOCTF_randomMethod_SCF(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         return_new = fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="F", CTF=False, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
         return_old = oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="F", CTF=False, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new,  (-25.085551424417645, -20.18510612542741, 0)))
         
     def test_NOmirror_mode_F_withCTF_randomMethod_SCF(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         return_new = fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="F", CTF=True, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
         return_old = oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="F", CTF=True, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new,  (-25.085551424417645, -20.18510612542741, 0)))
 
     def test_mirror_mode_H_NOCTF_randomMethod_SCF(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         return_new = fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="h", CTF=False, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
         return_old = oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="h", CTF=False, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, (-11.895780010148883, 3.155013743788004, 0)))
 
     def test_mirror_mode_H_WITHCTF_randomMethod_SCF(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         return_new = fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="h", CTF=True, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
         return_old = oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="h", CTF=True, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, (-11.895780010148883, 3.155013743788004, 0)))
 
     def test_mirror_mode_F_WITHCTF_randomMethod_SCF(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         return_new = fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="F", CTF=True, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
         return_old = oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="F", CTF=True, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
+        self.assertTrue(numpy.array_equal(return_new,  (-25.085551424417645, -20.18510612542741, 0)))
         self.assertTrue(numpy.array_equal(return_new, return_old))
 
     def test_mirror_mode_F_NOCTF_randomMethod_SCF(self):
@@ -280,54 +291,64 @@ class Test_ali2d_single_iter(unittest.TestCase):
         return_new = fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="F", CTF=False, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
         return_old = oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="F", CTF=False, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
         self.assertTrue(numpy.allclose(return_old, return_new , atol=TOLERANCE ))
+        self.assertTrue(numpy.allclose(return_new, (-25.085551424417645, -20.18510612542741, 0), atol=TOLERANCE))
 
     def test_NOmirror_mode_H_WITHCTF_randomMethod_default(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         return_new = fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="H", CTF=True, random_method="", ali_params="xform.align2d", delta = 0.0)
         return_old = oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="H", CTF=True, random_method="", ali_params="xform.align2d", delta = 0.0)
         self.assertTrue(numpy.allclose(return_old, return_new , atol=TOLERANCE ))
-        
+        self.assertTrue(numpy.allclose(return_new,(-19.65119509678334, -22.428544966503978, 0),  atol=TOLERANCE))
+
+
     def test_NOmirror_mode_H_NOCTF_randomMethod_default(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         return_new = fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="h", CTF=False, random_method="", ali_params="xform.align2d", delta = 0.0)
         return_old = oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="h", CTF=False, random_method="", ali_params="xform.align2d", delta = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, (-43.51346893221489, -43.28186049871147, 0)))
 
     def test_NOmirror_mode_F_NOCTF_randomMethod_default(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         return_new = fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="F", CTF=False, random_method="", ali_params="xform.align2d", delta = 0.0)
         return_old = oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="F", CTF=False, random_method="", ali_params="xform.align2d", delta = 0.0)
         self.assertTrue(numpy.allclose(return_old, return_new , atol=TOLERANCE ))
+        self.assertTrue(numpy.allclose(return_old,  (-38.559528638608754, -63.241320478729904, 0), atol=TOLERANCE))
         
     def test_NOmirror_mode_F_withCTF_randomMethod_default(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         return_new = fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="F", CTF=True, random_method="", ali_params="xform.align2d", delta = 0.0)
         return_old = oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="F", CTF=True, random_method="", ali_params="xform.align2d", delta = 0.0)
         self.assertTrue(numpy.allclose(return_old, return_new , atol=TOLERANCE ))
+        self.assertTrue(numpy.allclose(return_new,  (5.475417716242191, 37.246610491740284, 0), atol=TOLERANCE))
 
     def test_mirror_mode_H_NOCTF_randomMethod_default(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         return_new = fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="h", CTF=False, random_method="", ali_params="xform.align2d", delta = 0.0)
         return_old = oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="h", CTF=False, random_method="", ali_params="xform.align2d", delta = 0.0)
         self.assertTrue(numpy.allclose(return_old, return_new , atol=TOLERANCE ))
+        self.assertTrue(numpy.allclose( return_new, (-24.46844869107008, -27.762613539933227, 0), atol=TOLERANCE))
 
     def test_mirror_mode_H_WITHCTF_randomMethod_default(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         return_new = fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="h", CTF=True, random_method="", ali_params="xform.align2d", delta = 0.0)
         return_old = oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="h", CTF=True, random_method="", ali_params="xform.align2d", delta = 0.0)
         self.assertTrue(numpy.allclose(return_old, return_new , atol=TOLERANCE ))
+        self.assertTrue(numpy.allclose( return_new,  (-10.602042245678604, -28.610507858917117, 0),  atol=TOLERANCE))
 
     def test_mirror_mode_F_WITHCTF_randomMethod_default(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         return_new = fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="F", CTF=True, random_method="", ali_params="xform.align2d", delta = 0.0)
         return_old = oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="F", CTF=True, random_method="", ali_params="xform.align2d", delta = 0.0)
         self.assertTrue(numpy.allclose(return_old, return_new , atol=TOLERANCE ))
+        self.assertTrue(numpy.allclose( return_new,  (9.289807755313632, -4.889407425798709, 0),  atol=TOLERANCE))
 
     def test_mirror_mode_F_NOCTF_randomMethod_default(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         return_new = fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="F", CTF=False, random_method="", ali_params="xform.align2d", delta = 0.0)
         return_old = oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="F", CTF=False, random_method="", ali_params="xform.align2d", delta = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new,(-16.664929463528097, -62.39760458981618, 0)))
 
     def test_NOmirror_mode_H_WITHCTF_randomMethod_PCP_returns_typeError_object_float_hasnot_attibute__getitem__(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -417,6 +438,7 @@ class Test_ang_n(unittest.TestCase):
         return_new = fu.ang_n(2, 'f', 3)
         return_old = oldfu.ang_n(2, 'f', 3)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, 120.0))
 
     def test_null_max_ring_returns_ZeroDivisionError(self):
         with self.assertRaises(ZeroDivisionError) as cm_new:
@@ -430,6 +452,7 @@ class Test_ang_n(unittest.TestCase):
         return_new = fu.ang_n(2, 'not_f', 3)
         return_old = oldfu.ang_n(2, 'not_f', 3)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, 60.0))
 
 
 
@@ -444,10 +467,14 @@ class Test_log2(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_positive_number(self):
-        self.assertEqual(fu.log2(10),oldfu.log2(10))
+        return_new = fu.log2(10)
+        self.assertEqual(return_new,oldfu.log2(10))
+        self.assertEqual(return_new, 3)
 
     def test_null_number(self):
-        self.assertEqual(fu.log2(0),oldfu.log2(0))
+        return_new = fu.log2(0)
+        self.assertEqual(return_new,oldfu.log2(0))
+        self.assertEqual(return_new, -1)
 
 
 
@@ -470,11 +497,13 @@ class Test_Numrinit(unittest.TestCase):
         return_new = fu.Numrinit(2, 5, skip=1, mode="F")
         return_old = oldfu.Numrinit(2, 5, skip=1, mode="F")
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, [2, 1, 16, 3, 17, 32, 4, 49, 32, 5, 81, 32]))
 
     def test_Half_mode(self):
         return_new = fu.Numrinit(2, 5, skip=1, mode="not_F")
         return_old = oldfu.Numrinit(2, 5, skip=1, mode="not_F")
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, [2, 1, 8, 3, 9, 16, 4, 25, 16, 5, 41, 32]))
 
 
 
@@ -497,16 +526,17 @@ class Test_ringwe(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, "list index out of range")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-
     def test_Full_mode(self):
         return_new = fu.ringwe(self.argum[0][0], mode="F")
         return_old = oldfu.ringwe(self.argum[0][0], mode="F")
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new,  [25.132741228718345, 12.566370614359172, 4.71238898038469, 6.283185307179586, 7.853981633974483, 2.356194490192345, 2.748893571891069, 3.141592653589793, 3.5342917352885173, 3.9269908169872414, 1.0799224746714913, 1.1780972450961724, 1.2762720155208536, 1.3744467859455345, 1.4726215563702154, 1.5707963267948966, 1.6689710972195777, 1.7671458676442586, 1.8653206380689396, 1.9634954084936207, 0.5154175447295755, 0.5399612373357456, 0.5645049299419159, 0.5890486225480862, 0.6135923151542565, 0.6381360077604268, 0.662679700366597, 0.6872233929727672, 0.7117670855789375]))
 
     def test_Half_mode(self):
         return_new = fu.ringwe(self.argum[0][0], mode="not_F")
         return_old = oldfu.ringwe(self.argum[0][0], mode="not_F")
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new,[12.566370614359172, 6.283185307179586, 2.356194490192345, 3.141592653589793, 3.9269908169872414, 1.1780972450961724, 1.3744467859455345, 1.5707963267948966, 1.7671458676442586, 1.9634954084936207, 0.5399612373357456, 0.5890486225480862, 0.6381360077604268, 0.6872233929727672, 0.7363107781851077, 0.7853981633974483, 0.8344855486097889, 0.8835729338221293, 0.9326603190344698, 0.9817477042468103, 0.25770877236478773, 0.2699806186678728, 0.28225246497095796, 0.2945243112740431, 0.30679615757712825, 0.3190680038802134, 0.3313398501832985, 0.3436116964863836, 0.35588354278946877]))
 
 
 
@@ -589,6 +619,7 @@ class Test_ornq(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_with_negative_center(self):
+        #I cannot write a unit test because the output seems to be randon
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         return_new = fu.ornq(image, crefim, xrng, yrng, step, mode, numr, -5, -5, deltapsi=0.0)
         return_old = oldfu.ornq(image, crefim, xrng, yrng, step, mode, numr, -5, -5, deltapsi=0.0)
@@ -608,6 +639,7 @@ class Test_ornq(unittest.TestCase):
         return_new = fu.ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         return_old = oldfu.ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, (90.659458637237549, 0.0, 0.0, 0, 147.43201554741904)))
 
     def test_Full_mode(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
@@ -615,6 +647,7 @@ class Test_ornq(unittest.TestCase):
         return_new = fu.ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         return_old = oldfu.ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, (271.47330522537231, 0.0, -0.0, 0, 136.83287092834385)))
 
     def test_invalid_mode(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
@@ -622,6 +655,7 @@ class Test_ornq(unittest.TestCase):
         return_new = fu.ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         return_old = oldfu.ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, (90.659458637237549, 0.0, 0.0, 0, 147.43201554741904)))
 
 
 
@@ -723,6 +757,7 @@ class Test_ormq(unittest.TestCase):
         return_new = fu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
         return_old = oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new,  (180.0, -2.0, -2.4492935982947064e-16, 1, 23.19550078262219)))
 
     def test_Half_mode(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
@@ -730,12 +765,15 @@ class Test_ormq(unittest.TestCase):
         return_new = fu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
         return_old = oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, (135.0, 0.70710678118654768, -2.1213203435596424, 0, 32.54668225191281)))
 
     def test_with_negative_center(self):
+        # I cannot run unit test because it returns random values
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
         return_new = fu.ormq(image, crefim, xrng, yrng, step, mode, numr, -5, -5, delta)
         return_old = oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, -5, -5, delta)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        #self.assertTrue(numpy.array_equal(return_new, (358.59375, -3.9006303606931674, -4.0969601888764666, 0, -1e+20)))
 
     def test_with_invalid_mode(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
@@ -743,12 +781,14 @@ class Test_ormq(unittest.TestCase):
         return_new = fu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
         return_old = oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, (135.0, 0.70710678118654768, -2.1213203435596424, 0, 32.54668225191281)))
 
     def test_Full_mode_and_zero_delta(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
         return_new = fu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0)
         return_old = oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new,  (206.98280811309814, -0.89114270620982317, 0.45372312831619327, 0, 23.462145424755487)))
 
     def test_Half_mode_and_zero_delta(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
@@ -756,6 +796,7 @@ class Test_ormq(unittest.TestCase):
         return_new = fu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0)
         return_old = oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, (82.811969518661499, 2.1094076960564689, -0.74188892148201036, 1, 33.042001487198405)))
 
     def test_with_invalid_mode_and_zero_delta(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
@@ -763,6 +804,7 @@ class Test_ormq(unittest.TestCase):
         return_new = fu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0)
         return_old = oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, (82.811969518661499, 2.1094076960564689, -0.74188892148201036, 1, 33.042001487198405)))
 
 
 
@@ -1152,26 +1194,31 @@ class Test_proj_ali_incore(unittest.TestCase):
         return_new = fu.proj_ali_incore(deepcopy(data), refrings, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = 0.0, rshift = 0.0)
         return_old = oldfu.proj_ali_incore(deepcopy(data), refrings, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = 0.0, rshift = 0.0)
         self.assertTrue(numpy.allclose(return_old, return_new , atol=TOLERANCE ))
+        self.assertTrue(numpy.allclose( return_new, (1367.8909912109375, 26.295392990112305), atol=TOLERANCE))
 
     def test_sym_c1_negative_deltaPhsi(self):
         (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = self.argum[0]
         return_new = fu.proj_ali_incore(deepcopy(data), refrings, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = -100.0, rshift = 0.0)
         return_old = oldfu.proj_ali_incore(deepcopy(data), refrings, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = -100.0, rshift = 0.0)
         self.assertTrue(numpy.allclose(return_old, return_new , atol=TOLERANCE ))
+        self.assertTrue(numpy.allclose(return_new,  (-1.0000000200408773e+20, 38.38194274902344), atol=TOLERANCE))
 
     def test_sym_c1_negative_rshift(self):
         (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = self.argum[0]
         return_new = fu.proj_ali_incore(deepcopy(data), refrings, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = 0.0, rshift = -10000.0)
         return_old = oldfu.proj_ali_incore(deepcopy(data), refrings, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = 0.0, rshift = -10000.0)
         self.assertTrue(numpy.allclose(return_old, return_new , atol=TOLERANCE ))
+        self.assertTrue(numpy.allclose( return_new, (-1.0000000200408773e+20, 14153.8154296875), atol=TOLERANCE))
 
     def test_sym_c1_positive_deltaPhsi(self):
         (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = self.argum[0]
         return_new = fu.proj_ali_incore(deepcopy(data), refrings, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = 100.0, rshift = 0.0)
         return_old = oldfu.proj_ali_incore(deepcopy(data), refrings, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = 100.0, rshift = 0.0)
         self.assertTrue(numpy.allclose(return_old, return_new , atol=TOLERANCE ))
+        self.assertTrue(numpy.allclose( return_new, (1361.8897705078125, 14.46776294708252), atol=TOLERANCE))
 
     def test_sym_c1_positive_rshift(self):
+        # I cannot write the unitest
         (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = self.argum[0]
         return_new = fu.proj_ali_incore(deepcopy(data), refrings, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = 0.0, rshift = 10000.0)
         return_old = oldfu.proj_ali_incore(deepcopy(data), refrings, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = 0.0, rshift = 10000.0)
@@ -1182,6 +1229,7 @@ class Test_proj_ali_incore(unittest.TestCase):
         return_new = fu.proj_ali_incore(deepcopy(data), refrings, numr, xrng, yrng, step, finfo=None, sym = "icos", delta_psi = 0.0, rshift = 0.0)
         return_old = oldfu.proj_ali_incore(deepcopy(data), refrings, numr, xrng, yrng, step, finfo=None, sym = "icos", delta_psi = 0.0, rshift = 0.0)
         self.assertTrue(numpy.allclose(return_old, return_new , atol=TOLERANCE ))
+        self.assertTrue(numpy.allclose( return_new, (1367.8907470703125, 11.979691505432129), atol=TOLERANCE))
 
 
 @unittest.skip("All the tests in Test_proj_ali_incore_local. the old function returns always True ... is it obsolete?")
@@ -1308,6 +1356,7 @@ class Test_ali_vol_func(unittest.TestCase):
         return_new = fu.ali_vol_func(self.param, self.data)
         return_old = oldfu.ali_vol_func(self.param, self.data)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertEqual(return_new, 0.9856925010681152)
 
     def test_ali_vol_func_with_NoneTypes_as_image_returns_AttributeError_NoneType_obj_hasnot_attribute_rot_scale_trans_background(self):
         data = [None,None,None]
@@ -1434,24 +1483,28 @@ class Test_align2d(unittest.TestCase):
         return_new = fu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
         return_old = oldfu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, (149.20416355133057, 0.0, 0.0, 0, 231789.05009828304)))
 
     def test_Half_mode_zero_lastRing(self):
         (image, refim, xrng, yrng) = self.argum[0]
         return_new = fu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "H")
         return_old = oldfu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "H")
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, (0.75210951268672943, -0.0, 0.0, 1, 109166.1448026784)))
 
     def test_Full_mode(self):
         (image, refim, xrng, yrng) = self.argum[0]
         return_new = fu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=2, rstep=1, mode = "F")
         return_old = oldfu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=2, rstep=1, mode = "F")
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, (271.26248359680176, 0.0, -0.0, 1, 47.040936375909936)))
 
     def test_Half_mode(self):
         (image, refim, xrng, yrng) = self.argum[0]
         return_new = fu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=2, rstep=1, mode = "H")
         return_old = oldfu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=2, rstep=1, mode = "H")
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, (49.386130571365356, -0.0, 0.0, 1, 25.68331681913696)))
 
 
 
@@ -1524,12 +1577,14 @@ class Test_align2d_scf(unittest.TestCase):
         return_new = fu.align2d_scf(image, refim, xrng, yrng, self.argum[1]['ou'])
         return_old = oldfu.align2d_scf(image, refim, xrng, yrng, self.argum[1]['ou'])
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new,(179.20237851329148, 3.2698990821823117, 0.7647050324258848, 1, 218570.84244701988)))
 
     def test_with_invalid_ou_error_msg_output(self):
         (image, refim, xrng, yrng) = self.argum[0]
         return_new = fu.align2d_scf(image, refim, xrng, yrng, 1)
         return_old = oldfu.align2d_scf(image, refim, xrng, yrng,1)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, (179.97646629810333, 2.9426632285057943, 0.8089097572080193, 1, 219435.78332319538)))
 
     """ 
     the following testa are not able to work. It'd be a bug.
@@ -1681,6 +1736,7 @@ class Test_multialign2d_scf(unittest.TestCase):
         return_new = fu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=174)
         return_old = oldfu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=174)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new,  (-3.885814464943489, 1.3383300498977648, 0, 53.547465205192566, 0, 22.231731358743193)))
 
     def test_with_valid_params_cimage_with_mode_H(self):
         (dataa, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -1692,6 +1748,7 @@ class Test_multialign2d_scf(unittest.TestCase):
         return_new = fu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=174)
         return_old = oldfu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=174)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new,  (-3.887984832242739, 1.3200827893762717, 0, 53.596163392066956, 0, 22.225716444502115)))
 
     def test_with_invalid_ou(self):
         (dataa, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -1703,6 +1760,7 @@ class Test_multialign2d_scf(unittest.TestCase):
         return_new = fu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=1)
         return_old = oldfu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=1)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new,  (-3.885814464943489, 1.3383300498977648, 0, 53.547465205192566, 0, 22.231731358743193)))
 
     def test_with_DEFAULT_params_returns_IndexError_list_index_out_of_range(self):
         (dataa, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -1733,6 +1791,7 @@ class Test_parabl(unittest.TestCase):
         return_new = fu.parabl(EMData())
         return_old = oldfu.parabl(EMData())
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, (0.0, 0.0, 0.0)))
 
     def test_NoneType_as_input_image_returns_typeError_object_float_hasnot_attibute(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -1746,6 +1805,7 @@ class Test_parabl(unittest.TestCase):
         return_new = fu.parabl(self.argum[0][0])
         return_old = oldfu.parabl(self.argum[0][0])
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, (0.0, 0.0, 0.0)))
 
     def test_No_peak_found(self):
         Z=self.argum[0][0]
@@ -1755,6 +1815,7 @@ class Test_parabl(unittest.TestCase):
         return_new = fu.parabl(Z)
         return_old = oldfu.parabl(Z)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new,  (0.0, 0.0, 0.0)))
 
 
 
@@ -1855,12 +1916,14 @@ class Test_search_range(unittest.TestCase):
         return_new = fu.search_range(n, radius, shift, range_, location = "")
         return_old = oldfu.search_range(n, radius, shift, range_, location = "")
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, [4,4]))
 
     def test_no_image_size_warning_msg_shift_of_particle_too_large(self):
         (n, radius, shift, range_, location) = self.argum[0]
         return_new = fu.search_range(0, radius, shift, range_, location = "")
         return_old = oldfu.search_range(0, radius, shift, range_, location = "")
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, [0,0]))
 
 
 
@@ -1880,6 +1943,7 @@ class Test_generate_list_of_reference_angles_for_search(unittest.TestCase):
         return_new = fu.generate_list_of_reference_angles_for_search(ref_angles, sym)
         return_old = oldfu.generate_list_of_reference_angles_for_search(ref_angles, sym)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, [[0.0, 0.0, 0], [44.389802268702958, 19.749922795642572, 0], [4.2668022687029463, 28.07248693585296, 0], [30.709070484328791, 34.56032177999784, 0], [53.987279178298351, 40.11916689840513, 0], [3.1658765410020351, 45.0991278440273, 0], [22.839553661168754, 49.679784930029356, 0], [41.388074331228111, 53.96812092752944, 0], [59.069143085907285, 58.03428124920304, 0], [4.0711430859072806, 61.927513064147035, 0], [20.531322307288804, 65.68426082882351, 0], [36.563034950568053, 69.33268350648736, 0], [52.257200050432978, 72.89536482335619, 0], [67.690502133487442, 76.39103936921708, 0], [10.931666902500965, 79.83575137827651, 0], [26.036563285357822, 83.24367296941216, 0], [41.062582385571957, 86.62771331656609, 0], [180.0, 180.0, 0], [224.38980226870297, 160.25007720435744, 0], [184.26680226870295, 151.92751306414704, 0], [210.70907048432878, 145.43967822000215, 0], [233.98727917829837, 139.88083310159487, 0], [183.16587654100204, 134.9008721559727, 0], [202.83955366116876, 130.32021506997063, 0], [221.3880743312281, 126.03187907247056, 0], [239.06914308590729, 121.96571875079695, 0], [184.07114308590729, 118.07248693585296, 0], [200.5313223072888, 114.31573917117649, 0], [216.56303495056807, 110.66731649351264, 0], [232.25720005043297, 107.10463517664381, 0], [247.69050213348743, 103.60896063078292, 0], [190.93166690250098, 100.16424862172349, 0], [206.03656328535783, 96.75632703058784, 0], [221.06258238557194, 93.37228668343391, 0], [0.0, 0.0, 72.0], [116.3898, 19.74992, 0.0], [76.2668, 28.07249, 0.0], [102.70906, 34.56032, 0.0], [125.98728, 40.11917, 0.0], [75.16587, 45.09913, 0.0], [94.83955, 49.67978, 0.0], [113.38808, 53.96812, 0.0], [131.06914, 58.03428, 0.0], [76.07115, 61.92751, 0.0], [92.53132, 65.68426, 0.0], [108.56304, 69.33268, 0.0], [124.25719, 72.89537, 0.0], [139.69051, 76.39104, 0.0], [82.93166, 79.83575, 0.0], [98.03656, 83.24367, 0.0], [113.06258, 86.62771, 0.0], [0.0, 180.0, 108.0], [296.3898, 160.25008, 0.0], [256.2668, 151.92751, 0.0], [282.70907, 145.43968, 0.0], [305.98728, 139.88083, 0.0], [255.16588, 134.90087, 0.0], [274.83955, 130.32022, 0.0], [293.38808, 126.03188, 0.0], [311.06915, 121.96572, 0.0], [256.07114, 118.07249, 0.0], [272.53132, 114.31574, 0.0], [288.56304, 110.66732, 0.0], [304.2572, 107.10463, 0.0], [319.6905, 103.60896, 0.0], [262.93167, 100.16425, 0.0], [278.03656, 96.75633, 0.0], [293.06258, 93.37229, 0.0], [0.0, 0.0, 144.0], [188.38981, 19.74992, 0.0], [148.2668, 28.07249, 0.0], [174.70907, 34.56032, 0.0], [197.98728, 40.11917, 0.0], [147.16588, 45.09913, 0.0], [166.83955, 49.67978, 0.0], [185.38808, 53.96812, 0.0], [203.06915, 58.03428, 0.0], [148.07115, 61.92751, 0.0], [164.53133, 65.68426, 0.0], [180.56304, 69.33268, 0.0], [196.2572, 72.89536, 0.0], [211.6905, 76.39104, 0.0], [154.93167, 79.83575, 0.0], [170.03657, 83.24367, 0.0], [185.06258, 86.62771, 0.0], [0.0, 180.0, 36.0], [8.3898, 160.25008, 0.0], [328.2668, 151.92751, 0.0], [354.70907, 145.43968, 0.0], [17.98728, 139.88083, 0.0], [327.16588, 134.90087, 0.0], [346.83955, 130.32022, 0.0], [5.38808, 126.03188, 0.0], [23.06914, 121.96572, 0.0], [328.07114, 118.07249, 0.0], [344.53132, 114.31574, 0.0], [0.56304, 110.66732, 0.0], [16.2572, 107.10464, 0.0], [31.6905, 103.60896, 0.0], [334.93167, 100.16425, 0.0], [350.03657, 96.75633, 0.0], [5.06258, 93.37229, 0.0], [0.0, 0.0, 216.0], [260.3898, 19.74992, 0.0], [220.2668, 28.07249, 0.0], [246.70907, 34.56032, 0.0], [269.98728, 40.11917, 0.0], [219.16588, 45.09913, 0.0], [238.83955, 49.67978, 0.0], [257.38808, 53.96812, 0.0], [275.06914, 58.03428, 0.0], [220.07114, 61.92751, 0.0], [236.53132, 65.68426, 0.0], [252.56303, 69.33268, 0.0], [268.2572, 72.89536, 0.0], [283.6905, 76.39104, 0.0], [226.93167, 79.83575, 0.0], [242.03656, 83.24367, 0.0], [257.06258, 86.62771, 0.0], [0.0, 180.0, 324.0], [80.38981, 160.25008, 0.0], [40.2668, 151.92751, 0.0], [66.70907, 145.43968, 0.0], [89.98727, 139.88083, 0.0], [39.16587, 134.90087, 0.0], [58.83955, 130.32022, 0.0], [77.38807, 126.03188, 0.0], [95.06914, 121.96572, 0.0], [40.07114, 118.07249, 0.0], [56.53133, 114.31574, 0.0], [72.56304, 110.66732, 0.0], [88.2572, 107.10464, 0.0], [103.69051, 103.60896, 0.0], [46.93167, 100.16425, 0.0], [62.03657, 96.75633, 0.0], [77.06257, 93.37229, 0.0], [0.0, 0.0, 288.0], [332.3898, 19.74992, 0.0], [292.2668, 28.07249, 0.0], [318.70907, 34.56032, 0.0], [341.98728, 40.11917, 0.0], [291.16588, 45.09913, 0.0], [310.83956, 49.67978, 0.0], [329.38808, 53.96812, 0.0], [347.06914, 58.03428, 0.0], [292.07114, 61.92751, 0.0], [308.53132, 65.68426, 0.0], [324.56303, 69.33268, 0.0], [340.2572, 72.89536, 0.0], [355.6905, 76.39104, 0.0], [298.93167, 79.83575, 0.0], [314.03656, 83.24367, 0.0], [329.06258, 86.62771, 0.0], [0.0, 180.0, 252.0], [152.3898, 160.25008, 0.0], [112.26681, 151.92751, 0.0], [138.70907, 145.43968, 0.0], [161.98729, 139.88083, 0.0], [111.16588, 134.90087, 0.0], [130.83955, 130.32022, 0.0], [149.38808, 126.03188, 0.0], [167.06914, 121.96572, 0.0], [112.07114, 118.07249, 0.0], [128.53132, 114.31574, 0.0], [144.56303, 110.66732, 0.0], [160.2572, 107.10464, 0.0], [175.6905, 103.60896, 0.0], [118.93167, 100.16425, 0.0], [134.03656, 96.75633, 0.0], [149.06258, 93.37229, 0.0]]))
 
     def test_c1Sym(self):
         sym = 'c1'
@@ -1887,11 +1951,13 @@ class Test_generate_list_of_reference_angles_for_search(unittest.TestCase):
         return_new = fu.generate_list_of_reference_angles_for_search(ref_angles, sym)
         return_old = oldfu.generate_list_of_reference_angles_for_search(ref_angles, sym)
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, [[0.0, 0.0, 0], [102.5624397820863, 8.409807949596694, 0], [175.28184168449116, 11.903989804110001, 0], [234.81899085328783, 14.592550602033418, 0], [286.52113069039967, 16.865343252479008, 0], [332.89249973858841, 18.873236840047255, 0], [15.350997945238817, 20.69354123118596, 0], [54.760293521450905, 22.37214549396397, 0], [91.727719586672706, 23.938926249214624, 0], [126.67925988880424, 25.41462091516098, 0], [159.93126768874427, 26.81431796194859, 0], [191.72626852098327, 28.149400619646084, 0], [222.25501416086877, 29.428707176867, 0], [251.6707339535308, 30.659262305350033, 0], [280.09871166816117, 31.846758629170495, 0], [307.64293448395898, 32.995885473579534, 0], [334.39083847001103, 34.11056017878775, 0], [0.42677669506366556, 35.194095100409235, 0], [25.794606434997782, 36.249320882899376, 0], [50.559654291516139, 37.278679231322116, 0], [74.770232732225381, 38.2842939251198, 0], [98.468827134074971, 39.26802600175335, 0], [121.69303677671941, 40.231517219359155, 0], [144.4763293594925, 41.17622470375671, 0], [166.84865229059051, 42.10344887074584, 0], [188.83693262466142, 43.014356152771704, 0], [210.46548946865465, 43.909997664475156, 0], [231.75637688070145, 44.79132466007832, 0], [252.72967105963514, 45.65920143165515, 0], [273.40371249950607, 46.51441614768202, 0], [293.7953114483945, 47.357690020060026, 0], [313.91992324589262, 48.1896851042214, 0], [333.79179876604201, 49.01101097344977, 0], [353.42411415385686, 49.822230459852115, 0], [12.839083235960516, 50.62386461673009, 0], [32.02805535274598, 51.41639702767674, 0], [51.011600859315614, 52.20027756457276, 0], [69.799586144482291, 52.975925678303284, 0], [88.401239698292727, 53.743733291363625, 0], [106.82521050148785, 54.50406734974836, 0], [125.07961980182155, 55.25727208199666, 0], [143.17210717208275, 56.00367100552329, 0], [161.10987160517593, 56.74356871403049, 0], [178.89970828662715, 57.4772524745885, 0], [196.54804158963, 58.20499365866951, 0], [214.06095475847701, 58.92704902784667, 0], [231.44421667996505, 59.64366189189109, 0], [248.70330608674968, 60.355063154503576, 0], [265.84343348975648, 61.06147225981934, 0], [282.86956109711195, 61.763098051052104, 0], [299.78642094339619, 62.46013955114206, 0], [316.59853142434207, 63.152786673995614, 0], [333.31021240759083, 63.84122087381428, 0], [349.92559906909207, 64.52561573907757, 0], [6.4586545866518463, 65.20613753694339, 0], [22.893181806532958, 65.88294571313848, 0], [39.242833985512988, 66.55619335181605, 0], [55.511124699098673, 67.22602759934011, 0], [71.701436996410379, 67.8925900555079, 0], [87.81703187337213, 68.55601713533103, 0], [103.86105612808187, 69.21644040415431, 0], [119.8365496554388, 69.87398688859322, 0], [135.74645223213611, 70.52877936550931, 0], [151.59360983787678, 71.18093663101206, 0], [167.38078055404094, 71.83057375127423, 0], [183.11064007694512, 72.47780229676785, 0], [198.78578687921549, 73.12273056137076, 0], [214.40874704959094, 73.76546376765336, 0], [229.98197883862355, 74.40610425953089, 0], [245.50787693521318, 75.04475168335667, 0], [260.98877649665752, 75.68150315843295, 0], [276.42695695288819, 76.31645343782941, 0], [291.82464560376934, 76.94969506032008, 0], [307.18402102672974, 77.58131849418093, 0], [322.50721631056541, 78.21141227352726, 0], [337.79632212996364, 78.84006312781455, 0], [353.0533896741494, 79.46735610507622, 0], [8.2904334420228452, 80.09337468942728, 0], [23.489433915232105, 80.71820091332246, 0], [38.662340119797371, 81.34191546502161, 0], [53.811072086159413, 81.96459779168268, 0], [68.937523216861678, 82.58632619847424, 0], [84.043562570481001, 83.20717794407292, 0], [99.131037069892173, 83.82722933288893, 0], [114.20177364247999, 84.44655580434149, 0], [129.25758129949423, 85.06523201948858, 0], [144.30025316137389, 85.68333194529811, 0], [159.33156843554312, 86.30092893683496, 0], [174.35329435289955, 86.91809581762422, 0], [189.36718806897298, 87.53490495844152, 0], [204.37499853552671, 88.15142835477144, 0], [219.37846834820326, 88.7677377031675, 0], [234.37933557567774, 89.38390447674091, 0], [180.0, 180.0, 0], [282.5624397820863, 171.59019205040332, 0], [355.28184168449116, 168.09601019589, 0], [54.818990853287801, 165.4074493979666, 0], [106.52113069039967, 163.13465674752098, 0], [152.89249973858841, 161.12676315995276, 0], [195.35099794523882, 159.30645876881403, 0], [234.7602935214509, 157.62785450603604, 0], [271.72771958667272, 156.06107375078537, 0], [306.67925988880427, 154.58537908483902, 0], [339.93126768874424, 153.18568203805143, 0], [11.72626852098324, 151.8505993803539, 0], [42.255014160868768, 150.571292823133, 0], [71.670733953530771, 149.34073769464996, 0], [100.09871166816117, 148.1532413708295, 0], [127.64293448395898, 147.00411452642047, 0], [154.39083847001098, 145.88943982121225, 0], [180.42677669506367, 144.80590489959076, 0], [205.79460643499777, 143.75067911710062, 0], [230.55965429151615, 142.72132076867788, 0], [254.7702327322254, 141.7157060748802, 0], [278.46882713407496, 140.73197399824664, 0], [301.6930367767194, 139.76848278064085, 0], [324.47632935949252, 138.8237752962433, 0], [346.84865229059051, 137.89655112925416, 0], [8.836932624661415, 136.9856438472283, 0], [30.465489468654653, 136.09000233552484, 0], [51.756376880701453, 135.20867533992168, 0], [72.729671059635166, 134.34079856834484, 0], [93.403712499506071, 133.48558385231797, 0], [113.7953114483945, 132.64230997993997, 0], [133.91992324589262, 131.81031489577862, 0], [153.79179876604201, 130.98898902655023, 0], [173.42411415385686, 130.1777695401479, 0], [192.83908323596052, 129.3761353832699, 0], [212.02805535274598, 128.58360297232326, 0], [231.01160085931562, 127.79972243542724, 0], [249.7995861444823, 127.02407432169672, 0], [268.40123969829273, 126.25626670863637, 0], [286.82521050148785, 125.49593265025163, 0], [305.07961980182154, 124.74272791800334, 0], [323.17210717208275, 123.99632899447671, 0], [341.10987160517595, 123.25643128596951, 0], [358.89970828662717, 122.5227475254115, 0], [16.548041589629975, 121.79500634133049, 0], [34.06095475847701, 121.07295097215334, 0], [51.444216679965052, 120.3563381081089, 0], [68.703306086749649, 119.64493684549643, 0], [85.843433489756478, 118.93852774018066, 0], [102.86956109711195, 118.23690194894789, 0], [119.78642094339619, 117.53986044885794, 0], [136.59853142434207, 116.84721332600438, 0], [153.31021240759083, 116.15877912618572, 0], [169.92559906909207, 115.47438426092243, 0], [186.45865458665185, 114.79386246305661, 0], [202.89318180653297, 114.11705428686152, 0], [219.24283398551299, 113.44380664818395, 0], [235.51112469909867, 112.77397240065989, 0], [251.70143699641039, 112.1074099444921, 0], [267.81703187337212, 111.44398286466897, 0], [283.86105612808188, 110.78355959584569, 0], [299.83654965543883, 110.12601311140678, 0], [315.74645223213611, 109.47122063449069, 0], [331.59360983787678, 108.81906336898794, 0], [347.38078055404094, 108.16942624872577, 0], [3.110640076945117, 107.52219770323215, 0], [18.785786879215493, 106.87726943862924, 0], [34.408747049590943, 106.23453623234664, 0], [49.981978838623547, 105.59389574046911, 0], [65.507876935213176, 104.95524831664333, 0], [80.988776496657522, 104.31849684156705, 0], [96.42695695288819, 103.68354656217059, 0], [111.82464560376934, 103.05030493967992, 0], [127.18402102672974, 102.41868150581907, 0], [142.50721631056541, 101.78858772647274, 0], [157.79632212996364, 101.15993687218545, 0], [173.05338967414946, 100.53264389492378, 0], [188.29043344202285, 99.90662531057272, 0], [203.4894339152321, 99.28179908667754, 0], [218.66234011979736, 98.65808453497839, 0], [233.81107208615941, 98.03540220831732, 0], [248.93752321686168, 97.41367380152576, 0], [264.04356257048101, 96.79282205592708, 0], [279.13103706989216, 96.17277066711107, 0], [294.20177364248002, 95.55344419565851, 0], [309.25758129949423, 94.93476798051142, 0], [324.30025316137392, 94.31666805470189, 0], [339.33156843554309, 93.69907106316504, 0], [354.35329435289952, 93.08190418237578, 0], [9.3671880689729505, 92.46509504155848, 0], [24.374998535526743, 91.84857164522856, 0], [39.378468348203228, 91.2322622968325, 0], [54.379335575677715, 90.61609552325909, 0]]))
 
     def test_NoAngleList(self):
         return_new = fu.generate_list_of_reference_angles_for_search([], 'c1')
         return_old = oldfu.generate_list_of_reference_angles_for_search([], 'c1')
         self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy.array_equal(return_new, []))
 
     def test_invalid_simmetry_returns_RuntimeError_NotExistingObjectException_the_key_invalid_doesnot_exist(self):
         with self.assertRaises(RuntimeError) as cm_new:
@@ -1947,7 +2013,7 @@ def get_data_3d(num, dim=10):
 
 
 
-
+@unittest.skip("original adnan")
 class Test_lib_alignment_compare(unittest.TestCase):
     """"
     # data = list of images
