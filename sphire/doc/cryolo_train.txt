@@ -51,6 +51,9 @@ Then the training typcial happens in two steps:
   ; %%--%%coord_scale: Coordinates loss scale: Loss scale for coordinates. (default 1.0)
   ; %%--%%valid_image_dir : Path to validation images : Images used (default none)
   ; %%--%%valid_annot_dir : Path to validation annotations : Path to the validation box files (default none)
+  ; %%--%%dolowpass: Do low pass filtering : Set it to true if you want to use the low pass filter (default True question reversed in GUI)
+  ; %%--%%cutoff: Low pass cutoff : Cut off for low pass filter. Should be between 0 and 0.5. (default 0.1) : %%--%%dolowpass==True:
+  ; %%--%%filtered_dir: Filtering directory : Path to write filtered images. (default cryolo_filtered_micrographs) : %%--%%dolowpass==True:
   ; %%--%%warmup : Warm up epochs : Number of warmup epochs. (default 5)
   ; %%--%%gpu: GPUs : List of GPUs to use, separated by commas. (default 0)
   ; %%--%%gpu_fraction: GPU memory fraction : Specify the fraction of memory per GPU used by crYOLO during training. Only values between 0.0 and 1.0 are allowed. (default 1.0)
