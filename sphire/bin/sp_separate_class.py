@@ -40,44 +40,70 @@ from __future__ import print_function
 #
 
 import os
-from EMAN2 import EMUtil, EMArgumentParser, EMANVERSION
+from EMAN2 import *  # EMUtil, EMArgumentParser, EMANVERSION
 from sp_applications import header
 from datetime import datetime
 from sp_logger import Logger, BaseLogger_Files, BaseLogger_Print
-#from global_def import ERROR
+from sp_utilities import get_params2D
+from sp_global_def import ERROR
+from sp_fundamentals import rot_shift2D, resample
+from sp_filter import filt_gaussl
 
 # Set default values (global variables written in ALL CAPS)
 TIMESTAMP_LENGTH = 23
+DOCFILEDIR = "Docs"
 CLASSMAPFILE = "classmap.txt"
+BIGSTACKCOPY = 'stack_all'
 CLASSDOCPREFIX = 'docclass'
+STACKFILEDIR = "Stacks"
 CLASSSTACKPREFIX = 'stkclass_'
+ALIGNSTACKPREFIX = 'stkalign_'
 FILTSTACKPREFIX = 'stkflt_'
+COMBINEDPARAMS = 'params_combined.txt'
+
 USAGE = """ 
 PURPOSE:
-Separate particles according to class assignment:
+Separate particles according to class assignment.
 
-%s <input_avgs> <input_images> <output_directory> 
-General, required command-line parameters:
+General usage:
+  %s <input_avgs> <input_images> <output_directory> 
+Required command-line parameters:
   1. Input class averages
   2. Input image stack
   3. Output directory
 Outputs:
-  %s : Class-to-particle lookup table, one file for all classes 
-  %s???.txt : List of particles for each class, one file per class
+  %s/%s : Class-to-particle lookup table, one file for all classes 
+  %s/%s???.txt : List of particles for each class, one file per class
   EMAN2DB/%s???.bdb : Virtual stacks of particles for each class
-  EMAN2DB/%s???.bdb : (Optional) virtual stacks of filtered particles for each class
+  %s/%s???.mrcs : (Optional) stacks of aligned particles for each class
+  %s/%s???.mrcs : (Optional) stacks of filtered/shrunken particles for each class
 
-General options:
-%s <input_avgs> <input_images> <output_directory> --filt <filter_radius> --shrink <shrink_factor> --pxsz <pixel_size> --verbose
+To apply a low-pass (tangent) filter:
+  %s <input_avgs> <input_images> <output_directory> --filt <filter_radius> --apix <pixel_size> --verbose
 Parameters:
-  --filtrad : low-pass filter radius, Angstroms (or if, pxsz not provided, pixels^-1)
-  --pxsz : Pixel size, Angstroms
-  --shrink : Downsampling factor (e.g., 6 -> 1/6 original size)
+  --filtrad : Low-pass filter radius, Angstroms (or if, apix not provided, pixels^-1)
+  --apix : Pixel size of input images (NOT class averages), Angstroms (optional, if not provided, filter radius assumed to be pixels^-1)
   --verbose : Increase verbosity
 
-Modified 2019-03-19
+To downsample the output images:
+  %s <input_avgs> <input_images> <output_directory> --filt <filter_radius> --shrink <shrink_factor> --apix <pixel_size> --verbose
+Parameter:
+  --shrink : Downsampling factor (e.g., 4 -> 1/4 original size)
 
-""" % (__file__, CLASSMAPFILE, CLASSDOCPREFIX, CLASSSTACKPREFIX, FILTSTACKPREFIX, __file__)
+To apply alignments from ISAC to output image stacks:
+  %s <input_avgs> <input_images> <output_directory> --align --isac_dir <ISAC_directory> --verbose
+Parameters:
+  --align : Applies alignment parameters from ISAC to individual particles
+  --isac_dir : Directory for ISAC output, required if applying alignments
+
+To apply ISAC alignments, filter, and shrink:
+  %s <input_avgs> <input_images> <output_directory> --align --isac_dir <ISAC_directory> --filt <filter_radius> --shrink <shrink_factor> --verbose
+
+Modified 2019-07-05
+
+""" % (__file__, 
+	   DOCFILEDIR, CLASSMAPFILE, DOCFILEDIR, CLASSDOCPREFIX, CLASSSTACKPREFIX, STACKFILEDIR, ALIGNSTACKPREFIX, STACKFILEDIR, FILTSTACKPREFIX, 
+	   __file__, __file__, __file__, __file__, )
 
 def separate_class(classavgstack, instack, options, outdir='.', verbose=False):
 	"""
@@ -96,51 +122,140 @@ def separate_class(classavgstack, instack, options, outdir='.', verbose=False):
 	log, verbose = prepare_log(outdir, verbose)
 	
 	# Expand paths for outputs
-	classmap = os.path.join(outdir, CLASSMAPFILE)
-	classdoc = os.path.join(outdir, CLASSDOCPREFIX + '{0:03d}.txt')
+	prepare_outdir(os.path.join(outdir, DOCFILEDIR) )
+	classmap = os.path.join(outdir, DOCFILEDIR, CLASSMAPFILE)
+	classdoc = os.path.join(outdir, DOCFILEDIR, CLASSDOCPREFIX + '{0:03d}.txt')
+	stackcp = os.path.join(outdir, BIGSTACKCOPY)
 	outbdb = os.path.join(outdir, CLASSSTACKPREFIX + '{0:03d}')
-	outflt = os.path.join(outdir, FILTSTACKPREFIX + '{0:03d}')
+	if options.align or options.filtrad or options.shrink:
+		prepare_outdir(os.path.join(outdir, STACKFILEDIR) )
+		outali = os.path.join(outdir, STACKFILEDIR, ALIGNSTACKPREFIX + '{0:03d}')
+		outflt = os.path.join(outdir, STACKFILEDIR, FILTSTACKPREFIX + '{0:03d}' + '.mrcs')
 	num_classes = EMUtil.get_image_count(classavgstack)
 	
+	if options.align:
+		if options.isac_dir == None:
+			ERROR("No ISAC directory given! For usage examples, type:\n %s --help" % __file__, __file__, 1)
+			exit()
+		
 	# Generate class-to-particle lookup table and class-selection lists
 	vomq(classavgstack, classmap, classdoc, log=log, verbose=verbose)
 	
-	print_log_msg("Writing each class to a separate stack", log, verbose)
-	if options.shrink: print_log_msg("Will downsample stacks by a factor of %s" % options.shrink, log, verbose)
-	
 	if options.filtrad: 
-		if options.pxsz: 
-			filtrad = options.pxsz/options.filtrad
+		if options.apix: 
+			filtrad = options.apix/options.filtrad
 		else:
 			filtrad = options.filtrad
-		print_log_msg("Will low-pass filter to %s px^-1" % options.shrink, log, verbose)
+		print_log_msg("Will low-pass filter to %s px^-1" % options.filtrad, log, verbose)
+	
+	if options.shrink: print_log_msg("Will downsample stacks by a factor of %s" % options.shrink, log, verbose)
 	
 	tot_parts = 0
 	
-	# Loop through classes
-	for class_num in xrange(num_classes):
-		# Write BDB stacks
-		cmd = "e2bdb.py %s --makevstack bdb:%s --list %s" % (instack, outbdb.format(class_num), classdoc.format(class_num))
+	if options.align:
+		# Copy image stack
+		print_log_msg("Copying %s to virtual stack %s" % (instack, stackcp), log, verbose )
+		cmd = "e2bdb.py %s --makevstack bdb:%s" % (instack, stackcp)
 		print_log_msg(cmd, log, verbose)
 		os.system(cmd)
-		num_class_imgs = EMUtil.get_image_count('bdb:' + outbdb.format(class_num))
-		tot_parts += num_class_imgs
 		
-		# Optional filtered stack
-		if options.filtrad or options.shrink:
-			cmd = "e2proc2d.py bdb:%s bdb:%s --inplace" % (outbdb.format(class_num), outflt.format(class_num))
-			# --inplace overwrites existing images
+		# Combine alignment parameters
+		init_params_file = os.path.join(options.isac_dir, "2dalignment", "initial2Dparams.txt")
+		all_params_file = os.path.join(options.isac_dir, "all_parameters.txt")
+		combined_params_file = os.path.join(outdir, COMBINEDPARAMS)
+		combine_isac_params(options.isac_dir, init_params_file, all_params_file, combined_params_file, log, verbose)
+		
+		# Import alignment parameters
+		cmd = "sp_header.py %s --params=xform.align2d --import=%s" % (stackcp, combined_params_file) 
+		print_log_msg(cmd, log, verbose)
+		header(classavgstack, 'xform.align2d', fimport=combined_params_file)
+		
+		stack2split = stackcp
+	
+	# If not aligning images
+	else:
+		stack2split = instack
+		
+	print_log_msg("Writing class stacks", log, verbose)
+	if options.align:
+		if options.align:
+			print_log_msg('Writing aligned images', log, verbose)
+	
+	# Loop through classes
+	for class_num in xrange(num_classes):
+		
+		# Optional alignment
+		if options.align:
 			
-			if options.filtrad:
-				cmd = cmd + " --process=filter.lowpass.gauss:cutoff_freq=%s" % filtrad
-			
-			if options.shrink:
-				cmd = cmd + " --meanshrink=%s" % options.shrink
-				
+			# Write class stack
+			cmd = "e2bdb.py bdb:%s --makevstack bdb:%s --list %s" % (stack2split, outbdb.format(class_num), classdoc.format(class_num))
 			print_log_msg(cmd, log, verbose)
 			os.system(cmd)
-	
-	print_log_msg("\nDone! Separated %s particles from %s classes\n" % (tot_parts, num_classes), log, verbose=True)
+			num_class_imgs = EMUtil.get_image_count('bdb:' + outbdb.format(class_num) )
+			tot_parts += num_class_imgs
+
+			# Read class stack
+			class_stack = EMData.read_images('bdb:' + outbdb.format(class_num) )
+			box_size = class_stack[0].get_attr('nx')
+			if options.shrink:
+				sub_rate = float(1)/options.shrink
+				box_size = int(float(box_size)/options.shrink + 0.5)
+				####print('sub_rate', sub_rate, type(sub_rate), box_size, options.shrink)  #### DIAGNOSTIC
+			
+			# Set filenames
+			local_mrcs_path = outali.format(class_num) + ".mrcs"
+			local_mrcs = EMData(box_size, box_size, num_class_imgs)
+			####local_stack_path = "bdb:" + outali.format(class_num) + "_ptcls"
+			####local_bdb_stack = db_open_dict(local_stack_path)
+			
+			# Loop through images
+			for img_num in range(len(class_stack) ):
+				img_orig = class_stack[img_num]
+				alpha, sx, sy, mirror, scale = get_params2D(img_orig)
+				####img_orig_dict = img_orig.get_attr_dict()
+				img_ali = rot_shift2D(img_orig, alpha, sx, sy, mirror, scale, "quadratic")
+				####print('img_orig.get_attr_dict', img_orig.get_attr_dict() ) #### DIAGNOSTIC
+				####img_ali_dict = img_ali.get_attr_dict()
+				####print('img_ali.get_attr_dict', img_ali.get_attr_dict() ) #### DIAGNOSTIC
+
+				if options.filtrad:
+					img_ali = filt_gaussl(img_ali, filtrad)
+				
+				if options.shrink:
+					img_ali = resample(img_ali, sub_rate)
+				
+				local_mrcs.insert_clip(img_ali, (0, 0, img_num) )
+				
+			local_mrcs.write_image(local_mrcs_path)
+			####db_close_dict(local_stack_path)
+			
+		# No aligned images
+		else:
+			
+			# Write class stack
+			cmd = "e2bdb.py %s --makevstack bdb:%s --list %s" % (stack2split, outbdb.format(class_num), classdoc.format(class_num))
+			print_log_msg(cmd, log, verbose)
+			
+			os.system(cmd)
+			num_class_imgs = EMUtil.get_image_count('bdb:' + outbdb.format(class_num) )
+			tot_parts += num_class_imgs
+
+			# Optional filtered stack
+			if options.filtrad or options.shrink:
+				
+				cmd = "e2proc2d.py bdb:%s bdb:%s --inplace" % (outbdb.format(class_num), outflt.format(class_num))
+				# --inplace overwrites existing images
+				
+				if options.filtrad:
+					cmd = cmd + " --process=filter.lowpass.gauss:cutoff_freq=%s" % filtrad
+				
+				if options.shrink:
+					cmd = cmd + " --meanshrink=%s" % options.shrink
+					
+				print_log_msg(cmd, log, verbose)
+				os.system(cmd)
+			
+	print_log_msg("\nDone! Separated %s particles from %s classes\n" % (tot_parts, num_classes), log, verbose)  #=True)
 	
 def prepare_outdir(outdir='.', verbose=False, main=True):
 	"""
@@ -249,6 +364,43 @@ def vomq(classavgstack, classmap, classdoc, log=None, verbose=False):
 
 	print_log_msg("Wrote %s class selection files\n" % counter, log, verbose)
 
+def combine_isac_params(isac_dir, init_params_file, all_params_file, combined_params_file, log=False, verbose=False):
+	"""
+	Combines initial and all_params from ISAC.
+	
+	Arguments:
+		isac_dir : ISAC directory
+		init_params_file : Prealignment parameters file, ISAC_DIR/2dalignment/initial2Dparams.txt, will be all zeroes if prealignment skipped
+		all_params_file : Alignment parameters relative to prealignment, ISAC_DIR/all_parameters.txt
+		combined_params_file : Output combined alignment parameters
+		log : instance of Logger class
+		verbose : (boolean) -- whether to write to screen
+	"""
+	
+	from sp_utilities import combine_params2, read_text_row, write_text_row
+	
+	# Combine alignment parameters
+	init_params_list = read_text_row(init_params_file)
+	all_params = read_text_row(all_params_file)
+	isac_shrink_path = os.path.join(options.isac_dir, "README_shrink_ratio.txt")
+	isac_shrink_file = open(isac_shrink_path, "r")
+	isac_shrink_lines = isac_shrink_file.readlines()
+	isac_shrink_ratio = float(isac_shrink_lines[5])
+	msg = "Combining alignment parameters from %s and %s, dividing by %s, and writing to %s" % \
+		(init_params_file, all_params_file, isac_shrink_ratio, combined_params_file)
+	print_log_msg(msg, log, verbose)
+	combined_params = []
+	
+	# Loop through images
+	for im in range(len(all_params) ): 
+		P = combine_params2(
+			init_params_list[im][0], init_params_list[im][1], init_params_list[im][2], init_params_list[im][3],
+			all_params[im][0], all_params[im][1]/isac_shrink_ratio, all_params[im][2]/isac_shrink_ratio, all_params[im][3] )
+		combined_params.append([P[0], P[1], P[2], P[3], 1.0])
+	write_text_row(combined_params, combined_params_file)
+	
+	return combined_params
+	
 
 if __name__ == "__main__":
 	# Command-line arguments
@@ -256,8 +408,10 @@ if __name__ == "__main__":
 	parser.add_argument('classavgs', help='Input class averages')
 	parser.add_argument('instack', help='Input image stack')
 	parser.add_argument('outdir', type=str, help='Output directory')
+	parser.add_argument('--align', action="store_true", help='Write aligned particle images')
+	parser.add_argument('--isac_dir', type=str, default=None, help='ISAC directory, if aligning images')
 	parser.add_argument('--filtrad', type=float, help='For optional filtered images, low-pass filter radius (1/px or, if pixel size specified, Angstroms)')
-	parser.add_argument('--pxsz', type=float, default=None, help='Pixel size, Angstroms (might be downsampled by ISAC)')
+	parser.add_argument('--apix', type=float, default=None, help='Pixel size, Angstroms (might be downsampled by ISAC)')
 	parser.add_argument('--shrink', type=int, help='Optional downsampling factor')
 	parser.add_argument('--verbose', "-v", action="store_true", help='Increase verbosity')
 	

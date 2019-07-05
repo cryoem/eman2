@@ -8,7 +8,7 @@ Separate Into Classes : Separates stacks of particle images into stacks for each
 
 Usage in command line:
 
-  sp_separate_class.py input_class_avgs input_image_stack output_directory --filt=filter_radius --pxsz=pixel_size --shrink=shrink_factor --verbose
+  sp_separate_class.py input_class_avgs input_image_stack output_directory --filtrad=filter_radius --apix=pixel_size --shrink=shrink_factor --verbose
   
   
 \\
@@ -26,23 +26,33 @@ The purpose of sp_separate_class.py is to:
 
 \\ __2. Apply a low-pass filter to the image stacks__:
 
-  sp_separate_class.py input_class_avgs input_image_stack output_directory --filt=filter_radius --pxsz=pixel_size
+  sp_separate_class.py input_class_avgs input_image_stack output_directory --filtrad=filter_radius --apix=pixel_size
 
-Filter radius is in units of Angstroms. If pxsz parameter is not specified, program will assume units of pixels^-1.
+Filter radius is in units of Angstroms. If apix parameter is not specified, program will assume units of pixels^-1.
 
 \\ __3. Downsample output image stack__:
 
   sp_separate_class.py input_class_avgs input_image_stack output_directory --shrink=shrink_factor
   
+\\ __4. Apply alignments from ISAC to output image stacks__:
+
+  sp_separate_class.py input_class_avgs input_image_stack output_directory --align --isac_dir=isac_directory
+  
+\\ __5. Apply ISAC alignments, filter, and shrink__:
+
+  sp_separate_class.py input_class_avgs input_image_stack output_directory --align --isac_dir=isac_directory --filtrad=filter_radius --shrink=shrink_factor
+  
 \\
 ===== Input =====
 === Main Parameters ===
   ; input_class_avgs : Input class averages : Set of 2D class averages, with particle-membership information in header. (default required string)
-  ; input_image_stack : Input particles : Particle image stack. (default required string)
+  ; input_image_stack : Input particles : Particle image stack. Note that, if applying ISAC alignments, alignments are relative to class_averages.hdf and not ordered_class_averages.hdf (default required string)
   ; output_directory : Output directory : Directory where outputs will be written. (default required string)
-  ; %%--%%filt : Filter radius : Gaussian low-pass filter radius, Angstroms if pxsz specified below, else pixels^-1. (default None)
-  ; %%--%%pxsz : Pixel size : Angstroms per pixel, might be downsampled already by ISAC2. (default None)
+  ; %%--%%filtrad : Filter radius : Gaussian low-pass filter radius, Angstroms if apix specified below, else pixels^-1. (default None)
+  ; %%--%%apix : Pixel size : Angstroms per pixel of input image stack (as opposed to class averages, which might be downsampled). (default None)
   ; %%--%%shrink : Downsampling factor : Downsampling factor, e.g., 6 -> 1/6 original size. (default None)
+  ; %%--%%align : Align images : Applies alignment parameters from ISAC to individual particles. (default False)
+  ; %%--%%isac_dir : ISAC directory : Directory for ISAC output, required if applying alignments. If selected, ISAC directory is required below. (default None)
   ; %%--%%verbose : Verbose : Writes additional messages to the terminal during execution. (default False)
   
 \\
@@ -50,10 +60,11 @@ Filter radius is in units of Angstroms. If pxsz parameter is not specified, prog
 
 \\
 ===== Output =====
-  ; classmap.txt : Class-to-particle lookup table, one file for all classes
-  ; docclass???.txt : List of particles for each class, one file per class
+  ; Docs/classmap.txt : Class-to-particle lookup table, one file for all classes
+  ; Docs/docclass???.txt : List of particles for each class, one file per class
   ; EMAN2DB/stkclass_???.bdb : Virtual stacks of particles for each class
-  ; EMAN2DB/stkflt_???.bdb : (Optional) virtual stacks of filtered particles for each class
+  ; Stacks/stkflt_???.mrcs : Stacks of filtered particles for each class
+  ; Stacks/stkalign_???.mrcs : Stacks of aligned particles for each class
  
 \\
 ===== Description =====
