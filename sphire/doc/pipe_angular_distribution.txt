@@ -44,7 +44,7 @@ With the --dpi option, one can adjust the quality of the plot.
 === Main Parameters ===
 	; params_file : Projection parameters : File containing the 3D projection parameters (default required string)
 	; output_folder : Output directory: Output folder name (default required string)
-	; %%--%%prefix : File prefix : Prefix for the output files - None uses the same name as the params file - Existing files will be overridden (default none)
+	; %%--%%prefix : File prefix : Prefix for the output files - None uses the same name as the params file - Existing files will be overwritten (default none)
 	; %%--%%symmetry : Point-group symmetry: Symmetry to be applied to 3D reconstruction (default c1)
 
 \\
