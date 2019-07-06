@@ -3467,7 +3467,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 	float apix=(float)this_img->get_attr("apix_x");
 	int ny=this_img->get_ysize();
-	
+	params["boxsize"]=ny;
 	int maxshift00=(int)params.set_default("maxshift",ny/4);
 
 	int maxny=ny;
@@ -3687,7 +3687,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						// phi continues to move independently. I believe this should produce a more monotonic energy surface
 						if (axis==0) upd[axname[2]]=-s_step[i*3+axis];
 
-						int r=testort(small_this,small_to,sigmathisv,sigmatov,s_score,s_coverage,s_xform,i,upd, maxang, initxf, maxshift);
+						int r=testort(small_this,small_to,sigmathisv,sigmatov,s_score,s_coverage,s_xform,i,upd, initxf, maxshift);
 
 						// If we fail, we reverse direction with a slightly smaller step and try that
 						// Whether this fails or not, we move on to the next axis
@@ -3695,7 +3695,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						else {
 							s_step[i*3+axis]*=-0.75;
 							upd[axname[axis]]=s_step[i*3+axis];
-							r=testort(small_this,small_to,sigmathisv,sigmatov,s_score,s_coverage,s_xform,i,upd, maxang, initxf, maxshift);
+							r=testort(small_this,small_to,sigmathisv,sigmatov,s_score,s_coverage,s_xform,i,upd, initxf, maxshift);
 							if (r) changed=1;
 						}
 						if (verbose>4) printf("\nX %1.3f\t%1.3f\t%1.3f\t%d\t",s_step[i*3],s_step[i*3+1],s_step[i*3+2],changed);
@@ -3783,7 +3783,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 // This is just to prevent redundancy. It takes the existing solution vectors as arguments, an a proposed update for
 // vector i. It updates the vectors if the proposal makes an improvement, in which case it returns true
-bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> &sigmathisv,vector<float> &sigmatov,vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd, float maxang, Transform initxf, int maxshift) const {
+bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> &sigmathisv,vector<float> &sigmatov,vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd, Transform initxf, int maxshift) const {
 	Transform t;
 	Dict aap=s_xform[i].get_params("eman");
 	aap["tx"]=0;
@@ -3794,15 +3794,37 @@ bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> 
 	}
 
 	t.set_params(aap);
-	
+	float maxang=params.set_default("maxang",-1.0);
+	bool randphi=params.set_default("randphi",false);
+	bool rand180=params.set_default("rand180",false);
 	
 	if (maxang>0){
 		
-		Transform tmp=initxf * t.inverse();
+		Transform tmp;
+		if (randphi){
+			Dict td=t.get_params("eman");
+			Dict ti=initxf.get_params("eman");
+			td["phi"]=ti["phi"];
+			Transform tmp1=Transform(td);
+			tmp=initxf * tmp1.inverse();
+		}
+		else{
+			tmp=initxf * t.inverse();
+		}
 		float r=tmp.get_params("spin")["omega"];
+		if (rand180){
+			r=r>90?(180-r):r;
+		}
 		if(r>maxang)
 			return false;
 		
+	}
+	
+	if (params.has_key("initxform")){
+		// when doing refinement, search around the given position
+		int ny=small_this->get_ysize();
+		t.set_trans(initxf.get_trans()*ny/(float)params["boxsize"]);
+		aap=t.get_params("eman");
 	}
 
 	// rotate in Fourier space then use a CCF to find translation
@@ -3811,9 +3833,9 @@ bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> 
 	IntPoint ml=ccf->calc_max_location_wrap(maxshift, maxshift, maxshift);
 
 
-	aap["tx"]=(int)ml[0];
-	aap["ty"]=(int)ml[1];
-	aap["tz"]=(int)ml[2];
+	aap["tx"]=int(aap["tx"])+(int)ml[0];
+	aap["ty"]=int(aap["ty"])+(int)ml[1];
+	aap["tz"]=int(aap["tz"])+(int)ml[2];
 	t.set_params(aap);
 	EMData *st2=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",1));	// we have to do 1 slow transform here now that we have the translation
 	

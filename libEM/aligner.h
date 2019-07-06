@@ -1930,6 +1930,8 @@ namespace EMAN
 				d.put("initxform", EMObject::TRANSFORMARRAY,"An array of Transforms storing the starting positions.");
 
 // 				d.put("initxform", EMObject::TRANSFORM,"The Transform storing the starting position. If unspecified the identity matrix is used");
+				d.put("randphi", EMObject::BOOL,"Ignore phi constraint for refine search");
+				d.put("rand180", EMObject::BOOL,"Ignore 180 rotation for refine search");
 				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
 				return d;
 			}
@@ -1937,7 +1939,7 @@ namespace EMAN
 			static const string NAME;
 
 		private:
-			bool testort(EMData *small_this, EMData *small_to,vector<float> &sigmathisv,vector<float> &sigmatov, vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd, float maxang, Transform initxf, int maxshift) const;
+			bool testort(EMData *small_this, EMData *small_to,vector<float> &sigmathisv,vector<float> &sigmatov, vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd, Transform initxf, int maxshift) const;
 
 	};
 
