@@ -168,11 +168,11 @@ def main():
 	parser.add_argument("--alltiltseries", action="store_true",help="Use all tilt series in the folder. Acceptable file extensions include hdf, mrc, mrcs, st.", default=False,guitype='boolbox',row=1, col=0, rowspan=1, colspan=1,mode="model")
 
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=2, col=1, rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--dfrange", type=str,help="Search range of defocus (start, end, step). default is 2., 7, 0.1", default="2.0,7.0,0.1", guitype='strbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--dfrange", type=str,help="Search range of defocus (start, end, step). default is 2., 7, 0.02", default="2.0,7.0,0.02", guitype='strbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--psrange", type=str,help="phase shift range (start, end, step). default is 0, 5, 5", default="0,5,5", guitype='strbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--tilesize", type=int,help="Size of tile to calculate FFT, default is 256", default=256, guitype='intbox',row=4, col=2,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--voltage", type=int,help="Voltage of microscope in kV", default=300, guitype='intbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--cs", type=float,help="Cs of microscope in kV", default=2.7, guitype='floatbox',row=6, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--cs", type=float,help="Cs of microscope", default=2.7, guitype='floatbox',row=6, col=1,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--nref", type=int,help="Using N tilt images near the center tilt to estimate the range of defocus for all images. Default is 15", default=15, guitype='intbox',row=6, col=2,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--stepx", type=int,help="Number of tiles to generate on x-axis (different defocus)", default=20, guitype='intbox',row=8, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--stepy", type=int,help="Number of tiles to generate on y-axis (same defocus)", default=40, guitype='intbox',row=8, col=1,rowspan=1, colspan=1, mode="model")
@@ -306,7 +306,7 @@ def main():
 	if options.checkhand:
 		print("Checking handedness of the tomogram. Will NOT write metadata output...")
 		rot=np.mean(tltparams[:,2])
-		print("Current tilt axis rotation {:.2f}".format(rot))
+		print("Current tilt axis rotation {:.2f}".format(-rot))
 		signs=[-1, 1]
 		scores=[[], []]
 		dfs=[[], []]
@@ -355,7 +355,7 @@ def main():
 		print("Current hand is better than the flipped hand in {:.1f}% tilt images".format(scr*100))
 		
 		if scr>.5:
-			print("The handedness seems to be correct. Rerun CTF estimation without the checkhand option to finish the process.")
+			print("The handedness (--tltax={:.1f}) seems to be correct. Rerun CTF estimation without the checkhand option to finish the process.".format(-rot))
 		else:
 			print("The handedness seems to be flipped. Consider rerun the tomogram reconstruction with --tltax={:.1f} then rerun the CTF estimation.".format(-((180+rot)%360)))
 		      
