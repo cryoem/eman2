@@ -25,6 +25,7 @@ rm -vf ${CONDA_PREFIX}/bin/e2*.py
 
 conda info -a
 conda list
+conda list --explicit
 
 if [ -z "$JENKINS_HOME" ];then
     CPU_COUNT=4

@@ -77,7 +77,6 @@ sp_cter exists in for both MPI and non-MPI versions (Running MPI version does no
   ; %%--%%phase_max : Maximum phase search [degrees]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 175.0) : %%--%%vpp==True
   ; %%--%%phase_step : Phase search step [degrees]: UNDER DEVELOPMENT! This is applicable only with --vpp option. (default 5.0) : %%--%%vpp==True
   ; %%--%%pap : Use PW spectrum: UNDER DEVELOPMENT! Use power spectrum for CTF parameter search instead of amplitude. (default False)
-  ; %%--%%pws : Skip calculation of 2D power spectra: Will write periodograms to disk. (default False question reversed in GUI)
 
 \\
 ===== Output =====
@@ -85,7 +84,8 @@ After successful execution, sp_cter will create in the output_directory:
 
   - A CTF parameters file, written to ''partres.txt''
   - A list of rotationally averaged power spectra, written to ''pwrot/*_rotinf.txt''.
-  - A collection of micrographs Thumbnails (512 x 512 pixels), written to ''micthumb/*_thumb.hdf''.
+  - A collection of micrograph thumbnails (512 x 512 pixels), written to ''micthumb/*_thumb.hdf''.
+  - A collection of 2D periodograms, written to ''power2d/*_pws.hdf''.
 
 The CTF parameter file, ''partres.txt'', contains 22 columns with the following information:
 

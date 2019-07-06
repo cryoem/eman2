@@ -19,16 +19,36 @@ ENDIF(WIN32)
 
 find_program(GIT_EXECUTABLE git)
 if(GIT_EXECUTABLE)
-	execute_process(COMMAND ${GIT_EXECUTABLE} describe --always --dirty
+	# Get git repository's directory
+	execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse --git-dir
 					WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-					OUTPUT_VARIABLE EMAN_GITHASH
+					OUTPUT_VARIABLE EMAN_GITDIR
 					OUTPUT_STRIP_TRAILING_WHITESPACE
 					)
-	# git-describe output: <tag>-<num-of-commits-since-tag>-g<hash>
-	string(REGEX REPLACE
-		   "^.*-.*-g" ""
-		   EMAN_GITHASH ${EMAN_GITHASH}
-		   )
+	get_filename_component(EMAN_GITDIR "${EMAN_GITDIR}/.." ABSOLUTE BASE_DIR ${CMAKE_SOURCE_DIR})
+	
+	# If the source directory is missing .git, but EMAN_GITDIR is still non-empty,
+	# the git repository found is, probably, a parent repository.
+	# So, we test if the directories found by git and cmake are the same. 
+	message_var(EMAN_GITDIR)
+	message_var(CMAKE_SOURCE_DIR)
+	
+	if(NOT "${EMAN_GITDIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
+		set(EMAN_GITHASH "NOT-INSTALLED-FROM-GIT-REPO")
+	else()
+		execute_process(COMMAND ${GIT_EXECUTABLE} describe --always --dirty
+						WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+						OUTPUT_VARIABLE EMAN_GITHASH
+						OUTPUT_STRIP_TRAILING_WHITESPACE
+						)
+		
+		# git-describe output: <tag>-<num-of-commits-since-tag>-g<hash>
+		# We are insterested in extracting the hash part of the git-describe output
+		string(REGEX REPLACE
+			   "^.*-.*-g" ""
+			   EMAN_GITHASH "${EMAN_GITHASH}"
+			   )
+	endif()
 endif()
 
 string(TIMESTAMP EMAN_TIMESTAMP "%Y-%m-%d %H:%M")

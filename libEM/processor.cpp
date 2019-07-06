@@ -13416,7 +13416,7 @@ EMData* HarmonicProcessor::process(const EMData * const image) {
 			float si=sin(float(2.0*M_PI*(ja+0.5)/naz));
 			float co=cos(float(2.0*M_PI*(ja+0.5)/naz));
 			int y=0;		// This is where the results go
-			// Start at r=3 due to bad CryoEM values near the origin. 
+			// Start at r=5 due to bad CryoEM values near the origin. 
 			// Go to 1/2 Nyquist because high resolution values are less invariant due to interpolaton
 			for (int jr=5; jr<ny/4; jr++) {
 				// Innermost loop is hn (radial harmonic coefficient) to group similar values together
@@ -13444,6 +13444,7 @@ EMData* HarmonicProcessor::process(const EMData * const image) {
 	// Rotational & Translational invariant, fp specifies the maximum harmonic (R&T) to include
 	if (params.has_key("fp")) {
 		int fp=(int)params.set_default("fp",4);
+		if (fp<2) fp=2;
 		// Start with the translational invariant in Fourier space in a radial coordinate system
 		for (int ja=0; ja<naz; ja++) {
 			float si=sin(float(2.0*M_PI*(ja+0.5)/naz));
@@ -13452,8 +13453,8 @@ EMData* HarmonicProcessor::process(const EMData * const image) {
 			// Start at r=3 due to bad CryoEM values near the origin. 
 			// Go to 1/2 Nyquist because high resolution values are less invariant due to interpolaton
 			for (int jr=3; jr<ny/4; jr++) {
-				// Innermost loop is hn (radial harmonic coefficient) to group similar values together
-				for (int hn=1; hn<=fp; hn++) {
+				// Innermost loop is hn (radial harmonic coefficient) to group similar values together, skip the phaseless hn=1
+				for (int hn=2; hn<=fp; hn++) {
 					float jx=co*jr;
 					float jy=si*jr;
 					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
@@ -13479,9 +13480,9 @@ EMData* HarmonicProcessor::process(const EMData * const image) {
 			int x=0;		// output x coordinate
 			// outer loop over base rotational frequency
 			for (int jx=0; jx<naz/2; jx++) {
-				// inner loop over rotational harmonic coefficients
+				// inner loop over rotational harmonic coefficients, skip the phaseless rn=1
 				complex<double> v2 = tmp[jx];
-				for (int rn=1; rn<=fp; rn++) {
+				for (int rn=2; rn<=fp; rn++) {
 					if (jx*rn>=naz) break;
 					complex<double> v1 = tmp[jx*rn];
 					v1*=std::pow(std::conj(v2),(double)rn);
@@ -13497,7 +13498,9 @@ EMData* HarmonicProcessor::process(const EMData * const image) {
 
 
 		delete cimage;
-		EMData *ret=trns->get_clip(Region(0,0,min(naz,fp*naz/2),min(ny/2,fp*(ny/4-3))));
+		// the /4 in the next line is arbitrary to remove regions which empirically
+		// aren't useful
+		EMData *ret=trns->get_clip(Region(0,0,min(naz,fp*naz/4)/2,min(ny/2,fp*(ny/4-3))));
 		delete trns;
 		ret->set_attr("is_harmonic_fp",(int)fp);
 		ret->set_complex(0);

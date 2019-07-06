@@ -148,18 +148,18 @@ def importfn(i,arg,options):
 		if d["nx"]<1000 or d["ny"]<1000 : 
 			print("CTF estimation will only work with images at least 1000x1000 in size")
 			sys.exit(1)
-		if d["nx"]<2000 : box=256
-		elif d["nx"]<4000 : box=512
-		elif d["nx"]<6000 : box=768
-		else : box=1024
+		if d["nx"]<2050 : box=512
+		elif d["nx"]<6000 : box=1024
+		else : box=2048
 
 		import e2ctf
 		
 		ds=old_div(1.0,(options.apix*box))
 		ffta=None
 		nbx=0
-		for x in range(100,d["nx"]-box,box):
-			for y in range(100,d["ny"]-box,box):
+		# avoid the very edge, and have a little overlap
+		for x in range(50,d["nx"]-box-50,box*2/3):
+			for y in range(50,d["ny"]-box-50,box*2/3):
 				clip=d.get_clip(Region(x,y,box,box))
 				clip.process_inplace("normalize.edgemean")
 				fft=clip.do_fft()
