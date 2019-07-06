@@ -910,8 +910,62 @@ class EMJSONFileType(EMFileType) :
 		"""Returns a list of (name, help, callback) tuples detailing the operations the user can call on the current file"""
 
 		# No actions for now...
+		if len(self.js.values())==0:
+			return []
+		v=self.js.values()[0]
+		if type(v)==dict:
+			if v.has_key("xform.align3d"):
+				return [
+					("Plot 2D", "plot xform", self.plot2dApp),
+					("Plot 2D+", "plot xform", self.plot2dNew),
+					]
 
 		return []
+	
+	def plot2dNew(self, brws):
+		self.plot2dApp(brws, True)
+		
+		
+	def plot2dApp(self, brws, new=False) :
+		"""Append self to current plot"""
+		
+		brws.busy()
+
+		
+		rows = []
+		for k in self.keys:
+			dct = self.js[k]
+			#### inverse since we want the transform from reference to particle
+			tf = dct[u'xform.align3d'].inverse()
+			t = tf.get_trans()
+			r = tf.get_rotation()
+			row = [r["az"],r["alt"],r["phi"],t[0],t[1],t[2]]
+			if dct.has_key("score"):
+				row.append(dct["score"])
+
+			rows.append([float(x) for x in row])
+		
+		data=np.array(rows).T.tolist()
+		
+		if new:
+			target = EMPlot2DWidget()
+			brws.viewplot2d.append(target)
+		else:
+			try :
+				target = brws.viewplot2d[-1]
+				#target.set_data(data, remove_directories_from_name(self.path, 1))
+			except :
+				target = EMPlot2DWidget()
+				brws.viewplot2d.append(target)
+		
+		
+		target.set_data(data, self.path.split('/')[-1])
+
+		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
 
 
 class EMBdbFileType(EMFileType) :
@@ -3649,7 +3703,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 				self.wbutback.setEnabled(True)
 			else :
 				self.wbutback.setEnabled(False)
-				self.wbutfwd.setEnabled(False)
+			self.wbutfwd.setEnabled(False)
 
 	def bookmarkPress(self, action) :
 		""""""
