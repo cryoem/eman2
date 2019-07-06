@@ -315,7 +315,8 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		print("Showing 2D for image {} : {}".format(int(idx), info["filename"]))
 		
 		self.cur_data=EMData(info["filename"])
-		self.wg_2dimage.list_idx=int(old_div(self.cur_data["nz"],2))		
+		self.wg_2dimage.list_idx=int(old_div(self.cur_data["nz"],2))
+		self.wg_2dimage.setWindowTitle(info["filename"])
 		self.wg_2dimage.set_data(self.cur_data)
 		self.wg_2dimage.show()
 	

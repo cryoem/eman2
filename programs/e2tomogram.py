@@ -79,7 +79,7 @@ def main():
 	parser.add_argument("--tmppath", type=str,help="Temporary path", default=None)
 	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0)
 	parser.add_argument("--noali", action="store_true",help="skip initial alignment", default=False)
-	parser.add_argument("--posz", action="store_true",help="auto positioning along z axis", default=False)
+	parser.add_argument("--posz", action="store_true",help="auto positioning along z axis", default=False,guitype='boolbox',row=15, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--xdrift", action="store_true",help="apply extra correction for drifting along x axis", default=False,guitype='boolbox',row=13, col=0, rowspan=1, colspan=1,mode="easy")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
@@ -94,7 +94,7 @@ def main():
 	#### deal with multiple inputs
 	if options.alltiltseries:
 		fld="tiltseries/"
-		args=[fld+f for f in os.listdir(fld) if (
+		args=[fld+f for f in sorted(os.listdir(fld)) if (
 			f.endswith(".hdf") or f.endswith(".mrc") or f.endswith(".mrcs") or f.endswith(".st") or f.endswith(".lst"))]
 	
 	if len(args)==1:
@@ -493,6 +493,8 @@ def correct_zpos(tomo, ttparams, options):
 	val=np.max(abs(img), axis=(1,2))
 	val-=np.min(val)
 	val/=np.max(val)
+	if options.writetmp:
+		np.savetxt(os.path.join(options.tmppath,"zpos.txt"), np.vstack([np.arange(len(val)), val]).T)
 	thk=options.clipz*4/binfac
 	if options.outsize=="2k":
 		thk/=2
@@ -1120,7 +1122,7 @@ def reconstruct(nid, img, recon, pad, xform,  exclude, options):
 	#### the ramp filter and decay edge helps soften the edge artifacts
 	m.process_inplace("filter.ramp")
 	m.process_inplace("normalize")
-	m.process_inplace("mask.decayedge2d", {"width":int(pad//20)})
+	m.process_inplace("mask.decayedge2d", {"width":int(pad//40)})
 	p2=m.get_clip(Region(m["nx"]//2-pad//2,m["ny"]//2-pad//2, pad, pad), fill=0)
 	#### give up on the subpixel accuracy since it does not really matter here..
 	p2.translate(-int(xform["tx"]), -int(xform["ty"]), 0)

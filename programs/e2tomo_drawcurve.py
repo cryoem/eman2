@@ -277,6 +277,7 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		
 		self.datafile=datafile
 		self.data=EMData(datafile)
+		self.imgview.setWindowTitle(base_name(datafile))
 		self.imgview.list_idx=self.data["nz"]//2
 		self.imgview.set_data(self.data)
 		self.imgview.show()
