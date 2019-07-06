@@ -756,6 +756,11 @@ EMData *EMData::get_rotated_clip(const Transform &xform,
 			}
 		}
 	}
+	
+	result->attr_dict["apix_x"] = attr_dict["apix_x"];
+	result->attr_dict["apix_y"] = attr_dict["apix_y"];
+	result->attr_dict["apix_z"] = attr_dict["apix_z"];
+	
 	result->update();
 
 	return result;
