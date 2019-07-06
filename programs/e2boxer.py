@@ -825,6 +825,7 @@ class boxerConvNet(QtCore.QObject):
 			nnet1.do_training(data, label, session, shuffle=True, learnrate=1e-4, niter=30)
 			nnet1.write_output_train('trainout_classify.hdf', session)
 			nnet1.save_network("nnet_classify.hdf", session)
+		print("Training finished.")
 		
 	@staticmethod
 	def load_ptcls(ref0, ref1, sz=64, makegaussian=True):
