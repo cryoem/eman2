@@ -308,6 +308,10 @@ def construct_keyword_dict():
 	keyword_dict["volume_path"] = SXkeyword_map(2, "data3d_one")
 
 
+	# Added keywords for cinderella
+	keyword_dict["cinderella_path"] = SXkeyword_map(2, "py")
+
+
 	keyword_dict["--range"] = SXkeyword_map(2, "float")
 	keyword_dict["--delta"] = SXkeyword_map(2, "float")
 	keyword_dict["--resolution"] = SXkeyword_map(2, "float")
@@ -2459,6 +2463,9 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/separate_class.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/batch.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/automatic_2d_class_selection.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+
+
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_viper"
@@ -2481,6 +2488,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_angular_distribution.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/batch.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
+
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_meridien"
