@@ -25,7 +25,7 @@ for writing the box files. Optionally one can specify the confidence threshold a
 \\
 ===== Input =====
 === Main Parameters ===
-  ; %%--%%cryolo_predict_path : crYOLO predict executable : Path to the crYOLO prediction executeable (default none)
+  ; %%--%%cryolo_predict_path : crYOLO predict executable : Path to the cryolo_predict.py in your crYOLO environment (default none)
   ; config_path : Config file: Path of the crYOLO config file.  (default required)
   ; target_dir : Image directory  : Folder which contain all images. (default none)
   ; model_path : Model path : Path to the trained model. (default required)
