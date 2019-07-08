@@ -8,7 +8,7 @@ crYOLO - training: Training of crYOLO, a deep learning high accuracy particle pi
 
 Usage in command line
 
-  sp_cryolo_train.py particle_diameter training_dir annot_dir --cryolo_train_path=CRYOLO_PATH --architecture=architecture --input_size=input_size --num_patches=num_patches --overlap_patches=overlap_patches --train_times=train_times --pretrained_weights_name=PRETRAINED_NAME --saved_weights_name=SAVE_WEIGHTS_NAME --batch_size=batch_size --learning_rate=learning_rate --np_epoch=np_epoch --object_scale=object_scale --no_object_scale=no_object_scale --coord_scale=coord_scale --valid_image_dir=valid_image_dir --valid_annot_dir=valid_annot_dir --warmup=warmup --gpu=gpu --fine_tune --gpu_fraction=GPU_FRACTION --num_cpu=NUM_CPU
+  sp_cryolo_train.py particle_diameter training_dir annot_dir --cryolo_train_path=CRYOLO_PATH --architecture=architecture --input_size=input_size --num_patches=num_patches --overlap_patches=overlap_patches --train_times=train_times --pretrained_weights_name=PRETRAINED_NAME --saved_weights_name=SAVE_WEIGHTS_NAME --batch_size=batch_size --learning_rate=learning_rate --np_epoch=np_epoch --object_scale=object_scale --no_object_scale=no_object_scale --coord_scale=coord_scale --valid_image_dir=valid_image_dir --valid_annot_dir=valid_annot_dir --warmup=warmup --gpu=gpu --fine_tune --gpu_fraction=GPU_FRACTION --num_cpu=NUM_CPU --dolowpass=DO_LOW_PASS --cutoff=CUT_OFF --filtered_dir=FILTERED_DIR
 
 \\
 ===== Typical usage =====
