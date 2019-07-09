@@ -73,7 +73,7 @@ Simulates the effects of a 3D reconstruction by including noise and rotational u
 	parser.add_argument("--sym", dest = "sym", default="c1",help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos.")
 	parser.add_argument("--threads", default=4 ,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")

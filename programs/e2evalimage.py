@@ -93,7 +93,7 @@ power spectrum in various ways."""
 	parser.add_argument("--box",type=int,help="Forced box size in grid mode. Overrides any previous setting. ",default=-1, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="eval")
 	parser.add_argument("--usefoldername",action="store_true",help="If you have the same image filename in multiple folders, and need to import into the same project, this will prepend the folder name on each image name",default=False,guitype='boolbox',row=5, col=1, rowspan=1, colspan=1, mode="eval")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 
@@ -1003,6 +1003,8 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 			# if our first point (between the origin and the first 0) is too high, we readjust it once
 			bs=[self.fft1d[i]-parms[1].background[i] for i in range(fz)]
+			if len(bs)==0:
+				return
 			if min(bs)<0 :
 				mv=(bs[0],self.fft1d[0],0)
 				for i in range(1,fz): mv=min(mv,(bs[i],self.fft1d[i],i))

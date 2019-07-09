@@ -79,6 +79,7 @@ target_sources(EM2 PRIVATE
 
 add_subdirectory(gorgon)
 add_subdirectory(sparx)
+add_subdirectory(sphire)
 
 if(WIN32)
 	target_compile_definitions(EM2 PUBLIC _CRT_SECURE_NO_WARNINGS _SCL_SECURE_NO_WARNINGS)

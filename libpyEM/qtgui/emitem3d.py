@@ -82,7 +82,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		"""
 		Adds a transform layout to a dialog
 		@param layout, the layout to append to
-		@param idx, the row to being appnding to
+		@param idx, the row to being appending to
 		"""
 		font = QtGui.QFont()
 		font.setBold(True)
@@ -173,7 +173,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		@type transform: Transform or None
 		@param transform: The transformation (rotation, scaling, translation) that should be applied before rendering this node and its children 
 		"""
-		self.label = None	# Customisabl label, used to label the inspector in the tree
+		self.label = None	# Customizable label, used to label the inspector in the tree
 		self.setParent(parent)
 		self.setChildren(children)
 		if not transform: transform = Transform()
@@ -194,7 +194,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	def getParent(self): return self.parent
 	def setParent(self, parent): 
 		self.parent = parent
-		#if parent:	# Why is this here is causes chaos b/c things get added twice. You can only implment this if you check to ensure self is not already a child of parent!
+		#if parent:	# Why is this here is causes chaos b/c things get added twice. You can only implement this if you check to ensure self is not already a child of parent!
 			#parent.addChild(self)
 	def isSelectedItem(self): return self.is_selected
 	def setSelectedItem(self, is_selected): self.is_selected = is_selected
@@ -213,7 +213,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	
 	def getEvalString(self):
 		"""
-		Retrun a string that after eval can reinstatiate the object
+		Return a string that after eval can reinstantiate the object
 		"""
 		return "EMItem3D()"
 	
@@ -268,7 +268,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		
 	def getChildIndex(self, node):
 		"""
-		Returns the index of child in the list of children. Raises an execption if not found
+		Returns the index of child in the list of children. Raises an exception if not found
 		"""
 		return self.children.index(node)
 	
@@ -424,7 +424,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		
 	def updateMatrices(self, params, xformtype):
 		"""
-		The matrcies are updated in such a way that each is done in the standard cooridnate system and the std coord system is not perturbed by the others
+		The matrices are updated in such a way that each is done in the standard coordinate system and the std coord system is not perturbed by the others
 		@type params: List
 		@param params: A list defining how the transform in each active node is modified
 		@type xfromtype: sting
@@ -558,7 +558,7 @@ class EMItem3DInspector(QtWidgets.QTabWidget):
 			self.boundingbox = QtWidgets.QLabel("Size: "+self.item3d().boundingboxsize,self)
 			databox.addWidget(self.boundingbox)
 		gridbox.addLayout(databox, 1, 0, 1, 1)
-		# angluar controls
+		# angular controls
 		xformframe = QtWidgets.QFrame()
 		xformframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		xformbox = QtWidgets.QGridLayout()
@@ -616,7 +616,7 @@ class EMItem3DInspector(QtWidgets.QTabWidget):
 	
 	def _on_translation(self, value):
 		"""
-		Need to contain the right coords. And do translation in the correct corrd system
+		Need to contain the right coords. And do translation in the correct coord system
 		"""
 		tt = t = Transform({"tx":self.tx.getValue(),"ty":self.ty.getValue(),"tz":self.tz.getValue()})
 		tp = self.item3d().getParentMatrixProduct()
@@ -913,8 +913,8 @@ class EMItem3DInspector(QtWidgets.QTabWidget):
 		self.inspector().updateSceneGraph()
 		
 	def _set_rotation_std_coords(self, rotation):
-		""" This function sets the rotation as if there were no preceeding ones, otherwise a rot around Z could be arounf y,x, etc.
-		Works by transforming local coords into global corrds"""
+		""" This function sets the rotation as if there were no preceding ones, otherwise a rot around Z could be around y,x, etc.
+		Works by transforming local coords into global coords"""
 		tt = rotation
 		tp = self.item3d().getParentMatrixProduct()
 		if tp: tt = tp.inverse()*rotation

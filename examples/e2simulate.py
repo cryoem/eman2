@@ -27,7 +27,7 @@ def main():
 	parser.add_argument("--sym", type=str, help="Symmetry of specimen. Default is c1.",default="c1")
 	parser.add_argument("--grid",action="store_true",default=False,help="Place particles in a grid")
 	parser.add_argument("--scale",default=1.0,type=float,help="Factor by which volume will be scaled prior to projection")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	(options, args) = parser.parse_args()
 
 	logid=E2init(sys.argv)

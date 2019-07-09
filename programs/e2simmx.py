@@ -637,7 +637,7 @@ def main():
 	parser.add_argument("--colmasks",type=str,help="File containing one mask for each column (projection) image, to be used when refining row (particle) image alignments.",default=None)
 	parser.add_argument("--range",type=str,help="Range of images to process (c0,r0,c1,r1) c0,r0 inclusive c1,r1 exclusive", default=None)
 	parser.add_argument("--saveali",action="store_true",help="Save alignment values, output is 5, c x r images instead of 1. Images are (score,dx,dy,da,flip). ",default=False)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 #	parser.add_argument("--lowmem",action="store_true",help="prevent the bulk reading of the reference images - this will save memory but potentially increase CPU time",default=False)
 	parser.add_argument("--init",action="store_true",help="Initialize the output matrix file before performing 'range' calculations",default=False)
 	parser.add_argument("--fillzero",action="store_true",help="Checks the existing output file, and fills only matrix elements which are exactly zero.",default=False)

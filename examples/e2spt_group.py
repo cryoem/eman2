@@ -72,7 +72,7 @@ def main():
 	
 	parser.add_argument("--topn", type=int, default=None, help="Number of particles from best to worst that you want to be written as a substack, averaged, and generate a coordinates .txt file with their coordinates.")
 	
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	

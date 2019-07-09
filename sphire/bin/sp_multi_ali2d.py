@@ -71,7 +71,7 @@ def main():
 	parser.add_option("--CTF",      action="store_true", default=False,   help="use CTF correction during alignment ")
 	parser.add_option("--snr",      type="float",  default=1.0,           help="signal-to-noise ratio of the data (set to 1.0)")
 	parser.add_option("--Fourvar",  action="store_true", default=False,   help="compute Fourier variance")
-	parser.add_option("--Ng",       type="int",    default=-1,            help="number of groups in the new CTF filteration")
+	parser.add_option("--Ng",       type="int",    default=-1,            help="number of groups in the new CTF filtration")
 	parser.add_option("--num_ali",  type="int",    default=3,             help="number of independent alignments to do")
 	parser.add_option("--function", type="string", default="ref_ali2d",   help="name of the reference preparation function (default ref_ali2d)")
 	parser.add_option("--CUDA",     action="store_true", default=False,   help="use CUDA program")

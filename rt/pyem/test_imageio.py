@@ -210,6 +210,9 @@ class TestJPEGIO(ImageIOTester):
 		"""test write-read jpeg ............................."""
 		self.do_test_read_write("jpeg")  
 		
+	if platform.system() == "Darwin" and os.environ.get('JENKINS_HOME'):
+		test_write_jpeg.broken = True		
+
 class TestTIFFIO(ImageIOTester):
 	"""TIFF file IO test"""
 	

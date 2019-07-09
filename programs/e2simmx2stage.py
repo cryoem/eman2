@@ -69,7 +69,7 @@ def main():
 	parser.add_argument("--saveali",action="store_true",help="Save alignment values, output is c x r x 4 instead of c x r x 1",default=False)
 	parser.add_argument("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False)
 	parser.add_argument("--prectf",action="store_true",help="Apply CTF to each projection before comparison",default=False)
-	parser.add_argument("--verbose", "-v", dest="verbose", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 #	parser.add_argument("--lowmem",action="store_true",help="prevent the bulk reading of the reference images - this will save meclen,mory but potentially increase CPU time",default=False)
 	parser.add_argument("--exclude", type=str,default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude. Matrix elements will still be created, but will be zeroed.")
 	parser.add_argument("--shrink", type=float,default=None,help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. This will speed the process up but may change classifications.")

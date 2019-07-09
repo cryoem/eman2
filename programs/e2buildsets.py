@@ -74,7 +74,7 @@ def main():
 	parser.add_argument("--minbfactor",type=float,help="Files with a B-factor lower than specified will be skipped",default=0.0,guitype='floatbox', row=7, col=0,mode="build")
 	parser.add_argument("--maxbfactor",type=float,help="Files with a B-factor higher than specified will be skipped",default=5000.0,guitype='floatbox', row=7, col=1,mode="build")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 

@@ -64,7 +64,7 @@ def main():
 	parser.add_argument("--incomplete", type=int,help="The degree of incomplete allowed in the tree on each level", default=0)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--parallel", default=None, help="parallelism argument")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 	E2n=E2init(sys.argv,options.ppid)
@@ -453,7 +453,7 @@ class TreeClassifyTask(JSTask):
 	def __init__(self,ptcl,ptid,nodes,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{}),cmptmp=None,masktmp=None):
 		rt=EMUtil.get_image_count(nodes)
 		if cmptmp==None or masktmp==None:
-			### Compare to the two children seperately 
+			### Compare to the two children separately 
 			data={"images":["cache",ptcl,ptid], "nodes":["cache",nodes,0,rt]}
 			cmpdiff=False
 		else:

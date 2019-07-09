@@ -55,7 +55,7 @@ def main():
 #	parser.add_argument("--refinedefocus",  action="store_true", help="Will refit defocus to +-0.1 micron then further optimize using SSNR",default=False,guitype='boolbox', row=10, col=2, rowspan=1, colspan=1,mode="[True]")
 #	parser.add_argument("--refitdefocus",  action="store_true", help="Will use EMAN2 CTF fitting to refit the defocus values within +-0.1 micron, astigmatism unchanged",default=False,guitype='boolbox', row=10, col=1, rowspan=1, colspan=1)
 #	parser.add_argument("--fixeddefocus",  action="store_true", help="Will use defocus values from original HDF file.",default=False,guitype='boolbox', row=10, col=1, rowspan=1, colspan=1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()

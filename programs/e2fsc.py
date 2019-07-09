@@ -112,8 +112,14 @@ def procthread(jsd,vals,lnx,thresh1,thresh2,apix,v1,v2,cenmask,avgmask,options,t
 		v1m=v1.get_clip(Region(x,y,z,lnx,lnx,lnx))
 		v2m=v2.get_clip(Region(x,y,z,lnx,lnx,lnx))
 	#				if res143>.23 : v1m.write_image("zones.hdf",-1)
-		v1m.process_inplace("filter.lowpass.tophat",{"cutoff_pixels":si+1})	# sharp low-pass at 0.143 cutoff
-		v2m.process_inplace("filter.lowpass.tophat",{"cutoff_pixels":si+1})	# sharp low-pass at 0.143 cutoff
+	
+		
+		if options.gauss:
+			filtername="filter.lowpass.gauss"
+		else:
+			filtername="filter.lowpass.tophat"
+		v1m.process_inplace(filtername,{"cutoff_pixels":si+1})	# sharp low-pass at 0.143 cutoff
+		v2m.process_inplace(filtername,{"cutoff_pixels":si+1})	# sharp low-pass at 0.143 cutoff
 	#				if res143>.23 : v1m.write_image("zones.hdf",-1)
 		v1m.mult(avgmask)
 		v2m.mult(avgmask)
@@ -144,6 +150,7 @@ and this program should be regarded as experimental.
 	parser.add_argument("--overlap", type=int, help="Amount of oversampling to use in local resolution windows. Larger value -> larger output map",default=4)
 	parser.add_argument("--apix", type=float, help="A/pix to use for the comparison (default uses Vol1 apix)",default=0)
 	parser.add_argument("--cutoff", type=float, help="fsc cutoff. default is 0.143",default=0.143)
+	parser.add_argument("--gauss", action="store_true", help="use gaussian filter instead of tophat",default=False)
 	parser.add_argument("--mask",type=str,help="Mask to apply to both input images before calculation",default=None)
 	#parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
 	#parser.add_argument("--inimgs",type=str,help="Input image file",default=None)
@@ -331,14 +338,16 @@ and this program should be regarded as experimental.
 		volfilto.mult(volnorm)
 		volfilto.write_image(options.outfilto)
 	
-	out=open("fsc.curves.txt","w")
-	out.write("# This file contains individual FSC curves from e2fsc.py. Only a fraction of computed curves are included.\n")
-	if len(fys)>100 : 
-		step=old_div(len(fys),100)
-		print("Saving 1/%d of curves to fsc.curves.txt + %d"%(step,len(funny)))
-	else: 
-		step=1
-		print("Saving all curves to fsc.curves.txt")
+	#out=open("fsc.curves.txt","w")
+	#out.write("# This file contains individual FSC curves from e2fsc.py. Only a fraction of computed curves are included.\n")
+	#for y in fys:
+		#print(len(y),y)
+	#if len(fys)>100 : 
+		#step=old_div(len(fys),100)
+		#print("Saving 1/%d of curves to fsc.curves.txt + %d"%(step,len(funny)))
+	#else: 
+		#step=1
+		#print("Saving all curves to fsc.curves.txt")
 	
 	#for i,x in enumerate(fx):
 		#out.write( "%f\t"%x)
@@ -349,12 +358,12 @@ and this program should be regarded as experimental.
 		#for j in funny:
 			#out.write( "%f\t"%fys[j][i])
 			
-		out.write("\n")
+		#out.write("\n")
 		
 	#if len(funny)>1 :
-		#print "WARNING: %d/%d curves were evaluated as being >0.5 AT Nyquist. While these values have been set to \
+		#print("WARNING: %d/%d curves were evaluated as being >0.5 AT Nyquist. While these values have been set to \
 		#Nyquist (the maximum resolution for your sampling), these values are not meaningful, and could imply \
-		#insufficient sampling, or bias in the underlying reconstructions."%(len(funny),len(fys))
+		#insufficient sampling, or bias in the underlying reconstructions."%(len(funny),len(fys)))
 
 	E2end(logid)
 

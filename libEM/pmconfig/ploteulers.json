@@ -21,8 +21,8 @@
     ]
   },
   {
-    "TITLE":"Select ppintsize",
-    "INST":"Select the pointwidth. The actual point size is poinsize multiplied by the Euler angle bin population.",
+    "TITLE":"Select pointsize",
+    "INST":"Select the pointwidth. The actual point size is pointsize multiplied by the Euler angle bin population.",
     "WIDGETS":[
       "pointwidth"
     ]

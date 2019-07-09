@@ -774,7 +774,7 @@ float TomoWedgeFscCmp::cmp(EMData * image, EMData *with) const
 	vector<float> sigmawith;
 	if (params.has_key("sigmawith")) sigmawith = params["sigmawith"];
 	else {
-		sigmawith=image->calc_radial_dist(nx/2,0,1,4);
+		sigmawith=with->calc_radial_dist(nx/2,0,1,4);
 		for (int i=0; i<nx/2; i++) sigmawith[i]*=sigmawith[i]*sigmawithval; // The value here is amplitude, we square to make comparison less expensive
 	}
 
@@ -828,6 +828,7 @@ float TomoWedgeFscCmp::cmp(EMData * image, EMData *with) const
 	}
 	image->set_attr("fft_overlap",(float)(2.0*norm/(image->get_xsize()*image->get_ysize()*image->get_zsize())));
 //	printf("%f\t%f\t%f\t%f\t%f\n",s1,s2,sumsq1,sumsq2,norm);
+
 
 	if (imageo!=image) delete image;
 	if (witho!=with) delete with;

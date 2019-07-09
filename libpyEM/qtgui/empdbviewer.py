@@ -857,7 +857,7 @@ class EMPDBModel(EM3DModel):
 				
 				res = self.allResidues[k]
 				key =  res[4][0]
-				if key in self.side_chain_renderer: #goes through each residue and draws the newtwork of sticks connecting atoms
+				if key in self.side_chain_renderer: #goes through each residue and draws the network of sticks connecting atoms
 					self.side_chain_renderer[key](res,self)
 					continue
 

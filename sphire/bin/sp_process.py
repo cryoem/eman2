@@ -1693,7 +1693,7 @@ def main():
 						log_main.add("Low-pass filter is not applied to map!")
 				else:
 					if options.fl == -1.0: 
-						log_main.add("There is no low-pass filteration in single map enhancement")
+						log_main.add("There is no low-pass filtration in single map enhancement")
 					else:
 						if options.fl>0.5: # Input is in Angstrom 
 							map1   = filt_tanl(map1, options.pixel_size/options.fl, min(options.aa,.1))

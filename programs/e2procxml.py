@@ -47,7 +47,7 @@ def main():
 	####################
 	parser.add_argument("--fscxml2txt",action="store_true",help="Convert the input XML FSC file into a text file")
 	parser.add_argument("--fsctxt2xml",type=str,help="Convert the input text FSC file into an xml file. The value provided is the title of the graph. For example: --fsctxt2xml=\"My Graph Title\"", default="FSC Plot")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higner number means higher level of verboseness",default=1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higher number means higher level of verboseness",default=1)
 
 	(options, args) = parser.parse_args()
 	

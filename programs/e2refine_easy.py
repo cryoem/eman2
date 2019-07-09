@@ -193,7 +193,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default="thread:4", guitype='strbox', row=30, col=0, rowspan=1, colspan=2, mode="refinement[thread:4]")
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=30, col=2, rowspan=1, colspan=1, mode="refinement[4]")
 	parser.add_argument("--path", default=None, type=str,help="The name of a directory where results are placed. Default = create new refine_xx")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 #	parser.add_argument("--usefilt", dest="usefilt", type=str,default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used in projection matching routines, and elsewhere.")
 
 	# options associated with e2project3d.py
@@ -870,14 +870,15 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 		elif options.invar:
 			### FIXME - hard-coded rotate_translate aligner here due to odd irreproducible memory related crashes with rotate_translate_tree:flip=0   8/22/17
 			### At some point this was changed back to rotate_translate_tree with flipping. May be ok since it would recover some mis-classified handedness related particles?  5/29/18
+			msaopt=" --msamode=pca "
 			append_html("<p>* Computing similarity of each particle to the set of projections using invariants. This avoids alignment, and permits classification in a single step.</p>",True)
-			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_even.hdf {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --classinfo {path}/classinfo_{itr:02d}_even.json --classes {path}/classes_{itr:02}_even.hdf --averager {averager} --cmp {simcmp} --align rotate_translate_flip:usebispec=1 --aligncmp {simaligncmp} {simralign} {verbose} --sep {sep} --threads {threads}".format(
-				path=options.path,itr=it,inputfile=options.input[0],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,sep=options.sep,averager=options.classaverager,
+			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_even.hdf {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --classinfo {path}/classinfo_{itr:02d}_even.json --classes {path}/classes_{itr:02}_even.hdf --averager {averager} --cmp {simcmp} --align rotate_translate_tree:flip=1 --aligncmp {simaligncmp} {simralign} {msa} {verbose} --sep {sep} --threads {threads}".format(
+				path=options.path,itr=it,inputfile=options.input[0],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,sep=options.sep,averager=options.classaverager,msa=msaopt,
 				verbose=verbose,threads=options.threads)
 			run(cmd)
 			progress += 1.0
-			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_odd.hdf {inputfile} --classmx {path}/classmx_{itr:02d}_odd.hdf --classinfo {path}/classinfo_{itr:02d}_odd.json --classes {path}/classes_{itr:02}_odd.hdf --averager {averager} --cmp {simcmp} --align rotate_translate_flip:usebispec=1 --aligncmp {simaligncmp} {simralign} {verbose} --sep {sep} --threads {threads}".format(
-				path=options.path,itr=it,inputfile=options.input[1],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,sep=options.sep,averager=options.classaverager,
+			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_odd.hdf {inputfile} --classmx {path}/classmx_{itr:02d}_odd.hdf --classinfo {path}/classinfo_{itr:02d}_odd.json --classes {path}/classes_{itr:02}_odd.hdf --averager {averager} --cmp {simcmp} --align rotate_translate_tree:flip=1 --aligncmp {simaligncmp} {simralign} {msa} {verbose} --sep {sep} --threads {threads}".format(
+				path=options.path,itr=it,inputfile=options.input[1],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,sep=options.sep,averager=options.classaverager,msa=msaopt,
 				verbose=verbose,threads=options.threads)
 			run(cmd)
 			progress += 1.0

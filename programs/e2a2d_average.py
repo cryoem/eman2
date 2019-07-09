@@ -29,7 +29,7 @@ def main():
 	parser.add_argument("--scorebands", default=0,type=int,help="If specified will generate averages over N bands of 'score' values, including only particles in each band.")
 	parser.add_argument("--scorebandsali", default=0,type=int,help="If specified will generate averages over N bands of 'score' values, including only particles in each band, and iteratively realigning in each band.")
 	parser.add_argument("--scoreprogressive", default=0,type=int,help="If specified will generate progressive averages over N bands of 'score' values, including all particles starting with the best through the progressive bands.")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=1, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=1, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()

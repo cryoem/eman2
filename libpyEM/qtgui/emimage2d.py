@@ -137,7 +137,7 @@ class EMImage2DWidget(EMGLWidget):
 
 		self.shapes={}				# dictionary of shapes to draw, see add_shapes
 		self.shapechange=1			# Set to 1 when shapes need to be redrawn
-		self.active=(None,0,0,0)	# The active shape and a hilight color (n,r,g,b)
+		self.active=(None,0,0,0)	# The active shape and a highlight color (n,r,g,b)
 
 		self.extras = []			# an empty set of extras - other images that can be rendered over this one
 
@@ -383,7 +383,7 @@ class EMImage2DWidget(EMGLWidget):
 	def get_data(self):
 		return self.data
 
-	def set_data(self,incoming_data,file_name="",retain_current_settings=True, keepcontrast=False):
+	def set_data(self,incoming_data,file_name="",retain_current_settings=True, keepcontrast=False, xyz=2):
 		"""You may pass a single 2D image or a list of images"""
 		from .emimagemx import EMDataListCache,EMLightWeightParticleCache
 		#if self.data != None and self.file_name != "":
@@ -403,18 +403,28 @@ class EMImage2DWidget(EMGLWidget):
 			needresize=False
 
 		fourier = False
-
+		
+		apix=1.0
 		# it's a 3D image
 		if not isinstance(data,list) and not isinstance(data,EMDataListCache) and not isinstance(data,EMLightWeightParticleCache) and data.get_zsize() != 1:
+			
+			if xyz==0:
+				incoming_data.transform(Transform({"type":"xyz", "xtilt":90}))
+			elif xyz==1:
+				incoming_data.transform(Transform({"type":"xyz", "ytilt":90}))
+			
 			data = []
-			for z in range(incoming_data.get_zsize()):
+			shp=[incoming_data.get_xsize(), incoming_data.get_ysize(), incoming_data.get_zsize()]
+			for z in range(shp[xyz]):
 				image = incoming_data.get_clip(Region(0,0,z,incoming_data.get_xsize(),incoming_data.get_ysize(),1))
 				data.append(image)
 
 
 		if isinstance(data,list) or isinstance(data,EMDataListCache) or isinstance(data,EMLightWeightParticleCache):
-			if self.list_data == None and self.list_idx > len(data): self.list_idx = old_div(len(data),2) #otherwise we use the list idx from the previous list data, as in when being used from the emselector
+			if self.list_data == None and self.list_idx > len(data): 
+				self.list_idx = len(data)//2 #otherwise we use the list idx from the previous list data, as in when being used from the emselector
 			d = data[0]
+			apix=d["apix_x"]
 			if d.is_complex():
 				self.list_data = []
 				self.list_fft_data = data
@@ -427,7 +437,8 @@ class EMImage2DWidget(EMGLWidget):
 				self.data = self.list_data[self.list_idx]
 				self.list_fft_data = [d.do_fft() for d in data]
 				if self.fftorigincenter :
-					for im in self.list_fft_data : im.process_inplace("xform.phaseorigin.tocorner")
+					for im in self.list_fft_data :
+						im.process_inplace("xform.phaseorigin.tocorner")
 				self.__set_display_image(self.curfft)
 			else:
 				self.list_data = data
@@ -439,6 +450,7 @@ class EMImage2DWidget(EMGLWidget):
 		else:
 			self.list_data = None
 			self.list_fft_data = None
+			apix=data["apix_x"]
 			if data.is_complex() or self.curfft in [1,2,3]:
 				self.display_fft = None
 				self.data = None
@@ -463,7 +475,7 @@ class EMImage2DWidget(EMGLWidget):
 				self.fft = None
 
 		self.image_change_count = 0
-		
+		self.get_inspector().mtapix.setValue(apix)
 		if not keepcontrast:
 			self.auto_contrast(inspector_update=False,display_update=False)
 
@@ -1276,7 +1288,7 @@ class EMImage2DWidget(EMGLWidget):
 		#context = OpenGL.contextdata.getContext(None)
 		#print "Image2D context is", context,"display list is",self.shapelist
 
-		# make our own cirle rather than use gluDisk or somesuch
+		# make our own circle rather than use gluDisk or somesuch
 		emshape.EMShape.font_renderer=self.font_renderer		# Important !  Each window has to have its own font_renderer. Only one context active at a time, so this is ok.
 		glNewList(self.shapelist,GL_COMPILE)
 
@@ -1381,7 +1393,7 @@ class EMImage2DWidget(EMGLWidget):
 				elif s.shape[0][:3]!="scr":
 #					print "shape",s.shape
 					GL.glPushMatrix()		# The push/pop here breaks the 'scr*' shapes !
-#					print(self.devicePixelRatio())
+
 					s.draw()		# No need for coordinate transform any more
 					GL.glPopMatrix()
 #					GLUtil.colored_rectangle(s.shape[1:8],alpha)

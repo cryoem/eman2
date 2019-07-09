@@ -25,7 +25,7 @@ requirements:
     ] %}
     
     build:
-        - cmake 3.9
+        - cmake 3.9.*
         - {{ compiler('cxx') }}
 
     host:
@@ -40,6 +40,7 @@ test:
   
   source_files:
     - examples/mpi_test.py
+    - programs/
     - tests/
     - rt/pyem/
 
