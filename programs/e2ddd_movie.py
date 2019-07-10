@@ -1088,7 +1088,7 @@ def bimodal_peak_model(options,ccf):
 	s1 = 10.0
 	a2 = ncc.max()
 	s2 = 0.6
-        offset=ncc.mean()
+	offset=ncc.mean()
 
 	if options.optccf == "centerofmass":
 		#initial_guess = [x1,y1,s1,a1,s2,a2]

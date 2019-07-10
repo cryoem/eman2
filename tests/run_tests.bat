@@ -1,3 +1,5 @@
+conda.exe list
+
 :: 1. Run e2version.py and e2speedtest.py
 e2version.py
 e2speedtest.py

@@ -322,7 +322,7 @@ const string FixSignProcessor::NAME = "math.fixmode";
 const string ZThicknessProcessor::NAME = "misc.zthick";
 const string ReplaceValuefromListProcessor::NAME = "misc.colorlabel";
 const string PolyMaskProcessor::NAME = "mask.poly";
-
+const string AmpMultProcessor::NAME = "math.multamplitude";
 //#ifdef EMAN2_USING_CUDA
 //const string CudaMultProcessor::NAME = "cuda.math.mult";
 //const string CudaCorrelationProcessor::NAME = "cuda.correlate";
@@ -611,6 +611,7 @@ template <> Factory < Processor >::Factory()
 	force_add<ZThicknessProcessor>();
 	force_add<ReplaceValuefromListProcessor>();
 	force_add<PolyMaskProcessor>();
+	force_add<AmpMultProcessor>();
 
 //#ifdef EMAN2_USING_CUDA
 //	force_add<CudaMultProcessor>();
@@ -4308,7 +4309,7 @@ void ZeroEdgePlaneProcessor::process_inplace(EMData * image)
 	int y0=params["y0"];
 	int y1=params.set_default("y1",y0);
 	int z0=params["z0"];
-	int z1=params.set_default("z1",z1);
+	int z1=params.set_default("z1",z0);
 
 	size_t row_size = nx * sizeof(float);
 	size_t nxy = nx * ny;
@@ -8449,6 +8450,7 @@ EMData* DirectionalSumProcessor::process(const EMData* const image ) {
 	if (nz==1) {
 		if (dir=="x") {
 			ret->set_size(ny,1,1);
+			ret->set_attr("apix_x",image->get_attr("apix_y"));
 			for (int y=0; y<ny; y++) {
 				double sm=0;
 				for (int x=0; x<nx; x++) sm+=image->get_value_at(x,y);
@@ -8458,6 +8460,7 @@ EMData* DirectionalSumProcessor::process(const EMData* const image ) {
 		}
 		else if (dir=="y") {
 			ret->set_size(nx,1,1);
+			ret->set_attr("apix_x",image->get_attr("apix_x"));
 			for (int x=0; x<nx; x++) {
 				double sm=0;
 				for (int y=0; y<ny; y++) sm+=image->get_value_at(x,y);
@@ -8474,6 +8477,8 @@ EMData* DirectionalSumProcessor::process(const EMData* const image ) {
 	// compress one of the dimensions
 	if ( dir == "x" ) {
 		ret->set_size(nz,ny);
+		ret->set_attr("apix_x",image->get_attr("apix_z"));
+		ret->set_attr("apix_y",image->get_attr("apix_y"));
 
 		// bounds checks
 		if (a0<0) a0+=nx;
@@ -8493,6 +8498,8 @@ EMData* DirectionalSumProcessor::process(const EMData* const image ) {
 	}
 	else if ( dir == "y" ) {
 		ret->set_size(nx,nz);
+		ret->set_attr("apix_x",image->get_attr("apix_x"));
+		ret->set_attr("apix_y",image->get_attr("apix_z"));
 
 		// bounds checks
 		if (a0<0) a0+=ny;
@@ -8512,6 +8519,8 @@ EMData* DirectionalSumProcessor::process(const EMData* const image ) {
 	}
 	else if ( dir == "z" ) {
 		ret->set_size(nx,ny);
+		ret->set_attr("apix_x",image->get_attr("apix_x"));
+		ret->set_attr("apix_y",image->get_attr("apix_y"));
 
 		// bounds checks
 		if (a0<0) a0+=nz;
@@ -13407,7 +13416,7 @@ EMData* HarmonicProcessor::process(const EMData * const image) {
 			float si=sin(float(2.0*M_PI*(ja+0.5)/naz));
 			float co=cos(float(2.0*M_PI*(ja+0.5)/naz));
 			int y=0;		// This is where the results go
-			// Start at r=3 due to bad CryoEM values near the origin. 
+			// Start at r=5 due to bad CryoEM values near the origin. 
 			// Go to 1/2 Nyquist because high resolution values are less invariant due to interpolaton
 			for (int jr=5; jr<ny/4; jr++) {
 				// Innermost loop is hn (radial harmonic coefficient) to group similar values together
@@ -13435,6 +13444,7 @@ EMData* HarmonicProcessor::process(const EMData * const image) {
 	// Rotational & Translational invariant, fp specifies the maximum harmonic (R&T) to include
 	if (params.has_key("fp")) {
 		int fp=(int)params.set_default("fp",4);
+		if (fp<2) fp=2;
 		// Start with the translational invariant in Fourier space in a radial coordinate system
 		for (int ja=0; ja<naz; ja++) {
 			float si=sin(float(2.0*M_PI*(ja+0.5)/naz));
@@ -13443,8 +13453,8 @@ EMData* HarmonicProcessor::process(const EMData * const image) {
 			// Start at r=3 due to bad CryoEM values near the origin. 
 			// Go to 1/2 Nyquist because high resolution values are less invariant due to interpolaton
 			for (int jr=3; jr<ny/4; jr++) {
-				// Innermost loop is hn (radial harmonic coefficient) to group similar values together
-				for (int hn=1; hn<=fp; hn++) {
+				// Innermost loop is hn (radial harmonic coefficient) to group similar values together, skip the phaseless hn=1
+				for (int hn=2; hn<=fp; hn++) {
 					float jx=co*jr;
 					float jy=si*jr;
 					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
@@ -13470,9 +13480,9 @@ EMData* HarmonicProcessor::process(const EMData * const image) {
 			int x=0;		// output x coordinate
 			// outer loop over base rotational frequency
 			for (int jx=0; jx<naz/2; jx++) {
-				// inner loop over rotational harmonic coefficients
+				// inner loop over rotational harmonic coefficients, skip the phaseless rn=1
 				complex<double> v2 = tmp[jx];
-				for (int rn=1; rn<=fp; rn++) {
+				for (int rn=2; rn<=fp; rn++) {
 					if (jx*rn>=naz) break;
 					complex<double> v1 = tmp[jx*rn];
 					v1*=std::pow(std::conj(v2),(double)rn);
@@ -13488,7 +13498,9 @@ EMData* HarmonicProcessor::process(const EMData * const image) {
 
 
 		delete cimage;
-		EMData *ret=trns->get_clip(Region(0,0,min(naz,fp*naz/2),min(ny/2,fp*(ny/4-3))));
+		// the /4 in the next line is arbitrary to remove regions which empirically
+		// aren't useful
+		EMData *ret=trns->get_clip(Region(0,0,min(naz,fp*naz/4)/2,min(ny/2,fp*(ny/4-3))));
 		delete trns;
 		ret->set_attr("is_harmonic_fp",(int)fp);
 		ret->set_complex(0);
@@ -14791,6 +14803,42 @@ void ZThicknessProcessor::process_inplace(EMData *image)
 
 }
 
+
+EMData* AmpMultProcessor::process(const EMData* const image)
+{
+	EMData* proc = image->copy();
+	proc->process_inplace("math.multamplitude",params);
+	return proc;
+}
+
+void AmpMultProcessor::process_inplace(EMData *image)
+{
+	EMData *amp=params["amp"];
+	float* data = image->get_data();
+	float* mult = amp->get_data();
+	
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+
+	
+	
+	int anx = amp->get_xsize();
+	int any = amp->get_ysize();
+	int anz = amp->get_zsize();
+	
+	if  (( (nx==anx*2) && (ny==any) && (nz==anz) )==false)
+		throw InvalidParameterException("AmpMultProcessor: amplitude image size mismatch...");
+
+	int sz=nx*ny*nz;
+	
+	for (int i=0; i<sz; i++){
+		data[i]*=mult[i/2];
+	}
+	
+	image->update();
+
+}
 #ifdef SPARX_USING_CUDA
 
 /* CLASS MPICUDA_kmeans processor

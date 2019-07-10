@@ -705,7 +705,7 @@ The basic design of EMAN Processors: <br>\
 				d.put("hn", EMObject::INT, "Computes a single translational invariant for the nth harmonic, 1 is a normal power spectrum");
 				d.put("rn", EMObject::INT, "Computes a single rot/trans invariant for the nth rotational harmonic, requires hn to be non zero");
 				d.put("rfp", EMObject::INT, "Returns a non square 2-D image with translational invariants, y=radial, x=aziumth. Used for rotational alignment.");
-				d.put("fp", EMObject::INT, "Returns a non-square 2-D image containing n harmonics for each R&T component. R&T invariant.");
+				d.put("fp", EMObject::INT, "Returns a non-square 2-D image containing n harmonics for each R&T component. R&T invariant. Min 2, default 4");
 //				d.put("fb", EMObject::INT, "Fourier Bessel");
 				d.put("size", EMObject::INT, "If specified, will determine the number of rotational samples in the bispectrum. If not set, a size is selected automatically");
 				return d;
@@ -9432,6 +9432,34 @@ correction is not possible, this will allow you to approximate the correction to
 		}
 	};
 
+	
+	class AmpMultProcessor:public Processor
+	{
+	public:
+		virtual void process_inplace(EMData * image);
+		virtual EMData* process(const EMData* const image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new AmpMultProcessor();
+		}
+		string get_desc() const
+		{
+			return "Multiply amplitude image. For reconstruction normalization.";
+		}
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("verbose", EMObject::INT, "Verbose");
+			d.put("amp", EMObject::EMDATA, "Amplitude to multiply.");
+			return d;
+		}
+		static const string NAME;
+	};
 	
 	
 	class PolyMaskProcessor:public CoordinateProcessor

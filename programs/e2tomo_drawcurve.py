@@ -24,7 +24,7 @@ def main():
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_pos_argument(name="tomogram",help="Specify the tomogram to be segmented.", default="", guitype='filebox', browser="EMTomoTable(withmodal=True,multiselect=False)",  row=0, col=0,rowspan=1, colspan=2, mode="tomoseg")
-	parser.add_argument("--load", type=str,help="Load previous contour segmentation.", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)",  row=1, col=0,rowspan=1, colspan=2, mode="tomoseg")
+	#parser.add_argument("--load", type=str,help="Load previous contour segmentation.", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)",  row=1, col=0,rowspan=1, colspan=2, mode="tomoseg")
 	#parser.add_argument("--noupdate", action="store_true",help="do not erase shapes", default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	(options, args) = parser.parse_args()
@@ -52,43 +52,41 @@ class Contour(EMShape):
 		self.image=img
 		self.triangles=[]
 		self.select=0
-		#self.lines=[]
-
-#		if len(points)>3:
-
-#		self.make_triangle()
-
+		self.classid=0
+		
+		
+	
+		
 
 	def add_point(self, newpt=[], newcontour=False):
 
 
 
 		zpos=self.image.list_idx
-
-
-		#if len(pts)>=3:
-			#pts=pts[pts[:,2]==zpos,:]
-
-
+		if len(self.points)==0 and len(newpt)>0:
+			self.points.append([newpt[0], newpt[1], zpos, self.select, self.classid])
 
 		if newcontour==False:
 
 			ci=self.select
-			pts=np.array([p for p in self.points if p[3]==ci])
-
+			#### separate the points on the current contour and everything else
+			nppts=np.array(self.points)
+			sel=np.logical_and(nppts[:,3]==ci, nppts[:,4]==self.classid)
+			pts=nppts[sel,:3].copy()
+			otherpts=nppts[sel==False].copy()
 
 			if len(pts)<3:
 				if len(newpt)>0:
-					self.points.append([newpt[0], newpt[1], zpos, ci])
+					self.points.append([newpt[0], newpt[1], zpos, ci, self.classid])
 					return
 			else:
 				thr=1000.
 				newpt=np.array([newpt[0], newpt[1], zpos])
-
+			
 
 			if len(newpt)>0:
 				#### add a point
-				dst=np.array(scipydist.cdist([newpt], pts[:,:3])[0])
+				dst=np.array(scipydist.cdist([newpt], pts)[0])
 				rg=np.arange(len(dst), dtype=int)+1
 				#print rg
 				rg[-1]=rg[-2]
@@ -102,19 +100,19 @@ class Contour(EMShape):
 				#print(mi, len(pts))
 				#ci=pts[mi, 3]
 				if mi==0:
-					pts=np.vstack([ np.append(newpt, ci), pts])
+					pts=np.vstack([ newpt, pts])
 				if mi==len(pts):
-					pts=np.vstack([pts,  np.append(newpt, ci)])
-				pts=np.insert(pts, mi+0, np.append(newpt, ci), axis=0)
+					pts=np.vstack([pts, newpt])
+				pts=np.insert(pts, mi+0, newpt, axis=0)
 
 
 			allpts=[]
 			#### a simple tsp solver...
-			idx=np.where(pts[:,3]==ci)[0]
-			pp=pts[idx].copy()
+			#idx=np.where(pts[:,3]==ci)[0]
+			pp=pts.copy()
 			path=np.arange(len(pp), dtype=int)
 
-			dmat=scipydist.squareform(scipydist.pdist(pp[:,:3]))
+			dmat=scipydist.squareform(scipydist.pdist(pp))
 			dmat+=np.eye(len(dmat))*thr
 			if len(pp)>=3:
 				niter=2000
@@ -142,9 +140,9 @@ class Contour(EMShape):
 					nochange=0
 
 
-			allpts=[[pp[i][0], pp[i][1], pp[i][2], ci] for i in path]
+			allpts=[[pp[i][0], pp[i][1], pp[i][2], ci, self.classid] for i in path]
 
-			self.points=[p for p in self.points if p[3]!=ci]
+			self.points=otherpts.tolist()
 			self.points.extend(allpts)
 			#self.points=allpts#.tolist()
 
@@ -153,69 +151,22 @@ class Contour(EMShape):
 			pts=np.array(self.points)
 			ci=np.max(pts[:,3])+1
 			self.select=ci
-			self.points.append([newpt[0], newpt[1], zpos, ci])
+			self.points.append([newpt[0], newpt[1], zpos, ci, self.classid])
 
-
-
-	def next_slice(self):
-		pts=np.array(self.points)
-		mi=self.image.list_idx
-		ii=np.argmin(abs(pts[:,2]-mi))
-		if pts[ii,2]==mi: return
-		last=pts[ii,2]
-		pts=pts[pts[:,2]==last]
-		#print(mi, last, pts.shape)
-		img=self.image.data.numpy()
-
-		vec=[]
-		cid=np.unique(pts[:,3])
-		rg0=np.arange(len(pts), dtype=int)-1
-		rg1=np.arange(len(pts), dtype=int)+1
-		for ci in cid:
-			idx=np.where(pts[:,3]==ci)[0]
-			rg1[idx[-1]]=idx[0]
-			rg0[idx[0]]=idx[-1]
-
-		#for i in range(len(pts)):
-		vec= pts[rg0]-pts[rg1]
-		vec=np.vstack([vec[:,1], -vec[:,0]]).T
-		vec/=np.linalg.norm(vec, axis=1)[:, None]
-		#vec.append(v)
-
-		#vec=np.array(vec)
-
-		pval=[]
-		rg=np.arange(-2,2.1)
-		for i in rg:
-			p=(pts[:,:2]-vec*i).astype(int)
-			out=(p[:,0]<0)+(p[:,1]<0)+(p[:,0]>=img.shape[0])+(p[:,1]>=img.shape[1])
-			out=out>0
-			p[out,:]=0
-			pval.append(img[p[:,1], p[:,0]])
-			pval[-1][out]=1000
-
-		pval=np.array(pval)
-
-		vp=rg[np.argmin(pval, 0)]
-		p1=pts.copy()
-		p1[:,:2]-=vp[:,None]*vec
-		p1[:,:2]=np.round(p1[:,:2])
-#		p1[-1]=p1[0]
-		p1[:,2]=mi
-		self.points.extend(p1.tolist())
 
 
 
 	def draw(self,d2s=None,col=None):
-
 		zpos=self.image.list_idx
+		curpts=[p for p in self.points if p[4]==self.classid]
+		
 		#print np.array(self.points)
 		#print "#########"
 
-		cid=np.unique([p[3] for p in self.points])
+		cid=np.unique([p[3] for p in curpts])
 		for ci in cid:
 			#### draw lines
-			pts=np.array([[p[0], p[1], p[2]] for p in self.points if ci==p[3]])
+			pts=np.array([[p[0], p[1], p[2]] for p in curpts if ci==p[3]])
 			dzs=pts[:,2]-zpos
 			lns=[]
 			for i in range(len(pts)-1):
@@ -249,7 +200,7 @@ class Contour(EMShape):
 			glDrawArrays(GL_LINES, 0, len(lns))
 
 
-		for p in self.points:
+		for p in curpts:
 			#### draw nodes on the plane
 			#pts=[[p[0], p[1]] for p in self.points if p[2]==zpos]
 			s=14.-abs(p[2]-zpos)
@@ -279,34 +230,40 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		self.setCentralWidget(QtWidgets.QWidget())
 		self.gbl = QtWidgets.QGridLayout(self.centralWidget())
 		
-		
+		self.lb_txt0=QtWidgets.QLabel("ClassID")
+		self.gbl.addWidget(self.lb_txt0, 0,0,1,1)
+		self.classidbox=QtWidgets.QSpinBox()
+		self.classidbox.setMinimum(0)
+		self.classidbox.setMaximum(5)
+		self.classidbox.setValue(0)
+		self.gbl.addWidget(self.classidbox, 0,1,1,1)
 		
 		self.lb_lines=QtWidgets.QLabel("")
 		self.lb_lines.setWordWrap(True)
-		self.gbl.addWidget(self.lb_lines, 0,0,1,2)
+		self.gbl.addWidget(self.lb_lines, 1,0,1,2)
 		
 		
 		self.bt_showimg=QtWidgets.QPushButton("Show tomogram")
 		self.bt_showimg.setToolTip("Show tomogram window")
-		self.gbl.addWidget(self.bt_showimg, 1,0,1,2)
+		self.gbl.addWidget(self.bt_showimg, 2,0,1,2)
 		
 		self.bt_savepdb=QtWidgets.QPushButton("Save PDB")
 		self.bt_savepdb.setToolTip("Save curves as PDB")
-		self.gbl.addWidget(self.bt_savepdb, 2,0,1,2)
+		self.gbl.addWidget(self.bt_savepdb, 3,0,1,2)
 		
 		self.bt_clear=QtWidgets.QPushButton("Clear")
 		self.bt_clear.setToolTip("Clear all points")
-		self.gbl.addWidget(self.bt_clear, 3,0,1,2)
+		self.gbl.addWidget(self.bt_clear, 4,0,1,2)
 		
 		self.bt_interp=QtWidgets.QPushButton("Interpolate")
 		self.bt_interp.setToolTip("Interpolate points")
-		self.gbl.addWidget(self.bt_interp, 4,0,1,1)
+		self.gbl.addWidget(self.bt_interp, 5,0,1,1)
 		
 		self.tx_interp=QtWidgets.QLineEdit(self)
 		self.tx_interp.setText("20")
-		self.gbl.addWidget(self.tx_interp, 4,1,1,1)
+		self.gbl.addWidget(self.tx_interp, 5,1,1,1)
 		
-		
+		self.classidbox.valueChanged[int].connect(self.classid_change)
 		self.bt_showimg.clicked[bool].connect(self.show_tomo)
 		self.bt_savepdb.clicked[bool].connect(self.save_pdb)
 		self.bt_interp.clicked[bool].connect(self.interp_points)
@@ -330,26 +287,25 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		pts=[]
 		self.apix_scale=1
 		self.tomocenter=np.zeros(3)
-		if options.load:
-			pts=np.loadtxt(options.load).tolist()
-		else:
-			js=js_open_dict(self.infofile)
-			if "apix_unbin" in js:
-				apix_cur=apix=self.data["apix_x"]
-				apix_unbin=js["apix_unbin"]
-				self.apix_scale=apix_cur/apix_unbin
-				self.tomocenter= np.array([self.data["nx"],self.data["ny"],self.data["nz"]])/2
+
+		js=js_open_dict(self.infofile)
+		if "apix_unbin" in js:
+			apix_cur=apix=self.data["apix_x"]
+			apix_unbin=js["apix_unbin"]
+			self.apix_scale=apix_cur/apix_unbin
+			self.tomocenter= np.array([self.data["nx"],self.data["ny"],self.data["nz"]])/2
+		
 			
+		if js.has_key("curves") and len(js["curves"])>0:
+			pts=np.array(js["curves"]).copy()
+			if len(pts[0])<5:
+				pts=np.hstack([pts, np.zeros((len(pts),1))])
+			pts[:,:3]=pts[:,:3]/self.apix_scale + self.tomocenter
+			pts=pts.tolist()
 				
-			if js.has_key("curves") and len(js["curves"])>0:
-				pts=np.array(js["curves"]).copy()
-				pts[:,:3]=pts[:,:3]/self.apix_scale + self.tomocenter
-				pts=pts.tolist()
-					
-			else:
-				pts=[]
-			js.close()
-			
+		else:
+			pts=[]
+		js.close()
 		
 		self.contour=Contour(img=self.imgview, points=pts )
 		self.shape_index = 0
@@ -367,7 +323,8 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	def update_label(self):
-		pts=np.array(self.contour.points)
+		pts=np.array([p for p in self.contour.points if p[4]==self.contour.classid])
+		
 		if len(pts)==0:
 			return
 		lb=np.unique(pts[:,3])
@@ -376,7 +333,12 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		txt+='   '+','.join([str(np.sum(pts[:,3]==i)) for i in lb])
 		self.lb_lines.setText(txt)
 
-
+	def classid_change(self):
+		idx=int(self.classidbox.value())
+		self.contour.classid=idx
+		self.do_update()
+		
+		
 	def show_tomo(self):
 		self.imgview.show()
 		
@@ -389,7 +351,11 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		numpy2pdb(data=pts[:,:3], fname=filename, chainid=pts[:,3])
 	
 	def interp_points(self):
-		pts=np.array(self.contour.points)
+		nppts=np.array(self.contour.points)
+		sel=nppts[:,4]==self.contour.classid
+		pts=nppts[sel].copy()
+		otherpts=nppts[sel==False].copy()
+		
 		if len(pts)==0:
 			return
 		
@@ -410,14 +376,13 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 			#print len(pt), ln
 			ipt=interp_points(pt, npt=np.round(ln)//density)
 			
-			pts_intp.append(np.hstack([ipt, kk+np.zeros((len(ipt), 1))]))
+			pts_intp.append(np.hstack([ipt, kk+np.zeros((len(ipt), 1)), self.contour.classid+np.zeros((len(ipt), 1))]))
 			kk+=1
 		
 		pts_intp=np.vstack(pts_intp)
-		self.contour.points=pts_intp.tolist()
-		self.imgview.shapechange=1
-		self.imgview.updateGL()
-		self.update_label()
+		self.contour.points=otherpts.tolist()
+		self.contour.points.extend(pts_intp.tolist())
+		self.do_update()
 		self.save_points()
 		
 	def save_points(self):
@@ -434,6 +399,13 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		
 		
 	def key_press(self, event):
+		#print(event.key())
+		if event.key()==96:
+			self.imgview.increment_list_data(1)
+			self.do_update()
+		elif event.key()==49:	
+			self.imgview.increment_list_data(-1)
+			self.do_update()
 		return
 
 	def clear_points(self):
@@ -442,9 +414,7 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		if choice == QtWidgets.QMessageBox.Yes:
 			self.contour.points=[]
 		
-		self.imgview.shapechange=1
-		self.imgview.updateGL()
-		self.update_label()
+		self.do_update()
 		self.save_points()
 		
 		return
@@ -486,10 +456,14 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		else:
 			#### add point
 			self.contour.add_point([x, y]) #, self.imgview.list_idx
+		
+		self.do_update()
+		self.save_points()
+	
+	def do_update(self):
 		self.imgview.shapechange=1
 		self.update_label()
 		self.imgview.updateGL()
-		self.save_points()
 		
 	def closeEvent(self, event):
 		self.imgview.close()

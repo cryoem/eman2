@@ -26,20 +26,30 @@ def main():
 	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=4, col=1,rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--maxtilt", type=int,help="max tilt", default=100, guitype='intbox',row=4, col=0, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--padtwod", type=float,help="padding factor", default=2.0, guitype='floatbox',row=5, col=0, rowspan=1, colspan=1, mode="extract")
-	parser.add_argument("--noctf", action="store_true", default=False ,help="skip ctf correction..", guitype='boolbox',row=5, col=1, rowspan=1, colspan=1, mode="extract")
+	parser.add_argument("--noctf", action="store_true", default=False ,help="skip ctf correction.")
 	parser.add_argument("--wiener", action="store_true", default=False ,help="wiener filter the particles using ctf information..", guitype='boolbox',row=6, col=1, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--alltomograms", action="store_true", default=False ,help="use all tomograms.", guitype='boolbox',row=1, col=1, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--dotest", action="store_true", default=False ,help="only make 1 batch of subtomograms for testing")
-	parser.add_argument("--curves", action="store_true", default=False ,help="extract particles from saved curves")
-	parser.add_argument("--curves_overlap", type=float, help="fraction of overlap when generating particle along curves. default is 0.5",default=0.5)
 
-	parser.add_argument("--shrink", type=int, help="Shrinking factor for output particles. Default is 1 (no shrink)",default=1, guitype='intbox',row=8, col=0, rowspan=1, colspan=1, mode="extract")
+	parser.add_argument("--shrink", type=float, help="Shrinking factor for output particles. 1.5 or integers allowed. Default is 1 (no shrink).",default=1, guitype='floatbox',row=8, col=0, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--tltkeep", type=float,help="keep a fraction of tilt images with good score determined from tomogram reconstruction", default=1.0, guitype='floatbox',row=8, col=1, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--rmbeadthr", type=float,help="remove 2d particles with high contrast object beyond N sigma at 100A. Note that this may result in generating fewer particles than selected. Default is -1 (include all particles). 5 might be a good choice for removing gold beads but may need some testing...", default=-1, guitype='floatbox',row=9, col=0, rowspan=1, colspan=1, mode="extract")
 	
-	parser.add_header(name="orblock1", help='Just a visual separation', title="Re-extraction from spt", row=10, col=0, rowspan=1, colspan=1, mode="extract")
+	parser.add_header(name="orblock2", help='Just a visual separation', title="Extract from curves", row=10, col=0, rowspan=1, colspan=1, mode="extract")
+	
+	parser.add_argument("--curves", type=int, default=-1 ,help="specify curve id to extract particles from saved curves. ", guitype='intbox',row=11, col=0, rowspan=1, colspan=1, mode="extract")
+	parser.add_argument("--curves_overlap", type=float, help="fraction of overlap when generating particle along curves. default is 0.5",default=0.5,  guitype='floatbox',row=12, col=0, rowspan=1, colspan=1, mode="extract")
 
-	parser.add_argument("--jsonali", type=str,help="re-extract particles using a particle_param_xx json file from a spt alignment", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=11, col=0,rowspan=1, colspan=2, mode="extract")
+	
+	parser.add_header(name="orblock3", help='Just a visual separation', title="Re-extraction from spt", row=13, col=0, rowspan=1, colspan=1, mode="extract")
+
+	parser.add_argument("--jsonali", type=str,help="re-extract particles using a particle_param_xx json file from a spt alignment", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=14, col=0,rowspan=1, colspan=2, mode="extract")
+	parser.add_argument("--mindist", type=float,help="minimum distance between particles in A. for reextraction only", default=-1)
+	parser.add_argument("--keep", type=float,help="fraction of particles to keep fron previous alignment. for reextraction only.", default=.9)
+	parser.add_argument("--postproc", type=str,help="processor after 3d particle reconstruction", default="")
+	parser.add_argument("--postmask", type=str,help="masking after 3d particle reconstruction. The mask is transformed if json ", default="")
+	parser.add_argument("--textin", type=str,help="text file for particle coordinates. do not use..", default=None)
+
 	#parser.add_argument("--alioffset", type=str,help="coordinate offset when re-extract particles. (x,y,z)", default="0,0,0", guitype='strbox', row=12, col=0,rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--postxf", type=str,help="a file listing post transforms", default="")
 
@@ -49,6 +59,16 @@ def main():
 	
 	logid=E2init(sys.argv)
 	
+	if options.textin:
+		allxfs=parse_text(options)
+		
+		for fname in allxfs.keys():
+			#### it seems options is changed inplace somewhere...
+			(options, args) = parser.parse_args()
+			do_extraction(fname, options, allxfs[fname])
+		
+		return
+			
 	
 	if len(options.jsonali)>0:
 		print("re-extracting particles based on previous alignment. Ignoring particle/tomogram input...")
@@ -59,7 +79,7 @@ def main():
 		
 		#print("extracting {} sub-particles per particle, with offset".format(len(offset)//3))
 		#print(np.array(offset).reshape((-1,3)))
-		allxfs=parse_json(options.jsonali, options.postxf)
+		allxfs=parse_json(options)
 		for fname in allxfs.keys():
 			#### it seems options is changed inplace somewhere...
 			(options, args) = parser.parse_args()
@@ -106,7 +126,7 @@ def main():
 def do_extraction(pfile, options, xfs=[]):
 	#pfile=args[0]
 	print("Reading from {}...".format(pfile))
-	options.boxsz=options.boxsz_unbin // int(options.shrink)
+	options.boxsz= good_boxsize(options.boxsz_unbin // options.shrink)
 	
 	#### reading alignment info...
 	js=js_open_dict(info_name(pfile))
@@ -153,6 +173,12 @@ def do_extraction(pfile, options, xfs=[]):
 
 	print("Scaling factor: {:.1f}, y-tilt: {:.1f}, z-shift: {:d}.".format(scale, options.ytilt, int(zshift)))
 	
+	if options.shrink==1.5:
+		shrinklab="_bin1_5"
+	elif options.shrink>=2:
+		shrinklab="_bin{:d}".format(int(options.shrink))
+	else:
+		shrinklab=""
 	
 	#### reading particle location from json file corresponding to the tomogram input
 	ptclpos=[]
@@ -177,7 +203,7 @@ def do_extraction(pfile, options, xfs=[]):
 		print("Reading particle location from a tomogram...")
 		js=js_open_dict(info_name(pfile))
 		towrite=[]
-		if options.curves:
+		if options.curves>=0:
 			print("Generating particles along curves...")
 			overlap=options.curves_overlap
 			if overlap>=1 or overlap<0:
@@ -186,46 +212,52 @@ def do_extraction(pfile, options, xfs=[]):
 			
 			if js.has_key("curves") and len(js["curves"])>0:
 				pts=np.array(js["curves"]).copy()
+				
 				js.close()
 				
-				if "apix_unbin" in js:
-					pts[:,:3]/=options.shrink
-				else:
-					pts[:,:3]-=[e["nx"]//2, e["ny"]//2, e["nz"]//2]
-					pts[:,:3]*=scale
-					pts[:,2]-=zshift
+				if len(pts[0])<5:
+					pts=np.hstack([pts, np.zeros((len(pts),1))])
 				
-				if options.newlabel=="":
-					lab="curve"
-				else:
-					lab=options.newlabel
+				pts=pts[pts[:,4]==options.curves, :4]
+				
+				if len(pts)>1:
+					if "apix_unbin" in js:
+						pts[:,:3]/=options.shrink
+					else:
+						pts[:,:3]-=[e["nx"]//2, e["ny"]//2, e["nz"]//2]
+						pts[:,:3]*=scale
+						pts[:,2]-=zshift
 					
-				if options.shrink>1:
-					lab+="_bin{:d}".format(options.shrink)
-				outname=str(base_name(pfile)+"__"+lab+".hdf")
-				
-				sz=int(options.boxsz//2)
-				
-				
-				bxs=[]
-				drs=[]
-				for li in np.unique(pts[:,3]):
-					pt=pts[pts[:,3]==li][:,:3].copy()
-					pt=pt[np.append(True, np.linalg.norm(np.diff(pt, axis=0), axis=1)>0.1)]
-					ln=np.linalg.norm(pt[-1]-pt[0])
-					#     print np.round(ln)//2
-					if len(pt)<2: continue
-					ipt=interp_points(pt, npt=int(np.round(ln/options.boxsz/(1-overlap))))
+					if options.newlabel=="":
+						lab="curve"
+					else:
+						lab=options.newlabel
+						
+					lab+=shrinklab
+					outname=str(base_name(pfile)+"__"+lab+".hdf")
 					
-					if len(ipt)<4: continue
-					bxs.append(ipt[1:-1])
-					drs.append(ipt[2:]-ipt[:-2])
-				
-				bxs=np.vstack(bxs)
-				drs=np.vstack(drs)
-				bxs=np.hstack([bxs,drs])
-				
-				towrite.append((bxs, outname, sz))
+					sz=int(options.boxsz//2)
+					
+					
+					bxs=[]
+					drs=[]
+					for li in np.unique(pts[:,3]):
+						pt=pts[pts[:,3]==li][:,:3].copy()
+						pt=pt[np.append(True, np.linalg.norm(np.diff(pt, axis=0), axis=1)>0.1)]
+						ln=np.linalg.norm(pt[-1]-pt[0])
+						#     print np.round(ln)//2
+						if len(pt)<2: continue
+						ipt=interp_points(pt, npt=int(np.round(ln/options.boxsz/(1-overlap))))
+						
+						if len(ipt)<4: continue
+						bxs.append(ipt[1:-1])
+						drs.append(ipt[2:]-ipt[:-2])
+					
+					bxs=np.vstack(bxs)
+					drs=np.vstack(drs)
+					bxs=np.hstack([bxs,drs])
+					
+					towrite.append((bxs, outname, sz))
 		
 		elif "class_list" in js and "boxes_3d" in js:
 			clslst=js["class_list"]
@@ -260,8 +292,8 @@ def do_extraction(pfile, options, xfs=[]):
 				else:
 					lab=options.newlabel
 					
-				if options.shrink>1:
-					lab+="_bin{:d}".format(options.shrink)
+				lab+=shrinklab
+				
 				outname=str(base_name(pfile)+"__"+lab+".hdf")
 				
 				towrite.append((bxs, outname, sz))
@@ -280,9 +312,9 @@ def do_extraction(pfile, options, xfs=[]):
 	
 		sfx=pfile[pfile.find("__"):]
 		for i in range(2,10): sfx=sfx.replace("_bin{:d}".format(i),"")
-		if options.shrink>1:
-			sfx+="_bin{:d}".format(options.shrink)
-		outname=base_name(pfile)+sfx
+		
+		sfx+=shrinklab
+		outname=base_name(pfile)+sfx+".hdf"
 		
 		
 		ptclpos=np.array(ptclpos, dtype=float)
@@ -312,9 +344,14 @@ def do_extraction(pfile, options, xfs=[]):
 		
 	for m in imgs: 
 		if options.shrink>1:
-			m.process_inplace("math.fft.resample",{"n":options.shrink})
+			m.process_inplace("math.meanshrink",{"n":options.shrink})
 		m.process_inplace("normalize")
 	ntlt=len(imgs)
+	
+	if options.postmask!="":
+		pmask=EMData(options.postmask)
+	else:
+		pmask=None
 		
 	try: os.mkdir("particles3d")
 	except: pass
@@ -351,7 +388,7 @@ def do_extraction(pfile, options, xfs=[]):
 			
 		for tid in range(0,nptcl,batchsz):
 			ids=list(range(tid, min(tid+batchsz, nptcl)))
-			jobs.append([jsd, ids, imgs, ttparams, pinfo, options, ctf, tltkeep])
+			jobs.append([jsd, ids, imgs, ttparams, pinfo, options, ctf, tltkeep, pmask])
 		
 		
 		thrds=[threading.Thread(target=make3d,args=(i)) for i in jobs]
@@ -396,7 +433,7 @@ def do_extraction(pfile, options, xfs=[]):
 	
 	
 
-def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[]):
+def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mask=None):
 	ppos, outname, boxsz=pinfo
 	
 	bx=boxsz*2
@@ -407,7 +444,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[]):
 		defocus, phase, voltage, cs=ctfinfo
 		ctf=EMAN2Ctf()
 		ctf.from_dict({
-			"defocus":1.0, "voltage":voltage, "bfactor":50., "cs":cs,"ampcont":0, "apix":apix})
+			"defocus":1.0, "voltage":voltage, "bfactor":0., "cs":cs,"ampcont":0, "apix":apix})
 	
 	for pid in ids:
 		
@@ -456,9 +493,9 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[]):
 
 			e=m.get_clip(Region(txint-pad//2, tyint-pad//2, pad, pad), fill=0)
 			
-			e.process_inplace("mask.zeroedgefill",{"nonzero":1})		# This tries to deal with particles that were boxed off the edge of the micrograph
-			if e.has_attr("hadzeroedge") and e["hadzeroedge"]!=0:
-				continue
+			#e.process_inplace("mask.zeroedgefill",{"nonzero":1})		# This tries to deal with particles that were boxed off the edge of the micrograph
+			#if e.has_attr("hadzeroedge") and e["hadzeroedge"]!=0:
+				#continue
 
 			e.mult(-1)
 			e.process_inplace("normalize.edgemean")
@@ -472,9 +509,9 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[]):
 				er.process_inplace("threshold.binary",{"value":options.rmbeadthr})
 				er.process_inplace("mask.addshells.gauss",{"val1":e["nx"]//40,"val2":e["nx"]//25})
 				
-				if er["mean"]>0.1: 
-					### too many beads. better just remove this subtilt
-					continue
+				#if er["mean"]>0.1: 
+					#### too many beads. better just remove this subtilt
+					#continue
 				
 				e.mult(1-er)
 				e.mult(1-er)
@@ -522,7 +559,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[]):
 			e["tilt_id"]=nid
 			e["file_threed"]=options.output
 			e["ptcl_source_coord_3d"]=pos.tolist()
-			e.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.45})
+			#e.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.45})
 			projs.append(e)
 			
 			sz=e["nx"]
@@ -543,10 +580,24 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[]):
 		threed["ptcl_source_coord"]=pos.tolist()
 		threed["file_twod"]=options.output2d
 		threed["model_id"]=pid
+		threed.process_inplace("normalize.edgemean")
 		
 		if tf_dir:
 			threed["xform.align3d"]=tf_dir
-		#print(ids,projs)
+		
+		if options.postproc!="":
+			(filtername, param_dict) = parsemodopt(options.postproc)
+			threed.process_inplace(filtername, param_dict)
+			
+		if mask:
+			if tf_dir:
+				m=mask.copy()
+				m.transform(tf_dir.inverse())
+				threed.mult(m)
+			else:
+				threed.mult(mask)
+			
+		
 		jsd.put((pid, threed, projs))
 
 	return
@@ -568,12 +619,44 @@ def get_xf_pos(tpm, pk):
 	return [p2[0], p2[1]]
 
 
+#### parse a text file for particles
+def parse_text(options):
+	js=js_open_dict(options.textin)
+	keys=sorted(js.keys())
+	allxf={}
+	for ky in keys:
+		ptcls=js[ky]
+		xfs=[]
+		for p in ptcls:
+			xf=p[3]
+			xf.translate(p[0], p[1], p[2])
+			xfs.append(xf)
+			
+		allxf[str(ky)]=xfs
+		
+	js.close()
+	return allxf
+
+
 #### parse a json file from spt_align to re-extract particles
-def parse_json(jsfile, xffile=""):
-	js=js_open_dict(jsfile)
+def parse_json(options):
+	xffile=options.postxf
+	js=js_open_dict(options.jsonali)
 	coord=[]
 	allxfs={}
 	
+	
+	#### sort by score 
+	keys=sorted(js.keys())
+	score=[js[k]["score"] for k in keys]
+	srt=np.argsort(score)
+	
+	print("Reading {} particles. Score from {:.2f} to {:.2f}".format(len(score), min(score), max(score)))
+	if options.keep<1:
+		srt=srt[:int(len(score)*options.keep)+1]
+		print("Removing particles with score above {:.2f}. Keeping {} particles.".format(score[srt[-1]], len(srt)))
+	keys=[keys[i] for i in srt]
+		
 	postxfs=[]
 	if xffile!="":
 		f=open(xffile,'r')
@@ -582,31 +665,55 @@ def parse_json(jsfile, xffile=""):
 		for l in lines:
 			if len(l)>3:
 				postxfs.append(Transform(eval(l)))
+				
+		print("Extracting {} sub-particles per original particle".format(len(postxfs)))
 	else:
 		postxfs.append(Transform())
 	
-	
-	for ky in js.keys():
+	nptcl=0
+	nexclude=0
+	for ky in keys:
 		src, ii = eval(ky)
 		e=EMData(src, ii, True)
 		tomo=e["class_ptcl_src"]
 		dic=js[ky]
 		dxf=dic["xform.align3d"]
 		c=e["ptcl_source_coord"]
+		
+		ptcls=[]
 		for xf in postxfs:
 			ali=Transform(dxf)
 			ali=xf.inverse()*ali
 			a=ali.inverse()
 			a.translate(c[0], c[1], c[2])
-			#print(a)
 			
-			if allxfs.has_key(tomo):
-				allxfs[tomo].append(a)
+			
+			if options.mindist>0 and allxfs.has_key(tomo):
+				pos=np.array([x.get_trans() for x in allxfs[tomo]])
+				p0=np.array(a.get_trans())
+				mindst=np.min(np.linalg.norm(pos-p0, axis=1))
+				mindst*=e["apix_x"]
+				
+				if mindst<options.mindist:
+					nexclude+=1
+					continue
+			
+			ptcls.append(a)
+			nptcl+=1
+
+		
+		if len(ptcls)>0:
+			
+			if allxfs.has_key(tomo):	
+				allxfs[tomo].extend(ptcls)
 			else:
-				allxfs[tomo]=[a]
+				allxfs[tomo]=ptcls
+				
+				
+			
 			
 	js.close()
-	#print(len(allxfs))
+	print("Writing {} particles, excluding {} particles too close to each other.".format(nptcl, nexclude))
 	return allxfs
 	
 

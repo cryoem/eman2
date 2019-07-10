@@ -1585,8 +1585,11 @@ class TaskManager(QtWidgets.QWidget):
 							os.kill(task[1], killsig)
 							self._recursivekill(task[1], killsig)
 					## now parent
-					print("Killing parent")
-					os.kill(curppid,killsig)
+					print("Killing parent {}".format(curppid))
+					try:
+						os.kill(curppid,killsig)
+					except:
+						print(" cannot kill process {}".format(curppid))
 					
 				## The PID Mafia occurs below: # Kill all children and siblings
 				#for task in self.tasks:

@@ -57,11 +57,11 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_pos_argument(name="stack_files",help="List of images to be stacked", default="", guitype='filebox', browser="EMParticlesEditTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=3, nosharedb=True,mode="default")
-	parser.add_pos_argument(name="tilt_images",help="List of images to be stacked. Input order will determine the order of images in output tiltseries.", default="", guitype='filebox', browser="EMTiltsTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=3, nosharedb=True,mode="tomo")
+	parser.add_pos_argument(name="stack_files",help="List of images to be stacked. Selecting a folder to use all images inside.", default="micrographs", guitype='filebox', browser="EMParticlesEditTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=3, nosharedb=True,mode="default")
+	parser.add_pos_argument(name="tilt_images",help="List of images to be stacked. Input order will determine the order of images in output tiltseries.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True)",  row=0, col=0,rowspan=1, colspan=3, nosharedb=True,mode="tomo")
 	parser.add_argument("--output",type=str,help="Name of the output stack to build (Extension will be .hdf unless specified). Note, all tiltseries will be stored in the 'tiltseries' directory.", default=None, guitype='strbox',row=2, col=0, rowspan=1, colspan=1, mode="default,tomo")
 	parser.add_argument("--tilts",action="store_true",default=False,help="Write results to 'tiltseries' directory in current project.", guitype='boolbox',row=4, col=0, rowspan=1, colspan=1,mode="tomo[True]")
-	parser.add_argument("--guess",action="store_true",default=False,help="Guess the order of images of a tilt series from file names", guitype='boolbox',row=4, col=1, rowspan=1, colspan=1,mode="tomo[False]")
+	parser.add_argument("--guess",action="store_true",default=False,help="Guess how to split micrographs into tilt series and the order of images in each tilt series from file names. Tilt angles must be incuded in file names. May and may not work depending on the file name format...", guitype='boolbox',row=4, col=1, rowspan=1, colspan=1,mode="tomo[False]")
 	#parser.add_argument("--rawtlt",type=str,help="Name of tilt angles text file.\nNote, angles must correspond to stack file names in alphabetical/numerical order.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",row=3, col=0, rowspan=1, colspan=1, mode="tomo")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higher number means higher level of verboseness",default=1)
@@ -75,11 +75,25 @@ def main():
 
 	if options.tilts:
 
-
+		
+			
 		if options.guess:
+			
+
+			if len(args)==1 and os.path.isdir(args[0]):
+				print("input is a directory. reading all mrc/mrcs/hdf files in it...")
+				path=args[0]
+				args=[]
+				ext=["mrc", "mrcs", "hdf"]
+				for f in os.listdir(path):
+					for e in ext:
+						if f.endswith(e):
+							args.append(os.path.join(path, f))
+				print("found {} files".format(len(args)))
+			
 			lst=[]
-			for a in args:
-				ag=os.path.basename(a)
+			lstpos=[]
+			for ag in args:
 				l=[]
 				s0=""
 				p=[0]
@@ -92,50 +106,94 @@ def main():
 						p.append(i)
 						s0=""
 				lst.append(l)
+				lstpos.append(p)
 			
 			try:
-				lst=np.array(lst)
+				lst=np.array(lst, dtype=float)
 			except:
 				print("number in file names do not match.. something may be wrong..")
 				return
-			
-		
-			print('{} files, {} digit sections'.format(len(args),len(lst[0])))
+				
+			print("File name of the first input:")
+			print("\t{}".format(args[0]))
+			print("{} Columns".format(len(lst[0])))
+			print("\t"+',  '.join(lst[0].astype(int).astype(str)))
 			dt=[]
 			for i in range(len(lst[0])):
 				mn,mx=np.min(lst[:,i]), np.max(lst[:,i])
-				print("{}: range from {} to {}".format(i, mn, mx))
+				#print("{}: range from {} to {}".format(i, mn, mx))
 				dt.append(abs(mn+60)+abs(mx-60))
 			
 			ic=np.argmin(dt)
-			print("guess column {} is for tilt angles...".format(ic))
+			print("Guess column {} is for tilt angles,\n\tranging from {:.1f} to {:.1f}.".format(ic, np.min(lst[:,ic]), np.max(lst[:,ic])))
+			
+			
+			c=lst[:, ic]
+			if len(c)>len(np.unique(c)):
+				print("Multiple tilt series exist...")
 				
-		
-			aid=np.argsort(lst[:,ic])
-			args=[args[a] for a in aid]
+				it=np.where(np.std(lst,axis=0)>0)[0][0]
+				print("Guess column {} separates different tilt series".format(it))
 			
-			if options.output==None:
-				a=os.path.basename(args[0])
-				options.output=a[:p[ic]]+".hdf"
-				print("writing output to {}".format(options.output))
+				fid=sorted(np.unique(lst[:,it]))
+				print("\t{} files, from {:.0f} to {:.0f}.".format(len(fid), np.min(lst[:,it]), np.max(lst[:,it])))
+				
+				tlts=[np.where(lst[:,it]==t)[0] for t in fid]
+			else:
+				tlts=[np.arange(len(lst), dtype=int)]
+			
+			
+			try:
+				os.mkdir("tiltseries")
+			except:
+				pass
+			
+			
+			for tid in tlts:
+				l=lst[tid]
+				aid=np.argsort(l[:,ic])
+				fnames=[args[i] for i in tid[aid]]
+				p=lstpos[tid[0]][it+1]
+				prefix=fnames[0][fnames[0].rfind('/')+1:p]
+				lstname=os.path.join("tiltseries", prefix+'.lst')
+				print("{} : {} images -> {}".format(prefix, len(fnames), lstname))
+				
+				if os.path.isfile(lstname):
+					os.remove(lstname)
+				
+				lout=LSXFile(lstname, False)
+				
+				
+				for fm in fnames:
+					lout.write(-1, 0, fm)
+					
+					
+				lout.close()
 
 			
-		stdir = os.path.join(".","tiltseries")
-		if not os.access(stdir, os.R_OK):
-			os.mkdir(stdir)
 
-		options.output = "{}/{}".format(stdir,options.output)
+			
+		else:
+			stdir = os.path.join(".","tiltseries")
+			if not os.access(stdir, os.R_OK):
+				os.mkdir(stdir)
+			options.output = "{}/{}".format(stdir,options.output)
 
-		if options.output.split(".")[-1] not in ["hdf","mrc","mrcs"]:
-			options.output = options.output + ".hdf"
+			if options.output.split(".")[-1] not in ["hdf","mrc","mrcs"]:
+				options.output = options.output + ".hdf"
 
-		# remove existing output file
-		if os.path.exists(options.output) :
-			print("The file {} already exists.".format(options.output))
-			print("Please move, rename, or remove this file to generate an alternate version with this program.")
-			sys.exit(1)
+			# remove existing output file
+			if os.path.exists(options.output) :
+				print("The file {} already exists.".format(options.output))
+				print("Please move, rename, or remove this file to generate an alternate version with this program.")
+				sys.exit(1)
 
-		
+			
+			for n,arg in enumerate(args):
+				img = EMData(arg)
+				img.write_image(options.output,n)
+			
+			
 		# if options.rawtlt:
 		# 	try:
 		# 		angles = np.loadtxt(options.rawtlt)
@@ -161,9 +219,6 @@ def main():
 		#series_db=js_open_dict(info_name(options.output,nodir=True))
 
 		#series_db["tilt_angles"] = ordered_angles
-		for n,arg in enumerate(args):
-			img = EMData(arg)
-			img.write_image(options.output,n)
 
 		#for n,(angle,arg) in enumerate(zip(ordered_angles,sorted_args)):
 

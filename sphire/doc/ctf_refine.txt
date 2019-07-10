@@ -23,14 +23,14 @@ sp_ctf_refine.py exists only in non-MPI version.
 === Main Parameters ===
   ; path_to_input_stack : Input stack path  : Path to input stack. (default required)
   ; output_directory : Output directory : Folder to output files etc. (default required)
-  ; refinement_dir : Meridien directory : Path to Merdien directory.  (default required)
+  ; refinement_dir : Meridien directory : Path to Meridien directory.  (default required)
   ; %%--%%mask : Path to mask : Path to mask used. (default none)
 
 \\
 === Advanced Parameters ===
   ; %%--%%range : Defocus search range [um] : Search range +- around the current defocus value. (default 0.15)
   ; %%--%%delta : Defocus search delta [um] : Finest search delta. (default 0.0025)
-  ; %%--%%resolution : Nominal resolution [A] : Nominal resolution of the reconstruction. (default None)
+  ; %%--%%resolution : Nominal resolution [A] : Nominal resolution of the reconstruction. Low-pass Gaussian filter will be applied at this resolution. (default None)
   ; %%--%%apix : Pixel size [A] : Pixel size in Angstroms. (default None) : %%--%%resolution!=None
   ; %%--%%number_part : Number of particles : Number of particles to process. Mainly for debugging. (default none)
 

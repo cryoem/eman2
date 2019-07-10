@@ -10,7 +10,9 @@ from EMAN2_utils import *
 
 def main():
 	
-	usage=" "
+	usage="""prog <particle stack> --ref <reference> [options]
+	Iterative subtomogram refinement.  
+	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_pos_argument(name="particles",help="Specify particles to use to generate an initial model.", default="", guitype='filebox', browser="EMSetsTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=3, mode="model")
 	parser.add_argument("--reference","--ref",help="""3D reference for initial model generation. No reference is used by default.""", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=1, col=0,rowspan=1, colspan=3, mode="model")
@@ -22,8 +24,7 @@ def main():
 	parser.add_argument("--niter", type=int,help="Number of iterations", default=5, guitype='intbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
 	
-	parser.add_argument("--mass", type=float,help="mass", default=500.0, guitype='floatbox',row=5, col=0,rowspan=1, colspan=1, mode="model")
-	#parser.add_argument("--tarres", type=float,help="target resolution", default=10, guitype='floatbox',row=5, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--mass", type=float,help="mass. default -1 will skip by mass normalization", default=-1, guitype='floatbox',row=5, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--localfilter", action="store_true", default=False ,help="use tophat local", guitype='boolbox',row=5, col=2,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--goldstandard", type=int,help="initial resolution for gold standard refinement", default=-1, guitype='intbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
@@ -38,13 +39,15 @@ def main():
 	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=9, col=0,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--path", type=str,help="Specify name of refinement folder. Default is spt_XX.", default=None)#, guitype='strbox', row=10, col=0,rowspan=1, colspan=3, mode="model")
-	parser.add_argument("--wtori",type=float,help="Weight for using the prior orientation in the particle header. default is -1, i.e. not used.",default=-1)
+	parser.add_argument("--maxang",type=float,help="maximum anglular difference in refine mode.",default=30)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="")
 	parser.add_argument("--refine",action="store_true",help="local refinement from xform.init in header.",default=False)
 	parser.add_argument("--localnorm",action="store_true",help="local normalization. do not use yet....",default=False)
-	parser.add_argument("--resume",action="store_true",help="local normalization. do not use yet....",default=False)
+	parser.add_argument("--resume",action="store_true",help="resume from previous run",default=False)
+	
+	parser.add_argument("--masktight", type=str,help="Mask_tight file", default="")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -89,9 +92,14 @@ def main():
 	options.input_ptcls=ptcls
 	options.input_ref=ref
 	options.cmd=' '.join(sys.argv)
-	js=js_open_dict("{}/0_spt_params.json".format(options.path))
-	js.update(vars(options))
-	js.close()
+	for i in range(10):
+		fm="{}/{}_spt_params.json".format(options.path, i)
+		if not os.path.isfile(fm):
+			js=js_open_dict(fm)
+			js.update(vars(options))
+			js.close()
+			break
+		
 	
 	
 	
@@ -121,10 +129,10 @@ def main():
 			gd=" --goldcontinue".format(options.goldstandard)
 		
 		if options.refine:
-			gd+=" --refine"
+			gd+=" --refine --maxang {:.1f}".format(options.maxang)
 		#curres=0
 
-		cmd="e2spt_align.py {} {} --parallel {} --path {} --iter {} --sym {} --wtori {} --nsoln 1 {}".format(ptcls, ref,  options.parallel, options.path, itr, options.sym, options.wtori, gd)
+		cmd="e2spt_align.py {} {} --parallel {} --path {} --iter {} --sym {} --nsoln 1 {}".format(ptcls, ref,  options.parallel, options.path, itr, options.sym, gd)
 		
 		#### in case e2spt_align get segfault....
 		ret=1
@@ -151,13 +159,29 @@ def main():
 		
 		even=os.path.join(options.path, "threed_{:02d}_even.hdf".format(itr))
 		odd=os.path.join(options.path, "threed_{:02d}_odd.hdf".format(itr))
+		combine=os.path.join(options.path, "threed_{:02d}.hdf".format(itr))
 		
-		
+		if options.setsf==None:
+			#### do a simple amplitute correction when no sf provided
+			data=EMData(combine)
+			bxsz=data["nx"]
+			apix=data["apix_x"]
+			dataf = data.do_fft()
+			curve = dataf.calc_radial_dist((data["ny"]//2), 0, 1.0, False)
+			curve=np.array([i/dataf["nx"]*dataf["ny"]*dataf["nz"] for i in curve])
+			s=np.arange(len(curve))*1./(apix*bxsz)
+			sf=XYData()
+			sf.set_xy_list(s.tolist(), curve.tolist())
+			
+			
 		for f in [even, odd]:
 			e=EMData(f)
 			e.del_attr("xform.align3d")
+			e.write_image(f.replace("threed_{:02d}_".format(itr), "threed_raw_"))
+			if options.setsf==None:
+				e.process_inplace("filter.setstrucfac",{"apix":e["apix_x"],"strucfac":sf})
 			e.write_image(f)
-		
+			
 		
 		msk=options.mask
 		if len(msk)>0:
@@ -165,8 +189,13 @@ def main():
 				msk=" --automask3d mask.fromfile:filename={}".format(msk)
 			else:
 				msk=" --automask3d {}".format(msk)
-		#msk=" --automask3d mask.fromfile:filename=Subtomograms/atpase_mask.hdf"
-		#msk=" --automask3d mask.cylinder:outer_radius=14:phirange=360:zmax=50.0:zmin=14.0 --automask3d2 mask.addshells.gauss:val1=0:val2=8"
+
+		if len(options.masktight)>0:
+			if os.path.isfile(options.masktight):
+				msk+=" --automask3dtight mask.fromfile:filename={}".format(msk)
+			else:
+				msk+=" --automask3dtight {}".format(options.masktight)
+
 		s=""
 		if options.goldstandard>0:
 			s+=" --align"
@@ -177,11 +206,6 @@ def main():
 		if options.localfilter:
 			s+=" --tophat local "
 			
-		#s+=" --tophat global "
-		#if options.gaussz>0:
-			#s+=" --m3dpostprocess filter.lowpass.gaussz:cutoff_freq={}".format(options.gaussz)
-			
-		#os.system("rm {}/mask*.hdf {}/*unmasked.hdf".format(options.path, options.path))
 		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --mass {} --restarget {} --threads {} --sym {} {} {} ".format(even, odd, os.path.join(options.path, "threed_{:02d}.hdf".format(itr)), itr, options.mass, curres, options.threads, options.sym, msk, s)
 		run(ppcmd)
 		
@@ -197,29 +221,6 @@ def main():
 		if curres>40.:
 			curres=40
 		
-		# if options.tltrefine:# and itr%2==0:
-			
-		# 	os.system("rm {}/mask*.hdf {}/*unmasked.hdf".format(options.path, options.path))
-		# 	cmd="e2spt_tltrefine.py --path {} --iter {} --threads {} --sym {} --maxres {} --keep {}".format(options.path, itr, options.threads, options.sym, rs, options.tkeep)
-		# 	if options.tltrefine_unmask:
-		# 		cmd+=" --unmask "
-		# 	run(cmd)
-		# 	#ppcmd=ppcmd.replace("threed_{:02d}".format(itr), "threed_{:02d}_ali".format(itr))
-		# 	run(ppcmd)
-		# 	for eo in ["", "_even", "_odd"]:
-		# 		os.rename("{}/threed_{:02d}{}.hdf".format(options.path, itr, eo), 
-		# 				"{}/threed_{:02d}_ali{}.hdf".format(options.path, itr, eo))
-		# 	refnew=os.path.join(options.path, "threed_{:02d}_ali.hdf".format(itr))
-		# 	if os.path.isfile(refnew):
-		# 		ref=refnew
-		# 		fscs=[os.path.join(options.path,f) for f in os.listdir(options.path) if f.startswith("fsc") and f.endswith("{:02d}.txt".format(itr))]
-		# 		for f in fscs:
-		# 			os.rename(f, f[:-4]+"_ali.txt")
-		# 	else:
-		# 		print("tilt refinement failed for some reason...")
-		# 		return
-			
-	
 
 	E2end(logid)
 	

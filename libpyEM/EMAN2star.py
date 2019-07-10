@@ -108,7 +108,7 @@ If not set, it will read the first block encountered. Value should be of the for
 			for i,l in enumerate(self.lines):
 				if l[:lt]==self.dataname : break
 			else:
-				raise Exception,"Dataname '{}' not found".format(self.dataname)
+				raise Exception("Dataname '{}' not found".format(self.dataname))
 			self.lineptr=i+1
 		
 		while 1:

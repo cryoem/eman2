@@ -46,7 +46,7 @@ def main():
 
 	tmpname=options.reference #args[1]
 
-	sym=parsesym("c1")
+	sym=parsesym(options.sym)
 	dt=options.delta
 	oris=sym.gen_orientations("eman",{"delta":dt, "phitoo":dt})
 	print("Try {} orientations.".format(len(oris)))
@@ -65,7 +65,7 @@ def main():
 		img.mult(-1)
 		img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4})
 		img.process_inplace('normalize')
-		img.process_inplace('threshold.clampminmax.nsigma', {"nsigma":1})
+		img.process_inplace('threshold.clampminmax.nsigma', {"nsigma":2})
 		
 		m=EMData(tmpname)
 		mbin=img["apix_x"]/m["apix_x"]
@@ -136,6 +136,7 @@ def main():
 		
 		cbin.process_inplace("threshold.belowtozero")
 		cbin.process_inplace("normalize.edgemean")
+		cbin.write_image("ccc.hdf")
 		
 		cc=cbin.numpy().copy()
 		cshp=cc.shape
@@ -150,17 +151,30 @@ def main():
 		for i in range(len(asrt)):
 			aid=asrt[i]
 			pt=np.unravel_index(aid, cshp)
-			if len(pts)>0:
-				dst=scidist.cdist(pts, [pt])
-				if np.min(dst)<dthr:
-					continue
+			#if len(pts)>0:
+				#dst=scidist.cdist(pts, [pt])
+				#if np.min(dst)<dthr:
+					#continue
 
 			pts.append(pt)
 			scr.append(float(ccf[aid]))
-			if cc[pt]<vthr or len(pts)>=options.nptcl:
+			if cc[pt]<vthr:
 				break
-				
+			
+		
+		
 		pts=np.array(pts)
+		print(pts.shape)
+		dst=scidist.cdist(pts, pts)
+		tokeep=np.ones(len(dst), dtype=bool)
+		for i in range(len(dst)):
+			if tokeep[i]:
+				tokeep[dst[i]<dthr]=False
+			
+		pts=pts[tokeep]
+		if len(pts)>options.nptcl:
+			pts=pts[:options.nptcl]
+		
 		print("Found {} particles".format(len(pts)))
 		js=js_open_dict(info_name(imgname))
 		n=min(options.nptcl, len(pts))

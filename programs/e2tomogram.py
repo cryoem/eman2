@@ -64,11 +64,11 @@ def main():
 	parser.add_argument("--bxsz", type=int,help="Box size of the particles for tracking. Default is 32. Maybe helpful to use a larger one for fiducial-less cases..", default=32, guitype='intbox',row=5, col=1, rowspan=1, colspan=1,mode="easy")
 
 	parser.add_argument("--pk_maxval", type=float,help="Maximum Density value of landmarks (n sigma). Default is -5", default=-5.)
-	parser.add_argument("--pk_mindist", type=float,help="Minimum distance between landmarks, as fraction of micrograph length. Default is 0.125", default=0.125,guitype='floatbox',row=11, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--pk_mindist", type=float,help="Minimum distance between landmarks, as fraction of micrograph length. Default is 0.125", default=0.125)
 
 	parser.add_argument("--correctrot", action="store_true",help="correct for global rotation and position sample flat in tomogram.", default=False,guitype='boolbox',row=12, col=0, rowspan=1, colspan=1,mode="easy")
 
-	parser.add_argument("--normslice", action="store_true",help="normalize each 2D slice.", default=False,guitype='boolbox',row=13, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--normslice", action="store_true",help="normalize each 2D slice.", default=False)
 	parser.add_argument("--filterto", type=float,help="filter to abs.", default=0.45,guitype='floatbox',row=13, col=1, rowspan=1, colspan=1,mode="easy")
 
 	parser.add_argument("--extrapad", action="store_true",help="pad extra for tilted reconstruction. slower and cost more memory, but reduce boundary artifacts when the sample is thick", default=False,guitype='boolbox',row=14, col=0, rowspan=1, colspan=1,mode="easy")
@@ -79,11 +79,12 @@ def main():
 	parser.add_argument("--tmppath", type=str,help="Temporary path", default=None)
 	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0)
 	parser.add_argument("--noali", action="store_true",help="skip initial alignment", default=False)
-	parser.add_argument("--xdrift", action="store_true",help="apply extra correction for drifting along x axis", default=False)
+	parser.add_argument("--posz", action="store_true",help="auto positioning along z axis", default=False)
+	parser.add_argument("--xdrift", action="store_true",help="apply extra correction for drifting along x axis", default=False,guitype='boolbox',row=13, col=0, rowspan=1, colspan=1,mode="easy")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	
-	parser.add_argument("--maxshift", type=float,help="Maximum shift between tilt(/image size). default is 0.25", default=.25)
+	parser.add_argument("--maxshift", type=float,help="Maximum shift between tilt(/image size). default is 0.35", default=.35,guitype='floatbox',row=11, col=0, rowspan=1, colspan=1,mode="easy")
 
 	(options, args) = parser.parse_args()
 
@@ -94,7 +95,7 @@ def main():
 	if options.alltiltseries:
 		fld="tiltseries/"
 		args=[fld+f for f in os.listdir(fld) if (
-			f.endswith(".hdf") or f.endswith(".mrc") or f.endswith(".mrcs") or f.endswith(".st"))]
+			f.endswith(".hdf") or f.endswith(".mrc") or f.endswith(".mrcs") or f.endswith(".st") or f.endswith(".lst"))]
 	
 	if len(args)==1:
 		inputname=args[0]
@@ -271,24 +272,22 @@ def main():
 		
 		ttparams=np.zeros((num, 5))
 		
-		#### estimate initial tilt axis by common line
-		if options.tltax==None:
-			#### do an initial course alignment before common line
-			img_tali, pretrans=calc_global_trans(imgs_500, options)
-			tltax=calc_tltax_rot(img_tali, options)
-			options.tltax=tltax
-		else:
-			### it turns out there is a sign difference between serialem and eman...
-			tltax=-options.tltax
-			options.tltax=tltax
-		print("tilt axis:  {:.2f}".format(tltax))
-		
 		if options.noali:
 			print("Skipping coarse alignment...")
 			
 		else:
-			#### a second round of course alignment, using the rotation axis information...
-			img_tali, pretrans=calc_global_trans(imgs_500, options, tltax=options.tltax, tlts=tlts)
+			#### do an initial course alignment before common line
+			img_tali, pretrans=calc_global_trans(imgs_500, options)
+			#### estimate initial tilt axis by common line
+			if options.tltax==None:
+				tltax=calc_tltax_rot(img_tali, options)
+				options.tltax=tltax
+			else:
+				### it turns out there is a sign difference between serialem and eman...
+				tltax=-options.tltax
+				options.tltax=tltax
+			print("tilt axis:  {:.2f}".format(tltax))
+			
 			if options.writetmp:
 				for i,m in enumerate(img_tali):
 					m.write_image(os.path.join(options.tmppath,"tltseries_transali.hdf"), i)
@@ -311,8 +310,8 @@ def main():
 	
 	#### image scale, m3diter, fidkeep
 	#### refinement sequence []:global tilt axis, 0:tx, 1:ty, 2:tilt axis, 3: tilt, 4: off axis tilt
-	scaleiter=[(imgs_500, itnum[0], options.pkkeep*.8, [[0,1], [], [0,1],[], [0,1]]),
-			   (imgs_1k, itnum[1], options.pkkeep*.9, [[0,1],[], [0,1],[3],[4],[2],[0,1]]),
+	scaleiter=[(imgs_500, itnum[0], options.pkkeep, [[0,1], [], [0,1],[], [0,1]]),
+			   (imgs_1k, itnum[1], options.pkkeep, [[0,1],[], [0,1],[3],[4],[2],[0,1]]),
 			   (imgs_2k, itnum[2], options.pkkeep, [[0,1],[], [0,1],[3],[4],[2],[0,1]]),
 			   (imgs_4k, itnum[3], options.pkkeep, [[0,1], [0,1],[3],[4],[2],[0,1]])]
 	
@@ -381,6 +380,9 @@ def main():
 					allparams=np.hstack([ttparams.flatten(), pks.flatten()])
 					ttparams=xdrift_correction(imgs_, allparams, options)
 					allparams=np.hstack([ttparams.flatten(), pks.flatten()])
+					if options.writetmp:
+						make_samples(imgs_, allparams, options,
+							outname=os.path.join(path,"samples_xdrift.hdf"), refinepos=True);
 
 			#### Now actually refine the alignment parameters using the landmarks.
 			for idx in rfseq:
@@ -396,8 +398,7 @@ def main():
 		if options.writetmp:
 			#### make sample output and aligned tilt series
 			make_samples(imgs_, allparams, options, outname=name_sample, refinepos=False);
-			#make_ali(imgs_2k, ttparams, options, outname=name_ali)
-
+			
 		#### a final round to calculate the average loss per tilt
 		ptclpos=ali_ptcls(imgs_, allparams, options, outname=name_ptclali, doali=True)
 		loss0=np.zeros(num)
@@ -424,6 +425,14 @@ def main():
 			np.savetxt(os.path.join(path,"loss_{:02d}.txt".format(niter)), np.vstack([np.arange(len(loss0)), loss0]).T, fmt="%.2f")
 		
 	options.loss0=loss0
+	
+	if options.posz:
+		threed=make_tomogram(imgs_500, ttparams, options, errtlt=loss0, clipz=360)
+		if options.writetmp:
+			threed.write_image(os.path.join(path,"tomo_posz.hdf"))
+			
+		ttparams=correct_zpos(threed, ttparams, options)
+		
 	#### alignment finish. now save output
 	if options.outsize=="2k":
 		imgout=imgs_2k
@@ -474,6 +483,40 @@ def main():
 	print("Finished. Total time: {:.1f}s".format(dtime))
 
 	E2end(logid)
+	
+def correct_zpos(tomo, ttparams, options):
+	print("Positioning along z axis")
+	binfac=tomo["apix_x"]/options.apix_init
+	img=tomo.numpy().copy()
+	img-=np.mean(img)
+	img/=np.std(img)
+	val=np.max(abs(img), axis=(1,2))
+	val-=np.min(val)
+	val/=np.max(val)
+	thk=options.clipz*4/binfac
+	if options.outsize=="2k":
+		thk/=2
+	elif options.outsize=="4k":
+		thk/=4
+	rg=np.arange(0,1,0.02)
+	t=[]
+	for s in rg:
+		l=np.where(val>s)[0]
+		t.append([l[0],l[-1]])
+
+	t=np.array(t)
+	i=np.argmin(abs((t[:,1]-t[:,0])-thk))
+	dz=np.mean(t[i])-tomo["nz"]//2
+	
+	dz=dz*binfac
+	print("  shift z by {}".format(dz))
+	dxy=np.array([get_xf_pos(t, [0,0,dz]) for t in ttparams])
+	ttparamsnew=ttparams.copy()
+	ttparamsnew[:,:2]=dxy
+	
+	return ttparamsnew
+
+	
 
 def xdrift_correction(imgs, allpms, options):
 	print("Performing rotation axis drift correction....")
@@ -538,7 +581,7 @@ def xdrift_correction(imgs, allpms, options):
 def remove_beads(imgs_500, imgout, ttparams, options):
 	
 	print("Removing high contrast objects...")
-	threed=make_tomogram(imgs_500, ttparams, options, errtlt=options.loss0, clipz=options.clipz)
+	threed=make_tomogram(imgs_500, ttparams, options, errtlt=options.loss0)
 	threed.process_inplace("math.meanshrink",{"n":2})
 	threed.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./100})
 	threed.process_inplace("filter.highpass.gauss",{"cutoff_freq":1./50})
@@ -566,7 +609,11 @@ def remove_beads(imgs_500, imgout, ttparams, options):
 	realnpk=options.npk
 	options.npk=len(pts)
 	allparams=np.hstack([ttparams.flatten(), pts.flatten()])
-	apm, smp=make_samples(imgs_500, allparams, options)
+	if options.writetmp:
+		oname=os.path.join(options.tmppath, "samples_beads.hdf")
+	else: 
+		oname=None
+	apm, smp=make_samples(imgs_500, allparams, options, outname=oname)
 	
 	nx, ny=imgout[0]["nx"],imgout[0]["ny"]
 	
@@ -577,16 +624,15 @@ def remove_beads(imgs_500, imgout, ttparams, options):
 	
 	if options.writetmp:
 		fname=os.path.join(options.tmppath, "ptcls_rmbead.hdf")
-		try:
+		if os.path.isfile(fname):
 			os.remove(fname)
-		except:
-			pass
 	pad=good_boxsize(options.bxsz*2)
 	for n, tpm in enumerate(tpms):
 		
 		plst=[]
 		for i, pk in enumerate(pts):
-			if smp[i]["minimum"]>-vthr:
+			if smp[i]["minimum"]>-4:
+				#print(smp[i]["minimum"])
 				continue
 			
 			pxf=get_xf_pos(tpm, pk)
@@ -594,12 +640,12 @@ def remove_beads(imgs_500, imgout, ttparams, options):
 			
 			pxf=[int(round(pxf[0]))+nx//2-pad//2, int(round(pxf[1]))+ny//2-pad//2]
 			
-			if min(pxf)<pad*.8 or min(nx-pxf[0], ny-pxf[1])<pad*.8:
+			if min(pxf)<pad/4 or min(nx-pxf[0], ny-pxf[1])<pad/4:
 				continue
 			
 			if len(plst)>0:
 				dst=scidist.cdist(plst, [pxf])
-				if np.min(dst)<pad/3:
+				if np.min(dst)<pad/4:
 					continue
 			plst.append(pxf)
 			e=imgout[n].get_clip(Region(pxf[0], pxf[1], pad, pad))
@@ -608,7 +654,7 @@ def remove_beads(imgs_500, imgout, ttparams, options):
 			
 			
 			m=e.process("normalize.edgemean")
-			m.process_inplace("filter.highpass.gauss",{"cutoff_pixels":4})
+			m.process_inplace("filter.highpass.gauss",{"cutoff_freq":1./500})
 			m.process_inplace("mask.soft",{"outer_radius":pad//3, "width":pad//4})
 			m.mult(-1)
 			m.process_inplace("threshold.belowtozero")
@@ -625,10 +671,11 @@ def remove_beads(imgs_500, imgout, ttparams, options):
 				
 			m.process_inplace("threshold.clampminmax",{"maxval":1})
 			
-			if m["mean"]>0.2:
+			if m["mean"]>0.4:
+				#print(i,m["mean"])
 				continue
 			
-			m.process_inplace("mask.soft",{"outer_radius":int(pad*.3),"width":8})
+			m.process_inplace("mask.soft",{"outer_radius":int(pad*.25),"width":8})
 			
 			a0=e*(1-m)
 			
@@ -646,7 +693,7 @@ def remove_beads(imgs_500, imgout, ttparams, options):
 				#a1.process_inplace("filter.matchto",{"to":a0})
 			a1.mult(m)
 			
-			e1=a0+a1    
+			e1=a0+a1	
 			
 			if options.writetmp:
 				e.process("normalize").write_image(fname,-1)
@@ -737,80 +784,51 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 
 	num=len(imgs)
 	sz=min(imgs[0]["nx"], imgs[0]["ny"])
-
-	imgout=[0]*num
-	e0=imgs[options.zeroid].copy()
-	e0.clip_inplace(Region(e0["nx"]//2-sz//2, e0["ny"]//2-sz//2, sz,sz))
-	e0.process_inplace("mask.soft",{"outer_radius":sz//4,"width":sz//10})
-		
-	e0["xform.align2d"]=Transform()
-	imgout[options.zeroid]=e0
-
-	pretrans=np.zeros((num,2))
-	#### start from the center tilt and move toward both directions
-	for dr in [-1,1]:
-		for i in range(num):
-
-			nid=options.zeroid+(i+1)*dr
-			if nid>=num or nid<0: continue
-			if nid in excludes: continue
-			e0=imgout[options.zeroid+i*dr]
-			e1=imgs[nid].copy()
-			lastx=pretrans[options.zeroid+i*dr]
-			if tltax==None:
-				e1.process_inplace("mask.soft",{"outer_radius":sz*options.maxshift,"width":sz//10})
-				
-			else:
-				rx=np.cos(tlts[nid]*np.pi/180.)
-				msk=EMData(e1["nx"], e1["ny"])
-				msk.process_inplace("testimage.ellipsoid", {"a":rx*sz*options.maxshift,"b":sz*options.maxshift,"fill":1,"transform":Transform({"type":"2d","alpha":tltax})})
-				msk.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.01})
-				#m=msk.process("mask.gaussian.nonuniform",{"radius_x":sz//4, "radius_y":ry*sz//4, "gauss_width":0.4})
-				e1.mult(msk)
-				
-			e1.clip_inplace(Region(e1["nx"]//2-sz//2-lastx[0], e1["ny"]//2-sz//2-lastx[1], sz,sz))
-			#e1.process_inplace("filter.highpass.gauss",{"cutoff_pixels":10})
-
-			e1a=e1.align("translational", e0)
-			xf=e1a["xform.align2d"]
-			if i>1:
-				e00=imgout[options.zeroid+(i-1)*dr]
-				e1b=e1.align("translational", e00)
-				c0=e1a.cmp("ccc", e0)
-				c1=e1b.cmp("ccc", e00)
-				if c1<c0*4:
-					print("Bad tilt image at {}  ".format(nid), c0, c1)
-					xf=e1b["xform.align2d"]
-				
-
-			xf.translate(lastx[0], lastx[1], 0)
-			
-			#e1=imgs[nid].copy()
-			#e1.transform(xf)
-			#e1.clip_inplace(Region((e1["nx"]//2)-(sz//2), (e1["ny"]//2)-(sz//2), sz,sz))
-			##e1.process_inplace("filter.highpass.gauss",{"cutoff_pixels":10})
-			#e1.process_inplace("mask.soft",{"outer_radius":sz//4,"width":sz//10})
-
-			imgout[nid]=e1a
-			ts=xf.get_trans()
-			if options.verbose: print("\t{:d}: {:.1f}, {:.1f}".format(nid, ts[0], ts[1]))
-			pretrans[nid, 0]=ts[0]
-			pretrans[nid, 1]=ts[1]
+	
+	trans=[[0,0]]
+	for i,m0 in enumerate(imgs):
+		m=m0.process("mask.soft",{"outer_radius":sz*options.maxshift,"width":sz*.1})
+		m.process_inplace("filter.lowpass.gauss", {"cutoff_freq":.005})
+		if i==0:
+			e0=m
+			continue
 			
 		
-	return imgout,pretrans
+		ma=m.align("translational", e0, {"maxshift":sz//2})
+		xf=ma["xform.align2d"].get_params("2d")
+		
+		trans.append([xf["tx"], xf["ty"]])
+		e0=m
+
+	trans=np.array(trans)
+
+	tx=np.cumsum(trans, axis=0)
+	tx-=np.mean(tx, axis=0)
+	
+	imgout=[]
+	for i,m in enumerate(imgs):
+		e=m.process("mask.soft",{"outer_radius":sz*.3,"width":sz//8})
+		#e.process_inplace("filter.lowpass.gauss", {"cutoff_abs":.1})
+		t=tx[i]
+		e.translate(t[0], t[1],0)
+		imgout.append(e)
+		
+	return imgout, tx
 
 
 #### Find tilt axis by common line. copied from the original e2tomogram. Not very stable but mostly fine.. 
 def calc_tltax_rot(imgs, options):
 	print("Calculating tilt axis rotation...")
 	num=len(imgs)
-	sz=min(imgs[0]["nx"], imgs[0]["ny"])
+	nx, ny=imgs[0]["nx"], imgs[0]["ny"]
+	sz=min(nx, ny)
 
 	imgnp=[]
 	for i in range(num):
-		#imgs[i].process_inplace("mask.gaussian",{"outer_radius":sz/4})
-		m=get_fft(imgs[i].numpy().copy())
+		m=imgs[i].get_clip(Region(nx//2-sz//2, ny//2-sz//2, sz, sz))
+		
+		m.process_inplace("mask.gaussian",{"outer_radius":sz//4})
+		m=get_fft(m.numpy().copy())
 		am=np.abs(m)
 		am[am==0]=1
 		m/=am
@@ -1301,31 +1319,31 @@ def make_samples(imgs, allparams, options, refinepos=False, outname=None, errtlt
 
 
 #### find center of landmark subtomogram. 
-def get_center(img, lowres=True):
+def get_center(img, lowres=True, maxshift=64):
 	e=img.copy()
-	bx=old_div(e["nx"],2)
+	bx=e["nx"]/2
 	e.mult(-1)
 	#### low resolution mode: use peak
 	if lowres:
 		e.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.01})
 		e.process_inplace("mask.gaussian",{"outer_radius":bx*.5})
-		pk=e.calc_max_location()
 		if e["sigma"]==0:
-			pk=[bx,bx]
+			pk=[0,0]
+		else:
+			pk=bx-np.array(e.calc_max_location())
 
 	#### high resolution mode: use center of mass
 	else:
 		e.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.01})
 		e.process_inplace("mask.gaussian",{"outer_radius":bx*.5})
 		e.process_inplace("normalize")
-		pk=e.calc_center_of_mass(2)
-		if np.isnan(pk).any():
-			pk=[bx,bx]
+		pk=bx-np.array(e.calc_center_of_mass(2))[:2]
+		if np.isnan(pk).any() or np.linalg.norm(pk)>maxshift:
+			### give up if there is too much drift for center of mass...
+			pk=[0,0]
 
 
-	tx=[bx-pk[0], bx-pk[1]]
-
-	return tx
+	return pk
 
 #### this is the main function that calculate the offset of landmarks in tilt series given images and alignment parameters 
 def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
@@ -1363,8 +1381,8 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
 		for ii,nid in enumerate(nrange):
 			#### start from center tilt and go both directions
 			pxf=get_xf_pos(ttparams[nid], pks[pid])
-			pxf[0]+=old_div(nx,2)
-			pxf[1]+=old_div(ny,2)
+			pxf[0]+=nx/2
+			pxf[1]+=ny/2
 
 			if nid!=zeroid:
 				tlast=trans[nrange[ii-1]]
@@ -1380,21 +1398,18 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
 			ts=[0,0]
 			if doali:# and nid!=zeroid:
 				#### still get the center of particle differently at low and high res mode
-				tx=get_center(e, lowres)
+				tx=get_center(e, lowres, maxshift=8)
 				trans[nid]=tlast+np.array([tx[0], tx[1]])
-				
-				if nid!=zeroid:
-					if outname:
-						xf=Transform({"type":"2d","tx":pxf[0]-tx[0],"ty":pxf[1]-tx[1]})
-						e=imgs[nid].get_rotated_clip(xf,(bx*2,bx*2,1)).process("normalize")
-						e["apix_x"]=e["apix_y"]=e["apix_z"]=imgs[0]["apix_x"]
+			else:
+				tx=[0,0]
 
 			if outname:
-				e["score"]=trans[nid].tolist()
+				e["score"]=[tx[0], tx[1]]#trans[nid].tolist()
 				e["pid"]=pid
 				e["nid"]=nid
 				e.write_image(outname, nid+pid*num)
-			ppos[nid]=np.array(pxf-trans[nid]-[old_div(nx,2), old_div(ny,2)])
+			#ppos[nid]=np.array(pxf-trans[nid]-[nx/2, ny/2])
+			ppos[nid]=np.array(get_xf_pos(ttparams[nid], pks[pid]))-tlast-[tx[0], tx[1]]
 
 		ptclpos.append(ppos)
 
@@ -1415,12 +1430,13 @@ def refine_one_iter(imgs, allparams, options, idx=[]):
 	if len(idx)==0:
 		#### this refines the global rotation around z axis 
 		res=minimize(global_rot, 0, (ptclpos, apms, options), method='Powell',options={'ftol': 1e-4, 'disp': False, "maxiter":30})
+		res=res.x*1
 		print("refine global tilt_z {:.2f}, loss {:.2f} -> {:.2f}".format(
-			float(res.x)*.5, float(global_rot(0,ptclpos,apms, options)),
-			float(global_rot(res.x,ptclpos,apms, options))))
-		ttparams[:,2]-=res.x*.5
+			float(res), float(global_rot(0,ptclpos,apms, options)),
+			float(global_rot(res,ptclpos,apms, options))))
+		ttparams[:,2]-=res
 		pkc=pks.copy()
-		r=res.x*np.pi/180.
+		r=res*np.pi/180.
 		rotmat=np.array([[np.cos(r), -np.sin(r)], [np.sin(r), np.cos(r)]])
 		pkc[:,:2]=np.dot(pkc[:,:2],rotmat)
 		pks=pkc
@@ -1435,9 +1451,10 @@ def refine_one_iter(imgs, allparams, options, idx=[]):
 			tminit=np.zeros(len(idx))
 			#### simply call a scipy minimizer. Powell seem to work fine.
 			res=minimize(get_loss_pm, tminit,(nid,apms, options, idx, ptclpos) , method='Powell',options={'ftol': 1e-3, 'disp': False, "maxiter":10})
-			ttpm_new[nid, idx]+=res.x*.5
-			loss[nid]=get_loss_pm(res.x*.5, nid, apms, options, idx, ptclpos)
-			loss0[nid]=get_loss_pm(tminit, nid, apms, options, idx, ptclpos)
+			res=res.x*1
+			ttpm_new[nid, idx]+=res
+			loss[nid]=get_loss_pm(res, nid, apms, options, idx, ptclpos, False)
+			loss0[nid]=get_loss_pm(tminit, nid, apms, options, idx, ptclpos, False)
 
 		ipm=[pmlabel[i] for i in idx]
 		print("refine {}, loss: {:.2f} -> {:.2f}".format(ipm, np.mean(loss0), np.mean(loss)))
@@ -1447,16 +1464,23 @@ def refine_one_iter(imgs, allparams, options, idx=[]):
 	return allparams
 
 #### function for scipy optimizer
-def get_loss_pm(pm, nid, apms, options, idx=[2,3,4], ptclpos=[]):
+def get_loss_pm(pm, nid, apms, options, idx=[2,3,4], ptclpos=[], refine=True):
 	ttparams, pks=get_params(apms, options)
 	tpm=ttparams[nid].copy()
 	tpm[idx]+=pm
 	ps=np.array([get_xf_pos(tpm, p) for p in pks])
 	dst=np.sqrt(np.sum((ps-ptclpos[:,nid])**2, axis=1))
 	dst=np.mean(dst[np.argsort(dst)[:int(len(dst)*options.fidkeep)]])
+	dst=dst*options.apix_init/10.
+	### put some penalty on large rotation difference
+	#if refine:
+	diff=np.mean((tpm[[2,3,4]]-ttparams[nid][[2,3,4]])**2)
+	dst+=diff*1.
+	#print(diff)
+		
 
 	#### return distance in nm
-	return dst*options.apix_init/10.
+	return dst
 
 #### function for scipy optimizer for global rotation
 def global_rot(rt, ptclpos, allpms, options):

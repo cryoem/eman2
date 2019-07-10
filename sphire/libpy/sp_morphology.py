@@ -1929,7 +1929,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, \
 			check_consistency = False, stack_mode = False, debug_mode = False, \
 			program_name = "cter_mrk() in sp_morphology.py", \
-			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1, write_pws=False):
+			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1):
 	"""
 	Arguments
 		input_image_path  :  file name pattern for Micrographs Modes (e.g. 'Micrographs/mic*.mrc') or particle stack file path for Stack Mode (e.g. 'bdb:stack'; must be stack_mode = True).
@@ -2374,19 +2374,18 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 		outmicthumb = "%s/micthumb" % (output_directory)
 	if debug_mode:  
 		outravg = "%s/ravg" % (output_directory)
-	if write_pws:
-		outpower2d = os.path.join(output_directory,"power2d")
+	outpower2d = os.path.join(output_directory,"power2d")
 	if my_mpi_proc_id == main_mpi_proc:
 		# Make output directory
 		if not os.path.exists(output_directory):
-			os.mkdir(output_directory)
-		os.mkdir(outpwrot)
+			os.makedirs(output_directory)
+		os.makedirs(outpwrot)
 		if stack == None: 
-			os.mkdir(outmicthumb)
+			os.makedirs(outmicthumb)
 		if debug_mode:
-			os.mkdir(outravg)
-		if write_pws and not os.path.exists(outpower2d): 
-			os.mkdir(outpower2d)
+			os.makedirs(outravg)
+		if not os.path.exists(outpower2d):
+			os.makedirs(outpower2d)
 		sp_global_def.write_command(output_directory)
 	
 	if RUNNING_UNDER_MPI:
@@ -2811,8 +2810,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				
 				cvavbd1 = stdavbd1 / bd1 * 100 # use percentage
 				
-				if write_pws: 
-					draw_power2d(img_basename_root, qse, [defc,Cs,voltage,pixel_size,0.0,wgh, bd1, cd1], 
+				draw_power2d(img_basename_root, qse, [defc,Cs,voltage,pixel_size,0.0,wgh, bd1, cd1], 
 					mask=mask, outdir=outpower2d, radius_1a=ibec)
 				
 				# Compute CTF limit (theoretical resolution limit based on the oscillations of CTF) 
@@ -2985,7 +2983,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, \
 			check_consistency = False, stack_mode = False, debug_mode = False, \
 			program_name = "cter_pap() in sp_morphology.py", \
-			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1, write_pws=False):
+			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1):
 	"""
 	Arguments
 		input_image_path  :  file name pattern for Micrographs Modes (e.g. 'Micrographs/mic*.mrc') or particle stack file path for Stack Mode (e.g. 'bdb:stack'; must be stack_mode = True).
@@ -3435,19 +3433,18 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 		outmicthumb = "%s/micthumb" % (output_directory)
 	if debug_mode:  
 		outravg = "%s/ravg" % (output_directory)
-	if write_pws:
-		outpower2d = os.path.join(output_directory,"power2d")
+	outpower2d = os.path.join(output_directory,"power2d")
 	if my_mpi_proc_id == main_mpi_proc:
 		# Make output directory
 		if not os.path.exists(output_directory):
-			os.mkdir(output_directory)
-		os.mkdir(outpwrot)
+			os.makedirs(output_directory)
+		os.makedirs(outpwrot)
 		if stack == None: 
-			os.mkdir(outmicthumb)
+			os.makedirs(outmicthumb)
 		if debug_mode:
-			os.mkdir(outravg)
-		if write_pws and not os.path.exists(outpower2d): 
-			os.mkdir(outpower2d)
+			os.makedirs(outravg)
+		if not os.path.exists(outpower2d): 
+			os.makedirs(outpower2d)
 		sp_global_def.write_command(output_directory)
 	
 	if RUNNING_UNDER_MPI:
@@ -3864,8 +3861,8 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				
 				cvavbd1 = stdavbd1 / bd1 * 100 # use percentage
 				
-				if write_pws: 
-					draw_power2d(img_basename_root, qse, [defc,Cs,voltage,pixel_size,0.0,wgh, bd1, cd1], 
+				####if write_pws: 
+				draw_power2d(img_basename_root, qse, [defc,Cs,voltage,pixel_size,0.0,wgh, bd1, cd1], 
 					mask=mask, outdir=outpower2d, radius_1a=ibec)
 				
 				# Compute CTF limit (theoretical resolution limit based on the oscillations of CTF) 
@@ -5374,7 +5371,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, \
 			check_consistency = False, stack_mode = False, debug_mode = False, \
 			program_name = "cter_vpp() in sp_morphology.py", vpp_options = [], \
-			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1, write_pws=False):
+			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1):
 	"""
 	Arguments
 		input_image_path  :  file name pattern for Micrographs Modes (e.g. 'Micrographs/mic*.mrc') or particle stack file path for Stack Mode (e.g. 'bdb:stack'; must be stack_mode = True).
@@ -5825,19 +5822,19 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 		outmicthumb = "%s/micthumb" % (output_directory)
 	if debug_mode:  
 		outravg = "%s/ravg" % (output_directory)
-	if write_pws:
-		outpower2d = os.path.join(output_directory,"power2d")
+	####if write_pws:
+	outpower2d = os.path.join(output_directory,"power2d")
 	if my_mpi_proc_id == main_mpi_proc:
 		# Make output directory
 		if not os.path.exists(output_directory):
-			os.mkdir(output_directory)
-		os.mkdir(outpwrot)
+			os.makedirs(output_directory)
+		os.makedirs(outpwrot)
 		if stack == None: 
-			os.mkdir(outmicthumb)
+			os.makedirs(outmicthumb)
 		if debug_mode:
-			os.mkdir(outravg)
-		if write_pws and not os.path.exists(outpower2d): 
-			os.mkdir(outpower2d)
+			os.makedirs(outravg)
+		####if not os.path.exists(outpower2d): 
+		os.makedirs(outpower2d)
 		sp_global_def.write_command(output_directory)
 	
 	if RUNNING_UNDER_MPI:
@@ -6171,8 +6168,8 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				#from utilities import write_text_file
 				#write_text_file([range(ni), supe[:ni],pwrot2[:ni]],"fifi.txt")
 				
-				if write_pws: 
-					draw_power2d(img_basename_root, qse, [defc,Cs,voltage,pixel_size,0.0,wgh, bd1, cd1], 
+				mask = model_circle(istop - 1, wn, wn) * (model_blank(wn, wn, 1, 1.0) - model_circle(istart, wn, wn))
+				draw_power2d(img_basename_root, qse, [defc,Cs,voltage,pixel_size,0.0,wgh, bd1, cd1], 
 					mask=mask, outdir=outpower2d, radius_1a=ibec)
 				
 				# Compute defocus CV and astig. amp. CV (CV: coefficient of variation; ratio of error (SD) relative to average (mean))
@@ -6351,8 +6348,10 @@ def draw_power2d(file_root, input_pws, ctf_params, mask=None, outdir='.', radius
 		radius_1a	radius (1/A) at which to draw circle depicting nominal resolution (default: None)
 	"""
 	import os
-	from sp_utilities import generate_ctf, model_circle
+	from sp_utilities import generate_ctf, model_circle, model_gauss_noise
 	from sp_fundamentals import window2d
+	from sp_filter import filt_ctf
+	from EMAN2 import periodogram
 	
 	pixel_size = ctf_params[3]
 	idim = input_pws['nx']
@@ -6363,7 +6362,15 @@ def draw_power2d(file_root, input_pws, ctf_params, mask=None, outdir='.', radius
 	if mask: new_pws = input_pws*mask
 	
 	# Insert quarter of theoretical power spectrum
-	calcpw = ctf2_rimg(idim, generate_ctf(ctf_params))  # B-factor is not calculated
+	ctf_obj = generate_ctf(ctf_params)
+	####ctf_obj.bfactor = 80
+	calcpw = ctf2_rimg(idim, ctf_obj)  # B-factor is not calculated
+	
+	#### # Insert quarter noisy power spectrum (aliasing is less pronounced)
+	####noise = model_gauss_noise(1, nx=idim, ny=idim)  # sigma=1
+	####noisectf = filt_ctf(noise, ctf_obj)
+	####calcpw = periodogram(noisectf)
+
 	halfboxdim = int(idim/2)
 	topright = idim*3/4
 	quarterctf = window2d(calcpw, halfboxdim, halfboxdim, opt="a", ix=topright, iy=topright)

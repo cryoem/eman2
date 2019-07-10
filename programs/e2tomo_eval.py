@@ -210,12 +210,17 @@ class TomoEvalGUI(QtWidgets.QWidget):
 							else:
 								ptclcls[vname]=[1,n]
 				if ("curves" in js) and len(js["curves"])>0:
-					dic["curves"]=np.array(js["curves"])
-					bxcls["_curves_"]=len(dic["curves"])
-					if "_curves_" in ptclcls:
-						ptclcls["_curves_"][1]+=len(dic["curves"])
-					else:
-						ptclcls["_curves_"]=[1,len(dic["curves"])]
+					cv=dic["curves"]=np.array(js["curves"])
+					cids=np.unique(cv[:,-1])
+					
+					for ci in cids:
+						ctag="_curves_{:02d}".format(int(ci))
+					
+						if ctag not in ptclcls:
+							ptclcls[ctag]=[1,0]
+					
+						ptclcls[ctag][1]+=np.sum(cv[:,-1]==ci)
+						bxcls[ctag]=np.sum(cv[:,-1]==ci)
 						
 				else:
 					dic["curves"]=[]
@@ -275,22 +280,28 @@ class TomoEvalGUI(QtWidgets.QWidget):
 			it=QtWidgets.QTableWidgetItem()
 			it.setData(Qt.EditRole, float(df))
 			self.imglst.setItem(i,4, it)
+			#print(str(info["basename"]), nbox, loss, df)
 			
 		
 	def get_id_info(self):
 		#### utility function to get the info of current selected row.
 		crow=self.imglst.currentRow()
-		idx=self.imglst.item(crow, 0).text()
-		info=self.imginfo[int(idx)]
-		return idx, info
+		if crow>=0:
+			idx=self.imglst.item(crow, 0).text()
+			info=self.imginfo[int(idx)]
+			return idx, info
+		else:
+			return None, None
 	
 	def plot_loss(self):
 		idx, info=self.get_id_info()
+		if idx==None: return
 		self.wg_plot2d.set_data(info["loss"], info["e2basename"], replace=True)
 		self.wg_plot2d.show()
 	
 	def plot_tltparams(self):
 		idx, info=self.get_id_info()
+		if idx==None: return
 		if len(info["tlt_params"])==0: return 
 		tpm=info["tlt_params"].T
 		tpm=np.vstack([np.arange(len(tpm[0])), tpm])
@@ -300,6 +311,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		
 	def show2d(self):
 		idx, info=self.get_id_info()
+		if idx==None: return
 		print("Showing 2D for image {} : {}".format(int(idx), info["filename"]))
 		
 		self.cur_data=EMData(info["filename"])
@@ -309,6 +321,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 	
 	def show_tlts(self):
 		idx, info=self.get_id_info()
+		if idx==None: return
 		print("Showing tilt series for image {} : {}".format(int(idx), info["filename"]))
 		
 		if EMUtil.get_image_count(info["tltfile"])==1:
@@ -323,6 +336,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 	
 	def plot_ctf(self):
 		idx, info=self.get_id_info()
+		if idx==None: return
 		if len(info["defocus"])>0:
 			data=info["defocus"]
 			ln=len(data)
@@ -339,6 +353,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 	
 	def runboxer(self):
 		idx, info=self.get_id_info()
+		if idx==None: return
 		modifiers = QtWidgets.QApplication.keyboardModifiers()
 		### do not use launch_childprocess so the gui wont be frozen when boxer is opened
 		if modifiers == QtCore.Qt.ShiftModifier:
@@ -360,6 +375,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 	def noteupdate(self):
 		notes=self.wg_notes.text()
 		idx, info=self.get_id_info()
+		if idx==None: return
 		if notes==info["notes"]:
 			return
 		try:	
@@ -390,6 +406,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		
 		
 	def sortlst(self,col):
+		if col<0: return
 		print("Sort by",self.imglst.horizontalHeaderItem(col).text())
 		self.imglst_srtby=1-self.imglst_srtby
 		self.imglst.sortItems(col, self.imglst_srtby)
