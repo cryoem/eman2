@@ -127,16 +127,16 @@ def parse_args():
 	group.add_argument('--substack_output_dir', dest='XXX_SP_SUBSTACK_OUTPUT_DIR_XXX', type=str, default='SUBSTACK', help='Substack ISAC2 output directory.')
 
 	group = parser.add_argument_group('Automatic 2D class selection (required)')
-	group.add_argument('--skip_cinderella', action='store_true', default=False, help='Do not run automatic 2D class selection.')
 	group.add_argument('--cinderella_predict_path', dest='XXX_SP_CINDERELLA_PREDICT_PATH_XXX', type=str, default='/Path/sp_cinderella_predict.py', help='Path to the cinderella executable.')
-	group.add_argument('--cinderella_output_dir', dest='XXX_SP_CINDERELLA_OUTPUT_DIR_XXX', type=str, default='AUTO2D', help='Cinderalla output directory.')
 	group.add_argument('--cinderella_model_path', dest='XXX_SP_CINDERELLA_MODEL_PATH_XXX', type=str, default='cinderella_model.h5', help='Path to trained cinderella model')
 
 	group = parser.add_argument_group('Automatic 2D class selection (optional)')
+	group.add_argument('--skip_cinderella', action='store_true', default=False, help='Do not run automatic 2D class selection.')
+	group.add_argument('--cinderella_output_dir', dest='XXX_SP_CINDERELLA_OUTPUT_DIR_XXX', type=str, default='AUTO2D', help='Cinderalla output directory.')
 	group.add_argument('--cinderella_input_stack', dest='XXX_SP_CINDERELLA_STACK_XXX', type=str, default='isac_classes.h5', help='Path to ISAC class stack')
 	group.add_argument('--cinderella_conf_thresh', dest='XXX_SP_CINDERELLA_CONF_THRESH_XXX', type=float, default=0.5, help='Classes with a confidence higher as that threshold are classified as good.')
 	group.add_argument('--cinderella_gpu', dest='XXX_SP_GPU_ID_XXX', type=int, default=-1, help='GPU ID.')
-	group.add_argument('--cinderella_batch_size', dest='XXX_SP_BATCH_SIZE_XXX', type=int, default=32, help='Number of mini-batches during prediction.')
+	group.add_argument('--cinderella_batch_size', dest='XXX_SP_BATCH_SIZE_XXX', type=int, default=32, help='Number of images in one batch during prediction.')
 
 	group = parser.add_argument_group('RVIPER settings (optional)')
 	group.add_argument('--skip_rviper', action='store_true', default=False, help='Do not run 3d ab-initio reconstruction.')
