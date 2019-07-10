@@ -126,6 +126,18 @@ def parse_args():
 	group = parser.add_argument_group('Substack ISAC2 settings (optional)')
 	group.add_argument('--substack_output_dir', dest='XXX_SP_SUBSTACK_OUTPUT_DIR_XXX', type=str, default='SUBSTACK', help='Substack ISAC2 output directory.')
 
+	group = parser.add_argument_group('Automatic 2D class selection (required)')
+	group.add_argument('--skip_cinderella', action='store_true', default=False, help='Do not run automatic 2D class selection.')
+	group.add_argument('--cinderella_predict_path', dest='XXX_SP_CINDERELLA_PREDICT_PATH_XXX', type=str, default='/Path/sp_cinderella_predict.py', help='Path to the cinderella executable.')
+	group.add_argument('--cinderella_output_dir', dest='XXX_SP_CINDERELLA_OUTPUT_DIR_XXX', type=str, default='AUTO2D', help='Cinderalla output directory.')
+	group.add_argument('--cinderella_model_path', dest='XXX_SP_CINDERELLA_MODEL_PATH_XXX', type=str, default='cinderella_model.h5', help='Path to trained cinderella model')
+
+	group = parser.add_argument_group('Automatic 2D class selection (optional)')
+	group.add_argument('--cinderella_input_stack', dest='XXX_SP_CINDERELLA_STACK_XXX', type=str, default='isac_classes.h5', help='Path to ISAC class stack')
+	group.add_argument('--cinderella_conf_thresh', dest='XXX_SP_CINDERELLA_CONF_THRESH_XXX', type=float, default=0.5, help='Classes with a confidence higher as that threshold are classified as good.')
+	group.add_argument('--cinderella_gpu', dest='XXX_SP_GPU_ID_XXX', type=int, default=-1, help='GPU ID.')
+	group.add_argument('--cinderella_batch_size', dest='XXX_SP_BATCH_SIZE_XXX', type=int, default=32, help='Number of mini-batches during prediction.')
+
 	group = parser.add_argument_group('RVIPER settings (optional)')
 	group.add_argument('--skip_rviper', action='store_true', default=False, help='Do not run 3d ab-initio reconstruction.')
 	group.add_argument('--rviper_input_stack', dest='XXX_SP_RVIPER_INPUT_STACK_XXX', type=str, default='bdb:path#stack', help='Path to the input stack for RVIPER')
@@ -300,6 +312,26 @@ def get_isac2(status_dict, phase_plate, negative_stain, **kwargs):
 	cmd.append('XXX_SP_ISAC_ADDITION_XXX')
 	return cmd
 
+
+
+def get_cinderella_predict(status_dict, **kwargs):
+	cmd = []
+
+
+	cmd.append('sp_cinderella_pred.py')
+	cmd.append('XXX_SP_CINDERELLA_PREDICT_PATH_XXX')
+	if status_dict['do_isac']:
+		cmd.append("XXX_SP_ISAC_OUTPUT_DIR_XXX/ordered_class_averages.hdf")
+	else:
+		cmd.append('XXX_SP_CINDERELLA_STACK_XXX')
+	cmd.append('XXX_SP_CINDERELLA_OUTPUT_DIR_XXX')
+	cmd.append('XXX_SP_CINDERELLA_MODEL_PATH_XXX')
+
+	cmd.append('--confidence_threshold=XXX_SP_CRYOLO_GPU_XXX')
+	cmd.append('--gpu=XXX_SP_CRYOLO_PREDICT_PATH_XXX')
+	cmd.append('--batch_size=XXX_SP_CRYOLO_PREDICT_PATH_XXX')
+	return cmd
+
 def get_isac2_substack(status_dict, **kwargs):
 	cmd = []
 	cmd.append('sp_pipe.py')
@@ -308,15 +340,24 @@ def get_isac2_substack(status_dict, **kwargs):
 		cmd.append('bdb:XXX_SP_WINDOW_OUTPUT_DIR_XXX/stack')
 	else:
 		cmd.append('XXX_SP_ISAC_STACK_XXX')
-	cmd.append('XXX_SP_ISAC_OUTPUT_DIR_XXX')
-	cmd.append('XXX_SP_SUBSTACK_OUTPUT_DIR_XXX')
-	return cmd
 
+	cmd.append('XXX_SP_ISAC_OUTPUT_DIR_XXX')
+
+	cmd.append('XXX_SP_SUBSTACK_OUTPUT_DIR_XXX')
+
+	if status_dict['do_cinderella']:
+		cmd.append('--isac_class_avgs_path=XXX_SP_CINDERELLA_OUTPUT_DIR_XXX/ordered_class_averages_good.hdf')
+
+
+	return cmd
 
 def get_rviper(status_dict, **kwargs):
 	cmd = []
 	cmd.append('sp_rviper.py')
-	if status_dict['do_isac2']:
+
+	if status_dict['do_cinderella']:
+		cmd.append('XXX_SP_CINDERELLA_OUTPUT_DIR_XXX/ordered_class_averages_good.hdf')
+	elif status_dict['do_isac2']:
 		cmd.append('XXX_SP_ISAC_OUTPUT_DIR_XXX/ordered_class_averages.hdf')
 	else:
 		cmd.append('XXX_SP_RVIPER_INPUT_STACK_XXX')
@@ -649,6 +690,7 @@ def main(args_as_dict):
 	function_dict['do_window'] = [get_window, True]
 	function_dict['do_window_stack'] = [get_window_stack, False]
 	function_dict['do_isac2'] = [get_isac2, True]
+	function_dict['do_cinderella'] = [get_cinderella_predict, False]
 	function_dict['do_isac2_substack'] = [get_isac2_substack, False]
 	function_dict['do_rviper'] = [get_rviper, True]
 	function_dict['do_adjust_rviper'] = [get_adjustment, False]
