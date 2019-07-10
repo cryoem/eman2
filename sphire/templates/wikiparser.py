@@ -1836,7 +1836,7 @@ def create_sxcmd_subconfig_meridien_20171120_local():
 # Standard: parser.add_option("--delta",   type="float",  default= 7.50,  help="Initial angular sampling step (default 7.5)")
 # Local   : parser.add_option("--delta",   type="float",  default= 3.75,  help="Initial angular sampling step (default 7.5)")
 # 
-def add_sxcmd_subconfig_meridien_beta_shared(token_edit_list):
+def add_sxcmd_subconfig_meridien_shared(token_edit_list, beta=False):
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("radius"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("mask3D"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("symmetry"); token_edit_list.append(token_edit)
@@ -1844,51 +1844,39 @@ def add_sxcmd_subconfig_meridien_beta_shared(token_edit_list):
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("ts"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
 
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("theta_min"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("theta_max"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("even_angle_method"); token_edit_list.append(token_edit)
+	if beta:
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("theta_min"); token_edit_list.append(token_edit)
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("theta_max"); token_edit_list.append(token_edit)
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("even_angle_method"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("an"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("shake"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("small_memory"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("ccfpercentage"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("nonorm"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("group_by"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("limit_improvement"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("a_criterion"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("function"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("function_ai"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("group_id"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("filament_width"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("helical_rise"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("plot_ang_dist"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("main000"); token_edit_list.append(token_edit)
+	if beta:
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("group_by"); token_edit_list.append(token_edit)
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("limit_improvement"); token_edit_list.append(token_edit)
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("a_criterion"); token_edit_list.append(token_edit)
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("function"); token_edit_list.append(token_edit)
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("function_ai"); token_edit_list.append(token_edit)
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("group_id"); token_edit_list.append(token_edit)
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("filament_width"); token_edit_list.append(token_edit)
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("helical_rise"); token_edit_list.append(token_edit)
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("plot_ang_dist"); token_edit_list.append(token_edit)
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("main000"); token_edit_list.append(token_edit)
 
-def add_sxcmd_subconfig_meridien_shared(token_edit_list):
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("radius"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("mask3D"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("symmetry"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("xr"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("ts"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
-
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("an"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("shake"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("small_memory"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("ccfpercentage"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("nonorm"); token_edit_list.append(token_edit)
-
-def add_sxcmd_subconfig_meridien_standard_shared(token_edit_list):
+def add_sxcmd_subconfig_meridien_standard_shared(token_edit_list, beta=False):
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("inires"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("delta"); token_edit_list.append(token_edit)
-	add_sxcmd_subconfig_meridien_shared(token_edit_list)
+	add_sxcmd_subconfig_meridien_shared(token_edit_list, beta=beta)
 
 
-def add_sxcmd_subconfig_meridien_local_shared_refine(token_edit_list):
+def add_sxcmd_subconfig_meridien_local_shared_refine(token_edit_list, beta=False):
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("inires"); token_edit.help = "Resolution of the initial volume. For local refinement, the program automatically calculates the initial resolution using provided orientation parameters."; token_edit.default = -1.0; token_edit.restore = -1.0; token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("delta"); token_edit.help = "Initial angular sampling step. For local refinement, the value has to be less than or equal to 3.75."; token_edit.default = 3.75; token_edit.restore = [str(entry) for entry in [3.75, 1.875, 0.9375, 0.46875, 0.234375]]; token_edit_list.append(token_edit)
-	add_sxcmd_subconfig_meridien_shared(token_edit_list)
+	add_sxcmd_subconfig_meridien_shared(token_edit_list, beta=beta)
 
-def create_sxcmd_subconfig_meridien_standard_fresh():
+def create_sxcmd_subconfig_meridien_standard_fresh(beta=False):
 	token_edit_list = []
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("stack"); token_edit.is_required = True; token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.type = "output"; token_edit_list.append(token_edit)
@@ -1898,14 +1886,17 @@ def create_sxcmd_subconfig_meridien_standard_fresh():
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("center_method"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("target_radius"); token_edit_list.append(token_edit)
 
-	add_sxcmd_subconfig_meridien_standard_shared(token_edit_list)
+	add_sxcmd_subconfig_meridien_standard_shared(token_edit_list, beta=beta)
 
 	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("3D Refinement", "Performs 3D structure refinement using a quasi-Maximum Likelihood approach.", token_edit_list, sxsubcmd_mpi_support, is_modeless = True, subset_config="new")
+	if beta:
+		sxcmd_subconfig = SXsubcmd_config("3D Refinement (Beta)", "Performs 3D structure refinement using a quasi-Maximum Likelihood approach.", token_edit_list, sxsubcmd_mpi_support, is_modeless = True, subset_config="beta")
+	else:
+		sxcmd_subconfig = SXsubcmd_config("3D Refinement", "Performs 3D structure refinement using a quasi-Maximum Likelihood approach.", token_edit_list, sxsubcmd_mpi_support, is_modeless = True)
 
 	return sxcmd_subconfig
 
-def create_sxcmd_subconfig_meridien_standard_continuation():
+def create_sxcmd_subconfig_meridien_standard_continuation(beta=False):
 	token_edit_list = []
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Output Directory"; token_edit.help = "This directory must exist. The results will be written here."; token_edit.is_required = True; token_edit_list.append(token_edit)
 
@@ -1931,9 +1922,18 @@ def create_sxcmd_subconfig_meridien_standard_continuation():
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("small_memory"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("ccfpercentage"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("nonorm"); token_edit_list.append(token_edit)
+	if beta:
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("limit_improvement"); token_edit_list.append(token_edit)
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("a_criterion"); token_edit_list.append(token_edit)
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("function"); token_edit_list.append(token_edit)
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("function_ai"); token_edit_list.append(token_edit)
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("plot_ang_dist"); token_edit_list.append(token_edit)
 
 	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("3D Refinement Restart", "Restart 3D refinement after the last fully finished iteration of meridien run or local refinement run. One can change some parameters, but MPI settings have to be the same.", token_edit_list, sxsubcmd_mpi_support, is_modeless = True, subset_config="restart")
+	if beta:
+		sxcmd_subconfig = SXsubcmd_config("3D Refinement Restart (Beta)", "Restart 3D refinement after the last fully finished iteration of meridien run or local refinement run. One can change some parameters, but MPI settings have to be the same.", token_edit_list, sxsubcmd_mpi_support, is_modeless = True, subset_config="restart_beta")
+	else:
+		sxcmd_subconfig = SXsubcmd_config("3D Refinement Restart", "Restart 3D refinement after the last fully finished iteration of meridien run or local refinement run. One can change some parameters, but MPI settings have to be the same.", token_edit_list, sxsubcmd_mpi_support, is_modeless = True, subset_config="restart")
 
 	return sxcmd_subconfig
 
@@ -1948,34 +1948,40 @@ def create_sxcmd_subconfig_meridien_header_import_xform_projection():
 
 	return sxcmd_subconfig
 
-def create_sxcmd_subconfig_meridien_local_stack():
+def create_sxcmd_subconfig_meridien_local_stack(beta=False):
 	token_edit_list = []
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("local_refinement"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("stack"); token_edit.help = "The stack must have 3D orientation parameters (xform.projection) stored in image headers. They can be imported using sp_header.py."; token_edit.is_required = True; token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit_list.append(token_edit)
 
-	add_sxcmd_subconfig_meridien_local_shared_refine(token_edit_list)
+	add_sxcmd_subconfig_meridien_local_shared_refine(token_edit_list, beta=beta)
 
 	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("Local Refinement from Stack", "Perform local refinement in which the restricted search begins from the user-provided orientation parameters stored in image headers. Note delta has to be less than or equal to 3.75[A].", token_edit_list, sxsubcmd_mpi_support, subset_config="stack")
+	if beta:
+		sxcmd_subconfig = SXsubcmd_config("Local Refinement from Stack (Beta)", "Perform local refinement in which the restricted search begins from the user-provided orientation parameters stored in image headers. Note delta has to be less than or equal to 3.75[A].", token_edit_list, sxsubcmd_mpi_support, subset_config="stack_beta")
+	else:
+		sxcmd_subconfig = SXsubcmd_config("Local Refinement from Stack", "Perform local refinement in which the restricted search begins from the user-provided orientation parameters stored in image headers. Note delta has to be less than or equal to 3.75[A].", token_edit_list, sxsubcmd_mpi_support, subset_config="stack")
 	
 	return sxcmd_subconfig
 
-def create_sxcmd_subconfig_meridien_local_iteration():
+def create_sxcmd_subconfig_meridien_local_iteration(beta=False):
 	token_edit_list = []
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("local_refinement"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Directory"; token_edit.help = "This directory must exist. The results will be written there."; token_edit.is_required = True; token_edit_list.append(token_edit)
 
-	add_sxcmd_subconfig_meridien_local_shared_refine(token_edit_list)
+	add_sxcmd_subconfig_meridien_local_shared_refine(token_edit_list, beta=beta)
 
 	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("Restart Local Refinement", "Restart local refinement after the last fully finished iteration of meridien run or local refinement run. One can change some parameters, but MPI settings have to be the same as in the original run.", token_edit_list, sxsubcmd_mpi_support, subset_config="iteration")
+	if beta:
+		sxcmd_subconfig = SXsubcmd_config("Restart Local Refinement (Beta)", "Restart local refinement after the last fully finished iteration of meridien run or local refinement run. One can change some parameters, but MPI settings have to be the same as in the original run.", token_edit_list, sxsubcmd_mpi_support, subset_config="iteration_beta")
+	else:
+		sxcmd_subconfig = SXsubcmd_config("Restart Local Refinement", "Restart local refinement after the last fully finished iteration of meridien run or local refinement run. One can change some parameters, but MPI settings have to be the same as in the original run.", token_edit_list, sxsubcmd_mpi_support, subset_config="iteration")
 
 	return sxcmd_subconfig
 
-def create_sxcmd_subconfig_meridien_final():
+def create_sxcmd_subconfig_meridien_final(beta=False):
 	token_edit_list = []
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("do_final"); token_edit.is_required = True; token_edit.is_locked = False; token_edit.default = -1; token_edit.restore = -1; token_edit_list.append(token_edit)
 	
@@ -1984,7 +1990,10 @@ def create_sxcmd_subconfig_meridien_final():
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
 
 	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("Final 3D Reconstruction Only", "Compute a final 3D reconstruction using either select or best resolution iteration of meridien.", token_edit_list, sxsubcmd_mpi_support)
+	if beta:
+		sxcmd_subconfig = SXsubcmd_config("Final 3D Reconstruction Only (Beta)", "Compute a final 3D reconstruction using either select or best resolution iteration of meridien.", token_edit_list, sxsubcmd_mpi_support)
+	else:
+		sxcmd_subconfig = SXsubcmd_config("Final 3D Reconstruction Only", "Compute a final 3D reconstruction using either select or best resolution iteration of meridien.", token_edit_list, sxsubcmd_mpi_support)
 
 	return sxcmd_subconfig
 
@@ -2318,7 +2327,7 @@ def build_config_list_MoinMoinWiki():
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_stack()))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_continuation()))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final()))
-	
+
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
@@ -2513,6 +2522,12 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_iteration()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_continuation()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final()))
+	
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien_beta.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_fresh(beta=True)))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien_beta.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_stack(beta=True)))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien_beta.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_iteration(beta=True)))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien_beta.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_continuation(beta=True)))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien_beta.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final(beta=True)))
 	
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
