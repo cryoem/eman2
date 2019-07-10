@@ -125,7 +125,7 @@ def main():
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=14, col=1, rowspan=1, colspan=1,mode="boxing")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--device", type=str, help="For Convnet training only. Pick a device to use. chose from cpu, gpu, or gpuX (X=0,1,...) when multiple gpus are available. default is cpu",default="cpu",guitype='strbox', row=14, col=2, rowspan=1, colspan=1,mode="boxing")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 	
@@ -384,7 +384,7 @@ def write_particles(files,boxsize,verbose):
 ##########
 
 class boxerByRef(QtCore.QObject):
-	"""Simple reference-based cross-corrlation picker with exhaustive rotational search"""
+	"""Simple reference-based cross-correlation picker with exhaustive rotational search"""
 	@staticmethod
 	def setup_gui(gridlay,boxerwindow=None):
 		boxerByRef.threshold=ValSlider(None,(0.1,8),"Threshold",1.5,90)
@@ -825,6 +825,7 @@ class boxerConvNet(QtCore.QObject):
 			nnet1.do_training(data, label, session, shuffle=True, learnrate=1e-4, niter=30)
 			nnet1.write_output_train('trainout_classify.hdf', session)
 			nnet1.save_network("nnet_classify.hdf", session)
+		print("Training finished.")
 		
 	@staticmethod
 	def load_ptcls(ref0, ref1, sz=64, makegaussian=True):
@@ -1590,6 +1591,7 @@ class GUIBoxer(QtWidgets.QWidget):
 			try: color=self.boxcolors[self.mmode]
 			except: color=self.boxcolors["unknown"]
 			self.wimage.add_shape("tmpbox",EMShape(("rect",color[0],color[1],color[2],self.tmpbox[0]-boxsize2,self.tmpbox[1]-boxsize2,self.tmpbox[0]+boxsize2,self.tmpbox[1]+boxsize2,2)))
+			self.wimage.add_shape("tmpcir",EMShape(("circle",color[0],color[1],color[2],self.tmpbox[0],self.tmpbox[1],ptclsize//2,2)))
 			self.wimage.update()
 		elif self.mmode == "manual" :
 			self.curbox=0
@@ -1626,6 +1628,7 @@ class GUIBoxer(QtWidgets.QWidget):
 			try: color=self.boxcolors[self.mmode]
 			except: color=self.boxcolors["unknown"]
 			self.wimage.add_shape("tmpbox",EMShape(("rect",color[0],color[1],color[2],self.tmpbox[0]-boxsize2,self.tmpbox[1]-boxsize2,self.tmpbox[0]+boxsize2,self.tmpbox[1]+boxsize2,2)))
+			self.wimage.add_shape("tmpcir",EMShape(("circle",color[0],color[1],color[2],self.tmpbox[0],self.tmpbox[1],ptclsize//2,2)))
 			self.wimage.update()
 		elif self.mmode=="manual":
 			if m==self.lastloc : return
@@ -1638,7 +1641,8 @@ class GUIBoxer(QtWidgets.QWidget):
 	def imgmouseup(self,event,m) :
 #		m=self.wimage.scr_to_img((event.x(),event.y()))
 		if not self.downbut&Qt.LeftButton : return
-		boxsize2=self.vbbsize.getValue()//2
+		boxsize=self.vbbsize.getValue()
+		boxsize2=boxsize//2
 		ptclsize=self.vbbpsize.getValue()
 		if boxsize2<4 : return
 		
@@ -1652,7 +1656,8 @@ class GUIBoxer(QtWidgets.QWidget):
 			self.tmpbox=(b[0]+m[0]-self.lastloc[0],b[1]+m[1]-self.lastloc[1],self.mmode)
 			self.lastloc=m
 			self.wimage.del_shape("tmpbox")
-			boxim=self.micrograph.get_clip(Region(self.tmpbox[0]-boxsize2,self.tmpbox[1]-boxsize2,boxsize2*2,boxsize2*2))
+			self.wimage.del_shape("tmpcir")
+			boxim=self.micrograph.get_clip(Region(self.tmpbox[0]-boxsize2,self.tmpbox[1]-boxsize2,boxsize,boxsize))
 			boxim["ptcl_source_coord"]=(self.tmpbox[0],self.tmpbox[1])
 			if self.mmode == "refgood" : 
 				self.goodrefs.append(boxim)

@@ -77,7 +77,7 @@ class E2FoldHunterStat(object):
 			qdict["n1"] = v[0]
 			qdict["n2"] = v[1]
 			qdict["n3"] = v[2]
-			qdict["omega"] = Util.get_frand(0,180) # only need to 180 becaues the final rotation can be negative or positive
+			qdict["omega"] = Util.get_frand(0,180) # only need to 180 because the final rotation can be negative or positive
 			q = Transform(qdict)
 			normal_d = q*normal # this is the random axis of rotation
 
@@ -126,7 +126,7 @@ class E2FoldHunterStat(object):
 	
 		return percentile
 
-	#Given an mrc file, pdb file, and optional other information, this function returns several data stuctures representing the results
+	#Given an mrc file, pdb file, and optional other information, this function returns several data structures representing the results
 	def gen_data(self, mrc_file_name, pdb_file_name, trans_Num, iso_Thresh):
 
 		curTime = time.time()

@@ -67,7 +67,7 @@ def main():
 	parser.add_argument("--ncls", default=32, type=int, help="Number of classes to generate", guitype='intbox', row=1, col=0, rowspan=1, colspan=1, mode="spr")
 	parser.add_argument("--alignsort", default=False, action="store_true",help="This will align and sort the final class-averages based on mutual similarity.", guitype='boolbox', row=1, col=1, rowspan=1, colspan=1, mode="spr[True]")
 	parser.add_argument("--msamode",default="pca",type=str,help="e2msa can use a variety of different dimensionality reduction algorithms, the default is Principal Component Analysis (PCA), but others are available, see e2msa.py")
-#	parser.add_argument("--normproj", default=False, action="store_true",help="Normalizes each projected vector into the MSA subspace. Note that this is different from normalizing the input images since the subspace is not expected to fully span the image", guitype='boolbox', row=1, col=1, rowspan=1, colspan=1, mode="spr[True]")
+	parser.add_argument("--normproj", default=False, action="store_true",help="Normalizes each projected vector into the MSA subspace. Note that this is different from normalizing the input images since the subspace is not expected to fully span the image", guitype='boolbox', row=1, col=2, rowspan=1, colspan=1, mode="spr[True]")
 #	parser.add_argument("--fastseed", action="store_true", default=False,help="Will seed the k-means loop quickly, but may produce less consistent results. Always use this when generating >~100 classes.",guitype='boolbox', row=1, col=2, rowspan=1, colspan=1, mode="spr[True]")
 	parser.add_argument("--iter", type=int, default=0, help = "The total number of refinement iterations to perform")  #, guitype='intbox', row=2, col=0, rowspan=1, colspan=1, mode="spr")
 	parser.add_argument("--nbasisfp",type=int,default=8,help="Number of MSA basis vectors to use when classifying particles", guitype='intbox', row=2, col=1, rowspan=1, colspan=1, mode="spr")
@@ -78,7 +78,7 @@ def main():
 #	parser.add_argument("--centeracf", default=False, action="store_true",help="This option has been removed in favor of a new centering algorithm")
 	parser.add_argument("--center",type=str,default="xform.center",help="If the default centering algorithm (xform.center) doesn't work well, you can specify one of the others here (e2help.py processor center)",guitype='comboparambox', choicelist='dict(re_filter_list(dump_processors_list(),"xform.center").items()+[("nocenter",["Do not center class averages. (similar to what relion does)"])])', row=3, col=1, rowspan=1, colspan=2, mode="spr")
 #	parser.add_argument("--check", "-c",default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine2d.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 #	parser.add_argument("--maxshift", default=-1, type=int, help="Maximum particle translation in x and y")
 #	parser.add_argument("--exclude", type=str,default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude.")
 #	parser.add_argument("--resume", default=False, action="store_true",help="This will cause a check of the files in the current directory, and the refinement will resume after the last completed iteration. It's ok to alter other parameters.")
@@ -166,7 +166,7 @@ def main():
 	if not os.path.exists(fpfile):
 		print("ERROR: no _invar file found. Please run e2ctf_auto.py in your standard EMAN2 project folder. This program will not work with standalone stack files.")
 		sys.exit(1)
-		#print("WARNING: ",fpfile," not found. Computing bispectra. This will slow processing. ")
+		#print("WARNING: ",fpfile," not found. Computing invariants. This will slow processing. ")
 		#fpfile=options.path+"/input_bispec.hdf"
 		#run("e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_pixels=2 --process math.bispectrum.slice:fp={}:size={} --threads {}".format(options.input,fpfile,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
 	else:
@@ -188,7 +188,9 @@ def main():
 	if n>10000 : step="--step 0,{}".format((n+10000)//20000)
 	else: step=""
 	#run("e2msa.py %s %s --normalize --nbasis=%0d --scratchfile=%s/msa_scratch.bin %s"%(fpfile,fpbasis,options.nbasisfp,options.path,step))
-	run("e2msa.py %s %s %s --nbasis %0d %s --mode %s --nomean"%(fpfile,fpbasis,inputproj,options.nbasisfp,step,msamode))
+	if options.normproj: normproj="--normproj"
+	else: normproj=""
+	run("e2msa.py %s %s %s --nbasis %0d %s --mode %s --nomeansub %s"%(fpfile,fpbasis,inputproj,options.nbasisfp,step,msamode,normproj))
 	proc_tally += 1.0
 	if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
@@ -255,12 +257,12 @@ def class_postproc(options,it,invmode):
 	if invmode=="bispec" :
 		run("e2proc2dpar.py {}/classes_{:02d}.hdf {}/classes_fp_{:02d}.hdf --process math.bispectrum.slice:fp={}:size={} --threads {}".format(options.path,it,options.path,it,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
 	else:
-		run("e2proc2dpar.py {}/classes_{:02d}.hdf {}/classes_fp_{:02d}.hdf --process math.harmonicpow:fp=1 --threads {}".format(options.path,it,options.path,it,options.threads))
+		run("e2proc2dpar.py {}/classes_{:02d}.hdf {}/classes_fp_{:02d}.hdf --process math.harmonic:fp=4 --threads {}".format(options.path,it,options.path,it,options.threads))
 		
 	run("e2stacksort.py %s/classes_fp_%02d.hdf %s/classes_fp_%02d.hdf %s/classes_%02d.hdf %s/classes_%02d.hdf --simcmp=ccc --seqalicen"%(options.path,it,options.path,it,options.path,it,options.path,it))
 	
 	if options.alignsort:
-		run("e2stacksort.py %s/classes_%02d.hdf %s/classes_sort_%02d.hdf --bispec"%(options.path,it,options.path,it))
+		run("e2stacksort.py %s/classes_%02d.hdf %s/classes_sort_%02d.hdf --invar"%(options.path,it,options.path,it))
 
 
 def get_classaverage_extras(options):

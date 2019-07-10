@@ -7,7 +7,7 @@
   },
   {
     "TITLE":"Select micrograph files",
-    "INST":"Select micrograph files. This will be a space delimted list of files to process",
+    "INST":"Select micrograph files. This will be a space delimited list of files to process",
     "WIDGETS":[
       "import_files"
     ]

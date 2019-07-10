@@ -74,7 +74,7 @@ class EMBaseTomoChooseFilteredPtclsTask(WorkFlowTask):
 		raise NotImplementedException("Inheriting classes must implement this function")
 
 class EMTomoChooseFilteredPtclsTask(EMBaseTomoChooseFilteredPtclsTask):
-	"""Choose the particle set you wish to filter. The available sets inlcude the raw particles, and any filtered sets you have previously generated.""" 
+	"""Choose the particle set you wish to filter. The available sets include the raw particles, and any filtered sets you have previously generated.""" 
 	replace_task = QtCore.pyqtSignal()
 
 	def __init__(self):
@@ -450,7 +450,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		pncoarse = ParamDef(name="coarse number",vartype="int",desc_short="Coarse Number", desc_long="Coarse number",property=None,defaultunits=db.get("coarse number",dfl=6),choices=None )
 		params.append([piter, pncoarse])
 		pshrink = ParamDef(name="Percentage to shrink",vartype="int",desc_short="Shrink", desc_long="Percentage to shrink",property=None,defaultunits=db.get("Percentage to shrink",dfl=2),choices=None )
-		pshrinkrefine = ParamDef(name="Percentage to shrink, refinement",vartype="int",desc_short="Shrink refine", desc_long="Percentage to shrink for refienment",property=None,defaultunits=db.get("Percentage to shrink, refinement",dfl=2),choices=None )
+		pshrinkrefine = ParamDef(name="Percentage to shrink, refinement",vartype="int",desc_short="Shrink refine", desc_long="Percentage to shrink for refinement",property=None,defaultunits=db.get("Percentage to shrink, refinement",dfl=2),choices=None )
 		params.append([pshrink, pshrinkrefine])
 		
 		proc_data = dump_processors_list()
@@ -458,7 +458,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		for key in list(proc_data.keys()):
 			if len(key) >= 5 and key[:5] == "mask.":
 				masks[key] = proc_data[key]
-		masks["None"] = ["Choose this to stop masking from occuring"]
+		masks["None"] = ["Choose this to stop masking from occurring"]
 		pmask = ParamDef("mask",vartype="string",desc_short="Mask",desc_long="The mask to apply to the subtomos",property=None,defaultunits=db.get("mask",dfl="None"),choices=masks)
 		pmaskparams = ParamDef("maskparams",vartype="string",desc_short="Params",desc_long="Parameters for the mask",property=None,defaultunits=db.get("maskparams",dfl=""))
 		params.append([pmask, pmaskparams])
@@ -467,7 +467,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		for key in list(proc_data.keys()):
 			if len(key) >= 7 and key[:7] == "filter.":
 				filters[key] = proc_data[key]
-		filters["None"] = ["Choose this to stop filtering from occuring"]
+		filters["None"] = ["Choose this to stop filtering from occurring"]
 		pfilter = ParamDef("filter",vartype="string",desc_short="Filter",desc_long="The Filter to apply to the subtomos",property=None,defaultunits=db.get("filter",dfl="None"),choices=filters)
 		pfilterparams = ParamDef("filterparams",vartype="string",desc_short="Params",desc_long="Parameters for the filter",property=None,defaultunits=db.get("filterparams",dfl=""))
 		params.append([pfilter, pfilterparams])
@@ -493,7 +493,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		ppostfilterparams = ParamDef("postfilterparams",vartype="string",desc_short="Params",desc_long="Parameters for the postfilter",property=None,defaultunits=db.get("postfilterparams",dfl=""))
 		params.append([ppostfilter, ppostfilterparams])
 		
-		pparallel = ParamDef("parallel",vartype="string",desc_short="Parallel",desc_long="Parallalization parameters",property=None,defaultunits=db.get("parallel",dfl=""))
+		pparallel = ParamDef("parallel",vartype="string",desc_short="Parallel",desc_long="Parallelization parameters",property=None,defaultunits=db.get("parallel",dfl=""))
 		params.append(pparallel)
 			
 		#pylong = ParamDef(name="yshort",vartype="boolean",desc_short="yshort",desc_long="Use Z axis as normal",property=None,defaultunits=1,choices=None)

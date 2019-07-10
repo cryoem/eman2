@@ -10,12 +10,14 @@ from EMAN2_utils import *
 
 def main():
 	
-	usage="map aligned particles back to tomograms "
+	usage="""prog --path <spt_xx> --iter <X> --tomo <tomogram>
+	map aligned particles back to tomograms """
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--path", type=str,help="spt_xx path", default="",guitype='strbox',row=0, col=0,rowspan=1, colspan=1)
 	parser.add_argument("--iter", type=int,help="iteration number", default=1,guitype='intbox',row=0, col=1,rowspan=1, colspan=1)
 	parser.add_argument("--tomo", type=str,help="tomogram file name", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True, startpath='tomograms')", row=2, col=0,rowspan=1, colspan=2,)
 	parser.add_argument("--avg", type=str,help="3D average. will use spt_xx/threed_xx by default", default="")
+	parser.add_argument("--ptcl", type=str,help="particle input. will read from 0_spt_params by default", default="")
 	parser.add_argument("--keep", type=float,help="propotion to keep. will exclude bad particles if this is smaller than 1.0", default=1.0)
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
 	(options, args) = parser.parse_args()
@@ -24,9 +26,12 @@ def main():
 	path=options.path
 	itr=options.iter
 	
-	js=js_open_dict("{}/0_spt_params.json".format(path))
-	ptclin=str(js["input_ptcls"])
-	js=None
+	if len(options.ptcl)>0:
+		ptclin=options.ptcl
+	else:
+		js=js_open_dict("{}/0_spt_params.json".format(path))
+		ptclin=str(js["input_ptcls"])
+		js=None
 	
 	js=js_open_dict("{}/particle_parms_{:02d}.json".format(path, itr))
 	
@@ -53,16 +58,17 @@ def main():
 	tomo.to_zero()
 	
 	bname=base_name(options.tomo)
-	#print(js.keys())
-	
+	ptclid=[]
 	scr=[]
 	for i in range(lst.n):
 		l=lst.read(i)
-		if bname in l[1]:
+		if bname==base_name(l[1]):
 			ky=str((ptclin,i))
-			val=js[ky]
-			scr.append(val["score"])
-	
+			if js.has_key(ky):
+				ptclid.append(i)
+				val=js[ky]
+				scr.append(val["score"])
+			
 	nptcl=int(len(scr)*options.keep)
 	if options.keep<1.0:
 		sthr=np.sort(scr)[nptcl]
@@ -71,32 +77,30 @@ def main():
 	
 	pts=[]
 	print("{:d} particles total.".format(int(nptcl)))
-	for i in range(lst.n):
+	for i in ptclid:
 		l=lst.read(i)
-		if bname in l[1]:
-			#print(i,lst.n)
-			ky=str((ptclin,i))
-			val=js[ky]
-			s=val["score"]
-			if s>sthr:
-				continue
-			a=EMData(l[1], l[0],True)
-			xf=Transform(val["xform.align3d"])
-			
-			if tomo.has_attr("zshift"):
-				zs=tomo["zshift"]
-			else:
-				zs=0
-			crd=np.array(a["ptcl_source_coord"])/shrink + [
-				tomo["nx"]//2, tomo["ny"]//2, tomo["nz"]//2 + zs/shrink]
-			ts=np.array(xf.get_trans())
-			xf.set_trans((ts/shrink).tolist())
-			xf=xf.inverse()
-			t=avg.process("xform", {"transform":xf})
-			pts.append(crd-ts/4)
-			tomo.insert_scaled_sum(t,crd.tolist())
-			print("\t{}/{} finished.".format(len(pts), nptcl), end='\r')
-			sys.stdout.flush()
+		ky=str((ptclin,i))
+		val=js[ky]
+		s=val["score"]
+		if s>sthr:
+			continue
+		a=EMData(l[1], l[0],True)
+		xf=Transform(val["xform.align3d"])
+		
+		if tomo.has_attr("zshift"):
+			zs=tomo["zshift"]
+		else:
+			zs=0
+		crd=np.array(a["ptcl_source_coord"])/shrink + [
+			tomo["nx"]//2, tomo["ny"]//2, tomo["nz"]//2 + zs/shrink]
+		ts=np.array(xf.get_trans())
+		xf.set_trans((ts/shrink).tolist())
+		xf=xf.inverse()
+		t=avg.process("xform", {"transform":xf})
+		pts.append(crd-ts/4)
+		tomo.insert_scaled_sum(t,crd.tolist())
+		print("\t{}/{} finished.".format(len(pts), nptcl), end='\r')
+		sys.stdout.flush()
 			
 
 	pts=np.array(pts)

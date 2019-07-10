@@ -59,8 +59,6 @@ import traceback
 import weakref
 
 
-
-#---------------------------------------------------------------------------
 def display_error(msg) :
 	"""Displays an error message, in gui and on terminal."""
 
@@ -120,10 +118,9 @@ def askFileExists() :
 	elif box.clickedButton() == b2 : return "overwrite"
 	else : return "cancel"
 
-#---------------------------------------------------------------------------
 
 class EMFileType(object) :
-	"""This is a base class for handling interaction with files of different types. It includes a number of excution methods common to
+	"""This is a base class for handling interaction with files of different types. It includes a number of execution methods common to
 	several different subclasses"""
 
 	# A class dictionary keyed by EMDirEntry filetype string with value beign a single subclass of EMFileType. filetype strings are unique
@@ -167,7 +164,7 @@ class EMFileType(object) :
 
 	@staticmethod
 	def isValid(path, header) :
-		"""Returns (size, n, dim) if the referenced path is a file of this type, false if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."""
+		"""Returns (size, n, dim) if the referenced path is a file of this type, false if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
 
 		return False
 
@@ -447,6 +444,7 @@ class EMFileType(object) :
 		"""Show a single 3-D volume as a 2-D image"""
 
 		brws.busy()
+		print(self.path)
 
 		data = EMData(self.path,1)
 
@@ -473,7 +471,17 @@ class EMFileType(object) :
 			else : data = EMData.read_images(self.path)
 		else : data = EMData(self.path)
 
-		target = EMImage2DWidget(data)
+		modifiers = QtWidgets.QApplication.keyboardModifiers()
+		if modifiers == QtCore.Qt.ShiftModifier:
+			print("rotate x")
+			target = EMImage2DWidget()
+			target.set_data(data, xyz=0)
+		if modifiers == QtCore.Qt.ControlModifier:
+			print("rotate y")
+			target = EMImage2DWidget()
+			target.set_data(data, xyz=1)
+		else:
+			target = EMImage2DWidget(data)
 		brws.view2d.append(target)
 
 		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
@@ -492,7 +500,6 @@ class EMFileType(object) :
 		else:
 			os.system("e2filtertool.py %s &"%self.path)
 
-#---------------------------------------------------------------------------
 
 class EMTextFileType(EMFileType) :
 	"""FileType for files containing normal ASCII text"""
@@ -505,7 +512,7 @@ class EMTextFileType(EMFileType) :
 
 	@staticmethod
 	def isValid(path, header) :
-		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."""
+		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
 
 		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
 
@@ -542,7 +549,7 @@ class EMHTMLFileType(EMFileType) :
 
 	@staticmethod
 	def isValid(path, header) :
-		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."""
+		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
 
 		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
 		if not "<html>" in header.lower() : return False # For the moment, we demand an <html> tag somewhere in the first 4k
@@ -580,7 +587,6 @@ class EMHTMLFileType(EMFileType) :
 		else : 
 			print("Sorry, I don't know how to run Firefox on this platform")
 
-#---------------------------------------------------------------------------
 
 class EMPlotFileType(EMFileType) :
 	"""FileType for files containing normal ASCII text"""
@@ -593,7 +599,7 @@ class EMPlotFileType(EMFileType) :
 
 	@staticmethod
 	def isValid(path, header) :
-		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."""
+		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
 
 		if not isprint(header) : return False
 
@@ -837,7 +843,6 @@ class EMPlotFileType(EMFileType) :
 		target.raise_()
 
 
-#---------------------------------------------------------------------------
 
 class EMFolderFileType(EMFileType) :
 	"""FileType for Folders"""
@@ -849,7 +854,7 @@ class EMFolderFileType(EMFileType) :
 		return "Folder"
 	@staticmethod
 	def isValid(path, header) :
-		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."""
+		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
 
 		return False
 
@@ -864,8 +869,6 @@ class EMFolderFileType(EMFileType) :
 
 		return []
 
-#---------------------------------------------------------------------------
-
 class EMJSONFileType(EMFileType) :
 	"""FileType for JSON files"""
 
@@ -877,7 +880,7 @@ class EMJSONFileType(EMFileType) :
 
 	@staticmethod
 	def isValid(path, header) :
-		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."""
+		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
 
 		if path[-5:] == ".json" and header.strip()[0] == "{" : return (humansize(os.stat(path).st_size), "-", "-")
 		else : return None
@@ -907,10 +910,63 @@ class EMJSONFileType(EMFileType) :
 		"""Returns a list of (name, help, callback) tuples detailing the operations the user can call on the current file"""
 
 		# No actions for now...
+		if len(self.js.values())==0:
+			return []
+		v=self.js.values()[0]
+		if type(v)==dict:
+			if v.has_key("xform.align3d"):
+				return [
+					("Plot 2D", "plot xform", self.plot2dApp),
+					("Plot 2D+", "plot xform", self.plot2dNew),
+					]
 
 		return []
+	
+	def plot2dNew(self, brws):
+		self.plot2dApp(brws, True)
+		
+		
+	def plot2dApp(self, brws, new=False) :
+		"""Append self to current plot"""
+		
+		brws.busy()
 
-#---------------------------------------------------------------------------
+		
+		rows = []
+		for k in self.keys:
+			dct = self.js[k]
+			#### inverse since we want the transform from reference to particle
+			tf = dct[u'xform.align3d'].inverse()
+			t = tf.get_trans()
+			r = tf.get_rotation()
+			row = [r["az"],r["alt"],r["phi"],t[0],t[1],t[2]]
+			if dct.has_key("score"):
+				row.append(dct["score"])
+
+			rows.append([float(x) for x in row])
+		
+		data=np.array(rows).T.tolist()
+		
+		if new:
+			target = EMPlot2DWidget()
+			brws.viewplot2d.append(target)
+		else:
+			try :
+				target = brws.viewplot2d[-1]
+				#target.set_data(data, remove_directories_from_name(self.path, 1))
+			except :
+				target = EMPlot2DWidget()
+				brws.viewplot2d.append(target)
+		
+		
+		target.set_data(data, self.path.split('/')[-1])
+
+		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
+
 
 class EMBdbFileType(EMFileType) :
 	"""FileType for Folders"""
@@ -923,7 +979,7 @@ class EMBdbFileType(EMFileType) :
 
 	@staticmethod
 	def isValid(path, header) :
-		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."""
+		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
 
 		return False
 
@@ -1009,7 +1065,6 @@ class EMBdbFileType(EMFileType) :
 			os.system("/Applications/Chimera.app/Contents/MacOS/chimera /tmp/vol.hdf&")
 		else : print("Sorry, I don't know how to run Chimera on this platform")
 
-#---------------------------------------------------------------------------
 
 class EMImageFileType(EMFileType) :
 	"""FileType for files containing a single 2-D image"""
@@ -1046,7 +1101,7 @@ class EMImageFileType(EMFileType) :
 
 	@staticmethod
 	def isValid(path, header) :
-		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."""
+		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
 
 		return False
 
@@ -1109,7 +1164,6 @@ class EMImageFileType(EMFileType) :
 			os.system("/Applications/Chimera.app/Contents/MacOS/chimera /tmp/vol.hdf&")
 		else : print("Sorry, I don't know how to run Chimera on this platform")
 
-#---------------------------------------------------------------------------
 
 class EMStackFileType(EMFileType) :
 	"""FileType for files containing a set of 1-3D images"""
@@ -1122,7 +1176,7 @@ class EMStackFileType(EMFileType) :
 
 	@staticmethod
 	def isValid(path, header) :
-		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."""
+		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
 
 		return False
 
@@ -1180,7 +1234,6 @@ class EMStackFileType(EMFileType) :
 			os.system("/Applications/Chimera.app/Contents/MacOS/chimera /tmp/vol.hdf&")
 		else : print("Sorry, I don't know how to run Chimera on this platform")
 
-#---------------------------------------------------------------------------
 
 class EMPDBFileType(EMFileType):
 	
@@ -1208,7 +1261,7 @@ class EMPDBFileType(EMFileType):
 	def isValid(path, header) :
 		"""
 		Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. 
-		The first 4k block of data from the file is provided as well to avoid unnecesary file access.
+		The first 4k block of data from the file is provided as well to avoid unnecessary file access.
 		"""
 		proper_exts = ['pdb','ent']
 		ext = os.path.basename(path).split('.')[-1]
@@ -1312,7 +1365,6 @@ class EMPDBFileType(EMFileType):
 		else:
 			print("Sorry, I don't know how to run Chimera on this platform")
 
-#---------------------------------------------------------------------------
 
 # These are set all together at the end rather than after each class for efficiency
 
@@ -1346,7 +1398,6 @@ EMFileType.extbyft = {
 
 EMFileType.alltocheck = (EMPlotFileType, EMPDBFileType, EMTextFileType)
 
-#---------------------------------------------------------------------------
 
 class EMDirEntry(object) :
 	"""Represents a directory entry in the filesystem"""
@@ -1488,8 +1539,8 @@ class EMDirEntry(object) :
 		return len(self.__children)
 
 	def fillChildNames(self) :
-		"""Makes sure that __children contains at LEAST a list of names. This function needs to reimplmented to make derived browsers, 
-		NOTE!!!! You must have nimg implmented in your reimplmentation (I know this is a bad design....)"""
+		"""Makes sure that __children contains at LEAST a list of names. This function needs to reimplemented to make derived browsers, 
+		NOTE!!!! You must have nimg implemented in your reimplementation (I know this is a bad design....)"""
 
 		if self.__children == None :
 			if not os.path.isdir(self.filepath) :
@@ -1654,7 +1705,7 @@ class EMDirEntry(object) :
 
 			return 1
 
-		# we do this this way because there are so many possible image file exensions, and sometimes
+		# we do this this way because there are so many possible image file extensions, and sometimes
 		# people use a non-standard one (esp for MRC files)
 
 		try : self.nimg = EMUtil.get_image_count(self.path())
@@ -1663,15 +1714,18 @@ class EMDirEntry(object) :
 		# we have an image file
 
 		if self.nimg > 0 :
-			try : tmp = EMData(self.path(), 0, True)		# try to read an image header for the file
+			try : 
+				tmp = EMData(self.path(), 0, True)		# try to read an image header for the file
 			except :
-				for i in range(1, 10) :
-					try : tmp = EMData(self.path(), i, True)
-					except : continue
-					break
-				if i == 9 :
-					print("Error: all of the first 10 images are missing ! : ",self.path())
-					return
+				print("Error: first image missing ! : ",self.path())
+				return 0
+				#for i in range(1, 10) :
+					#try : tmp = EMData(self.path(), i, True)
+					#except : continue
+					#break
+				#if i == 9 :
+					#print("Error: all of the first 10 images are missing ! : ",self.path())
+					#return 0
 
 			if tmp["ny"] == 1 : self.dim = str(tmp["nx"])
 			elif tmp["nz"] == 1 : self.dim = "%d x %d"%(tmp["nx"], tmp["ny"])
@@ -1716,8 +1770,6 @@ class EMDirEntry(object) :
 			except : pass
 		return 1
 
-#---------------------------------------------------------------------------
-
 def nonone(val) :
 	"""Returns '-' for None, otherwise the string representation of the passed value"""
 
@@ -1736,8 +1788,6 @@ def humansize(val) :
 	elif val > 1000000 : return "%d m"%(old_div(val,1000000))
 	elif val > 1000 : return "%d k"%(old_div(val,1000))
 	return str(val)
-
-#---------------------------------------------------------------------------
 
 class EMFileItemModel(QtCore.QAbstractItemModel) :
 	"""This ItemModel represents the local filesystem. We don't use the normal filesystem item model because we want
@@ -1920,7 +1970,6 @@ class EMFileItemModel(QtCore.QAbstractItemModel) :
 		if index.internalPointer().fillDetails() :
 			self.dataChanged.emit(index, self.createIndex(index.row(), 5, index.internalPointer()))
 
-#---------------------------------------------------------------------------
 
 class myQItemSelection(QtCore.QItemSelectionModel) :
 	"""For debugging"""
@@ -1928,8 +1977,6 @@ class myQItemSelection(QtCore.QItemSelectionModel) :
 	def select(self, tl, br) :
 		print(tl.indexes()[0].row(), tl.indexes()[0].column(), int(br))
 		QtCore.QItemSelectionModel.select(self, tl, QtCore.QItemSelectionModel.SelectionFlags(QtCore.QItemSelectionModel.ClearAndSelect+QtCore.QItemSelectionModel.Rows))
-
-#---------------------------------------------------------------------------
 
 class EMInfoPane(QtWidgets.QWidget) :
 	"""Subclasses of this class will be used to display information about specific files. Each EMFileType class will return the
@@ -1941,7 +1988,7 @@ class EMInfoPane(QtWidgets.QWidget) :
 
 		QtWidgets.QWidget.__init__(self, parent)
 
-		# self.setTitle("e2dispaly.py Information Pane")
+		# self.setTitle("e2display.py Information Pane")
 
 		self.setWindowTitle("e2display.py Information Pane") # Jesus
 
@@ -1954,7 +2001,7 @@ class EMInfoPane(QtWidgets.QWidget) :
 	def display(self, target) :
 		"""display information for the target EMDirEntry with EMFileType ftype"""
 
-		# self.setTitle("e2dispaly.py Information Pane")
+		# self.setTitle("e2display.py Information Pane")
 
 		self.target = target
 		self.setWindowTitle("e2display.py Information Pane") # Jesus
@@ -2040,8 +2087,6 @@ class EMTextInfoPane(EMInfoPane) :
 		try : open(self.target.path(), "w").write(str(self.text.toPlainText()))
 		except : QtWidgets.QMessageBox.warning(self, "Error !", "File write failed")
 
-#---------------------------------------------------------------------------
-
 class EMHTMLInfoPane(EMInfoPane) :
 	def __init__(self, parent = None) :
 		QtWidgets.QWidget.__init__(self, parent)
@@ -2113,8 +2158,6 @@ class EMHTMLInfoPane(EMInfoPane) :
 		try : open(self.target.path(), "w").write(str(self.text.toHtml()))
 		except : QtWidgets.QMessageBox.warning(self, "Error !", "File write failed")
 
-#---------------------------------------------------------------------------
-
 class EMPDBInfoPane(EMInfoPane) :
 	def __init__(self, parent = None) :
 		QtWidgets.QWidget.__init__(self, parent)
@@ -2172,8 +2215,6 @@ class EMPDBInfoPane(EMInfoPane) :
 		try : open(self.target.path(), "w").write(str(self.text.toPlainText()))
 		except : QtWidgets.QMessageBox.warning(self, "Error !", "File write failed")
 
-#---------------------------------------------------------------------------
-
 class EMPlotInfoPane(EMInfoPane) :
 	def __init__(self, parent = None) :
 		QtWidgets.QWidget.__init__(self, parent)
@@ -2223,8 +2264,6 @@ class EMPlotInfoPane(EMInfoPane) :
 		if len(data) == 2500 :
 			self.plotdata.setVerticalHeaderItem(2500, QtWidgets.QTableWidgetItem("..."))
 
-#---------------------------------------------------------------------------
-
 class EMFolderInfoPane(EMInfoPane) :
 	def __init__(self, parent = None) :
 		QtWidgets.QWidget.__init__(self, parent)
@@ -2235,8 +2274,6 @@ class EMFolderInfoPane(EMInfoPane) :
 		"""display information for the target EMDirEntry"""
 
 		self.target = target
-
-#---------------------------------------------------------------------------
 
 class EMBDBInfoPane(EMInfoPane) :
 	maxim = 500
@@ -2436,8 +2473,6 @@ class EMBDBInfoPane(EMInfoPane) :
 			self.wheadtree.resizeColumnToContents(0)
 		else : parent.addChildren(itms)
 
-#---------------------------------------------------------------------------
-
 class EMJSONInfoPane(EMInfoPane) :
 	def __init__(self, parent = None) :
 		QtWidgets.QWidget.__init__(self, parent)
@@ -2617,7 +2652,6 @@ class EMJSONInfoPane(EMInfoPane) :
 			self.wheadtree.resizeColumnToContents(0)
 		else : parent.addChildren(itms)
 
-#---------------------------------------------------------------------------
 
 class EMImageInfoPane(EMInfoPane) :
 	maxim = 500
@@ -2683,8 +2717,6 @@ class EMImageInfoPane(EMInfoPane) :
 			self.wheadtree.resizeColumnToContents(0)
 		else : parent.addChildren(itms)
 
-#---------------------------------------------------------------------------
-
 class EMStackInfoPane(EMInfoPane) :
 	module_closed = QtCore.pyqtSignal()
 	maxim = 500
@@ -2693,7 +2725,7 @@ class EMStackInfoPane(EMInfoPane) :
 		QtWidgets.QWidget.__init__(self, parent)
 
 		# self.setWindowTitle("e2display.py Information Pane") # Jesus
-		# self.setTitle("e2dispaly.py Information Pane")
+		# self.setTitle("e2display.py Information Pane")
 
 		self.gbl = QtWidgets.QGridLayout(self)
 
@@ -2909,8 +2941,6 @@ class EMStackInfoPane(EMInfoPane) :
 			self.wheadtree.resizeColumnToContents(0)
 		else : parent.addChildren(itms)
 
-#---------------------------------------------------------------------------
-
 class EMInfoWin(QtWidgets.QWidget) :
 	"""The info window"""
 	winclosed = QtCore.pyqtSignal()
@@ -3016,8 +3046,6 @@ class SortSelTree(QtWidgets.QTreeView) :
 
 #		for i in sel : self.selectionModel().select(i, QtCore.QItemSelectionModel.ClearAndSelect)
 #		self.update()
-
-#---------------------------------------------------------------------------
 
 class EMBrowserWidget(QtWidgets.QWidget) :
 	"""This widget is a file browser for EMAN2. In addition to being a regular file browser, it supports:
@@ -3132,7 +3160,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 
 		self.gbl.addLayout(self.wtoolhbl2, 1, 0, 1, 2)
 
-		### Central verticalregion has bookmarks and tree
+		### Central vertical region has bookmarks and tree
 		# Bookmarks implemented with a toolbar in a frame
 
 		self.wbookmarkfr = QtWidgets.QFrame()
@@ -3232,7 +3260,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		self.setsmode = setsmode	# The sets mode is used when selecting bad particles
 		self.curmodel = None	# The current data model displayed in the tree
 		self.curpath = None	# The path represented by the current data model
-		self.curft = None		# a fileType instance for the currently hilighted object
+		self.curft = None		# a fileType instance for the currently highlighted object
 		self.curactions = []	# actions returned by the filtetype. Cached for speed
 #		self.models = {}		# Cached models to avoid a lot of rereading (not sure if this is really worthwhile)
 		self.pathstack = []	# A stack of previous viewed paths
@@ -3256,7 +3284,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		self.updthread = threading.Thread(target = self.updateDetails)	# The actual thread
 		self.updlist = []				# List of QModelIndex items in need of updating
 		self.redrawlist = []			# List of QModelIndex items in need of redisplay
-		self.needresize = 0			# Used to resize column widths occaisonally
+		self.needresize = 0			# Used to resize column widths occasionally
 		self.expanded = set()			# We get multiple expand events for each path element, so we need to keep track of which ones we've updated
 
 		self.setPath(startpath)	# start in the local directory
@@ -3299,7 +3327,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 # 				print "### ", de.internalPointer().path()
 
 	def updateDetailsDisplay(self) :
-		"""Since we can't do GUI updates from a thread, this is a timer event to update the display after the beckground thread
+		"""Since we can't do GUI updates from a thread, this is a timer event to update the display after the background thread
 		gets the details for each item"""
 
 		if self.needresize > 0 :
@@ -3360,7 +3388,11 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 			ftc = obj.fileTypeClass()
 	
 			if ftc != None :
-				self.curft = ftc(obj.path())
+				if os.path.exists(obj.path()):
+					self.curft = ftc(obj.path())
+				else:
+					print("Error: file {} does not exist...".format(obj.path()))
+					return
 				
 #				if self.setsmode : self.curft.setSetsDB(re.sub(r'_ctf_flip$|_ctf_wiener$', '', obj.path()))	# If we want to enable bad particle picking (treat ctf and raw data bads as same)
 
@@ -3671,7 +3703,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 				self.wbutback.setEnabled(True)
 			else :
 				self.wbutback.setEnabled(False)
-				self.wbutfwd.setEnabled(False)
+			self.wbutfwd.setEnabled(False)
 
 	def bookmarkPress(self, action) :
 		""""""

@@ -301,7 +301,7 @@ def apply_neuralnet(options, tomogram=None):
 	
 		while not jsd.empty():
 			idx,cout=jsd.get()
-			cout.write_image("tmp.hdf",-1)
+			#cout.write_image("tmp.hdf",-1)
 			cout=cout.get_clip(Region(((cout["nx"]-enx)//2),((cout["ny"]-eny)//2) ,enx, eny))
 			cout.scale(labelshrink)
 			cout.div(amplitude)

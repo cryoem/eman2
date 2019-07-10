@@ -49,7 +49,7 @@ def main():
 	parser.add_argument("--input", type=str, help="The name of the volumes stack that HAVE BEEN ALIGNED to a common reference", default=None)
 	parser.add_argument("--output", type=str, help="The name of the volumes stack that HAVE BEEN ALIGNED to a common reference", default=None)
 
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")				
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")				
 	
 	(options, args) = parser.parse_args()	
 	

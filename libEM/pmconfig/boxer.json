@@ -2,12 +2,12 @@
 [
   {
     "TITLE":"e2boxer Wizard",
-    "INST":"This Wizard is to Help users pick particles using e2boxer. For more information click on the wiki but5ton in the projectmanger toolbar",
+    "INST":"This Wizard is to Help users pick particles using e2boxer. For more information click on the wiki button in the projectmanager toolbar",
     "WIDGETS":[]
   },
   {
     "TITLE":"Select micrograph files",
-    "INST":"Select micrograph files. This will be a space delimted list of files to process",
+    "INST":"Select micrograph files. This will be a space delimited list of files to process",
     "WIDGETS":[
       "micrographs"
     ]

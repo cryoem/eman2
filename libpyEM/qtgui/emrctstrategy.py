@@ -37,7 +37,7 @@ from builtins import object
 import numpy, math
 
 class Strategy(object):
-	''' This is a base class for the strategy to use for pcik event hadeling'''
+	''' This is a base class for the strategy to use for pick event handling'''
 	def __init__ (self, mediator):
 		self.mediator = mediator
 	
@@ -69,7 +69,7 @@ class Strategy(object):
 		raise NotImplementedError("Subclass must implement abstract method")
 		
 class Strategy2IMGMan(Strategy):
-	''' This is a derived class for the strategy to use for pcik event hadeling, more classes can be added'''
+	''' This is a derived class for the strategy to use for pick event handling, more classes can be added'''
 	def __init__ (self, mediator):
 		Strategy.__init__(self, mediator)
 	
@@ -88,14 +88,14 @@ class Strategy2IMGMan(Strategy):
 	def pickevent(self, caller, x, y):
 		if caller == self.mediator.untilt_win:
 			if self.mediator.tilt_win.boxes.boxpopulation < self.mediator.untilt_win.boxes.boxpopulation:
-				print("Error, you need to selct an untilted partilce pair, before you select a new tilted one")
+				print("Error, you need to select an untilted particle pair, before you select a new tilted one")
 				return False
 		if caller == self.mediator.tilt_win:
 			if (self.mediator.tilt_win.boxes.boxpopulation == 0 and self.mediator.untilt_win.boxes.boxpopulation == 0):
 				print("Error, you first need to pick an untilted particle")
 				return False
 			if self.mediator.untilt_win.boxes.boxpopulation < self.mediator.tilt_win.boxes.boxpopulation:
-				print("Error, you need to selct an untilted partilce pair, before you select a new tilted one")
+				print("Error, you need to select an untilted particle pair, before you select a new tilted one")
 				return False
 		return True
 		
@@ -114,7 +114,7 @@ class Strategy2IMGMan(Strategy):
 		return True
 		
 class Strategy2IMGPair(Strategy):
-	''' This is a derived class for the strategy to use for pcik event hadeling, more classes can be added'''
+	''' This is a derived class for the strategy to use for pick event handling, more classes can be added'''
 	def __init__ (self, mediator):
 		Strategy.__init__(self, mediator)
 		self.A = None
@@ -124,14 +124,14 @@ class Strategy2IMGPair(Strategy):
 		self.cont_update_boxes = False
 		self.centertilts = False
 		
-	# This function is called after boxes are loaded from the DB (to intialize the strategy
+	# This function is called after boxes are loaded from the DB (to initialize the strategy
 	def initial_calculations(self):
 		if self.mediator.untilt_win.boxes.boxpopulation == self.mediator.tilt_win.boxes.boxpopulation:
 				if self.mediator.untilt_win.boxes.boxpopulation > self.minpp_for_xform:
 					self.compute_transform()
 					self.compute_tilt_angle()
 	
-	# This function is called to configure or reconfigure the strategy alogorithm (sort of sets the state)
+	# This function is called to configure or reconfigure the strategy algorithm (sort of sets the state)
 	def configure_strategy(self, caller):
 		self.minpp_for_xform = caller.minpp_for_xform
 		self.cont_update_boxes =  caller.updateboxes
@@ -155,7 +155,7 @@ class Strategy2IMGPair(Strategy):
 					# Compute tilt angle
 					self.compute_tilt_angle()
 					
-					# Use the transfomration matrix to compute the tilted angle
+					# Use the transformation matrix to compute the tilted angle
 					# I could just use the affine matrix, but better to use just the rotational part to reduce error
 					currX = [x,y,1]
 					currY = numpy.dot(self.A,currX)
@@ -348,7 +348,7 @@ class Strategy2IMGPair(Strategy):
 			
 		return True
 	
-	# This toggle the contol buttons on and off (also controls the mask)
+	# This toggle the control buttons on and off (also controls the mask)
 	def set_gui_buttons(self, toggle):
 		self.mediator.control_window.pair_picker_tool.mask_combobox.setEnabled(toggle)
 		self.mediator.control_window.pair_picker_tool.upboxes_but.setEnabled(toggle)

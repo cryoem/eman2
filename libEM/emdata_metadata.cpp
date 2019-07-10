@@ -16,8 +16,7 @@
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
- * (at your op
- * tion) any later version.
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -500,11 +499,13 @@ vector<float> EMData::calc_max_location_wrap_intp(const int maxdx, const int max
 				//Compute center of mass
 				float val = get_value_at_wrap(x,y,z);
 				
-// 				printf("%f,%f,%f\t%f\n",x, y, z, val);
-				cmx += x*val;
-				cmy += y*val;
-				cmz += z*val;
-				sval += val;
+// 				printf("%.2f,%.2f, %.2f\t%.2f,%.2f,%.2f\n",x, y, val, cmx, cmy, sval);
+				if (val>0){
+					cmx += x*val;
+					cmy += y*val;
+					cmz += z*val;
+					sval += val;
+				}
 			}
 		}
 	}

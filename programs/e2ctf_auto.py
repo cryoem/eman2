@@ -96,7 +96,7 @@ Important: This program must be run from the project directory, not from within 
 	parser.add_argument("--minqual",type=int,help="Files with a quality value lower than specified will be skipped",default=0,guitype='intbox', row=30, col=1, mode='auto[0]')
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 
@@ -172,7 +172,7 @@ Strongly suggest refitting CTF from frames with e2rawdata.py with revised parame
 			sys.exit(1)
 
 	if options.invartype=="auto" :
-		try: options.invartype=str(project(["global.invartype"]))
+		try: options.invartype=str(project(["global.invariant_type"]))
 		except: 
 			print("Warning: no project invariant type spectified, using bispectrum")
 			options.invartype="bispec"
@@ -412,7 +412,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 		print("Phase-flipped output files:\n__ctf_flip_lp12 - masked, downsampled, filtered to 12 A resolution\n__ctf_flip_lp5 - masked, downsampled, filtered to 5 A resolution\n__ctf_flip_fullres - masked, full sampling")
 
 	if options.invartype=="bispec" : pp4="math.bispectrum.slice:size={bssz}:fp={bsfp}".format(bssz=bispec_invar_parm[0],bsfp=bispec_invar_parm[1])
-	elif options.invartype=="harmonic" : pp4="math.harmonicpow:fp=1"
+	elif options.invartype=="harmonic" : pp4="math.harmonic:fp=4"
 	com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} --proctag invar --phaseflipproc filter.highpass.gauss:cutoff_freq=0.01 --phaseflipproc2 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc3 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc4 {pp4} {extrapad} --threads {threads} ".format(
 		maskrad=maskrad4,maskwid=maskwid4,invert=invert,minqual=options.minqual,extrapad=extrapad,pp4=pp4,threads=options.threads,missingonly=missingonly)
 	if options.verbose: print(com)

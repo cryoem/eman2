@@ -493,6 +493,8 @@ namespace EMAN
 			d.put("quiet", EMObject::BOOL, "Optional. If false, print verbose information.");
 			d.put("subvolume",EMObject::INTARRAY, "Optional. (xorigin,yorigin,zorigin,xsize,ysize,zsize) all in Fourier pixels. Useful for parallelism.");
 			d.put("savenorm",EMObject::STRING, "Debug. Will cause the normalization volume to be written directly to the specified file when finish() is called.");
+			
+			d.put("normout",EMObject::EMDATA, "Will write the normalization volume to the given EMData object file when finish() is called.");
 			return d;
 		}
 		

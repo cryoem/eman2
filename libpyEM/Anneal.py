@@ -61,7 +61,7 @@ def main():
     parser.add_argument("--nlimit",type=int,default=100000,help="Maximum successful changes before continuing")
     parser.add_argument("--guess",type=float,default=(-1.0,1.0),nargs="+",help="Initial guess for each dimension. Default: -1.0 1.0. NOTE: Separate these two parameters with spaces.")
     parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
-    parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+    parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
     (options, args) = parser.parse_args()
 
@@ -292,7 +292,7 @@ class BaseAnnealer(with_metaclass(abc.ABCMeta, object)):
         last update that strictly decreased the energy.  At high
         temperatures it will include both moves that improved the overall
         state and moves that simply undid previously accepted moves that
-        increased the energy by thermal excititation.  At low temperatures
+        increased the energy by thermal excitation.  At low temperatures
         it will tend toward zero as the moves that can decrease the energy
         are exhausted and moves that would increase the energy are no longer
         thermally accessible."""

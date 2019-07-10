@@ -86,7 +86,7 @@ def main():
 	parser.add_header(name="e2eulerxplorheader", help="Click Launch to Run e2eulerxplor.py", title="### Click Launch to Run e2eulerxplor.py ###", row=0, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--eulerdata", "-e", type=str,help="File for Eulerdata, Ryan style, if none is given, data is read from the DB.",default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	global options
 	(options, args) = parser.parse_args()
@@ -175,7 +175,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		glMatrixMode(GL_PROJECTION)
 		glPushMatrix()
 		glLoadIdentity()
-		gluPickMatrix(event.x(),v[-1]-event.y(),5,5,v)
+		gluPickMatrix(event.x()*self.get_gl_widget().devicePixelRatio(),v[-1]-event.y()*self.get_gl_widget().devicePixelRatio(),5,5,v)
 		self.get_gl_widget().load_perspective()
 		glMatrixMode(GL_MODELVIEW)
 		glInitNames()

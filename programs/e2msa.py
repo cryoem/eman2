@@ -48,13 +48,13 @@ import sys
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """prog [options] <input stack> <output basis> [input reprojections]
+	usage = """prog [options] <input stack> <output basis> [reprojections]
 This too provides a variety of dimensionality reduction methods. This new version
 uses scikit.learn, which provides a greater variety of algorithms, but must load 
 all data into memory. If working with a large file, you may want to consider using
 --step to operate on a limited subset of the data.
 
-If specified, [input reprojections] will contain projections of the full input stack
+If specified, [reprojections] will contain projections of the full input stack
 (ignoring --step) into the basis subspace represented as a single image. This 
 obviates the need for e2basis.py, and permits use of nonlinear decompositions.
 
@@ -76,6 +76,7 @@ handled this way."""
 
 	parser.add_argument("--mode",type=str,help="Mode should be one of: pca, sparsepca, fastica, factan, lda, nmf",default="pca")
 	parser.add_argument("--nomean",action="store_true",help="Suppress writing the average image as the first output image",default=False)
+	parser.add_argument("--nomeansub",action="store_true",help="Suppress subtracting the mean from each input image, also implies --nomean",default=False)
 	parser.add_argument("--nbasis","-n",type=int,help="Number of basis images to generate.",default=20)
 	parser.add_argument("--maskfile","-M",type=str,help="File containing a mask defining the pixels to include in the Eigenimages")
 	parser.add_argument("--projin",type=str,default=None,help="When generating subspace projections, use this file instead of the input used for the MSA")
@@ -85,7 +86,7 @@ handled this way."""
 	parser.add_argument("--normalize",action="store_true",help="Perform a careful normalization of input images before MSA. Otherwise normalization is not modified until after mean subtraction.",default=False)
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <init>,<step>[,last]. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	#parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
 	#parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1)
@@ -144,8 +145,9 @@ handled this way."""
 	try: os.unlink(args[1])
 	except: pass
 	mean=np.mean(data,0)
-	for i in range(len(data)): data[i]-=mean
-	from_numpy(mean).process("misc.mask.pack",{"mask":mask,"unpack":1}).write_image(args[1],0)
+	if not options.nomeansub:
+		for i in range(len(data)): data[i]-=mean
+	#from_numpy(mean).process("misc.mask.pack",{"mask":mask,"unpack":1}).write_image(args[1],0)
 	
 	shift=0
 	# This is where the actual action takes place!
@@ -209,7 +211,10 @@ handled this way."""
 		msa.fit(data)
 
 	# write mean
-	if not options.nomean: from_numpy(mean).process("misc.mask.pack",{"mask":mask,"unpack":1}).write_image(args[1],0)
+	if not options.nomean and not options.nomeansub: 
+		mn=from_numpy(mean).process("misc.mask.pack",{"mask":mask,"unpack":1})
+		mn["eigval"]=0			# we add this artifically to the mean image, both to mark it, and to make some other code requiring it work. It isn't meaningful as a value, obviously
+		mn.write_image(args[1],0)
 
 		
 #	print(msa.components_.shape)
@@ -218,7 +223,7 @@ handled this way."""
 	if options.verbose>0 : print("MSA complete")
 
 	# write other basis vectors
-	if options.nomean: offset=0
+	if options.nomean or options.nomeansub: offset=0
 	else: offset=1
 	for i,v in enumerate(msa.components_):
 		im=from_numpy(v.copy()).process("misc.mask.pack",{"mask":mask,"unpack":1})

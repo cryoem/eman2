@@ -96,11 +96,11 @@ def main():
 		so that such relative alignment is taken into account when determining whether the final alignment of the particles 'undid' the random transforms 
 		they were rotated into when simulating the subvolumes with e2spt_simulation.py (these random transforms are stored as 'spt_randT' in the headers of the particles.""")
 		
-	parser.add_argument("--output", type=str, help="""The name of the output text file in .txt format containing the average angular distance and translational distance of the solutions proposed
-							by e2spt_classaverage3d.py respect to the simulated transforms.""", default='results.txt') 
+	parser.add_argument("--output", default='results.txt', type=str, help="""The name of the output text file in .txt format containing the average angular distance and translational distance of the solutions proposed
+							by e2spt_classaverage3d.py respect to the simulated transforms.""") 
 	
-	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--ppid", default=-1, type=int, help="Set the PID of the parent process, used for cross platform PPID")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	
 	#parser.add_argument("--shrink", type=int,default=0,help="""If the 'solution transform'
 	#	storied in the header parameter 'xform.align3d' was derived from particles that 

@@ -62,7 +62,7 @@ This program allows the user to play around with Fourier synthesis graphically
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 #	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 

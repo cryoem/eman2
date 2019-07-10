@@ -71,7 +71,7 @@ e2classextract.py --orientcls refine_03/cls_result_04 --orientedparticles sets/a
 	parser.add_argument("--sort",action="store_true",help="If set, output .lst file will be sorted. The default is to leave the output grouped by class-average. If (and only if) sorted, duplicate entries will be removed.",default=False)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 

@@ -1,6 +1,7 @@
 /*
  * Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
- * Copyright (c) 2000-2006 The University of Texas - Houston Medical School
+ * Please do not copy or modify this file without written consent of the author.
+ * Copyright (c) 2000-2019 The University of Texas - Houston Medical School
  *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
@@ -13094,26 +13095,29 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_factor, float sign)
 {
-	float cst  = cs*1.0e7f;
+	float ctfv;
+	if( voltage > 0.0f ) {
+		float cst  = cs*1.0e7f;
 
-	wgh /= 100.0;
-	float phase;
-	if(wgh == 0.0) phase = 0.0;
-	else if(wgh > 0.0f) {
-		if(wgh >= 1.0f)  phase = M_PI/2.0;
-		else phase = atan(wgh/sqrt(1.0f-wgh*wgh));
-	} else {
-		if(wgh <= -1.0f)  phase = M_PI/2.0;
-		else phase = M_PI + atan(wgh/sqrt(1.0f-wgh*wgh));
-	}
+		wgh /= 100.0;
+		float phase;
+		if(wgh == 0.0) phase = 0.0;
+		else if(wgh > 0.0f) {
+			if(wgh >= 1.0f)  phase = M_PI/2.0;
+			else phase = atan(wgh/sqrt(1.0f-wgh*wgh));
+		} else {
+			if(wgh <= -1.0f)  phase = M_PI/2.0;
+			else phase = M_PI + atan(wgh/sqrt(1.0f-wgh*wgh));
+		}
 
-	float lambda=12.398f/sqrt(voltage*(1022.0f+voltage));
-	float ak2 = ak*ak;
-	float g1 = dzz*1.0e4f*lambda*ak2;
-	float g2 = cst*lambda*lambda*lambda*ak2*ak2/2.0f;
+		float lambda=12.398f/sqrt(voltage*(1022.0f+voltage));
+		float ak2 = ak*ak;
+		float g1 = dzz*1.0e4f*lambda*ak2;
+		float g2 = cst*lambda*lambda*lambda*ak2*ak2/2.0f;
 
-	float ctfv = static_cast<float>( sin(M_PI*(g1-g2)+phase)*sign );
-	if(b_factor != 0.0f)  ctfv *= exp(-b_factor*ak2/4.0f);
+		ctfv = static_cast<float>( sin(M_PI*(g1-g2)+phase)*sign );
+		if(b_factor != 0.0f)  ctfv *= exp(-b_factor*ak2/4.0f);
+	} else ctfv = 1.0f;
 	return ctfv;
 }
 

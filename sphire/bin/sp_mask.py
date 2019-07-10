@@ -105,7 +105,7 @@ def parse_command_line():
 		type=float,
 		default=0.01,
 		action=NotSmallerZeroAction,
-		help='Low pass filter fall of in absolute frequencies. Used for filtering the volume.'
+		help='Low pass filter falloff in absolute frequencies. Used for filtering the volume.'
 		)
 	group_filter.add_argument(
 		'--pixel_size',
