@@ -43,6 +43,10 @@ sp_auto.py output_directory --mpi_procs=MPI_PROCS --mpi_job_name=MPI_JOB_NAME --
 
   ; %%--%%isac2_img_per_grp : ISAC2 images per group: Number of images per group. (default 100): %%--skip_isac2==False
 
+  ; %%--%%cinderella_predict_path: Cinderella predict path:Path to the Cinderella executable. (default None): %%--%%skip_cinderella==False
+  ; %%--%%cinderella_model_path: Cinderella model path:Path to trained Cinderella model. (default None): %%--%%skip_cinderella==False
+
+
   ; %%--%%mpi_procs : MPI processors: Number of processors you want to use for auto SPHIRE. (default 2)
   ; %%--%%mpi_job_name : MPI job name: Name of the submission job. (default auto_sphire)
   ; %%--%%mpi_submission_command: MPI Submission command: Submission command to execute the Auto SPHIRE job (default sbatch)
@@ -77,6 +81,14 @@ sp_auto.py output_directory --mpi_procs=MPI_PROCS --mpi_job_name=MPI_JOB_NAME --
   ; %%--%%isac2_output_dir: ISAC2 output name: Name of the output directory. (default ISAC): %%--%%skip_isac2==False
   ; %%--%%isac2_addition: ISAC2 addititions: Optional additional arguments.  (default none): %%--%%skip_isac2==False
   ; %%--%%substack_output_dir: ISAC2 substack output name: Name of the output directory for the ISAC substack. (default SUBSTACK): %%--%%skip_isac2==False
+
+  ; %%--%%skip_cinderella: Skip Cinderella: Skip automatic 2D class selection. (default False)
+  ; %%--%%cinderella_output_dir: Cinderella output name : Name of the output directory. (default AUTO2D): %%--%%skip_cinderella==False
+  ; %%--%%cinderella_input_stack: Cinderella input stack: Path to ISAC class stack (default none): %%--%%skip_cinderella==False
+  ; %%--%%cinderella_conf_thresh: Cinderella confidence threshold:Classes with a confidence higher as that threshold are classified as good. (default 0.5): %%--%%skip_cinderella==False
+  ; %%--%%cinderella_gpu: Cinderella GPU ID:ID of the GPU to run on. -1 will choose a GPU automatically. (default -1): %%--%%skip_cinderella==False
+  ; %%--%%cinderella_batch_size: Cinderella Batch size:Number of images in one batch during prediction. (default 32): %%--%%skip_cinderella==False
+
 
   ; %%--%%skip_rviper: Skip RVIPER: Skip the movie alignment in case that you already have aligned movies. (default False)
   ; %%--%%rviper_input_stack: RVIPER input stack: Stack used for RVIPER (default none): %%--%%skip_isac2==True %%--%%skip_rviper==False
