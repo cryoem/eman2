@@ -1,0 +1,264 @@
+-) ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", nomirror = False, dst=0.0, center=-1, maxit=0, CTF=False, snr=1.0, Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPUID="", random_method = "")
+-) ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", nomirror = False, dst=0.0, center=-1, maxit=0, CTF=False, snr=1.0, Fourvar=False, user_func_name="ref_ali2d", random_method = "", log = None, number_of_proc = 1, myid = 0, main_node = 0, mpi_comm = None, write_headers = False)
+-) cpy(ins_list, ous)
+-) project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None , listctfs = None, noise = None, realsp = False, trillinear = False)
+-) ali_vol(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc")
+-) recons3d_n_trl_MPI_one_node(prjlist, CTF, snr, sign, npad, sym, group, niter, verbose, upweighted, compensate, chunk_id)
+-) pca(input_stacks, subavg="", mask_radius=-1, nvec=3, incore=False, shuffle=False, genbuf=True, maskfile="", MPI=False, verbose=False)
+-) prepare_2d_forPCA(data, mode = "a", output_stack = None, CTF = False)
+-) extract_value( s )
+-) header(stack, params, zero=False, one=False, set = 0.0, randomize=False, rand_alpha=False, fimport=None, fexport=None, fprint=False, backup=False, suffix='_backup', restore=False, delete=False, consecutive=False)
+-) MPI_start_end(nima, nproc, myid)
+-) refvol( vollist, fsclist, output, mask )
+-) within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, step, dst, maxit, FH, FF, method = "", CTF = False)
+-) ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker)
+-) mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker)
+
+################################################################################################################################################################################################################################################
+IT SEEMS TO BE NOT USED
+    ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", nomirror = False, dst=0.0, center=-1, maxit=0, CTF=False, snr=1.0, Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPUID="", random_method = "")
+    stack -->
+    outdir -->
+    maskfile -->
+    ir -->
+    ou -->
+    rs -->
+    xr -->
+    yr -->
+    ts -->
+    nomirror  -->
+    dst -->
+    center -->
+    maxit -->
+    CTF -->
+    snr -->
+    Fourvar -->
+    Ng -->
+    user_func_name -->
+    CUDA -->
+    GPUID -->
+    random_method -->
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+################################################################################################################################################################################################################################################
+USED IN MERIDIEN AND ISAC2
+    ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", nomirror = False, dst=0.0, center=-1, maxit=0, CTF=False, snr=1.0, Fourvar=False, user_func_name="ref_ali2d", random_method = "", log = None, number_of_proc = 1, myid = 0, main_node = 0, mpi_comm = None, write_headers = False)
+    stack --> list of images
+    outdir --> path to the output dir
+    maskfile --> path to image used as mask or image
+    ir --> first ring (aka: inner ring)
+    ou --> last ring (aka: outer ring)
+    rs --> Ring step
+    xr --> string that specifies the X search range
+    yr --> string that specifies the Y search range
+    ts --> string that specifies the Translational step
+    nomirror  --> Flag to Disable checking mirror used in "sparx_alignment.ali2d_single_iter"
+    dst --> Discrete angle used as 'delta" in ""sparx_alignment.ali2d_single_iter" (hence it is the starting angle. Used in the calculation of crosscorrelation)
+    center --> Center type for preparing reference image. defualt -1 means average center method
+    maxit --> # max of iteration
+    CTF --> Flag to enable the use of CTF
+    snr --> Signal-to-Noise Ratio, It seems to be not used beacuse the dead code pb (see *)
+    Fourvar --> Use Fourier variance for which purpose ???
+    user_func_name --> user function string for debugging purpose
+    random_method -->  align method to use (SHC,PCP,SCF). if SHC it sets the mode=H for the "sparx_alignment.Numrinit" and "sparx_alignment.ringwe" methods
+    log --> enable the log stuff
+    number_of_proc --> Number of processors used
+    myid -->
+    main_node -->
+    mpi_comm -->
+    write_headers --> ??? Anyway it is always set as False
+Given a list of images it calculates the alignment params
+* if CTF =True and myid == main_node (i.e.: ln 695) it try to use an not defined variable and crash .... dead code or bug?
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+USED IN SXCPY THAT IS CALLED IN 'sx3dvariability.py' (not used), "sxrviper.py" and "sxsort3d.py"
+    cpy(ins_list, ous)
+    ins_list --> list of images
+    ous --> directory that specifies the bdb
+Copy the list of imgs 'ins_list' to the specified bdb
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+USED IN 'sxproj_compare.py'
+    project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None , listctfs = None, noise = None, realsp = False, trillinear = False)
+    volume --> 3d img,  In sxproj_compare is the reconstruction for which re-projections will be computed
+    stack --> name of the stack, where it 'll save the imgs
+    mask --> mask to apply at the volume
+    delta --> (*) Delta theta (spacing in theta)
+    method --> (*) S for Saff algorithm and P for Penczek
+    phiEqpsi --> (*) Can be "minus" or nothing. Used in 'even_angles_cd' if you want psi=-phi (see the eulero convenction to better understand)
+    symmetry --> (*) type of symmetry. It supports cn,dn or helical (i.e. scn or sdn)
+    listagls --> parameters containing projection angles
+    listctfs --> list of ctf that has to be applied to the volume
+    noise --> it adds a 'sparx_utilities.model_gauss_noise' to the stack imgs with sigma=float(noise)
+    realsp --> If True it avoid to generate a new volume using 'sparx_projection.prep_vol' to use in 'sparx_projection.project' (hence no interpolation step in the reconstruction ?!)
+    trillinear --> If True generate a new volume using 'sparx_projection.prep_vol' to use in 'sparx_projection.project' (Use trillinear interpolation algorithm?!)
+
+Returns 3D reconstruction
+(*) used by sparx_utilities.even_angles in case of listagls is None
+(**) in case of realsp=trillinear=True it will spawn an error message but its behaviour will be as if it'd receive as input realsp=True and Trilinear=False
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+################################################################################################################################################################################################################################################
+USED IN 'sxrviper.py'
+    ali_vol(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc")
+		Name
+			sxali_vol - align a 3D structure with respect of a 3D reference structure
+		Input
+			aligned_volume.hdf: 3D structure to be aligned.
+		reference_volume.hdf
+			3D reference structure.
+		ang_scale
+			correct angles are expected to be within +/-ang_scale of the values preset in the header of the structure to be aligned
+		shift_scale
+			correct shifts are expected to be within +/-shift_scale of the values preset in the header of the structure to be aligned
+		mag_scale
+			correct magnification is expected to be within +/-mag_scale of the value preset in the header of the structure to be aligned
+		r
+			radius of a spherical mask centered at nx/2, ny/2, nz/2
+		Note - there are no defaults for three scale parameters. At least one has to appear.
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+USED in "sparx_application,.ali3d_mref_Kmeans_MPI" used in "sxsort3d.py"
+    recons3d_n_trl_MPI_one_node(prjlist, CTF, snr, sign, npad, sym, group, niter, verbose, upweighted, compensate, chunk_id)
+    prjlist --> list of projction image
+    CTF --> flag value to enable the use of CTF in  the  EMAN2_cppwrap.Reconstructors obj
+    snr, sign, npad --> not_used
+    sym --> in case of 'not c1' applies symmetry calculation in the fftvol calculation
+    group -->  ???
+    niter --> # of iteration
+    verbose --> if true print on file debug stuff
+    upweighted --> if True inserts in the recontruction obj a 'filt_table' filter
+    compensate --> A flag indicating whether the returned object should be guaranteed to be in real-space (true) or should be left in whatever space the reconstructor generated.
+                   Used by the reconstructor obj in the 'finish' function
+    chunk_id --> ???
+It applies the trilinear interpolation in the 3d reconstruction and returns the fftvol ONLY if it is calle dby main node (myid==0)
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+USED in 'sx3dvariability.py'
+    pca(input_stacks, subavg="", mask_radius=-1, nvec=3, incore=False, shuffle=False, genbuf=True, maskfile="", MPI=False, verbose=False)
+    	"""
+		PCA of a set of images (can be 1-2-3-D).
+		input_stacks -
+		subavg       - file name containing the average of the input stack.  If None, average will not be subtracted
+		mask_radius  - radius of a spherical mask, cannot be specified if maskfile provided
+		nvec         - number of egeinimages to be computed
+		incore       - do in-core calculations, preferable for small datasets (default False)
+		shuffle      - Shuffle test (default False)
+		genbuf       - generate disk buffer (default True), to use the disk buffer with data set to False
+		maskfile     - name of the mask file
+	"""
+Returns the eigenvectors using the pcs algorithm
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+USED in 'sx3dvariability.py'
+    prepare_2d_forPCA(data, mode = "a", output_stack = None, CTF = False)
+    mode:  if 'a' applies sparx_fundamentals.rot_shift2D (got from the image's header) at the data
+    output_stack: path to the stack, where the results will be saved. If exists no output values will be returned
+    CTF: if True applies the ctf params (got from the image's header)
+	"""
+		Prepare 2D images for PCA
+		Average of all images is calculated using header alignment information,
+		  subtracted from each image and the difference is written to the output_stack
+		If CTF, the average is calculated as
+		   Av = sum(CTF_k*Im_k)/sum(CTF_k^2)
+		and the difference as
+		   CTF_k(Im_k - CTF_k*Av)/sum(CTF_k^2)
+		average outside of a circle r = nx//2-1 is subtracted from each image
+	"""
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    extract_value( s )
+    s --> string
+convert the string in a integer or float, if it is not able to convert returns the given input
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+USED in "sxrviper.py", "sxproj_compare.py" and "sxheader.py"
+    header(stack, params, zero=False, one=False, set = 0.0, randomize=False, rand_alpha=False, fimport=None, fexport=None, fprint=False, backup=False, suffix='_backup', restore=False, delete=False, consecutive=False)
+    stack -->
+    params --> parameter list, of what?????
+    zero --> set parameter to zero
+    one -->  parameter to one
+    set --> set parameter to the given value (different from 0.0)
+    randomize --> set parameter to a value (different from 0.0)
+    rand_alpha --> set all angles to randomized value
+    fimport --> import parameters from file
+    fexport --> export parameters from file
+    fprint --> print parameters
+    backup --> backup parameters
+    suffix --> suffix for xform name in backup
+    restore --> restore parameters
+    delete --> delete parameters
+    consecutive --> set selected parameter to consecutive integers starting from 0
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    MPI_start_end(nima, nproc, myid)
+    nima --> # tot image
+    nproc --> # process
+    myid --> my id
+Returns the first and last image to process
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+seems to be never USED
+    refvol( vollist, fsclist, output, mask )
+    vollist -->
+    fsclist -->
+    output -->
+    mask  -->
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+USED in "sxcompute_isac_avg.py" and "sxcompute_isac_avg.py"
+    within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, step, dst, maxit, FH, FF, method = "", CTF = False)
+    data --> list of 2D image
+    maskfile --> mask file
+    randomize --> if True it set randomly the use of mirror and the degree in the orientation calculation (i.e. sparx_utilities.combine_params2)
+    ir --> first ring (aka: inner ring)
+    ou --> last ring (aka: outer ring)
+    rs --> Ring step
+	xrng --> X search range , used in 'sparx_alignment.ali2d_single_iter'
+	yrng --> Y search range , used in 'sparx_alignment.ali2d_single_iter'
+	step --> Step used to change the search range
+    dst -->  used to calculate the starting angle. Used in the calculation of crosscorrelation used in 'sparx_alignment.ali2d_single_iter'
+    maxit --> # max of iteration in the alignment calculation
+    FH --> stop-band frequency in the tan filter (sparx_filter.filt_tanl)
+    FF --> fall off of the filter
+    method  --> let the default value because the other 2 are not in use
+    CTF --> if True enable the use of the CTF , used in 'sparx_alignment.ali2d_single_iter'
+
+It is the core of ISAC, basically it receives a list of image, data, it applies several stuff as filter, rotation etc in order to find the average image of the initial list using 'sparx_alignment.ali2d_single_iter'
+Returns the average image
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    USED in "sxsort3d.py"
+    ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker)
+    ref_list -->
+    outdir -->
+    this_data_list_file -->
+    Tracker -->
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    USED in "sxsort3d.py"
+    mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker)
+    ref_list -->
+    outdir -->
+    particle_list_file -->
+    Tracker -->
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
