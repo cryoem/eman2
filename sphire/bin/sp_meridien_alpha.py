@@ -125,7 +125,7 @@ Util.innerproduct(p2,p2,m)/(nx*nx/2) = Util.innerproduct(fp1,fp1,None)
 
 
 from EMAN2 	import *
-from sparx 	import *
+from sp_sparx 	import *
 from EMAN2  import EMNumPy
 from sp_logger import Logger, BaseLogger_Files
 import sp_global_def
@@ -172,8 +172,8 @@ else: Blockdata["node_volume"] = [0,0]
 #  We have to send the two myids to all nodes so we can identify main nodes on two selected groups.
 Blockdata["main_shared_nodes"]	= [Blockdata["node_volume"][0]*Blockdata["no_of_processes_per_group"],Blockdata["node_volume"][1]*Blockdata["no_of_processes_per_group"]]
 # end of Blockdata
-global_def.BATCH = True
-global_def.MPI = True
+sp_global_def.BATCH = True
+sp_global_def.MPI = True
 
 def create_subgroup():
 	# select a subset of myids to be in subdivision
