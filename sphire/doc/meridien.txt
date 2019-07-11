@@ -8,7 +8,7 @@
 
 Usage in command line
 
-  sp_meridien.py  stack  output_directory  initial_volume  --do_final=MERIDIEN_ITERATION_ID  --local_refinement  --radius=particle_radius  --mask3D=MASK3D  --symmetry=SYMMETRY  --inires=INITIAL_RESOLUTION  --delta=DELTA  --xr=XR  --ts=TS  --initialshifts  --skip_prealignment  --memory_per_node=MEMORY_PER_NODE  --center_method=CENTER_METHOD  --target_radius=TARGET_RADIUS  --an=ANGULAR_NEIGHBORHOOD  --shake=SHAKE  --small_memory  --ccfpercentage=CCFPERCENTAGE  --nonorm
+  sp_meridien.py  stack  output_directory  initial_volume  --do_final=MERIDIEN_ITERATION_ID  --local_refinement  --radius=particle_radius  --mask3D=MASK3D  --symmetry=SYMMETRY  --inires=INITIAL_RESOLUTION  --delta=DELTA  --xr=XR  --ts=TS  --initialshifts  --skip_prealignment  --memory_per_node=MEMORY_PER_NODE  --center_method=CENTER_METHOD  --target_radius=TARGET_RADIUS  --an=ANGULAR_NEIGHBORHOOD  --shake=SHAKE  --small_memory  --ccfpercentage=CCFPERCENTAGE  --nonorm --function=FUNCTION
 
 
 \\
@@ -70,6 +70,7 @@ One can change some parameters (MPI settings have to be the same)
   ; %%--%%small_memory : Keep data in memory: Indicate if data should be kept in memory or not. By default, data will be kept in memory. Ignored in final reconstruction. (default False question reversed in GUI)
   ; %%--%%ccfpercentage : Correlation peaks to be included [%]: Percentage of correlation peaks to be included. 0.0 corresponds to hard matching. Ignored in final reconstruction. This value will be adjusted during helical refinement. (default 99.9)::10;Main
   ; %%--%%nonorm : Apply image norm correction: Indicate if image norm correction should be applied or not. By default, apply image norm correction. Ignored in final reconstruction. (default False question reversed in GUI)
+  ; %%--%%function : Reference preparation function: Specify name of function that the program should use to prepare the reference structure after each iteration. Ignored in final reconstruction. (default do_volume_mask)
 
 \\
 ===== Output =====
