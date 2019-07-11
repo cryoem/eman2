@@ -208,7 +208,7 @@ def parse_args():
 	return args
 
 
-def get_unblur_cmd(status_dict, **kwargs):
+def get_unblur_cmd(status_dict, do_gain, **kwargs):
 	cmd = []
 	cmd.append('sp_unblur.py')
 	cmd.append('XXX_SP_UNBLUR_PATH_XXX')
@@ -217,7 +217,8 @@ def get_unblur_cmd(status_dict, **kwargs):
 	cmd.append('--pixel_size=XXX_SP_PIXEL_SIZE_XXX')
 	cmd.append('--voltage=XXX_SP_VOLTAGE_XXX')
 	cmd.append('--exposure_per_frame=XXX_SP_UNBLUR_EXP_PER_FRAME_XXX')
-	cmd.append('--gain_file=XXX_SP_UNBLUR_GAIN_FILE_XXX')
+	if do_gain:
+		cmd.append('--gain_file=XXX_SP_UNBLUR_GAIN_FILE_XXX')
 	cmd.append('XXX_SP_UNBLUR_ADDITION_XXX')
 	return cmd
 
@@ -320,16 +321,16 @@ def get_cinderella_predict(status_dict, **kwargs):
 
 	cmd.append('sp_cinderella_pred.py')
 	cmd.append('XXX_SP_CINDERELLA_PREDICT_PATH_XXX')
-	if status_dict['do_isac']:
+	if status_dict['do_isac2']:
 		cmd.append("XXX_SP_ISAC_OUTPUT_DIR_XXX/ordered_class_averages.hdf")
 	else:
 		cmd.append('XXX_SP_CINDERELLA_STACK_XXX')
 	cmd.append('XXX_SP_CINDERELLA_OUTPUT_DIR_XXX')
 	cmd.append('XXX_SP_CINDERELLA_MODEL_PATH_XXX')
 
-	cmd.append('--confidence_threshold=XXX_SP_CRYOLO_GPU_XXX')
-	cmd.append('--gpu=XXX_SP_CRYOLO_PREDICT_PATH_XXX')
-	cmd.append('--batch_size=XXX_SP_CRYOLO_PREDICT_PATH_XXX')
+	cmd.append('--confidence_threshold=XXX_SP_CINDERELLA_CONF_THRESH_XXX')
+	cmd.append('--gpu=XXX_SP_GPU_ID_XXX')
+	cmd.append('--batch_size=XXX_SP_BATCH_SIZE_XXX')
 	return cmd
 
 def get_isac2_substack(status_dict, **kwargs):
@@ -732,6 +733,7 @@ def main(args_as_dict):
 	phase_plate = args_as_dict['phase_plate']
 	negative_stain = args_as_dict['negative_stain']
 	fill_rviper_mask = args_as_dict['fill_rviper_mask']
+	do_gain = bool(args_as_dict['XXX_SP_UNBLUR_GAIN_FILE_XXX'] is not None)
 
 	mpi_procs = args_as_dict['mpi_procs']
 	mpi_submission = args_as_dict['mpi_submission_template']
@@ -749,7 +751,7 @@ def main(args_as_dict):
 			cmds.append(prev_line.format(key))
 			dict_idx_dict[running_idx] = current_idx
 			running_idx+=1
-			return_value = [entry for entry in function_dict[key][0](phase_plate=phase_plate, negative_stain=negative_stain, fill_rviper_mask=fill_rviper_mask, status_dict=do_dict) if entry.strip()]
+			return_value = [entry for entry in function_dict[key][0](phase_plate=phase_plate, negative_stain=negative_stain, fill_rviper_mask=fill_rviper_mask, status_dict=do_dict, do_gain=do_gain) if entry.strip()]
 			return_value.insert(0, [function_dict[key][1], key])
 			cmds.append(return_value)
 			dict_idx_dict[running_idx] = current_idx
