@@ -8,7 +8,7 @@ CTF Estimation: Automated estimation of CTF parameters with error assessment, in
 
 Usage in command line
 
-  sp_cter.py  input_image_path  output_directory  --selection_list=SELECTION_TEXT_FILE  --wn=CTF_WINDOW_SIZE --apix=PIXEL_SIZE  --Cs=CS  --voltage=VOLTAGE  --ac=AMP_CONTRAST  --f_start=FREA_START  --f_stop=FREQ_STOP  --kboot=KBOOT  --overlap_x=OVERLAP_X  --overlap_y=OVERLAP_Y  --edge_x=EDGE_X  --edge_y=EDGE_Y  --check_consistency  --stack_mode  --debug_mode  --vpp  --defocus_min=DEFOCUS_MIN  --defocus_max=DEFOCUS_MAX  --defocus_step=DEFOCUS_STEP  --phase_min=PHASE_MIN    --phase_max=PHASE_MAX  --phase_step==PHASE_STEP  --pap --pws
+  sp_cter.py  input_image_path  output_directory  --selection_list=SELECTION_TEXT_FILE  --wn=CTF_WINDOW_SIZE --apix=PIXEL_SIZE  --Cs=CS  --voltage=VOLTAGE  --ac=AMP_CONTRAST  --f_start=FREA_START  --f_stop=FREQ_STOP  --kboot=KBOOT  --overlap_x=OVERLAP_X  --overlap_y=OVERLAP_Y  --edge_x=EDGE_X  --edge_y=EDGE_Y  --check_consistency  --stack_mode  --debug_mode  --vpp  --defocus_min=DEFOCUS_MIN  --defocus_max=DEFOCUS_MAX  --defocus_step=DEFOCUS_STEP  --phase_min=PHASE_MIN    --phase_max=PHASE_MAX  --phase_step==PHASE_STEP  --pap
 
 \\
 ===== Typical usage =====
