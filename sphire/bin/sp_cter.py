@@ -121,7 +121,6 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 	parser.add_option("--phase_max",		type="float",         default=175.0,  help="Maximum phase search [degrees] (default 175.0)")
 	parser.add_option("--phase_step",		type="float",         default=5.0,    help="Step phase search [degrees] (default 5.0)")
 	parser.add_option("--pap",				action="store_true",  default=False,  help="Use power spectrum for fitting. (default False)")
-	parser.add_option("--pws",				action="store_true",  default=False,  help="Write 2D power spectra. (default False)")
 
 	(options, args) = parser.parse_args(sys.argv[1:])
 

@@ -1100,7 +1100,7 @@ def aves_wiener(input_stack, mode="a", SNR=1.0, interpolation_method="linear"):
 	nx = ima.get_xsize()
 	ny = ima.get_xsize()
 
-	if ima.get_attr_default('ctf_applied', -2) > 0:	ERROR("data cannot be ctf-applied", "aves_wiener", 1)
+	if ima.get_attr_default('ctf_applied', -2) > 0:	ERROR("Data cannot be CTF-applied", "aves_wiener", 1)
 
 	ave       = model_blank(nx,ny)
 	ctf_2_sum = EMData(nx, ny, 1, False)

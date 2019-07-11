@@ -450,7 +450,6 @@ def main():
 		
 		if options.VAR: # 2D variance images have no shifts
 			#varList   = EMData.read_images(stack, range(img_begin, img_end))
-			from EMAN2 import Region
 			for index_of_particle in range(img_begin,img_end):
 				image = get_im(stack, index_of_proj)
 				if current_window > 0: varList.append(fdecimate(window2d(image,current_window,current_window), nx,ny))
@@ -598,7 +597,6 @@ def main():
 			del vol, imgdata2
 			mpi_barrier(MPI_COMM_WORLD)
 			'''
-			from applications import prepare_2d_forPCA
 			from utilities    import model_blank
 			from EMAN2        import Transform
 			if not options.no_norm: 
