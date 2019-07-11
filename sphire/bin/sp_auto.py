@@ -235,7 +235,6 @@ def get_cter_cmd(status_dict, phase_plate, **kwargs):
 	cmd.append('--apix=XXX_SP_PIXEL_SIZE_XXX')
 	cmd.append('--Cs=XXX_SP_CTER_CS_XXX')
 	cmd.append('--voltage=XXX_SP_VOLTAGE_XXX')
-	cmd.append('--pws')
 	if phase_plate:
 		cmd.append('--vpp')
 	cmd.append('XXX_SP_CTER_ADDITION_XXX')
