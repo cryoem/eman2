@@ -44,7 +44,7 @@ from EMAN2 import *  # EMUtil, EMArgumentParser, EMANVERSION
 from sp_applications import header
 from datetime import datetime
 from sp_logger import Logger, BaseLogger_Files, BaseLogger_Print
-from sp_utilities import get_params2D
+from sp_utilities import get_params2D, read_text_row
 from sp_global_def import ERROR
 from sp_fundamentals import rot_shift2D, resample
 from sp_filter import filt_gaussl
@@ -60,6 +60,7 @@ CLASSSTACKPREFIX = 'stkclass_'
 ALIGNSTACKPREFIX = 'stkalign_'
 FILTSTACKPREFIX = 'stkflt_'
 COMBINEDPARAMS = 'params_combined.txt'
+TESTPARAMSOUT = 'params_testout.txt'
 
 USAGE = """ 
 PURPOSE:
@@ -99,7 +100,7 @@ Parameters:
 To apply ISAC alignments, filter, and shrink:
   %s <input_avgs> <input_images> <output_directory> --align --isac_dir <ISAC_directory> --filt <filter_radius> --shrink <shrink_factor> --verbose
 
-Modified 2019-07-05
+Modified 2019-07-10
 
 """ % (__file__, 
 	   DOCFILEDIR, CLASSMAPFILE, DOCFILEDIR, CLASSDOCPREFIX, CLASSSTACKPREFIX, STACKFILEDIR, ALIGNSTACKPREFIX, STACKFILEDIR, FILTSTACKPREFIX, 
@@ -125,7 +126,7 @@ def separate_class(classavgstack, instack, options, outdir='.', verbose=False):
 	prepare_outdir(os.path.join(outdir, DOCFILEDIR) )
 	classmap = os.path.join(outdir, DOCFILEDIR, CLASSMAPFILE)
 	classdoc = os.path.join(outdir, DOCFILEDIR, CLASSDOCPREFIX + '{0:03d}.txt')
-	stackcp = os.path.join(outdir, BIGSTACKCOPY)
+	stackcp = 'bdb:' + os.path.join(outdir, BIGSTACKCOPY)
 	outbdb = os.path.join(outdir, CLASSSTACKPREFIX + '{0:03d}')
 	if options.align or options.filtrad or options.shrink:
 		prepare_outdir(os.path.join(outdir, STACKFILEDIR) )
@@ -153,22 +154,35 @@ def separate_class(classavgstack, instack, options, outdir='.', verbose=False):
 	tot_parts = 0
 	
 	if options.align:
+		init_params_file = os.path.join(options.isac_dir, "2dalignment", "initial2Dparams.txt")
+		all_params_file = os.path.join(options.isac_dir, "all_parameters.txt")
+		
+		if options.debug:
+			num_tot_images = EMUtil.get_image_count(instack)
+			print('num_tot_images', num_tot_images)
+			
+			num_init_params = read_text_row(init_params_file)
+			print('num_init_params', len(num_init_params) )
+			
 		# Copy image stack
 		print_log_msg("Copying %s to virtual stack %s" % (instack, stackcp), log, verbose )
-		cmd = "e2bdb.py %s --makevstack bdb:%s" % (instack, stackcp)
+		cmd = "e2bdb.py %s --makevstack %s" % (instack, stackcp)
 		print_log_msg(cmd, log, verbose)
 		os.system(cmd)
 		
 		# Combine alignment parameters
-		init_params_file = os.path.join(options.isac_dir, "2dalignment", "initial2Dparams.txt")
-		all_params_file = os.path.join(options.isac_dir, "all_parameters.txt")
 		combined_params_file = os.path.join(outdir, COMBINEDPARAMS)
 		combine_isac_params(options.isac_dir, init_params_file, all_params_file, combined_params_file, log, verbose)
 		
 		# Import alignment parameters
 		cmd = "sp_header.py %s --params=xform.align2d --import=%s" % (stackcp, combined_params_file) 
 		print_log_msg(cmd, log, verbose)
-		header(classavgstack, 'xform.align2d', fimport=combined_params_file)
+		header(stackcp, 'xform.align2d', fimport=combined_params_file)
+		
+		if options.debug:
+			test_params_file = os.path.join(outdir, TESTPARAMSOUT)
+			print_log_msg("Writing imported parameters to %s" % test_params_file)
+			header(stackcp, 'xform.align2d', fexport=test_params_file)
 		
 		stack2split = stackcp
 	
@@ -188,7 +202,7 @@ def separate_class(classavgstack, instack, options, outdir='.', verbose=False):
 		if options.align:
 			
 			# Write class stack
-			cmd = "e2bdb.py bdb:%s --makevstack bdb:%s --list %s" % (stack2split, outbdb.format(class_num), classdoc.format(class_num))
+			cmd = "e2bdb.py %s --makevstack bdb:%s --list %s" % (stack2split, outbdb.format(class_num), classdoc.format(class_num))
 			print_log_msg(cmd, log, verbose)
 			os.system(cmd)
 			num_class_imgs = EMUtil.get_image_count('bdb:' + outbdb.format(class_num) )
@@ -200,23 +214,22 @@ def separate_class(classavgstack, instack, options, outdir='.', verbose=False):
 			if options.shrink:
 				sub_rate = float(1)/options.shrink
 				box_size = int(float(box_size)/options.shrink + 0.5)
-				####print('sub_rate', sub_rate, type(sub_rate), box_size, options.shrink)  #### DIAGNOSTIC
+				if options.debug and class_num == 0:
+					print('sub_rate', sub_rate, type(sub_rate), box_size, options.shrink)
 			
 			# Set filenames
 			local_mrcs_path = outali.format(class_num) + ".mrcs"
 			local_mrcs = EMData(box_size, box_size, num_class_imgs)
-			####local_stack_path = "bdb:" + outali.format(class_num) + "_ptcls"
-			####local_bdb_stack = db_open_dict(local_stack_path)
 			
 			# Loop through images
 			for img_num in range(len(class_stack) ):
 				img_orig = class_stack[img_num]
 				alpha, sx, sy, mirror, scale = get_params2D(img_orig)
-				####img_orig_dict = img_orig.get_attr_dict()
 				img_ali = rot_shift2D(img_orig, alpha, sx, sy, mirror, scale, "quadratic")
-				####print('img_orig.get_attr_dict', img_orig.get_attr_dict() ) #### DIAGNOSTIC
-				####img_ali_dict = img_ali.get_attr_dict()
-				####print('img_ali.get_attr_dict', img_ali.get_attr_dict() ) #### DIAGNOSTIC
+				if options.debug and class_num == 0 and img_num == 0:
+					print('img_orig.get_attr_dict0', img_orig.get_attr_dict() )
+					img_ali_dict = img_ali.get_attr_dict()
+					print('img_ali.get_attr_dict1', img_ali.get_attr_dict() )
 
 				if options.filtrad:
 					img_ali = filt_gaussl(img_ali, filtrad)
@@ -227,7 +240,6 @@ def separate_class(classavgstack, instack, options, outdir='.', verbose=False):
 				local_mrcs.insert_clip(img_ali, (0, 0, img_num) )
 				
 			local_mrcs.write_image(local_mrcs_path)
-			####db_close_dict(local_stack_path)
 			
 		# No aligned images
 		else:
@@ -243,7 +255,7 @@ def separate_class(classavgstack, instack, options, outdir='.', verbose=False):
 			# Optional filtered stack
 			if options.filtrad or options.shrink:
 				
-				cmd = "e2proc2d.py bdb:%s bdb:%s --inplace" % (outbdb.format(class_num), outflt.format(class_num))
+				cmd = "e2proc2d.py bdb:%s %s --inplace" % (outbdb.format(class_num), outflt.format(class_num))
 				# --inplace overwrites existing images
 				
 				if options.filtrad:
@@ -414,6 +426,7 @@ if __name__ == "__main__":
 	parser.add_argument('--apix', type=float, default=None, help='Pixel size, Angstroms (might be downsampled by ISAC)')
 	parser.add_argument('--shrink', type=int, help='Optional downsampling factor')
 	parser.add_argument('--verbose', "-v", action="store_true", help='Increase verbosity')
+	parser.add_argument('--debug', action="store_true", help='Debug mode')
 	
 	(options, args) = parser.parse_args()
 	#print('args',args)
