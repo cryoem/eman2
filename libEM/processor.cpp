@@ -13272,7 +13272,7 @@ EMData* HarmonicProcessor::process(const EMData * const image) {
 	
 	// Decide how large the harmonic invariant will be
 //	int nx=cimage->get_xsize();
-	int ny=cimage->get_ysize()/4;
+	int ny=cimage->get_ysize()/8;
 	int naz=Util::calc_best_fft_size((int)params.set_default("size",ny));
 	
 	// Compute a translational invariant for a single harmonic
