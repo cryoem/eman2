@@ -2528,8 +2528,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		phi,theta,psi,sx,sy = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4]#  First ITER
 
 		if preshift:
-			sx = int(round(sx))
-			sy = int(round(sy))
+			sx, sy = reduce_shifts(sx, sy, original_data[im])
 			dataimage  = cyclic_shift(original_data[im],sx,sy)
 			#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
 			oldparams[im][3] = sx
@@ -3241,8 +3240,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		phi,theta,psi,sx,sy, wnorm = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4], oldparams[im][7]
 
 		if preshift:
-			sx = int(round(sx))
-			sy = int(round(sy))
+			sx, sy = reduce_shifts(sx, sy, original_data[im])
 			dataimage  = cyclic_shift(original_data[im],sx,sy)
 			#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
 			oldparams[im][3] = sx
@@ -3946,8 +3944,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		phi,theta,psi,sx,sy, wnorm = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4], oldparams[im][7]
 
 		if preshift:
-			sx = int(round(sx))
-			sy = int(round(sy))
+			sx, sy = reduce_shifts(sx, sy, original_data[im])
 			dataimage  = cyclic_shift(original_data[im],sx,sy)
 			#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
 			oldparams[im][3] = sx
@@ -9609,6 +9606,33 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 #   This can be used to restart process from an arbitrary iteration.
 #   
 #
+
+
+def reduce_shifts(sx, sy, img):
+	def rot_matrix(angle):
+		angle = np.radians(angle)
+		matrix = np.array([
+			[np.cos(angle), -np.sin(angle)],
+			[np.sin(angle), np.cos(angle)]
+			])
+		return matrix
+
+	if Tracker['constants']['helical_rise'] is not None:
+		try:
+			rotation_angle = img.get_attr('segment_angle')
+		except AttributeError:
+			pass
+		else:
+			rise = Tracker['constants']['helical_rise'] / float(Tracker['constants']['pixel_size'])
+			rise_half = rise / 2.0
+			point = np.array([sx, sy])
+			rot_point = np.dot(rot_matrix(rotation_angle), point.T)
+			rot_point[0] = ((rot_point[0] + rise_half) % rise ) - rise_half
+			sx, sy = np.dot(rot_matrix(rotation_angle).T, rot_point.T)
+
+	return int(round(sx)), int(round(sy))
+
+
 def main():
 
 	from sp_utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
@@ -9690,6 +9714,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		parser.add_option("--theta_max",               	type="float",  	default= -1,              	help="Upper limit for the out-of-plane rotation angle.  Default is the full range based on the symmetry. (Default -1)")
 		parser.add_option("--howmany",               	type="int",  	default= 4,              	help="Upper limit for the out-of-plane rotation angle.  Default is the full range based on the symmetry. (Default -1)")
 		parser.add_option("--angle_method",               	type="str",  	default='S',              	help="Even angle creation strategy. Choices: S, P, M. (Default S)")
+		parser.add_option("--helical_rise",         	type="float",  	default=None,              	help="Helical rise in angstrom. This is used to limit the shift along the helical axis. (Default None)")
 		(options, args) = parser.parse_args(sys.argv[1:])
 
 		if( len(args) == 3 ):
@@ -9790,6 +9815,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			Constants["memory_per_node"] 			= options.memory_per_node
 			Constants["plot_ang_dist"]			    = options.plot_ang_dist
 			Constants["angle_method"]			    = options.angle_method
+			Constants["helical_rise"]			    = options.helical_rise
 
 
 			#
