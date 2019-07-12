@@ -538,14 +538,14 @@ def compute_search_params(acc_trans, shifter, old_range):
 	if(new_range == 0.0):  step = 0.5  # change 1.0 to 0.5
 	return new_range, step
 
-def assign_particles_to_groups(minimum_group_size = 10, asubset= None):
+def assign_particles_to_groups(minimum_group_size = 10, asubset= None, name_tag='ptcl_source_image'):
 	global Tracker, Blockdata
 	from random import shuffle
-	#  Input data does not have to be consecutive in terms of ptcl_source_image or defocus
+	#  Input data does not have to be consecutive in terms of ptcl_source_image/filament_id or defocus
 	#
 	if not asubset:
 		try:
-			stmp  = EMUtil.get_all_attributes(Tracker["constants"]["stack"], "ptcl_source_image")
+			stmp  = EMUtil.get_all_attributes(Tracker["constants"]["stack"], name_tag)
 			if Tracker["constants"]["CTF"]:
 				defstmp = EMUtil.get_all_attributes(Tracker["constants"]["stack"],"ctf")
 			else:
@@ -557,10 +557,10 @@ def assign_particles_to_groups(minimum_group_size = 10, asubset= None):
 				for i in range(len(stmp)):  stmp[i] = round(stmp[i].defocus, 4)
 				defstmp = stmp[:]
 			else:
-				ERROR("Either ptcl_source_image or ctf has to be present in the header.","meridien",1)
+				ERROR( "Either ptcl_source_image/filament/filament_id or ctf has to be present in the header." )
 	else:
 		try:
-			stmp_junk = EMUtil.get_all_attributes(Tracker["constants"]["stack"], "ptcl_source_image")
+			stmp_junk = EMUtil.get_all_attributes(Tracker["constants"]["stack"], name_tag)
 			stmp = [None]*len(asubset)
 			for isub in range(len(asubset)): stmp[isub] = stmp_junk[asubset[isub]]
 			if Tracker["constants"]["CTF"]:
@@ -577,7 +577,8 @@ def assign_particles_to_groups(minimum_group_size = 10, asubset= None):
 					stmp[isub] = stmp_junk[asubset[isub]]
 					stmp[isub] = round(stmp[isub].defocus, 4)
 				defstmp[:] = stmp[:]
-			else:  ERROR("Either ptcl_source_image or ctf has to be present in the header.","meridien",1)
+			else:  
+				ERROR( "Either ptcl_source_image/filament/filament_id or ctf has to be present in the header." )
 	tt = [[stmp[i],i] for i in range(len(stmp))]
 	tt.sort()
 	tt.append([-1,-1])
@@ -9731,6 +9732,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		parser.add_option("--angle_method",               	type="str",  	default='S',              	help="Even angle creation strategy. Choices: S, P, M. (Default S)")
 		parser.add_option("--helical_rise",         	type="float",  	default=None,              	help="Helical rise in angstrom. This is used to limit the shift along the helical axis. (Default None)")
 		parser.add_option("--filament_width",         	type="int",  	default=None,              	help="Filament width used to normalize the particles. (Default None)")
+		parser.add_option("--chunk_by",               	type="str",  	default= 'ptcl_source_image',              	help="Group particles by header information. For helical refinement use filament or filament_id if present. (Default ptcl_source_image)")
 		(options, args) = parser.parse_args(sys.argv[1:])
 
 		if( len(args) == 3 ):
@@ -10052,7 +10054,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			partstack = [None]*2
 			for procid in range(2):  partstack[procid] = os.path.join(initdir,"params-chunk_%01d_000.txt"%procid)
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				l1, l2 = assign_particles_to_groups(minimum_group_size = 10)
+				l1, l2 = assign_particles_to_groups(minimum_group_size = 10, name_tag=options.chunk_by)
 				write_text_file(l1,partids[0])
 				write_text_file(l2,partids[1])
 				if(options.initialshifts):
