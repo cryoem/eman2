@@ -13478,8 +13478,8 @@ EMData* HarmonicProcessor::process(const EMData * const image) {
 			memcpy((void*)tmp,(void*)(trns->get_data()+jy*naz*2),naz*2*sizeof(float));
 			EMfft::complex_to_complex_1d_inplace(tmp,naz*2);
 			int x=0;		// output x coordinate
-			// outer loop over base rotational frequency
-			for (int jx=0; jx<naz/2; jx++) {
+			// outer loop over base rotational frequency, skip phaseless jx=0
+			for (int jx=1; jx<naz/2; jx++) {
 				// inner loop over rotational harmonic coefficients, skip the phaseless rn=1
 				complex<double> v2 = tmp[jx];
 				for (int rn=2; rn<=fp; rn++) {
