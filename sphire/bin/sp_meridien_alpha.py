@@ -890,7 +890,7 @@ def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi
 			indx = projdata[i].get_attr("particle_group")
 			phi,theta,psi,sx,sy = params[i][0],params[i][1],params[i][2],params[i][3],params[i][4]
 			stmp = cyclic_shift( projdata[i], int(round(sx)), int(round(sy)))
-			st = Util.infomask(stmp, mask, False)
+			st = get_image_statistics(stmp, mask, False)
 			stmp -=st[0]
 			stmp /=st[1]
 			temp = cosinemask(stmp, radius = Tracker["constants"]["radius"], s = 0.0)
@@ -1090,7 +1090,7 @@ def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 			sy = 0.0
 		else:  data[im] = original_data[im].copy()
 
-		st = Util.infomask(data[im], mask2D, False)
+		st = get_image_statistics(data[im], mask2D, False)
 		data[im] -= st[0]
 		data[im] /= st[1]
 		if data[im].get_attr_default("bckgnoise", None) :  data[im].delete_attr("bckgnoise")
@@ -1105,7 +1105,7 @@ def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 					bckg.set_attr("is_fftpad",1)
 					bckg = fft(filt_table(bckg, oneover[data[im].get_attr("particle_group")]))
 					#  Normalize bckg noise in real space, only region actually used.
-					st = Util.infomask(bckg, mask2D, False)
+					st = get_image_statistics(bckg, mask2D, False)
 					bckg -= st[0]
 					bckg /= st[1]
 					data[im] = cosinemask(data[im],radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -2537,7 +2537,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 			sy = 0.0
 		else:  dataimage = original_data[im].copy()
 
-		st = Util.infomask(dataimage, mask2D, False)
+		st = get_image_statistics(dataimage, mask2D, False)
 		dataimage -= st[0]
 		dataimage /= st[1]
 		##if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
@@ -2551,7 +2551,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 				bckg.set_attr("is_fftpad",1)
 				bckg = fft(filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
 				#  Normalize bckg noise in real space, only region actually used.
-				st = Util.infomask(bckg, mask2D, False)
+				st = get_image_statistics(bckg, mask2D, False)
 				bckg -= st[0]
 				bckg /= st[1]
 				dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -3249,7 +3249,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			sy = 0.0
 		else:  dataimage = original_data[im].copy()
 
-		st = Util.infomask(dataimage, mask2D, False)
+		st = get_image_statistics(dataimage, mask2D, False)
 		dataimage -= st[0]
 		dataimage /= st[1]
 		if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
@@ -3263,7 +3263,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 				bckg.set_attr("is_fftpad",1)
 				bckg = fft(filt_table(bckg, oneover[particle_group]))
 				#  Normalize bckg noise in real space, only region actually used.
-				st = Util.infomask(bckg, mask2D, False)
+				st = get_image_statistics(bckg, mask2D, False)
 				bckg -= st[0]
 				bckg /= st[1]
 				dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -3953,7 +3953,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 			sy = 0.0
 		else:  dataimage = original_data[im].copy()
 
-		st = Util.infomask(dataimage, mask2D, False)
+		st = get_image_statistics(dataimage, mask2D, False)
 		dataimage -= st[0]
 		dataimage /= st[1]
 		if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
@@ -3968,7 +3968,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 				bckg.set_attr("is_fftpad",1)
 				bckg = fft(filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
 				#  Normalize bckg noise in real space, only region actually used.
-				st = Util.infomask(bckg, mask2D, False)
+				st = get_image_statistics(bckg, mask2D, False)
 				bckg -= st[0]
 				bckg /= st[1]
 				dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -4837,7 +4837,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					else:  dataimage = original_data[im].copy()
 
 
-					st = Util.infomask(dataimage, mask2D, False)
+					st = get_image_statistics(dataimage, mask2D, False)
 					dataimage -= st[0]
 					dataimage /= st[1]
 					if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
@@ -4852,7 +4852,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 								bckg.set_attr("is_fftpad",1)
 								bckg = fft(filt_table(bckg, oneover[particle_group]))
 								#  Normalize bckg noise in real space, only region actually used.
-								st = Util.infomask(bckg, mask2D, False)
+								st = get_image_statistics(bckg, mask2D, False)
 								bckg -= st[0]
 								bckg /= st[1]
 								dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -5884,7 +5884,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					else:  dataimage = original_data[im].copy()
 
 
-					st = Util.infomask(dataimage, mask2D, False)
+					st = get_image_statistics(dataimage, mask2D, False)
 					dataimage -= st[0]
 					dataimage /= st[1]
 					if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
@@ -5899,7 +5899,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 								bckg.set_attr("is_fftpad",1)
 								bckg = fft(filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
 								#  Normalize bckg noise in real space, only region actually used.
-								st = Util.infomask(bckg, mask2D, False)
+								st = get_image_statistics(bckg, mask2D, False)
 								bckg -= st[0]
 								bckg /= st[1]
 								dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -6898,7 +6898,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 					else:  dataimage = original_data[im].copy()
 
 
-					st = Util.infomask(dataimage, mask2D, False)
+					st = get_image_statistics(dataimage, mask2D, False)
 					dataimage -= st[0]
 					dataimage /= st[1]
 					if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
@@ -6913,7 +6913,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 								bckg.set_attr("is_fftpad",1)
 								bckg = fft(filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
 								#  Normalize bckg noise in real space, only region actually used.
-								st = Util.infomask(bckg, mask2D, False)
+								st = get_image_statistics(bckg, mask2D, False)
 								bckg -= st[0]
 								bckg /= st[1]
 								dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -8238,7 +8238,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 					else:  dataimage = original_data[im].copy()
 
 
-					st = Util.infomask(dataimage, mask2D, False)
+					st = get_image_statistics(dataimage, mask2D, False)
 					dataimage -= st[0]
 					dataimage /= st[1]
 					if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
@@ -8253,7 +8253,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 								bckg.set_attr("is_fftpad",1)
 								bckg = fft(filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
 								#  Normalize bckg noise in real space, only region actually used.
-								st = Util.infomask(bckg, mask2D, False)
+								st = get_image_statistics(bckg, mask2D, False)
 								bckg -= st[0]
 								bckg /= st[1]
 								dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -9633,6 +9633,21 @@ def reduce_shifts(sx, sy, img):
 	return int(round(sx)), int(round(sy))
 
 
+def get_image_statistics(image, mask, invert):
+	if Tracker['constants']['filament_width'] is None:
+		mask2d = mask
+	else:
+		mask2d = sp_utilities.model_rotated_rectangle2D(
+			radius_long=int(np.sqrt(2 * image.get_xsize()**2) // 2),
+			radius_short=int(Tracker['constants']['filament_width'] * image.get_xsize() / float(Tracker['constants']['nnxo']) + 0.5) // 2,
+			nx=image.get_xsize(),
+			ny=image.get_ysize(),
+			angle=image.get_attr('segment_angle'),
+			)
+
+	return Util.infomask(image, mask2d, invert)
+
+
 def main():
 
 	from sp_utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
@@ -9715,6 +9730,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		parser.add_option("--howmany",               	type="int",  	default= 4,              	help="Upper limit for the out-of-plane rotation angle.  Default is the full range based on the symmetry. (Default -1)")
 		parser.add_option("--angle_method",               	type="str",  	default='S',              	help="Even angle creation strategy. Choices: S, P, M. (Default S)")
 		parser.add_option("--helical_rise",         	type="float",  	default=None,              	help="Helical rise in angstrom. This is used to limit the shift along the helical axis. (Default None)")
+		parser.add_option("--filament_width",         	type="int",  	default=None,              	help="Filament width used to normalize the particles. (Default None)")
 		(options, args) = parser.parse_args(sys.argv[1:])
 
 		if( len(args) == 3 ):
@@ -9816,6 +9832,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			Constants["plot_ang_dist"]			    = options.plot_ang_dist
 			Constants["angle_method"]			    = options.angle_method
 			Constants["helical_rise"]			    = options.helical_rise
+			Constants["filament_width"]			    = options.filament_width
 
 
 			#
