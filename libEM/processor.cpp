@@ -13420,7 +13420,7 @@ EMData* HarmonicProcessor::process(const EMData * const image) {
 			// Go to 1/2 Nyquist because high resolution values are less invariant due to interpolaton
 			for (int jr=5; jr<ny/4; jr++) {
 				// Innermost loop is hn (radial harmonic coefficient) to group similar values together
-				for (int hn=1; hn<=rfp; hn++) {
+				for (int hn=2; hn<=rfp; hn++) {
 					float jx=co*jr;
 					float jy=si*jr;
 					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx,jy);

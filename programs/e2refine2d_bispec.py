@@ -67,6 +67,7 @@ def main():
 	parser.add_argument("--ncls", default=32, type=int, help="Number of classes to generate", guitype='intbox', row=1, col=0, rowspan=1, colspan=1, mode="spr")
 	parser.add_argument("--alignsort", default=False, action="store_true",help="This will align and sort the final class-averages based on mutual similarity.", guitype='boolbox', row=1, col=1, rowspan=1, colspan=1, mode="spr[True]")
 	parser.add_argument("--msamode",default="pca",type=str,help="e2msa can use a variety of different dimensionality reduction algorithms, the default is Principal Component Analysis (PCA), but others are available, see e2msa.py")
+	parser.add_argument("--basisrefs",default=None,type=str,help="Will use a set of existing class-averages/projections to generate the Eigenbasis for classification. This must be an image stack with the same dimensions as the particle data.")
 	parser.add_argument("--normproj", default=False, action="store_true",help="Normalizes each projected vector into the MSA subspace. Note that this is different from normalizing the input images since the subspace is not expected to fully span the image", guitype='boolbox', row=1, col=2, rowspan=1, colspan=1, mode="spr[True]")
 #	parser.add_argument("--fastseed", action="store_true", default=False,help="Will seed the k-means loop quickly, but may produce less consistent results. Always use this when generating >~100 classes.",guitype='boolbox', row=1, col=2, rowspan=1, colspan=1, mode="spr[True]")
 	parser.add_argument("--iter", type=int, default=0, help = "The total number of refinement iterations to perform")  #, guitype='intbox', row=2, col=0, rowspan=1, colspan=1, mode="spr")
@@ -182,15 +183,27 @@ def main():
 
 	logid=E2init(sys.argv,options.ppid)
 
-	# MSA on the footprints
 	fpbasis=options.path+"/basis_00.hdf"
 	inputproj=options.path+"/basis_proj_00.hdf"
-	if n>10000 : step="--step 0,{}".format((n+10000)//20000)
-	else: step=""
-	#run("e2msa.py %s %s --normalize --nbasis=%0d --scratchfile=%s/msa_scratch.bin %s"%(fpfile,fpbasis,options.nbasisfp,options.path,step))
 	if options.normproj: normproj="--normproj"
 	else: normproj=""
-	run("e2msa.py %s %s %s --nbasis %0d %s --mode %s --nomeansub %s"%(fpfile,fpbasis,inputproj,options.nbasisfp,step,msamode,normproj))
+
+	# we are using a subspace defined by some class-averages or projections instead of the particles
+	if options.basisrefs!=None:
+		if invmode=="bispec":
+			run("e2proc2dpar.py {} {}/bref_invar.hdf --process math.bispectrum.slice:fp={}:size={} --threads {}".format(options.basisrefs,options.path,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
+		else:
+			run("e2proc2dpar.py {} {}/bref_invar.hdf --process math.harmonic:fp=4 --threads {}".format(options.basisrefs,options.path,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
+		
+		run("e2msa.py %s/bref_invar.hdf %s %s --projin %s --nbasis %0d --mode %s --nomeansub %s"%(options.path,fpbasis,inputproj,fpfile,options.nbasisfp,msamode,normproj))
+
+	else:
+		# MSA on the footprints
+		if n>10000 : step="--step 0,{}".format((n+10000)//20000)
+		else: step=""
+		#run("e2msa.py %s %s --normalize --nbasis=%0d --scratchfile=%s/msa_scratch.bin %s"%(fpfile,fpbasis,options.nbasisfp,options.path,step))
+		run("e2msa.py %s %s %s --nbasis %0d %s --mode %s --nomeansub %s"%(fpfile,fpbasis,inputproj,options.nbasisfp,step,msamode,normproj))
+
 	proc_tally += 1.0
 	if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
