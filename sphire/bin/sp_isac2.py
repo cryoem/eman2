@@ -1703,7 +1703,7 @@ def main(args):
 			# create custom mask per particle in case we're processing filament images
 			if options.filament_width != -1:
 				mask = util.model_rotated_rectangle2D( radius_long=int(np.sqrt(2*nx**2))//2, # use a length that will be guaranteed to cross the whole image
-													   radius_short=int( options.filament_width*1.5 ), # use a conservative, slightly larger mask since filaments might not be aligned as well as they could be
+													   radius_short=int( options.filament_width*0.5 ), # use a conservative, slightly larger mask since filaments might not be aligned as well as they could be
 													   nx=nx, ny=nx, angle=aligned_images[im].get_attr("segment_angle") )
 			# subtract mean of the within-mask area
 			st = Util.infomask(aligned_images[im], mask, False)

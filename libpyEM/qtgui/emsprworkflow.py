@@ -224,7 +224,7 @@ class WorkFlowTask(object):
 	def get_wd(self):
 		'''
 		Get the working directory, originally introduced to provide a centralized mechanism for accessing the working directory,
-		specificially for the purpose of spawning processes. Could be used more generally, however.
+		specifically for the purpose of spawning processes. Could be used more generally, however.
 		'''
 		return e2getcwd()
 
@@ -358,7 +358,7 @@ class WorkFlowTask(object):
 		
 	def get_latest_r2d_classes(self):
 		dirs = get_numbered_directories("r2d_")
-		# allright everything left in dirs is "r2d_??" where the ?? is castable to an int, so we should be safe now
+		# all right everything left in dirs is "r2d_??" where the ?? is castable to an int, so we should be safe now
 		class_files = []
 		class_dims = []
 		class_ptcls = []
@@ -380,7 +380,7 @@ class WorkFlowTask(object):
 						if i != 0 or j != 0:
 							cont = False
 							break
-						#else just check for 01 incase the user has specified the --initial arugment
+						#else just check for 01 in case the user has specified the --initial argument
 				if not cont:
 					break
 				
@@ -736,7 +736,7 @@ class EMRawDataReportTask(WorkFlowTask):
 	documentation_string = "This page shows raw micrographs/ccd frames currently associated with the project. It is possible to add additional images directly on this panel, which will \
 leave them in-place and not copy them into the project database. This will limit some later operations and leave the project with less metadata at the end, but will save disk space. \
 Note that the data cannot be filtered unless it is imported."
-	warning_string = "\n\n\nNOTE: There are no images currenty associated with the project. Please associate or import images"
+	warning_string = "\n\n\nNOTE: There are no images currently associated with the project. Please associate or import images"
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 		self.window_title = "Micrographs In Project"

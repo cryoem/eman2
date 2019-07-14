@@ -1,7 +1,7 @@
 ~~NOTOC~~
 
 ===== sp_auto =====
-Auto SPHIRE: Run SPHIRE up to 3D refinement in an autmoated manner
+Auto SPHIRE: Run SPHIRE up to 3D refinement in an automated manner
 
 \\
 ===== Usage =====

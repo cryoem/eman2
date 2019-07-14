@@ -83,7 +83,7 @@ def main():
 	parser.add_argument("--step", type=int, default=1, help="""Number of particles to increase from one data point to the next. For example, --step=10 will compute the B-factor averaging 10 particles from the even set and 10 from the odd set; then 20; then 40; etc.""")
 	parser.add_argument("--sym", type=str, default='', help="""Default=None (equivalent to c1). Symmetry to impose -choices are: c<n>, d<n>, h<n>, tet, oct, icos""")
 	
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()	#c:this parses the options or "arguments" listed 
 											#c:above so that they're accesible in the form of option.argument; 

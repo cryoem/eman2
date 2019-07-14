@@ -2,12 +2,12 @@
 [
   {
     "TITLE":"e2spt_classaverage breaksym",
-    "INST":"This Wizard is to Help users run e2spt_classaverage in breaksym mode. Once subtomograms have been aligned using a symmetric search, it can be desirable to break the symmetry to find asymmetric features such as the tail of a virus. This seach takes particles that are prealigned to their symmetry axis, searches all symmetric positions and alignes based on the best score which should be where asymetric features line up(provided the have sufficient signal). This program is CUDA enabled",
+    "INST":"This Wizard is to Help users run e2spt_classaverage in breaksym mode. Once subtomograms have been aligned using a symmetric search, it can be desirable to break the symmetry to find asymmetric features such as the tail of a virus. This search takes particles that are prealigned to their symmetry axis, searches all symmetric positions and aligns based on the best score which should be where asymmetric features line up(provided the have sufficient signal). This program is CUDA enabled",
     "WIDGETS":[]
   },
   {
     "TITLE":"Input subtomogram",
-    "INST":"Select the input subtomogram stack (usualy from the subtomograms directory)",
+    "INST":"Select the input subtomogram stack (usually from the subtomograms directory)",
     "WIDGETS":[
       "input"
     ]
@@ -20,7 +20,7 @@
     ]
   },
   {
-    "TITLE":"Intermidtae save options",
+    "TITLE":"Intermediate save options",
     "INST":"To save the average after each iteration, check 'savesteps'. To save the final alignment position of each subtomogram, check 'saveali'. To save the alignment for each particle for each iteration, check, 'saveallalign'.",
     "WIDGETS":[
       "savesteps",
@@ -30,7 +30,7 @@
   },
   {
     "TITLE":"Number of iterations",
-    "INST":"Cooose the number of iterations for subtomogram alignment and averaging. This value must be >= 1",
+    "INST":"Choose the number of iterations for subtomogram alignment and averaging. This value must be >= 1",
     "WIDGETS":[
       "iter"
     ]
@@ -60,21 +60,21 @@
   },
   {
     "TITLE":"Initial position transforms",
-    "INST":"After running e2spt_classaverage NOT in break sym mode, each particle will have been given a transform to mve the raw subtomogram into alignment with the reference. There is a set of such transforms for each spt_ directory. Please select the refinement direcotry you want to use",
+    "INST":"After running e2spt_classaverage NOT in break sym mode, each particle will have been given a transform to mve the raw subtomogram into alignment with the reference. There is a set of such transforms for each spt_ directory. Please select the refinement directory you want to use",
     "WIDGETS":[
       "inixforms"
     ]
   },
   {
     "TITLE":"Subtomogram symmetry",
-    "INST":"Choose the symmetry to seach over. This symmetry must be the same as what the subtomograms are alsinged to.",
+    "INST":"Choose the symmetry to search over. This symmetry must be the same as what the subtomograms are aligned to.",
     "WIDGETS":[
       "sym"
     ]
   },
   {
     "TITLE":"Preprocess subtomos",
-    "INST":"If desired, select the processor to preprosess your subtomograms before alignment. The final average will not be affected by this step. If none is desired, choose 'None'. This can greatly help alignment if you have low contrasty subtomograrm and/or are trying to align a small asymmetric feature on an otherwise symmetric particle.",
+    "INST":"If desired, select the processor to preprocess your subtomograms before alignment. The final average will not be affected by this step. If none is desired, choose 'None'. This can greatly help alignment if you have low contrasty subtomogram and/or are trying to align a small asymmetric feature on an otherwise symmetric particle.",
     "WIDGETS":[
       "preprocess"
     ]
@@ -96,7 +96,7 @@
   },
   {
     "TITLE":"Refine aligner",
-    "INST":"Select the refine aligner. If you have high contrasty particles you can use refine_3d, otheriwse, use refine_3d_grid, which is better for low contasty particles(but is slower). Also select a comparitor, always use the smae compariotr that you used for the course aligner.",
+    "INST":"Select the refine aligner. If you have high contrasty particles you can use refine_3d, otherwise, use refine_3d_grid, which is better for low contrast particles(but is slower). Also select a comparitor, always use the same compariotr that you used for the course aligner.",
     "WIDGETS":[
       "ralign",
       "raligncmp"
@@ -110,8 +110,8 @@
     ]
   },
   {
-    "TITLE":"EMAN2 paralleism",
-    "INST":"Select the EMAN2 paralleism. You can choose thread(SMP) mpi, or dc(distributed computing)",
+    "TITLE":"EMAN2 parallelism",
+    "INST":"Select the EMAN2 parallelism. You can choose thread(SMP) mpi, or dc(distributed computing)",
     "WIDGETS":[
       "parallel"
     ]

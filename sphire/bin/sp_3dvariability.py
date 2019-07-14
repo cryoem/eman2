@@ -70,7 +70,7 @@ nohup mpirun -np  64   --hostfile ./node4567.txt  sx3dvariability.py bdb:data/da
     
  2. Always use small decimation rate in the first run if there is no prior info about 3D \
    variability analysis of the data and the memory requirement. In addition, one can skip 
-   the low-pass filteration when decimation rate is small, which significantly speeds up computation.
+   the low-pass filtration when decimation rate is small, which significantly speeds up computation.
    
  3. The program will check the user provided parameters such that the final image size is a 
     product of small primes such as 2, 3, 5...

@@ -121,7 +121,6 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 	parser.add_option("--phase_max",		type="float",         default=175.0,  help="Maximum phase search [degrees] (default 175.0)")
 	parser.add_option("--phase_step",		type="float",         default=5.0,    help="Step phase search [degrees] (default 5.0)")
 	parser.add_option("--pap",				action="store_true",  default=False,  help="Use power spectrum for fitting. (default False)")
-	parser.add_option("--pws",				action="store_true",  default=False,  help="Write 2D power spectra. (default False)")
 
 	(options, args) = parser.parse_args(sys.argv[1:])
 
@@ -232,21 +231,21 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 				options.apix, options.Cs, options.voltage, options.ac, freq_start, freq_stop, \
 				options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, \
 				options.check_consistency, options.stack_mode, options.debug_mode, program_name, vpp_options, \
-				RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs, write_pws=options.pws)
+				RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
 	elif options.pap:
 		from sp_morphology import cter_pap
 		result = cter_pap(input_image_path, output_directory, options.selection_list, options.wn, \
 				options.apix, options.Cs, options.voltage, options.ac, freq_start, freq_stop, \
 				options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, \
 				options.check_consistency, options.stack_mode, options.debug_mode, program_name, \
-				RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs, write_pws=options.pws)
+				RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
 	else:
 		from sp_morphology import cter_mrk
 		result = cter_mrk(input_image_path, output_directory, options.selection_list, options.wn, \
 				options.apix, options.Cs, options.voltage, options.ac, freq_start, freq_stop, \
 				options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, \
 				options.check_consistency, options.stack_mode, options.debug_mode, program_name, \
-				RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs, write_pws=options.pws)
+				RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
 
 	if RUNNING_UNDER_MPI:
 		mpi_barrier(MPI_COMM_WORLD)

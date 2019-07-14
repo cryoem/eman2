@@ -866,6 +866,22 @@ f2-=g;
 return mem[g+1]*f2+mem[g]*(1.0-f2);*/
 }
 
+// Uses a precached table to return a good approximate to exp(-2 x^2)
+// if outside the cached range, uses regular function
+float Util::fast_gauss_B2(const float &f) {
+static float *mem = (float *)malloc(sizeof(float)*1000);
+static bool needinit=true;
+
+if (needinit) {
+	needinit=false;
+	for (int i=0; i<1000; i++) mem[i]=(float)exp(-i*i/125000.0f);
+}
+if (f>1.998) return exp(-2.0f*f*f);
+int g=(int)(fabs(f)*500.0f+0.5f);
+
+return mem[g];
+}
+
 
 float Util::get_gauss_rand(float mean, float sigma)
 {

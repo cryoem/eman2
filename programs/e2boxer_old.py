@@ -91,14 +91,14 @@ e2boxer.py ????.mrc --boxsize=256
 	parser.add_argument("--exclude_bad",action="store_true",help="Don't generate output for any particles marked as exclude",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode="extraction[False]")
 	parser.add_argument("--force","-f",action="store_true",help="Force overwrite",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--format", help="Format of the output particle images. For EMAN2 refinement must be HDF.", default="hdf", guitype='combobox', choicelist="['hdf','img','spi']", row=6, col=0, rowspan=1, colspan=2, mode="extraction")
-	parser.add_argument("--norm", type=str,help="Normalization processor to apply to written particle images. Should be normalize, normalize.edgemean,etc.Specifc \"None\" to turn this off", default="normalize.edgemean", guitype='combobox', choicelist='re_filter_list(dump_processors_list(),\'normalize\')', row=5, col=0, rowspan=1, colspan=2, mode="extraction")
+	parser.add_argument("--norm", type=str,help="Normalization processor to apply to written particle images. Should be normalize, normalize.edgemean,etc.Specific \"None\" to turn this off", default="normalize.edgemean", guitype='combobox', choicelist='re_filter_list(dump_processors_list(),\'normalize\')', row=5, col=0, rowspan=1, colspan=2, mode="extraction")
 	parser.add_argument("--invert",action="store_true",help="If writing outputt inverts pixel intensities",default=False, guitype='boolbox', row=3, col=2, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--suffix",type=str,help="suffix which is appended to the names of output particle and coordinate files",default="_ptcls", guitype='strbox', expert=True, row=4, col=1, rowspan=1, colspan=2, mode="extraction")
 	parser.add_argument("--dbls",type=str,help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
 	parser.add_argument("--autoboxer",type=str,help="A key of the swarm_boxers dict in the local directory, used by the workflow.",default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--gui", action="store_true", default=True, help="Dummy option; used in older version of e2boxer")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--gauss_autoboxer",type=str,help="Name of autoboxed file whose autoboxing parameters (obtained via some previous run of Gauss autoboxer via the GUI) should be used for automatic boxing.",default=None)
 	parser.add_argument("--do_ctf",type=str,help="Name of file whose ctf estimation parameters (obtained via some previous run of Gauss autoboxer via the GUI) should be used for automatic ctf estimation.",default=None)
 
@@ -228,7 +228,7 @@ def gauss_cmd_line_autobox(args,options,logid):
 		ctfkey = boxkey
 	gdb_name = GaussPanel.GDB_NAME
 	if not js_check_dict(gdb_name):
-		err = "There is no gausse method autoboxing information present in the current directory"
+		err = "There is no gauss method autoboxing information present in the current directory"
 		return err
 	gbdb = js_open_dict(gdb_name)
 	if (boxkey not in gbdb):
@@ -271,7 +271,7 @@ def gauss_cmd_line_autobox(args,options,logid):
 		boxer_vitals = EMBoxerModuleVitals(file_names=[arg], box_size=boxsize)
 		boxer_vitals.current_idx=0
 		gboxer.target = boxer_vitals
-		# Estimate ctf first and then autobox so ctf parametes need not be separately set in alternate image (i.e., the filtered and possibly downsampled image)
+		# Estimate ctf first and then autobox so ctf parameters need not be separately set in alternate image (i.e., the filtered and possibly downsampled image)
 		if do_ctfest:
 			gboxer.auto_ctf(arg,ctf_params)
 		if do_autobox:
@@ -490,7 +490,7 @@ class SwarmBox(object):
 		peak_location = BoxingTools.find_radial_max(correlation,x,y,search_radius )
 		peak_location2 = BoxingTools.find_radial_max(correlation,peak_location[0],peak_location[1],search_radius )
 		if (peak_location != peak_location2):
-			# there is no local max, this particle will be ignorned
+			# there is no local max, this particle will be ignored
 			self.profile = None
 			self.peak_score = None
 			self.peak_x = None
@@ -898,7 +898,7 @@ class SwarmBoxer(object):
 		5		self.particle_diameter		Int- User supplied estimate of the particle diameter
 		6		self.update_template		Bool - Flag indicating whether adding a references should cause an update of the template
 		7		self.pick_mode				Int - either SwarmBoxer.THRESHOLD, SwarmBoxer.SELECTIVE, or SwarmBoxer.MORESELECTIVE
-		8		self.interactive_threshol	Float or None - If not None, this is a theshold value that overrides self.peak_score
+		8		self.interactive_threshold	Float or None - If not None, this is a threshold value that overrides self.peak_score
 		9		unique id					String - that which is return by gm_time_string - this can be used to decide what is the best autoboxer (i.e. is not really related to interactive boxing)
 		10		self.proximity_threshold	Float or None - If not None, this is a threshold used to remove auto-selected particles that are too close to each other
 		-----------------
@@ -1296,7 +1296,7 @@ class SwarmBoxer(object):
 	def set_update_template(self,val):
 		'''
 		Whether or not the act of adding a reference should for an update of the template
-		@param val a boolena
+		@param val a boolean
 		'''
 		self.update_template = val
 
@@ -1468,7 +1468,7 @@ class SwarmBoxer(object):
 			scaled_template.process_inplace("xform.centeracf")
 			box = self.target().get_box(box_num)
 			dx,dy = self.xform_center_propagate([box.x,box.y],self.target().current_file(),scaled_template,self.particle_diameter)
-			self.move_ref(box_num,self.target().current_file(),dx,dy,set_moved=False)  # set moved = False so that it's also updated the next time through self.auto_box - this is probably unecessary but is not harmful
+			self.move_ref(box_num,self.target().current_file(),dx,dy,set_moved=False)  # set moved = False so that it's also updated the next time through self.auto_box - this is probably unnecessary but is not harmful
 #
 
 	def get_subsample_rate(self):
@@ -1585,7 +1585,7 @@ class SwarmBoxer(object):
 		# print "soln:", soln
 		# print "==========="
 
-		if self.gui_mode: self.target().set_status_message("Auboxing Done",1000)
+		if self.gui_mode: self.target().set_status_message("Autoboxing Done",1000)
 
 		scaled_template = self.templates[-1].process("xform.scale",{"scale":shrink,"clip":self.particle_diameter})
 		scaled_template.process_inplace("xform.centeracf")
@@ -1786,7 +1786,7 @@ class SwarmTool(SwarmBoxer,EMBoxingTool):
 		self.panel_object = SwarmPanel(self,self.particle_diameter)
 		self.current_file = None # the name of the file that is being studied in the main viewer
 		self.moving = None # keeps track of the moving box, will be a list in the format [[int,int],int,str] = [[x,y],box_number,box_type]
-		self.ptcl_moving_data = None # keeps track of movement that's occuring in the particles (mx) viewer
+		self.ptcl_moving_data = None # keeps track of movement that's occurring in the particles (mx) viewer
 		self.gui_mode = True
 
 	def unique_name(self): return "Swarm"
@@ -2803,7 +2803,7 @@ class GaussBoxer(object):
 
 		del ccfs
 
-		if self.gui_mode: self.target().set_status_message("Auboxing Done",1000)
+		if self.gui_mode: self.target().set_status_message("Autoboxing Done",1000)
 
 		if self.gui_mode: self.target().set_status_message("Updating Positions",0)
 		if self.gui_mode: self.target().set_status_message("Done",1000)
@@ -2876,7 +2876,7 @@ class GaussBoxer(object):
 
 		gbdb = js_open_dict(GaussPanel.GDB_NAME)
 		# Don't set gbdb to None but just set it's 'clear' flag to true.
-		# If GUI is invoked next time, alternate image will NOT be generated adn GUI will start from clean slate. However, if gauss mode autoboxing or ctf is invoked via command line, the paramters used for boxing will still be there for autoboxing and ctf est to work.
+		# If GUI is invoked next time, alternate image will NOT be generated adn GUI will start from clean slate. However, if gauss mode autoboxing or ctf is invoked via command line, the parameters used for boxing will still be there for autoboxing and ctf est to work.
 		gbdb['clear']=True
 
 	def get_small_image(self,imgname,modecmd=False,boxsize=128,ret_dummy=False):
@@ -2977,7 +2977,7 @@ class GaussBoxer(object):
 
 	def get_alternate(self,filename):
 		# if there is a subsampled image in cache then user was probably using that the last time
-		# if we use subsampled image from cache then also have to reload all the previous parameters, mosti mportantly box size and in/output pixel size
+		# if we use subsampled image from cache then also have to reload all the previous parameters, most importantly box size and in/output pixel size
 
 		#self.small_img = get_idd_image_entry(filename,'subsampled_image')
 
@@ -3096,7 +3096,7 @@ class GaussTool(GaussBoxer,EMBoxingTool):
 		self.panel_object = GaussPanel(self,self.pixel_input)
 		self.current_file = None # the name of the file that is being studied in the main viewer
 		self.moving = None # keeps track of the moving box, will be a list in the format [[int,int],int,str] = [[x,y],box_number,box_type]
-		self.ptcl_moving_data = None # keeps track of movement that's occuring in the particles (mx) viewer
+		self.ptcl_moving_data = None # keeps track of movement that's occurring in the particles (mx) viewer
 		self.gui_mode = True
 
 	def unique_name(self): return "Gauss"

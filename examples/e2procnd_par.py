@@ -47,19 +47,40 @@ def main():
 	for td in range(nthd):
 		t[td].join()
 	
-	### put outputs together
-	print("Merging outputs...")
-	for i in range(nthd):
-		fm=tmpfname[i]
-		n=EMUtil.get_image_count(fm)
-		for i in range(n):
-			e=EMData(fm,i)
-			e.write_image(outfile,-1)
-		e=None
-		try: os.remove(fm)
-		except: 
-			print("Cannot remove {}".format(fm))
-			pass
+	if "--average" in proc:
+		print("Averaging...")
+		avgr=Averagers.get("mean")
+		
+		for i in range(nthd):
+			fm=tmpfname[i]
+			n=EMUtil.get_image_count(fm)
+			for i in range(n):
+				e=EMData(fm,i)
+				avgr.add_image(e)
+			e=None
+			try: os.remove(fm)
+			except: 
+				print("Cannot remove {}".format(fm))
+				pass
+			
+		a=avgr.finish()
+		a.write_image(outfile)
+		
+	else:
+		### put outputs together
+		print("Merging outputs...")
+		for i in range(nthd):
+			fm=tmpfname[i]
+			n=EMUtil.get_image_count(fm)
+			for i in range(n):
+				e=EMData(fm,i)
+				e.write_image(outfile,-1)
+			e=None
+			try: os.remove(fm)
+			except: 
+				print("Cannot remove {}".format(fm))
+				pass
+			
 	print("Done")
 	E2end(logid)
 	

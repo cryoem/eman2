@@ -891,9 +891,6 @@ class TestProcessor(unittest.TestCase):
         
         e.process_inplace('eman1.filter.median')
         
-    if platform.system() == "Darwin":
-        test_eman1_filter_median.broken = True
-    
     def test_math_localsigma(self):
         """test math.localsigma processor ..................."""
         e = EMData()
@@ -2041,9 +2038,6 @@ class TestProcessor(unittest.TestCase):
                 e3.process_inplace('filter.integercyclicshift2d', {'dx':10, 'dy':20})
             except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-
-if platform.system() == "Darwin" or platform.system() == "Windows":
-    TestProcessor.broken = True
 
 def test_main():
     p = OptionParser()

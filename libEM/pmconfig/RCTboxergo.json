@@ -39,7 +39,7 @@
   },
   {
     "TITLE":"Select output format",
-    "INST":"Choose a image format to write to 'BDB' write to the datbase and is the prefered option. You can also choose 'HDF', which is optional for flat files. SPIDER and IMAGIC are not good choice as metadata is limited.",
+    "INST":"Choose a image format to write to 'BDB' write to the datbase and is the preferred option. You can also choose 'HDF', which is optional for flat files. SPIDER and IMAGIC are not good choice as metadata is limited.",
     "WIDGETS":[
       "format"
     ]

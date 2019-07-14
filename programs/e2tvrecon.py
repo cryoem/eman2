@@ -94,7 +94,7 @@ def main():
 	parser.add_argument("--saveslices", action="store_true", default=False,help="""If provided,
 		this option will save each reconstructed 2-D slice (along Y) to disk.""")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="""
-		verbose level [0-9], higner number means higher level of verboseness.""")
+		verbose level [0-9], higher number means higher level of verboseness.""")
 	parser.add_argument("--parallel",type=str,default='thread:1',help="""Default=thread:1. 
 		See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""")
 	parser.add_argument("--ppid", type=int, help="""Set the PID of the parent process, 

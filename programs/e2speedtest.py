@@ -52,7 +52,7 @@ def main():
 This program runs a set of speed tests on the current machine
 
 This program runs a set of speed tests in the current computer. It should
-have at least 1 unloaded processor, and minimal i/o occuring when this
+have at least 1 unloaded processor, and minimal i/o occurring when this
 is run. It will give a single value which should be generally proportional
 to how fast single particle refinement will run on a given computer. It is a 'real world' test,
 in that it tests a variety of actual operations performed by a
@@ -71,7 +71,7 @@ improved with time."""
 	parser.add_argument("--size",type=int,help="Size of particles, 192 default for comparisons",default=192)
 	parser.add_argument("--simpleout",action="store_true",help="Simpler 2 column output file (appends)")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 

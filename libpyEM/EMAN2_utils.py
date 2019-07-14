@@ -221,7 +221,7 @@ def make_path(suffix):
 
 def findfs(stem=''):
 	"""
-	"Returns a sorted list with the files in the current directory that contain the string(s) indicated by 'id'
+	"Returns a sorted list with the files in the current directory that contain the string(s) indicated by 'stem'
 	To find files with more than one string, use *. 
 	For example stem=id1*id2 will find files with "id1" and "id2" in them, regardless of where these strings occur in the filename
 	Author: Jesus Montoya, jgalaz@gmail.com, April 2019
@@ -313,10 +313,6 @@ def makepath(options, stem='e2dir'):
 	
 	return options
 
-#### this triggers a segmentation fault. in case we need it somewhere...
-def do_segfault():
-	exec'()'*7**6
-
 def detectThreads(options):
 	"""
 	c:If parallelism isn't set, parallelize automatically unless disabled
@@ -380,7 +376,7 @@ def checkinput(options):
 
 def runcmd(options,cmd,cmdsfilepath=''):
 	"""
-	Version of runcmd (below) with verbose feedback and option to save the executed commnad to a commands file for record keeping
+	Version of runcmd (below) with verbose feedback and option to save the executed command to a commands file for record keeping
 	Author: Jesus Montoya, jgalaz@gmail.com
 	"""
 	if options.verbose > 9:
@@ -399,7 +395,7 @@ def runcmd(options,cmd,cmdsfilepath=''):
 
 def runcmdbasic(cmd):
 	"""
-	Runs commands "properly" at the commnad line, April 2019
+	Runs commands "properly" at the command line, April 2019
 	Author: Jesus Montoya, jgalaz@gmail.com
 	"""
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -811,7 +807,7 @@ def writeParameters( options, program, tag ):
 	Used by many SPT programs. Function to write the parameters used for every run of the program to parameters.txt inside the path specified by --path.
 	Unfortunately, the usability of the .eman2log.txt file is limited when it is overcrowded with commands; e.g., a program that iteratively runs other EMAN2 programs at the command line
 	will SWARM the log file with commands that will obscure the command you wanted to log. Having a parameters file explicitly record what was the state of every parameter used by the program
-	is useful, as it also explicitly records values for parameters that were used by DEFAULT and not set by the user at the commnadline.
+	is useful, as it also explicitly records values for parameters that were used by DEFAULT and not set by the user at the commandline.
 
 	Author: Jesus Montoya, jgalaz@gmail.com
 	'''

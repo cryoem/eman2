@@ -255,6 +255,8 @@ class SptEvalGUI(QtWidgets.QWidget):
 			if "threed" in f:
 				if "even" not in f and "odd" not in f:
 					vols.append(f)#"{}".format(self.path,f))
+		if len(vols)==0:
+			return
 		lastvol = sorted(vols)[-1]
 		print("Displaying {} from {}".format(lastvol,self.path))
 		volpath = "{}/{}".format(self.path,lastvol)
@@ -272,6 +274,7 @@ class SptEvalGUI(QtWidgets.QWidget):
 		self.wg_thumbnail.updateSG()
 
 	def sortlst(self,col):
+		if col<0: return
 		print("Sort by",self.imglst.horizontalHeaderItem(col).text())
 		self.imglst_srtby=1-self.imglst_srtby
 		self.imglst.sortItems(col, self.imglst_srtby)

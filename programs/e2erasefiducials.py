@@ -60,7 +60,7 @@ def main():
 	parser.add_argument("--oversample", default=4, type=int, help="Oversample noise image to smooth transitions from regions with different noise.")
 	parser.add_argument("--boxsize", default=128, type=int, help="Box size to use when computing local noise.")
 	parser.add_argument("--debug", default=False, action="store_true", help="Save noise and mask/masked image(s).")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--parallel",type=str, default=None, help="""Default=None (not used). Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""")
 	parser.add_argument("--subset", default=0, type=int, help="Default=0 (not used). Apply algorithm to only a subset of images in each stack file.")
@@ -462,7 +462,7 @@ if __name__ == "__main__":
 
  		#if options.verbose: print("processing {} ({} images)".format(arg, EMUtil.get_image_count(arg)))
 
-		#Averaging can be outsorced to e2proc2d via the command line, and the average can be read in as the new input
+		#Averaging can be outsourced to e2proc2d via the command line, and the average can be read in as the new input
 		#if options.average:
 
 		#	newarg = arg.replace('.hdf','_avg.hdf')

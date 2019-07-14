@@ -496,6 +496,24 @@ float sget_value_at(size_t i) const;
  */
 std::complex<float> get_complex_at_interp(float x, float y) const;
 
+/** Gets 2x2 Gaussian interpolated complex values
+ * note that with Gaussian interpolation, there is a discontinuity in the interpolated values
+ * as you shift from one set of 2x2 samples to the next. This is at the ~5% level
+ * @param x The x coordinate (float).
+ * @param y The y coordinate (float).
+ * @return The complex value at coordinates (x,y).
+ */
+std::complex<float> get_complex_at_ginterp(float x, float y) const;
+
+/** Gets 3x3 Gaussian interpolated complex values
+ * note that with Gaussian interpolation, there is a discontinuity in the interpolated values
+ * as you shift from one set of 3x3 samples to the next. 
+ * @param x The x coordinate (float).
+ * @param y The y coordinate (float).
+ * @return The complex value at coordinates (x,y).
+ */
+std::complex<float> get_complex_at_3ginterp(float x, float y) const;
+
 
 /** Get pixel density value at interpolation of (x,y).
  * The validity of x, y is checked.2D image only.

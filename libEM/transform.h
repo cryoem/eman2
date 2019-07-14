@@ -304,12 +304,12 @@ namespace EMAN
 			void scale(const float& scale);
 			
 			//=============== set and get post x mirror =============
-			/** Query whether x_mirroring is occuring
-			 * @return whether x_mirroring is occuring
+			/** Query whether x_mirroring is occurring
+			 * @return whether x_mirroring is occurring
 			 */
 			bool get_mirror() const;
 
-			/** Set whether or not x_mirroring is occuring
+			/** Set whether or not x_mirroring is occurring
 			 * @param x_mirror whether x_mirroring should be applied
 			 */
 			void set_mirror(const bool x_mirror);

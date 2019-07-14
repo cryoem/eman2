@@ -36,7 +36,7 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 	#parser.add_argument("--saveali",action="store_true",help="Save a stack file (aliptcls.hdf) containing the aligned subtomograms.",default=False)
 	parser.add_argument("--extract",action="store_true",help="If set, will convert the .json file to a .txt file suitable for plotting. No histogramming is involved, this is a per-particle conversion",default=False, guitype="boolbox", row=3, col=0, rowspan=1, colspan=1,mode="gui")
 	parser.add_argument("--gui",action="store_true",help="If set will open an interactive plot with the results", default=False, guitype="boolbox", row=3, col=1, rowspan=1, colspan=1,mode='gui[True]')
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	(options, args) = parser.parse_args()
 

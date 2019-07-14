@@ -321,7 +321,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, [1,0,-1.,1.])
 		glLightfv(GL_LIGHT0, GL_POSITION, [40,40,100.,1.])
-		#glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE) # this is intenionally turned off
+		#glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE) # this is intentionally turned off
 
 		glEnable(GL_CULL_FACE)
 		glCullFace(GL_BACK)
@@ -435,7 +435,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		if len(badimg)>0 :
 			QtWidgets.QMessageBox.warning(None,"Error","Could not save images: %s"%(str(badimg)))
 		else:
-			QtWidgets.QMessageBox.information(None,"Save Succesful","%d images appended to %s"%(len(outset),fsp))
+			QtWidgets.QMessageBox.information(None,"Save Successful","%d images appended to %s"%(len(outset),fsp))
 		
 
 	def get_set(self,name):
@@ -552,7 +552,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			self.updateGL()
 
 	def subset_set(self,toadd,update_gl=True):
-		"""merges toadd to current set"""
+		"""merges to add to current set"""
 
 		if self.current_set==None : return
 
@@ -931,7 +931,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		view_height = self.height()
 		panel_height = self.matrix_panel.height
 		if panel_height < view_height :
-			# This auto rescaling stuff was disabled at the requeset of Steve Ludtke. Uncomment to see how it works
+			# This auto rescaling stuff was disabled at the request of Steve Ludtke. Uncomment to see how it works
 			#if oldscale > newscale: self.scale =  self.matrix_panel.get_min_scale(self.view_width(),self.height(),self.scale,self.data) # this is to prevent locking
 			self.draw_scroll = False
 			self.origin=(self.matrix_panel.min_sep,self.matrix_panel.min_sep)
@@ -1097,7 +1097,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 			n=len(self.data)
 			self.hist=numpy.zeros(256)
-			#if len(self.coords)>n : self.coords=self.coords[:n] # dont know what this does? Had to comment out, changing from a list to a dictionary
+			#if len(self.coords)>n : self.coords=self.coords[:n] # don't know what this does? Had to comment out, changing from a list to a dictionary
 			glColor(0.5,1.0,0.5)
 			glLineWidth(2)
 
@@ -1570,7 +1570,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		'''
 
 		msg = QtWidgets.QMessageBox()
-		msg.setWindowTitle("Woops")
+		msg.setWindowTitle("Whoops")
 		if self.data==None or len(self.data)==0:
 			msg.setText("there is no data to save" %fsp)
 			msg.exec_()
@@ -2346,7 +2346,7 @@ class EMImageInspectorMX(QtWidgets.QWidget):
 
 		self.lowlim=0
 		self.highlim=1.0
-		self.Del_mode_set = None # Because a selection set can have any name, the Deletion mode set can be anyhting
+		self.Del_mode_set = None # Because a selection set can have any name, the Deletion mode set can be anything
 
 		self.update_brightness_contrast()
 		minden = self.target().get_density_min()
@@ -2826,7 +2826,7 @@ class EMLightWeightParticleCache(EMMXDataCache):
 
 	Primary data is basically a list like this: [[filename, idx, [func1,func2,...]], [filename, idx2, [func1,func2,...]],...]
 	the filename and idx variables should be obvious, however the extra list contains functions that take an EMData as the argument -
-	I used this, for example, for assignint attributes to images once they are in memory, and for transforming them, etc.
+	I used this, for example, for assigning attributes to images once they are in memory, and for transforming them, etc.
 
 	A big advantage of this cache is that it only displays the images that are asked for. Additionally, it has a maximum cache size,
 	and refocuses the cache when asked for an image outside its current index bounds. This makes this cache only suitable for linear access

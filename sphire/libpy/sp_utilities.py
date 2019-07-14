@@ -74,7 +74,7 @@ def make_v_stack_header(path, vstack_path, verbose=False):
 		dbs=[dbs]
 	else:
 		if not '#' in path and path[-1]!='/' : path+='#'			
-		dbs=db_list_dicts(path)
+		dbs=EMAN2db.db_list_dicts(path)
 
 	dbs.sort()
 

@@ -1097,7 +1097,7 @@ class EMPlot3DStatsInsp(QtWidgets.QWidget):
 	def printSummary(self):
 		"""Computes and plots a polynomial fit (of order N) for the current x and y axes"""
 		insp=self.target().get_inspector()				# inspector
-		name=str(insp.setlist.currentItem().text())		# currently hilighted item
+		name=str(insp.setlist.currentItem().text())		# currently highlighted item
 		data=self.target().data[name]					# data set we will operate on
 		rnd=self.wnround.getValue()
 
@@ -1247,7 +1247,7 @@ class EMPlot3DRegrInsp(QtWidgets.QWidget):
 		norm = str(self.wcomb_norm.currentText())
 		npts = self.wnpts.getValue()
 		insp = self.target().get_inspector() # inspector
-		name=str(insp.setlist.currentItem().text())	# currently hilighted items
+		name=str(insp.setlist.currentItem().text())	# currently highlighted items
 
 		try:
 			xaxes=[int(i) for i in xaxes.split(",")]
@@ -1407,7 +1407,7 @@ class EMPlot3DClassInsp(QtWidgets.QWidget):
 	def doMakeSet(self):
 		"""Saves selected plots as new .lst files in sets/ if 'comment' field contains image specifiers"""
 		insp=self.target().get_inspector()				# inspector
-		names=[str(i.text()) for i in insp.setlist.selectedItems()]		# currently hilighted items
+		names=[str(i.text()) for i in insp.setlist.selectedItems()]		# currently highlighted items
 		lsx={}
 
 		nums=set()
@@ -1415,7 +1415,7 @@ class EMPlot3DClassInsp(QtWidgets.QWidget):
 		for name in names:
 			try: num=int(name.rsplit("_",1)[1])
 			except:
-				QtWidgets.QMessageBox.warning(self,"Error","Please hilight sets with names ending in _# !")
+				QtWidgets.QMessageBox.warning(self,"Error","Please highlight sets with names ending in _# !")
 				return
 			if num in nums:
 				QtWidgets.QMessageBox.warning(self, "Error","Please select only one group of sets at a time !")
@@ -1449,7 +1449,7 @@ class EMPlot3DClassInsp(QtWidgets.QWidget):
 		axes=self.wnax.getValue()		# selected axes
 		axnorm=self.wcbaxnorm.getValue()
 		insp=self.target().get_inspector()				# inspector
-		name=str(insp.setlist.currentItem().text())		# currently hilighted item
+		name=str(insp.setlist.currentItem().text())		# currently highlighted item
 		data=self.target().data[name]					# data set we will operate on
 		try: comments=self.target().comments[name]		# comments for copying to results
 		except: comments=None
@@ -1505,7 +1505,7 @@ class EMPlot3DClassInsp(QtWidgets.QWidget):
 		vals=self.wnval.getValue()								# values
 		thresh_type=str(self.wcomb_threshtype.currentText())	# type of threshold to perform
 		insp=self.target().get_inspector()						# inspector
-		name=str(insp.setlist.currentItem().text())				# currently hilighted item
+		name=str(insp.setlist.currentItem().text())				# currently highlighted item
 		data=self.target().data[name]							# data set we will operate on
 		try: comments=self.target().comments[name]				# comments for copying to results
 		except: comments=None
@@ -1641,7 +1641,7 @@ class DragListWidget(QtWidgets.QListWidget):
 
 	def keyPressEvent(self,event):
 		if event.key() == Qt.Key_Backspace:
-			name=str(self.currentItem().text())		# currently hilighted item
+			name=str(self.currentItem().text())		# currently highlighted item
 			self.datasource().target().set_data(None,key=name)
 		else: QtWidgets.QListWidget.keyPressEvent(self,event)
 

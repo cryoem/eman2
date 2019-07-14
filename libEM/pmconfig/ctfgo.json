@@ -2,12 +2,12 @@
 [
   {
     "TITLE":"e2ctf generate output Wizard",
-    "INST":"This Wizard is to Help users from e2ctf in generate output mode. Two distint type of output are posssible: CTF corrected particles using phase flipping, and CTF corrected particles using Wiener filtration",
+    "INST":"This Wizard is to Help users from e2ctf in generate output mode. Two distinct types of output are possible: CTF corrected particles using phase flipping, and CTF corrected particles using Wiener filtration",
     "WIDGETS":[]
   },
   {
     "TITLE":"Select particle files",
-    "INST":"Select particle stacks for generating ouput from",
+    "INST":"Select particle stacks for generating output from",
     "WIDGETS":[
       "particles"
     ]
@@ -22,7 +22,7 @@
   },
   {
     "TITLE":"CTF correction by wiener filtration",
-    "INST":"The second method of CTF correction, is Wiener filtration. Here we optimally correct both the phases and amplitudes in a least sqaures sense. Mathematically this is the best method, HOWEVER, it relies on a good estimate of the signal to noise ratio. If your SNR is off your wiener filtration will distort your partilcesdue to grossly erronious amplitude modification. I reccomend this only where you have strong signal (high contrasty images)",
+    "INST":"The second method of CTF correction, is Wiener filtration. Here we optimally correct both the phases and amplitudes in a least squares sense. Mathematically this is the best method, HOWEVER, it relies on a good estimate of the signal to noise ratio. If your SNR is off your wiener filtration will distort your particles due to grossly erroneous amplitude modification. I recommend this only where you have strong signal (high contrasty images)",
     "WIDGETS":[
       "wiener"
     ]
