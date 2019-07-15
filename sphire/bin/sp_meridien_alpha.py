@@ -125,11 +125,13 @@ Util.innerproduct(p2,p2,m)/(nx*nx/2) = Util.innerproduct(fp1,fp1,None)
 
 
 from EMAN2 	import *
-from sparx 	import *
+from sp_sparx 	import *
 from EMAN2  import EMNumPy
-from logger import Logger, BaseLogger_Files
-import global_def
-from global_def import *
+from sp_logger import Logger, BaseLogger_Files
+import sp_global_def
+from sp_global_def import *
+
+import sp_utilities
 
 from mpi   	import  *
 from math  	import  *
@@ -170,8 +172,8 @@ else: Blockdata["node_volume"] = [0,0]
 #  We have to send the two myids to all nodes so we can identify main nodes on two selected groups.
 Blockdata["main_shared_nodes"]	= [Blockdata["node_volume"][0]*Blockdata["no_of_processes_per_group"],Blockdata["node_volume"][1]*Blockdata["no_of_processes_per_group"]]
 # end of Blockdata
-global_def.BATCH = True
-global_def.MPI = True
+sp_global_def.BATCH = True
+sp_global_def.MPI = True
 
 def create_subgroup():
 	# select a subset of myids to be in subdivision
@@ -345,6 +347,9 @@ def AI( fff, anger, shifter, chout = False):
 				Tracker["changed_delta"] = True
 				if( Tracker["delta"] <= 3.75/2.0 ):  #  MOVE DOWN TO RESTRICTED
 					Tracker["an"]		= 6*Tracker["delta"]
+					Tracker['howmany'] = 4
+					Tracker['theta_min'] = -1
+					Tracker['theta_max'] = -1
 					if( Tracker["delta"] <= degrees(atan(0.25/Tracker["constants"]["radius"])) ): Tracker["state"] = "FINAL"
 					else:	Tracker["state"] = "RESTRICTED"
 				else:
@@ -478,6 +483,9 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 				Tracker["changed_delta"] = True
 				if( Tracker["delta"] <= 3.75/2.0 or True):  #  MOVE DOWN TO RESTRICTED
 					Tracker["an"]		= 6*Tracker["delta"]
+					Tracker['howmany'] = 4
+					Tracker['theta_min'] = -1
+					Tracker['theta_max'] = -1
 					if( Tracker["delta"] <= degrees(atan(0.25/Tracker["constants"]["radius"])) ): Tracker["state"] = "FINAL"
 					else:	Tracker["state"] = "RESTRICTED"
 				else:
@@ -501,9 +509,9 @@ def params_changes( params, oldparams ):
 	#  params - contain parameters associated with these images
 	#  Both lists can be of different sizes, so we have to find a common subset
 	#  We do not compensate for random changes of grids.
-	from utilities    	import getang3
-	from utilities    	import rotate_shift_params
-	from pixel_error  	import max_3D_pixel_error
+	from sp_utilities    	import getang3
+	from sp_utilities    	import rotate_shift_params
+	from sp_pixel_error  	import max_3D_pixel_error
 	from EMAN2        	import Vec2f
 	from math 			import sqrt
 	import sets
@@ -530,14 +538,14 @@ def compute_search_params(acc_trans, shifter, old_range):
 	if(new_range == 0.0):  step = 0.5  # change 1.0 to 0.5
 	return new_range, step
 
-def assign_particles_to_groups(minimum_group_size = 10, asubset= None):
+def assign_particles_to_groups(minimum_group_size = 10, asubset= None, name_tag='ptcl_source_image'):
 	global Tracker, Blockdata
 	from random import shuffle
-	#  Input data does not have to be consecutive in terms of ptcl_source_image or defocus
+	#  Input data does not have to be consecutive in terms of ptcl_source_image/filament_id or defocus
 	#
 	if not asubset:
 		try:
-			stmp  = EMUtil.get_all_attributes(Tracker["constants"]["stack"], "ptcl_source_image")
+			stmp  = EMUtil.get_all_attributes(Tracker["constants"]["stack"], name_tag)
 			if Tracker["constants"]["CTF"]:
 				defstmp = EMUtil.get_all_attributes(Tracker["constants"]["stack"],"ctf")
 			else:
@@ -549,10 +557,10 @@ def assign_particles_to_groups(minimum_group_size = 10, asubset= None):
 				for i in range(len(stmp)):  stmp[i] = round(stmp[i].defocus, 4)
 				defstmp = stmp[:]
 			else:
-				ERROR("Either ptcl_source_image or ctf has to be present in the header.","meridien",1)
+				ERROR( "Either ptcl_source_image/filament/filament_id or ctf has to be present in the header." )
 	else:
 		try:
-			stmp_junk = EMUtil.get_all_attributes(Tracker["constants"]["stack"], "ptcl_source_image")
+			stmp_junk = EMUtil.get_all_attributes(Tracker["constants"]["stack"], name_tag)
 			stmp = [None]*len(asubset)
 			for isub in range(len(asubset)): stmp[isub] = stmp_junk[asubset[isub]]
 			if Tracker["constants"]["CTF"]:
@@ -569,7 +577,8 @@ def assign_particles_to_groups(minimum_group_size = 10, asubset= None):
 					stmp[isub] = stmp_junk[asubset[isub]]
 					stmp[isub] = round(stmp[isub].defocus, 4)
 				defstmp[:] = stmp[:]
-			else:  ERROR("Either ptcl_source_image or ctf has to be present in the header.","meridien",1)
+			else:  
+				ERROR( "Either ptcl_source_image/filament/filament_id or ctf has to be present in the header." )
 	tt = [[stmp[i],i] for i in range(len(stmp))]
 	tt.sort()
 	tt.append([-1,-1])
@@ -882,7 +891,7 @@ def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi
 			indx = projdata[i].get_attr("particle_group")
 			phi,theta,psi,sx,sy = params[i][0],params[i][1],params[i][2],params[i][3],params[i][4]
 			stmp = cyclic_shift( projdata[i], int(round(sx)), int(round(sy)))
-			st = Util.infomask(stmp, mask, False)
+			st = get_image_statistics(stmp, mask, False)
 			stmp -=st[0]
 			stmp /=st[1]
 			temp = cosinemask(stmp, radius = Tracker["constants"]["radius"], s = 0.0)
@@ -950,7 +959,7 @@ def getindexdata(partids, partstack, particle_groups, original_data=None, small_
 	# So, the lengths of partids and partstack are the same.
 	#  The read data is properly distributed among MPI threads.
 	if( mpi_comm < 0 ):  mpi_comm = MPI_COMM_WORLD
-	from applications import MPI_start_end
+	from sp_applications import MPI_start_end
 	#  parameters
 	if( myid == 0 ):  partstack = read_text_row(partstack)
 	else:  			  partstack = 0
@@ -1015,10 +1024,10 @@ def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 	
 	"""
 	#from fundamentals import resample
-	from utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
-	from fundamentals import fdecimate, fshift, fft
-	from filter       import filt_ctf, filt_table
-	from applications import MPI_start_end
+	from sp_utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
+	from sp_fundamentals import fdecimate, fshift, fft
+	from sp_filter       import filt_ctf, filt_table
+	from sp_applications import MPI_start_end
 	from math         import sqrt
 	
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
@@ -1082,7 +1091,7 @@ def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 			sy = 0.0
 		else:  data[im] = original_data[im].copy()
 
-		st = Util.infomask(data[im], mask2D, False)
+		st = get_image_statistics(data[im], mask2D, False)
 		data[im] -= st[0]
 		data[im] /= st[1]
 		if data[im].get_attr_default("bckgnoise", None) :  data[im].delete_attr("bckgnoise")
@@ -1097,7 +1106,7 @@ def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 					bckg.set_attr("is_fftpad",1)
 					bckg = fft(filt_table(bckg, oneover[data[im].get_attr("particle_group")]))
 					#  Normalize bckg noise in real space, only region actually used.
-					st = Util.infomask(bckg, mask2D, False)
+					st = get_image_statistics(bckg, mask2D, False)
 					bckg -= st[0]
 					bckg /= st[1]
 					data[im] = cosinemask(data[im],radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -1157,8 +1166,8 @@ def subdict(d,u):
 
 def get_anger(angle1, angle2):
 	from math import acos, degrees
-	from utilities import lacos
-	from fundamentals import rotmatrix
+	from sp_utilities import lacos
+	from sp_fundamentals import rotmatrix
 	A1 = rotmatrix(angle1[0],angle1[1],angle1[2])
 	ar = Blockdata["symclass"].symmetry_related(angle2)
 	axes_dis_min = 1.0e23
@@ -1199,7 +1208,7 @@ def get_refangs_and_shifts():
 	global Tracker, Blockdata
 
 	refang = Blockdata["symclass"].even_angles(Tracker["delta"])
-	coarse = Blockdata["symclass"].even_angles(2*Tracker["delta"])
+	coarse = Blockdata["symclass"].even_angles(2*Tracker["delta"], theta1=Tracker['theta_min'], theta2=Tracker['theta_max'], method=Tracker['constants']['angle_method'])
 	refang = Blockdata["symclass"].reduce_anglesets( rotate_params(refang, [-0.5*Tracker["delta"], -0.5*Tracker["delta"], -0.5*Tracker["delta"]]) )
 
 	"""
@@ -1291,8 +1300,8 @@ def get_refvol(nxinit):
 
 def prepdata_ali3d(projdata, rshifts, shrink, method = "DIRECT"):
 	global Tracker, Blockdata
-	from fundamentals 	import prepi
-	from morphology 	import ctf_img_real
+	from sp_fundamentals 	import prepi
+	from sp_morphology 	import ctf_img_real
 	#  Data is NOT CTF-applied.
 	#  Data is shrank, in Fourier format
 	data = [[] for i in range(len(projdata))]
@@ -1331,7 +1340,7 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, smea
 	global Tracker, Blockdata
 
 	#  Without filtration
-	from reconstruction import recons3d_trl_struct_MPI
+	from sp_reconstruction import recons3d_trl_struct_MPI
 	import os
 	if (mpi_comm == -1): mpi_comm = MPI_COMM_WORLD
 	
@@ -1548,11 +1557,11 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 	else:  return None
 
 def calculate_2d_params_for_centering(kwargs):
-	from utilities 		import wrap_mpi_gatherv, read_text_row, write_text_row, bcast_number_to_all, get_im, combine_params2, model_circle, gather_compacted_EMData_to_root
-	from applications 	import MPI_start_end, ali2d_base 
-	from fundamentals 	import resample, rot_shift2D 
-	from filter 		import filt_ctf 
-	from global_def 	import ERROR
+	from sp_utilities 		import wrap_mpi_gatherv, read_text_row, write_text_row, bcast_number_to_all, get_im, combine_params2, model_circle, gather_compacted_EMData_to_root
+	from sp_applications 	import MPI_start_end, ali2d_base 
+	from sp_fundamentals 	import resample, rot_shift2D 
+	from sp_filter 		import filt_ctf 
+	from sp_global_def 	import ERROR
 	
 	
 	#################################################################################################################################################################
@@ -1598,7 +1607,7 @@ def calculate_2d_params_for_centering(kwargs):
 
 		if(Blockdata["myid"] == 0):
 			import subprocess
-			from logger import Logger, BaseLogger_Files
+			from sp_logger import Logger, BaseLogger_Files
 			#  Create output directory
 			log2d = Logger(BaseLogger_Files())
 			log2d.prefix = os.path.join(init2dir)
@@ -1768,9 +1777,9 @@ def XNumrinit_local(first_ring, last_ring, skip=1, mode="F"):
 
 def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D = None):
 	global Tracker, Blockdata
-	from projection 	import prgs,prgl
-	from fundamentals 	import fft
-	from utilities 		import wrap_mpi_gatherv
+	from sp_projection 	import prgs,prgl
+	from sp_fundamentals 	import fft
+	from sp_utilities 		import wrap_mpi_gatherv
 	from math 			import sqrt
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
@@ -1974,9 +1983,9 @@ def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D 
 
 def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs = None, bckgnoise = None, kb3D = None):
 	global Tracker, Blockdata
-	from projection 	import prgs,prgl
-	from fundamentals 	import fft
-	from utilities 		import wrap_mpi_gatherv
+	from sp_projection 	import prgs,prgl
+	from sp_fundamentals 	import fft
+	from sp_utilities 		import wrap_mpi_gatherv
 	from math 			import sqrt
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
@@ -2208,9 +2217,9 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 		ipsi = ipsiandiang%100000
 		ishift = hashparams%1000
 		tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
-		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, [coarse_angles[oldiang]], Tracker["delta"], howmany = 4)
+		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, [coarse_angles[oldiang]], Tracker["delta"], howmany = Tracker['howmany'])
 		opar.append([coarse_angles[oldiang][0],coarse_angles[oldiang][1],(coarse_angles[oldiang][2]+ipsi*coarse_delta)%360.0 , coarse_shifts[ishift][0],coarse_shifts[ishift][1]])
-		for i2 in range(4):
+		for i2 in range(Tracker['howmany']):
 			iang = ltabang[0][i2]
 			for i3 in range(2):  # psi
 				itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
@@ -2248,9 +2257,9 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, original_data = None, oldparams = None, \
 					preshift = False, apply_mask = True, nonorm = False, applyctf = True):
 	global Tracker, Blockdata
-	from projection 	import prgs,prgl
-	from fundamentals 	import fft
-	from utilities 		import wrap_mpi_gatherv
+	from sp_projection 	import prgs,prgl
+	from sp_fundamentals 	import fft
+	from sp_utilities 		import wrap_mpi_gatherv
 	from math 			import sqrt
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
@@ -2270,10 +2279,10 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	#from operator 		import itemgetter#, attrgetter, methodcaller
 	#   params.sort(key=itemgetter(2))
 	#from fundamentals import resample
-	from utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
-	from fundamentals import fdecimate, fshift, fft
-	from filter       import filt_ctf, filt_table
-	from applications import MPI_start_end
+	from sp_utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
+	from sp_fundamentals import fdecimate, fshift, fft
+	from sp_filter       import filt_ctf, filt_table
+	from sp_applications import MPI_start_end
 	from math         import sqrt
 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -2520,8 +2529,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		phi,theta,psi,sx,sy = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4]#  First ITER
 
 		if preshift:
-			sx = int(round(sx))
-			sy = int(round(sy))
+			sx, sy = reduce_shifts(sx, sy, original_data[im])
 			dataimage  = cyclic_shift(original_data[im],sx,sy)
 			#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
 			oldparams[im][3] = sx
@@ -2530,7 +2538,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 			sy = 0.0
 		else:  dataimage = original_data[im].copy()
 
-		st = Util.infomask(dataimage, mask2D, False)
+		st = get_image_statistics(dataimage, mask2D, False)
 		dataimage -= st[0]
 		dataimage /= st[1]
 		##if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
@@ -2544,7 +2552,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 				bckg.set_attr("is_fftpad",1)
 				bckg = fft(filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
 				#  Normalize bckg noise in real space, only region actually used.
-				st = Util.infomask(bckg, mask2D, False)
+				st = get_image_statistics(bckg, mask2D, False)
 				bckg -= st[0]
 				bckg /= st[1]
 				dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -2739,7 +2747,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		#exit()
 
 		# Find neighbors, ltabang contains positions on refang list, no psis
-		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
+		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
 
 		# ltabang has length lit, which is the same as length as firshifts.  However, original xod2 is still available,
 		#   even though it is longer than lit.
@@ -2760,7 +2768,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 			ipsi = ipsiandiang%100000
 			ishift = hashparams%1000
 			tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
-			for i2 in range(4):
+			for i2 in range(Tracker['howmany']):
 				iang = ltabang[i1][i2]
 				for i3 in range(2):  # psi
 					itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
@@ -2927,9 +2935,9 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_data = None, oldparams = None, \
 					preshift = False, apply_mask = True, nonorm = False, applyctf = True):
 	global Tracker, Blockdata
-	from projection 	import prgs,prgl
-	from fundamentals 	import fft
-	from utilities 		import wrap_mpi_gatherv
+	from sp_projection 	import prgs,prgl
+	from sp_fundamentals 	import fft
+	from sp_utilities 		import wrap_mpi_gatherv
 	from math 			import sqrt
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
@@ -2949,10 +2957,10 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	#from operator 		import itemgetter, attrgetter, methodcaller
 	#   params.sort(key=itemgetter(2))
 	#from fundamentals import resample
-	from utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
-	from fundamentals import fdecimate, fshift, fft
-	from filter       import filt_ctf, filt_table
-	from applications import MPI_start_end
+	from sp_utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
+	from sp_fundamentals import fdecimate, fshift, fft
+	from sp_filter       import filt_ctf, filt_table
+	from sp_applications import MPI_start_end
 	from math         import sqrt
 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -3233,8 +3241,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		phi,theta,psi,sx,sy, wnorm = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4], oldparams[im][7]
 
 		if preshift:
-			sx = int(round(sx))
-			sy = int(round(sy))
+			sx, sy = reduce_shifts(sx, sy, original_data[im])
 			dataimage  = cyclic_shift(original_data[im],sx,sy)
 			#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
 			oldparams[im][3] = sx
@@ -3243,7 +3250,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			sy = 0.0
 		else:  dataimage = original_data[im].copy()
 
-		st = Util.infomask(dataimage, mask2D, False)
+		st = get_image_statistics(dataimage, mask2D, False)
 		dataimage -= st[0]
 		dataimage /= st[1]
 		if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
@@ -3257,7 +3264,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 				bckg.set_attr("is_fftpad",1)
 				bckg = fft(filt_table(bckg, oneover[particle_group]))
 				#  Normalize bckg noise in real space, only region actually used.
-				st = Util.infomask(bckg, mask2D, False)
+				st = get_image_statistics(bckg, mask2D, False)
 				bckg -= st[0]
 				bckg /= st[1]
 				dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -3444,7 +3451,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			firstshifts[iln] = ishift
 
 		# Find neighbors, ltabang contains positions on refang list, no psis
-		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
+		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
 
 		# ltabang has length lit, which is the same as length as firshifts.  However, original xod2 is still available,
 		#   even though it is longer than lit.
@@ -3464,7 +3471,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			ipsi = ipsiandiang%100000
 			ishift = hashparams%1000
 			tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
-			for i2 in range(4):
+			for i2 in range(Tracker['howmany']):
 				iang = ltabang[i1][i2]
 				for i3 in range(2):  # psi
 					itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
@@ -3663,9 +3670,9 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_data = None, oldparams = None, \
 					preshift = False, apply_mask = True, nonorm = False, applyctf = True):
 	global Tracker, Blockdata
-	from projection 	import prgs,prgl
-	from fundamentals 	import fft
-	from utilities 		import wrap_mpi_gatherv
+	from sp_projection 	import prgs,prgl
+	from sp_fundamentals 	import fft
+	from sp_utilities 		import wrap_mpi_gatherv
 	from math 			import sqrt
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
@@ -3685,10 +3692,10 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	from operator 		import itemgetter#, attrgetter, methodcaller
 	#   params.sort(key=itemgetter(2))
 	#from fundamentals import resample
-	from utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
-	from fundamentals import fdecimate, fshift, fft
-	from filter       import filt_ctf, filt_table
-	from applications import MPI_start_end
+	from sp_utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
+	from sp_fundamentals import fdecimate, fshift, fft
+	from sp_filter       import filt_ctf, filt_table
+	from sp_applications import MPI_start_end
 	from math         import sqrt
 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -3938,8 +3945,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		phi,theta,psi,sx,sy, wnorm = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4], oldparams[im][7]
 
 		if preshift:
-			sx = int(round(sx))
-			sy = int(round(sy))
+			sx, sy = reduce_shifts(sx, sy, original_data[im])
 			dataimage  = cyclic_shift(original_data[im],sx,sy)
 			#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
 			oldparams[im][3] = sx
@@ -3948,7 +3954,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 			sy = 0.0
 		else:  dataimage = original_data[im].copy()
 
-		st = Util.infomask(dataimage, mask2D, False)
+		st = get_image_statistics(dataimage, mask2D, False)
 		dataimage -= st[0]
 		dataimage /= st[1]
 		if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
@@ -3963,7 +3969,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 				bckg.set_attr("is_fftpad",1)
 				bckg = fft(filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
 				#  Normalize bckg noise in real space, only region actually used.
-				st = Util.infomask(bckg, mask2D, False)
+				st = get_image_statistics(bckg, mask2D, False)
 				bckg -= st[0]
 				bckg /= st[1]
 				dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -4156,7 +4162,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		#exit()
 
 		# Find neighbors, ltabang contains positions on refang list, no psis
-		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
+		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
 
 		# ltabang has length lit, which is the same as length as firshifts.  However, original xod2 is still available,
 		#   even though it is longer than lit.
@@ -4177,7 +4183,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 			ipsi = ipsiandiang%100000
 			ishift = hashparams%1000
 			tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
-			for i2 in range(4):
+			for i2 in range(Tracker['howmany']):
 				iang = ltabang[i1][i2]
 				for i3 in range(2):  # psi
 					itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
@@ -4350,9 +4356,9 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	12/06/2017
 	"""
 	global Tracker, Blockdata
-	from projection 	import prgs,prgl
-	from fundamentals 	import fft
-	from utilities 		import wrap_mpi_gatherv
+	from sp_projection 	import prgs,prgl
+	from sp_fundamentals 	import fft
+	from sp_utilities 		import wrap_mpi_gatherv
 	from math 			import sqrt
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
@@ -4372,10 +4378,10 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	#from operator 		import itemgetter, attrgetter, methodcaller
 	#   params.sort(key=itemgetter(2))
 	#from fundamentals import resample
-	from utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
-	from fundamentals import fdecimate, fshift, fft
-	from filter       import filt_ctf, filt_table
-	from applications import MPI_start_end
+	from sp_utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
+	from sp_fundamentals import fdecimate, fshift, fft
+	from sp_filter       import filt_ctf, filt_table
+	from sp_applications import MPI_start_end
 	from math         import sqrt
 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -4832,7 +4838,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					else:  dataimage = original_data[im].copy()
 
 
-					st = Util.infomask(dataimage, mask2D, False)
+					st = get_image_statistics(dataimage, mask2D, False)
 					dataimage -= st[0]
 					dataimage /= st[1]
 					if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
@@ -4847,7 +4853,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 								bckg.set_attr("is_fftpad",1)
 								bckg = fft(filt_table(bckg, oneover[particle_group]))
 								#  Normalize bckg noise in real space, only region actually used.
-								st = Util.infomask(bckg, mask2D, False)
+								st = get_image_statistics(bckg, mask2D, False)
 								bckg -= st[0]
 								bckg /= st[1]
 								dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -5136,7 +5142,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  GUGU ",firstshifts)
 					# Find neighbors, ltabang contains positions on refang list, no psis
 					###ltabang = nearest_many_full_k_projangles(refang, firstdirections, howmany = 5, sym=Tracker["constants"]["symmetry"])
-					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
+					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
 					###if( Blockdata["myid"] == Blockdata["main_node"]): print("  ltabang ",ltabang)
 					##mpi_barrier(MPI_COMM_WORLD)
 					##mpi_finalize()
@@ -5170,7 +5176,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 						ishift = hashparams%1000
 						tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
 						#if( Blockdata["myid"] == Blockdata["main_node"]): print(" tshifts  ",i1,len(tshifts))
-						for i2 in range(4):
+						for i2 in range(Tracker['howmany']):
 							iang = ltabang[i1][i2]
 							for i3 in range(2):  # psi
 								itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
@@ -5422,9 +5428,9 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	02/07/2017
 	"""
 	global Tracker, Blockdata
-	from projection 	import prgs,prgl
-	from fundamentals 	import fft
-	from utilities 		import wrap_mpi_gatherv
+	from sp_projection 	import prgs,prgl
+	from sp_fundamentals 	import fft
+	from sp_utilities 		import wrap_mpi_gatherv
 	from math 			import sqrt
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
@@ -5444,10 +5450,10 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	#from operator 		import itemgetter#, attrgetter, methodcaller
 	#   params.sort(key=itemgetter(2))
 	#from fundamentals import resample
-	from utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
-	from fundamentals import fdecimate, fshift, fft
-	from filter       import filt_ctf, filt_table
-	from applications import MPI_start_end
+	from sp_utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
+	from sp_fundamentals import fdecimate, fshift, fft
+	from sp_filter       import filt_ctf, filt_table
+	from sp_applications import MPI_start_end
 	from math         import sqrt
 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -5879,7 +5885,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					else:  dataimage = original_data[im].copy()
 
 
-					st = Util.infomask(dataimage, mask2D, False)
+					st = get_image_statistics(dataimage, mask2D, False)
 					dataimage -= st[0]
 					dataimage /= st[1]
 					if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
@@ -5894,7 +5900,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 								bckg.set_attr("is_fftpad",1)
 								bckg = fft(filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
 								#  Normalize bckg noise in real space, only region actually used.
-								st = Util.infomask(bckg, mask2D, False)
+								st = get_image_statistics(bckg, mask2D, False)
 								bckg -= st[0]
 								bckg /= st[1]
 								dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -6182,7 +6188,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  GUGU ",firstshifts)
 					# Find neighbors, ltabang contains positions on refang list, no psis
 					###ltabang = nearest_many_full_k_projangles(refang, firstdirections, howmany = 5, sym=Tracker["constants"]["symmetry"])
-					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
+					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
 					###if( Blockdata["myid"] == Blockdata["main_node"]): print("  ltabang ",ltabang)
 					##mpi_barrier(MPI_COMM_WORLD)
 					##mpi_finalize()
@@ -6216,7 +6222,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						ishift = hashparams%1000
 						tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
 						#if( Blockdata["myid"] == Blockdata["main_node"]): print(" tshifts  ",i1,len(tshifts))
-						for i2 in range(4):
+						for i2 in range(Tracker['howmany']):
 							iang = ltabang[i1][i2]
 							for i3 in range(2):  # psi
 								itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
@@ -6431,9 +6437,9 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, original_data = None, oldparams = None, \
 					preshift = False, apply_mask = True, nonorm = False, applyctf = True):
 	global Tracker, Blockdata
-	from projection 	import prgs,prgl
-	from fundamentals 	import fft
-	from utilities 		import wrap_mpi_gatherv
+	from sp_projection 	import prgs,prgl
+	from sp_fundamentals 	import fft
+	from sp_utilities 		import wrap_mpi_gatherv
 	from math 			import sqrt
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
@@ -6453,10 +6459,10 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 	#from operator 		import itemgetter#, attrgetter, methodcaller
 	#   params.sort(key=itemgetter(2))
 	#from fundamentals import resample
-	from utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
-	from fundamentals import fdecimate, fshift, fft
-	from filter       import filt_ctf, filt_table
-	from applications import MPI_start_end
+	from sp_utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
+	from sp_fundamentals import fdecimate, fshift, fft
+	from sp_filter       import filt_ctf, filt_table
+	from sp_applications import MPI_start_end
 	from math         import sqrt
 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -6893,7 +6899,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 					else:  dataimage = original_data[im].copy()
 
 
-					st = Util.infomask(dataimage, mask2D, False)
+					st = get_image_statistics(dataimage, mask2D, False)
 					dataimage -= st[0]
 					dataimage /= st[1]
 					if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
@@ -6908,7 +6914,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 								bckg.set_attr("is_fftpad",1)
 								bckg = fft(filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
 								#  Normalize bckg noise in real space, only region actually used.
-								st = Util.infomask(bckg, mask2D, False)
+								st = get_image_statistics(bckg, mask2D, False)
 								bckg -= st[0]
 								bckg /= st[1]
 								dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -7202,7 +7208,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  GUGU ",firstshifts)
 					# Find neighbors, ltabang contains positions on refang list, no psis
 					###ltabang = nearest_many_full_k_projangles(refang, firstdirections, howmany = 5, sym=Tracker["constants"]["symmetry"])
-					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
+					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
 					###if( Blockdata["myid"] == Blockdata["main_node"]): print("  ltabang ",ltabang)
 					##mpi_barrier(MPI_COMM_WORLD)
 					##mpi_finalize()
@@ -7236,7 +7242,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 						ishift = hashparams%1000
 						tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
 						#if( Blockdata["myid"] == Blockdata["main_node"]): print(" tshifts  ",i1,len(tshifts))
-						for i2 in range(4):
+						for i2 in range(Tracker['howmany']):
 							iang = ltabang[i1][i2]
 							for i3 in range(2):  # psi
 								itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
@@ -7770,9 +7776,9 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 					preshift = False, apply_mask = True, nonorm = False, applyctf = True):
 	global Tracker, Blockdata
 	global Tracker, Blockdata
-	from projection 	import prgs,prgl
-	from fundamentals 	import fft
-	from utilities 		import wrap_mpi_gatherv
+	from sp_projection 	import prgs,prgl
+	from sp_fundamentals 	import fft
+	from sp_utilities 		import wrap_mpi_gatherv
 	from math 			import sqrt
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
@@ -7792,10 +7798,10 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 	from operator 		import itemgetter#, attrgetter, methodcaller
 	#   params.sort(key=itemgetter(2))
 	#from fundamentals import resample
-	from utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
-	from fundamentals import fdecimate, fshift, fft
-	from filter       import filt_ctf, filt_table
-	from applications import MPI_start_end
+	from sp_utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
+	from sp_fundamentals import fdecimate, fshift, fft
+	from sp_filter       import filt_ctf, filt_table
+	from sp_applications import MPI_start_end
 	from math         import sqrt
 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -8233,7 +8239,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 					else:  dataimage = original_data[im].copy()
 
 
-					st = Util.infomask(dataimage, mask2D, False)
+					st = get_image_statistics(dataimage, mask2D, False)
 					dataimage -= st[0]
 					dataimage /= st[1]
 					if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
@@ -8248,7 +8254,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 								bckg.set_attr("is_fftpad",1)
 								bckg = fft(filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
 								#  Normalize bckg noise in real space, only region actually used.
-								st = Util.infomask(bckg, mask2D, False)
+								st = get_image_statistics(bckg, mask2D, False)
 								bckg -= st[0]
 								bckg /= st[1]
 								dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -8540,7 +8546,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  GUGU ",firstshifts)
 					# Find neighbors, ltabang contains positions on refang list, no psis
 					###ltabang = nearest_many_full_k_projangles(refang, firstdirections, howmany = 5, sym=Tracker["constants"]["symmetry"])
-					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
+					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
 					###if( Blockdata["myid"] == Blockdata["main_node"]): print("  ltabang ",ltabang)
 					##mpi_barrier(MPI_COMM_WORLD)
 					##mpi_finalize()
@@ -8574,7 +8580,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 						ishift = hashparams%1000
 						tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
 						#if( Blockdata["myid"] == Blockdata["main_node"]): print(" tshifts  ",i1,len(tshifts))
-						for i2 in range(4):
+						for i2 in range(Tracker['howmany']):
 							iang = ltabang[i1][i2]
 							for i3 in range(2):  # psi
 								itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
@@ -8765,13 +8771,13 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 
 def recons3d_trl_struct_MPI_nosmearing(myid, main_node, prjlist, parameters, CTF, upweighted, mpi_comm, target_size):
 	global Tracker, Blockdata
-	from utilities      import reduce_EMData_to_root, random_string, get_im, findall, model_blank, info, get_params_proj
+	from sp_utilities      import reduce_EMData_to_root, random_string, get_im, findall, model_blank, info, get_params_proj
 	from EMAN2          import Reconstructors
-	from filter		    import filt_table
+	from sp_filter		    import filt_table
 	from mpi            import MPI_COMM_WORLD, mpi_barrier
-	from statistics     import fsc 
-	from reconstruction import insert_slices_pdf
-	from fundamentals   import fft
+	from sp_statistics     import fsc 
+	from sp_reconstruction import insert_slices_pdf
+	from sp_fundamentals   import fft
 	import datetime, types
 	import copy
 	imgsize = prjlist[0].get_ysize()  # It can be Fourier, so take y-size
@@ -9045,7 +9051,7 @@ def compare_bckgnoise(bckgnoise1, bckgnoise2):
 	
 def rec3d_make_maps(compute_fsc = True, regularized = True):
 	global Tracker, Blockdata
-	import user_functions
+	import sp_user_functions
 	
 	# final reconstruction: compute_fsc = False; regularized = False
 	# tempdir is removed in the end of the function
@@ -9146,7 +9152,7 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 							tvol0 = filt_table(tvol0, cfsc)
 							if( Blockdata["no_of_groups"] > 1 ):  del cfsc
 
-						user_func = user_functions.factory[Tracker["constants"]["user_func"]]
+						user_func = sp_user_functions.factory[Tracker["constants"]["user_func"]]
 						#ref_data = [tvol0, Tracker, mainiteration]
 						ref_data = [tvol0, Tracker, Tracker["mainiteration"]]
 						#--  #--  memory_check(Blockdata["myid"],"first node, after masking")
@@ -9178,7 +9184,7 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 								elif( i > Tracker["constants"]["inires"]+1 ):  cfsc[i]  = 0.0
 							tvol1 = filt_table(tvol1, cfsc)
 							del cfsc
-						user_func = user_functions.factory[Tracker["constants"]["user_func"]]
+						user_func = sp_user_functions.factory[Tracker["constants"]["user_func"]]
 						#ref_data = [tvol1, Tracker, mainiteration]
 						ref_data = [tvol1, Tracker, Tracker["mainiteration"]]
 						#--  #--  memory_check(Blockdata["myid"],"first node, after masking")
@@ -9469,6 +9475,59 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		write_text_file([pinids[i][0] for i in range(len(pinids))], os.path.join(Tracker["directory"] ,"indexes_%03d.txt"%(Tracker["mainiteration"])))
 		write_text_row( [pinids[i][1] for i in range(len(pinids))], os.path.join(Tracker["directory"] ,"params_%03d.txt"%(Tracker["mainiteration"])))
 		del pinids
+
+	for procid in range(2):
+		if Blockdata['myid'] == Blockdata['main_node'] and Tracker['constants']['plot_ang_dist']:
+			### NEEDS TO BE REACTIVATED AFTER THE SYMCLASS CHANGE
+			outlier_full = []
+			print('Create angular distribution plot for chunk {0}'.format(procid))
+			delta = np.maximum(Tracker['delta'], 3.75)
+			exclude = []
+			exclude.append(
+				[
+					None,
+					os.path.join(Tracker["directory"], "ang_dist_{0}".format(procid)),
+					'',
+					]
+				)
+			if np.array(outlier_full).any():
+				exclude.append(
+					[
+						outlier_full,
+						os.path.join(Tracker["directory"], "ang_dist_{0}_outlier".format(procid)),
+						'_outlier',
+						]
+					)
+
+			for exclude_list, dir_name, suffix in exclude:
+				sp_utilities.angular_distribution(
+					params_file=partstack[procid],
+					output_folder=dir_name,
+					prefix='ang_dist{0}'.format(suffix),
+					method=Tracker['constants']['angle_method'],
+					pixel_size=1,
+					delta=delta,
+					symmetry=Tracker['constants']['symmetry'],
+					box_size=Tracker['constants']['nnxo'],
+					particle_radius=Tracker['constants']['radius'],
+					dpi=72,
+					do_print=False,
+					exclude=exclude_list,
+					)
+				sp_utilities.angular_distribution(
+					params_file=partstack[procid],
+					output_folder=dir_name,
+					prefix='full_ang_dist{0}'.format(suffix),
+					method=Tracker['constants']['angle_method'],
+					pixel_size=1,
+					delta=delta,
+					symmetry=Tracker['constants']['symmetry'] + '_full',
+					box_size=Tracker['constants']['nnxo'],
+					particle_radius=Tracker['constants']['radius'],
+					dpi=72,
+					do_print=False,
+					exclude=exclude_list,
+					)
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if(Tracker["mainiteration"] == 1 ):
@@ -9548,17 +9607,59 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 #   This can be used to restart process from an arbitrary iteration.
 #   
 #
+
+
+def reduce_shifts(sx, sy, img):
+	def rot_matrix(angle):
+		angle = np.radians(angle)
+		matrix = np.array([
+			[np.cos(angle), -np.sin(angle)],
+			[np.sin(angle), np.cos(angle)]
+			])
+		return matrix
+
+	if Tracker['constants']['helical_rise'] is not None:
+		try:
+			rotation_angle = img.get_attr('segment_angle')
+		except AttributeError:
+			pass
+		else:
+			rise = Tracker['constants']['helical_rise'] / float(Tracker['constants']['pixel_size'])
+			rise_half = rise / 2.0
+			point = np.array([sx, sy])
+			rot_point = np.dot(rot_matrix(rotation_angle), point.T)
+			rot_point[0] = ((rot_point[0] + rise_half) % rise ) - rise_half
+			sx, sy = np.dot(rot_matrix(rotation_angle).T, rot_point.T)
+
+	return int(round(sx)), int(round(sy))
+
+
+def get_image_statistics(image, mask, invert):
+	if Tracker['constants']['filament_width'] is None:
+		mask2d = mask
+	else:
+		mask2d = sp_utilities.model_rotated_rectangle2D(
+			radius_long=int(np.sqrt(2 * image.get_xsize()**2) // 2),
+			radius_short=int(Tracker['constants']['filament_width'] * image.get_xsize() / float(Tracker['constants']['nnxo']) + 0.5) // 2,
+			nx=image.get_xsize(),
+			ny=image.get_ysize(),
+			angle=image.get_attr('segment_angle'),
+			)
+
+	return Util.infomask(image, mask2d, invert)
+
+
 def main():
 
-	from utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
-	import user_functions
-	from applications  import MPI_start_end
+	from sp_utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
+	import sp_user_functions
+	from sp_applications  import MPI_start_end
 	from optparse      import OptionParser
-	from global_def    import SPARXVERSION
+	from sp_global_def    import SPARXVERSION
 	from EMAN2         import EMData
-	from multi_shc     import multi_shc
+	from sp_multi_shc     import multi_shc
 	from random        import random, uniform
-	from logger        import Logger, BaseLogger_Files
+	from sp_logger        import Logger, BaseLogger_Files
 	import sys
 	import os
 	import socket
@@ -9624,6 +9725,14 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		parser.add_option("--ccfpercentage",			type="float", 	      	default= 99.9,               	help="Percentage of the correlation peak area to be included, 0.0 corresponds to hard matching (default 99.9%)")
 		parser.add_option("--nonorm",               	action="store_true",  	default= False,              	help="Do not apply image norm correction. (default False)")
 		parser.add_option("--memory_per_node",          type="float",           default= -1.0,                	help="User provided information about memory per node (NOT per CPU) [in GB] (default 2GB*(number of CPUs per node))")	
+		parser.add_option("--plot_ang_dist",         	action='store_true',  	default=False,              	help="Plot the angular distribution plot for every iteration. This will take some time for high symmetries. (Default False)")
+		parser.add_option("--theta_min",               	type="float",  	default= -1,              	help="Lower limit for the out-of-plane rotation angle. Default is the full range based on the symmetry. (Default -1)")
+		parser.add_option("--theta_max",               	type="float",  	default= -1,              	help="Upper limit for the out-of-plane rotation angle.  Default is the full range based on the symmetry. (Default -1)")
+		parser.add_option("--howmany",               	type="int",  	default= 4,              	help="Upper limit for the out-of-plane rotation angle.  Default is the full range based on the symmetry. (Default -1)")
+		parser.add_option("--angle_method",               	type="str",  	default='S',              	help="Even angle creation strategy. Choices: S, P, M. (Default S)")
+		parser.add_option("--helical_rise",         	type="float",  	default=None,              	help="Helical rise in angstrom. This is used to limit the shift along the helical axis. (Default None)")
+		parser.add_option("--filament_width",         	type="int",  	default=None,              	help="Filament width used to normalize the particles. (Default None)")
+		parser.add_option("--chunk_by",               	type="str",  	default= 'ptcl_source_image',              	help="Group particles by header information. For helical refinement use filament or filament_id if present. (Default ptcl_source_image)")
 		(options, args) = parser.parse_args(sys.argv[1:])
 
 		if( len(args) == 3 ):
@@ -9676,8 +9785,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			print(line)
 		# ------------------------------------------------------------------------------------
 		#  INPUT PARAMETERS
-		global_def.BATCH = True
-		global_def.MPI   = True
+		sp_global_def.BATCH = True
+		sp_global_def.MPI   = True
 		###  VARIOUS SANITY CHECKES <-----------------------
 		if( options.memory_per_node < 0.0 ): options.memory_per_node = 2.0*Blockdata["no_of_processes_per_group"]
 		#  For the time being we use all CPUs during refinement
@@ -9722,6 +9831,10 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			Constants["small_memory"]      			= options.small_memory
 			Constants["initialshifts"]			    = options.initialshifts
 			Constants["memory_per_node"] 			= options.memory_per_node
+			Constants["plot_ang_dist"]			    = options.plot_ang_dist
+			Constants["angle_method"]			    = options.angle_method
+			Constants["helical_rise"]			    = options.helical_rise
+			Constants["filament_width"]			    = options.filament_width
 
 
 			#
@@ -9745,6 +9858,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			Tracker["refvol"]		= None
 			Tracker["nxinit"]		= -1  # will be figured in first AI.
 			Tracker["nxstep"]		= 10
+			Tracker["theta_min"]		= options.theta_min
+			Tracker["theta_max"]		= options.theta_max
+			Tracker["howmany"]		= options.howmany
 			#  Resolution in pixels at 0.5 cutoff
 			Tracker["currentres"]		    = -1
 			Tracker["fsc143"]			    = -1
@@ -9938,7 +10054,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			partstack = [None]*2
 			for procid in range(2):  partstack[procid] = os.path.join(initdir,"params-chunk_%01d_000.txt"%procid)
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				l1, l2 = assign_particles_to_groups(minimum_group_size = 10)
+				l1, l2 = assign_particles_to_groups(minimum_group_size = 10, name_tag=options.chunk_by)
 				write_text_file(l1,partids[0])
 				write_text_file(l2,partids[1])
 				if(options.initialshifts):
@@ -10195,8 +10311,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			print(line)
 		# ------------------------------------------------------------------------------------
 		#  INPUT PARAMETERS
-		global_def.BATCH = True
-		global_def.MPI   = True
+		sp_global_def.BATCH = True
+		sp_global_def.MPI   = True
 		###  VARIOUS SANITY CHECKES <-----------------------
 		if( options.delta> 3.75 ):
 			ERROR("Local searches requested, delta cannot be larger than 3.73.", "meridien",1, Blockdata["myid"])
@@ -10658,8 +10774,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			print(line)
 		# ------------------------------------------------------------------------------------
 		#  INPUT PARAMETERS
-		global_def.BATCH = True
-		global_def.MPI   = True
+		sp_global_def.BATCH = True
+		sp_global_def.MPI   = True
 
 		###  VARIOUS SANITY CHECKES <-----------------------
 		if( options.memory_per_node < 0.0 ):
