@@ -173,7 +173,10 @@ EMData* ScaleAlignerABS::align_using_base(EMData * this_img, EMData * to,
 			//If we just reassign w/o cleaing up we will get memory leaks!
 			if(result != 0) delete result;
 			result = aligned;
-			result->set_attr("scalefactor",i);
+			Transform *tt=(Transform*)(result->get_attr("xform.align2d"));
+			tt->set_scale(i);
+			result->set_attr("xform.align2d",tt);
+//			result->set_attr("scalefactor",i);	// I don't know why this was done instead of updating the transform, but it breaks a bunch of things
 		}else{
 			delete aligned;
 		}

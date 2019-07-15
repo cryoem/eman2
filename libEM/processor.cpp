@@ -13272,7 +13272,7 @@ EMData* HarmonicProcessor::process(const EMData * const image) {
 	
 	// Decide how large the harmonic invariant will be
 //	int nx=cimage->get_xsize();
-	int ny=cimage->get_ysize()/4;
+	int ny=cimage->get_ysize()/8;
 	int naz=Util::calc_best_fft_size((int)params.set_default("size",ny));
 	
 	// Compute a translational invariant for a single harmonic
@@ -13420,7 +13420,7 @@ EMData* HarmonicProcessor::process(const EMData * const image) {
 			// Go to 1/2 Nyquist because high resolution values are less invariant due to interpolaton
 			for (int jr=5; jr<ny/4; jr++) {
 				// Innermost loop is hn (radial harmonic coefficient) to group similar values together
-				for (int hn=1; hn<=rfp; hn++) {
+				for (int hn=2; hn<=rfp; hn++) {
 					float jx=co*jr;
 					float jy=si*jr;
 					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
@@ -13478,8 +13478,8 @@ EMData* HarmonicProcessor::process(const EMData * const image) {
 			memcpy((void*)tmp,(void*)(trns->get_data()+jy*naz*2),naz*2*sizeof(float));
 			EMfft::complex_to_complex_1d_inplace(tmp,naz*2);
 			int x=0;		// output x coordinate
-			// outer loop over base rotational frequency
-			for (int jx=0; jx<naz/2; jx++) {
+			// outer loop over base rotational frequency, skip phaseless jx=0
+			for (int jx=1; jx<naz/2; jx++) {
 				// inner loop over rotational harmonic coefficients, skip the phaseless rn=1
 				complex<double> v2 = tmp[jx];
 				for (int rn=2; rn<=fp; rn++) {
