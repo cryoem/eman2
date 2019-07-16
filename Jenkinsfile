@@ -70,7 +70,7 @@ def isReleaseBranch() {
 }
 
 def isContinuousBuild() {
-    return (CI_BUILD == "1" && isMasterBranch()) || isReleaseBranch()
+    return (CI_BUILD == "1" && isMasterBranch()) || isReleaseBranch() || JOB_TYPE == "cron"
 }
 
 def isExperimentalBuild() {
