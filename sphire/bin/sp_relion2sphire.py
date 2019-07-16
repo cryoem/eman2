@@ -54,6 +54,7 @@ from sys import  *
 import os
 import sys
 from operator import itemgetter
+import numpy as np
 import shutil
 from EMAN2db import db_check_dict
 
@@ -91,6 +92,19 @@ def makerelpath(p1,p2):
 	p2s=p2s[dv:]
 	
 	return "../"*len(p1s)+"/".join(p2s)
+
+def estimate_angle(coords_a, coords_b):
+	"""
+	Estimates the angle given by a line between two  boxes.
+	:param coords_a: First coordinate pair
+	:param coords_b: Second coordinate pair
+	:return: Angle from positive x axis twoards the positiv y axis.
+	"""
+	delta_x = coords_b[0] - coords_a[0]
+	delta_y = coords_b[1] - coords_a[1]
+	angle = -1 * np.arctan2(delta_y, delta_x) * 180 / np.pi
+
+	return angle
 
 # ========================================================================================
 # Main function
@@ -659,6 +673,10 @@ def main():
 							sphire_header['filament_id'] = '{0}{1:05d}'.format(adjusted_relion_micrograph_name, sphire_filament_id)
 							sphire_header['segment_id'] = sphire_local_particle_id
 							sphire_header['filament_track_length'] = float(tokens_line[relion_dict['_rlnHelicalTrackLength'][idx_col] - 1])
+							if relion_dict['_rlnAnglePsiPrior'][idx_col] == -1:
+								sphire_header['segment_angle'] = None
+							else:
+								sphire_header['segment_angle'] = float(tokens_line[relion_dict['_rlnAnglePsiPrior'][idx_col] - 1])
 						if relion_category_dict['ctf'][idx_is_category_found] or options.negative_stain:
 							sphire_cter_entry_list = []
 							for idx_sphire_ctf in range(n_idx_sphire_ctf):
@@ -1117,6 +1135,32 @@ def main():
 							img_particles_dict['filament_id'] = sphire_header['filament_id']
 							img_particles_dict['segment_id'] = sphire_header['segment_id']
 							img_particles_dict['filament_track_length'] = sphire_header['filament_track_length']
+							if sphire_header['segment_angle'] is None:
+								if sphire_header_id != 0:
+									prev = sphire_header_dict[micrograph_dirname][micrograph_basename][sphire_header_id-1]
+								else:
+									prev = None
+								try:
+									nexti = sphire_header_dict[micrograph_dirname][micrograph_basename][sphire_header_id+1]
+								except IndexError:
+									nexti = None
+								if prev is None and nexti is None:
+									angle = 0
+								elif prev is None and sphire_header['filament_id'] == nexti['filament_id']:
+									angle = estimate_angle(sphire_header['ptcl_source_coord'], nexti['ptcl_source_coord'])
+								elif nexti is None and sphire_header['filament_id'] == prev['filament_id']:
+									angle = estimate_angle(prev['ptcl_source_coord'], sphire_header['ptcl_source_coord'])
+								elif prev['filament_id'] == sphire_header['filament_id'] and sphire_header['filament_id'] != nexti['filament_id']:
+									angle = estimate_angle(prev['ptcl_source_coord'], sphire_header['ptcl_source_coord'])
+								elif prev['filament_id'] != sphire_header['filament_id'] and sphire_header['filament_id'] == nexti['filament_id']:
+									angle = estimate_angle(sphire_header['ptcl_source_coord'], nexti['ptcl_source_coord'])
+								elif prev['filament_id'] == sphire_header['filament_id'] and sphire_header['filament_id'] == nexti['filament_id']:
+									angle = estimate_angle(prev['ptcl_source_coord'], nexti['ptcl_source_coord'])
+								else:
+									raise Exception('This part of the code should not be reached!')
+								img_particles_dict['segment_angle'] = angle
+							else:
+								img_particles_dict['segment_angle'] = sphire_header['segment_angle']
 						if relion_category_dict['ctf'][idx_is_category_found] == True or options.negative_stain:
 							img_particles_dict['ctf'] = sphire_header['ctf']
 							img_particles_dict['ctf_applied'] = sphire_header['ctf_applied']
