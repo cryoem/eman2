@@ -1035,7 +1035,7 @@ class SXCmdWidget(QWidget):
 					if np > 1:
 						cmd_line = "mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX"
 					else:
-						cmd_line = "XXX_SXCMD_LINE_XXX " + line.split('XXX_SXCMD_LINE_XXX')[-1]
+						cmd_line = "XXX_SXCMD_LINE_XXX " + cmd_line.split('XXX_SXCMD_LINE_XXX')[-1]
 				if cmd_line.find("XXX_SXMPI_NPROC_XXX") != -1:
 					cmd_line = cmd_line.replace("XXX_SXMPI_NPROC_XXX", str(np))
 				if cmd_line.find("XXX_SXCMD_LINE_XXX") != -1:
