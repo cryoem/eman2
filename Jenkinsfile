@@ -51,6 +51,10 @@ def selectNotifications() {
         env.NOTIFY_GITHUB = result.notify_github
         env.NOTIFY_EMAIL  = result.notify_email
     }
+    else if(env.JOB_TYPE == 'cron') {
+        env.NOTIFY_GITHUB = false
+        env.NOTIFY_EMAIL  = false
+    }
     else {
         env.NOTIFY_GITHUB = true
         env.NOTIFY_EMAIL  = true
