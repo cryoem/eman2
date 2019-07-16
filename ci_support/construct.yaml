@@ -10,12 +10,12 @@ channels:
     - https://repo.anaconda.com/pkgs/msys2          # [win]
     - file:///place_holder_conda_prefix/conda-bld
 
-channels_remap:
-  -
-      src: file:///place_holder_conda_prefix/conda-bld
-      dest: eman-build-machine
+channels_remap:                                       # [not win]
+  -                                                   # [not win]
+      src: file:/place_holder_conda_prefix/conda-bld  # [not win]
+      dest: eman-build-machine                        # [not win]
 
-keep_pkgs: True
+keep_pkgs: False
 ignore_duplicate_files: True
 
 specs:
