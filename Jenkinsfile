@@ -129,6 +129,10 @@ pipeline {
   
   stages {
     stage('init') {
+      options {
+        timeout(time: 10, unit: 'MINUTES') 
+      }
+      
       steps {
         selectNotifications()
         notifyGitHub('PENDING')
