@@ -169,7 +169,6 @@ pipeline {
     stage('test-package') {
       when {
         expression {isBinaryBuild() }
-        expression { JOB_NAME != 'Win' }
       }
       
       steps {
