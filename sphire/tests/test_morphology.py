@@ -5093,7 +5093,7 @@ class Test_defocusgett_vpp2(unittest.TestCase):
         return_new = fu.defocusgett_vpp2(IMAGE_2D, self.wn, self.new_defc, self.new_ampcont, self.voltage, self.pixel_size, 0, self.new_istart, self.new_istop)
         return_old = oldfu.defocusgett_vpp2(IMAGE_2D, self.wn, self.old_defc, self.old_ampcont, self.voltage, self.pixel_size, 0, self.old_istart, self.old_istop)
         self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, (6.0, -90.630778703665001, 0.0, 179.82421875, 1e+20)))
+        self.assertTrue(numpy.allclose(return_new, (6.0, -90.630778703665001, 0.0, 179.82421875, 1e+20), atol=TOLERANCE, equal_nan=True))
 
     def test_img3D_null_voltage(self):
         return_new = fu.defocusgett_vpp2(IMAGE_3D, self.wn, self.new_defc, self.new_ampcont, 0, self.pixel_size,self.Cs, self.new_istart, self.new_istop)
