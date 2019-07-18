@@ -344,7 +344,7 @@ def AI( fff, anger, shifter, chout = False):
 			else:
 				step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
 				if( chout ):   sxprint("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
-				if Tracker["state"] == "PRIMARY" and Tracker["delta"] <= 3.75::
+				if Tracker["state"] == "PRIMARY" and Tracker["delta"] <= 3.75:
 					Tracker["state"] = "EXHAUSTIVE"
 				else:
 					Tracker["xr"] = step_range
