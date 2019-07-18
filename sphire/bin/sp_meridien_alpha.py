@@ -344,29 +344,26 @@ def AI( fff, anger, shifter, chout = False):
 			else:
 				step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
 				if( chout ):   sxprint("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
-				if Tracker["state"] == "PRIMARY" and Tracker["delta"] <= 3.75:
-					Tracker["state"] = "EXHAUSTIVE"
+				Tracker["xr"] = step_range
+				Tracker["ts"] = step
+				Tracker["delta"] /= 2.0
+				Tracker["changed_delta"] = True
+				if( Tracker["delta"] <= 3.75/2.0 ):  #  MOVE DOWN TO RESTRICTED
+					Tracker["an"]		= 6*Tracker["delta"]
+					Tracker['howmany'] = 4
+					Tracker['theta_min'] = -1
+					Tracker['theta_max'] = -1
+					if( Tracker["delta"] <= degrees(atan(0.25/Tracker["constants"]["radius"])) ): Tracker["state"] = "FINAL"
+					else:	Tracker["state"] = "RESTRICTED"
 				else:
-					Tracker["xr"] = step_range
-					Tracker["ts"] = step
-					Tracker["delta"] /= 2.0
-					Tracker["changed_delta"] = True
-					if( Tracker["delta"] <= 3.75/2.0 ):  #  MOVE DOWN TO RESTRICTED
-						Tracker["an"]		= 6*Tracker["delta"]
-						Tracker['howmany'] = 4
-						Tracker['theta_min'] = -1
-						Tracker['theta_max'] = -1
-						if( Tracker["delta"] <= degrees(atan(0.25/Tracker["constants"]["radius"])) ): Tracker["state"] = "FINAL"
-						else:	Tracker["state"] = "RESTRICTED"
-					else:
-						Tracker["an"] = -1
-						if( Tracker["state"] == "PRIMARY" ):  Tracker["state"] = "EXHAUSTIVE"
-					if( chout ): sxprint("  IN AI there was reset due to no changes, adjust stuff  ",Tracker["no_improvement"],Tracker["no_params_changes"],Tracker["delta"],Tracker["xr"],Tracker["ts"], Tracker["state"])
-					# check convergence before reset
-					if( (Tracker["state"] == "FINAL") and (Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) ):
-						keepgoing = 0
-						if(Blockdata["myid"] == Blockdata["main_node"]):
-							sxprint(line,"Convergence criterion B is reached (angular step delta smaller than the limit imposed by the structure radius)")
+					Tracker["an"] = -1
+					if( Tracker["state"] == "PRIMARY" ):  Tracker["state"] = "EXHAUSTIVE"
+				if( chout ): sxprint("  IN AI there was reset due to no changes, adjust stuff  ",Tracker["no_improvement"],Tracker["no_params_changes"],Tracker["delta"],Tracker["xr"],Tracker["ts"], Tracker["state"])
+				# check convergence before reset
+				if( (Tracker["state"] == "FINAL") and (Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) ):
+					keepgoing = 0
+					if(Blockdata["myid"] == Blockdata["main_node"]):
+						sxprint(line,"Convergence criterion B is reached (angular step delta smaller than the limit imposed by the structure radius)")
 				Tracker["no_improvement"]		= 0
 				Tracker["no_params_changes"]	= 0
 				Tracker["anger"]				= 1.0e23
