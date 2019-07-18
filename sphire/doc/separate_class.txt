@@ -8,7 +8,7 @@ Separate Into Classes : Separates stacks of particle images into stacks for each
 
 Usage in command line:
 
-  sp_separate_class.py input_class_avgs input_image_stack output_directory --filtrad=filter_radius --apix=pixel_size --shrink=shrink_factor --verbose
+  sp_separate_class.py input_class_avgs input_image_stack output_directory --filtrad=filter_radius --apix=pixel_size --shrink=shrink_factor --align_isac_dir=isac_directory --verbose
   
   
 \\
@@ -36,11 +36,11 @@ Filter radius is in units of Angstroms. If apix parameter is not specified, prog
   
 \\ __4. Apply alignments from ISAC to output image stacks__:
 
-  sp_separate_class.py input_class_avgs input_image_stack output_directory --align --isac_dir=isac_directory
+  sp_separate_class.py input_class_avgs input_image_stack output_directory --align_isac_dir=isac_directory
   
 \\ __5. Apply ISAC alignments, filter, and shrink__:
 
-  sp_separate_class.py input_class_avgs input_image_stack output_directory --align --isac_dir=isac_directory --filtrad=filter_radius --shrink=shrink_factor
+  sp_separate_class.py input_class_avgs input_image_stack output_directory --align_isac_dir=isac_directory --filtrad=filter_radius --shrink=shrink_factor
   
 \\
 ===== Input =====
@@ -51,8 +51,7 @@ Filter radius is in units of Angstroms. If apix parameter is not specified, prog
   ; %%--%%filtrad : Filter radius : Gaussian low-pass filter radius, Angstroms if apix specified below, else pixels^-1. (default None)
   ; %%--%%apix : Pixel size : Angstroms per pixel of input image stack (as opposed to class averages, which might be downsampled). (default None)
   ; %%--%%shrink : Downsampling factor : Downsampling factor, e.g., 6 -> 1/6 original size. (default None)
-  ; %%--%%align : Align images : Applies alignment parameters from ISAC to individual particles. (default False)
-  ; %%--%%isac_dir : ISAC directory : Directory for ISAC output, required if applying alignments. If selected, ISAC directory is required below. (default None)
+  ; %%--%%align_isac_dir : ISAC directory : Directory for ISAC output, for applying alignments. (default None)
   ; %%--%%verbose : Verbose : Writes additional messages to the terminal during execution. (default False)
   
 \\
@@ -78,7 +77,6 @@ Filter radius is in units of Angstroms. If apix parameter is not specified, prog
 \\
 ==== Developer Notes ====
   : Should allow filter types other than Gaussian low-pass
-  : Should offer option to write aligned images
 
 \\
 ==== Author / Maintainer ====
