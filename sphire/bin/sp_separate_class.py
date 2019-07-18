@@ -45,7 +45,7 @@ from sp_applications import header
 from datetime import datetime
 from sp_logger import Logger, BaseLogger_Files, BaseLogger_Print
 from sp_utilities import get_params2D, read_text_row
-from sp_global_def import ERROR
+from sp_global_def import ERROR, write_command
 from sp_fundamentals import rot_shift2D, resample
 from sp_filter import filt_gaussl
 
@@ -119,6 +119,7 @@ def separate_class(classavgstack, instack, options, outdir='.', verbose=False):
 	
 	# Set output directory and log file name
 	prepare_outdir(outdir, verbose)
+	write_command(outdir)
 	log, verbose = prepare_log(outdir, verbose)
 	
 	# Expand paths for outputs
@@ -129,8 +130,8 @@ def separate_class(classavgstack, instack, options, outdir='.', verbose=False):
 	outbdb = os.path.join(outdir, CLASSSTACKPREFIX + '{0:03d}')
 	if options.align_isac_dir or options.filtrad or options.shrink:
 		prepare_outdir(os.path.join(outdir, STACKFILEDIR) )
-		outali = os.path.join(outdir, STACKFILEDIR, ALIGNSTACKPREFIX + '{0:03d}')
-		outflt = os.path.join(outdir, STACKFILEDIR, FILTSTACKPREFIX + '{0:03d}' + '.mrcs')
+		outali = os.path.join(outdir, STACKFILEDIR, ALIGNSTACKPREFIX + '{0:03d}' + options.format)
+		outflt = os.path.join(outdir, STACKFILEDIR, FILTSTACKPREFIX + '{0:03d}' + options.format)
 	num_classes = EMUtil.get_image_count(classavgstack)
 	
 	# Generate class-to-particle lookup table and class-selection lists
@@ -211,8 +212,8 @@ def separate_class(classavgstack, instack, options, outdir='.', verbose=False):
 					print('sub_rate', sub_rate, type(sub_rate), box_size, options.shrink)
 			
 			# Set filenames
-			local_mrcs_path = outali.format(class_num) + ".mrcs"
-			local_mrcs = EMData(box_size, box_size, num_class_imgs)
+			local_aligned_path = outali.format(class_num)
+			local_aligned_obj = EMData(box_size, box_size, num_class_imgs)
 			
 			# Loop through images
 			for img_num in range(len(class_stack) ):
@@ -230,9 +231,9 @@ def separate_class(classavgstack, instack, options, outdir='.', verbose=False):
 				if options.shrink:
 					img_ali = resample(img_ali, sub_rate)
 				
-				local_mrcs.insert_clip(img_ali, (0, 0, img_num) )
+				local_aligned_obj.insert_clip(img_ali, (0, 0, img_num) )
 				
-			local_mrcs.write_image(local_mrcs_path)
+			local_aligned_obj.write_image(local_aligned_path)
 			
 		# No aligned images
 		else:
@@ -417,6 +418,7 @@ if __name__ == "__main__":
 	parser.add_argument('--filtrad', type=float, help='For optional filtered images, low-pass filter radius (1/px or, if pixel size specified, Angstroms)')
 	parser.add_argument('--apix', type=float, default=None, help='Pixel size, Angstroms (might be downsampled by ISAC)')
 	parser.add_argument('--shrink', type=int, help='Optional downsampling factor')
+	parser.add_argument('--format', type=str, default='.mrcs', help='Format of output stacks')
 	parser.add_argument('--verbose', "-v", action="store_true", help='Increase verbosity')
 	parser.add_argument('--debug', action="store_true", help='Debug mode')
 	
