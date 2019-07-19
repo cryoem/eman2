@@ -21,17 +21,9 @@ from sphire.libpy_py3 import sphire_pixel_error as fu
 from sphire.tests.sparx_lib import sparx_pixel_error as oldfu
 
 
-import numpy
-from test_module import  remove_list_of_file, returns_values_in_file, get_arg_from_pickle_file,get_real_data,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER
+from numpy import array_equal as numpy_array_equal
+from test_module import   get_arg_from_pickle_file
 from os import path
-from ..libpy import sparx_utilities
-from EMAN2_cppwrap import EMData
-IMAGE_2D, IMAGE_2D_REFERENCE = get_real_data(dim=2)
-IMAGE_3D, STILL_NOT_VALID = get_real_data(dim=3)
-TOLERANCE = 0.0005
-MASK = sparx_utilities.model_circle(2, 5, 5)
-STACK_NAME = 'bdb:' + path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, 'Substack/sort3d_substack_003')
-
 
 
 class Test_pixel_error_2D(unittest.TestCase):
@@ -148,8 +140,8 @@ class Test_angle_ave(unittest.TestCase):
     def test_pickle_value(self):
         return_new = fu.angle_ave(self.angle1)
         return_old = oldfu.angle_ave(self.angle1)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, (348.04583441529024, 4.4154015011463477)))
+        self.assertTrue(numpy_array_equal(return_new, return_old))
+        self.assertTrue(numpy_array_equal(return_new, (348.04583441529024, 4.4154015011463477)))
 
     def test_emptyList_returns_ZeroDivisionError(self):
         with self.assertRaises(ZeroDivisionError) as cm_new:
@@ -291,20 +283,20 @@ class Test_align_diff_params(unittest.TestCase):
     def test_pickle_file(self):
         return_new = fu.align_diff_params(ali_params1= self.ali_params1, ali_params2= self.ali_params2)
         return_old = oldfu.align_diff_params(ali_params1= self.ali_params1, ali_params2= self.ali_params2)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, (359.99999999135014, 0.0, 0.0, 0)))
+        self.assertTrue(numpy_array_equal(return_new, return_old))
+        self.assertTrue(numpy_array_equal(return_new, (359.99999999135014, 0.0, 0.0, 0)))
 
     def test_ali_params1_emptyList_printout_ErrorMsg(self):
         return_new = fu.align_diff_params(ali_params1= [], ali_params2= self.ali_params2)
         return_old = oldfu.align_diff_params(ali_params1= [], ali_params2= self.ali_params2)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, (0.0, 0.0, 0.0, 0)))
+        self.assertTrue(numpy_array_equal(return_new, return_old))
+        self.assertTrue(numpy_array_equal(return_new, (0.0, 0.0, 0.0, 0)))
 
     def test_ali_params2_emptyList_printout_ErrorMsg(self):
         return_new = fu.align_diff_params(ali_params1= self.ali_params1, ali_params2= [])
         return_old = oldfu.align_diff_params(ali_params1= self.ali_params1, ali_params2= [])
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, (0.0, 0.0, 0.0, 0)))
+        self.assertTrue(numpy_array_equal(return_new, return_old))
+        self.assertTrue(numpy_array_equal(return_new, (0.0, 0.0, 0.0, 0)))
 
     def test_ali_params_both_emptyList_returns_ZeroDivisionError(self):
         with self.assertRaises(ZeroDivisionError) as cm_new:
@@ -333,8 +325,8 @@ class Test_multi_align_stability(unittest.TestCase):
     def test_pickle_value(self):
         return_new = fu.multi_align_stability(ali_params=self.ali_params, mir_stab_thld=self.mir_stab_thld, grp_err_thld=self.grp_err_thld, err_thld=self.err_thld, print_individual=False, d=self.d)
         return_old = oldfu.multi_align_stability(ali_params=self.ali_params, mir_stab_thld=self.mir_stab_thld, grp_err_thld=self.grp_err_thld, err_thld=self.err_thld, print_individual=False, d=self.d)
-        self.assertTrue(numpy.array_equal(return_new, ([], 0.11, 21.663624836876036)))
-        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy_array_equal(return_new, ([], 0.11, 21.663624836876036)))
+        self.assertTrue(numpy_array_equal(return_new, return_old))
 
     def test_ali_params_emptyList_returns_IndexError(self):
         with self.assertRaises(IndexError) as cm_new:
@@ -347,14 +339,16 @@ class Test_multi_align_stability(unittest.TestCase):
     def test_grp_err_thld_is0(self):
         return_new = fu.multi_align_stability(ali_params=self.ali_params, mir_stab_thld=self.mir_stab_thld, grp_err_thld=self.grp_err_thld, err_thld=0, print_individual=False, d=self.d)
         return_old = oldfu.multi_align_stability(ali_params=self.ali_params, mir_stab_thld=self.mir_stab_thld, grp_err_thld=self.grp_err_thld, err_thld=0, print_individual=False, d=self.d)
-        self.assertTrue(numpy.array_equal(return_new, ([], 0.11, 21.663624836876036)))
-        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy_array_equal(return_new, ([], 0.11, 21.663624836876036)))
+        self.assertTrue(numpy_array_equal(return_new, return_old))
 
     def test_d_is0(self):
         return_new = fu.multi_align_stability(ali_params=self.ali_params, mir_stab_thld=self.mir_stab_thld, grp_err_thld=self.grp_err_thld, err_thld=self.err_thld, print_individual=False, d=0)
         return_old = oldfu.multi_align_stability(ali_params=self.ali_params, mir_stab_thld=self.mir_stab_thld, grp_err_thld=self.grp_err_thld, err_thld=self.err_thld, print_individual=False, d=0)
-        self.assertTrue(numpy.array_equal(return_new, ([], 0.11, 2.5553015852192766)))
-        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(numpy_array_equal(return_new, ([], 0.11, 2.5553015852192766)))
+        self.assertTrue(numpy_array_equal(return_new, return_old))
+
+
 
 
 
