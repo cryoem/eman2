@@ -79,6 +79,7 @@ IT SEEMS TO BE THE SAME THAT insert_slices
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ################################################################################################################################################################################################################################################
+USED in 'sx3dvariability.py'
         recons3d_4nn_MPI(myid, prjlist, symmetry="c1", finfo=None, snr = 1.0, npad=2, xysize=-1, zsize=-1, mpi_comm=None)
 		myid --> my ID
 		prjlist --> list of projection images
@@ -93,26 +94,57 @@ Returns the fft volume representing the reconstruction with the '4nn' method
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ################################################################################################################################################################################################################################################
+USED in 'sxmeriden.py'
         recons3d_trl_struct_MPI(myid, main_node, prjlist, paramstructure, refang, rshifts_shrank, delta, upweighted = True, mpi_comm=None, CTF = True, target_size=-1, avgnorm = 1.0, norm_per_particle = None)
 		myid -->
 		main_node -->
-		prjlist -->
-		paramstructure -->
-		refang -->
-		rshifts_shrank -->
-		delta -->
-		upweighted -->
+		prjlist --> list of lists of projections to be included in the reconstruction
+		paramstructure --> list of list containing the params of the new struct
+		refang --> list of reference angles
+		rshifts_shrank --> list of shift of ????
+		delta --> delta angle of the 'psi' angle in the new_slice of the reconstructor (see 'insert_slice' function of the Reconstructors obj)
+		upweighted --> if false filter the images, using 'sparx_filter.py --> filt_table' using the given "bcknoise" filter found in the 'prjlist[im].get_attr("bckgnoise")'
 		mpi_comm -->
-		CTF -->
-		target_size -->
-		avgnorm -->
-		norm_per_particle -->
+		CTF --> if True enable the use of the CTF
+		target_size --> size of the output volume 'refvol'
+		avgnorm --> this value influences the weighting factor for eache slice, generally the number of particles in a class-average. (see 'insert_slice' function of the Reconstructors obj)
+		norm_per_particle --> this value influences the weighting factor for eache slice, generally the number of particles in a class-average. (see 'insert_slice' function of the Reconstructors obj)
+calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
 returns:
 	fftvol --> fft volume representing the reconstruction
 	weight --> fourier weight
 	refvol --> reference volume
+It performs a 'Direct Fourier Weighted Inversion Reconstructor' (nn4_ctfw reconstructor type)
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+################################################################################################################################################################################################################################################
+def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1", verbose=0, npad=2, xysize = -1, zsize = -1 ):
+	"""Perform a 3-D reconstruction using Pawel's FFT Back Projection algoritm.
+
+	   Input:
+	    stack_name - name of the stack file on a disk,
+	                 each image has to have the following attributes set:
+			 psi, theta, phi, sx, sy, defocus,
+	    list_proj - list of images from stack_name to be included in the reconstruction
+	    symmetry	 -- Point group of the target molecule (defaults to "C1")
+
+	   Return:  3d reconstructed volume image
+
+	   Usage:
+
+	     anglelist = getAngles("myangles.txt") # not yet written
+	     vol = do_reconstruction(filepattern, start, end, anglelist, symmetry)
+	"""
+	"""
+		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
+		Input
+			stack: name of the stack file containing projection data, projections have to be squares
+			list_proj: list of projections to be included in the reconstruction or image iterator
+			snr: Signal-to-Noise Ratio of the data
+			sign: sign of the CTF
+			symmetry: point-group symmetry to be enforced, each projection will enter the reconstruction in all symmetry-related directions.
+	"""
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ################################################################################################################################################################################################################################################
         recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", verbose=0, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.0)
@@ -126,7 +158,9 @@ returns:
 		xysize --> xysize/image().get_xsize() set both of the ratio x,y direction in the 3d volume comparing to the cubic case
 		zsize --> zsize/image().get_xsize() set both of the ratio z direction in the 3d volume comparing to the cubic case
 		mpi_comm -->
-		smearstep -->
+		smearstep --> used to set smear in prepare_recons_ctf ... it is always used with the default param
+
+
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ################################################################################################################################################################################################################################################
@@ -134,7 +168,7 @@ returns:
 		myid -->  my ID
 		prjlist --> list of projection images
 		mask2D --> mask2D to add to the projections in prjlist via 'insert_slice'
-		ring_width -->
+		ring_width --> width of the ring, it depends direct from an input value of 'sparx_applicatio.py --> varf3d_MPI'
 		npad -->
 		sign --> sign of the CTF
 		symmetry --> symmetry group, could be 'c1', 'c2', 'c5' (or somethong like s?, d?, oct?, tet? and icos?).
@@ -168,111 +202,141 @@ Save on file the initial fftvol values and its weight. The size of the fftvol is
 
 ################################################################################################################################################################################################################################################
         prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start, step, finfo=None, npad = 2, mpi_comm=None, smearstep = 0.0)
-		nx -->
-		data -->
-		snr -->
-		symmetry -->
+		nx --> size of the image
+		data --> list of image of size 'nx'
+		snr --> Signal-to-Noise Ratio
+		symmetry --> symmetry group, could be 'c1', 'c2', 'c5' (or somethong like s?, d?, oct?, tet? and icos?).
 		myid -->
 		main_node_half -->
-		half_start -->
-		step -->
+		half_start -->  integer value used to start to sample the list of image
+		step --> integer value used to select the image from the list, if 1 it selects all of the images
 		finfo -->
 		npad -->
 		mpi_comm -->
-		smearstep -->
+		smearstep -->  used to set smear value ... it is always used with the default param
+returns, if myid !=main_half-node:
+-) fftvol_half_file --> fft volume representing the reconstruction of the selected image
+-) weight_half_file --> fourier weight
+
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ################################################################################################################################################################################################################################################
-        econs_from_fftvol(size, fftvol, weight, symmetry, npad = 2)
-		size -->
-		fftvol -->
-		weight -->
-		symmetry -->
+        recons_from_fftvol(size, fftvol, weight, symmetry, npad = 2)
+		size --> size of the images
+		fftvol --> fft volume
+		weight --> fourier weight
+		symmetry --> symmetry group, could be 'c1', 'c2', 'c5' (or somethong like s?, d?, oct?, tet? and icos?).
 		npad -->
+returns the fftvol using a reconstructor type "nn4" --> Direct Fourier inversion Reconstructor
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ################################################################################################################################################################################################################################################
         recons_ctf_from_fftvol(size, fftvol, weight, snr, symmetry, weighting=1, npad = 2)
-		size -->
-		fftvol -->
-		weight -->
-		snr -->
-		symmetry -->
-		weighting -->
+		size --> size of the images
+		fftvol --> fft volume
+		weight --> fourier weight
+		snr --> Signal-to-Noise Ratio
+		symmetry --> symmetry group, could be 'c1', 'c2', 'c5' (or somethong like s?, d?, oct?, tet? and icos?).
+		weighting --> weighting factor for this slice, generally the number of particles in a class-average. May be ignored by some reconstructors
 		npad -->
+returns the fftvol using a reconstructor type "nn4_ctf" --> Direct Fourier inversion Reconstructor
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ################################################################################################################################################################################################################################################
         get_image_size( imgdata, myid )
-		imgdata -->
+		imgdata --> list of images
 		myid -->
+returns the size of the image
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ################################################################################################################################################################################################################################################
         rec3D_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, odd_start=0, eve_start=1, finfo=None, index=-1, npad = 2, mpi_comm=None, smearstep = 0.0)
-		data -->
-		snr -->
-		symmetry -->
-		mask3D -->
-		fsc_curve -->
+		data --> list of 2d iamges
+		snr --> Signal-to-Noise Ratio
+		symmetry --> symmetry group, could be 'c1', 'c2', 'c5' (or somethong like s?, d?, oct?, tet? and icos?).
+		mask3D --> 3d mask
+		fsc_curve --> filename passed to 'sparx_statistics.fsc_mask'
 		myid -->
 		main_node -->
-		rstep -->
-		odd_start -->
-		eve_start -->
+		rstep --> weight for the fsc calculation it is the 'w' value of 'sparx_statistics.py -> fsc' ... not 100% sure
+		odd_start --> start value of the 'prepare_recons_ctf'
+		eve_start --> start value of the 'prepare_recons_ctf'
 		finfo -->
-		index -->
+		index --> index group
 		npad -->
 		mpi_comm -->
-		smearstep -->
+		smearstep --> used to set smear in prepare_recons_ctf ... it is always used with the default param
+	'''
+	  This function is to be called within an MPI program to do a reconstruction on a dataset kept in the memory
+	  Computes reconstruction and through odd-even, in order to get the resolution
+	  if index > -1, projections should have attribute group set and only those whose group matches index will be used in the reconstruction
+	    this is for multireference alignment
+	'''
+The return values depend on the work flow!!!!!! anyway it should returns the reconstructed volume and the associated fsc value
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ################################################################################################################################################################################################################################################
         rec3D_MPI_noCTF(data, symmetry = "c1", mask3D = None, fsc_curve = None, myid = 2, main_node = 0, rstep = 1.0, odd_start=0, eve_start=1, finfo=None, index = -1, npad = 2, mpi_comm=None)
-		data -->
-		symmetry -->
-		mask3D -->
-		fsc_curve -->
+		data --> list of 2d iamges
+		symmetry --> symmetry group, could be 'c1', 'c2', 'c5' (or somethong like s?, d?, oct?, tet? and icos?).
+		mask3D --> 3d mask
+		fsc_curve --> filename passed to 'sparx_statistics.fsc_mask'
 		myid -->
 		main_node -->
-		rstep -->
-		odd_start -->
-		eve_start -->
+		rstep --> weight for the fsc calculation it is the 'w' value of 'sparx_statistics.py -> fsc' ... not 100% sure
+		odd_start --> start value of the 'prepare_recons_ctf'
+		eve_start --> start value of the 'prepare_recons_ctf'
 		finfo -->
-		index -->
+		index --> index group
 		npad  -->
 		mpi_comm -->
+	'''
+	  This function is to be called within an MPI program to do a reconstruction on a dataset kept in the memory
+	  Computes reconstruction and through odd-even, in order to get the resolution
+	  if index > -1, projections should have attribute group set and only those whose group matches index will be used in the reconstruction
+	    this is for multireference alignment
+	'''
+It is basically the same of 'rec3D_MPI' but it does not use the ctf in the reconstruction step
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ################################################################################################################################################################################################################################################
+USED in 'rec3D_two_chunks_MPI'
         prepare_recons_ctf_two_chunks(nx,data,snr,symmetry,myid,main_node_half,chunk_ID,finfo=None,npad=2,mpi_comm=None,smearstep = 0.0)
-		nx -->
-		data -->
-		snr -->
-		symmetry -->
+		nx --> size of the image
+		data --> list of image of size 'nx'
+		snr --> Signal-to-Noise Ratio
+		symmetry --> symmetry group, could be 'c1', 'c2', 'c5' (or somethong like s?, d?, oct?, tet? and icos?).
 		myid -->
 		main_node_half -->
-		chunk_ID -->
+		chunk_ID --> id of the chunk
 		finfo -->
 		npad -->
 		mpi_comm -->
-		smearstep -->
+		smearstep -->  used to set smear value ... it is always used with the default param
+returns, if myid !=main_half-node:
+-) fftvol_half_file --> fft volume representing the reconstruction of the selected image
+-) weight_half_file --> fourier weight
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ################################################################################################################################################################################################################################################
         rec3D_two_chunks_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, finfo=None, index=-1, npad = 2, mpi_comm=None, smearstep = 0.0)
-		data -->
-		snr -->
-		symmetry -->
-		mask3D -->
-		fsc_curve -->
+		data --> list of 2d iamges
+		snr --> Signal-to-Noise Ratio
+		symmetry --> symmetry group, could be 'c1', 'c2', 'c5' (or somethong like s?, d?, oct?, tet? and icos?).
+		mask3D --> 3d mask
+		fsc_curve --> filename passed to 'sparx_statistics.fsc_mask'
 		myid -->
 		main_node -->
-		rstep -->
+		rstep --> weight for the fsc calculation it is the 'w' value of 'sparx_statistics.py -> fsc' ... not 100% sure
 		finfo -->
-		index -->
+		index --> index group
 		npad -->
 		mpi_comm -->
-		smearstep -->
+		smearstep --> used to set smear in prepare_recons_ctf ... it is always used with the default param
+	'''
+	  This function is to be called within an MPI program to do a reconstruction on a dataset kept
+	  in the memory, computes reconstruction and through odd-even, in order to get the resolution
+	'''
+It is basically the same of 'rec3D_MPI' but it split automatically the set in 2 halves
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
