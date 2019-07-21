@@ -3224,15 +3224,15 @@ The basic design of EMAN Processors: <br>\
 		void set_params(const Dict & new_params)
 		{
 			params = new_params;
-			low = params.get("low");
-			high = params.get("high");
+			low = params.set_default("low",1.0f);
+			high = params.set_default("high",0.0f);
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("low", EMObject::FLOAT, "Pixels are divided by (low - high) prior to the exponential operation");
-			d.put("high", EMObject::FLOAT, "Pixels are divided by (low - high) prior to the exponential operation");
+			d.put("low", EMObject::FLOAT, "Pixels are divided by low then high is subtracted prior to the exponential operation, default 1.0");
+			d.put("high", EMObject::FLOAT, "Pixels are divided by low then high is subtracted prior to the exponential operation, default 0.0");
 			return d;
 		}
 

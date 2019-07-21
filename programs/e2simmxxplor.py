@@ -220,8 +220,8 @@ class EMSimmxExplorer(EM3DSymModel):
 		if self.mx_display == None : return
 
 		data = []
-		projection = EMData()
-		projection.read_image(self.projection_file,self.current_projection)
+		projection = EMData(self.projection_file,self.current_projection)
+		projection.process_inplace("normalize.edgemean")
 
 		if self.particle_file != None:
 			r = Region(self.current_projection,self.current_particle,1,1)
@@ -240,22 +240,30 @@ class EMSimmxExplorer(EM3DSymModel):
 			d["type"] = "2d"
 			t = Transform(d)
 
-			particle = EMData()
+			particle = EMData(self.particle_file,self.current_particle)
 			#n = EMUtil.get_image_count(self.particle_file)
-			particle.read_image(self.particle_file,self.current_particle)
 			particle.transform(t)
 			particle["xform.align2d"]=t
-			particle.process_inplace("normalize.toimage",{"to":projection})
-			if particle["norm_mult"]<0 : particle*=-1.0
+#			particle.process_inplace("normalize.toimage",{"to":projection})
+			particle.process_inplace("normalize.edgemean")
+#			if particle["norm_mult"]<0 : particle*=-1.0
 
-			particle_masked=particle.copy()
-			tmp=projection.process("threshold.notzero")
-			particle_masked.mult(tmp)
+#			particle_masked=particle.copy()
+			#tmp=projection.process("threshold.notzero")
+			#particle_masked.mult(tmp)
+			particle_masked=particle.process("math.sub.optimal",{"low_cutoff_frequency":0.01,"high_cutoff_frequency":0.25,"ref":projection})
+			
+			particle_prod=particle.copy()
+			particle_prod.mult(projection)
+			
+			particle_lpprod=particle.process("filter.lowpass.gauss",{"cutoff_freq":0.04})
+			tmp=projection.process("filter.lowpass.gauss",{"cutoff_freq":0.04})
+			particle_lpprod.mult(tmp)
 
 			projection["cmp"]=0
 			particle["cmp"]=simval
 			particle_masked["cmp"]=0
-			self.mx_display.set_data([projection,particle,particle_masked])
+			self.mx_display.set_data([projection,particle,particle_masked,particle_prod,particle_lpprod])
 
 			if self.frc_display != None :
 				try : apix=particle["ctf"].apix
