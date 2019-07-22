@@ -7686,7 +7686,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 
 			outlier_file = os.path.join(final_dir, "outlier-params-chunk_%01d_%03d.txt"%(procid, (Tracker["mainiteration"])))
 
-			if Tracker['prior']['apply_prior'] or Tracker['prior']['force_outlier']:
+			if Tracker['prior']['apply_prior']:
 				outlier_list = read_text_file(outlier_file)[start_end[0]:start_end[1]]
 			else:
 				outlier_list = [0] * len(projdata[procid])
@@ -9469,8 +9469,6 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 
 		if Tracker['prior']['apply_prior']:
 			pass
-		elif Tracker['prior']['force_outlier']:
-			pass
 		else:
 			outlier_list = [0] * len(projdata[procid])
 		norm_per_particle_outlier = []
@@ -9765,13 +9763,13 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 		if Tracker['prior']['force_outlier']:
 			shutil.copy(params_file, '{0}_old'.format(params_file))
 			shutil.copy(new_params, params_file)
-			outliers = outliers.tolist()
-		elif Tracker['prior']['apply_prior']:
+
+		if Tracker['prior']['apply_prior']:
 			outliers = outliers.tolist()
 		else:
 			outliers = [0] * len_data
 
-		if 100*no_outliers/float(len_data) < 15:
+		if 100*no_outliers/float(len_data) < 50:
 			sxprint('Number of outliers too large! Do not discard outlier!')
 			outliers = [0] * len_data
 
@@ -10044,6 +10042,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				Constants['stack_prior_fmt'] = None
 				Constants['stack_prior_dtype'] = None
 			else:
+				Prior['force_outlier'] = True
 				Constants['stack_prior'] = sp_helix_sphire.import_sphire_stack(args[0], options.outlier_by)
 				Constants['stack_prior_fmt'] = prior_stack_fmt(Constants['stack_prior'])
 				Constants['stack_prior_dtype'] = Constants['stack_prior'].dtype.descr
