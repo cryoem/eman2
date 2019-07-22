@@ -1,9 +1,9 @@
 name: EMAN2
 version: 2.3
 
-installer_filename: eman2.mac.sh    # [osx]
-installer_filename: eman2.linux.sh  # [linux]
-installer_filename: eman2.win.exe   # [win]
+installer_filename: eman2_huge.mac.sh    # [osx]
+installer_filename: eman2_huge.linux.sh  # [linux]
+installer_filename: eman2_huge.win.exe   # [win]
 
 channels:
     - https://conda.anaconda.org/cryoem
@@ -31,7 +31,7 @@ specs:
   - menuinst          # [win]
 
 
-welcome_image: ../images/EMAN2Icon.png      # [win]
-icon_image:    ../images/eman.ico           # [win]
-post_install:  post-install-actions.sh   # [unix]
-post_install:  post-install-actions.bat  # [win]
+welcome_image: ../../images/EMAN2Icon.png      # [win]
+icon_image:    ../../images/eman.ico           # [win]
+post_install:  ../post-install-actions.sh      # [unix]
+post_install:  ../post-install-actions.bat     # [win]
