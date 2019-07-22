@@ -163,10 +163,26 @@ pipeline {
       when {
         expression { isBinaryBuild() }
       }
+      environment {
+        PARENT_STAGE_NAME = "${STAGE_NAME}"
+      }
       
-      steps {
-        notifyGitHub('PENDING')
-        sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/'
+      parallel {
+        stage('notify') {
+          steps {
+            notifyGitHub('PENDING')
+          }
+        }
+        stage('mini') {
+          steps {
+            sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/constructor-mini/'
+          }
+        }
+        stage('huge') {
+          steps {
+            sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/constructor-huge/'
+          }
+        }
       }
     }
     
