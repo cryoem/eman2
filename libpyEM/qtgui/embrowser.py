@@ -3386,9 +3386,9 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 			# This makes an instance of a FileType for the selected object
 
 			ftc = obj.fileTypeClass()
-	
+
 			if ftc != None :
-				if os.path.exists(obj.path()):
+				if os.path.exists(obj.truepath()) :
 					self.curft = ftc(obj.path())
 				else:
 					print("Error: file {} does not exist...".format(obj.path()))
