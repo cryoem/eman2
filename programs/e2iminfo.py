@@ -171,7 +171,7 @@ def main():
 					print("\t",end='')
 			
 			if options.stat :
-				print("apix=%-5.2f min=%-10.4g max=%-10.4g mean=%-10.4g sigma=%-9.4g skewness=%-9.4g kurtosis=%-9.4g"%(d["apix_x"],d["minimum"],d["maximum"],d["mean"],d["sigma"],d["skewness"],d["kurtosis"]), end=' ')
+				print("apix=%-5.2f min=%-10.4g max=%-10.4g mean=%-10.4g sigma=%-9.4g skewness=%-9.4g kurtosis=%-9.4g moment_inertia=%9.4g radius_gyration=%9.4g"%(d["apix_x"],d["minimum"],d["maximum"],d["mean"],d["sigma"],d["skewness"],d["kurtosis"],d["moment_inertia"],d["radius_gyration"]), end=' ')
 				try:
 					c=d["ctf"]
 					print("   defocus=%-6.2f B=%-1.0f"%(c.defocus,c.bfactor))

@@ -466,6 +466,16 @@ class EMHistogramWidget(EMGLWidget):
 			elif self.alignment == "edge":
 				histalign = "left"
 
+			# this try except block is because the developers of matplotlib have been changing their API
+			try: # this would work for matplotlib 0.98
+				self.scrlim=(ax.get_window_extent().xmin,ax.get_window_extent().ymin,ax.get_window_extent().xmax-ax.get_window_extent().xmin,ax.get_window_extent().ymax-ax.get_window_extent().ymin)
+			except:
+				try: # this should work for matplotlib 0.91
+					self.scrlim=(ax.get_window_extent().xmin(),ax.get_window_extent().ymin(),ax.get_window_extent().xmax()-ax.get_window_extent().xmin(),ax.get_window_extent().ymax()-ax.get_window_extent().ymin())
+				except:
+					print('there is a problem with your matplotlib')
+					return
+
 			for k in list(self.axes.keys()):
 				if not self.visibility[k]: continue
 
@@ -473,12 +483,13 @@ class EMHistogramWidget(EMGLWidget):
 				color = colortypes[self.pparm[k][0]]
 				alpha = self.pparm[k][1]
 				rwidth = self.pparm[k][2]
-
+				
 				self.bins[k],self.edges = np.histogram(dcurr,self.nbins,range=self.xlimits,density=self.normed)
 				width = (self.edges[1]-self.edges[0])*rwidth
 
 				if self.cumulative:
 					self.bins[k] = np.cumsum(self.bins[k])
+					
 				if self.normed:
 					self.bins[k] /= np.sum(self.bins[k])
 					self.bins[k] /= len(list(self.axes.keys()))
@@ -508,15 +519,6 @@ class EMHistogramWidget(EMGLWidget):
 			canvas.draw()
 			self.plotimg = canvas.tostring_rgb()  # save this and convert to bitmap as needed
 
-			# this try except block is because the developers of matplotlib have been changing their API
-			try: # this would work for matplotlib 0.98
-				self.scrlim=(ax.get_window_extent().xmin,ax.get_window_extent().ymin,ax.get_window_extent().xmax-ax.get_window_extent().xmin,ax.get_window_extent().ymax-ax.get_window_extent().ymin)
-			except:
-				try: # this should work for matplotlib 0.91
-					self.scrlim=(ax.get_window_extent().xmin(),ax.get_window_extent().ymin(),ax.get_window_extent().xmax()-ax.get_window_extent().xmin(),ax.get_window_extent().ymax()-ax.get_window_extent().ymin())
-				except:
-					print('there is a problem with your matplotlib')
-					return
 			self.plotlim=(ax.get_xlim()[0],ax.get_ylim()[0],ax.get_xlim()[1]-ax.get_xlim()[0],ax.get_ylim()[1]-ax.get_ylim()[0])
 
 			if not self.glflags.npt_textures_unsupported():
@@ -612,6 +614,12 @@ class EMHistogramWidget(EMGLWidget):
 	def setAxes(self,key,xa,quiet=False):
 		if self.axes[key]==(xa,) : return
 		self.axes[key]=(xa,)
+		dcurr = self.data[key][self.axes[key][0]]
+		self.add_shape("statlbl1",EMShape(("scrlabel",0,0,0,75,self.scrlim[3]-20,"{}({})".format(key,self.axes[key][0]),120.0,-1)))
+		self.add_shape("statlbl2",EMShape(("scrlabel",0,0,0,75,self.scrlim[3]-40,"{:0.4g} - {:0.4g}".format(dcurr.min(),dcurr.max()),120.0,-1)))
+		self.add_shape("statlbl3",EMShape(("scrlabel",0,0,0,75,self.scrlim[3]-60,"mean={:0.4g}".format(dcurr.mean()),120.0,-1)))
+		self.add_shape("statlbl4",EMShape(("scrlabel",0,0,0,75,self.scrlim[3]-80,"std={:0.4g}".format(dcurr.std()),120.0,-1)))
+
 		self.autoscale(True)
 		self.needupd=1
 		if not quiet : self.updateGL()

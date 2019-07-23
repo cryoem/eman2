@@ -129,6 +129,10 @@ pipeline {
   
   stages {
     stage('init') {
+      options {
+        timeout(time: 10, unit: 'MINUTES') 
+      }
+      
       steps {
         selectNotifications()
         notifyGitHub('PENDING')
@@ -169,7 +173,6 @@ pipeline {
     stage('test-package') {
       when {
         expression {isBinaryBuild() }
-        expression { JOB_NAME != 'Win' }
       }
       
       steps {
