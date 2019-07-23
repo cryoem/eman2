@@ -10042,7 +10042,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				Constants['stack_prior_fmt'] = None
 				Constants['stack_prior_dtype'] = None
 			else:
-				Prior['force_outlier'] = True
 				Constants['stack_prior'] = sp_helix_sphire.import_sphire_stack(args[0], options.outlier_by)
 				Constants['stack_prior_fmt'] = prior_stack_fmt(Constants['stack_prior'])
 				Constants['stack_prior_dtype'] = Constants['stack_prior'].dtype.descr
@@ -10566,8 +10565,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			Constants["nonorm"]            			= options.nonorm
 			Constants["small_memory"]      			= options.small_memory
 			Constants["memory_per_node"] 			= options.memory_per_node
-			Constants["outlier_by"] 			= options.memory_per_node
-
 
 
 			#
@@ -10581,7 +10578,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			# Initialize Tracker Dictionary with input options
 			Tracker = {}
 			Tracker["constants"]	= Constants
-			Tracker["prior"]	= Prior
 			Tracker["maxit"]		= Tracker["constants"]["maxit"]
 
 			Tracker["xr"]			= options.xr
