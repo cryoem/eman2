@@ -12,7 +12,7 @@ def getJobType() {
 
 def notifyGitHub(status) {
     if(JOB_TYPE == "push" || NOTIFY_GITHUB == "true") {
-        if(status == 'PENDING') { message = 'Stage: ' + STAGE_NAME }
+        if(status == 'PENDING') { message = 'Stage: ' + (env.PARENT_STAGE_NAME ?: STAGE_NAME) }
         if(status == 'SUCCESS') { message = 'Build succeeded!' }
         if(status == 'FAILURE') { message = 'Build failed!' }
         if(status == 'ERROR')   { message = 'Build aborted!' }
