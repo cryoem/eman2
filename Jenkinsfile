@@ -72,7 +72,7 @@ def isBinaryBuild() {
 
 def testPackage() {
     if(SLAVE_OS != 'win')
-        sh "bash tests/test_binary_installation.sh ${INSTALLERS_DIR} eman2.${SLAVE_OS}.sh"
+        sh "bash tests/test_binary_installation.sh ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${INSTALLERS_DIR}/eman2-binary-test"
     else
         sh 'ci_support/test_wrapper.sh'
 }

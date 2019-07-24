@@ -2,10 +2,8 @@
 
 set "BASH_EXE=C:\Program Files\Git\bin\bash.exe"
 
-set "dir=%1"
-set fname=%2
-set "installer_file=%dir%\%fname%"
-set "installation_loc=%dir%\eman2-binary-test"
+set "installer_file=%1"
+set "installation_loc=%2"
 
 rmdir /q /s %installation_loc%
 start /wait "" %installer_file% /InstallationType=JustMe /RegisterPython=0 /AddToPath=0 /S /D=%installation_loc%
