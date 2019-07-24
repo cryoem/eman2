@@ -190,10 +190,26 @@ pipeline {
       when {
         expression {isBinaryBuild() }
       }
+      environment {
+        PARENT_STAGE_NAME = "${STAGE_NAME}"
+      }
       
-      steps {
-        notifyGitHub('PENDING')
-        testPackage('', 'eman2-binary-test')
+      parallel {
+        stage('notify') {
+          steps {
+            notifyGitHub('PENDING')
+          }
+        }
+        stage('mini') {
+          steps {
+            testPackage('', 'mini')
+          }
+        }
+        stage('huge') {
+          steps {
+            testPackage('_huge','huge')
+          }
+        }
       }
     }
     
