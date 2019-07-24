@@ -705,7 +705,7 @@ The basic design of EMAN Processors: <br>\
 				d.put("hn", EMObject::INT, "Computes a single translational invariant for the nth harmonic, 1 is a normal power spectrum");
 				d.put("rn", EMObject::INT, "Computes a single rot/trans invariant for the nth rotational harmonic, requires hn to be non zero");
 				d.put("rfp", EMObject::INT, "Returns a non square 2-D image with translational invariants, y=radial, x=aziumth. Used for rotational alignment.");
-				d.put("fp", EMObject::INT, "Returns a non-square 2-D image containing n harmonics for each R&T component. R&T invariant.");
+				d.put("fp", EMObject::INT, "Returns a non-square 2-D image containing n harmonics for each R&T component. R&T invariant. Min 2, default 4");
 //				d.put("fb", EMObject::INT, "Fourier Bessel");
 				d.put("size", EMObject::INT, "If specified, will determine the number of rotational samples in the bispectrum. If not set, a size is selected automatically");
 				return d;
@@ -3224,15 +3224,15 @@ The basic design of EMAN Processors: <br>\
 		void set_params(const Dict & new_params)
 		{
 			params = new_params;
-			low = params.get("low");
-			high = params.get("high");
+			low = params.set_default("low",1.0f);
+			high = params.set_default("high",0.0f);
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("low", EMObject::FLOAT, "Pixels are divided by (low - high) prior to the exponential operation");
-			d.put("high", EMObject::FLOAT, "Pixels are divided by (low - high) prior to the exponential operation");
+			d.put("low", EMObject::FLOAT, "Pixels are divided by low then high is subtracted prior to the exponential operation, default 1.0");
+			d.put("high", EMObject::FLOAT, "Pixels are divided by low then high is subtracted prior to the exponential operation, default 0.0");
 			return d;
 		}
 

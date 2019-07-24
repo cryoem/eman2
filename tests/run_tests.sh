@@ -2,6 +2,8 @@
 
 set -xe
 
+conda list
+
 MYDIR="$(cd "$(dirname "$0")"; pwd -P)"
 
 # 1. Run e2version.py and e2speedtest.py

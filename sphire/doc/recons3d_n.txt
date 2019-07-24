@@ -13,17 +13,19 @@ Usage in command line
 \\
 ===== Typical usage =====
 
+  sp_recons3d_n.py exists in for both MPI and non-MPI versions.
+
 Create a binary mask dilated by 2 pixel using the binary threshold from chimera
 
-  sp_recons3d_n.py input_volume output_directory 
+  mpirun -np 32 sp_recons3d_n.py input_volume output_directory  --MPI
 
 Create an adapted mask dilated by 2 pixel and a soft edge of 5 pixel using the binary threshold from chimera
 
-  sp_recons3d_n.py input_volume output_directory --threshold=0.3 --edge_width=5 --ndilation=1
+  mpirun -np 32 sp_recons3d_n.py input_volume output_directory --threshold=0.3 --edge_width=5 --ndilation=1 --MPI
 
 Create an adapted mask dilated by 2 pixel and a soft edge of 5 pixel using the binary threshold from chimera and masked by a soft edged cylinder to 80% (e.g. for helical reconstruction with a box size of 300)
 
-  sp_recons3d_n.py input_volume output_directory --threshold=0.3 --edge_width=5 --ndilation=1 --second_mask_shape=cylinder --s_radius=40 --s_nx=240 --s_ny=240 --s_nz=240 --s_ndilation=1 --s_edge_width=5
+  mpirun -np 32 sp_recons3d_n.py input_volume output_directory --threshold=0.3 --edge_width=5 --ndilation=1 --second_mask_shape=cylinder --s_radius=40 --s_nx=240 --s_ny=240 --s_nz=240 --s_ndilation=1 --s_edge_width=5 --MPI
 
 \\
 ===== Input =====
@@ -53,6 +55,7 @@ Create an adapted mask dilated by 2 pixel and a soft edge of 5 pixel using the b
   ; %%--%%compensate : Compensate : Compensate in reconstruction. (default False)
   ; %%--%%chunk_id : Chunk ID : Reconstruct both odd and even groups of particles. (default -1)
   ; %%--%%target_window_size : Target window size : Size of the targeted reconstruction. (default -1)
+  ; %%--%%MPI : Use MPI: (default False)
 
 \\
 ===== Output =====

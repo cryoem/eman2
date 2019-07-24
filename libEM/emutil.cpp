@@ -529,6 +529,7 @@ int EMUtil::get_image_count(const string & filename)
 	int nimg = 0;
 
 	ImageIO *imageio = get_imageio(filename, ImageIO::READ_ONLY);
+	//printf("%p\n",imageio);
 
 	if (imageio) {
 		nimg = imageio->get_nimg();

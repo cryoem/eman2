@@ -883,10 +883,10 @@ def rops(e):
 	for i in range(len(table)): ps[i] = table[i]
 	return ps
 
-def rops_textfile(e, filename, lng = False):
+def rops_textfile(img, filename, lng = False):
 	"""Rotational average of the periodogram stored as a text file.
 	   Saves a text file (suitable for gnuplot) of the rotational average 
-	   of the periodogram of image e.
+	   of the periodogram of img.
 		Input image can be real or Fourier, can be rectangular
 		output length mapped onto x-dimension length
 	"""
@@ -900,7 +900,7 @@ def rops_textfile(e, filename, lng = False):
 		from math import log10
 		for ir in range(1,len(table)): table[ir] = log10(table[ir])
 		table[0] = table[1]
-	write_text_file([list(range(nr)),table], filename)
+	write_text_file([list(range(len(table) ) ),table], filename)
 	
 def rops_table(img, lng = False):
 

@@ -16,8 +16,7 @@
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
- * (at your op
- * tion) any later version.
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -1100,6 +1099,59 @@ EMObject EMData::get_attr(const string & key) const
 		}
 		float skewness = (float)(skewness_sum / size);
 		return skewness;
+	}
+	else if (key == "moment_inertia") {
+		double moment=0;
+		if (ny==1 && nz==1) throw ImageFormatException("Error - cannot calculate moment of inertia of 1-D image");
+		if (nz==1) {
+			for (int y=0; y<ny; y++) {
+				for (int x=0; x<nx; x++) {
+					double v=get_value_at(x,y);
+					if (v<=0) continue;
+					moment+=v*(double)Util::hypot2sq(x-nx/2,y-ny/2);
+				}
+			}
+		}
+		else {
+			for (int z=0; z<nz; z++) {
+				for (int y=0; y<ny; y++) {
+					for (int x=0; x<nx; x++) {
+						double v=get_value_at(x,y,z);
+						if (v<=0) continue;
+						moment+=v*(double)Util::hypot3sq(x-nx/2,y-ny/2,z-nz/2);
+					}
+				}
+			}
+		}
+		return (float)moment;
+	}
+	else if (key == "radius_gyration") {
+		double moment=0;
+		double mass=0;
+		if (ny==1 && nz==1) throw ImageFormatException("Error - cannot calculate moment of inertia of 1-D image");
+		if (nz==1) {
+			for (int y=0; y<ny; y++) {
+				for (int x=0; x<nx; x++) {
+					double v=get_value_at(x,y);
+					if (v<=0) continue;
+					mass+=v;
+					moment+=v*(double)Util::hypot2sq(x-nx/2,y-ny/2);
+				}
+			}
+		}
+		else {
+			for (int z=0; z<nz; z++) {
+				for (int y=0; y<ny; y++) {
+					for (int x=0; x<nx; x++) {
+						double v=get_value_at(x,y,z);
+						if (v<=0) continue;
+						mass+=v;
+						moment+=v*(double)Util::hypot3sq(x-nx/2,y-ny/2,z-nz/2);
+					}
+				}
+			}
+		}
+		return (float)(std::sqrt(moment/mass));
 	}
 	else if (key == "median")
 	{

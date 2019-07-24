@@ -78,7 +78,7 @@ def parse_command_line():
 	parser.add_argument(
 		'--prefix',
 		type=str,
-		default='sxmask',
+		default='sp_mask',
 		help='Prefix for the produced files'
 		)
 	parser.add_argument(
@@ -105,7 +105,7 @@ def parse_command_line():
 		type=float,
 		default=0.01,
 		action=NotSmallerZeroAction,
-		help='Low pass filter fall of in absolute frequencies. Used for filtering the volume.'
+		help='Low pass filter falloff in absolute frequencies. Used for filtering the volume.'
 		)
 	group_filter.add_argument(
 		'--pixel_size',
@@ -233,6 +233,13 @@ def parse_command_line():
 		default=None,
 		action=NotSmallerZeroAction,
 		help='Second mask mask_path: Number of times of sigma of the input volume to calculate the binarization threshold.'
+		)
+	group_filter.add_argument(
+		'--s_pixel_size',
+		'--sapix',
+		type=float,
+		default=1.0,
+		help='Second mask pixel_size: Pixel size of the input volume. Used for filtering the volume.'
 		)
 	group_threshold.add_argument(
 		'--s_mol_mass',
@@ -422,7 +429,11 @@ def main():
 	density_threshold = -9999.0
 	nsigma = 1.0
 	if command_args.mol_mass:
-		density_threshold = input_vol.find_3d_threshold(command_args.mol_mass, command_args.pixel_size)
+		density_threshold = input_vol.find_3d_threshold(
+			command_args.mol_mass,
+			command_args.pixel_size
+			)
+		sxprint('Mask molecular mass translated into binary threshold: ', density_threshold)
 	elif command_args.threshold:
 		density_threshold = command_args.threshold
 	elif command_args.nsigma:
@@ -458,13 +469,14 @@ def main():
 	if command_args.second_mask is not None:
 		sxprint('Prepare second mask')
 		s_mask = sp_utilities.get_im(command_args.second_mask)
-		density_threshold = -9999.0
-		nsigma = 1.0
+		s_density_threshold = -9999.0
+		s_nsigma = 1.0
 		if command_args.s_mol_mass:
 			s_density_threshold = input_vol.find_3d_threshold(
 				command_args.s_mol_mass,
 				command_args.s_pixel_size
 				)
+			sxprint('Second mask molecular mass translated into binary threshold: ', s_density_threshold)
 		elif command_args.s_threshold:
 			s_density_threshold = command_args.s_threshold
 		elif command_args.s_nsigma:

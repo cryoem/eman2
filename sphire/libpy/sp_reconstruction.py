@@ -1456,46 +1456,47 @@ def recons3d_trl_struct_MPI(myid, main_node, prjlist, paramstructure, refang, rs
 	r = Reconstructors.get( "nn4_ctfw", params )
 	r.setup()
 	
-	if norm_per_particle == None: norm_per_particle = len(prjlist)*[1.0]
+	if prjlist:
+		if norm_per_particle == None: norm_per_particle = len(prjlist)*[1.0]
 
-	nnx = prjlist[0].get_xsize()
-	nny = prjlist[0].get_ysize()
-	nshifts = len(rshifts_shrank)
-	for im in range(len(prjlist)):
-		#  parse projection structure, generate three lists:
-		#  [ipsi+iang], [ishift], [probability]
-		#  Number of orientations for a given image
-		numbor = len(paramstructure[im][2])
-		ipsiandiang = [ paramstructure[im][2][i][0]/1000  for i in range(numbor) ]
-		allshifts   = [ paramstructure[im][2][i][0]%1000  for i in range(numbor) ]
-		probs       = [ paramstructure[im][2][i][1] for i in range(numbor) ]
-		#  Find unique projection directions
-		tdir = list(set(ipsiandiang))
-		bckgn = prjlist[im].get_attr("bckgnoise")
-		ct = prjlist[im].get_attr("ctf")
-		#  For each unique projection direction:
-		data = [None]*nshifts
-		for ii in range(len(tdir)):
-			#  Find the number of times given projection direction appears on the list, it is the number of different shifts associated with it.
-			lshifts = findall(tdir[ii], ipsiandiang)
-			toprab  = 0.0
-			for ki in range(len(lshifts)):  toprab += probs[lshifts[ki]]
-			recdata = EMData(nny,nny,1,False)
-			recdata.set_attr("is_complex",0)
-			for ki in range(len(lshifts)):
-				lpt = allshifts[lshifts[ki]]
-				if( data[lpt] == None ):
-					data[lpt] = fshift(prjlist[im], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
-					data[lpt].set_attr("is_complex",0)
-				Util.add_img(recdata, Util.mult_scalar(data[lpt], probs[lshifts[ki]]/toprab))
-			recdata.set_attr_dict({"padffted":1, "is_fftpad":1,"is_fftodd":0, "is_complex_ri":1, "is_complex":1})
-			if not upweighted:  recdata = filt_table(recdata, bckgn )
-			recdata.set_attr_dict( {"bckgnoise":bckgn, "ctf":ct} )
-			ipsi = tdir[ii]%100000
-			iang = tdir[ii]/100000
-			r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":refang[iang][2]+ipsi*delta}), toprab*avgnorm/norm_per_particle[im])
-	#  clean stuff
-	del bckgn, recdata, tdir, ipsiandiang, allshifts, probs
+		nnx = prjlist[0].get_xsize()
+		nny = prjlist[0].get_ysize()
+		nshifts = len(rshifts_shrank)
+		for im in range(len(prjlist)):
+			#  parse projection structure, generate three lists:
+			#  [ipsi+iang], [ishift], [probability]
+			#  Number of orientations for a given image
+			numbor = len(paramstructure[im][2])
+			ipsiandiang = [ paramstructure[im][2][i][0]/1000  for i in range(numbor) ]
+			allshifts   = [ paramstructure[im][2][i][0]%1000  for i in range(numbor) ]
+			probs       = [ paramstructure[im][2][i][1] for i in range(numbor) ]
+			#  Find unique projection directions
+			tdir = list(set(ipsiandiang))
+			bckgn = prjlist[im].get_attr("bckgnoise")
+			ct = prjlist[im].get_attr("ctf")
+			#  For each unique projection direction:
+			data = [None]*nshifts
+			for ii in range(len(tdir)):
+				#  Find the number of times given projection direction appears on the list, it is the number of different shifts associated with it.
+				lshifts = findall(tdir[ii], ipsiandiang)
+				toprab  = 0.0
+				for ki in range(len(lshifts)):  toprab += probs[lshifts[ki]]
+				recdata = EMData(nny,nny,1,False)
+				recdata.set_attr("is_complex",0)
+				for ki in range(len(lshifts)):
+					lpt = allshifts[lshifts[ki]]
+					if( data[lpt] == None ):
+						data[lpt] = fshift(prjlist[im], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
+						data[lpt].set_attr("is_complex",0)
+					Util.add_img(recdata, Util.mult_scalar(data[lpt], probs[lshifts[ki]]/toprab))
+				recdata.set_attr_dict({"padffted":1, "is_fftpad":1,"is_fftodd":0, "is_complex_ri":1, "is_complex":1})
+				if not upweighted:  recdata = filt_table(recdata, bckgn )
+				recdata.set_attr_dict( {"bckgnoise":bckgn, "ctf":ct} )
+				ipsi = tdir[ii]%100000
+				iang = tdir[ii]/100000
+				r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":refang[iang][2]+ipsi*delta}), toprab*avgnorm/norm_per_particle[im])
+		#  clean stuff
+		del bckgn, recdata, tdir, ipsiandiang, allshifts, probs
 
 
 	reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)

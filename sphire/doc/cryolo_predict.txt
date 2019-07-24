@@ -8,12 +8,12 @@ crYOLO - predict: Prediction with crYOLO, a deep learning high accuracy particle
 
 Usage in command line
 
-  sp_cryolo_predict.py config_path target_dir model_path output_dir --cryolo_predict_path=CRYOLO_PATH --confidence_threshold=confidence_threshold --gpu=gpu --gpu=GPU_NUMBER --filament_mode --filament_width=FILAMENT_WIDTH --min_box_per_filament=MIN_BOX_PER_FILAMENT --box_distance=BOX_DISTANCE --gpu_fraction=GPU_FRACTION --num_cpu=NUM_CPU --nosplit --nomerging
+  sp_cryolo_predict.py config_path target_dir model_path output_directory --cryolo_predict_path=CRYOLO_PATH --confidence_threshold=confidence_threshold --gpu=gpu --gpu=GPU_NUMBER --filament_mode --filament_width=FILAMENT_WIDTH --min_box_per_filament=MIN_BOX_PER_FILAMENT --box_distance=BOX_DISTANCE --gpu_fraction=GPU_FRACTION --num_cpu=NUM_CPU --nosplit --nomerging
 
 \\
 ===== Typical usage =====
 
-To pick with crYOLO one have to specifiy the config file, the target folder containing the images and the output folder
+To pick with crYOLO, one has to specify the config file, the target folder containing the images and the output folder
 for writing the box files. Optionally one can specify the confidence threshold and which GPUs should be used.
 
 \\ __Prediction__:
@@ -25,11 +25,11 @@ for writing the box files. Optionally one can specify the confidence threshold a
 \\
 ===== Input =====
 === Main Parameters ===
-  ; %%--%%cryolo_predict_path : crYOLO predict executable : Path to the crYOLO prediction executeable (default none)
+  ; %%--%%cryolo_predict_path : crYOLO predict executable : Path to the cryolo_predict.py in your crYOLO environment (default none)
   ; config_path : Config file: Path of the crYOLO config file.  (default required)
   ; target_dir : Image directory  : Folder which contain all images. (default none)
   ; model_path : Model path : Path to the trained model. (default required)
-  ; output_dir : Output directory : Folder to write the box files. (default none)
+  ; output_directory : Output directory : Folder to write the box files. (default none)
 
 
 \\

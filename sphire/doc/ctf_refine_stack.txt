@@ -32,7 +32,7 @@ sp_ctf_refine.py exists only in non-MPI version.
 === Advanced Parameters ===
   ; %%--%%range : Defocus search range [um] : Search range +- around the current defocus value. (default 0.15)
   ; %%--%%delta : Defocus search delta [um] : Finest search delta. (default 0.0025)
-  ; %%--%%resolution : Nominal resolution [A] : Nominal resolution of the reconstruction. (default None)
+  ; %%--%%resolution : Nominal resolution [A] : Nominal resolution of the reconstruction. Low-pass Gaussian filter will be applied at this resolution. (default None)
   ; %%--%%apix : Pixel size [A] : Pixel size in Angstroms. (default None) : %%--%%resolution!=None
   ; %%--%%number_part : Number of particles : Number of particles to process. Mainly for debugging. (default none)
   ; %%--%%chunk : Path to chunk file : Path to chunk file (default none)

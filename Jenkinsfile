@@ -12,7 +12,7 @@ def getJobType() {
 
 def notifyGitHub(status) {
     if(JOB_TYPE == "push" || NOTIFY_GITHUB == "true") {
-        if(status == 'PENDING') { message = 'Building...' }
+        if(status == 'PENDING') { message = 'Stage: ' + STAGE_NAME }
         if(status == 'SUCCESS') { message = 'Build succeeded!' }
         if(status == 'FAILURE') { message = 'Build failed!' }
         if(status == 'ERROR')   { message = 'Build aborted!' }
@@ -129,6 +129,10 @@ pipeline {
   
   stages {
     stage('init') {
+      options {
+        timeout(time: 10, unit: 'MINUTES') 
+      }
+      
       steps {
         selectNotifications()
         notifyGitHub('PENDING')
@@ -143,12 +147,14 @@ pipeline {
       }
       
       steps {
+        notifyGitHub('PENDING')
         sh 'source $(conda info --root)/bin/activate eman-deps-14.0 && bash ci_support/build_no_recipe.sh'
       }
     }
     
     stage('build-recipe') {
       steps {
+        notifyGitHub('PENDING')
         sh 'bash ci_support/build_recipe.sh'
       }
     }
@@ -159,6 +165,7 @@ pipeline {
       }
       
       steps {
+        notifyGitHub('PENDING')
         sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/'
       }
     }
@@ -166,10 +173,10 @@ pipeline {
     stage('test-package') {
       when {
         expression {isBinaryBuild() }
-        expression { JOB_NAME != 'Win' }
       }
       
       steps {
+        notifyGitHub('PENDING')
         testPackage()
       }
     }
@@ -180,6 +187,7 @@ pipeline {
       }
       
       steps {
+        notifyGitHub('PENDING')
         deployPackage()
       }
     }

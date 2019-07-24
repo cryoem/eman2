@@ -169,6 +169,24 @@ argparser.add_argument(
 		 'the training is stopped.')
 
 argparser.add_argument(
+    "--dolowpass",
+    action="store_true",
+    help="",
+)
+
+argparser.add_argument(
+	'--cutoff',
+	default=0.1,
+	type=float,
+	help='Cut off for low pass filter. Should be between 0 and 0.5.')
+
+argparser.add_argument(
+	'--filtered_dir',
+	type=str,
+	default="cryolo_filtered_micrographs",
+	help='Path to write filtered images')
+
+argparser.add_argument(
 	'--fine_tune',
 	default=False,
 	action="store_true",
@@ -225,6 +243,10 @@ def main():
 	num_cpu = args.num_cpu
 	cryolo_train_path = args.cryolo_train_path
 
+	do_low_pass = args.dolowpass
+	cutoff = args.cutoff
+	filtered_dir = args.filtered_dir
+
 	warmup = args.warmup
 	early_stop = int(args.early)
 
@@ -238,6 +260,9 @@ def main():
 				  'overlap_patches': overlap_patches,
 				  'max_box_per_image': 1000,
 				  'num_patches': num_patches}
+
+	if do_low_pass:
+		model_dict['filter'] = [cutoff,filtered_dir]
 
 	train_dict = {'train_image_folder': trainging_dir,
 				  'train_annot_folder': annot_dir,

@@ -13971,9 +13971,6 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 					proj = prgs(volft, kbz, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]],kbx,kby)
 			if trillinear:set_params_proj(proj, angles[i][0:5])
 			else:         set_params_proj(proj, angles[i])
-		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
-		# proj.set_attr_dict({'active':1})
-		
 
 		# add noise, if noise is set. this is two-fold: application of noise before
 		#    ctf filtering and after it.
@@ -14018,7 +14015,7 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 
 		if(Disk):
 			proj.write_image(stack, i)
-		else: 
+		else:
 			out.append(proj)
 	if(not Disk):  return out
 

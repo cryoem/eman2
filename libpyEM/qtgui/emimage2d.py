@@ -403,13 +403,16 @@ class EMImage2DWidget(EMGLWidget):
 			needresize=False
 
 		fourier = False
-		if xyz==0:
-			incoming_data.transform(Transform({"type":"xyz", "xtilt":90}))
-		elif xyz==1:
-			incoming_data.transform(Transform({"type":"xyz", "ytilt":90}))
-
+		
+		apix=1.0
 		# it's a 3D image
 		if not isinstance(data,list) and not isinstance(data,EMDataListCache) and not isinstance(data,EMLightWeightParticleCache) and data.get_zsize() != 1:
+			
+			if xyz==0:
+				incoming_data.transform(Transform({"type":"xyz", "xtilt":90}))
+			elif xyz==1:
+				incoming_data.transform(Transform({"type":"xyz", "ytilt":90}))
+			
 			data = []
 			shp=[incoming_data.get_xsize(), incoming_data.get_ysize(), incoming_data.get_zsize()]
 			for z in range(shp[xyz]):
@@ -418,8 +421,10 @@ class EMImage2DWidget(EMGLWidget):
 
 
 		if isinstance(data,list) or isinstance(data,EMDataListCache) or isinstance(data,EMLightWeightParticleCache):
-			if self.list_data == None and self.list_idx > len(data): self.list_idx = old_div(len(data),2) #otherwise we use the list idx from the previous list data, as in when being used from the emselector
+			if self.list_data == None and self.list_idx > len(data): 
+				self.list_idx = len(data)//2 #otherwise we use the list idx from the previous list data, as in when being used from the emselector
 			d = data[0]
+			apix=d["apix_x"]
 			if d.is_complex():
 				self.list_data = []
 				self.list_fft_data = data
@@ -432,7 +437,8 @@ class EMImage2DWidget(EMGLWidget):
 				self.data = self.list_data[self.list_idx]
 				self.list_fft_data = [d.do_fft() for d in data]
 				if self.fftorigincenter :
-					for im in self.list_fft_data : im.process_inplace("xform.phaseorigin.tocorner")
+					for im in self.list_fft_data :
+						im.process_inplace("xform.phaseorigin.tocorner")
 				self.__set_display_image(self.curfft)
 			else:
 				self.list_data = data
@@ -444,6 +450,7 @@ class EMImage2DWidget(EMGLWidget):
 		else:
 			self.list_data = None
 			self.list_fft_data = None
+			apix=data["apix_x"]
 			if data.is_complex() or self.curfft in [1,2,3]:
 				self.display_fft = None
 				self.data = None
@@ -468,7 +475,7 @@ class EMImage2DWidget(EMGLWidget):
 				self.fft = None
 
 		self.image_change_count = 0
-		
+		self.get_inspector().mtapix.setValue(apix)
 		if not keepcontrast:
 			self.auto_contrast(inspector_update=False,display_update=False)
 

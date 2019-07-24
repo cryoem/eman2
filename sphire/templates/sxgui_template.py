@@ -1018,7 +1018,7 @@ class SXCmdWidget(QWidget):
 						if np > 1:
 							cmd_line = line
 						else:
-							cmd_line = "XXX_SXCMD_LINE_XXX"
+							cmd_line = "XXX_SXCMD_LINE_XXX " + line.split('XXX_SXCMD_LINE_XXX')[-1]
 						cmd_line = cmd_line.replace("XXX_SXCMD_LINE_XXX", sxcmd_line)
 						if cmd_line.find("XXX_SXMPI_NPROC_XXX") != -1:
 							cmd_line = cmd_line.replace("XXX_SXMPI_NPROC_XXX", str(np))
@@ -1035,7 +1035,7 @@ class SXCmdWidget(QWidget):
 					if np > 1:
 						cmd_line = "mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX"
 					else:
-						cmd_line = "XXX_SXCMD_LINE_XXX"
+						cmd_line = "XXX_SXCMD_LINE_XXX " + line.split('XXX_SXCMD_LINE_XXX')[-1]
 				if cmd_line.find("XXX_SXMPI_NPROC_XXX") != -1:
 					cmd_line = cmd_line.replace("XXX_SXMPI_NPROC_XXX", str(np))
 				if cmd_line.find("XXX_SXCMD_LINE_XXX") != -1:
@@ -2957,7 +2957,6 @@ class SXCmdTab(QWidget):
 
 			# self.mpi_nproc_edit = QLineEdit(self)
 			self.mpi_nproc_edit = QLineEdit()
-			self.mpi_nproc_edit.setText("1")
 			self.mpi_nproc_edit.setToolTip('<FONT>'+"Number of processors to use. default is single processor mode"+'</FONT>')
 			submit_layout.addWidget(self.mpi_nproc_edit, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
@@ -2994,6 +2993,12 @@ class SXCmdTab(QWidget):
 
 			# If MPI is not supported, disable this widget
 			self.set_text_entry_widget_enable_state(self.mpi_nproc_edit, self.sxcmdwidget.sxcmd.mpi_support)
+			if not self.mpi_nproc_edit.isEnabled():
+				self.mpi_nproc_edit.setText("1")
+			elif 'SPHIRE_NPROC' in os.environ:
+				self.mpi_nproc_edit.setText(os.environ['SPHIRE_NPROC'])
+			else:
+				self.mpi_nproc_edit.setText("1")
 			self.set_text_entry_widget_enable_state(self.mpi_cmd_line_edit, self.sxcmdwidget.sxcmd.mpi_support)
 
 			# Add gui components for queue submission (qsub)
@@ -3005,7 +3010,14 @@ class SXCmdTab(QWidget):
 			self.qsub_enable_checkbox = QCheckBox("")
 			if is_qsub_enabled == True:
 				self.qsub_enable_checkbox.setCheckState(Qt.Checked)
-			else: # assert(is_qsub_enabled == False)
+			elif not self.sxcmdwidget.sxcmd.is_submittable:
+				self.qsub_enable_checkbox.setCheckState(Qt.Unchecked)
+			elif 'SPHIRE_ENABLE_QSUB' in os.environ: # assert(is_qsub_enabled == False)
+				if os.environ['SPHIRE_ENABLE_QSUB'].lower() == 'true':
+					self.qsub_enable_checkbox.setCheckState(Qt.Checked)
+				else:
+					self.qsub_enable_checkbox.setCheckState(Qt.Unchecked)
+			else:
 				self.qsub_enable_checkbox.setCheckState(Qt.Unchecked)
 			self.qsub_enable_checkbox.setToolTip('<FONT>'+"Submit job to queue"+'</FONT>')
 			self.qsub_enable_checkbox.stateChanged.connect(self.set_qsub_enable_state) # To control enable state of the following qsub related widgets
@@ -4702,7 +4714,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxconst = SXconst(); sxconst.key = "sym"; sxconst.label = "Point-group symmetry"; sxconst.help = "e.g. c1, c4, d5"; sxconst.register = "c1"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "mass"; sxconst.label = "Protein molecular mass [kDa]"; sxconst.help = ""; sxconst.register = "-1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		if helical:
-			sxconst = SXconst(); sxconst.key = "filament_width"; sxconst.label = "Filament width [pixels]"; sxconst.help = "Width of the filament in case of filamentous processing."; sxconst.register = "-1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+			sxconst = SXconst(); sxconst.key = "filament_width"; sxconst.label = "Filament width [pixels]"; sxconst.help = "Width of the filament in case of filamentous processing."; sxconst.register = "-1"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "config"; sxconst.label = "Imaging configurations"; sxconst.help = "a free-style string for your record. please use it to describe the set of imaging configurations used in this project (e.g. types of microscope, detector, enegy filter, abbration corrector, phase plate, and etc."; sxconst.register = "MY_MICROSCOPE"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 
 		# Store the project constant parameter set as a class data member
@@ -4868,7 +4880,7 @@ def main():
 	sxapp.setStyleSheet("QToolTip {font-size:%dpt;}" % (new_point_size));
 
 	# Initialise a singleton class for look & feel constants
-	version_string = '1.2'
+	version_string = '1.2a'
 	SXLookFeelConst.initialise(sxapp, version_string)
 
 	# Define the main window (class SXMainWindow)
