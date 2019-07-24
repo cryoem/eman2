@@ -70,11 +70,11 @@ def isBinaryBuild() {
     return isContinuousBuild() || isExperimentalBuild()
 }
 
-def testPackage() {
+def testPackage(suffix, dir) {
     if(SLAVE_OS != 'win')
-        sh "bash tests/test_binary_installation.sh ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${INSTALLERS_DIR}/eman2-binary-test"
+        sh "bash tests/test_binary_installation.sh ${INSTALLERS_DIR}/eman2" + suffix + ".${SLAVE_OS}.sh ${INSTALLERS_DIR}/" + dir
     else
-        sh 'ci_support/test_wrapper.sh'
+        sh 'ci_support/test_wrapper.sh ' + suffix + ' ' + dir
 }
 
 def deployPackage() {
@@ -177,7 +177,7 @@ pipeline {
       
       steps {
         notifyGitHub('PENDING')
-        testPackage()
+        testPackage('', 'eman2-binary-test')
       }
     }
     
