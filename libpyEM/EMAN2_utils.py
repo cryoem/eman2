@@ -313,7 +313,6 @@ def makepath(options, stem='e2dir'):
 	
 	return options
 
-<<<<<<< HEAD
 
 def emformats(nonhdf=False):
 	"""
@@ -332,8 +331,6 @@ def do_segfault():
 	exec'()'*7**6
 
 
-=======
->>>>>>> fe0d36db6fc267a0b7870d7b5d15652faeb4ea5b
 def detectThreads(options):
 	"""
 	c:If parallelism isn't set, parallelize automatically unless disabled
