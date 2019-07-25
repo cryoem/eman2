@@ -17,5 +17,13 @@ if exist site-packages\nul (
     rmdir /s /q site-packages
 ) > %PREFIX%\install_logs\install_log.txt 2>&1
 
-conda.exe install -v eman-deps=14.1 -c cryoem -c defaults -c conda-forge -y >> %PREFIX%\install_logs\install_log.txt 2>&1
+if not defined EMAN_INSTALL_DONT_UPDATE_DEPS (
+    if not "%EMAN_INSTALL_DONT_UPDATE_DEPS%"=="0" (
+        conda.exe install -v eman-deps=14.1 -c cryoem -c defaults -c conda-forge -y >> %PREFIX%\install_logs\install_log.txt 2>&1
+    ) else (
+        echo "WARNING: Skipping installation of dependencies per user request..."
+    )
+) else (
+    echo "WARNING: Skipping installation of dependencies per user request..."
+)
 if errorlevel 1 exit 1
