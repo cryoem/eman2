@@ -313,27 +313,6 @@ def makepath(options, stem='e2dir'):
 	
 	return options
 
-<<<<<<< HEAD
-
-def emformats(nonhdf=False):
-	"""
-	c:returns a list of most common modern extensions for EM images
-	Author: Jesus Montoya, jgalaz@gmail.com, May 2019
-	"""
-	formats=['.hdf','.HDF','.mrc','.MRC','.mrcs','.MRCS','.st','.ST','.ali','.ALI','.rec','.REC','.tif','.TIF','.tiff','.TIFF','.dm3','.DM3']
-	if nonhdf:
-		formats=['.mrc','.MRC','.mrcs','.MRCS','.st','.ST','.ali','.ALI','.rec','.REC','.tif','.TIF','.tiff','.TIFF','.dm3','.DM3']
-
-	return formats
-
-
-#### this triggers a segmentation fault. in case we need it somewhere...
-def do_segfault():
-	exec'()'*7**6
-
-
-=======
->>>>>>> fe0d36db6fc267a0b7870d7b5d15652faeb4ea5b
 def detectThreads(options):
 	"""
 	c:If parallelism isn't set, parallelize automatically unless disabled
