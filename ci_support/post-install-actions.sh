@@ -4,6 +4,8 @@ set -xe
 
 source ${PREFIX}/bin/activate
 
+conda config --env --set auto_update_conda False
+
 mkdir ${PREFIX}/install_logs
 
 conda info -a            | tee ${PREFIX}/install_logs/info_log.txt 2>&1

@@ -1,6 +1,9 @@
 call %PREFIX%\Scripts\activate.bat
 if errorlevel 1 exit 1
 
+conda.exe config --env --set auto_update_conda False
+if errorlevel 1 exit 1
+
 mkdir %PREFIX%\install_logs
 if errorlevel 1 exit 1
 
