@@ -348,7 +348,11 @@ def AI( fff, anger, shifter, chout = False):
 				Tracker["ts"] = step
 				Tracker["delta"] /= 2.0
 				Tracker["changed_delta"] = True
-				if( Tracker["delta"] <= 3.75/2.0 ):  #  MOVE DOWN TO RESTRICTED
+				if( Tracker["state"] == "PRIMARY" ) and ( Tracker["delta"] <= 3.75/2.0 ) and Tracker['constants']['do_exhaustive']:
+					Tracker["state"] = "EXHAUSTIVE"
+					Tracker['delta'] *= 2.0
+					Tracker["changed_delta"] = False
+				elif( Tracker["delta"] <= 3.75/2.0 ):  #  MOVE DOWN TO RESTRICTED
 					Tracker["an"]		= 6*Tracker["delta"]
 					Tracker['howmany'] = 4
 					Tracker['theta_min'] = -1
@@ -9312,8 +9316,9 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 def refinement_one_iteration(partids, partstack, original_data, oldparams, projdata, general_mode = True, continuation_mode = False):
 	global Tracker, Blockdata
 	#  READ DATA AND COMPUTE SIGMA2   ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+	start_end = [[],[]]
 	for procid in range(2):
-		original_data[procid], oldparams[procid], start_end = getindexdata(partids[procid], partstack[procid], \
+		original_data[procid], oldparams[procid], start_end[procid] = getindexdata(partids[procid], partstack[procid], \
 			os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_%01d.txt"%procid), \
 			original_data[procid], small_memory = Tracker["constants"]["small_memory"],\
 			nproc = Blockdata["nproc"], myid = Blockdata["myid"], mpi_comm = MPI_COMM_WORLD)
@@ -9346,7 +9351,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		rangle        = shakenumber*Tracker["delta"]
 		rshift        = shakenumber*Tracker["ts"]
 		refang        = Blockdata["symclass"].reduce_anglesets( rotate_params(refang, [-rangle,-rangle,-rangle]) )
-		coarse_angles = Blockdata["symclass"].reduce_anglesets( rotate_params(coarse_angles, [-rangle,-rangle,-rangle]) )
+		#coarse_angles = Blockdata["symclass"].reduce_anglesets( rotate_params(coarse_angles, [-rangle,-rangle,-rangle]) )
 		shakegrid(rshifts, rshift)
 		shakegrid(coarse_shifts, rshift)
 
@@ -9431,7 +9436,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 
 		projdata[procid] = []
 		if Tracker["constants"]["small_memory"]:
-			original_data[procid], oldparams[procid] = getindexdata(partids[procid], partstack[procid], \
+			original_data[procid], oldparams[procid], start_end[procid] = getindexdata(partids[procid], partstack[procid], \
 			os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_%01d.txt"%procid), \
 			original_data[procid], small_memory = Tracker["constants"]["small_memory"], \
 			nproc = Blockdata["nproc"], myid = Blockdata["myid"], mpi_comm = MPI_COMM_WORLD)
@@ -9462,8 +9467,8 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			outlier_file=outlier_file,
 			params_file=params_file,
 			chunk_file=chunk_file,
-			im_start=start_end[0],
-			im_end=start_end[1],
+			im_start=start_end[procid][0],
+			im_end=start_end[procid][1],
 			procid=procid
 			)
 
@@ -9471,6 +9476,13 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			pass
 		else:
 			outlier_list = [0] * len(projdata[procid])
+
+		assert len(newparamstructure[procid]) == len(projdata[procid])
+		assert len(newparamstructure[procid]) == len(norm_per_particle[procid])
+		assert len(newparamstructure[procid]) == len(outlier_list), (len(newparamstructure[procid]), len(outlier_list))
+		assert len(norm_per_particle[procid]) == len(outlier_list), (len(norm_per_particle[procid]), len(outlier_list))
+		assert len(projdata[procid]) == len(outlier_list), (len(projdata[procid]), len(outlier_list))
+
 		norm_per_particle_outlier = []
 		newparamstructure_outlier = []
 		projdata_outlier = []
@@ -9479,6 +9491,11 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 				projdata_outlier.append(projdata[procid][idx])
 				norm_per_particle_outlier.append(norm_per_particle[procid][idx])
 				newparamstructure_outlier.append(newparamstructure[procid][idx])
+
+		assert len(projdata_outlier) == len([entry for entry in outlier_list if int(entry) == 0]), (len(projdata_outlier), len([entry for entry in outlier_list if int(entry) == 0]))
+		assert len(norm_per_particle_outlier) == len(newparamstructure_outlier)
+		assert len(norm_per_particle_outlier) == len(projdata_outlier)
+
 		total_left_particles = wrap_mpi_gatherv(norm_per_particle_outlier, Blockdata["main_node"], MPI_COMM_WORLD)
 		if Blockdata['myid'] == Blockdata['main_node']: 
 			sp_global_def.sxprint('Use {0} particles for final reconstruction!'.format(len(total_left_particles)))
@@ -9769,7 +9786,10 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 		else:
 			outliers = [0] * len_data
 
-		if 100*no_outliers/float(len_data) < 50:
+		if Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]) > 10:
+			sxprint('Resolution not sufficient to remove outliers! Do not discard outlier!')
+			outliers = [0] * len_data
+		elif 100*no_outliers/float(len_data) < 50:
 			sxprint('Number of outliers too large! Do not discard outlier!')
 			outliers = [0] * len_data
 
@@ -10036,6 +10056,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			Constants["helical_rise"]			    = options.helical_rise
 			Constants["filament_width"]			    = options.filament_width
 			Constants["outlier_by"]				    = options.outlier_by
+			Constants["do_exhaustive"]				= False
 
 			if options.outlier_by is None:
 				Constants['stack_prior'] = None
