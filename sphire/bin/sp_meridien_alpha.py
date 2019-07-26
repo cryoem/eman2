@@ -9491,6 +9491,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 				projdata_outlier.append(projdata[procid][idx])
 				norm_per_particle_outlier.append(norm_per_particle[procid][idx])
 				newparamstructure_outlier.append(newparamstructure[procid][idx])
+		projdata[procid] = []
 
 		assert len(projdata_outlier) == len([entry for entry in outlier_list if int(entry) == 0]), (len(projdata_outlier), len([entry for entry in outlier_list if int(entry) == 0]))
 		assert len(norm_per_particle_outlier) == len(newparamstructure_outlier)
@@ -9501,7 +9502,9 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			sp_global_def.sxprint('Use {0} particles for final reconstruction!'.format(len(total_left_particles)))
 
 		do3d(procid, projdata_outlier, newparamstructure_outlier, refang, rshifts, norm_per_particle_outlier, Blockdata["myid"], smearing = True, mpi_comm = MPI_COMM_WORLD)
-		projdata[procid] = []
+		projdata_outlier = []
+		newparamstructure_outlier = []
+		norm_per_particle_outlier = []
 		if Tracker["changed_delta"]:
 			Tracker["nxinit"] = org_nxinit
 
@@ -9931,6 +9934,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		parser.add_option("--filament_width",         	type="int",  	default=None,              	help="Filament width used to normalize the particles. (Default None)")
 		parser.add_option("--chunk_by",               	type="str",  	default= 'ptcl_source_image',              	help="Group particles by header information. For helical refinement use filament or filament_id if present. (Default ptcl_source_image)")
 		parser.add_option("--outlier_by",               	type="str",  	default= 'ptcl_source_image',              	help="Group particles by header information. For helical refinement use filament or filament_id if present. (Default ptcl_source_image)")
+		parser.add_option("--outlier_tracker",               	type="str",  	default=None,              	help="Skip stack file creation and load the stack from an existing stack.")
 		(options, args) = parser.parse_args(sys.argv[1:])
 
 		if( len(args) == 3 ):
@@ -10056,16 +10060,23 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				Constants['stack_prior_dtype'] = None
 			else:
 				if Blockdata['myid'] == Blockdata['main_node']:
-					stack_prior = sp_helix_sphire.import_sphire_stack(args[0], options.outlier_by)
-					stack_prior_fmt = prior_stack_fmt(stack_prior)
-					stack_prior_dtype = stack_prior.dtype.descr
-					stack_prior_name = os.path.join(Constants['masterdir'], 'stack_prior.txt')
-					np.savetxt(
-						stack_prior_name,
-						stack_prior,
-						fmt=stack_prior_fmt
-						)
-					del stack_prior
+					if options.outlier_tracker:
+						tmp_tracker = load_tracker_from_json(options.outlier_tracker)
+						stack_prior_name = tmp_tracker['constants']['stack_prior']
+						stack_prior_fmt = tmp_tracker['constants']['stack_prior_fmt']
+						stack_prior_dtype = tmp_tracker['constants']['stack_prior_dtype']
+						del tmp_tracker
+					else:
+						stack_prior = sp_helix_sphire.import_sphire_stack(args[0], options.outlier_by)
+						stack_prior_fmt = prior_stack_fmt(stack_prior)
+						stack_prior_dtype = stack_prior.dtype.descr
+						stack_prior_name = os.path.join(Constants['masterdir'], 'stack_prior.txt')
+						np.savetxt(
+							stack_prior_name,
+							stack_prior,
+							fmt=stack_prior_fmt
+							)
+						del stack_prior
 				else:
 					stack_prior_name = None
 					stack_prior_fmt = None
