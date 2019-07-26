@@ -10196,6 +10196,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					if not os.path.exists(masterdir): os.makedirs(masterdir)
 					li = 0
 					keepchecking = 1
+				sp_global_def.write_command(masterdir)
 			else:
 				li = 0
 				keepchecking = 1
