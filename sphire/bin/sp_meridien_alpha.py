@@ -9337,7 +9337,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 
 	mpi_barrier(MPI_COMM_WORLD)
 
-	refang, rshifts, coarse_angles, coarse_shifts = get_refangs_and_shifts()
+	refang, rshifts, coarse_angles_raw, coarse_shifts = get_refangs_and_shifts()
 	if( Tracker["constants"]["shake"] > 0.0 ):
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			shakenumber = uniform( -Tracker["constants"]["shake"], Tracker["constants"]["shake"])
@@ -9351,7 +9351,9 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		rangle        = shakenumber*Tracker["delta"]
 		rshift        = shakenumber*Tracker["ts"]
 		refang        = Blockdata["symclass"].reduce_anglesets( rotate_params(refang, [-rangle,-rangle,-rangle]) )
-		#coarse_angles = Blockdata["symclass"].reduce_anglesets( rotate_params(coarse_angles, [-rangle,-rangle,-rangle]) )
+		coarse_angles = Blockdata["symclass"].reduce_anglesets( rotate_params(coarse_angles_raw, [-rangle,-rangle,-rangle]) )
+		for idx, entry in enumerate(coarse_angles_raw):
+			coarse_angles[idx][1] = entry[1]
 		shakegrid(rshifts, rshift)
 		shakegrid(coarse_shifts, rshift)
 
@@ -9364,6 +9366,8 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		write_text_row( refang,  os.path.join(Tracker["directory"] , "refang.txt"))
 		write_text_row( rshifts, os.path.join(Tracker["directory"] , "rshifts.txt"))
+		write_text_row( coarse_shifts,  os.path.join(Tracker["directory"] , "coarse_shift.txt"))
+		write_text_row( coarse_angles, os.path.join(Tracker["directory"] , "coarse_angles.txt"))
 	mpi_barrier(MPI_COMM_WORLD)
 
 	newparamstructure = [[],[]]
@@ -9933,7 +9937,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		parser.add_option("--helical_rise",         	type="float",  	default=None,              	help="Helical rise in angstrom. This is used to limit the shift along the helical axis. (Default None)")
 		parser.add_option("--filament_width",         	type="int",  	default=None,              	help="Filament width used to normalize the particles. (Default None)")
 		parser.add_option("--chunk_by",               	type="str",  	default= 'ptcl_source_image',              	help="Group particles by header information. For helical refinement use filament or filament_id if present. (Default ptcl_source_image)")
-		parser.add_option("--outlier_by",               	type="str",  	default= 'ptcl_source_image',              	help="Group particles by header information. For helical refinement use filament or filament_id if present. (Default ptcl_source_image)")
+		parser.add_option("--outlier_by",               	type="str",  	default=None,              	help="Group particles by header information. For helical refinement use filament or filament_id if present. (Default ptcl_source_image)")
 		parser.add_option("--outlier_tracker",               	type="str",  	default=None,              	help="Skip stack file creation and load the stack from an existing stack.")
 		(options, args) = parser.parse_args(sys.argv[1:])
 
@@ -10213,7 +10217,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			else:
 				li = 0
 				keepchecking = 1
-			if Blockdata['myid'] == Blockdata['main_node'] and not options.outlier_tracker:
+			if Blockdata['myid'] == Blockdata['main_node'] and not options.outlier_tracker and options.outlier_by is not None:
 				np.savetxt(
 					stack_prior_name,
 					stack_prior,
