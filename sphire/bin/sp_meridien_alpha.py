@@ -10071,12 +10071,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 						stack_prior_fmt = prior_stack_fmt(stack_prior)
 						stack_prior_dtype = stack_prior.dtype.descr
 						stack_prior_name = os.path.join(Constants['masterdir'], 'stack_prior.txt')
-						np.savetxt(
-							stack_prior_name,
-							stack_prior,
-							fmt=stack_prior_fmt
-							)
-						del stack_prior
 				else:
 					stack_prior_name = None
 					stack_prior_fmt = None
@@ -10219,6 +10213,13 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			else:
 				li = 0
 				keepchecking = 1
+			if Blockdata['myid'] == Blockdata['main_node'] and not options.outlier_tracker:
+				np.savetxt(
+					stack_prior_name,
+					stack_prior,
+					fmt=stack_prior_fmt
+					)
+				del stack_prior
 
 			li = mpi_bcast(li,1,MPI_INT,Blockdata["main_node"],MPI_COMM_WORLD)[0]
 
@@ -10486,8 +10487,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 
 			#  End of if doit
 		#   end of while
-		mpi_finalize()
-		exit() 
 
 
 
@@ -10962,8 +10961,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 
 			#  End of if doit
 		#   end of while
-		mpi_finalize()
-		exit() 
 
 	elif do_final_mode: #  DO FINAL
 		parser.add_option("--memory_per_node",          type="float",           default= -1.0,		help="User provided information about memory per node (NOT per CPU) [in GB] (default 2GB*(number of CPUs per node))")
@@ -11024,10 +11021,11 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 	
 		Blockdata["accumulatepw"] = [[],[]]
 		recons3d_final(masterdir, options.do_final, options.memory_per_node, orgstack)
-		mpi_finalize()
-		exit()
 	else:
 		ERROR("Incorrect input options","meridien", 1, Blockdata["myid"])
 
 if __name__=="__main__":
+	sp_global_def.print_timestamp("Start")
 	main()
+	sp_global_def.print_timestamp("Finish")
+	mpi_finalize()
