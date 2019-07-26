@@ -9745,6 +9745,13 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 	# Calculate outliers
 	if(blockdata["myid"] == blockdata["main_node"] ):
 		# Calculate priors
+		stack_prior_name = Tracker['constants']['stack_prior']
+		stack_prior_dtype = [tuple(entry) for entry in Tracker['constants']['stack_prior_dtype']]
+		Tracker['constants']['stack_prior'] = np.genfromtxt(
+			Tracker['constants']['stack_prior'],
+			dtype=stack_prior_dtype
+			)
+
 		outliers, new_params, new_index = sp_helix_fundamentals.calculate_priors(
 			tracker=Tracker,
 			params_file=params_file,
@@ -9764,6 +9771,7 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 			symclass=Blockdata['symclass'],
 			plot=Tracker['prior']['plot'],
 			)
+		Tracker['constants']['stack_prior'] = stack_prior_name
 
 		# Print to screen
 		nr_outliers = len(outliers[outliers == 1])
@@ -9809,15 +9817,6 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 
 def load_tracker_from_json(file_name):
 	tracker = load_object_from_json(file_name)
-	try:
-		if tracker['constants']['stack_prior'] is not None:
-			tracker['constants']['stack_prior_dtype'] = [tuple(entry) for entry in tracker['constants']['stack_prior_dtype']]
-			tracker['constants']['stack_prior'] = np.genfromtxt(
-				tracker['constants']['stack_prior'],
-				dtype=tracker['constants']['stack_prior_dtype']
-				)
-	except KeyError:
-		tracker['constants']['stack_prior'] = None
 	return tracker
 
 def load_object_from_json(file_name):
@@ -9826,13 +9825,6 @@ def load_object_from_json(file_name):
 	return json_object
 
 def dump_tracker_to_json(file_name, tracker):
-	if tracker['constants']['stack_prior'] is not None:
-		np.savetxt(
-			os.path.join(tracker['constants']['masterdir'], 'stack_prior.txt'),
-			Tracker['constants']['stack_prior'],
-			fmt=Tracker['constants']['stack_prior_fmt']
-			)
-		tracker['constants']['stack_prior'] = os.path.join(tracker['constants']['masterdir'], 'stack_prior.txt')
 	dump_object_to_json(file_name, tracker)
 
 def dump_object_to_json(file_name, data_object):
@@ -10063,9 +10055,25 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				Constants['stack_prior_fmt'] = None
 				Constants['stack_prior_dtype'] = None
 			else:
-				Constants['stack_prior'] = sp_helix_sphire.import_sphire_stack(args[0], options.outlier_by)
-				Constants['stack_prior_fmt'] = prior_stack_fmt(Constants['stack_prior'])
-				Constants['stack_prior_dtype'] = Constants['stack_prior'].dtype.descr
+				if Blockdata['myid'] == Blockdata['main_node']:
+					stack_prior = sp_helix_sphire.import_sphire_stack(args[0], options.outlier_by)
+					stack_prior_fmt = prior_stack_fmt(stack_prior)
+					stack_prior_dtype = stack_prior.dtype.descr
+					stack_prior_name = os.path.join(Constants['masterdir'], 'stack_prior.txt')
+					np.savetxt(
+						stack_prior_name,
+						stack_prior,
+						fmt=stack_prior_fmt
+						)
+					del stack_prior
+				else:
+					stack_prior_name = None
+					stack_prior_fmt = None
+					stack_prior_dtype = None
+
+				Constants['stack_prior'] = wrap_mpi_bcast(stack_prior_name, Blockdata['main_node'], MPI_COMM_WORLD)
+				Constants['stack_prior_fmt'] = wrap_mpi_bcast(stack_prior_fmt, Blockdata['main_node'], MPI_COMM_WORLD)
+				Constants['stack_prior_dtype'] = wrap_mpi_bcast(stack_prior_dtype, Blockdata['main_node'], MPI_COMM_WORLD)
 
 
 			#
