@@ -405,11 +405,11 @@ def main():
 
 	try:
 		os.makedirs(command_args.output_dir)
-		sp_global_def.write_command(command_args.output_dir)
 	except OSError:
 		sxprint('Output directory already exists. No need to create it.')
 	else:
 		sxprint('Created output directory.')
+	sp_global_def.write_command(command_args.output_dir)
 	output_prefix = os.path.join(command_args.output_dir, command_args.prefix)
 
 	# Filter volume if specified
