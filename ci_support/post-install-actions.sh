@@ -4,6 +4,8 @@ set -xe
 
 source ${PREFIX}/bin/activate
 
+conda config --env --set auto_update_conda False
+
 mkdir ${PREFIX}/install_logs
 
 conda info -a            | tee ${PREFIX}/install_logs/info_log.txt 2>&1
@@ -17,7 +19,14 @@ if [ -d site-packages ]; then
     rm -rv site-packages
 fi | tee ${PREFIX}/install_logs/install_log.txt 2>&1
 
-conda install eman-deps=14.1 -c cryoem -c defaults -c conda-forge -y | tee -a ${PREFIX}/install_logs/install_log.txt 2>&1
+case ${EMAN_INSTALL_DONT_UPDATE_DEPS:-} in
+    0|"")
+        conda install eman-deps=14.1 -c cryoem -c defaults -c conda-forge -y | tee -a ${PREFIX}/install_logs/install_log.txt 2>&1
+        ;;
+    *)
+        echo "WARNING: Skipping installation of dependencies per user request..."
+        ;;
+esac
 
 cat <<EOF
 

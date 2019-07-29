@@ -12,7 +12,7 @@ def getJobType() {
 
 def notifyGitHub(status) {
     if(JOB_TYPE == "push" || NOTIFY_GITHUB == "true") {
-        if(status == 'PENDING') { message = 'Stage: ' + STAGE_NAME }
+        if(status == 'PENDING') { message = 'Stage: ' + (env.PARENT_STAGE_NAME ?: STAGE_NAME) }
         if(status == 'SUCCESS') { message = 'Build succeeded!' }
         if(status == 'FAILURE') { message = 'Build failed!' }
         if(status == 'ERROR')   { message = 'Build aborted!' }
@@ -87,8 +87,10 @@ def deployPackage() {
         upload_ext = 'experimental'
     }
     
-    if(SLAVE_OS != 'win')
+    if(SLAVE_OS != 'win') {
         sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${DEPLOY_DEST}/" + upload_dir + "/eman2." + JOB_NAME.toLowerCase() + "." + upload_ext + ".sh"
+        sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2_huge.${SLAVE_OS}.sh ${DEPLOY_DEST}/" + upload_dir + "/eman2_huge." + JOB_NAME.toLowerCase() + "." + upload_ext + ".sh"
+    }
     else
         bat 'ci_support\\rsync_wrapper.bat ' + upload_dir + ' ' + upload_ext
 }
@@ -163,10 +165,26 @@ pipeline {
       when {
         expression { isBinaryBuild() }
       }
+      environment {
+        PARENT_STAGE_NAME = "${STAGE_NAME}"
+      }
       
-      steps {
-        notifyGitHub('PENDING')
-        sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/'
+      parallel {
+        stage('notify') {
+          steps {
+            notifyGitHub('PENDING')
+          }
+        }
+        stage('mini') {
+          steps {
+            sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/constructor-mini/'
+          }
+        }
+        stage('huge') {
+          steps {
+            sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/constructor-huge/'
+          }
+        }
       }
     }
     
@@ -174,10 +192,26 @@ pipeline {
       when {
         expression {isBinaryBuild() }
       }
+      environment {
+        PARENT_STAGE_NAME = "${STAGE_NAME}"
+      }
       
-      steps {
-        notifyGitHub('PENDING')
-        testPackage('', 'eman2-binary-test')
+      parallel {
+        stage('notify') {
+          steps {
+            notifyGitHub('PENDING')
+          }
+        }
+        stage('mini') {
+          steps {
+            testPackage('', 'mini')
+          }
+        }
+        stage('huge') {
+          steps {
+            testPackage('_huge','huge')
+          }
+        }
       }
     }
     
