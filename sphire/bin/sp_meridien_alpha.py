@@ -337,7 +337,7 @@ def AI( fff, anger, shifter, chout = False):
 		Tracker["changed_delta"] = False
 		#  decide angular step and translations
 		if((Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) and (Tracker["no_params_changes"]>=Tracker["constants"]["limit_changes"]) and (not Tracker["large_at_Nyquist"])):
-			if( Tracker["delta"] < 0.75*Tracker["acc_rot"] and Tracker['state'] != 'PRIMARY'):#<<<----it might cause converge issues when shake is 0.0
+			if( Tracker["delta"] < Tracker['constants']['a_criterion']*Tracker["acc_rot"] and Tracker['state'] != 'PRIMARY'):#<<<----it might cause converge issues when shake is 0.0
 				keepgoing = 0
 				if(Blockdata["myid"] == Blockdata["main_node"]):
 					sxprint(line,"Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
@@ -9958,6 +9958,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		parser.add_option("--outlier_by",               	type="str",  	default=None,              	help="Group particles by header information. For helical refinement use filament or filament_id if present. (Default ptcl_source_image)")
 		parser.add_option("--outlier_tracker",               	type="str",  	default=None,              	help="Skip stack file creation and load the stack from an existing stack.")
 		parser.add_option("--helical_twist",               	type="float",  	default=None,              	help="Helical rise for symmetrisation during PRIMARY and EXHAUSTIVE step.")
+		parser.add_option("--a_criterion",               	type="float",  	default=0.75,              	help="Convergance criterion delta < a_criterion*acc_rot, the smaller the later.")
 		(options, args) = parser.parse_args(sys.argv[1:])
 
 		if( len(args) == 3 ):
@@ -10077,6 +10078,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			Constants["filament_width"]			    = options.filament_width
 			Constants["outlier_by"]				    = options.outlier_by
 			Constants["do_exhaustive"]				= False
+			Constants["a_criterion"]				= options.a_criterion
 
 			if options.outlier_by is None:
 				Constants['stack_prior'] = None
