@@ -337,7 +337,7 @@ def AI( fff, anger, shifter, chout = False):
 		Tracker["changed_delta"] = False
 		#  decide angular step and translations
 		if((Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) and (Tracker["no_params_changes"]>=Tracker["constants"]["limit_changes"]) and (not Tracker["large_at_Nyquist"])):
-			if( Tracker["delta"] < 0.75*Tracker["acc_rot"] ):#<<<----it might cause converge issues when shake is 0.0
+			if( Tracker["delta"] < 0.75*Tracker["acc_rot"] and Tracker['state'] != 'PRIMARY'):#<<<----it might cause converge issues when shake is 0.0
 				keepgoing = 0
 				if(Blockdata["myid"] == Blockdata["main_node"]):
 					sxprint(line,"Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
@@ -9195,6 +9195,15 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 							tvol0 = filt_table(tvol0, cfsc)
 							if( Blockdata["no_of_groups"] > 1 ):  del cfsc
 
+						if Tracker['constants']['helical_twist'] and Tracker['state'] != 'RESTRICTED': 
+							tvol0 = tvol0.helicise(
+								Tracker['constants']['pixel_size'],
+								Tracker['constants']['helical_rise'],
+								Tracker['constants']['helical_twist'],
+								0.67,
+								Tracker['constants']['radius'],
+								0
+								)
 						user_func = sp_user_functions.factory[Tracker["constants"]["user_func"]]
 						#ref_data = [tvol0, Tracker, mainiteration]
 						ref_data = [tvol0, Tracker, Tracker["mainiteration"]]
@@ -9227,6 +9236,15 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 								elif( i > Tracker["constants"]["inires"]+1 ):  cfsc[i]  = 0.0
 							tvol1 = filt_table(tvol1, cfsc)
 							del cfsc
+						if Tracker['constants']['helical_twist'] and Tracker['state'] != 'RESTRICTED': 
+							tvol1 = tvol1.helicise(
+								Tracker['constants']['pixel_size'],
+								Tracker['constants']['helical_rise'],
+								Tracker['constants']['helical_twist'],
+								0.67,
+								Tracker['constants']['radius'],
+								0
+								)
 						user_func = sp_user_functions.factory[Tracker["constants"]["user_func"]]
 						#ref_data = [tvol1, Tracker, mainiteration]
 						ref_data = [tvol1, Tracker, Tracker["mainiteration"]]
@@ -9503,7 +9521,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 
 		total_left_particles = wrap_mpi_gatherv(norm_per_particle_outlier, Blockdata["main_node"], MPI_COMM_WORLD)
 		if Blockdata['myid'] == Blockdata['main_node']: 
-			sp_global_def.sxprint('Use {0} particles for final reconstruction!'.format(len(total_left_particles)))
+			sp_global_def.sxprint('Use {0} particles for reconstruction!'.format(len(total_left_particles)))
 
 		do3d(procid, projdata_outlier, newparamstructure_outlier, refang, rshifts, norm_per_particle_outlier, Blockdata["myid"], smearing = True, mpi_comm = MPI_COMM_WORLD)
 		projdata_outlier = []
@@ -9939,6 +9957,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		parser.add_option("--chunk_by",               	type="str",  	default= 'ptcl_source_image',              	help="Group particles by header information. For helical refinement use filament or filament_id if present. (Default ptcl_source_image)")
 		parser.add_option("--outlier_by",               	type="str",  	default=None,              	help="Group particles by header information. For helical refinement use filament or filament_id if present. (Default ptcl_source_image)")
 		parser.add_option("--outlier_tracker",               	type="str",  	default=None,              	help="Skip stack file creation and load the stack from an existing stack.")
+		parser.add_option("--helical_twist",               	type="float",  	default=None,              	help="Helical rise for symmetrisation during PRIMARY and EXHAUSTIVE step.")
 		(options, args) = parser.parse_args(sys.argv[1:])
 
 		if( len(args) == 3 ):
@@ -10054,6 +10073,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			Constants["plot_ang_dist"]			    = options.plot_ang_dist
 			Constants["angle_method"]			    = options.angle_method
 			Constants["helical_rise"]			    = options.helical_rise
+			Constants["helical_twist"]			    = options.helical_twist
 			Constants["filament_width"]			    = options.filament_width
 			Constants["outlier_by"]				    = options.outlier_by
 			Constants["do_exhaustive"]				= False
