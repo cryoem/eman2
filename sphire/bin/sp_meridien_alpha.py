@@ -9850,11 +9850,11 @@ def load_object_from_json(file_name):
 	return json_object
 
 def dump_tracker_to_json(file_name, tracker):
-	dump_object_to_json(file_name, tracker)
+	dump_object_to_json(file_name, tracker, indent=4)
 
-def dump_object_to_json(file_name, data_object):
+def dump_object_to_json(file_name, data_object, indent=None):
 	with open(file_name, 'w') as fout:
-		json.dump(data_object, fout, indent=4)
+		json.dump(data_object, fout, indent=indent)
 
 
 def prior_stack_fmt(sphire_prior_stack):
