@@ -13,7 +13,7 @@ channels:
 channels_remap:                                       # [not win]
   -                                                   # [not win]
       src: file:/place_holder_conda_prefix/conda-bld  # [not win]
-      dest: eman-build-machine                        # [not win]
+      dest: file://local                              # [not win]
 
 keep_pkgs: False
 ignore_duplicate_files: True
