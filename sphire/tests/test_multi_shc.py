@@ -39,7 +39,7 @@ from os import path
 from numpy import array_equal as numpy_array_equal
 from copy import deepcopy
 from EMAN2_cppwrap import EMData
-TOLERANCE = 0.005
+TOLERANCE = 0.00005
 
 """
 There are some opened issues in:
@@ -334,7 +334,7 @@ class Test_do_volume(unittest.TestCase):
         return_new = fu.do_volume(data=self.data,options=self.options,iter=None, mpi_comm = MPI_COMM_WORLD)
         mpi_barrier(MPI_COMM_WORLD)
         return_old = oldfu.do_volume(data=self.data,options=self.options,iter=None, mpi_comm = MPI_COMM_WORLD)
-        self.assertTrue(numpy_array_equal(return_old.get_3dview(),return_new.get_3dview()))
+        self.assertTrue(numpy.allclose(return_old.get_3dview(), return_new.get_3dview(), atol=TOLERANCE))
 
     def test_emptyData_returns_RuntimeError(self):
         mpi_barrier(MPI_COMM_WORLD)

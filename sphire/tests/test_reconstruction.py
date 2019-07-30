@@ -726,7 +726,6 @@ class Test_prepare_recons(unittest.TestCase):
         mpi_barrier(MPI_COMM_WORLD)
         return_old = oldfu.prepare_recons(data=deepcopy(self.data), symmetry='c5', myid=0 , main_node_half=0, half_start=0, step=1, index=self.index, npad=2, mpi_comm = MPI_COMM_WORLD)
         mpi_barrier(MPI_COMM_WORLD)
-
         self.assertEqual(returns_values_in_file(return_old[0]),returns_values_in_file(return_new[0]))
         self.assertEqual(returns_values_in_file(return_old[1]), returns_values_in_file(return_new[1]))
         remove_list_of_file([path.join(ABSOLUTE_PATH, return_old[0]),path.join(ABSOLUTE_PATH, return_old[1]),path.join(ABSOLUTE_PATH, return_new[0]),path.join(ABSOLUTE_PATH, return_new[1])])
@@ -1273,7 +1272,7 @@ class Test_rec3D_two_chunks_MPI(unittest.TestCase):
         mpi_barrier(MPI_COMM_WORLD)
         self.assertTrue(numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
-        self.assertTrue(numpy.allclose(return_new[0].get_3dview(), sparx_utilities.model_blank( 2, 2, 2 ).get_3dview(), 0.0000001, equal_nan=True))
+        self.assertTrue(numpy.allclose(return_new[0].get_3dview(), sparx_utilities.model_blank( 2, 2, 2 ).get_3dview(), 0.0001, equal_nan=True))
         self.assertEqual(return_new[1] , None)
 
     @unittest.skip("skip I cannot find a correct mask")
