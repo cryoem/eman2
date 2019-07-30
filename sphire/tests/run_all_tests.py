@@ -1,5 +1,7 @@
 import os
 from datetime import datetime
+
+""" the 'test_user_functions.py' is not tested because, at the 30/07/2019, there is nothing to test"""
 FILE_LIST_NOSE_TEST = ["test_morphology.py","test_projection.py","test_reconstruction.py","test_utilities.py", "test_alignment.py", "test_filter.py", "test_fundamentals.py", "test_statistics.py", "test_pixel_error.py","test_multi_shc.py"]
 CURRENT_PATH = os.path.dirname(os.path.abspath(__file__))
 
