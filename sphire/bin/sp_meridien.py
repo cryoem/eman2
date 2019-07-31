@@ -128,6 +128,7 @@ from EMAN2 	import *
 from sparx 	import *
 from EMAN2  import EMNumPy
 from logger import Logger, BaseLogger_Files
+import sp_global_def
 import global_def
 from global_def import *
 
@@ -9841,12 +9842,13 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
 					masterdir = "master"+timestring
 					li = len(masterdir)
-					os.mkdir(masterdir)
+					os.makedirs(masterdir)
 					keepchecking = 0
 				else:
-					if not os.path.exists(masterdir): os.mkdir(masterdir)
+					if not os.path.exists(masterdir): os.makedirs(masterdir)
 					li = 0
 					keepchecking = 1
+				sp_global_def.write_command(masterdir)
 			else:
 				li = 0
 				keepchecking = 1
@@ -10123,8 +10125,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 
 			#  End of if doit
 		#   end of while
-		mpi_finalize()
-		exit() 
 
 
 
@@ -10369,12 +10369,13 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
 					masterdir = "master"+timestring
 					li = len(masterdir)
-					os.mkdir(masterdir)
+					os.makedirs(masterdir)
 					keepchecking = 0
 				else:
-					if not os.path.exists(masterdir): os.mkdir(masterdir)
+					if not os.path.exists(masterdir): os.makedirs(masterdir)
 					li = 0
 					keepchecking = 1
+				sp_global_def.write_command(masterdir)
 			else:
 				li = 0
 				keepchecking = 1
@@ -10605,8 +10606,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 
 			#  End of if doit
 		#   end of while
-		mpi_finalize()
-		exit() 
 
 	elif do_final_mode: #  DO FINAL
 		parser.add_option("--memory_per_node",          type="float",           default= -1.0,		help="User provided information about memory per node (NOT per CPU) [in GB] (default 2GB*(number of CPUs per node))")
@@ -10667,10 +10666,11 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 	
 		Blockdata["accumulatepw"] = [[],[]]
 		recons3d_final(masterdir, options.do_final, options.memory_per_node, orgstack)
-		mpi_finalize()
-		exit()
 	else:
 		ERROR("Incorrect input options","meridien", 1, Blockdata["myid"])
 
 if __name__=="__main__":
+	sp_global_def.print_timestamp("Start")
 	main()
+	sp_global_def.print_timestamp("Finish")
+	mpi_finalize()
