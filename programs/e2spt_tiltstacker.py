@@ -613,10 +613,11 @@ def organizetilts( options, intilts, raworder=False ):
 			#sign2 = intilt.split(str(angle))[0][-1]
 			#print "by other means, sign2 is",sign2
 			
-			angles.append( angle )
 			anglesdict.update({angle:[intilt,collectionindex]})
 			
-			collectionindex+=1
+			if angle not in angles:
+				angles.append( angle )
+				collectionindex+=1
 		
 		angles.sort()
 		if not options.negativetiltseries:
