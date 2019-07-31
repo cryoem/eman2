@@ -2349,7 +2349,7 @@ void SetBitsProcessor::process_inplace(EMData *image)
 	int bits = params.set_default("bits",5);
 	float sigma = image->get_attr("sigma");
 	float mean = image->get_attr("mean");
-	float bitmax=pow(2,bits);
+	float bitmax=pow(2.,bits);
 	
 	float min=image->get_attr("minimum");
 	float max=image->get_attr("maximum");
