@@ -413,7 +413,7 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 
 
 	if(Tracker["mainiteration"] == 1):
-		Tracker["state"]		= "PRIMARY"
+		#Tracker["state"]		= "PRIMARY"
 		Tracker["currentres"]	= l05
 		Tracker["fsc143"]		= l01
 		Tracker["large_at_Nyquist"] = (fff[Tracker["nxinit"]//2] > 0.1 or fff[Tracker["nxinit"]//2-1] > 0.2)
@@ -10533,6 +10533,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		parser.add_option("--ccfpercentage",			type="float", 	      	default= 99.9,               	help="Percentage of the correlation peak area to be included, 0.0 corresponds to hard matching (default 99.9%)")
 		parser.add_option("--nonorm",               	action="store_true",  	default= False,              	help="Do not apply image norm correction. (default False)")
 		parser.add_option("--memory_per_node",          type="float",           default= -1.0,                	help="User provided information about memory per node (NOT per CPU) [in GB] (default 2GB*(number of CPUs per node))")	
+		parser.add_option("--skip_primary",               	action="store_true",  	default= False,              	help="Skip the PRIMARY step in local refinement (Default False)")
 		(options, args) = parser.parse_args(sys.argv[1:])
 
 		if( len(args) == 2 ):
@@ -10671,7 +10672,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			Tracker["avgvaradj"]			= [1.0,1.0]  # This has to be initialized to 1.0 !!
 			Tracker["mainiteration"]     	= 0
 			Tracker["lentop"]				= 2000
-			Tracker["state"]             	= Tracker["constants"]["states"][0]
+			Tracker["state"]             	= Tracker["constants"]["states"][options.skip_primary]
 			Tracker["nima_per_chunk"]    	= [0,0]
 			###<<<----state 
 			Tracker["bestres"]          	= 0
@@ -10719,7 +10720,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			del fq, nnxo, pixel_size
 			# Resolution is always in full size image pixel units.
 			#HOHO
-			if(Tracker["constants"]["inires"]>0.0):
+			if(Tracker["constants"]["inires"]<0.0):
+				Tracker["constants"]["inires"] = int(Tracker["constants"]["nnxo"]/2.0 + 0.5) - Tracker['nxstep']
+			else:
 				Tracker["constants"]["inires"] = int(Tracker["constants"]["nnxo"]*Tracker["constants"]["pixel_size"]/Tracker["constants"]["inires"] + 0.5)
 			Tracker["currentres"] = Tracker["constants"]["inires"]
 			Tracker["fsc143"]     = Tracker["constants"]["inires"]
