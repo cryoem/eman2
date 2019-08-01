@@ -31,6 +31,13 @@ def notifyEmail() {
                  attachLog: true
                  )
     }
+    if(JOB_TYPE == "cron") {
+        emailext(to: '$DEFAULT_RECIPIENTS',
+                 subject: '[JenkinsCI/cron] ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER - $BUILD_STATUS!',
+                 body: '''${SCRIPT, template="groovy-text.template"}''',
+                 attachLog: true
+                 )
+    }
 }
 
 def selectNotifications() {
@@ -43,6 +50,10 @@ def selectNotifications() {
                  
         env.NOTIFY_GITHUB = result.notify_github
         env.NOTIFY_EMAIL  = result.notify_email
+    }
+    else if(env.JOB_TYPE == 'cron') {
+        env.NOTIFY_GITHUB = false
+        env.NOTIFY_EMAIL  = false
     }
     else {
         env.NOTIFY_GITHUB = true
@@ -59,7 +70,7 @@ def isReleaseBranch() {
 }
 
 def isContinuousBuild() {
-    return (CI_BUILD == "1" && isMasterBranch()) || isReleaseBranch()
+    return (CI_BUILD == "1" && isMasterBranch()) || isReleaseBranch() || JOB_TYPE == "cron"
 }
 
 def isExperimentalBuild() {
