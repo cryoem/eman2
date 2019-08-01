@@ -3120,12 +3120,10 @@ class Test_balance_angular_distribution(unittest.TestCase):
         """
         self.assertTrue(True)
         """
-        (params, not_usedangstep, sym, not_used) = self.argum[0]
-        return_new = fu.balance_angular_distribution(deepcopy(params), max_occupy = 1, angstep = self.angstep, sym= sym)
-        return_old = oldfu.balance_angular_distribution(deepcopy(params), max_occupy = 1, angstep = self.angstep, sym= sym)
+        return_new = fu.balance_angular_distribution(deepcopy(self.params), max_occupy = 1, angstep = self.angstep, sym= 'c5')
+        return_old = oldfu.balance_angular_distribution(deepcopy(self.params), max_occupy = 1, angstep = self.angstep, sym= 'c5')
         self.assertTrue(numpy.array_equal(return_new, return_old))
         """
-
 
 
 class Test_symmetry_neighbors(unittest.TestCase):

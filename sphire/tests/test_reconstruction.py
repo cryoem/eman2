@@ -38,6 +38,7 @@ There are some opened issues in:
 6) Test_recons3d_nn_SSNR_MPI.test_withMask2D, I cannot test the 2Dmask case because:
     I cannot provide it a valid mask. I tried with 'mask2D = sparx_utilities.model_circle(0.1, nx, ny) - sparx_utilities.model_circle(1, nx, ny)'
 7) Test_prepare_recons.test_main_node_half_NOTequal_myid_crashes_because_MPI_ERRORS_ARE_FATAL
+7_1)    --> in test_index_equal_group and test_symC1 the unittest sometimes does not work because I look into the hdf file as it was a txt file. I have to improve it
 8) Test_prepare_recons_ctf are crashing using di 'PRJLIST' beacause 'half.insert_slice(data[i], xform_proj )' ...maybe changing the image we get no crash ... WHICH ONE?
                 --> in practice all the cases with param 'half_start'<len(data)                
 9) Test_rec3D_MPI -->same problem as (8) when  set  odd_start=0 becuase it is used as 'half_start' when it calls 'prepare_recons_ctf'

@@ -43,12 +43,6 @@ class Test_ali2d_single_iter(unittest.TestCase):
     """
     argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.ali2d_single_iter"))
 
-    def test_all_the_conditions(self,return_new=None,return_old=None, skip=True):
-        if skip is False:
-            self.assertEqual(len(return_old), len(return_new))
-            for i, j in zip(return_old, return_new):
-                self.assertEqual(len(i), len(j))
-
     def test_wrong_number_params_returns_TypeError_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.ali2d_single_iter()
@@ -149,6 +143,7 @@ class Test_ali2d_single_iter(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, "local variable 'ang' referenced before assignment")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
+    @unittest.skip("The output seems to be random")
     def test_negative_center_warning_msg_shift_of_paricle_too_large(self):
         # I cannot run unit test because it returns random values
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -811,18 +806,18 @@ class Test_ormq(unittest.TestCase):
 class Test_prepref(unittest.TestCase):
     argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.ali2d_single_iter"))
 
-    def test_all_the_conditions(self,return_new=None,return_old=None, skip=True):
-        if skip is False:
-            self.assertEqual(len(return_old), len(return_new))
-            for i, j in zip(return_old, return_new):
-                self.assertEqual(len(i), len(j))
-                for q, r in zip(i, j):
-                    self.assertEqual(len(q), len(r))
-                    for img1, img2 in zip(q, r):
-                        try:
-                            self.assertTrue(numpy.array_equal(img1.get_3dview(), img2.get_3dview()))
-                        except AssertionError:
-                            self.assertTrue(TOLERANCE > numpy.abs(numpy.sum(img1.get_3dview() - img2.get_3dview())))
+    def test_all_the_conditions(self, return_new=(), return_old=(), tolerance=TOLERANCE):
+        self.assertEqual(len(return_old), len(return_new))
+        for i, j in zip(return_old, return_new):
+            self.assertEqual(len(i), len(j))
+            for q, r in zip(i, j):
+                self.assertEqual(len(q), len(r))
+                for img1, img2 in zip(q, r):
+                    try:
+                        self.assertTrue(numpy.allclose(img1.get_3dview(), img2.get_3dview(), atol=tolerance, equal_nan=True))
+                        self.assertTrue(numpy.array_equal(img1.get_3dview(), img2.get_3dview()))
+                    except AssertionError:
+                        self.assertTrue(TOLERANCE > numpy.abs(numpy.sum(img1.get_3dview() - img2.get_3dview())))
 
     def test_wrong_number_params_returns_TypeError_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -875,7 +870,7 @@ class Test_prepref(unittest.TestCase):
         (data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         return_new = fu.prepref(data, None, cnx, cny, numr, mode = 'f', maxrangex = 4, maxrangey = 4, step =step)
         return_old = oldfu.prepref(data, None, cnx, cny, numr, mode = 'f', maxrangex = 4, maxrangey = 4, step =step)
-        self.test_all_the_conditions(return_new,return_old,False)
+        self.test_all_the_conditions(return_new,return_old)
 
     def test_half_mode_without_mask(self):
         """
@@ -884,7 +879,7 @@ class Test_prepref(unittest.TestCase):
         (data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         return_new = fu.prepref(data, None, cnx, cny, numr, mode = 'H', maxrangex = 4, maxrangey = 4, step =step)
         return_old = oldfu.prepref(data, None, cnx, cny, numr, mode = 'H', maxrangex = 4, maxrangey = 4, step =step)
-        self.test_all_the_conditions(return_new, return_old, False)
+        self.test_all_the_conditions(return_new, return_old,)
 
     def test_image_mask_returns_RuntimeError_ImageDimensionException_img_dimension_doesnot_match_with_its_dimension(self):
         """
@@ -912,7 +907,7 @@ class Test_prepref(unittest.TestCase):
         mask = sparx_utilities.model_circle(nx//2-1,nx,nx)
         return_new = fu.prepref(data, mask, cnx, cny, numr, mode = 'f', maxrangex = 4, maxrangey = 4, step =step)
         return_old = oldfu.prepref(data, mask, cnx, cny, numr, mode = 'f', maxrangex = 4, maxrangey = 4, step =step)
-        self.test_all_the_conditions(return_new,return_old,False)
+        self.test_all_the_conditions(return_new,return_old)
 
     def test_Half_mode_withMask(self):
         """
@@ -923,7 +918,7 @@ class Test_prepref(unittest.TestCase):
         mask = sparx_utilities.model_circle(nx//2-1,nx,nx)
         return_new = fu.prepref(data, mask, cnx, cny, numr, mode = 'H', maxrangex = 4, maxrangey = 4, step =step)
         return_old = oldfu.prepref(data, mask, cnx, cny, numr, mode = 'H', maxrangex = 4, maxrangey = 4, step =step)
-        self.test_all_the_conditions(return_new,return_old,False)
+        self.test_all_the_conditions(return_new,return_old)
 
     def test_with_invalid_mode(self):
         """
@@ -932,7 +927,7 @@ class Test_prepref(unittest.TestCase):
         (data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
         return_new = fu.prepref(data, None, cnx, cny, numr, mode = 'not_valid', maxrangex = 4, maxrangey = 4, step =step)
         return_old = oldfu.prepref(data, None, cnx, cny, numr, mode = 'not_valid', maxrangex = 4, maxrangey = 4, step =step)
-        self.test_all_the_conditions(return_new, return_old, False)
+        self.test_all_the_conditions(return_new, return_old)
 
 
 
@@ -947,17 +942,16 @@ class Test_prepare_refrings(unittest.TestCase):
     volft = sparx_utilities.model_blank(100,100,100)
     numr = [1, 1, 8, 2, 9, 16, 3, 953, 128, 16, 1081, 128, 17, 1209, 128, 18, 1337, 128, 19, 2745, 256, 26, 3001, 256, 27, 3257, 256, 28, 3513, 256, 29, 3769, 256]
 
-    def test_all_the_conditions(self,return_new=None,return_old=None, skip=True):
-        if skip is False:
-            self.assertEqual(len(return_new), len(return_old))
-            for img1, img2 in zip(return_new, return_old):
-                try:
-                    self.assertTrue(numpy.array_equal(img1.get_3dview(), img2.get_3dview()))
-                except AssertionError:
-                    # since sometimes we get  img1.get_3dview()= [[[ nan  nan  nan ...,  nan  nan  nan]]] we skip these cases
-                    res = numpy.sum(img1.get_3dview() - img2.get_3dview())
-                    if math_isnan(res) is False:
-                        self.assertTrue(TOLERANCE > numpy.abs(res))
+    def test_all_the_conditions(self, return_new=(), return_old=()):
+        self.assertEqual(len(return_new), len(return_old))
+        for img1, img2 in zip(return_new, return_old):
+            try:
+                self.assertTrue(numpy.array_equal(img1.get_3dview(), img2.get_3dview()))
+            except AssertionError:
+                # since sometimes we get  img1.get_3dview()= [[[ nan  nan  nan ...,  nan  nan  nan]]] we skip these cases
+                res = numpy.sum(img1.get_3dview() - img2.get_3dview())
+                if math_isnan(res) is False:
+                    self.assertTrue(TOLERANCE > numpy.abs(res))
 
     def test_wrong_number_params_returns_TypeError_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -1023,7 +1017,7 @@ class Test_prepare_refrings(unittest.TestCase):
         return_new = fu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=True, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
         mpi_barrier(MPI_COMM_WORLD)
         return_old = oldfu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=True, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
-        self.test_all_the_conditions(return_new,return_old,False)
+        self.test_all_the_conditions(return_new,return_old)
 
     def test_with_sym_c5_MPI_flag_deprecationWarning_outputmsg_PyArray_FromDims_AND_NPYCHAR_type_num_is_deprecated(self):
         volft,kb = sparx_projection.prep_vol(self.volft)
@@ -1031,116 +1025,116 @@ class Test_prepare_refrings(unittest.TestCase):
         return_new = fu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="P", sym="c5", numr=self.numr, MPI=True, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
         mpi_barrier(MPI_COMM_WORLD)
         return_old = oldfu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="P", sym="c5", numr=self.numr, MPI=True, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
-        self.test_all_the_conditions(return_new,return_old,False)
+        self.test_all_the_conditions(return_new,return_old)
 
     @unittest.skip( "\n***************************\n\t\t 'Test_prepare_refringstest_sym_c1_initialTheta_None. Even if this combination is it seems to lead the code to a deadlock, i waited more then an hour'\n***************************")
     def test_sym_c1_initialTheta_None(self):
         volft, kb = sparx_projection.prep_vol(self.volft)
         return_new = fu.prepare_refrings(volft, kb, nz=4, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=False,phiEqpsi="Minus", kbx=None, kby=None, initial_theta=None, delta_theta=0.5,initial_phi=0.1)
         return_old = oldfu.prepare_refrings(volft, kb, nz=4, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=False,phiEqpsi="Minus", kbx=None, kby=None, initial_theta=None, delta_theta=0.5,initial_phi=0.1)
-        self.test_all_the_conditions(return_new, return_old, False)
+        self.test_all_the_conditions(return_new, return_old)
 
     def test_No_nz_data_size_Error_msg_datasize_hasnot_be_given(self):
         volft,kb = sparx_projection.prep_vol(self.volft)
         return_new = fu.prepare_refrings(volft, kb,nz=0, delta=2.0, ref_a="S", sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
         return_old = oldfu.prepare_refrings(volft, kb,nz=0, delta=2.0, ref_a="S", sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
-        self.test_all_the_conditions(return_new,return_old,False)
+        self.test_all_the_conditions(return_new,return_old)
 
     def test_kb_cubic_sym_oct_Warning_in_even_angles_this_sym_isnot_supported(self):
         volft,kb = sparx_projection.prep_vol(self.volft)
         return_new = fu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="S", sym="oct", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
         return_old = oldfu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="S", sym="oct", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
-        self.test_all_the_conditions(return_new,return_old,False)
+        self.test_all_the_conditions(return_new,return_old)
 
     def test_kb_rect_sym_oct_Warning_in_even_angles_this_sym_isnot_supported(self):
         volft, kbx, kby, kbz = sparx_projection.prep_vol(sparx_utilities.model_blank(100, 50, 100))
         return_new = fu.prepare_refrings(volft, kbz,nz=4, delta=2.0, ref_a="S", sym="oct", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=kbx, kby=kby, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
         return_old = oldfu.prepare_refrings(volft, kbz,nz=4, delta=2.0, ref_a="S", sym="oct", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=kbx, kby=kby, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
-        self.test_all_the_conditions(return_new,return_old,False)
+        self.test_all_the_conditions(return_new,return_old)
 
     def test_kb_cubic_sym_c1_and_referenceAngles_got_via_sparx_utilities_even_angles_and_Minus(self):
         volft,kb = sparx_projection.prep_vol(self.volft)
         return_new = fu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a= sparx_utilities.even_angles(60.0), sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
         return_old = oldfu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a= sparx_utilities.even_angles(60.0), sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
-        self.test_all_the_conditions(return_new,return_old,False)
+        self.test_all_the_conditions(return_new,return_old)
 
     def test_kb_rect_sym_c1_and_referenceAngles_got_via_sparx_utilities_even_angles_and_Minus(self):
         volft, kbx, kby, kbz = sparx_projection.prep_vol(sparx_utilities.model_blank(100, 50, 100))
         return_new = fu.prepare_refrings(volft, kbz,nz=4, delta=2.0, ref_a= sparx_utilities.even_angles(60.0), sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=kbx, kby=kby, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
         return_old = oldfu.prepare_refrings(volft, kbz,nz=4, delta=2.0, ref_a= sparx_utilities.even_angles(60.0), sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=kbx, kby=kby, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
-        self.test_all_the_conditions(return_new,return_old,False)
+        self.test_all_the_conditions(return_new,return_old)
 
     def test_kb_cubic_sym_c1_and_referenceAngles_got_via_Penczek_algorithm_and_Minus(self):
         volft,kb = sparx_projection.prep_vol(self.volft)
         return_new = fu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
         return_old = oldfu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
-        self.test_all_the_conditions(return_new,return_old,False)
+        self.test_all_the_conditions(return_new,return_old)
 
     def test_kb_rect_sym_c1_and_referenceAngles_got_via_Penczek_algorithm_and_Minus(self):
         volft, kbx, kby, kbz = sparx_projection.prep_vol(sparx_utilities.model_blank(100, 50, 100))
         return_new = fu.prepare_refrings(volft, kbz,nz=4, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=kbx, kby=kby, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
         return_old = oldfu.prepare_refrings(volft, kbz,nz=4, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=kbx, kby=kby, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
-        self.test_all_the_conditions(return_new,return_old,False)
+        self.test_all_the_conditions(return_new,return_old)
 
     def test_kb_cubic_sym_c5_and_referenceAngles_got_via_Penczek_algorithm_and_Minus(self):
         volft,kb = sparx_projection.prep_vol(self.volft)
         return_new = fu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="P", sym="c5", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
         return_old = oldfu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="P", sym="c5", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
-        self.test_all_the_conditions(return_new,return_old,False)
+        self.test_all_the_conditions(return_new,return_old)
 
     def test_kb_rect_sym_c5_and_referenceAngles_got_via_Penczek_algorithm_and_Minus(self):
         volft, kbx, kby, kbz = sparx_projection.prep_vol(sparx_utilities.model_blank(100, 50, 100))
         return_new = fu.prepare_refrings(volft, kbz,nz=4, delta=2.0, ref_a="P", sym="c5", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=kbx, kby=kby, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
         return_old = oldfu.prepare_refrings(volft, kbz,nz=4, delta=2.0, ref_a="P", sym="c5", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=kbx, kby=kby, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
-        self.test_all_the_conditions(return_new,return_old,False)
+        self.test_all_the_conditions(return_new,return_old)
 
     def test_kb_cubic_sym_c1_and_referenceAngles_got_via_Saff_algorithm_and_Minus(self):
         volft,kb = sparx_projection.prep_vol(self.volft)
         return_new = fu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="S", sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
         return_old = oldfu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="S", sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
-        self.test_all_the_conditions(return_new,return_old,False)
+        self.test_all_the_conditions(return_new,return_old)
 
     def test_kb_rect_sym_c1_and_referenceAngles_got_via_Saff_algorithm_and_Minus(self):
         volft, kbx, kby, kbz = sparx_projection.prep_vol(sparx_utilities.model_blank(100, 50, 100))
         return_new = fu.prepare_refrings(volft, kbz,nz=4, delta=2.0, ref_a="S", sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=kbx, kby=kby, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
         return_old = oldfu.prepare_refrings(volft, kbz,nz=4, delta=2.0, ref_a="S", sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=kbx, kby=kby, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
-        self.test_all_the_conditions(return_new,return_old,False)
+        self.test_all_the_conditions(return_new,return_old)
 
     def test_kb_cubic_sym_c5_and_referenceAngles_got_via_Saff_algorithm_and_Minus(self):
         volft,kb = sparx_projection.prep_vol(self.volft)
         return_new = fu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="S", sym="c5", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
         return_old = oldfu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="S", sym="c5", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
-        self.test_all_the_conditions(return_new,return_old,False)
+        self.test_all_the_conditions(return_new,return_old)
 
     def test_kb_rect_sym_c5_and_referenceAngles_got_via_Saff_algorithm_and_Minus(self):
         volft, kbx, kby, kbz = sparx_projection.prep_vol(sparx_utilities.model_blank(100, 50, 100))
         return_new = fu.prepare_refrings(volft, kbz,nz=4, delta=2.0, ref_a="S", sym="c5", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=kbx, kby=kby, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
         return_old = oldfu.prepare_refrings(volft, kbz,nz=4, delta=2.0, ref_a="S", sym="c5", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=kbx, kby=kby, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
-        self.test_all_the_conditions(return_new,return_old,False)
+        self.test_all_the_conditions(return_new,return_old)
 
     def test_kb_cubic_sym_c1_and_referenceAngles_got_via_Penczek_algorithm_and_Zero(self):
         volft,kb = sparx_projection.prep_vol(self.volft)
         return_new = fu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=False, phiEqpsi="Zero", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
         return_old = oldfu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=False, phiEqpsi="Zero", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
-        self.test_all_the_conditions(return_new,return_old,False)
+        self.test_all_the_conditions(return_new,return_old)
 
     def test_kb_rect_sym_c1_and_referenceAngles_got_via_Penczek_algorithm_and_Zero(self):
         volft, kbx, kby, kbz = sparx_projection.prep_vol(sparx_utilities.model_blank(100, 50, 100))
         return_new = fu.prepare_refrings(volft, kbz,nz=4, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=False, phiEqpsi="Zero", kbx=kbx, kby=kby, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
         return_old = oldfu.prepare_refrings(volft, kbz,nz=4, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=False, phiEqpsi="Zero", kbx=kbx, kby=kby, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
-        self.test_all_the_conditions(return_new,return_old,False)
+        self.test_all_the_conditions(return_new,return_old)
 
     def test_kb_cubic_sym_c5_and_referenceAngles_got_via_Penczek_algorithm_and_Zero(self):
         volft,kb = sparx_projection.prep_vol(self.volft)
         return_new = fu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="P", sym="c5", numr=self.numr, MPI=False, phiEqpsi="Zero", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
         return_old = oldfu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="P", sym="c5", numr=self.numr, MPI=False, phiEqpsi="Zero", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
-        self.test_all_the_conditions(return_new,return_old,False)
+        self.test_all_the_conditions(return_new,return_old)
 
     def test_kb_rect_sym_c5_and_referenceAngles_got_via_Penczek_algorithm_and_Zero(self):
         volft, kbx, kby, kbz = sparx_projection.prep_vol(sparx_utilities.model_blank(100, 50, 100))
         return_new = fu.prepare_refrings(volft, kbz,nz=4, delta=2.0, ref_a="P", sym="c5", numr=self.numr, MPI=False, phiEqpsi="Zero", kbx=kbx, kby=kby, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
         return_old = oldfu.prepare_refrings(volft, kbz,nz=4, delta=2.0, ref_a="P", sym="c5", numr=self.numr, MPI=False, phiEqpsi="Zero", kbx=kbx, kby=kby, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
-        self.test_all_the_conditions(return_new,return_old,False)
+        self.test_all_the_conditions(return_new,return_old)
 
 
 
@@ -1563,7 +1557,7 @@ class Test_align2d_scf(unittest.TestCase):
         with self.assertRaises(RuntimeError) as cm_old:
             fu.align2d_scf(image, None, xrng, yrng, self.argum[1]['ou'])
         with self.assertRaises(RuntimeError) as cm_new:
-            oldfu.align2d_scf(image, Nnoe, xrng, yrng, self.argum[1]['ou'])
+            oldfu.align2d_scf(image, None, xrng, yrng, self.argum[1]['ou'])
         msg = cm_new.exception.message.split("'")
         msg_old = cm_old.exception.message.split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
@@ -1602,7 +1596,7 @@ class Test_align2d_scf(unittest.TestCase):
         with self.assertRaises(IndexError) as cm_new:
             fu.align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1)
         with self.assertRaises(IndexError) as cm_old:
-            old = oldfu.align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1)
+            oldfu.align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1)
         self.assertEqual(cm_new.exception.message, "list index out of range")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 

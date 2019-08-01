@@ -50,9 +50,9 @@ If the test continues to fail you found a bug
 In all the tests miss the case with a complex image. where can we find one of them?
 There are some opened issues in:
 1) rotavg_ctf --> for definition it'll process a 2D image ... should we impede a 3D img as input?
-2) adaptive_mask --> it'll process a 3D image ... should we impede a 2D img as input?
 3) get_shrink_3dmask --> accepts the 'mask_file_name' params as string too. I did not test it because it is processed by 'sparx_fundamentals.resample'
 4) defocusgett --> with f_start=0 it crashes but in the code it manages this situation at the beginning ...it seems that should be possible to init it with 0
+41) Test_defocusgett_vpp2 --> the following unittest sometimes fail, I cannot figure out the reason: test_img2D_default_value, test_img2D_null_spherical_aberration
 5) fastigmatism3 --> sometimes some test fails because a very large difference of value e.g.: -11.974973537555098 != 1e+20 or 178.59375 != 142.71600723266602
 6) fupw it jsut calls fastigmatism3 hence there is the same issue
 7) all the 3 cterfuntions:
@@ -184,9 +184,6 @@ class Test_dilatation(unittest.TestCase):
 
     def test_empty_input_image_crashes_because_signal11SIGSEV(self):
         """
-        It seems not possible to test it without getting an segmentation fault. We should return None after the first error message
-        in order to avoid to run in the second if/else and get the segmentation fault in the c+++ code
-
         img =EMData()
         return_new = fu.dilation(img)
         return_old = oldfu.dilation(img)
@@ -1856,12 +1853,17 @@ class Test_adaptive_mask(unittest.TestCase):
         self.assertEqual(msg[1], msg_old[1])
 
     def test_img_blank2D_negative_edge_width_crashes_because_signal11SIGSEV(self):
-        """
-        return_new = fu.adaptive_mask(IMAGE_BLANK_2D,nsigma = 1.0, threshold = -9999.0,  ndilation = 3, edge_width = -5)
-        return_old = oldfu.adaptive_mask(IMAGE_BLANK_2D,nsigma = 1.0, threshold = -9999.0,  ndilation = 3, edge_width = -5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
-        """
-        self.assertTrue(True)
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.adaptive_mask(IMAGE_BLANK_2D,nsigma = 1.0, threshold = -9999.0,  ndilation = 3, edge_width = -5)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.adaptive_mask(IMAGE_BLANK_2D,nsigma = 1.0, threshold = -9999.0,  ndilation = 3, edge_width = -5)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+
+        self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
+        self.assertEqual(msg[1], " surface_mask is only applicable to 3-D volume")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[1], msg_old[1])
 
     def test_img_blank2D_null_edge_width(self):
         with self.assertRaises(RuntimeError) as cm_new:
@@ -1903,11 +1905,11 @@ class Test_adaptive_mask(unittest.TestCase):
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_img_blank3D_negative_edge_width_crashes_because_signal11SIGSEV(self):
-        """
+
         return_new = fu.adaptive_mask(IMAGE_BLANK_3D,nsigma = 1.0, threshold = -9999.0,  ndilation = 3, edge_width = -5)
         return_old = oldfu.adaptive_mask(IMAGE_BLANK_3D,nsigma = 1.0, threshold = -9999.0,  ndilation = 3, edge_width = -5)
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
-        """
+
         self.assertTrue(True)
 
     def test_img_blank3D_null_edge_width(self):
@@ -4339,8 +4341,8 @@ class Test_defocusgett_vpp(unittest.TestCase):
     def test_empty_spectrum_array_crashes_because_signal6SIGABRT(self):
         """
         with self.assertRaises(IndexError):
-            fu.defocusgett_vpp([], self.nx, self.voltage, self.pixel_size, self.Cs, self.i_start,self.f_stop, self.vpp_options)
-            oldfu.defocusgett_vpp([], self.nx, self.voltage, self.pixel_size, self.Cs, self.i_start,self.f_stop, self.vpp_options)
+            fu.defocusgett_vpp([], self.nx, self.voltage, self.pixel_size, self.Cs, self.f_start,self.f_stop, self.vpp_options)
+            oldfu.defocusgett_vpp([], self.nx, self.voltage, self.pixel_size, self.Cs, self.f_start,self.f_stop, self.vpp_options)
         """
         self.assertTrue(True)
 
@@ -4989,8 +4991,8 @@ class Test_defocusgett_vpp(unittest.TestCase):
     def test_null_defocus_step_in_VPP_leads_to_deadlock_BUG(self):
         """
         vpp_options =  [0.3, 9.0, 0, 5.0, 175.0, 5.0]
-        return_new = fu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.i_start, self.f_stop, vpp_options, nr2=self.nr2)
-        return_old = oldfu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.i_start,self.f_stop, vpp_options, nr2=self.nr2)
+        return_new = fu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.f_start, self.f_stop, vpp_options, nr2=self.nr2)
+        return_old = oldfu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.f_start,self.f_stop, vpp_options, nr2=self.nr2)
         self.test_all_the_conditions(return_new, return_old, self.skip)
         """
         self.assertTrue(True)
@@ -4998,8 +5000,8 @@ class Test_defocusgett_vpp(unittest.TestCase):
     def test_null_phase_step_in_VPP_leads_to_deadlock_BUG(self):
         """
         vpp_options = [0.3, 9.0, 0.1, 5.0, 175.0, 0]
-        return_new = fu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.i_start, self.f_stop, vpp_options, nr2=self.nr2)
-        return_old = oldfu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.i_start,self.f_stop, vpp_options, nr2=self.nr2)
+        return_new = fu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.f_start, self.f_stop, vpp_options, nr2=self.nr2)
+        return_old = oldfu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.f_start,self.f_stop, vpp_options, nr2=self.nr2)
         self.test_all_the_conditions(return_new, return_old, self.skip)
 		"""
         self.assertTrue(True)
@@ -5007,8 +5009,8 @@ class Test_defocusgett_vpp(unittest.TestCase):
     def test_negative_defocus_step_in_VPP_leads_to_deadlock_BUG(self):
         """
 		vpp_options =  [0.3, 9.0, -1.0, 5.0, 175.0, 5.0]
-        return_new = fu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.i_start, self.f_stop, vpp_options, nr2=self.nr2)
-        return_old = oldfu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.i_start,self.f_stop, vpp_options, nr2=self.nr2)
+        return_new = fu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.f_start, self.f_stop, vpp_options, nr2=self.nr2)
+        return_old = oldfu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.f_start,self.f_stop, vpp_options, nr2=self.nr2)
         self.test_all_the_conditions(return_new, return_old, self.skip)
         """
         self.assertTrue(True)
@@ -5016,8 +5018,8 @@ class Test_defocusgett_vpp(unittest.TestCase):
     def test_negative_phase_step_in_VPP_leads_to_deadlock_BUG(self):
         """
         vpp_options = [0.3, 9.0, 0.1, 5.0, 175.0, -5.0]
-        return_new = fu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.i_start, self.f_stop, vpp_options, nr2=self.nr2)
-        return_old = oldfu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.i_start,self.f_stop, vpp_options, nr2=self.nr2)
+        return_new = fu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.f_start, self.f_stop, vpp_options, nr2=self.nr2)
+        return_old = oldfu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.f_start,self.f_stop, vpp_options, nr2=self.nr2)
         self.test_all_the_conditions(return_new, return_old, self.skip)
 		"""
         self.assertTrue(True)
@@ -5064,7 +5066,7 @@ class Test_defocusgett_vpp2(unittest.TestCase):
         self.assertTrue(numpy.array_equal(return_new, return_old))
         self.assertTrue(numpy.array_equal(return_new, (6.0, -90.630778703665001, 0.0, 179.82421875, -0.0)))
 
-
+    """ sometimes th output is (6.0, -65.050398467363308, 0.0, 65.065138936042786, -4.797284381217452e+35) why???"""
     def test_img2D_default_value(self):
         return_new = fu.defocusgett_vpp2(IMAGE_2D, self.wn, self.new_defc, self.new_ampcont, self.voltage, self.pixel_size,self.Cs, self.new_istart, self.new_istop)
         return_old = oldfu.defocusgett_vpp2(IMAGE_2D, self.wn, self.old_defc, self.old_ampcont, self.voltage, self.pixel_size,self.Cs, self.old_istart, self.old_istop)
@@ -5089,6 +5091,7 @@ class Test_defocusgett_vpp2(unittest.TestCase):
         self.assertTrue(numpy.array_equal(return_new, return_old))
         self.assertTrue(numpy.array_equal(return_new,  (6.0, -90.630778703665001, 0.0, 179.82421875, 1e+20)))
 
+    """ sometimes th output is (6.0, -65.050398467363308, 0.0, 65.065138936042786, -4.797284381217452e+35) why???"""
     def test_img2D_null_spherical_aberration(self):
         return_new = fu.defocusgett_vpp2(IMAGE_2D, self.wn, self.new_defc, self.new_ampcont, self.voltage, self.pixel_size, 0, self.new_istart, self.new_istop)
         return_old = oldfu.defocusgett_vpp2(IMAGE_2D, self.wn, self.old_defc, self.old_ampcont, self.voltage, self.pixel_size, 0, self.old_istart, self.old_istop)
@@ -5548,7 +5551,7 @@ class Test_fupw(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_empty_input_image_crashes_because_signal11SIGSEGV(self):
-        
+
         #(image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         #data = [EMData(), numr, self.nx, self.defocus, self.Cs, self.voltage, self.pixel_size, self.bfactor, self.amp_contrast,1]
         #self.assertTrue(TOLERANCE > numpy.abs(fu.fupw(self.args, data) - oldfu.fupw(self.args, data)))
@@ -5818,8 +5821,8 @@ class Test_ornq_vpp(unittest.TestCase):
         """
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         numr = []
-        return_new = fu.ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
-        return_old = oldfu.ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
+        return_new = fu.ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
+        return_old = oldfu.ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         self.assertTrue(numpy.array_equal(return_new, return_old))
         """
         self.assertTrue(True)

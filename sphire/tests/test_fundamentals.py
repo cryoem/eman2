@@ -315,17 +315,18 @@ class Test_fftip(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'is_complex'")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-"""
-    def test_3Dimg(self):
+
+    def test_wrong_3Dimg_returns_attributeError(self):
         return_new = fu.fftip(REAL_IMAGE_3D)
         return_old = oldfu.fftip(REAL_IMAGE_3D)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertEqual(return_old,return_new)
+        self.assertEqual(return_old, None)
 
-    def test_2Dimg(self):
+    def test_wrong_2Dimg_returns_attributeError(self):
         return_new = fu.fftip(IMAGE_2D)
         return_old = oldfu.fftip(IMAGE_2D)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
-"""
+        self.assertEqual(return_old,return_new)
+        self.assertEqual(return_old, None)
 
 
 

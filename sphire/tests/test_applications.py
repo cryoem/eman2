@@ -744,7 +744,12 @@ class Test_refvol(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
 
-
+"""
+    -) I tested just the default method because the other 2 are not in use (Fabian docet)
+    -) do not test with randomize=True because the results will be never the same because the random orientation in same calculations
+    -) since the input parameter are basically used in 'sparx_alignment.ali2d_single_iter' and 'sparx_utilities.combine_params2' that i have already deeply tested
+        I tested it just the pickle file case
+"""
 class Test_within_group_refinement(unittest.TestCase):
     argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/applications.within_group_refinement"))[0]
     randomize = False
