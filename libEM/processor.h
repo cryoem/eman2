@@ -2454,6 +2454,7 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	
 	class DiscritizeProcessor:public RealPixelProcessor
 	{
 	  public:
@@ -2615,6 +2616,37 @@ The basic design of EMAN Processors: <br>\
 			}
 
 			static const string NAME;
+	};
+
+	class SetBitsProcessor:public Processor
+	{
+	  public:
+		string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new SetBitsProcessor();
+		}
+
+		void process_inplace(EMData *image);
+
+		TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("bits", EMObject::FLOAT, "Number of bits to retain (default 5)");
+				d.put("nsigma", EMObject::FLOAT, "Number of standard deviations to include in the n bit mapping. eg - max=min(mean+nsigma*sigma,max)");
+				return d;
+			}
+
+		string get_desc() const
+		{
+			return "Converts each pixel value to an integer using the specified number of total bits. This will make the data more compressible, and allows you to handle conversion to integer data modes.";
+		}
+
+		static const string NAME;
+
 	};
 
 

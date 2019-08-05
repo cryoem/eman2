@@ -4,14 +4,29 @@ set -xe
 
 source ${PREFIX}/bin/activate
 
+conda config --env --set auto_update_conda False
+
 mkdir ${PREFIX}/install_logs
 
-conda info -a          > ${PREFIX}/install_logs/info_log.txt 2>&1
-conda list             > ${PREFIX}/install_logs/list_log.txt 2>&1
-conda list --explicit >> ${PREFIX}/install_logs/list_log.txt 2>&1
+conda info -a            | tee ${PREFIX}/install_logs/info_log.txt 2>&1
+conda list               | tee ${PREFIX}/install_logs/list_log.txt 2>&1
+conda list --explicit | tee -a ${PREFIX}/install_logs/list_log.txt 2>&1
 
-conda install --force-reinstall conda=4.6.14 conda-build=3.17.8 pytz backports backports.functools_lru_cache filelock tqdm -y | tee ${PREFIX}/install_logs/install_log.txt 2>&1
-conda install eman-deps=14.1 -c cryoem -c defaults -c conda-forge -y | tee -a ${PREFIX}/install_logs/install_log.txt 2>&1
+SP_DIR=$(python -c "import site; print(site.getsitepackages()[0])")
+
+if [ -d site-packages ]; then
+    cp -av site-packages/* "${SP_DIR}"
+    rm -rv site-packages
+fi | tee ${PREFIX}/install_logs/install_log.txt 2>&1
+
+case ${EMAN_INSTALL_DONT_UPDATE_DEPS:-} in
+    0|"")
+        conda install eman-deps=14.1 -c cryoem -c defaults -c conda-forge -y | tee -a ${PREFIX}/install_logs/install_log.txt 2>&1
+        ;;
+    *)
+        echo "WARNING: Skipping installation of dependencies per user request..."
+        ;;
+esac
 
 cat <<EOF
 

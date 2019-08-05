@@ -2181,10 +2181,10 @@ class DragListWidget(QtWidgets.QListWidget):
 		# create the string representation of the data set
 		sdata=StringIO()		# easier to write as if to a file
 		for y in range(len(data[0])):
-			sdata.write("%1.8g"%data[axes[0]][y])
+			sdata.write(u"%1.8g"%data[axes[0]][y])
 			for x in range(1,len(axes)):
-				sdata.write("\t%1.8g"%data[axes[x]][y])
-			sdata.write("\n")
+				sdata.write(u"\t%1.8g"%data[axes[x]][y])
+			sdata.write(u"\n")
 
 		# start the drag operation
 		drag = QtGui.QDrag(self)

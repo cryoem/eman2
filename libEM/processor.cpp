@@ -151,6 +151,7 @@ const string MaskGaussNonuniformProcessor::NAME = "mask.gaussian.nonuniform";
 const string MaskGaussInvProcessor::NAME = "math.gausskernelfix";
 const string GridKernelFixProcessor::NAME = "math.gridkernelfix";
 const string LinearPyramidProcessor::NAME = "math.linearpyramid";
+const string SetBitsProcessor::NAME = "math.setbits";
 const string MakeRadiusSquaredProcessor::NAME = "math.toradiussqr";
 const string MakeRadiusProcessor::NAME = "math.toradius";
 const string ComplexNormPixel::NAME = "complex.normpixels";
@@ -381,7 +382,8 @@ template <> Factory < Processor >::Factory()
 	force_add<BinarizeFourierProcessor>();
 	force_add<CollapseProcessor>();
 	force_add<LinearXformProcessor>();
-
+	force_add<SetBitsProcessor>();
+	
 	force_add<ExpProcessor>();
 	force_add<RangeThresholdProcessor>();
 	force_add<SigmaProcessor>();
@@ -2336,6 +2338,38 @@ void LaplacianProcessor::create_kernel() const
 		kernel[16] = -1.0f / 6.0f;
 		kernel[22] = -1.0f / 6.0f;
 		kernel[13] = 1;
+	}
+}
+
+void SetBitsProcessor::process_inplace(EMData *image)
+{
+	if (!image) return;
+
+	float nsigma = params.set_default("nsigma",3.0f);
+	int bits = params.set_default("bits",5);
+	float sigma = image->get_attr("sigma");
+	float mean = image->get_attr("mean");
+	float bitmax=pow(2.,bits);
+	
+	float min=image->get_attr("minimum");
+	float max=image->get_attr("maximum");
+	
+	// our max/min are either the actual max/min, or mean+-nsigma*sigma
+	// whichever produces the smaller range. That way by specifying a large
+	// nsigma you can get the actual min/max of the image easily
+	if (mean-nsigma*sigma>min) min=mean-nsigma*sigma;
+	if (mean+nsigma*sigma<max) max=mean+nsigma*sigma;
+	
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	size_t total_size = (size_t)nx * (size_t)ny * (size_t)nz;
+
+	for (size_t i=0; i<total_size; i++) {
+		float newval=floor((image->get_value_at_index(i)-min)*bitmax/(max-min));
+		if (newval<0) newval=0;
+		if (newval>=bitmax) newval=bitmax-1.0f;
+		image->set_value_at_index(i,newval);
 	}
 }
 
