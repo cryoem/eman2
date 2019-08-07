@@ -397,7 +397,7 @@ class EMFileType(object) :
 		target.show()
 		target.raise_()
 
-	def show2dSingle(self, brws) :
+	def show2dSingle(self, brws, new=False) :
 		"""Show a single 2-D image"""
 
 		brws.busy()
@@ -406,12 +406,30 @@ class EMFileType(object) :
 			if self.n >= 0 : data = EMData(self.path, self.n)
 			else : data = EMData.read_images(self.path)
 		else : data = EMData(self.path)
+		
+		#### allow view from x/y/z axis
+		modifiers = QtWidgets.QApplication.keyboardModifiers()
+		
+		if modifiers == QtCore.Qt.ShiftModifier:
+			#print("rotate x")
+			xyz=0
+		elif modifiers == QtCore.Qt.ControlModifier:
+			#print("rotate y")
+			xyz=1
+		else:
+			xyz=-1
+			
+		if new==False:
 
-		try :
-			target = brws.view2d[-1]
-			target.set_data(data)
-		except :
-			target = EMImage2DWidget(data)
+			try :
+				target = brws.view2d[-1]
+				target.set_data(data, xyz=xyz)
+			except :
+				new=True
+		
+		if new:
+			target = EMImage2DWidget()
+			target.set_data(data, xyz=xyz)
 			brws.view2d.append(target)
 
 		target.setWindowTitle(self.path.split('/')[-1])
@@ -463,32 +481,33 @@ class EMFileType(object) :
 
 	def show2dSingleNew(self, brws) :
 		"""Show a single 2-D image"""
+		self.show2dSingle(brws, new=True)
 
-		brws.busy()
+		#brws.busy()
 
-		if self.nimg > 1 :
-			if self.n >= 0 : data = EMData(self.path, self.n)
-			else : data = EMData.read_images(self.path)
-		else : data = EMData(self.path)
+		#if self.nimg > 1 :
+			#if self.n >= 0 : data = EMData(self.path, self.n)
+			#else : data = EMData.read_images(self.path)
+		#else : data = EMData(self.path)
 
-		modifiers = QtWidgets.QApplication.keyboardModifiers()
-		if modifiers == QtCore.Qt.ShiftModifier:
-			print("rotate x")
-			target = EMImage2DWidget()
-			target.set_data(data, xyz=0)
-		if modifiers == QtCore.Qt.ControlModifier:
-			print("rotate y")
-			target = EMImage2DWidget()
-			target.set_data(data, xyz=1)
-		else:
-			target = EMImage2DWidget(data)
-		brws.view2d.append(target)
+		#modifiers = QtWidgets.QApplication.keyboardModifiers()
+		#if modifiers == QtCore.Qt.ShiftModifier:
+			#print("rotate x")
+			#target = EMImage2DWidget()
+			#target.set_data(data, xyz=0)
+		#if modifiers == QtCore.Qt.ControlModifier:
+			#print("rotate y")
+			#target = EMImage2DWidget()
+			#target.set_data(data, xyz=1)
+		#else:
+			#target = EMImage2DWidget(data)
+		#brws.view2d.append(target)
 
-		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+		#target.qt_parent.setWindowTitle(self.path.split('/')[-1])
 
-		brws.notbusy()
-		target.show()
-		target.raise_()
+		#brws.notbusy()
+		#target.show()
+		#target.raise_()
 
 	def showFilterTool(self, brws) :
 		"""Open in e2filtertool.py"""
@@ -918,6 +937,8 @@ class EMJSONFileType(EMFileType) :
 				return [
 					("Plot 2D", "plot xform", self.plot2dApp),
 					("Plot 2D+", "plot xform", self.plot2dNew),
+					("Histogram", "histogram xform", self.histApp),
+					("Histogram+", "histogram xform", self.histNew)
 					]
 
 		return []
@@ -930,13 +951,21 @@ class EMJSONFileType(EMFileType) :
 		"""Append self to current plot"""
 		
 		brws.busy()
+		
+		modifiers = QtWidgets.QApplication.keyboardModifiers()
+		if modifiers == QtCore.Qt.ShiftModifier:
+			inv=False
+		else:
+			inv=True
 
 		
 		rows = []
 		for k in self.keys:
 			dct = self.js[k]
 			#### inverse since we want the transform from reference to particle
-			tf = dct[u'xform.align3d'].inverse()
+			tf = Transform(dct[u'xform.align3d'])
+			if inv: 
+				tf=tf.inverse()
 			t = tf.get_trans()
 			r = tf.get_rotation()
 			row = [r["az"],r["alt"],r["phi"],t[0],t[1],t[2]]
@@ -959,6 +988,50 @@ class EMJSONFileType(EMFileType) :
 				brws.viewplot2d.append(target)
 		
 		
+		target.set_data(data, self.path.split('/')[-1])
+
+		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
+	
+	def histNew(self, brws):
+		self.histApp(brws, True)
+	
+	def histApp(self, brws, new=False) :
+		"""Make a new plot"""
+		
+		modifiers = QtWidgets.QApplication.keyboardModifiers()
+		if modifiers == QtCore.Qt.ShiftModifier:
+			inv=False
+		else:
+			inv=True
+
+		rows = []
+		for k in self.keys:
+			dct = self.js[k]
+			#### inverse since we want the transform from reference to particle
+			tf = Transform(dct[u'xform.align3d'])
+			if inv: 
+				tf=tf.inverse()
+			t = tf.get_trans()
+			r = tf.get_rotation()
+			row = [r["az"],r["alt"],r["phi"],t[0],t[1],t[2]]
+			if dct.has_key("score"):
+				row.append(dct["score"])
+
+			rows.append([float(x) for x in row])
+		
+		data=np.array(rows).T.tolist()
+		if new==False and len(brws.viewhist)>0:
+			target=brws.viewhist[-1]
+		
+		else:
+			target = EMHistogramWidget()
+			brws.viewhist.append(target)
+		
+			
 		target.set_data(data, self.path.split('/')[-1])
 
 		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
