@@ -75,7 +75,7 @@ def main():
 		np.random.shuffle(ip)
 		pts=pts[ip]
 		pks=pts[:options.random].copy()
-		pkscore=np.array([0 for p in pks])
+		pkscore=np.array([1.0 for p in pks])
 		
 	
 	n=len(pks)

@@ -42,6 +42,7 @@ def main():
 
 
 	parser.add_argument("--padby", type=float,default=2.0, help="pad by factor. default is 2")
+	parser.add_argument("--maxres", type=float,default=-1, help="max resolution for cmp")
 	parser.add_argument("--sym", type=str,help="symmetry. will use symmetry from spt refinement by default", default="")
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
 
@@ -171,10 +172,12 @@ class SptTltRefineTask(JSTask):
 			a=data["ref"]
 			b=EMData(info[1],info[0])
 			
+			
 			if b["ny"]!=a["ny"]: # box size mismatch. simply clip the box
 				b=b.get_clip(Region((b["nx"]-a["ny"])/2, (b["ny"]-a["ny"])/2, a["ny"],a["ny"]))
 				
-			
+			if options.maxres>0:
+				b.process_inplace("filter.lowpass.gauss", {"cutoff_freq":1./options.maxres})
 			initxf=eval(info[-1])
 			
 			if options.transonly:

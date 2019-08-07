@@ -298,7 +298,7 @@ def main():
 			ttparams[:,0]=-pretrans[:,0] # tx
 			ttparams[:,1]=-pretrans[:,1] # ty
 			
-		ttparams[:,2]=tltax # rot
+		ttparams[:,2]=options.tltax # rot
 		ttparams[:,3]=tlts.copy() # ytilt
 		ttparams[:,4]=0 # off axis tilt
 		loss0=abs(ttparams[:,3]) ### this is used to exclude bad tilt. in case the user ask 0 iterations..
@@ -983,13 +983,6 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	#####
 
 	
-	#msk=EMData(sz,sz,outz)
-	#msk.to_one()
-	#msk.process_inplace("mask.soft",{"outer_radius":sz//4, "width":sz//6})
-	#msk.process_inplace("mask.gaussian",{"outer_radius":sz//4})
-	#msk.process_inplace("mask.poly",{"2d":True, "k4":1/4, "k2":-1, "k0":1})
-	#msk.add(0.1)
-	#msk.write_image("tmp03_msk.hdf")
 	while thrtolaunch<len(thrds) or threading.active_count()>tsleep or jsd.empty()==False:
 		if thrtolaunch<len(thrds) :
 			while (threading.active_count()==options.threads ) : time.sleep(.1)
@@ -1016,14 +1009,6 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 				
 	for t in thrds: t.join()
 	
-	#full3d[0].write_image("tmp00_full.hdf")
-	#full3d[1].write_image("tmp01_full.hdf")
-	#wt.write_image("tmp02_wt.hdf")
-	#print("lalala")
-	#wt.add(.01)
-	#full3d=full3d[0]+full3d[1]
-	#full3d.div(wt)
-	#full3d.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.filterto})
 	full3d.process_inplace("normalize")
 	
 	#### skip the tomogram positioning step because there is some contrast difference at the boundary that sometimes breaks the algorithm...
