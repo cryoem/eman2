@@ -252,7 +252,16 @@ This program will take an input stack of subtomograms and a reference volume, an
 		#t.join()
 
 	E2end(logid)
-
+	
+	
+def reduce_sym(xf, s):
+	sym=parsesym(s)
+	trans=xf.get_trans()
+	xf.set_trans(0,0,0)
+	xi=sym.in_which_asym_unit(xf)
+	xf.set_trans(trans)
+	xf=xf.get_sym(s, -xi)
+	return xf
 
 class SptAlignTask(JSTask):
 	
@@ -274,10 +283,13 @@ class SptAlignTask(JSTask):
 		ref=data["ref"]
 		
 		callback(0)
-		b=EMData(fsp,i).do_fft()
+		b=EMData(fsp,i)
+		if options.maxres>0:
+			b.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./options.maxres})
+		b=b.do_fft()
 		b.process_inplace("xform.phaseorigin.tocorner")
 		#b=EMData(fsp, i, True)
-		aligndic={"verbose":0,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0, "maxres":options.maxres}
+		aligndic={"verbose":options.verbose,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0}
 		
 		if options.refine and (data["xf"]!=None or b.has_attr("xform.align3d")):
 			ntry=8
@@ -308,15 +320,7 @@ class SptAlignTask(JSTask):
 				xfs.append(xf*ixf)
 			
 			
-			#astep=3.0
-			#xfs=[]
-			#initxf=b["xform.align3d"].get_params("eman")
-			#for ii in range(16):
-				#d={"type":"eman","tx":0, "ty":0}
-				#for ky in ["alt", "az", "phi"]:
-					#d[ky]=initxf[ky]+(ii>0)*np.random.randn()*astep/np.pi*2
-				#xfs.append(Transform(d))
-					
+			xfs=[reduce_sym(xf.inverse(), options.sym).inverse() for xf in xfs]
 			aligndic["initxform"]=xfs
 			if options.maxshift<0:
 				options.maxshift=16
