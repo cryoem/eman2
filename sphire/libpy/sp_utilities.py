@@ -1777,7 +1777,8 @@ def model_rotated_rectangle2D(radius_long, radius_short, nx, ny, angle=90, retur
 	if return_numpy:
 		return mask
 	else:
-		return EMAN2.EMNumPy.numpy2em(mask)
+		return_mask = numpy2em_python(mask)
+		return return_mask
 
 
 def model_gauss_noise(sigma, nx, ny=1, nz=1):
@@ -3182,7 +3183,7 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 				elif ny != 1:
 					image_data = reshape(image_data, (ny, nx))
 
-				em_object = EMNumPy.numpy2em(image_data)
+				em_object = numpy2em_python(image_data)
 				em_object.set_attr_dict(em_dict)
 				list_of_em_objects[i] = em_object
 
@@ -3276,7 +3277,7 @@ def bcast_compacted_EMData_all_to_all___original(list_of_em_objects, myid, comm=
 				elif ny != 1:
 					image_data = reshape(image_data, (ny, nx))
 
-				em_object = EMNumPy.numpy2em(image_data)
+				em_object = numpy2em_python(image_data)
 
 				# em_object.set_complex(is_complex)
 				em_object.set_ri(is_ri)
@@ -3452,7 +3453,7 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(
 				elif ny != 1:
 					image_data = reshape(image_data, (ny, nx))
 
-				em_object = EMNumPy.numpy2em(image_data)
+				em_object = numpy2em_python(image_data)
 				em_object.set_attr_dict(em_dict_list[i - sender_ref_start])
 
 				# # em_object.set_complex(is_complex)
@@ -3558,7 +3559,7 @@ def gather_compacted_EMData_to_root( number_of_all_em_objects_distributed_across
 
 			# collect received data in EMData objects
 			for img_data in data:
-				em_object = EMNumPy.numpy2em(img_data)
+				em_object = numpy2em_python(img_data)
 				em_object.set_ri(is_ri)
 				em_object.set_attr_dict( { "changecount": changecount,
 										   "is_complex_x": is_complex_x,
@@ -3635,7 +3636,7 @@ def bcast_EMData_to_all(img, myid, main_node = 0, comm = -1):
 		img_data = reshape(img_data, (ny, nx))
 	else:
 		pass
-	img = EMNumPy.numpy2em(img_data)
+	img = numpy2em_python(img_data)
 	img.set_complex(is_complex)
 	img.set_ri(is_ri)
 
@@ -3676,7 +3677,7 @@ def reduce_EMData_to_root(img, myid, main_node = 0, comm = -1):
 		else:
 			pass
 
-		img = EMNumPy.numpy2em(img_data)
+		img = numpy2em_python(img_data)
 		img.set_complex(is_complex)
 		img.set_ri(is_ri)
 		return img
@@ -3753,7 +3754,7 @@ def recv_EMData(src, tag, comm=-1):
 	else:
 		pass
 
-	img = EMNumPy.numpy2em(img_data)
+	img = numpy2em_python(img_data)
 	img.set_complex(is_complex)
 	img.set_ri(is_ri)
 	img.set_attr_dict(
@@ -3773,7 +3774,7 @@ def recv_EMData(src, tag, comm=-1):
 	#recv_data_numeric = mpi_recv(ntot, MPI_FLOAT, src, data_tag, comm)
 	#recv_data_numpy = numpy.array(recv_data_numeric)
 	#numpy_data = recv_data.reshape(recv_data, (nz,ny,nx))
-	#img = EMNumPy.numpy2em(numpy_data)
+	#img = numpy2em_python(numpy_data)
 
 	#comment out Wei's original code, which makes memory copy to construct EMData from numpy array  --Grant Tang
 	img = EMData()
@@ -8997,7 +8998,7 @@ def angular_distribution(params_file, output_folder, prefix, method, pixel_size,
 		return None
 	else:
 		if do_print:
-			sxprint('Most values are valid')
+			sxprint('Values are valid')
 
 	try:
 		os.makedirs(output_folder)
@@ -9509,6 +9510,28 @@ def convert_to_float(value):
 	from struct import unpack
 
 	return unpack("!f", hex(value)[2:].zfill(8).decode("hex"))[0]
+
+
+def numpy2em_python(numpy_array):
+	"""
+	Create an EMData object based on a numpy array by reference.
+	The output EMData object will have the reversed order of dimensions.
+	x,y,z -> z,y,x
+
+	Arguments:
+	numpy_array - Array to convert
+
+	Return:
+	EMData object
+	"""
+	shape = numpy_array.shape[::-1]
+	if len(shape) == 1:
+		shape = (shape[0], 1)
+	return_array = EMAN2.EMData(*shape)
+	return_view = EMNumPy.em2numpy(return_array)
+	return_view[...] = numpy_array
+	return_array.update()
+	return return_array
 
 
 def create_summovie_command(temp_name, micrograph_name, shift_name, frc_name, opt):

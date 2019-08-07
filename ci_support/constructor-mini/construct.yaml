@@ -10,12 +10,12 @@ channels:
     - https://repo.anaconda.com/pkgs/msys2          # [win]
     - file:///place_holder_conda_prefix/conda-bld
 
-channels_remap:
-  -
-      src: file:///place_holder_conda_prefix/conda-bld
-      dest: eman-build-machine
+channels_remap:                                       # [not win]
+  -                                                   # [not win]
+      src: file:/place_holder_conda_prefix/conda-bld  # [not win]
+      dest: file://local                              # [not win]
 
-keep_pkgs: True
+keep_pkgs: False
 ignore_duplicate_files: True
 
 specs:
@@ -33,7 +33,7 @@ exclude:
   - libtiff   # [not win]
   - freetype  # [osx]
 
-welcome_image: ../images/EMAN2Icon.png      # [win]
-icon_image:    ../images/eman.ico           # [win]
-post_install:  post-install-actions.sh   # [unix]
-post_install:  post-install-actions.bat  # [win]
+welcome_image: ../../images/EMAN2Icon.png      # [win]
+icon_image:    ../../images/eman.ico           # [win]
+post_install:  ../post-install-actions.sh      # [unix]
+post_install:  ../post-install-actions.bat     # [win]

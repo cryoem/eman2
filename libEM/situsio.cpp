@@ -192,9 +192,10 @@ bool SitusIO::is_valid(const void *first_block)
 	if(line1.size()==0) return false;
 
 	float apix, origx, origy, origz;
-	int nx, ny, nz;
+	int nx, ny, nz, missing;
 
-	if(sscanf(line1.c_str(), "%f %f %f %f %d %d %d", &apix, &origx, &origy, &origz, &nx, &ny, &nz) != 7) return false;
+	// We're looking for exactly 7
+	if(sscanf(line1.c_str(), "%f %f %f %f %d %d %d %d", &apix, &origx, &origy, &origz, &nx, &ny, &nz,&missing) != 7) return false;
 
 	if(apix<0.01 || apix>100) return false;
 	if(nx<=0 || ny<0 || nz<0) return false;

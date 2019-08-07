@@ -227,7 +227,7 @@ class Strategy2IMGPair(Strategy):
 
 	def compute_tiltaxis(self):
 		""" Must have already computed tilt angle for this to work!"""
-		if self.A != None and self.tiltangle != None:
+		if type(self.A) != type(None) and type(self.tiltangle) != type(None):
 			rotA = numpy.array([[self.A[0,0],self.A[0,1]],[self.A[1,0],self.A[1,1]]])
 			tan_phi = old_div((rotA[0,0] - rotA[1,1]*math.cos(math.radians(self.tiltangle))),(rotA[1,0]*math.cos(math.radians(self.tiltangle)) + rotA[0,1]))
 			phi = math.atan2((rotA[0,0] - rotA[1,1]*math.cos(math.radians(self.tiltangle))),(rotA[1,0]*math.cos(math.radians(self.tiltangle)) + rotA[0,1]))
@@ -249,7 +249,7 @@ class Strategy2IMGPair(Strategy):
 			self.mediator.untilt_win.boxes.save_tiltdata_to_db([self.tiltangle, self.dphi, self.dgamma])
 		
 	def compute_mask(self):
-		if self.A != None:
+		if type(self.A) != type(None):
 			v1 = numpy.dot(self.A,[0,0,1])
 			v2 = numpy.dot(self.A,[self.mediator.untilt_win.win_xsize,0,1])
 			v3 = numpy.dot(self.A,[self.mediator.untilt_win.win_xsize,self.mediator.untilt_win.win_ysize,1])
@@ -267,7 +267,7 @@ class Strategy2IMGPair(Strategy):
 	def compute_tilt_angle(self):
 		#self.compute_tilt_angle_phil()
 		
-		if self.A != None:
+		if type(self.A) != type(None):
 			# Use the transformation matrix to compute the tilt angle
 			rotA = numpy.array([[self.A[0,0],self.A[0,1]],[self.A[1,0],self.A[1,1]]])
 			detA = numpy.linalg.det(self.A)	# The determinate is is COS of the tilt angle
@@ -279,7 +279,7 @@ class Strategy2IMGPair(Strategy):
 			self.compute_tiltaxis()
 		
 	def compute_tilt_angle_phil(self):
-		if self.A != None:
+		if type(self.A) != type(None):
 			# SVD of A
 			rotA = numpy.array([[self.A[0,0],self.A[0,1]],[self.A[1,0],self.A[1,1]]])
 			U, D, V = numpy.linalg.svd(rotA)
@@ -323,7 +323,7 @@ class Strategy2IMGPair(Strategy):
 		window.boxes.labellist[len(window.boxes.boxlist)-1] = None
 	
 	def imagesaveevent(self, image):
-		if self.A != None:
+		if type(self.A) != type(None):
 			if image.has_attr("tiltaxis"): image.set_attr("tiltaxis", self.dphi)
 			if image.has_attr("tiltgamma"): image.set_attr("tiltgamma", self.dgamma)
 			if image.has_attr("tiltangle"): image.set_attr("tiltangle", self.tiltangle)

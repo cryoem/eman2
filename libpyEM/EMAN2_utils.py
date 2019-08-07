@@ -226,9 +226,11 @@ def findfs(stem=''):
 	For example stem=id1*id2 will find files with "id1" and "id2" in them, regardless of where these strings occur in the filename
 	Author: Jesus Montoya, jgalaz@gmail.com, April 2019
 	"""
-	findir=set(fsincurrentdir())
+	#findir=set(fsincurrentdir())
+	findir=fsindir()
 	
 	if stem: #only do this if a string has been passed in
+		findir=set(findir)
 		ids=[stem]
 		if '*' in stem: ids=stem.split('*')
 
@@ -237,27 +239,55 @@ def findfs(stem=''):
 				selectfiles=set([f for f in findir if i in f])
 				findir=findir.intersection(selectfiles)
 
-	findir=list(findir)
-	findir.sort()
-	return findir
+		findir=list(findir)
+
+		findir.sort()
+		return findir
+	else:
+		print("\nWARNING: no files with stem={} found".format(stem))
+		return None
 
 
-def fsincurrentdir():
-	"""Returns a sorted list with the files in the current directory
-	Author: Jesus Montoya, jgalaz@gmail.com, April 2019
+def finddirs(stem=''):
+	"""Returns a sorted list with subdirectories containing "stem" as part of their name in the current directory
+	Author: Jesus Montoya, jgalaz@gmail.com, August 2019
 	"""
-	import os
+	if stem:
+		fs=findfs(stem)
+		dirs=[f for f in fs if os.path.isdir(f)]
+		dirs.sort()
+		return dirs
+	else:
+		print("\nWARNING: no dirs with stem={} found".format(stem))
+		return None
+
+
+def fsindir(directory=''):
+	"""Returns a sorted list with the files in "directory"
+	Author: Jesus Montoya, jgalaz@gmail.com, August 2019
+	"""
 	c = os.getcwd()
+	if directory:
+		c = directory
 	findir = os.listdir(c)
 	findir.sort()
 	return findir
+
+
+def dirsindir(directory=''):
+	"""Returns a sorted list with subdirectories in "directory"
+	Author: Jesus Montoya, jgalaz@gmail.com, August 2019
+	"""
+	dirs=[f for f in fsindir(directory) if os.path.isdir(f)]
+	dirs.sort()
+	return dirs
 
 
 def fisindir(f):
 	"""Checks whether a file is in the current directory
 	Author: Jesus Montoya, jgalaz@gmail.com, April 2019
 	"""
-	fs=fsincurrentdir()
+	fs=fsindir()
 	result=False
 	if f in fs:
 		result=True
@@ -281,13 +311,12 @@ def cleanfilenames():
 	"""Renames all files in a directory and its subdirectories to NOT contain parentheses, brackets, commas, spaces
 	Author: Jesus Montoya, jgalaz@gmail.com, April 2019
 	"""
-	fs=fsincurrentdir()
+	fs=fsindir()
 	badcharacters=['[',']','{','}','(',')',',','  ',' ']
 	cmds = ["""find . -depth -name '*"""+b+"""*' -execdir bash -c 'for f; do mv -i "$f" "${f//"""+b+"""/_}"; done' bash {} +""" for b in badcharacters]
 	for cmd in cmds:
 		runcmdbasic(cmd)
 	return	
-
 
 def makepath(options, stem='e2dir'):
 	"""
@@ -335,17 +364,19 @@ def detectThreads(options):
 			options.parallel = None
 			print("\n(EMAN2_utils)(detectThreads) WARNING: parallelism disabled, options.parallel={}".format(options.parallel) )
 	except:
-		try:
-			if options.threads and options.threads != 'None' and options.threads != 'none' and options.threads != 'NONE':
-				
-				options.threads = 'thread:' + str(nparallel)
-				print("\nfound cores n={}".format(nparallel))
-				print("setting --parallel={}".format(options.parallel))
-			elif not options.threads or options.threads == 'None' or options.threads == 'none':
-				options.parallel = None
-				print("\n(EMAN2_utils)(detectThreads) WARNING: parallelism disabled, options.parallel={}".format(options.parallel) ) 
-		except:
-			print("\n(EMAN2_utils)(detectThreads) WARNING: No parallelism option detected, neither --parallel nor --threads.")
+		print("\n--parallel not set")
+	try:
+		if options.threads and options.threads != 'None' and options.threads != 'none' and options.threads != 'NONE':
+			
+			options.threads = 'thread:' + str(nparallel)
+			print("\nfound cores n={}".format(nparallel))
+			print("setting --parallel={}".format(options.parallel))
+		elif not options.threads or options.threads == 'None' or options.threads == 'none':
+			options.parallel = None
+			print("\n(EMAN2_utils)(detectThreads) WARNING: parallelism disabled, options.parallel={}".format(options.parallel) ) 
+	except:
+		print("\n--threads not set")
+		#print("\n(EMAN2_utils)(detectThreads) WARNING: No parallelism option detected, neither --parallel nor --threads.")
 
 	return options
 

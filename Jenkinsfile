@@ -12,7 +12,7 @@ def getJobType() {
 
 def notifyGitHub(status) {
     if(JOB_TYPE == "push" || NOTIFY_GITHUB == "true") {
-        if(status == 'PENDING') { message = 'Stage: ' + STAGE_NAME }
+        if(status == 'PENDING') { message = 'Stage: ' + (env.PARENT_STAGE_NAME ?: STAGE_NAME) }
         if(status == 'SUCCESS') { message = 'Build succeeded!' }
         if(status == 'FAILURE') { message = 'Build failed!' }
         if(status == 'ERROR')   { message = 'Build aborted!' }
@@ -31,6 +31,13 @@ def notifyEmail() {
                  attachLog: true
                  )
     }
+    if(JOB_TYPE == "cron") {
+        emailext(to: '$DEFAULT_RECIPIENTS',
+                 subject: '[JenkinsCI/cron] ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER - $BUILD_STATUS!',
+                 body: '''${SCRIPT, template="groovy-text.template"}''',
+                 attachLog: true
+                 )
+    }
 }
 
 def selectNotifications() {
@@ -43,6 +50,10 @@ def selectNotifications() {
                  
         env.NOTIFY_GITHUB = result.notify_github
         env.NOTIFY_EMAIL  = result.notify_email
+    }
+    else if(env.JOB_TYPE == 'cron') {
+        env.NOTIFY_GITHUB = false
+        env.NOTIFY_EMAIL  = false
     }
     else {
         env.NOTIFY_GITHUB = true
@@ -59,7 +70,7 @@ def isReleaseBranch() {
 }
 
 def isContinuousBuild() {
-    return (CI_BUILD == "1" && isMasterBranch()) || isReleaseBranch()
+    return (CI_BUILD == "1" && isMasterBranch()) || isReleaseBranch() || JOB_TYPE == "cron"
 }
 
 def isExperimentalBuild() {
@@ -70,11 +81,11 @@ def isBinaryBuild() {
     return isContinuousBuild() || isExperimentalBuild()
 }
 
-def testPackage() {
+def testPackage(suffix, dir) {
     if(SLAVE_OS != 'win')
-        sh "bash tests/test_binary_installation.sh ${INSTALLERS_DIR} eman2.${SLAVE_OS}.sh"
+        sh "bash tests/test_binary_installation.sh ${INSTALLERS_DIR}/eman2" + suffix + ".${SLAVE_OS}.sh ${INSTALLERS_DIR}/" + dir
     else
-        sh 'ci_support/test_wrapper.sh'
+        sh 'ci_support/test_wrapper.sh ' + suffix + ' ' + dir
 }
 
 def deployPackage() {
@@ -87,8 +98,10 @@ def deployPackage() {
         upload_ext = 'experimental'
     }
     
-    if(SLAVE_OS != 'win')
+    if(SLAVE_OS != 'win') {
         sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${DEPLOY_DEST}/" + upload_dir + "/eman2." + JOB_NAME.toLowerCase() + "." + upload_ext + ".sh"
+        sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2_huge.${SLAVE_OS}.sh ${DEPLOY_DEST}/" + upload_dir + "/eman2_huge." + JOB_NAME.toLowerCase() + "." + upload_ext + ".sh"
+    }
     else
         bat 'ci_support\\rsync_wrapper.bat ' + upload_dir + ' ' + upload_ext
 }
@@ -129,6 +142,10 @@ pipeline {
   
   stages {
     stage('init') {
+      options {
+        timeout(time: 10, unit: 'MINUTES') 
+      }
+      
       steps {
         selectNotifications()
         notifyGitHub('PENDING')
@@ -159,22 +176,53 @@ pipeline {
       when {
         expression { isBinaryBuild() }
       }
+      environment {
+        PARENT_STAGE_NAME = "${STAGE_NAME}"
+      }
       
-      steps {
-        notifyGitHub('PENDING')
-        sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/'
+      parallel {
+        stage('notify') {
+          steps {
+            notifyGitHub('PENDING')
+          }
+        }
+        stage('mini') {
+          steps {
+            sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/constructor-mini/'
+          }
+        }
+        stage('huge') {
+          steps {
+            sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/constructor-huge/'
+          }
+        }
       }
     }
     
     stage('test-package') {
       when {
         expression {isBinaryBuild() }
-        expression { JOB_NAME != 'Win' }
+      }
+      environment {
+        PARENT_STAGE_NAME = "${STAGE_NAME}"
       }
       
-      steps {
-        notifyGitHub('PENDING')
-        testPackage()
+      parallel {
+        stage('notify') {
+          steps {
+            notifyGitHub('PENDING')
+          }
+        }
+        stage('mini') {
+          steps {
+            testPackage('', 'mini')
+          }
+        }
+        stage('huge') {
+          steps {
+            testPackage('_huge','huge')
+          }
+        }
       }
     }
     

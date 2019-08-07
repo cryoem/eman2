@@ -789,6 +789,26 @@ namespace EMAN
 #endif	//_WIN32
 			
 		}
+		
+		/** Euclidean distance function squared in 2D: f(x,y) = (x*x + y*y);
+		 * @param[in] x The first number.
+		 * @param[in] y The second number.
+		 * @return (int)(x*x + y*y);
+		 */
+		static inline int hypot2sq(int x, int y)
+		{
+			return (x * x + y * y);
+		}
+		
+		/** Euclidean distance function squared in 2D: f(x,y) = (x*x + y*y);
+		 * @param[in] x The first number.
+		 * @param[in] y The second number.
+		 * @return (int)(x*x + y*y);
+		 */
+		static inline float hypot2sq(float x, float y)
+		{
+			return (float)(x * x + y * y);
+		}
 
 		/** Euclidean distance function squared in 3D: f(x,y,z) = (x*x + y*y + z*z);
 		 * @param[in] x The first number.

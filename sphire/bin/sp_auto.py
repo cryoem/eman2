@@ -126,6 +126,18 @@ def parse_args():
 	group = parser.add_argument_group('Substack ISAC2 settings (optional)')
 	group.add_argument('--substack_output_dir', dest='XXX_SP_SUBSTACK_OUTPUT_DIR_XXX', type=str, default='SUBSTACK', help='Substack ISAC2 output directory.')
 
+	group = parser.add_argument_group('Automatic 2D class selection (required)')
+	group.add_argument('--cinderella_predict_path', dest='XXX_SP_CINDERELLA_PREDICT_PATH_XXX', type=str, default='/Path/sp_cinderella_predict.py', help='Path to the cinderella executable.')
+	group.add_argument('--cinderella_model_path', dest='XXX_SP_CINDERELLA_MODEL_PATH_XXX', type=str, default='cinderella_model.h5', help='Path to trained cinderella model')
+
+	group = parser.add_argument_group('Automatic 2D class selection (optional)')
+	group.add_argument('--skip_cinderella', action='store_true', default=False, help='Do not run automatic 2D class selection.')
+	group.add_argument('--cinderella_output_dir', dest='XXX_SP_CINDERELLA_OUTPUT_DIR_XXX', type=str, default='AUTO2D', help='Cinderalla output directory.')
+	group.add_argument('--cinderella_input_stack', dest='XXX_SP_CINDERELLA_STACK_XXX', type=str, default='isac_classes.h5', help='Path to ISAC class stack')
+	group.add_argument('--cinderella_conf_thresh', dest='XXX_SP_CINDERELLA_CONF_THRESH_XXX', type=float, default=0.5, help='Classes with a confidence higher as that threshold are classified as good.')
+	group.add_argument('--cinderella_gpu', dest='XXX_SP_GPU_ID_XXX', type=int, default=-1, help='GPU ID.')
+	group.add_argument('--cinderella_batch_size', dest='XXX_SP_BATCH_SIZE_XXX', type=int, default=32, help='Number of images in one batch during prediction.')
+
 	group = parser.add_argument_group('RVIPER settings (optional)')
 	group.add_argument('--skip_rviper', action='store_true', default=False, help='Do not run 3d ab-initio reconstruction.')
 	group.add_argument('--rviper_input_stack', dest='XXX_SP_RVIPER_INPUT_STACK_XXX', type=str, default='bdb:path#stack', help='Path to the input stack for RVIPER')
@@ -196,7 +208,7 @@ def parse_args():
 	return args
 
 
-def get_unblur_cmd(status_dict, **kwargs):
+def get_unblur_cmd(status_dict, do_gain, **kwargs):
 	cmd = []
 	cmd.append('sp_unblur.py')
 	cmd.append('XXX_SP_UNBLUR_PATH_XXX')
@@ -205,7 +217,8 @@ def get_unblur_cmd(status_dict, **kwargs):
 	cmd.append('--pixel_size=XXX_SP_PIXEL_SIZE_XXX')
 	cmd.append('--voltage=XXX_SP_VOLTAGE_XXX')
 	cmd.append('--exposure_per_frame=XXX_SP_UNBLUR_EXP_PER_FRAME_XXX')
-	cmd.append('--gain_file=XXX_SP_UNBLUR_GAIN_FILE_XXX')
+	if do_gain:
+		cmd.append('--gain_file=XXX_SP_UNBLUR_GAIN_FILE_XXX')
 	cmd.append('XXX_SP_UNBLUR_ADDITION_XXX')
 	return cmd
 
@@ -222,7 +235,6 @@ def get_cter_cmd(status_dict, phase_plate, **kwargs):
 	cmd.append('--apix=XXX_SP_PIXEL_SIZE_XXX')
 	cmd.append('--Cs=XXX_SP_CTER_CS_XXX')
 	cmd.append('--voltage=XXX_SP_VOLTAGE_XXX')
-	cmd.append('--pws')
 	if phase_plate:
 		cmd.append('--vpp')
 	cmd.append('XXX_SP_CTER_ADDITION_XXX')
@@ -300,6 +312,26 @@ def get_isac2(status_dict, phase_plate, negative_stain, **kwargs):
 	cmd.append('XXX_SP_ISAC_ADDITION_XXX')
 	return cmd
 
+
+
+def get_cinderella_predict(status_dict, **kwargs):
+	cmd = []
+
+
+	cmd.append('sp_cinderella_pred.py')
+	cmd.append('XXX_SP_CINDERELLA_PREDICT_PATH_XXX')
+	if status_dict['do_isac2']:
+		cmd.append("XXX_SP_ISAC_OUTPUT_DIR_XXX/ordered_class_averages.hdf")
+	else:
+		cmd.append('XXX_SP_CINDERELLA_STACK_XXX')
+	cmd.append('XXX_SP_CINDERELLA_OUTPUT_DIR_XXX')
+	cmd.append('XXX_SP_CINDERELLA_MODEL_PATH_XXX')
+
+	cmd.append('--confidence_threshold=XXX_SP_CINDERELLA_CONF_THRESH_XXX')
+	cmd.append('--gpu=XXX_SP_GPU_ID_XXX')
+	cmd.append('--batch_size=XXX_SP_BATCH_SIZE_XXX')
+	return cmd
+
 def get_isac2_substack(status_dict, **kwargs):
 	cmd = []
 	cmd.append('sp_pipe.py')
@@ -308,15 +340,24 @@ def get_isac2_substack(status_dict, **kwargs):
 		cmd.append('bdb:XXX_SP_WINDOW_OUTPUT_DIR_XXX/stack')
 	else:
 		cmd.append('XXX_SP_ISAC_STACK_XXX')
-	cmd.append('XXX_SP_ISAC_OUTPUT_DIR_XXX')
-	cmd.append('XXX_SP_SUBSTACK_OUTPUT_DIR_XXX')
-	return cmd
 
+	cmd.append('XXX_SP_ISAC_OUTPUT_DIR_XXX')
+
+	cmd.append('XXX_SP_SUBSTACK_OUTPUT_DIR_XXX')
+
+	if status_dict['do_cinderella']:
+		cmd.append('--isac_class_avgs_path=XXX_SP_CINDERELLA_OUTPUT_DIR_XXX/ordered_class_averages_good.hdf')
+
+
+	return cmd
 
 def get_rviper(status_dict, **kwargs):
 	cmd = []
 	cmd.append('sp_rviper.py')
-	if status_dict['do_isac2']:
+
+	if status_dict['do_cinderella']:
+		cmd.append('XXX_SP_CINDERELLA_OUTPUT_DIR_XXX/ordered_class_averages_good.hdf')
+	elif status_dict['do_isac2']:
 		cmd.append('XXX_SP_ISAC_OUTPUT_DIR_XXX/ordered_class_averages.hdf')
 	else:
 		cmd.append('XXX_SP_RVIPER_INPUT_STACK_XXX')
@@ -352,6 +393,7 @@ def get_mask_rviper(status_dict, fill_rviper_mask, **kwargs):
 		cmd.append('--mol_mass=XXX_SP_MOL_MASS_XXX')
 		cmd.append('--ndilation=XXX_SP_MASK_RVIPER_NDILAITON_XXX')
 		cmd.append('--edge_width=XXX_SP_MASK_RVIPER_SOFT_EDGE_XXX')
+		cmd.append('--pixel_size=XXX_SP_PIXEL_SIZE_XXX')
 		if fill_rviper_mask:
 			cmd.append('--fill_mask')
 		cmd.append('XXX_SP_MASK_RVIPER_ADDITION_XXX')
@@ -374,7 +416,7 @@ def get_meridien(status_dict, **kwargs):
 	cmd.append('--symmetry=XXX_SP_SYMMETRY_XXX')
 	cmd.append('--memory_per_node=XXX_SP_MEMORY_PER_NODE_XXX')
 	if status_dict['do_mask_rviper']:
-		cmd.append('--mask3D=XXX_SP_MASK_RVIPER_OUTPUT_DIR_XXX/sxmask_mask.hdf')
+		cmd.append('--mask3D=XXX_SP_MASK_RVIPER_OUTPUT_DIR_XXX/sp_mask_mask.hdf')
 	else:
 		cmd.append('--mask3D=XXX_SP_MERIDIEN_INPUT_MASK_XXX')
 	if status_dict['do_isac2']:
@@ -648,6 +690,7 @@ def main(args_as_dict):
 	function_dict['do_window'] = [get_window, True]
 	function_dict['do_window_stack'] = [get_window_stack, False]
 	function_dict['do_isac2'] = [get_isac2, True]
+	function_dict['do_cinderella'] = [get_cinderella_predict, False]
 	function_dict['do_isac2_substack'] = [get_isac2_substack, False]
 	function_dict['do_rviper'] = [get_rviper, True]
 	function_dict['do_adjust_rviper'] = [get_adjustment, False]
@@ -662,7 +705,7 @@ def main(args_as_dict):
 	function_dict['do_restack_sharpening'] = [get_restack_sharpening, False]
 	function_dict['do_ctf_refine_import_params'] = [get_ctf_import_params, False]
 	function_dict['do_ctf_refine'] = [get_ctf_refine, False]
-	function_dict['do_ctf_refine_meridien'] = [get_ctf_meridien, False]
+	function_dict['do_ctf_refine_meridien'] = [get_ctf_meridien, True]
 	function_dict['do_ctf_refine_sharpening'] = [get_ctf_sharpening, False]
 
 	do_dict = {}
@@ -689,6 +732,7 @@ def main(args_as_dict):
 	phase_plate = args_as_dict['phase_plate']
 	negative_stain = args_as_dict['negative_stain']
 	fill_rviper_mask = args_as_dict['fill_rviper_mask']
+	do_gain = bool(args_as_dict['XXX_SP_UNBLUR_GAIN_FILE_XXX'] is not None)
 
 	mpi_procs = args_as_dict['mpi_procs']
 	mpi_submission = args_as_dict['mpi_submission_template']
@@ -706,7 +750,7 @@ def main(args_as_dict):
 			cmds.append(prev_line.format(key))
 			dict_idx_dict[running_idx] = current_idx
 			running_idx+=1
-			return_value = [entry for entry in function_dict[key][0](phase_plate=phase_plate, negative_stain=negative_stain, fill_rviper_mask=fill_rviper_mask, status_dict=do_dict) if entry.strip()]
+			return_value = [entry for entry in function_dict[key][0](phase_plate=phase_plate, negative_stain=negative_stain, fill_rviper_mask=fill_rviper_mask, status_dict=do_dict, do_gain=do_gain) if entry.strip()]
 			return_value.insert(0, [function_dict[key][1], key])
 			cmds.append(return_value)
 			dict_idx_dict[running_idx] = current_idx

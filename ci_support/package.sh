@@ -21,6 +21,5 @@ CONDA_ROOT_DIR=${CONDA_ROOT_DIR//\\/\\\\}
 sed -i.bak "s~place_holder_conda_prefix~"${CONDA_ROOT_DIR}"~" ${CONSTRUCT_YAML}
 cat ${CONSTRUCT_YAML}
 constructor --version
-constructor --clean -v --cache-dir=${HOME_DIR}/.conda/constructor
 constructor ${CONSTRUCT_YAML_DIR} -v --cache-dir=${HOME_DIR}/.conda/constructor
 mv ${CONSTRUCT_YAML}.bak ${CONSTRUCT_YAML}

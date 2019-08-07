@@ -1257,7 +1257,6 @@ def main():
 
 				elif options.do_adaptive_mask:
 					log_main.add("Create an adaptive mask, let's wait...")
-					log_main.add("Options.threshold, options.ndilation, options.edge_width %f %5.2f %5.2f"%(options.threshold, options.ndilation, options.edge_width))
 					from sp_morphology import adaptive_mask_scipy
 					if single_map:
 						input_vol_mask = map1
@@ -1270,6 +1269,7 @@ def main():
 							)
 					else:
 						density_threshold = options.threshold
+					log_main.add("density_threshold, options.ndilation, options.edge_width %f %5.2f %5.2f"%(density_threshold, options.ndilation, options.edge_width))
 					if options.edge_type == "cosine":
 						mode = "C"
 					else:
