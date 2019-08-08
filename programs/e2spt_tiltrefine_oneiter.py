@@ -59,7 +59,7 @@ def main():
 	m=EMData(threedname)
 	bxsz=m["nx"]
 	apix=m["apix_x"]
-	m.process_inplace('normalize.edgemean')
+	#m.process_inplace('normalize.edgemean')
 	
 	pinfo=[]
 	if options.debug: nptcl=options.threads*8
@@ -81,7 +81,7 @@ def main():
 	
 	tids=[]
 	for info in infos:
-		task = SptTltRefineTask(info, m, options)
+		task = SptTltRefineTask(info, threedname, options)
 		tid=etc.send_task(task)
 		tids.append(tid)
 	
@@ -169,7 +169,7 @@ class SptTltRefineTask(JSTask):
 			ii=infos[0]
 			info=infos[1]
 			
-			a=data["ref"]
+			a=EMData(data["ref"],0)
 			b=EMData(info[1],info[0])
 			
 			
