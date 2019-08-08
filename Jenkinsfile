@@ -26,14 +26,14 @@ def notifyGitHub(status) {
 def notifyEmail() {
     if(JOB_TYPE == "push" || NOTIFY_EMAIL == "true") {
         emailext(to: "$GIT_AUTHOR_EMAIL",  
-                 subject: '[JenkinsCI/$PROJECT_NAME] ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER - $BUILD_STATUS!',
+                 subject: '[JenkinsCI/$PROJECT_NAME] - $BUILD_STATUS! ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER',
                  body: '''${SCRIPT, template="groovy-text.template"}''',
                  attachLog: true
                  )
     }
     if(JOB_TYPE == "cron") {
         emailext(to: '$DEFAULT_RECIPIENTS',
-                 subject: '[JenkinsCI/cron] ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER - $BUILD_STATUS!',
+                 subject: '[JenkinsCI/cron]  - $BUILD_STATUS! ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER',
                  body: '''${SCRIPT, template="groovy-text.template"}''',
                  attachLog: true
                  )
