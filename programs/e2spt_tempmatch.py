@@ -165,7 +165,7 @@ def main():
 		
 		pts=np.array(pts)
 		print(pts.shape)
-		dst=scidist.cdist(pts, pts)
+		dst=scidist.cdist(pts, pts)+(np.eye(len(pts))*dthr*100)
 		tokeep=np.ones(len(dst), dtype=bool)
 		for i in range(len(dst)):
 			if tokeep[i]:

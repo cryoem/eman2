@@ -15,6 +15,13 @@ import re
 from EMAN2_utils import make_path
 from shutil import copy2
 
+def do_copy(a,b):
+	try:
+		copy2(a,b)
+	except:
+		print("!!\tCannot find {}".format(a))
+	return
+
 def main():
 	
 	usage="""prog --path <path to previous spt or subtlt refinement> [options]
@@ -124,18 +131,18 @@ def main():
 		oom = os.path.join(oldpath,"threed_{:02d}_odd.hdf".format(itr))
 		oldfsc = os.path.join(oldpath, "fsc_masked_{:02d}.txt".format(itr))
 
-		copy2(oldmap,os.path.join(path,"threed_00.hdf"))
-		copy2(oldfsc, os.path.join(path, "fsc_masked_00.txt"))
-		copy2(oem,os.path.join(path,"threed_00_even.hdf"))
-		copy2(oom,os.path.join(path,"threed_00_odd.hdf"))
+		do_copy(oldmap,os.path.join(path,"threed_00.hdf"))
+		do_copy(oldfsc, os.path.join(path, "fsc_masked_00.txt"))
+		do_copy(oem,os.path.join(path,"threed_00_even.hdf"))
+		do_copy(oom,os.path.join(path,"threed_00_odd.hdf"))
 		
 		if fromspt:
 			oldparm = os.path.join(oldpath,"particle_parms_{:02d}.json".format(itr))
-			copy2(oldparm,os.path.join(path,"particle_parms_00.json"))
+			do_copy(oldparm,os.path.join(path,"particle_parms_00.json"))
 		else:
 			for eo in ["even", "odd"]:
 				oali = os.path.join(oldpath,"ali_ptcls_{:02d}_{}.lst".format(itr, eo))
-				copy2(oali,os.path.join(path,"ali_ptcls_00_{}.lst".format(eo)))
+				do_copy(oali,os.path.join(path,"ali_ptcls_00_{}.lst".format(eo)))
 
 
 		e=EMData(os.path.join(path,"threed_00.hdf"))
