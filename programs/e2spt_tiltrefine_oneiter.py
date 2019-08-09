@@ -42,6 +42,7 @@ def main():
 
 
 	parser.add_argument("--padby", type=float,default=2.0, help="pad by factor. default is 2")
+	parser.add_argument("--maxres", type=float,default=-1, help="max resolution for cmp")
 	parser.add_argument("--sym", type=str,help="symmetry. will use symmetry from spt refinement by default", default="")
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
 
@@ -58,7 +59,7 @@ def main():
 	m=EMData(threedname)
 	bxsz=m["nx"]
 	apix=m["apix_x"]
-	m.process_inplace('normalize.edgemean')
+	#m.process_inplace('normalize.edgemean')
 	
 	pinfo=[]
 	if options.debug: nptcl=options.threads*8
@@ -80,7 +81,7 @@ def main():
 	
 	tids=[]
 	for info in infos:
-		task = SptTltRefineTask(info, m, options)
+		task = SptTltRefineTask(info, threedname, options)
 		tid=etc.send_task(task)
 		tids.append(tid)
 	
@@ -168,13 +169,15 @@ class SptTltRefineTask(JSTask):
 			ii=infos[0]
 			info=infos[1]
 			
-			a=data["ref"]
+			a=EMData(data["ref"],0)
 			b=EMData(info[1],info[0])
+			
 			
 			if b["ny"]!=a["ny"]: # box size mismatch. simply clip the box
 				b=b.get_clip(Region((b["nx"]-a["ny"])/2, (b["ny"]-a["ny"])/2, a["ny"],a["ny"]))
 				
-			
+			if options.maxres>0:
+				b.process_inplace("filter.lowpass.gauss", {"cutoff_freq":1./options.maxres})
 			initxf=eval(info[-1])
 			
 			if options.transonly:

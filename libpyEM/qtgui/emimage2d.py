@@ -424,7 +424,10 @@ class EMImage2DWidget(EMGLWidget):
 			if self.list_data == None and self.list_idx > len(data): 
 				self.list_idx = len(data)//2 #otherwise we use the list idx from the previous list data, as in when being used from the emselector
 			d = data[0]
-			apix=d["apix_x"]
+			if d.has_attr("apix_x"):
+				apix=d["apix_x"]
+			else:
+				apix=1.0
 			if d.is_complex():
 				self.list_data = []
 				self.list_fft_data = data

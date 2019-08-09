@@ -795,7 +795,10 @@ lc is the cursor selection point in plot coords"""
 
 	def autoscale(self,force=False,xmin=1.0e38,xmax=-1.0e38,ymin = 0,ymax = -1e38):
 		"This autoscales, but only axes which currently have invalid settings"
-
+		
+		if np.sum(self.visibility.values())==0: # do not autoscale empty plot...
+			return
+		
 		if force or self.xlimits==None or self.xlimits[1]<=self.xlimits[0] :
 			for k in list(self.axes.keys()):
 				if not self.visibility[k]: continue

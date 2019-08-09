@@ -9,9 +9,9 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - mini-eman-deps-14.0-5
+            - mini-eman-deps-14.0-6
       - save_cache:
-          key: mini-eman-deps-14.0-5
+          key: mini-eman-deps-14.0-6
           paths:
             - ~/miniconda2
       - run: bash ci_support/build_no_recipe.sh
@@ -24,9 +24,9 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - mini-eman-deps-14.0-5
+            - mini-eman-deps-14.0-6
       - save_cache:
-          key: mini-eman-deps-14.0-5
+          key: mini-eman-deps-14.0-6
           paths:
             - ~/miniconda2
       - run: bash ci_support/build_recipe.sh

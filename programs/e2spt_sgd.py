@@ -179,8 +179,6 @@ def main():
 
 			ddm=dmap*dmap
 			cc.append(ddm["mean_nonzero"])
-			if options.reference==None:
-				ref.process_inplace("xform.centerofmass")
 			
 			ref0=ref.copy()
 			if options.mask:
@@ -207,6 +205,9 @@ def main():
 			ref=sym_search(ref, options)
 		if options.applysym:
 			ref.process_inplace("xform.applysym", {"averager":"mean.tomo", "sym":options.sym})
+			
+		if options.reference==None:
+			ref.process_inplace("xform.centerofmass")
 		ref.write_image("{}/threed_{:02d}.hdf".format(path, itr), 0)
 
 	#ref.write_image(os.path.join(path,"output.hdf"))
@@ -233,7 +234,7 @@ def sym_search(e, options):
 	im=np.argmin(scr)
 	a=alis[im]
 	a.process_inplace("normalize.edgemean")
-	a.process_inplace("xform.centerofmass")
+	#a.process_inplace("xform.centerofmass")
 	
 	#outname=fname[:-4]+"_sym.hdf"
 	#a.write_image(outname)

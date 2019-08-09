@@ -119,12 +119,15 @@ This program will take an input stack of subtomograms and a reference volume, an
 	NTHREADS=max(options.threads+1,2)		# we have one thread just writing results
 
 	logid=E2init(sys.argv, options.ppid)
+	refnames=[]
 
 	if options.goldcontinue:
 		ref=[]
 		try:
-			ref.append(EMData(reffile[:-4]+"_even.hdf",0))
-			ref.append(EMData(reffile[:-4]+"_odd.hdf",0))
+			refnames=[reffile[:-4]+"_even.hdf", reffile[:-4]+"_odd.hdf"]
+			ref.append(EMData(refnames[0],0))
+			ref.append(EMData(refnames[1],0))
+			
 		except:
 			print("Error: cannot find one of reference files, eg: ",EMData(reffile[:-4]+"_even.hdf",0))
 	else:
@@ -137,13 +140,17 @@ This program will take an input stack of subtomograms and a reference volume, an
 			ref[0].process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,options.goldstandard)})
 			ref[1].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":old_div(1.0,options.goldstandard)})
 			ref[1].process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,options.goldstandard)})
-			ref[0].write_image("{}/align_ref.hdf".format(options.path),0)
-			ref[1].write_image("{}/align_ref.hdf".format(options.path),1)
+			refnames=["{}/align_ref_even.hdf".format(options.path), "{}/align_ref_odd.hdf".format(options.path)]
+			ref[0].write_image(refnames[0],0)
+			ref[1].write_image(refnames[1],0)
+			
+		else:
+			refnames=[reffile, reffile]
 
-	ref[0]=ref[0].do_fft()
-	ref[0].process_inplace("xform.phaseorigin.tocorner")
-	ref[1]=ref[1].do_fft()
-	ref[1].process_inplace("xform.phaseorigin.tocorner")
+	#ref[0]=ref[0].do_fft()
+	#ref[0].process_inplace("xform.phaseorigin.tocorner")
+	#ref[1]=ref[1].do_fft()
+	#ref[1].process_inplace("xform.phaseorigin.tocorner")
 
 	
 	#jsd=queue.Queue(0)
@@ -158,12 +165,12 @@ This program will take an input stack of subtomograms and a reference volume, an
 			print("Using particle list: \n\t {} \n\t {}".format(fsps[0], fsps[1]))
 			for eo, f in enumerate(fsps):
 				N=EMUtil.get_image_count(f)
-				tasks.extend([(f,i,ref[eo]) for i in range(N)])
+				tasks.extend([(f,i,refnames[eo]) for i in range(N)])
 				
 		#### split by even/odd by default
 		else:
 			N=EMUtil.get_image_count(args[0])
-			tasks.extend([(args[0],i,ref[i%2]) for i in range(N)])
+			tasks.extend([(args[0],i,refnames[i%2]) for i in range(N)])
 			#thrds=[threading.Thread(target=alifn,args=(jsd,args[0],i,ref[i%2],options)) for i in range(N)]
 	
 	elif args[0].endswith(".json"):
@@ -174,7 +181,7 @@ This program will take an input stack of subtomograms and a reference volume, an
 			src, ii=eval(k)
 			dic=js[k]
 			xf=dic["xform.align3d"]
-			tasks.append([src, ii, ref[ii%2], xf])
+			tasks.append([src, ii, refnames[ii%2], xf])
 			
 
 
@@ -252,7 +259,16 @@ This program will take an input stack of subtomograms and a reference volume, an
 		#t.join()
 
 	E2end(logid)
-
+	
+	
+def reduce_sym(xf, s):
+	sym=parsesym(s)
+	trans=xf.get_trans()
+	xf.set_trans(0,0,0)
+	xi=sym.in_which_asym_unit(xf)
+	xf.set_trans(trans)
+	xf=xf.get_sym(s, -xi)
+	return xf
 
 class SptAlignTask(JSTask):
 	
@@ -266,18 +282,23 @@ class SptAlignTask(JSTask):
 	
 	def execute(self, callback):
 		
+		callback(0)
+		
 		data=self.data
 		options=self.options
 		
 		fsp=data["fsp"]
 		i=data["i"]
-		ref=data["ref"]
+		ref=EMData(data["ref"],0).do_fft()
+		ref.process_inplace("xform.phaseorigin.tocorner")
 		
-		callback(0)
-		b=EMData(fsp,i).do_fft()
+		b=EMData(fsp,i)
+		if options.maxres>0:
+			b.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./options.maxres})
+		b=b.do_fft()
 		b.process_inplace("xform.phaseorigin.tocorner")
 		#b=EMData(fsp, i, True)
-		aligndic={"verbose":0,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0, "maxres":options.maxres}
+		aligndic={"verbose":options.verbose,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0}
 		
 		if options.refine and (data["xf"]!=None or b.has_attr("xform.align3d")):
 			ntry=8
@@ -308,15 +329,7 @@ class SptAlignTask(JSTask):
 				xfs.append(xf*ixf)
 			
 			
-			#astep=3.0
-			#xfs=[]
-			#initxf=b["xform.align3d"].get_params("eman")
-			#for ii in range(16):
-				#d={"type":"eman","tx":0, "ty":0}
-				#for ky in ["alt", "az", "phi"]:
-					#d[ky]=initxf[ky]+(ii>0)*np.random.randn()*astep/np.pi*2
-				#xfs.append(Transform(d))
-					
+			xfs=[reduce_sym(xf.inverse(), options.sym).inverse() for xf in xfs]
 			aligndic["initxform"]=xfs
 			if options.maxshift<0:
 				options.maxshift=16
