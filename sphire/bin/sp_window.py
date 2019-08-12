@@ -711,7 +711,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		input_mic_path_list = glob.glob(mic_pattern)
 		# Check error condition of input micrograph file path list
 		sxprint(
-			"Found %d microgarphs in %s."
+			"Found %d micrographs in %s."
 			% (len(input_mic_path_list), os.path.dirname(mic_pattern))
 		)
 		if error_status is None and not input_mic_path_list:
@@ -763,7 +763,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 
 				# Check error condition of micrograph entry lists
 				sxprint(
-					"Found %d microgarph entries in %s."
+					"Found %d micrograph entries in %s."
 					% (len(selected_mic_path_list), options.selection_list)
 				)
 				if error_status is None and len(selected_mic_path_list) == 0:
@@ -921,9 +921,25 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 					# Find tail index of micrograph id substring and extract the substring from the micrograph path of CTER partres entry
 					cter_mic_path = cter_entry[idx_cter_mic_name]
 					cter_mic_basename = os.path.basename(cter_mic_path)
-					mic_id_substr_tail_idx = cter_mic_basename.index(
-						mic_basename_tokens[1]
-					)
+					try:
+						mic_id_substr_tail_idx = cter_mic_basename.index(
+							mic_basename_tokens[1]
+						)
+					except ValueError:
+						error_status = (
+							"A micrograph name (%s) in the CTER partres file (%s) does not match with input micrograph basename pattern (%s) (The input micrograph basename pattern ends with '%s' while the CTER partres micrograph name ends in '%s'). Please check the CTER partres file and correct input micrograph path pattern. Run %s -h for help."
+							% (
+								cter_mic_basename,
+								ctf_params_src,
+								mic_basename_pattern,
+								mic_basename_tokens[1],
+								os.path.splitext(cter_mic_basename)[1],
+								program_name,
+							),
+							getframeinfo(currentframe()),
+						)
+						break
+						
 					mic_id_substr = cter_mic_basename[
 						mic_id_substr_head_idx:mic_id_substr_tail_idx
 					]
@@ -964,6 +980,8 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 						global_entry_dict[mic_id_substr] = {}
 					assert mic_id_substr in global_entry_dict
 					global_entry_dict[mic_id_substr][subkey_cter_entry] = cter_entry
+				# end cter_entry loop
+				
 				assert global_entry_dict
 				# For OLD CTER partres format (BEFORE 2017/12/05)
 			else:
