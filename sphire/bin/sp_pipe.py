@@ -768,7 +768,7 @@ def resample_micrographs(args):
 		sxprint("Checking the input directory...")
 		input_mic_path_list = glob.glob(mic_pattern)
 		# Check error condition of input micrograph file path list
-		sxprint("Found %d microgarphs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern)))
+		sxprint("Found %d micrographs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern)))
 		if error_status is None and len(input_mic_path_list) == 0:
 			error_status = ("No micrograph files are found in the directory specified by micrograph path pattern (%s). Please check input_micrograph_pattern argument. Run %s -h for help." % (os.path.dirname(mic_pattern), program_name), getframeinfo(currentframe()))
 			break
@@ -805,7 +805,7 @@ def resample_micrographs(args):
 				selected_mic_path_list = read_text_file(args.selection_list)
 				
 				# Check error condition of micrograph entry lists
-				sxprint("Found %d microgarph entries in %s." % (len(selected_mic_path_list), args.selection_list))
+				sxprint("Found %d micrograph entries in %s." % (len(selected_mic_path_list), args.selection_list))
 				if error_status is None and len(selected_mic_path_list) == 0:
 					error_status = ("No micrograph entries are found in the selection list file. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 					break
@@ -1209,7 +1209,7 @@ def organize_micrographs(args):
 	sxprint("Checking the source directory...")
 	src_mic_path_list = glob.glob(src_mic_pattern)
 	# Check error condition of source micrograph file path list
-	sxprint("Found %d microgarphs in %s."%(len(src_mic_path_list), src_dir))
+	sxprint("Found %d micrographs in %s."%(len(src_mic_path_list), src_dir))
 	if len(src_mic_path_list) == 0:
 		ERROR("No micrograph files are found in the directory specified by the micrograph path pattern (%s). Please check source_micrograph_pattern argument and restart the program."%(src_dir), where=subcommand_name) # action=1 - fatal error, exit
 	
@@ -1238,7 +1238,7 @@ def organize_micrographs(args):
 		sxprint("Checking the destination directory...")
 		dst_mic_path_list = glob.glob(dst_mic_pattern)
 		# Check error condition of destination micrograph file path list
-		sxprint("Found %d microgarphs in %s."%(len(dst_mic_path_list), dst_dir))
+		sxprint("Found %d micrographs in %s."%(len(dst_mic_path_list), dst_dir))
 		
 		# Register micrograph id substrings to the global entry dictionary
 		for dst_mic_path in dst_mic_path_list:
@@ -1266,7 +1266,7 @@ def organize_micrographs(args):
 	select_mic_path_list = read_text_file(select_list_path)
 	
 	# Check error condition of micrograph entry lists
-	sxprint("Found %d microgarph entries in %s."%(len(select_mic_path_list), select_list_path))
+	sxprint("Found %d micrograph entries in %s."%(len(select_mic_path_list), select_list_path))
 	if len(select_mic_path_list) == 0:
 		ERROR("No micrograph entries are found in the selection list file (%s). Please correct selection_list option and restart the program."%(select_list_path), where=subcommand_name) # action=1 - fatal error, exit
 	
@@ -1879,7 +1879,7 @@ def restacking(args):
 		selected_mic_path_list = read_text_file(args.selection_list)
 		
 		# Check error condition of micrograph entry lists
-		sxprint("Found %d microgarph entries in %s." % (len(selected_mic_path_list), args.selection_list))
+		sxprint("Found %d micrograph entries in %s." % (len(selected_mic_path_list), args.selection_list))
 		if len(selected_mic_path_list) == 0:
 			ERROR("No micrograph entries are found in the selection list file. Please check the micrograph selecting list and restart the program.", where=subcommand_name) # action=1 - fatal error, exit
 		if not isinstance(selected_mic_path_list[0], str):

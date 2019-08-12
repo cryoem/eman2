@@ -461,7 +461,7 @@ For negative staining data, use --skip_invert.
 		sxprint("Checking the input directory...")
 		input_mic_path_list = glob.glob(mic_pattern)
 		# Check error condition of input micrograph file path list
-		sxprint("Found %d microgarphs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern)))
+		sxprint("Found %d micrographs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern)))
 		if error_status is None and len(input_mic_path_list) == 0:
 			error_status = ("No micrograph files are found in the directory specified by micrograph path pattern (%s). Please check input_micrograph_pattern argument. Run %s -h for help." % (os.path.dirname(mic_pattern), program_name), getframeinfo(currentframe()))
 			break
@@ -504,7 +504,7 @@ For negative staining data, use --skip_invert.
 				selected_mic_path_list = read_text_file(options.selection_list)
 				
 				# Check error condition of micrograph entry lists
-				sxprint("Found %d microgarph entries in %s." % (len(selected_mic_path_list), options.selection_list))
+				sxprint("Found %d micrograph entries in %s." % (len(selected_mic_path_list), options.selection_list))
 				if error_status is None and len(selected_mic_path_list) == 0:
 					error_status = ("No micrograph entries are found in the selection list file. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 					break

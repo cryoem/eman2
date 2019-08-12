@@ -1567,7 +1567,7 @@ if ENABLE_GUI:
 					self.load_micrograph(micrograph)
 		def open_micrograph(self):
 			"""
-			loads a file browser to select a micrograph or multiple microgrpahs to add to the micrograph table
+			loads a file browser to select a micrograph or multiple micrographs to add to the micrograph table
 			"""
 			selector = EMSelectorDialog(single_selection=False,save_as_mode=False)
 			new_micrographs = selector.exec_()
