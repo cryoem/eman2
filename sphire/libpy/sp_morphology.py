@@ -2191,7 +2191,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 					selected_mic_path_list = read_text_file(selection_list)
 				
 					# Check error condition of  entry lists
-					sxprint(("Found %d microgarph entries in %s." % (len(selected_mic_path_list), selection_list)))
+					sxprint(("Found %d micrograph entries in %s." % (len(selected_mic_path_list), selection_list)))
 					if len(selected_mic_path_list) == 0:
 						error_status = ("The provided  list file (%s) for %s mode contains no entries. Please check selection_list option and make sure the file contains a  list. Run %s -h for help." % (selection_list, cter_mode_name, program_name), getframeinfo(currentframe()))
 						break
@@ -3245,7 +3245,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 					selected_mic_path_list = read_text_file(selection_list)
 				
 					# Check error condition of  entry lists
-					sxprint(("Found %d microgarph entries in %s." % (len(selected_mic_path_list), selection_list)))
+					sxprint(("Found %d micrograph entries in %s." % (len(selected_mic_path_list), selection_list)))
 					if len(selected_mic_path_list) == 0:
 						error_status = ("The provided  list file (%s) for %s mode contains no entries. Please check selection_list option and make sure the file contains a  list. Run %s -h for help." % (selection_list, cter_mode_name, program_name), getframeinfo(currentframe()))
 						break
@@ -5633,7 +5633,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 					selected_mic_path_list = read_text_file(selection_list)
 				
 					# Check error condition of  entry lists
-					sxprint(("Found %d microgarph entries in %s." % (len(selected_mic_path_list), selection_list)))
+					sxprint(("Found %d micrograph entries in %s." % (len(selected_mic_path_list), selection_list)))
 					if len(selected_mic_path_list) == 0:
 						error_status = ("The provided  list file (%s) for %s mode contains no entries. Please check selection_list option and make sure the file contains a  list. Run %s -h for help." % (selection_list, cter_mode_name, program_name), getframeinfo(currentframe()))
 						break
