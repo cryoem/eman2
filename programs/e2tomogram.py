@@ -52,7 +52,6 @@ def main():
 	parser.add_argument("--outsize", type=str,help="Size of output tomograms. choose from 1k, 2k and 4k. default is 1k", default="1k",guitype='combobox',choicelist="('1k', '2k')",row=8, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--niter", type=str,help="Number of iterations for bin8, bin4, bin2 images. Default if 2,1,1,1", default="2,1,1,1",guitype='strbox',row=8, col=1, rowspan=1, colspan=1,mode='easy[2,1,1,1]')
 	
-	parser.add_argument("--badzero", action="store_true",help="In case the 0 degree tilt is bad for some reason...", default=False)#, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--bytile", action="store_true",help="make final tomogram by tiles.. ", default=False, guitype='boolbox',row=9, col=1, rowspan=1, colspan=1,mode="easy[True]")
 	
 	parser.add_argument("--load", action="store_true",help="load existing tilt parameters.", default=False,guitype='boolbox',row=10, col=0, rowspan=1, colspan=1,mode="easy")
@@ -87,6 +86,9 @@ def main():
 	parser.add_argument("--reconmode", type=str, help="Intepolation mode for reconstruction. default is gauss_2. check e2help.py for details. Not recommended to change.",default="gauss_2")
 	
 	parser.add_argument("--maxshift", type=float,help="Maximum shift between tilt(/image size). default is 0.35", default=.35,guitype='floatbox',row=11, col=0, rowspan=1, colspan=1,mode="easy")
+	
+	parser.add_argument("--badone", action="store_true",help="Remove one bad tilt during coarse alignment. seem to work better with smaller maxshift...", default=False)#, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
+
 
 	(options, args) = parser.parse_args()
 
@@ -265,8 +267,6 @@ def main():
 		#### we need a zero degree tilt as reference to position the tomogram
 		if options.zeroid<0:
 			zeroid=np.argmin(abs(tlts))
-			if options.badzero:
-				zeroid+=2
 			options.zeroid=zeroid
 		
 		#### here we always assume the center tilt is at 0 degree
@@ -279,7 +279,11 @@ def main():
 			
 		else:
 			#### do an initial course alignment before common line
-			img_tali, pretrans=calc_global_trans(imgs_500, options)
+			ret=calc_global_trans(imgs_500, options)
+			if options.badone:
+				img_tali, pretrans, badi=ret
+			else:
+				img_tali, pretrans=ret
 			#### estimate initial tilt axis by common line
 			if options.tltax==None:
 				tltax=calc_tltax_rot(img_tali, options)
@@ -304,6 +308,8 @@ def main():
 		ttparams[:,3]=tlts.copy() # ytilt
 		ttparams[:,4]=0 # off axis tilt
 		loss0=abs(ttparams[:,3]) ### this is used to exclude bad tilt. in case the user ask 0 iterations..
+		if options.badone:
+			loss0[badi]=np.max(loss0)+100
 	
 	
 	pks=np.zeros((options.npk, 3))
@@ -790,9 +796,11 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 	sz=min(imgs[0]["nx"], imgs[0]["ny"])
 	
 	trans=[[0,0]]
+	imgp=[]
 	for i,m0 in enumerate(imgs):
 		m=m0.process("mask.soft",{"outer_radius":sz*options.maxshift,"width":sz*.1})
 		m.process_inplace("filter.lowpass.gauss", {"cutoff_freq":.005})
+		imgp.append(m)
 		if i==0:
 			e0=m
 			continue
@@ -805,6 +813,21 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 		e0=m
 
 	trans=np.array(trans)
+	
+	if options.badone:
+		### find the tilt that jumps the most
+		trans2=[]
+		for i in range(2,len(imgs)):
+			ma=imgp[i].align("translational", imgp[i-2], {"maxshift":sz//2})
+			xf=ma["xform.align2d"].get_params("2d")
+			trans2.append([xf["tx"], xf["ty"]])
+		trans2=np.array(trans2)
+
+		loss=[np.linalg.norm(t- (trans[i+1]+ trans[i+2])) for i, t in enumerate(trans2)]
+		badi=np.argmax(loss)+1
+		trans[badi]=[0,0]
+		trans[badi+1]=trans2[badi-1]
+		print("Maximum tilt jump at image {}. Removing the tilt.".format(badi))
 
 	tx=np.cumsum(trans, axis=0)
 	tx-=np.mean(tx, axis=0)
@@ -817,10 +840,14 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 		e.translate(t[0], t[1],0)
 		imgout.append(e)
 		
-	return imgout, tx
+	if options.badone:
+		return imgout, tx, badi
+	else:
+		return imgout, tx
+	
 
 
-#### Find tilt axis by common line. copied from the original e2tomogram. Not very stable but mostly fine.. 
+#### Find tilt axis by common line. modified from the original e2tomogram. Not very stable but mostly fine.. 
 def calc_tltax_rot(imgs, options):
 	print("Calculating tilt axis rotation...")
 	num=len(imgs)
