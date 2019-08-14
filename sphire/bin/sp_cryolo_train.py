@@ -307,15 +307,17 @@ def main():
 	cryolo_ex_pth = "cryolo_train.py"
 	if cryolo_train_path:
 		cryolo_ex_pth = cryolo_train_path
-	if not fine_tune:
-		command = [cryolo_ex_pth, "-c=config_yolo.json", warmup_argument, gpu_argument, early_stop, gpu_fraction_arg]
-
-		if num_cpu != -1:
-			command.append(num_cpu_arg)
-		subprocess.check_call(
-			command)
-
-	warmup_argument = "-w=0"
+	'''
+		if not fine_tune:
+			command = [cryolo_ex_pth, "-c=config_yolo.json", warmup_argument, gpu_argument, early_stop, gpu_fraction_arg]
+	
+			if num_cpu != -1:
+				command.append(num_cpu_arg)
+			subprocess.check_call(
+				command)
+	'''
+	if fine_tune:
+		warmup_argument = "-w=0"
 	command = [cryolo_ex_pth, "-c=config_yolo.json", warmup_argument, gpu_argument, early_stop, gpu_fraction_arg]
 	if fine_tune:
 		command.append(fine_tune_argument)
