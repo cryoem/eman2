@@ -17,9 +17,9 @@ def main():
 	
 	usage="A simple template matching script. run [prog] <tomogram> <reference> to extract particles from tomogram. Results will be saved in the corresponding info files and can be visualized via spt_boxer"
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_pos_argument(name="tomograms",help="Specify tomograms containing reference-like particles to be exctracted.", default="", guitype='filebox', browser="EMTomoBoxesTable(withmodal=True,multiselect=True)", row=0, col=0,rowspan=1, colspan=2, mode="boxing")
+	parser.add_pos_argument(name="tomograms",help="Specify tomograms containing reference-like particles to be exctracted. These should be 'dark contrast'", default="", guitype='filebox', browser="EMTomoBoxesTable(withmodal=True,multiselect=True)", row=0, col=0,rowspan=1, colspan=2, mode="boxing")
 	
-	parser.add_argument("--reference",help="Specify a 3D reference volume.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=1, col=0,rowspan=1, colspan=2, mode="boxing")
+	parser.add_argument("--reference",help="Specify a 3D reference volume. This should be 'light contrast', ie - positive isosurface.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=1, col=0,rowspan=1, colspan=2, mode="boxing")
 
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=2, col=0, rowspan=1, colspan=1, mode="boxing")
 
@@ -165,7 +165,7 @@ def main():
 		
 		pts=np.array(pts)
 		print(pts.shape)
-		dst=scidist.cdist(pts, pts)
+		dst=scidist.cdist(pts, pts)+(np.eye(len(pts))*dthr*100)
 		tokeep=np.ones(len(dst), dtype=bool)
 		for i in range(len(dst)):
 			if tokeep[i]:

@@ -2366,7 +2366,9 @@ void SetBitsProcessor::process_inplace(EMData *image)
 	size_t total_size = (size_t)nx * (size_t)ny * (size_t)nz;
 
 	for (size_t i=0; i<total_size; i++) {
-		float newval=floor((image->get_value_at_index(i)-min)*bitmax/(max-min));
+		float newval=floor((image->get_value_at_index(i)-min)*bitmax/(max-min)
+			
+		);
 		if (newval<0) newval=0;
 		if (newval>=bitmax) newval=bitmax-1.0f;
 		image->set_value_at_index(i,newval);
