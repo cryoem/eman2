@@ -337,7 +337,7 @@ def AI( fff, anger, shifter, chout = False):
 		Tracker["changed_delta"] = False
 		#  decide angular step and translations
 		if((Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) and (Tracker["no_params_changes"]>=Tracker["constants"]["limit_changes"]) and (not Tracker["large_at_Nyquist"])):
-			if( Tracker["delta"] < Tracker['constants']['a_criterion']*Tracker["acc_rot"] and Tracker['state'] != 'PRIMARY'):#<<<----it might cause converge issues when shake is 0.0
+			if( Tracker["delta"] < 0.75*Tracker["acc_rot"] ):#<<<----it might cause converge issues when shake is 0.0
 				keepgoing = 0
 				if(Blockdata["myid"] == Blockdata["main_node"]):
 					sxprint(line,"Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
@@ -7759,13 +7759,18 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 	if(Blockdata["myid"] == Blockdata["main_node"]): # check json file and load tracker
 		try:
 			Tracker = load_tracker_from_json(os.path.join(final_dir,"Tracker_%03d.json"%do_final_iter))
+			stack_prior = Tracker['constants']['stack_prior']
+			Tracker['constants']['stack_prior'] = None
 		except: carryon = 0
 		if orgstack: Tracker["constants"]["stack"] = orgstack
-	else: Tracker = 0
+	else:
+		Tracker = 0
+		stack_prior = None
 	carryon = bcast_number_to_all(carryon, Blockdata["main_node"], MPI_COMM_WORLD)
 	if carryon == 0: 
 		ERROR("Failed to load Tracker file %s, program terminates "%os.path.join(final_dir,"Tracker_%03d.json"%do_final_iter), "recons3d_final",1, Blockdata["myid"])
 	Tracker = wrap_mpi_bcast(Tracker,      Blockdata["main_node"], MPI_COMM_WORLD)
+	Tracker['constants']['stack_prior'] = stack_prior
 	if(Blockdata["myid"] == Blockdata["main_node"]): # check stack 
 		try:  image = get_im(Tracker["constants"]["stack"],0)
 		except:carryon = 0
@@ -9195,15 +9200,6 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 							tvol0 = filt_table(tvol0, cfsc)
 							if( Blockdata["no_of_groups"] > 1 ):  del cfsc
 
-						if Tracker['constants']['helical_twist'] and Tracker['state'] != 'RESTRICTED': 
-							tvol0 = tvol0.helicise(
-								Tracker['constants']['pixel_size'],
-								Tracker['constants']['helical_rise'],
-								Tracker['constants']['helical_twist'],
-								0.67,
-								Tracker['constants']['radius'],
-								0
-								)
 						user_func = sp_user_functions.factory[Tracker["constants"]["user_func"]]
 						#ref_data = [tvol0, Tracker, mainiteration]
 						ref_data = [tvol0, Tracker, Tracker["mainiteration"]]
@@ -9236,15 +9232,6 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 								elif( i > Tracker["constants"]["inires"]+1 ):  cfsc[i]  = 0.0
 							tvol1 = filt_table(tvol1, cfsc)
 							del cfsc
-						if Tracker['constants']['helical_twist'] and Tracker['state'] != 'RESTRICTED': 
-							tvol1 = tvol1.helicise(
-								Tracker['constants']['pixel_size'],
-								Tracker['constants']['helical_rise'],
-								Tracker['constants']['helical_twist'],
-								0.67,
-								Tracker['constants']['radius'],
-								0
-								)
 						user_func = sp_user_functions.factory[Tracker["constants"]["user_func"]]
 						#ref_data = [tvol1, Tracker, mainiteration]
 						ref_data = [tvol1, Tracker, Tracker["mainiteration"]]
@@ -9355,7 +9342,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 
 	mpi_barrier(MPI_COMM_WORLD)
 
-	refang, rshifts, coarse_angles_raw, coarse_shifts = get_refangs_and_shifts()
+	refang, rshifts, coarse_angles, coarse_shifts = get_refangs_and_shifts()
 	if( Tracker["constants"]["shake"] > 0.0 ):
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			shakenumber = uniform( -Tracker["constants"]["shake"], Tracker["constants"]["shake"])
@@ -9369,9 +9356,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		rangle        = shakenumber*Tracker["delta"]
 		rshift        = shakenumber*Tracker["ts"]
 		refang        = Blockdata["symclass"].reduce_anglesets( rotate_params(refang, [-rangle,-rangle,-rangle]) )
-		coarse_angles = Blockdata["symclass"].reduce_anglesets( rotate_params(coarse_angles_raw, [-rangle,-rangle,-rangle]) )
-		for idx, entry in enumerate(coarse_angles_raw):
-			coarse_angles[idx][1] = entry[1]
+		coarse_angles = Blockdata["symclass"].reduce_anglesets( rotate_params(coarse_angles, [-rangle,-rangle,-rangle]) )
 		shakegrid(rshifts, rshift)
 		shakegrid(coarse_shifts, rshift)
 
@@ -9384,8 +9369,6 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		write_text_row( refang,  os.path.join(Tracker["directory"] , "refang.txt"))
 		write_text_row( rshifts, os.path.join(Tracker["directory"] , "rshifts.txt"))
-		write_text_row( coarse_shifts,  os.path.join(Tracker["directory"] , "coarse_shift.txt"))
-		write_text_row( coarse_angles, os.path.join(Tracker["directory"] , "coarse_angles.txt"))
 	mpi_barrier(MPI_COMM_WORLD)
 
 	newparamstructure = [[],[]]
@@ -9521,7 +9504,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 
 		total_left_particles = wrap_mpi_gatherv(norm_per_particle_outlier, Blockdata["main_node"], MPI_COMM_WORLD)
 		if Blockdata['myid'] == Blockdata['main_node']: 
-			sp_global_def.sxprint('Use {0} particles for reconstruction!'.format(len(total_left_particles)))
+			sp_global_def.sxprint('Use {0} particles for final reconstruction!'.format(len(total_left_particles)))
 
 		do3d(procid, projdata_outlier, newparamstructure_outlier, refang, rshifts, norm_per_particle_outlier, Blockdata["myid"], smearing = True, mpi_comm = MPI_COMM_WORLD)
 		projdata_outlier = []
@@ -9538,6 +9521,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 					dummy = wrap_mpi_recv(kproc, Blockdata["shared_comm"])
 					dump_object_to_json(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,(Blockdata["color"]*Blockdata["no_of_processes_per_group"] + kproc),Tracker["mainiteration"])), dummy)
 					del dummy
+				os.remove(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,(Blockdata["color"]*Blockdata["no_of_processes_per_group"] + kproc),Tracker["mainiteration"]-1)))
 		else:
 			wrap_mpi_send(newparamstructure[procid], 0, Blockdata["shared_comm"])
 
@@ -9770,13 +9754,6 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 	# Calculate outliers
 	if(blockdata["myid"] == blockdata["main_node"] ):
 		# Calculate priors
-		stack_prior_name = Tracker['constants']['stack_prior']
-		stack_prior_dtype = [tuple(entry) for entry in Tracker['constants']['stack_prior_dtype']]
-		Tracker['constants']['stack_prior'] = np.genfromtxt(
-			Tracker['constants']['stack_prior'],
-			dtype=stack_prior_dtype
-			)
-
 		outliers, new_params, new_index = sp_helix_fundamentals.calculate_priors(
 			tracker=Tracker,
 			params_file=params_file,
@@ -9796,7 +9773,6 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 			symclass=Blockdata['symclass'],
 			plot=Tracker['prior']['plot'],
 			)
-		Tracker['constants']['stack_prior'] = stack_prior_name
 
 		# Print to screen
 		nr_outliers = len(outliers[outliers == 1])
@@ -9819,7 +9795,7 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 		else:
 			outliers = [0] * len_data
 
-		if Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]) > 10:
+		if Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]) > 10:
 			sxprint('Resolution not sufficient to remove outliers! Do not discard outlier!')
 			outliers = [0] * len_data
 		elif 100*no_outliers/float(len_data) < 50:
@@ -9841,7 +9817,17 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 
 
 def load_tracker_from_json(file_name):
+	# Expects this only beeing executed on the main node
 	tracker = load_object_from_json(file_name)
+	try:
+		if tracker['constants']['stack_prior'] is not None:
+			tracker['constants']['stack_prior_dtype'] = [tuple(entry) for entry in tracker['constants']['stack_prior_dtype']]
+			tracker['constants']['stack_prior'] = np.genfromtxt(
+				tracker['constants']['stack_prior'],
+				dtype=tracker['constants']['stack_prior_dtype']
+				)
+	except KeyError:
+		tracker['constants']['stack_prior'] = None
 	return tracker
 
 def load_object_from_json(file_name):
@@ -9850,6 +9836,13 @@ def load_object_from_json(file_name):
 	return json_object
 
 def dump_tracker_to_json(file_name, tracker):
+	if tracker['constants']['stack_prior'] is not None:
+		np.savetxt(
+			os.path.join(tracker['constants']['masterdir'], 'stack_prior.txt'),
+			Tracker['constants']['stack_prior'],
+			fmt=Tracker['constants']['stack_prior_fmt']
+			)
+		tracker['constants']['stack_prior'] = os.path.join(tracker['constants']['masterdir'], 'stack_prior.txt')
 	dump_object_to_json(file_name, tracker, indent=4)
 
 def dump_object_to_json(file_name, data_object, indent=None):
@@ -9957,8 +9950,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		parser.add_option("--chunk_by",               	type="str",  	default= 'ptcl_source_image',              	help="Group particles by header information. For helical refinement use filament or filament_id if present. (Default ptcl_source_image)")
 		parser.add_option("--outlier_by",               	type="str",  	default=None,              	help="Group particles by header information. For helical refinement use filament or filament_id if present. (Default ptcl_source_image)")
 		parser.add_option("--outlier_tracker",               	type="str",  	default=None,              	help="Skip stack file creation and load the stack from an existing stack.")
-		parser.add_option("--helical_twist",               	type="float",  	default=None,              	help="Helical rise for symmetrisation during PRIMARY and EXHAUSTIVE step.")
-		parser.add_option("--a_criterion",               	type="float",  	default=0.75,              	help="Convergance criterion delta < a_criterion*acc_rot, the smaller the later.")
 		(options, args) = parser.parse_args(sys.argv[1:])
 
 		if( len(args) == 3 ):
@@ -10074,11 +10065,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			Constants["plot_ang_dist"]			    = options.plot_ang_dist
 			Constants["angle_method"]			    = options.angle_method
 			Constants["helical_rise"]			    = options.helical_rise
-			Constants["helical_twist"]			    = options.helical_twist
 			Constants["filament_width"]			    = options.filament_width
 			Constants["outlier_by"]				    = options.outlier_by
 			Constants["do_exhaustive"]				= False
-			Constants["a_criterion"]				= options.a_criterion
 
 			if options.outlier_by is None:
 				Constants['stack_prior'] = None
@@ -10086,25 +10075,19 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				Constants['stack_prior_dtype'] = None
 			else:
 				if Blockdata['myid'] == Blockdata['main_node']:
+					sxprint('Import outlier information')
 					if options.outlier_tracker:
 						tmp_tracker = load_tracker_from_json(options.outlier_tracker)
-						stack_prior_name = tmp_tracker['constants']['stack_prior']
-						stack_prior_fmt = tmp_tracker['constants']['stack_prior_fmt']
-						stack_prior_dtype = tmp_tracker['constants']['stack_prior_dtype']
+						Constants['stack_prior'] = tmp_tracker['constants']['stack_prior']
 						del tmp_tracker
 					else:
-						stack_prior = sp_helix_sphire.import_sphire_stack(args[0], options.outlier_by)
-						stack_prior_fmt = prior_stack_fmt(stack_prior)
-						stack_prior_dtype = stack_prior.dtype.descr
-						stack_prior_name = os.path.join(Constants['masterdir'], 'stack_prior.txt')
+						Constants['stack_prior'] = sp_helix_sphire.import_sphire_stack(args[0], options.outlier_by)
+					Constants['stack_prior_fmt'] = prior_stack_fmt(Constants['stack_prior'])
+					Constants['stack_prior_dtype'] = Constants['stack_prior'].dtype.descr
 				else:
-					stack_prior_name = None
-					stack_prior_fmt = None
-					stack_prior_dtype = None
-
-				Constants['stack_prior'] = wrap_mpi_bcast(stack_prior_name, Blockdata['main_node'], MPI_COMM_WORLD)
-				Constants['stack_prior_fmt'] = wrap_mpi_bcast(stack_prior_fmt, Blockdata['main_node'], MPI_COMM_WORLD)
-				Constants['stack_prior_dtype'] = wrap_mpi_bcast(stack_prior_dtype, Blockdata['main_node'], MPI_COMM_WORLD)
+					Constants['stack_prior'] = None
+					Constants['stack_prior_fmt'] = None
+					Constants['stack_prior_dtype'] = None
 
 
 			#
@@ -10235,17 +10218,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					if not os.path.exists(masterdir): os.makedirs(masterdir)
 					li = 0
 					keepchecking = 1
-				sp_global_def.write_command(masterdir)
 			else:
 				li = 0
 				keepchecking = 1
-			if Blockdata['myid'] == Blockdata['main_node'] and not options.outlier_tracker and options.outlier_by is not None:
-				np.savetxt(
-					stack_prior_name,
-					stack_prior,
-					fmt=stack_prior_fmt
-					)
-				del stack_prior
 
 			li = mpi_bcast(li,1,MPI_INT,Blockdata["main_node"],MPI_COMM_WORLD)[0]
 
@@ -10390,8 +10365,13 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				Tracker = load_tracker_from_json(os.path.join(initdir,"Tracker_000.json"))
 				print_dict(Tracker["constants"], "Permanent settings of the original run recovered from main000")
-			else: Tracker = None
+				stack_prior = Tracker['constants']['stack_prior']
+				Tracker['constants']['stack_prior'] = None
+			else:
+				Tracker = None
+				stack_prior = None
 			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
+			Tracker['constants']['stack_prior'] = stack_prior
 			mainiteration 	= 0
 			Tracker["mainiteration"] = mainiteration
 
@@ -10420,12 +10400,17 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			if doit :
 				if(Blockdata["myid"] == Blockdata["main_node"]):
 					Tracker = load_tracker_from_json(os.path.join(Tracker["previousoutputdir"], "Tracker_%03d.json"%(Tracker["mainiteration"]-1)))
+					stack_prior = Tracker['constants']['stack_prior']
+					Tracker['constants']['stack_prior'] = None
 					#  It has to be repeated here as Tracker is from previous iteration, I see no other way.
 					Tracker["previousoutputdir"]	= os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
 					Tracker["mainiteration"]		= mainiteration
 					Tracker["directory"]			= os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
-				else: Tracker = None
+				else:
+					Tracker = None
+					stack_prior = None
 				Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
+				Tracker['constants']['stack_prior'] = stack_prior
 				### 
 				if restart_mode:
 					update_tracker(sys.argv[1:])
@@ -10513,6 +10498,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 
 			#  End of if doit
 		#   end of while
+		mpi_finalize()
+		exit() 
 
 
 
@@ -10533,7 +10520,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		parser.add_option("--ccfpercentage",			type="float", 	      	default= 99.9,               	help="Percentage of the correlation peak area to be included, 0.0 corresponds to hard matching (default 99.9%)")
 		parser.add_option("--nonorm",               	action="store_true",  	default= False,              	help="Do not apply image norm correction. (default False)")
 		parser.add_option("--memory_per_node",          type="float",           default= -1.0,                	help="User provided information about memory per node (NOT per CPU) [in GB] (default 2GB*(number of CPUs per node))")	
-		parser.add_option("--skip_primary",               	action="store_true",  	default= False,              	help="Skip the PRIMARY step in local refinement (Default False)")
+		parser.add_option("--skip_primary",               	action="store_true",  	default= False,              	help="Skip the primary step and go directly to RESTRICTED.")
 		(options, args) = parser.parse_args(sys.argv[1:])
 
 		if( len(args) == 2 ):
@@ -10720,9 +10707,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			del fq, nnxo, pixel_size
 			# Resolution is always in full size image pixel units.
 			#HOHO
-			if(Tracker["constants"]["inires"]<0.0):
-				Tracker["constants"]["inires"] = int(Tracker["constants"]["nnxo"]/2.0 + 0.5) - Tracker['nxstep']
-			else:
+			if(Tracker["constants"]["inires"]>0.0):
 				Tracker["constants"]["inires"] = int(Tracker["constants"]["nnxo"]*Tracker["constants"]["pixel_size"]/Tracker["constants"]["inires"] + 0.5)
 			Tracker["currentres"] = Tracker["constants"]["inires"]
 			Tracker["fsc143"]     = Tracker["constants"]["inires"]
@@ -10867,8 +10852,13 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				Tracker = load_tracker_from_json(os.path.join(initdir,"Tracker_000.json"))
 				print_dict(Tracker["constants"], "Permanent settings of the original run recovered from main000")
-			else: Tracker = None
+				stack_prior = Tracker['constants']['stack_prior']
+				Tracker['constants']['stack_prior'] = None
+			else:
+				Tracker = None
+				stack_prior = None
 			Tracker         = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
+			Tracker['constants']['stack_prior'] = stack_prior
 			mainiteration 	= 0
 			Tracker["mainiteration"] = mainiteration
 		# ------------------------------------------------------------------------------------
@@ -10892,12 +10882,17 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			if doit :
 				if(Blockdata["myid"] == Blockdata["main_node"]):
 					Tracker = load_tracker_from_json(os.path.join(Tracker["previousoutputdir"], "Tracker_%03d.json"%(Tracker["mainiteration"]-1)))
+					stack_prior = Tracker['constants']['stack_prior']
+					Tracker['constants']['stack_prior'] = None
 					#  It has to be repeated here as Tracker is from previous iteration, I see no other way.
 					Tracker["previousoutputdir"]	= os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
 					Tracker["mainiteration"]		= mainiteration
 					Tracker["directory"]			= os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
-				else: Tracker = None
+				else:
+					Tracker = None
+					stack_prior = None
 				Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
+				Tracker['constants']['stack_prior'] = stack_prior
 				### 
 				if restart_mode:
 					update_tracker(sys.argv[1:])
@@ -10990,6 +10985,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 
 			#  End of if doit
 		#   end of while
+		mpi_finalize()
+		exit() 
 
 	elif do_final_mode: #  DO FINAL
 		parser.add_option("--memory_per_node",          type="float",           default= -1.0,		help="User provided information about memory per node (NOT per CPU) [in GB] (default 2GB*(number of CPUs per node))")
@@ -11050,11 +11047,10 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 	
 		Blockdata["accumulatepw"] = [[],[]]
 		recons3d_final(masterdir, options.do_final, options.memory_per_node, orgstack)
+		mpi_finalize()
+		exit()
 	else:
 		ERROR("Incorrect input options","meridien", 1, Blockdata["myid"])
 
 if __name__=="__main__":
-	sp_global_def.print_timestamp("Start")
 	main()
-	sp_global_def.print_timestamp("Finish")
-	mpi_finalize()
