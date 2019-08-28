@@ -129,8 +129,7 @@ from sparx 	import *
 from EMAN2  import EMNumPy
 from logger import Logger, BaseLogger_Files
 import sp_global_def
-import global_def
-from global_def import *
+from sp_global_def import *
 
 from mpi   	import  *
 from math  	import  *
@@ -1551,7 +1550,7 @@ def calculate_2d_params_for_centering(kwargs):
 	from applications 	import MPI_start_end, ali2d_base 
 	from fundamentals 	import resample, rot_shift2D 
 	from filter 		import filt_ctf 
-	from global_def 	import ERROR
+	from sp_global_def 	import ERROR
 	
 	
 	#################################################################################################################################################################
@@ -9553,7 +9552,7 @@ def main():
 	import user_functions
 	from applications  import MPI_start_end
 	from optparse      import OptionParser
-	from global_def    import SPARXVERSION
+	from sp_global_def    import SPARXVERSION
 	from EMAN2         import EMData
 	from multi_shc     import multi_shc
 	from random        import random, uniform
