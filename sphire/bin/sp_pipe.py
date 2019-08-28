@@ -884,6 +884,7 @@ def resample_micrographs(args):
 		if args.check_consistency:
 			# Create output directory
 			os.mkdir(root_out_dir)
+			sp_global_def.write_command(root_out_dir)
 			
 			# Open the consistency check file
 			mic_consistency_check_info_path = os.path.join(root_out_dir, "mic_consistency_check_info_%s.txt"%(get_time_stamp_suffix()))
@@ -1517,6 +1518,7 @@ def organize_micrographs(args):
 		sxprint(" ")
 		sxprint("Creating the destination directory (%s)..."%(dst_dir))
 		os.mkdir(dst_dir)
+	sp_global_def.write_command(dst_dir)
 
 	# --------------------------------------------------------------------------------
 	# Move micrographs in selecting list form source directory to destination directory
@@ -2127,6 +2129,7 @@ def restacking(args):
 				sxprint("    Micrograph {} is in the selection list but not in the stack.".format(mic_basename))
 	
 	os.mkdir(args.output_directory)
+	sp_global_def.write_command(args.output_directory)
 
 	sxprint(" ")
 	sxprint("Found total of {} micrographs in the input stack {}.".format(len(mic_basename_list_of_input_stack), args.input_bdb_stack_path))
@@ -2440,6 +2443,7 @@ def moon_eliminator(args):
 	# Create output directory
 	sxprint(" ")
 	os.mkdir(args.output_directory)
+	sp_global_def.write_command(args.output_directory)
 	
 	# ------------------------------------------------------------------------------------
 	# Step 1: Extract resample ratio from ISAC run directory if necessary (mainly designed for R-VIPER models).
@@ -2701,6 +2705,7 @@ def desymmetrize(args):
 	
 	# Create output directory
 	os.mkdir(args.output_directory)
+	sp_global_def.write_command(args.output_directory)
 	
 	# Load symmetrized particle IDs of all sorted groups in the specified homogeneous group
 	symmetrized_particle_id_list = read_text_file(args.input_cluster_path)  # Cluster#.txt

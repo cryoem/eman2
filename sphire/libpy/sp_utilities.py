@@ -9011,6 +9011,7 @@ def angular_distribution(params_file, output_folder, prefix, method, pixel_size,
 	else:
 		if do_print:
 			sxprint('Created output directory: {0}'.format(output_folder))
+	sp_global_def.write_command(output_folder)
 	COLUMN_X = 0
 	COLUMN_Y = 1
 	if prefix is None:
