@@ -171,8 +171,6 @@ else: Blockdata["node_volume"] = [0,0]
 #  We have to send the two myids to all nodes so we can identify main nodes on two selected groups.
 Blockdata["main_shared_nodes"]	= [Blockdata["node_volume"][0]*Blockdata["no_of_processes_per_group"],Blockdata["node_volume"][1]*Blockdata["no_of_processes_per_group"]]
 # end of Blockdata
-global_def.BATCH = True
-global_def.MPI = True
 
 def create_subgroup():
 	# select a subset of myids to be in subdivision
@@ -181,7 +179,7 @@ def create_subgroup():
 
 	submyids = wrap_mpi_gatherv(submyids, Blockdata["main_node"], MPI_COMM_WORLD)
 	submyids = wrap_mpi_bcast(submyids, Blockdata["main_node"], MPI_COMM_WORLD)
-	#if( Blockdata["myid"] == Blockdata["main_node"] ): print(submyids)
+	#if( Blockdata["myid"] == Blockdata["main_node"] ): sxprint(submyids)
 	world_group = mpi_comm_group(MPI_COMM_WORLD)
 	subgroup = mpi_group_incl(world_group,len(submyids),submyids)
 	#print(" XXX world group  ",Blockdata["myid"],world_group,subgroup)
@@ -207,7 +205,7 @@ def create_zero_group():
 
 	submyids = wrap_mpi_gatherv(submyids, Blockdata["main_node"], MPI_COMM_WORLD)
 	submyids = wrap_mpi_bcast(submyids, Blockdata["main_node"], MPI_COMM_WORLD)
-	#if( Blockdata["myid"] == Blockdata["main_node"] ): print(submyids)
+	#if( Blockdata["myid"] == Blockdata["main_node"] ): sxprint(submyids)
 	world_group = mpi_comm_group(MPI_COMM_WORLD)
 	subgroup = mpi_group_incl(world_group,len(submyids),submyids)
 	#print(" XXX world group  ",Blockdata["myid"],world_group,subgroup)
@@ -228,7 +226,7 @@ def create_zero_group():
 #if( Blockdata["subgroup_myid"] > -1 ):
 #	dudu = [Blockdata["subgroup_myid"]]
 #	dudu = wrap_mpi_gatherv(dudu, 0, Blockdata["subgroup_comm"])
-#	if Blockdata["subgroup_myid"] == 0 :  print("  HERE  ",dudu)
+#	if Blockdata["subgroup_myid"] == 0 :  sxprint("  HERE  ",dudu)
 
 #we may want to free it in order to use different number of CPUs
 #  create_subgroup()
@@ -282,7 +280,7 @@ def AI( fff, anger, shifter, chout = False):
 				break
 		l01 = max(l01,-1)
 
-		if( chout ): print("  AI: TR[nxstep], TR[currentres], TR[fsc143], l05, l01, fff[Tracker[nxinit]//2-1]:",Tracker["nxstep"],Tracker["currentres"],Tracker["fsc143"], l05, l01,fff[Tracker["nxinit"]//2-1])
+		if( chout ): sxprint("  AI: TR[nxstep], TR[currentres], TR[fsc143], l05, l01, fff[Tracker[nxinit]//2-1]:",Tracker["nxstep"],Tracker["currentres"],Tracker["fsc143"], l05, l01,fff[Tracker["nxinit"]//2-1])
 		Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
 		if(Tracker["state"] == "FINAL" or Tracker["state"] == "RESTRICTED"): Tracker["large_at_Nyquist"] = (fff[Tracker["nxinit"]//2] > 0.1 or fff[Tracker["nxinit"]//2-1] > 0.2)
 		else:   Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2-1] > 0.2
@@ -311,7 +309,7 @@ def AI( fff, anger, shifter, chout = False):
 		params_changes = anger >= 1.03*Tracker["anger"] and shifter >= 1.03*Tracker["shifter"]
 
 		#  figure changes in params
-		if( chout ):  print("  Incoming  parameters  %10.3f  %10.3f  %10.3f  %10.3f   %s"%(Tracker["anger"],anger,Tracker["shifter"],shifter,params_changes))
+		if( chout ):  sxprint("  Incoming  parameters  %10.3f  %10.3f  %10.3f  %10.3f   %s"%(Tracker["anger"],anger,Tracker["shifter"],shifter,params_changes))
 		if( params_changes ):	Tracker["no_params_changes"] += 1
 		else:					Tracker["no_params_changes"]  = 0
 
@@ -327,7 +325,7 @@ def AI( fff, anger, shifter, chout = False):
 			inc += Tracker["nxstep"]
 			tmp = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
 
-		if( chout ): print("  IN AI: nxstep, large at Nyq, outcoming current res, adjusted current, inc, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
+		if( chout ): sxprint("  IN AI: nxstep, large at Nyq, outcoming current res, adjusted current, inc, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
 
 		Tracker["nxinit"] = tmp
 		Tracker["changed_delta"] = False
@@ -336,10 +334,10 @@ def AI( fff, anger, shifter, chout = False):
 			if( Tracker["delta"] < 0.75*Tracker["acc_rot"] ):#<<<----it might cause converge issues when shake is 0.0
 				keepgoing = 0
 				if(Blockdata["myid"] == Blockdata["main_node"]):
-					print(line,"Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
+					sxprint(line,"Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
 			else:
 				step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
-				if( chout ):   print("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
+				if( chout ):   sxprint("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
 				Tracker["xr"] = step_range
 				Tracker["ts"] = step
 				Tracker["delta"] /= 2.0
@@ -351,12 +349,12 @@ def AI( fff, anger, shifter, chout = False):
 				else:
 					Tracker["an"] = -1
 					if( Tracker["state"] == "PRIMARY" ):  Tracker["state"] = "EXHAUSTIVE"
-				if( chout ): print("  IN AI there was reset due to no changes, adjust stuff  ",Tracker["no_improvement"],Tracker["no_params_changes"],Tracker["delta"],Tracker["xr"],Tracker["ts"], Tracker["state"])
+				if( chout ): sxprint("  IN AI there was reset due to no changes, adjust stuff  ",Tracker["no_improvement"],Tracker["no_params_changes"],Tracker["delta"],Tracker["xr"],Tracker["ts"], Tracker["state"])
 				# check convergence before reset
 				if( (Tracker["state"] == "FINAL") and (Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) ):
 					keepgoing = 0
 					if(Blockdata["myid"] == Blockdata["main_node"]):
-						print(line,"Convergence criterion B is reached (angular step delta smaller than the limit imposed by the structure radius)")
+						sxprint(line,"Convergence criterion B is reached (angular step delta smaller than the limit imposed by the structure radius)")
 				Tracker["no_improvement"]		= 0
 				Tracker["no_params_changes"]	= 0
 				Tracker["anger"]				= 1.0e23
@@ -397,7 +395,7 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 			break
 	l01 = max(l01,-1)
 
-	if( chout ): print("  AI: Tracker[nxstep], TR[currentres], Tracker[fsc143], l05, l01, fff[Tracker[nxinit]//2-1]:",Tracker["nxstep"],Tracker["currentres"],Tracker["fsc143"], l05, l01,fff[Tracker["nxinit"]//2-1])
+	if( chout ): sxprint("  AI: Tracker[nxstep], TR[currentres], Tracker[fsc143], l05, l01, fff[Tracker[nxinit]//2-1]:",Tracker["nxstep"],Tracker["currentres"],Tracker["fsc143"], l05, l01,fff[Tracker["nxinit"]//2-1])
 	if(Blockdata["myid"] == Blockdata["main_node"]): line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 
 
@@ -415,7 +413,7 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 		Tracker["shifter"]				= 1.0e23
 		Tracker["constants"]["best"] = Tracker["mainiteration"]
 		if( Blockdata["myid"] == Blockdata["main_node"] ):
-			print(line, "ITERATION  #%2d. Resolution achieved       : %3d/%3d pixels, %5.2fA/%5.2fA."%\
+			sxprint(line, "ITERATION  #%2d. Resolution achieved       : %3d/%3d pixels, %5.2fA/%5.2fA."%\
 				(Tracker["mainiteration"], \
 				Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
 				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"])))
@@ -444,7 +442,7 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 		params_changes = anger >= 1.03*Tracker["anger"] and shifter >= 1.03*Tracker["shifter"]
 
 		#  figure changes in params
-		if( chout ):  print("  Incoming  parameters  %10.3f  %10.3f  %10.3f  %10.3f   %s"%(Tracker["anger"],anger,Tracker["shifter"],shifter,params_changes))
+		if( chout ):  sxprint("  Incoming  parameters  %10.3f  %10.3f  %10.3f  %10.3f   %s"%(Tracker["anger"],anger,Tracker["shifter"],shifter,params_changes))
 		if( params_changes ):	Tracker["no_params_changes"] += 1
 		else:					Tracker["no_params_changes"]  = 0
 
@@ -460,7 +458,7 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 			inc += Tracker["nxstep"]
 			tmp = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
 
-		if( chout ): print("  IN AI: nxstep, large at Nyq, outcoming current res, adjusted current, inc, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
+		if( chout ): sxprint("  IN AI: nxstep, large at Nyq, outcoming current res, adjusted current, inc, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
 
 		Tracker["nxinit"]        = tmp
 		Tracker["changed_delta"] = False
@@ -469,10 +467,10 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 			if( Tracker["delta"] < 0.75*Tracker["acc_rot"] ):#<<<----it might cause converge issues when shake is 0.0
 				keepgoing = 0
 				if(Blockdata["myid"] == Blockdata["main_node"]):
-					print(line,"Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
+					sxprint(line,"Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
 			else:
 				step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
-				if( chout ):   print("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
+				if( chout ):   sxprint("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
 				Tracker["xr"] = step_range
 				Tracker["ts"] = step
 				Tracker["delta"] /= 2.0
@@ -484,12 +482,12 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 				else:
 					Tracker["an"] = -1
 					if( Tracker["state"] == "PRIMARY" ):  Tracker["state"] = "EXHAUSTIVE"
-				if( chout ): print("  IN AI there was reset due to no changes, adjust stuff  ",Tracker["no_improvement"],Tracker["no_params_changes"],Tracker["delta"],Tracker["xr"],Tracker["ts"], Tracker["state"])
+				if( chout ): sxprint("  IN AI there was reset due to no changes, adjust stuff  ",Tracker["no_improvement"],Tracker["no_params_changes"],Tracker["delta"],Tracker["xr"],Tracker["ts"], Tracker["state"])
 				# check convergence before reset
 				if( (Tracker["state"] == "FINAL") and (Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) ):
 					keepgoing = 0
 					if(Blockdata["myid"] == Blockdata["main_node"]):
-						print(line,"Convergence criterion B is reached (angular step delta smaller than the limit imposed by the structure radius)")
+						sxprint(line,"Convergence criterion B is reached (angular step delta smaller than the limit imposed by the structure radius)")
 				Tracker["no_improvement"]		= 0
 				Tracker["no_params_changes"]	= 0
 				Tracker["anger"]				= 1.0e23
@@ -901,14 +899,14 @@ def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi
 			'''
 			tocp[indx] += 1
 
-		####for lll in range(len(Blockdata["accumulatepw"])):  print(myid,ndata,lll,len(Blockdata["accumulatepw"][lll]))
+		####for lll in range(len(Blockdata["accumulatepw"])):  sxprint(myid,ndata,lll,len(Blockdata["accumulatepw"][lll]))
 		reduce_EMData_to_root(tsd, myid, Blockdata["main_node"],  mpi_comm)
 		reduce_EMData_to_root(tocp, myid, Blockdata["main_node"], mpi_comm)
 		reduce_EMData_to_root(tavg, myid, Blockdata["main_node"], mpi_comm)
 		if( myid == Blockdata["main_node"]):
 			Util.mul_scalar(tavg, 1.0/float(sum(Tracker["nima_per_chunk"])))
 			sig = Util.rotavg_fourier( tavg )
-			#for k in range(1,nv):  print("  BACKG  ",k,tsd.get_value_at(k,0)/tocp[0] ,sig[k],tsd.get_value_at(k,0)/tocp[0] - sig[k])
+			#for k in range(1,nv):  sxprint("  BACKG  ",k,tsd.get_value_at(k,0)/tocp[0] ,sig[k],tsd.get_value_at(k,0)/tocp[0] - sig[k])
 			tmp1 = [0.0]*nv
 			tmp2 = [0.0]*nv
 			for i in range(ngroups):
@@ -1023,9 +1021,9 @@ def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 	from math         import sqrt
 	
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  " )
+		sxprint( "  " )
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line, "Processing data  onx: %3d, nx: %3d, CTF: %s, applymask: %s, preshift: %s."%(Tracker["constants"]["nnxo"], nxinit, Tracker["constants"]["CTF"], apply_mask, preshift) )
+		sxprint(  line, "Processing data  onx: %3d, nx: %3d, CTF: %s, applymask: %s, preshift: %s."%(Tracker["constants"]["nnxo"], nxinit, Tracker["constants"]["CTF"], apply_mask, preshift) )
 	#  Preprocess the data
 	mask2D  	= model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	nima 		= len(original_data)
@@ -1189,12 +1187,12 @@ def checkstep(item, keepchecking):
 
 def out_fsc(f):
 	global Tracker, Blockdata
-	print(" ")
-	print("  driver FSC  after  iteration#%3d"%Tracker["mainiteration"])
-	print("  %4d        %7.2f         %7.3f"%(0,1000.00,f[0]))
+	sxprint(" ")
+	sxprint("  driver FSC  after  iteration#%3d"%Tracker["mainiteration"])
+	sxprint("  %4d        %7.2f         %7.3f"%(0,1000.00,f[0]))
 	for i in range(1,len(f)):
-		print("  %4d        %7.2f         %7.3f"%(i,Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(i),f[i]))
-	print(" ")
+		sxprint("  %4d        %7.2f         %7.3f"%(i,Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(i),f[i]))
+	sxprint(" ")
 
 def get_refangs_and_shifts():
 	global Tracker, Blockdata
@@ -1339,16 +1337,16 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, smea
 	if procid == 0:
 		if(Blockdata["no_of_groups"] >1):
 			if myid == Blockdata["nodes"][0] :
-				if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): print("tempdir exists")
+				if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): sxprint("tempdir exists")
 				else: 
 					try: os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
-					except:  print("tempdir exists")
+					except:  sxprint("tempdir exists")
 		else:
 			if myid == Blockdata["main_node"]:
 				if not os.path.exists(os.path.join(Tracker["directory"],"tempdir")): 
 					try: os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
-					except: print("tempdir exists")
-				else: print("tempdir exists")
+					except: sxprint("tempdir exists")
+				else: sxprint("tempdir exists")
 	mpi_barrier(mpi_comm)
 	"""
 	tvol, tweight, trol = recons3d_4nnstruct_MPI(myid = Blockdata["subgroup_myid"], main_node = Blockdata["nodes"][procid], prjlist = data, \
@@ -1375,7 +1373,7 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, smea
 			tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 			trol.write_image(os.path.join(Tracker["directory"],    "tempdir", "trol_%01d_%03d.hdf"%(procid,   Tracker["mainiteration"])))
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,"Executed successfully backprojection for group ",procid)
+			sxprint(line,"Executed successfully backprojection for group ",procid)
 	else:
 		if myid == Blockdata["main_node"]:
 			tvol.set_attr("is_complex",0)
@@ -1383,13 +1381,13 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, smea
 			tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 			trol.write_image(os.path.join(   Tracker["directory"], "tempdir", "trol_%01d_%03d.hdf"%(procid,   Tracker["mainiteration"])))
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,"Executed successfully backprojection for group ",procid)
+			sxprint(line,"Executed successfully backprojection for group ",procid)
 	mpi_barrier(mpi_comm)
 	return  
 	
 def print_dict(dict,theme):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	print(line,theme)
+	sxprint(line,theme)
 	spaces = "                    "
 	exclude = ["constants", "maxit", "nodes", "yr", "shared_comm", "bckgnoise", "myid", "myid_on_node", "accumulatepw",\
 				"changed_delta"]
@@ -1399,7 +1397,7 @@ def print_dict(dict,theme):
 			if(key == ll):
 				pt = False
 				break
-		if pt:  print("                    => ", key+spaces[len(key):],":  ",value)
+		if pt:  sxprint("                    => ", key+spaces[len(key):],":  ",value)
 
 def stepone(tvol, tweight):
 	global Tracker, Blockdata
@@ -1586,9 +1584,9 @@ def calculate_2d_params_for_centering(kwargs):
 
 	if options_skip_prealignment:
 		if(Blockdata["myid"] == 0):
-			print("=========================================")
-			print(" >>> There is no pre-alignment step.")
-			print("=========================================")
+			sxprint("=========================================")
+			sxprint(" >>> There is no pre-alignment step.")
+			sxprint("=========================================")
 			return [[0, 0, 0, 0, 0] for i in range(number_of_images_in_stack)]
 		else:  return [0.0]
 	Finished_initial_2d_alignment = 1
@@ -1673,7 +1671,7 @@ def calculate_2d_params_for_centering(kwargs):
 	else:
 		if (Blockdata["myid"] == Blockdata["main_node"]):
 			params2d = read_text_row(os.path.join(init2dir, "initial2Dparams.txt"))
-			print("Skipping 2d alignment since it was already done!")
+			sxprint("Skipping 2d alignment since it was already done!")
 			return params2d
 		else:  return [0.0]
 
@@ -1793,7 +1791,7 @@ def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D 
 	
 	#   params.sort(key=itemgetter(2))
 	at = time()
-	if(Blockdata["myid"] == 0):  print("  ENTERING Xali buffered exhaustive CCC  ")
+	if(Blockdata["myid"] == 0):  sxprint("  ENTERING Xali buffered exhaustive CCC  ")
 	npsi = int(360./Tracker["delta"])
 	nang = len(refang)
 	ndat = len(data)
@@ -1805,7 +1803,7 @@ def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D 
 	'''
 	if(Blockdata["myid"] <3):
 		for kl in range(0,ndat,ndat/2):
-			for m in range(0,len(data[kl]),len(data[kl])/3):  print(" DNORM  ",Blockdata["myid"],kl,m, Util.innerproduct(data[kl][m],data[kl][m],mask))
+			for m in range(0,len(data[kl]),len(data[kl])/3):  sxprint(" DNORM  ",Blockdata["myid"],kl,m, Util.innerproduct(data[kl][m],data[kl][m],mask))
 	'''
 
 	if Tracker["mainiteration"]>1 :
@@ -1914,7 +1912,7 @@ def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D 
 
 	for i in range(nang):
 		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (i%(max(1,nang/5)) == 0) and (i>0)):
-			print( "  Angle :%7d   %5d  %5.1f"%(i,ndat,float(i)/float(nang)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
+			sxprint( "  Angle :%7d   %5d  %5.1f"%(i,ndat,float(i)/float(nang)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
 
 		if(i%Blockdata["no_of_processes_per_group"] == 0 ):  #  Time to fill up the buffer
 			for itemp in range(i, min(i+Blockdata["no_of_processes_per_group"], nang)):
@@ -2029,7 +2027,7 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 	'''
 	if(Blockdata["myid"] <3):
 		for kl in range(0,ndat,ndat/2):
-			for m in range(0,len(data[kl]),len(data[kl])/3):  print(" DNORM  ",Blockdata["myid"],kl,m, Util.innerproduct(data[kl][m],data[kl][m],mask))
+			for m in range(0,len(data[kl]),len(data[kl])/3):  sxprint(" DNORM  ",Blockdata["myid"],kl,m, Util.innerproduct(data[kl][m],data[kl][m],mask))
 	'''
 
 	if Tracker["mainiteration"]>1 :
@@ -2111,7 +2109,7 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 	#lenbigbuf = min(Blockdata["no_of_processes_per_group"],n_coarse_ang)*n_coarse_psi
 	lenbigbuf = nang*npsi
 	orgsize = lenbigbuf*size_of_one_image #  This is number of projections to be computed simultaneously times their size
-	if( Blockdata["myid"] == 0 ):  print("  BIGBUFFER  ",float(orgsize)/1.e9,"GB")
+	if( Blockdata["myid"] == 0 ):  sxprint("  BIGBUFFER  ",float(orgsize)/1.e9,"GB")
 	if( Blockdata["myid_on_node"] == 0 ): size = orgsize
 	else:  size = 0
 
@@ -2139,7 +2137,7 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 
 	for i in range(n_coarse_ang):
 		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (i%(max(1,n_coarse_ang/5)) == 0) and (i>0)):
-			print( "  Angle :%7d   %5d  %5.1f"%(i,ndat,float(i)/float(n_coarse_ang)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
+			sxprint( "  Angle :%7d   %5d  %5.1f"%(i,ndat,float(i)/float(n_coarse_ang)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
 
 		if(i%Blockdata["no_of_processes_per_group"] == 0 ):  #  Time to fill up the buffer
 			for itemp in range(i, min(i+Blockdata["no_of_processes_per_group"], n_coarse_ang)):
@@ -2180,7 +2178,7 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 
 	#print  " >>>  %4d   %12.3e       %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(best,simis[0],newpar[0][0],newpar[0][1],newpar[0][2],newpar[0][3],newpar[0][4])
 	###if Blockdata["myid"] == Blockdata["main_node"]:  print "  Finished :",time()-at
-	if Blockdata["myid"] == Blockdata["main_node"]:   print("  COARSE SEARCHES DONE  ","   %10.1fmin"%((time()-at)/60.))
+	if Blockdata["myid"] == Blockdata["main_node"]:   sxprint("  COARSE SEARCHES DONE  ","   %10.1fmin"%((time()-at)/60.))
 	at = time()
 	for itemp in range(0, min(Blockdata["no_of_processes_per_group"], nang)):
 		if( itemp == Blockdata["myid_on_node"]):
@@ -2194,7 +2192,7 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 				bigbuffer.insert_clip(temp,(0,0,itemp*npsi+j))
 
 	mpi_barrier(Blockdata["shared_comm"])
-	if( Blockdata["myid"] == Blockdata["main_node"] ):   print("  REFPROJ DONE  ","   %10.1fmin"%((time()-at)/60.))
+	if( Blockdata["myid"] == Blockdata["main_node"] ):   sxprint("  REFPROJ DONE  ","   %10.1fmin"%((time()-at)/60.))
 	at = time()
 
 	opar = []
@@ -2237,7 +2235,7 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 	del emnumpy1, emnumpy2, emnumpy3
 
 	mpi_barrier(Blockdata["shared_comm"])
-	if Blockdata["myid"] == Blockdata["main_node"]:   print("  FINE SEARCH DONE  ","   %10.1fmin"%((time()-at)/60.))
+	if Blockdata["myid"] == Blockdata["main_node"]:   sxprint("  FINE SEARCH DONE  ","   %10.1fmin"%((time()-at)/60.))
 
 	#print("  NORMALIZATION DONE  ",Blockdata["myid"])
 	mpi_barrier(MPI_COMM_WORLD)
@@ -2290,7 +2288,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	wr = ringwe(numr, mode)
 	cnx = float(Tracker["nxpolar"]//2 + 1)
 
-	##if(Blockdata["myid"] == Blockdata["main_node"]):  print("  RADIUS IN POLAR  ",radius,numr[-1])
+	##if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  RADIUS IN POLAR  ",radius,numr[-1])
 	#  FINE SEARCH CONSTANTS
 	#  Fine grids are shifted by half-fine_step
 	nang = len(refang)
@@ -2314,7 +2312,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	for ib in range(n_coarse_shifts):
 		coarse_shifts_shrank[ib] = [coarse_shifts[ib][0]*shrinkage,coarse_shifts[ib][1]*shrinkage]
 
-	###if(Blockdata["myid"] == Blockdata["main_node"]): print("   TRETR  ",Tracker["constants"]["nnxo"],Tracker["nxinit"],reachpw)
+	###if(Blockdata["myid"] == Blockdata["main_node"]): sxprint("   TRETR  ",Tracker["constants"]["nnxo"],Tracker["nxinit"],reachpw)
 
 	disp_unit = np.dtype("f4").itemsize
 
@@ -2455,7 +2453,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		if( Blockdata["myid_on_node"] == 0 ):  volinit.update()
 		mpi_barrier(Blockdata["shared_comm"])
 		###if( Blockdata["myid"] < 10 ):
-		###	print(" VOLPREP  ",volinit[0],volinit[1],info(volinit))
+		###	sxprint(" VOLPREP  ",volinit[0],volinit[1],info(volinit))
 	else:
 		volinit = volprep
 	#  End of replaced volprep
@@ -2475,12 +2473,12 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 
 	mpi_barrier(Blockdata["shared_comm"])
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		print( "  Reference projections generated : %10.1fmin"%((time()-at)/60.))
+		sxprint( "  Reference projections generated : %10.1fmin"%((time()-at)/60.))
 	
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  " )
+		sxprint( "  " )
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift) )
+		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift) )
 
 	#  Preprocess the data
 
@@ -2511,7 +2509,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	refdirs = angles_to_normals(refang)
 
 	#if( Blockdata["myid"] == Blockdata["main_node"]):
-	#	print("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, n_coarse_psi, len(list_of_coarse_shifts), lxod1 ",nima, nang,npsi,nshifts, n_coarse_ang,n_coarse_psi, len(coarse_shifts), lxod1)
+	#	sxprint("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, n_coarse_psi, len(list_of_coarse_shifts), lxod1 ",nima, nang,npsi,nshifts, n_coarse_ang,n_coarse_psi, len(coarse_shifts), lxod1)
 
 	at = time()
 
@@ -2593,7 +2591,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		dataimage = fpol(Util.mulnclreal(fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
 
 		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (im%(max(1,nima/5)) == 0) and (im>0)):
-			print( "  Number of images :%7d   %5d  %5.1f"%(im,nima,float(im)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
+			sxprint( "  Number of images :%7d   %5d  %5.1f"%(im,nima,float(im)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
 
 		if( im < min(nima, 1) and procid == 0):
 			#   Search all and compare with direct to figure what keepfirst might be
@@ -2661,7 +2659,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 			else:  keepf = 0
 			keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
 			Tracker["keepfirst"] = int(keepf)
-			###if( Blockdata["myid"] == 0 ):  print("  keepfirst first ",Tracker["keepfirst"])
+			###if( Blockdata["myid"] == 0 ):  sxprint("  keepfirst first ",Tracker["keepfirst"])
 
 		else:
 			#Tracker["keepfirst"] = min(200,nang)#min(max(lxod1/25,200),lxod1)
@@ -2721,7 +2719,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 
 		del data
 
-		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  SECOND KEPT  ",lit)
+		#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  SECOND KEPT  ",lit)
 
 		firstdirections = [[0.0,0.0] for iln in range(lit)]
 		firstshifts = [0]*lit
@@ -2734,7 +2732,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 			firstdirections[iln] = [coarse_angles[iang][0], coarse_angles[iang][1], 0.0]
 			firstshifts[iln] = ishift
 		###del xod2
-		###if( Blockdata["myid"] == Blockdata["main_node"]): print("  SECOND KEPT  ",im,lit)#,len(xod2),xod2,firstdirections,firstshifts)
+		###if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  SECOND KEPT  ",im,lit)#,len(xod2),xod2,firstdirections,firstshifts)
 		#mpi_barrier(MPI_COMM_WORLD)
 		#mpi_finalize()
 		#exit()
@@ -2771,7 +2769,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 
 		del xod1, xod2
 
-		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  THIRD1   ",len(cod2),cod2)
+		#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  THIRD1   ",len(cod2),cod2)
 		cod2 = list(set(cod2))
 		cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
 		cod1.sort()
@@ -2785,7 +2783,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		#cod3 = np.ndarray(lit,dtype='f4',order="C")
 		#cod3.fill(0.0)  #  varadj
 
-		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  THIRD2   ",im,lit,cod2)
+		#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  THIRD2   ",im,lit,cod2)
 
 		#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 		#  Third ML part.  Now the actual chi2 distances, we compute reprojections on the fly.
@@ -2852,7 +2850,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		###exit()
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
+		sxprint( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
 	#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 	#  All images were processed, now to the additional calculations
 	###mpi_barrier(MPI_COMM_WORLD)
@@ -2898,7 +2896,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
+		sxprint(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 	"""
 	at = time()
 	mpi_barrier(Blockdata["shared_comm"])
@@ -2922,7 +2920,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	mpi_barrier(MPI_COMM_WORLD)
 	#if( Blockdata["myid"] == Blockdata["main_node"] ):
 	#	#write_text_row([[newpar[0][2][j][0],newpar[0][2][j][1]] for j in range(len(newpar[0][2]))],os.path.join(Tracker["directory"], "polar%1d.txt"%procid))
-	#	print( "  Statistics finished : %10.1fmin"%((time()-at)/60.))
+	#	sxprint( "  Statistics finished : %10.1fmin"%((time()-at)/60.))
 	return newpar, [1.0]*nima#norm_per_particle
 
 def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_data = None, oldparams = None, \
@@ -2969,7 +2967,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	wr = ringwe(numr, mode)
 	cnx = float(Tracker["nxpolar"]//2 + 1)
 
-	##if(Blockdata["myid"] == Blockdata["main_node"]):  print("  RADIUS IN POLAR  ",radius,numr[-1])
+	##if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  RADIUS IN POLAR  ",radius,numr[-1])
 	#  FINE SEARCH CONSTANTS
 	#  Fine grids are shifted by half-fine_step
 	nang = len(refang)
@@ -3176,7 +3174,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 
 	mpi_barrier(Blockdata["shared_comm"])
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		print( "  Reference projections generated : %10.1fmin"%((time()-at)/60.))
+		sxprint( "  Reference projections generated : %10.1fmin"%((time()-at)/60.))
 
 	###mpi_finalize()
 	###exit()
@@ -3184,9 +3182,9 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 
 	
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  " )
+		sxprint( "  " )
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift) )
+		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift) )
 
 	#  Preprocess the data
 
@@ -3224,7 +3222,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	refdirs = angles_to_normals(refang)
 
 	#if( Blockdata["myid"] == Blockdata["main_node"]):
-	#	print("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, n_coarse_psi, len(list_of_coarse_shifts), lxod1 ",nima, nang,npsi,nshifts, n_coarse_ang,n_coarse_psi, len(coarse_shifts), lxod1)
+	#	sxprint("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, n_coarse_psi, len(list_of_coarse_shifts), lxod1 ",nima, nang,npsi,nshifts, n_coarse_ang,n_coarse_psi, len(coarse_shifts), lxod1)
 
 	at = time()
 
@@ -3305,7 +3303,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		dataimage = fpol(Util.mulnclreal(Util.mulnclreal(dataml, Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
 
 		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (im%(max(1,nima/5)) == 0) and (im>0)):
-			print( "  Number of images :%7d   %5d  %5.1f"%(im,nima,float(im)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
+			sxprint( "  Number of images :%7d   %5d  %5.1f"%(im,nima,float(im)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
 
 		if( im < min(nima, 1) and procid == 0):
 			#   Search all and compare with direct to figure what keepfirst might be
@@ -3342,7 +3340,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 
 			xod1 -= np.max(xod1)
 			lina = np.argwhere(xod1 > Tracker["constants"]["expthreshold"])
-			#if( Blockdata["myid"] == 0 ):  print("  STARTING ",np.max(xod1),np.min(xod1),len(lina),lina[-1])
+			#if( Blockdata["myid"] == 0 ):  sxprint("  STARTING ",np.max(xod1),np.min(xod1),len(lina),lina[-1])
 			lina = lina.reshape(lina.size)
 			keepf = int(lina[-1]) + 1
 
@@ -3373,7 +3371,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			else:  keepf = 0
 			keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
 			Tracker["keepfirst"] = int(keepf)
-			###if( Blockdata["myid"] == 0 ):  print("  keepfirst first ",Tracker["keepfirst"])
+			###if( Blockdata["myid"] == 0 ):  sxprint("  keepfirst first ",Tracker["keepfirst"])
 				
 		else:
 			#Tracker["keepfirst"] = min(200,nang)#min(max(lxod1/25,200),lxod1)
@@ -3431,7 +3429,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 
 		del data
 
-		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  SECOND KEPT  ",lit)
+		#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  SECOND KEPT  ",lit)
 
 		firstdirections = [[0.0,0.0] for iln in range(lit)]
 		firstshifts = [0]*lit
@@ -3475,7 +3473,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 
 		del xod1, xod2
 
-		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  THIRD1   ",len(cod2),cod2)
+		#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  THIRD1   ",len(cod2),cod2)
 		cod2 = list(set(cod2))
 		cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
 		cod1.sort()
@@ -3489,7 +3487,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		cod3 = np.ndarray(lit,dtype='f4',order="C")
 		#cod3.fill(0.0)  #  varadj
 
-		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  THIRD2   ",im,lit,cod2)
+		#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  THIRD2   ",im,lit,cod2)
 
 		#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 		#  Third ML part.  Now the actual chi2 distances, we compute reprojections on the fly.
@@ -3572,7 +3570,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		###exit()
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
+		sxprint( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
 	at = time()
 	#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 	#  All images were processed, now to the additional calculations
@@ -3619,7 +3617,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
+		sxprint(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
 	at = time()
 	mpi_barrier(MPI_COMM_WORLD)
@@ -3658,7 +3656,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		del Blockdata["newbckgnoise"]
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  Finished sigma2   %10.1fmin"%((time()-at)/60.))
+		sxprint( "  Finished sigma2   %10.1fmin"%((time()-at)/60.))
 	return newpar, norm_per_particle
 
 def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_data = None, oldparams = None, \
@@ -3705,7 +3703,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	wr = ringwe(numr, mode)
 	cnx = float(Tracker["nxpolar"]//2 + 1)
 
-	##if(Blockdata["myid"] == Blockdata["main_node"]):  print("  RADIUS IN POLAR  ",radius,numr[-1])
+	##if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  RADIUS IN POLAR  ",radius,numr[-1])
 	#  FINE SEARCH CONSTANTS
 	#  Fine grids are shifted by half-fine_step
 	nang = len(refang)
@@ -3729,7 +3727,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	for ib in range(n_coarse_shifts):
 		coarse_shifts_shrank[ib] = [coarse_shifts[ib][0]*shrinkage,coarse_shifts[ib][1]*shrinkage]
 
-	###if(Blockdata["myid"] == Blockdata["main_node"]): print("   TRETR  ",Tracker["constants"]["nnxo"],Tracker["nxinit"],reachpw)
+	###if(Blockdata["myid"] == Blockdata["main_node"]): sxprint("   TRETR  ",Tracker["constants"]["nnxo"],Tracker["nxinit"],reachpw)
 
 	disp_unit = np.dtype("f4").itemsize
 
@@ -3871,7 +3869,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		if( Blockdata["myid_on_node"] == 0 ):  volinit.update()
 		mpi_barrier(Blockdata["shared_comm"])
 		###if( Blockdata["myid"] < 10 ):
-		###	print(" VOLPREP  ",volinit[0],volinit[1],info(volinit))
+		###	sxprint(" VOLPREP  ",volinit[0],volinit[1],info(volinit))
 	else:
 		volinit = volprep
 	#  End of replaced volprep
@@ -3890,12 +3888,12 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 
 	mpi_barrier(Blockdata["shared_comm"])
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		print( "  Reference projections generated : %10.1fmin"%((time()-at)/60.))
+		sxprint( "  Reference projections generated : %10.1fmin"%((time()-at)/60.))
 	
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  " )
+		sxprint( "  " )
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift) )
+		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift) )
 
 	#  Preprocess the data
 
@@ -3928,7 +3926,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	refdirs = angles_to_normals(refang)
 
 	#if( Blockdata["myid"] == Blockdata["main_node"]):
-	#	print("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, n_coarse_psi, len(list_of_coarse_shifts), lxod1 ",nima, nang,npsi,nshifts, n_coarse_ang,n_coarse_psi, len(coarse_shifts), lxod1)
+	#	sxprint("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, n_coarse_psi, len(list_of_coarse_shifts), lxod1 ",nima, nang,npsi,nshifts, n_coarse_ang,n_coarse_psi, len(coarse_shifts), lxod1)
 
 	###firsti = True
 
@@ -4011,7 +4009,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		dataimage = fpol(Util.mulnclreal(Util.mulnclreal(dataml, Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
 
 		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (im%(max(1,nima/5)) == 0) and (im>0)):
-			print( "  Number of images :%7d   %5d  %5.1f"%(im,nima,float(im)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
+			sxprint( "  Number of images :%7d   %5d  %5.1f"%(im,nima,float(im)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
 
 		if( im < min(nima, 1) and procid == 0):
 			#   Search all and compare with direct to figure what keepfirst might be
@@ -4080,7 +4078,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 			else:  keepf = 0
 			keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
 			Tracker["keepfirst"] = int(keepf)
-			###if( Blockdata["myid"] == 0 ):  print("  keepfirst first ",Tracker["keepfirst"])
+			###if( Blockdata["myid"] == 0 ):  sxprint("  keepfirst first ",Tracker["keepfirst"])
 
 		else:
 			#Tracker["keepfirst"] = min(200,nang)#min(max(lxod1/25,200),lxod1)
@@ -4138,7 +4136,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 
 		del data
 
-		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  SECOND KEPT  ",lit)
+		#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  SECOND KEPT  ",lit)
 
 		firstdirections = [[0.0,0.0] for iln in range(lit)]
 		firstshifts = [0]*lit
@@ -4151,7 +4149,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 			firstdirections[iln] = [coarse_angles[iang][0], coarse_angles[iang][1], 0.0]
 			firstshifts[iln] = ishift
 		###del xod2
-		###if( Blockdata["myid"] == Blockdata["main_node"]): print("  SECOND KEPT  ",im,lit)#,len(xod2),xod2,firstdirections,firstshifts)
+		###if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  SECOND KEPT  ",im,lit)#,len(xod2),xod2,firstdirections,firstshifts)
 		#mpi_barrier(MPI_COMM_WORLD)
 		#mpi_finalize()
 		#exit()
@@ -4189,7 +4187,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 
 		del xod1, xod2
 
-		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  THIRD1   ",len(cod2),cod2)
+		#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  THIRD1   ",len(cod2),cod2)
 		cod2 = list(set(cod2))
 		cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
 		cod1.sort()
@@ -4203,7 +4201,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		cod3 = np.ndarray(lit,dtype='f4',order="C")
 		#cod3.fill(0.0)  #  varadj
 
-		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  THIRD2   ",im,lit,cod2)
+		#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  THIRD2   ",im,lit,cod2)
 
 		#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 		#  Third ML part.  Now the actual chi2 distances, we compute reprojections on the fly.
@@ -4271,7 +4269,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		###exit()
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
+		sxprint( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
 	#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 	#  All images were processed, now to the additional calculations
 	###mpi_barrier(MPI_COMM_WORLD)
@@ -4317,7 +4315,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
+		sxprint(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
 	at = time()
 	mpi_barrier(Blockdata["shared_comm"])
@@ -4341,7 +4339,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		#write_text_row([[newpar[0][2][j][0],newpar[0][2][j][1]] for j in range(len(newpar[0][2]))],os.path.join(Tracker["directory"], "polar%1d.txt"%procid))
-		print( "  Statistics finished : %10.1fmin"%((time()-at)/60.))
+		sxprint( "  Statistics finished : %10.1fmin"%((time()-at)/60.))
 	return newpar, norm_per_particle
 
 # MODIFIED FROM TRUE POLAR  12/06/2017  PAP
@@ -4391,7 +4389,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	wr = ringwe(numr, mode)
 	cnx = float(Tracker["nxpolar"]//2 + 1)
 
-	##if(Blockdata["myid"] == Blockdata["main_node"]):  print("  RADIUS IN POLAR  ",radius,numr[-1])
+	##if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  RADIUS IN POLAR  ",radius,numr[-1])
 	#  FINE SEARCH CONSTANTS
 	nang = len(refang)
 	ac_fine = cos(radians(Tracker["an"]))
@@ -4574,7 +4572,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	size_of_one_image = crefim.get_xsize()
 	#  We will assume half of the memory is available.  We will do it betteer later.
 	numberofrefs_inmem = int(Tracker["constants"]["memory_per_node"]/4/((size_of_one_image*disp_unit)/1.0e9))
-	####if( Blockdata["myid_on_node"] == 0  ):  print( " MEMEST ", n_coarse_ang,numberofrefs_inmem)
+	####if( Blockdata["myid_on_node"] == 0  ):  sxprint( " MEMEST ", n_coarse_ang,numberofrefs_inmem)
 	#  number of references that will fit into one mode
 	normals_set = angles_to_normals(coarse_angles)
 	Blockdata["angle_set"] = coarse_angles
@@ -4605,7 +4603,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 				#print(  " assignments_of_refangles_to_cones on zero ",i,len(assignments_of_refangles_to_cones[i]) )#,assignments_of_refangles_to_cones[i]
 
 		for i,q in enumerate(assignments_of_refangles_to_cones):
-			###if( Blockdata["myid_on_node"] == 0 ): print( " which refangles belong to which cone",Blockdata["color"],Blockdata["myid"],i,len(q) )#,q
+			###if( Blockdata["myid_on_node"] == 0 ): sxprint( " which refangles belong to which cone",Blockdata["color"],Blockdata["myid"],i,len(q) )#,q
 			assignments_of_refangles_to_cones[i] = wrap_mpi_bcast(q, 0, Blockdata["shared_comm"])
 
 	else:
@@ -4613,13 +4611,13 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 		angledirs = angles_to_normals([u1[:3] for u1 in oldparams])
 
 		number_of_cones = max(2, int(n_coarse_ang/numberofrefs_inmem*1.5 + 0.5))
-		###if Blockdata["myid_on_node"] == 0:  print( " LENGTHS  ",Blockdata["color"],nima,n_coarse_ang, numberofrefs_inmem,number_of_cones)
+		###if Blockdata["myid_on_node"] == 0:  sxprint( " LENGTHS  ",Blockdata["color"],nima,n_coarse_ang, numberofrefs_inmem,number_of_cones)
 		cont = True
 		while  cont :
 			#  Translate number of cones to cone_delta
 			cone_delta, number_of_cones = number_of_cones_to_delta(number_of_cones)
 			#  Generate cone_angles
-			##if Blockdata["myid"] == 0:  print( "  WHILE  ",number_of_cones, cone_delta)
+			##if Blockdata["myid"] == 0:  sxprint( "  WHILE  ",number_of_cones, cone_delta)
 			if(Blockdata["symclass"].sym[0] == "c"):
 				if( number_of_cones == 1 ):
 					cone_delta  = 180.1
@@ -4631,12 +4629,12 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 			else:
 				cone_angles = Blockdata["symclass"].even_angles(cone_delta, theta1=1.0)
 
-			#if Blockdata["myid"] == 0:  print(  "  number of cones ",number_of_cones,cone_delta, len(cone_angles))
+			#if Blockdata["myid"] == 0:  sxprint(  "  number of cones ",number_of_cones,cone_delta, len(cone_angles))
 			assert(number_of_cones == len(cone_angles) )
 
 			conedirs = angles_to_normals(Blockdata["symclass"].symmetry_neighbors(cone_angles))
 			neighbors = len(conedirs)/len(cone_angles)  #  Symmetry related neighbors
-			#if Blockdata["myid"] == 0:  print(  "  neighbors  ",Blockdata["myid"],neighbors, cone_angles)
+			#if Blockdata["myid"] == 0:  sxprint(  "  neighbors  ",Blockdata["myid"],neighbors, cone_angles)
 			#  assign data directions to cone_angles
 			assignments_to_cones = assign_projdirs_f(angledirs, conedirs, neighbors)
 			###print(  " assignments_to_cones ",Blockdata["myid"],len(assignments_to_cones),[len(q) for q in assignments_to_cones],assignments_to_cones[0])
@@ -4650,7 +4648,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 
 			for i,q in enumerate(assignments_to_cones):
 				#  find assignments of refdirs to this cone within an of each angledirs, so we need symmetry neighbors set of refdirs.
-				#if Blockdata["myid"] == 0:  print( "in loop ", Blockdata["myid"],i,len(q),q)
+				#if Blockdata["myid"] == 0:  sxprint( "in loop ", Blockdata["myid"],i,len(q),q)
 
 				if(len(q) == 0):
 					# empty assignment, on a given CPU there are no images assigned to a given cone
@@ -4660,18 +4658,18 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 						#print " m ",m,len(angles)
 
 						assignments_of_refangles_to_angles[m] = find_assignments_of_refangles_to_angles(normals_set, oldparams[m], Tracker["an"])
-						#if Blockdata["myid"] == 0:  print( "assignments_of_refangles_to_angles[m] ", Blockdata["color"],i,m,assignments_of_refangles_to_angles[m])
+						#if Blockdata["myid"] == 0:  sxprint( "assignments_of_refangles_to_angles[m] ", Blockdata["color"],i,m,assignments_of_refangles_to_angles[m])
 						assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
 
-					#if( Blockdata["myid"] == 19 ):  print(  " doit0 ",Blockdata["myid"], i,assignments_of_refangles_to_cones[i],q,assignments_to_cones)
+					#if( Blockdata["myid"] == 19 ):  sxprint(  " doit0 ",Blockdata["myid"], i,assignments_of_refangles_to_cones[i],q,assignments_to_cones)
 					assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
-				###if Blockdata["myid"] == 19:  print(  " assignments_of_refangles_to_cones on myid ",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]), assignments_of_refangles_to_cones[i] )
+				###if Blockdata["myid"] == 19:  sxprint(  " assignments_of_refangles_to_cones on myid ",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]), assignments_of_refangles_to_cones[i] )
 				assignments_of_refangles_to_cones[i] = wrap_mpi_gatherv(assignments_of_refangles_to_cones[i], 0, Blockdata["shared_comm"])
-				###if Blockdata["myid"] == 0:  print(  " assignments_of_refangles_to_cones gatherv",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]) )
+				###if Blockdata["myid"] == 0:  sxprint(  " assignments_of_refangles_to_cones gatherv",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]) )
 				doit = 1
 				if( Blockdata["myid_on_node"] == 0 ):
 					assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i])-set([-1]))
-					###if( Blockdata["myid_on_node"] == 0 ):  print(  " assignments_of_refangles_to_cones on zero ",i,len(assignments_of_refangles_to_cones[i]))
+					###if( Blockdata["myid_on_node"] == 0 ):  sxprint(  " assignments_of_refangles_to_cones on zero ",i,len(assignments_of_refangles_to_cones[i]))
 					#  POSSIBLE PROBLEM - IT IS POSSIBLE FOR A GIVEN CONE TO HAVE NO REFANGLES AND THUS BE EMPTY
 					if( len(assignments_of_refangles_to_cones[i]) > numberofrefs_inmem ):
 						number_of_cones = int(number_of_cones*1.25)
@@ -4679,7 +4677,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 						doit = 0
 				doit = bcast_number_to_all(doit, source_node = 0)
 				number_of_cones = bcast_number_to_all(number_of_cones, source_node = 0, mpi_comm = Blockdata["shared_comm"] )
-				###if( Blockdata["myid"] == 19 ):  print(  " doit ",Blockdata["myid"], i,doit ,assignments_of_refangles_to_cones[i],assignments_to_cones)
+				###if( Blockdata["myid"] == 19 ):  sxprint(  " doit ",Blockdata["myid"], i,doit ,assignments_of_refangles_to_cones[i],assignments_to_cones)
 				if( doit == 0 ):  break
 
 			if( doit == 1 ):
@@ -4687,13 +4685,13 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 
 
 		for i,q in enumerate(assignments_of_refangles_to_cones):
-			###if( Blockdata["myid_on_node"] == 0 ): print( " which refangles belong to which cone IOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
+			###if( Blockdata["myid_on_node"] == 0 ): sxprint( " which refangles belong to which cone IOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
 			assignments_of_refangles_to_cones[i] = wrap_mpi_bcast(q, 0, Blockdata["shared_comm"])
-			###if( Blockdata["myid_on_node"] == 0 ): print( " which refangles belong to which cone XOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
+			###if( Blockdata["myid_on_node"] == 0 ): sxprint( " which refangles belong to which cone XOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
 			#if( myid == 1 ):
 			#	print " which refangles belong to which cone",myid,i,len(assignments_of_refangles_to_cones[i])#,q
 
-	if( Blockdata["myid"] == 0  ):  print( " number_of_cones: ",number_of_cones)
+	if( Blockdata["myid"] == 0  ):  sxprint( " number_of_cones: ",number_of_cones)
 	#  Maximum number of refangles assigned to angles (max number of references per image)
 	nlocal_angles = max( [ len(q) for q in assignments_of_refangles_to_angles] )
 	#  Most likely we have to delete some lists before proceeding
@@ -4703,7 +4701,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	numberofrefs_inmem = max([len(q) for q in assignments_of_refangles_to_cones])
 
 	###for i,q in enumerate(assignments_of_refangles_to_cones):
-	###	print( " which refangles belong to which cone OUT ",Blockdata["color"],Blockdata["myid_on_node"],Blockdata["myid"],i,numberofrefs_inmem,nlocal_angles,len(q))#,q
+	###	sxprint( " which refangles belong to which cone OUT ",Blockdata["color"],Blockdata["myid_on_node"],Blockdata["myid"],i,numberofrefs_inmem,nlocal_angles,len(q))#,q
 
 	#  BIG BUFFER
 	lenbigbuf = numberofrefs_inmem  #MAXIMUM NUMBER OF REFERENCE IN ONE OF THE CONES
@@ -4727,9 +4725,9 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	#  end of CONES setup
 
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  " )
+		sxprint( "  " )
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,orgsize/1.0e9) )
+		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,orgsize/1.0e9) )
 
 	#  Note these are in Fortran notation for polar searches
 	txm    	= float(Tracker["nxpolar"]-(Tracker["nxpolar"]//2+1) - radius)
@@ -4772,7 +4770,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 
 
 	#if( Blockdata["myid_on_node"] == 0):
-	#	print("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, nlocal_angles, n_coarse_psi, len(list_of_coarse_shifts), number_of_cones , max_number_of_cones ",nima, nang,npsi,nshifts,n_coarse_ang,nlocal_angles,n_coarse_psi, len(coarse_shifts),number_of_cones,max_number_of_cones)
+	#	sxprint("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, nlocal_angles, n_coarse_psi, len(list_of_coarse_shifts), number_of_cones , max_number_of_cones ",nima, nang,npsi,nshifts,n_coarse_ang,nlocal_angles,n_coarse_psi, len(coarse_shifts),number_of_cones,max_number_of_cones)
 
 	##firsti = True
 	at = time()
@@ -4797,7 +4795,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 			mpi_barrier(Blockdata["shared_comm"])
 
 			#if(Blockdata["myid"] == Blockdata["main_node"]):
-			#	print( "  Reference projections generated for cone %4d: %10.1fmin"%(icone,(time()-at)/60.))
+			#	sxprint( "  Reference projections generated for cone %4d: %10.1fmin"%(icone,(time()-at)/60.))
 			###print("  TOPOP    ",Blockdata["myid"],MPI_COMM_WORLD,len(assignments_to_cones[icone]))
 			###mpi_finalize()
 			###exit()
@@ -4820,7 +4818,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 
 					phi,theta,psi,sx,sy, wnorm = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4], oldparams[im][7]
 
-					#  CONTROLPRINTOUT   if( Blockdata["myid"] == Blockdata["main_node"] and icnm<5):  print("\n\n  INPUT PARAMS  ",im,phi,theta,psi,sx,sy)
+					#  CONTROLPRINTOUT   if( Blockdata["myid"] == Blockdata["main_node"] and icnm<5):  sxprint("\n\n  INPUT PARAMS  ",im,phi,theta,psi,sx,sy)
 					if preshift:
 						sx = int(round(sx))
 						sy = int(round(sy))
@@ -4903,7 +4901,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					###print("   BICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
 
 				if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (lima%(max(1,nima/5)) == 0) and (lima>0)):
-					print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
+					sxprint( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
 					##print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin   %10.1fmin"%((time()-at)/60.,eat/60.0))
 				lima += 1
 
@@ -4915,7 +4913,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					if( lenass > 0):
 						###print("   CICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
 						keepfirst = lang*m_coarse_psi*n_coarse_shifts#150#lang*m_coarse_psi*len(coarse_shifts_shrank)  #500#min(200,nlocal_angles)#min(max(lxod1/25,200),lxod1)
-						###if( Blockdata["myid"] == 18 and lima<5):  print(" START   nlocal_angles* m_coarse_psi*len(coarse_shifts_shrank",nlocal_angles,coarse_delta,len(coarse_shifts_shrank),keepfirst)
+						###if( Blockdata["myid"] == 18 and lima<5):  sxprint(" START   nlocal_angles* m_coarse_psi*len(coarse_shifts_shrank",nlocal_angles,coarse_delta,len(coarse_shifts_shrank),keepfirst)
 						#if( Blockdata["myid"] == Blockdata["main_node"] ):
 						lxod1 = Util.multiref_Crosrng_msg_stack_stepsi_local(dataimage, bigbuffer, \
 								coarse_shifts_shrank,\
@@ -4953,7 +4951,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 								##junk = time()
 								temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 								##eat += time()-junk
-								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
+								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
 								temp.set_attr("is_complex",0)
 							##junk = time()
 							xod1[iln] = -Util.sqed(data[ishift], temp, ctfa, bckgnoise)
@@ -5013,12 +5011,12 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					#	exit()
 					###print("  STARTING8    ",Blockdata["myid"],keepf)
 					Tracker["keepfirst"] = int(keepf)
-					###if( Blockdata["myid"] == 0 ):  print("  keepfirst first ",Tracker["keepfirst"])
+					###if( Blockdata["myid"] == 0 ):  sxprint("  keepfirst first ",Tracker["keepfirst"])
 
 				else:
 					if(lenass>0):
 						###print("   DICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
-						###if( Blockdata["myid"] == 18 and lima<5):  print(" START   nlocal_angles* m_coarse_psi*len(coarse_shifts_shrank",nlocal_angles,coarse_delta,len(coarse_shifts_shrank),Tracker["keepfirst"])
+						###if( Blockdata["myid"] == 18 and lima<5):  sxprint(" START   nlocal_angles* m_coarse_psi*len(coarse_shifts_shrank",nlocal_angles,coarse_delta,len(coarse_shifts_shrank),Tracker["keepfirst"])
 						#if( Blockdata["myid"] == Blockdata["main_node"] ):
 						keepfirst = lang*m_coarse_psi*n_coarse_shifts
 						keepfirst = max(keepfirst*Tracker["keepfirst"]/100,min(keepfirst,3))
@@ -5027,7 +5025,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 								assignments_of_refangles_to_angles[im], assignments_of_refangles_to_cones[icone],\
 								numr, [coarse_angles[i][2] for i in range(n_coarse_ang)], \
 								oldparams[im][2], c_coarse_psi, coarse_delta, cnx, keepfirst)
-						#if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  ")
+						#if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  ")
 						##'''
 						assert( keepfirst == len(lxod1)/3 )
 						xod1 = np.ndarray((keepfirst),dtype='f4',order="C")
@@ -5060,7 +5058,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 								iang = ipsiandiang/100000
 								##junk = time()
 								temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
-								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
+								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
 								##eat += time()-junk
 								temp.set_attr("is_complex",0)
 							##junk = time()
@@ -5078,7 +5076,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 
 						#if( Blockdata["myid"] == Blockdata["main_node"]):
 						#	#print("  PROJECT   ",im,lit,johi)#,cod2)
-						#	for iln in range(len(xod1)):  print("  ROPE   ",iln,xod1[iln],xod2[iln])
+						#	for iln in range(len(xod1)):  sxprint("  ROPE   ",iln,xod1[iln],xod2[iln])
 
 
 						lina = np.argwhere(xod1 > Tracker["constants"]["expthreshold"])
@@ -5095,8 +5093,8 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 								break
 
 						#  To here
-						###if( Blockdata["myid"] == 18 and lima<5):  print("  SECOND KEPT  ",lit)
-						#if( lima<5):  print("  SECOND KEPT  ",lit)
+						###if( Blockdata["myid"] == 18 and lima<5):  sxprint("  SECOND KEPT  ",lit)
+						#if( lima<5):  sxprint("  SECOND KEPT  ",lit)
 
 
 				#mpi_barrier(MPI_COMM_WORLD)
@@ -5118,7 +5116,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 						#try:
 						firstdirections[iln] = [coarse_angles[iang][0], coarse_angles[iang][1], 0.0]
 						#except:
-						#	print(" FAILED  ",Blockdata["myid"],Tracker["keepfirst"],iln,lima,lit,hashparams,iang,xod2[:lit],xod1[:lit])
+						#	sxprint(" FAILED  ",Blockdata["myid"],Tracker["keepfirst"],iln,lima,lit,hashparams,iang,xod2[:lit],xod1[:lit])
 						#	mpi_finalize()
 						#	exit()
 						firstshifts[iln] = ishift
@@ -5126,19 +5124,19 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 						#	ipsi = ipsiandiang%100000
 						#	ishift = hashparams%1000
 						#	###print("  SECONDPAR%04d  "%im,iln,hashparams, ipsi,iang,ishift)
-						#	print(" SECONDPAR%04d  "%im,iln, refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, shifts[ishift])
+						#	sxprint(" SECONDPAR%04d  "%im,iln, refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, shifts[ishift])
 					###del xod2
-					###if( Blockdata["myid"] == 18 and lima<5):   print("  SECOND KEPT  ",im,lit)#,len(xod2),xod2,firstdirections,firstshifts)
+					###if( Blockdata["myid"] == 18 and lima<5):   sxprint("  SECOND KEPT  ",im,lit)#,len(xod2),xod2,firstdirections,firstshifts)
 					#mpi_barrier(MPI_COMM_WORLD)
 					#mpi_finalize()
 					#exit()
 
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  FIFI ",firstdirections)
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  GUGU ",firstshifts)
+					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  FIFI ",firstdirections)
+					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  GUGU ",firstshifts)
 					# Find neighbors, ltabang contains positions on refang list, no psis
 					###ltabang = nearest_many_full_k_projangles(refang, firstdirections, howmany = 5, sym=Tracker["constants"]["symmetry"])
 					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
-					###if( Blockdata["myid"] == Blockdata["main_node"]): print("  ltabang ",ltabang)
+					###if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  ltabang ",ltabang)
 					##mpi_barrier(MPI_COMM_WORLD)
 					##mpi_finalize()
 					##exit()
@@ -5148,8 +5146,8 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 
 
 					###ltabshi = [shiftneighbors[iln] for iln in firstshifts]
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  HUHU ",ltabang)
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  OUOU ",ltabshi)
+					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  HUHU ",ltabang)
+					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  OUOU ",ltabshi)
 
 					#  Prepare image for chi2.
 					#  We have to repeat everything from get shrink data, including shifts
@@ -5170,7 +5168,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 						ipsi = ipsiandiang%100000
 						ishift = hashparams%1000
 						tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
-						#if( Blockdata["myid"] == Blockdata["main_node"]): print(" tshifts  ",i1,len(tshifts))
+						#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint(" tshifts  ",i1,len(tshifts))
 						for i2 in range(4):
 							iang = ltabang[i1][i2]
 							for i3 in range(2):  # psi
@@ -5179,12 +5177,12 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 								for i4 in range(len(tshifts)):
 									cod2.append(iang*100000000 + itpsi*1000 + tshifts[i4])
 									#lol += 1
-									#if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  zibzi  ",i1,i2,i3,i4, lol)
+									#if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  zibzi  ",i1,i2,i3,i4, lol)
 
 
 					del xod1, xod2
 
-					###if( Blockdata["myid"] == 18 and lima<5):   print("  THIRD   ",len(cod2))#,cod2)
+					###if( Blockdata["myid"] == 18 and lima<5):   sxprint("  THIRD   ",len(cod2))#,cod2)
 					cod2 = list(set(cod2))
 					cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
 					cod1.sort()
@@ -5198,7 +5196,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					cod3 = np.ndarray(lit,dtype='f4',order="C")
 					#cod3.fill(0.0)  #  varadj
 
-					###if( Blockdata["myid"] == 18 and lima<5): print("  THIRD   ",im,lit)#,cod2)
+					###if( Blockdata["myid"] == 18 and lima<5): sxprint("  THIRD   ",im,lit)#,cod2)
 
 					#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 					#  Third ML part.  Now the actual chi2 distances, we compute reprojections on the fly.
@@ -5210,7 +5208,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					prevdir = -1
 					while(iln<lit):
 						hashparams = cod2[iln]
-						#if( Blockdata["myid"] == Blockdata["main_node"]): print("  COD2   ",im,lit,iln,cod2[iln])
+						#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  COD2   ",im,lit,iln,cod2[iln])
 						ipsiandiang	= hashparams/1000
 						if(ipsiandiang != prevdir):
 							prevdir = ipsiandiang
@@ -5243,10 +5241,10 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 						#	ctfa.write_image("ctfa.hdf")
 						#	bckgnoise.write_image("bckgnoise.hdf")
 						#	exit()
-						###if( Blockdata["myid"] == Blockdata["main_node"] and iln%1000 ==0):  print(" progress  ",iln,time()-at)
+						###if( Blockdata["myid"] == Blockdata["main_node"] and iln%1000 ==0):  sxprint(" progress  ",iln,time()-at)
 					#if( Blockdata["myid"] == Blockdata["main_node"]):
-					#	print("  PROJECT   ",im,lit,johi)#,cod2)
-					#	#for iln in range(lit):  print("  ROPE   ",iln,cod1[iln],cod2[iln],cod3[iln])
+					#	sxprint("  PROJECT   ",im,lit,johi)#,cod2)
+					#	#for iln in range(lit):  sxprint("  ROPE   ",iln,cod1[iln],cod2[iln],cod3[iln])
 					del data
 					del dataml
 
@@ -5265,7 +5263,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					###if( Blockdata["myid"] == Blockdata["main_node"]):
 					###for iui in range(len(lina)):
 					###	for iui in range(len(cod1)):
-					###		print("  MLML  ",iui,cod1[iui],exp(cod1[iui]),cod2[iui],cod3[iui])
+					###		sxprint("  MLML  ",iui,cod1[iui],exp(cod1[iui]),cod2[iui],cod3[iui])
 
 					np.exp(cod1, out=cod1)
 					cod1 /= np.sum(cod1)
@@ -5299,9 +5297,9 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 						#	iang = ipsiandiang/100000
 						#	ishift = hashparams%1000
 						#	#print("  NEWPAR%04d  "%im,iln,newpar[im][2][-1],hashparams,ipsi,iang,ishift)
-						#	print(" NEWPAR%04d  "%im,iln,newpar[im][2][iln], refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, shifts[ishift])
+						#	sxprint(" NEWPAR%04d  "%im,iln,newpar[im][2][iln], refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, shifts[ishift])
 
-					###if( Blockdata["myid"] == 18 and lima<5):   print("  FINALLY  ",im,lit)
+					###if( Blockdata["myid"] == 18 and lima<5):   sxprint("  FINALLY  ",im,lit)
 					del cod1, cod2, cod3, lina
 					###mpi_barrier(MPI_COMM_WORLD)
 					###mpi_finalize()
@@ -5319,7 +5317,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	#  END OF CONES
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
+		sxprint( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
 	at = time()
 	#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 	#  All images were processed, now to the additional calculations
@@ -5368,7 +5366,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
+		sxprint(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
 	at = time()
 	mpi_barrier(MPI_COMM_WORLD)
@@ -5413,7 +5411,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	#print("  NORMALIZATION DONE  ",Blockdata["myid"])
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  Finished sigma2   %10.1fmin"%((time()-at)/60.))
+		sxprint( "  Finished sigma2   %10.1fmin"%((time()-at)/60.))
 	return newpar, norm_per_particle
 
 # TRUE POLAR
@@ -5463,7 +5461,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	wr = ringwe(numr, mode)
 	cnx = float(Tracker["nxpolar"]//2 + 1)
 
-	##if(Blockdata["myid"] == Blockdata["main_node"]):  print("  RADIUS IN POLAR  ",radius,numr[-1])
+	##if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  RADIUS IN POLAR  ",radius,numr[-1])
 	#  FINE SEARCH CONSTANTS
 	nang = len(refang)
 	ac_fine = cos(radians(Tracker["an"]))
@@ -5492,11 +5490,11 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	for ib in range(n_coarse_shifts):
 		coarse_shifts_shrank[ib] = [coarse_shifts[ib][0]*shrinkage,coarse_shifts[ib][1]*shrinkage]
 
-	###if(Blockdata["myid"] == Blockdata["main_node"]): print("   TRETR  ",Tracker["constants"]["nnxo"],Tracker["nxinit"],reachpw,n_coarse_ang,coarse_delta,n_coarse_psi,m_coarse_psi,c_coarse_psi,n_coarse_shifts)
+	###if(Blockdata["myid"] == Blockdata["main_node"]): sxprint("   TRETR  ",Tracker["constants"]["nnxo"],Tracker["nxinit"],reachpw,n_coarse_ang,coarse_delta,n_coarse_psi,m_coarse_psi,c_coarse_psi,n_coarse_shifts)
 
 	#if(Blockdata["myid"] == Blockdata["main_node"]):
-	#	print( original_data[0].get_attr("identifier") )
-	#	print( original_data[1].get_attr("identifier") )
+	#	sxprint( original_data[0].get_attr("identifier") )
+	#	sxprint( original_data[1].get_attr("identifier") )
 
 	disp_unit = np.dtype("f4").itemsize
 
@@ -5614,7 +5612,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 		if( Blockdata["myid_on_node"] == 0 ):  volinit.update()
 		mpi_barrier(Blockdata["shared_comm"])
 		###if( Blockdata["myid"] < 10 ):
-		###	print(" VOLPREP  ",volinit[0],volinit[1],info(volinit))
+		###	sxprint(" VOLPREP  ",volinit[0],volinit[1],info(volinit))
 	else:
 		volinit = volprep
 	#  End of replaced volprep
@@ -5627,7 +5625,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	size_of_one_image = crefim.get_xsize()
 	#  We will assume half of the memory is available.  We will do it betteer later.
 	numberofrefs_inmem = int(Tracker["constants"]["memory_per_node"]/4/((size_of_one_image*disp_unit)/1.0e9))
-	####if( Blockdata["myid_on_node"] == 0  ):  print( " MEMEST ", n_coarse_ang,numberofrefs_inmem)
+	####if( Blockdata["myid_on_node"] == 0  ):  sxprint( " MEMEST ", n_coarse_ang,numberofrefs_inmem)
 	#  number of references that will fit into one mode
 	normals_set = angles_to_normals(coarse_angles)
 	Blockdata["angle_set"] = coarse_angles
@@ -5658,7 +5656,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 				#print(  " assignments_of_refangles_to_cones on zero ",i,len(assignments_of_refangles_to_cones[i]) )#,assignments_of_refangles_to_cones[i]
 
 		for i,q in enumerate(assignments_of_refangles_to_cones):
-			###if( Blockdata["myid_on_node"] == 0 ): print( " which refangles belong to which cone",Blockdata["color"],Blockdata["myid"],i,len(q) )#,q
+			###if( Blockdata["myid_on_node"] == 0 ): sxprint( " which refangles belong to which cone",Blockdata["color"],Blockdata["myid"],i,len(q) )#,q
 			assignments_of_refangles_to_cones[i] = wrap_mpi_bcast(q, 0, Blockdata["shared_comm"])
 
 	else:
@@ -5666,13 +5664,13 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 		angledirs = angles_to_normals([u1[:3] for u1 in oldparams])
 
 		number_of_cones = max(2, int(n_coarse_ang/numberofrefs_inmem*1.5 + 0.5))
-		###if Blockdata["myid_on_node"] == 0:  print( " LENGTHS  ",Blockdata["color"],nima,n_coarse_ang, numberofrefs_inmem,number_of_cones)
+		###if Blockdata["myid_on_node"] == 0:  sxprint( " LENGTHS  ",Blockdata["color"],nima,n_coarse_ang, numberofrefs_inmem,number_of_cones)
 		cont = True
 		while  cont :
 			#  Translate number of cones to cone_delta
 			cone_delta, number_of_cones = number_of_cones_to_delta(number_of_cones)
 			#  Generate cone_angles
-			##if Blockdata["myid"] == 0:  print( "  WHILE  ",number_of_cones, cone_delta)
+			##if Blockdata["myid"] == 0:  sxprint( "  WHILE  ",number_of_cones, cone_delta)
 			if(Blockdata["symclass"].sym[0] == "c"):
 				if( number_of_cones == 1 ):
 					cone_delta  = 180.1
@@ -5684,12 +5682,12 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 			else:
 				cone_angles = Blockdata["symclass"].even_angles(cone_delta, theta1=1.0)
 
-			#if Blockdata["myid"] == 0:  print(  "  number of cones ",number_of_cones,cone_delta, len(cone_angles))
+			#if Blockdata["myid"] == 0:  sxprint(  "  number of cones ",number_of_cones,cone_delta, len(cone_angles))
 			assert(number_of_cones == len(cone_angles) )
 
 			conedirs = angles_to_normals(Blockdata["symclass"].symmetry_neighbors(cone_angles))
 			neighbors = len(conedirs)/len(cone_angles)  #  Symmetry related neighbors
-			#if Blockdata["myid"] == 0:  print(  "  neighbors  ",Blockdata["myid"],neighbors, cone_angles)
+			#if Blockdata["myid"] == 0:  sxprint(  "  neighbors  ",Blockdata["myid"],neighbors, cone_angles)
 			#  assign data directions to cone_angles
 			assignments_to_cones = assign_projdirs_f(angledirs, conedirs, neighbors)
 			###print(  " assignments_to_cones ",Blockdata["myid"],len(assignments_to_cones),[len(q) for q in assignments_to_cones],assignments_to_cones[0])
@@ -5703,7 +5701,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 			for i,q in enumerate(assignments_to_cones):
 				#  find assignments of refdirs to this cone within an of each angledirs, so we need symmetry neighbors set of refdirs.
-				#if Blockdata["myid"] == 0:  print( "in loop ", Blockdata["myid"],i,len(q),q)
+				#if Blockdata["myid"] == 0:  sxprint( "in loop ", Blockdata["myid"],i,len(q),q)
 
 				if(len(q) == 0):
 					# empty assignment, on a given CPU there are no images assigned to a given cone
@@ -5713,18 +5711,18 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						#print " m ",m,len(angles)
 
 						assignments_of_refangles_to_angles[m] = find_assignments_of_refangles_to_angles(normals_set, oldparams[m], Tracker["an"])
-						#if Blockdata["myid"] == 0:  print( "assignments_of_refangles_to_angles[m] ", Blockdata["color"],i,m,assignments_of_refangles_to_angles[m])
+						#if Blockdata["myid"] == 0:  sxprint( "assignments_of_refangles_to_angles[m] ", Blockdata["color"],i,m,assignments_of_refangles_to_angles[m])
 						assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
 
-					#if( Blockdata["myid"] == 19 ):  print(  " doit0 ",Blockdata["myid"], i,assignments_of_refangles_to_cones[i],q,assignments_to_cones)
+					#if( Blockdata["myid"] == 19 ):  sxprint(  " doit0 ",Blockdata["myid"], i,assignments_of_refangles_to_cones[i],q,assignments_to_cones)
 					assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
-				###if Blockdata["myid"] == 19:  print(  " assignments_of_refangles_to_cones on myid ",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]), assignments_of_refangles_to_cones[i] )
+				###if Blockdata["myid"] == 19:  sxprint(  " assignments_of_refangles_to_cones on myid ",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]), assignments_of_refangles_to_cones[i] )
 				assignments_of_refangles_to_cones[i] = wrap_mpi_gatherv(assignments_of_refangles_to_cones[i], 0, Blockdata["shared_comm"])
-				###if Blockdata["myid"] == 0:  print(  " assignments_of_refangles_to_cones gatherv",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]) )
+				###if Blockdata["myid"] == 0:  sxprint(  " assignments_of_refangles_to_cones gatherv",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]) )
 				doit = 1
 				if( Blockdata["myid_on_node"] == 0 ):
 					assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i])-set([-1]))
-					###if( Blockdata["myid_on_node"] == 0 ):  print(  " assignments_of_refangles_to_cones on zero ",i,len(assignments_of_refangles_to_cones[i]))
+					###if( Blockdata["myid_on_node"] == 0 ):  sxprint(  " assignments_of_refangles_to_cones on zero ",i,len(assignments_of_refangles_to_cones[i]))
 					#  POSSIBLE PROBLEM - IT IS POSSIBLE FOR A GIVEN CONE TO HAVE NO REFANGLES AND THUS BE EMPTY
 					if( len(assignments_of_refangles_to_cones[i]) > numberofrefs_inmem ):
 						number_of_cones = int(number_of_cones*1.25)
@@ -5732,7 +5730,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						doit = 0
 				doit = bcast_number_to_all(doit, source_node = 0)
 				number_of_cones = bcast_number_to_all(number_of_cones, source_node = 0, mpi_comm = Blockdata["shared_comm"] )
-				###if( Blockdata["myid"] == 19 ):  print(  " doit ",Blockdata["myid"], i,doit ,assignments_of_refangles_to_cones[i],assignments_to_cones)
+				###if( Blockdata["myid"] == 19 ):  sxprint(  " doit ",Blockdata["myid"], i,doit ,assignments_of_refangles_to_cones[i],assignments_to_cones)
 				if( doit == 0 ):  break
 
 			if( doit == 1 ):
@@ -5740,13 +5738,13 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 
 		for i,q in enumerate(assignments_of_refangles_to_cones):
-			###if( Blockdata["myid_on_node"] == 0 ): print( " which refangles belong to which cone IOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
+			###if( Blockdata["myid_on_node"] == 0 ): sxprint( " which refangles belong to which cone IOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
 			assignments_of_refangles_to_cones[i] = wrap_mpi_bcast(q, 0, Blockdata["shared_comm"])
-			###if( Blockdata["myid_on_node"] == 0 ): print( " which refangles belong to which cone XOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
+			###if( Blockdata["myid_on_node"] == 0 ): sxprint( " which refangles belong to which cone XOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
 			#if( myid == 1 ):
 			#	print " which refangles belong to which cone",myid,i,len(assignments_of_refangles_to_cones[i])#,q
 
-	if( Blockdata["myid"] == 0  ):  print( " number_of_cones: ",number_of_cones)
+	if( Blockdata["myid"] == 0  ):  sxprint( " number_of_cones: ",number_of_cones)
 	#  Maximum number of refangles assigned to angles (max number of references per image)
 	nlocal_angles = max( [ len(q) for q in assignments_of_refangles_to_angles] )
 	#  Most likely we have to delete some lists before proceeding
@@ -5756,7 +5754,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	numberofrefs_inmem = max([len(q) for q in assignments_of_refangles_to_cones])
 
 	###for i,q in enumerate(assignments_of_refangles_to_cones):
-	###	print( " which refangles belong to which cone OUT ",Blockdata["color"],Blockdata["myid_on_node"],Blockdata["myid"],i,numberofrefs_inmem,nlocal_angles,len(q))#,q
+	###	sxprint( " which refangles belong to which cone OUT ",Blockdata["color"],Blockdata["myid_on_node"],Blockdata["myid"],i,numberofrefs_inmem,nlocal_angles,len(q))#,q
 
 	#  BIG BUFFER
 	lenbigbuf = numberofrefs_inmem  #MAXIMUM NUMBER OF REFERENCE IN ONE OF THE CONES
@@ -5780,9 +5778,9 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	#  end of CONES setup
 
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  " )
+		sxprint( "  " )
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,orgsize/1.0e9) )
+		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,orgsize/1.0e9) )
 
 	#  Note these are in Fortran notation for polar searches
 	txm    	= float(Tracker["nxpolar"]-(Tracker["nxpolar"]//2+1) - radius)
@@ -5820,7 +5818,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 
 	#if( Blockdata["myid_on_node"] == 0):
-	#	print("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, nlocal_angles, n_coarse_psi, len(list_of_coarse_shifts), number_of_cones , max_number_of_cones ",nima, nang,npsi,nshifts,n_coarse_ang,nlocal_angles,n_coarse_psi, len(coarse_shifts),number_of_cones,max_number_of_cones)
+	#	sxprint("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, nlocal_angles, n_coarse_psi, len(list_of_coarse_shifts), number_of_cones , max_number_of_cones ",nima, nang,npsi,nshifts,n_coarse_ang,nlocal_angles,n_coarse_psi, len(coarse_shifts),number_of_cones,max_number_of_cones)
 
 	##firsti = True
 	at = time()
@@ -5845,7 +5843,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 			mpi_barrier(Blockdata["shared_comm"])
 
 			#if(Blockdata["myid"] == Blockdata["main_node"]):
-			#	print( "  Reference projections generated for cone %4d: %10.1fmin"%(icone,(time()-at)/60.))
+			#	sxprint( "  Reference projections generated for cone %4d: %10.1fmin"%(icone,(time()-at)/60.))
 			###print("  TOPOP    ",Blockdata["myid"],MPI_COMM_WORLD,len(assignments_to_cones[icone]))
 			###mpi_finalize()
 			###exit()
@@ -5867,7 +5865,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 					phi,theta,psi,sx,sy, wnorm = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4], oldparams[im][7]
 
-					#  CONTROLPRINTOUT   if( Blockdata["myid"] == Blockdata["main_node"] and icnm<5):  print("\n\n  INPUT PARAMS  ",im,phi,theta,psi,sx,sy)
+					#  CONTROLPRINTOUT   if( Blockdata["myid"] == Blockdata["main_node"] and icnm<5):  sxprint("\n\n  INPUT PARAMS  ",im,phi,theta,psi,sx,sy)
 					if preshift:
 						sx = int(round(sx))
 						sy = int(round(sy))
@@ -5949,7 +5947,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					###print("   BICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
 
 				if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (lima%(max(1,nima/5)) == 0) and (lima>0)):
-					print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
+					sxprint( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
 					##print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin   %10.1fmin"%((time()-at)/60.,eat/60.0))
 				lima += 1
 
@@ -5961,7 +5959,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					if( lenass > 0):
 						###print("   CICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
 						keepfirst = lang*m_coarse_psi*n_coarse_shifts#150#lang*m_coarse_psi*len(coarse_shifts_shrank)  #500#min(200,nlocal_angles)#min(max(lxod1/25,200),lxod1)
-						###if( Blockdata["myid"] == 18 and lima<5):  print(" START   nlocal_angles* m_coarse_psi*len(coarse_shifts_shrank",nlocal_angles,coarse_delta,len(coarse_shifts_shrank),keepfirst)
+						###if( Blockdata["myid"] == 18 and lima<5):  sxprint(" START   nlocal_angles* m_coarse_psi*len(coarse_shifts_shrank",nlocal_angles,coarse_delta,len(coarse_shifts_shrank),keepfirst)
 						#if( Blockdata["myid"] == Blockdata["main_node"] ):
 						lxod1 = Util.multiref_Crosrng_msg_stack_stepsi_local(dataimage, bigbuffer, \
 								coarse_shifts_shrank,\
@@ -5999,7 +5997,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 								##junk = time()
 								temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 								##eat += time()-junk
-								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
+								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
 								temp.set_attr("is_complex",0)
 							##junk = time()
 							xod1[iln] = -Util.sqed(data[ishift], temp, ctfa, bckgnoise)
@@ -6059,12 +6057,12 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						exit()
 					###print("  STARTING8    ",Blockdata["myid"],keepf)
 					Tracker["keepfirst"] = int(keepf)
-					###if( Blockdata["myid"] == 0 ):  print("  keepfirst first ",Tracker["keepfirst"])
+					###if( Blockdata["myid"] == 0 ):  sxprint("  keepfirst first ",Tracker["keepfirst"])
 
 				else:
 					if(lenass>0):
 						###print("   DICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
-						###if( Blockdata["myid"] == 18 and lima<5):  print(" START   nlocal_angles* m_coarse_psi*len(coarse_shifts_shrank",nlocal_angles,coarse_delta,len(coarse_shifts_shrank),Tracker["keepfirst"])
+						###if( Blockdata["myid"] == 18 and lima<5):  sxprint(" START   nlocal_angles* m_coarse_psi*len(coarse_shifts_shrank",nlocal_angles,coarse_delta,len(coarse_shifts_shrank),Tracker["keepfirst"])
 						#if( Blockdata["myid"] == Blockdata["main_node"] ):
 						keepfirst = lang*m_coarse_psi*n_coarse_shifts
 						keepfirst = max(keepfirst*Tracker["keepfirst"]/100,min(keepfirst,3))
@@ -6073,7 +6071,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 								assignments_of_refangles_to_angles[im], assignments_of_refangles_to_cones[icone],\
 								numr, [coarse_angles[i][2] for i in range(n_coarse_ang)], \
 								oldparams[im][2], c_coarse_psi, coarse_delta, cnx, keepfirst)
-						#if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  ")
+						#if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  ")
 						##'''
 						assert( keepfirst == len(lxod1)/3 )
 						xod1 = np.ndarray((keepfirst),dtype='f4',order="C")
@@ -6106,7 +6104,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 								iang = ipsiandiang/100000
 								##junk = time()
 								temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
-								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
+								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
 								##eat += time()-junk
 								temp.set_attr("is_complex",0)
 							##junk = time()
@@ -6124,7 +6122,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 						#if( Blockdata["myid"] == Blockdata["main_node"]):
 						#	#print("  PROJECT   ",im,lit,johi)#,cod2)
-						#	for iln in range(len(xod1)):  print("  ROPE   ",iln,xod1[iln],xod2[iln])
+						#	for iln in range(len(xod1)):  sxprint("  ROPE   ",iln,xod1[iln],xod2[iln])
 
 
 						lina = np.argwhere(xod1 > Tracker["constants"]["expthreshold"])
@@ -6141,8 +6139,8 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 								break
 
 						#  To here
-						###if( Blockdata["myid"] == 18 and lima<5):  print("  SECOND KEPT  ",lit)
-						#if( lima<5):  print("  SECOND KEPT  ",lit)
+						###if( Blockdata["myid"] == 18 and lima<5):  sxprint("  SECOND KEPT  ",lit)
+						#if( lima<5):  sxprint("  SECOND KEPT  ",lit)
 
 
 				#mpi_barrier(MPI_COMM_WORLD)
@@ -6164,7 +6162,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						#try:
 						firstdirections[iln] = [coarse_angles[iang][0], coarse_angles[iang][1], 0.0]
 						#except:
-						#	print(" FAILED  ",Blockdata["myid"],Tracker["keepfirst"],iln,lima,lit,hashparams,iang,xod2[:lit],xod1[:lit])
+						#	sxprint(" FAILED  ",Blockdata["myid"],Tracker["keepfirst"],iln,lima,lit,hashparams,iang,xod2[:lit],xod1[:lit])
 						#	mpi_finalize()
 						#	exit()
 						firstshifts[iln] = ishift
@@ -6172,19 +6170,19 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						#	ipsi = ipsiandiang%100000
 						#	ishift = hashparams%1000
 						#	###print("  SECONDPAR%04d  "%im,iln,hashparams, ipsi,iang,ishift)
-						#	print(" SECONDPAR%04d  "%im,iln, refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, shifts[ishift])
+						#	sxprint(" SECONDPAR%04d  "%im,iln, refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, shifts[ishift])
 					###del xod2
-					###if( Blockdata["myid"] == 18 and lima<5):   print("  SECOND KEPT  ",im,lit)#,len(xod2),xod2,firstdirections,firstshifts)
+					###if( Blockdata["myid"] == 18 and lima<5):   sxprint("  SECOND KEPT  ",im,lit)#,len(xod2),xod2,firstdirections,firstshifts)
 					#mpi_barrier(MPI_COMM_WORLD)
 					#mpi_finalize()
 					#exit()
 
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  FIFI ",firstdirections)
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  GUGU ",firstshifts)
+					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  FIFI ",firstdirections)
+					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  GUGU ",firstshifts)
 					# Find neighbors, ltabang contains positions on refang list, no psis
 					###ltabang = nearest_many_full_k_projangles(refang, firstdirections, howmany = 5, sym=Tracker["constants"]["symmetry"])
 					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
-					###if( Blockdata["myid"] == Blockdata["main_node"]): print("  ltabang ",ltabang)
+					###if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  ltabang ",ltabang)
 					##mpi_barrier(MPI_COMM_WORLD)
 					##mpi_finalize()
 					##exit()
@@ -6194,8 +6192,8 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 
 					###ltabshi = [shiftneighbors[iln] for iln in firstshifts]
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  HUHU ",ltabang)
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  OUOU ",ltabshi)
+					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  HUHU ",ltabang)
+					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  OUOU ",ltabshi)
 
 					#  Prepare image for chi2.
 					#  We have to repeat everything from get shrink data, including shifts
@@ -6216,7 +6214,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						ipsi = ipsiandiang%100000
 						ishift = hashparams%1000
 						tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
-						#if( Blockdata["myid"] == Blockdata["main_node"]): print(" tshifts  ",i1,len(tshifts))
+						#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint(" tshifts  ",i1,len(tshifts))
 						for i2 in range(4):
 							iang = ltabang[i1][i2]
 							for i3 in range(2):  # psi
@@ -6225,12 +6223,12 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 								for i4 in range(len(tshifts)):
 									cod2.append(iang*100000000 + itpsi*1000 + tshifts[i4])
 									#lol += 1
-									#if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  zibzi  ",i1,i2,i3,i4, lol)
+									#if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  zibzi  ",i1,i2,i3,i4, lol)
 
 
 					del xod1, xod2
 
-					###if( Blockdata["myid"] == 18 and lima<5):   print("  THIRD   ",len(cod2))#,cod2)
+					###if( Blockdata["myid"] == 18 and lima<5):   sxprint("  THIRD   ",len(cod2))#,cod2)
 					cod2 = list(set(cod2))
 					cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
 					cod1.sort()
@@ -6244,7 +6242,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					cod3 = np.ndarray(lit,dtype='f4',order="C")
 					#cod3.fill(0.0)  #  varadj
 
-					###if( Blockdata["myid"] == 18 and lima<5): print("  THIRD   ",im,lit)#,cod2)
+					###if( Blockdata["myid"] == 18 and lima<5): sxprint("  THIRD   ",im,lit)#,cod2)
 
 					#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 					#  Third ML part.  Now the actual chi2 distances, we compute reprojections on the fly.
@@ -6255,7 +6253,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					prevdir = -1
 					while(iln<lit):
 						hashparams = cod2[iln]
-						#if( Blockdata["myid"] == Blockdata["main_node"]): print("  COD2   ",im,lit,iln,cod2[iln])
+						#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  COD2   ",im,lit,iln,cod2[iln])
 						ipsiandiang	= hashparams/1000
 						if(ipsiandiang != prevdir):
 							prevdir = ipsiandiang
@@ -6287,10 +6285,10 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						#	ctfa.write_image("ctfa.hdf")
 						#	bckgnoise.write_image("bckgnoise.hdf")
 						#	exit()
-						###if( Blockdata["myid"] == Blockdata["main_node"] and iln%1000 ==0):  print(" progress  ",iln,time()-at)
+						###if( Blockdata["myid"] == Blockdata["main_node"] and iln%1000 ==0):  sxprint(" progress  ",iln,time()-at)
 					#if( Blockdata["myid"] == Blockdata["main_node"]):
-					#	print("  PROJECT   ",im,lit,johi)#,cod2)
-					#	#for iln in range(lit):  print("  ROPE   ",iln,cod1[iln],cod2[iln],cod3[iln])
+					#	sxprint("  PROJECT   ",im,lit,johi)#,cod2)
+					#	#for iln in range(lit):  sxprint("  ROPE   ",iln,cod1[iln],cod2[iln],cod3[iln])
 					del data
 					del dataml
 
@@ -6307,7 +6305,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					###if( Blockdata["myid"] == Blockdata["main_node"]):
 					###for iui in range(len(lina)):
 					###	for iui in range(len(cod1)):
-					###		print("  MLML  ",iui,cod1[iui],exp(cod1[iui]),cod2[iui],cod3[iui])
+					###		sxprint("  MLML  ",iui,cod1[iui],exp(cod1[iui]),cod2[iui],cod3[iui])
 
 					np.exp(cod1, out=cod1)
 					cod1 /= np.sum(cod1)
@@ -6332,9 +6330,9 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						#	iang = ipsiandiang/100000
 						#	ishift = hashparams%1000
 						#	#print("  NEWPAR%04d  "%im,iln,newpar[im][2][-1],hashparams,ipsi,iang,ishift)
-						#	print(" NEWPAR%04d  "%im,iln,newpar[im][2][iln], refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, shifts[ishift])
+						#	sxprint(" NEWPAR%04d  "%im,iln,newpar[im][2][iln], refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, shifts[ishift])
 
-					###if( Blockdata["myid"] == 18 and lima<5):   print("  FINALLY  ",im,lit)
+					###if( Blockdata["myid"] == 18 and lima<5):   sxprint("  FINALLY  ",im,lit)
 					del cod1, cod2, cod3, lina
 					###mpi_barrier(MPI_COMM_WORLD)
 					###mpi_finalize()
@@ -6352,7 +6350,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	#  END OF CONES
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
+		sxprint( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
 	at = time()
 	#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 	#  All images were processed, now to the additional calculations
@@ -6401,7 +6399,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
+		sxprint(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
 	at = time()
 	mpi_barrier(Blockdata["shared_comm"])
@@ -6426,7 +6424,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	#print("  NORMALIZATION DONE  ",Blockdata["myid"])
 	mpi_barrier(MPI_COMM_WORLD)
 	#if( Blockdata["myid"] == Blockdata["main_node"] ):
-	#	print( "  Projection matching finished : %10.1fmin"%((time()-at)/60.))
+	#	sxprint( "  Projection matching finished : %10.1fmin"%((time()-at)/60.))
 	return newpar, norm_per_particle
 
 def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, original_data = None, oldparams = None, \
@@ -6472,7 +6470,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 	wr = ringwe(numr, mode)
 	cnx = float(Tracker["nxpolar"]//2 + 1)
 
-	##if(Blockdata["myid"] == Blockdata["main_node"]):  print("  RADIUS IN POLAR  ",radius,numr[-1])
+	##if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  RADIUS IN POLAR  ",radius,numr[-1])
 	#  FINE SEARCH CONSTANTS
 	nang = len(refang)
 	ac_fine = cos(radians(Tracker["an"]))
@@ -6501,11 +6499,11 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 	for ib in range(n_coarse_shifts):
 		coarse_shifts_shrank[ib] = [coarse_shifts[ib][0]*shrinkage,coarse_shifts[ib][1]*shrinkage]
 
-	###if(Blockdata["myid"] == Blockdata["main_node"]): print("   TRETR  ",Tracker["constants"]["nnxo"],Tracker["nxinit"],reachpw,n_coarse_ang,coarse_delta,n_coarse_psi,m_coarse_psi,c_coarse_psi,n_coarse_shifts)
+	###if(Blockdata["myid"] == Blockdata["main_node"]): sxprint("   TRETR  ",Tracker["constants"]["nnxo"],Tracker["nxinit"],reachpw,n_coarse_ang,coarse_delta,n_coarse_psi,m_coarse_psi,c_coarse_psi,n_coarse_shifts)
 
 	#if(Blockdata["myid"] == Blockdata["main_node"]):
-	#	print( original_data[0].get_attr("identifier") )
-	#	print( original_data[1].get_attr("identifier") )
+	#	sxprint( original_data[0].get_attr("identifier") )
+	#	sxprint( original_data[1].get_attr("identifier") )
 	
 	disp_unit = np.dtype("f4").itemsize
 
@@ -6623,7 +6621,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 		if( Blockdata["myid_on_node"] == 0 ):  volinit.update()
 		mpi_barrier(Blockdata["shared_comm"])
 		###if( Blockdata["myid"] < 10 ):
-		###	print(" VOLPREP  ",volinit[0],volinit[1],info(volinit))
+		###	sxprint(" VOLPREP  ",volinit[0],volinit[1],info(volinit))
 	else: volinit = volprep
 	#  End of replaced volprep
 
@@ -6635,7 +6633,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 	size_of_one_image = crefim.get_xsize()
 	#  We will assume half of the memory is available.  We will do it betteer later.
 	numberofrefs_inmem = int(Tracker["constants"]["memory_per_node"]/4/((size_of_one_image*disp_unit)/1.0e9))
-	####if( Blockdata["myid_on_node"] == 0  ):  print( " MEMEST ", n_coarse_ang,numberofrefs_inmem)
+	####if( Blockdata["myid_on_node"] == 0  ):  sxprint( " MEMEST ", n_coarse_ang,numberofrefs_inmem)
 	#  number of references that will fit into one mode
 	normals_set = angles_to_normals(coarse_angles)
 	Blockdata["angle_set"] = coarse_angles
@@ -6666,7 +6664,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 				#print(  " assignments_of_refangles_to_cones on zero ",i,len(assignments_of_refangles_to_cones[i]) )#,assignments_of_refangles_to_cones[i]
 
 		for i,q in enumerate(assignments_of_refangles_to_cones):
-			###if( Blockdata["myid_on_node"] == 0 ): print( " which refangles belong to which cone",Blockdata["color"],Blockdata["myid"],i,len(q) )#,q
+			###if( Blockdata["myid_on_node"] == 0 ): sxprint( " which refangles belong to which cone",Blockdata["color"],Blockdata["myid"],i,len(q) )#,q
 			assignments_of_refangles_to_cones[i] = wrap_mpi_bcast(q, 0, Blockdata["shared_comm"])
 
 	else:
@@ -6674,13 +6672,13 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 		angledirs = angles_to_normals([u1[:3] for u1 in oldparams])
 
 		number_of_cones = max(2, int(n_coarse_ang/numberofrefs_inmem*1.5 + 0.5))
-		###if Blockdata["myid_on_node"] == 0:  print( " LENGTHS  ",Blockdata["color"],nima,n_coarse_ang, numberofrefs_inmem,number_of_cones)
+		###if Blockdata["myid_on_node"] == 0:  sxprint( " LENGTHS  ",Blockdata["color"],nima,n_coarse_ang, numberofrefs_inmem,number_of_cones)
 		cont = True
 		while  cont :
 			#  Translate number of cones to cone_delta
 			cone_delta, number_of_cones = number_of_cones_to_delta(number_of_cones)
 			#  Generate cone_angles
-			##if Blockdata["myid"] == 0:  print( "  WHILE  ",number_of_cones, cone_delta)
+			##if Blockdata["myid"] == 0:  sxprint( "  WHILE  ",number_of_cones, cone_delta)
 			if(Blockdata["symclass"].sym[0] == "c"):
 				if( number_of_cones == 1 ):
 					cone_delta  = 180.1
@@ -6692,12 +6690,12 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 			else:
 				cone_angles = Blockdata["symclass"].even_angles(cone_delta, theta1=1.0)
 
-			#if Blockdata["myid"] == 0:  print(  "  number of cones ",number_of_cones,cone_delta, len(cone_angles))
+			#if Blockdata["myid"] == 0:  sxprint(  "  number of cones ",number_of_cones,cone_delta, len(cone_angles))
 			assert(number_of_cones == len(cone_angles) )
 
 			conedirs = angles_to_normals(Blockdata["symclass"].symmetry_neighbors(cone_angles))
 			neighbors = len(conedirs)/len(cone_angles)  #  Symmetry related neighbors
-			#if Blockdata["myid"] == 0:  print(  "  neighbors  ",Blockdata["myid"],neighbors, cone_angles)
+			#if Blockdata["myid"] == 0:  sxprint(  "  neighbors  ",Blockdata["myid"],neighbors, cone_angles)
 			#  assign data directions to cone_angles
 			assignments_to_cones = assign_projdirs_f(angledirs, conedirs, neighbors)
 			###print(  " assignments_to_cones ",Blockdata["myid"],len(assignments_to_cones),[len(q) for q in assignments_to_cones],assignments_to_cones[0])
@@ -6711,7 +6709,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 
 			for i,q in enumerate(assignments_to_cones):
 				#  find assignments of refdirs to this cone within an of each angledirs, so we need symmetry neighbors set of refdirs.
-				#if Blockdata["myid"] == 0:  print( "in loop ", Blockdata["myid"],i,len(q),q)
+				#if Blockdata["myid"] == 0:  sxprint( "in loop ", Blockdata["myid"],i,len(q),q)
 
 				if(len(q) == 0):
 					# empty assignment, on a given CPU there are no images assigned to a given cone
@@ -6721,18 +6719,18 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 						#print " m ",m,len(angles)
 
 						assignments_of_refangles_to_angles[m] = find_assignments_of_refangles_to_angles(normals_set, oldparams[m], Tracker["an"])
-						#if Blockdata["myid"] == 0:  print( "assignments_of_refangles_to_angles[m] ", Blockdata["color"],i,m,assignments_of_refangles_to_angles[m])
+						#if Blockdata["myid"] == 0:  sxprint( "assignments_of_refangles_to_angles[m] ", Blockdata["color"],i,m,assignments_of_refangles_to_angles[m])
 						assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
 
-					#if( Blockdata["myid"] == 19 ):  print(  " doit0 ",Blockdata["myid"], i,assignments_of_refangles_to_cones[i],q,assignments_to_cones)
+					#if( Blockdata["myid"] == 19 ):  sxprint(  " doit0 ",Blockdata["myid"], i,assignments_of_refangles_to_cones[i],q,assignments_to_cones)
 					assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
-				###if Blockdata["myid"] == 19:  print(  " assignments_of_refangles_to_cones on myid ",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]), assignments_of_refangles_to_cones[i] )
+				###if Blockdata["myid"] == 19:  sxprint(  " assignments_of_refangles_to_cones on myid ",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]), assignments_of_refangles_to_cones[i] )
 				assignments_of_refangles_to_cones[i] = wrap_mpi_gatherv(assignments_of_refangles_to_cones[i], 0, Blockdata["shared_comm"])
-				###if Blockdata["myid"] == 0:  print(  " assignments_of_refangles_to_cones gatherv",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]) )
+				###if Blockdata["myid"] == 0:  sxprint(  " assignments_of_refangles_to_cones gatherv",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]) )
 				doit = 1
 				if( Blockdata["myid_on_node"] == 0 ):
 					assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i])-set([-1]))
-					###if( Blockdata["myid_on_node"] == 0 ):  print(  " assignments_of_refangles_to_cones on zero ",i,len(assignments_of_refangles_to_cones[i]))
+					###if( Blockdata["myid_on_node"] == 0 ):  sxprint(  " assignments_of_refangles_to_cones on zero ",i,len(assignments_of_refangles_to_cones[i]))
 					#  POSSIBLE PROBLEM - IT IS POSSIBLE FOR A GIVEN CONE TO HAVE NO REFANGLES AND THUS BE EMPTY
 					if( len(assignments_of_refangles_to_cones[i]) > numberofrefs_inmem ):
 						number_of_cones = int(number_of_cones*1.25)
@@ -6740,7 +6738,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 						doit = 0
 				doit = bcast_number_to_all(doit, source_node = 0)
 				number_of_cones = bcast_number_to_all(number_of_cones, source_node = 0, mpi_comm = Blockdata["shared_comm"] )
-				###if( Blockdata["myid"] == 19 ):  print(  " doit ",Blockdata["myid"], i,doit ,assignments_of_refangles_to_cones[i],assignments_to_cones)
+				###if( Blockdata["myid"] == 19 ):  sxprint(  " doit ",Blockdata["myid"], i,doit ,assignments_of_refangles_to_cones[i],assignments_to_cones)
 				if( doit == 0 ):  break
 
 			if( doit == 1 ):
@@ -6748,13 +6746,13 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 
 
 		for i,q in enumerate(assignments_of_refangles_to_cones):
-			###if( Blockdata["myid_on_node"] == 0 ): print( " which refangles belong to which cone IOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
+			###if( Blockdata["myid_on_node"] == 0 ): sxprint( " which refangles belong to which cone IOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
 			assignments_of_refangles_to_cones[i] = wrap_mpi_bcast(q, 0, Blockdata["shared_comm"])
-			###if( Blockdata["myid_on_node"] == 0 ): print( " which refangles belong to which cone XOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
+			###if( Blockdata["myid_on_node"] == 0 ): sxprint( " which refangles belong to which cone XOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
 			#if( myid == 1 ):
 			#	print " which refangles belong to which cone",myid,i,len(assignments_of_refangles_to_cones[i])#,q
 
-	if( Blockdata["myid"] == 0  ):  print( " number_of_cones: ",number_of_cones)
+	if( Blockdata["myid"] == 0  ):  sxprint( " number_of_cones: ",number_of_cones)
 	
 	#mpi_barrier(MPI_COMM_WORLD)
 	#mpi_finalize()
@@ -6769,7 +6767,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 	numberofrefs_inmem = max([len(q) for q in assignments_of_refangles_to_cones])
 
 	###for i,q in enumerate(assignments_of_refangles_to_cones):
-	###	print( " which refangles belong to which cone OUT ",Blockdata["color"],Blockdata["myid_on_node"],Blockdata["myid"],i,numberofrefs_inmem,nlocal_angles,len(q))#,q
+	###	sxprint( " which refangles belong to which cone OUT ",Blockdata["color"],Blockdata["myid_on_node"],Blockdata["myid"],i,numberofrefs_inmem,nlocal_angles,len(q))#,q
 
 	#  BIG BUFFER
 	lenbigbuf = numberofrefs_inmem  #MAXIMUM NUMBER OF REFERENCE IN ONE OF THE CONES
@@ -6793,9 +6791,9 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 	#  end of CONES setup
 
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  " )
+		sxprint( "  " )
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,orgsize/1.0e9) )
+		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,orgsize/1.0e9) )
 
 	#  Note these are in Fortran notation for polar searches
 	txm    	= float(Tracker["nxpolar"]-(Tracker["nxpolar"]//2+1) - radius)
@@ -6834,7 +6832,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 
 
 	#if( Blockdata["myid_on_node"] == 0):
-	#	print("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, nlocal_angles, n_coarse_psi, len(list_of_coarse_shifts), number_of_cones , max_number_of_cones ",nima, nang,npsi,nshifts,n_coarse_ang,nlocal_angles,n_coarse_psi, len(coarse_shifts),number_of_cones,max_number_of_cones)
+	#	sxprint("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, nlocal_angles, n_coarse_psi, len(list_of_coarse_shifts), number_of_cones , max_number_of_cones ",nima, nang,npsi,nshifts,n_coarse_ang,nlocal_angles,n_coarse_psi, len(coarse_shifts),number_of_cones,max_number_of_cones)
 
 	##firsti = True
 	at = time()
@@ -6859,7 +6857,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 			mpi_barrier(Blockdata["shared_comm"])
 
 			#if(Blockdata["myid"] == Blockdata["main_node"]):
-			#	print( "  Reference projections generated for cone %4d: %10.1fmin"%(icone,(time()-at)/60.))
+			#	sxprint( "  Reference projections generated for cone %4d: %10.1fmin"%(icone,(time()-at)/60.))
 			###print("  TOPOP    ",Blockdata["myid"],MPI_COMM_WORLD,len(assignments_to_cones[icone]))
 			###mpi_finalize()
 			###exit()
@@ -6881,7 +6879,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 
 					phi,theta,psi,sx,sy, wnorm = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4], oldparams[im][7]
 
-					#  CONTROLPRINTOUT   if( Blockdata["myid"] == Blockdata["main_node"] and icnm<5):  print("\n\n  INPUT PARAMS  ",im,phi,theta,psi,sx,sy)
+					#  CONTROLPRINTOUT   if( Blockdata["myid"] == Blockdata["main_node"] and icnm<5):  sxprint("\n\n  INPUT PARAMS  ",im,phi,theta,psi,sx,sy)
 					if preshift:
 						sx = int(round(sx))
 						sy = int(round(sy))
@@ -6965,7 +6963,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 					###print("   BICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
 
 				if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (lima%(max(1,nima/5)) == 0) and (lima>0)):
-					print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
+					sxprint( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
 					##print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin   %10.1fmin"%((time()-at)/60.,eat/60.0))
 				lima += 1
 
@@ -6975,7 +6973,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 					if( lenass > 0):
 						###print("   CICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
 						keepfirst = lang*m_coarse_psi*n_coarse_shifts#150#lang*m_coarse_psi*len(coarse_shifts_shrank)  #500#min(200,nlocal_angles)#min(max(lxod1/25,200),lxod1)
-						###if( Blockdata["myid"] == 18 and lima<5):  print(" START   nlocal_angles* m_coarse_psi*len(coarse_shifts_shrank",nlocal_angles,coarse_delta,len(coarse_shifts_shrank),keepfirst)
+						###if( Blockdata["myid"] == 18 and lima<5):  sxprint(" START   nlocal_angles* m_coarse_psi*len(coarse_shifts_shrank",nlocal_angles,coarse_delta,len(coarse_shifts_shrank),keepfirst)
 						#if( Blockdata["myid"] == Blockdata["main_node"] ):  
 						lxod1 = Util.multiref_Crosrng_msg_stack_stepsi_local(dataimage, bigbuffer, \
 								coarse_shifts_shrank,\
@@ -7014,7 +7012,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 								##junk = time()
 								temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 								##eat += time()-junk
-								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
+								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
 								temp.set_attr("is_complex",0)
 								nrmref = sqrt(Util.innerproduct(temp, temp, None))
 							##junk = time()
@@ -7079,12 +7077,12 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 						exit()
 					###print("  STARTING8    ",Blockdata["myid"],keepf)
 					Tracker["keepfirst"] = int(keepf)
-					###if( Blockdata["myid"] == 0 ):  print("  keepfirst first ",Tracker["keepfirst"])
+					###if( Blockdata["myid"] == 0 ):  sxprint("  keepfirst first ",Tracker["keepfirst"])
 
 				else:
 					if(lenass>0):
 						###print("   DICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
-						###if( Blockdata["myid"] == 18 and lima<5):  print(" START   nlocal_angles* m_coarse_psi*len(coarse_shifts_shrank",nlocal_angles,coarse_delta,len(coarse_shifts_shrank),Tracker["keepfirst"])
+						###if( Blockdata["myid"] == 18 and lima<5):  sxprint(" START   nlocal_angles* m_coarse_psi*len(coarse_shifts_shrank",nlocal_angles,coarse_delta,len(coarse_shifts_shrank),Tracker["keepfirst"])
 						#if( Blockdata["myid"] == Blockdata["main_node"] ):
 						keepfirst = lang*m_coarse_psi*n_coarse_shifts
 						keepfirst = max(keepfirst*Tracker["keepfirst"]/100,min(keepfirst,3))
@@ -7093,7 +7091,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 								assignments_of_refangles_to_angles[im], assignments_of_refangles_to_cones[icone],\
 								numr, [coarse_angles[i][2] for i in range(n_coarse_ang)], \
 								oldparams[im][2], c_coarse_psi, coarse_delta, cnx, keepfirst)
-						#if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  ")
+						#if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  ")
 						##'''
 						assert( keepfirst == len(lxod1)/3 )
 						xod1 = np.ndarray((keepfirst),dtype='f4',order="C")
@@ -7126,7 +7124,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 								iang = ipsiandiang/100000
 								##junk = time()
 								temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
-								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
+								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
 								##eat += time()-junk
 								temp.set_attr("is_complex",0)
 							##junk = time()
@@ -7144,7 +7142,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 
 						#if( Blockdata["myid"] == Blockdata["main_node"]):
 						#	#print("  PROJECT   ",im,lit,johi)#,cod2)
-						#	for iln in range(len(xod1)):  print("  ROPE   ",iln,xod1[iln],xod2[iln])
+						#	for iln in range(len(xod1)):  sxprint("  ROPE   ",iln,xod1[iln],xod2[iln])
 
 
 						lina = np.argwhere(xod1 > Tracker["constants"]["expthreshold"])
@@ -7161,8 +7159,8 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 								break
 
 						#  To here
-						###if( Blockdata["myid"] == 18 and lima<5):  print("  SECOND KEPT  ",lit)
-						#if( lima<5):  print("  SECOND KEPT  ",lit)
+						###if( Blockdata["myid"] == 18 and lima<5):  sxprint("  SECOND KEPT  ",lit)
+						#if( lima<5):  sxprint("  SECOND KEPT  ",lit)
 
 
 				#mpi_barrier(MPI_COMM_WORLD)
@@ -7184,7 +7182,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 						#try:
 						firstdirections[iln] = [coarse_angles[iang][0], coarse_angles[iang][1], 0.0]
 						#except:
-						#	print(" FAILED  ",Blockdata["myid"],Tracker["keepfirst"],iln,lima,lit,hashparams,iang,xod2[:lit],xod1[:lit])
+						#	sxprint(" FAILED  ",Blockdata["myid"],Tracker["keepfirst"],iln,lima,lit,hashparams,iang,xod2[:lit],xod1[:lit])
 						#	mpi_finalize()
 						#	exit()
 						firstshifts[iln] = ishift
@@ -7192,19 +7190,19 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 						#	ipsi = ipsiandiang%100000
 						#	ishift = hashparams%1000
 						#	###print("  SECONDPAR%04d  "%im,iln,hashparams, ipsi,iang,ishift)
-						#	print(" SECONDPAR%04d  "%im,iln, refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, shifts[ishift])
+						#	sxprint(" SECONDPAR%04d  "%im,iln, refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, shifts[ishift])
 					###del xod2
-					###if( Blockdata["myid"] == 18 and lima<5):   print("  SECOND KEPT  ",im,lit)#,len(xod2),xod2,firstdirections,firstshifts)
+					###if( Blockdata["myid"] == 18 and lima<5):   sxprint("  SECOND KEPT  ",im,lit)#,len(xod2),xod2,firstdirections,firstshifts)
 					#mpi_barrier(MPI_COMM_WORLD)
 					#mpi_finalize()
 					#exit()
 
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  FIFI ",firstdirections)
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  GUGU ",firstshifts)
+					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  FIFI ",firstdirections)
+					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  GUGU ",firstshifts)
 					# Find neighbors, ltabang contains positions on refang list, no psis
 					###ltabang = nearest_many_full_k_projangles(refang, firstdirections, howmany = 5, sym=Tracker["constants"]["symmetry"])
 					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
-					###if( Blockdata["myid"] == Blockdata["main_node"]): print("  ltabang ",ltabang)
+					###if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  ltabang ",ltabang)
 					##mpi_barrier(MPI_COMM_WORLD)
 					##mpi_finalize()
 					##exit()
@@ -7214,8 +7212,8 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 
 
 					###ltabshi = [shiftneighbors[iln] for iln in firstshifts]
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  HUHU ",ltabang)
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  OUOU ",ltabshi)
+					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  HUHU ",ltabang)
+					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  OUOU ",ltabshi)
 
 					#  Prepare image for chi2.
 					#  We have to repeat everything from get shrink data, including shifts
@@ -7236,7 +7234,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 						ipsi = ipsiandiang%100000
 						ishift = hashparams%1000
 						tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
-						#if( Blockdata["myid"] == Blockdata["main_node"]): print(" tshifts  ",i1,len(tshifts))
+						#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint(" tshifts  ",i1,len(tshifts))
 						for i2 in range(4):
 							iang = ltabang[i1][i2]
 							for i3 in range(2):  # psi
@@ -7245,12 +7243,12 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 								for i4 in range(len(tshifts)):
 									cod2.append(iang*100000000 + itpsi*1000 + tshifts[i4])
 									#lol += 1
-									#if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  zibzi  ",i1,i2,i3,i4, lol)
+									#if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  zibzi  ",i1,i2,i3,i4, lol)
 
 
 					del xod1, xod2
 
-					###if( Blockdata["myid"] == 18 and lima<5):   print("  THIRD   ",len(cod2))#,cod2)
+					###if( Blockdata["myid"] == 18 and lima<5):   sxprint("  THIRD   ",len(cod2))#,cod2)
 					cod2 = list(set(cod2))
 					cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
 					cod1.sort()
@@ -7264,7 +7262,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 					cod3 = np.ndarray(lit,dtype='f4',order="C")
 					#cod3.fill(0.0)  #  varadj
 
-					###if( Blockdata["myid"] == 18 and lima<5): print("  THIRD   ",im,lit)#,cod2)
+					###if( Blockdata["myid"] == 18 and lima<5): sxprint("  THIRD   ",im,lit)#,cod2)
 
 					#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 					#  Third ML part.  Now the actual chi2 distances, we compute reprojections on the fly.
@@ -7275,7 +7273,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 					prevdir = -1
 					while(iln<lit):
 						hashparams = cod2[iln]
-						#if( Blockdata["myid"] == Blockdata["main_node"]): print("  COD2   ",im,lit,iln,cod2[iln])
+						#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  COD2   ",im,lit,iln,cod2[iln])
 						ipsiandiang	= hashparams/1000
 						if(ipsiandiang != prevdir):
 							prevdir = ipsiandiang
@@ -7307,10 +7305,10 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 						#	ctfa.write_image("ctfa.hdf")
 						#	bckgnoise.write_image("bckgnoise.hdf")
 						#	exit()
-						###if( Blockdata["myid"] == Blockdata["main_node"] and iln%1000 ==0):  print(" progress  ",iln,time()-at)
+						###if( Blockdata["myid"] == Blockdata["main_node"] and iln%1000 ==0):  sxprint(" progress  ",iln,time()-at)
 					#if( Blockdata["myid"] == Blockdata["main_node"]):
-					#	print("  PROJECT   ",im,lit,johi)#,cod2)
-					#	#for iln in range(lit):  print("  ROPE   ",iln,cod1[iln],cod2[iln],cod3[iln])
+					#	sxprint("  PROJECT   ",im,lit,johi)#,cod2)
+					#	#for iln in range(lit):  sxprint("  ROPE   ",iln,cod1[iln],cod2[iln],cod3[iln])
 					del data
 					del dataml
 
@@ -7327,7 +7325,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 					###if( Blockdata["myid"] == Blockdata["main_node"]):
 					###for iui in range(len(lina)):
 					###	for iui in range(len(cod1)):
-					###		print("  MLML  ",iui,cod1[iui],exp(cod1[iui]),cod2[iui],cod3[iui])
+					###		sxprint("  MLML  ",iui,cod1[iui],exp(cod1[iui]),cod2[iui],cod3[iui])
 
 					np.exp(cod1, out=cod1)
 					cod1 /= np.sum(cod1)
@@ -7352,9 +7350,9 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 						#	iang = ipsiandiang/100000
 						#	ishift = hashparams%1000
 						#	#print("  NEWPAR%04d  "%im,iln,newpar[im][2][-1],hashparams,ipsi,iang,ishift)
-						#	print(" NEWPAR%04d  "%im,iln,newpar[im][2][iln], refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, shifts[ishift])
+						#	sxprint(" NEWPAR%04d  "%im,iln,newpar[im][2][iln], refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, shifts[ishift])
 
-					###if( Blockdata["myid"] == 18 and lima<5):   print("  FINALLY  ",im,lit)
+					###if( Blockdata["myid"] == 18 and lima<5):   sxprint("  FINALLY  ",im,lit)
 					del cod1, cod2, cod3, lina
 					###mpi_barrier(MPI_COMM_WORLD)
 					###mpi_finalize()
@@ -7372,7 +7370,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 	#  END OF CONES
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
+		sxprint( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
 	at = time()
 	#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 	#  All images were processed, now to the additional calculations
@@ -7421,7 +7419,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 	#print("  NORMALIZATION DONE  ",Blockdata["myid"])
 	mpi_barrier(MPI_COMM_WORLD)
 	#if( Blockdata["myid"] == Blockdata["main_node"] ):
-	#	print( "  Projection matching finished : %10.1fmin"%((time()-at)/60.))
+	#	sxprint( "  Projection matching finished : %10.1fmin"%((time()-at)/60.))
 	return newpar, [1.0]*nima
 
 def cerrs(params, ctfs, particle_groups):
@@ -7539,7 +7537,7 @@ def cerrs(params, ctfs, particle_groups):
 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line,"Estimated accuracy of angles = %6.2f degrees; and shifts = %5.1f pixels"%(acc_rot,acc_trans) )
+		sxprint(line,"Estimated accuracy of angles = %6.2f degrees; and shifts = %5.1f pixels"%(acc_rot,acc_trans) )
 
 	Tracker["acc_rot"] = acc_rot
 	Tracker["acc_trans"] = acc_trans
@@ -7554,10 +7552,10 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 		carryon = 1
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		if(Blockdata["subgroup_myid"] == Blockdata["main_node"]):
-			print(line, "do_final_rec3d")
-			print("Reconstruction uses solution of %d iteration"%final_iter)
-			print("Final reconstruction image size is:  %d"%(Tracker["constants"]["nnxo"]))
-			print("Final directory is %s"%(Tracker["directory"]))
+			sxprint(line, "do_final_rec3d")
+			sxprint("Reconstruction uses solution of %d iteration"%final_iter)
+			sxprint("Final reconstruction image size is:  %d"%(Tracker["constants"]["nnxo"]))
+			sxprint("Final directory is %s"%(Tracker["directory"]))
 		final_dir = Tracker["directory"]
 		if(Blockdata["subgroup_myid"] == Blockdata["main_node"]):
 			try:
@@ -7655,7 +7653,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 			original_data[procid]  = None
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			if(Blockdata["subgroup_myid"] == Blockdata["nodes"][procid]):
-				print(line, "3-D reconstruction of group %d"%procid)
+				sxprint(line, "3-D reconstruction of group %d"%procid)
 			###--------------------------------------------------------- Force 
 			Tracker["directory"]    = Tracker["constants"]["masterdir"]
 			Tracker["nxinit"]       = Tracker["constants"]["nnxo"]
@@ -7671,7 +7669,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 	mpi_barrier(MPI_COMM_WORLD)
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if Blockdata["myid"] == Blockdata["main_node"]: 
-		print(line, "final rec3d_make_maps")
+		sxprint(line, "final rec3d_make_maps")
 	rec3d_make_maps(compute_fsc = False, regularized = False)
 	
 	# also copy params to masterdir as final params
@@ -7696,7 +7694,7 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 				fout    = open(os.path.join(masterdir, "Tracker_final.json"),'r')
 				Tracker = convert_json_fromunicode(json.load(fout))
 				fout.close()
-				print("The best solution is %d  "%Tracker["constants"]["best"])
+				sxprint("The best solution is %d  "%Tracker["constants"]["best"])
 				do_final_iter =  Tracker["constants"]["best"] # set the best as do_final iteration
 			except: carryon = 0
 		carryon = bcast_number_to_all(carryon)
@@ -7706,7 +7704,7 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 	elif( do_final_iter_init == -1 ): do_final_iter = Tracker["constants"]["best"]
 	else:
 		do_final_iter = do_final_iter_init
-		if(Blockdata["myid"] == Blockdata["main_node"]): print("User selected %d iteration to compute the 3D reconstruction "%do_final_iter)
+		if(Blockdata["myid"] == Blockdata["main_node"]): sxprint("User selected %d iteration to compute the 3D reconstruction "%do_final_iter)
 		if do_final_iter<=2:
 			ERROR("The selected iteration should be larger than 2", "recons3d_final", 1, Blockdata["myid"])
 			
@@ -7736,7 +7734,7 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 		#  Estimated data size
 		data_size = max(Tracker["nima_per_chunk"])*4*float(Tracker["constants"]["nnxo"]**2)/float(Blockdata["no_of_groups"])/1.0e9
 		nnprocs  =  min( Blockdata["no_of_processes_per_group"], int(((memory_per_node - data_size*1.2) / volume_size ) ) )
-		print("  MEMORY ESTIMATION.  memory per node = %6.1fGB,  volume size = %6.2fGB, data size per node = %6.2fGB, estimated number of CPUs = %d"%(memory_per_node,volume_size,data_size,nnprocs))
+		sxprint("  MEMORY ESTIMATION.  memory per node = %6.1fGB,  volume size = %6.2fGB, data size per node = %6.2fGB, estimated number of CPUs = %d"%(memory_per_node,volume_size,data_size,nnprocs))
 		if( (memory_per_node - data_size*1.2 - volume_size) < 0 or (nnprocs == 0)):  nogo = 1
 		else:  nogo = 0
 	else:
@@ -7764,7 +7762,7 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 	mpi_barrier(MPI_COMM_WORLD)
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		print(line, "Final reconstruction is successfully done")
+		sxprint(line, "Final reconstruction is successfully done")
 	return
 
 def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, original_data = None, oldparams = None, \
@@ -7811,7 +7809,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 	wr = ringwe(numr, mode)
 	cnx = float(Tracker["nxpolar"]//2 + 1)
 
-	##if(Blockdata["myid"] == Blockdata["main_node"]):  print("  RADIUS IN POLAR  ",radius,numr[-1])
+	##if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  RADIUS IN POLAR  ",radius,numr[-1])
 	#  FINE SEARCH CONSTANTS
 	nang = len(refang)
 	ac_fine = cos(radians(Tracker["an"]))
@@ -7840,11 +7838,11 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 	for ib in range(n_coarse_shifts):
 		coarse_shifts_shrank[ib] = [coarse_shifts[ib][0]*shrinkage,coarse_shifts[ib][1]*shrinkage]
 
-	###if(Blockdata["myid"] == Blockdata["main_node"]): print("   TRETR  ",Tracker["constants"]["nnxo"],Tracker["nxinit"],reachpw,n_coarse_ang,coarse_delta,n_coarse_psi,m_coarse_psi,c_coarse_psi,n_coarse_shifts)
+	###if(Blockdata["myid"] == Blockdata["main_node"]): sxprint("   TRETR  ",Tracker["constants"]["nnxo"],Tracker["nxinit"],reachpw,n_coarse_ang,coarse_delta,n_coarse_psi,m_coarse_psi,c_coarse_psi,n_coarse_shifts)
 
 	#if(Blockdata["myid"] == Blockdata["main_node"]):
-	#	print( original_data[0].get_attr("identifier") )
-	#	print( original_data[1].get_attr("identifier") )
+	#	sxprint( original_data[0].get_attr("identifier") )
+	#	sxprint( original_data[1].get_attr("identifier") )
 
 	disp_unit = np.dtype("f4").itemsize
 
@@ -7962,7 +7960,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 		if( Blockdata["myid_on_node"] == 0 ):  volinit.update()
 		mpi_barrier(Blockdata["shared_comm"])
 		###if( Blockdata["myid"] < 10 ):
-		###	print(" VOLPREP  ",volinit[0],volinit[1],info(volinit))
+		###	sxprint(" VOLPREP  ",volinit[0],volinit[1],info(volinit))
 	else:
 		volinit = volprep
 	#  End of replaced volprep
@@ -7975,7 +7973,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 	size_of_one_image = crefim.get_xsize()
 	#  We will assume half of the memory is available.  We will do it betteer later.
 	numberofrefs_inmem = int(Tracker["constants"]["memory_per_node"]/4/((size_of_one_image*disp_unit)/1.0e9))
-	####if( Blockdata["myid_on_node"] == 0  ):  print( " MEMEST ", n_coarse_ang,numberofrefs_inmem)
+	####if( Blockdata["myid_on_node"] == 0  ):  sxprint( " MEMEST ", n_coarse_ang,numberofrefs_inmem)
 	#  number of references that will fit into one mode
 	normals_set = angles_to_normals(coarse_angles)
 	Blockdata["angle_set"] = coarse_angles
@@ -8006,7 +8004,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 				#print(  " assignments_of_refangles_to_cones on zero ",i,len(assignments_of_refangles_to_cones[i]) )#,assignments_of_refangles_to_cones[i]
 
 		for i,q in enumerate(assignments_of_refangles_to_cones):
-			###if( Blockdata["myid_on_node"] == 0 ): print( " which refangles belong to which cone",Blockdata["color"],Blockdata["myid"],i,len(q) )#,q
+			###if( Blockdata["myid_on_node"] == 0 ): sxprint( " which refangles belong to which cone",Blockdata["color"],Blockdata["myid"],i,len(q) )#,q
 			assignments_of_refangles_to_cones[i] = wrap_mpi_bcast(q, 0, Blockdata["shared_comm"])
 
 	else:
@@ -8014,13 +8012,13 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 		angledirs = angles_to_normals([u1[:3] for u1 in oldparams])
 
 		number_of_cones = max(2, int(n_coarse_ang/numberofrefs_inmem*1.5 + 0.5))
-		###if Blockdata["myid_on_node"] == 0:  print( " LENGTHS  ",Blockdata["color"],nima,n_coarse_ang, numberofrefs_inmem,number_of_cones)
+		###if Blockdata["myid_on_node"] == 0:  sxprint( " LENGTHS  ",Blockdata["color"],nima,n_coarse_ang, numberofrefs_inmem,number_of_cones)
 		cont = True
 		while  cont :
 			#  Translate number of cones to cone_delta
 			cone_delta, number_of_cones = number_of_cones_to_delta(number_of_cones)
 			#  Generate cone_angles
-			##if Blockdata["myid"] == 0:  print( "  WHILE  ",number_of_cones, cone_delta)
+			##if Blockdata["myid"] == 0:  sxprint( "  WHILE  ",number_of_cones, cone_delta)
 			if(Blockdata["symclass"].sym[0] == "c"):
 				if( number_of_cones == 1 ):
 					cone_delta  = 180.1
@@ -8032,12 +8030,12 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 			else:
 				cone_angles = Blockdata["symclass"].even_angles(cone_delta, theta1=1.0)
 
-			#if Blockdata["myid"] == 0:  print(  "  number of cones ",number_of_cones,cone_delta, len(cone_angles))
+			#if Blockdata["myid"] == 0:  sxprint(  "  number of cones ",number_of_cones,cone_delta, len(cone_angles))
 			assert(number_of_cones == len(cone_angles) )
 
 			conedirs = angles_to_normals(Blockdata["symclass"].symmetry_neighbors(cone_angles))
 			neighbors = len(conedirs)/len(cone_angles)  #  Symmetry related neighbors
-			#if Blockdata["myid"] == 0:  print(  "  neighbors  ",Blockdata["myid"],neighbors, cone_angles)
+			#if Blockdata["myid"] == 0:  sxprint(  "  neighbors  ",Blockdata["myid"],neighbors, cone_angles)
 			#  assign data directions to cone_angles
 			assignments_to_cones = assign_projdirs_f(angledirs, conedirs, neighbors)
 			###print(  " assignments_to_cones ",Blockdata["myid"],len(assignments_to_cones),[len(q) for q in assignments_to_cones],assignments_to_cones[0])
@@ -8051,7 +8049,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 
 			for i,q in enumerate(assignments_to_cones):
 				#  find assignments of refdirs to this cone within an of each angledirs, so we need symmetry neighbors set of refdirs.
-				#if Blockdata["myid"] == 0:  print( "in loop ", Blockdata["myid"],i,len(q),q)
+				#if Blockdata["myid"] == 0:  sxprint( "in loop ", Blockdata["myid"],i,len(q),q)
 
 				if(len(q) == 0):
 					# empty assignment, on a given CPU there are no images assigned to a given cone
@@ -8061,18 +8059,18 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 						#print " m ",m,len(angles)
 
 						assignments_of_refangles_to_angles[m] = find_assignments_of_refangles_to_angles(normals_set, oldparams[m], Tracker["an"])
-						#if Blockdata["myid"] == 0:  print( "assignments_of_refangles_to_angles[m] ", Blockdata["color"],i,m,assignments_of_refangles_to_angles[m])
+						#if Blockdata["myid"] == 0:  sxprint( "assignments_of_refangles_to_angles[m] ", Blockdata["color"],i,m,assignments_of_refangles_to_angles[m])
 						assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
 
-					#if( Blockdata["myid"] == 19 ):  print(  " doit0 ",Blockdata["myid"], i,assignments_of_refangles_to_cones[i],q,assignments_to_cones)
+					#if( Blockdata["myid"] == 19 ):  sxprint(  " doit0 ",Blockdata["myid"], i,assignments_of_refangles_to_cones[i],q,assignments_to_cones)
 					assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
-				###if Blockdata["myid"] == 19:  print(  " assignments_of_refangles_to_cones on myid ",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]), assignments_of_refangles_to_cones[i] )
+				###if Blockdata["myid"] == 19:  sxprint(  " assignments_of_refangles_to_cones on myid ",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]), assignments_of_refangles_to_cones[i] )
 				assignments_of_refangles_to_cones[i] = wrap_mpi_gatherv(assignments_of_refangles_to_cones[i], 0, Blockdata["shared_comm"])
-				###if Blockdata["myid"] == 0:  print(  " assignments_of_refangles_to_cones gatherv",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]) )
+				###if Blockdata["myid"] == 0:  sxprint(  " assignments_of_refangles_to_cones gatherv",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]) )
 				doit = 1
 				if( Blockdata["myid_on_node"] == 0 ):
 					assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i])-set([-1]))
-					###if( Blockdata["myid_on_node"] == 0 ):  print(  " assignments_of_refangles_to_cones on zero ",i,len(assignments_of_refangles_to_cones[i]))
+					###if( Blockdata["myid_on_node"] == 0 ):  sxprint(  " assignments_of_refangles_to_cones on zero ",i,len(assignments_of_refangles_to_cones[i]))
 					#  POSSIBLE PROBLEM - IT IS POSSIBLE FOR A GIVEN CONE TO HAVE NO REFANGLES AND THUS BE EMPTY
 					if( len(assignments_of_refangles_to_cones[i]) > numberofrefs_inmem ):
 						number_of_cones = int(number_of_cones*1.25)
@@ -8080,7 +8078,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 						doit = 0
 				doit = bcast_number_to_all(doit, source_node = 0)
 				number_of_cones = bcast_number_to_all(number_of_cones, source_node = 0, mpi_comm = Blockdata["shared_comm"] )
-				###if( Blockdata["myid"] == 19 ):  print(  " doit ",Blockdata["myid"], i,doit ,assignments_of_refangles_to_cones[i],assignments_to_cones)
+				###if( Blockdata["myid"] == 19 ):  sxprint(  " doit ",Blockdata["myid"], i,doit ,assignments_of_refangles_to_cones[i],assignments_to_cones)
 				if( doit == 0 ):  break
 
 			if( doit == 1 ):
@@ -8088,13 +8086,13 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 
 
 		for i,q in enumerate(assignments_of_refangles_to_cones):
-			###if( Blockdata["myid_on_node"] == 0 ): print( " which refangles belong to which cone IOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
+			###if( Blockdata["myid_on_node"] == 0 ): sxprint( " which refangles belong to which cone IOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
 			assignments_of_refangles_to_cones[i] = wrap_mpi_bcast(q, 0, Blockdata["shared_comm"])
-			###if( Blockdata["myid_on_node"] == 0 ): print( " which refangles belong to which cone XOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
+			###if( Blockdata["myid_on_node"] == 0 ): sxprint( " which refangles belong to which cone XOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
 			#if( myid == 1 ):
 			#	print " which refangles belong to which cone",myid,i,len(assignments_of_refangles_to_cones[i])#,q
 
-	if( Blockdata["myid"] == 0  ):  print( " number_of_cones: ",number_of_cones)
+	if( Blockdata["myid"] == 0  ):  sxprint( " number_of_cones: ",number_of_cones)
 	
 	#mpi_barrier(MPI_COMM_WORLD)
 	#mpi_finalize()
@@ -8109,7 +8107,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 	numberofrefs_inmem = max([len(q) for q in assignments_of_refangles_to_cones])
 
 	###for i,q in enumerate(assignments_of_refangles_to_cones):
-	###	print( " which refangles belong to which cone OUT ",Blockdata["color"],Blockdata["myid_on_node"],Blockdata["myid"],i,numberofrefs_inmem,nlocal_angles,len(q))#,q
+	###	sxprint( " which refangles belong to which cone OUT ",Blockdata["color"],Blockdata["myid_on_node"],Blockdata["myid"],i,numberofrefs_inmem,nlocal_angles,len(q))#,q
 
 	#  BIG BUFFER
 	lenbigbuf = numberofrefs_inmem  #MAXIMUM NUMBER OF REFERENCE IN ONE OF THE CONES
@@ -8133,9 +8131,9 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 	#  end of CONES setup
 
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  " )
+		sxprint( "  " )
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,orgsize/1.0e9) )
+		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,orgsize/1.0e9) )
 
 	#  Note these are in Fortran notation for polar searches
 	txm    	= float(Tracker["nxpolar"]-(Tracker["nxpolar"]//2+1) - radius)
@@ -8174,7 +8172,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 
 
 	#if( Blockdata["myid_on_node"] == 0):
-	#	print("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, nlocal_angles, n_coarse_psi, len(list_of_coarse_shifts), number_of_cones , max_number_of_cones ",nima, nang,npsi,nshifts,n_coarse_ang,nlocal_angles,n_coarse_psi, len(coarse_shifts),number_of_cones,max_number_of_cones)
+	#	sxprint("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, nlocal_angles, n_coarse_psi, len(list_of_coarse_shifts), number_of_cones , max_number_of_cones ",nima, nang,npsi,nshifts,n_coarse_ang,nlocal_angles,n_coarse_psi, len(coarse_shifts),number_of_cones,max_number_of_cones)
 
 	##firsti = True
 	at = time()
@@ -8199,7 +8197,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 			mpi_barrier(Blockdata["shared_comm"])
 
 			#if(Blockdata["myid"] == Blockdata["main_node"]):
-			#	print( "  Reference projections generated for cone %4d: %10.1fmin"%(icone,(time()-at)/60.))
+			#	sxprint( "  Reference projections generated for cone %4d: %10.1fmin"%(icone,(time()-at)/60.))
 			###print("  TOPOP    ",Blockdata["myid"],MPI_COMM_WORLD,len(assignments_to_cones[icone]))
 			###mpi_finalize()
 			###exit()
@@ -8221,7 +8219,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 
 					phi,theta,psi,sx,sy, wnorm = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4], oldparams[im][7]
 
-					#  CONTROLPRINTOUT   if( Blockdata["myid"] == Blockdata["main_node"] and icnm<5):  print("\n\n  INPUT PARAMS  ",im,phi,theta,psi,sx,sy)
+					#  CONTROLPRINTOUT   if( Blockdata["myid"] == Blockdata["main_node"] and icnm<5):  sxprint("\n\n  INPUT PARAMS  ",im,phi,theta,psi,sx,sy)
 					if preshift:
 						sx = int(round(sx))
 						sy = int(round(sy))
@@ -8304,7 +8302,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 					###print("   BICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
 
 				if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (lima%(max(1,nima/5)) == 0) and (lima>0)):
-					print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
+					sxprint( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
 					##print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin   %10.1fmin"%((time()-at)/60.,eat/60.0))
 				lima += 1
 
@@ -8316,7 +8314,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 					if( lenass > 0):
 						###print("   CICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
 						keepfirst = lang*m_coarse_psi*n_coarse_shifts#150#lang*m_coarse_psi*len(coarse_shifts_shrank)  #500#min(200,nlocal_angles)#min(max(lxod1/25,200),lxod1)
-						###if( Blockdata["myid"] == 18 and lima<5):  print(" START   nlocal_angles* m_coarse_psi*len(coarse_shifts_shrank",nlocal_angles,coarse_delta,len(coarse_shifts_shrank),keepfirst)
+						###if( Blockdata["myid"] == 18 and lima<5):  sxprint(" START   nlocal_angles* m_coarse_psi*len(coarse_shifts_shrank",nlocal_angles,coarse_delta,len(coarse_shifts_shrank),keepfirst)
 						#if( Blockdata["myid"] == Blockdata["main_node"] ):  
 						lxod1 = Util.multiref_Crosrng_msg_stack_stepsi_local(dataimage, bigbuffer, \
 								coarse_shifts_shrank,\
@@ -8355,7 +8353,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 								##junk = time()
 								temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 								##eat += time()-junk
-								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
+								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
 								temp.set_attr("is_complex",0)
 								nrmref = sqrt(Util.innerproduct(temp, temp, None))
 							##junk = time()
@@ -8419,19 +8417,19 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 						exit()
 					###print("  STARTING8    ",Blockdata["myid"],keepf)
 					Tracker["keepfirst"] = int(keepf)
-					if( Blockdata["myid"] == 0 ):  print("  keepfirst first ",Tracker["keepfirst"])
+					if( Blockdata["myid"] == 0 ):  sxprint("  keepfirst first ",Tracker["keepfirst"])
 
 				else:
 					if(lenass>0):
 						###print("   DICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
-						###if( Blockdata["myid"] == 18 and lima<5):  print(" START   nlocal_angles* m_coarse_psi*len(coarse_shifts_shrank",nlocal_angles,coarse_delta,len(coarse_shifts_shrank),Tracker["keepfirst"])
+						###if( Blockdata["myid"] == 18 and lima<5):  sxprint(" START   nlocal_angles* m_coarse_psi*len(coarse_shifts_shrank",nlocal_angles,coarse_delta,len(coarse_shifts_shrank),Tracker["keepfirst"])
 						#if( Blockdata["myid"] == Blockdata["main_node"] ):  
 						lxod1 = Util.multiref_Crosrng_msg_stack_stepsi_local(dataimage, bigbuffer, \
 								coarse_shifts_shrank,\
 								assignments_of_refangles_to_angles[im], assignments_of_refangles_to_cones[icone],\
 								numr, [coarse_angles[i][2] for i in range(n_coarse_ang)], \
 								oldparams[im][2], c_coarse_psi, coarse_delta, cnx, Tracker["keepfirst"])
-						#if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  ")
+						#if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  ")
 						##'''
 
 						xod1 = np.ndarray((Tracker["keepfirst"]),dtype='f4',order="C")
@@ -8464,7 +8462,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 								iang = ipsiandiang/100000
 								##junk = time()
 								temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
-								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
+								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
 								##eat += time()-junk
 								temp.set_attr("is_complex",0)
 							##junk = time()
@@ -8482,7 +8480,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 
 						#if( Blockdata["myid"] == Blockdata["main_node"]):
 						#	#print("  PROJECT   ",im,lit,johi)#,cod2)
-						#	for iln in range(len(xod1)):  print("  ROPE   ",iln,xod1[iln],xod2[iln])
+						#	for iln in range(len(xod1)):  sxprint("  ROPE   ",iln,xod1[iln],xod2[iln])
 
 
 						lina = np.argwhere(xod1 > Tracker["constants"]["expthreshold"])
@@ -8499,8 +8497,8 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 								break
 
 						#  To here
-						###if( Blockdata["myid"] == 18 and lima<5):  print("  SECOND KEPT  ",lit)
-						#if( lima<5):  print("  SECOND KEPT  ",lit)
+						###if( Blockdata["myid"] == 18 and lima<5):  sxprint("  SECOND KEPT  ",lit)
+						#if( lima<5):  sxprint("  SECOND KEPT  ",lit)
 
 
 				#mpi_barrier(MPI_COMM_WORLD)
@@ -8522,7 +8520,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 						#try:
 						firstdirections[iln] = [coarse_angles[iang][0], coarse_angles[iang][1], 0.0]
 						#except:
-						#	print(" FAILED  ",Blockdata["myid"],Tracker["keepfirst"],iln,lima,lit,hashparams,iang,xod2[:lit],xod1[:lit])
+						#	sxprint(" FAILED  ",Blockdata["myid"],Tracker["keepfirst"],iln,lima,lit,hashparams,iang,xod2[:lit],xod1[:lit])
 						#	mpi_finalize()
 						#	exit()
 						firstshifts[iln] = ishift
@@ -8530,19 +8528,19 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 						#	ipsi = ipsiandiang%100000
 						#	ishift = hashparams%1000
 						#	###print("  SECONDPAR%04d  "%im,iln,hashparams, ipsi,iang,ishift)
-						#	print(" SECONDPAR%04d  "%im,iln, refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, shifts[ishift])
+						#	sxprint(" SECONDPAR%04d  "%im,iln, refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, shifts[ishift])
 					###del xod2
-					###if( Blockdata["myid"] == 18 and lima<5):   print("  SECOND KEPT  ",im,lit)#,len(xod2),xod2,firstdirections,firstshifts)
+					###if( Blockdata["myid"] == 18 and lima<5):   sxprint("  SECOND KEPT  ",im,lit)#,len(xod2),xod2,firstdirections,firstshifts)
 					#mpi_barrier(MPI_COMM_WORLD)
 					#mpi_finalize()
 					#exit()
 
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  FIFI ",firstdirections)
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  GUGU ",firstshifts)
+					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  FIFI ",firstdirections)
+					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  GUGU ",firstshifts)
 					# Find neighbors, ltabang contains positions on refang list, no psis
 					###ltabang = nearest_many_full_k_projangles(refang, firstdirections, howmany = 5, sym=Tracker["constants"]["symmetry"])
 					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
-					###if( Blockdata["myid"] == Blockdata["main_node"]): print("  ltabang ",ltabang)
+					###if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  ltabang ",ltabang)
 					##mpi_barrier(MPI_COMM_WORLD)
 					##mpi_finalize()
 					##exit()
@@ -8552,8 +8550,8 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 
 
 					###ltabshi = [shiftneighbors[iln] for iln in firstshifts]
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  HUHU ",ltabang)
-					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  OUOU ",ltabshi)
+					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  HUHU ",ltabang)
+					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  OUOU ",ltabshi)
 
 					#  Prepare image for chi2.
 					#  We have to repeat everything from get shrink data, including shifts
@@ -8574,7 +8572,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 						ipsi = ipsiandiang%100000
 						ishift = hashparams%1000
 						tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
-						#if( Blockdata["myid"] == Blockdata["main_node"]): print(" tshifts  ",i1,len(tshifts))
+						#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint(" tshifts  ",i1,len(tshifts))
 						for i2 in range(4):
 							iang = ltabang[i1][i2]
 							for i3 in range(2):  # psi
@@ -8583,12 +8581,12 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 								for i4 in range(len(tshifts)):
 									cod2.append(iang*100000000 + itpsi*1000 + tshifts[i4])
 									#lol += 1
-									#if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  zibzi  ",i1,i2,i3,i4, lol)
+									#if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  zibzi  ",i1,i2,i3,i4, lol)
 
 
 					del xod1, xod2
 
-					###if( Blockdata["myid"] == 18 and lima<5):   print("  THIRD   ",len(cod2))#,cod2)
+					###if( Blockdata["myid"] == 18 and lima<5):   sxprint("  THIRD   ",len(cod2))#,cod2)
 					cod2 = list(set(cod2))
 					cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
 					cod1.sort()
@@ -8602,7 +8600,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 					cod3 = np.ndarray(lit,dtype='f4',order="C")
 					#cod3.fill(0.0)  #  varadj
 
-					###if( Blockdata["myid"] == 18 and lima<5): print("  THIRD   ",im,lit)#,cod2)
+					###if( Blockdata["myid"] == 18 and lima<5): sxprint("  THIRD   ",im,lit)#,cod2)
 
 					#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 					#  Third ML part.  Now the actual chi2 distances, we compute reprojections on the fly.
@@ -8613,7 +8611,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 					prevdir = -1
 					while(iln<lit):
 						hashparams = cod2[iln]
-						#if( Blockdata["myid"] == Blockdata["main_node"]): print("  COD2   ",im,lit,iln,cod2[iln])
+						#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  COD2   ",im,lit,iln,cod2[iln])
 						ipsiandiang	= hashparams/1000
 						if(ipsiandiang != prevdir):
 							prevdir = ipsiandiang
@@ -8645,10 +8643,10 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 						#	ctfa.write_image("ctfa.hdf")
 						#	bckgnoise.write_image("bckgnoise.hdf")
 						#	exit()
-						###if( Blockdata["myid"] == Blockdata["main_node"] and iln%1000 ==0):  print(" progress  ",iln,time()-at)
+						###if( Blockdata["myid"] == Blockdata["main_node"] and iln%1000 ==0):  sxprint(" progress  ",iln,time()-at)
 					#if( Blockdata["myid"] == Blockdata["main_node"]):
-					#	print("  PROJECT   ",im,lit,johi)#,cod2)
-					#	#for iln in range(lit):  print("  ROPE   ",iln,cod1[iln],cod2[iln],cod3[iln])
+					#	sxprint("  PROJECT   ",im,lit,johi)#,cod2)
+					#	#for iln in range(lit):  sxprint("  ROPE   ",iln,cod1[iln],cod2[iln],cod3[iln])
 					del data
 					del dataml
 
@@ -8665,7 +8663,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 					###if( Blockdata["myid"] == Blockdata["main_node"]):
 					###for iui in range(len(lina)):
 					###	for iui in range(len(cod1)):
-					###		print("  MLML  ",iui,cod1[iui],exp(cod1[iui]),cod2[iui],cod3[iui])
+					###		sxprint("  MLML  ",iui,cod1[iui],exp(cod1[iui]),cod2[iui],cod3[iui])
 
 					np.exp(cod1, out=cod1)
 					cod1 /= np.sum(cod1)
@@ -8690,9 +8688,9 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 						#	iang = ipsiandiang/100000
 						#	ishift = hashparams%1000
 						#	#print("  NEWPAR%04d  "%im,iln,newpar[im][2][-1],hashparams,ipsi,iang,ishift)
-						#	print(" NEWPAR%04d  "%im,iln,newpar[im][2][iln], refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, shifts[ishift])
+						#	sxprint(" NEWPAR%04d  "%im,iln,newpar[im][2][iln], refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, shifts[ishift])
 
-					###if( Blockdata["myid"] == 18 and lima<5):   print("  FINALLY  ",im,lit)
+					###if( Blockdata["myid"] == 18 and lima<5):   sxprint("  FINALLY  ",im,lit)
 					del cod1, cod2, cod3, lina
 					###mpi_barrier(MPI_COMM_WORLD)
 					###mpi_finalize()
@@ -8712,7 +8710,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 	#  END OF CONES
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
+		sxprint( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
 	at = time()
 	#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 	#  All images were processed, now to the additional calculations
@@ -8761,7 +8759,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 	#print("  NORMALIZATION DONE  ",Blockdata["myid"])
 	mpi_barrier(MPI_COMM_WORLD)
 	#if( Blockdata["myid"] == Blockdata["main_node"] ):
-	#	print( "  Projection matching finished : %10.1fmin"%((time()-at)/60.))
+	#	sxprint( "  Projection matching finished : %10.1fmin"%((time()-at)/60.))
 	return newpar, [1.0]*nima
 
 def recons3d_trl_struct_MPI_nosmearing(myid, main_node, prjlist, parameters, CTF, upweighted, mpi_comm, target_size):
@@ -8838,11 +8836,11 @@ def rec3d_continuation_nosmearing(original_data, mpi_comm):
 	# Estimate initial resolution/image size
 	if(Blockdata["myid"] == Blockdata["nodes"][0]):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line,  "continuation: reconstruct initial reference")
+		sxprint(line,  "continuation: reconstruct initial reference")
 
 	for procid in range(2):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		if(Blockdata["myid"] == Blockdata["nodes"][procid]): print(line, "3-D reconstruction of group %d"%procid)
+		if(Blockdata["myid"] == Blockdata["nodes"][procid]): sxprint(line, "3-D reconstruction of group %d"%procid)
 		
 		do3d(procid, projdata[procid], oldparams[procid], None, None, None, Blockdata["myid"], smearing = False, mpi_comm = mpi_comm)
 		
@@ -8852,7 +8850,7 @@ def rec3d_continuation_nosmearing(original_data, mpi_comm):
 	Tracker["maxfrad"] = Tracker["nxinit"]//2
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if Blockdata["myid"] == Blockdata["main_node"]: 
-		print(line, "do3d_continuation_get_maps_mpi")
+		sxprint(line, "do3d_continuation_get_maps_mpi")
 	rec3d_make_maps(compute_fsc = True, regularized = True)
 	#if(Blockdata["myid"] == Blockdata["nodes"][0]):  shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
 	Tracker["directory"] = temp
@@ -8905,15 +8903,15 @@ def update_memory_estimation():
 		if Tracker["constants"]["memory_per_node"] ==-1.:
 			Tracker["constants"]["memory_per_node"] = Blockdata["no_of_processes_per_group"]*2.0 # reasonable approximation
 		try: total_stack = EMUtil.get_image_count(Tracker["constants"]["stack"])
-		except: print(Tracker["constants"]["stack"], "does not exist")
+		except: sxprint(Tracker["constants"]["stack"], "does not exist")
 		image_size   = max(Tracker["nxinit"], Tracker["constants"]["nnxo"]*1./2.)
 		data_size    = total_stack*4*float(image_size**2)/float(Blockdata["no_of_groups"])/1.0e9
 		volume_size  = (1.5*4*(2.0*image_size+3.0)**3)/1.e9
 		#nnprocs = Blockdata["no_of_processes_per_group"]
 		nnprocs = min(Blockdata["no_of_processes_per_group"], int(((Tracker["constants"]["memory_per_node"] - data_size*1.2)/volume_size)))
-		print("  MEMORY ESTIMATION.  memory per node = %6.1fGB,  volume size = %6.2fGB, data size per node = %6.2fGB, estimated number of CPUs = %d"%(Tracker["constants"]["memory_per_node"],volume_size,data_size,nnprocs))
+		sxprint("  MEMORY ESTIMATION.  memory per node = %6.1fGB,  volume size = %6.2fGB, data size per node = %6.2fGB, estimated number of CPUs = %d"%(Tracker["constants"]["memory_per_node"],volume_size,data_size,nnprocs))
 		memory_per_cpu_3d = data_size/Blockdata["no_of_processes_per_group"]*1.2 + volume_size
-		print("  Estimated memory consumption per CPU in reconstruction %6.2f"%memory_per_cpu_3d)
+		sxprint("  Estimated memory consumption per CPU in reconstruction %6.2f"%memory_per_cpu_3d)
 		if( (Tracker["constants"]["memory_per_node"] - data_size*1.2 - volume_size) < 0 or (nnprocs == 0)):  nogo = 1
 		else:  nogo = 0
 	else:
@@ -9380,7 +9378,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		#  store params
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,"Executed successfully: ","Projection matching, state: %s, number of images:%7d"%(Tracker["state"],len(params)))
+			sxprint(line,"Executed successfully: ","Projection matching, state: %s, number of images:%7d"%(Tracker["state"],len(params)))
 			write_text_row(params, os.path.join(Tracker["directory"], "params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"])) )
 		del params
 
@@ -9525,7 +9523,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		write_text_row( [[anger, shifter]], os.path.join(Tracker["directory"] ,"error_thresholds_%03d.txt"%(Tracker["mainiteration"])) )
 
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line,"Average displacements for angular directions = %6.2f degrees; and shifts = %5.1f pixels"%(anger, shifter) )
+		sxprint(line,"Average displacements for angular directions = %6.2f degrees; and shifts = %5.1f pixels"%(anger, shifter) )
 
 		#  Write current Trucker
 
@@ -9639,8 +9637,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 
 		elif( len(args) == 1 ): masterdir = args[0]
 		else:
-			print( "usage: " + usage)
-			print( "Please run '" + progname + " -h' for detailed options")
+			sxprint( "usage: " + usage)
+			sxprint( "Please run '" + progname + " -h' for detailed options")
 			return 1
 
 		#  Check whether we are restarting the program, in the least main000 should exist, otherwise there is nothing to restart
@@ -9673,12 +9671,10 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			line = ""
 			for a in sys.argv:
 				line +=a+"  "
-			print(" shell line command ")
-			print(line)
+			sxprint(" shell line command ")
+			sxprint(line)
 		# ------------------------------------------------------------------------------------
 		#  INPUT PARAMETERS
-		global_def.BATCH = True
-		global_def.MPI   = True
 		###  VARIOUS SANITY CHECKES <-----------------------
 		if( options.memory_per_node < 0.0 ): options.memory_per_node = 2.0*Blockdata["no_of_processes_per_group"]
 		#  For the time being we use all CPUs during refinement
@@ -9775,7 +9771,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			# Get the pixel size; if none, set to 1.0, and the original image size
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				print(line,"INITIALIZATION OF MERIDIEN")
+				sxprint(line,"INITIALIZATION OF MERIDIEN")
 				a = get_im(orgstack)
 				nnxo = a.get_xsize()
 				if Tracker["constants"]["CTF"]:
@@ -9921,13 +9917,13 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			#################################################################################################################################################################
 			if( (Blockdata["myid"] == Blockdata["main_node"]) and (not options.skip_prealignment )):
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				print(line,"2D pre-alignment step")
+				sxprint(line,"2D pre-alignment step")
 			## only the master has the parameters
 			params2d = calculate_2d_params_for_centering(kwargs)
 			del kwargs
 			if( (Blockdata["myid"] == Blockdata["main_node"]) and (not options.skip_prealignment )):
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				print(line,"2D pre-alignment completed")
+				sxprint(line,"2D pre-alignment completed")
 
 			if( Blockdata["myid"] == Blockdata["main_node"] ):
 				os.mkdir(initdir)
@@ -9952,7 +9948,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					write_text_row([tp_list[i] for i in l1], partstack[0])
 					write_text_row([tp_list[i] for i in l2], partstack[1])
 					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-					print(line,"Executed successfully: Imported initial parameters from the input stack")
+					sxprint(line,"Executed successfully: Imported initial parameters from the input stack")
 					del tp_list
 
 				else:
@@ -9999,6 +9995,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				Tracker = convert_json_fromunicode(json.load(fout))
 				print_dict(Tracker["constants"], "Permanent settings of the original run recovered from main000")
 				fout.close()
+				sp_global_def.write_command(Tracker["constants"]["masterdir"])
 			else: Tracker = None
 			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 			mainiteration 	= 0
@@ -10075,13 +10072,13 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					if Blockdata["myid"] == Blockdata["main_node"]:
 						if( Tracker["mainiteration"] > 1 ):
 							line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-							print(line,"Resolution achieved in ITERATION  #%2d: %3d/%3d pixels, %5.2fA/%5.2fA."%
+							sxprint(line,"Resolution achieved in ITERATION  #%2d: %3d/%3d pixels, %5.2fA/%5.2fA."%
 								(Tracker["mainiteration"]-1, \
 								Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
 								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]) ) )
-						print("\n\n\n\n")
+						sxprint("\n\n\n\n")
 						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-						print(line,"ITERATION  #%2d. Current state: %14s, nxinit: %3d, delta: %9.4f, xr: %9.4f, ts: %9.4f"%\
+						sxprint(line,"ITERATION  #%2d. Current state: %14s, nxinit: %3d, delta: %9.4f, xr: %9.4f, ts: %9.4f"%\
 							(Tracker["mainiteration"], Tracker["state"],Tracker["nxinit"], Tracker["delta"], Tracker["xr"], Tracker["ts"]  ))
 					#print("RACING  A ",Blockdata["myid"])
 					li = True
@@ -10098,18 +10095,18 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					refinement_one_iteration(partids, partstack, original_data, oldparams, projdata, \
 					    general_mode =True, continuation_mode = False)
 					
-					#	print("  MOVING  ON --------------------------------------------------------------------")
+					#	sxprint("  MOVING  ON --------------------------------------------------------------------")
 				else: # converged, do final
 					if( Blockdata["subgroup_myid"] > -1 ): mpi_comm_free(Blockdata["subgroup_comm"])
 					if(Blockdata["myid"] == Blockdata["main_node"]):
-						print(line,"Resolution achieved in ITERATION  #%2d: %3d/%3d pixels, %5.2fA/%5.2fA."%
+						sxprint(line,"Resolution achieved in ITERATION  #%2d: %3d/%3d pixels, %5.2fA/%5.2fA."%
 								(Tracker["mainiteration"]-1, \
 								Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
 								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]) ) )
-						print("\n\n\n\n")
+						sxprint("\n\n\n\n")
 
-						print("The iteration that contains the best resolution is %d"%Tracker["constants"]["best"])
-						if Tracker["constants"]["best"] ==2:  print("No resolution improvement in refinement ")
+						sxprint("The iteration that contains the best resolution is %d"%Tracker["constants"]["best"])
+						if Tracker["constants"]["best"] ==2:  sxprint("No resolution improvement in refinement ")
 						fout = open(os.path.join(masterdir,"Tracker_final.json"),'w')
 						json.dump(Tracker, fout)
 						fout.close()
@@ -10155,8 +10152,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			masterdir = args[0]
 
 		else:
-			print( "usage: " + usage)
-			print( "Please run '" + progname + " -h' for detailed options")
+			sxprint( "usage: " + usage)
+			sxprint( "Please run '" + progname + " -h' for detailed options")
 			return 1
 		#  Check whether we are restarting the program, in the least main000 should exist, otherwise there is nothing to restart
 		keepgoing1   = 1
@@ -10191,12 +10188,10 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			line = ""
 			for a in sys.argv:
 				line +=a+"  "
-			print(" shell line command ")
-			print(line)
+			sxprint(" shell line command ")
+			sxprint(line)
 		# ------------------------------------------------------------------------------------
 		#  INPUT PARAMETERS
-		global_def.BATCH = True
-		global_def.MPI   = True
 		###  VARIOUS SANITY CHECKES <-----------------------
 		if( options.delta> 3.75 ):
 			ERROR("Local searches requested, delta cannot be larger than 3.73.", "meridien",1, Blockdata["myid"])
@@ -10296,7 +10291,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			# Get the pixel size; if none, set to 1.0, and the original image size
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				print(line,"INITIALIZATION OF LOCAL MERIDIEN")
+				sxprint(line,"INITIALIZATION OF LOCAL MERIDIEN")
 				a = get_im(orgstack)
 				nnxo = a.get_xsize()
 				if Tracker["constants"]["CTF"]:
@@ -10480,6 +10475,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					Tracker = convert_json_fromunicode(json.load(fout))
 				fout.close()
 				print_dict(Tracker["constants"], "Permanent settings of the original run recovered from main000")
+				sp_global_def.write_command(Tracker["constants"]["masterdir"])
 			else: Tracker = None
 			Tracker         = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 			mainiteration 	= 0
@@ -10552,13 +10548,13 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					if Blockdata["myid"] == Blockdata["main_node"]:
 						if(Tracker["mainiteration"] > 1):
 							line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-							print(line,"Resolution achieved in ITERATION  #%2d: %3d/%3d pixels, %5.2fA/%5.2fA."%
+							sxprint(line,"Resolution achieved in ITERATION  #%2d: %3d/%3d pixels, %5.2fA/%5.2fA."%
 								(Tracker["mainiteration"]-1, \
 								Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
 								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]) ) )
-						print("\n\n\n\n")
+						sxprint("\n\n\n\n")
 						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-						print(line,"ITERATION  #%2d. Current state: %14s, nxinit: %3d, delta: %9.4f, xr: %9.4f, ts: %9.4f"%\
+						sxprint(line,"ITERATION  #%2d. Current state: %14s, nxinit: %3d, delta: %9.4f, xr: %9.4f, ts: %9.4f"%\
 							(Tracker["mainiteration"], Tracker["state"],Tracker["nxinit"], Tracker["delta"], Tracker["xr"], Tracker["ts"]  ))
 					#print("RACING  A ",Blockdata["myid"])
 					li = True
@@ -10575,21 +10571,21 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					#  READ DATA AND COMPUTE SIGMA2   ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 					refinement_one_iteration(partids, partstack, original_data, oldparams, projdata, \
 					   general_mode = False, continuation_mode = True)
-					#	print("  MOVING  ON --------------------------------------------------------------------")
+					#	sxprint("  MOVING  ON --------------------------------------------------------------------")
 				else: # converged, do final
 					if( Blockdata["subgroup_myid"] > -1 ):
 						mpi_comm_free(Blockdata["subgroup_comm"])
 						
 					if(Blockdata["myid"] == Blockdata["main_node"]):
-						print(line,"Resolution achieved in ITERATION  #%2d: %3d/%3d pixels, %5.2fA/%5.2fA."%
+						sxprint(line,"Resolution achieved in ITERATION  #%2d: %3d/%3d pixels, %5.2fA/%5.2fA."%
 								(Tracker["mainiteration"]-1, \
 								Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
 								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]) ) )
-						print("\n\n\n\n")
+						sxprint("\n\n\n\n")
 						
-						print("Iteration that contains the best resolution is %d"%Tracker["constants"]["best"])
+						sxprint("Iteration that contains the best resolution is %d"%Tracker["constants"]["best"])
 						if Tracker["constants"]["best"] ==2:
-							print("No resolution improvement in refinement ")
+							sxprint("No resolution improvement in refinement ")
 						
 						with open(os.path.join(masterdir,"Tracker_final.json"),'w') as fout:
 							json.dump(Tracker, fout)
@@ -10628,13 +10624,14 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		elif(len(args) == 1):
 			masterdir 	= args[0]
 			if Blockdata["myid"] == Blockdata["main_node"]:
+				sp_global_def.write_command(masterdir)
 				if not os.path.exists(masterdir): checking_flag = 0
 			checking_flag = bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"])
 			if checking_flag ==0: ERROR("do_final: refinement directory for final reconstruction does not exist ","meridien", 1, Blockdata["myid"])
 			
 		else:
-			print( "usage: " + usage)
-			print( "Please run '" + progname + " -h' for detailed options")
+			sxprint( "usage: " + usage)
+			sxprint( "Please run '" + progname + " -h' for detailed options")
 			return 1
 
 		if( options.do_final < 0):
@@ -10653,12 +10650,10 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			line = ""
 			for a in sys.argv:
 				line +=a+"  "
-			print(" shell line command ")
-			print(line)
+			sxprint(" shell line command ")
+			sxprint(line)
 		# ------------------------------------------------------------------------------------
 		#  INPUT PARAMETERS
-		global_def.BATCH = True
-		global_def.MPI   = True
 
 		###  VARIOUS SANITY CHECKES <-----------------------
 		if( options.memory_per_node < 0.0 ):
@@ -10670,7 +10665,11 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		ERROR("Incorrect input options","meridien", 1, Blockdata["myid"])
 
 if __name__=="__main__":
+	sp_global_def.BATCH = True
+	sp_global_def.MPI   = True
 	sp_global_def.print_timestamp("Start")
 	main()
 	sp_global_def.print_timestamp("Finish")
+	sp_global_def.BATCH = False
+	sp_global_def.MPI   = False
 	mpi_finalize()
