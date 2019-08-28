@@ -2254,7 +2254,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			
 			# Check the input dataset consistency and save the result to a text file, if necessary.
 			if check_consistency:
-				os.mkdir(output_directory)
+				os.makedirs(output_directory)
 			
 				# Open the consistency check file
 				inconsist_mic_list_path = os.path.join(output_directory,"inconsist_mic_id_file.txt")
@@ -3310,7 +3310,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			# Check the input dataset consistency and save the result to a text file, if necessary.
 			if check_consistency:
 				# Create output directory
-				os.mkdir(output_directory)
+				os.makedirs(output_directory)
 			
 				# Open the consistency check file
 				inconsist_mic_list_path = os.path.join(output_directory,"inconsist_mic_id_file.txt")
@@ -5698,7 +5698,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			# Check the input dataset consistency and save the result to a text file, if necessary.
 			if check_consistency:
 				# Create output directory
-				os.mkdir(output_directory)
+				os.makedirs(output_directory)
 			
 				# Open the consistency check file
 				inconsist_mic_list_path = os.path.join(output_directory,"inconsist_mic_id_file.txt")
