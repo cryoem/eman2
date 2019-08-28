@@ -174,11 +174,11 @@ def main():
 								if(round(ui.get_value_at(x,y,z),2) == cutoff):
 									filteredvol.set_value_at_fast(x,y,z,vovo.get_value_at(x,y,z))
 
+		sp_global_def.write_command(os.path.dirname(outvol))
 		filteredvol.write_image(outvol)
 
 if __name__ == "__main__":
 	sp_global_def.print_timestamp( "Start" )
-	sp_global_def.write_command()
 	main()
 	sp_global_def.print_timestamp( "Finish" )
 	mpi.mpi_finalize()
