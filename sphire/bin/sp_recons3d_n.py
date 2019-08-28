@@ -122,7 +122,7 @@ def main():
 		ERROR( "Wrong interpolation method. The current options are 4nn, and tril. 4nn is the default one." )
 		return
 		
-    sp_global_def.write_command(os.path.dirname(vol_stack))
+	sp_global_def.write_command(os.path.dirname(vol_stack))
 	sp_global_def.BATCH = False
 
 
