@@ -10624,7 +10624,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		elif(len(args) == 1):
 			masterdir 	= args[0]
 			if Blockdata["myid"] == Blockdata["main_node"]:
-				sp_global_def.write_command(masterdir)
 				if not os.path.exists(masterdir): checking_flag = 0
 			checking_flag = bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"])
 			if checking_flag ==0: ERROR("do_final: refinement directory for final reconstruction does not exist ","meridien", 1, Blockdata["myid"])
@@ -10633,6 +10632,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			sxprint( "usage: " + usage)
 			sxprint( "Please run '" + progname + " -h' for detailed options")
 			return 1
+
+		if Blockdata["myid"] == Blockdata['main_node']:
+			sp_global_def.write_command(masterdir)
 
 		if( options.do_final < 0):
 			ERROR("Incorrect iteration number in do_final  %d"%options.do_final,"meridien",1,Blockdata["myid"])

@@ -10218,6 +10218,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					if not os.path.exists(masterdir): os.makedirs(masterdir)
 					li = 0
 					keepchecking = 1
+				sp_global_def.write_command(masterdir)
 			else:
 				li = 0
 				keepchecking = 1
@@ -10367,6 +10368,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				print_dict(Tracker["constants"], "Permanent settings of the original run recovered from main000")
 				stack_prior = Tracker['constants']['stack_prior']
 				Tracker['constants']['stack_prior'] = None
+				sp_global_def.write_command(Tracker["constants"]["masterdir"])
 			else:
 				Tracker = None
 				stack_prior = None
@@ -10752,6 +10754,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					if not os.path.exists(masterdir): os.makedirs(masterdir)
 					li = 0
 					keepchecking = 1
+				sp_global_def.write_command(masterdir)
 			else:
 				li = 0
 				keepchecking = 1
@@ -10854,6 +10857,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				print_dict(Tracker["constants"], "Permanent settings of the original run recovered from main000")
 				stack_prior = Tracker['constants']['stack_prior']
 				Tracker['constants']['stack_prior'] = None
+				sp_global_def.write_command(Tracker["constants"]["masterdir"])
 			else:
 				Tracker = None
 				stack_prior = None
@@ -11011,7 +11015,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				if not os.path.exists(masterdir): checking_flag = 0
 			checking_flag = bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"])
-			if checking_flag ==0: ERROR("do_final: refinement directory for final reconstruction does not exist ","meridien", 1, Blockdata["myid"])
+			if checking_flag ==0:
+				ERROR("do_final: refinement directory for final reconstruction does not exist ","meridien", 1, Blockdata["myid"])
 			
 		else:
 			sxprint( "usage: " + usage)
@@ -11036,6 +11041,10 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				line +=a+"  "
 			sxprint(" shell line command ")
 			sxprint(line)
+
+		if Blockdata["myid"] == Blockdata['main_node']:
+			sp_global_def.write_command(masterdir)
+
 		# ------------------------------------------------------------------------------------
 		#  INPUT PARAMETERS
 		sp_global_def.BATCH = True
