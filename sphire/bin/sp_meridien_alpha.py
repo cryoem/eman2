@@ -9523,7 +9523,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 					del dummy
 				try:
 					os.remove(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,(Blockdata["color"]*Blockdata["no_of_processes_per_group"] + kproc),Tracker["mainiteration"]-1)))
-				except FileNotFoundError:
+				except OSError:
 					pass
 		else:
 			wrap_mpi_send(newparamstructure[procid], 0, Blockdata["shared_comm"])
