@@ -1035,7 +1035,7 @@ class SXCmdWidget(QWidget):
 					if np > 1:
 						cmd_line = "mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX"
 					else:
-						cmd_line = "XXX_SXCMD_LINE_XXX " + line.split('XXX_SXCMD_LINE_XXX')[-1]
+						cmd_line = "XXX_SXCMD_LINE_XXX " + cmd_line.split('XXX_SXCMD_LINE_XXX')[-1]
 				if cmd_line.find("XXX_SXMPI_NPROC_XXX") != -1:
 					cmd_line = cmd_line.replace("XXX_SXMPI_NPROC_XXX", str(np))
 				if cmd_line.find("XXX_SXCMD_LINE_XXX") != -1:
@@ -4880,7 +4880,7 @@ def main():
 	sxapp.setStyleSheet("QToolTip {font-size:%dpt;}" % (new_point_size));
 
 	# Initialise a singleton class for look & feel constants
-	version_string = '1.2a'
+	version_string = '1.3'
 	SXLookFeelConst.initialise(sxapp, version_string)
 
 	# Define the main window (class SXMainWindow)

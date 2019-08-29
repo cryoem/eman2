@@ -195,7 +195,7 @@ def main():
 			sp_global_def.ERROR('Output directory already exists!')
 		elif myid == 0:
 			os.makedirs(outdir)
-			sp_global_def.write_command(outdir)
+		sp_global_def.write_command(outdir)
 		sp_utilities.bcast_EMData_to_all(m, myid, main_node)
 
 		"""Multiline Comment0"""
@@ -211,6 +211,9 @@ def main():
 		ui = sp_utilities.get_im(args[1])
 
 		nn = vi.get_xsize()
+		nx = nn
+		ny = nn
+		nz = nn
 		nk = int(options.wn)
 	
 		if len(args) == 3:
@@ -224,7 +227,7 @@ def main():
 			sp_global_def.ERROR('Output directory already exists!')
 		else:
 			os.makedirs(outdir)
-			sp_global_def.write_command(outdir)
+		sp_global_def.write_command(outdir)
 
 		mc = sp_utilities.model_blank(nn,nn,nn,1.0)-m
 

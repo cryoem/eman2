@@ -115,6 +115,7 @@ def _main_():
 	# Write stack
 	number_of_particles = EMAN2.EMUtil.get_image_count(path_stack)
 	local_bdb_stack = EMAN2db.db_open_dict(path_output)
+	sp_global_def.write_command(EMAN2db.db_parse_path(path_output)[0])
 	num_particles_relevant = 0
 	for particle_index in range(number_of_particles):
 

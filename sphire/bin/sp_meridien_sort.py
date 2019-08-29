@@ -127,11 +127,9 @@ Util.innerproduct(p2,p2,m)/(nx*nx/2) = Util.innerproduct(fp1,fp1,None)
 from EMAN2 	import *
 from sp_sparx 	import *
 from EMAN2  import EMNumPy
-from sp_logger import Logger, BaseLogger_Files
+from logger import Logger, BaseLogger_Files
 import sp_global_def
 from sp_global_def import *
-
-import sp_utilities
 
 from mpi   	import  *
 from math  	import  *
@@ -147,9 +145,6 @@ import string
 import json
 from   sys 	import exit
 from   time import localtime, strftime, sleep, time
-
-import sp_helix_sphire
-import sp_helix_fundamentals
 
 global Tracker, Blockdata
 global  target_theta, refang
@@ -169,11 +164,6 @@ masters_from_groups_vs_everything_else_comm = mpi_comm_split(MPI_COMM_WORLD, Blo
 Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = get_colors_and_subsets(Blockdata["main_node"], MPI_COMM_WORLD, Blockdata["myid"], \
 		Blockdata["shared_comm"], Blockdata["myid_on_node"], masters_from_groups_vs_everything_else_comm)
 #  We need two nodes for processing of volumes
-if( Blockdata["no_of_groups"] > 1 ):  Blockdata["node_volume"] = [Blockdata["no_of_groups"]-2, Blockdata["no_of_groups"]-1]  # For 3D stuff take two last nodes
-else: Blockdata["node_volume"] = [0,0]
-#  We need two CPUs for processing of volumes, they are taken to be main CPUs on each volume
-#  We have to send the two myids to all nodes so we can identify main nodes on two selected groups.
-Blockdata["main_shared_nodes"]	= [Blockdata["node_volume"][0]*Blockdata["no_of_processes_per_group"],Blockdata["node_volume"][1]*Blockdata["no_of_processes_per_group"]]
 # end of Blockdata
 sp_global_def.BATCH = True
 sp_global_def.MPI = True
@@ -199,7 +189,7 @@ def create_subgroup():
 		Blockdata["subgroup_size"] = mpi_comm_size(Blockdata["subgroup_comm"])
 		Blockdata["subgroup_myid"] = mpi_comm_rank(Blockdata["subgroup_comm"])
 	#  "nodes" are zero nodes on subgroups on the two "node_volume" that compute backprojection
-	Blockdata["nodes"] = [Blockdata["node_volume"][0]*Blockdata["ncpuspernode"], Blockdata["node_volume"][1]*Blockdata["ncpuspernode"]]
+	Blockdata["nodes"] = [entry*Blockdata["ncpuspernode"] for entry in Blockdata['node_volume']]
 	mpi_barrier(MPI_COMM_WORLD)
 	return
 
@@ -258,7 +248,7 @@ def AI( fff, anger, shifter, chout = False):
 	#3. nr_iter_wo_large_hidden_variable_changes >= MAX_NR_ITER_WO_LARGE_HIDDEN_VARIABLE_CHANGES
 
 	keepgoing = 1
-	if(Blockdata["myid"] == Blockdata["main_node"]): line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	if(Blockdata["myid"] == Blockdata["main_node"]): line = ''
 
 	if(Tracker["mainiteration"] == 1):
 		Tracker["state"] = "INITIAL"
@@ -348,15 +338,8 @@ def AI( fff, anger, shifter, chout = False):
 				Tracker["ts"] = step
 				Tracker["delta"] /= 2.0
 				Tracker["changed_delta"] = True
-				if( Tracker["state"] == "PRIMARY" ) and ( Tracker["delta"] <= 3.75/2.0 ) and Tracker['constants']['do_exhaustive']:
-					Tracker["state"] = "EXHAUSTIVE"
-					Tracker['delta'] *= 2.0
-					Tracker["changed_delta"] = False
-				elif( Tracker["delta"] <= 3.75/2.0 ):  #  MOVE DOWN TO RESTRICTED
+				if( Tracker["delta"] <= 3.75/2.0 ):  #  MOVE DOWN TO RESTRICTED
 					Tracker["an"]		= 6*Tracker["delta"]
-					Tracker['howmany'] = 4
-					Tracker['theta_min'] = -1
-					Tracker['theta_max'] = -1
 					if( Tracker["delta"] <= degrees(atan(0.25/Tracker["constants"]["radius"])) ): Tracker["state"] = "FINAL"
 					else:	Tracker["state"] = "RESTRICTED"
 				else:
@@ -409,11 +392,11 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 	l01 = max(l01,-1)
 
 	if( chout ): sxprint("  AI: Tracker[nxstep], TR[currentres], Tracker[fsc143], l05, l01, fff[Tracker[nxinit]//2-1]:",Tracker["nxstep"],Tracker["currentres"],Tracker["fsc143"], l05, l01,fff[Tracker["nxinit"]//2-1])
-	if(Blockdata["myid"] == Blockdata["main_node"]): line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	if(Blockdata["myid"] == Blockdata["main_node"]): line = ''
 
 
 	if(Tracker["mainiteration"] == 1):
-		#Tracker["state"]		= "PRIMARY"
+		Tracker["state"]		= "PRIMARY"
 		Tracker["currentres"]	= l05
 		Tracker["fsc143"]		= l01
 		Tracker["large_at_Nyquist"] = (fff[Tracker["nxinit"]//2] > 0.1 or fff[Tracker["nxinit"]//2-1] > 0.2)
@@ -490,9 +473,6 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 				Tracker["changed_delta"] = True
 				if( Tracker["delta"] <= 3.75/2.0 or True):  #  MOVE DOWN TO RESTRICTED
 					Tracker["an"]		= 6*Tracker["delta"]
-					Tracker['howmany'] = 4
-					Tracker['theta_min'] = -1
-					Tracker['theta_max'] = -1
 					if( Tracker["delta"] <= degrees(atan(0.25/Tracker["constants"]["radius"])) ): Tracker["state"] = "FINAL"
 					else:	Tracker["state"] = "RESTRICTED"
 				else:
@@ -545,14 +525,14 @@ def compute_search_params(acc_trans, shifter, old_range):
 	if(new_range == 0.0):  step = 0.5  # change 1.0 to 0.5
 	return new_range, step
 
-def assign_particles_to_groups(minimum_group_size = 10, asubset= None, name_tag='ptcl_source_image'):
+def assign_particles_to_groups(minimum_group_size = 10, asubset= None, nclasses=2):
 	global Tracker, Blockdata
 	from random import shuffle
-	#  Input data does not have to be consecutive in terms of ptcl_source_image/filament_id or defocus
+	#  Input data does not have to be consecutive in terms of ptcl_source_image or defocus
 	#
 	if not asubset:
 		try:
-			stmp  = EMUtil.get_all_attributes(Tracker["constants"]["stack"], name_tag)
+			stmp  = EMUtil.get_all_attributes(Tracker["constants"]["stack"], "ptcl_source_image")
 			if Tracker["constants"]["CTF"]:
 				defstmp = EMUtil.get_all_attributes(Tracker["constants"]["stack"],"ctf")
 			else:
@@ -564,10 +544,10 @@ def assign_particles_to_groups(minimum_group_size = 10, asubset= None, name_tag=
 				for i in range(len(stmp)):  stmp[i] = round(stmp[i].defocus, 4)
 				defstmp = stmp[:]
 			else:
-				ERROR( "Either ptcl_source_image/filament/filament_id or ctf has to be present in the header." )
+				ERROR("Either ptcl_source_image or ctf has to be present in the header.","meridien",1)
 	else:
 		try:
-			stmp_junk = EMUtil.get_all_attributes(Tracker["constants"]["stack"], name_tag)
+			stmp_junk = EMUtil.get_all_attributes(Tracker["constants"]["stack"], "ptcl_source_image")
 			stmp = [None]*len(asubset)
 			for isub in range(len(asubset)): stmp[isub] = stmp_junk[asubset[isub]]
 			if Tracker["constants"]["CTF"]:
@@ -584,8 +564,7 @@ def assign_particles_to_groups(minimum_group_size = 10, asubset= None, name_tag=
 					stmp[isub] = stmp_junk[asubset[isub]]
 					stmp[isub] = round(stmp[isub].defocus, 4)
 				defstmp[:] = stmp[:]
-			else:  
-				ERROR( "Either ptcl_source_image/filament/filament_id or ctf has to be present in the header." )
+			else:  ERROR("Either ptcl_source_image or ctf has to be present in the header.","meridien",1)
 	tt = [[stmp[i],i] for i in range(len(stmp))]
 	tt.sort()
 	tt.append([-1,-1])
@@ -665,48 +644,34 @@ def assign_particles_to_groups(minimum_group_size = 10, asubset= None, name_tag=
 
 	Tracker["constants"]["number_of_groups"] = len(cross_reference_txt[0])
 	#  split into two chunks by groups
-	lili = [[],list(range(Tracker["constants"]["number_of_groups"]))]
-	shuffle(lili[1])
-	lili[0] = lili[1][:len(lili[1])//2]
-	lili[1] = lili[1][len(lili[1])//2:]
-	lili[0].sort()
-	lili[1].sort()
+	lili = list(range(Tracker["constants"]["number_of_groups"]))
 
 	#  Create output tables
-	for iproc in range(2):
-		write_text_row([cross_reference_txt[0][i] for i in lili[iproc]] , os.path.join(Tracker["constants"]["masterdir"],"main000","groupids_%03d.txt"%iproc) )
-		write_text_row([[sd[cross_reference_txt[0][i][j]][0] for j in range(len(cross_reference_txt[0][i]))]  for i in lili[iproc]], os.path.join(Tracker["constants"]["masterdir"],"main000","micids_%03d.txt"%iproc) )
+	for iproc in range(nclasses):
+		write_text_row([cross_reference_txt[0][i] for i in lili] , os.path.join(Tracker["constants"]["masterdir"],"main000","groupids_%03d.txt"%iproc) )
+		write_text_row([[sd[cross_reference_txt[0][i][j]][0] for j in range(len(cross_reference_txt[0][i]))]  for i in lili], os.path.join(Tracker["constants"]["masterdir"],"main000","micids_%03d.txt"%iproc) )
 	del sd
 
 	write_text_file([len(cross_reference_txt[4][i]) for i in range(len(cross_reference_txt[4]))], os.path.join(Tracker["constants"]["masterdir"],"main000","number_of_particles_per_group.txt") )
 
-	q0 = []
-	g0 = []
-	q1 = []
-	g1 = []
-	for i in lili[0]:
+	for i in lili:
 		g0 += [i]*len(cross_reference_txt[4][i])
 		q0 += cross_reference_txt[4][i]
-	for i in lili[1]:
-		g1 += [i]*len(cross_reference_txt[4][i])
-		q1 += cross_reference_txt[4][i]
-	Tracker["nima_per_chunk"] = [len(q0), len(q1)]
+	Tracker["nima_per_chunk"] = [len(q0)] * nclasses
 
 	### conversion
 	
 	#for iproc in range(2):
 	#	if( Tracker["nima_per_chunk"][iproc] < Blockdata["nproc"] ):  ERROR("Number of particles per chunk smaller than the number of CPUs","assign_particles_to_groups",1,Blockdata["myid"])
 	#write_text_file(q0, os.path.join(Tracker["constants"]["masterdir"],"main000","tchunk_0.txt") )
-	write_text_file(g0, os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_0.txt") )
+	for idx in range(nclasses):
+		write_text_file(g0, os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_{0}.txt".format(idx)) )
 	#write_text_file(q1, os.path.join(Tracker["constants"]["masterdir"],"main000","tchunk_1.txt") )
-	write_text_file(g1, os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_1.txt") )
 	if asubset:
 		sq0 =[None]*len(q0)
-		sq1 =[None]*len(q1) 
 		for iptl in range(len(sq0)): sq0[iptl] = asubset[q0[iptl]]
-		for iptl in range(len(sq1)): sq1[iptl] = asubset[q1[iptl]]
-		return sq0, sq1
-	else: return  q0, q1
+		return sq0
+	else: return  q0
 #  CONES support functions
 
 def number_of_cones_to_delta(number_of_cones):
@@ -898,7 +863,7 @@ def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi
 			indx = projdata[i].get_attr("particle_group")
 			phi,theta,psi,sx,sy = params[i][0],params[i][1],params[i][2],params[i][3],params[i][4]
 			stmp = cyclic_shift( projdata[i], int(round(sx)), int(round(sy)))
-			st = get_image_statistics(stmp, mask, False)
+			st = Util.infomask(stmp, mask, False)
 			stmp -=st[0]
 			stmp /=st[1]
 			temp = cosinemask(stmp, radius = Tracker["constants"]["radius"], s = 0.0)
@@ -1009,7 +974,7 @@ def getindexdata(partids, partstack, particle_groups, original_data=None, small_
 		original_data = EMData.read_images(Tracker["constants"]["stack"], partids)
 		for im in range( len(original_data) ):
 			original_data[im].set_attr("particle_group", group_reference[im])
-	return original_data, partstack, [im_start, im_end]
+	return original_data, partstack
 
 def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 					return_real = False, preshift = False, apply_mask = True, nonorm = False, nosmearing = False, npad = 1):
@@ -1039,7 +1004,7 @@ def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 	
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		sxprint( "  " )
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(  line, "Processing data  onx: %3d, nx: %3d, CTF: %s, applymask: %s, preshift: %s."%(Tracker["constants"]["nnxo"], nxinit, Tracker["constants"]["CTF"], apply_mask, preshift) )
 	#  Preprocess the data
 	mask2D  	= model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
@@ -1098,7 +1063,7 @@ def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 			sy = 0.0
 		else:  data[im] = original_data[im].copy()
 
-		st = get_image_statistics(data[im], mask2D, False)
+		st = Util.infomask(data[im], mask2D, False)
 		data[im] -= st[0]
 		data[im] /= st[1]
 		if data[im].get_attr_default("bckgnoise", None) :  data[im].delete_attr("bckgnoise")
@@ -1113,7 +1078,7 @@ def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 					bckg.set_attr("is_fftpad",1)
 					bckg = fft(filt_table(bckg, oneover[data[im].get_attr("particle_group")]))
 					#  Normalize bckg noise in real space, only region actually used.
-					st = get_image_statistics(bckg, mask2D, False)
+					st = Util.infomask(bckg, mask2D, False)
 					bckg -= st[0]
 					bckg /= st[1]
 					data[im] = cosinemask(data[im],radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -1215,7 +1180,7 @@ def get_refangs_and_shifts():
 	global Tracker, Blockdata
 
 	refang = Blockdata["symclass"].even_angles(Tracker["delta"])
-	coarse = Blockdata["symclass"].even_angles(2*Tracker["delta"], theta1=Tracker['theta_min'], theta2=Tracker['theta_max'], method=Tracker['constants']['angle_method'])
+	coarse = Blockdata["symclass"].even_angles(2*Tracker["delta"])
 	refang = Blockdata["symclass"].reduce_anglesets( rotate_params(refang, [-0.5*Tracker["delta"], -0.5*Tracker["delta"], -0.5*Tracker["delta"]]) )
 
 	"""
@@ -1356,12 +1321,12 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, smea
 			if myid == Blockdata["nodes"][0] :
 				if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): sxprint("tempdir exists")
 				else: 
-					try: os.makedirs(os.path.join(Tracker["directory"], "tempdir"))
+					try: os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
 					except:  sxprint("tempdir exists")
 		else:
 			if myid == Blockdata["main_node"]:
 				if not os.path.exists(os.path.join(Tracker["directory"],"tempdir")): 
-					try: os.makedirs(os.path.join(Tracker["directory"], "tempdir"))
+					try: os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
 					except: sxprint("tempdir exists")
 				else: sxprint("tempdir exists")
 	mpi_barrier(mpi_comm)
@@ -1389,7 +1354,7 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, smea
 			tvol.write_image(os.path.join(Tracker["directory"],    "tempdir", "tvol_%01d_%03d.hdf"%(procid,   Tracker["mainiteration"])))
 			tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 			trol.write_image(os.path.join(Tracker["directory"],    "tempdir", "trol_%01d_%03d.hdf"%(procid,   Tracker["mainiteration"])))
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			line = ''
 			sxprint(line,"Executed successfully backprojection for group ",procid)
 	else:
 		if myid == Blockdata["main_node"]:
@@ -1397,13 +1362,13 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, smea
 			tvol.write_image(os.path.join(   Tracker["directory"], "tempdir", "tvol_%01d_%03d.hdf"%(procid,   Tracker["mainiteration"])))
 			tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 			trol.write_image(os.path.join(   Tracker["directory"], "tempdir", "trol_%01d_%03d.hdf"%(procid,   Tracker["mainiteration"])))
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			line = ''
 			sxprint(line,"Executed successfully backprojection for group ",procid)
 	mpi_barrier(mpi_comm)
 	return  
 	
 def print_dict(dict,theme):
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	line = ''
 	sxprint(line,theme)
 	spaces = "                    "
 	exclude = ["constants", "maxit", "nodes", "yr", "shared_comm", "bckgnoise", "myid", "myid_on_node", "accumulatepw",\
@@ -1969,7 +1934,7 @@ def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D 
 					if(peak>newpar[kl][2][0][1]):  newpar[kl][2] = [[im + iangpsi, peak]]
 
 	#print  " >>>  %4d   %12.3e       %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(best,simis[0],newpar[0][0],newpar[0][1],newpar[0][2],newpar[0][3],newpar[0][4])
-	###if Blockdata["myid"] == Blockdata["main_node"]:  sxprint "  Finished :",time()-at
+	###if Blockdata["myid"] == Blockdata["main_node"]:  print "  Finished :",time()-at
 	
 	#print("  SEARCHES DONE  ",Blockdata["myid"])
 
@@ -2194,7 +2159,7 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 					if(peak>newpar[kl][2][0][1]):  newpar[kl][2] = [[im + iangpsi, peak]]
 
 	#print  " >>>  %4d   %12.3e       %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(best,simis[0],newpar[0][0],newpar[0][1],newpar[0][2],newpar[0][3],newpar[0][4])
-	###if Blockdata["myid"] == Blockdata["main_node"]:  sxprint "  Finished :",time()-at
+	###if Blockdata["myid"] == Blockdata["main_node"]:  print "  Finished :",time()-at
 	if Blockdata["myid"] == Blockdata["main_node"]:   sxprint("  COARSE SEARCHES DONE  ","   %10.1fmin"%((time()-at)/60.))
 	at = time()
 	for itemp in range(0, min(Blockdata["no_of_processes_per_group"], nang)):
@@ -2224,9 +2189,9 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 		ipsi = ipsiandiang%100000
 		ishift = hashparams%1000
 		tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
-		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, [coarse_angles[oldiang]], Tracker["delta"], howmany = Tracker['howmany'])
+		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, [coarse_angles[oldiang]], Tracker["delta"], howmany = 4)
 		opar.append([coarse_angles[oldiang][0],coarse_angles[oldiang][1],(coarse_angles[oldiang][2]+ipsi*coarse_delta)%360.0 , coarse_shifts[ishift][0],coarse_shifts[ishift][1]])
-		for i2 in range(Tracker['howmany']):
+		for i2 in range(4):
 			iang = ltabang[0][i2]
 			for i3 in range(2):  # psi
 				itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
@@ -2494,7 +2459,6 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		sxprint( "  " )
-		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		line = ''
 		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift) )
 
@@ -2537,7 +2501,8 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		phi,theta,psi,sx,sy = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4]#  First ITER
 
 		if preshift:
-			sx, sy = reduce_shifts(sx, sy, original_data[im])
+			sx = int(round(sx))
+			sy = int(round(sy))
 			dataimage  = cyclic_shift(original_data[im],sx,sy)
 			#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
 			oldparams[im][3] = sx
@@ -2546,7 +2511,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 			sy = 0.0
 		else:  dataimage = original_data[im].copy()
 
-		st = get_image_statistics(dataimage, mask2D, False)
+		st = Util.infomask(dataimage, mask2D, False)
 		dataimage -= st[0]
 		dataimage /= st[1]
 		##if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
@@ -2560,7 +2525,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 				bckg.set_attr("is_fftpad",1)
 				bckg = fft(filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
 				#  Normalize bckg noise in real space, only region actually used.
-				st = get_image_statistics(bckg, mask2D, False)
+				st = Util.infomask(bckg, mask2D, False)
 				bckg -= st[0]
 				bckg /= st[1]
 				dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -2755,7 +2720,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		#exit()
 
 		# Find neighbors, ltabang contains positions on refang list, no psis
-		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
+		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
 
 		# ltabang has length lit, which is the same as length as firshifts.  However, original xod2 is still available,
 		#   even though it is longer than lit.
@@ -2776,7 +2741,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 			ipsi = ipsiandiang%100000
 			ishift = hashparams%1000
 			tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
-			for i2 in range(Tracker['howmany']):
+			for i2 in range(4):
 				iang = ltabang[i1][i2]
 				for i3 in range(2):  # psi
 					itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
@@ -2912,13 +2877,13 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		from math import sqrt
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = ''
 		sxprint(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 	"""
 	at = time()
 	mpi_barrier(Blockdata["shared_comm"])
 
-	###if Blockdata["myid"] == Blockdata["main_node"]:  sxprint "  Finished :",time()-at
+	###if Blockdata["myid"] == Blockdata["main_node"]:  print "  Finished :",time()-at
 	mpi_win_free(win_sm)
 	if( Tracker["nxinit"] != Tracker["nxpolar"] ):
 		mpi_win_free(win_volinit)
@@ -3200,7 +3165,6 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		sxprint( "  " )
-		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		line = ''
 		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift) )
 
@@ -3250,7 +3214,8 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		phi,theta,psi,sx,sy, wnorm = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4], oldparams[im][7]
 
 		if preshift:
-			sx, sy = reduce_shifts(sx, sy, original_data[im])
+			sx = int(round(sx))
+			sy = int(round(sy))
 			dataimage  = cyclic_shift(original_data[im],sx,sy)
 			#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
 			oldparams[im][3] = sx
@@ -3259,7 +3224,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			sy = 0.0
 		else:  dataimage = original_data[im].copy()
 
-		st = get_image_statistics(dataimage, mask2D, False)
+		st = Util.infomask(dataimage, mask2D, False)
 		dataimage -= st[0]
 		dataimage /= st[1]
 		if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
@@ -3273,7 +3238,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 				bckg.set_attr("is_fftpad",1)
 				bckg = fft(filt_table(bckg, oneover[particle_group]))
 				#  Normalize bckg noise in real space, only region actually used.
-				st = get_image_statistics(bckg, mask2D, False)
+				st = Util.infomask(bckg, mask2D, False)
 				bckg -= st[0]
 				bckg /= st[1]
 				dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -3460,7 +3425,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			firstshifts[iln] = ishift
 
 		# Find neighbors, ltabang contains positions on refang list, no psis
-		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
+		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
 
 		# ltabang has length lit, which is the same as length as firshifts.  However, original xod2 is still available,
 		#   even though it is longer than lit.
@@ -3480,7 +3445,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			ipsi = ipsiandiang%100000
 			ishift = hashparams%1000
 			tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
-			for i2 in range(Tracker['howmany']):
+			for i2 in range(4):
 				iang = ltabang[i1][i2]
 				for i3 in range(2):  # psi
 					itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
@@ -3633,7 +3598,6 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		from math import sqrt
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
-		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		line = ''
 		sxprint(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
@@ -3910,7 +3874,6 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		sxprint( "  " )
-		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		line = ''
 		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift) )
 
@@ -3956,7 +3919,8 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		phi,theta,psi,sx,sy, wnorm = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4], oldparams[im][7]
 
 		if preshift:
-			sx, sy = reduce_shifts(sx, sy, original_data[im])
+			sx = int(round(sx))
+			sy = int(round(sy))
 			dataimage  = cyclic_shift(original_data[im],sx,sy)
 			#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
 			oldparams[im][3] = sx
@@ -3965,7 +3929,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 			sy = 0.0
 		else:  dataimage = original_data[im].copy()
 
-		st = get_image_statistics(dataimage, mask2D, False)
+		st = Util.infomask(dataimage, mask2D, False)
 		dataimage -= st[0]
 		dataimage /= st[1]
 		if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
@@ -3980,7 +3944,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 				bckg.set_attr("is_fftpad",1)
 				bckg = fft(filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
 				#  Normalize bckg noise in real space, only region actually used.
-				st = get_image_statistics(bckg, mask2D, False)
+				st = Util.infomask(bckg, mask2D, False)
 				bckg -= st[0]
 				bckg /= st[1]
 				dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -4173,7 +4137,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		#exit()
 
 		# Find neighbors, ltabang contains positions on refang list, no psis
-		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
+		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
 
 		# ltabang has length lit, which is the same as length as firshifts.  However, original xod2 is still available,
 		#   even though it is longer than lit.
@@ -4194,7 +4158,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 			ipsi = ipsiandiang%100000
 			ishift = hashparams%1000
 			tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
-			for i2 in range(Tracker['howmany']):
+			for i2 in range(4):
 				iang = ltabang[i1][i2]
 				for i3 in range(2):  # psi
 					itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
@@ -4332,14 +4296,13 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		from math import sqrt
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
-		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		line = ''
 		sxprint(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
 	at = time()
 	mpi_barrier(Blockdata["shared_comm"])
 
-	###if Blockdata["myid"] == Blockdata["main_node"]:  sxprint "  Finished :",time()-at
+	###if Blockdata["myid"] == Blockdata["main_node"]:  print "  Finished :",time()-at
 	mpi_win_free(win_sm)
 	if( Tracker["nxinit"] != Tracker["nxpolar"] ):
 		mpi_win_free(win_volinit)
@@ -4708,7 +4671,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 			assignments_of_refangles_to_cones[i] = wrap_mpi_bcast(q, 0, Blockdata["shared_comm"])
 			###if( Blockdata["myid_on_node"] == 0 ): sxprint( " which refangles belong to which cone XOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
 			#if( myid == 1 ):
-			#	sxprint " which refangles belong to which cone",myid,i,len(assignments_of_refangles_to_cones[i])#,q
+			#	print " which refangles belong to which cone",myid,i,len(assignments_of_refangles_to_cones[i])#,q
 
 	if( Blockdata["myid"] == 0  ):  sxprint( " number_of_cones: ",number_of_cones)
 	#  Maximum number of refangles assigned to angles (max number of references per image)
@@ -4745,7 +4708,6 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		sxprint( "  " )
-		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		line = ''
 		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,orgsize/1.0e9) )
 
@@ -4851,7 +4813,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					else:  dataimage = original_data[im].copy()
 
 
-					st = get_image_statistics(dataimage, mask2D, False)
+					st = Util.infomask(dataimage, mask2D, False)
 					dataimage -= st[0]
 					dataimage /= st[1]
 					if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
@@ -4866,7 +4828,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 								bckg.set_attr("is_fftpad",1)
 								bckg = fft(filt_table(bckg, oneover[particle_group]))
 								#  Normalize bckg noise in real space, only region actually used.
-								st = get_image_statistics(bckg, mask2D, False)
+								st = Util.infomask(bckg, mask2D, False)
 								bckg -= st[0]
 								bckg /= st[1]
 								dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -5155,7 +5117,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  GUGU ",firstshifts)
 					# Find neighbors, ltabang contains positions on refang list, no psis
 					###ltabang = nearest_many_full_k_projangles(refang, firstdirections, howmany = 5, sym=Tracker["constants"]["symmetry"])
-					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
+					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
 					###if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  ltabang ",ltabang)
 					##mpi_barrier(MPI_COMM_WORLD)
 					##mpi_finalize()
@@ -5189,7 +5151,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 						ishift = hashparams%1000
 						tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
 						#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint(" tshifts  ",i1,len(tshifts))
-						for i2 in range(Tracker['howmany']):
+						for i2 in range(4):
 							iang = ltabang[i1][i2]
 							for i3 in range(2):  # psi
 								itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
@@ -5385,7 +5347,6 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 		from math import sqrt
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
-		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		line = ''
 		sxprint(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
@@ -5800,7 +5761,6 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		sxprint( "  " )
-		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		line = ''
 		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,orgsize/1.0e9) )
 
@@ -5900,7 +5860,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					else:  dataimage = original_data[im].copy()
 
 
-					st = get_image_statistics(dataimage, mask2D, False)
+					st = Util.infomask(dataimage, mask2D, False)
 					dataimage -= st[0]
 					dataimage /= st[1]
 					if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
@@ -5915,7 +5875,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 								bckg.set_attr("is_fftpad",1)
 								bckg = fft(filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
 								#  Normalize bckg noise in real space, only region actually used.
-								st = get_image_statistics(bckg, mask2D, False)
+								st = Util.infomask(bckg, mask2D, False)
 								bckg -= st[0]
 								bckg /= st[1]
 								dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -6203,7 +6163,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  GUGU ",firstshifts)
 					# Find neighbors, ltabang contains positions on refang list, no psis
 					###ltabang = nearest_many_full_k_projangles(refang, firstdirections, howmany = 5, sym=Tracker["constants"]["symmetry"])
-					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
+					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
 					###if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  ltabang ",ltabang)
 					##mpi_barrier(MPI_COMM_WORLD)
 					##mpi_finalize()
@@ -6237,7 +6197,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						ishift = hashparams%1000
 						tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
 						#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint(" tshifts  ",i1,len(tshifts))
-						for i2 in range(Tracker['howmany']):
+						for i2 in range(4):
 							iang = ltabang[i1][i2]
 							for i3 in range(2):  # psi
 								itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
@@ -6420,7 +6380,6 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 		from math import sqrt
 		sava = float(sava)/snum
 		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
-		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		line = ''
 		sxprint(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
@@ -6815,7 +6774,6 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		sxprint( "  " )
-		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		line = ''
 		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,orgsize/1.0e9) )
 
@@ -6916,7 +6874,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 					else:  dataimage = original_data[im].copy()
 
 
-					st = get_image_statistics(dataimage, mask2D, False)
+					st = Util.infomask(dataimage, mask2D, False)
 					dataimage -= st[0]
 					dataimage /= st[1]
 					if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
@@ -6931,7 +6889,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 								bckg.set_attr("is_fftpad",1)
 								bckg = fft(filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
 								#  Normalize bckg noise in real space, only region actually used.
-								st = get_image_statistics(bckg, mask2D, False)
+								st = Util.infomask(bckg, mask2D, False)
 								bckg -= st[0]
 								bckg /= st[1]
 								dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -7225,7 +7183,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  GUGU ",firstshifts)
 					# Find neighbors, ltabang contains positions on refang list, no psis
 					###ltabang = nearest_many_full_k_projangles(refang, firstdirections, howmany = 5, sym=Tracker["constants"]["symmetry"])
-					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
+					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
 					###if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  ltabang ",ltabang)
 					##mpi_barrier(MPI_COMM_WORLD)
 					##mpi_finalize()
@@ -7259,7 +7217,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 						ishift = hashparams%1000
 						tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
 						#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint(" tshifts  ",i1,len(tshifts))
-						for i2 in range(Tracker['howmany']):
+						for i2 in range(4):
 							iang = ltabang[i1][i2]
 							for i3 in range(2):  # psi
 								itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
@@ -7560,7 +7518,6 @@ def cerrs(params, ctfs, particle_groups):
 	acc_trans /= n_trials
 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		line = ''
 		sxprint(line,"Estimated accuracy of angles = %6.2f degrees; and shifts = %5.1f pixels"%(acc_rot,acc_trans) )
 
@@ -7571,17 +7528,10 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
       final_iter=-1, comm = -1 ):
 	global Tracker, Blockdata
 
-	final_dir = Tracker["directory"]
-	if(Blockdata["subgroup_myid"] > -1):
-		this_color = 1
-	else:
-		this_color = 0
-	subgroup_comm = mpi_comm_split(MPI_COMM_WORLD, this_color, Blockdata['myid'])
 	if(Blockdata["subgroup_myid"] > -1):
 		# load datastructure, read data, do two reconstructions(stepone, steptwo)
 		if final_iter ==-1: final_iter = Tracker["constants"]["best"]  
 		carryon = 1
-		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		line = ''
 		if(Blockdata["subgroup_myid"] == Blockdata["main_node"]):
 			sxprint(line, "do_final_rec3d")
@@ -7608,7 +7558,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 		partids =[None, None]
 		if(Blockdata["subgroup_myid"] == Blockdata["main_node"]):
 			if not os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "tempdir")):
-				os.makedirs(os.path.join(Tracker["constants"]["masterdir"], "tempdir"))
+				os.mkdir(os.path.join(Tracker["constants"]["masterdir"], "tempdir"))
 			l = 0
 			for procid in range(2):
 				partids[procid] = os.path.join(final_dir,"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
@@ -7630,8 +7580,10 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 
 		for procid in range(2):
 			if procid ==0: original_data[1] = None	
-			partids[procid]   = os.path.join(final_dir,"chunk_%01d_%03d.txt"%(procid, Tracker["mainiteration"]))
-			partstack[procid] = os.path.join(final_dir,"params-chunk_%01d_%03d.txt"%(procid, (Tracker["mainiteration"])))
+			partids[procid]   = os.path.join(final_dir,"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
+			partstack[procid] = os.path.join(Tracker["constants"]["masterdir"],\
+			   "main%03d"%(Tracker["mainiteration"]-1),"params-chunk_%01d_%03d.txt"%(procid,\
+			     (Tracker["mainiteration"]-1)))
 			###
 			psize = len(read_text_file(partids[procid]))
 			oldparamstructure[procid] = []			
@@ -7649,7 +7601,10 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 
 			ptl_on_this_cpu = im_start
 			for iproc_index_old in range(istart_old_proc_id, iend_old_proc_id+1):
-				oldparamstructure_on_old_cpu = load_object_from_json(os.path.join(final_dir,"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,iproc_index_old,Tracker["mainiteration"])))
+				with open(os.path.join(final_dir,"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%\
+				  (procid,iproc_index_old,Tracker["mainiteration"])),'r') as fout:
+					oldparamstructure_on_old_cpu = convert_json_fromunicode(json.load(fout))
+				fout.close()
 				mlocal_id_on_old = ptl_on_this_cpu - plist[iproc_index_old][0]
 				while (mlocal_id_on_old<len(oldparamstructure_on_old_cpu)) and (ptl_on_this_cpu<im_end):
 					oldparamstructure[procid].append(oldparamstructure_on_old_cpu[mlocal_id_on_old])
@@ -7658,7 +7613,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 			del oldparamstructure_on_old_cpu
 			mpi_barrier(Blockdata["subgroup_comm"])
 			#####
-			original_data[procid], oldparams[procid], start_end = getindexdata(partids[procid], \
+			original_data[procid], oldparams[procid] = getindexdata(partids[procid], \
 			   partstack[procid], os.path.join(Tracker["constants"]["masterdir"],"main000", \
 			   "particle_groups_%01d.txt"%procid), original_data[procid], small_memory = \
 			     Tracker["constants"]["small_memory"], nproc = Blockdata["subgroup_size"],\
@@ -7678,7 +7633,6 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 				norm_per_particle[procid].append(oldparams[procid][ipar][7])
 			oldparams[procid]      = []
 			original_data[procid]  = None
-			#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			line = ''
 			if(Blockdata["subgroup_myid"] == Blockdata["nodes"][procid]):
 				sxprint(line, "3-D reconstruction of group %d"%procid)
@@ -7687,34 +7641,14 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 			Tracker["nxinit"]       = Tracker["constants"]["nnxo"]
 			Tracker["maxfrad"]      = Tracker["constants"]["nnxo"]//2
 			###---------------------------------------------------------
-
-			outlier_file = os.path.join(final_dir, "outlier-params-chunk_%01d_%03d.txt"%(procid, (Tracker["mainiteration"])))
-
-			if Tracker['prior']['apply_prior']:
-				outlier_list = read_text_file(outlier_file)[start_end[0]:start_end[1]]
-			else:
-				outlier_list = [0] * len(projdata[procid])
-			norm_per_particle_outlier = []
-			oldparamstructure_outlier = []
-			projdata_outlier = []
-			for idx, entry in enumerate(outlier_list):
-				if int(entry) == 0:
-					projdata_outlier.append(projdata[procid][idx])
-					norm_per_particle_outlier.append(norm_per_particle[procid][idx])
-					oldparamstructure_outlier.append(oldparamstructure[procid][idx])
-			total_left_particles = wrap_mpi_gatherv(norm_per_particle_outlier, Blockdata["main_node"], subgroup_comm)
-			if Blockdata['myid'] == Blockdata['main_node']: 
-				sp_global_def.sxprint('Use {0} particles for final reconstruction!'.format(len(total_left_particles)))
-
-			do3d(procid, projdata_outlier, oldparamstructure_outlier, refang, rshifts, \
-			 norm_per_particle_outlier, myid = Blockdata["subgroup_myid"], smearing = True, mpi_comm = comm)
+			do3d(procid, projdata[procid], oldparamstructure[procid], refang, rshifts, \
+			 norm_per_particle[procid], myid = Blockdata["subgroup_myid"], smearing = True, mpi_comm = comm)
 			projdata[procid]          = []
 			oldparamstructure[procid] = []
 			norm_per_particle[procid] = []
 			mpi_barrier(Blockdata["subgroup_comm"])
 		mpi_barrier(Blockdata["subgroup_comm"])
 	mpi_barrier(MPI_COMM_WORLD)
-	#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	line = ''
 	if Blockdata["myid"] == Blockdata["main_node"]: 
 		sxprint(line, "final rec3d_make_maps")
@@ -7733,14 +7667,15 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 	global Tracker, Blockdata
 	# search for best solution, and load respective tracker
 	carryon  = 1
-	#line     = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	line = ''
 	if(Blockdata["myid"] == Blockdata["main_node"]):print(line, "recons3d_final")
 	do_final_iter = 3
 	if(do_final_iter_init ==0):
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			try:
-				Tracker = load_tracker_from_json(os.path.join(masterdir, "Tracker_final.json"))
+				fout    = open(os.path.join(masterdir, "Tracker_final.json"),'r')
+				Tracker = convert_json_fromunicode(json.load(fout))
+				fout.close()
 				sxprint("The best solution is %d  "%Tracker["constants"]["best"])
 				do_final_iter =  Tracker["constants"]["best"] # set the best as do_final iteration
 			except: carryon = 0
@@ -7758,19 +7693,16 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 	final_dir = os.path.join(masterdir, "main%03d"%do_final_iter)
 	if(Blockdata["myid"] == Blockdata["main_node"]): # check json file and load tracker
 		try:
-			Tracker = load_tracker_from_json(os.path.join(final_dir,"Tracker_%03d.json"%do_final_iter))
-			stack_prior = Tracker['constants']['stack_prior']
-			Tracker['constants']['stack_prior'] = None
+			with open(os.path.join(final_dir,"Tracker_%03d.json"%do_final_iter),'r') as fout:
+				Tracker = convert_json_fromunicode(json.load(fout))
+			fout.close()
 		except: carryon = 0
 		if orgstack: Tracker["constants"]["stack"] = orgstack
-	else:
-		Tracker = 0
-		stack_prior = None
+	else: Tracker = 0
 	carryon = bcast_number_to_all(carryon, Blockdata["main_node"], MPI_COMM_WORLD)
 	if carryon == 0: 
 		ERROR("Failed to load Tracker file %s, program terminates "%os.path.join(final_dir,"Tracker_%03d.json"%do_final_iter), "recons3d_final",1, Blockdata["myid"])
 	Tracker = wrap_mpi_bcast(Tracker,      Blockdata["main_node"], MPI_COMM_WORLD)
-	Tracker['constants']['stack_prior'] = stack_prior
 	if(Blockdata["myid"] == Blockdata["main_node"]): # check stack 
 		try:  image = get_im(Tracker["constants"]["stack"],0)
 		except:carryon = 0
@@ -7810,7 +7742,6 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 	do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, projdata, \
 	  do_final_iter, Blockdata["subgroup_comm"])
 	mpi_barrier(MPI_COMM_WORLD)
-	#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	line = ''
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		sxprint(line, "Final reconstruction is successfully done")
@@ -8183,7 +8114,6 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		sxprint( "  " )
-		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		line = ''
 		sxprint(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,orgsize/1.0e9) )
 
@@ -8284,7 +8214,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 					else:  dataimage = original_data[im].copy()
 
 
-					st = get_image_statistics(dataimage, mask2D, False)
+					st = Util.infomask(dataimage, mask2D, False)
 					dataimage -= st[0]
 					dataimage /= st[1]
 					if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
@@ -8299,7 +8229,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 								bckg.set_attr("is_fftpad",1)
 								bckg = fft(filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
 								#  Normalize bckg noise in real space, only region actually used.
-								st = get_image_statistics(bckg, mask2D, False)
+								st = Util.infomask(bckg, mask2D, False)
 								bckg -= st[0]
 								bckg /= st[1]
 								dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
@@ -8591,7 +8521,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 					#if(Blockdata["myid"] == Blockdata["main_node"]):  sxprint("  GUGU ",firstshifts)
 					# Find neighbors, ltabang contains positions on refang list, no psis
 					###ltabang = nearest_many_full_k_projangles(refang, firstdirections, howmany = 5, sym=Tracker["constants"]["symmetry"])
-					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = Tracker['howmany'])
+					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4)
 					###if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  ltabang ",ltabang)
 					##mpi_barrier(MPI_COMM_WORLD)
 					##mpi_finalize()
@@ -8625,7 +8555,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 						ishift = hashparams%1000
 						tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
 						#if( Blockdata["myid"] == Blockdata["main_node"]): sxprint(" tshifts  ",i1,len(tshifts))
-						for i2 in range(Tracker['howmany']):
+						for i2 in range(4):
 							iang = ltabang[i1][i2]
 							for i3 in range(2):  # psi
 								itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
@@ -8857,23 +8787,23 @@ def recons3d_trl_struct_MPI_nosmearing(myid, main_node, prjlist, parameters, CTF
 	if myid == main_node: return fftvol, weight, refvol
 	else: return None, None, None
 
-def rec3d_continuation_nosmearing(original_data, mpi_comm):
+def rec3d_continuation_nosmearing(mpi_comm, nclasses=2):
 	global Tracker, Blockdata
 	
-	original_data	= [None, None]
-	oldparams		= [None, None]
-	projdata		= [None, None]
-	partstack		= [None, None]
-	partids			= [None, None]
+	original_data	= [None] * nclasses
+	oldparams		= [None] * nclasses
+	projdata		= [None] * nclasses
+	partstack		= [None] * nclasses
+	partids			= [None] * nclasses
 	
 	temp = Tracker["directory"]
 	Tracker["directory"] = os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
 
-	for procid in range(2):
+	for procid in range(nclasses):
 		partids[procid]   = os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
 		partstack[procid] = os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"params-chunk_%01d_%03d.txt"%(procid, Tracker["mainiteration"]))
 
-		original_data[procid], oldparams[procid], start_end = getindexdata(partids[procid], partstack[procid], \
+		original_data[procid], oldparams[procid] = getindexdata(partids[procid], partstack[procid], \
 				os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_%01d.txt"%procid), \
 				original_data[procid], small_memory = Tracker["constants"]["small_memory"], \
 				nproc = Blockdata["nproc"], myid = Blockdata["myid"], mpi_comm = mpi_comm)
@@ -8883,16 +8813,14 @@ def rec3d_continuation_nosmearing(original_data, mpi_comm):
 		  return_real = False, preshift = True, apply_mask = False, nonorm = True, nosmearing = True)
 		mpi_barrier(mpi_comm)
 
-	compute_sigma(original_data[0]+original_data[1],oldparams[0]+oldparams[1], len(oldparams[0]), False, Blockdata["myid"], mpi_comm = mpi_comm)
+	compute_sigma(original_data[0], oldparams[0], len(oldparams[0]), False, Blockdata["myid"], mpi_comm = mpi_comm)
 
 	# Estimate initial resolution/image size
 	if(Blockdata["myid"] == Blockdata["nodes"][0]):
-		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		line = ''
 		sxprint(line,  "continuation: reconstruct initial reference")
 
-	for procid in range(2):
-		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	for procid in range(nclasses):
 		line = ''
 		if(Blockdata["myid"] == Blockdata["nodes"][procid]): sxprint(line, "3-D reconstruction of group %d"%procid)
 		
@@ -8902,11 +8830,10 @@ def rec3d_continuation_nosmearing(original_data, mpi_comm):
 		mpi_barrier(mpi_comm)
 
 	Tracker["maxfrad"] = Tracker["nxinit"]//2
-	#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	line = ''
 	if Blockdata["myid"] == Blockdata["main_node"]: 
 		sxprint(line, "do3d_continuation_get_maps_mpi")
-	rec3d_make_maps(compute_fsc = True, regularized = True)
+	rec3d_make_maps(compute_fsc = False, regularized = False, nclasses=nclasses)
 	#if(Blockdata["myid"] == Blockdata["nodes"][0]):  shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
 	Tracker["directory"] = temp
 	return
@@ -9097,7 +9024,7 @@ def compare_bckgnoise(bckgnoise1, bckgnoise2):
 		ccsum +=pearson(c1, c2)
 	return ccsum/float(ny)
 	
-def rec3d_make_maps(compute_fsc = True, regularized = True):
+def rec3d_make_maps(compute_fsc = True, regularized = True, nclasses=2):
 	global Tracker, Blockdata
 	import sp_user_functions
 	
@@ -9172,8 +9099,9 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 
 	# Now that we have the curve, do the reconstruction
 	Tracker["maxfrad"] = Tracker["nxinit"]//2
-	if (Blockdata["no_of_groups"] > 1):    lorder = [0,0] #  Two blocks in parallel
-	elif( Blockdata["no_of_groups"] == 1): lorder = [0,1] #  One after another
+	#if (Blockdata["no_of_groups"] > 1):    lorder = [0,0] #  Two blocks in parallel
+	#elif( Blockdata["no_of_groups"] == 1): lorder = [0,1] #  One after another
+	#lorder = [0] * nclasses #  One after another
 	
 	if regularized:
 		for iorder in range(2):
@@ -9244,86 +9172,26 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 		if( Blockdata["myid"] == Blockdata["nodes"][0]): shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
 		mpi_barrier(MPI_COMM_WORLD)
 	else:
-		if(Blockdata["no_of_groups"] == 1):
-			for iproc in range(2):
-				if(Blockdata["myid_on_node"] == 0):
-					tvol0 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_0_%03d.hdf"%(Tracker["mainiteration"]))))
-					tweight0 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_0_%03d.hdf"%(Tracker["mainiteration"]))))
-					tvol1 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_1_%03d.hdf"%(Tracker["mainiteration"]))))
-					tweight1 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_1_%03d.hdf"%(Tracker["mainiteration"]))))
-					Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["constants"]["fuse_freq"])
-					treg  = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_%d_%03d.hdf"%((iproc, Tracker["mainiteration"]))))
-				else:
-					treg = model_blank(1)
-					if iproc ==0:
-						tvol0 		= model_blank(1)
-						tweight0 	= model_blank(1)
-					else:
-						tvol1 		= model_blank(1)
-						tweight1 	= model_blank(1)
-				if iproc ==0 : 
-					tvol0 = steptwo_mpi(tvol0, tweight0, treg, None, False , color = Blockdata["node_volume"][0])
-				else:
-					tvol1 = steptwo_mpi(tvol1, tweight1, treg, None, False , color = Blockdata["node_volume"][0])
-				if( Blockdata["myid_on_node"] == 0):
-					if iproc ==0: tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil_%03d.hdf"%(iproc, final_iter)))
-					else: tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"],         "vol_%d_unfil_%03d.hdf"%(iproc, final_iter)))
-				mpi_barrier(MPI_COMM_WORLD)
-		else:
-			if(Blockdata["myid"] == Blockdata["main_shared_nodes"][1]):
-				# post-insertion operations, done only in main_node		
-				tvol0 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_0_%03d.hdf"%   Tracker["mainiteration"])))
-				tweight0 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tweight_0_%03d.hdf"%Tracker["mainiteration"])))
-				tvol1 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_1_%03d.hdf"%   Tracker["mainiteration"])))
-				tweight1 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tweight_1_%03d.hdf"%Tracker["mainiteration"])))
-				Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["constants"]["fuse_freq"])
-			mpi_barrier(MPI_COMM_WORLD)
-			
-			if(Blockdata["myid"] == Blockdata["main_shared_nodes"][1]):
-				tag = 7007
-				send_EMData(tvol1,    Blockdata["main_shared_nodes"][0], tag, MPI_COMM_WORLD)
-				send_EMData(tweight1, Blockdata["main_shared_nodes"][0], tag, MPI_COMM_WORLD)
-				tvol0.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
-				
-			elif(Blockdata["myid"] == Blockdata["main_shared_nodes"][0]):
-				tag = 7007
-				tvol1    	= recv_EMData(Blockdata["main_shared_nodes"][1], tag, MPI_COMM_WORLD)
-				tweight1    = recv_EMData(Blockdata["main_shared_nodes"][1], tag, MPI_COMM_WORLD)
-				tvol1.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
-			mpi_barrier(MPI_COMM_WORLD)
-			
-			if( Blockdata["color"] == Blockdata["node_volume"][1]):
-				if( Blockdata["myid"] == Blockdata["main_shared_nodes"][1] ):
-					treg0 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_0_%03d.hdf"%(Tracker["mainiteration"])))
-				else:
-					tvol0 		= model_blank(1)
-					tweight0 	= model_blank(1)
-					treg0 		= model_blank(1)
-				tvol0 = steptwo_mpi(tvol0, tweight0, treg0, None, False , color = Blockdata["node_volume"][1])
-				del tweight0, treg0
-				if( Blockdata["myid_on_node"] == 0):
-					tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_0_unfil_%03d.hdf"%Tracker["mainiteration"]))
-					
-			elif( Blockdata["color"] == Blockdata["node_volume"][0]):
-				if( Blockdata["myid"] == Blockdata["main_shared_nodes"][0]):
-					treg1 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_1_%03d.hdf"%(Tracker["mainiteration"])))
-				else:
-					tvol1 		= model_blank(1)
-					tweight1 	= model_blank(1)
-					treg1 		= model_blank(1)
-				tvol1 = steptwo_mpi(tvol1, tweight1, treg1, None, False , color = Blockdata["node_volume"][0])
-				del tweight1, treg1
-				if( Blockdata["myid_on_node"] == 0):
-					tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_1_unfil_%03d.hdf"%Tracker["mainiteration"]))
+		for iproc in range(nclasses):
+			if(Blockdata["myid_on_node"] == 0):
+				tvol0 		= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_%d_%03d.hdf"%(iproc, Tracker["mainiteration"]))))
+				tweight0 	= get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_%d_%03d.hdf"%(iproc, Tracker["mainiteration"]))))
+				treg  = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_%d_%03d.hdf"%((iproc, Tracker["mainiteration"]))))
+			else:
+				treg = model_blank(1)
+				tvol0 		= model_blank(1)
+				tweight0 	= model_blank(1)
+			tvol0 = steptwo_mpi(tvol0, tweight0, treg, None, False , color = Blockdata["node_volume"][0])
+			if( Blockdata["myid_on_node"] == 0):
+				tvol0.write_image(os.path.join(Tracker["directory"], "vol_%d_%03d.hdf"%(iproc, final_iter)))
 			mpi_barrier(MPI_COMM_WORLD)
 	return
 	
-def refinement_one_iteration(partids, partstack, original_data, oldparams, projdata, general_mode = True, continuation_mode = False):
+def refinement_one_iteration(partids, partstack, original_data, oldparams, projdata, general_mode = True, continuation_mode = False, nclasses=2):
 	global Tracker, Blockdata
 	#  READ DATA AND COMPUTE SIGMA2   ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-	start_end = [[],[]]
-	for procid in range(2):
-		original_data[procid], oldparams[procid], start_end[procid] = getindexdata(partids[procid], partstack[procid], \
+	for procid in range(nclasses):
+		original_data[procid], oldparams[procid] = getindexdata(partids[procid], partstack[procid], \
 			os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_%01d.txt"%procid), \
 			original_data[procid], small_memory = Tracker["constants"]["small_memory"],\
 			nproc = Blockdata["nproc"], myid = Blockdata["myid"], mpi_comm = MPI_COMM_WORLD)
@@ -9336,7 +9204,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 	elif continuation_mode: dryrun = True
 	else: pass
  		
-	compute_sigma(original_data[0]+original_data[1], oldparams[0]+oldparams[1], len(oldparams[0]), dryrun, Blockdata["myid"])
+	compute_sigma(original_data[0], oldparams[0], len(oldparams[0]), dryrun, Blockdata["myid"])
 
 	#  REFINEMENT   ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
@@ -9371,11 +9239,12 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		write_text_row( rshifts, os.path.join(Tracker["directory"] , "rshifts.txt"))
 	mpi_barrier(MPI_COMM_WORLD)
 
-	newparamstructure = [[],[]]
-	raw_vol           = [[],[]]
-	norm_per_particle = [[],[]]
+	newparamstructure = [[] for _ in range(nclasses)]
+	raw_vol           = [[] for _ in range(nclasses)]
+	norm_per_particle = [[] for _ in range(nclasses)]
+	max_its = [[] for _ in range(nclasses)]
 
-	for procid in range(2):
+	for procid in range(nclasses):
 		Tracker["refvol"] = os.path.join(Tracker["previousoutputdir"],"vol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"]-1))
 
 		Tracker["nxpolar"] = Tracker["nxinit"]#min( 3*Tracker["nxinit"], Tracker["constants"]["nnxo"] )
@@ -9409,7 +9278,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			elif( (Tracker["state"] == "RESTRICTED") or (Tracker["state"] == "FINAL") ):
 				###print("   ",Blockdata["myid"],len(refang),len(rshifts),len(coarse_angles),len(coarse_shifts),len(original_data[procid]), len(oldparams[procid]))
 				###print("   ",Blockdata["myid"],original_data[0][0], oldparams[0][0])
-				newparamstructure[procid], norm_per_particle[procid] = \
+				newparamstructure[procid], norm_per_particle[procid], max_its[procid] = \
 						ali3D_local_polar(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
 						preshift = True, apply_mask = True, nonorm = Tracker["constants"]["nonorm"], applyctf = True)
 			else:  ERROR("sxmeridien","Incorrect state  %s"%Tracker["state"],1,Blockdata["myid"])
@@ -9424,8 +9293,8 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			ishift = hash%1000
 			ipsi   = (hash/1000)%100000
 			iang   = hash/100000000
-			params.append([ refang[iang][0], refang[iang][1], (refang[iang][2]+ipsi*Tracker["delta"])%360.0, \
-			  rshifts[ishift][0]+oldparams[procid][im][3], rshifts[ishift][1]+oldparams[procid][im][4],\
+			params.append([ oldparams[procid][im][0], oldparams[procid][im][1], oldparams[procid][im][2], \
+			  oldparams[procid][im][3], oldparams[procid][im][4],\
 			     newparamstructure[procid][im][-1][0][1], norm_per_particle[procid][im]*qt, norm_per_particle[procid][im]])
 
 		mpi_barrier(MPI_COMM_WORLD)
@@ -9433,7 +9302,6 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		params = wrap_mpi_gatherv(params, Blockdata["main_node"], MPI_COMM_WORLD)
 		#  store params
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			line = ''
 			sxprint(line,"Executed successfully: ","Projection matching, state: %s, number of images:%7d"%(Tracker["state"],len(params)))
 			write_text_row(params, os.path.join(Tracker["directory"], "params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"])) )
@@ -9441,7 +9309,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 
 		projdata[procid] = []
 		if Tracker["constants"]["small_memory"]:
-			original_data[procid], oldparams[procid], start_end[procid] = getindexdata(partids[procid], partstack[procid], \
+			original_data[procid], oldparams[procid] = getindexdata(partids[procid], partstack[procid], \
 			os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_%01d.txt"%procid), \
 			original_data[procid], small_memory = Tracker["constants"]["small_memory"], \
 			nproc = Blockdata["nproc"], myid = Blockdata["myid"], mpi_comm = MPI_COMM_WORLD)
@@ -9456,75 +9324,23 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		oldparams[procid] = []
 		if Tracker["constants"]["small_memory"]: original_data[procid]	= []
 
-		if( Blockdata["myid"] == Blockdata["main_node"]):
-			# Carry over chunk information
-			cmd = "{} {} {}".format("cp -p", os.path.join(Tracker["previousoutputdir"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]-1)), \
-									os.path.join(Tracker["directory"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"])) )
-			junk = cmdexecute(cmd)
-
-		chunk_file = os.path.join(Tracker["directory"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
-		params_file = os.path.join(Tracker["directory"],"params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
-		outlier_file = os.path.join(Tracker["directory"],"outlier-params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
-
-		outlier_list, outlier_full = calculate_prior_values(
-			tracker=Tracker,
-			blockdata=Blockdata,
-			outlier_file=outlier_file,
-			params_file=params_file,
-			chunk_file=chunk_file,
-			im_start=start_end[procid][0],
-			im_end=start_end[procid][1],
-			procid=procid
-			)
-
-		if Tracker['prior']['apply_prior']:
-			pass
-		else:
-			outlier_list = [0] * len(projdata[procid])
-
-		assert len(newparamstructure[procid]) == len(projdata[procid])
-		assert len(newparamstructure[procid]) == len(norm_per_particle[procid])
-		assert len(newparamstructure[procid]) == len(outlier_list), (len(newparamstructure[procid]), len(outlier_list))
-		assert len(norm_per_particle[procid]) == len(outlier_list), (len(norm_per_particle[procid]), len(outlier_list))
-		assert len(projdata[procid]) == len(outlier_list), (len(projdata[procid]), len(outlier_list))
-
-		norm_per_particle_outlier = []
-		newparamstructure_outlier = []
-		projdata_outlier = []
-		for idx, entry in enumerate(outlier_list):
-			if int(entry) == 0:
-				projdata_outlier.append(projdata[procid][idx])
-				norm_per_particle_outlier.append(norm_per_particle[procid][idx])
-				newparamstructure_outlier.append(newparamstructure[procid][idx])
+		do3d(procid, projdata[procid], newparamstructure[procid], refang, rshifts, norm_per_particle[procid], Blockdata["myid"], smearing = True, mpi_comm = MPI_COMM_WORLD)
 		projdata[procid] = []
-
-		assert len(projdata_outlier) == len([entry for entry in outlier_list if int(entry) == 0]), (len(projdata_outlier), len([entry for entry in outlier_list if int(entry) == 0]))
-		assert len(norm_per_particle_outlier) == len(newparamstructure_outlier)
-		assert len(norm_per_particle_outlier) == len(projdata_outlier)
-
-		total_left_particles = wrap_mpi_gatherv(norm_per_particle_outlier, Blockdata["main_node"], MPI_COMM_WORLD)
-		if Blockdata['myid'] == Blockdata['main_node']: 
-			sp_global_def.sxprint('Use {0} particles for final reconstruction!'.format(len(total_left_particles)))
-
-		do3d(procid, projdata_outlier, newparamstructure_outlier, refang, rshifts, norm_per_particle_outlier, Blockdata["myid"], smearing = True, mpi_comm = MPI_COMM_WORLD)
-		projdata_outlier = []
-		newparamstructure_outlier = []
-		norm_per_particle_outlier = []
 		if Tracker["changed_delta"]:
 			Tracker["nxinit"] = org_nxinit
 
 		if( Blockdata["myid_on_node"] == 0 ):
 			for kproc in range(Blockdata["no_of_processes_per_group"]):
 				if( kproc == 0 ):
-					dump_object_to_json(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,Blockdata["myid"],Tracker["mainiteration"])), newparamstructure[procid])
+					fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,Blockdata["myid"],Tracker["mainiteration"])),'w')
+					json.dump(newparamstructure[procid], fout)
+					fout.close()
 				else:
 					dummy = wrap_mpi_recv(kproc, Blockdata["shared_comm"])
-					dump_object_to_json(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,(Blockdata["color"]*Blockdata["no_of_processes_per_group"] + kproc),Tracker["mainiteration"])), dummy)
+					fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,(Blockdata["color"]*Blockdata["no_of_processes_per_group"] + kproc),Tracker["mainiteration"])),'w')
+					json.dump(dummy, fout)
+					fout.close()
 					del dummy
-				try:
-					os.remove(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,(Blockdata["color"]*Blockdata["no_of_processes_per_group"] + kproc),Tracker["mainiteration"]-1)))
-				except OSError:
-					pass
 		else:
 			wrap_mpi_send(newparamstructure[procid], 0, Blockdata["shared_comm"])
 
@@ -9542,7 +9358,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		org_nxinit = Tracker["nxinit"]
 		Tracker["nxinit"] = Tracker["constants"]["nnxo"]
 	
-	rec3d_make_maps(compute_fsc = True, regularized = True)
+	rec3d_make_maps(compute_fsc = False, regularized = False, nclasses=nclasses)
 
 	if Tracker["changed_delta"]:
 		Tracker["nxinit"] = org_nxinit
@@ -9552,133 +9368,85 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 	#exit()
 	#
 	#  Change to current params
-	partids = [None]*2
-	for procid in range(2):  partids[procid] = os.path.join(Tracker["directory"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
-	partstack = [None]*2
-	vol = [None]*2
-	for procid in range(2):  partstack[procid] = os.path.join(Tracker["directory"],"params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
+	partids = [None]*nclasses
+	for procid in range(nclasses):  partids[procid] = os.path.join(Tracker["directory"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
+	partstack = [None]*nclasses
+	vol = [None]*nclasses
+	for procid in range(nclasses):  partstack[procid] = os.path.join(Tracker["directory"],"params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
 	if( Blockdata["myid"] == Blockdata["main_node"]):
-		pinids = read_text_file(partids[0])  + read_text_file(partids[1])
-		params = read_text_row(partstack[0]) + read_text_row(partstack[1])
+		# Carry over chunk information
+		for procid in range(nclasses):
+			cmd = "{} {} {}".format("cp -p", os.path.join(Tracker["previousoutputdir"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]-1)), \
+									os.path.join(Tracker["directory"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"])) )
+			junk = cmdexecute(cmd)
 
-		assert(len(pinids) == len(params))
+		#pinids = read_text_file(partids[0])  + read_text_file(partids[1])
+		#params = read_text_row(partstack[0]) + read_text_row(partstack[1])
 
-		for i in range(len(pinids)):
-			pinids[i] = [ pinids[i], params[i] ]
-		del params
-		pinids.sort()
+		#assert(len(pinids) == len(params))
 
-		write_text_file([pinids[i][0] for i in range(len(pinids))], os.path.join(Tracker["directory"] ,"indexes_%03d.txt"%(Tracker["mainiteration"])))
-		write_text_row( [pinids[i][1] for i in range(len(pinids))], os.path.join(Tracker["directory"] ,"params_%03d.txt"%(Tracker["mainiteration"])))
-		del pinids
+		#for i in range(len(pinids)):
+		#	pinids[i] = [ pinids[i], params[i] ]
+		#del params
+		#pinids.sort()
 
-	for procid in range(2):
-		if Blockdata['myid'] == Blockdata['main_node'] and Tracker['constants']['plot_ang_dist']:
-			### NEEDS TO BE REACTIVATED AFTER THE SYMCLASS CHANGE
-			outlier_full = []
-			sxprint('Create angular distribution plot for chunk {0}'.format(procid))
-			delta = np.maximum(Tracker['delta'], 3.75)
-			exclude = []
-			exclude.append(
-				[
-					None,
-					os.path.join(Tracker["directory"], "ang_dist_{0}".format(procid)),
-					'',
-					]
-				)
-			if np.array(outlier_full).any():
-				exclude.append(
-					[
-						outlier_full,
-						os.path.join(Tracker["directory"], "ang_dist_{0}_outlier".format(procid)),
-						'_outlier',
-						]
-					)
-
-			for exclude_list, dir_name, suffix in exclude:
-				sp_utilities.angular_distribution(
-					params_file=partstack[procid],
-					output_folder=dir_name,
-					prefix='ang_dist{0}'.format(suffix),
-					method=Tracker['constants']['angle_method'],
-					pixel_size=1,
-					delta=delta,
-					symmetry=Tracker['constants']['symmetry'],
-					box_size=Tracker['constants']['nnxo'],
-					particle_radius=Tracker['constants']['radius'],
-					dpi=72,
-					do_print=False,
-					exclude=exclude_list,
-					)
-				sp_utilities.angular_distribution(
-					params_file=partstack[procid],
-					output_folder=dir_name,
-					prefix='full_ang_dist{0}'.format(suffix),
-					method=Tracker['constants']['angle_method'],
-					pixel_size=1,
-					delta=delta,
-					symmetry=Tracker['constants']['symmetry'] + '_full',
-					box_size=Tracker['constants']['nnxo'],
-					particle_radius=Tracker['constants']['radius'],
-					dpi=72,
-					do_print=False,
-					exclude=exclude_list,
-					)
+		#write_text_file([pinids[i][0] for i in range(len(pinids))], os.path.join(Tracker["directory"] ,"indexes_%03d.txt"%(Tracker["mainiteration"])))
+		#write_text_row( [pinids[i][1] for i in range(len(pinids))], os.path.join(Tracker["directory"] ,"params_%03d.txt"%(Tracker["mainiteration"])))
+		#del pinids
 	mpi_barrier(MPI_COMM_WORLD)
 
-	if(Tracker["mainiteration"] == 1 ):
-		acc_rot = acc_trans = 1.e23
-	else:
-		if( Blockdata["myid"] == Blockdata["main_node"] ):
-			Blockdata["bckgnoise"]= get_im(os.path.join(Tracker["directory"],"bckgnoise.hdf"))
-			nnx = Blockdata["bckgnoise"].get_xsize()
-			nny = Blockdata["bckgnoise"].get_ysize()
-		else:
-			nnx = 0
-			nny = 0
-		nnx = bcast_number_to_all(nnx)
-		nny = bcast_number_to_all(nny)
-		if( Blockdata["myid"] != Blockdata["main_node"] ):
-			Blockdata["bckgnoise"] = model_blank(nnx,nny, 1, 1.0)
-		bcast_EMData_to_all(Blockdata["bckgnoise"], Blockdata["myid"], source_node = Blockdata["main_node"])
+	#if(Tracker["mainiteration"] == 1 ):
+	#	acc_rot = acc_trans = 1.e23
+	#else:
+	#	if( Blockdata["myid"] == Blockdata["main_node"] ):
+	#		Blockdata["bckgnoise"]= get_im(os.path.join(Tracker["directory"],"bckgnoise.hdf"))
+	#		nnx = Blockdata["bckgnoise"].get_xsize()
+	#		nny = Blockdata["bckgnoise"].get_ysize()
+	#	else:
+	#		nnx = 0
+	#		nny = 0
+	#	nnx = bcast_number_to_all(nnx)
+	#	nny = bcast_number_to_all(nny)
+	#	if( Blockdata["myid"] != Blockdata["main_node"] ):
+	#		Blockdata["bckgnoise"] = model_blank(nnx,nny, 1, 1.0)
+	#	bcast_EMData_to_all(Blockdata["bckgnoise"], Blockdata["myid"], source_node = Blockdata["main_node"])
 
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			params = read_text_row(os.path.join(Tracker["directory"],"params-chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_row(os.path.join(Tracker["directory"],"params-chunk_1_%03d.txt"%(Tracker["mainiteration"])))
-			li     = read_text_file(os.path.join(Tracker["directory"],"chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_file(os.path.join(Tracker["directory"],"chunk_1_%03d.txt"%(Tracker["mainiteration"])))
-			ctfs   = EMUtil.get_all_attributes(Tracker["constants"]["stack"],'ctf')
-			ctfs   = [ctfs[i] for i in li]
-			particle_groups = read_text_file(os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_0.txt") ) + read_text_file(os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_1.txt") )
-			npart = 500/Blockdata["nproc"] + 1
-			li = list(range(len(ctfs)))
-			shuffle(li)
-			li = li[:npart*Blockdata["nproc"]]
-			params = [params[i] for i in li]
-			ctfs = [[ctfs[i].defocus, ctfs[i].cs, ctfs[i].voltage, ctfs[i].apix, ctfs[i].bfactor, ctfs[i].ampcont, ctfs[i].dfdiff, ctfs[i].dfang] for i in li]
-			particle_groups = [particle_groups[i] for i in li]
-		else:
-			params = 0
-			ctfs = 0
-			particle_groups = 0
-		params = wrap_mpi_bcast(params, Blockdata["main_node"])
-		ctfs   = wrap_mpi_bcast(ctfs,   Blockdata["main_node"])
-		particle_groups = wrap_mpi_bcast(particle_groups, Blockdata["main_node"])
-		#print(" A ",Blockdata["myid"] ,len(params),len(ctfs),len(particle_groups),len(params)/Blockdata["nproc"])
-		npart = len(params)/Blockdata["nproc"]
-		params = params[Blockdata["myid"]*npart:(Blockdata["myid"]+1)*npart]
-		ctfs = [generate_ctf(ctfs[i]) for i in range(Blockdata["myid"]*npart,(Blockdata["myid"]+1)*npart)]
-		particle_groups = particle_groups[Blockdata["myid"]*npart:(Blockdata["myid"]+1)*npart]
-		Tracker["refvol"] = os.path.join(Tracker["directory"], "vol_0_%03d.hdf"%(Tracker["mainiteration"]))
-		#print(" B ",Blockdata["myid"] ,len(params),len(ctfs),len(particle_groups),npart)
-		cerrs(params, ctfs, particle_groups)
-		del params, ctfs, particle_groups
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			write_text_row( [[Tracker["acc_rot"], Tracker["acc_trans"]]], os.path.join(Tracker["directory"] ,"accuracy_%03d.txt"%(Tracker["mainiteration"])) )
+	#	if(Blockdata["myid"] == Blockdata["main_node"]):
+	#		params = read_text_row(os.path.join(Tracker["directory"],"params-chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_row(os.path.join(Tracker["directory"],"params-chunk_1_%03d.txt"%(Tracker["mainiteration"])))
+	#		li     = read_text_file(os.path.join(Tracker["directory"],"chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_file(os.path.join(Tracker["directory"],"chunk_1_%03d.txt"%(Tracker["mainiteration"])))
+	#		ctfs   = EMUtil.get_all_attributes(Tracker["constants"]["stack"],'ctf')
+	#		ctfs   = [ctfs[i] for i in li]
+	#		particle_groups = read_text_file(os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_0.txt") ) + read_text_file(os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_1.txt") )
+	#		npart = 500/Blockdata["nproc"] + 1
+	#		li = list(range(len(ctfs)))
+	#		shuffle(li)
+	#		li = li[:npart*Blockdata["nproc"]]
+	#		params = [params[i] for i in li]
+	#		ctfs = [[ctfs[i].defocus, ctfs[i].cs, ctfs[i].voltage, ctfs[i].apix, ctfs[i].bfactor, ctfs[i].ampcont, ctfs[i].dfdiff, ctfs[i].dfang] for i in li]
+	#		particle_groups = [particle_groups[i] for i in li]
+	#	else:
+	#		params = 0
+	#		ctfs = 0
+	#		particle_groups = 0
+	#	params = wrap_mpi_bcast(params, Blockdata["main_node"])
+	#	ctfs   = wrap_mpi_bcast(ctfs,   Blockdata["main_node"])
+	#	particle_groups = wrap_mpi_bcast(particle_groups, Blockdata["main_node"])
+	#	#print(" A ",Blockdata["myid"] ,len(params),len(ctfs),len(particle_groups),len(params)/Blockdata["nproc"])
+	#	npart = len(params)/Blockdata["nproc"]
+	#	params = params[Blockdata["myid"]*npart:(Blockdata["myid"]+1)*npart]
+	#	ctfs = [generate_ctf(ctfs[i]) for i in range(Blockdata["myid"]*npart,(Blockdata["myid"]+1)*npart)]
+	#	particle_groups = particle_groups[Blockdata["myid"]*npart:(Blockdata["myid"]+1)*npart]
+	#	Tracker["refvol"] = os.path.join(Tracker["directory"], "vol_0_%03d.hdf"%(Tracker["mainiteration"]))
+	#	#print(" B ",Blockdata["myid"] ,len(params),len(ctfs),len(particle_groups),npart)
+	#	cerrs(params, ctfs, particle_groups)
+	#	del params, ctfs, particle_groups
+	#	if(Blockdata["myid"] == Blockdata["main_node"]):
+	#		write_text_row( [[Tracker["acc_rot"], Tracker["acc_trans"]]], os.path.join(Tracker["directory"] ,"accuracy_%03d.txt"%(Tracker["mainiteration"])) )
 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		anger, shifter = params_changes( read_text_row(os.path.join(Tracker["directory"],"params_%03d.txt"%(Tracker["mainiteration"]))), read_text_row(os.path.join(Tracker["previousoutputdir"],"params_%03d.txt"%(Tracker["mainiteration"]-1))) )
-		write_text_row( [[anger, shifter]], os.path.join(Tracker["directory"] ,"error_thresholds_%03d.txt"%(Tracker["mainiteration"])) )
+		#anger, shifter = params_changes( read_text_row(os.path.join(Tracker["directory"],"params_%03d.txt"%(Tracker["mainiteration"]))), read_text_row(os.path.join(Tracker["previousoutputdir"],"params_%03d.txt"%(Tracker["mainiteration"]-1))) )
+		#write_text_row( [[anger, shifter]], os.path.join(Tracker["directory"] ,"error_thresholds_%03d.txt"%(Tracker["mainiteration"])) )
 
-		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		line = ''
 		sxprint(line,"Average displacements for angular directions = %6.2f degrees; and shifts = %5.1f pixels"%(anger, shifter) )
 
@@ -9686,7 +9454,9 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 
 		if  Blockdata["bckgnoise"] :
 			Blockdata["bckgnoise"] = "computed"
-		dump_tracker_to_json(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"]), Tracker)
+		fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"]),'w')
+		json.dump(Tracker, fout)
+		fout.close()
 	Tracker["previousoutputdir"] = Tracker["directory"]
 	return # parameters are all passed by Tracker
 
@@ -9702,171 +9472,6 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 #   This can be used to restart process from an arbitrary iteration.
 #   
 #
-
-
-def reduce_shifts(sx, sy, img):
-	def rot_matrix(angle):
-		angle = np.radians(angle)
-		matrix = np.array([
-			[np.cos(angle), -np.sin(angle)],
-			[np.sin(angle), np.cos(angle)]
-			])
-		return matrix
-
-	if Tracker['constants']['helical_rise'] is not None:
-		try:
-			rotation_angle = img.get_attr('segment_angle')
-		except AttributeError:
-			pass
-		else:
-			rise = Tracker['constants']['helical_rise'] / float(Tracker['constants']['pixel_size'])
-			rise_half = rise / 2.0
-			point = np.array([sx, sy])
-			rot_point = np.dot(rot_matrix(rotation_angle), point.T)
-			rot_point[0] = ((rot_point[0] + rise_half) % rise ) - rise_half
-			sx, sy = np.dot(rot_matrix(rotation_angle).T, rot_point.T)
-
-	return int(round(sx)), int(round(sy))
-
-
-def get_image_statistics(image, mask, invert):
-	if Tracker['constants']['filament_width'] is None:
-		mask2d = mask
-	else:
-		mask2d = sp_utilities.model_rotated_rectangle2D(
-			radius_long=int(np.sqrt(2 * image.get_xsize()**2) // 2),
-			radius_short=int(Tracker['constants']['filament_width'] * image.get_xsize() / float(Tracker['constants']['nnxo']) + 0.5) // 2,
-			nx=image.get_xsize(),
-			ny=image.get_ysize(),
-			angle=image.get_attr('segment_angle'),
-			)
-
-	return Util.infomask(image, mask2d, invert)
-
-
-def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_file, im_start, im_end, procid):
-	"""Calculate the prior values and identify outliers"""
-
-	if not tracker['constants']['outlier_by']:
-		return [0] * (im_end - im_start), None
-
-	# Print to screen
-	if(blockdata["myid"] == blockdata["main_node"]):
-		sxprint("Executed successfully: ", "Prior calculation")
-
-	# Calculate outliers
-	if(blockdata["myid"] == blockdata["main_node"] ):
-		# Calculate priors
-		outliers, new_params, new_index = sp_helix_fundamentals.calculate_priors(
-			tracker=Tracker,
-			params_file=params_file,
-			index_file=chunk_file,
-			group_id=Tracker['constants']['outlier_by'],
-			typ='sphire',
-			tol_psi=Tracker['prior']['tol_psi'],
-			tol_theta=Tracker['prior']['tol_theta'],
-			tol_filament=Tracker['prior']['tol_filament'],
-			tol_std=Tracker['prior']['tol_std'],
-			tol_mean=Tracker['prior']['tol_mean'],
-			outlier_method=Tracker['prior']['outlier_method'],
-			prior_method=Tracker['prior']['prior_method'],
-			force_outlier=Tracker['prior']['force_outlier'],
-			window_size=Tracker['prior']['window_size'],
-			remove_outlier=Tracker['prior']['remove_outlier'],
-			symclass=Blockdata['symclass'],
-			plot=Tracker['prior']['plot'],
-			)
-
-		# Print to screen
-		nr_outliers = len(outliers[outliers == 1])
-		len_data = len(outliers)
-		no_outliers = len_data - nr_outliers
-		sxprint('Chunk {0}: Discarded {1}|{2:.1f}%; Kept {3}|{4:.1f}%; Nr. particles {5}'.format(
-			procid,
-			nr_outliers,
-			100*nr_outliers/float(len_data),
-			no_outliers,
-			100*no_outliers/float(len_data),
-			len_data
-			))
-		if Tracker['prior']['force_outlier']:
-			shutil.copy(params_file, '{0}_old'.format(params_file))
-			shutil.copy(new_params, params_file)
-
-		if Tracker['prior']['apply_prior']:
-			outliers = outliers.tolist()
-		else:
-			outliers = [0] * len_data
-
-		if Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]) > 10:
-			sxprint('Resolution not sufficient to remove outliers! Do not discard outlier!')
-			outliers = [0] * len_data
-		elif 100*no_outliers/float(len_data) < 50:
-			sxprint('Number of outliers too large! Do not discard outlier!')
-			outliers = [0] * len_data
-
-		np.savetxt(outlier_file, outliers)
-	else:
-		# Dummy variable
-		outliers = 0
-
-	# Distribute outlier list to all processes
-	outliers = bcast_list_to_all(outliers, blockdata["myid"], blockdata["main_node"])
-
-	# Get the node specific outlier information
-	outliers_node = outliers[im_start:im_end]
-
-	return outliers_node, outliers
-
-
-def load_tracker_from_json(file_name):
-	# Expects this only beeing executed on the main node
-	tracker = load_object_from_json(file_name)
-	try:
-		if tracker['constants']['stack_prior'] is not None:
-			tracker['constants']['stack_prior_dtype'] = [tuple(entry) for entry in tracker['constants']['stack_prior_dtype']]
-			tracker['constants']['stack_prior'] = np.genfromtxt(
-				tracker['constants']['stack_prior'],
-				dtype=tracker['constants']['stack_prior_dtype']
-				)
-	except KeyError:
-		tracker['constants']['stack_prior'] = None
-	return tracker
-
-def load_object_from_json(file_name):
-	with open(file_name, 'r') as fin:
-		json_object = convert_json_fromunicode(json.load(fin))
-	return json_object
-
-def dump_tracker_to_json(file_name, tracker):
-	if tracker['constants']['stack_prior'] is not None:
-		np.savetxt(
-			os.path.join(tracker['constants']['masterdir'], 'stack_prior.txt'),
-			Tracker['constants']['stack_prior'],
-			fmt=Tracker['constants']['stack_prior_fmt']
-			)
-		tracker['constants']['stack_prior'] = os.path.join(tracker['constants']['masterdir'], 'stack_prior.txt')
-	dump_object_to_json(file_name, tracker, indent=4)
-
-def dump_object_to_json(file_name, data_object, indent=None):
-	with open(file_name, 'w') as fout:
-		json.dump(data_object, fout, indent=indent)
-
-
-def prior_stack_fmt(sphire_prior_stack):
-	fmt = []
-	for entry in sphire_prior_stack.dtype.names:
-		if isinstance(sphire_prior_stack[entry][0], basestring):
-			fmt.append('% {0}s'.format(np.max([len(str_entry) for str_entry in sphire_prior_stack[entry]])+3))
-		elif isinstance(sphire_prior_stack[entry][0], int):
-			fmt.append('% {0}d'.format(len(str(np.max(sphire_prior_stack[entry])))+3))
-		elif isinstance(sphire_prior_stack[entry][0], float):
-			fmt.append('% {0}.6f'.format(len(str(np.max(sphire_prior_stack[entry])))+3))
-		else:
-			sxprint('UNKNOWN', entry, type(entry))
-	return ' '.join(fmt)
-
-
 def main():
 
 	from sp_utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
@@ -9941,19 +9546,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		parser.add_option("--shake",	           		type="float", 	     	default= 0.5,                	help="Shake (0.5)")
 		parser.add_option("--small_memory",         	action="store_true",  	default= False,             	help="Data will not be kept in memory if small_memory is true. (default False)")
 		parser.add_option("--ccfpercentage",			type="float", 	      	default= 99.9,               	help="Percentage of the correlation peak area to be included, 0.0 corresponds to hard matching (default 99.9%)")
-		parser.add_option("--memory_per_node",          type="float",           default= -1.0,                	help="User provided information about memory per node (NOT per CPU) [in GB] (default 2GB*(number of CPUs per node))")	
 		parser.add_option("--nonorm",               	action="store_true",  	default= False,              	help="Do not apply image norm correction. (default False)")
-
-		parser.add_option("--plot_ang_dist",         	action='store_true',  	default=False,              	help="Plot the angular distribution plot for every iteration. This will take some time for high symmetries. (Default False)")
-		parser.add_option("--theta_min",               	type="float",  	default= -1,              	help="Lower limit for the out-of-plane rotation angle. Default is the full range based on the symmetry. (Default -1)")
-		parser.add_option("--theta_max",               	type="float",  	default= -1,              	help="Upper limit for the out-of-plane rotation angle.  Default is the full range based on the symmetry. (Default -1)")
-		parser.add_option("--howmany",               	type="int",  	default= 4,              	help="Upper limit for the out-of-plane rotation angle.  Default is the full range based on the symmetry. (Default -1)")
-		parser.add_option("--angle_method",               	type="str",  	default='S',              	help="Even angle creation strategy. Choices: S, P, M. (Default S)")
-		parser.add_option("--helical_rise",         	type="float",  	default=None,              	help="Helical rise in angstrom. This is used to limit the shift along the helical axis. (Default None)")
-		parser.add_option("--filament_width",         	type="int",  	default=None,              	help="Filament width used to normalize the particles. (Default None)")
-		parser.add_option("--chunk_by",               	type="str",  	default= 'ptcl_source_image',              	help="Group particles by header information. For helical refinement use filament or filament_id if present. (Default ptcl_source_image)")
-		parser.add_option("--outlier_by",               	type="str",  	default=None,              	help="Group particles by header information. For helical refinement use filament or filament_id if present. (Default ptcl_source_image)")
-		parser.add_option("--outlier_tracker",               	type="str",  	default=None,              	help="Skip stack file creation and load the stack from an existing stack.")
+		parser.add_option("--memory_per_node",          type="float",           default= -1.0,                	help="User provided information about memory per node (NOT per CPU) [in GB] (default 2GB*(number of CPUs per node))")	
 		(options, args) = parser.parse_args(sys.argv[1:])
 
 		if( len(args) == 3 ):
@@ -10019,20 +9613,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		Blockdata["rkeepf"] = 0.90
 
 		if not restart_mode: #<<<-------Fresh run
-			Prior = {}
-			Prior['tol_psi'] = 30
-			Prior['tol_theta'] = 15
-			Prior['tol_filament'] = 0.2
-			Prior['tol_std'] = 1
-			Prior['tol_mean'] = 30
-			Prior['outlier_method'] = 'deg'
-			Prior['prior_method'] = 'running'
-			Prior['force_outlier'] = False
-			Prior['remove_outlier'] = False
-			Prior['apply_prior'] = False
-			Prior['window_size'] = 3
-			Prior['plot'] = True
-
 			#  Constant settings of the project
 			Constants		       			        = {}
 			Constants["stack"]             			= args[0]
@@ -10066,32 +9646,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			Constants["small_memory"]      			= options.small_memory
 			Constants["initialshifts"]			    = options.initialshifts
 			Constants["memory_per_node"] 			= options.memory_per_node
-			Constants["plot_ang_dist"]			    = options.plot_ang_dist
-			Constants["angle_method"]			    = options.angle_method
-			Constants["helical_rise"]			    = options.helical_rise
-			Constants["filament_width"]			    = options.filament_width
-			Constants["outlier_by"]				    = options.outlier_by
-			Constants["do_exhaustive"]				= False
-
-			if options.outlier_by is None:
-				Constants['stack_prior'] = None
-				Constants['stack_prior_fmt'] = None
-				Constants['stack_prior_dtype'] = None
-			else:
-				if Blockdata['myid'] == Blockdata['main_node']:
-					sxprint('Import outlier information')
-					if options.outlier_tracker:
-						tmp_tracker = load_tracker_from_json(options.outlier_tracker)
-						Constants['stack_prior'] = tmp_tracker['constants']['stack_prior']
-						del tmp_tracker
-					else:
-						Constants['stack_prior'] = sp_helix_sphire.import_sphire_stack(args[0], options.outlier_by)
-					Constants['stack_prior_fmt'] = prior_stack_fmt(Constants['stack_prior'])
-					Constants['stack_prior_dtype'] = Constants['stack_prior'].dtype.descr
-				else:
-					Constants['stack_prior'] = None
-					Constants['stack_prior_fmt'] = None
-					Constants['stack_prior_dtype'] = None
 
 
 			#
@@ -10105,7 +9659,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			# Initialize Tracker Dictionary with input options
 			Tracker = {}
 			Tracker["constants"]	= Constants
-			Tracker["prior"]		= Prior
 			Tracker["maxit"]		= Tracker["constants"]["maxit"]
 		
 			Tracker["xr"]			= options.xr
@@ -10116,9 +9669,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			Tracker["refvol"]		= None
 			Tracker["nxinit"]		= -1  # will be figured in first AI.
 			Tracker["nxstep"]		= 10
-			Tracker["theta_min"]		= options.theta_min
-			Tracker["theta_max"]		= options.theta_max
-			Tracker["howmany"]		= options.howmany
 			#  Resolution in pixels at 0.5 cutoff
 			Tracker["currentres"]		    = -1
 			Tracker["fsc143"]			    = -1
@@ -10147,7 +9697,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			# ------------------------------------------------------------------------------------
 			# Get the pixel size; if none, set to 1.0, and the original image size
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 				line = ''
 				sxprint(line,"INITIALIZATION OF MERIDIEN")
 				a = get_im(orgstack)
@@ -10294,19 +9843,17 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			kwargs["mpi_comm"] 								= MPI_COMM_WORLD
 			#################################################################################################################################################################
 			if( (Blockdata["myid"] == Blockdata["main_node"]) and (not options.skip_prealignment )):
-				#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 				line = ''
 				sxprint(line,"2D pre-alignment step")
 			## only the master has the parameters
 			params2d = calculate_2d_params_for_centering(kwargs)
 			del kwargs
 			if( (Blockdata["myid"] == Blockdata["main_node"]) and (not options.skip_prealignment )):
-				#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 				line = ''
 				sxprint(line,"2D pre-alignment completed")
 
 			if( Blockdata["myid"] == Blockdata["main_node"] ):
-				os.makedirs(initdir)
+				os.mkdir(initdir)
 				write_text_file(list(range(total_stack)), partids)
 			mpi_barrier(MPI_COMM_WORLD)
 
@@ -10316,7 +9863,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			partstack = [None]*2
 			for procid in range(2):  partstack[procid] = os.path.join(initdir,"params-chunk_%01d_000.txt"%procid)
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				l1, l2 = assign_particles_to_groups(minimum_group_size = 10, name_tag=options.chunk_by)
+				l1, l2 = assign_particles_to_groups(minimum_group_size = 10)
 				write_text_file(l1,partids[0])
 				write_text_file(l2,partids[1])
 				if(options.initialshifts):
@@ -10327,7 +9874,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					write_text_row(tp_list, os.path.join(initdir,"params_000.txt"))
 					write_text_row([tp_list[i] for i in l1], partstack[0])
 					write_text_row([tp_list[i] for i in l2], partstack[1])
-					#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 					line = ''
 					sxprint(line,"Executed successfully: Imported initial parameters from the input stack")
 					del tp_list
@@ -10358,7 +9904,11 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			mainiteration 	= 0
 			Tracker["mainiteration"] = mainiteration
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				dump_tracker_to_json(os.path.join(Tracker["constants"]["masterdir"], "main%03d"%Tracker["mainiteration"], "Tracker_%03d.json"%Tracker["mainiteration"]), Tracker)
+				with open(os.path.join(Tracker["constants"]["masterdir"], \
+					"main%03d"%Tracker["mainiteration"], \
+						"Tracker_%03d.json"%Tracker["mainiteration"]),'w') as fout:
+					json.dump(Tracker, fout)
+				fout.close()
 
 
 		else:# simple restart, at least main000 is completed. Otherwise no need restart
@@ -10368,16 +9918,12 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			initdir 			= os.path.join(masterdir,"main000")
 			keepchecking 		= 1
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				Tracker = load_tracker_from_json(os.path.join(initdir,"Tracker_000.json"))
+				fout 	= open(os.path.join(initdir,"Tracker_000.json"),'r')
+				Tracker = convert_json_fromunicode(json.load(fout))
 				print_dict(Tracker["constants"], "Permanent settings of the original run recovered from main000")
-				stack_prior = Tracker['constants']['stack_prior']
-				Tracker['constants']['stack_prior'] = None
-				sp_global_def.write_command(Tracker["constants"]["masterdir"])
-			else:
-				Tracker = None
-				stack_prior = None
+				fout.close()
+			else: Tracker = None
 			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
-			Tracker['constants']['stack_prior'] = stack_prior
 			mainiteration 	= 0
 			Tracker["mainiteration"] = mainiteration
 
@@ -10405,18 +9951,16 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					mpi_barrier(MPI_COMM_WORLD)
 			if doit :
 				if(Blockdata["myid"] == Blockdata["main_node"]):
-					Tracker = load_tracker_from_json(os.path.join(Tracker["previousoutputdir"], "Tracker_%03d.json"%(Tracker["mainiteration"]-1)))
-					stack_prior = Tracker['constants']['stack_prior']
-					Tracker['constants']['stack_prior'] = None
+					with open(os.path.join(Tracker["previousoutputdir"], \
+					  "Tracker_%03d.json"%(Tracker["mainiteration"]-1)),'r') as fout:
+						Tracker = convert_json_fromunicode(json.load(fout))
+					fout.close()
 					#  It has to be repeated here as Tracker is from previous iteration, I see no other way.
 					Tracker["previousoutputdir"]	= os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
 					Tracker["mainiteration"]		= mainiteration
 					Tracker["directory"]			= os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
-				else:
-					Tracker = None
-					stack_prior = None
+				else: Tracker = None
 				Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
-				Tracker['constants']['stack_prior'] = stack_prior
 				### 
 				if restart_mode:
 					update_tracker(sys.argv[1:])
@@ -10453,14 +9997,12 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				if keepgoing == 1: # not converged
 					if Blockdata["myid"] == Blockdata["main_node"]:
 						if( Tracker["mainiteration"] > 1 ):
-							#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 							line = ''
 							sxprint(line,"Resolution achieved in ITERATION  #%2d: %3d/%3d pixels, %5.2fA/%5.2fA."%
 								(Tracker["mainiteration"]-1, \
 								Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
 								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]) ) )
 						sxprint("\n\n\n\n")
-						#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 						line = ''
 						sxprint(line,"ITERATION  #%2d. Current state: %14s, nxinit: %3d, delta: %9.4f, xr: %9.4f, ts: %9.4f"%\
 							(Tracker["mainiteration"], Tracker["state"],Tracker["nxinit"], Tracker["delta"], Tracker["xr"], Tracker["ts"]  ))
@@ -10468,9 +10010,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					li = True
 					doit2, keepchecking2 = checkstep(Tracker["directory"], li)
 					if(Blockdata["myid"] == Blockdata["main_node"] and doit2):
-						cmd = "{} {}".format("mkdir -p", Tracker["directory"])
+						cmd = "{} {}".format("mkdir", Tracker["directory"])
 						junk = cmdexecute(cmd)
-						cmd = "{} {}".format("mkdir -p", os.path.join(Tracker["directory"],"oldparamstructure"))
+						cmd = "{} {}".format("mkdir", os.path.join(Tracker["directory"],"oldparamstructure"))
 						junk = cmdexecute(cmd)
 					if(not doit2):  ERROR("There was a gap in main directories, program cannot proceed","sxmeridien",1,Blockdata["myid"])
 
@@ -10491,7 +10033,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 
 						sxprint("The iteration that contains the best resolution is %d"%Tracker["constants"]["best"])
 						if Tracker["constants"]["best"] ==2:  sxprint("No resolution improvement in refinement ")
-						dump_tracker_to_json(os.path.join(masterdir,"Tracker_final.json"), Tracker)
+						fout = open(os.path.join(masterdir,"Tracker_final.json"),'w')
+						json.dump(Tracker, fout)
+						fout.close()
 					mpi_barrier(MPI_COMM_WORLD)
 					
 					newparamstructure 			= [[],[]]
@@ -10526,7 +10070,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		parser.add_option("--ccfpercentage",			type="float", 	      	default= 99.9,               	help="Percentage of the correlation peak area to be included, 0.0 corresponds to hard matching (default 99.9%)")
 		parser.add_option("--nonorm",               	action="store_true",  	default= False,              	help="Do not apply image norm correction. (default False)")
 		parser.add_option("--memory_per_node",          type="float",           default= -1.0,                	help="User provided information about memory per node (NOT per CPU) [in GB] (default 2GB*(number of CPUs per node))")	
-		parser.add_option("--skip_primary",               	action="store_true",  	default= False,              	help="Skip the primary step and go directly to RESTRICTED.")
+		parser.add_option("--nclasses",          type="int",           default=2,                	help="Number of classes!")	
 		(options, args) = parser.parse_args(sys.argv[1:])
 
 		if( len(args) == 2 ):
@@ -10584,6 +10128,11 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			ERROR("Local searches requested, delta cannot be larger than 3.73.", "meridien",1, Blockdata["myid"])
 		if( options.memory_per_node < 0.0 ): options.memory_per_node = 2.0*Blockdata["no_of_processes_per_group"]
 		#  For the time being we use all CPUs during refinement
+		Blockdata["node_volume"] = [0] * options.nclasses
+		#  We need two CPUs for processing of volumes, they are taken to be main CPUs on each volume
+		#  We have to send the two myids to all nodes so we can identify main nodes on two selected groups.
+		Blockdata["main_shared_nodes"]	= [entry*Blockdata["no_of_processes_per_group"] for entry in Blockdata['node_volume']]
+
 		Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
 		Blockdata["nsubset"]      = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
 		
@@ -10625,6 +10174,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			Constants["nonorm"]            			= options.nonorm
 			Constants["small_memory"]      			= options.small_memory
 			Constants["memory_per_node"] 			= options.memory_per_node
+			Constants["nclasses"]					= options.nclasses
 
 
 			#
@@ -10662,22 +10212,21 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			Tracker["previousoutputdir"] 	= ""
 			Tracker["acc_rot"]           	= 0.0
 			Tracker["acc_trans"]			= 0.0
-			Tracker["avgvaradj"]			= [1.0,1.0]  # This has to be initialized to 1.0 !!
+			Tracker["avgvaradj"]			= [1.0] * options.nclasses  # This has to be initialized to 1.0 !!
 			Tracker["mainiteration"]     	= 0
 			Tracker["lentop"]				= 2000
-			Tracker["state"]             	= Tracker["constants"]["states"][options.skip_primary]
-			Tracker["nima_per_chunk"]    	= [0,0]
+			Tracker["state"]             	= Tracker["constants"]["states"][1]
+			Tracker["nima_per_chunk"]    	= [0] * options.nclasses
 			###<<<----state 
 			Tracker["bestres"]          	= 0
 			Tracker["bestres_143"]          = 0
 			Blockdata["bckgnoise"]          = None
-			Blockdata["accumulatepw"]       = [[],[]]
+			Blockdata["accumulatepw"]       = [[] for entry in range(options.nclasses)]
 			Tracker["changed_delta"]        = False
 
 			# ------------------------------------------------------------------------------------
 			# Get the pixel size; if none, set to 1.0, and the original image size
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 				line = ''
 				sxprint(line,"INITIALIZATION OF LOCAL MERIDIEN")
 				a = get_im(orgstack)
@@ -10773,7 +10322,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			initdir = os.path.join(Tracker["constants"]["masterdir"],"main000")
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				if os.path.exists(initdir): shutil.rmtree(initdir)
-				os.makedirs(initdir)
+				os.mkdir(initdir)
 
 
 			if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -10795,44 +10344,44 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			mpi_barrier(MPI_COMM_WORLD)
 
 			#  store params
-			partids = [None]*2
-			for procid in range(2):
+			partids = [None]*options.nclasses
+			for procid in range(options.nclasses):
 				partids[procid] = os.path.join(initdir,"chunk_%01d_000.txt"%procid)
-			partstack = [None]*2
-			for procid in range(2):
+			partstack = [None]*options.nclasses
+			for procid in range(options.nclasses):
 				partstack[procid] = os.path.join(initdir,"params-chunk_%01d_000.txt"%procid)
 				
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				l1, l2 = assign_particles_to_groups(minimum_group_size = 10)
-				write_text_file(l1,partids[0])
-				write_text_file(l2,partids[1])
+				l1 = assign_particles_to_groups(minimum_group_size = 10, nclasses=options.nclasses)
+				for idx in range(options.nclasses):
+					write_text_file(l1,partids[idx])
 				tp_list = EMUtil.get_all_attributes(Tracker["constants"]["stack"], "xform.projection")
 				for i in range(len(tp_list)):
 					dp = tp_list[i].get_params("spider")
 					tp_list[i] = [dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"], 0.0, 1.0, 1.0]
 					
 				write_text_row(tp_list, os.path.join(initdir,"params_000.txt"))
-				write_text_row([tp_list[i] for i in l1], partstack[0])
-				write_text_row([tp_list[i] for i in l2], partstack[1])
+				for idx in range(options.nclasses):
+					write_text_row([tp_list[i] for i in l1], partstack[idx])
 
 				del tp_list
-				del l1, l2
+				del l1
 			else:
-				Tracker["nima_per_chunk"] = [0,0]
-			Tracker["nima_per_chunk"][0]             = bcast_number_to_all(Tracker["nima_per_chunk"][0],             Blockdata["main_node"])
-			Tracker["nima_per_chunk"][1]             = bcast_number_to_all(Tracker["nima_per_chunk"][1],             Blockdata["main_node"])
+				Tracker["nima_per_chunk"] = [0] * nclasses
+			for idx, entry in enumerate(Tracker['nima_per_chunk']):
+				Tracker["nima_per_chunk"][idx]             = bcast_number_to_all(entry,             Blockdata["main_node"])
 			Tracker["constants"]["number_of_groups"] = bcast_number_to_all(Tracker["constants"]["number_of_groups"], Blockdata["main_node"])
 
-			projdata       = [[model_blank(1,1)], [model_blank(1,1)]]
-			oldparams      = [[],[]]
-			currentparams  = [[],[]]
-			original_data  = [None, None]
+			projdata       = [[model_blank(1,1)] for _ in range(options.nclasses)]
+			oldparams      = [[] for _ in range(options.nclasses)]
+			currentparams  = [[] for _ in range(options.nclasses)]
+			original_data  = [None] * options.nclasses
 			#HOHO
 			if( Tracker["constants"]["inires"] > 0 ):
 				Tracker["nxinit"] = min(2*Tracker["constants"]["inires"], Tracker["constants"]["nnxo"] )
 			else: Tracker["nxinit"] = Tracker["constants"]["nnxo"]
 				
-			rec3d_continuation_nosmearing(original_data, MPI_COMM_WORLD)
+			rec3d_continuation_nosmearing(MPI_COMM_WORLD, nclasses=options.nclasses)
 			
 			"""
 			if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -10844,7 +10393,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			"""
 
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				dump_tracker_to_json(os.path.join(initdir,"Tracker_%03d.json"%Tracker["mainiteration"]), Tracker)
+				with open(os.path.join(initdir,"Tracker_%03d.json"%Tracker["mainiteration"]),'w') as fout:
+					json.dump(Tracker, fout)
+				fout.close()
 
 		else:# simple restart, at least main000 is completed. Otherwise no need restart
 
@@ -10857,16 +10408,12 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			initdir 			        = os.path.join(masterdir,"main000")
 			keepchecking 		        = 1
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				Tracker = load_tracker_from_json(os.path.join(initdir,"Tracker_000.json"))
+				with open(os.path.join(initdir,"Tracker_000.json"),'r') as fout:
+					Tracker = convert_json_fromunicode(json.load(fout))
+				fout.close()
 				print_dict(Tracker["constants"], "Permanent settings of the original run recovered from main000")
-				stack_prior = Tracker['constants']['stack_prior']
-				Tracker['constants']['stack_prior'] = None
-				sp_global_def.write_command(Tracker["constants"]["masterdir"])
-			else:
-				Tracker = None
-				stack_prior = None
+			else: Tracker = None
 			Tracker         = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
-			Tracker['constants']['stack_prior'] = stack_prior
 			mainiteration 	= 0
 			Tracker["mainiteration"] = mainiteration
 		# ------------------------------------------------------------------------------------
@@ -10889,18 +10436,16 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					mpi_barrier(MPI_COMM_WORLD)
 			if doit :
 				if(Blockdata["myid"] == Blockdata["main_node"]):
-					Tracker = load_tracker_from_json(os.path.join(Tracker["previousoutputdir"], "Tracker_%03d.json"%(Tracker["mainiteration"]-1)))
-					stack_prior = Tracker['constants']['stack_prior']
-					Tracker['constants']['stack_prior'] = None
+					with open(os.path.join(Tracker["previousoutputdir"], \
+					  "Tracker_%03d.json"%(Tracker["mainiteration"]-1)),'r') as fout:
+						Tracker = convert_json_fromunicode(json.load(fout))
+					fout.close()
 					#  It has to be repeated here as Tracker is from previous iteration, I see no other way.
 					Tracker["previousoutputdir"]	= os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
 					Tracker["mainiteration"]		= mainiteration
 					Tracker["directory"]			= os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
-				else:
-					Tracker = None
-					stack_prior = None
+				else: Tracker = None
 				Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
-				Tracker['constants']['stack_prior'] = stack_prior
 				### 
 				if restart_mode:
 					update_tracker(sys.argv[1:])
@@ -10909,43 +10454,45 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 
 				# prepare names of input file names, they are in main directory,
 				#   log subdirectories contain outputs from specific refinements
-				partids = [None]*2
-				for procid in range(2):
+				partids = [None]*options.nclasses
+				for procid in range(options.nclasses):
 					partids[procid] = os.path.join(Tracker["previousoutputdir"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]-1))
-				partstack = [None]*2
-				for procid in range(2):
+				partstack = [None]*options.nclasses
+				for procid in range(options.nclasses):
 					partstack[procid] = os.path.join(Tracker["previousoutputdir"],"params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]-1))
 
 				mpi_barrier(MPI_COMM_WORLD)
 
-				if(Blockdata["myid"] == Blockdata["main_node"]):
-					fff = read_text_file(os.path.join(Tracker["previousoutputdir"],"driver_%03d.txt"%(Tracker["mainiteration"]-1)))
-					if(Tracker["mainiteration"] == 1):
-						anger   = 1.0e9
-						shifter = 1.0e9
-					else:				
-						[anger, shifter] = read_text_row( os.path.join(Tracker["previousoutputdir"] ,"error_thresholds_%03d.txt"%(Tracker["mainiteration"]-1)) )[0]
-				else:
-					fff = []
-					anger   = 0.0
-					shifter = 0.0
-				fff     = bcast_list_to_all(fff, Blockdata["myid"], source_node = Blockdata["main_node"])
-				anger   = bcast_number_to_all(anger,                source_node = Blockdata["main_node"])
-				shifter = bcast_number_to_all(shifter,              source_node = Blockdata["main_node"])
+				#if(Blockdata["myid"] == Blockdata["main_node"]):
+				#	fff = read_text_file(os.path.join(Tracker["previousoutputdir"],"driver_%03d.txt"%(Tracker["mainiteration"]-1)))
+				#	if(Tracker["mainiteration"] == 1):
+				#		anger   = 1.0e9
+				#		shifter = 1.0e9
+				#	else:				
+				#		[anger, shifter] = read_text_row( os.path.join(Tracker["previousoutputdir"] ,"error_thresholds_%03d.txt"%(Tracker["mainiteration"]-1)) )[0]
+				#else:
+				#	fff = []
+				#	anger   = 0.0
+				#	shifter = 0.0
+				#fff     = bcast_list_to_all(fff, Blockdata["myid"], source_node = Blockdata["main_node"])
+				#anger   = bcast_number_to_all(anger,                source_node = Blockdata["main_node"])
+				#shifter = bcast_number_to_all(shifter,              source_node = Blockdata["main_node"])
 
-				keepgoing = AI_continuation( fff, anger, shifter, Blockdata["myid"] == Blockdata["main_node"])
+				if mainiteration > 5:
+					keepgoing = 0
+				else:
+					keepgoing = 1
+				#keepgoing = AI_continuation( fff, anger, shifter, Blockdata["myid"] == Blockdata["main_node"])
 
 				if keepgoing == 1: # not converged
 					if Blockdata["myid"] == Blockdata["main_node"]:
 						if(Tracker["mainiteration"] > 1):
-							#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 							line = ''
 							sxprint(line,"Resolution achieved in ITERATION  #%2d: %3d/%3d pixels, %5.2fA/%5.2fA."%
 								(Tracker["mainiteration"]-1, \
 								Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
 								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]) ) )
 						sxprint("\n\n\n\n")
-						#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 						line = ''
 						sxprint(line,"ITERATION  #%2d. Current state: %14s, nxinit: %3d, delta: %9.4f, xr: %9.4f, ts: %9.4f"%\
 							(Tracker["mainiteration"], Tracker["state"],Tracker["nxinit"], Tracker["delta"], Tracker["xr"], Tracker["ts"]  ))
@@ -10953,9 +10500,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					li = True
 					doit2, keepchecking2 = checkstep(Tracker["directory"], li)
 					if(Blockdata["myid"] == Blockdata["main_node"] and doit2):
-						cmd = "{} {}".format("mkdir -p", Tracker["directory"])
+						cmd = "{} {}".format("mkdir", Tracker["directory"])
 						junk = cmdexecute(cmd)
-						cmd = "{} {}".format("mkdir -p", os.path.join(Tracker["directory"],"oldparamstructure"))
+						cmd = "{} {}".format("mkdir", os.path.join(Tracker["directory"],"oldparamstructure"))
 						junk = cmdexecute(cmd)
 					if(not doit2):
 						ERROR("There was a gap in main directories, program cannot proceed","sxmeridien",1,Blockdata["myid"])
@@ -10963,7 +10510,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 
 					#  READ DATA AND COMPUTE SIGMA2   ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 					refinement_one_iteration(partids, partstack, original_data, oldparams, projdata, \
-					   general_mode = False, continuation_mode = True)
+					   general_mode = False, continuation_mode = True, nclasses=options.nclasses)
 					#	sxprint("  MOVING  ON --------------------------------------------------------------------")
 				else: # converged, do final
 					if( Blockdata["subgroup_myid"] > -1 ):
@@ -10980,7 +10527,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 						if Tracker["constants"]["best"] ==2:
 							sxprint("No resolution improvement in refinement ")
 						
-						dump_tracker_to_json(os.path.join(masterdir,"Tracker_final.json"), Tracker)
+						with open(os.path.join(masterdir,"Tracker_final.json"),'w') as fout:
+							json.dump(Tracker, fout)
+						fout.close()
 					mpi_barrier(MPI_COMM_WORLD)
 					
 					newparamstructure 			= [[],[]]
@@ -11019,8 +10568,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				if not os.path.exists(masterdir): checking_flag = 0
 			checking_flag = bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"])
-			if checking_flag ==0:
-				ERROR("do_final: refinement directory for final reconstruction does not exist ","meridien", 1, Blockdata["myid"])
+			if checking_flag ==0: ERROR("do_final: refinement directory for final reconstruction does not exist ","meridien", 1, Blockdata["myid"])
 			
 		else:
 			sxprint( "usage: " + usage)
@@ -11045,10 +10593,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				line +=a+"  "
 			sxprint(" shell line command ")
 			sxprint(line)
-
-		if Blockdata["myid"] == Blockdata['main_node']:
-			sp_global_def.write_command(masterdir)
-
 		# ------------------------------------------------------------------------------------
 		#  INPUT PARAMETERS
 		sp_global_def.BATCH = True

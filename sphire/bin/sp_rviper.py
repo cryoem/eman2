@@ -823,6 +823,7 @@ output_directory: directory name into which the output files will be written.  I
 		if not os.path.exists(masterdir):
 			cmd = "{} {}".format("mkdir -p", masterdir)
 			junk = cmdexecute(cmd)
+		sp_global_def.write_command(masterdir)
 
 		if options.filament_width != -1:
 			suffix = '_000_no_align'
@@ -972,7 +973,6 @@ output_directory: directory name into which the output files will be written.  I
 				independent_run_dir = masterdir + DIR_DELIM + NAME_OF_MAIN_DIR + ('%03d' + DIR_DELIM + NAME_OF_RUN_DIR + "%03d" + DIR_DELIM)%(rviper_iter, runs_iter)
 				if run_get_already_processed_viper_runs:
 					cmd = "{} {}".format("mkdir -p", masterdir + DIR_DELIM + NAME_OF_MAIN_DIR + ('%03d' + DIR_DELIM)%(rviper_iter)); junk = cmdexecute(cmd)
-					sp_global_def.write_command(masterdir)
 					cmd = "{} {}".format("rm -rf", independent_run_dir); junk = cmdexecute(cmd)
 					cmd = "{} {}".format("cp -r", get_already_processed_viper_runs() + " " +  independent_run_dir); junk = cmdexecute(cmd)
 

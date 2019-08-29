@@ -647,6 +647,7 @@ if myid == main_node:
 	print("  filtmap =", not filtseg)
 	print("  imask =",imask)
 	print("  init_max =", not init_median)
+	sp_global_def.write_command('.')
 #-------------------------------------
 
 

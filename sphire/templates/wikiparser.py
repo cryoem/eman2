@@ -190,6 +190,8 @@ def construct_keyword_dict():
 	keyword_dict["--second_mask_shape"]             = SXkeyword_map(0, "string")                # if one wants to use the --mol_mass=KILODALTON
 	keyword_dict["--s_fill_mask"]             = SXkeyword_map(0, "bool")                # if one wants to use the --mol_mass=KILODALTON
 	keyword_dict["--mask_threshold"]              = SXkeyword_map(0, "float")               # --mask_threshold=MASK_THRESHOLD (contains keyworkd 'mask' but this should be bool type)
+	keyword_dict["--chunk_by"]              = SXkeyword_map(0, "string")               # --mask_threshold=MASK_THRESHOLD (contains keyworkd 'mask' but this should be bool type)
+	keyword_dict["--outlier_tracker"] = SXkeyword_map(0, "params_any_json")  # --import=INPUT_PARAMS_PATH
 	# Use priority 1 for output
 	keyword_dict["output"]                        = SXkeyword_map(1, "output")              # output_hdf, output_directory, outputfile, outputfile, --output=OUTPUT, output_stack, output_file
 	keyword_dict["outdir"]                        = SXkeyword_map(1, "output")              # outdir
@@ -1848,7 +1850,7 @@ def add_sxcmd_subconfig_meridien_shared(token_edit_list, beta=False):
 	if beta:
 		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("theta_min"); token_edit_list.append(token_edit)
 		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("theta_max"); token_edit_list.append(token_edit)
-		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("even_angle_method"); token_edit_list.append(token_edit)
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("angle_method"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("an"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("shake"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("small_memory"); token_edit_list.append(token_edit)
@@ -1856,15 +1858,13 @@ def add_sxcmd_subconfig_meridien_shared(token_edit_list, beta=False):
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("nonorm"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("function"); token_edit_list.append(token_edit)
 	if beta:
-		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("group_by"); token_edit_list.append(token_edit)
-		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("limit_improvement"); token_edit_list.append(token_edit)
-		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("a_criterion"); token_edit_list.append(token_edit)
-		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("function_ai"); token_edit_list.append(token_edit)
-		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("group_id"); token_edit_list.append(token_edit)
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("chunk_by"); token_edit_list.append(token_edit)
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("outlier_by"); token_edit_list.append(token_edit)
 		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("filament_width"); token_edit_list.append(token_edit)
 		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("helical_rise"); token_edit_list.append(token_edit)
 		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("plot_ang_dist"); token_edit_list.append(token_edit)
-		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("main000"); token_edit_list.append(token_edit)
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("outlier_tracker"); token_edit_list.append(token_edit)
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("howmany"); token_edit_list.append(token_edit)
 
 def add_sxcmd_subconfig_meridien_standard_shared(token_edit_list, beta=False):
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("inires"); token_edit_list.append(token_edit)
@@ -1891,7 +1891,7 @@ def create_sxcmd_subconfig_meridien_standard_fresh(beta=False):
 
 	sxsubcmd_mpi_support = True
 	if beta:
-		sxcmd_subconfig = SXsubcmd_config("3D Refinement (Beta)", "Performs 3D structure refinement using a quasi-Maximum Likelihood approach.", token_edit_list, sxsubcmd_mpi_support, is_modeless = True, subset_config="beta")
+		sxcmd_subconfig = SXsubcmd_config("3D Refinement (Alpha)", "Performs 3D structure refinement for helical specimen using a quasi-Maximum Likelihood approach.", token_edit_list, sxsubcmd_mpi_support, is_modeless = True, subset_config="beta")
 	else:
 		sxcmd_subconfig = SXsubcmd_config("3D Refinement", "Performs 3D structure refinement using a quasi-Maximum Likelihood approach.", token_edit_list, sxsubcmd_mpi_support, is_modeless = True)
 
@@ -1925,9 +1925,6 @@ def create_sxcmd_subconfig_meridien_standard_continuation(beta=False):
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("nonorm"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("function"); token_edit_list.append(token_edit)
 	if beta:
-		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("limit_improvement"); token_edit_list.append(token_edit)
-		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("a_criterion"); token_edit_list.append(token_edit)
-		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("function_ai"); token_edit_list.append(token_edit)
 		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("plot_ang_dist"); token_edit_list.append(token_edit)
 
 	sxsubcmd_mpi_support = True
@@ -2524,11 +2521,11 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_continuation()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final()))
 	
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien_beta.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_fresh(beta=True)))
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien_beta.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_stack(beta=True)))
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien_beta.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_iteration(beta=True)))
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien_beta.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_continuation(beta=True)))
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien_beta.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final(beta=True)))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien_alpha.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_fresh(beta=True)))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien_alpha.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_stack(beta=True)))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien_alpha.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_iteration(beta=True)))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien_alpha.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_continuation(beta=True)))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien_alpha.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final(beta=True)))
 	
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
