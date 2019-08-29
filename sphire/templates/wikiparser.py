@@ -298,6 +298,7 @@ def construct_keyword_dict():
 	keyword_dict["model_path"] = SXkeyword_map(2, "params_any_h5")
 	keyword_dict["pretrained_weights_name"] = SXkeyword_map(2, "params_any_h5")
 	keyword_dict["box_dir"] = SXkeyword_map(2, "dir")
+	keyword_dict["janni_model"] = SXkeyword_map(2, "params_any_h5")
 
 	# Added keywords for ctf refine
 	keyword_dict["inputstack"] = SXkeyword_map(2, "data2d_stack")

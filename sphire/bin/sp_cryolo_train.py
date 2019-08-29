@@ -169,7 +169,7 @@ argparser.add_argument(
 		 'the training is stopped.')
 
 argparser.add_argument(
-    "--dolowpass",
+    "--skiplowpass",
     action="store_true",
     help="",
 )
@@ -179,6 +179,31 @@ argparser.add_argument(
 	default=0.1,
 	type=float,
 	help='Cut off for low pass filter. Should be between 0 and 0.5.')
+
+argparser.add_argument(
+    "--usejanni",
+    action="store_true",
+    help="",
+)
+
+argparser.add_argument(
+	'--janni_model',
+	type=str,
+	help='Name of the model')
+
+argparser.add_argument(
+	"--janni_overlap",
+	type=int,
+	default=24,
+	help="Overlap of patches in pixel (only needed when using JANNI)",
+)
+
+argparser.add_argument(
+	"--janni_batches",
+	type=int,
+	default=3,
+	help="Number of batches (only needed when using JANNI)",
+)
 
 argparser.add_argument(
 	'--filtered_dir',
@@ -243,7 +268,7 @@ def main():
 	num_cpu = args.num_cpu
 	cryolo_train_path = args.cryolo_train_path
 
-	do_low_pass = args.dolowpass
+	skiplowpass = args.skiplowpass
 	cutoff = args.cutoff
 	filtered_dir = args.filtered_dir
 
@@ -261,8 +286,12 @@ def main():
 				  'max_box_per_image': 1000,
 				  'num_patches': num_patches}
 
-	if do_low_pass:
+	if not skiplowpass:
 		model_dict['filter'] = [cutoff,filtered_dir]
+	else:
+		if args.usejanni:
+			model_dict['filter'] = [args.janni_model, args.janni_overlap, args.janni_batches, filtered_dir]
+
 
 	train_dict = {'train_image_folder': trainging_dir,
 				  'train_annot_folder': annot_dir,
