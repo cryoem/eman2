@@ -736,7 +736,6 @@ For negative staining data, use --skip_invert.
 			# Create output directory
 			assert (not os.path.exists(root_out_dir))
 			os.makedirs(root_out_dir)
-			sp_global_def.write_command(root_out_dir)
 			# Open the consistency check file
 			mic_consistency_check_info_path = os.path.join(root_out_dir, "mic_consistency_check_info_%s.txt"%(get_time_stamp_suffix()))
 			sxprint(" ")
@@ -879,7 +878,8 @@ For negative staining data, use --skip_invert.
 		# However, it is side-effect of the function, so we will explicitly make root output directory here.
 		# 
 		if not os.path.exists(root_out_dir):
-			os.mkdir(root_out_dir)
+			os.makedirs(root_out_dir)
+		sp_global_def.write_command(root_out_dir)
 		assert not os.path.exists(reject_out_of_boundary_dir), "MRK_DEBUG"
 		os.mkdir(reject_out_of_boundary_dir)
 	

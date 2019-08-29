@@ -44,6 +44,8 @@ from EMAN2 import EMUtil, EMArgumentParser, EMANVERSION
 from sp_applications import header
 from datetime import datetime
 from sp_logger import Logger, BaseLogger_Files, BaseLogger_Print
+import sp_global_def
+from sp_global_def import *
 #from global_def import ERROR
 
 # Set default values (global variables written in ALL CAPS)
@@ -155,10 +157,11 @@ def prepare_outdir(outdir='.', verbose=False, main=True):
 	# If using MPI, only need to check once
 	if main:
 		if os.path.isdir(outdir):
-			if verbose: print("Writing to output directory: %s" % outdir)
+			if verbose: sxprint("Writing to output directory: %s" % outdir)
 		else:
-			if verbose: print("Created output directory: %s" % outdir)
+			if verbose: sxprint("Created output directory: %s" % outdir)
 			os.makedirs(outdir)  # os.mkdir() can only operate one directory deep
+		sp_global_def.write_command(outdir)
 			
 def prepare_log(outdir='.', verbose=False, main=True):
 	"""
@@ -186,11 +189,11 @@ def prepare_log(outdir='.', verbose=False, main=True):
 		else:
 			log = Logger(base_logger=BaseLogger_Files(), file_name=logname)
 	except TypeError:
-		print("WARNING: Using old sp_logger.py library")
+		sxprint("WARNING: Using old sp_logger.py library")
 		log = Logger(base_logger=BaseLogger_Files())#, file_name=logname)
 		logname = 'log.txt'
 		
-	print("Writing log file to %s" % logname)
+	sxprint("Writing log file to %s" % logname)
 	
 	if main:
 		progbase = os.path.basename(__file__).split('.')[0].upper()
@@ -216,7 +219,7 @@ def print_log_msg(msg, log=None, verbose=False, is_main=True):
 	"""
 	
 	if is_main:
-		if verbose: print(msg)
+		if verbose: sxprint(msg)
 		if log: log.add(msg)
 
 def vomq(classavgstack, classmap, classdoc, log=None, verbose=False):

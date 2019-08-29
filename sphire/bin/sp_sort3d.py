@@ -56,6 +56,7 @@ from   sp_sparx      import *
 from   EMAN2      import *
 from   numpy      import array
 from   sp_logger  import Logger, BaseLogger_Files
+from   time import localtime, strftime, sleep, time
 
 import mpi
 

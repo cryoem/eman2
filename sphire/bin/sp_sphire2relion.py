@@ -197,7 +197,7 @@ def main(args):
 		params_import = []
 		for idx, file_name in enumerate([args.params_3d_chunk_file_0, args.params_3d_chunk_file_1 ]):
 			chunk_import = np.genfromtxt(file_name, int)
-			params_3d_subset_data["_rlnRandomSubset"][chunk_import] = idx
+			params_3d_subset_data["_rlnRandomSubset"][chunk_import] = idx + 1
 			params_import.extend(chunk_import.tolist())
 		output_dtype.extend(params_3d_subset_data.dtype.descr)
 		assert params_3d_subset_data.shape[0] == params_3d_data.shape[0]

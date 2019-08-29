@@ -55,33 +55,35 @@ args = parser.parse_args()
 
 sp_global_def.BATCH = True
 if not os.path.exists(args.input_run_dir):
-    sp_global_def.ERROR('Input directory does not exist!', 'sxbatch.py', 1)
+	sp_global_def.ERROR('Input directory does not exist!', 'sxbatch.py', 1)
 
 qsub_dict = {
-    'qsub': re.compile('Your job (\w+)'),
-    'sbatch': re.compile('Submitted batch job (\w+)'),
-    }
+	'qsub': re.compile('Your job (\w+)'),
+	'sbatch': re.compile('Submitted batch job (\w+)'),
+	}
 if args.submission_command.split()[0] not in qsub_dict and args.hold_flag:
-    sp_global_def.ERROR('Qsub return output not known! Please contact the SPHIRE authors!', 'sxbatch.py', 1)
+	sp_global_def.ERROR('Qsub return output not known! Please contact the SPHIRE authors!', 'sxbatch.py', 1)
+
+sp_global_def.write_command('.')
 
 if args.first_hold_number:
-    prev_hold = args.first_hold_number
+	prev_hold = args.first_hold_number
 else:
-    prev_hold = 'aaa'
+	prev_hold = 'aaa'
 
 for idx, file_name in enumerate(sorted(glob.glob('{0}/*'.format(args.input_run_dir)))):
-    command = args.submission_command.split()
-    if args.hold_flag and (idx != 0 or args.first_hold_number):
-        command.append('{0}{1}'.format(args.hold_flag, prev_hold))
-    else:
-        pass
-    command.append(file_name)
-    if args.hold_flag:
-        print(' '.join(command))
-        stdout = subprocess.check_output(command)
-        print(stdout)
-        prev_hold = qsub_dict[command[0]].match(stdout).group(1)
-    else:
-        subprocess.Popen(command).wait()
+	command = args.submission_command.split()
+	if args.hold_flag and (idx != 0 or args.first_hold_number):
+		command.append('{0}{1}'.format(args.hold_flag, prev_hold))
+	else:
+		pass
+	command.append(file_name)
+	if args.hold_flag:
+		sp_global_def.sxprint(' '.join(command))
+		stdout = subprocess.check_output(command)
+		sp_global_def.sxprint(stdout)
+		prev_hold = qsub_dict[command[0]].match(stdout).group(1)
+	else:
+		subprocess.Popen(command).wait()
 
 sp_global_def.BATCH = False

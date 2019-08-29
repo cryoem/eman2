@@ -1415,14 +1415,15 @@ def create_masterdir():
             if not masterdir:
                 timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
                 masterdir = "sort3d" + timestring
-                os.mkdir(masterdir)
+                os.makedirs(masterdir)
             else:
-                if not os.path.exists(masterdir): os.mkdir(masterdir)
+                if not os.path.exists(masterdir): os.makedirs(masterdir)
             li = len(masterdir)
         else:
             li = len(masterdir)
             if os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "generation_000")): restart = 1
             if os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json")):   restart = 1
+        sp_global_def.write_command(masterdir)
     else:
         restart = 0
         li = 0
