@@ -189,6 +189,7 @@ def main():
 
 	if args.min_distance > 0:
 		min_dist_arg = "-d=" + str(int(args.min_distance))
+		complete_command.append(min_dist_arg)
 
 	gpu_argument = "-g " + arg_gpu
 	complete_command.append(gpu_argument)
@@ -200,6 +201,7 @@ def main():
 
 	if args.otf:
 		complete_command.append("--otf")
+
 	if do_filament_mode:
 		complete_command.append("--filament")
 		complete_command.append("-fw=" + str(filament_width))
