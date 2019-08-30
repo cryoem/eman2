@@ -82,6 +82,18 @@ argparser.add_argument(
 	help="Specifiy which gpu(s) should be used. Multiple GPUs are separated by a comma")
 
 argparser.add_argument(
+    "--otf",
+    action="store_true",
+    help="On-the-fly filtering",
+)
+
+argparser.add_argument(
+	'--min_distance',
+	default=0,
+	type=int,
+	help="Particles with a distance less than this value (in pixel) will be removed")
+
+argparser.add_argument(
 	'--filament_mode',
 	action="store_true",
 	help="Specifiy if filament mode should be used")
@@ -96,7 +108,7 @@ argparser.add_argument(
 	'--box_distance',
 	default=-1,
 	type=int,
-	help="Distance between two boxes in pixel")
+	help="Distance between two filament boxes in pixel")
 
 argparser.add_argument(
 	'--min_box_per_filament',
@@ -174,6 +186,10 @@ def main():
 	complete_command.append(output_argument)
 	thresh_argument = "-t=" + str(confidence_threshold)
 	complete_command.append(thresh_argument)
+
+	if args.min_distance > 0:
+		min_dist_arg = "-d=" + str(int(args.min_distance))
+
 	gpu_argument = "-g " + arg_gpu
 	complete_command.append(gpu_argument)
 	gpu_fraction_arg = "--gpu_fraction="+str(gpu_fraction)
@@ -182,6 +198,8 @@ def main():
 		num_cpu_arg = "--num_cpu="+str(num_cpu)
 		complete_command.append(num_cpu_arg)
 
+	if args.otf:
+		complete_command.append("--otf")
 	if do_filament_mode:
 		complete_command.append("--filament")
 		complete_command.append("-fw=" + str(filament_width))
