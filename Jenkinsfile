@@ -141,7 +141,7 @@ def getHomeDir() {
 
 pipeline {
   agent {
-    node { label "${JOB_NAME}-slave" }
+    node { label "eman-build-agent" }
   }
   
   options {
