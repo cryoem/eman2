@@ -25,7 +25,7 @@ def notifyGitHub(status) {
 
 def notifyEmail() {
     if(JOB_TYPE == "push" || NOTIFY_EMAIL == "true") {
-        emailext(to: "$GIT_AUTHOR_EMAIL",  
+        emailext(to: "$GIT_AUTHOR_EMAIL",
                  subject: '[JenkinsCI/$PROJECT_NAME] - $BUILD_STATUS! ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER',
                  body: '''${SCRIPT, template="groovy-text.template"}''',
                  attachLog: true
@@ -99,7 +99,7 @@ def deployPackage() {
     }
     
     if(SLAVE_OS != 'win') {
-        sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${DEPLOY_DEST}/" + upload_dir + "/eman2." + JOB_NAME.toLowerCase() + "." + upload_ext + ".sh"
+        sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh      ${DEPLOY_DEST}/" + upload_dir + "/eman2."      + JOB_NAME.toLowerCase() + "." + upload_ext + ".sh"
         sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2_huge.${SLAVE_OS}.sh ${DEPLOY_DEST}/" + upload_dir + "/eman2_huge." + JOB_NAME.toLowerCase() + "." + upload_ext + ".sh"
     }
     else

@@ -18,6 +18,7 @@ mkdir -p ${OUTPUT_DIR} && cd ${OUTPUT_DIR}
 CONSTRUCT_YAML="${CONSTRUCT_YAML_DIR}/construct.yaml"
 CONDA_ROOT_DIR="$(conda info --root)"
 CONDA_ROOT_DIR=${CONDA_ROOT_DIR//\\/\\\\}
+
 sed -i.bak "s~place_holder_conda_prefix~"${CONDA_ROOT_DIR}"~" ${CONSTRUCT_YAML}
 cat ${CONSTRUCT_YAML}
 constructor --version
