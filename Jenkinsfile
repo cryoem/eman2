@@ -82,7 +82,7 @@ def isBinaryBuild() {
 }
 
 def testPackage(suffix, dir) {
-    if(SLAVE_OS != 'win')
+    if(isUnix())
         sh "bash tests/test_binary_installation.sh ${INSTALLERS_DIR}/eman2" + suffix + ".${SLAVE_OS}.sh ${INSTALLERS_DIR}/" + dir
     else
         sh 'ci_support/test_wrapper.sh ' + suffix + ' ' + dir
@@ -98,7 +98,7 @@ def deployPackage() {
         upload_ext = 'experimental'
     }
     
-    if(SLAVE_OS != 'win') {
+    if(isUnix()) {
         sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh      ${DEPLOY_DEST}/" + upload_dir + "/eman2."      + JOB_NAME.toLowerCase() + "." + upload_ext + ".sh"
         sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2_huge.${SLAVE_OS}.sh ${DEPLOY_DEST}/" + upload_dir + "/eman2_huge." + JOB_NAME.toLowerCase() + "." + upload_ext + ".sh"
     }
@@ -107,8 +107,8 @@ def deployPackage() {
 }
 
 def getHomeDir() {
-    if(SLAVE_OS == "win") return "${USERPROFILE}"
-    else                  return "${HOME}"
+    if(!isUnix()) return "${USERPROFILE}"
+    else          return "${HOME}"
 }
 
 pipeline {
@@ -147,7 +147,7 @@ pipeline {
     stage('build-local') {
       when {
         not { expression { isBinaryBuild() } }
-        expression { JOB_NAME != 'Win' }
+        expression { isUnix() }
       }
       
       steps {
