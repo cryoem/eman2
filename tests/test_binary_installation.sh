@@ -29,4 +29,9 @@ conda list --explicit
 
 MYDIR="$(cd "$(dirname "$0")" && pwd -P)"
 
-bash "${MYDIR}/run_tests_from_binary.sh"
+MYDIR="$(cd "$(dirname "$0")" && pwd -P)"
+
+export SRC_DIR="$(cd "$(dirname "$0")"/.. && pwd -P)"
+export PREFIX=${SRC_DIR}
+
+bash "${MYDIR}/run_tests.sh"
