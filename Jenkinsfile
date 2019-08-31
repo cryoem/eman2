@@ -142,9 +142,7 @@ pipeline {
   
   stages {
     stage('init') {
-      options {
-        timeout(time: 10, unit: 'MINUTES') 
-      }
+      options { timeout(time: 10, unit: 'MINUTES') }
       
       steps {
         selectNotifications()
@@ -173,63 +171,29 @@ pipeline {
     }
     
     stage('package') {
-      when {
-        expression { isBinaryBuild() }
-      }
-      environment {
-        PARENT_STAGE_NAME = "${STAGE_NAME}"
-      }
+      when { expression { isBinaryBuild() } }
+      environment { PARENT_STAGE_NAME = "${STAGE_NAME}" }
       
       parallel {
-        stage('notify') {
-          steps {
-            notifyGitHub('PENDING')
-          }
-        }
-        stage('mini') {
-          steps {
-            sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/constructor-mini/'
-          }
-        }
-        stage('huge') {
-          steps {
-            sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/constructor-huge/'
-          }
-        }
+        stage('notify') { steps { notifyGitHub('PENDING') } }
+        stage('mini')   { steps { sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/constructor-mini/' } }
+        stage('huge')   { steps { sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/constructor-huge/' } }
       }
     }
     
     stage('test-package') {
-      when {
-        expression {isBinaryBuild() }
-      }
-      environment {
-        PARENT_STAGE_NAME = "${STAGE_NAME}"
-      }
+      when { expression { isBinaryBuild() } }
+      environment { PARENT_STAGE_NAME = "${STAGE_NAME}" }
       
       parallel {
-        stage('notify') {
-          steps {
-            notifyGitHub('PENDING')
-          }
-        }
-        stage('mini') {
-          steps {
-            testPackage('', 'mini')
-          }
-        }
-        stage('huge') {
-          steps {
-            testPackage('_huge','huge')
-          }
-        }
+        stage('notify') { steps { notifyGitHub('PENDING') } }
+        stage('mini')   { steps { testPackage('',     'mini') } }
+        stage('huge')   { steps { testPackage('_huge','huge') } }
       }
     }
     
     stage('deploy') {
-      when {
-        expression {isBinaryBuild() }
-      }
+      when { expression { isBinaryBuild() } }
       
       steps {
         notifyGitHub('PENDING')
@@ -239,20 +203,9 @@ pipeline {
   }
   
   post {
-    success {
-      notifyGitHub('SUCCESS')
-    }
-    
-    failure {
-      notifyGitHub('FAILURE')
-    }
-    
-    aborted {
-      notifyGitHub('ERROR')
-    }
-    
-    always {
-      notifyEmail()
-    }
+    success { notifyGitHub('SUCCESS') }
+    failure { notifyGitHub('FAILURE') }
+    aborted { notifyGitHub('ERROR') }
+    always  { notifyEmail() }
   }
 }
