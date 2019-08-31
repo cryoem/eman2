@@ -11,6 +11,10 @@ if errorlevel 1 exit 1
 call %installation_loc%\Scripts\activate.bat
 if errorlevel 1 exit 1
 
+conda.exe info -a
+conda.exe list
+conda.exe list --explicit
+
 call tests\run_tests.bat
 if errorlevel 1 exit 1
 
