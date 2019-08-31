@@ -107,15 +107,8 @@ def deployPackage() {
 }
 
 def getHomeDir() {
-    def result = ''
-    if(SLAVE_OS == "win") {
-        result = "${USERPROFILE}"
-    }
-    else {
-        result = "${HOME}"
-    }
-    
-    return result
+    if(SLAVE_OS == "win") return "${USERPROFILE}"
+    else                  return "${HOME}"
 }
 
 pipeline {
