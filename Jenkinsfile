@@ -15,7 +15,7 @@ def notifyGitHub(status) {
         if(status == 'PENDING') { message = 'Stage: ' + (env.PARENT_STAGE_NAME ?: STAGE_NAME) }
         if(status == 'SUCCESS') { message = 'Build succeeded!' }
         if(status == 'FAILURE') { message = 'Build failed!' }
-        if(status == 'ERROR')   { message = 'Build aborted!' }
+        if(status == 'ABORTED') { message = 'Build aborted!'; status == 'ERROR' }
         step([$class: 'GitHubCommitStatusSetter', 
               contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "JenkinsCI/${JOB_NAME}"], 
               statusResultSource: [$class: 'ConditionalStatusResultSource', 
@@ -196,9 +196,9 @@ pipeline {
   }
   
   post {
-    success { notifyGitHub('SUCCESS') }
-    failure { notifyGitHub('FAILURE') }
-    aborted { notifyGitHub('ERROR') }
-    always  { notifyEmail() }
+    always {
+      notifyGitHub("${currentBuild.result}")
+      notifyEmail()
+    }
   }
 }
