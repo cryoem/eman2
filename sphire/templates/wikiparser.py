@@ -330,6 +330,12 @@ def construct_keyword_dict():
 	keyword_dict["_ndilation"]       = SXkeyword_map(0, "int")     # input_ctf_params_source
 	keyword_dict["_soft_edge"]       = SXkeyword_map(0, "int")     # input_ctf_params_source
 	keyword_dict["_addition"]       = SXkeyword_map(0, "string")     # input_ctf_params_source
+	
+	# Added keywords for CTER GUI
+	keyword_dict["--pwrot_dir"]    = SXkeyword_map(2, "dir")
+	keyword_dict["--power2d_dir"]  = SXkeyword_map(2, "dir")
+	keyword_dict["--micthumb_dir"] = SXkeyword_map(2, "dir")
+
 	# NOTE: 2018/02/06 Toshio Moriya
 	# Low-pass filter fall-off width does not make sense to convert to resolution [A] directly. 
 	# It might make more sense to compute Angstrom range from the given cutoff, falloff width, and pixel size
