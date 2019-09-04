@@ -100,12 +100,29 @@ def deployPackage() {
         upload_ext = 'experimental'
     }
     
-    if(isUnix()) {
-        sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh      ${DEPLOY_DEST}/" + upload_dir + "/eman2."      + JOB_NAME.toLowerCase() + "." + upload_ext + ".sh"
-        sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2_huge.${SLAVE_OS}.sh ${DEPLOY_DEST}/" + upload_dir + "/eman2_huge." + JOB_NAME.toLowerCase() + "." + upload_ext + ".sh"
-    }
-    else
-        bat 'ci_support\\rsync_wrapper.bat ' + upload_dir + ' ' + upload_ext
+    sshPublisher(publishers: [
+                              sshPublisherDesc(configName: 'Installer-Server',
+                                               transfers:
+                                                          [sshTransfer(sourceFiles: "${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh",
+                                                                       removePrefix: "${INSTALLERS_DIR}",
+                                                                       remoteDirectory: upload_dir,
+                                                                       remoteDirectorySDF: false,
+                                                                       cleanRemote: false,
+                                                                       excludes: '',
+                                                                       execCommand: '',
+                                                                       execTimeout: 120000,
+                                                                       flatten: false,
+                                                                       makeEmptyDirs: false,
+                                                                       noDefaultExcludes: false,
+                                                                       patternSeparator: '[, ]+'
+                                                                      )
+                                                          ],
+                                                          usePromotionTimestamp: false,
+                                                          useWorkspaceInPromotion: false,
+                                                          verbose: true
+                                              )
+                             ]
+                )
 }
 
 def getHomeDir() {
