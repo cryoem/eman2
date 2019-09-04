@@ -112,7 +112,7 @@ def deployPackage() {
                                                                        remoteDirectorySDF: false,
                                                                        cleanRemote: false,
                                                                        excludes: '',
-                                                                       execCommand: '',
+                                                                       execCommand: "cd ${DEPLOY_PATH}/" + upload_dir + " && mv eman2.${SLAVE_OS}." + installer_ext[SLAVE_OS] + " eman2.${SLAVE_OS}." + upload_ext + "." + installer_ext[SLAVE_OS],
                                                                        execTimeout: 120000,
                                                                        flatten: false,
                                                                        makeEmptyDirs: false,
