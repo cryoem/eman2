@@ -103,16 +103,30 @@ def isReleaseBranch() {
     return GIT_BRANCH_SHORT ==~ /release.*/
 }
 
+// Can't be called to set pipeline envvars, because depends on CI_BUILD
 def isContinuousBuild() {
     return (CI_BUILD == "1" && isMasterBranch()) || isReleaseBranch() || JOB_TYPE == "cron"
 }
 
+// Can't be called to set pipeline envvars, because depends on CI_BUILD
 def isExperimentalBuild() {
     return CI_BUILD == "1" && !(isMasterBranch() || isReleaseBranch())
 }
 
+// Can't be called to set pipeline envvars, because depends on CI_BUILD indirectly
 def isBinaryBuild() {
     return isContinuousBuild() || isExperimentalBuild()
+}
+
+def getBuildStabilityType() {
+    if(isContinuousBuild())        return 'unstable'
+    else if(isExperimentalBuild()) return 'experimental'
+    else                           return 'NONE'
+}
+
+def getInstallerExt() {
+    if(isUnix()) return 'sh'
+    else         return 'exe'
 }
 
 def testPackage(suffix, dir) {
