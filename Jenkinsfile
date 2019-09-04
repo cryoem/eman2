@@ -182,6 +182,22 @@ def deployPackage(size_type='') {
                 )
 }
 
+def testDeployedPackage(size_type) {
+    stability_type = getBuildStabilityType()
+
+    def file_name = getDeployFileName(size_type)
+    def download_dir = "${HOME_DIR}/workspace/jenkins-continuous-download/"
+
+    fileOperations([fileDownloadOperation(url: 'https://cryoem.bcm.edu/cryoem/static/software/' + stability_type + "/" + file_name,
+                                          targetLocation: download_dir,
+                                          targetFileName: file_name,
+                                          userName: '',
+                                          password: ''
+                                          )])
+    
+    testPackage(download_dir + file_name, download_dir + size_type)
+}
+
 def getHomeDir() {
     if(!isUnix()) return "${USERPROFILE}"
     else          return "${HOME}"
@@ -273,6 +289,17 @@ pipeline {
         stage('notify') { steps { notifyGitHub('PENDING') } }
         stage('mini')   { steps { deployPackage(STAGE_NAME) } }
         stage('huge')   { steps { deployPackage(STAGE_NAME) } }
+      }
+    }
+
+    stage('test-continuous') {
+      when { expression { isContinuousBuild() } }
+      environment { PARENT_STAGE_NAME = "${STAGE_NAME}" }
+
+      parallel {
+        stage('notify') { steps { notifyGitHub('PENDING') } }
+        stage('mini')   { steps { testDeployedPackage(STAGE_NAME) } }
+        stage('huge')   { steps { testDeployedPackage(STAGE_NAME) } }
       }
     }
   }
