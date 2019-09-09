@@ -220,44 +220,41 @@ def make_path(suffix):
 	return path
 
 
-
 def mid_points(length,segment,step):
-		points=[p+segment/2.0 for p in range(0,length,step) if (p+segment/2.0)<length-(segment/2.0)]
-
-		#ys = [y+tilesize/2.0 for y in range(0,ny,tilesize)]
-		#	if options.overlap:
-		#	ys = [y+tilesize/2.0 for y in range(0,ny,tilesize/2) if (y+tilesize/2.0)<ny-(tilesize/2.0)]
-		return points
+	"""Returns the mid points of consecutive sections of size "segment" along the "length" of a line
+	Author: Jesus Montoya, jgalaz@gmail.com, September 2019
+	"""
+	points=[int(round(p+segment/2.0)) for p in range(0,length,step) if (p+segment/2.0)<(length-(segment/2.0))]
+	#print("\n(EMAN2_utils)(mid_points) lenpoints={}".format(len(points)))
+	return points
 
 
 def tile_grid(nx,ny,tilesize,overlap=True,pad=False):
 	"""Returns tile centers based on a defined box size, with the option to overlap tiles by 50% as maximally allowed to improve power spectrum when doing this for CTF fitting
 	Author: Jesus Montoya, jgalaz@gmail.com, September 2019
 	"""
-	import numpy as np
 	
 	nx=int(nx)
 	ny=int(ny)
 	tilesize=int(tilesize)
-
-	maxspan=max(nx,ny)
-	if pad:
-		maxspan=int(round( np.hypot(nx,ny) ) )
-		nx=ny=maxspan
+	print("\n(EMAN2_utils)(tile_grid) nx={}, ny={}, tilesize={}".format(nx,ny,tilesize))
 
 	step = tilesize
 	if overlap:
 		step = int(round(tilesize/2.0))
 	
+	print("\n(EMAN2_utils)(tile_grid) step={}".format(step))
+
 	xs = np.array(mid_points(nx,tilesize,step))
 	ys = np.array(mid_points(ny,tilesize,step))
+	
+	print("\n(EMAN2_utils)(tile_grid) step={}, lenx={}, leny={}".format(step,len(xs),len(ys)))
 
 	xx, yy = np.meshgrid(xs, ys)
-
+	print("\n(EMAN2_utils)(tile_grid) lenxx={}, lenyy={}".format(len(xx),len(yy)))
+	print("\nlast element is {}".format(xx[len(xx)-1][len(yy)-1],yy[len(xx)-1][len(yy)-1]))
+	
 	coords = [ [xx[i][j],yy[i][j]] for i in range(0,len(xx)) for j in range(0,len(yy)) ]
-
-	#finalxs=[c[0] for c in coords]
-	#finalys=[c[1] for c in coords]
 
 	if not pad:
 		return coords
@@ -267,23 +264,30 @@ def tile_grid(nx,ny,tilesize,overlap=True,pad=False):
 
 def tile_grid_rot(nx,ny,tilesize,rot,overlap=True):
 
-	newnx = nx*math.cos(math.radians(rot))+ny*math.sin(math.radians(rot))
-	newny = nx*math.sin(math.radians(rot))+ny*math.sin(math.radians(90-rot))
-	
+	newnx = int(round(nx*math.cos(math.radians(rot))+ny*math.sin(math.radians(rot))))
+	newny = int(round(nx*math.sin(math.radians(rot))+ny*math.sin(math.radians(90-rot))))
+	print("\n(EMAN2_utils)(tile_grid_rot) newnx={}, newny={}".format(newnx,newny))
 	#h=np.hypot(nx,ny)
 	#nxny_angle = math.atan(float(ny)/float(nx))
 	#newnx=h*math.cos(math.radians(rot+nxny_angle))+2*ny*math.sin(math.radians(rot))
 	
 	xx,yy=tile_grid(newnx,newny,tilesize,overlap,pad=True)
-
+	
+	diffx=newnx-nx
+	diffy=newny-ny
 	center = [nx/2,ny/2]
+	
+	xx_trans = xx - diffx/2.0
+	yy_trans = yy - diffy/2.0
 
-	yr=np.sin(math.radians(rot))*(xx-center[0]) + np.cos(math.radians(rot))*(yy-center[1]) + center[1]
-	xr=np.cos(math.radians(rot))*(xx-center[0]) - np.sin(math.radians(rot))*(yy-center[1]) + center[0]
+	xr=np.cos(math.radians(rot))*(xx_trans-center[0]) - np.sin(math.radians(rot))*(yy_trans-center[1]) + center[0]
+	yr=np.sin(math.radians(rot))*(xx_trans-center[0]) + np.cos(math.radians(rot))*(yy_trans-center[1]) + center[1]
 	
 	coords = [ [xr[i][j],yr[i][j]] for i in range(0,len(xr)) for j in range(0,len(yr)) ]
+	
+	trimmed_coords = [ [ int(round(c[0])), int(round(c[1])) ] for c in coords if int(round(c[0]))<nx-tilesize/2 and int(round(c[0]))>tilesize/2 and int(round(c[1]))<ny-tilesize/2 and int(round(c[1]))>tilesize/2]
 
-	return coords
+	return trimmed_coords
 
 
 def findfs(stem=''):
