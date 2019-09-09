@@ -89,7 +89,7 @@ def main():
 	"""
 	parser = OptionParser(usage, version=SPARXVERSION)
 	
-	parser.add_option("--ctffind", action="store_true", default=False, help="apply CTF correction")
+	parser.add_option("--ctffind", action="store_true", default=False, help="use CTFFIND outputs (PWROT_DIR/*_avrot.txt, POWER2D_DIR/*.mrc) ")
 	parser.add_option("--pwrot_dir", default='pwrot', help="directory for 1D profiles (default: pwrot)")
 	parser.add_option("--power2d_dir", default='power2d', help="directory for 2D power spectra (default: power2d)")
 	parser.add_option("--micthumb_dir", default='micthumb', help="directory for micrograph thumbnails (default: micthumb)")
@@ -408,8 +408,8 @@ class SXGuiCter(QWidget):
 			self.pwrot_suffix = "_avrot.txt"  # '_rotinftxt'
 			self.power2d_suffix = '.mrc'  # '_pws.hdf'
 			
-			#### # Thumbnails not generated
-			####self.micthumb_suffix = '.mrc'
+			# Thumbnails not generated
+			self.micthumb_suffix = '.mrc'
 	
 	def build_cter_params(self):
 		self.cter_params = OrderedDict()
@@ -1490,13 +1490,13 @@ class SXGuiCter(QWidget):
 	def openCterPartres(self,val=None):
 		"""Open CTER partres file"""
 		file_path = QFileDialog.getOpenFileName(self, "Open CTER partres File", options = QFileDialog.DontUseNativeDialog)
-		if file_path == "": return
 		
 		# QFileDialog gives a tuple in Qt5, w/unicode elements
 		if isinstance(file_path, tuple):
 			file_path = file_path[0]
 		else: 
 			file_path = str(file_path)
+		if file_path == "": return
 			
 		self.readCterPartresFile(os.path.relpath(file_path))
 	
@@ -1799,6 +1799,10 @@ class SXGuiCter(QWidget):
 			self.wplotrotavgfine.render()
 		if not hasattr(self.wplotrotavgcoarse, 'scrlim'):
 			self.wplotrotavgcoarse.render()
+		if not hasattr(self.whistparam, 'scrlim'):
+			self.whistparam.render()
+		if not hasattr(self.wscatterparam, 'scrlim'):
+			self.wscatterparam.render()
 		
 		fineLimits   = self.wplotrotavgfine.scrlim
 		coarseLimits = self.wplotrotavgcoarse.scrlim
