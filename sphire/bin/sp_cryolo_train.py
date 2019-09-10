@@ -33,6 +33,7 @@
 # GNU General Public License for more details.
 
 from __future__ import print_function
+import os
 import argparse
 from json import dump
 import subprocess
@@ -255,11 +256,19 @@ def main():
 	trainging_dir = args.training_dir
 	annot_dir = args.annot_dir
 	input_size = args.input_size
+
 	output_dir = args.output_directory
+	if os.path.exists(output_dir):
+		sp_global_def.ERROR("Output folder already exists. Stop execution.")
+	else:
+		os.makedirs(output_dir)
+		sp_global_def.write_command(output_dir)
+
 	num_patches = args.num_patches
 	overlap_patches = args.overlap_patches
 	train_times = args.train_times
 	saved_weights_name = args.saved_weights_name
+	saved_weights_name = os.path.join(output_dir, saved_weights_name)
 	pretrained_weights_name = args.pretrained_weights_name
 	batch_size = args.batch_size
 	learning_rate = args.learning_rate
@@ -321,12 +330,6 @@ def main():
 				  'valid_times': 1
 				  }
 	dict = {"model": model_dict, "train": train_dict, "valid": valid_dict}
-	import os
-	if os.path.exists(output_dir):
-		sp_global_def.ERROR("Output folder already exists. Stop execution.")
-	else:
-		os.makedirs(output_dir)
-		sp_global_def.write_command(output_dir)
 
 	path = os.path.join(output_dir,"config_yolo.json")
 	with open(path, 'w') as f:
