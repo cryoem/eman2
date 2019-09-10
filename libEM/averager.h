@@ -370,6 +370,9 @@ namespace EMAN
 			TypeDict d;
 			d.put("thresh_sigma", EMObject::FLOAT, "multiplied by the standard deviation of the image, below-which values are considered zero. Default = .01");
 			d.put("save_norm", EMObject::INT, "If set, will save the normalization volume as norm.hdf. Mainly for debugging purposes.");
+			d.put("normout", EMObject::EMDATA, "If set, will save the normalization volume in the given EMData object.");
+			d.put("doift", EMObject::INT, "IFT the resulting volume. Default is 1.");
+
 			return d;
 		}
 

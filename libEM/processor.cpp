@@ -14863,13 +14863,22 @@ void AmpMultProcessor::process_inplace(EMData *image)
 	int any = amp->get_ysize();
 	int anz = amp->get_zsize();
 	
+	int div=2;
+	
+	if (nx==anx){ // in case the amplitude volume has the same size...
+		div=1;
+		anx=nx/2;
+	}
+		
+		
+	
 	if  (( (nx==anx*2) && (ny==any) && (nz==anz) )==false)
 		throw InvalidParameterException("AmpMultProcessor: amplitude image size mismatch...");
 
 	int sz=nx*ny*nz;
 	
 	for (int i=0; i<sz; i++){
-		data[i]*=mult[i/2];
+		data[i]*=mult[i/div];
 	}
 	
 	image->update();

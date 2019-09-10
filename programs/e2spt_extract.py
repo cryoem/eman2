@@ -33,7 +33,7 @@ def main():
 
 	parser.add_argument("--shrink", type=float, help="Shrinking factor for output particles. 1.5 or integers allowed. Default is 1 (no shrink).",default=1, guitype='floatbox',row=8, col=0, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--tltkeep", type=float,help="keep a fraction of tilt images with good score determined from tomogram reconstruction", default=1.0, guitype='floatbox',row=8, col=1, rowspan=1, colspan=1, mode="extract")
-	parser.add_argument("--rmbeadthr", type=float,help="remove 2d particles with high contrast object beyond N sigma at 100A. Note that this may result in generating fewer particles than selected. Default is -1 (include all particles). 5 might be a good choice for removing gold beads but may need some testing...", default=-1, guitype='floatbox',row=9, col=0, rowspan=1, colspan=1, mode="extract")
+	parser.add_argument("--rmbeadthr", type=float,help="remove 2d particles with high contrast object beyond N sigma at 100A. Note that this may result in generating fewer particles than selected. Default is -1 (include all particles). 0.5 might be a good choice for removing gold beads but may need some testing...", default=-1, guitype='floatbox',row=9, col=0, rowspan=1, colspan=1, mode="extract")
 	
 	parser.add_header(name="orblock2", help='Just a visual separation', title="Extract from curves", row=10, col=0, rowspan=1, colspan=1, mode="extract")
 	
@@ -49,6 +49,8 @@ def main():
 	parser.add_argument("--postproc", type=str,help="processor after 3d particle reconstruction", default="")
 	parser.add_argument("--postmask", type=str,help="masking after 3d particle reconstruction. The mask is transformed if json ", default="")
 	parser.add_argument("--textin", type=str,help="text file for particle coordinates. do not use..", default=None)
+	parser.add_argument("--saveint", action="store_true", default=False ,help="save particles in uint8 format to save space. still under testing.")
+	parser.add_argument("--norewrite", action="store_true", default=False ,help="skip existing files. do not rewrite.")
 
 	#parser.add_argument("--alioffset", type=str,help="coordinate offset when re-extract particles. (x,y,z)", default="0,0,0", guitype='strbox', row=12, col=0,rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--postxf", type=str,help="a file listing post transforms", default="")
@@ -334,6 +336,18 @@ def do_extraction(pfile, options, xfs=[]):
 		towrite=[(ptclpos,outname, boxsz)]
 	
 	
+	
+	
+	if options.norewrite:
+		skip=True
+		for pinfo in towrite:
+			ptclpos, outname, boxsz=pinfo
+			output=os.path.join("particles3d", outname)
+			if not os.path.isfile(output):
+				skip=False
+		if skip:
+			print("all particles in {} exit. skip tilt series...".format(tfile))
+			
 	print("Reading tilt series file: {}".format(tfile))
 	#### make sure this works on image stack or mrc volume
 	img=EMData(tfile,0)
@@ -369,6 +383,12 @@ def do_extraction(pfile, options, xfs=[]):
 		options.output2d=os.path.join("particles", outname)
 		options.pad=pad=good_size(boxsz*2*options.padtwod)
 		
+		if options.norewrite:
+			if os.path.isfile(options.output):
+				print("File {} already exist. skipping...".format(options.output))
+				continue
+				
+		
 		print("Writing {} particles to {}".format(nptcl, outname))
 		print("Box size {}, padded to {}".format(int(boxsz*2), pad))
 		
@@ -389,6 +409,13 @@ def do_extraction(pfile, options, xfs=[]):
 		for tid in range(0,nptcl,batchsz):
 			ids=list(range(tid, min(tid+batchsz, nptcl)))
 			jobs.append([jsd, ids, imgs, ttparams, pinfo, options, ctf, tltkeep, pmask])
+		
+		
+		hdftype=EMUtil.get_image_ext_type("hdf")
+		if options.saveint:
+			outmode=file_mode_map["uint8"]
+		else:
+			outmode=file_mode_map["float"]
 		
 		
 		thrds=[threading.Thread(target=make3d,args=(i)) for i in jobs]
@@ -413,7 +440,7 @@ def do_extraction(pfile, options, xfs=[]):
 				except: pji=0
 				pjids=[]
 				for i,pj in enumerate(projs):
-					pj.write_image(options.output2d, pji)
+					pj.write_image(options.output2d, pji, hdftype,  False, None, outmode)
 					pjids.append(pji)
 					pji+=1
 				threed["class_ptcl_src"]=options.output2d
@@ -421,7 +448,7 @@ def do_extraction(pfile, options, xfs=[]):
 				#if options.rmbeadthr>0:
 				#### give up maintaining the order since there are empty particles...
 				#pid=-1
-				threed.write_image(options.output, -1)
+				threed.write_image(options.output, -1, hdftype,  False, None, outmode)
 				ndone+=1
 				#if ndone%10==0:
 				sys.stdout.write("\r{}/{} finished.".format(ndone, nptcl))
@@ -597,6 +624,15 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			else:
 				threed.mult(mask)
 			
+		
+		if options.saveint:
+			#### save as integers
+			lst=[threed]+projs
+			outmode=file_mode_map["uint8"]
+			for data in lst:
+				data.process_inplace("math.setbits",{"nsigma":3, "bits":8})
+				data["render_min"]=file_mode_range[outmode][0]
+				data["render_max"]=file_mode_range[outmode][1]
 		
 		jsd.put((pid, threed, projs))
 

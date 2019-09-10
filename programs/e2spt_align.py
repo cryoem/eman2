@@ -82,7 +82,10 @@ This program will take an input stack of subtomograms and a reference volume, an
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default=None)
 	parser.add_argument("--refine",action="store_true",help="local refinement from xform.align3d in header.",default=False)
 	
+	parser.add_argument("--refinentry", type=int, help="number of tests for refine mode. default is 8",default=8)
 	parser.add_argument("--randphi",action="store_true",help="randomize phi during refine alignment",default=False)
+	parser.add_argument("--breaksym",action="store_true",help="symmetry breaking.",default=False)
+	parser.add_argument("--breaksymsym",type=str,help="the symmetry to use for breaksym. setting sym to c6 and this to c2 results in a c3 structure. default is the same as sym",default=None)
 	parser.add_argument("--rand180",action="store_true",help="randomly add a 180 degree rotation during refine alignment",default=False)
 	parser.add_argument("--maxang",type=float,help="Maximum angular difference for the refine mode. default is 30",default=30)
 	parser.add_argument("--maxshift",type=float,help="Maximum shift for the refine mode. default is 16",default=-1)
@@ -114,6 +117,13 @@ This program will take an input stack of subtomograms and a reference volume, an
 		
 	if options.parallel==None:
 		options.parallel="thread:{}".format(options.threads)
+		
+	if options.breaksym:
+		if options.sym=="c1":
+			print("cannot break a c1 symmetry. breaksym disabled.")
+			options.breaksym=False
+		elif options.breaksymsym==None:
+			options.breaksymsym=options.sym
 
 	reffile=args[1]
 	NTHREADS=max(options.threads+1,2)		# we have one thread just writing results
@@ -165,12 +175,12 @@ This program will take an input stack of subtomograms and a reference volume, an
 			print("Using particle list: \n\t {} \n\t {}".format(fsps[0], fsps[1]))
 			for eo, f in enumerate(fsps):
 				N=EMUtil.get_image_count(f)
-				tasks.extend([(f,i,refnames[eo]) for i in range(N)])
+				tasks.extend([(f,i,refnames, eo) for i in range(N)])
 				
 		#### split by even/odd by default
 		else:
 			N=EMUtil.get_image_count(args[0])
-			tasks.extend([(args[0],i,refnames[i%2]) for i in range(N)])
+			tasks.extend([(args[0],i,refnames, i%2) for i in range(N)])
 			#thrds=[threading.Thread(target=alifn,args=(jsd,args[0],i,ref[i%2],options)) for i in range(N)]
 	
 	elif args[0].endswith(".json"):
@@ -181,7 +191,7 @@ This program will take an input stack of subtomograms and a reference volume, an
 			src, ii=eval(k)
 			dic=js[k]
 			xf=dic["xform.align3d"]
-			tasks.append([src, ii, refnames[ii%2], xf])
+			tasks.append([src, ii, refnames, ii%2, xf])
 			
 
 
@@ -189,23 +199,32 @@ This program will take an input stack of subtomograms and a reference volume, an
 	etc=EMTaskCustomer(options.parallel, module="e2spt_align.SptAlignTask")
 	num_cpus = etc.cpu_est()
 	
-	#tasks=tasks[:24]
-	print("{} total CPUs available".format(num_cpus))
-	print("{} jobs".format(len(tasks)))
-
+	#tasks=tasks[:2400]
+	print("{} jobs on {} CPUs".format(len(tasks), num_cpus))
+	njob=num_cpus#*4
+	
 	tids=[]
-	for t in tasks:
-		if len(t)>3:
-			task = SptAlignTask(t[0], t[1], t[2], options, t[3])
-		else:
-			task = SptAlignTask(t[0], t[1], t[2], options)
+	for i in range(njob):
+		t=tasks[i::njob]
+		task=SptAlignTask(t, options)
 		tid=etc.send_task(task)
 		tids.append(tid)
+	
+	#print("starting...")
+	#for t in tasks:
+		#if len(t)>3:
+			#task = SptAlignTask(t[0], t[1], t[2], options, t[3])
+		#else:
+			#task = SptAlignTask(t[0], t[1], t[2], options)
+		#tid=etc.send_task(task)
+		#tids.append(tid)
 
 	while 1:
 		st_vals = etc.check_task(tids)
-		#print("{:.1f}/{} finished".format(np.mean(st_vals), 100))
-		#print(tids)
+		E2progress(logid, np.mean(st_vals)/100.)
+		#print("{:.1f}/{} finished".format(np.sum(st_vals)/100, len(tids)))
+		#print(st_vals)
+		#sys.stdout.flush()
 		if np.min(st_vals) == 100: break
 		time.sleep(5)
 
@@ -213,12 +232,13 @@ This program will take an input stack of subtomograms and a reference volume, an
 	
 	angs={}
 	for i in tids:
-		ret=etc.get_results(i)[1]
-		fsp,n,dic=ret
-		if len(dic)==1:
-			angs[(fsp,n)]=dic[0]
-		else:
-			angs[(fsp,n)]=dic
+		rets=etc.get_results(i)[1]
+		for ret in rets:
+			fsp,n,dic=ret
+			if len(dic)==1:
+				angs[(fsp,n)]=dic[0]
+			else:
+				angs[(fsp,n)]=dic
 		
 	out="{}/particle_parms_{:02d}.json".format(options.path,options.iter)
 	if os.path.isfile(out):
@@ -273,9 +293,8 @@ def reduce_sym(xf, s):
 class SptAlignTask(JSTask):
 	
 	
-	def __init__(self, fsp, i, ref, options, xf=None):
+	def __init__(self, data, options):
 		
-		data={"fsp":fsp, "i":i, "ref": ref, "xf":xf}
 		JSTask.__init__(self,"SptAlign",data,{},"")
 		self.options=options
 	
@@ -284,76 +303,128 @@ class SptAlignTask(JSTask):
 		
 		callback(0)
 		
-		data=self.data
 		options=self.options
 		
-		fsp=data["fsp"]
-		i=data["i"]
-		ref=EMData(data["ref"],0).do_fft()
-		ref.process_inplace("xform.phaseorigin.tocorner")
+		#####[src, ii, refnames, ii%2, xf]
 		
-		b=EMData(fsp,i)
-		if options.maxres>0:
-			b.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./options.maxres})
-		b=b.do_fft()
-		b.process_inplace("xform.phaseorigin.tocorner")
-		#b=EMData(fsp, i, True)
-		aligndic={"verbose":options.verbose,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0}
-		
-		if options.refine and (data["xf"]!=None or b.has_attr("xform.align3d")):
-			ntry=8
-			if data["xf"]!=None:
-				initxf=data["xf"]
+		refnames=self.data[0][2]
+		refs=[]
+		for r in refnames:
+			ref=EMData(r,0).do_fft()
+			ref.process_inplace("xform.phaseorigin.tocorner")
+			refs.append(ref)
+			
+		if options.breaksym:
+			x=Transform()
+			nsym=x.get_nsym(options.breaksymsym)
+			refasym=[]
+			for r in refs:
+				rs=[]
+				for i in range(nsym):
+					rt=r.process("xform",{"transform":x.get_sym(options.breaksymsym, i)})
+					rs.append(rt)
+				refasym.append(rs)
 				
+			
+		rets=[]
+		for data in self.data:
+			
+			fsp=data[0]
+			i=data[1]
+			
+			if len(data)>4:
+				dataxf=data[4]
 			else:
-				initxf=b["xform.align3d"]
+				dataxf=None
 			
-			xfs=[initxf]
-			
-			for ii in range(len(xfs), ntry):
-				ixf=initxf.get_params("eman")
-				if options.randphi:
-					ixf["phi"]=np.random.rand()*360.
-				if options.rand180:
-					ixf["alt"]=ixf["alt"]+180
-				ixf=Transform(ixf)
-				
-				v=np.random.rand(3)-0.5
-				nrm=np.linalg.norm(v)
-				if nrm>0:
-					v=v/nrm
-				else:
-					v=(0,0,1)
-				xf=Transform({"type":"spin", "n1":v[0], "n2":v[1], "n3":v[2],
-						"omega":options.maxang*np.random.randn()/3.0})
-				xfs.append(xf*ixf)
-			
-			
-			xfs=[reduce_sym(xf.inverse(), options.sym).inverse() for xf in xfs]
-			aligndic["initxform"]=xfs
-			if options.maxshift<0:
-				options.maxshift=16
-			aligndic["maxshift"]=options.maxshift
-			aligndic["maxang"]=options.maxang
-			aligndic["randphi"]=options.randphi
-			aligndic["rand180"]=options.rand180
-		
-		else:
-			if options.maxshift>0:
-				aligndic["maxshift"]=options.maxshift
+			b=EMData(fsp,i)
+			b.process_inplace("normalize.edgemean")
+			if options.maxres>0:
+				b.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./options.maxres})
+			b=b.do_fft()
+			b.process_inplace("xform.phaseorigin.tocorner")
 
-		# we align backwards due to symmetry
-		if options.verbose>2 : print("Aligning: ",fsp,i)
-		
-		#c=[{"xform.align3d":xfs[1], "score":-1}]
-		c=ref.xform_align_nbest("rotate_translate_3d_tree",b, aligndic, options.nsoln)
-		for cc in c : cc["xform.align3d"]=cc["xform.align3d"].inverse()
+			aligndic={"verbose":options.verbose,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0}
+			
+			if options.refine and (dataxf!=None or b.has_attr("xform.align3d")):
+				ntry=options.refinentry
+				if dataxf!=None:
+					initxf=dataxf
+				else:
+					initxf=b["xform.align3d"]
+				
+				xfs=[initxf]
+				
+				for ii in range(len(xfs), ntry):
+					ixf=initxf.get_params("eman")
+					if options.randphi:
+						ixf["phi"]=np.random.rand()*360.
+					if options.rand180:
+						ixf["alt"]=ixf["alt"]+180
+					ixf=Transform(ixf)
+					
+					v=np.random.rand(3)-0.5
+					nrm=np.linalg.norm(v)
+					if nrm>0:
+						v=v/nrm
+					else:
+						v=(0,0,1)
+					xf=Transform({"type":"spin", "n1":v[0], "n2":v[1], "n3":v[2],
+							"omega":options.maxang*np.random.randn()/3.0})
+					xfs.append(xf*ixf)
+				
+				## rotate back to the first asym unit
+				xfs=[reduce_sym(xf.inverse(), options.sym).inverse() for xf in xfs]
+					
+				aligndic["initxform"]=xfs
+				if options.maxshift<0:
+					options.maxshift=16
+				aligndic["maxshift"]=options.maxshift
+				aligndic["maxang"]=options.maxang
+				aligndic["randphi"]=options.randphi
+				aligndic["rand180"]=options.rand180
+			
+			else:
+				if options.maxshift>0:
+					aligndic["maxshift"]=options.maxshift
+
+			# we align backwards due to symmetry
+			if options.verbose>2 : print("Aligning: ",fsp,i)
+			
+			#c=[{"xform.align3d":xfs[0].inverse(), "score":-1}]
+			
+	
+			ref=refs[data[3]]
+			c=ref.xform_align_nbest("rotate_translate_3d_tree",b, aligndic, options.nsoln)
+			
+			for cc in c : cc["xform.align3d"]=cc["xform.align3d"].inverse()
+			
+			if options.breaksym:
+				xf=c[0]["xform.align3d"]
+				b.process_inplace("xform", {"transform":xf})
+				cs=[]
+				for si in range(nsym):
+					ref=refasym[data[3]][si]
+					ccc=b.cmp("fsc.tomo.auto", ref, {"sigmaimgval":1.0, "sigmawithval":0.1})
+					cs.append(ccc)
+					
+				#print(xf, cs, np.argmin(cs))
+				ci=np.argmin(cs)
+				#ci=0
+				x=Transform()
+				xf=x.get_sym(options.breaksymsym, ci)*xf
+				c[0]["xform.align3d"]=xf
+					
+			
+			rets.append((fsp,i,c))
+
+			callback(len(rets)*100//len(self.data)-1)
 
 		#print(fsp, i, c[0])
 		#callback(100)
 		#print(i,c[0]["xform.align3d"])
-		
-		return (fsp,i,c)
+		#exit()
+		return rets
 		
 
 

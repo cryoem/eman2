@@ -13,6 +13,9 @@ import os
 import threading
 import queue
 from sys import argv,exit
+import numpy as np
+from EMAN2jsondb import JSTask
+
 
 def rotfn(avg,fsp,i,a,maxtilt,verbose):
 	"""Averaging thread. 
@@ -21,7 +24,7 @@ def rotfn(avg,fsp,i,a,maxtilt,verbose):
 	a is the Transform to put the particle in the correct orientation
 	maxtilt can optionally better enforce missing wedge exclusion
 	"""
-	b=EMData(fsp,i)
+	b=EMData(fsp,i).process("normalize.edgemean")
 	if maxtilt<90.0 :
 		bf=b.do_fft()
 		bf.process_inplace("mask.wedgefill",{"thresh_sigma":0.0,"maxtilt":maxtilt})
@@ -39,7 +42,7 @@ def rotfnsym(avg,fsp,i,a,sym,masked,maxtilt,verbose):
 	masked is a reference volume (generally masked) for translational alignment of each symmetric copy
 	maxtilt can optionally better enforce missing wedge exclusion
 	"""
-	b=EMData(fsp,i)
+	b=EMData(fsp,i).process("normalize.edgemean")
 	if maxtilt<90.0 :
 		bf=b.do_fft()
 		bf.process_inplace("mask.wedgefill",{"thresh_sigma":0.0,"maxtilt":maxtilt})
@@ -54,6 +57,52 @@ def rotfnsym(avg,fsp,i,a,sym,masked,maxtilt,verbose):
 		avg.add_image(d)
 	#jsd.put((fsp,i,b))
 
+
+
+
+class SptavgTask(JSTask):
+	
+	
+	def __init__(self, inp, options):
+		
+		data={"data":inp}
+		JSTask.__init__(self,"Sptavg",data,{},"")
+		self.options=options
+	
+	
+	def execute(self, callback):
+		
+		callback(0)
+		data=self.data["data"]
+		options=self.options
+		sz=options.boxsz
+		
+		normvol=EMData((sz//2+1)*2, sz, sz)
+		
+		avg=Averagers.get("mean.tomo",{"thresh_sigma":options.wedgesigma, "doift":0, "normout":normvol})
+		
+		for ii,dt in enumerate(data):
+			fsp, i, xf=dt
+			### it seems that there are some problems with non integer shift in fourier space...
+			xf.set_trans(np.round(xf.get_trans()).tolist())
+			b=EMData(fsp,i).process("normalize.edgemean")
+			
+			b=b.do_fft()
+			if options.maxtilt<90.0 :
+				b.process_inplace("mask.wedgefill",{"thresh_sigma":0.0,"maxtilt":options.maxtilt})
+			
+			b.process_inplace("xform.phaseorigin.tocorner")
+			b.process_inplace("xform",{"transform":xf})
+			avg.add_image(b)
+			callback(ii*100//len(data))
+			#print(fsp, i, xf)
+			
+		
+		#callback(100)
+		output=avg.finish()
+				
+				
+		return (output, normvol)
 
 def inrange(a,b,c): return a<=b and b<=c
 
@@ -70,6 +119,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.")
 	parser.add_argument("--iter",type=int,help="Iteration number within path. Default = start a new iteration",default=0)
 	parser.add_argument("--simthr", default=-0.1,type=float,help="Similarity is smaller for better 'quality' particles. Specify the highest value to include from e2spt_hist.py. Default -0.1")
+	parser.add_argument("--keep", default=-1,type=float,help="fraction of particles to keep. will overwrite simthr if set.")
 	parser.add_argument("--replace",type=str,default=None,help="Replace the input subtomograms used for alignment with the specified file (used when the aligned particles were masked or filtered)")
 	parser.add_argument("--wedgesigma",type=float,help="Threshold for identifying missing data in Fourier space in terms of standard deviation of each Fourier shell. Default 3.0",default=3.0)
 	parser.add_argument("--minalt",type=float,help="Minimum alignment altitude to include. Default=0",default=0)
@@ -83,6 +133,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	parser.add_argument("--skippostp", action="store_true", default=False ,help="Skip post process steps (fsc, mask and filters)")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default=None)
 
 	(options, args) = parser.parse_args()
 
@@ -123,9 +174,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 #	jsd=Queue.Queue(0)
 
 
-	avg=[0,0]
-	avg[0]=Averagers.get("mean.tomo",{"thresh_sigma":options.wedgesigma}) #,{"save_norm":1})
-	avg[1]=Averagers.get("mean.tomo",{"thresh_sigma":options.wedgesigma})
+	
 
 	# filter the list of particles to include 
 	keys=list(angs.keys())
@@ -136,6 +185,11 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	
 	newkey=[]
 	newang={}
+	if options.keep>0 and options.keep<=1:
+		score=[float(angs[k]["score"]) for k in keys]
+		options.simthr=np.sort(score)[int(len(score)*options.keep)]
+		print("Keeping {:.0f}% particles with score below {:.2f}".format(options.keep*100, options.simthr))
+	
 	for k in keys:
 		val=angs[k]
 		if type(val)==list:
@@ -148,47 +202,123 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	keys=newkey
 	angs=newang
 	if options.verbose : print("{}/{} particles after filters".format(len(keys),len(list(angs.keys()))))
-																		 
 
-	# Rotation and insertion are slow, so we do it with threads. 
-	if options.symalimasked!=None:
-		if options.replace!=None :
-			print("Error: --replace cannot be used with --symalimasked")
-			sys.exit(1)
-		alimask=EMData(options.symalimasked)
-		thrds=[threading.Thread(target=rotfnsym,args=(avg[i%2],eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.sym,alimask,options.maxtilt,options.verbose)) for i,k in enumerate(keys)]
+			
+			
+	if options.parallel:
+		print("running in mpi mode. This is experimental, so please switch back to threading if anything goes wrong...")
+				
+		from EMAN2PAR import EMTaskCustomer
+		etc=EMTaskCustomer(options.parallel, module="e2spt_average.SptavgTask")
+		num_cpus = etc.cpu_est()
+		
+		print("{} total CPUs available".format(num_cpus))
+		data=[[],[]] ## even/odd
+		for i,k in enumerate(keys):
+			src, ii=eval(k)[0],eval(k)[1]
+			data[ii%2].append([src, ii, angs[k]["xform.align3d"]])
+		
+		
+		#### check and save size of particle
+		fsp, i, xf=data[0][0]
+		b=EMData(fsp,i, True)
+		sz=options.boxsz=b["ny"]
+		avgs=[]
+		for ieo, eo in enumerate(["even", "odd"]):
+			print("Averaging {}...".format(eo))
+		
+			tasks=[data[ieo][i::num_cpus] for i in range(num_cpus)]
+			
+			
+			
+			print("{} particles in {} jobs".format(len(data[ieo]), len(tasks) ))
+
+			tids=[]
+			for t in tasks:
+				task = SptavgTask(t,  options)
+				tid=etc.send_task(task)
+				tids.append(tid)
+
+			while 1:
+				st_vals = etc.check_task(tids)
+				#print("{:.1f}/{} finished".format(np.mean(st_vals), 100))
+				#print(tids)
+				if np.min(st_vals) == 100: break
+				time.sleep(5)
+
+			#dics=[0]*nptcl
+			
+			output=EMData(sz, sz, sz)
+			normvol=EMData((sz//2+1)*2, sz, sz)
+			output.to_zero()
+			output.do_fft_inplace()
+			avg=Averagers.get("mean")
+			normvol.to_zero()
+			for i in tids:
+				threed, norm=etc.get_results(i)[1]
+				#print(i, threed["mean"], threed["sigma"], norm["mean"], norm["sigma"])
+				#norm.div(len(tids))
+				threed.process_inplace("math.multamplitude", {"amp":norm})
+				avg.add_image(threed)
+				normvol.add(norm)
+				
+			output=avg.finish()
+			normvol.process_inplace("math.reciprocal")
+			output.process_inplace("math.multamplitude", {"amp":normvol})
+			output.process_inplace("xform.phaseorigin.tocenter")
+			
+			output.do_ift_inplace()
+			output.depad()
+			avgs.append(output)
+				
+		ave, avo=avgs
+				
+		
 	else:
-		# Averager isn't strictly threadsafe, so possibility of slight numerical errors with a lot of threads
-		if options.replace != None:
-			thrds=[threading.Thread(target=rotfn,args=(avg[i%2],options.replace,eval(k)[1],angs[k]["xform.align3d"],options.maxtilt,options.verbose)) for i,k in enumerate(keys)]
+		avg=[0,0]
+		avg[0]=Averagers.get("mean.tomo",{"thresh_sigma":options.wedgesigma}) #,{"save_norm":1})
+		avg[1]=Averagers.get("mean.tomo",{"thresh_sigma":options.wedgesigma})
 
+		# Rotation and insertion are slow, so we do it with threads. 
+		if options.symalimasked!=None:
+			if options.replace!=None :
+				print("Error: --replace cannot be used with --symalimasked")
+				sys.exit(1)
+			alimask=EMData(options.symalimasked)
+			thrds=[threading.Thread(target=rotfnsym,args=(avg[eval(k)[1]%2],eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.sym,alimask,options.maxtilt,options.verbose)) for i,k in enumerate(keys)]
 		else:
-			thrds=[threading.Thread(target=rotfn,args=(avg[i%2],eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.maxtilt,options.verbose)) for i,k in enumerate(keys)]
+			# Averager isn't strictly threadsafe, so possibility of slight numerical errors with a lot of threads
+			if options.replace != None:
+				thrds=[threading.Thread(target=rotfn,args=(avg[eval(k)[1]%2],options.replace,eval(k)[1],angs[k]["xform.align3d"],options.maxtilt,options.verbose)) for i,k in enumerate(keys)]
+
+			else:
+				thrds=[threading.Thread(target=rotfn,args=(avg[eval(k)[1]%2],eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.maxtilt,options.verbose)) for i,k in enumerate(keys)]
 
 
-	print(len(thrds)," threads")
-	thrtolaunch=0
-	while thrtolaunch<len(thrds) or threading.active_count()>1:
-		# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
-		# note that it's ok that we wait here forever, since there can't be new results if an existing
-		# thread hasn't finished.
-		if thrtolaunch<len(thrds) :
-			while (threading.active_count()==NTHREADS ) : time.sleep(.1)
-			if options.verbose : print("Starting thread {}/{}".format(thrtolaunch,len(thrds)))
-			thrds[thrtolaunch].start()
-			thrtolaunch+=1
-		else: time.sleep(1)
-	
-		#while not jsd.empty():
-			#fsp,n,ptcl=jsd.get()
-			#avg[n%2].add_image(ptcl)
+		print(len(thrds)," threads")
+		thrtolaunch=0
+		while thrtolaunch<len(thrds) or threading.active_count()>1:
+			# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
+			# note that it's ok that we wait here forever, since there can't be new results if an existing
+			# thread hasn't finished.
+			if thrtolaunch<len(thrds) :
+				while (threading.active_count()==NTHREADS ) : time.sleep(.1)
+				if options.verbose : print("Starting thread {}/{}".format(thrtolaunch,len(thrds)))
+				thrds[thrtolaunch].start()
+				thrtolaunch+=1
+			else: time.sleep(1)
+		
+			#while not jsd.empty():
+				#fsp,n,ptcl=jsd.get()
+				#avg[n%2].add_image(ptcl)
 
 
-	for t in thrds:
-		t.join()
+		for t in thrds:
+			t.join()
 
-	ave=avg[0].finish()		#.process("xform.phaseorigin.tocenter").do_ift()
-	avo=avg[1].finish()		#.process("xform.phaseorigin.tocenter").do_ift()
+		ave=avg[0].finish()		#.process("xform.phaseorigin.tocenter").do_ift()
+		avo=avg[1].finish()		#.process("xform.phaseorigin.tocenter").do_ift()
+		
 	# impose symmetry on even and odd halves if appropriate
 	if options.sym!=None and options.sym.lower()!="c1" and options.symalimasked==None:
 		ave.process_inplace("xform.applysym",{"averager":"mean.tomo","sym":options.sym})

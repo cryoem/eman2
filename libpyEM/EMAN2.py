@@ -170,15 +170,15 @@ file_mode_intmap={
 
 #keyed both by type and by the integer version for flexibility
 file_mode_range={
-	EMUtil.EMDataType.EM_CHAR:(0,255),
-	EMUtil.EMDataType.EM_UCHAR:(-127,128),
+	EMUtil.EMDataType.EM_CHAR:(-127,128),
+	EMUtil.EMDataType.EM_UCHAR:(0,255),
 	EMUtil.EMDataType.EM_SHORT:(-32767,32768 ),
 	EMUtil.EMDataType.EM_USHORT:(0,65535 ),
 	EMUtil.EMDataType.EM_INT:(-2147483647,2147483648 ),
 	EMUtil.EMDataType.EM_UINT:(0,4294967295),
 	EMUtil.EMDataType.EM_FLOAT:(-3.40282347e+38,3.40282347e+38 ),
-	int(EMUtil.EMDataType.EM_CHAR):(0,255),
-	int(EMUtil.EMDataType.EM_UCHAR):(-127,128),
+	int(EMUtil.EMDataType.EM_CHAR):(-127,128),
+	int(EMUtil.EMDataType.EM_UCHAR):(0,255),
 	int(EMUtil.EMDataType.EM_SHORT):(-32767,32768 ),
 	int(EMUtil.EMDataType.EM_USHORT):(0,65535 ),
 	int(EMUtil.EMDataType.EM_INT):(-2147483647,2147483648 ),

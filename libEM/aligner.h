@@ -1932,6 +1932,7 @@ namespace EMAN
 // 				d.put("initxform", EMObject::TRANSFORM,"The Transform storing the starting position. If unspecified the identity matrix is used");
 				d.put("randphi", EMObject::BOOL,"Ignore phi constraint for refine search");
 				d.put("rand180", EMObject::BOOL,"Ignore 180 rotation for refine search");
+				d.put("breaksym", EMObject::BOOL,"break symmetry. used only when initxform is provided.");
 				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
 				return d;
 			}

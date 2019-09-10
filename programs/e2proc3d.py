@@ -313,6 +313,7 @@ def main():
 		for i in range(n0,n1+1,n2):
 			a=EMData(infile,i)
 			if options.avg_byxf and a.has_attr("xform.align3d"):
+				a.process_inplace('normalize.edgemean')
 				a.transform(a["xform.align3d"])
 			avgr.add_image(a)
 			if options.verbose:

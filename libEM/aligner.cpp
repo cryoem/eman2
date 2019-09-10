@@ -3800,10 +3800,12 @@ bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> 
 	float maxang=params.set_default("maxang",-1.0);
 	bool randphi=params.set_default("randphi",false);
 	bool rand180=params.set_default("rand180",false);
+	bool breaksym=params.set_default("breaksym",false);
 	
 	if (maxang>0){
 		
-		Transform tmp;
+		Transform tmp=initxf * t.inverse();
+		
 		if (randphi){
 			Dict td=t.get_params("eman");
 			Dict ti=initxf.get_params("eman");
@@ -3811,9 +3813,16 @@ bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> 
 			Transform tmp1=Transform(td);
 			tmp=initxf * tmp1.inverse();
 		}
-		else{
-			tmp=initxf * t.inverse();
+		if (breaksym){
+			string s=params.set_default("sym","c1");
+			Symmetry3D* sym = Factory<Symmetry3D>::get(s);
+			int xi=sym->in_which_asym_unit(t.inverse());
+			Transform tmp1=t.inverse().get_sym(s, -xi).inverse();
+			tmp=initxf * tmp1.inverse();
+			
 		}
+		
+		
 		float r=tmp.get_params("spin")["omega"];
 		if (rand180){
 			r=r>90?(180-r):r;

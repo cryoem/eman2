@@ -57,7 +57,7 @@ def main():
 	parser.add_argument("--buildsetonly", action="store_true", default=False ,help="will only prepare particle set for the refinement but skip the actual refinement process.",guitype='boolbox',row=6, col=0,rowspan=1, colspan=1)
 	parser.add_argument("--resume", action="store_true", default=False ,help="continue from previous run",guitype='boolbox',row=6, col=1,rowspan=1, colspan=1)
 	
-	parser.add_argument("--reproject", action="store_true", default=False ,help="Reproject 3D particles into 2D particles.",guitype='boolbox',row=7, col=0,rowspan=1, colspan=1)
+	parser.add_argument("--reproject", action="store_true", default=False ,help="Reproject 3D particles into 2D particles.")
 	
 	parser.add_argument("--reprj_offset", type=str, default="" ,help="Offset translation before reprojection")
 	parser.add_argument("--reprj_clip", type=int, default=-1 ,help="clip after reprojection")
@@ -74,7 +74,7 @@ def main():
 	parser.add_argument("--localnorm",action="store_true",help="local normalization. do not use yet....",default=False)
 	parser.add_argument("--sym", type=str,help="symmetry. will use symmetry from spt refinement by default", default="c1")
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
-	parser.add_argument("--transonly", action="store_true", default=False ,help="only refine translation")
+	parser.add_argument("--transonly", action="store_true", default=False ,help="only refine translation",guitype='boolbox',row=7, col=0,rowspan=1, colspan=1)
 
 
 	(options, args) = parser.parse_args()
@@ -179,8 +179,15 @@ def main():
 			
 		oldjd.close()
 	else:
-		print("Cannot find {}. exit.".format(sptparms))
-		return
+		print("Cannot find {}. Using default parameters.".format(sptparms))
+		jd["mass"] = -1
+		jd["sym"] = "c1"
+		jd["localfilter"]=False
+		jd["mask"]=""
+			
+		if fromspt:
+			options.ptclkeep=0.8
+		
 	
 	if options.mask.lower()!="none":
 		#print("Overwritting masking")

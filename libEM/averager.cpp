@@ -192,11 +192,22 @@ EMData * TomoAverager::finish()
 	norm_image->update();
 	result->update();
 	
-	EMData *ret = result->do_ift();
+	EMData *ret;
+	if ((int)params.set_default("doift", 1))
+		ret = result->do_ift();
+	else
+		ret = result->copy();
+	
 	ret->set_attr("ptcl_repr",norm_image->get_attr("maximum"));
 	ret->set_attr("mean_coverage",(float)(overlap/nimg));
 	if ((int)params.set_default("save_norm", 0)) 
 		norm_image->write_image("norm.hdf");
+	
+	if (params.has_key("normout")) {
+		EMData *normout=(EMData*) params["normout"];
+		normout->set_data(norm_image->copy()->get_data());
+		normout->update();
+	}
 	
 	delete result;
 	delete norm_image;

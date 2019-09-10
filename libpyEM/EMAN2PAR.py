@@ -520,7 +520,7 @@ class EMMpiClient(object):
 					else : print("Warning: unknown task command ",com)
 					continue
 
-				time.sleep(2)
+				time.sleep(.5)
 
 		# all other ranks handle executing jobs
 		else :

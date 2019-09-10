@@ -986,30 +986,30 @@ def main():
 							# This sets the minimum and maximum values to the range
 							# for the specified type, which should result in no rescaling
 
-#							outmode = file_mode_map[options.outmode]
+							outmode = file_mode_map[options.outmode]
 
-#							d["render_min"] = file_mode_range[outmode][0]
-#							d["render_max"] = file_mode_range[outmode][1]
+							d["render_min"] = file_mode_range[outmode][0]
+							d["render_max"] = file_mode_range[outmode][1]
 
-							if   options.outmode == "int8" :
-								u =   -128.0
-								v =    127.0
-							elif options.outmode == "uint8" :
-								u =      0.0
-								v =    255.0
-							elif options.outmode == "int16" :
-								u = -32768.0
-								v =  32767.0
-							elif options.outmode == "uint16" :
-								u =      0.0
-								v =  65535.0
-							else :
-								u =      1.0
-								v =      0.0
+							#if   options.outmode == "int8" :
+								#u =   -128.0
+								#v =    127.0
+							#elif options.outmode == "uint8" :
+								#u =      0.0
+								#v =    255.0
+							#elif options.outmode == "int16" :
+								#u = -32768.0
+								#v =  32767.0
+							#elif options.outmode == "uint16" :
+								#u =      0.0
+								#v =  65535.0
+							#else :
+								#u =      1.0
+								#v =      0.0
 
-							if u < v :
-								d["render_min"] = u
-								d["render_max"] = v
+							#if u < v :
+								#d["render_min"] = u
+								#d["render_max"] = v
 						else :
 							if not min_max_set :
 								d["render_min"] = d["minimum"]

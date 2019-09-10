@@ -28,7 +28,7 @@ def rotfncompete(jsd,avgs,fsp,fspn,a,refs, shrinkrefs, options):
 	
 	shrink=options.shrinkcompare
 	if shrink<2: shrink=0
-	b=EMData(fsp,fspn)
+	b=EMData(fsp,fspn).process("normalize.edgemean")
 	if options.maxres>0: b.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,options.maxres)})
 	if options.maxtilt<90.0 :
 		bf=b.do_fft()
