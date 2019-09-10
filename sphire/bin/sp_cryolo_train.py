@@ -333,6 +333,7 @@ def main():
 		dump(dict, f, ensure_ascii=False, indent=4)
 
 	# Run the training
+	config_argument = "-c=" + path
 	warmup_argument = "-w=" + str(warmup)
 	gpu_argument = "-g " + arg_gpu
 	early_stop = "-e=" + str(early_stop)
@@ -360,7 +361,7 @@ def main():
 	'''
 	if fine_tune:
 		warmup_argument = "-w=0"
-	command = [cryolo_ex_pth, "-c=config_yolo.json", warmup_argument, gpu_argument, early_stop, gpu_fraction_arg]
+	command = [cryolo_ex_pth, config_argument, warmup_argument, gpu_argument, early_stop, gpu_fraction_arg]
 	if fine_tune:
 		command.append(fine_tune_argument)
 	if num_cpu != -1:
