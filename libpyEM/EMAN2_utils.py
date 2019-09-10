@@ -421,13 +421,16 @@ def detectThreads(options):
 	import multiprocessing
 	nparallel = multiprocessing.cpu_count()
 
+	print("\n(EMAN2_utils)(detectThreads) incoming options.parallel={}".format(otpions.parallel)) 
+	print("\n(EMAN2_utils)(detectThreads) incoming options.threads={}".format(otpions.threads))
+
 	try:	
 		if options.parallel and options.parallel != 'None' and options.parallel != 'none' and options.parallel != 'NONE':
 			if 'mpi' not in options.parallel:
 
 				options.parallel = 'thread:' + str(nparallel)
-				print("\nfound cores n={}".format(nparallel))
-				print("setting --parallel={}".format(options.parallel))
+				print("\n(EMAN2_utils)(detectThreads) found cores n={}".format(nparallel))
+				print("(EMAN2_utils)(detectThreads) setting --parallel={}".format(options.parallel))
 			else:
 				print("\n(EMAN2_utils)(detectThreads) nothing to do; mpi paralellism specified; options.parallel={}".format(otpions.parallel)) 
 	
@@ -439,14 +442,14 @@ def detectThreads(options):
 	try:
 		if options.threads and options.threads != 'None' and options.threads != 'none' and options.threads != 'NONE':
 			
-			options.threads = 'thread:' + str(nparallel)
-			print("\nfound cores n={}".format(nparallel))
-			print("setting --parallel={}".format(options.parallel))
+			options.threads = str(nparallel)
+			print("\n(EMAN2_utils)(detectThreads) found cores n={}".format(nparallel))
+			print("(EMAN2_utils)(detectThreads) setting --threads={}".format(options.threads))
 		elif not options.threads or options.threads == 'None' or options.threads == 'none':
-			options.parallel = None
-			print("\n(EMAN2_utils)(detectThreads) WARNING: parallelism disabled, options.parallel={}".format(options.parallel) ) 
+			options.threads = None
+			print("\n(EMAN2_utils)(detectThreads) WARNING: parallelism disabled, options.threads={}".format(options.threads) ) 
 	except:
-		print("\n--threads not set")
+		print("\n(EMAN2_utils)(detectThreads) --threads not set")
 		#print("\n(EMAN2_utils)(detectThreads) WARNING: No parallelism option detected, neither --parallel nor --threads.")
 
 	return options
