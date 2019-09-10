@@ -40,10 +40,10 @@ for writing the box files. Optionally one can specify the confidence threshold a
   ; %%--%%num_cpu: Number of CPUs : Number of CPUs used during prediction. By default it will use half of the available CPUs. (default -1)::
   ; %%--%%otf: On the fly filtering : If checked, the images are filtered on the fly and not saved to disk. (default False) ::
   ; %%--%%min_distance: Minimum distance : Particles with a distance less than this value (in pixel) will be removed. (default 0) ::
-  ; %%--%%filament_mode : Filament mode [Yes/No] : Check if you want to use the filament mode. (default False)::True;Main
-  ; %%--%%filament_width : Filament width [Pixel] : Width of your filament in pixel. (default 100) : %%--%%filament_mode==True:100;Main
+  ; %%--%%filament_mode : Filament mode [Yes/No] : Check if you want to use the filament mode. (default False)::
+  ; %%--%%filament_width : Filament width [Pixel] : Width of your filament in pixel. (default 100) : %%--%%filament_mode==True:
   ; %%--%%min_box_per_filament : Minimum number of boxes per filament : Specifies the minimum number of boxes per filament. (default 6) : %%--%%filament_mode==True:6;Main
-  ; %%--%%box_distance : Box distance : Distance between two filament boxes in pixels. (default -1) : %%--%%filament_mode==True:-1;Main
+  ; %%--%%box_distance : Box distance : Distance between two filament boxes in pixels. (default -1) : %%--%%filament_mode==True:
   ; %%--%%nosplit: Don't split curved filaments : If checked, the filament mode does not split curved filaments. (default False) :  %%--%%filament_mode==True:
   ; %%--%%nomerging: Don't merge filaments : If checked, the filament mode does not merge filaments. (default False) : %%--%%filament_mode==True:
 
