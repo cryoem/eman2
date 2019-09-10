@@ -60,6 +60,11 @@ argparser.add_argument(
 	help='Path to training images')
 
 argparser.add_argument(
+	'output_directory',
+	type=str,
+	help='Path to output directory')
+
+argparser.add_argument(
 	'--architecture',
 	default="PhosaurusNet",
 	type=str,
@@ -250,6 +255,7 @@ def main():
 	trainging_dir = args.training_dir
 	annot_dir = args.annot_dir
 	input_size = args.input_size
+	output_dir = args.output_directory
 	num_patches = args.num_patches
 	overlap_patches = args.overlap_patches
 	train_times = args.train_times
@@ -315,7 +321,14 @@ def main():
 				  'valid_times': 1
 				  }
 	dict = {"model": model_dict, "train": train_dict, "valid": valid_dict}
-	path = "config_yolo.json"
+	import os
+	if os.path.exists(output_dir):
+		sp_global_def.ERROR("Output folder already exists. Stop execution.")
+	else:
+		os.makedirs(output_dir)
+		sp_global_def.write_command(output_dir)
+
+	path = os.path.join(output_dir,"config_yolo.json")
 	with open(path, 'w') as f:
 		dump(dict, f, ensure_ascii=False, indent=4)
 
