@@ -209,10 +209,12 @@ pipeline {
     
     stage('deploy') {
       when { expression { isBinaryBuild() } }
-      
-      steps {
-        notifyGitHub('PENDING')
-        deployPackage()
+      environment { PARENT_STAGE_NAME = "${STAGE_NAME}" }
+
+      parallel {
+        stage('notify') { steps { notifyGitHub('PENDING') } }
+        stage('mini')   { steps { deployPackage(binary_size_suffix[STAGE_NAME]) } }
+        stage('huge')   { steps { deployPackage(binary_size_suffix[STAGE_NAME]) } }
       }
     }
   }
