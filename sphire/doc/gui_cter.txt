@@ -8,7 +8,7 @@ CTF Assessment: GUI tool to assess and sort micrographs according to their CTF p
 
 Usage in command line
 
-  sp_gui_cter.py  cter_ctf_file 
+  sp_gui_cter.py  cter_ctf_file --ctffind --pwrot_dir=PWROT_DIR --power2d_dir=POWER2D_DIR --micthumb_dir=MICTHUMB_DIR
 
 \\
 ===== Typical usage =====
@@ -21,9 +21,13 @@ sp_gui_cter GUI tool can be run as a stand-alone program or run from the SPHIRE 
 ===== Input =====
 === Main Parameters ===
   ; cter_ctf_file : File containing CTF parameters: This file is produced by sp_cter and normally called partres.txt. (default none)
+  ; %%--%%ctffind : ctffind : Use CTFFIND outputs (e.g., PWROT_DIR/*_avrot.txt, POWER2D_DIR/*.mrc). If using this option, you may need to specify the advanced parameters pwrot_dir and power2d_dir (default False)
 
 \\
 === Advanced Parameters ===
+  ; %%--%%pwrot_dir : 1D profile directory : Directory for 1D profiles (default pwrot)
+  ; %%--%%power2d_dir : 2D power-spectrum directory : Directory for 2D power spectra (default power2d)
+  ; %%--%%micthumb_dir : 2D power-spectrum directory : Directory for 2D power spectra (default micthumb)
 
 \\
 ===== Output =====

@@ -696,6 +696,9 @@ int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bo
 	dict["FEIMRC.tilt_axis"] = feiexth.tilt_axis;
 
 	dict["FEIMRC.pixel_size"] = feiexth.pixel_size;
+	dict["apix_x"] = feiexth.pixel_size *1.0e10;
+	dict["apix_y"] = feiexth.pixel_size *1.0e10;
+	dict["apix_z"] = feiexth.pixel_size *1.0e10;
 	dict["FEIMRC.magnification"] = feiexth.magnification;
 	dict["FEIMRC.ht"] = feiexth.ht;
 	dict["FEIMRC.binning"] = feiexth.binning;

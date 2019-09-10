@@ -78,6 +78,7 @@ def main():
 		from sp_applications  import  rot_sym
 		sp_global_def.BATCH = True
 		rot_sym(args[0],args[1],options.sym,options.r,options.phi,options.theta,options.psi,options.phirange,options.thetarange,options.psirange,options.ftol,options.xtol)
+		sp_global_def.write_command('.')
 		sp_global_def.BATCH = False
 	
 if __name__ == "__main__":

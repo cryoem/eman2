@@ -8,6 +8,7 @@ from __future__ import division
 from past.utils import old_div
 from builtins import range
 import numpy as np
+import math
 import os
 from EMAN2 import *
 import importlib
@@ -219,6 +220,76 @@ def make_path(suffix):
 	return path
 
 
+def mid_points(length,segment,step):
+	"""Returns the mid points of consecutive sections of size "segment" along the "length" of a line
+	Author: Jesus Montoya, jgalaz@gmail.com, September 2019
+	"""
+	points=[int(round(p+segment/2.0)) for p in range(0,length,step) if (p+segment/2.0)<(length-(segment/2.0))]
+	#print("\n(EMAN2_utils)(mid_points) lenpoints={}".format(len(points)))
+	return points
+
+
+def tile_grid(nx,ny,tilesize,overlap=True,pad=False):
+	"""Returns tile centers based on a defined box size, with the option to overlap tiles by 50% as maximally allowed to improve power spectrum when doing this for CTF fitting
+	Author: Jesus Montoya, jgalaz@gmail.com, September 2019
+	"""
+	
+	nx=int(nx)
+	ny=int(ny)
+	tilesize=int(tilesize)
+	print("\n(EMAN2_utils)(tile_grid) nx={}, ny={}, tilesize={}".format(nx,ny,tilesize))
+
+	step = tilesize
+	if overlap:
+		step = int(round(tilesize/2.0))
+	
+	print("\n(EMAN2_utils)(tile_grid) step={}".format(step))
+
+	xs = np.array(mid_points(nx,tilesize,step))
+	ys = np.array(mid_points(ny,tilesize,step))
+	
+	print("\n(EMAN2_utils)(tile_grid) step={}, lenx={}, leny={}".format(step,len(xs),len(ys)))
+
+	xx, yy = np.meshgrid(xs, ys)
+	print("\n(EMAN2_utils)(tile_grid) lenxx={}, lenyy={}".format(len(xx),len(yy)))
+	print("\nlast element is {}".format(xx[len(xx)-1][len(yy)-1],yy[len(xx)-1][len(yy)-1]))
+	
+	coords = [ [xx[i][j],yy[i][j]] for i in range(0,len(xx)) for j in range(0,len(yy)) ]
+
+	if not pad:
+		return coords
+	elif pad:
+		return xx,yy
+
+
+def tile_grid_rot(nx,ny,tilesize,rot,overlap=True):
+
+	newnx = int(round(nx*math.cos(math.radians(rot))+ny*math.sin(math.radians(rot))))
+	newny = int(round(nx*math.sin(math.radians(rot))+ny*math.sin(math.radians(90-rot))))
+	print("\n(EMAN2_utils)(tile_grid_rot) newnx={}, newny={}".format(newnx,newny))
+	#h=np.hypot(nx,ny)
+	#nxny_angle = math.atan(float(ny)/float(nx))
+	#newnx=h*math.cos(math.radians(rot+nxny_angle))+2*ny*math.sin(math.radians(rot))
+	
+	xx,yy=tile_grid(newnx,newny,tilesize,overlap,pad=True)
+	
+	diffx=newnx-nx
+	diffy=newny-ny
+	center = [nx/2,ny/2]
+	
+	xx_trans = xx - diffx/2.0
+	yy_trans = yy - diffy/2.0
+
+	xr=np.cos(math.radians(rot))*(xx_trans-center[0]) - np.sin(math.radians(rot))*(yy_trans-center[1]) + center[0]
+	yr=np.sin(math.radians(rot))*(xx_trans-center[0]) + np.cos(math.radians(rot))*(yy_trans-center[1]) + center[1]
+	
+	coords = [ [xr[i][j],yr[i][j]] for i in range(0,len(xr)) for j in range(0,len(yr)) ]
+	
+	trimmed_coords = [ [ int(round(c[0])), int(round(c[1])) ] for c in coords if int(round(c[0]))<nx-tilesize/2 and int(round(c[0]))>tilesize/2 and int(round(c[1]))<ny-tilesize/2 and int(round(c[1]))>tilesize/2]
+
+	return trimmed_coords
+
+
 def findfs(stem=''):
 	"""
 	"Returns a sorted list with the files in the current directory that contain the string(s) indicated by 'stem'
@@ -350,13 +421,16 @@ def detectThreads(options):
 	import multiprocessing
 	nparallel = multiprocessing.cpu_count()
 
+	print("\n(EMAN2_utils)(detectThreads) incoming options.parallel={}".format(otpions.parallel)) 
+	print("\n(EMAN2_utils)(detectThreads) incoming options.threads={}".format(otpions.threads))
+
 	try:	
 		if options.parallel and options.parallel != 'None' and options.parallel != 'none' and options.parallel != 'NONE':
 			if 'mpi' not in options.parallel:
 
 				options.parallel = 'thread:' + str(nparallel)
-				print("\nfound cores n={}".format(nparallel))
-				print("setting --parallel={}".format(options.parallel))
+				print("\n(EMAN2_utils)(detectThreads) found cores n={}".format(nparallel))
+				print("(EMAN2_utils)(detectThreads) setting --parallel={}".format(options.parallel))
 			else:
 				print("\n(EMAN2_utils)(detectThreads) nothing to do; mpi paralellism specified; options.parallel={}".format(otpions.parallel)) 
 	
@@ -368,14 +442,14 @@ def detectThreads(options):
 	try:
 		if options.threads and options.threads != 'None' and options.threads != 'none' and options.threads != 'NONE':
 			
-			options.threads = 'thread:' + str(nparallel)
-			print("\nfound cores n={}".format(nparallel))
-			print("setting --parallel={}".format(options.parallel))
+			options.threads = str(nparallel)
+			print("\n(EMAN2_utils)(detectThreads) found cores n={}".format(nparallel))
+			print("(EMAN2_utils)(detectThreads) setting --threads={}".format(options.threads))
 		elif not options.threads or options.threads == 'None' or options.threads == 'none':
-			options.parallel = None
-			print("\n(EMAN2_utils)(detectThreads) WARNING: parallelism disabled, options.parallel={}".format(options.parallel) ) 
+			options.threads = None
+			print("\n(EMAN2_utils)(detectThreads) WARNING: parallelism disabled, options.threads={}".format(options.threads) ) 
 	except:
-		print("\n--threads not set")
+		print("\n(EMAN2_utils)(detectThreads) --threads not set")
 		#print("\n(EMAN2_utils)(detectThreads) WARNING: No parallelism option detected, neither --parallel nor --threads.")
 
 	return options

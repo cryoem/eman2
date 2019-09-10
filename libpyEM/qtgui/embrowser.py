@@ -397,6 +397,64 @@ class EMFileType(object) :
 		target.show()
 		target.raise_()
 
+	def show2dStack3z(self, brws) :
+		"""A set of 2-D images derived from a stack of 3-D Volumes"""
+	
+		brws.busy()
+
+		# if self.dim[2] > 1 :
+			# data = []
+			# for z in range(self.dim[2]) :
+				# data.append(EMData(self.path, 0, False, Region(0, 0, z, self.dim[0], self.dim[1], 1)))
+		# else : data = EMData.read_images(self.path)
+		data=[EMData(self.path,i).process("misc.directional_sum",{"axis":"z"}) for i in range(self.nimg)]
+
+		try :
+			target = brws.view2ds[-1]
+			target.set_data(data,self.path)
+			#if self.getSetsDB() : target.set_single_active_set(self.getSetsDB())
+		except :
+			target = EMImageMXWidget()
+			target.set_data(data,self.path)
+			#target.mx_image_double.connect(target.mouse_double_click)		# this makes class average viewing work in app mode
+			# if self.getSetsDB() : target.set_single_active_set(self.getSetsDB())
+			brws.view2ds.append(target)
+
+		target.qt_parent.setWindowTitle("Stack - "+self.path.split('/')[-1])
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
+
+	def show2dStack3sec(self, brws) :
+		"""A set of 2-D images derived from a stack of 3-D Volumes"""
+	
+		brws.busy()
+
+		# if self.dim[2] > 1 :
+			# data = []
+			# for z in range(self.dim[2]) :
+				# data.append(EMData(self.path, 0, False, Region(0, 0, z, self.dim[0], self.dim[1], 1)))
+		# else : data = EMData.read_images(self.path)
+		data=[EMData(self.path,i,False,Region(0,0,self.dim[2]/2,self.dim[0],self.dim[1],1)) for i in range(self.nimg)]
+
+		try :
+			target = brws.view2ds[-1]
+			target.set_data(data,self.path)
+			#if self.getSetsDB() : target.set_single_active_set(self.getSetsDB())
+		except :
+			target = EMImageMXWidget()
+			target.set_data(data,self.path)
+			target.mx_image_double.connect(target.mouse_double_click)		# this makes class average viewing work in app mode
+			# if self.getSetsDB() : target.set_single_active_set(self.getSetsDB())
+			brws.view2ds.append(target)
+
+		target.qt_parent.setWindowTitle("Stack - "+self.path.split('/')[-1])
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
+
 	def show2dSingle(self, brws, new=False) :
 		"""Show a single 2-D image"""
 
@@ -1281,7 +1339,7 @@ class EMStackFileType(EMFileType) :
 		"""Returns a list of (name, callback) tuples detailing the operations the user can call on the current file"""
 		# 3-D stack
 		if self.nimg > 1 and self.dim[2] > 1:
-			return [("Show all 3D", "Show all in a single 3D window", self.show3DAll), ("Show 1st 3D", "Show only the first volume", self.show3DNew),("Show 1st 2D", "Show first volume as 2D stack", self.show2dSingle30),("Show 2nd 2D", "Show second volume as 2D stack", self.show2dSingle31), ("Chimera", "Open in chimera (if installed)", self.showChimera), ("Save As", "Saves images in new file format", self.saveAs)]
+			return [("Show all 3D", "Show all in a single 3D window", self.show3DAll), ("Show 1st 3D", "Show only the first volume", self.show3DNew),("Show 1st 2D", "Show first volume as 2D stack", self.show2dSingle30),("Show 2nd 2D", "Show second volume as 2D stack", self.show2dSingle31),("Show All Zproj", "Show Z projection of all volumes", self.show2dStack3z),("Show All Zcen", "Show Z central section of all volumes", self.show2dStack3sec), ("Chimera", "Open in chimera (if installed)", self.showChimera), ("Save As", "Saves images in new file format", self.saveAs)]
 		# 2-D stack
 		elif self.nimg > 1 and self.dim[1] > 1:
 			return [("Show Stack", "Show all images together in one window", self.show2dStack), ("Show Stack+", "Show all images together in a new window", self.show2dStackNew), 
@@ -3461,7 +3519,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 			ftc = obj.fileTypeClass()
 
 			if ftc != None :
-				if os.path.exists(obj.truepath()) :
+				if os.path.exists(obj.truepath()):
 					self.curft = ftc(obj.path())
 				else:
 					print("Error: file {} does not exist...".format(obj.path()))

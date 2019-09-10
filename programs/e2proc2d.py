@@ -1093,7 +1093,7 @@ def main():
 							d.write_image(outfile, 0, out_type, False, region, out_mode, not_swap)
 
 						elif options.unstacking:	# output a series numbered single image files
-							out_name = outfile.split('.')[0]+'-'+str(i+1).zfill(len(str(nimg)))+'.'+outfile.split('.')[-1]
+							out_name = os.path.splitext(outfile)[0]+'-'+str(i+1).zfill(len(str(nimg)))+os.path.splitext(outfile)[-1]
 							if d["sigma"]==0:
 								if options.verbose > 0:
 									print("Warning: sigma = 0 for image ",i)
