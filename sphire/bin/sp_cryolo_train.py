@@ -33,6 +33,7 @@
 # GNU General Public License for more details.
 
 from __future__ import print_function
+import os
 import argparse
 from json import dump
 import subprocess
@@ -58,6 +59,11 @@ argparser.add_argument(
 	'annot_dir',
 	type=str,
 	help='Path to training images')
+
+argparser.add_argument(
+	'output_directory',
+	type=str,
+	help='Path to output directory')
 
 argparser.add_argument(
 	'--architecture',
@@ -169,7 +175,7 @@ argparser.add_argument(
 		 'the training is stopped.')
 
 argparser.add_argument(
-    "--dolowpass",
+    "--skiplowpass",
     action="store_true",
     help="",
 )
@@ -179,6 +185,31 @@ argparser.add_argument(
 	default=0.1,
 	type=float,
 	help='Cut off for low pass filter. Should be between 0 and 0.5.')
+
+argparser.add_argument(
+    "--usejanni",
+    action="store_true",
+    help="",
+)
+
+argparser.add_argument(
+	'--janni_model',
+	type=str,
+	help='Name of the model')
+
+argparser.add_argument(
+	"--janni_overlap",
+	type=int,
+	default=24,
+	help="Overlap of patches in pixel (only needed when using JANNI)",
+)
+
+argparser.add_argument(
+	"--janni_batches",
+	type=int,
+	default=3,
+	help="Number of batches (only needed when using JANNI)",
+)
 
 argparser.add_argument(
 	'--filtered_dir',
@@ -225,10 +256,19 @@ def main():
 	trainging_dir = args.training_dir
 	annot_dir = args.annot_dir
 	input_size = args.input_size
+
+	output_dir = args.output_directory
+	if os.path.exists(output_dir):
+		sp_global_def.ERROR("Output folder already exists. Stop execution.")
+	else:
+		os.makedirs(output_dir)
+		sp_global_def.write_command(output_dir)
+
 	num_patches = args.num_patches
 	overlap_patches = args.overlap_patches
 	train_times = args.train_times
 	saved_weights_name = args.saved_weights_name
+	saved_weights_name = os.path.join(output_dir, saved_weights_name)
 	pretrained_weights_name = args.pretrained_weights_name
 	batch_size = args.batch_size
 	learning_rate = args.learning_rate
@@ -243,7 +283,7 @@ def main():
 	num_cpu = args.num_cpu
 	cryolo_train_path = args.cryolo_train_path
 
-	do_low_pass = args.dolowpass
+	skiplowpass = args.skiplowpass
 	cutoff = args.cutoff
 	filtered_dir = args.filtered_dir
 
@@ -261,8 +301,12 @@ def main():
 				  'max_box_per_image': 1000,
 				  'num_patches': num_patches}
 
-	if do_low_pass:
+	if not skiplowpass:
 		model_dict['filter'] = [cutoff,filtered_dir]
+	else:
+		if args.usejanni:
+			model_dict['filter'] = [args.janni_model, args.janni_overlap, args.janni_batches, filtered_dir]
+
 
 	train_dict = {'train_image_folder': trainging_dir,
 				  'train_annot_folder': annot_dir,
@@ -286,11 +330,13 @@ def main():
 				  'valid_times': 1
 				  }
 	dict = {"model": model_dict, "train": train_dict, "valid": valid_dict}
-	path = "config_yolo.json"
+
+	path = os.path.join(output_dir,"config_yolo.json")
 	with open(path, 'w') as f:
 		dump(dict, f, ensure_ascii=False, indent=4)
 
 	# Run the training
+	config_argument = "-c=" + path
 	warmup_argument = "-w=" + str(warmup)
 	gpu_argument = "-g " + arg_gpu
 	early_stop = "-e=" + str(early_stop)
@@ -307,16 +353,18 @@ def main():
 	cryolo_ex_pth = "cryolo_train.py"
 	if cryolo_train_path:
 		cryolo_ex_pth = cryolo_train_path
-	if not fine_tune:
-		command = [cryolo_ex_pth, "-c=config_yolo.json", warmup_argument, gpu_argument, early_stop, gpu_fraction_arg]
-
-		if num_cpu != -1:
-			command.append(num_cpu_arg)
-		subprocess.check_call(
-			command)
-
-	warmup_argument = "-w=0"
-	command = [cryolo_ex_pth, "-c=config_yolo.json", warmup_argument, gpu_argument, early_stop, gpu_fraction_arg]
+	'''
+		if not fine_tune:
+			command = [cryolo_ex_pth, "-c=config_yolo.json", warmup_argument, gpu_argument, early_stop, gpu_fraction_arg]
+	
+			if num_cpu != -1:
+				command.append(num_cpu_arg)
+			subprocess.check_call(
+				command)
+	'''
+	if fine_tune:
+		warmup_argument = "-w=0"
+	command = [cryolo_ex_pth, config_argument, warmup_argument, gpu_argument, early_stop, gpu_fraction_arg]
 	if fine_tune:
 		command.append(fine_tune_argument)
 	if num_cpu != -1:
