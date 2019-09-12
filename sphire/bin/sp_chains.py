@@ -50,6 +50,7 @@ from	EMAN2 		import EMUtil, parsemodopt, EMAN2Ctf
 from    EMAN2jsondb import js_open_dict
 
 from	sp_utilities 	import *
+from	sp_utilities	import write_text_row
 from    sp_statistics import mono
 import  os
 
@@ -230,19 +231,19 @@ def main():
 		Options 1-3 require image stack to be aligned.  The program will apply orientation parameters if present in headers.
 	    The ways to use the program:
 	   1.  Use option initial to specify which image will be used as an initial seed to form the chain.
-	        sxchains.py input_stack.hdf output_stack.hdf --initial=23 --radius=25
+	        sp_chains.py input_stack.hdf output_stack.hdf --initial=23 --radius=25
 
 	   2.  If options initial is omitted, the program will determine which image best serves as initial seed to form the chain
-	        sxchains.py input_stack.hdf output_stack.hdf --radius=25
+	        sp_chains.py input_stack.hdf output_stack.hdf --radius=25
 
 	   3.  Use option circular to form a circular chain.
-	        sxchains.py input_stack.hdf output_stack.hdf --circular--radius=25
+	        sp_chains.py input_stack.hdf output_stack.hdf --circular--radius=25
 
 	   4.  New circular code based on pairwise alignments
-			sxchains.py aclf.hdf chain.hdf circle.hdf --align  --radius=25 --xr=2 --pairwiseccc=lcc.txt
+			sp_chains.py aclf.hdf chain.hdf circle.hdf --align  --radius=25 --xr=2 --pairwiseccc=lcc.txt
 
 	   5.  Circular ordering based on pairwise alignments
-			sxchains.py vols.hdf chain.hdf mask.hdf --dd  --radius=25
+			sp_chains.py vols.hdf chain.hdf mask.hdf --dd  --radius=25
 
 
 """
@@ -259,7 +260,6 @@ def main():
 	parser.add_option("--yr",           type="int",    default=0,          	help="range for translation search in y direction, search is +/yr (0)")
 	#parser.add_option("--nomirror",     action="store_true", default=False,   help="Disable checking mirror orientations of images (default False)")
 	parser.add_option("--pairwiseccc",  type="string",	default= " ",      help="Input/output pairwise ccc file")
-
 
 	(options, args) = parser.parse_args()
 
@@ -368,7 +368,6 @@ def main():
 				#print "  %4d   %10.1f"%(i,time()-st)
 
 			if((not os.path.exists(options.pairwiseccc)) and (options.pairwiseccc != " ")):
-				from sp_utilities import write_text_row
 				write_text_row([[initial,0,0,0,0]]+lccc, options.pairwiseccc)
 		elif(os.path.exists(options.pairwiseccc)):
 			lccc = read_text_row(options.pairwiseccc)
@@ -434,7 +433,7 @@ def main():
 		#  To add - apply all transformations and do the overall centering.
 		for m in range(lend):
 			prms = trans[m].get_params("2D")
-			#print " %3d   %7.1f   %7.1f   %7.1f   %2d  %6.2f"%(snake[m][0], prms["alpha"], prms["tx"], prms["ty"], prms["mirror"], snake[m][2])
+			#print(" %3d   %7.1f   %7.1f   %7.1f   %2d  %6.2f"%(snake[m][0], prms["alpha"], prms["tx"], prms["ty"], prms["mirror"], snake[m][2]) )
 			#rot_shift2D(d[snake[m][0]], prms["alpha"], prms["tx"], prms["ty"], prms["mirror"]).write_image(new_stack, m)
 			rot_shift2D(d[snake[m][0]], prms["alpha"], 0.0,0.0, prms["mirror"]).write_image(new_stack, m)
 
@@ -483,10 +482,17 @@ def main():
 				# calculate predicted angles mb->m 
 		"""
 
+		best_params = []
 		for m in range(lend):
 			prms = trans[m].get_params("2D")
 			#rot_shift2D(d[order[m]], prms["alpha"], prms["tx"], prms["ty"], prms["mirror"]).write_image("metro.hdf", m)
 			rot_shift2D(d[order[m]], prms["alpha"], 0.0,0.0, prms["mirror"]).write_image(args[2], m)
+			best_params.append( [m, order[m], prms["alpha"], 0.0,0.0, prms["mirror"] ])
+
+		# Write alignment parameters
+		outdir = os.path.dirname(args[2])
+		aligndoc = os.path.join(outdir, "chains_params.txt")
+		write_text_row(best_params, aligndoc)
 
 		"""
 		#  This was an effort to get number of loops, inconclusive, to say the least
