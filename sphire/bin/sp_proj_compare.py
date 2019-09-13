@@ -42,13 +42,13 @@ from __future__ import print_function
 import os
 import EMAN2
 from EMAN2 import EMData
-#from EMAN2 import EMUtil, EMArgumentParser, EMANVERSION
+from EMAN2 import EMUtil  # EMArgumentParser, EMANVERSION
 from sp_applications import header, project3d, mref_ali2d
-from sp_utilities import get_im, write_header, model_circle, read_text_row, set_params2D, write_text_row, set_params_proj, compose_transform3, model_blank
+from sp_utilities import get_im, write_header, model_circle, read_text_row, set_params2D, write_text_row, set_params_proj, compose_transform3, model_blank, get_params_proj
 from sp_statistics import ccc
 from sp_fundamentals import rops_table, fft, rot_shift2D
 from sp_projection import prep_vol, prgl
-from math import sqrt, degrees, atan2
+from math import sqrt, degrees, atan2, ceil, log10
 from sp_filter import filt_table
 import sp_global_def
 from datetime import datetime
@@ -72,16 +72,15 @@ To use angles stored in the image header:
 %s <input_imgs> <input_volume>
 General, required command-line parameters:
   1. Input image stack
-  2. Input volume to be projected
+  2. Input volume to be projected, same dimension as images
 Outputs:
   docangles.txt : Projection angles applied to input model
   comp-proj-reproj.hdf : Stack of reprojections (numbered 0,2,4...) and averages (numbered 1,3,5...)
   
 General options:
-%s <input_imgs> <input_volume> <output_directory> --classangles <angles_file> --select <img_selection_file> --prjmethod <interpolation_method> --verbose --display
+%s <input_imgs> <input_volume> <output_directory> --classangles <angles_file> --select <img_selection_file> --prjmethod <interpolation_method> --display
 Parameters:
   --prjmethod : Interpolation method : trilinear (default), gridding, nn (nearest neighbor)
-  --verbose : Increase verbosity
   --display : Automatically open montage in e2display
    
 To use angles from a VIPER or RVIPER run:
@@ -89,7 +88,12 @@ To use angles from a VIPER or RVIPER run:
 Parameters:
   --classangles : Projection angles (For RVIPER, this file will have a name like main003/run002/rotated_reduced_params.txt)
   --classselect : Image selection file (For RVIPER, not all images will necessarily be assigned alignment angles, in which case the number of angles in the doc file above will differ from the number of images in the input stack. This file will have a name like main003/index_keep_image.txt)
- 
+
+To apply VIPER angles to the member particles:
+%s <input_imgs> <input_volume> <output_directory> --mode viper --classangles <angles_file> --classselect <img_selection_file> --fullstack <bdb_stack> 
+Parameters:
+  --fullstack : Input particle stack to which VIPER angles will be added
+
 To perform an internal round of projection matching against the input model:
 %s <input_imgs> <input_volume> <output_directory> --mode projmatch --delta <angular_increment> --matchshift <shift_range> --matchrad <outer_radius> --matchstep <ring_step> --symmetry <optional_symmetry>
 Parameters:
@@ -110,9 +114,9 @@ Parameters:
   --refinestep : Alignment radius step size (default 1)
   --align : Alignment method: apsh (default) or scf
 
-Modified 2019-03-23
+Modified 2019-09-13
 
-""" % ((__file__,)*5)
+""" % ((__file__,)*6)
 	
 def parse_command_line():
 	"""
@@ -160,10 +164,15 @@ def parse_command_line():
 		action="store_true", 
 		help='Automatically open montage in e2display')
 	
+	####parser.add_argument(
+		####'--verbose', "-v", 
+		####action="store_true", 
+		####help='Increase verbosity')
+
 	parser.add_argument(
-		'--verbose', "-v", 
+		'--debug', 
 		action="store_true", 
-		help='Increase verbosity')
+		help='Write additional debugging information')
 
 	group_viper = parser.add_argument_group(
 		title='VIPER options (--mode=viper)',
@@ -178,6 +187,11 @@ def parse_command_line():
 		'--classselect', 
 		type=str, 
 		help='Selection file for included classes.')
+	
+	group_viper.add_argument(
+		'--fullstack', 
+		type=str, 
+		help='Input particle stack to which VIPER angles will be added.')
 	
 	group_projmatch = parser.add_argument_group(
 		title='Projection-matching options (--mode=projmatch)',
@@ -263,7 +277,7 @@ def parse_command_line():
 
 def main_proj_compare(classavgstack, reconfile, outdir, options, mode='viper', prjmethod='trilinear', 
 			 classangles=None, partangles=None, selectdoc=None, 
-			 verbose=False, displayYN=False):
+			 verbose=False, displayYN=False, debug=False):
 	"""
 	Main function overseeing various projection-comparison modes.
 	
@@ -315,6 +329,12 @@ def main_proj_compare(classavgstack, reconfile, outdir, options, mode='viper', p
 			sxprint(msg)
 			exit()
 	
+	# Check whether dimension is odd (prep_vol and/or prgl does something weird if so. --Tapu)
+	if voldim % 2 != 0:
+		padYN = True
+		voldim = voldim + 1
+		print_log_msg("WARNING! Inputs have odd dimension, will pad to %s" % voldim, log, verbose)
+		
 	#  Here if you want to be fancy, there should be an option to chose the projection method,
 	#  the mechanism can be copied from sxproject3d.py  PAP
 	if prjmethod=='trilinear':
@@ -331,6 +351,8 @@ def main_proj_compare(classavgstack, reconfile, outdir, options, mode='viper', p
 	# Set output directory and log file name
 	log, verbose = prepare_outdir_log(outdir, verbose)
 
+	sxprint('Using mode %s\n' % mode)
+	
 	# In case class averages include discarded images, apply selection file
 	if mode == 'viper':
 		if selectdoc:
@@ -352,16 +374,91 @@ def main_proj_compare(classavgstack, reconfile, outdir, options, mode='viper', p
 			
 			# Update class-averages
 			classavgstack = newclasses
+		
+		if options.fullstack:
+			print_log_msg('Will copy angles to %s' % options.fullstack, log, verbose)
 	
+			# Make sure enough digits
+			num_imgs   = EMUtil.get_image_count(classavgstack)
+			num_digits = ceil(log10(num_imgs) )
+			
+			# Filenames
+			classdir = os.path.join(outdir, 'Byclass')
+			if not os.path.isdir(classdir): 
+				os.makedirs(classdir)
+			classmap = os.path.join(classdir, 'classmap.txt')
+			classdoc = os.path.join(classdir, 'docclass{{0:0{0}d}}.txt'.format(num_digits) )
+			classdocs = os.path.join(classdir, 'docclass*.txt')
+			
+			# Separate particles by class
+			vomq(classavgstack, classmap, classdoc, log=log, verbose=verbose)
+			
+			# Read class lists
+			classdoclist = glob.glob(classdocs)
+			
+			# Read Euler angles
+			angleslist = read_text_row(classangles)
+			
+			##### DIAGNOSTIC
+			stack_obj = EMData.read_images(options.fullstack, 0)
+			#print( stack_obj[0].get_attr_dict() )
+			print('Before')
+			print( stack_obj[0].has_attr("xform.projection") )
+			print( EMData.read_images(options.fullstack, 0)[0].has_attr("xform.projection") )
+			set_params_proj(stack_obj[0], [1,2,3,4,5], xform="xform.projection")
+			print('\nAfter')
+			print( stack_obj[0].has_attr("xform.projection") )
+			stack_obj[0].update()
+			print( EMData.read_images(options.fullstack, 0)[0].has_attr("xform.projection") )
+			exit()
+			
+			# Read stack
+			print_log_msg("Reading %s" % options.fullstack, log, verbose)
+			stack_obj = EMData.read_images(options.fullstack)
+			num_tot_imgs = len(stack_obj)
+			print_log_msg("Finished reading %s images from %s\n" % (num_tot_imgs, options.fullstack), log, verbose)
+			
+			# Loop through class lists
+			for classidx, classdoc in enumerate(classdoclist):
+				# Strip out filenumber
+				classexample = os.path.splitext(classdoc)
+				classnum = int(classexample[0][-num_digits:])  # number of digits in class number
+				sxprint('Index %s, class number %s' % (classidx, classnum) )
+				
+				# Read angles
+				curr_angles = angleslist[classidx]
+				
+				# Read class list
+				partlist = read_text_row(classdoc)
+				
+				# Loop through particles
+				for totpartnum in partlist:
+					img_obj = get_im(stack_obj, totpartnum[0])  # totpartnum is a list of length 1
+					set_params_proj(img_obj, curr_angles, xform="xform.projection")
+					
+			# Loop through images and set angles to 0 if empty
+			for idx, img_obj in enumerate(stack_obj):
+				if img_obj.has_attr("xform.projection"):
+					print(idx, get_params_proj(img_obj) )  #### DIAGNOSTIC
+					exit()
+				else:
+					print(idx, img_obj.has_attr("xform.projection") )  #### DIAGNOSTIC
+					
+				if idx == 10: break  #### DIAGNOSTIC
+					
 	# align de novo to reference map
 	if mode=='projmatch':
 		# Generate reference projections
 		print_log_msg('Projecting %s to output %s using an increment of %s degrees using %s symmetry' % (reconfile, refprojstack, options.delta, options.symmetry), log, verbose)
 		cmd = 'sxproject3d.py %s %s --delta=%s --method=S --phiEqpsi=Minus --symmetry=%s' % (reconfile, refprojstack, options.delta, options.symmetry)
-		if options.prjmethod == 'trilinear': cmd += ' --trilinear'
+		if options.prjmethod == 'trilinear':
+			cmd += ' --trilinear'
+			trilinear = True
+		else: 
+			trilinear = False
 		cmd += '\n'
 		print_log_msg(cmd, log, verbose)
-		project3d(reconfile, refprojstack, delta=options.delta, symmetry=options.symmetry)
+		project3d(reconfile, refprojstack, delta=options.delta, symmetry=options.symmetry, trillinear=trilinear)  # 'trillinear' is spelled wrong
 		
 		# Export projection angles
 		print_log_msg("Exporting projection angles from %s to %s" % (refprojstack, refanglesdoc), log, verbose)
@@ -418,18 +515,25 @@ def main_proj_compare(classavgstack, reconfile, outdir, options, mode='viper', p
 			sxprint('Type %s --help to see available options\n' % os.path.basename(__file__))
 			exit()
 		
-		if not options.classdocs or options.outliers:
+		if not options.classdocs or options.outliers:  # TODO: remove classdocs option, never used
 			classdir = os.path.join(outdir, 'Byclass')
 			if not os.path.isdir(classdir): os.makedirs(classdir)
 			
+			# Make sure enough digits
+			num_imgs   = EMUtil.get_image_count(classavgstack)
+			num_digits = ceil(log10(num_imgs) )
+			if debug:
+				msg = 'Number of images %s, number of digits allocated %s' % (num_imgs, num_digits)
+				print_log_msg(msg, log, verbose)
+			
 			if options.outliers: 
-				goodclassparttemplate = os.path.join(classdir, 'goodpartsclass{0:03d}.txt')
+				goodclassparttemplate = os.path.join(classdir, 'goodpartsclass{{0:0{0}d}}.txt'.format(num_digits) )
 			else:
 				goodclassparttemplate = None
 		
-			if not options.classdocs:
+			if not options.classdocs:  # TODO: remove classdocs option, never used
 				classmap = os.path.join(classdir, 'classmap.txt')
-				classdoc = os.path.join(classdir, 'docclass{0:03d}.txt')
+				classdoc = os.path.join(classdir, 'docclass{{0:0{0}d}}.txt'.format(num_digits) )
 				options.classdocs = os.path.join(classdir, 'docclass*.txt')
 				
 				# Separate particles by class
@@ -438,7 +542,7 @@ def main_proj_compare(classavgstack, reconfile, outdir, options, mode='viper', p
 		mode_meridien(reconfile, classavgstack, options.classdocs, partangles, selectdoc, options.refineshift, options.refinerad, 
 				classangles, outaligndoc, interpolation_method=method_num, outliers=options.outliers,
 				goodclassparttemplate=goodclassparttemplate, alignopt=options.align, ringstep=options.refinestep, 
-				log=log, verbose=verbose)
+				log=log, verbose=verbose, debug=debug)
 		
 	# Import Euler angles
 	print_log_msg("Importing parameter information into %s from %s" % (classavgstack, classangles), log, verbose)
@@ -750,7 +854,7 @@ def vomq(classavgstack, classmap, classdoc, log=None, verbose=False):
 def mode_meridien(reconfile, classavgstack, classdocs, partangles, selectdoc, maxshift, outerrad, 
 					outanglesdoc, outaligndoc, interpolation_method=1, outliers=None, 
 					goodclassparttemplate=None, alignopt='apsh', ringstep=1, 
-					log=None, verbose=False):
+					log=None, verbose=False, debug=False):
 	
 	# Resample reference
 	recondata = EMAN2.EMData(reconfile)
@@ -765,20 +869,27 @@ def mode_meridien(reconfile, classavgstack, classdocs, partangles, selectdoc, ma
 	classdoclist = glob.glob(classdocs)
 	partangleslist = read_text_row(partangles)
 	
+	# Allocate number of digits for class number
+	num_imgs   = EMUtil.get_image_count(classavgstack)
+	num_digits = ceil(log10(num_imgs) )
+	
 	# Loop through class lists
-	for classdoc in classdoclist:  # [classdoclist[32]]:  # 
-		# Strip out three-digit filenumber
+	for classidx, classdoc in enumerate(classdoclist):
+		# Strip out filenumber
 		classexample = os.path.splitext(classdoc)
-		classnum = int(classexample[0][-3:])
+		classnum = int(classexample[0][-num_digits:])  # number of digits in class number
+		sxprint('Index %s, class number %s' % (classidx, classnum) )
 		
 		# Initial average
-		[avg_phi_init, avg_theta_init] = average_angles(partangleslist, classdoc, selectdoc=selectdoc)
+		[avg_phi_init, avg_theta_init] = average_angles(partangleslist, classdoc, selectdoc=selectdoc, 
+				log=log, verbose=verbose)
 		
 		# Look for outliers
 		if outliers:
+			goodpartdoc = goodclassparttemplate.format(classnum)
 			[avg_phi_final, avg_theta_final] = average_angles(partangleslist, classdoc, selectdoc=selectdoc,
 					init_angles=[avg_phi_init, avg_theta_init], threshold=outliers, 
-					goodpartdoc=goodclassparttemplate.format(classnum), log=log, verbose=verbose)
+					goodpartdoc=goodpartdoc, log=log, verbose=verbose)
 		else:
 			[avg_phi_final, avg_theta_final] = [avg_phi_init, avg_theta_init]
 		
@@ -811,7 +922,9 @@ def mode_meridien(reconfile, classavgstack, classdocs, partangles, selectdoc, ma
 				outerradius=outerrad, maxshift=maxshift, ringstep=ringstep)
 			
 		outalignlist.append([ang_align2d, sxs, sys, mirrorflag, 1])
-		msg = "Particle list %s: ang_align2d=%s sx=%s sy=%s mirror=%s\n" % (classdoc, ang_align2d, sxs, sys, mirrorflag)
+		msg = "Particle list %s: ang_align2d=%s sx=%s sy=%s mirror=%s" % (classdoc, ang_align2d, sxs, sys, mirrorflag)
+		if outliers and not debug: 
+			msg += "\n"
 		print_log_msg(msg, log, verbose)
 		
 		# Check for mirroring
@@ -825,6 +938,8 @@ def mode_meridien(reconfile, classavgstack, classdocs, partangles, selectdoc, ma
 						0,0,-ang_align2d, 0,0, 0,1))
 		# compose_transform3: returns phi,theta,psi, tx,ty,tz, scale
 		
+		if debug:
+			print_log_msg("Particle list %s: combinedparams %s\n" % (classdoc, combinedparams), log, verbose)
 		outangleslist.append(combinedparams)
 	# End class-loop
 	
@@ -841,7 +956,7 @@ def average_angles(alignlist, partdoc, selectdoc=None, init_angles=None, thresho
 	Computes a vector average of a set of particles' Euler angles phi and theta.
 	
 	Arguments:
-		alignlist : Alignment parameter doc file, i.e., from MERIDIEN refinment
+		alignlist : Alignment parameter doc file, i.e., from MERIDIEN refinement
 		partdoc : List of particle indices whose angles should be averaged
 		selectdoc : Input substack selection file if particles removed before refinement (e.g., Substack/isac_substack_particle_id_list.txt)
 		init_angles : List (2 elements) with initial phi and theta angles, for excluding outliers
@@ -953,8 +1068,21 @@ def compare_projs(reconfile, classavgstack, inputanglesdoc, outdir, interpolatio
 		compstack : Stack of comparisons between input image stack (even-numbered (starts from 0)) and input volume (odd-numbered)
 	"""
 	
+	nimg1   = EMAN2.EMUtil.get_image_count(classavgstack)
+	angleslist = read_text_row(inputanglesdoc)
+	
 	recondata = EMAN2.EMData(reconfile)
 	nx = recondata.get_xsize()
+	
+	# Check whether dimension is odd (prgl does something weird if so. --Tapu)
+	padYN = False
+	if nx % 2 != 0:
+		from sp_utilities import pad
+		
+		padYN = True
+		nx = nx + 1
+		print_log_msg("Padding volume and images to %s" % nx, log, verbose)
+		recondata = pad(recondata, nx, nx, nx, background='circumference')
 
 	# Resample reference
 	reconprep = prep_vol(recondata, npad=2, interpolation_method=interpolation_method)
@@ -966,13 +1094,13 @@ def compare_projs(reconfile, classavgstack, inputanglesdoc, outdir, interpolatio
 	mask.write_image(os.path.join(outdir, 'maskalign.hdf'))
 	compstack = os.path.join(outdir, 'comp-proj-reproj.hdf')
 	
-	# Number of images may have changed
-	nimg1   = EMAN2.EMUtil.get_image_count(classavgstack)
-	angleslist = read_text_row(inputanglesdoc)
-	
 	for imgnum in range(nimg1):
 		# Get class average
 		classimg = get_im(classavgstack, imgnum)
+		
+		# Pad if necessary
+		if padYN:
+			classimg = pad(classimg, nx, nx, background='circumference')
 		
 		# Compute re-projection
 		prjimg = prgl(reconprep, angleslist[imgnum], interpolation_method=1, return_real=False)
@@ -1088,8 +1216,8 @@ if __name__ == "__main__":
 	options = parse_command_line()
 	
 	##print args, options  # (Everything is in options.)
-	#print options  
-	#print('LOGFILE',global_def.LOGFILE)
+	#print('options', options)
+	#print('LOGFILE', sp_global_def.LOGFILE)
 	#exit()
 	
 	# If output directory not specified, write to same directory as class averages
@@ -1111,5 +1239,5 @@ if __name__ == "__main__":
 
 	main_proj_compare(options.classavgs, options.vol3d, outdir, options, mode=options.mode, prjmethod=options.prjmethod, 
 			  classangles=options.classangles, partangles=options.partangles, selectdoc=selectdoc, 
-			  verbose=options.verbose, displayYN=options.display)
+			  displayYN=options.display, debug=options.debug)
 	sp_global_def.print_timestamp( "Finish" )
