@@ -41,21 +41,21 @@ Some particles may have been erroneously assigned to a class, as indiciated by a
 \\
 ===== Input =====
 === Main Parameters ===
-  ; stack : Input images stack : Set of 2D images to be compared. (default required string)
-  ; input_volume : Input volume : Reconstruction for which re-projections will be computed. In RVIPER, this file is of the form main003/run002/rotated_volume.hdf. (default required string)
+  ; stack : Input image stack : Set of 2D images to be compared, i.e., class averages. (default required string)
+  ; input_volume : Input volume : Reconstruction for which re-projections will be computed. In RVIPER, this file is of the form main003/run002/rotated_volume.hdf. This volume must have the same dimensions as the input images. (default required string)
   ; outdir : Output directory : Directory where outputs will be written. (default required string)
-  ; %%--%%mode : Comparison method : Choices are: viper, projmatch, and meridien. (default viper)
+  ; %%--%%mode : Comparison method : Choices are: viper, projmatch, and meridien. (default viper|||projmatch|||meridien)
   ; %%--%%classangles : VIPER - Projection parameter file : Parameter file containing projection angles. Not required if the projection parameters are stored in the header of the input images, which for ISAC2 is generally not the case. In RVIPER, this file is of the form main003/run002/rotated_reduced_params.txt. (default None) : %%--%%mode==viper
   ; %%--%%classselect : VIPER - Image selection file : Input selection containing list of images to be included from the input stack.  For instance, RVIPER, if it finds a stable solution, may exclude some images, and thus their projection angles will be excluded from the parameters file.  The file containing the list of included images will have a name like main003/index_keep_image.txt. (default None) : %%--%%mode==viper
   ; %%--%%delta : ProjMatch - Sampling angle : Angular-sampling for reference projections. (default 7.5|||15|||3.75|||1.875|||0.9375|||0.46875|||0.234375) : %%--%%mode==projmatch
   ; %%--%%symmetry : ProjMatch - Symmetry : To limit angular projections. (default c1) : %%--%%mode==projmatch
-  ; %%--%%partangles : MERIDIEN - Alignment parameter file : Input refinement parameter file. (default None) : %%--%%mode==meridien
-  ; %%--%%partselect : MERIDIEN - Particle selection file : Input substack selection file if particles removed before refinement (e.g., Substack/isac_substack_particle_id_list.txt). (default None) : %%--%%mode==meridien
+  ; %%--%%partangles : MERIDIEN - Alignment parameter file : Input refinement parameter file, e.g., Refine3D/final_params_037.txt. (default None) : %%--%%mode==meridien
+  ; %%--%%partselect : MERIDIEN - Particle selection file : Input substack selection file if particles removed before refinement, e.g., Substack/isac_substack_particle_id_list.txt. This file is used to map the particle number before classification to particle number in refinement. (default None) : %%--%%mode==meridien
   ; %%--%%outliers : MERIDIEN - Outlier angle : Particles differing from average Euler angle by more than this threshold (in degrees) will be excluded from average calculation, by default keeps all. (default None) : %%--%%mode==meridien
 
 \\
 === Advanced Parameters ===
-  ; %%--%%prjmethod : Interpolation method : Valid choices are trilinear, gridding, and nn. (default trilinear)
+  ; %%--%%prjmethod : Interpolation method : Valid choices are trilinear, gridding, and nn. (default trilinear|||gridding|||nn)
   ; %%--%%display : e2display : Automatically pops up a window with the output montage. (default False) 
   ; %%--%%verbose : verbose : Writes additional messages to the terminal during execution. (default False)
   ; %%--%%matchshift : ProjMatch - Maximum shift : Maximum shift to allow during translation alignment, pixels. (default 2) : %%--%%mode==projmatch
@@ -64,7 +64,7 @@ Some particles may have been erroneously assigned to a class, as indiciated by a
   ; %%--%%refinerad : MERIDIEN - Outer radius : Outer alignment radius, defaults to automatically-determined. (default None) : %%--%%mode==meridien
   ; %%--%%refineshift : MERIDIEN - Maximum shift : Maximum shift to allow during translation alignment, pixels. (default 2) : %%--%%mode==meridien
   ; %%--%%refinestep : MERIDIEN - Radius step size : Alignment radius step size. (default 1) : %%--%%mode==meridien
-  ; %%--%%align : MERIDIEN - Alignment method : Valid choices are apsh and scf. (default apsh) : %%--%%mode==meridien
+  ; %%--%%align : MERIDIEN - Alignment method : Valid choices are apsh and scf. (default apsh|||scf) : %%--%%mode==meridien
   
 \\
 ===== Output =====
