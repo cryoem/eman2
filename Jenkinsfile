@@ -87,7 +87,7 @@ def testPackage(suffix, dir) {
     if(isUnix())
         sh "bash tests/test_binary_installation.sh ${INSTALLERS_DIR}/eman2" + suffix + ".${SLAVE_OS}.sh ${INSTALLERS_DIR}/" + dir
     else
-        sh 'ci_support/test_wrapper.sh ' + suffix + ' ' + dir
+        bat "call tests\\test_binary_installation.bat ${INSTALLERS_DIR}\\eman2" + suffix + ".win.exe        ${INSTALLERS_DIR}\\" + dir
 }
 
 def deployPackage() {
@@ -130,7 +130,7 @@ pipeline {
     GIT_AUTHOR_EMAIL = sh(returnStdout: true, script: 'git log -1 --format="%ae"').trim()
     HOME_DIR = getHomeDir()
     HOME = "${HOME_DIR}"     // on Windows HOME is set to something like C:\Program Files\home\eman
-    INSTALLERS_DIR = "${HOME_DIR}/workspace/${JOB_NAME}-installers"
+    INSTALLERS_DIR = sh(returnStdout: true, script: "python -c 'import os; print(os.path.join(\"${HOME_DIR}\", \"workspace\", \"${JOB_NAME}-installers\"))'").trim()
 
     CI_BUILD       = sh(script: "! git log -1 | grep '.*\\[ci build\\].*'",       returnStatus: true)
   }
