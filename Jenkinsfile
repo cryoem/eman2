@@ -100,10 +100,13 @@ def deployPackage() {
         upload_ext = 'experimental'
     }
     
+    if(isUnix()) installer_ext = 'sh'
+    else         installer_ext = 'exe'
+
     sshPublisher(publishers: [
                               sshPublisherDesc(configName: 'Installer-Server',
                                                transfers:
-                                                          [sshTransfer(sourceFiles: "${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh",
+                                                          [sshTransfer(sourceFiles: "${INSTALLERS_DIR}/eman2.${SLAVE_OS}." + installer_ext,
                                                                        removePrefix: "${INSTALLERS_DIR}",
                                                                        remoteDirectory: upload_dir,
                                                                        remoteDirectorySDF: false,
