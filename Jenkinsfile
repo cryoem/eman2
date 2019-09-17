@@ -90,7 +90,7 @@ def testPackage(suffix, dir) {
         bat "call tests\\test_binary_installation.bat ${WORKSPACE}\\eman2" + suffix + ".win.exe        ${INSTALLERS_DIR}\\" + dir
 }
 
-def deployPackage() {
+def deployPackage(size_type='') {
     if(isContinuousBuild()) {
         upload_dir = 'continuous_build'
         upload_ext = 'unstable'
@@ -106,13 +106,13 @@ def deployPackage() {
     sshPublisher(publishers: [
                               sshPublisherDesc(configName: 'Installer-Server',
                                                transfers:
-                                                          [sshTransfer(sourceFiles: "eman2.${SLAVE_OS}." + installer_ext,
+                                                          [sshTransfer(sourceFiles: "eman2" + size_type + ".${SLAVE_OS}." + installer_ext,
                                                                        removePrefix: "",
                                                                        remoteDirectory: upload_dir,
                                                                        remoteDirectorySDF: false,
                                                                        cleanRemote: false,
                                                                        excludes: '',
-                                                                       execCommand: "cd ${DEPLOY_PATH}/" + upload_dir + " && mv eman2.${SLAVE_OS}." + installer_ext + " eman2.${SLAVE_OS}." + upload_ext + "." + installer_ext,
+                                                                       execCommand: "cd ${DEPLOY_PATH}/" + upload_dir + " && mv eman2" + size_type + ".${SLAVE_OS}." + installer_ext + " eman2" + size_type + ".${SLAVE_OS}." + upload_ext + "." + installer_ext,
                                                                        execTimeout: 120000,
                                                                        flatten: false,
                                                                        makeEmptyDirs: false,
