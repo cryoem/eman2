@@ -140,13 +140,13 @@ def main():
 	#'''
 	logger = E2init(sys.argv, options.ppid)
 
-	global_defoci,bad_indexes=get_global_defocuses(options,imgs_unstacked,n)
+	global_defoci,bad_indexes=get_global_defocuses(options,imgs_unstacked,n,angles)
 
 	E2end(logger)
 	return
 	
 
-def get_global_defocuses(options,imgs_unstacked,n):
+def get_global_defocuses(options,imgs_unstacked,n,angles):
 
 	global_defoci = {}
 	bad_indexes = {}
