@@ -312,7 +312,7 @@ def tile_grid_rot(nx,ny,tilesize,rot,overlap=True,verbose=False):
 	return trimmed_coords
 
 
-def incoherent_sum_from_file(f,scale=False,checkcorners=False,verbose=False):
+def incoherent_sum_from_file(f,checkcorners=False,verbose=False):
 	"""Returns the incoherent sum of the FFTs of images in a stack
 	Author: Jesus Montoya, jgalaz@gmail.com, 09/2019
 	"""
@@ -374,7 +374,7 @@ def incoherent_sum_from_file(f,scale=False,checkcorners=False,verbose=False):
 	return fftcumulative
 
 
-def incoherent_sum_from_imglist(imglist,scale=False,checkcorners=False,verbose=False):
+def incoherent_sum_from_imglist(imglist,checkcorners=False,verbose=False):
 	"""Returns the incoherent sum of the FFTs of images (typically "tiles") preloaded to a list
 	Author: Jesus Montoya, jgalaz@gmail.com, 09/2019
 	"""
@@ -474,7 +474,7 @@ def check_corners( img, percent_of_side_length=0.1, verbose=False ):
 		corner7 = img.get_clip( Region(nx-cornernx,ny-cornerny,nz-cornernz, cornernx,cornerny,cornernz))
 		corner8 = img.get_clip( Region(0,ny-cornerny,nz-cornernz, cornernx,cornerny,cornernz))
 		
-		if not corner5['sigma'] or not corner1['sigma'] or not corner1['sigma'] or not corner8['sigma']:
+		if not corner5['sigma'] or not corner6['sigma'] or not corner7['sigma'] or not corner8['sigma']:
 			print("\n(EMAN2_utils)(check_corners) found at least one bad corner exceeding percent_of_side_length={}".format(percent_of_side_length))
 			return 0 
 	elif nz > 1:
