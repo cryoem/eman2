@@ -91,13 +91,9 @@ def testPackage(suffix, dir) {
 }
 
 def deployPackage(size_type='') {
-    if(isContinuousBuild()) {
-        stability_type = 'unstable'
-    }
-    if(isExperimentalBuild()) {
-        stability_type = 'experimental'
-    }
-    
+    if(isContinuousBuild())   stability_type = 'unstable'
+    if(isExperimentalBuild()) stability_type = 'experimental'
+
     if(isUnix()) installer_ext = 'sh'
     else         installer_ext = 'exe'
 
