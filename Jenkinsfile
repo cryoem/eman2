@@ -92,11 +92,9 @@ def testPackage(suffix, dir) {
 
 def deployPackage(size_type='') {
     if(isContinuousBuild()) {
-        upload_dir = 'continuous_build'
         stability_type = 'unstable'
     }
     if(isExperimentalBuild()) {
-        upload_dir = 'experimental'
         stability_type = 'experimental'
     }
     
@@ -108,11 +106,11 @@ def deployPackage(size_type='') {
                                                transfers:
                                                           [sshTransfer(sourceFiles: "eman2" + size_type + ".${SLAVE_OS}." + installer_ext,
                                                                        removePrefix: "",
-                                                                       remoteDirectory: upload_dir,
+                                                                       remoteDirectory: stability_type,
                                                                        remoteDirectorySDF: false,
                                                                        cleanRemote: false,
                                                                        excludes: '',
-                                                                       execCommand: "cd ${DEPLOY_PATH}/" + upload_dir + " && mv eman2" + size_type + ".${SLAVE_OS}." + installer_ext + " eman2" + size_type + ".${SLAVE_OS}." + stability_type + "." + installer_ext,
+                                                                       execCommand: "cd ${DEPLOY_PATH}/" + stability_type + " && mv eman2" + size_type + ".${SLAVE_OS}." + installer_ext + " eman2" + size_type + ".${SLAVE_OS}." + stability_type + "." + installer_ext,
                                                                        execTimeout: 120000,
                                                                        flatten: false,
                                                                        makeEmptyDirs: false,
