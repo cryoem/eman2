@@ -38,7 +38,7 @@ def notifyGitHub(status) {
 def notifyEmail() {
     if(JOB_TYPE == "push" || NOTIFY_EMAIL == "true") {
         emailext(to: "$GIT_AUTHOR_EMAIL",
-                 from: "JenkinsCI ($SLAVE_OS) <jenkins@jenkins>",
+                 from: "JenkinsCI ($AGENT_OS_NAME) <jenkins@jenkins>",
                  subject: '$BUILD_STATUS! ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER',
                  body: '''${SCRIPT, template="groovy-text.template"}''',
                  attachLog: true
@@ -97,7 +97,7 @@ def isBinaryBuild() {
 
 def testPackage(suffix, dir) {
     if(isUnix())
-        sh  "bash tests/test_binary_installation.sh   ${WORKSPACE}/eman2"  + suffix + ".${SLAVE_OS}.sh ${INSTALLERS_DIR}/"  + dir
+        sh  "bash tests/test_binary_installation.sh   ${WORKSPACE}/eman2"  + suffix + ".${AGENT_OS_NAME}.sh ${INSTALLERS_DIR}/"  + dir
     else
         bat "call tests\\test_binary_installation.bat ${WORKSPACE}\\eman2" + suffix + ".win.exe        ${INSTALLERS_DIR}\\" + dir
 }
@@ -112,13 +112,13 @@ def deployPackage(size_type='') {
     sshPublisher(publishers: [
                               sshPublisherDesc(configName: 'Installer-Server',
                                                transfers:
-                                                          [sshTransfer(sourceFiles: "eman2" + size_type + ".${SLAVE_OS}." + installer_ext,
+                                                          [sshTransfer(sourceFiles: "eman2" + size_type + ".${AGENT_OS_NAME}." + installer_ext,
                                                                        removePrefix: "",
                                                                        remoteDirectory: stability_type,
                                                                        remoteDirectorySDF: false,
                                                                        cleanRemote: false,
                                                                        excludes: '',
-                                                                       execCommand: "cd ${DEPLOY_PATH}/" + stability_type + " && mv eman2" + size_type + ".${SLAVE_OS}." + installer_ext + " eman2" + size_type + ".${SLAVE_OS}." + stability_type + "." + installer_ext,
+                                                                       execCommand: "cd ${DEPLOY_PATH}/" + stability_type + " && mv eman2" + size_type + ".${AGENT_OS_NAME}." + installer_ext + " eman2" + size_type + ".${AGENT_OS_NAME}." + stability_type + "." + installer_ext,
                                                                        execTimeout: 120000,
                                                                        flatten: false,
                                                                        makeEmptyDirs: false,
