@@ -1,5 +1,15 @@
 def binary_size_suffix = ['mini':'', 'huge':'_huge']
 
+def getOSName() {
+    if(!isUnix()) return 'win'
+    else {
+        uname  = sh(returnStdout: true, script: 'uname -s').trim().toLowerCase()
+        os_map = ['linux':'linux', 'darwin':'mac']
+
+        return os_map[uname]
+    }
+}
+
 def getJobType() {
     def causes = "${currentBuild.rawBuild.getCauses()}"
     def job_type = "UNKNOWN"
@@ -140,6 +150,7 @@ pipeline {
   }
   
   environment {
+    AGENT_OS_NAME = getOSName()
     JOB_TYPE = getJobType()
     GIT_BRANCH_SHORT = sh(returnStdout: true, script: 'echo ${GIT_BRANCH##origin/}').trim()
     GIT_COMMIT_SHORT = sh(returnStdout: true, script: 'echo ${GIT_COMMIT:0:7}').trim()
