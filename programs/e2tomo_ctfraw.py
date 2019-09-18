@@ -140,7 +140,7 @@ def main():
 	#'''
 	logger = E2init(sys.argv, options.ppid)
 
-	global_defoci,bad_indexes=get_global_defocuses(options,imgs_unstacked,n,angles)
+	global_ctfs,bad_indexes=get_global_defocuses(options,imgs_unstacked,n,angles)
 
 	E2end(logger)
 	return
@@ -149,7 +149,8 @@ def main():
 def get_global_defocuses(options,imgs_unstacked,n,angles):
 
 	global_defoci = {}
-	bad_indexes = {}
+	global_ctfs = {}
+	bad_indexes = []
 	
 	for i in range(n):
 		angle=angles[i]
@@ -177,26 +178,31 @@ def get_global_defocuses(options,imgs_unstacked,n,angles):
 			defocusmax = options.defocus + 1.5
 
 		try:
-			global_ctf = fit_global_ctf(options,img_file,img,defocusmin,defocusmax)
-			global_defocus = global_ctf.defocus
-			global_defoci.update({i:global_defocus})
+			global_ctf = fit_global_ctf(options,img_file,img,apix,defocusmin,defocusmax)
+			global_ctfs.update({i:global_ctf})
+
+			global_defoci.update({i:global_ctf.defocus})
+			
 			maxres = math.sqrt(global_ctf.bfactor/6.0)
-			print("\n(e2tomo_ctfraw)(main) for img {}/{}, global_defocus={}, maxres={}".format(i+1,n,global_defocus,maxres))
+			print("\n(e2tomo_ctfraw)(main) for img {}/{}, global_defocus={}, maxres={}".format(i+1,n,global_ctf.defocus,maxres))
 
 		except:
 			print("\nWARNING: img=img_file has a poor fit; retrying")
 			if global_defoci:
 				try:
 					global_defocus_avg = numpy.mean(global_defoci.values())
-					global_defocus_std = numpy0.std(global_defoci.values())
+					global_defocus_std = numpy.std(global_defoci.values())
 					defocusmin = global_defocus_avg - 2*global_defocus_std
 					defocusmax = global_defocus_avg + 2*global_defocus_std
 					print("\nretrying fit with constrained defocusmin={}, defocusmax={}".format(defocusmin,defocusmax))
-					global_ctf = fit_global_ctf(options,img_file,img,defocusmin,defocusmax)
+					global_ctf = fit_global_ctf(options,img_file,img,apix,defocusmin,defocusmax)
+					global_ctfs.update({i:global_ctf})
+					global_defoci.update({i:global_ctf.defocus})
 
 				except:
 					print("\nERROR: skipping img={} due to poor fit; I'll try ONE more time after going over all images".format(img_file))
 					bad_indexes.append(i)
+					global_ctfs.update({i:None})
 			else:
 				bad_indexes.append(i)
 				continue
@@ -217,21 +223,22 @@ def get_global_defocuses(options,imgs_unstacked,n,angles):
 		nx=img['nx']
 		ny=img['ny']
 
-		global_defocus_avg = math.mean(global_defoci)
-		global_defocus_std = math.std(global_defoci)
-		defocusmin = global_defocus_avg - 1*global_defocus_std
-		defocusmax = global_defocus_avg + 1*global_defocus_std
-
 		try:
-			global_defocus_avg = math.mean(global_defoci)
-			global_defocus_std = math.std(global_defoci)
-			defocusmin = global_defocus_avg - 2*global_defocus_std
-			defocusmax = global_defocus_avg + 2*global_defocus_std
-			print("\nretrying fit with constrained defocusmin={}, defocusmax={}".format(defocusmin,defocusmax))
-			global_ctf = fit_global_ctf(options,img_file,img,defocusmin,defocusmax)
+			global_defocus_avg = numpy.mean(global_defoci)
+			global_defocus_std = numpy.std(global_defoci)
+			
+			defocusmin = global_defocus_avg - 1*global_defocus_std
+			defocusmax = global_defocus_avg + 1*global_defocus_std
+
+			print("\nretrying fit for bad image={} with HYPER-constrained defocusmin={}, defocusmax={}".format(img_file,defocusmin,defocusmax))
+			
+			global_ctf = fit_global_ctf(options,img_file,img,apix,defocusmin,defocusmax)
+			global_ctfs.update({j:global_ctf})
+			global_defoci.update({j:global_ctf.defocus})
 
 		except:
 			print("\nERROR: skipping img={} PERMANENTLY for global defocus fitting due to poor fit; I'll try ONE more time after going over all images".format(img_file))
+			global_ctfs.update({j:None})
 			#bad_indexes.append(i)
 
 		#except:
@@ -240,31 +247,25 @@ def get_global_defocuses(options,imgs_unstacked,n,angles):
 			#ctfer(options,i,angle,n)	
 
 	globald_f = 'global_defoci.txt'
-	if n > 1: globald_f = options.path + '/' + global_df
+	if n > 1: globald_f = options.path + '/' + globald_f
 	
-	with open(globald_f,'w') as gdf:
-		lines=[ str(i) + '\t' + str(global_defoci[i]) + '\n' for i in range(len(global_defoci))]
-		gdf.writelines(lines)
+	#with open(globald_f,'w') as gdf:
+	#	lines=[ str(i) + '\t' + str(global_defoci[i]) + '\n' for i in range(len(global_defoci))]
+	#	gdf.writelines(lines)
 	
-	write_txt( globald_f.keys(), globald_f.values(), globald_f.replace('.txt','_2.txt') )
+	write_txt( global_defoci.keys(), global_defoci.values(), globald_f )
 	
-	return global_defoci,bad_indexes
+	return global_ctfs,bad_indexes
 
 
-#def ctfer(options,index,angle,n):
-#
-#	coords=tile_grid(nx,ny,tilesize,overlap=True,pad=False)
-#	ntiles-len(coords)
-#	for coords
-#
-#	return
-
-
-def fit_global_ctf(options,img_file,img,defocusmin,defocusmax):
+def fit_global_ctf(options,img_file,img,apix,defocusmin,defocusmax):
 	#grid_coords=tile_grid(nx,ny,options.tilesize):
+	print("\n(fit_global_ctf) entered function")
+
 	verbose=False
 	if options.verbose > 5.0:
 		verbose=True
+	
 
 	tiles = get_tiles(img,options.tilesize,True)
 	tiles_fft_avg = incoherent_sum_from_imglist(tiles,checkcorners=True,verbose=verbose)
@@ -282,7 +283,10 @@ def fit_global_ctf(options,img_file,img,defocusmin,defocusmax):
 	tiles_fft_avg.process_inplace('filter.highpass.gauss',{"cutoff_pixels":3})
 	tiles_fft_avg.set_value_at(0,0,0.0)
 	
-	ctf = fit_defocus(options,img_file,tiles_fft_avg, options.voltage, options.cs, options.ampcont, options.phaseplate, options.apix, options.defocus, defocusmin, defocusmax, 0.1)
+	print("\n(fit_global_ctf) will call fit_defocus")
+
+	ctf = fit_defocus(options,img_file,tiles_fft_avg, options.voltage, options.cs, options.ampcont, options.phaseplate, apix, options.defocus, defocusmin, defocusmax, 0.1)
+	print("\n(fit_global_ctf) leaving function")
 
 	return ctf
 
@@ -342,6 +346,8 @@ def fit_defocus(options,img_file,fft_avg,voltage,cs,ampcont,phaseplate,apix,targ
 	"""Fit defocus from an incoherent average of tiles 
 	Author: Jesus Montoya, jgalaz@gmail.com, 09/2019
 	"""
+	print("\n(fit_defocus) entering function")
+
 	tilesize = fft_avg['ny']
 	
 	fft_bg = fft_avg.process("math.nonconvex")
@@ -363,7 +369,7 @@ def fit_defocus(options,img_file,fft_avg,voltage,cs,ampcont,phaseplate,apix,targ
 	#print("\n(e2tomo_ctfraw)(fit_defocus) bg_1d={}".format(bg_1d))
 	
 	dfhint=( defocusmin, defocusmax, defocusstep )
-	ctf = e2ctf.ctf_fit( fft_avg_1d, bg_1d, bg_1d, fft_avg, fft_bg, float(voltage), float(cs), float(ampcont), phaseplate, float(apix), bgadj=1, autohp=True, dfhint=dfhint, tomo=True )		
+	ctf = e2ctf.ctf_fit( fft_avg_1d, bg_1d, bg_1d, fft_avg, fft_bg, float(voltage), float(cs), float(ampcont), phaseplate, float(apix), bgadj=1, autohp=True, dfhint=dfhint)		
 	#print("\n(e2tomo_ctfraw)(fit_defocus) ctf={}".format(ctf))
 
 	#bg_sub = numpy.array(fft_avg_1d) - numpy.array(bg_1d)
@@ -427,14 +433,15 @@ def fit_defocus(options,img_file,fft_avg,voltage,cs,ampcont,phaseplate,apix,targ
 			#	lines.append( str(s[-1]) + '\t' + str(bg_sub_final[-1]) )	#the last element does not need a 'return' or 'line break'
 			write_txt(s,fit2,fit_file)
 
+	print("\n(fit_defocus) leaving function")
+
 	return ctf
 
 
 def write_txt(xdata,ydata,filename):
 	print("\n(write_txt) writing plot txt file for f={}".format(filename))
 	with open(filename,'w') as f:
-		lines = [ str(xdata[i])+'\t'+str(ydata[i])+'\n' for i in range(len(xdata-1)) ]
-		lines.append( str(xdata[-1]) + '\t' + str(ydata[-1]) )	#the last element does not need a 'return' or 'line break'
+		lines = [ str(xdata[i])+'\t'+str(ydata[i])+'\n' for i in range(len(xdata)) ]
 		f.writelines(lines)
 
 	return
