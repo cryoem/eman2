@@ -179,7 +179,7 @@ def main():
 			if global_defoci:
 				try:
 					global_defocus_avg = numpy.mean(global_defoci)
-					global_defocus_std = numpy.std(global_defoci)
+					global_defocus_std = numpy0.std(global_defoci)
 					defocusmin = global_defocus_avg - 2*global_defocus_std
 					defocusmax = global_defocus_avg + 2*global_defocus_std
 					print("\nretrying fit with constrained defocusmin={}, defocusmax={}".format(defocusmin,defocusmax))
@@ -245,8 +245,12 @@ def main():
 
 def get_global_defocus(options,img_file,img,defocusmin,defocusmax):
 	#grid_coords=tile_grid(nx,ny,options.tilesize):
+	verbose=False
+	if options.verbose > 5.0:
+		verbose=True
+
 	tiles = get_tiles(img,options.tilesize,True)
-	tiles_fft_avg = incoherent_sum_from_imglist(tiles,scale=False,checkcorners=True)
+	tiles_fft_avg = incoherent_sum_from_imglist(tiles,checkcorners=True,verbose=verbose)
 
 	if options.savefft:
 		extension = os.path.splitext(os.path.basename( img_file ))[-1]
