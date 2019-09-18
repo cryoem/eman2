@@ -139,8 +139,17 @@ def main():
 	#Log current run of the program ONLY if input parameters are healthy and images and angles have been loaded without issues
 	#'''
 	logger = E2init(sys.argv, options.ppid)
-	global_defoci = []
-	bad_indexes = []
+
+	global_defoci,bad_indexes=get_global_defocuses(options,imgs_unstacked,n)
+
+	E2end(logger)
+	return
+	
+
+def get_global_defocuses(options,imgs_unstacked,n):
+
+	global_defoci = {}
+	bad_indexes = {}
 	
 	for i in range(n):
 		angle=angles[i]
@@ -168,9 +177,9 @@ def main():
 			defocusmax = options.defocus + 1.5
 
 		try:
-			global_ctf = get_global_defocus(options,img_file,img,defocusmin,defocusmax)
+			global_ctf = fit_global_ctf(options,img_file,img,defocusmin,defocusmax)
 			global_defocus = global_ctf.defocus
-			global_defoci.append(global_defocus)
+			global_defoci.update({i:global_defocus})
 			maxres = math.sqrt(global_ctf.bfactor/6.0)
 			print("\n(e2tomo_ctfraw)(main) for img {}/{}, global_defocus={}, maxres={}".format(i+1,n,global_defocus,maxres))
 
@@ -178,12 +187,12 @@ def main():
 			print("\nWARNING: img=img_file has a poor fit; retrying")
 			if global_defoci:
 				try:
-					global_defocus_avg = numpy.mean(global_defoci)
-					global_defocus_std = numpy0.std(global_defoci)
+					global_defocus_avg = numpy.mean(global_defoci.values())
+					global_defocus_std = numpy0.std(global_defoci.values())
 					defocusmin = global_defocus_avg - 2*global_defocus_std
 					defocusmax = global_defocus_avg + 2*global_defocus_std
 					print("\nretrying fit with constrained defocusmin={}, defocusmax={}".format(defocusmin,defocusmax))
-					global_ctf = get_global_defocus(options,img_file,img,defocusmin,defocusmax)
+					global_ctf = fit_global_ctf(options,img_file,img,defocusmin,defocusmax)
 
 				except:
 					print("\nERROR: skipping img={} due to poor fit; I'll try ONE more time after going over all images".format(img_file))
@@ -219,7 +228,7 @@ def main():
 			defocusmin = global_defocus_avg - 2*global_defocus_std
 			defocusmax = global_defocus_avg + 2*global_defocus_std
 			print("\nretrying fit with constrained defocusmin={}, defocusmax={}".format(defocusmin,defocusmax))
-			global_ctf = get_global_defocus(options,img_file,img,defocusmin,defocusmax)
+			global_ctf = fit_global_ctf(options,img_file,img,defocusmin,defocusmax)
 
 		except:
 			print("\nERROR: skipping img={} PERMANENTLY for global defocus fitting due to poor fit; I'll try ONE more time after going over all images".format(img_file))
@@ -230,8 +239,16 @@ def main():
 
 			#ctfer(options,i,angle,n)	
 
-	E2end(logger)
-	return
+	globald_f = 'global_defoci.txt'
+	if n > 1: globald_f = options.path + '/' + global_df
+	
+	with open(globald_f,'w') as gdf:
+		lines=[ str(i) + '\t' + str(global_defoci[i]) + '\n' for i in range(len(global_defoci))]
+		gdf.writelines(lines)
+	
+	write_txt( globald_f.keys(), globald_f.values(), globald_f.replace('.txt','_2.txt') )
+	
+	return global_defoci,bad_indexes
 
 
 #def ctfer(options,index,angle,n):
@@ -243,7 +260,7 @@ def main():
 #	return
 
 
-def get_global_defocus(options,img_file,img,defocusmin,defocusmax):
+def fit_global_ctf(options,img_file,img,defocusmin,defocusmax):
 	#grid_coords=tile_grid(nx,ny,options.tilesize):
 	verbose=False
 	if options.verbose > 5.0:
