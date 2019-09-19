@@ -292,14 +292,17 @@ def construct_keyword_dict():
 	keyword_dict["annot_dir"] = SXkeyword_map(2, "dir")
 	keyword_dict["valid_image_dir"] = SXkeyword_map(2, "dir")
 	keyword_dict["valid_annot_dir"] = SXkeyword_map(2, "dir")
+	keyword_dict["filtered_dir"] = SXkeyword_map(2, "dir")
 	keyword_dict["cryolo_train_path"] = SXkeyword_map(2, "py")
 	keyword_dict["cryolo_predict_path"] = SXkeyword_map(2, "py")
 	keyword_dict["cryolo_bm_path"] = SXkeyword_map(2, "py")
+	keyword_dict["--box_distance"] = SXkeyword_map(0, "int")
 	keyword_dict["target_dir"] = SXkeyword_map(2, "dir")
 	keyword_dict["config_path"] = SXkeyword_map(2, "params_any_json")  # --import=INPUT_PARAMS_PATH
 	keyword_dict["model_path"] = SXkeyword_map(2, "params_any_h5")
 	keyword_dict["pretrained_weights_name"] = SXkeyword_map(2, "params_any_h5")
 	keyword_dict["box_dir"] = SXkeyword_map(2, "dir")
+	keyword_dict["janni_model"] = SXkeyword_map(2, "params_any_h5")
 
 	# Added keywords for ctf refine
 	keyword_dict["inputstack"] = SXkeyword_map(2, "data2d_stack")

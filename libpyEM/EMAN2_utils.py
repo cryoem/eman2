@@ -229,44 +229,66 @@ def mid_points(length,segment,step):
 	return points
 
 
-def tile_grid(nx,ny,tilesize,overlap=True,pad=False):
-	"""Returns tile centers based on a defined box size, with the option to overlap tiles by 50% as maximally allowed to improve power spectrum when doing this for CTF fitting
-	Author: Jesus Montoya, jgalaz@gmail.com, September 2019
+def tile_grid(nx,ny,tilesize,overlap=True,pad=False,verbose=False):
+	"""Returns tile centers across and image based on a defined tile size, with the option to overlap tiles by 50% as maximally allowed to improve power spectrum when doing this for CTF fitting
+	Author: Jesus Montoya, jgalaz@gmail.com, 09/2019
 	"""
 	
 	nx=int(nx)
 	ny=int(ny)
 	tilesize=int(tilesize)
-	print("\n(EMAN2_utils)(tile_grid) nx={}, ny={}, tilesize={}".format(nx,ny,tilesize))
+	if verbose:
+		print("\n(EMAN2_utils)(tile_grid) nx={}, ny={}, tilesize={}".format(nx,ny,tilesize))
 
 	step = tilesize
 	if overlap:
 		step = int(round(tilesize/2.0))
 	
-	print("\n(EMAN2_utils)(tile_grid) step={}".format(step))
+	if verbose:
+		print("\n(EMAN2_utils)(tile_grid) step={}".format(step))
 
 	xs = np.array(mid_points(nx,tilesize,step))
 	ys = np.array(mid_points(ny,tilesize,step))
 	
-	print("\n(EMAN2_utils)(tile_grid) step={}, lenx={}, leny={}".format(step,len(xs),len(ys)))
+	if verbose:
+		print("\n(EMAN2_utils)(tile_grid) step={}, lenx={}, leny={}".format(step,len(xs),len(ys)))
 
 	xx, yy = np.meshgrid(xs, ys)
-	print("\n(EMAN2_utils)(tile_grid) lenxx={}, lenyy={}".format(len(xx),len(yy)))
-	print("\nlast element is {}".format(xx[len(xx)-1][len(yy)-1],yy[len(xx)-1][len(yy)-1]))
+	if verbose:
+		print("\n(EMAN2_utils)(tile_grid) lenxx={}, lenyy={}".format(len(xx),len(yy)))
+		print("\nlast element is {}".format(xx[len(xx)-1][len(yy)-1],yy[len(xx)-1][len(yy)-1]))
 	
 	coords = [ [xx[i][j],yy[i][j]] for i in range(0,len(xx)) for j in range(0,len(yy)) ]
+	trimmed_coords = [ [ int(round(c[0])), int(round(c[1])) ] for c in coords if int(round(c[0]))<nx-tilesize/2 and int(round(c[0]))>tilesize/2 and int(round(c[1]))<ny-tilesize/2 and int(round(c[1]))>tilesize/2]
 
 	if not pad:
-		return coords
+		return trimmed_coords
 	elif pad:
 		return xx,yy
 
 
-def tile_grid_rot(nx,ny,tilesize,rot,overlap=True):
+def get_tiles(img,tilesize,overlap=False,pad=False,verbose=False):
+	"""Extract (clip) tiles out from an image given a defined tilesize 
+	Author: Jesus Montoya, jgalaz@gmail.com, 09/2019
+	"""
+	coords = tile_grid(img['nx'],img['ny'],tilesize,overlap,pad)
+	if verbose:
+		print("\n(EMAN2_utils)(get_tiles) returned n={} coords; for example, coords[0]={}, of type={}".format(len(coords),coords[0],type(coords)))
+	tiles = [ clip2d(img,tilesize,c) for c in coords ]
+	return tiles
+
+
+def tile_grid_rot(nx,ny,tilesize,rot,overlap=True,verbose=False):
+	"""Returns ROTATED tile centers across and image based on a defined tile size and rotation angle (for example, the direction of the tilt axis),
+	with the option to overlap tiles by 50% as maximally allowed to improve power spectrum when doing this for CTF fitting
+	Author: Jesus Montoya, jgalaz@gmail.com, 09/2019
+	"""
 
 	newnx = int(round(nx*math.cos(math.radians(rot))+ny*math.sin(math.radians(rot))))
 	newny = int(round(nx*math.sin(math.radians(rot))+ny*math.sin(math.radians(90-rot))))
-	print("\n(EMAN2_utils)(tile_grid_rot) newnx={}, newny={}".format(newnx,newny))
+	
+	if verbose:
+		print("\n(EMAN2_utils)(tile_grid_rot) newnx={}, newny={}".format(newnx,newny))
 	#h=np.hypot(nx,ny)
 	#nxny_angle = math.atan(float(ny)/float(nx))
 	#newnx=h*math.cos(math.radians(rot+nxny_angle))+2*ny*math.sin(math.radians(rot))
@@ -288,6 +310,220 @@ def tile_grid_rot(nx,ny,tilesize,rot,overlap=True):
 	trimmed_coords = [ [ int(round(c[0])), int(round(c[1])) ] for c in coords if int(round(c[0]))<nx-tilesize/2 and int(round(c[0]))>tilesize/2 and int(round(c[1]))<ny-tilesize/2 and int(round(c[1]))>tilesize/2]
 
 	return trimmed_coords
+
+
+def incoherent_sum_from_file(f,checkcorners=False,verbose=False):
+	"""Returns the incoherent sum of the FFTs of images in a stack
+	Author: Jesus Montoya, jgalaz@gmail.com, 09/2019
+	"""
+	validf=fileisimage(f)
+	if not validf:
+		sys.exit(1)
+
+	n=EMUtil.get_image_count(f)
+	if verbose:
+		print("\n(EMAN2_utils)(incoherent_sum) file={} has n={} images".format(f,n))
+
+	imghdr = img=EMData(f,0,True)
+	nx=img['nx']
+
+	nbx=1
+	fftcumulative=None
+	for i in range(n):
+		img=EMData(f,i)
+		
+		if not img['sigma']:
+			print("\n(EMAN2_utils)(incoherent_sum) WARNING: SKIPPING image n={} in file={} because it seems to be empty; mean={}, sigma={}".format(i,f,img['mean'],img['sigma']))	
+			continue
+		
+		if checkcorners:
+			ret=check_corners( img )
+			if not ret:
+				print("\n(EMAN2_utils)(incoherent_sum) WARNING: SKIPPING image n={} in file={} because it seems to have at least one 'bad' corner with too many empty pixels".format(i,f))	
+				continue
+		
+		if verbose:
+			print("\n(EMAN2_utils)(incoherent_sum) processing image {}/{} images".format(i,n))
+			
+		img.process_inplace("normalize.edgemean")
+		fft = img.do_fft()
+		fft.ri2inten()
+		
+		#if fftcumulative==None: 
+		#	fftcumulative = fft
+		#else: 
+		#	fftcumulative = fftcumulative*(nbx-1) + fft 
+		#	fftcumulative.mult(old_div(1.0,nbx))		#this keeps the contribution of each image properly weighted at every step of the average
+		
+		if i==0: 
+			fftcumulative = fft
+		elif i>0: 
+			#fftcumulative = fftcumulative*(nbx-1) + fft 
+			#fftcumulative.mult(old_div(1.0,nbx))		#this keeps the contribution of each image properly weighted at every step of the average
+			fftcumulative += fft 
+		nbx+=1
+
+	
+	fftcumulative = post_proc_fft_avg(fftcumulative,n,nx)
+	#fftcumulative.set_complex(1)
+	#fftcumulative.set_attr("is_intensity", 1)
+	
+	if verbose:
+		print("\n(EMAN2_utils)(incoherent_sum_from_file) finished incoherent sum of images in file={}".format(f))
+
+	return fftcumulative
+
+
+def incoherent_sum_from_imglist(imglist,checkcorners=False,verbose=False):
+	"""Returns the incoherent sum of the FFTs of images (typically "tiles") preloaded to a list
+	Author: Jesus Montoya, jgalaz@gmail.com, 09/2019
+	"""
+	n=len(imglist)
+	nx=imglist[0]['nx']
+	#nbx=1
+	fftcumulative=None
+	for i in range(n):
+		fft=None
+		img=imglist[i]
+		
+		if not img['sigma']:
+			print("\n(EMAN2_utils)(incoherent_sum) WARNING: SKIPPING image n={} because it seems to be empty; mean={}, sigma={}".format(i,img['mean'],img['sigma']))	
+			continue
+		
+		if checkcorners:
+			ret=check_corners( img )
+			if not ret:
+				print("\n(EMAN2_utils)(incoherent_sum) WARNING: SKIPPING image n={} because it seems to have at least one 'bad' corner with too many empty pixels".format(i))	
+				continue
+		if verbose:
+			print("\n(EMAN2_utils)(incoherent_sum) processing image {}/{} images".format(i,n))
+			
+		img.process_inplace("normalize.edgemean")
+		fft = img.do_fft()
+		fft.ri2inten()
+		if i==0: 
+			fftcumulative = fft
+		elif i>0: 
+			#fftcumulative = fftcumulative*(nbx-1) + fft 
+			#fftcumulative.mult(old_div(1.0,nbx))		#this keeps the contribution of each image properly weighted at every step of the average
+			fftcumulative += fft 
+		#nbx+=1
+
+	fftcumulative = post_proc_fft_avg(fftcumulative,n,nx)
+
+	#fftcumulative.mult(old_div(1.0,float(n)))
+	#if scale:
+	#fftcumulative.mult(old_div(	1.0, nx**2 ))
+	#fftcumulative.process_inplace("math.sqrt")
+	#fftcumulative["is_intensity"]=0				# These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
+	if verbose:
+		print("\n(EMAN2_utils)(incoherent_sum_from_imglist) finished incoherent sum of n={} images".format(n))
+
+	return fftcumulative
+
+
+def post_proc_fft_avg(fftimg,n,nx,verbose=False):
+
+	fftimg.mult(old_div(1.0,float(n)))
+	fftimg.mult(old_div(	1.0, nx**2 ))
+	fftimg.process_inplace("math.sqrt")
+	fftimg.process_inplace('xform.phaseorigin.tocenter')
+	if verbose:
+		print("\n(EMAN2_utils)(post_proc_fft_avg) adjusted phase origin to center")
+	fftimg["is_intensity"]=0
+
+	return fftimg
+
+
+def check_corners( img, percent_of_side_length=0.1, verbose=False ):
+	"""Checks whether the corners of an image have "bad" empty pixels covering at least a certain percentage of the side length 
+	Author: Jesus Montoya, jgalaz@gmail.com, 09/2019
+	"""
+	
+	nx = img['nx']
+	ny = img['ny']
+	nz = img['nz']
+
+	if nz < 32 and verbose:
+		print("\n(EMAN2_utils)(check_corners) Image will be treated as 2D because nz<32, nz={}".format(nz))
+
+	if nx <32 or ny <32:
+		print("\n(EMAN2_utils)(check_corners) ERROR: this function requires images 32x32 pixels or larger.")
+		sys.exit(1)
+
+	cornernx = round( nx * percent_of_side_length)
+	cornerny = round( ny * percent_of_side_length)
+	
+	if cornernx < 3:
+		cornernx = 3
+	if cornerny < 3:
+		cornerny = 3
+
+	
+	if nz > 32:
+		if verbose:
+			print("\n(EMAN2_utils)(check_corners) image is 3D; nx={}, ny={}, nz={}".format(nx,ny,nz))
+
+		cornernz = round( nz * percent_of_side_length)
+
+		if cornernz < 3:
+			cornernz = 3
+
+		corner5 = img.get_clip( Region(0,0,nz-cornernz, cornernx,cornerny,cornernz))
+		corner6 = img.get_clip( Region(nx-cornernx,0,nz-cornernz, cornernx,cornerny,cornernz))
+		corner7 = img.get_clip( Region(nx-cornernx,ny-cornerny,nz-cornernz, cornernx,cornerny,cornernz))
+		corner8 = img.get_clip( Region(0,ny-cornerny,nz-cornernz, cornernx,cornerny,cornernz))
+		
+		if not corner5['sigma'] or not corner6['sigma'] or not corner7['sigma'] or not corner8['sigma']:
+			print("\n(EMAN2_utils)(check_corners) found at least one bad corner exceeding percent_of_side_length={}".format(percent_of_side_length))
+			return 0 
+	elif nz > 1:
+		corner1 = img.get_clip( Region(0,0,0, cornernx,cornerny,1))
+		corner2 = img.get_clip( Region(nx-cornernx,0,0, cornernx,cornerny,1))
+		corner3 = img.get_clip( Region(nx-cornernx,ny-cornerny,0, cornernx,cornerny,1))
+		corner4 = img.get_clip( Region(0,ny-cornerny,0, cornernx,cornerny,1))
+	
+		if not corner1['sigma'] or not corner2['sigma'] or not corner3['sigma'] or not corner4['sigma']:
+			print("\n(EMAN2_utils)(check_corners) found at least one bad corner exceeding percent_of_side_length={}".format(percent_of_side_length))
+			return 0
+	else:
+		corner1 = img.get_clip( Region(0,0, cornernx,cornerny))
+		corner2 = img.get_clip( Region(nx-cornernx,0, cornernx,cornerny))
+		corner3 = img.get_clip( Region(nx-cornernx,ny-cornerny, cornernx,cornerny))
+		corner4 = img.get_clip( Region(0,ny-cornerny, cornernx,cornerny))
+
+		if not corner1['sigma'] or not corner2['sigma'] or not corner3['sigma'] or not corner4['sigma']:
+			print("\n(EMAN2_utils)(check_corners)found at least one bad corner exceeding percent_of_side_length={}".format(percent_of_side_length))
+			return 0
+
+	return 1
+	
+
+def remove_blank_lines(f,spaces_too=False,verbose=False):
+	"""Removes empty lines from a file and optionally blank spaces from lines 
+	Author: Jesus Montoya, jgalaz@gmail.com, 09/2019
+	"""
+	stem,extension = os.path.splitext(f)
+	if verbose:
+		print('\n(EMAN2_utils)(remove_blank_lines) stem={},extension={}'.format(stem, extension))
+	newf = f.replace(extension,'_clean' + extension)
+	with open(f,'rw') as ff:
+		g=open(newf,'w')
+		lines = ff.readlines()
+
+		#newlines=[]
+		#for line in lines:
+		#	newline = line.replace('\n','')
+		#	if newline:
+		#		newlines.append(newline+'\n')
+		
+		newlines=[line for line in lines if line and line!='\n']
+		if spaces_too:
+			newlines=[ line.replace(' ','') for line in newlines ]
+
+		g.writelines(newlines)
+	
+	return newf
 
 
 def findfs(stem=''):
@@ -374,13 +610,13 @@ def fileisimage(f):
 		a=EMData(f,0,True)
 		isimage=True
 	except:
-		print("\n(EMAN2_utils)(fileisimage) file={} is NOT a valid image file".format(f))
+		print("\n(EMAN2_utils)(fileisimage) file={} is NOT a valid image file readable by EMAN2".format(f))
 	return isimage
 
 
 def cleanfilenames():
 	"""Renames all files in a directory and its subdirectories to NOT contain parentheses, brackets, commas, spaces
-	Author: Jesus Montoya, jgalaz@gmail.com, April 2019
+	Author: Jesus Montoya, jgalaz@gmail.com, 04/2019
 	"""
 	fs=fsindir()
 	badcharacters=['[',']','{','}','(',')',',','  ',' ']
@@ -412,6 +648,7 @@ def makepath(options, stem='e2dir'):
 		pass
 	
 	return options
+
 
 def detectThreads(options):
 	"""
@@ -540,9 +777,9 @@ def clip3d( vol, size, center=None ):
 	volzc = old_div(vol['nz'],2)
 	
 	if center:
-		volxc = center[0]
-		volyc = center[1]
-		volzc = center[2]
+		volxc = int(center[0])
+		volyc = int(center[1])
+		volzc = int(center[2])
 	
 	Rvol =  Region( old_div((2*volxc - size),2), old_div((2*volyc - size),2), old_div((2*volzc - size),2), size , size , size)
 	volclip = vol.get_clip( Rvol )
@@ -566,8 +803,8 @@ def clip2d( img, size, center=None ):
 	imgyc = old_div(img['ny'],2)
 	
 	if center:
-		imgxc = center[0]
-		imgyc = center[1]
+		imgxc = int(center[0])
+		imgyc = int(center[1])
 	
 	Rimg = Region( old_div((2*imgxc - size),2), old_div((2*imgyc - size),2), size , size )
 	imgclip = img.get_clip( Rimg )
