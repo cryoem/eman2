@@ -87,6 +87,7 @@ This program will take an input stack of subtomograms and a reference volume, an
 	parser.add_argument("--breaksym",action="store_true",help="symmetry breaking.",default=False)
 	parser.add_argument("--breaksymsym",type=str,help="the symmetry to use for breaksym. setting sym to c6 and this to c2 results in a c3 structure. default is the same as sym",default=None)
 	parser.add_argument("--rand180",action="store_true",help="randomly add a 180 degree rotation during refine alignment",default=False)
+	parser.add_argument("--skipali",action="store_true",help="skip alignment. the program will do nothing. mostly for testing...",default=False)
 	parser.add_argument("--maxang",type=float,help="Maximum angular difference for the refine mode. default is 30",default=30)
 	parser.add_argument("--maxshift",type=float,help="Maximum shift for the refine mode. default is 16",default=-1)
 
@@ -199,7 +200,7 @@ This program will take an input stack of subtomograms and a reference volume, an
 	etc=EMTaskCustomer(options.parallel, module="e2spt_align.SptAlignTask")
 	num_cpus = etc.cpu_est()
 	
-	#tasks=tasks[:2400]
+	#tasks=tasks[:6]
 	print("{} jobs on {} CPUs".format(len(tasks), num_cpus))
 	njob=num_cpus#*4
 	
@@ -338,6 +339,13 @@ class SptAlignTask(JSTask):
 				dataxf=None
 			
 			b=EMData(fsp,i)
+			if b["sigma"]==0:
+				###empty particle. really should not happen but will break a few things below...
+				c=[{"xform.align3d":Transform(), "score":1}]
+				rets.append((fsp,i,c))
+				print("empty particle : {} {}".format(fsp, i))
+				continue
+				
 			b.process_inplace("normalize.edgemean")
 			if options.maxres>0:
 				b.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./options.maxres})
@@ -391,11 +399,15 @@ class SptAlignTask(JSTask):
 			# we align backwards due to symmetry
 			if options.verbose>2 : print("Aligning: ",fsp,i)
 			
-			#c=[{"xform.align3d":xfs[0].inverse(), "score":-1}]
 			
 	
 			ref=refs[data[3]]
-			c=ref.xform_align_nbest("rotate_translate_3d_tree",b, aligndic, options.nsoln)
+			if options.skipali:
+				c=[{"xform.align3d":xfs[0].inverse(), "score":-1}]
+			else:
+				c=ref.xform_align_nbest("rotate_translate_3d_tree",b, aligndic, options.nsoln)
+			
+			
 			
 			for cc in c : cc["xform.align3d"]=cc["xform.align3d"].inverse()
 			
@@ -414,6 +426,7 @@ class SptAlignTask(JSTask):
 				x=Transform()
 				xf=x.get_sym(options.breaksymsym, ci)*xf
 				c[0]["xform.align3d"]=xf
+				c[0]["score"]=cs[ci]
 					
 			
 			rets.append((fsp,i,c))
