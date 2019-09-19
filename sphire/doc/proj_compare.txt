@@ -108,6 +108,6 @@ Beta:: Under evaluation and testing. Please let us know if there are any bugs.
 
 \\
 ==== Bugs ====
-There are no known bugs so far.
+In projection-matching mode, with large images/volume, program sometimes crashes with a segmentation fault. If this error occurs, try specifying a ring step (flag matchstep) from the default of 1 pixel.
 
 \\
