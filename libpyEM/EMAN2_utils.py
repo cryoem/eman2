@@ -569,14 +569,18 @@ def finddirs(stem=''):
 		return None
 
 
-def fsindir(directory=''):
+def fsindir(directory=None,stem=None):
 	"""Returns a sorted list with the files in "directory"
 	Author: Jesus Montoya, jgalaz@gmail.com, August 2019
 	"""
 	c = os.getcwd()
 	if directory:
 		c = directory
+
 	findir = os.listdir(c)
+	if stem:
+		findir = [f for f in findir if stem in f]
+
 	findir.sort()
 	return findir
 
@@ -623,7 +627,8 @@ def cleanfilenames():
 	cmds = ["""find . -depth -name '*"""+b+"""*' -execdir bash -c 'for f; do mv -i "$f" "${f//"""+b+"""/_}"; done' bash {} +""" for b in badcharacters]
 	for cmd in cmds:
 		runcmdbasic(cmd)
-	return	
+	return
+
 
 def makepath(options, stem='e2dir'):
 	"""
@@ -637,6 +642,8 @@ def makepath(options, stem='e2dir'):
 	
 	elif options.path:
 		stem=options.path
+
+	options.path = os.getcwd() + '/' + stem
 	
 	i=1
 	while os.path.exists("{}_{:02d}".format(stem,i)): i+=1
