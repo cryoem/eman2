@@ -117,7 +117,10 @@ def main():
 	angles=get_angles(options,n)
 
 	dirname = os.path.dirname( options.input )
-	options.path = dirname + "/" + options.path
+
+	if dirname:
+		options.path = dirname + "/" + options.path
+	#print("\ndirname={}".format(dirname))
 	imgs_unstacked = {}
 	if tomo:
 		options = makepath( options, 'tomoctfraw')
@@ -130,6 +133,7 @@ def main():
 		runcmd(options,cmdunstack)
 		for img in imgs_unstacked_tmp:
 			out_final =  options.path + '/' + img.replace('unstacked-','unstacked_')
+			print("\ntrying out_final={} and options.path={}".format(out_final,options.path))
 			os.rename( img, out_final )
 			num = int(img.split('unstacked-')[-1].replace('.hdf','')) - 1 				#indexes should start from 0
 			imgs_unstacked.update({ num : out_final })
