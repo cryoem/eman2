@@ -602,7 +602,11 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			threed=recon.finish(True)
 			threed.process_inplace("math.gausskernelfix",{"gauss_width":4.0})
 			threed=threed.get_clip(Region((p3d-bx)//2,(p3d-bx)//2,(p3d-bx)//2,bx,bx,bx))
-			
+		
+		if threed["sigma"]==0:
+			####empty particle for some reason...
+			continue
+		
 		threed["apix_x"]=threed["apix_y"]=threed["apix_z"]=apix
 		threed["ptcl_source_coord"]=pos.tolist()
 		threed["file_twod"]=options.output2d
