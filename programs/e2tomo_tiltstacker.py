@@ -48,7 +48,7 @@ def main():
 	by supplying a common string to all the images to stack.
 	
 	For example:
-	e2tomo_tiltstacker.py --input=my_imgs* --anglesindxinfilename=6
+	e2tomo_tiltstacker.py --input=my_imgs --anglesindxinfilename=6
 
 	It also generates a .rawtlt file with tilt angle values if --lowerend, --upperend and --tiltstep are provided.
 	"""
@@ -60,7 +60,7 @@ def main():
 
 	parser.add_argument("--highesttilt",type=float,default=0.0,help="""Highest tilt angle. If not supplied, it will be assumed to be 1* --tiltrange.""")
 	
-	parser.add_argument("--input", type=str, default=None, help="""String common all files to process and *, followed by all parameters of interest. For example, to process all .mrc files in a directory, you would run e2tomo_tiltstacker.py *.mrc <parameters>.""")
+	parser.add_argument("--input", type=str, default=None, help="""String common all files to process. For example, to process all .mrc files in a directory, you would run e2tomo_tiltstacker.py --input=.mrc <parameters>.""")
 
 	parser.add_argument("--lowesttilt",type=float,default=0.0,help="""Lowest tilt angle. If not supplied, it will be assumed to be -1* --tiltrange.""")
 			
@@ -81,15 +81,22 @@ def main():
 	#'''
 	#Make sure input file is EMAN2 readable
 	#'''
+	
+	print("\n--input={}".format(options.input))
 
 	stem =  os.path.basename( options.input.replace('*','') )
+	print("\ntherefore, stem={}".format(stem))
+
 	dirname = os.path.dirname( options.input.replace('*','') )
 	if not dirname:
 		dirname='.'
 	files2process = fsindir(directory=dirname,stem=stem)
-	files2process = [dirname + '/' + f for f in files2process]
+	print("\nfound raw files2process={}".format(files2process))
 
-	if precheckfiles:
+	files2process = [dirname + '/' + f for f in files2process]
+	print("\nwith full path, files2process={}".format(files2process))
+
+	if options.precheckfiles:
 		good=[]
 		bad=[]
 		for g in files2process:
@@ -134,7 +141,7 @@ def main():
 	kk=0
 	
 	print("\n(e2spt_tomostacker.py)(stacker) organizing tilt imgs")
-	intiltsdict = organizetilts( options, files2process, tiltstoexclude )		#Get a dictionary in the form { indexintiltseries:[ tiltfile, tiltangle, damageRank ]},
+	intiltsdict = organizetilts( options, files2process )		#Get a dictionary in the form { indexintiltseries:[ tiltfile, tiltangle, damageRank ]},
 	print("\n(e2spt_tomostacker.py)(stacker) done organizing tilt imgs")					#where damageRank tells you the order in which the images 
 																							#were acquired regardless of wether the tilt series goes from 
 													#-tiltrange to +tiltrange, or 0 to -tiltrange then +tiltstep to +tiltrange, or the opposite of these 
@@ -181,8 +188,7 @@ def main():
 
 		intiltimg['damageRank'] = damageRank
 		
-		if options.invert:
-			intiltimg.mult(-1)
+
 		intiltimg.write_image( outstackhdf, -1 )
 		#print "\nWrote image index", index
 	
@@ -191,104 +197,21 @@ def main():
 
 	tmp = options.path + '/tmp.hdf'
 
-	if options.clip:
-		clip = options.clip.split(',')
-		
-		shiftx = 0
-		shifty = 0
-		if len( clip ) == 1:
-			clipx = clipy = clip[0]
-		
-		if len( clip ) == 2:
-			clipx = clip[0]
-			clipy = clip[1]
-		
-		if len( clip ) == 4:
-			clipx = clip[0]
-			clipy = clip[1]
-			shiftx = clip[2]
-			shifty = clip[3]
-		
-		
-		cmdClip = 'e2proc2d.py ' + outstackhdf + ' ' + tmp + ' --clip=' + clipx + ',' + clipy
-		
-		if shiftx:
-			xcenter = int( round( nx/2.0 + float(shiftx)))
-			cmdClip += ',' + str(xcenter)
-		if shifty:
-			ycenter = int( round( ny/2.0 + float(shifty)))
-			cmdClip += ',' + str(ycenter)
-		
-		runcmd(options,cmdClip)
-
-		os.remove(outstackhdf)
-		os.rename(tmp,outstackhdf)			
 	
-	if options.shrink and options.shrink > 1.0:
-		
-		cmdBin = 'e2proc2d.py ' + outstackhdf + ' ' + tmp + ' --process=math.fft.resample:n=' + str(options.shrink) 
-		
-		print("\n(e2spt_tomostacker.py)(stacker) cmdBin is", cmdBin)
-		
-		runcmd(options,cmdBin)
-		
-		os.remove(outstackhdf)
-		print("\n(e2spt_tomostacker.py)(stacker) removed {}".format(outstackhdf))
-		os.rename(tmp,outstackhdf)
-		print("\n(e2spt_tomostacker.py)(stacker) renamed {} to {}".format(tmp,outstackhdf))
-
 	print("\n(e2spt_tomostacker.py)(stacker) reading outstackhdf hdr, for file {}".format(outstackhdf))
 	outtilthdr = EMData(outstackhdf,0,True)
 	currentapix = outtilthdr['apix_x']
-	if float(options.apix) and float(options.apix) != float(currentapix):
-		if options.shrink:
-			options.apix *= options.shrink
-
-		print("\n(e2spt_tomostacker.py)(stacker) Fixing apix")
-		cmdapix = 'e2procheader.py --input=' + outstackhdf + ' --stem=apix --valtype=float --stemval=' + str( options.apix )
-		
-		print("\n(e2spt_tomostacker.py)(stacker) cmdapix is", cmdapix)
-		
-		runcmd(options,cmdapix)
 		
 	outstackst = outstackhdf.replace('.hdf','.st')
 	stcmd = 'e2proc2d.py	' + outstackhdf + ' ' + outstackst + ' --twod2threed'
-	if options.outmode != 'float':
-		stcmd += ' --outmode=' + options.outmode + ' --fixintscaling=sane'
+	
 		
 	print("\n(e2spt_tomostacker.py)(stacker) stcmd is", stcmd)	
 
 	runcmd(options,stcmd)
 	os.remove(outstackhdf)
 
-	if options.normalizeimod:
-		try:
-			cmd = 'newstack ' + outstackst + ' ' + outstackst + ' --float 2'
-			print("normalizeimod cmd is", cmd)
-			runcmd(options,cmd)
-		except:
-			print("\n(e2spt_tomostacker.py)(stacker) ERROR: --normalizeimod skipped. Doesn't seem like IMOD is installed on this machine")	
 	
-	if options.mirroraxis:
-		print("\n(e2spt_tomostacker.py)(stacker) Mirroring across axis", options.mirroraxis)
-		mirrorlabel = options.mirroraxis.upper()
-		outstackstmirror = outstackst.replace('.st','_mirror'+ mirrorlabel+ '.st')
-
-		cmdMirror = 'e2proc2d.py ' + outstackst + ' ' + outstackstmirror + ' --process=xform.mirror:axis=' + options.mirroraxis
-		
-		if options.outmode != 'float':
-			cmdMirror += ' --outmode=' + options.outmode + ' --fixintscaling=sane'
-		
-		print("options.apix is", options.apix)
-		if options.apix:
-			cmdMirror += ' --apix=' + str(options.apix)
-			cmdMirror += ' && e2fixheaderparam.py --input=' + outstackstmirror + ' --stem=apix --valtype=float --stemval=' + str( options.apix ) + ' --output=' + outstackstmirror.replace('.st','.mrc') + " && mv " +  outstackstmirror.replace('.st','.mrc') + ' ' + outstackstmirror
-			
-			print("added fixheaderparam to cmdMirror!")
-		
-		print("cmdMirror is", cmdMirror)
-		runcmd(options,cmdMirror)
-
 	findir = os.listdir(options.path)
 	for f in findir:
 		if '~' in f:
@@ -337,18 +260,11 @@ def getangles( options, ntilts, raworder=False ):
 	
 	print("BEFORE sorting, angles are", angles)
 	
-	print("negativetiltseries is", options.negativetiltseries)
-	print("not negativetiltseries", not options.negativetiltseries)
 	print("raworder", raworder)
 	print("not raworder", not raworder)
-	print("not options.negativetiltseries and not raworder", not options.negativetiltseries and not raworder)
 
-
-	if options.negativetiltseries:
-		angles.sort()
-		print("\n(e2spt_tomostacker.py)(getangles) AFTER sorting, angles are", angles)
 	
-	elif not raworder:
+	if not raworder:
 		angles.sort()
 		angles.reverse()
 		print("\n(e2spt_tomostacker.py)(getangles) AFTER REVERSING (ordered from largest to smallest), angles are", angles)
@@ -364,7 +280,7 @@ def writetlt( angles, options, raworder=False ):
 	if not raworder:
 		angless.sort()
 	
-	if not options.negativetiltseries and not raworder:
+	if not raworder:
 		angless.reverse()
 		
 	lines = []
@@ -382,7 +298,7 @@ def writetlt( angles, options, raworder=False ):
 	return
 
 
-def organizetilts( options, intilts, tiltstoexclude, raworder=False ):
+def organizetilts( options, intilts, raworder=False ):
 	
 	intilts.sort()
 
@@ -435,14 +351,8 @@ def organizetilts( options, intilts, tiltstoexclude, raworder=False ):
 				collectionindex+=1
 		
 		angles.sort()
-		if not options.negativetiltseries:
-			angles.reverse()
-		#if options.negativetiltseries:
-		#	angles.sort()
-		#else:
-		#	angles.sort()
-		#	angles.reverse()
-
+		angles.reverse()
+		
 		writetlt( angles, options )
 
 		#kkkk=0
@@ -458,17 +368,15 @@ def organizetilts( options, intilts, tiltstoexclude, raworder=False ):
 			if options.verbose>5:
 				print("\n(e2spt_tomostacker)(organizetilts) examining angle {} corresponding to index {}".format(angle,indexintiltseries))	
 			#{ indexintiltseries:[ imgile, angle, collectionindx]} 
-			if indexintiltseries not in tiltstoexclude:
-				intiltsdict.update( { newindexintiltseries:[ anglesdict[angle][0], angle, anglesdict[angle][1] ]} )
-				print("\n(e2spt_tomostacker)(organizetilts) updating intiltsdict with img={}, angle={}, order={}".format(anglesdict[angle][0], angle, anglesdict[angle][1] ) )
-				finalangles.append(angle)
-				
-				if options.verbose>5:
-					print("\n(e2spt_tomostacker)(organizetilts) kept oldindex={}, which after excluding images became newindex={}".format(indexintiltseries,newindexintiltseries))
-				newindexintiltseries+=1
-			else:
-				if options.verbose>5:
-					print("\n(e2spt_tomostacker)(organizetilts) !!!! discarding index={} because it is in tiltstoexclude={}".format(indexintiltseries,tiltstoexclude))
+			
+			intiltsdict.update( { newindexintiltseries:[ anglesdict[angle][0], angle, anglesdict[angle][1] ]} )
+			print("\n(e2spt_tomostacker)(organizetilts) updating intiltsdict with img={}, angle={}, order={}".format(anglesdict[angle][0], angle, anglesdict[angle][1] ) )
+			finalangles.append(angle)
+			
+			if options.verbose>5:
+				print("\n(e2spt_tomostacker)(organizetilts) kept oldindex={}, which after excluding images became newindex={}".format(indexintiltseries,newindexintiltseries))
+			newindexintiltseries+=1
+			
 		
 			indexintiltseries+=1
 		
@@ -490,50 +398,14 @@ def organizetilts( options, intilts, tiltstoexclude, raworder=False ):
 			indexminangle = angles.index( -1*zeroangle )		#Or negative. Either way, we find its index in the list of angles
 			zeroangle = angles[ indexminangle ]
 
-		
-		if not options.tltfile:
-			
-			
-			if options.bidirectional:
-				
-				
-				print("\nzeroangle=%f, indexminangle=%d" %( zeroangle, indexminangle ))
-				if not options.negativetiltseries:
-					print("\nNegative tilt series is OFF. This is a POSITIVE tilt series")
-					secondhalf = angles[ indexminangle: len(angles) ]	#This goes from zero to lowest tilta angles, i.e., -tiltrange
-					#print "Firsthalf is", firsthalf
-					#print "because angles are", angles
-					firsthalf =  angles[ 0:indexminangle ]				#This should go from most positive angle or +tiltrange to zero (without including it)
-					#secondhalf.sort()									#We order this list to go from 0-tiltstep to the most negative angle, -tiltrange
-					#secondhalf.reverse()
-				
-				elif options.negativetiltseries:
-					print("T\nhis is a NEGATIVE tiltseries")
-					firsthalf = angles[ 0:indexminangle+1 ]				#This goes from the most negative angle to zero (INCLUDING it)
-					#firsthalf.sort()									#We order this list to go from 0 to -tiltrange
-					#firsthalf.reverse()
-					
-					secondhalf = angles[ indexminangle+1: len(angles) ]	#This goes from 0+tiltstep to the most positive angle, that is, +tiltrange
-				
-				orderedangles = firsthalf + secondhalf
-				print("\n(organizetilts) Ordered angles are", orderedangles)
-				print("\n(organizetilts) Because firsthalf is", firsthalf)
-				print("\n(organizetilts) and secondhalf is", secondhalf)
-				
-				#writetlt( orderedangles, options )
-		
-			#else:
-			#	writetlt( angles, options )
-		#else:
-		#	writetlt( angles, options )
 	
 		angles.sort()
-		if not options.negativetiltseries and not raworder:			#Change angles to go from +tiltrange to -tiltrange if that's the order of the images
+		if not raworder:			#Change angles to go from +tiltrange to -tiltrange if that's the order of the images
 			#orderedangles.sort()
 			#orderedangles.reverse()
 			
 			#angles.sort()
-			print("negativetiltseries and raworer are",options.negativetiltseries,raworder)
+			print("raworder is",raworder)
 			angles.reverse()
 			print("therefore, angles are reversed (largest to smallest)")
 			
@@ -554,15 +426,13 @@ def organizetilts( options, intilts, tiltstoexclude, raworder=False ):
 				and tilt images is not equal. Stacking nevertheless since you provided --stackregardless""", options.stackregardless)
 				print("""Number of tilt angles = %d ; number of tilt images = %d """ % ( len( orderedangles ), len( intilts ) ))
 				
-		tiltstoexclude = options.exclude.split(',')
 		
 		indexesintiltseries = range(len(angles))
 		collectionindexes = range(len(angles))
 		
-		print("options.bidirectional is", options.bidirectional)
 		print("indexminangle is", indexminangle)
 
-		if options.bidirectional and indexminangle != None:
+		if indexminangle != None:
 			firstrange = range(0,indexminangle+1)
 			secondrange = range(indexminangle+1,len(angles))			
 			
@@ -598,9 +468,8 @@ def organizetilts( options, intilts, tiltstoexclude, raworder=False ):
 					collectionindex = collectionindexes[k-1] + collectionindexes[k-1] - collectionindexes[k-2]
 				
 					
-			if indexintiltseries not in tiltstoexclude and str(indexintiltseries) not in tiltstoexclude:
 			
-				intiltsdict.update( { indexintiltseries:[ intilts[k],tiltangle,collectionindex ]} )
+			intiltsdict.update( { indexintiltseries:[ intilts[k],tiltangle,collectionindex ]} )
 				#print "\nadded collectionIndex=%d, tiltangle=%f, indexintiltseries=%d" % ( collectionindex, tiltangle, indexintiltseries )
  				
 	return intiltsdict
@@ -654,16 +523,6 @@ def makeimglist( inputf, options ):
 	
 	print("\nallindxs are", allindxs)
 	
-	if options.exclude:
-		print("\nPrint there's EXCLUDE!!")
-		eindxs = getindxs( options.exclude )
-		finalindxs = list( allindxs.difference( eindxs ) )
-		
-	elif options.include:
-		print("\nPrint there's INCLUDE!!")
-		iindxs = getindxs( options.include )
-		finalindxs = list( iindxs )
-	
 	print("\nFinalindxs are", finalindxs)
 	
 	ints = []
@@ -671,8 +530,7 @@ def makeimglist( inputf, options ):
 		ints.append( int( id ) )
 	
 	ints.sort()
-	if not options.negativetiltseries:
-			ints.reverse()
+	ints.reverse()
 	
 	print("\nfinalindx sorted are", ints)
 	#final = []
