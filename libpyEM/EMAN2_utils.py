@@ -577,8 +577,13 @@ def fsindir(directory=None,stem=None):
 	if directory:
 		c = directory
 
+	print("\n(EMN2_utils)(fsindir) looking for files in c={}!!!!!!!".format(c))
 	findir = os.listdir(c)
+	print("\n(EMN2_utils)(fsindir) found findir={}!!!!!!!".format(findir))
+
 	if stem:
+		print("\n(EMN2_utils)(fsindir) filtering by stem={}!!!!!!!".format(stem))
+
 		findir = [f for f in findir if stem in f]
 
 	findir.sort()
