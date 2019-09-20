@@ -116,6 +116,8 @@ def main():
 	check_healthy_params(options,n)
 	angles=get_angles(options,n)
 
+	dirname = os.path.dirname( options.input )
+	options.path = dirname + "/" + options.path
 	imgs_unstacked = {}
 	if tomo:
 		options = makepath( options, 'tomoctfraw')
@@ -140,13 +142,13 @@ def main():
 	#'''
 	logger = E2init(sys.argv, options.ppid)
 
-	global_ctfs,bad_indexes=get_global_defocuses(options,imgs_unstacked,n,angles)
+	global_ctfs,bad_indexes=get_global_defocuses(options,imgs_unstacked,n,angles,dirname)
 
 	E2end(logger)
 	return
 	
 
-def get_global_defocuses(options,imgs_unstacked,n,angles):
+def get_global_defocuses(options,imgs_unstacked,n,angles,dirname):
 
 	global_defoci = {}
 	global_ctfs = {}
@@ -247,7 +249,12 @@ def get_global_defocuses(options,imgs_unstacked,n,angles):
 			#ctfer(options,i,angle,n)	
 
 	globald_f = 'global_defoci.txt'
-	if n > 1: globald_f = options.path + '/' + globald_f
+	if n > 1: 
+		globald_f = options.path + '/' + globald_f
+	else:
+		globald_f =  dirname + '/global_defoci.txt'
+
+	
 	
 	#with open(globald_f,'w') as gdf:
 	#	lines=[ str(i) + '\t' + str(global_defoci[i]) + '\n' for i in range(len(global_defoci))]
