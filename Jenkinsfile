@@ -1,3 +1,5 @@
+def binary_size_suffix = ['mini':'', 'huge':'_huge']
+
 def getJobType() {
     def causes = "${currentBuild.rawBuild.getCauses()}"
     def job_type = "UNKNOWN"
@@ -180,8 +182,8 @@ pipeline {
       
       parallel {
         stage('notify') { steps { notifyGitHub('PENDING') } }
-        stage('mini')   { steps { testPackage('',     'mini') } }
-        stage('huge')   { steps { testPackage('_huge','huge') } }
+        stage('mini')   { steps { testPackage(binary_size_suffix[STAGE_NAME], STAGE_NAME) } }
+        stage('huge')   { steps { testPackage(binary_size_suffix[STAGE_NAME], STAGE_NAME) } }
       }
     }
     
