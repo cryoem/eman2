@@ -85,27 +85,41 @@ def isBinaryBuild() {
 
 def testPackage(suffix, dir) {
     if(isUnix())
-        sh  "bash tests/test_binary_installation.sh   ${INSTALLERS_DIR}/eman2"  + suffix + ".${SLAVE_OS}.sh ${INSTALLERS_DIR}/"  + dir
+        sh  "bash tests/test_binary_installation.sh   ${WORKSPACE}/eman2"  + suffix + ".${SLAVE_OS}.sh ${INSTALLERS_DIR}/"  + dir
     else
-        bat "call tests\\test_binary_installation.bat ${INSTALLERS_DIR}\\eman2" + suffix + ".win.exe        ${INSTALLERS_DIR}\\" + dir
+        bat "call tests\\test_binary_installation.bat ${WORKSPACE}\\eman2" + suffix + ".win.exe        ${INSTALLERS_DIR}\\" + dir
 }
 
-def deployPackage() {
-    if(isContinuousBuild()) {
-        upload_dir = 'continuous_build'
-        upload_ext = 'unstable'
-    }
-    if(isExperimentalBuild()) {
-        upload_dir = 'experimental'
-        upload_ext = 'experimental'
-    }
-    
-    if(isUnix()) {
-        sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh      ${DEPLOY_DEST}/" + upload_dir + "/eman2."      + JOB_NAME.toLowerCase() + "." + upload_ext + ".sh"
-        sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2_huge.${SLAVE_OS}.sh ${DEPLOY_DEST}/" + upload_dir + "/eman2_huge." + JOB_NAME.toLowerCase() + "." + upload_ext + ".sh"
-    }
-    else
-        bat 'ci_support\\rsync_wrapper.bat ' + upload_dir + ' ' + upload_ext
+def deployPackage(size_type='') {
+    if(isContinuousBuild())   stability_type = 'unstable'
+    if(isExperimentalBuild()) stability_type = 'experimental'
+
+    if(isUnix()) installer_ext = 'sh'
+    else         installer_ext = 'exe'
+
+    sshPublisher(publishers: [
+                              sshPublisherDesc(configName: 'Installer-Server',
+                                               transfers:
+                                                          [sshTransfer(sourceFiles: "eman2" + size_type + ".${SLAVE_OS}." + installer_ext,
+                                                                       removePrefix: "",
+                                                                       remoteDirectory: stability_type,
+                                                                       remoteDirectorySDF: false,
+                                                                       cleanRemote: false,
+                                                                       excludes: '',
+                                                                       execCommand: "cd ${DEPLOY_PATH}/" + stability_type + " && mv eman2" + size_type + ".${SLAVE_OS}." + installer_ext + " eman2" + size_type + ".${SLAVE_OS}." + stability_type + "." + installer_ext,
+                                                                       execTimeout: 120000,
+                                                                       flatten: false,
+                                                                       makeEmptyDirs: false,
+                                                                       noDefaultExcludes: false,
+                                                                       patternSeparator: '[, ]+'
+                                                                      )
+                                                          ],
+                                                          usePromotionTimestamp: false,
+                                                          useWorkspaceInPromotion: false,
+                                                          verbose: true
+                                              )
+                             ]
+                )
 }
 
 def getHomeDir() {
@@ -171,8 +185,8 @@ pipeline {
       
       parallel {
         stage('notify') { steps { notifyGitHub('PENDING') } }
-        stage('mini')   { steps { sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/constructor-${STAGE_NAME}/' } }
-        stage('huge')   { steps { sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/constructor-${STAGE_NAME}/' } }
+        stage('mini')   { steps { sh "bash ci_support/package.sh " + '${WORKSPACE} ${WORKSPACE}/ci_support/constructor-${STAGE_NAME}/' } }
+        stage('huge')   { steps { sh "bash ci_support/package.sh " + '${WORKSPACE} ${WORKSPACE}/ci_support/constructor-${STAGE_NAME}/' } }
       }
     }
     
@@ -189,10 +203,12 @@ pipeline {
     
     stage('deploy') {
       when { expression { isBinaryBuild() } }
-      
-      steps {
-        notifyGitHub('PENDING')
-        deployPackage()
+      environment { PARENT_STAGE_NAME = "${STAGE_NAME}" }
+
+      parallel {
+        stage('notify') { steps { notifyGitHub('PENDING') } }
+        stage('mini')   { steps { deployPackage(binary_size_suffix[STAGE_NAME]) } }
+        stage('huge')   { steps { deployPackage(binary_size_suffix[STAGE_NAME]) } }
       }
     }
   }
