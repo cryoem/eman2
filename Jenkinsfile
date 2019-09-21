@@ -169,8 +169,8 @@ pipeline {
       
       parallel {
         stage('notify') { steps { notifyGitHub('PENDING') } }
-        stage('mini')   { steps { sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/constructor-mini/' } }
-        stage('huge')   { steps { sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/constructor-huge/' } }
+        stage('mini')   { steps { sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/constructor-${STAGE_NAME}/' } }
+        stage('huge')   { steps { sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/constructor-${STAGE_NAME}/' } }
       }
     }
     
