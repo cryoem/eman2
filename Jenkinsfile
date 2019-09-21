@@ -85,9 +85,9 @@ def isBinaryBuild() {
 
 def testPackage(suffix, dir) {
     if(isUnix())
-        sh  "bash tests/test_binary_installation.sh   ${INSTALLERS_DIR}/eman2"  + suffix + ".${SLAVE_OS}.sh ${INSTALLERS_DIR}/"  + dir
+        sh  "bash tests/test_binary_installation.sh   ${WORKSPACE}/eman2"  + suffix + ".${SLAVE_OS}.sh ${INSTALLERS_DIR}/"  + dir
     else
-        bat "call tests\\test_binary_installation.bat ${INSTALLERS_DIR}\\eman2" + suffix + ".win.exe        ${INSTALLERS_DIR}\\" + dir
+        bat "call tests\\test_binary_installation.bat ${WORKSPACE}\\eman2" + suffix + ".win.exe        ${INSTALLERS_DIR}\\" + dir
 }
 
 def deployPackage() {
@@ -106,13 +106,13 @@ def deployPackage() {
     sshPublisher(publishers: [
                               sshPublisherDesc(configName: 'Installer-Server',
                                                transfers:
-                                                          [sshTransfer(sourceFiles: "${INSTALLERS_DIR}/eman2.${SLAVE_OS}." + installer_ext,
-                                                                       removePrefix: "${INSTALLERS_DIR}",
+                                                          [sshTransfer(sourceFiles: "eman2.${SLAVE_OS}." + installer_ext,
+                                                                       removePrefix: "",
                                                                        remoteDirectory: upload_dir,
                                                                        remoteDirectorySDF: false,
                                                                        cleanRemote: false,
                                                                        excludes: '',
-                                                                       execCommand: "cd ${DEPLOY_PATH}/" + upload_dir + " && mv eman2.${SLAVE_OS}." + installer_ext[SLAVE_OS] + " eman2.${SLAVE_OS}." + upload_ext + "." + installer_ext[SLAVE_OS],
+                                                                       execCommand: "cd ${DEPLOY_PATH}/" + upload_dir + " && mv eman2.${SLAVE_OS}." + installer_ext + " eman2.${SLAVE_OS}." + upload_ext + "." + installer_ext,
                                                                        execTimeout: 120000,
                                                                        flatten: false,
                                                                        makeEmptyDirs: false,
@@ -191,8 +191,8 @@ pipeline {
       
       parallel {
         stage('notify') { steps { notifyGitHub('PENDING') } }
-        stage('mini')   { steps { sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/constructor-${STAGE_NAME}/' } }
-        stage('huge')   { steps { sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/constructor-${STAGE_NAME}/' } }
+        stage('mini')   { steps { sh "bash ci_support/package.sh " + '${WORKSPACE} ${WORKSPACE}/ci_support/constructor-${STAGE_NAME}/' } }
+        stage('huge')   { steps { sh "bash ci_support/package.sh " + '${WORKSPACE} ${WORKSPACE}/ci_support/constructor-${STAGE_NAME}/' } }
       }
     }
     
