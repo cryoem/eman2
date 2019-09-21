@@ -91,15 +91,9 @@ def testPackage(suffix, dir) {
 }
 
 def deployPackage(size_type='') {
-    if(isContinuousBuild()) {
-        upload_dir = 'continuous_build'
-        upload_ext = 'unstable'
-    }
-    if(isExperimentalBuild()) {
-        upload_dir = 'experimental'
-        upload_ext = 'experimental'
-    }
-    
+    if(isContinuousBuild())   stability_type = 'unstable'
+    if(isExperimentalBuild()) stability_type = 'experimental'
+
     if(isUnix()) installer_ext = 'sh'
     else         installer_ext = 'exe'
 
@@ -108,11 +102,11 @@ def deployPackage(size_type='') {
                                                transfers:
                                                           [sshTransfer(sourceFiles: "eman2" + size_type + ".${SLAVE_OS}." + installer_ext,
                                                                        removePrefix: "",
-                                                                       remoteDirectory: upload_dir,
+                                                                       remoteDirectory: stability_type,
                                                                        remoteDirectorySDF: false,
                                                                        cleanRemote: false,
                                                                        excludes: '',
-                                                                       execCommand: "cd ${DEPLOY_PATH}/" + upload_dir + " && mv eman2" + size_type + ".${SLAVE_OS}." + installer_ext + " eman2" + size_type + ".${SLAVE_OS}." + upload_ext + "." + installer_ext,
+                                                                       execCommand: "cd ${DEPLOY_PATH}/" + stability_type + " && mv eman2" + size_type + ".${SLAVE_OS}." + installer_ext + " eman2" + size_type + ".${SLAVE_OS}." + stability_type + "." + installer_ext,
                                                                        execTimeout: 120000,
                                                                        flatten: false,
                                                                        makeEmptyDirs: false,
