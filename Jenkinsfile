@@ -129,11 +129,15 @@ def getInstallerExt() {
     else         return 'exe'
 }
 
-def testPackage(suffix, dir) {
+def testPackage(installer_file, installation_dir) {
+    def script_file_base = convertToNativePath("tests/test_binary_installation.")
+    installer_file       = convertToNativePath(installer_file)
+    installation_dir     = convertToNativePath(installation_dir)
+    
     if(isUnix())
-        sh  "bash tests/test_binary_installation.sh   ${WORKSPACE}/eman2"  + suffix + ".${AGENT_OS_NAME}.sh ${INSTALLERS_DIR}/"  + dir
+        sh  "bash " + script_file_base + "sh "  + installer_file + " " + installation_dir
     else
-        bat "call tests\\test_binary_installation.bat ${WORKSPACE}\\eman2" + suffix + ".win.exe        ${INSTALLERS_DIR}\\" + dir
+        bat "call " + script_file_base + "bat " + installer_file + " " + installation_dir
 }
 
 def deployPackage(size_type='') {
@@ -236,12 +240,15 @@ pipeline {
     
     stage('test-package') {
       when { expression { isBinaryBuild() } }
-      environment { PARENT_STAGE_NAME = "${STAGE_NAME}" }
+      environment {
+        PARENT_STAGE_NAME = "${STAGE_NAME}"
+        INSTALLER_EXT     = getInstallerExt()
+      }
       
       parallel {
         stage('notify') { steps { notifyGitHub('PENDING') } }
-        stage('mini')   { steps { testPackage(binary_size_suffix[STAGE_NAME], STAGE_NAME) } }
-        stage('huge')   { steps { testPackage(binary_size_suffix[STAGE_NAME], STAGE_NAME) } }
+        stage('mini')   { steps { testPackage("${WORKSPACE}/eman2" + binary_size_suffix[STAGE_NAME] + ".${AGENT_OS_NAME}.${INSTALLER_EXT}", "${INSTALLERS_DIR}/" + STAGE_NAME) } }
+        stage('huge')   { steps { testPackage("${WORKSPACE}/eman2" + binary_size_suffix[STAGE_NAME] + ".${AGENT_OS_NAME}.${INSTALLER_EXT}", "${INSTALLERS_DIR}/" + STAGE_NAME) } }
       }
     }
     
