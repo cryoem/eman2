@@ -22,7 +22,7 @@ def alifn(jsd,fsp,i,a,options):
 	b.process_inplace("xform.phaseorigin.tocorner")
 
 	# we align backwards due to symmetry
-	c=a.xform_align_nbest("rotate_translate_3d_tree",b,{"verbose":0,"sym":"c1","sigmathis":1,"sigmato":1, "maxres":(1./options.filterto)*.8},1)
+	c=a.xform_align_nbest("rotate_translate_3d_tree",b,{"verbose":0,"sym":"c1","sigmathis":.1,"sigmato":1},1)
 	for cc in c : cc["xform.align3d"]=cc["xform.align3d"].inverse()
 
 	jsd.put((fsp,i,c[0]))
@@ -40,7 +40,7 @@ def main():
 
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=1, col=1, rowspan=1, colspan=1, mode="model")
 
-	parser.add_argument('--reference','--ref', type=str, default=None, help="""3D reference for initial model generation. No reference is used by default.""", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=2, col=0,rowspan=1, colspan=2, mode="model")
+	parser.add_argument('--reference','--ref', type=str, default="", help="""3D reference for initial model generation. No reference is used by default.""", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=2, col=0,rowspan=1, colspan=2, mode="model")
 
 	parser.add_argument("--mask", type=str,help="Mask file to be applied to initial model", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0,rowspan=1, colspan=2, mode="model")
 
@@ -201,12 +201,12 @@ def main():
 		jspast=jspm.data.copy()
 		jspm=None
 		#### if symmetry exist, first align to symmetry axis
-		if options.sym!="c1" and options.reference==None:
+		if options.sym!="c1" and len(options.reference)==0:
 			ref=sym_search(ref, options)
 		if options.applysym:
 			ref.process_inplace("xform.applysym", {"averager":"mean.tomo", "sym":options.sym})
 			
-		if options.reference==None:
+		if len(options.reference)==0:
 			ref.process_inplace("xform.centerofmass")
 		ref.write_image("{}/threed_{:02d}.hdf".format(path, itr), 0)
 
@@ -250,7 +250,7 @@ def make_ref(fname, options):
 
 	num=EMUtil.get_image_count(fname)
 	rfile="{}/ref.hdf".format(options.path)
-	if not options.reference:
+	if len(options.reference)==0:
 		print("Making random references...")
 		
 		tt=parsesym("c1")
