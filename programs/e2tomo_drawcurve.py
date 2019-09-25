@@ -371,7 +371,9 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		for li in np.unique(pts[:,3]):
 			pt=pts[pts[:,3]==li][:,:3].copy()
 			pt=pt[np.append(True, np.linalg.norm(np.diff(pt, axis=0), axis=1)>0.1)]
-			ln=np.linalg.norm(pt[-1]-pt[0])
+			ln=np.linalg.norm(np.diff(pt, axis=0), axis=1)
+			ln=np.sum(ln)
+			#ln=np.linalg.norm(pt[-1]-pt[0])
 			#     print np.round(ln)//2
 			if len(pt)<2: continue
 			#print len(pt), ln
