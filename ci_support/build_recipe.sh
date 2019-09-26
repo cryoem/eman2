@@ -18,7 +18,11 @@ fi
 
 python -m compileall -q .
 
-export CPU_COUNT=2
+if [ ! -z "$JENKINS_HOME" ];then
+    export CPU_COUNT=4
+else
+    export CPU_COUNT=2
+fi
 
 conda info -a
 conda list
