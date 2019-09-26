@@ -1,3 +1,15 @@
+def binary_size_suffix = ['mini':'', 'huge':'_huge']
+
+def getOSName() {
+    if(!isUnix()) return 'win'
+    else {
+        uname  = sh(returnStdout: true, script: 'uname -s').trim().toLowerCase()
+        os_map = ['linux':'linux', 'darwin':'mac']
+
+        return os_map[uname]
+    }
+}
+
 def getJobType() {
     def causes = "${currentBuild.rawBuild.getCauses()}"
     def job_type = "UNKNOWN"
@@ -15,9 +27,9 @@ def notifyGitHub(status) {
         if(status == 'PENDING') { message = 'Stage: ' + (env.PARENT_STAGE_NAME ?: STAGE_NAME) }
         if(status == 'SUCCESS') { message = 'Build succeeded!' }
         if(status == 'FAILURE') { message = 'Build failed!' }
-        if(status == 'ERROR')   { message = 'Build aborted!' }
+        if(status == 'ABORTED') { message = 'Build aborted!'; status == 'ERROR' }
         step([$class: 'GitHubCommitStatusSetter', 
-              contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "JenkinsCI/${JOB_NAME}"], 
+              contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "JenkinsCI/${AGENT_OS_NAME.capitalize()}"],
               statusResultSource: [$class: 'ConditionalStatusResultSource', 
                                    results: [[$class: 'AnyBuildResult', message: message, state: status]]]])
     }
@@ -25,15 +37,17 @@ def notifyGitHub(status) {
 
 def notifyEmail() {
     if(JOB_TYPE == "push" || NOTIFY_EMAIL == "true") {
-        emailext(to: "$GIT_AUTHOR_EMAIL",  
-                 subject: '[JenkinsCI/$PROJECT_NAME] - $BUILD_STATUS! ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER',
+        emailext(to: "$GIT_AUTHOR_EMAIL",
+                 from: "JenkinsCI ($AGENT_OS_NAME) <jenkins@jenkins>",
+                 subject: '$BUILD_STATUS! ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER',
                  body: '''${SCRIPT, template="groovy-text.template"}''',
                  attachLog: true
                  )
     }
     if(JOB_TYPE == "cron") {
         emailext(to: '$DEFAULT_RECIPIENTS',
-                 subject: '[JenkinsCI/cron]  - $BUILD_STATUS! ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER',
+                 from: "JenkinsCI ($SLAVE_OS) <jenkins@jenkins>",
+                 subject: '[cron] - $BUILD_STATUS! ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER',
                  body: '''${SCRIPT, template="groovy-text.template"}''',
                  attachLog: true
                  )
@@ -82,45 +96,52 @@ def isBinaryBuild() {
 }
 
 def testPackage(suffix, dir) {
-    if(SLAVE_OS != 'win')
-        sh "bash tests/test_binary_installation.sh ${INSTALLERS_DIR}/eman2" + suffix + ".${SLAVE_OS}.sh ${INSTALLERS_DIR}/" + dir
+    if(isUnix())
+        sh  "bash tests/test_binary_installation.sh   ${WORKSPACE}/eman2"  + suffix + ".${AGENT_OS_NAME}.sh ${INSTALLERS_DIR}/"  + dir
     else
-        sh 'ci_support/test_wrapper.sh ' + suffix + ' ' + dir
+        bat "call tests\\test_binary_installation.bat ${WORKSPACE}\\eman2" + suffix + ".win.exe        ${INSTALLERS_DIR}\\" + dir
 }
 
-def deployPackage() {
-    if(isContinuousBuild()) {
-        upload_dir = 'continuous_build'
-        upload_ext = 'unstable'
-    }
-    if(isExperimentalBuild()) {
-        upload_dir = 'experimental'
-        upload_ext = 'experimental'
-    }
-    
-    if(SLAVE_OS != 'win') {
-        sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${DEPLOY_DEST}/" + upload_dir + "/eman2." + JOB_NAME.toLowerCase() + "." + upload_ext + ".sh"
-        sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2_huge.${SLAVE_OS}.sh ${DEPLOY_DEST}/" + upload_dir + "/eman2_huge." + JOB_NAME.toLowerCase() + "." + upload_ext + ".sh"
-    }
-    else
-        bat 'ci_support\\rsync_wrapper.bat ' + upload_dir + ' ' + upload_ext
+def deployPackage(size_type='') {
+    if(isContinuousBuild())   stability_type = 'unstable'
+    if(isExperimentalBuild()) stability_type = 'experimental'
+
+    if(isUnix()) installer_ext = 'sh'
+    else         installer_ext = 'exe'
+
+    sshPublisher(publishers: [
+                              sshPublisherDesc(configName: 'Installer-Server',
+                                               transfers:
+                                                          [sshTransfer(sourceFiles: "eman2" + size_type + ".${AGENT_OS_NAME}." + installer_ext,
+                                                                       removePrefix: "",
+                                                                       remoteDirectory: stability_type,
+                                                                       remoteDirectorySDF: false,
+                                                                       cleanRemote: false,
+                                                                       excludes: '',
+                                                                       execCommand: "cd ${DEPLOY_PATH}/" + stability_type + " && mv eman2" + size_type + ".${AGENT_OS_NAME}." + installer_ext + " eman2" + size_type + ".${AGENT_OS_NAME}." + stability_type + "." + installer_ext,
+                                                                       execTimeout: 120000,
+                                                                       flatten: false,
+                                                                       makeEmptyDirs: false,
+                                                                       noDefaultExcludes: false,
+                                                                       patternSeparator: '[, ]+'
+                                                                      )
+                                                          ],
+                                                          usePromotionTimestamp: false,
+                                                          useWorkspaceInPromotion: false,
+                                                          verbose: true
+                                              )
+                             ]
+                )
 }
 
 def getHomeDir() {
-    def result = ''
-    if(SLAVE_OS == "win") {
-        result = "${USERPROFILE}"
-    }
-    else {
-        result = "${HOME}"
-    }
-    
-    return result
+    if(!isUnix()) return "${USERPROFILE}"
+    else          return "${HOME}"
 }
 
 pipeline {
   agent {
-    node { label "${JOB_NAME}-slave" }
+    node { label "eman-build-agent" }
   }
   
   options {
@@ -129,22 +150,21 @@ pipeline {
   }
   
   environment {
+    AGENT_OS_NAME = getOSName()
     JOB_TYPE = getJobType()
     GIT_BRANCH_SHORT = sh(returnStdout: true, script: 'echo ${GIT_BRANCH##origin/}').trim()
     GIT_COMMIT_SHORT = sh(returnStdout: true, script: 'echo ${GIT_COMMIT:0:7}').trim()
     GIT_AUTHOR_EMAIL = sh(returnStdout: true, script: 'git log -1 --format="%ae"').trim()
     HOME_DIR = getHomeDir()
     HOME = "${HOME_DIR}"     // on Windows HOME is set to something like C:\Program Files\home\eman
-    INSTALLERS_DIR = '${HOME_DIR}/workspace/${JOB_NAME}-installers'
+    INSTALLERS_DIR = sh(returnStdout: true, script: "python -c 'import os; print(os.path.join(\"${HOME_DIR}\", \"workspace\", \"jenkins-eman-installers\"))'").trim()
 
     CI_BUILD       = sh(script: "! git log -1 | grep '.*\\[ci build\\].*'",       returnStatus: true)
   }
   
   stages {
     stage('init') {
-      options {
-        timeout(time: 10, unit: 'MINUTES') 
-      }
+      options { timeout(time: 10, unit: 'MINUTES') }
       
       steps {
         selectNotifications()
@@ -156,7 +176,7 @@ pipeline {
     stage('build-local') {
       when {
         not { expression { isBinaryBuild() } }
-        expression { JOB_NAME != 'Win' }
+        expression { isUnix() }
       }
       
       steps {
@@ -173,85 +193,42 @@ pipeline {
     }
     
     stage('package') {
-      when {
-        expression { isBinaryBuild() }
-      }
-      environment {
-        PARENT_STAGE_NAME = "${STAGE_NAME}"
-      }
+      when { expression { isBinaryBuild() } }
+      environment { PARENT_STAGE_NAME = "${STAGE_NAME}" }
       
       parallel {
-        stage('notify') {
-          steps {
-            notifyGitHub('PENDING')
-          }
-        }
-        stage('mini') {
-          steps {
-            sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/constructor-mini/'
-          }
-        }
-        stage('huge') {
-          steps {
-            sh "bash ci_support/package.sh ${INSTALLERS_DIR} " + '${WORKSPACE}/ci_support/constructor-huge/'
-          }
-        }
+        stage('notify') { steps { notifyGitHub('PENDING') } }
+        stage('mini')   { steps { sh "bash ci_support/package.sh " + '${WORKSPACE} ${WORKSPACE}/ci_support/constructor-${STAGE_NAME}/' } }
+        stage('huge')   { steps { sh "bash ci_support/package.sh " + '${WORKSPACE} ${WORKSPACE}/ci_support/constructor-${STAGE_NAME}/' } }
       }
     }
     
     stage('test-package') {
-      when {
-        expression {isBinaryBuild() }
-      }
-      environment {
-        PARENT_STAGE_NAME = "${STAGE_NAME}"
-      }
+      when { expression { isBinaryBuild() } }
+      environment { PARENT_STAGE_NAME = "${STAGE_NAME}" }
       
       parallel {
-        stage('notify') {
-          steps {
-            notifyGitHub('PENDING')
-          }
-        }
-        stage('mini') {
-          steps {
-            testPackage('', 'mini')
-          }
-        }
-        stage('huge') {
-          steps {
-            testPackage('_huge','huge')
-          }
-        }
+        stage('notify') { steps { notifyGitHub('PENDING') } }
+        stage('mini')   { steps { testPackage(binary_size_suffix[STAGE_NAME], STAGE_NAME) } }
+        stage('huge')   { steps { testPackage(binary_size_suffix[STAGE_NAME], STAGE_NAME) } }
       }
     }
     
     stage('deploy') {
-      when {
-        expression {isBinaryBuild() }
-      }
-      
-      steps {
-        notifyGitHub('PENDING')
-        deployPackage()
+      when { expression { isBinaryBuild() } }
+      environment { PARENT_STAGE_NAME = "${STAGE_NAME}" }
+
+      parallel {
+        stage('notify') { steps { notifyGitHub('PENDING') } }
+        stage('mini')   { steps { deployPackage(binary_size_suffix[STAGE_NAME]) } }
+        stage('huge')   { steps { deployPackage(binary_size_suffix[STAGE_NAME]) } }
       }
     }
   }
   
   post {
-    success {
-      notifyGitHub('SUCCESS')
-    }
-    
-    failure {
-      notifyGitHub('FAILURE')
-    }
-    
-    aborted {
-      notifyGitHub('ERROR')
-    }
-    
     always {
+      notifyGitHub("${currentBuild.result}")
       notifyEmail()
     }
   }
