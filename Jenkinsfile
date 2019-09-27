@@ -299,7 +299,11 @@ pipeline {
       parallel {
         stage('notify') { steps { notifyGitHub('PENDING') } }
         stage('mini')   { steps { testDeployedPackage(STAGE_NAME) } }
-        stage('huge')   { steps { testDeployedPackage(STAGE_NAME) } }
+
+        stage('huge') {
+          when { expression { AGENT_OS_NAME != 'linux' } }
+          steps { testDeployedPackage(STAGE_NAME) }
+        }
       }
     }
   }
