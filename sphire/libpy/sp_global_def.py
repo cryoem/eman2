@@ -281,7 +281,7 @@ CACHE_DISABLE = False
 
 #________________________________________ System settings: please do not change
 
-SPARXVERSION = "SPHIRE v1.2a (GitHub: " + DATESTAMP + ")"
+SPARXVERSION = "SPHIRE v1.3 (GitHub: " + DATESTAMP + ")"
 SPARX_MPI_TAG_UNIVERSAL = 123456
 SPARX_DOCUMENTATION_WEBSITE = "http://sparx-em.org/sparxwiki/"
 
