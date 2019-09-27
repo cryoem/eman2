@@ -16,6 +16,7 @@ import queue
 def alifn(jsd,fsp,i,a,options):
 	t=time.time()
 	b=EMData(fsp,i)#.do_fft()
+	b.process_inplace("filter.lowpass.gauss", {"cutoff_freq":options.filterto})
 	if options.shrink>1:
 		b.process_inplace("math.fft.resample",{"n":options.shrink})
 	b=b.do_fft()
