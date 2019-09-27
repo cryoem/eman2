@@ -17,12 +17,19 @@ case $# in
        ;;
 esac
 
-MYDIR="$(cd "$(dirname "$0")" && pwd -P)"
-
 rm -rf ${installation_loc}
+
 bash "${installer_file}" -bp ${installation_loc}
+
 source ${installation_loc}/bin/activate root
+
 conda info -a
 conda list
 conda list --explicit
-bash "${MYDIR}/run_tests_from_binary.sh"
+
+MYDIR="$(cd "$(dirname "$0")" && pwd -P)"
+
+export SRC_DIR="$(cd "${MYDIR}"/.. && pwd -P)"
+export PREFIX=${SRC_DIR}
+
+bash "${MYDIR}/run_tests.sh"

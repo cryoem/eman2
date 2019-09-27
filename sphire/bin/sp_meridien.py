@@ -5824,6 +5824,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	##eat = 0.0
 	lima = 0  #  total counter of images
 	#  PROCESSING OF CONES
+	keepfirst_error = 0
 	for icone in range(max_number_of_cones):
 		mpi_barrier(MPI_COMM_WORLD)
 		if( icone < number_of_cones ):  #  This is executed for individual number of cones, some nodes may have fewer.
@@ -6051,9 +6052,12 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					###print("  STARTING7    ",Blockdata["myid"],keepf)
 					keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
 					if(keepf == 0):
-						ERROR("Too few images to estimate keepfirst","sxmeridien", 1, Blockdata["myid"])
-						mpi_finalize()
-						exit()
+						keepf = 3
+						if not keepfirst_error:
+							ERROR("\n\n###\n###\n###\nToo few images to estimate keepfirst.\nSet it to 3 for now.\nYou are entering unkown water!\nIn case the results do not look promising, try less processors.\n###\n###\n###\n\n","sxmeridien", 0, Blockdata["myid"])
+							keepfirst_error = 1
+						#mpi_finalize()
+						#exit()
 					###print("  STARTING8    ",Blockdata["myid"],keepf)
 					Tracker["keepfirst"] = int(keepf)
 					###if( Blockdata["myid"] == 0 ):  sxprint("  keepfirst first ",Tracker["keepfirst"])
@@ -6838,6 +6842,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 	##eat = 0.0
 	lima = 0  #  total counter of images
 	#  PROCESSING OF CONES
+	keepfirst_error = 0
 	for icone in range(max_number_of_cones):
 		mpi_barrier(MPI_COMM_WORLD)
 		if( icone < number_of_cones ):  #  This is executed for individual number of cones, some nodes may have fewer.
@@ -7071,9 +7076,13 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 					###print("  STARTING7    ",Blockdata["myid"],keepf)
 					keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
 					if(keepf == 0):
-						ERROR("Too few images to estimate keepfirst","sxmeridien", 1, Blockdata["myid"])
-						mpi_finalize()
-						exit()
+						keepf = 3
+						if not keepfirst_error:
+							ERROR("\n\n###\n###\n###\nToo few images to estimate keepfirst.\nSet it to 3 for now.\nYou are entering unkown water!\nIn case the results do not look promising, try less processors.\n###\n###\n###\n\n","sxmeridien", 0, Blockdata["myid"])
+							keepfirst_error = 1
+						#ERROR("Too few images to estimate keepfirst","sxmeridien", 1, Blockdata["myid"])
+						#mpi_finalize()
+						#exit()
 					###print("  STARTING8    ",Blockdata["myid"],keepf)
 					Tracker["keepfirst"] = int(keepf)
 					###if( Blockdata["myid"] == 0 ):  sxprint("  keepfirst first ",Tracker["keepfirst"])
@@ -8178,6 +8187,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 	##eat = 0.0
 	lima = 0  #  total counter of images
 	#  PROCESSING OF CONES
+	keepfirst_error = 0
 	for icone in range(max_number_of_cones):
 		mpi_barrier(MPI_COMM_WORLD)
 		if( icone < number_of_cones ):  #  This is executed for individual number of cones, some nodes may have fewer.
@@ -8411,9 +8421,13 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 					###print("  STARTING7    ",Blockdata["myid"],keepf)
 					keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
 					if(keepf == 0):
-						ERROR("Too few images to estimate keepfirst","sxmeridien", 1, Blockdata["myid"])
-						mpi_finalize()
-						exit()
+						keepf = 3
+						if not keepfirst_error:
+							ERROR("\n\n###\n###\n###\nToo few images to estimate keepfirst.\nSet it to 3 for now.\nYou are entering unkown water!\nIn case the results do not look promising, try less processors.\n###\n###\n###\n\n","sxmeridien", 0, Blockdata["myid"])
+							keepfirst_error = 1
+						#ERROR("Too few images to estimate keepfirst","sxmeridien", 1, Blockdata["myid"])
+						#mpi_finalize()
+						#exit()
 					###print("  STARTING8    ",Blockdata["myid"],keepf)
 					Tracker["keepfirst"] = int(keepf)
 					if( Blockdata["myid"] == 0 ):  sxprint("  keepfirst first ",Tracker["keepfirst"])
