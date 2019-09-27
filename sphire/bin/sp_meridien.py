@@ -6055,6 +6055,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						keepf = 3
 						if not keepfirst_error:
 							ERROR("\n\n###\n###\n###\nToo few images to estimate keepfirst.\nSet it to 3 for now.\nYou are entering unkown water!\nIn case the results do not look promising, try less processors.\n###\n###\n###\n\n","sxmeridien", 0, Blockdata["myid"])
+							keepfirst_error = 1
 						#mpi_finalize()
 						#exit()
 					###print("  STARTING8    ",Blockdata["myid"],keepf)
@@ -7078,6 +7079,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 						keepf = 3
 						if not keepfirst_error:
 							ERROR("\n\n###\n###\n###\nToo few images to estimate keepfirst.\nSet it to 3 for now.\nYou are entering unkown water!\nIn case the results do not look promising, try less processors.\n###\n###\n###\n\n","sxmeridien", 0, Blockdata["myid"])
+							keepfirst_error = 1
 						#ERROR("Too few images to estimate keepfirst","sxmeridien", 1, Blockdata["myid"])
 						#mpi_finalize()
 						#exit()
@@ -8422,6 +8424,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 						keepf = 3
 						if not keepfirst_error:
 							ERROR("\n\n###\n###\n###\nToo few images to estimate keepfirst.\nSet it to 3 for now.\nYou are entering unkown water!\nIn case the results do not look promising, try less processors.\n###\n###\n###\n\n","sxmeridien", 0, Blockdata["myid"])
+							keepfirst_error = 1
 						#ERROR("Too few images to estimate keepfirst","sxmeridien", 1, Blockdata["myid"])
 						#mpi_finalize()
 						#exit()
