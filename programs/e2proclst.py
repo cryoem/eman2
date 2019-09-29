@@ -125,7 +125,13 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			n=EMUtil.get_image_count(f)
 			for i in range(n):
 				im=EMData(f,i,True)
+				# It shouldn't be possible for this to go infinitely, or there would have been a problem on the previous line
+				while im["data_source"][-4:]==".lst" : im=EMData(im["data_source"],im["data_n"],True)
 				newlst.write(-1,im["data_n"],im["data_source"])
+				if options.verbose>1 : print("{},{} -> {},{}".format(f,i,im["data_source"],im["data_n"]))
+		
+		print("exiting after --dereforig")
+		sys.exit(0)
 
 	if options.create:
 
