@@ -24,12 +24,26 @@ def getJobType() {
 
 def notifyGitHub(status) {
     if(JOB_TYPE == "push" || NOTIFY_GITHUB == "true") {
-        if(status == 'PENDING') { message = 'Stage: ' + (env.PARENT_STAGE_NAME ?: STAGE_NAME) }
-        if(status == 'SUCCESS') { message = 'Build succeeded!' }
-        if(status == 'FAILURE') { message = 'Build failed!' }
-        if(status == 'ABORTED') { message = 'Build aborted!'; status == 'ERROR' }
+        switch(status) {
+            case 'PENDING':
+                message = 'Stage: ' + (env.PARENT_STAGE_NAME ?: STAGE_NAME)
+                break
+            case 'SUCCESS':
+                message = 'Build succeeded!'
+                break
+            case 'FAILURE':
+                message = 'Build failed!'
+                break
+            case 'ABORTED':
+                message = 'Build aborted!'
+                status == 'ERROR'
+                break
+        }
+
+        context = "JenkinsCI/${AGENT_OS_NAME.capitalize()}"
+
         step([$class: 'GitHubCommitStatusSetter',
-              contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "JenkinsCI/${AGENT_OS_NAME.capitalize()}"],
+              contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: context],
               statusResultSource: [$class: 'ConditionalStatusResultSource',
                                    results: [[$class: 'AnyBuildResult', message: message, state: status]]]])
     }
