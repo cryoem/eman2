@@ -37,21 +37,24 @@ def notifyGitHub(status) {
 
 def notifyEmail() {
     if(JOB_TYPE == "push" || NOTIFY_EMAIL == "true") {
-        emailext(to: "$GIT_AUTHOR_EMAIL",
-                 from: "JenkinsCI ($AGENT_OS_NAME) <jenkins@jenkins>",
-                 subject: '$BUILD_STATUS! ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER',
-                 body: '''${SCRIPT, template="groovy-text.template"}''',
-                 attachLog: true
-                 )
+        to      = "$GIT_AUTHOR_EMAIL"
+        from    = "JenkinsCI ($AGENT_OS_NAME) <jenkins@jenkins>"
+        subject = '$BUILD_STATUS! ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER'
+        body    = '''${SCRIPT, template="groovy-text.template"}'''
     }
     if(JOB_TYPE == "cron") {
-        emailext(to: '$DEFAULT_RECIPIENTS',
-                 from: "JenkinsCI ($AGENT_OS_NAME) <jenkins@jenkins>",
-                 subject: '[cron] - $BUILD_STATUS! ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER',
-                 body: '''${SCRIPT, template="groovy-text.template"}''',
-                 attachLog: true
-                 )
+        to      = '$DEFAULT_RECIPIENTS'
+        from    = "JenkinsCI ($AGENT_OS_NAME) <jenkins@jenkins>"
+        subject = '[cron] - $BUILD_STATUS! ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER'
+        body    = '''${SCRIPT, template="groovy-text.template"}'''
     }
+
+    emailext(to:        to,
+             from:      from,
+             subject:   subject,
+             body:      body,
+             attachLog: true
+             )
 }
 
 def selectNotifications() {
