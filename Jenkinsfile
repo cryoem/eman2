@@ -28,23 +28,29 @@ def getJobType() {
 
 def notifyGitHub(status) {
     if(JOB_TYPE == "push" || NOTIFY_GITHUB == "true") {
+        context = "JenkinsCI/${AGENT_OS_NAME.capitalize()}"
+        run_type = 'Build'
+
+        if(STAGE_NAME == 'test-continuous') {
+            context = context + "/test-continuous"
+            run_type = 'Continuous test'
+        }
+
         switch(status) {
             case 'PENDING':
                 message = 'Stage: ' + (env.PARENT_STAGE_NAME ?: STAGE_NAME)
                 break
             case 'SUCCESS':
-                message = 'Build succeeded!'
+                message = run_type + ' succeeded!'
                 break
             case 'FAILURE':
-                message = 'Build failed!'
+                message = run_type + ' failed!'
                 break
             case 'ABORTED':
-                message = 'Build aborted!'
+                message = run_type + ' aborted!'
                 status == 'ERROR'
                 break
         }
-
-        context = "JenkinsCI/${AGENT_OS_NAME.capitalize()}"
 
         step([$class: 'GitHubCommitStatusSetter',
               contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: context],
@@ -60,6 +66,11 @@ def notifyEmail() {
 
     if(JOB_TYPE == "push" || NOTIFY_EMAIL == "true") {
         to      = "$GIT_AUTHOR_EMAIL"
+        if(STAGE_NAME == 'test-continuous') {
+            to      = '$DEFAULT_RECIPIENTS'
+            subject = '[test-continuous] - ' + subject
+            body    = 'Continuous binary test: $BUILD_STATUS'
+        }
     }
     if(JOB_TYPE == "cron") {
         to      = '$DEFAULT_RECIPIENTS'
