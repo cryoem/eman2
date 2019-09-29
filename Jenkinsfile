@@ -36,17 +36,16 @@ def notifyGitHub(status) {
 }
 
 def notifyEmail() {
+    from    = "JenkinsCI ($AGENT_OS_NAME) <jenkins@jenkins>"
+    body    = '''${SCRIPT, template="groovy-text.template"}'''
+    subject = '$BUILD_STATUS! ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER'
+
     if(JOB_TYPE == "push" || NOTIFY_EMAIL == "true") {
         to      = "$GIT_AUTHOR_EMAIL"
-        from    = "JenkinsCI ($AGENT_OS_NAME) <jenkins@jenkins>"
-        subject = '$BUILD_STATUS! ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER'
-        body    = '''${SCRIPT, template="groovy-text.template"}'''
     }
     if(JOB_TYPE == "cron") {
         to      = '$DEFAULT_RECIPIENTS'
-        from    = "JenkinsCI ($AGENT_OS_NAME) <jenkins@jenkins>"
-        subject = '[cron] - $BUILD_STATUS! ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER'
-        body    = '''${SCRIPT, template="groovy-text.template"}'''
+        subject = '[cron] - ' + subject
     }
 
     emailext(to:        to,
