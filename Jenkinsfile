@@ -46,7 +46,7 @@ def notifyEmail() {
     }
     if(JOB_TYPE == "cron") {
         emailext(to: '$DEFAULT_RECIPIENTS',
-                 from: "JenkinsCI ($SLAVE_OS) <jenkins@jenkins>",
+                 from: "JenkinsCI ($AGENT_OS_NAME) <jenkins@jenkins>",
                  subject: '[cron] - $BUILD_STATUS! ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER',
                  body: '''${SCRIPT, template="groovy-text.template"}''',
                  attachLog: true
