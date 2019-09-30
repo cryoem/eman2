@@ -316,6 +316,13 @@ pipeline {
           steps { testDeployedPackage(STAGE_NAME) }
         }
       }
+
+      post {
+        always {
+          notifyGitHub("${currentBuild.result}")
+          notifyEmail()
+        }
+      }
     }
   }
   
