@@ -31,7 +31,7 @@ def getJobType() {
 
 def notifyGitHub(status) {
     if(JOB_TYPE == "push" || NOTIFY_GITHUB == "true") {
-        context = "JenkinsCI/${AGENT_OS_NAME.capitalize()}"
+        context = "JenkinsCI/${NODE_NAME}"
         run_type = 'Build'
 
         if(STAGE_NAME == 'test-continuous') {
@@ -63,7 +63,7 @@ def notifyGitHub(status) {
 }
 
 def notifyEmail() {
-    from    = "JenkinsCI ($AGENT_OS_NAME) <jenkins@jenkins>"
+    from    = "JenkinsCI ($NODE_NAME) <jenkins@jenkins>"
     body    = '''${SCRIPT, template="groovy-text.template"}'''
     subject = '$BUILD_STATUS! ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER'
 
