@@ -105,7 +105,7 @@ produce new sets/ for each class, which could be further-refined.
 		nx,ny,nz=ptcl["nx"],ptcl["ny"],ptcl["nz"]
 		xf=parm["xform.align3d"]
 		ptcl.transform(xf)
-		ptcl.process_inplace("math.meanshrink",{"n":options.shrink})
+		if options.shrink>1 : ptcl.process_inplace("math.meanshrink",{"n":options.shrink})
 		ptcl["score"]=parm["score"]
 		
 		# these are the range limited orthogonal projections
