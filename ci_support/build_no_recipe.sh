@@ -40,6 +40,7 @@ rm -rf $build_dir
 mkdir -p $build_dir
 cd $build_dir
 
+cmake --version
 cmake ${src_dir} -DENABLE_WARNINGS=OFF
 make -j${CPU_COUNT}
 make install

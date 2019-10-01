@@ -30,8 +30,8 @@ if(GIT_EXECUTABLE)
 	# If the source directory is missing .git, but EMAN_GITDIR is still non-empty,
 	# the git repository found is, probably, a parent repository.
 	# So, we test if the directories found by git and cmake are the same. 
-	message_var(EMAN_GITDIR)
-	message_var(CMAKE_SOURCE_DIR)
+	cmake_print_variables(EMAN_GITDIR)
+	cmake_print_variables(CMAKE_SOURCE_DIR)
 	
 	if(NOT "${EMAN_GITDIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
 		set(EMAN_GITHASH "NOT-INSTALLED-FROM-GIT-REPO")

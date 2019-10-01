@@ -1,6 +1,6 @@
 find_package(JPEG REQUIRED)
 
-message_var(JPEG_LIBRARIES)
+cmake_print_variables(JPEG_LIBRARIES)
 
 if(JPEG_FOUND AND NOT TARGET JPEG::JPEG)
 	add_library(JPEG::JPEG INTERFACE IMPORTED)

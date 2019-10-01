@@ -1,25 +1,3 @@
-# Find Boost
-set(Boost_USE_MULTITHREADED ON)
-set(Boost_NO_BOOST_CMAKE ON)
-find_package(Boost COMPONENTS python REQUIRED)
-
-message("Boost_LIBRARIES:   ${Boost_LIBRARIES}")
-message("Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
-
-#this definition is for boost.python > 1.35.0 
-set_target_properties(Boost::python
-					  PROPERTIES
-					  INTERFACE_COMPILE_DEFINITIONS BOOST_PYTHON_NO_PY_SIGNATURES
-					  INTERFACE_LINK_LIBRARIES Python::Python
-					  )
-if(WIN32)
-	ADD_DEFINITIONS(-DBOOST_DISABLE_ASSERTS)
-endif()
-
-IF(CMAKE_SYSTEM MATCHES "IRIX.*")
-    INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR}/boost/compatibility/cpp_c_headers)
-ENDIF()
-
 function(ADD_PYSTE_LIB libname)
 	add_library(${libname} SHARED lib${libname}.cpp)
 	
@@ -33,9 +11,9 @@ function(ADD_PYSTE_LIB libname)
 			PROPERTIES
 			PREFIX lib
 			SUFFIX ${suffix}
+			LINK_LIBRARIES "EM2;Boost::python"
 			)
 	
-	target_link_libraries(${libname} EM2 Boost::python)
 	install(TARGETS ${libname} DESTINATION ${SP_DIR})
 endfunction()
 
@@ -64,17 +42,27 @@ if(NOT WIN32)
 	ADD_PYSTE_LIB(pyTomoSeg2)
 endif()
 
+option(ENABLE_OPENGL "enable EMAN2 OpenGL usage" ON)
 if(ENABLE_OPENGL)
+	include(${CMAKE_SOURCE_DIR}/cmake/OpenGL.cmake)
+
+	option(ENABLE_STATIC_FTGL "If build EMAN with libftgl.a" OFF)
+	mark_as_advanced(ENABLE_STATIC_FTGL)
+	
+	find_package(FTGL REQUIRED)
+	
+	add_subdirectory(fonts)
+
 	ADD_PYSTE_LIB(pyGLUtils2)
 	ADD_PYSTE_LIB(pyMarchingCubes2)
 	
 	target_sources(pyMarchingCubes2 PRIVATE
-				   ${CMAKE_SOURCE_DIR}/libEM/marchingcubes.cpp
+				   marchingcubes.cpp
 				   )
 	target_sources(pyGLUtils2 PRIVATE
-				   ${CMAKE_SOURCE_DIR}/libEM/emftgl.cpp
-				   ${CMAKE_SOURCE_DIR}/libEM/glutil.cpp
-				   ${CMAKE_SOURCE_DIR}/libEM/marchingcubes.cpp
+				   emftgl.cpp
+				   glutil.cpp
+				   marchingcubes.cpp
 				   )
 	target_link_libraries(pyGLUtils2       OpenGL::OpenGL FTGL::FTGL)
 	target_link_libraries(pyMarchingCubes2 OpenGL::OpenGL)

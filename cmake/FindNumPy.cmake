@@ -5,7 +5,7 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import numpy; print(numpy.get_i
 
 set_cache_var_to_var(NUMPY_INCLUDE_DIR numpy_include_dir)
 
-message_var(NUMPY_INCLUDE_DIR)
+cmake_print_variables(NUMPY_INCLUDE_DIR)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(NumPy

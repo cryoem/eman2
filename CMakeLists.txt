@@ -34,12 +34,10 @@ EMAN_CHECK_FUNCTION(ftello HAVE_FTELLO)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
-SET(CMAKE_MACOSX_RPATH ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_INCLUDE_CURRENT_DIR_IN_INTERFACE ON)
 
 MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
-OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console during the make" ON)
 
 # Set EMAN_PREFIX
 if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
@@ -65,10 +63,9 @@ set(EMAN_PREFIX_INC      ${EMAN_PREFIX}/include)
 set(EMAN_PREFIX_LIB      ${EMAN_PREFIX}/lib)
 set(CMAKE_INSTALL_PREFIX ${EMAN_PREFIX} CACHE PATH "installation prefix" FORCE)
 set(CMAKE_PREFIX_PATH    ${EMAN_PREFIX} ${EMAN_PREFIX}/..)
-message_var(CMAKE_PREFIX_PATH)
+cmake_print_variables(CMAKE_PREFIX_PATH)
 
-find_package(Python REQUIRED)
-find_package(NumPy  REQUIRED)
+include(cmake/find_all.cmake)
 
 set(CMAKE_INSTALL_RPATH "${SP_DIR};${EMAN_PREFIX_LIB}")
 
@@ -164,10 +161,8 @@ ELSE()
 		SET (OPT_FLAGS "-O3 -ansi -ffast-math")     # This is the default
 	ENDIF()
 ENDIF()
-#MESSAGE("OPT_FLAGS = " ${OPT_FLAGS})
 
 IF(CMAKE_SYSTEM MATCHES "IRIX.*")
-	SET(PLATFORMLIB "/usr/lib32" CACHE INTERNAL "IRIX lib32")
 #	SET(EMAN_CXX_FLAGS "-n32 -LANG:std -w2 -fullwarn -LANG:ansi-for-init-scope=ON" CACHE INTERNAL "C++ compiler flags")
 	SET(EMAN_CXX_FLAGS "-n32 -woffall -LANG:std -LANG:ansi-for-init-scope=ON" CACHE INTERNAL "C++ compiler flags")
 ENDIF()
@@ -189,7 +184,6 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
 	ELSE()
 		SET(EMAN_CXX_FLAGS "" CACHE INTERNAL "EMAN CXX FLAGS")
 	ENDIF()
-	SET(PLATFORMLIB "/usr/lib64" CACHE INTERNAL "lib64")
 	SET(EMAN_CXX_FLAGS "${EMAN_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0" CACHE INTERNAL "EMAN CXX FLAGS")
 ENDIF()
 
@@ -198,9 +192,6 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EMAN_CXX_FLAGS} ${OPT_FLAGS}")
 if(WIN32)
 	add_definitions(-DNOMINMAX)
 endif()
-
-MARK_AS_ADVANCED(CMAKE_C_FLAGS)
-MARK_AS_ADVANCED(CMAKE_CXX_FLAGS)
 
 IF(ENABLE_IOCACHE)
 	ADD_DEFINITIONS(-DIMAGEIO_CACHE)
@@ -273,69 +264,4 @@ if(NOT WIN32)
 			)
 endif()
 
-enable_testing()
-
-add_custom_target(test-verbose
-		COMMAND ${CMAKE_COMMAND} -P cmake_install.cmake
-		COMMAND ${CMAKE_CTEST_COMMAND} -V -C Release
-		)
-
-add_test(NAME imports
-		 COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_imports.py
-		 )
-
-add_test(NAME test-EMAN2DIR
-		 COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_EMAN2DIR.py
-		 )
-
-find_package(Nosetests)
-
-if(NOT WIN32)
-	add_test(NAME nose-tests
-			COMMAND ${NOSETESTS_EXECUTABLE} -vv --exe -m "^test_*" -e "^test_image_" -e "test_main" -e "test_result" -e "test_boxing" -a \!broken
-					${CMAKE_SOURCE_DIR}/rt/pyem/ 
-			)
-else()
-	set(test_methods-win
-			test_imageio.py:TestHdfIO.test_read_image
-			test_imageio.py:TestHdfIO.test_write_image
-			test_imageio.py:TestHdfIO.test_read_write_hdf
-			test_imageio.py:TestPNGIO.test_write_png
-		)
-
-	foreach(t ${test_methods-win})
-		add_test(NAME ${t}
-				COMMAND ${NOSETESTS_EXECUTABLE} -v -m "^test_*" -a \!broken
-						${CMAKE_SOURCE_DIR}/rt/pyem/${t}
-				)
-	endforeach()
-endif()
-
-add_custom_target(test-rt
-		COMMAND ${CMAKE_CTEST_COMMAND} -V -C Release -R nose-tests
-		DEPENDS PythonFiles
-		)
-
-add_custom_target(test-verbose-broken
-		COMMAND ${NOSETESTS_EXECUTABLE} -v -m "^test_*" -a broken ${CMAKE_SOURCE_DIR}/rt/pyem/*
-		)
-
-if(NOT WIN32)
-	add_custom_target(test-progs
-					  COMMAND ${CMAKE_CTEST_COMMAND} -V -C Release -R progs
-					  DEPENDS PythonFiles
-					  )
-	
-	add_test(NAME progs
-			 COMMAND bash ${CMAKE_SOURCE_DIR}/tests/run_prog_tests.sh
-			 )
-endif()
-
-add_test(NAME py-compile
-		COMMAND ${PYTHON_EXECUTABLE} -m compileall -q ${CMAKE_SOURCE_DIR}
-		)
-
-add_custom_target(test-py-compile
-		COMMAND ${CMAKE_CTEST_COMMAND} -V -C Release -R py-compile
-		DEPENDS PythonFiles
-		)
+include(cmake/testing.cmake)

@@ -6,8 +6,8 @@ FIND_LIBRARY(G2C_LIBRARY NAMES g2c PATHS
 			 $ENV{HOME}/lib
 			 )
 
-message_var(ACML_INCLUDE_PATH)
-message_var(ACML_LIBRARY)
+cmake_print_variables(ACML_INCLUDE_PATH)
+cmake_print_variables(ACML_LIBRARY)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(ACML
