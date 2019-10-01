@@ -70,6 +70,7 @@ def notifyEmail() {
     if(JOB_TYPE == "push" || NOTIFY_EMAIL == "true") {
         to      = "$GIT_AUTHOR_EMAIL"
     }
+    
     if(JOB_TYPE == "cron") {
         to      = '$DEFAULT_RECIPIENTS'
         subject = '[cron] - ' + subject
@@ -81,12 +82,14 @@ def notifyEmail() {
         body    = 'Continuous binary test: $BUILD_STATUS'
     }
 
-    emailext(to:        to,
-             from:      from,
-             subject:   subject,
-             body:      body,
-             attachLog: true
-             )
+    if(NOTIFY_EMAIL != "false") {
+        emailext(to:        to,
+                 from:      from,
+                 subject:   subject,
+                 body:      body,
+                 attachLog: true
+                 )
+    }
 }
 
 def selectNotifications() {
