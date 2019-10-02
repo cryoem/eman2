@@ -42,27 +42,17 @@ if(NOT WIN32)
 	ADD_PYSTE_LIB(pyTomoSeg2)
 endif()
 
-option(ENABLE_OPENGL "enable EMAN2 OpenGL usage" ON)
 if(ENABLE_OPENGL)
-	include(${CMAKE_SOURCE_DIR}/cmake/OpenGL.cmake)
-
-	option(ENABLE_STATIC_FTGL "If build EMAN with libftgl.a" OFF)
-	mark_as_advanced(ENABLE_STATIC_FTGL)
-	
-	find_package(FTGL REQUIRED)
-	
-	add_subdirectory(fonts)
-
 	ADD_PYSTE_LIB(pyGLUtils2)
 	ADD_PYSTE_LIB(pyMarchingCubes2)
 	
 	target_sources(pyMarchingCubes2 PRIVATE
-				   marchingcubes.cpp
+				   ${CMAKE_SOURCE_DIR}/libEM/marchingcubes.cpp
 				   )
 	target_sources(pyGLUtils2 PRIVATE
-				   emftgl.cpp
-				   glutil.cpp
-				   marchingcubes.cpp
+				   ${CMAKE_SOURCE_DIR}/libEM/emftgl.cpp
+				   ${CMAKE_SOURCE_DIR}/libEM/glutil.cpp
+				   ${CMAKE_SOURCE_DIR}/libEM/marchingcubes.cpp
 				   )
 	target_link_libraries(pyGLUtils2       OpenGL::OpenGL FTGL::FTGL)
 	target_link_libraries(pyMarchingCubes2 OpenGL::OpenGL)
