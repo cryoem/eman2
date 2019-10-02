@@ -550,8 +550,7 @@ class PathWalker(object):
 		f.write(lkh)
 		f.close()
 
-		self.write_tsplib(filename="test.tsp")#tspfile)
-		print("aaaaaaaaaaaa")
+		self.write_tsplib(filename=tspfile)
 		
 		args =' '.join(['LKH',lkhfile])
 		print(args)
@@ -807,46 +806,47 @@ class PathWalker(object):
 
 
 	def write_tsplib(self, filename=None):
-		fout = open(filename, "w")
 		
+		
+		fout = open(filename, "w")
+	
 		# TSPLib format header
 		header = [
-			"NAME: %s"%self.filename,
+			"NAME: {}".format(filename),
 			"TYPE: TSP",
-			"COMMENT: %s"%self.filename,
-			"DIMENSION: %s"%len(self.points),
+			"COMMENT: {}".format(filename),
+			"DIMENSION: {:d}".format(len(self.points)),
 			"EDGE_WEIGHT_TYPE: EXPLICIT",
-			"EDGE_WEIGHT_FORMAT: FULL_MATRIX",
+			"EDGE_WEIGHT_FORMAT: LOWER_ROW",
 			""
 		]
 		
 		fout.write("\n".join(header))
-
-		# TSPlib expects edges to start at #1
-		keyorder = sorted(self.points.keys())		
+		
+		ky = sorted(self.points.keys())
 		
 		if self.fixededges:
 			fout.write("FIXED_EDGES_SECTION\n")
 			for i in self.fixededges:
-				try:
-					fout.write("%s %s\n"%(keyorder.index(i[0])+1, keyorder.index(i[1])+1))
-				except ValueError:
-					print(i,"is not in the list")
+				fout.write("{:d} {:d}\n".format(ky.index(i[0])+1, ky.index(i[1])+1))
+				
 			fout.write("-1\n")
+			
+		ix, iy=numpy.tril_indices(len(self.points), k=-1)
+		
+		row=[]
+		for i in zip(ix,iy):
+			d = self.weighted.get((ky[i[0]], ky[i[1]]))
+			row.append(d)
 
 		fout.write("EDGE_WEIGHT_SECTION\n")
-
-		for point1 in keyorder:
-			row = []
-			for point2 in keyorder:
-				d = self.weighted.get((point1, point2))
-				row.append(d)
-
-			fout.write("%s\n"%" ".join(map(str, row)))
+		fout.write(" ".join(["{:d}".format(int(d*10)) for d in row])+"\n")
+			
 
 
 		fout.write("EOF")
 		fout.close()
+		
 		
 		return filename
 	

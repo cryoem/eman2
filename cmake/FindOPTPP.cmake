@@ -8,10 +8,10 @@ FIND_PATH(NEWMAT_INCLUDE_PATH newmat.h /usr/include /usr/include/opt++
 FIND_LIBRARY(OPTPP_LIBRARY NAMES opt-linux PATHS /usr/lib /usr/local/lib)
 FIND_LIBRARY(NEWMAT_LIBRARY NAMES newmat-linux PATHS /usr/lib /usr/local/lib)
 
-message_var(OPTPP_INCLUDE_PATH)
-message_var(OPTPP_LIBRARY)
-message_var(NEWMAT_INCLUDE_PATH)
-message_var(NEWMAT_LIBRARY)
+cmake_print_variables(OPTPP_INCLUDE_PATH)
+cmake_print_variables(OPTPP_LIBRARY)
+cmake_print_variables(NEWMAT_INCLUDE_PATH)
+cmake_print_variables(NEWMAT_LIBRARY)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(OPTPP

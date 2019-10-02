@@ -15,7 +15,7 @@ def main():
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_pos_argument(name="particles",help="Specify particles to use to generate an initial model.", default="", guitype='filebox', browser="EMSetsTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=3, mode="model")
-	parser.add_argument("--reference","--ref",help="""3D reference for initial model generation. No reference is used by default.""", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=1, col=0,rowspan=1, colspan=3, mode="model")
+	parser.add_argument("--reference","--ref",help="""3D reference for iterative alignment/averaging. No reference is used by default. <name> or <name>,#""", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=1, col=0,rowspan=1, colspan=3, mode="model")
 
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=2, col=1, rowspan=1, colspan=1, mode="model")
 
@@ -52,7 +52,9 @@ def main():
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	ptcls=args[0]
-	ref=options.reference
+	ref=options.reference.split(",")[0]
+	try: refn=int(options.reference.split(",")[1])
+	except: refn=0
 
 	if options.resume:
 		try:
@@ -106,14 +108,14 @@ def main():
 	ep=EMData(ptcls,0)
 	
 	if options.goldcontinue==False:
-		er=EMData(ref,0)
+		er=EMData(ref,refn,True)
 		if abs(1-ep["apix_x"]/er["apix_x"])>0.01 or ep["nx"]!=er["nx"]:
 			print("apix mismatch {:.2f} vs {:.2f}".format(ep["apix_x"], er["apix_x"]))
 			rs=er["apix_x"]/ep["apix_x"]
 			if rs>1.:
-				run("e2proc3d.py {} {}/model_input.hdf --clip {} --scale {} --process mask.soft:outer_radius=-1".format(ref, options.path, ep["nx"], rs))
+				run("e2proc3d.py {} {}/model_input.hdf --clip {} --scale {} --process mask.soft:outer_radius=-1 --first {} --last {}".format(ref, options.path, ep["nx"], rs,refn,refn))
 			else:
-				run("e2proc3d.py {} {}/model_input.hdf --scale {} --clip {} --process mask.soft:outer_radius=-1".format(ref, options.path, rs, ep["nx"]))
+				run("e2proc3d.py {} {}/model_input.hdf --scale {} --clip {} --process mask.soft:outer_radius=-1 --first {} --last {}".format(ref, options.path, rs, ep["nx"],refn,refn))
 			
 			ref="{}/model_input.hdf".format(options.path)
 		
@@ -132,7 +134,7 @@ def main():
 			gd+=" --refine --maxang {:.1f}".format(options.maxang)
 		#curres=0
 
-		cmd="e2spt_align.py {} {} --parallel {} --path {} --iter {} --sym {} --nsoln 1 {}".format(ptcls, ref,  options.parallel, options.path, itr, options.sym, gd)
+		cmd="e2spt_align.py {} {},{} --parallel {} --path {} --iter {} --sym {} --nsoln 1 {}".format(ptcls, ref,refn,  options.parallel, options.path, itr, options.sym, gd)
 		
 		#### in case e2spt_align get segfault....
 		ret=1

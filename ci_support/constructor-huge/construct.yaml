@@ -1,5 +1,5 @@
 name: EMAN2
-version: 2.3
+version: 2.31
 
 installer_filename: eman2_huge.mac.sh    # [osx]
 installer_filename: eman2_huge.linux.sh  # [linux]
@@ -22,7 +22,7 @@ keep_pkgs: False
 ignore_duplicate_files: True
 
 specs:
-  - eman2 2.3
+  - eman2 2.31
   - eman-deps 14.1
   - conda 4.6.14 py27*
   - conda-build 3.17.8

@@ -40,6 +40,7 @@ from __future__ import division
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
+from EMAN2_utils import numpy2pdb
 import numpy as np
 
 import weakref
@@ -134,6 +135,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.mfile_open=self.mfile.addAction("Open")
 		self.mfile_read_boxloc=self.mfile.addAction("Read Box Coord")
 		self.mfile_save_boxloc=self.mfile.addAction("Save Box Coord")
+		self.mfile_save_boxpdb=self.mfile.addAction("Save Coord as PDB")
 		self.mfile_save_boxes_stack=self.mfile.addAction("Save Boxes as Stack")
 		self.mfile_quit=self.mfile.addAction("Quit")
 
@@ -216,6 +218,8 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.mfile_open.triggered[bool].connect(self.menu_file_open)
 		self.mfile_read_boxloc.triggered[bool].connect(self.menu_file_read_boxloc)
 		self.mfile_save_boxloc.triggered[bool].connect(self.menu_file_save_boxloc)
+		self.mfile_save_boxpdb.triggered[bool].connect(self.menu_file_save_boxpdb)
+		
 		self.mfile_save_boxes_stack.triggered[bool].connect(self.save_boxes)
 		self.mfile_quit.triggered[bool].connect(self.menu_file_quit)
 
@@ -513,6 +517,10 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 
 	def menu_file_read_boxloc(self):
 		fsp=str(QtWidgets.QFileDialog.getOpenFileName(self, "Select output text file")[0])
+		
+		if not os.path.isfile(fsp):
+			print("file does not exist")
+			return
 
 		f=file(fsp,"r")
 		for b in f:
@@ -528,11 +536,32 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		shrinkf=self.shrink 								#jesus
 
 		fsp=str(QtWidgets.QFileDialog.getSaveFileName(self, "Select output text file")[0])
+		if len(fsp)==0:
+			return
 
 		out=file(fsp,"w")
 		for b in self.boxes:
 			out.write("%d\t%d\t%d\n"%(b[0]*shrinkf,b[1]*shrinkf,b[2]*shrinkf))
 		out.close()
+		
+		
+	def menu_file_save_boxpdb(self):
+		fsp=str(QtWidgets.QFileDialog.getSaveFileName(self, "Select output PDB file", filter="PDB (*.pdb)")[0])
+		if len(fsp)==0:
+			return
+		if fsp[-4:].lower()!=".pdb" :
+			fsp+=".pdb"
+		clsid=list(self.sets_visible.keys())
+		if len(clsid)==0:
+			print("No visible particles to save")
+			return
+		
+		bxs=np.array([[b[0], b[1], b[2]] for b in self.boxes if int(b[5]) in clsid])/10
+		
+		numpy2pdb(bxs, fsp)
+		print("PDB saved to {}. Use voxel size 0.1".format(fsp))
+		
+		
 
 
 	def save_boxes(self, clsid=[]):

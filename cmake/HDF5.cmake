@@ -4,7 +4,7 @@ endif()
 
 CHECK_REQUIRED_LIB(HDF5 hdf5 hdf5.h "" "")
 
-message_var(HDF5_LIBRARY)
+cmake_print_variables(HDF5_LIBRARY)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(HDF5

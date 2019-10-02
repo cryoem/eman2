@@ -62,12 +62,12 @@ def main():
 	logid=E2init(sys.argv)
 	
 	if options.textin:
-		allxfs=parse_text(options)
+		allxfs,allinfo=parse_text(options)
 		
 		for fname in allxfs.keys():
 			#### it seems options is changed inplace somewhere...
 			(options, args) = parser.parse_args()
-			do_extraction(fname, options, allxfs[fname])
+			do_extraction(fname, options, allxfs[fname],allinfo[fname])
 		
 		return
 			
@@ -124,8 +124,8 @@ def main():
 	return
 	
 	
-	
-def do_extraction(pfile, options, xfs=[]):
+### info: extra header information par particle in a dictionary
+def do_extraction(pfile, options, xfs=[], info=[]):
 	#pfile=args[0]
 	print("Reading from {}...".format(pfile))
 	options.boxsz= good_boxsize(options.boxsz_unbin // options.shrink)
@@ -198,7 +198,7 @@ def do_extraction(pfile, options, xfs=[]):
 		if scale!=1:
 			for t in xfs:
 				t.set_trans(t.get_trans()*scale)
-		towrite=[[xfs, outname, sz]]
+		towrite=[[xfs, outname, sz, info]]
 		
 		
 	elif e["nz"]!=e["nx"] and nptcl==1:
@@ -259,7 +259,7 @@ def do_extraction(pfile, options, xfs=[]):
 					drs=np.vstack(drs)
 					bxs=np.hstack([bxs,drs])
 					
-					towrite.append((bxs, outname, sz))
+					towrite.append((bxs, outname, sz, info))
 		
 		elif "class_list" in js and "boxes_3d" in js:
 			clslst=js["class_list"]
@@ -298,7 +298,7 @@ def do_extraction(pfile, options, xfs=[]):
 				
 				outname=str(base_name(pfile)+"__"+lab+".hdf")
 				
-				towrite.append((bxs, outname, sz))
+				towrite.append((bxs, outname, sz, info))
 				print("{} : {} boxes, unbinned box size {}".format(val["name"], len(bxs), int(sz*2))) 
 		
 		if len(towrite)==0:
@@ -341,7 +341,7 @@ def do_extraction(pfile, options, xfs=[]):
 	if options.norewrite:
 		skip=True
 		for pinfo in towrite:
-			ptclpos, outname, boxsz=pinfo
+			ptclpos, outname, boxsz, info=pinfo
 			output=os.path.join("particles3d", outname)
 			if not os.path.isfile(output):
 				skip=False
@@ -373,7 +373,9 @@ def do_extraction(pfile, options, xfs=[]):
 	except: pass
 
 	for pinfo in towrite:
-		ptclpos, outname, boxsz=pinfo
+		ptclpos, outname, boxsz, info=pinfo
+		if len(info)>0 and len(info)!=len(ptclpos):
+			print("Warning: Extra header info exist but does not match particle count...")
 		if options.dotest:
 			nptcl=options.threads
 		else:
@@ -461,7 +463,9 @@ def do_extraction(pfile, options, xfs=[]):
 	
 
 def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mask=None):
-	ppos, outname, boxsz=pinfo
+	ppos, outname, boxsz, info=pinfo
+	if len(info)!=len(ppos):
+		info=[]
 	
 	bx=boxsz*2
 	pad=options.pad
@@ -476,6 +480,10 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 	for pid in ids:
 		
 		pos=ppos[pid]
+		if len(info)>0:
+			hdr=info[pid]
+		else:
+			hdr={}
 		
 		if type(pos)==type(Transform()):
 			tf_dir=Transform(pos.get_rotation()).inverse()
@@ -602,11 +610,18 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			threed=recon.finish(True)
 			threed.process_inplace("math.gausskernelfix",{"gauss_width":4.0})
 			threed=threed.get_clip(Region((p3d-bx)//2,(p3d-bx)//2,(p3d-bx)//2,bx,bx,bx))
-			
+		
+		if threed["sigma"]==0:
+			####empty particle for some reason...
+			continue
+		
 		threed["apix_x"]=threed["apix_y"]=threed["apix_z"]=apix
 		threed["ptcl_source_coord"]=pos.tolist()
 		threed["file_twod"]=options.output2d
 		threed["model_id"]=pid
+		for hd in hdr.keys():
+			threed[str(hd)]=hdr[hd]
+			
 		threed.process_inplace("normalize.edgemean")
 		
 		if tf_dir:
@@ -659,19 +674,24 @@ def get_xf_pos(tpm, pk):
 def parse_text(options):
 	js=js_open_dict(options.textin)
 	keys=sorted(js.keys())
+	allinfo={}
 	allxf={}
 	for ky in keys:
 		ptcls=js[ky]
 		xfs=[]
+		info=[]
 		for p in ptcls:
 			xf=p[3]
 			xf.translate(p[0], p[1], p[2])
 			xfs.append(xf)
+			if len(p)>4:
+				info.append(p[4])
 			
 		allxf[str(ky)]=xfs
+		allinfo[str(ky)]=info
 		
 	js.close()
-	return allxf
+	return allxf,allinfo
 
 
 #### parse a json file from spt_align to re-extract particles

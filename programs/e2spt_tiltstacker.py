@@ -451,7 +451,12 @@ def findtiltimgs( options ):
 						#print "\nvalid file", f
 						intilt = f
 						if intilt:
-							intilts.append( intilt )
+							try:
+								hdr=EMData(intilt,0,True)
+								intilts.append( intilt )
+							except:
+								print("\nERROR: file={} is not a valid image; it might be empty; check that the size of the image (in megabytes) is healthy/normal, compared to other images".format(intilt))
+								sys.exit(1)
 					else:
 						print("\n(e2spt_tiltstacker.py)(findtiltimgs) extension not valid. Needs to be .mrc, .mrcs, .hdf, .dm3, .tif")
 					
@@ -597,6 +602,11 @@ def organizetilts( options, intilts, tiltstoexclude, raworder=False ):
 			parsedname = intilt.replace(extension,'').replace(',',' ').replace('-',' ').replace('_',' ').replace('[',' ').replace(']',' ').replace('+',' ').split()
 			#dividerstoadd = options.anglesindxinfilename - 1
 			print('\n(e2spt_tiltstacker)(organizetilts) parsedname is',parsedname)
+			try:
+				angle = float(parsedname[options.anglesindxinfilename])
+			except:
+				print("\ninvalid angle={}. make sure --anglesindxinfilename is correct! Remember, indexes start from 0".format(parsedname[options.anglesindxinfilename]))
+				sys.exit(1)
 			
 			charsum = 0
 			for i in range(options.anglesindxinfilename):
