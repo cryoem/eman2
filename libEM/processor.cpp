@@ -2347,31 +2347,46 @@ void SetBitsProcessor::process_inplace(EMData *image)
 
 	float nsigma = params.set_default("nsigma",3.0f);
 	int bits = params.set_default("bits",5);
+	int floatbits = params.set_default("floatbits",-1);
 	float sigma = image->get_attr("sigma");
 	float mean = image->get_attr("mean");
 	float bitmax=pow(2.,bits);
-	
-	float min=image->get_attr("minimum");
-	float max=image->get_attr("maximum");
-	
-	// our max/min are either the actual max/min, or mean+-nsigma*sigma
-	// whichever produces the smaller range. That way by specifying a large
-	// nsigma you can get the actual min/max of the image easily
-	if (mean-nsigma*sigma>min) min=mean-nsigma*sigma;
-	if (mean+nsigma*sigma<max) max=mean+nsigma*sigma;
 	
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 	size_t total_size = (size_t)nx * (size_t)ny * (size_t)nz;
+	
+	if (floatbits<=0) {
+		float min=image->get_attr("minimum");
+		float max=image->get_attr("maximum");
+		
+		// our max/min are either the actual max/min, or mean+-nsigma*sigma
+		// whichever produces the smaller range. That way by specifying a large
+		// nsigma you can get the actual min/max of the image easily
+		if (mean-nsigma*sigma>min) min=mean-nsigma*sigma;
+		if (mean+nsigma*sigma<max) max=mean+nsigma*sigma;
+		
 
-	for (size_t i=0; i<total_size; i++) {
-		float newval=floor((image->get_value_at_index(i)-min)*bitmax/(max-min)
-			
-		);
-		if (newval<0) newval=0;
-		if (newval>=bitmax) newval=bitmax-1.0f;
-		image->set_value_at_index(i,newval);
+		for (size_t i=0; i<total_size; i++) {
+			float newval=floor((image->get_value_at_index(i)-min)*bitmax/(max-min)
+				
+			);
+			if (newval<0) newval=0;
+			if (newval>=bitmax) newval=bitmax-1.0f;
+			image->set_value_at_index(i,newval);
+		}
+	}
+	else {
+		// In this version, we keep a specified number of significant bits in the floating point significand, leaving the exponent and sign alone
+		if (floatbits>22) throw InvalidValueException(floatbits,"floatbits must be <23");
+		u_int32_t bitmask= 0xffffffff << (23-floatbits); // this will leave 1 in the sign and exponent bits, along with the specified number of significand bits
+		for (size_t i=0; i<total_size; i++) {
+			float newval=image->get_value_at_index(i);
+			u_int32_t *newvali = (u_int32_t*)&newval;
+			*newvali&=bitmask;
+			image->set_value_at_index(i,newval);
+		}
 	}
 }
 

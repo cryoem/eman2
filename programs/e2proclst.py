@@ -251,7 +251,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			lst=LSXFile(f,True)
 
 			a=lst.read(0)
-			if a[1][:10]!="particles/" and a[1][:12]!="particles3d" :
+			if a[1][:10]!="particles/" and a[1][:12]!="particles3d/" :
 				print("To use the --retype option, the .lst file must reference image files in particles/*")
 
 			if options.verbose>1 :
