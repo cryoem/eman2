@@ -286,7 +286,6 @@ namespace EMAN
 		void resort();
 
 		vector<EMData *> centers;
-		vector<int> worstmemb;
 		int ncls;	//number of current classes
 		int nclstot;	//number of desired classes
 		int verbose;

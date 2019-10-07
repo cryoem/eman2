@@ -1467,10 +1467,13 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 				else {
 					H5Pset_chunk(plist,3,cdims);
 				}
+//				H5Pset_scaleoffset(plist,H5Z_SO_FLOAT_DSCALE,2);  // doesn't seem to work right?, anyway some conceptual problems
+				H5Pset_shuffle(plist);	// rearrange bytes
 				H5Pset_deflate(plist, 1);	// zlib level 1
-				//int r=H5Pset_szip (plist, H5_SZIP_EC_OPTION_MASK, 8);	// szip with 8 pixels per block (NN vs EC)
-				//if (r) printf("R: %d\n",r); 
+//				int r=H5Pset_szip (plist, H5_SZIP_NN_OPTION_MASK, 16);	// szip with 16 pixels per block (NN (2 stage) vs EC), NN definitely seems to perform better
+//				if (r) printf("R: %d\n",r); 
 				ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, spc, plist );
+//				ds=H5Dcreate(file,ipath, H5T_NATIVE_UCHAR, spc, plist );
 				H5Pclose(plist);	// safe to do this here?
 			}
 			break;
