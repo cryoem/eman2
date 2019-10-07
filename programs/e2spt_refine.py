@@ -109,6 +109,7 @@ def main():
 	
 	if options.goldcontinue==False:
 		er=EMData(ref,refn,True)
+		if er["apix_x"]==1.0 : print("Warning, A/pix exactly 1.0. You may wish to double-check that this is correct!")
 		if abs(1-ep["apix_x"]/er["apix_x"])>0.01 or ep["nx"]!=er["nx"]:
 			print("apix mismatch {:.2f} vs {:.2f}".format(ep["apix_x"], er["apix_x"]))
 			rs=er["apix_x"]/ep["apix_x"]
@@ -116,8 +117,9 @@ def main():
 				run("e2proc3d.py {} {}/model_input.hdf --clip {} --scale {} --process mask.soft:outer_radius=-1 --first {} --last {}".format(ref, options.path, ep["nx"], rs,refn,refn))
 			else:
 				run("e2proc3d.py {} {}/model_input.hdf --scale {} --clip {} --process mask.soft:outer_radius=-1 --first {} --last {}".format(ref, options.path, rs, ep["nx"],refn,refn))
-			
-			ref="{}/model_input.hdf".format(options.path)
+		else:	
+				run("e2proc3d.py {} {}/model_input.hdf ---process mask.soft:outer_radius=-1 --first {} --last {}".format(ref, options.path, refn,refn))
+		ref="{}/model_input.hdf".format(options.path)
 		
 	
 	for itr in range(startitr,options.niter+startitr):

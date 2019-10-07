@@ -181,7 +181,15 @@ produce new sets/ for each class, which could be further-refined.
 	ny=hdr["ny"]
 	nz=hdr["nz"]
 	sets=[LSXFile("sets/{}_{:02d}_{:02d}.lst".format(options.path,options.iter,i)) for i in range(options.ncls)]
+	
+	# Initialize averages
 	avgs=[EMData(nx,ny,nz) for i in range(options.ncls)]
+	for a in avgs:
+		a["apix_x"]=hdr["apix_x"]
+		a["apix_y"]=hdr["apix_y"]
+		a["apix_z"]=hdr["apix_z"]
+	
+	# do the actual averaging
 	for n,im in enumerate(prjs):
 		if options.verbose and time.time()-lasttime>3:
 			print("\r  {}/{}       ".format(n+1,len(prjs)),end="")
