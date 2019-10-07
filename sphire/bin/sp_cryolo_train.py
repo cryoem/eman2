@@ -110,7 +110,7 @@ argparser.add_argument(
 argparser.add_argument(
 	'--batch_size',
 	type=int,
-	default=6,
+	default=5,
 	help='How many patches are processed in parallel')
 
 argparser.add_argument(
