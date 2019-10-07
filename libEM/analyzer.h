@@ -229,6 +229,7 @@ namespace EMAN
 	 * @param minchange Terminate if fewer than minchange members move in an iteration
 	 * @param mininclass Minumum number of particles to keep a class as good (not enforced at termination
 	 * @param slowseed Instead of seeding all classes at once, it will gradually increase the number of classes by adding new seeds in groups with large standard deviations
+	 * @param outlierclass The last class will be reserved for outliers. Any class containing fewer than n particles will be permanently moved to the outlier group. default = disabled
 	 * @param calcsigmamean Computes standard deviation of the mean image for each class-average (center), and returns them at the end of the list of centers
 	 *
 	 */
@@ -265,12 +266,13 @@ namespace EMAN
 		{
 			TypeDict d;
 			d.put("verbose", EMObject::INT, "Display progress if set, more detail with larger numbers (9 max)");
-			d.put("seedmode",EMObject::INT, "How to generate initial seeds. 0 - default, random element, 1 - max sum, min sum, linear");
+			d.put("seedmode",EMObject::INT, "How to generate initial seeds. 0 - random element (default), 1 - max sum, min sum, linear");
 			d.put("ncls", EMObject::INT, "number of desired classes");
 			d.put("maxiter", EMObject::INT, "maximum number of iterations");
 			d.put("minchange", EMObject::INT, "Terminate if fewer than minchange members move in an iteration");
 			d.put("mininclass", EMObject::INT, "Minumum number of particles to keep a class as good (not enforced at termination");
 			d.put("slowseed",EMObject::INT, "Instead of seeding all classes at once, it will gradually increase the number of classes by adding new seeds in groups with large standard deviations");
+			d.put("outlierclass",EMObject::INT, "The last class will be reserved for outliers. Any class containing fewer than n particles will be permanently moved to the outlier group. default = disabled");
 			d.put("calcsigmamean",EMObject::INT, "Computes standard deviation of the mean image for each class-average (center), and returns them at the end of the list of centers");
 			return d;
 		}
@@ -284,7 +286,9 @@ namespace EMAN
 		void resort();
 
 		vector<EMData *> centers;
-		int ncls;	//number of desired classes
+		vector<int> worstmemb;
+		int ncls;	//number of current classes
+		int nclstot;	//number of desired classes
 		int verbose;
 		int minchange;
 		int maxiter;
@@ -292,6 +296,7 @@ namespace EMAN
 		int nchanged;
 		int slowseed;
 		int calcsigmamean;
+		int outlierclass;
 
 	};
 
