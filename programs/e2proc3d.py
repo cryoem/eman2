@@ -737,7 +737,7 @@ def main():
 					options.outtype = "unknown"
 
 		#print_iminfo(data, "Final")
-		if options.outmode!="float":
+		if options.outmode not in ("float","compressed") :
 			if options.outnorescale :
 				# This sets the minimum and maximum values to the range for the specified type, which should result in no rescaling
 				outmode=file_mode_map[options.outmode]
