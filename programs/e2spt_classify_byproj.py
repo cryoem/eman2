@@ -164,7 +164,7 @@ produce new sets/ for each class, which could be further-refined.
 	if options.verbose: print("Classifying")
 	# classification
 	an=Analyzers.get("kmeans")
-	an.set_params({"ncls":options.ncls,"minchange":len(ks)//(options.ncls*25),"verbose":options.verbose-1,"slowseed":1,"mininclass":len(ks)//(options.ncls*10)})
+	an.set_params({"ncls":options.ncls,"minchange":len(ks)//(options.ncls*25),"verbose":options.verbose-1,"slowseed":1,"mininclass":max(2,len(ks)//(options.ncls*10))})
 	
 	an.insert_images_list(prjs)
 	centers=an.analyze()
