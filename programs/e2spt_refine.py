@@ -118,7 +118,7 @@ def main():
 			else:
 				run("e2proc3d.py {} {}/model_input.hdf --scale {} --clip {} --process mask.soft:outer_radius=-1 --first {} --last {}".format(ref, options.path, rs, ep["nx"],refn,refn))
 		else:	
-				run("e2proc3d.py {} {}/model_input.hdf ---process mask.soft:outer_radius=-1 --first {} --last {}".format(ref, options.path, refn,refn))
+				run("e2proc3d.py {} {}/model_input.hdf --process mask.soft:outer_radius=-1 --first {} --last {}".format(ref, options.path, refn,refn))
 		ref="{}/model_input.hdf".format(options.path)
 		
 	
