@@ -73,6 +73,7 @@ together."""
 	parser.add_argument("--clsfiles","-C",action="store_true",help="Write EMAN 1 style cls files with members of each class",default=False)
 #	parser.add_argument("--listout","-L",action="store_true",help="Output the results to 'class.list",default=False)
 	parser.add_argument("--mininclass",type=int,help="Try to eliminate classes with fewer than specified members. Default=2",default=2)
+	parser.add_argument("--outlierclass",action="store_true",help="If selected, classes with fewer than mininclass particles will move permanently to an outlier class (the last class)",default=False)
 	parser.add_argument("--original","-O",type=str,help="If the input stack was derived from another stack, you can provide the name of the original stack here",default=None)
 	parser.add_argument("--axes",type=str,help="Works only for 1-D input images. Specify a range, eg 0-5 to indicate which components to use from each vector. Inclusive. default=all",default=None)
 	parser.add_argument("--exclude", type=str,default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude.")
@@ -132,7 +133,7 @@ together."""
 	if options.fastseed : slowseed=0
 	else : slowseed=1
 	an=Analyzers.get("kmeans")
-	an.set_params({"ncls":options.ncls,"minchange":options.minchange,"verbose":1,"slowseed":slowseed,"calcsigmamean":options.sigma,"mininclass":options.mininclass})
+	an.set_params({"ncls":options.ncls,"minchange":options.minchange,"verbose":1,"slowseed":slowseed,"calcsigmamean":options.sigma,"mininclass":options.mininclass,"outlierclass":options.outlierclass})
 	
 	an.insert_images_list(data)
 	centers=an.analyze()
@@ -145,6 +146,8 @@ together."""
 	classes=[[] for i in range(options.ncls)]
 	for n,i in enumerate(data):
 		classes[i.get_attr("class_id")].append(n)
+		
+#	for i,j in enumerate(classes): print(i,len(j),j)
 		
 	# This is the old python version of the algorithm, functional but slow
 	# left here in case someone needs something they can tweak

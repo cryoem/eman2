@@ -46,6 +46,40 @@ from sys import argv,exit
 from EMAN2jsondb import JSTask
 import numpy as np
 
+def ptclextract(jsd,db,ks,shrink,layers,verbose):
+	#  we have to get the 3d particles in the right orientation
+	lasttime=time.time()
+	for i,k in ks:
+		# this only happens in the first thread
+		if verbose and time.time()-lasttime>3:
+			print("\r  {}/{}       ".format(i,ks[-1][0]),end="")
+			sys.stdout.flush()
+			lasttime=time.time()
+			
+		parm=db[k[2]]		# alignment for one particle
+		ptcl=EMData(k[0],k[1])
+		xf=parm["xform.align3d"]
+		ptcl.process_inplace("xform",{"transform":xf})
+		if shrink>1 : ptcl.process_inplace("math.meanshrink",{"n":shrink})
+		ptcl["score"]=parm["score"]
+		
+		# these are the range limited orthogonal projections
+		x=ptcl.process("misc.directional_sum",{"axis":"x","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+		y=ptcl.process("misc.directional_sum",{"axis":"y","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+		z=ptcl.process("misc.directional_sum",{"axis":"z","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+		
+		# we pack the 3 projections into a single 2D image
+		all=EMData(x["nx"]*3,x["ny"],1)
+		all.insert_clip(x,(0,0))
+		all.insert_clip(y,(x["nx"],0))
+		all.insert_clip(z,(x["nx"]*2,0))
+		all["score"]=parm["score"]
+		
+		all["orig_file"]=ptcl["data_source"]
+		all["orig_n"]=ptcl["data_n"]
+		all["orig_key"]=k[2]
+		jsd.put((i,k,all))
+
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -90,47 +124,47 @@ produce new sets/ for each class, which could be further-refined.
 	# the keys are name,number pairs for the individual particles
 	ks=[eval(k)+(k,) for k in db.keys()]
 	ks.sort()
-
-	prjs=[]
+	ks=list(enumerate(ks))
+	
+	prjs=[0]*len(ks)
 	if options.verbose: print("Generating sections")
 	lasttime=time.time()
-	# first we have to get the particles in the right orientation
-	for i,k in enumerate(ks):
-		if options.verbose and time.time()-lasttime>3:
-			print("\r  {}/{}       ".format(i+1,len(ks)),end="")
-			sys.stdout.flush()
-			lasttime=time.time()
-		parm=db[k[2]]		# alignment for one particle
-		ptcl=EMData(k[0],k[1])
-		nx,ny,nz=ptcl["nx"],ptcl["ny"],ptcl["nz"]
-		xf=parm["xform.align3d"]
-		ptcl.transform(xf)
-		ptcl.process_inplace("math.meanshrink",{"n":options.shrink})
-		ptcl["score"]=parm["score"]
-		
-		# these are the range limited orthogonal projections
-		x=ptcl.process("misc.directional_sum",{"axis":"x","first":ptcl["nx"]/2-options.layers,"last":ptcl["nx"]/2+options.layers+1})
-		y=ptcl.process("misc.directional_sum",{"axis":"y","first":ptcl["nx"]/2-options.layers,"last":ptcl["nx"]/2+options.layers+1})
-		z=ptcl.process("misc.directional_sum",{"axis":"z","first":ptcl["nx"]/2-options.layers,"last":ptcl["nx"]/2+options.layers+1})
-		
-		# we pack the 3 projections into a single 2D image
-		all=EMData(x["nx"]*3,x["ny"],1)
-		all.insert_clip(x,(0,0))
-		all.insert_clip(y,(x["nx"],0))
-		all.insert_clip(z,(x["nx"]*2,0))
-		all["score"]=parm["score"]
-		
-		all.write_image("{}/alisecs_{:02d}.hdf".format(options.path,options.iter),i)
-		
-		all["orig_file"]=ptcl["data_source"]
-		all["orig_n"]=ptcl["data_n"]
-		all["orig_key"]=k[2]
-		prjs.append(all)	# keep them for the classification step
+	jsd=queue.Queue(0)
+
+	NTHREADS=max(options.threads,2)		# we have one thread just writing results
+	thrds=[threading.Thread(target=ptclextract,args=(jsd,db,ks[i::NTHREADS-1],options.shrink,options.layers,options.verbose>1 and i==0)) for i in range(NTHREADS-1)]
+
+	# here we run the threads and save the results, no actual alignment done here
+	if options.verbose: print(len(thrds)," threads")
+	thrtolaunch=0
+	while thrtolaunch<len(thrds) or threading.active_count()>1:
+		# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
+		# note that it's ok that we wait here forever, since there can't be new results if an existing
+		# thread hasn't finished.
+		if thrtolaunch<len(thrds) :
+			while (threading.active_count()==NTHREADS ) : time.sleep(.1)
+			if options.verbose>1 : print("Starting thread {}/{}".format(thrtolaunch,len(thrds)))
+			thrds[thrtolaunch].start()
+			thrtolaunch+=1
+		else: time.sleep(1)
+		#if options.verbose>1 and thrtolaunch>0:
+			#frac=thrtolaunch/float(len(thrds))
+			#print("{}% complete".format(100.0*frac))
+	
+		while not jsd.empty():
+			i,k,all=jsd.get()
+			prjs[i]=all
+			all.write_image("{}/alisecs_{:02d}.hdf".format(options.path,options.iter),i)
+
+	for t in thrds:
+		t.join()
+
+
 		
 	if options.verbose: print("Classifying")
 	# classification
 	an=Analyzers.get("kmeans")
-	an.set_params({"ncls":options.ncls,"minchange":len(ks)//(options.ncls*25),"verbose":options.verbose-1,"slowseed":1,"mininclass":len(ks)//(options.ncls*10)})
+	an.set_params({"ncls":options.ncls,"minchange":len(ks)//(options.ncls*25),"verbose":options.verbose-1,"slowseed":1,"outlierclass":1,"mininclass":max(2,len(ks)//(options.ncls*10))})
 	
 	an.insert_images_list(prjs)
 	centers=an.analyze()
@@ -141,7 +175,11 @@ produce new sets/ for each class, which could be further-refined.
 	for i in range(options.ncls):
 		try: os.unlink("sets/{}_{:02d}_{:02d}.lst".format(options.path,options.iter,i))
 		except: pass
-	
+
+	hdr=EMData(ks[0][1][0],ks[0][1][1],True)
+	nx=hdr["nx"]
+	ny=hdr["ny"]
+	nz=hdr["nz"]
 	sets=[LSXFile("sets/{}_{:02d}_{:02d}.lst".format(options.path,options.iter,i)) for i in range(options.ncls)]
 	avgs=[EMData(nx,ny,nz) for i in range(options.ncls)]
 	for n,im in enumerate(prjs):

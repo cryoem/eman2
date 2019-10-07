@@ -251,7 +251,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			lst=LSXFile(f,True)
 
 			a=lst.read(0)
-			if a[1][:10]!="particles/" :
+			if a[1][:10]!="particles/" and a[1][:12]!="particles3d/" :
 				print("To use the --retype option, the .lst file must reference image files in particles/*")
 
 			if options.verbose>1 :
@@ -261,7 +261,8 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			# loop over the images in the lst file
 			for i in range(len(lst)):
 				im=lst.read(i)
-				outname="particles/{}__{}.hdf".format(base_name(im[1]),options.retype)
+				if "3d" in a[1] : outname="particles3d/{}__{}.hdf".format(base_name(im[1]),options.retype)
+				else: outname="particles/{}__{}.hdf".format(base_name(im[1]),options.retype)
 				lst.write(i,im[0],outname,im[2])
 
 			lst.normalize()			# clean up at the end

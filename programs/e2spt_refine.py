@@ -134,7 +134,7 @@ def main():
 			gd+=" --refine --maxang {:.1f}".format(options.maxang)
 		#curres=0
 
-		cmd="e2spt_align.py {} {},{} --parallel {} --path {} --iter {} --sym {} --nsoln 1 {}".format(ptcls, ref,refn,  options.parallel, options.path, itr, options.sym, gd)
+		cmd="e2spt_align.py {} {} --parallel {} --path {} --iter {} --sym {} --nsoln 1 {}".format(ptcls, ref,  options.parallel, options.path, itr, options.sym, gd)
 		
 		#### in case e2spt_align get segfault....
 		ret=1

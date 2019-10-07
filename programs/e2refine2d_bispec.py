@@ -213,13 +213,13 @@ def main():
 	if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
 	# Classification
-	run("e2classifykmeans.py %s --original %s --mininclass 2 --ncls %d --clsmx %s/classmx_00.hdf --onein --fastseed --axes 0-%d"%(inputproj,options.input,options.ncls,options.path,options.nbasisfp-1))
+	run("e2classifykmeans.py %s --original %s --mininclass 3 --outlierclass --ncls %d --clsmx %s/classmx_00.hdf --onein --fastseed --axes 0-%d"%(inputproj,options.input,options.ncls,options.path,options.nbasisfp-1))
 
 	proc_tally += 1.0
 	if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
 	# Make class averages
-	cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_00.hdf --output=%s/classes_00.hdf --iter=%d --force --storebad --center=%s" %(options.input,options.path,options.path,options.classiter,options.center)
+	cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_00.hdf --output=%s/classes_00.hdf --iter=%d --force --storebad --center=%s " %(options.input,options.path,options.path,options.classiter,options.center)
 	cls_cmd += get_classaverage_extras(options)
 	run (cls_cmd)
 
@@ -244,7 +244,7 @@ def main():
 		#if logid : E2progress(logid,proc_tally/total_procs)
 
 		# Classification
-		run("e2classifykmeans.py %s/basis_proj_%02d.hdf --original=%s --mininclass=2 --ncls=%d --clsmx=%s/classmx_%02d.hdf --onein --fastseed"%(options.path,it,options.input,options.ncls,options.path,it))
+		run("e2classifykmeans.py %s/basis_proj_%02d.hdf --original=%s --mininclass 3 --outlierclass --ncls=%d --clsmx=%s/classmx_%02d.hdf --onein --fastseed"%(options.path,it,options.input,options.ncls,options.path,it))
 		proc_tally += 1.0
 		if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
@@ -279,7 +279,7 @@ def class_postproc(options,it,invmode):
 
 
 def get_classaverage_extras(options):
-	s = " --align=%s --averager=%s  --keep=%f --cmp=%s --aligncmp=%s --normproc=%s" %(options.classalign,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp,options.classnormproc)
+	s = " --align=%s --averager=%s  --keep=%f --cmp=%s --aligncmp=%s --normproc=%s -v %d" %(options.classalign,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp,options.classnormproc,max(options.verbose-1,0))
 
 	if options.classkeepsig:
 		s += " --keepsig"
