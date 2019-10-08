@@ -11,6 +11,7 @@ Current build status
 
 Linux: [![CircleCI](https://circleci.com/gh/cryoem/eman2.svg?style=svg)](https://circleci.com/gh/cryoem/eman2)
 OSX: [![TravisCI](https://travis-ci.org/cryoem/eman2.svg?branch=master)](https://travis-ci.org/cryoem/eman2)
+Windows: [![Appveyor](https://ci.appveyor.com/api/projects/status/6rxvs4hxet6rk6u1/branch/master?svg=true)](https://ci.appveyor.com/project/cryoem/eman2/branch/master)
 
 
 
