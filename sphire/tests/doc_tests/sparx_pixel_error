@@ -1,0 +1,84 @@
+-) pixel_error_2D(ali_params1, ali_params2, r=1.0)
+-) max_3D_pixel_error(t1, t2, r=1.0)
+-) angle_ave(angle1)
+-) angle_diff(angle1, angle2)
+-) angle_diff_sym(angle1, angle2, simi=1)
+-) align_diff_params(ali_params1, ali_params2)
+-) multi_align_stability(ali_params, mir_stab_thld=0.0, grp_err_thld=10000.0, err_thld=1.732, print_individual=False, d=64)
+
+
+
+######################################################################################################################################################################################################################
+    pixel_error_2D(ali_params1, ali_params2, r=1.0)
+    -) ali_params1: list of alignment parameters with the following format [alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2, ...]
+    -) ali_params2: list of alignment parameters with the following format [alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2, ...]
+    -) radius of the object (not 100% sure)
+Compute average squared 2D pixel error
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+    max_3D_pixel_error(t1, t2, r=1.0)
+    """
+    Compute maximum pixel error between two sets of orientation parameters
+    assuming object has radius r, t1 is the projection transformation
+    of the first projection and t2 of the second one, respectively:
+        t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
+        t.set_trans(Vec2f(-tx, -ty))
+    Note the function is symmetric in t1, t2.
+    """
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+    angle_ave(angle1)
+    '''
+    This function computes average angle of a set of angles.
+    It also computes a measure of dispersion (incorrect).
+    '''
+Returns the avg and the standard deviation of the list of angle got in input
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+    angle_diff(angle1, angle2)
+    '''
+    This function determines the relative angle between two sets of angles.
+    The resulting angle has to be added (modulo 360) to the first set.
+    '''
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+    angle_diff_sym(angle1, angle2, simi=1)
+    '''
+    This function determines the relative angle around Z axis (phi) between two sets of angles
+       taking into account point group symmetry with multiplicity simi.
+    The input has to be in the form [[phi0,theta0], [phi1,theta1], ...]
+      Only sets that have theta in the same range (0,90), or (90,180) are included in calculation.
+    The resulting angle has to be added (modulo 360/simi) to the first set.
+    '''
+It is called only once in 'sparx_multi_shc.py --> orient_params' in case of symmetri Cn where n>1
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+USED in "multi_align_stability" that is used in 'sxisac2.py'
+    align_diff_params(ali_params1, ali_params2)
+    '''
+    This function determines the relative angle, shifts and mirrorness between
+    two sets of alignment parameters.
+    '''
+Returns angle, shiftX,shiftY and mirror
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+USED in 'sxisac2.py'
+    multi_align_stability(ali_params, mir_stab_thld=0.0, grp_err_thld=10000.0, err_thld=1.732, print_individual=False, d=64)
+    ali_params --> list of list of aliparams. Each list as the following format [alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2, ...]
+    mir_stab_thld -->  ????
+    grp_err_thld -->  threshold relative to the max error in the multialignment step ( i.e.: EMAN2_cppwrap.Util.multi_align_error(...))
+    err_thld --> therseshold relative to what ????
+    print_individual --> if True print out debug stuff
+    d --> ????? no idea. it is used in the subfunction 'func' (that is also not unclear) to estimate the sqrt of the pixel_error
+It returns, ?I got the names form the sxisac2.py code:
+ -) stable_set of what??? it is a list of list, each list has the following format [avarage_error at the i-th iteration, i-th iteration, , [alpha,tx,ty,mirror] of the combination between 2 ali_params]
+ -) mirror_consistent_rate: ?????
+ -) err: error of what????
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+

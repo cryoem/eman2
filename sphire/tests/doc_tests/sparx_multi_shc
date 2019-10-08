@@ -1,0 +1,87 @@
+-) orient_params(params, refparams, indexes=None, symmetry_class = None)
+-) find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, symmetry_class = None)
+-) ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = None, log = None, number_of_runs=2 )
+-) ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = None, log = None )
+-) multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, ref_vol=None)
+-) mirror_and_reduce_dsym(params, indexes, symmetry_class)
+-) do_volume(data, options, iter, mpi_comm)
+
+################################################################################################################################################################################################################################################
+    orient_params(params, refparams, indexes=None, symmetry_class = None)
+    params --> list of lists of param. it is passed to pixel_error.py -> angle_diff_sym .... hence it will use the first 2 elements of the sublists. that represent [phi0,theta0]
+    refparams --> list of lists of param. it is passed to pixel_error.py -> angle_diff_sym .... hence it will use the first 2 elements of the sublists. that represent [phi0,theta0]
+    indexes --> list of index representing the angles to compare
+    symmetry_class --> symmetry class obj, it has to be a 'Cn' otherwise iot crash
+Returns rotation object and properly rotated/mirrored params
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, symmetry_class = None)
+    projs --> lists of projections angle to compare eache other. Each list is a list of [3angles,2translation]
+    target_threshold --> threshold to remove the element whose have an average different ( it used: sparx_utilities.getang3 that is another name of sparx_utilities.angle_between_projections_directions)
+    minimal_subset_size --> the minimal number of element in the common subset to find
+    symmetry_class --> symmetry class obj
+Returns 3 lists:
+subset: list of valid elements of the given projs (it returns the index not the real value)
+avg_diff_per_image: the average of the difference beetween 2 proj
+outp: The rotated parameter (using mirror_and_reduce_dsym)
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = None, log = None, number_of_runs=2 )
+    stack --> list of img
+    ref_vol --> reference volume
+    ali3d_options --> dict of the 3D alignment options
+    symmetry_class --> symmetry class obj
+    mpi_comm  -->
+    log  -->
+    number_of_runs -->
+Returns the list of parameter (3angles, 2 translation) ???? of what ???
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = None, log = None )
+    stack --> list of img
+    ref_vol --> reference volume
+    ali3d_options --> dict of the 3D alignment options
+    symmetry_class --> symmetry class obj
+    mpi_comm -->
+    log -->
+Returns:  ?????
+params:
+vol:
+previousmax:
+par_r:
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, ref_vol=None)
+    all_projs -->
+    subset -->
+    runs_count -->
+    ali3d_options -->
+    mpi_comm -->
+    log -->
+    ref_vol -->
+out_params: it is the 'params' return value of 'ali3d_multishc_2'
+out_vol: it is the 'vol' return value of 'ali3d_multishc_2'
+None
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    mirror_and_reduce_dsym(params, indexes, symmetry_class)
+    params --> list is a list of [3angles,2translation]. are they the projections params ?? the first one is the reference
+    indexes --> list of index representing the projection to compare
+    symmetry_class --> symmetry class obj
+It should try to align the params to the first of its element. not so sure
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    do_volume(data, options, iter, mpi_comm)
+    data --> list of 2D images
+    options --> align 3d params
+    iter --> not used
+    mpi_comm -->
+Calculate and return the volume
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,224 @@
+-) add_ave_varf_MPI(myid, data, mask=None, mode="a", CTF=False, ctf_2_sum=None, ali_params="xform.align2d",main_node=0, comm=-1)
+-) sum_oe(data, mode="a", CTF=False, ctf_2_sum=None, ctf_eo_sum=False, return_params=False)
+-) ave_var(data, mode="a", listID=None)
+-) ave_series(data, pave=True, mask=None)
+-) varf2d_MPI(myid, data, ave, mask=None, mode="a", CTF=False, main_node=0, comm=-1)
+-) varf3d_MPI(prjlist, ssnr_text_file=None, mask2D=None, reference_structure=None, ou=-1, rw=1.0, npad=1, CTF=False, sign=1, sym="c1", myid=0, mpi_comm=None)
+-) ccc(img1, img2, mask=None)
+-) fsc(img1, img2, w=1.0, filename=None)
+-) fsc_mask(img1, img2, mask=None, w=1.0, filename=None)
+-) locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc)
+-) histogram(image, mask=None, nbins=0, hmin=0.0, hmax=0.0)
+-) k_means_match_clusters_asg_new(asg1, asg2, T=0)
+-) hist_list(data, nbin=-1, fminiu=None, fmaxiu=None)
+-) linreg(X, Y)
+-) pearson(X, Y)
+-) table_stat(X)
+-) mono(k1, k2)
+-) k_means_stab_bbenum(PART, T=10, nguesses=5, J=50, max_branching=40, stmult=0.25, branchfunc=2, LIM=-1, doMPI_init=False, njobs=-1, do_mpi=False, K=-1, cdim=[], nstart=-1, nstop=-1, top_Matches=[])
+-) k_means_match_bbenum(PART, T=10, J=1, max_branching=40, stmult=0.25, nguesses=5, branchfunc=2, LIM=-1,DoMPI_init=False, Njobs=-1, DoMPI=False, K=-1, np=-1, c_dim=[], N_start=-1, N_stop=-1,topMatches=[])
+-) scale_fsc_datasetsize(fsc_to_be_adjusted, nfsc, nnew)
+
+
+################################################################################################################################################################################################################################################
+NEVER USED
+    add_ave_varf_MPI(myid, data, mask=None, mode="a", CTF=False, ctf_2_sum=None, ali_params="xform.align2d",main_node=0, comm=-1)
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    sum_oe(data, mode="a", CTF=False, ctf_2_sum=None, ctf_eo_sum=False, return_params=False)
+    """
+        Calculate average of an image series
+        mode - "a": use current alignment parameters
+        CTF  - if True, use CTF for calculations of the average.
+        In addition, calculate odd and even sums, these are not divided by the ctf^2
+        If ctf_2_sum not provided, sum of ctf^2 will be calculated and returned
+        If ctf_eo_sum is True, then compute ctf^2 in odd and even form
+        If return_params is True, then return ali2d.xform parameters
+    """
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+USED in 'sxrviper.py'
+    ave_var(data, mode="a", listID=None)
+    """
+        Calculate average and variance of a 2D or 3D image series
+        with optional application of orientation parameters
+        data can be either in-core stack or a disk file
+    """
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    ave_series(data, pave=True, mask=None)
+    """
+        Calculate average of a image series using current alignment parameters
+        data - real space image series
+    """
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    varf2d_MPI(myid, data, ave, mask=None, mode="a", CTF=False, main_node=0, comm=-1)
+    """
+    Calculate variance in Fourier space for 2D images optionally including ctf correction
+    ave is the Wiener average of data
+    If mode = "a" apply alignment parameters
+    This command is for Wiener average, i.e., A = sum_k (CTF_k SNR_k F_k) / [sum_k ( CTF_k^2 SNR_k) + 1]
+    """
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    varf3d_MPI(prjlist, ssnr_text_file=None, mask2D=None, reference_structure=None, ou=-1, rw=1.0, npad=1, CTF=False, sign=1, sym="c1", myid=0, mpi_comm=None)
+    """
+      Calculate variance in Fourier space of an object reconstructed from projections
+
+      Known problems: properly speaking, the SSNR has to be calculated using snr=inf and this is what recons3d_nn_SSNR_MPI does.
+      So, when one computes reference structure, snr should be 1.0e20.  However, when the reference structure is passed
+      from the reconstruction program, it was computed using different snr.  I tested it and in practice there is no difference,
+      as this only changes the background variance due to reconstruction algorithm, which is much lower anyway.  PAP.
+    """
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    ccc(img1, img2, mask=None)
+    """Cross-correlation coefficient.
+       Usage: result = ccc(image1, image2 [, mask])
+    """
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    fsc(img1, img2, w=1.0, filename=None)
+    """Fourier Shell (or Ring) Correlation.
+
+       Usage: [frsc =] fsc(image1, image2 [, w, filename])
+
+       Computes the Fourier Shell (3d) or Fourier Ring (2d) correlation
+       function of two images.  If a filename is provided, then the
+       result is saved using that filename.
+    """
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    fsc_mask(img1, img2, mask=None, w=1.0, filename=None)
+    """
+            Compute fsc using mask and normalization.
+
+        Usage: [frsc =] fsc(image1, image2 [, mask, w, filename])
+
+        If no mask is provided, using circular mask with R=nx//2
+
+    """
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc)
+    vi --> First half-map: A sub-map computed from about half of input projection data
+    ui --> Second half-map: A sub-map computed from about half of input projection data
+    m --> 3D mask: Defines the region for which local resolution will be computed
+    nk --> Size of window within which local real-space FSC is computed
+    cutoff --> Resolution cut-off for FSC
+    step --> Shell step in Fourier size in pixels
+    myid -->
+    main_node -->
+    number_of_proc -->
+Compute local resolution
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    histogram(image, mask=None, nbins=0, hmin=0.0, hmax=0.0)
+    """
+        Name
+            histogram - calculate a histogram of the image pixel values
+        Input
+            input: input image
+            mask: optional binary mask
+            nbins:number of bins. Optional.
+            hmin, hmax: Optional.
+        Output
+            h:a list containining 2*nbins elements.
+    """
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    k_means_match_clusters_asg_new(asg1, asg2, T=0)
+    asg1 --> numpy array representing a cluster (partition of the whole particles set ???)
+    asg2 --> numpy array representing a cluster
+    T -->  An integer. It is the threshold such that the stable sets corresponding to the matches in the output have size larger than T
+returns:
+newindexes: new index
+list_stable" 2 stable cluster
+nb_tot_objs: # total of objects
+Not sure but it seems to filter, using T, the clustered value in order to find the stable clusters
+Please see 'k_means_stab_bbenum' for more info about it
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    hist_list(data, nbin=-1, fminiu=None, fmaxiu=None)
+    """
+      Calculate histogram of the list elements
+      nbin - number of bins, if not provided it will be set such that in average there is 10 elements per bin
+      fminiu - user provided minimum value for the histogram, it has to be smaller than the smallest element in data
+      fmaxiu - user provided maximum value for the histogram, it has to be larger than the largest element in data
+        Hierarchical stability between partitions given by k-means
+    """
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    linreg(X, Y)
+    """
+      Linear regression y=ax+b
+    """
+    returns a,b
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    pearson(X, Y)
+    """
+      Pearson correlation coefficient between two lists
+    """
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+    table_stat(X)
+    """
+      Basic statistics of numbers stored in a list: average, variance, minimum, maximum
+    """
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+################################################################################################################################################################################################################################################
+    mono(k1, k2)
+    """
+    get index of a square nxn matrix stored in a triangular form
+    for i in xrange(1,n):
+        for j in xrange(i):
+        print  i,j,mono(i,j)
+
+    """
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+################################################################################################################################################################################################################################################
+    k_means_stab_bbenum(PART, T=10, nguesses=5, J=50, max_branching=40, stmult=0.25, branchfunc=2, LIM=-1, doMPI_init=False, njobs=-1, do_mpi=False, K=-1, cdim=[], nstart=-1, nstop=-1, top_Matches=[])
+See the code for the long documentation.
+Anyway the following params are not used: doMPI_init, njobs, do_mpi, K, cdim, nstart, nstop, top_Matche
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+################################################################################################################################################################################################################################################
+    k_means_match_bbenum(PART, T=10, J=1, max_branching=40, stmult=0.25, nguesses=5, branchfunc=2, LIM=-1,DoMPI_init=False, Njobs=-1, DoMPI=False, K=-1, np=-1, c_dim=[], N_start=-1, N_stop=-1,topMatches=[])
+See the code of 'k_means_stab_bbenum' for the documentation
+This is the wrapper function for bb_enumerateMPI. It packages the arguments and formats the output. DO NOT copy memory - could lead to crashes
+The followinf params are not used:  Njobs, K, c_dim, N_start, N_stop, topMatches=[]
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+################################################################################################################################################################################################################################################
+    scale_fsc_datasetsize(fsc_to_be_adjusted, nfsc, nnew)
+    -) fsc_to_be_adjusted -->
+    -) nfsc -->
+    -) nnew -->
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+

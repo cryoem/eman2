@@ -1,0 +1,65 @@
+-) project(volume, params, radius=-1)
+-) prgs(volft, kb, params, kbx=None, kby=None)
+-) prgl(volft, params, interpolation_method=0, return_real=True)
+-) prgq(volft, kb, nx, delta, ref_a, sym, MPI=False)
+-) prg(volume, params)
+-) prep_vol(vol, npad=2, interpolation_method=-1)
+
+################################################################################################################################################################################################################################################
+		project(volume, params, radius=-1)
+		volft		--> input volume, all dimensions have to be the same
+        params  --> input parameters given as a list [phi, theta, psi, s2x, s2y], projection in calculated using the three Eulerian angles and then shifted by s2x,s2y
+        radius: --> radius of a sphere within which the projection of the volume will be calculated
+calculate 2-D projection of a 3-D volume using trilinear interpolation
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        prgs(volft, kb, params, kbx=None, kby=None)
+		volft 	 --> input volume, the volume can be either cubic or rectangular
+        kb		 --> interpolants generated using prep_vol (tabulated Kaiser-Bessel function). If the volume is cubic, kb is the only interpolant.
+                	 Otherwise, kb is the for caculating weigthing along z direction.
+        kbx,kby	 --> interpolants generated using prep_vol used to calculae weighting aling x and y directin. Default is none when the volume is cubic.
+                 	 If the volume is rectangular, kbx and kby must be given.
+        params	 --> input parameters given as a list [phi, theta, psi, s2x, s2y], projection in calculated using the three Eulerian angles and then shifted by sx,sy
+generated 2-D projection
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        prgl(volft, params, interpolation_method=0, return_real=True)
+		volft	   -->  input volume, the volume has to be cubic
+        params -->	input parameters given as a list [phi, theta, psi, s2x, s2y], projection in calculated using the three Eulerian angles and then shifted by sx,sy
+        			interpolation_method = 0  NN
+        			interpolation_method = 1  trilinear
+        return_real-->  True - return real; False - return FT of a projection.
+calculate 2-D projection of a 3-D volume using either NN Fourier or or trilinear Fourier
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        prgq(volft, kb, nx, delta, ref_a, sym, MPI=False)
+		volft 	--> input volume, the volume can be either cubic or rectangular. It is processed by 'prgs'
+		kb 		--> interpolants generated using prep_vol (tabulated Kaiser-Bessel function). cubic case. It is processed by 'prgs'
+		nx 		--> size of the output's EMData(). it used by sparx_utilities.model_blank to generated the initial EMData()
+		delta	--> Delta theta (spacing in theta). it is used by 'sparx_utilities.even_angles'
+		ref_a 	--> Reference projection method  "P" or "S"  P=Penczek algorithm S=Saff algorithm. it is used by 'sparx_utilities.even_angles'
+		sym 	--> symmetry group, could be 'c1', 'c2', 'c5' (or somethong like s?, d?, oct?, tet? and icos?). it is used by 'sparx_utilities.even_angles'
+		MPI 	--> activated MPI enviroment
+Generate set of projections based on even angles and then returns list of ffts of projections
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        prg(volume, params)
+		volume	   -->  input volume
+        params 		-->	input parameters given as a list  [set of projection angles, and Kaiser-Bessel window parameters]
+Given a volume, a set of projection angles, and Kaiser-Bessel window parameters, use gridding to generate projection. The output is  given by 'prgs' (with e.g. volft, kb = prep_vol(volume))
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        prep_vol(vol, npad=2, interpolation_method=-1)
+		vol: input volume for which projections will be calculated using prgs (interpolation_method=-1) or prgl (interpolation_method>0)
+        interpolation_method = -1  gridding (or  0 for NN or 1 for trilinear)
+Returns volume and interpolants values as follow:
+		volft: volume prepared for gridding projections using prgs
+        kb: interpolants (tabulated Kaiser-Bessel function) when the volume is cubic.
+        kbx,kby: interpolants along x, y and z direction (tabulated Kaiser-Bessel function) when the volume is rectangular
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

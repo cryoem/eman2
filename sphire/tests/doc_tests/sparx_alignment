@@ -1,0 +1,345 @@
+-) ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny,xrng, yrng, step, nomirror = False, mode="F", CTF=False, random_method="", ali_params="xform.align2d", delta = 0.0)
+-) ang_n(tot, mode, maxrin)
+-) Numrinit(first_ring, last_ring, skip=1, mode="F")
+-) ringwe(numr, mode="F")
+-) ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
+-) ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0)
+-) prepref(data, maskfile, cnx, cny, numr, mode, maxrangex, maxrangey, step)
+-) prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", numr = None, MPI=False, phiEqpsi = "Zero", kbx = None, kby = None, initial_theta = None, delta_theta = None, initial_phi = None)
+-) proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = 0.0, rshift = 0.0)
+-) ali_vol_func(params, data)
+-) align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
+-) align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1)
+-) multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1)
+-) parabl(Z)
+-) shc(data, refrings, list_of_reference_angles, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=None)
+-) search_range(n, radius, shift, range, location = "")
+-) generate_list_of_reference_angles_for_search(input_angles, sym)
+
+non in use
+-) ormq_fast(dimage, crefim, xrng, yrng, step, numr, mode, delta = 0.0)
+
+
+
+################################################################################################################################################################################################################################################
+        NB:
+            -) It seems that PCP option is not enabled ... it calls "rings" variable that is not declared
+            -) it seems that in the sparx library we use always the default value for "ali_params". Can we delete it?
+            -) It is called, and it is dependent of an input parameter, from:
+				1) ali2d_MPI .... it seems to be never used
+				2) ali2d_base called in:
+    				a) sphire/bin/sxmeridien.py as default param
+    				b) sphire/bin/sxali2d.py as user param
+				3) within_group_refinement called in:
+					a) sphire/bin/sxcompute_isac_avg.py as default param
+					b) /sphire/legacy/libpy/applications.py as user para.
+					c) /sphire/legacy/libpy/isac.py as param 'new' is True (defuaklt is False) creates the SHC case
+
+ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny,xrng, yrng, step, nomirror = False, mode="F", CTF=False, random_method="", ali_params="xform.align2d", delta = 0.0)
+        data --> imgs to align with con tavg, (e.g output of prepref(...))
+        numr --> vector containing all the infos for the polar 2D interpolation passed to "Util.Polar2Dm" in practice is always the output of "Numrinit(..)".
+                 Furthermore employs in the calculation only the first third of that vector (because Numrinit storages 3 values pro ring)
+        wr --> fourier's weight (e.g. output di ringwe()).  The values of the omega of the FT
+        cs --> 2d vector. X,y shift value
+        tavg --> reference img. It represents the "average" of the images, on which we try to align 'data'
+        cnx,cny --> predefined cener used in "Util.Polar2Dm" (see https://blake.grid.bcm.edu/eman2/doxygen_html/util__sparx_8cpp_source.html ln2410)
+        step --> Step used to change the search range
+        nomirror --> Se True abilita operazione di mirroring su asse x.
+        mode --> type of interpolation F(full circle interpolation) o H (half ...)
+        CTF --> True if you want apply the CTF info on 'data' images
+        random_method --> align method to use (SHC,PCP,SCF) -->statistical hill climbing, circulant self-correlation function, PCP???? PCP leads to dead code
+        ali_params --> Type of parmas to select in "sparx_utilities.get_params2D"
+        delta --> Represent the starting angle. Used in the calculation of crosscorrelation in LIBem/SPARX/UTIL_SPARX.CPP Util::Crosrng_ms_delta.USed in 14 e 16
+
+1) frotim = sparx_fundamentals.fft(tavg)--> calculates fft or ift in case of complex img
+2) sparx_fundamentals.scf(tavg) --> calculates the circulant self-correlation
+3) cimage = resamples the image in polar coordnates. EMAN2_cppwrap.Util.Polar2Dm(sparx_fundamentals.scf(tavg), cnx, cny, numr, mode) --> in LIBem/SPARX/UTIL_SPARX.CPP ln7145
+4) EMAN2_cppwrap.Util.Frngs(cimage, numr) --> in LIBem/SPARX/UTIL_SPARX.CPP ln 3266 --> calculates fft with floating point accuracy
+5) EMAN2_cppwrap.Util.Applyws(cimage, numr, wr) -->  Applies the fourier's weight to the FT to the rings in LIBem/SPARX/UTIL_SPARX.CPP  ln 3299
+6) sparx_filter.filt_ctf(data[im], ctf_params, True) where 'ctf_params = data[im].get_attr("ctf")'
+7) sparx_utilities.get_params2D(data[im], ali_params) --> it calls EMAN2_cppwrap.Util.get_transform_params and returns the params "alpha","tx","ty","mirror" e "scale" of 2D transformation
+8) sparx_utilities.set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
+9) sparx_utilities.combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0) --> combines the align's params of the 2 input's Transform variables (first 4 params for transform1 and second 4 parmas for Transform2)
+10) sparx_utilities.inverse_transform2(alpha, sx, sy) --> calculates the inverse function on 2D rotation and translation. Used in PCP case
+11) search_range(nx, ou, sxi, xrng, "ali2d_single_iter") --> defines the admitted sshift ranges
+12) EMAN2_cppwrap.Util.shc(ima, [cimage], txrng, tyrng, step, -1.0, mode, numr, cnx+sxi, cny+syi, "c1") --> in LIBem/SPARX/UTIL_SPARX.CPP ln27343 --> performs the SHC alignment
+13) mult1lign2d_scf(data[im], [cimage], frotim, numr, xrng, yrng, ou = ou) --> performs the SCF alignment ... see info mult1lign2d_scf
+14) ormq_fast(data[im], cimage, txrng, tyrng, step, numr, mode, delta) --> Defines rotation and traslation between the data and the reference image (cimage). With Mirror. Used in  PCP case
+15) ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0) --> Defines rotation and traslation between the data and the reference image (cimage) No mirror. Interpolazione quadratic
+16) ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0) --> Defines rotation and traslation between the data and the reference image (cimage). with mirror. Interpolazione quadratic
+
+A single iteration of the 2D alignment method is performed by 'ormq' function. Returns tx,ty and the number of (the crosscorrelation????) peak in SHC case.
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        ang_n(tot, mode, maxrin)
+		tot --> angular position of the peak. The peak is the max correlation's value (retvals["qn"]), hence usually "tot=retvals["tot"]".. where 'retvals' is output of 'Crosrng_e' defined in Util_sparx.h (ln 664)
+		mode --> type of interpolation F(full circle interpolation) o H (half ...)
+		maxrin --> max ring, usually the last value of the vector got via Numrinit()
+Calculate angle based on the position of the peak
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        Numrinit(first_ring, last_ring, skip=1, mode="F")
+		first_ring -->	first ring of the sphere
+		last_ring -->	last ring of the sphere
+		skip -->	step for skipping the rings. We can think it as the resolution value. If =1 it elaborates all the rings
+		mode --> type of interpolation F(full circle interpolation) o H (half ...)
+calculates the necessary information for the 2D
+	   polar interpolation. For each ring, three elements are recorded:
+	   numr[i*3]:  Radius of this ring
+	   numr[i*3+1]: Total number of samples of all inner rings+1
+	   		(Or, the beginning point of this ring)
+	   numr[i*3+2]: Number of samples of this ring. This number is an
+	   		FFT-friendly power of the 2.
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        ringwe(numr, mode="F")
+		numr --> vector containing all the infos for the polar 2D interpolation passed to "Util.Polar2Dm" in practice is always the output of "Numrinit(..)".
+		mode --> type of interpolation F(full circle interpolation) o H (half ...)
+Calculate ring weights for rotational alignment. The weights are r*delta(r)*delta(phi).
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
+		dimage --> img
+		crefim --> reference img
+		xrng --> X search range
+		yrng --> Y search range
+		step --> Step used to change the search range
+		numr --> vector containing all the infos for the polar 2D interpolation
+		mode --> type of interpolation F(full circle interpolation) o H (half ...)
+		cnx, cny --> predefined cener used in "Util.Polar2Dm" (see https://blake.grid.bcm.edu/eman2/doxygen_html/util__sparx_8cpp_source.html ln2410)
+		deltapsi --> Represent the angular variation between two correlations. Used in the calculation of crosscorrelation in LIBem/SPARX/UTIL_SPARX.CPP Util::Crosrng_e.
+1) cimage = EMAN2_cppwrap.Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
+2) EMAN2_cppwrap.Util.Frngs(cimage, numr)
+3) retvals = EMAN2_cppwrap.Util.Crosrng_e(crefim, cimage, numr, 0, deltapsi)
+
+Determine shift and rotation between image and reference image (refim)
+	   no mirror
+		quadratic interpolation
+		cnx, cny in FORTRAN convention
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0)
+		dimage --> img
+		crefim --> reference img
+		xrng --> X search range
+		yrng --> Y search range
+		step --> Step used to change the search range
+		numr --> vector containing all the infos for the polar 2D interpolation
+		mode --> type of interpolation F(full circle interpolation) o H (half ...)
+		cnx, cny --> predefined cener used in "Util.Polar2Dm" (see https://blake.grid.bcm.edu/eman2/doxygen_html/util__sparx_8cpp_source.html ln2410)
+		deltapsi --> Represent the angular variation between two correlations. Used in the calculation of crosscorrelation in LIBem/SPARX/UTIL_SPARX.CPP Util::Crosrng_e.
+	Determine shift and rotation between image and reference image (crefim)
+		crefim should be as FT of polar coords with applied weights
+	        consider mirror
+		quadratic interpolation
+		cnx, cny in FORTRAN convention
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        prepref(data, maskfile, cnx, cny, numr, mode, maxrangex, maxrangey, step)
+		data --> imgs
+		maskfile --> mask image to filter 'data'. (e.g.  sparx_utilities.model_circle(nx//2-1,nx,nx) where nx size data
+		cnx, cny --> predefined cener used in "Util.Polar2Dm" (see https://blake.grid.bcm.edu/eman2/doxygen_html/util__sparx_8cpp_source.html ln2410)
+		numr --> vector containing all the infos for the polar 2D interpolation
+		mode --> type of interpolation F(full circle interpolation) o H (half ...)
+		maxrangex -->
+		maxrangey -->
+		step --> Step used to change the search range
+Filters the data
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", numr = None, MPI=False, phiEqpsi = "Zero", kbx = None, kby = None, initial_theta = None, delta_theta = None, initial_phi = None)
+		volft --> volume, usually got via "sparx_projection.prep_vol(volume)"
+		kb --> interpolation function (kaiser bessel filter). usually got via  "sparx_projection.prep_vol(volume)"
+		nz --> value used to calculate cnx,cnz to pass to "Util.Polar2Dm"
+		delta --> Delta theta (spacing in theta) used in "Util::even_angles(float delta, float t1, float t2, float p1, float p2)" ln 681
+		ref_a -->  Reference projection method  type "P","S" or list of angles like "symmetry_class=sparx_fundamentals.symclass("c1")->symmetry_class.even_angles(delta[N_step], phiEqpsi = "Zero")". P=Penczek algorithm S=Saff algorithm
+		sym --> symmetry group, could be 'c1', 'c2', 'c5' (or something like s?, d?, oct?, tet? and icos?)
+		numr --> vector containing all the infos for the polar 2D interpolation
+		MPI --> flag to enable MPI stuff
+		phiEqpsi --> Can be "minus" or nothing. Used in 'even_angles_cd' if you want psi=-phi (see the eulero convenction to better understand). Called in "sparx_utilities.even_angles"  to create a list of valid angle to perform the projection
+		kbx, kby --> interpolation function (kaiser bessel filter) long X and Y axis
+		initial_theta --> Starting (min) value of theta in degrees. Used in"sparx_utilities.even_angles_cd" called by "sparx_utilities.even_angles". See "Util::even_angles" ln 681
+		delta_theta -->   Ending (max) value of theta in degrees. Used in"sparx_utilities.even_angles_cd" called by "sparx_utilities.even_angles". See "Util::even_angles" ln 681
+		initial_phi --> Starting (min) value of phi in degrees. Used in"sparx_utilities.even_angles_cd" called by "sparx_utilities.even_angles". See "Util::even_angles" ln 681
+
+1) sparx_utilities.even_angles(....) --> create a list of valid angle to perform the projection
+2) prjref = sparx_projection.prgs(volft, kb, ... ) --> Calculates the 2D projection of a 3D volume
+3) cimage = EMAN2_cppwrap.Util.Polar2Dm(prjref, cnx, cny, numr, mode)
+4) EMAN2_cppwrap.Util.Normalize_ring
+5) EMAN2_cppwrap.Util.Frngs(cimage, numr) --> in LIBem/SPARX/UTIL_SPARX.CPP ln 3266 -->
+6) EMAN2_cppwrap.Util.Applyws(cimage, numr, wr, four) --> in LIBem/SPARX/UTIL_SPARX.CPP  ln 3299 -->
+7) sparx_utilities.getfvec(ref_angles[i][0], ref_angles[i][1])	???
+
+
+Generate quasi-evenly distributed reference projections converted to ringsref_a can be a list of angles, in which case it is used instead of being generated
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = 0.0, rshift = 0.0)
+		data --> 1 immagine
+		refrings --> rings di riferimento
+		numr --> vector containing all the infos for the polar 2D interpolation
+		xrng --> X search range
+		yrng --> Y search range
+		step --> Translational step
+		finfo --> print out variables values
+		sym --> Symmetry group
+		delta_psi -->
+		rshift --> reverse shift to apply to cnx and cny used for calculating the 2D polar alignment
+
+1) [ang, sxs, sys, mirror, iref, peak] = EMAN2_cppwrap.Util.multiref_polar_ali_3d(data, refrings, txrng, tyrng, step, mode, numr, cnx-sxi, cny-syi, delta_psi) --> ????
+2) sparx_pixel_error.max_3D_pixel_error(t1, t2, r) --> define the max error between 2 sets of param orientation's param (t = EMAN2_cppwrap.Transform())
+
+returns the peak got by "EMAN2_cppwrap.Util.multiref_polar_ali_3d" and the pixel error got via "sparx_pixel_error.max_3D_pixel_error"
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        ali_vol_func(params, data)
+		params --> params list to rotate, shift and scale the img
+		data --> ????
+
+1) sparx_fundamentals.rot_shift3D(....) rotates, shifts and scales a 3D img
+
+Returns similarity index, as a real value, between the input image given [1] and that date [0] translated modified as a function of the params via (1). If given [2] nn nothing considers it as img mask.
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+################################################################################################################################################################################################################################################
+        align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
+		image --> 1 img
+		refim --> img di riferimento
+		xrng --> Translational step    parameter of ormq
+		yrng -->Translational step     parameter of ormq
+		step --> Angular step
+		first_ring --> Inner radius
+		last_ring --> Outer radius
+		rstep --> reverse Translational step  e' passato a Numrinit
+		mode --> type of interpolation F(full circle interpolation) o H (half ...)
+
+1) numr = Numrinit(first_ring, last_ring, rstep, mode)
+2) wr   = ringwe(numr, mode)
+3) crefim = EMAN2_cppwrap.Util.Polar2Dm(refim, cnx, cny, numr, mode)
+4) EMAN2_cppwrap.Util.Frngs(crefim, numr)
+5) EMAN2_cppwrap.Util.Applyws(crefim, numr, wr)
+6) return ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
+
+Determina rotazione, shift tramite image e quella di riferiment, refim. output:[angolo di rotazione, shiftX, shiftY, isMirror, peak]. Tramite chaiamata a "ormq"
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1)
+		image --> 1 img
+		refim --> ref img
+		xrng --> X search range
+		yrng -->  Y search range
+		ou --> ray of the object
+
+2) scr = sparx_fundamentals.scf(refim)
+3) numr = Numrinit(first_ring, ou, 1, "H")
+4) wr   = ringwe(numr, "H")
+5) crefim = EMAN2_cppwrap.Util.Polar2Dm(scr, cnx, cny, numr, "H")
+6) EMAN2_cppwrap.Util.Frngs(crefim, numr)
+7) EMAN2_cppwrap.Util.Applyws(crefim, numr, wr)
+8) alpha1, sxs, sys, mirr, peak1 = ornq(sci, crefim, [0.0], [0.0], 1.0, "H", numr, cnx, cny)
+9) sparx_fundamentals.mirror(sci)
+10) frotim = sparx_fundamentals.fft( refim )
+11 * 3) ccf1 = EMAN2_cppwrap.Util.window(sparx_fundamentals.ccf(sparx_fundamentals.rot_shift2D(image, alpha, 0.0, 0.0, mirr), frotim),nrx,nry)
+11_2 sparx_fundamentals.ccf .... 		--> calcules correlation between 2 imgs
+12) p1 = sparx_utilities.peak_search(ccf1)		--> searches the peak in the img. in this case just the first one
+13) z = sparx_utilities.model_blank(3,3)	generates a 3x3 @d white img
+14) XSH, YSH, PEAKV = parabl(z) --> returns the x,y coordinate of the interpolation peak of the parable, which it is looking for interpolation purpose
+
+Defines the rotation an shift between the image and the ref img.
+output:[rotation angle, shiftX, shiftY, isMirror, peak], for the SCF (Similarity Histogram-Based clustering) alignment
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1)
+		image --> imgs
+		refrings --> rings di riferimento
+		frotim --> ref img modified by fft
+		numr --> vector containing all the infos for the polar 2D interpolation
+		xrng --> X search range
+		yrng -->  Y search range
+		ou --> raggio dell' oggetto
+Generalization of "align2d_scf" over all the rings.
+Defines rotation and shift between image and the imgs of refrings and refim
+output:[rotation angle, shiftX, shiftY, isMirror, peak], for the SCF (Similarity Histogram-Based clustering) alignment
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        parabl(Z)
+		z --> img
+It seems to use the quadratic interpolation. I'm really not sure. See https://www.dsprelated.com/freebooks/sasp/Quadratic_Interpolation_Spectral_Peaks.html parte di  ' Matlab for Parabolic Peak Interpolation '.
+Fabian has something similar in the C++ code
+returns the x,y coordinate of the interpolation peak of the parable, which it is looking for interpolation purpose
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        shc(data, refrings, list_of_reference_angles, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=None)
+		data --> img
+		refrings --> reference ring image
+		list_of_reference_angles --> list of reference anfle
+		numr --> vector containing all the infos for the polar 2D interpolation
+		xrng --> X search range
+		yrng -->  Y search range
+		step --> Translational step
+		an --> Angular search range
+		sym --> Symmetry group
+		finfo --> print out variables values
+Statistical hill climbing algorithm.
+Output:
+-) peak = represent the next peak.
+-) pixel_error = pixel error got via 'sparx_pixel_error.max_3D_pixel_error
+-) number_of_checked_refs = number of images analyzed before finding the peak
+-) iref = index of the image of the peak. Since it seems that it analyzes the list randomly. this value change from iteration and iteration
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        search_range(n, radius, shift, range, location = "")
+		n --> size of img
+		radius --> ray of the particle
+		shift --> currently shift of the particle
+		range --> max range possible
+		location --. ???
+Find permissible ranges for translational searches by resampling into polar coordinates
+		n - image size; radius - particle radius, the circle has to fit into the square image;
+		shift - current particle shift; range - desired maximum range search
+		Output: a list of two elements:
+		  left range (positive)
+		  right range
+		NOTE - ranges are with respect to the point n//2+1-shift within image (in 3D)
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        generate_list_of_reference_angles_for_search(input_angles, sym)
+		input_angles --> lista di angoli di eulero adattati per la proiezione, generati da 'sparx_utilities.even_angles'
+		sym --> Symmetry group
+	  Generate full set of reference angles, including mirror and symmetry related
+	  from a unique subrange generated by even_angles and stored in refrings.
+	  Input - input_angles [[angles],[angles]]
+	  Output - [[angles], [angles]] (no shifts)
+			Blocks - [[basic][mirrored basic]] [[basic sym1][mirrored basic sym1]] ...
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+################################################################################################################################################################################################################################################
+        ormq_fast(dimage, crefim, xrng, yrng, step, numr, mode, delta = 0.0)
+		dimage --> img
+		crefim --> img di riferimento
+		xrng --> X search range
+		yrng -->  Y search range
+		step --> Translational step
+		numr --> vettore contenente tutte le info per l'interpolazione 2D polare passato a "Util.Polar2Dm" in pratica e' sempre l'output di "Numrinit(..)"
+		mode --> type of interpolation F(full circle interpolation) o H (half ...)
+		delta --> Angular step
+determina rotazione e traslazione tra i data e l'immagine di riferimento (cimage).Mirror ammesso.
+E' usata unicamente in "ali2d_single_iter" nel caso PCP che sembra essere non piu' disponibile quindi al momento evito di testarla  e di documentarla e memorizzati in refrings
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+

@@ -1,0 +1,823 @@
+-) amoeba(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data=None)
+-) compose_transform2(alpha1, sx1, sy1, scale1, alpha2, sx2, sy2, scale2)
+-) compose_transform3(phi1,theta1,psi1,sx1,sy1,sz1,scale1,phi2,theta2,psi2,sx2,sy2,sz2,scale2)
+-) combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2)
+-) inverse_transform2(alpha, tx = 0.0, ty = 0.0, mirror = 0)
+-) drop_image(imagename, destination, itype="h")
+-) even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method = 'S', phiEqpsi = "Minus", symmetry='c1', ant = 0.0)
+-) even_angles_cd(delta, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method = 'P', phiEQpsi='Minus'):
+		-) find(vv, cmp_str, n) seems to be unused
+-) gauss_edge(sharp_edge_image, kernel_size = 7, gauss_standard_dev =3)
+-) get_image(imagename, nx = 0, ny = 1, nz = 1, im = 0)
+-) get_im(stackname, im = 0)
+-) get_image_data(img)
+-) get_symt(symmetry)
+-) get_input_from_string(str_input):
+-) model_circle(r, nx, ny, nz=1)
+-) model_gauss(xsigma, nx, ny=1, nz=1, ysigma=None, zsigma=None, xcenter=None, ycenter=None, zcenter=None)
+-) model_gauss_noise(sigma, nx, ny=1, nz=1)
+-) model_blank(nx, ny=1, nz=1, bckg = 0.0)
+-) peak_search(e, npeak = 1, invert = 1, print_screen = 0)
+-) pad(image_to_be_padded, new_nx, new_ny = 1,	new_nz = 1, background = "average", off_center_nx = 0, off_center_ny = 0, off_center_nz = 0)
+-) chooseformat(t)
+-) read_text_row(fnam, format="", skip=";")
+-) write_text_row(data, file_name)
+-) read_text_file(file_name, ncol = 0)
+-) write_text_file(data, file_name)
+-) rotate_shift_params(paramsin, transf)
+-) reshape_1d(input_object, length_current=0, length_interpolated=0, Pixel_size_current = 0., Pixel_size_interpolated = 0.)
+		-) estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node, mpi_comm=None) ?????????
+-) rotate_3D_shift(data, shift3d)
+-) set_arb_params(img, params, par_str)
+-) get_arb_params(img, par_str)
+					inserire i seghini di mpi
+-) circumference( img, inner = -1, outer = -1)
+-) write_headers(filename, data, lima)
+-) file_type(name)
+-) get_params2D(ima, xform = "xform.align2d")
+-) set_params2D(ima, p, xform = "xform.align2d")
+-) get_params3D(ima, xform = "xform.align3d")
+-) set_params3D(ima, p, xform = "xform.align3d")
+-) get_params_proj(ima, xform = "xform.projection")
+-) set_params_proj(ima, p, xform = "xform.projection")
+-) get_ctf(ima)
+-) same_ctf(c1,c2)
+-) generate_ctf(p)
+-) disable_bdb_cache()
+-) getvec( phi, tht )
+-) getfvec( phi, tht )
+-) nearest_fang( vecs, phi, tht )
+-) assign_projdirs_f(projdirs, refdirs, neighbors)
+-) angles_to_normals(angles)
+	-) angular_occupancy(params, angstep = 15., sym= "c1", method='S')								?????
+	-) angular_histogram(params, angstep = 15., sym= "c1", method='S')								?????
+	-) balance_angular_distribution(params, max_occupy = -1, angstep = 15., sym= "c1")				?????
+-) symmetry_neighbors(angles, symmetry)
+-) rotation_between_anglesets(agls1, agls2)
+-) angle_between_projections_directions(proj1, proj2)
+-) get_pixel_size(img)
+-) set_pixel_size(img, pixel_image)
+-) lacos(x)
+					to do:	nearest_proj(proj_ang, img_per_grp=100, List=[])
+-) findall(value, L, start=0)
+-) iterImagesList(list_of_images, list_of_indexes = None)
+-) get_dist(c1, c2)
+-) combinations_of_n_taken_by_k(n,k)
+-) cmdexecute(cmd, printing_on_success = True)
+-) string_found_in_file(myregex, filename)
+-) store_value_of_simple_vars_in_json_file(filename, local_vars, exclude_list_of_vars = [], write_or_append = "w", vars_that_will_show_only_size = [])
+-) convert_json_fromunicode(data)
+-) parsing_sorting_params(sorting_params_list)
+-) sample_down_1D_curve(nxinit, nnxo, pspcurv_nnxo_file)
+-) get_initial_ID(part_list, full_ID_dict)
+-) prepare_ptp(data_list, K)
+-) print_dict(dict,theme)
+-) get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option)
+-) partition_to_groups(alist, K)
+-) partition_independent_runs(run_list, K)
+-) merge_groups(stable_members_list)
+-) save_alist(Tracker,name_of_the_text_file,alist)
+-) margin_of_error(P, size_of_this_sampling)
+-) do_two_way_comparison(Tracker)
+-) select_two_runs(summed_scores,two_way_dict)
+-) counting_projections(delta, ali3d_params, image_start)
+-) unload_dict(dict_angles)
+-) load_dict(dict_angle_main_node, unloaded_dict_angles)
+-) get_groups_from_partition(partition, initial_ID_list, number_of_groups)
+-) get_complementary_elements(total_list,sub_data_list)
+-) count_chunk_members(chunk_dict, one_class)
+-) remove_small_groups(class_list,minimum_number_of_objects_in_a_group)
+-) apply_low_pass_filter(refvol,Tracker)
+-) create_random_list(Tracker)
+-) update_full_dict(leftover_list, Tracker)
+-) get_sorting_params_refine(Tracker,data,ndata)
+-) fill_in_mpi_list(mpi_list,data_list,index_start,index_end)
+-) getindexdata(stack, partids, partstack, myid, nproc)
+
+######################################################################################################################################################################################################################
+        amoeba(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data=None)
+        var --> the initial guess, a list with one element for each variable
+        scale --> the search scale for each variable, a list with one element for each variable
+        func --> the function to maximize
+        ftolerance --> convergence criterion on the function values
+        xtolerance --> convergence criterion on the variables values
+        itmax --> maximum number of iterations allowed
+        data --> data to be passed to func
+Use the simplex method to maximize a function of 1 or more variables
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+        compose_transform2(alpha1, sx1, sy1, scale1, alpha2, sx2, sy2, scale2)
+		alpha,sx,sy,scale --> parameters of an transform object represent respectively rotation angle in degree, shift in x,y axis and scale factor
+Compute the composition of two transformations  T2*T1. 2D version
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#######################################################################################################################################################################################################################
+        compose_transform3(phi1,theta1,psi1,sx1,sy1,sz1,scale1,phi2,theta2,psi2,sx2,sy2,sz2,scale2)
+		phi, theta, psi, sx, sy, sz, scale --> parameters of an transform object represent respectively rotations angle in degree (using the standard eulero name convenction. See https://en.wikipedia.org/wiki/Euler_angles),
+		shift in x,y,z axis and scale factor
+Compute the composition of two transformations  T2*T1. 3D version
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+        combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2)
+        alpha,sx,sy,mirroring --> parameters of an transform object represent respectively rotation angle in degree, shift in x,y axis and use of mirror
+Combine 2D alignment parameters including mirror: Tnew = T2*T1
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+        inverse_transform2(alpha, tx = 0.0, ty = 0.0, mirror = 0)
+        alpha --> rotation param
+        tx --> translation on the x axis
+        ty --> translation on the y axis
+        mirror -->  mirroring enabled
+Returns the inverse of the 2d rot and trans matrix
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+        drop_image(imagename, destination, itype="h")
+		imagename --> name of an existing image
+		destination --> path to the image
+		itype --> type of the image: h= hdf and s =spider
+Write an image on the disk
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+        even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method = 'S', phiEqpsi = "Minus", symmetry='c1', ant = 0.0)
+		delta -->  Delta theta (spacing in theta)
+		theta1 --> Starting (min) value of theta in degrees
+		theta2 --> Ending (max) value of theta in degrees
+		phi1 -->  Starting (min) value of phi in degrees
+		phi2 --> Ending (max) value of phi in degrees
+		method --> S for Saff algorithm and P for Penczek
+		phiEqpsi --> Can be "minus" or nothing. Used in 'even_angles_cd' if you want psi=-phi (see the eulero convenction to better understand)
+		symmetry --> type of symmetry. It supports cn,dn or helical (i.e. scn or sdn)
+		ant --> delta value to search in the neighborhood. not so clear
+Create a list of Euler angles suitable for projections
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+        even_angles_cd(delta, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method = 'P', phiEQpsi='Minus'):
+		delta -->  Delta theta (spacing in theta)
+		theta1 --> Starting (min) value of theta in degrees
+		theta2 --> Ending (max) value of theta in degrees
+		phi1 -->  Starting (min) value of phi in degrees
+		phi2 --> Ending (max) value of phi in degrees
+		method --> S for Saff algorithm and P for Penczek
+		phiEqpsi --> Can be "minus" or nothing. Used in 'even_angles_cd' if you want psi=-phi (see the eulero convenction to better understand)
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+        gauss_edge(sharp_edge_image, kernel_size = 7, gauss_standard_dev =3)
+		sharp_edge_image --> img
+		kernel_size --> size of the filter kernel
+		gauss_standard_dev -->	standard deviation of the gaussian kernel
+returns a smooth sharp_edge_image, smoothed with Gaussian function
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+        get_image(imagename, nx = 0, ny = 1, nz = 1, im = 0)
+		imagename --> path to the images
+		nx --> x size of the new image
+		ny --> y size of the new image
+		nz --> z size of the new image
+		im --> index of the image to load
+Returns an image from the disk or create an image with the specified size
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+        get_im(stackname, im = 0)
+		stackname  --> path to the images
+		im --> index of the image to load
+Returns an image from the disk or create an image with the specified size
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+        get_image_data(img)
+Return a NumPy array containing the image data
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+ 		get_symt(symmetry)
+		symmetry --> string that specifies the symmetry group. See the definition of the 'symclass' in the sparx_fundamental.py to get all the avalable types (e.g. cx,dx,oct etc.)
+ get a list of point-group symmetry transformations
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		get_input_from_string(str_input):
+		str_input --> string that specifies a number or a list of numbers (e.g: 4 or 5,6,7.8)
+Returns a list of the numbers specified in the input string. It returns a list even if the input string contains a single number
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		model_circle(r, nx, ny, nz=1)
+		r --> length of the ray
+		nx,ny,nz --> size of the EMData()
+Create a centered circle (or sphere) having radius r. Returns an EMData() object
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		model_gauss(xsigma, nx, ny=1, nz=1, ysigma=None, zsigma=None, xcenter=None, ycenter=None, zcenter=None)
+		nx,ny,nz --> size of the EMData()
+		?sigma --> standard deviation of x,y,z
+		?center --> coordinate of the center of the img
+Create an image of a Gaussian function with standard deviation "xsigma,ysigma,zsigma" and centered at (xcenter,ycenter,zcenter), by default the center is image center. Returns an EMData() object
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		model_gauss_noise(sigma, nx, ny=1, nz=1)
+		nx,ny,nz --> size of the EMData()
+		sigma --> standard deviation
+Create an image of noise having standard deviation "sigma", d average 0
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		model_blank(nx, ny=1, nz=1, bckg = 0.0)
+		nx,ny,nz --> size of the EMData()
+		bckg --> value to set a background colour
+Create a blank image
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+        peak_search(e, npeak = 1, invert = 1, print_screen = 0)
+        e --> image
+        npeak --> number of peak to search
+        invert --> if not -1 returns the results in the increasing order
+        print_screen --> if not 0 print debug values
+
+Returns all the peaks of the imgae using (e.peak_search()) ... libEM/sparx/emdata_sparx.cpp
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		pad(image_to_be_padded, new_nx, new_ny = 1,	new_nz = 1, background = "average", off_center_nx = 0, off_center_ny = 0, off_center_nz = 0)
+		image_to_be_padded --> image to pad
+		new_nx, new_ny, new_nz --> size of the padded EMData()
+		background --> type of the background colour
+		off_center_nx, off_center_ny off_center_nz --> representing the offset to center the new images
+Returns an image containg the input image. The padding is filled with 'background' colour and it is centered using the given offset values
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		chooseformat(t)
+		t --> floating point value
+Returns 'e' if it is an exponential number otherwise 'f'
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		read_text_row(fnam, format="", skip=";")
+		fnam --> file name to analyze
+		format--> ???? with 's' it does stuff ....bho
+		skip --> delimiter character
+Read a column-listed txt file and returns ....not clear ...have to take a look at an example
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		write_text_row(data, file_name)
+		data --> dati to save in the given file
+		file_name --> save the given data in this file
+Write in 'file_name' the list of lists given via 'data ... in the code is written list of lists of float but you can save string too
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		read_text_file(file_name, ncol = 0)
+		file_name --> path to the file
+		ncol --> number of coloumn to read
+Read the number of coloumn 'ncol' given from the file 'file_name'
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		write_text_file(data, file_name)
+		data --> dati to save in the given file
+		file_name --> save the given data in this file
+Write in 'file_name' the list of lists given via 'data ... in the code is written list of lists of float but you can save string too
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		rotate_shift_params(paramsin, transf)
+		paramsin --> list of 3 or 6 params. rotation first
+		transf --> list of 3 or 6 params. rotation first
+Returns the rotation and shift parameters as list (1,2,3 are the rotation params4,5,6 the shift.
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		reshape_1d(input_object, length_current=0, length_interpolated=0, Pixel_size_current = 0., Pixel_size_interpolated = 0.)
+		input_object --> a 1D list with a 1D curve to be interpolated
+		length_current --> half size of the image size (in case of power spectrum, it can be different from the length of the input_object)
+		length_interpolated --> length of the interpolated 1D curve
+		Pixel_size_current --> pixel size of the input 1D list
+		Pixel_size_interpolated --> pixel size of the target 1D list
+Returns as list the linearly interpolate a 1D power spectrum to required length with required Pixel size
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node, mpi_comm=None)
+		data -->
+		nima -->
+		myid -->
+		number_of_proc -->
+		main_node -->
+		mpi_comm -->
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		rotate_3D_shift(data, shift3d)
+		data --> list of imgs
+		shift3d --> list containing the shift values to add to the imgs
+Change the attribute containing the projection info adding to it the given rotation params
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		set_arb_params(img, params, par_str)
+		img -->
+		params --> list of params associated to the 'par_str' list
+		par_str --> list of new attributes.
+Inserts a new list of attributes to the given img
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+######################################################################################################################################################################################################################
+		get_arb_params(img, par_str)
+		img -->
+		par_str --> list of attributes
+Returns the values of the given list of params. If the list contains just a param is like "EMData().get_attr("par_str[0]")"
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+######################################################################################################################################################################################################################
+		circumference( img, inner = -1, outer = -1)
+		img -->
+		inner --> internal ray
+		outer --> external ray
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+######################################################################################################################################################################################################################
+		write_headers(filename, data, lima)
+		filename -->
+		data -->
+		lima --> list with positions in the disk files into which headers will be written,
+write headers from files in data into a disk file called filename. Has to be a .bdb or hdf. The bdb case does not work under linux (it is a known bug)
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+######################################################################################################################################################################################################################
+		write_header(filename, data, lima)
+		filename -->
+		data -->
+		lima --> list with positions in the disk files into which headers will be written,
+write a single header from files in data into a disk file called filename. Has to be a .bdb or hdf. The bdb case WORKS under linux
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+######################################################################################################################################################################################################################
+		file_type(name)
+		name --> filename to check
+Print out an error message if the extension of the file has not exactly 3 chars or if the first 4 chars are not "bdb:"
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+######################################################################################################################################################################################################################
+		get_params2D(ima, xform = "xform.align2d")
+		ima -->
+		xform -->
+retrieve 2D alignment parameters from the header alpha, tx, ty, mirror, scale
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		set_params2D(ima, p, xform = "xform.align2d")
+		ima -->
+		p --> values of the params
+		xform -->
+set 2D alignment parameters in the header p = [alpha, tx, ty, mirror, scale]
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		get_params3D(ima, xform = "xform.align3d")
+		ima -->
+		xform -->
+retrieve 3D alignment parameters from the header phi,theta, psi, tx, ty, tz, mirror,scale
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		set_params3D(ima, p, xform = "xform.align3d")
+		ima -->
+		p --> values of the params
+		xform -->
+set 3D alignment parameters in the header p = [phi,theta, psi, tx, ty, tz, mirror,scale]
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		get_params_proj(ima, xform = "xform.projection")
+		ima -->
+		xform -->
+retrieve projection alignment parameters from the header phi, theta, psi, s2x, s2y
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		set_params_proj(ima, p, xform = "xform.projection")
+		ima -->
+		p --> values of the params
+		xform -->
+set projection alignment parameters in the header p = [phi, theta, psi, s2x, s2y]
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		get_ctf(ima)
+		ima -> img
+recover numerical values of CTF parameters from EMAN2 CTF object stored in a header of the input image.
+Returns [ defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle[
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		same_ctf(c1,c2)
+		c1 --> first ctf
+		c1 --> second ctf
+Compare two CTF objects and return True if they are the same
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		generate_ctf(p)
+		p --> list of params of the ctf [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle]
+Returns the ctf with the given params
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		disable_bdb_cache()
+sets to True the global variable 'EMAN2db.BDB_CACHE_DISABLE'
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		getvec( phi, tht )
+		phi --> rotation angle https://en.wikipedia.org/wiki/Euler_angles
+		tht --> rotation angle See https://en.wikipedia.org/wiki/Euler_angles
+The meaning of the output ??????????
+Used in sparx_application. The input are the first 2 values of a row got via 'even_angles'
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		getfvec( phi, tht )
+		phi --> rotation angle see https://en.wikipedia.org/wiki/Euler_angles
+		tht --> rotation angle See https://en.wikipedia.org/wiki/Euler_angles
+The meaning of the output ??????????
+Used in sparx_application. The input are the first 2 values of a row got via 'even_angles'
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		nearest_fang( vecs, phi, tht )
+		vecs --> list of projection angle
+		phi --> angle of reference See https://en.wikipedia.org/wiki/Euler_angles
+		tht --> angle of reference See https://en.wikipedia.org/wiki/Euler_angles
+Find the nearest projection angles, and gives back the index of the input vector representing the nearest project angle
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		assign_projdirs_f(projdirs, refdirs, neighbors)
+		projdirs --> data, that represents the projection directions (e.g: in sxmeridian is the output of sparx_utilities.angles_to_normals())
+		refdirs -->templates, each template has neighbors related copies, that represents the reference directions (e.g: in sxmeridian is the output of sparx_utilities.angles_to_normals())
+		neighbors --> integer value that represent the number of what ????? (e.g: in sxmeridian is "len(projdirs)/len(refdirs)")
+Returns a list of lists, ofr each of refdirs/neighbors there is a list of projdirs indexes that are closest to it
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		angles_to_normals(angles)
+		angles --> list of angles
+retunns the normal of the angles
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		angular_occupancy(params, angstep = 15., sym= "c1", method='S')
+		params --> ????
+		angstep --> The Delta theta (spacing in theta) used in 'even_angles'
+		sym --> string that specifies the symmetry group. See the definition of the 'symclass' in the sparx_fundamental.py to get all the avalable types (e.g. cx,dx,oct etc.)
+		method --> S for Saff algorithm and P for Penczek
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		angular_histogram(params, angstep = 15., sym= "c1", method='S')
+		params --> ????
+		angstep --> The Delta theta (spacing in theta) used in 'even_angles'
+		sym --> string that specifies the symmetry group. See the definition of the 'symclass' in the sparx_fundamental.py to get all the avalable types (e.g. cx,dx,oct etc.)
+		method --> S for Saff algorithm and P for Penczek
+It calls 'angular_occupancy' but what is returning??????
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		balance_angular_distribution(params, max_occupy = -1, angstep = 15., sym= "c1")
+		params --> ????
+		max_occupy --> ???
+		angstep --> The Delta theta (spacing in theta) used in 'even_angles'
+		sym --> string that specifies the symmetry group. See the definition of the 'symclass' in the sparx_fundamental.py to get all the avalable types (e.g. cx,dx,oct etc.)
+It calls 'angular_occupancy' with method = S but what is returning??????
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		symmetry_neighbors(angles, symmetry)
+		angles --> listof lists of angles in this form:  [[phi0,theta0,psi0],[phi1,theta1,psi1],...]
+		symmetry --> string that specifies the symmetry group. See the definition of the 'symclass' in the sparx_fundamental.py to get all the avalable types (e.g. cx,dx,oct etc.)
+The similar angles in the neighboor
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		rotation_between_anglesets(agls1, agls2)
+		agls1 --> listof lists of angles in this form:  [[phi0,theta0,psi0],[phi1,theta1,psi1],...]
+		agls2 --> listof lists of angles in this form:  [[phi0,theta0,psi0],[phi1,theta1,psi1],...]. Reference value
+Returns an overall 3D rotation (phi theta psi) between two sets of Eulerian angles. (psi irrelevant)
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		angle_between_projections_directions(proj1, proj2)
+		proj1 --> list of the angles of a projection
+		proj2 --> list of the angles of a projection
+It returns angle between two projections directions
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		get_pixel_size(img)
+		img -->
+Retrieve pixel size from the header
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		set_pixel_size(img, pixel_size)
+		img -->
+		pixel_size  -->  new pixel size
+Set pixel size in the header
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		lacos(x)
+		x --> value of the angle
+compute acos(x) in degrees after enforcing -1<=x<=1
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		findall(value, L, start=0)
+		value --> value to llok for in the list L
+		L --> list of values
+		start --> index where it has to start to seek
+return a list of all indices of a value on the list L beginning from position 'start'
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		iterImagesList(list_of_images, list_of_indexes = None)
+		list_of_images --> list of images
+		list_of_indexes --> list of index used to select the images from the list
+Class used to manage a list of images
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		get_dist(c1, c2)
+		c1 --> point 1
+		c2 --> point 2
+returns the euclidean distance between the given points
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		eliminate_moons(my_volume, moon_elimination_params)
+		my_volume --> volume
+		moon_elimination_params -->parameters for the 'float EMData::find_3d_threshold(float mass, float pixel_size)'. It shopuld be a 2d list
+Removes the pixel out of the main image. Returns the volume without clusters of pixel out of the main image
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		combinations_of_n_taken_by_k(n,k)
+Returns the simple combination without ripetition between n and k --> n=5 , k=3 is n!/k!*(n-k)!
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		cmdexecute(cmd, printing_on_success = True)
+		cmd --> string contained the command to run on the cmdline
+Runs the command 'cmd' on the console
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		string_found_in_file(myregex, filename)
+		myregex -> string to find in the file
+		filename --> path to the file
+returns True if the 'myregex' string is present in the file 'filename'
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		store_value_of_simple_vars_in_json_file(filename, local_vars, exclude_list_of_vars = [], write_or_append = "w", vars_that_will_show_only_size = [])
+		filename -->
+		local_vars -->	dict rapresenting the vars to save: key=var_name value=value of the var_name
+		exclude_list_of_vars --> list of variable to avoid to save on file
+		write_or_append -->
+		vars_that_will_show_only_size --> list of variables (sort 'type list') which we want to safe the size but not their values
+Save a bunch of variables in a json file
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		convert_json_fromunicode(data)
+		data --> json  file values
+given the contained values of a json file returns the values as dict
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		parsing_sorting_params(sorting_params_list)
+		sorting_params_list -->
+Returns the list rapresenting 'group_list' and 'ali3d_params_list'   ???????????????
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		sample_down_1D_curve(nxinit, nnxo, pspcurv_nnxo_file)
+		nxinit --> start rate value
+		nnxo --> end rate value
+		pspcurv_nnxo_file --> file containing the values of the curve
+Returns the input curve shrank of a factor "float(nnxo)/float(nxinit)"
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		get_initial_ID(part_list, full_ID_dict)
+		part_list -->
+		full_ID_dict -->
+?????
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		convertasi(asig,K)
+		asig --> list of value
+		K --> ????
+Returns a list of array ...????
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		prepare_ptp(data_list, K)
+		data_list -->
+		K -->
+returns a list of list of array using 'convertasi'????
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		print_dict(dict,theme)
+		dict --> dict with string as key
+		theme --> title to print out
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option)
+		vol = list of img (2D or 3D)
+		radi = radius of the circle mask that it has to create if not present in 'mask_option' params
+		nnxo = size (x=y=z) of the image used to create the circle mask that it has to create if not present in 'mask_option' params
+		mask_option = list of image. the first one will be the mask
+return parameters of the tanh filter (see sparx_filter.py --> fit_tanh1) of the fsc (see sparx_statistics.fsc) between the first 2 img of the volume
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		partition_to_groups(alist, K)
+		alist -->
+		K -->
+???
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		partition_independent_runs(run_list, K)
+		run_list -->
+		K -->
+????
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		merge_groups(stable_members_list)
+		stable_members_list -->
+????
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		save_alist(Tracker,name_of_the_text_file,alist)
+		Tracker -->
+		name_of_the_text_file --> name of the file
+		alist --> list to save on the file 'name_of_the_text_file'
+Save the given list on the given path on the dirs definited in the 'Tracker', if Tracker['myid']=Tracker['main_node]
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+######################################################################################################################################################################################################################
+		margin_of_error(P, size_of_this_sampling)
+		P -->
+		size_of_this_sampling -->
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		do_two_way_comparison(Tracker)
+		Tracker -->
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		select_two_runs(summed_scores,two_way_dict)
+		summed_scores -->
+		two_way_dict -->
+?????
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		counting_projections(delta, ali3d_params, image_start)
+		delta --> Delta theta (spacing in theta) used by 'even_angles'
+		ali3d_params --> list of params for the 3d alignment
+		image_start --> ????
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+######################################################################################################################################################################################################################
+		unload_dict(dict_angles)
+		dict_angles --> dict of angles
+returns the key as list of list
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		load_dict(dict_angle_main_node, unloaded_dict_angles)
+		dict_angle_main_node --> in the code got from 'counting_projections'
+		unloaded_dict_angles --> in the code got from unload_dict(dict_angle_main_node)
+??????
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		get_groups_from_partition(partition, initial_ID_list, number_of_groups)
+		partition -->
+		initial_ID_list -->
+		number_of_groups -->
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		get_complementary_elements(total_list,sub_data_list)
+		total_list
+		sub_data_list
+Returns data that are present in 'total_list' but not in 'sub_data_list'
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		count_chunk_members(chunk_dict, one_class)
+		chunk_dict -->
+		one_class -->
+???
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		remove_small_groups(class_list,minimum_number_of_objects_in_a_group)
+		class_list --> list of list of values
+		minimum_number_of_objects_in_a_group --> minimum number of objects in a group
+From a list of list of values, 'class_list' remove the class having less elements than 'minimum_number_of_objects_in_a_group'.
+Returns all the remaint elements as order list and the 'class_list' that have more than  'minimum_number_of_objects_in_a_group'.
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		get_number_of_groups(total_particles,number_of_images_per_group)
+		total_particles --> total number of particles
+		number_of_images_per_group --> # of images for each group
+Returns the number of group with 'number_of_images_per_group' images
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		tabessel(nx, nnxo, nbel = 5000)
+		nx,nnxo are not used
+		nbel --> number of elements to create
+create a list with 'nbel' elements. Each element is an bessel0 float value (see: Util.bessel0 in libEM/sparx/util_sparx.cpp)
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		apply_low_pass_filter(refvol,Tracker)
+		refvol --> volume, list of images
+		Tracker -->
+Filters all the images in the stack with the filter 'sparx_filter.filt_tanl' with freq= 'Tracker["low_pass_filter"]'
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		create_random_list(Tracker)
+		Tracker -->
+Create a random list of 'Tracker["this_data_list"]'
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		update_full_dict(leftover_list, Tracker)
+		leftover_list --> dict value to add
+		Tracker -->
+Add the value of 'leftover_list' in Tracker["full_ID_dict"]
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		get_sorting_params_refine(Tracker,data,ndata)
+		Tracker -->
+		data --> list of images, i.e. a stack
+		ndata --> number of images that you want to analyze, it has to be not higher than len(data)
+Reurns a list of list. In each list there are the projection params, group etc.
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		fill_in_mpi_list(mpi_list,data_list,index_start,index_end)
+		mpi_list --> it is the output list too, it will be modified. It use to be a list of empty list with size "index_end-index_start"
+		data_list --> Given a stack it contained a list of list representing the params of each image of the stack (used in 'get_sorting_params_refine')
+		index_start --> first index of the data_list to analyze
+		index_end --> last index of the data_list to analyze
+returns a list of list of important variables of the images in a stack (e.g. the projection params, group )
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+######################################################################################################################################################################################################################
+		getindexdata(stack, partids, partstack, myid, nproc)
+		stack --> path to the stack (e.g. "bdb:mydb")
+		partids --> path to the file containing the values of particles ID
+		partstack --> path to the file containing the values of the particles
+		myid --> my ID
+		nproc --> # process
+The function will read from stack a subset of images specified in partids and assign to them parameters from partstack
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
