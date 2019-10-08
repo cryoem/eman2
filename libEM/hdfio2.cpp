@@ -42,6 +42,7 @@
 
 #include <iostream>
 #include <cstring>
+#include <inttypes.h>
 
 #ifndef WIN32
 	#include <sys/param.h>

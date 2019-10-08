@@ -2380,10 +2380,10 @@ void SetBitsProcessor::process_inplace(EMData *image)
 	else {
 		// In this version, we keep a specified number of significant bits in the floating point significand, leaving the exponent and sign alone
 		if (floatbits>22) throw InvalidValueException(floatbits,"floatbits must be <23");
-		u_int32_t bitmask= 0xffffffff << (23-floatbits); // this will leave 1 in the sign and exponent bits, along with the specified number of significand bits
+		unsigned int bitmask= 0xffffffff << (23-floatbits); // this will leave 1 in the sign and exponent bits, along with the specified number of significand bits
 		for (size_t i=0; i<total_size; i++) {
 			float newval=image->get_value_at_index(i);
-			u_int32_t *newvali = (u_int32_t*)&newval;
+			unsigned int *newvali = (unsigned int*)&newval;
 			*newvali&=bitmask;
 			image->set_value_at_index(i,newval);
 		}
