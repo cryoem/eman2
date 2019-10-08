@@ -10,7 +10,7 @@ Current build status
 ====================
 
 Linux: [![CircleCI](https://circleci.com/gh/cryoem/eman2.svg?style=svg)](https://circleci.com/gh/cryoem/eman2)
-OSX: [![TravisCI](https://travis-ci.org/cryoem/eman2.svg?branch=benchmark-fftw)](https://travis-ci.org/cryoem/eman2)
+OSX: [![TravisCI](https://travis-ci.org/cryoem/eman2.svg?branch=master)](https://travis-ci.org/cryoem/eman2)
 
 
 
