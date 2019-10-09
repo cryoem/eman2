@@ -201,7 +201,7 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 		towrite=[[xfs, outname, sz, info]]
 		
 		
-	elif e["nz"]!=e["nx"] and nptcl==1:
+	elif nptcl==1:
 		print("Reading particle location from a tomogram...")
 		js=js_open_dict(info_name(pfile))
 		towrite=[]
@@ -450,7 +450,7 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 				#if options.rmbeadthr>0:
 				#### give up maintaining the order since there are empty particles...
 				#pid=-1
-				threed.write_image(options.output, -1, hdftype,  False, None, outmode)
+				threed.write_image(options.output, pid, hdftype,  False, None, outmode)
 				ndone+=1
 				#if ndone%10==0:
 				sys.stdout.write("\r{}/{} finished.".format(ndone, nptcl))
@@ -605,15 +605,17 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 
 		if len(projs)<len(imgs)/5:
 			#### too many bad 2D particles
-			continue
+			threed=EMData(bx,bx,bx)
+			threed.to_zero()
+			#continue
 		else:
 			threed=recon.finish(True)
 			threed.process_inplace("math.gausskernelfix",{"gauss_width":4.0})
 			threed=threed.get_clip(Region((p3d-bx)//2,(p3d-bx)//2,(p3d-bx)//2,bx,bx,bx))
 		
-		if threed["sigma"]==0:
+		#if threed["sigma"]==0:
 			####empty particle for some reason...
-			continue
+			#continue
 		
 		threed["apix_x"]=threed["apix_y"]=threed["apix_z"]=apix
 		threed["ptcl_source_coord"]=pos.tolist()
