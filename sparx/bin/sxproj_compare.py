@@ -202,7 +202,8 @@ if __name__ == "__main__":
 	
 	(options, args) = parser.parse_args()
 	#print args, options  # (Everything is in options.)
-	#exit()
+	print("This program is unfinished")
+	exit()
 	
 	# If output directory not specified, write to same directory as class averages
 	if not options.outdir:
