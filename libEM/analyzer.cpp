@@ -161,14 +161,14 @@ vector<EMData *> ShapeAnalyzer::analyze() {
 void KMeansAnalyzer::set_params(const Dict & new_params)
 {
 	params = new_params;
-	if (params.has_key("ncls")) ncls = params["ncls"];
+	if (params.has_key("ncls")) ncls = nclstot = params["ncls"];
 	if (params.has_key("maxiter"))maxiter = params["maxiter"];
 	if (params.has_key("minchange"))minchange = params["minchange"];
 	if (params.has_key("mininclass"))mininclass = params["mininclass"];
 	if (params.has_key("slowseed"))slowseed = params["slowseed"];
 	if (params.has_key("verbose"))verbose = params["verbose"];
 	if (params.has_key("calcsigmamean")) calcsigmamean=params["calcsigmamean"];
-
+	if (params.has_key("outlierclass")) outlierclass=params["outlierclass"];	
 }
 
 vector<EMData *> KMeansAnalyzer::analyze()
@@ -178,17 +178,19 @@ if (ncls<=1) return vector<EMData *>();
 
 // These are the class centers, start each with a random image
 int nptcl=images.size();
-int nclstot=ncls;
 if (calcsigmamean) centers.resize(nclstot*2);
 else centers.resize(nclstot);
 if (mininclass<1) mininclass=1;
 
 int seedmode=params.set_default("seedmode",(int)0);
 
-for (int i=0; i<nptcl; i++) images[i]->set_attr("is_ok_center",(int)5);  // if an image becomes part of too small a set, it will (eventually) be marked as a bad center
+// in outlier mode we don't use the bad center concept
+if (outlierclass==0) {
+	for (int i=0; i<nptcl; i++) images[i]->set_attr("is_ok_center",(int)5);  // if an image becomes part of too small a set, it will (eventually) be marked as a bad center
+}
 
 if (slowseed) {
-	if (ncls>25) slowseed=ncls/25+1;	// this becomes the number to seed in each step
+	if (ncls>25) ncls=slowseed=ncls/25+1;	// this becomes the number to seed in each step
 //	if (maxiter<ncls*3+20) maxiter=ncls*3+20;	// We need to make sure we have enough iterations to seed all of the classes
 //	ncls=2;
 }
@@ -259,25 +261,40 @@ for (int i=0; i<ncls; i++) {
 	centers[i]->to_zero();
 	if (sigmas) centers[i+ncls]->to_zero();
 	repr[i]=0;
+	centers[i]->set_attr("worst_ptcldist",0.0f);
 }
 
 // compute new position for each center
 for (int i=0; i<nptcl; i++) {
 	int cid=images[i]->get_attr("class_id");
-	if ((int)images[i]->get_attr("is_ok_center")>0) {
+	// outlier mode disables is_ok_center functionality
+	if (outlierclass || (int)images[i]->get_attr("is_ok_center")>0) {
 		centers[cid]->add(*images[i]);
 		if (sigmas) centers[cid+ncls]->addsquare(*images[i]);
 		repr[cid]++;
+		float imdist=images[i]->get_attr("class_cendist");
+		if (imdist>(float)centers[cid]->get_attr("worst_ptcldist")) {
+			centers[cid]->set_attr("worst_ptcldist",imdist);
+			centers[cid]->set_attr("worst_ptcl",i);
+		}
 	}
 }
 
 for (int i=0; i<ncls; i++) {
-	// If this class is too small
-	if (repr[i]<mininclass) {
+	// If this class is too small, outlier class is never reseeded
+	if (repr[i]<mininclass && (outlierclass==0||i<nclstot-1)) {
 		// find all of the particles in the class, and decrement their "is_ok_center" counter.
 		// when it reaches zero the particle will no longer participate in determining the location of a center
-		for (int j=0; j<nptcl; j++) {
-			if ((int)images[j]->get_attr("class_id")==i) images[i]->set_attr("is_ok_center",(int)images[i]->get_attr("is_ok_center")-1);
+		if (outlierclass) {	// outliers are relegated to the outlier class permanently
+			for (int j=0; j<nptcl; j++) {
+				if ((int)images[j]->get_attr("class_id")==i) images[i]->set_attr("class_id",nclstot-1);
+			}
+		}
+		// if not using outlier class, we use "is_ok_center" concept to reduce influence of outliers
+		else {
+			for (int j=0; j<nptcl; j++) {
+				if ((int)images[j]->get_attr("class_id")==i) images[i]->set_attr("is_ok_center",(int)images[i]->get_attr("is_ok_center")-1);
+			}
 		}
 		// Mark the center for reseeding
 		delete centers[i];
@@ -319,17 +336,39 @@ if (i==ncls) return;
 
 // make a list of all particles which could be centers
 vector<int> goodcen;
-for (int i=0; i<nptcl; i++) if ((int)images[i]->get_attr("is_ok_center")>0) goodcen.push_back(i);
+if (outlierclass) {
+	for (int i=0; i<nptcl; i++) if ((int)images[i]->get_attr("class_id")!=nclstot-1) goodcen.push_back(i);
+}
+else {
+//	printf("c%d\n",outlierclass);
+	for (int i=0; i<nptcl; i++) if ((int)images[i]->get_attr("is_ok_center")>0) goodcen.push_back(i);
+}
 
 if (goodcen.size()==0) throw UnexpectedBehaviorException("Kmeans ran out of valid center particles with the provided parameters");
 
 // pick a random particle for the new seed
+// for (i=0; i<ncls; i++) {
+// 	if (centers[i]) continue;		// center doesn't need reseeding
+// 	j=Util::get_irand(0,goodcen.size()-1);
+// 	centers[i]=images[j]->copy();		// Isn't this wrong? Should it be looking in goodcen?
+// 	centers[i]->set_attr("ptcl_repr",1);
+// 	printf("reseed %d -> %d\n",i,j);
+// }
+
+// use a valid center with a large distance for the new seed
 for (i=0; i<ncls; i++) {
 	if (centers[i]) continue;		// center doesn't need reseeding
-	j=Util::get_irand(0,goodcen.size()-1);
-	centers[i]=images[j]->copy();
+	j=Util::get_irand(0,ncls-1);	// pick a random class
+	if (centers[j] && centers[j]->has_attr("worst_ptcl")) {		// try to use the worst particle from that class
+		centers[i]=images[(int)centers[j]->get_attr("worst_ptcl")]->copy();
+		printf("reseed %d -> worst (cls %d)\n",i,j);
+	}
+	else {
+		j=Util::get_irand(0,goodcen.size()-1);
+		centers[i]=images[goodcen[j]]->copy();
+		printf("reseed %d -> %d\n",i,j);
+	}
 	centers[i]->set_attr("ptcl_repr",1);
-	printf("reseed %d -> %d\n",i,j);
 }
 
 
@@ -354,9 +393,12 @@ void KMeansAnalyzer::resort() {
 
 	// The first center remains first, we proceed from that starting point
 	// simple shells sort to an out-of-place reference
-	for (int i=1; i<ncls; i++) {
+	int sortmax=ncls;
+	if (outlierclass && ncls==nclstot) sortmax--;	// outlier class must not get resorted!
+	
+	for (int i=1; i<sortmax; i++) {
 		float bst=1.0e22;
-		for (int j=i; j<ncls; j++) {
+		for (int j=i; j<sortmax; j++) {
 //			float d=c->cmp(centers[i-1],centers[j]);
 			float d=qsqcmp(centers[i-1],centers[j]);
 			if (d<bst) {
@@ -373,11 +415,13 @@ void KMeansAnalyzer::resort() {
 //	delete c;
 }
 
+// Redetermine which class each particle belongs in
 void KMeansAnalyzer::reclassify() {
 int nptcl=images.size();
 
 //Cmp *c = Factory < Cmp >::get("sqeuclidean");
 for (int i=0; i<nptcl; i++) {
+	if (outlierclass && (int)images[i]->get_attr_default("class_id",0)==nclstot-1) continue;	// outliers are forever
 	float best=1.0e38f;
 	int bestn=0;
 	for (int j=0; j<ncls; j++) {
@@ -388,6 +432,7 @@ for (int i=0; i<nptcl; i++) {
 	int oldn=images[i]->get_attr_default("class_id",0);
 	if (oldn!=bestn) nchanged++;
 	images[i]->set_attr("class_id",bestn);
+	images[i]->set_attr("class_cendist",best);		// store this for reseeding
 }
 //delete c;
 }

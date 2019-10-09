@@ -153,7 +153,8 @@ file_mode_map={
 	"uint16":EMUtil.EMDataType.EM_USHORT,
 	"int32" :EMUtil.EMDataType.EM_INT,
 	"uint32":EMUtil.EMDataType.EM_UINT,
-	"float" :EMUtil.EMDataType.EM_FLOAT  }
+	"float" :EMUtil.EMDataType.EM_FLOAT,
+	"compressed": EMUtil.EMDataType.EM_CMPR }
 
 # inverse dictionary for getting printable names
 file_mode_imap=dict([[int(v),k] for k,v in list(file_mode_map.items())])
@@ -165,7 +166,8 @@ file_mode_intmap={
 	4 :EMUtil.EMDataType.EM_USHORT,
 	5 :EMUtil.EMDataType.EM_INT,
 	6 :EMUtil.EMDataType.EM_UINT,
-	7 :EMUtil.EMDataType.EM_FLOAT  }
+	7 :EMUtil.EMDataType.EM_FLOAT,
+	8 :EMUtil.EMDataType.EM_CMPR }
 
 
 #keyed both by type and by the integer version for flexibility
@@ -183,7 +185,9 @@ file_mode_range={
 	int(EMUtil.EMDataType.EM_USHORT):(0,65535 ),
 	int(EMUtil.EMDataType.EM_INT):(-2147483647,2147483648 ),
 	int(EMUtil.EMDataType.EM_UINT):(0,4294967295),
-	int(EMUtil.EMDataType.EM_FLOAT):(-3.40282347e+38,3.40282347e+38 )  }
+	int(EMUtil.EMDataType.EM_FLOAT):(-3.40282347e+38,3.40282347e+38 ),
+	int(EMUtil.EMDataType.EM_CMPR):(-3.40282347e+38,3.40282347e+38 )
+	}
 
 def E2init(argv, ppid=-1) :
 	"""E2init(argv)

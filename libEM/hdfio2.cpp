@@ -42,6 +42,7 @@
 
 #include <iostream>
 #include <cstring>
+#include <inttypes.h>
 
 #ifndef WIN32
 	#include <sys/param.h>
@@ -80,10 +81,11 @@ HdfIO2::HdfIO2(const string & hdf_filename, IOMode rw)
 
 	//STDIO file driver has 2G size limit on 32 bit Linux system
 	H5Pset_fapl_sec2( accprop );
+	// 0.75 ->H5D_CHUNK_CACHE_W0_DEFAULT  but raises an error
+	H5Pset_cache(accprop, 0, 256, 4194304,  0.75);	// meaningless for non-chunked data, sets the default chunk cache size per data set to 4 MB
 	//H5Pset_fapl_stdio( accprop );
 
 //	H5Pset_fapl_core( accprop, 1048576, 0  );
-//	H5Pset_cache(accprop)
 
 	hsize_t dims=1;
 	simple_space=H5Screate_simple(1,&dims,NULL);
@@ -1455,6 +1457,27 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		case EMUtil::EM_CHAR:
 			ds=H5Dcreate(file,ipath, H5T_NATIVE_CHAR, spc, H5P_DEFAULT );
 			break;
+		case EMUtil::EM_CMPR:
+			{
+//				printf("COMPRESSING!\n");
+				hid_t plist = H5Pcreate(H5P_DATASET_CREATE);
+				hsize_t cdims[3] = { nx>256?256:nx, ny>256?256:ny, 1};		// slice-wise reading common in 3D so 2-D chunks
+				if (nz==1) {
+					H5Pset_chunk(plist,2,cdims);	// uses only the first 2 elements
+				}
+				else {
+					H5Pset_chunk(plist,3,cdims);
+				}
+//				H5Pset_scaleoffset(plist,H5Z_SO_FLOAT_DSCALE,2);  // doesn't seem to work right?, anyway some conceptual problems
+				H5Pset_shuffle(plist);	// rearrange bytes
+				H5Pset_deflate(plist, 1);	// zlib level 1
+//				int r=H5Pset_szip (plist, H5_SZIP_NN_OPTION_MASK, 16);	// szip with 16 pixels per block (NN (2 stage) vs EC), NN definitely seems to perform better
+//				if (r) printf("R: %d\n",r); 
+				ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, spc, plist );
+//				ds=H5Dcreate(file,ipath, H5T_NATIVE_UCHAR, spc, plist );
+				H5Pclose(plist);	// safe to do this here?
+			}
+			break;
 		default:
 			throw ImageWriteException(filename,"HDF5 does not support this data format");
 		}
@@ -1547,6 +1570,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 		switch(dt) {
 		case EMUtil::EM_FLOAT:
+		case EMUtil::EM_CMPR:
 			err_no = H5Dwrite(ds, H5T_NATIVE_FLOAT, memoryspace, filespace, H5P_DEFAULT, data);
 
 			if (err_no < 0) {
@@ -1660,6 +1684,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	else {
 		switch(dt) {
 		case EMUtil::EM_FLOAT:
+		case EMUtil::EM_CMPR:
 			H5Dwrite(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
 
 			break;

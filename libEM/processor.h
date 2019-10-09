@@ -2635,14 +2635,16 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 			{
 				TypeDict d;
-				d.put("bits", EMObject::FLOAT, "Number of bits to retain (default 5)");
+				d.put("bits", EMObject::INT, "Number of bits to retain (default 5)");
 				d.put("nsigma", EMObject::FLOAT, "Number of standard deviations to include in the n bit mapping. eg - max=min(mean+nsigma*sigma,max)");
+				d.put("floatbits", EMObject::INT, "If set to a >0 number, alters the algorithm, so the specified number of significant floating point bits is retained. The floating point exponent is not modified. This will produce less compressible data, but the values will be less perturbed.");
 				return d;
 			}
 
 		string get_desc() const
 		{
-			return "Converts each pixel value to an integer using the specified number of total bits. This will make the data more compressible, and allows you to handle conversion to integer data modes.";
+			return "Converts each pixel value to an integer using the specified number of total bits. This will make the data more compressible, and allows you to handle conversion to integer data modes.\
+The data itself will remain stored in single precision floating point format, so using >23 bits would be a bad idea.";
 		}
 
 		static const string NAME;

@@ -193,7 +193,7 @@ def main():
 			#sys.exit(1)
 			
 	if good_size(options.boxsize)!=options.boxsize :
-		print("Bad box size detected. Adjusting size to {}. See http://eman2.org/emanwiki/EMAN2/BoxSize".format(good_size(options.boxsize)))
+		print("Bad box size detected. Adjusting size to {}. Can override by typing a new number in the GUI, but not recommended. See http://eman2.org/BoxSize".format(good_size(options.boxsize)))
 		options.boxsize=good_size(options.boxsize)
 	project_db["global.boxsize"]=options.boxsize
 	boxsize=options.boxsize

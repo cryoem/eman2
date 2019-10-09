@@ -77,6 +77,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 
 	parser.add_argument("--range", type=str, default=None, help="Range of particles to use. Works only with --create option. Input of 0,10,2 means range(0,10, step=2).")
 	parser.add_argument("--retype", type=str, default=None, help="If a lst file is referencing a set of particles from particles/imgname__oldtype.hdf, this will change oldtype to the specified string in-place (modifies input files)")
+	parser.add_argument("--refile", type=str, default=None, help="similar to retype, but replaces the full filename of the source image file with the provided string")
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higher number means higher level of verboseness",default=1)
 
@@ -124,7 +125,13 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			n=EMUtil.get_image_count(f)
 			for i in range(n):
 				im=EMData(f,i,True)
+				# It shouldn't be possible for this to go infinitely, or there would have been a problem on the previous line
+				while im["data_source"][-4:]==".lst" : im=EMData(im["data_source"],im["data_n"],True)
 				newlst.write(-1,im["data_n"],im["data_source"])
+				if options.verbose>1 : print("{},{} -> {},{}".format(f,i,im["data_source"],im["data_n"]))
+		
+		print("exiting after --dereforig")
+		sys.exit(0)
 
 	if options.create:
 
@@ -244,7 +251,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			lst=LSXFile(f,True)
 
 			a=lst.read(0)
-			if a[1][:10]!="particles/" :
+			if a[1][:10]!="particles/" and a[1][:12]!="particles3d/" :
 				print("To use the --retype option, the .lst file must reference image files in particles/*")
 
 			if options.verbose>1 :
@@ -254,7 +261,8 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			# loop over the images in the lst file
 			for i in range(len(lst)):
 				im=lst.read(i)
-				outname="particles/{}__{}.hdf".format(base_name(im[1]),options.retype)
+				if "3d" in a[1] : outname="particles3d/{}__{}.hdf".format(base_name(im[1]),options.retype)
+				else: outname="particles/{}__{}.hdf".format(base_name(im[1]),options.retype)
 				lst.write(i,im[0],outname,im[2])
 
 			lst.normalize()			# clean up at the end
@@ -262,6 +270,27 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			if options.verbose>1 : print(len(lst)," particles adjusted")
 
 		if options.verbose : print("Done processing {} files".format(len(args)))
+
+	if options.refile != None:
+		if options.minlosnr>0 or options.minhisnr>0 or options.mindf>0 or options.maxdf>0 :
+			print("ERROR: --minlosnr and --minhisnr not compatible with --refile")
+			sys.exit(1)
+
+		for f in args:
+			if options.verbose : print("Processing ",f)
+			lst=LSXFile(f,True)
+
+			# loop over the images in the lst file
+			for i in range(len(lst)):
+				im=lst.read(i)
+				lst.write(i,im[0],options.refile,im[2])
+
+			lst.normalize()			# clean up at the end
+
+			if options.verbose>1 : print(len(lst)," particles adjusted")
+
+		if options.verbose : print("Done processing {} files".format(len(args)))
+
 
 	if options.merge!=None:
 

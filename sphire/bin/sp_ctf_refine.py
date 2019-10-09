@@ -657,14 +657,14 @@ def merge_ctf_refinement_results(refinement_results):
 def setup_argparser():
 	example_txt_meridien = """Example:
 
-    sxrefinectf.py bdb:/path/to/stack/input/STACKNAME bdb_file_name /path/to/output/folder/ /path/to/meridien/refinement/folder/
+    sp_ctf_refine.py bdb:/path/to/stack/input/STACKNAME bdb_file_name /path/to/output/folder/ /path/to/meridien/refinement/folder/
                   -m /pth/adp_mask/mask.hdf -r 0.2 -d 0.01 -res 2.2 -apix 1.07
 
     """
 
 	example_txt_manual = """Example:
 
-    sxrefinectf.py -v1 /path/to/volume/vol_0_unfil_XXX.hdf -v2 /path/to/volume/vol_0_unfil_XXX.hdf 
+    sp_ctf_refine.py -v1 /path/to/volume/vol_0_unfil_XXX.hdf -v2 /path/to/volume/vol_0_unfil_XXX.hdf 
                 -c /path/to/meridien/mainXXX/chunk_0_XXX.txt -s bdb:/path/to/stack/STACKNAME 
                 -p /path/to/merdien/refinement/final_params_XXX.txt -o bdb:/your/output/path/bdb_file_name 
                 -os /statistics/out/path/ -m /pth/adp_mask/mask.hdf -r 0.2 -d 0.01 -res 2.2 -apix 1.07

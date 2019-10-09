@@ -18,8 +18,8 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
 	set(CMAKE_LIBRARY_ARCHITECTURE ${CMAKE_LIBRARY_ARCHITECTURE_BACKUP})
 endif()
 
-message_var(OPENGL_INCLUDE_DIR)
-message_var(OPENGL_LIBRARIES)
+cmake_print_variables(OPENGL_INCLUDE_DIR)
+cmake_print_variables(OPENGL_LIBRARIES)
 
 if(OpenGL_FOUND AND NOT TARGET OpenGL)
 	add_library(OpenGL INTERFACE)

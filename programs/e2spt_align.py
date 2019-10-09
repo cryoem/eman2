@@ -60,9 +60,11 @@ def alifn(jsd,fsp,i,a,options):
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """Usage: e2spt_align.py [options] <subvolume_stack> <reference>
-Note that this program is not part of the original e2spt hierarchy, but is part of an experimental refactoring.
+This program is part of the 'new' hierarchy of e2spt_ programs. It performs one iteration of a classical subtomogram refinement, ie -  aligning particles with missing wedge to a reference in 3-D
 
-This program will take an input stack of subtomograms and a reference volume, and perform a missing-wedge aware alignment of each particle to the reference. If --goldstandard is specified, then even and odd particles will be aligned to different perturbed versions of the reference volume, phase-randomized past the specified resolution."""
+The reference may be <volume> or <volume>,<n>
+
+If --goldstandard is specified, then even and odd particles will be aligned to different perturbed versions of the reference volume, phase-randomized past the specified resolution."""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
@@ -128,7 +130,11 @@ This program will take an input stack of subtomograms and a reference volume, an
 				options.breaksymsym=options.sym
 		
 
-	reffile=args[1]
+	# file may be "name" or "name,#"
+	reffile=args[1].split(",")[0]
+	try: refn=int(args[1].split(",")[1])
+	except: refn=0
+	
 	NTHREADS=max(options.threads+1,2)		# we have one thread just writing results
 
 	logid=E2init(sys.argv, options.ppid)
@@ -145,8 +151,8 @@ This program will take an input stack of subtomograms and a reference volume, an
 			print("Error: cannot find one of reference files, eg: ",EMData(reffile[:-4]+"_even.hdf",0))
 	else:
 		ref=[]
-		ref.append(EMData(reffile,0))
-		ref.append(EMData(reffile,0))
+		ref.append(EMData(reffile,refn))
+		ref.append(EMData(reffile,refn))
 
 		if options.goldstandard>0 :
 			ref[0].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":old_div(1.0,options.goldstandard)})
