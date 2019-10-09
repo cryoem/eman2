@@ -38,7 +38,7 @@ def main():
 
 	parser.add_argument("--zeroid", type=int,help="Index of the center tilt. Ignored when rawtlt is provided.", default=-1)#,guitype='intbox',row=3, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--tltstep", type=float,help="Step between tilts. Ignored when rawtlt is provided. Default is 2.0.", default=2.0,guitype='floatbox',row=3, col=0, rowspan=1, colspan=1,mode="easy")
-	parser.add_argument("--rawtlt", type=str,help="Specify a text file contains raw tilt angles.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=4, col=0, rowspan=1, colspan=2)#,mode="easy")
+	parser.add_argument("--rawtlt", type=str,help="Specify a text file contains raw tilt angles. Will look for files with the same name as the tilt series if a directory is provided", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=4, col=0, rowspan=1, colspan=2)#,mode="easy")
 
 	parser.add_argument("--npk", type=int,help="Number of landmarks to use (such as gold fiducials). Default is 20.", default=20,guitype='intbox',row=5, col=0, rowspan=1, colspan=1, mode="easy")
 
@@ -252,6 +252,22 @@ def main():
 	else:
 		#### determine alignment parameters from scratch
 		if (options.rawtlt!=None and len(options.rawtlt)>0) :
+			
+			if os.path.isdir(options.rawtlt):
+				print("Looking for raw tilt file matching {} in {}...".format(options.inputname, options.rawtlt))
+				bnm=options.basename.split('/')[-1]
+				rl=[f for f in os.listdir(options.rawtlt) if f.startswith(bnm)]
+				if len(rl)==0:
+					print("Cannot find raw tilt file in the directory. exit...")
+					return
+				elif len(rl)>1:
+					print("Found multiple matching files...")
+					print(rl)
+					
+					
+				options.rawtlt=os.path.join(options.rawtlt, rl[0])
+				print("Using {}".format(rl[0]))
+				
 			#### load raw tilt file
 			tlts=np.loadtxt(options.rawtlt)
 			
