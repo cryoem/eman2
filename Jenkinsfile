@@ -144,16 +144,22 @@ def deployPackage(size_type='') {
     stability_type = getBuildStabilityType()
     installer_ext  = getInstallerExt()
 
+    def sourceFile  = "eman2" + size_type + ".${AGENT_OS_NAME}." + installer_ext
+    def targetFile  = "eman2" + size_type + ".${AGENT_OS_NAME}." + stability_type + "." + installer_ext
+    def cdCommand   = "cd ${DEPLOY_PATH}/" + stability_type
+    def mvCommand   = "mv " + sourceFile + " " + targetFile
+    def execCommand = cdCommand + " && " + mvCommand
+    
     sshPublisher(publishers: [
                               sshPublisherDesc(configName: 'Installer-Server',
                                                transfers:
-                                                          [sshTransfer(sourceFiles: "eman2" + size_type + ".${AGENT_OS_NAME}." + installer_ext,
+                                                          [sshTransfer(sourceFiles: sourceFile,
                                                                        removePrefix: "",
                                                                        remoteDirectory: stability_type,
                                                                        remoteDirectorySDF: false,
                                                                        cleanRemote: false,
                                                                        excludes: '',
-                                                                       execCommand: "cd ${DEPLOY_PATH}/" + stability_type + " && mv eman2" + size_type + ".${AGENT_OS_NAME}." + installer_ext + " eman2" + size_type + ".${AGENT_OS_NAME}." + stability_type + "." + installer_ext,
+                                                                       execCommand: execCommand,
                                                                        execTimeout: 120000,
                                                                        flatten: false,
                                                                        makeEmptyDirs: false,
