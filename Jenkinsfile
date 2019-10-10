@@ -1,4 +1,4 @@
-def binary_size_suffix = ['mini':'', 'huge':'_huge']
+binary_size_suffix = ['mini':'', 'huge':'_huge']
 
 def convertToNativePath(path) {
     return sh(returnStdout: true, script: "python -c 'import os; print(os.path.normpath(\"" + path + "\"))'").trim()
@@ -144,8 +144,8 @@ def deployPackage(size_type='') {
     stability_type = getBuildStabilityType()
     installer_ext  = getInstallerExt()
 
-    def sourceFile  = "eman2" + size_type + ".${AGENT_OS_NAME}." + installer_ext
-    def targetFile  = "eman2" + size_type + ".${AGENT_OS_NAME}." + stability_type + "." + installer_ext
+    def sourceFile  = "eman2" + binary_size_suffix[size_type] + ".${AGENT_OS_NAME}." + installer_ext
+    def targetFile  = "eman2" + binary_size_suffix[size_type] + ".${AGENT_OS_NAME}." + stability_type + "." + installer_ext
     def cdCommand   = "cd ${DEPLOY_PATH}/" + stability_type
     def mvCommand   = "mv " + sourceFile + " " + targetFile
     def execCommand = cdCommand + " && " + mvCommand
@@ -264,8 +264,8 @@ pipeline {
 
       parallel {
         stage('notify') { steps { notifyGitHub('PENDING') } }
-        stage('mini')   { steps { deployPackage(binary_size_suffix[STAGE_NAME]) } }
-        stage('huge')   { steps { deployPackage(binary_size_suffix[STAGE_NAME]) } }
+        stage('mini')   { steps { deployPackage(STAGE_NAME) } }
+        stage('huge')   { steps { deployPackage(STAGE_NAME) } }
       }
     }
   }
