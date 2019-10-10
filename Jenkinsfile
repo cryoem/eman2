@@ -153,23 +153,23 @@ def deployPackage(size_type='') {
     sshPublisher(publishers: [
                               sshPublisherDesc(configName: 'Installer-Server',
                                                transfers:
-                                                          [sshTransfer(sourceFiles: sourceFile,
-                                                                       removePrefix: "",
-                                                                       remoteDirectory: stability_type,
+                                                          [sshTransfer(sourceFiles:        sourceFile,
+                                                                       removePrefix:       "",
+                                                                       remoteDirectory:    stability_type,
                                                                        remoteDirectorySDF: false,
-                                                                       cleanRemote: false,
-                                                                       excludes: '',
-                                                                       execCommand: execCommand,
-                                                                       execTimeout: 120000,
-                                                                       flatten: false,
-                                                                       makeEmptyDirs: false,
-                                                                       noDefaultExcludes: false,
-                                                                       patternSeparator: '[, ]+'
+                                                                       cleanRemote:        false,
+                                                                       excludes:           '',
+                                                                       execCommand:        execCommand,
+                                                                       execTimeout:        120000,
+                                                                       flatten:            false,
+                                                                       makeEmptyDirs:      false,
+                                                                       noDefaultExcludes:  false,
+                                                                       patternSeparator:   '[, ]+'
                                                                       )
                                                           ],
-                                                          usePromotionTimestamp: false,
+                                                          usePromotionTimestamp:   false,
                                                           useWorkspaceInPromotion: false,
-                                                          verbose: true
+                                                          verbose:                 true
                                               )
                              ]
                 )
