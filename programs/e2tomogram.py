@@ -276,7 +276,7 @@ def main():
 				return
 		else: 
 			#### parse tilt step
-			tlts=np.arange(-len(imgs_2k)*options.tltstep//2,len(imgs_2k)*options.tltstep//2,options.tltstep)
+			tlts=np.arange(-len(imgs_2k)*options.tltstep/2,len(imgs_2k)*options.tltstep/2,options.tltstep)
 		
 		if options.writetmp: np.savetxt(os.path.join(options.tmppath,"rawtilt.txt"), tlts)
 		
