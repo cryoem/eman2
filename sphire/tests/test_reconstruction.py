@@ -47,6 +47,171 @@ There are some opened issues in:
     b) where can I find a valid file with for  the fsc curve"
     c) how can I reach the nproc !+ 1? --> I have to use mpi_comm !=MPI_COMM_WORLD. But I got always MPI_ERRORS_ARE_FATAL
 """
+
+
+
+"""
+pickle files stored under smb://billy.storage.mpi-dortmund.mpg.de/abt3/group/agraunser/transfer/Adnan/pickle files
+"""
+
+
+""" start: new in sphire 1.3"""
+from sphire.libpy import sp_reconstruction as oldfu
+from sphire.libpy_py3 import sp_reconstruction as fu
+
+class Test_rec2D(unittest.TestCase):
+    def test_rec2D(self):
+        oldv = oldfu.rec2D(  lines=0, idrange=None, snr=None )
+        v = fu.rec2D(  lines=0, idrange=None, snr=None )
+        pass
+
+
+class Test_recons3d_4nn(unittest.TestCase):
+    def test_recons3d_4nn(self):
+        oldv = oldfu.recons3d_4nn(stack_name=0, list_proj=[], symmetry="c1", npad=4, snr=None, weighting=1, varsnr=False, xysize=-1, zsize = -1)
+        v = fu.recons3d_4nn(stack_name=0, list_proj=[], symmetry="c1", npad=4, snr=None, weighting=1, varsnr=False, xysize=-1, zsize = -1)
+        pass
+
+
+
+class Test_recons3d_4nnw_MPI(unittest.TestCase):
+    def test_recons3d_4nnw_MPI(self):
+        oldv = oldfu.recons3d_4nnw_MPI(myid=0, prjlist=0, bckgdata=0, snr = 1.0, sign=1, symmetry="c1", finfo=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.0, fsc = None)
+        v = fu.recons3d_4nnw_MPI(myid=0, prjlist=0, bckgdata=0, snr = 1.0, sign=1, symmetry="c1", finfo=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.0, fsc = None)
+        pass
+
+
+
+class Test_recons3d_4nnf_MPI(unittest.TestCase):
+    def test_recons3d_4nnf_MPI(self):
+        oldv = oldfu.recons3d_4nnf_MPI(myid=0, list_of_prjlist=0, bckgdata=0, snr = 1.0, sign=1, symmetry="c1", finfo=None, npad=2, mpi_comm=None, smearstep = 0.0)
+        v = fu.recons3d_4nnf_MPI(myid=0, list_of_prjlist=0, bckgdata=0, snr = 1.0, sign=1, symmetry="c1", finfo=None, npad=2, mpi_comm=None, smearstep = 0.0)
+        pass
+
+
+class Test_recons3d_4nnfs_MPI(unittest.TestCase):
+    def test_recons3d_4nnfs_MPI(self):
+        oldv = oldfu.recons3d_4nnfs_MPI(myid=0, main_node=0, prjlist=0, upweighted = True, finfo=None, mpi_comm=None, smearstep = 0.0, CTF = True, compensate = False, target_size=-1)
+        v = fu.recons3d_4nnfs_MPI(myid=0, main_node=0, prjlist=0, upweighted = True, finfo=None, mpi_comm=None, smearstep = 0.0, CTF = True, compensate = False, target_size=-1)
+        pass
+
+
+class Test_recons3d_4nnstruct_MPI(unittest.TestCase):
+    def test_recons3d_4nnstruct_MPI(self):
+        oldv = oldfu.recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, delta, upweighted = True, mpi_comm=None, CTF = True, target_size=-1, avgnorm = 1.0, norm_per_particle = None)
+        v = fu.recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, delta, upweighted = True, mpi_comm=None, CTF = True, target_size=-1, avgnorm = 1.0, norm_per_particle = None)
+        pass
+
+
+class Test_recons3d_4nnstruct_MPI_test(unittest.TestCase):
+    def test_recons3d_4nnstruct_MPI_test(self):
+        oldv = oldfu.recons3d_4nnstruct_MPI_test(myid, main_node, prjlist, paramstructure, refang, parameters, delta, upweighted = True, mpi_comm=None, CTF = True, target_size=-1, avgnorm = 1.0, norm_per_particle = None)
+        v = fu.recons3d_4nnstruct_MPI_test(myid, main_node, prjlist, paramstructure, refang, parameters, delta, upweighted = True, mpi_comm=None, CTF = True, target_size=-1, avgnorm = 1.0, norm_per_particle = None)
+        pass
+
+
+class Test_recons3d_nn_SSNR(unittest.TestCase):
+    def test_recons3d_nn_SSNR(self):
+        oldv = oldfu.recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, symmetry="c1", CTF = False, random_angles = 0)
+        v = fu.recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, symmetry="c1", CTF = False, random_angles = 0)
+        pass
+
+
+class Test_bootstrap_nn(unittest.TestCase):
+    def test_bootstrap_nn(self):
+        oldv = oldfu.bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npad=4, symmetry="c1", output=-1, CTF=False, snr=1.0, sign=1, myseed=None )
+        v = fu.bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npad=4, symmetry="c1", output=-1, CTF=False, snr=1.0, sign=1, myseed=None )
+        pass
+
+
+class Test_recons3d_em(unittest.TestCase):
+    def test_recons3d_em(self):
+        oldv = oldfu.recons3d_em(projections_stack, max_iterations_count = 100, radius = -1, min_avg_abs_voxel_change = 0.01, use_weights = False, symmetry = "c1")
+        v = fu.recons3d_em(projections_stack, max_iterations_count = 100, radius = -1, min_avg_abs_voxel_change = 0.01, use_weights = False, symmetry = "c1")
+        pass
+
+
+class Test_recons3d_em_MPI(unittest.TestCase):
+    def test_recons3d_em_MPI(self):
+        oldv = oldfu.recons3d_em_MPI(projections_stack, output_file, max_iterations_count = 100, radius = -1, min_norm_absolute_voxel_change = 0.01, use_weights = False, symmetry = "c1", min_norm_squared_voxel_change = 0.0001)
+        v = fu.recons3d_em_MPI(projections_stack, output_file, max_iterations_count = 100, radius = -1, min_norm_absolute_voxel_change = 0.01, use_weights = False, symmetry = "c1", min_norm_squared_voxel_change = 0.0001)
+        pass
+
+
+class Test_recons3d_sirt(unittest.TestCase):
+    def test_recons3d_sirt(self):
+        oldv = oldfu.recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry="c1", tol=0.001)
+        v = fu.recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry="c1", tol=0.001)
+        pass
+
+
+class Test_recons3d_wbp(unittest.TestCase):
+    def test_recons3d_wbp(self):
+        oldv = oldfu.recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry="c1", radius=None)
+        v = fu.recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry="c1", radius=None)
+        pass
+
+
+class Test_recons3d_vwbp(unittest.TestCase):
+    def test_recons3d_vwbp(self):
+        oldv = oldfu.recons3d_vwbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry="c1",outstack="bdb:temp")
+        v = fu.recons3d_vwbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry="c1",outstack="bdb:temp")
+        pass
+
+
+class Test_prepare_wbp(unittest.TestCase):
+    def test_prepare_wbp(self):
+        oldv = oldfu.prepare_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry="c1")
+        v = fu.prepare_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry="c1")
+        pass
+
+
+class Test_recons3d_swbp(unittest.TestCase):
+    def test_recons3d_swbp(self):
+        oldv = oldfu.recons3d_swbp(A, transform, L, ss, method = "general", const=1.0E4, symmetry="c1")
+        v = fu.recons3d_swbp(A, transform, L, ss, method = "general", const=1.0E4, symmetry="c1")
+        pass
+
+
+class Test_weight_swbp(unittest.TestCase):
+    def test_weight_swbp(self):
+        oldv = oldfu.weight_swbp(A, L, ss, method = "general", const=1.0E4, symmetry="c1")
+        v = fu.weight_swbp(A, L, ss, method = "general", const=1.0E4, symmetry="c1")
+        pass
+
+
+class Test_backproject_swbp(unittest.TestCase):
+    def test_backproject_swbp(self):
+        oldv = oldfu.backproject_swbp(B, transform = None, symmetry="c1")
+        v = fu.backproject_swbp(B, transform = None, symmetry="c1")
+        pass
+
+class Test_one_swbp(unittest.TestCase):
+    def test_one_swbp(self):
+        oldv = oldfu.one_swbp(CUBE, B, transform = None, symmetry="c1")
+        v = fu.one_swbp(CUBE, B, transform = None, symmetry="c1")
+        pass
+
+class Test_prepare_recons_ctf_fftvol(unittest.TestCase):
+    def test_prepare_recons_ctf_fftvol(self):
+        oldv = oldfu.prepare_recons_ctf_fftvol(data, snr, symmetry, myid, main_node_half, pidlist, finfo=None, npad = 2, mpi_comm=None)
+        v = fu.prepare_recons_ctf_fftvol(data, snr, symmetry, myid, main_node_half, pidlist, finfo=None, npad = 2, mpi_comm=None)
+        pass
+
+class Test_recons_ctf_from_fftvol_using_nn4_ctfw(unittest.TestCase):
+    def test_recons_ctf_from_fftvol_using_nn4_ctfw(self):
+        oldv = oldfu.recons_ctf_from_fftvol_using_nn4_ctfw(size, fftvol, weight, snr, symmetry, weighting=1, npad = 2)
+        v = fu.recons_ctf_from_fftvol_using_nn4_ctfw(size, fftvol, weight, snr, symmetry, weighting=1, npad = 2)
+        pass
+
+class Test_rec3D_MPI_with_getting_odd_even_volumes_from_files(unittest.TestCase):
+    def test_rec3D_MPI_with_getting_odd_even_volumes_from_files(self):
+        oldv = oldfu.rec3D_MPI_with_getting_odd_even_volumes_from_files(fftvol_files, weight_files, reconstructed_vol_files,nx, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, finfo=None, npad = 2, mpi_comm=None)
+        v = fu.rec3D_MPI_with_getting_odd_even_volumes_from_files(fftvol_files, weight_files, reconstructed_vol_files,nx, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, finfo=None, npad = 2, mpi_comm=None)
+        pass
+
+""" end: new in sphire 1.3"""
+
 class Test_insert_slices(unittest.TestCase):
     size = 76
     img = EMData(size,size)

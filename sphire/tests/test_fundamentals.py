@@ -30,6 +30,281 @@ In all the tests miss the case with a complex image. where can we find one of th
 """
 
 
+"""
+pickle files stored under smb://billy.storage.mpi-dortmund.mpg.de/abt3/group/agraunser/transfer/Adnan/pickle files
+"""
+
+
+""" start: new in sphire 1.3"""
+from sphire.libpy import sp_fundamentals as oldfu
+from sphire.libpy_py3 import sp_fundamentals as fu
+
+class Test_absi(unittest.TestCase):
+    def test_absi(self):
+        oldv = oldfu.absi(e="")
+        v = fu.absi(e="")
+        pass
+
+class Test_acf(unittest.TestCase):
+    def test_acf(self):
+        oldv = oldfu.acf(e="", center=True)
+        v = fu.acf(e="", center=True)
+        pass
+
+class Test_acfn(unittest.TestCase):
+    def test_acfn(self):
+        oldv = oldfu.acfn(e="", center=True)
+        v = fu.acfn(e="", center=True)
+        pass
+
+class Test_acfp(unittest.TestCase):
+    def test_acf(self):
+        oldv = oldfu.acfp(e="", center=True)
+        v = fu.acfp(e="", center=True)
+        pass
+
+class Test_acfnp(unittest.TestCase):
+    def test_acfnp(self):
+        oldv = oldfu.acfnp(e="", center=True)
+        v = fu.acfnp(e="", center=True)
+        pass
+
+class Test_acfpl(unittest.TestCase):
+    def test_acfpl(self):
+        oldv = oldfu.acfpl(e="", center=True)
+        v = fu.acfpl(e="", center=True)
+        pass
+
+class Test_ccfn(unittest.TestCase):
+    def test_ccfn(self):
+        oldv = oldfu.ccfn(e="", f="", center=True)
+        v = fu.ccfn(e="", f="", center=True)
+        pass
+
+
+class Test_ccfp(unittest.TestCase):
+    def test_ccfp(self):
+        oldv = oldfu.ccfp(e="", f="", center=True)
+        v = fu.ccfp(e="", f="", center=True)
+        pass
+
+
+class Test_ccfnp(unittest.TestCase):
+    def test_ccfnp(self):
+        oldv = oldfu.ccfnp(e="", f="", center=True)
+        v = fu.ccfnp(e="", f="", center=True)
+        pass
+
+
+class Test_ccfpl(unittest.TestCase):
+    def test_ccfpl(self):
+        oldv = oldfu.ccfpl(e="", f="", center=True)
+        v = fu.ccfpl(e="", f="", center=True)
+        pass
+
+
+class Test_ccfnpl(unittest.TestCase):
+    def test_ccfnpl(self):
+        oldv = oldfu.ccfnpl(e="", f="", center=True)
+        v = fu.ccfnpl(e="", f="", center=True)
+        pass
+
+
+class Test_cnv(unittest.TestCase):
+    def test_cnv(self):
+        oldv = oldfu.cnv(e="", f="", center=True)
+        v = fu.cnv(e="", f="", center=True)
+        pass
+
+
+class Test_cnvn(unittest.TestCase):
+    def test_cnvn(self):
+        oldv = oldfu.cnvn(e="", f="", center=True)
+        v = fu.cnvn(e="", f="", center=True)
+        pass
+
+
+class Test_cnvp(unittest.TestCase):
+    def test_cnvp(self):
+        oldv = oldfu.cnvp(e="", f="", center=True)
+        v = fu.cnvp(e="", f="", center=True)
+        pass
+
+
+class Test_cnvnp(unittest.TestCase):
+    def test_cnvnp(self):
+        oldv = oldfu.cnvnp(e="", f="", center=True)
+        v = fu.cnvnp(e="", f="", center=True)
+        pass
+
+
+class Test_cnvpl(unittest.TestCase):
+    def test_cnvpl(self):
+        oldv = oldfu.cnvpl(e="", f="", center=True)
+        v = fu.cnvpl(e="", f="", center=True)
+        pass
+
+
+class Test_cnvnpl(unittest.TestCase):
+    def test_cnvnpl(self):
+        oldv = oldfu.cnvnpl(e="", f="", center=True)
+        v = fu.cnvnpl(e="", f="", center=True)
+        pass
+
+
+class Test_scfn(unittest.TestCase):
+    def test_scfn(self):
+        oldv = oldfu.scfn(e="", center=True)
+        v = fu.scfn(e="", center=True)
+        pass
+
+
+class Test_scfp(unittest.TestCase):
+    def test_scfp(self):
+        oldv = oldfu.scfp(e="", center=True)
+        v = fu.scfp(e="", center=True)
+        pass
+
+
+class Test_scfnp(unittest.TestCase):
+    def test_scfnp(self):
+        oldv = oldfu.scfnp(e="", center=True)
+        v = fu.scfnp(e="", center=True)
+        pass
+
+
+class Test_scfpl(unittest.TestCase):
+    def test_scfpl(self):
+        oldv = oldfu.scfpl(e="", center=True)
+        v = fu.scfpl(e="", center=True)
+        pass
+
+
+class Test_scfnpl(unittest.TestCase):
+    def test_scfnpl(self):
+        oldv = oldfu.scfnpl(e="", center=True)
+        v = fu.scfnpl(e="", center=True)
+        pass
+
+
+class Test_image_decimate(unittest.TestCase):
+    def test_image_decimate(self):
+        oldv = oldfu.image_decimate(img="", decimation=2, fit_to_fft = True, frequency_low=0, frequency_high=0)
+        v = fu.image_decimate(img="", decimation=2, fit_to_fft = True, frequency_low=0, frequency_high=0)
+        pass
+
+class Test_fdownsample(unittest.TestCase):
+    def test_fdownsample(self):
+        oldv = oldfu.fdownsample(img="", sub_rate=0.5, RetReal = True)
+        v = fu.fdownsample(img="", sub_rate=0.5, RetReal = True)
+        pass
+
+class Test_prepf(unittest.TestCase):
+    def test_prepf(self):
+        oldv = oldfu.prepf(image="", npad = 2)
+        v = fu.prepf(image="", npad = 2)
+        pass
+
+class Test_prep_refim_gridding(unittest.TestCase):
+    def test_prep_refim_gridding(self):
+        oldv = oldfu.prep_refim_gridding(refim="", wr="", numr="", mode = "F")
+        v = fu.prep_refim_gridding(refim="", wr="", numr="", mode = "F")
+        pass
+
+class Test_prepg(unittest.TestCase):
+    def test_prepg(self):
+        oldv = oldfu.prepg(image="", kb="")
+        v = fu.prepg(image="", kb="")
+        pass
+
+class Test_rot_avg_table(unittest.TestCase):
+    def test_rot_avg_table(self):
+        oldv = oldfu.rot_avg_table(e="")
+        v = fu.rot_avg_table(e="")
+        pass
+
+class Test_rot_avg_image(unittest.TestCase):
+    def test_rot_avg_image(self):
+        oldv = oldfu.rot_avg_image(image_to_be_averaged="")
+        v = fu.rot_avg_image(image_to_be_averaged="")
+        pass
+
+class Test_(unittest.TestCase):
+    def test_(self):
+        oldv = oldfu.ro_textfile(e="", filename="", helpful_string="")
+        v = fu.ro_textfile(e="", filename="", helpful_string="")
+        pass
+
+class Test_rops(unittest.TestCase):
+    def test_rops(self):
+        oldv = oldfu.rops(e="")
+        v = fu.rops(e="")
+        pass
+
+class Test_rops_textfile(unittest.TestCase):
+    def test_rops_textfile(self):
+        oldv = oldfu.rops_textfile(img="", filename="", lng = False)
+        v = fu.rops_textfile(img="", filename="", lng = False)
+        pass
+
+class Test_rops_dir(unittest.TestCase):
+    def test_rops_dir(self):
+        oldv = oldfu.rops_dir(indir="", output_dir = "1dpw2_dir")
+        v = fu.rops_dir(indir="", output_dir = "1dpw2_dir")
+        pass
+
+class Test_rotshift2dg(unittest.TestCase):
+    def test_rotshift2dg(self):
+        oldv = oldfu.rotshift2dg(image="", ang="", dx="", dy="", kb="", scale = 1.0)
+        v = fu.rotshift2dg(image="", ang="", dx="", dy="", kb="", scale = 1.0)
+        pass
+
+class Test_ft2polargrid(unittest.TestCase):
+    def test_ft2polargrid(self):
+        oldv = oldfu.ft2polargrid(image="", ring_length="", nb="", ne="")
+        v = fu.ft2polargrid(image="", ring_length="", nb="", ne="")
+        pass
+
+class Test_rot_shift3D_grid(unittest.TestCase):
+    def test_rot_shift3D_grid(self):
+        oldv = oldfu.rot_shift3D_grid(img="", phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0, kb=None, mode="background", wrap=False)
+        v = fu.rot_shift3D_grid(img="", phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0, kb=None, mode="background", wrap=False)
+        pass
+
+class Test_sinc2inv(unittest.TestCase):
+    def test_sinc2inv(self):
+        oldv = oldfu.sinc2inv(nx="")
+        v = fu.sinc2inv(nx="")
+        pass
+
+class Test_sincinv(unittest.TestCase):
+    def test_sincinv(self):
+        oldv = oldfu.sincinv(nx="")
+        v = fu.sincinv(nx="")
+        pass
+
+class Test_welch_pw2(unittest.TestCase):
+    def test_welch_pw2(self):
+        oldv = oldfu.welch_pw2(img="", win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0)
+        v = fu.welch_pw2(img="", win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0)
+        pass
+
+class Test_welch_pw2_tilt_band(unittest.TestCase):
+    def test_welch_pw2_tilt_band(self):
+        oldv = oldfu.welch_pw2_tilt_band(img="",theta="",num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s=256)
+        v = fu.welch_pw2_tilt_band(img="",theta="",num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s=256)
+        pass
+
+class Test_bracket(unittest.TestCase):
+    def test_bracket(self):
+        oldv = oldfu.bracket(f="",x1="",h=0)
+        v = fu.bracket(f="",x1="",h=0)
+        pass
+
+
+""" start: end in sphire 1.3"""
+
+
 class Test_ccf(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError)  as cm_new:
@@ -1522,7 +1797,7 @@ class Test_goldsearch(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
 
-
+# todo: modificato
 class Test_rotate_params(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError)  as cm_new:
@@ -1565,7 +1840,7 @@ class Test_rotate_params(unittest.TestCase):
         self.assertTrue(numpy.array_equal(return_new, [[174.00000000000003, 2.9999999999999232, 183.0], [166.07792596478271, 1.0120857125278824, 194.9159858556005]]))
 
 
-
+# todo: modificato
 class Test_rotmatrix(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError)  as cm_new:
@@ -1582,7 +1857,7 @@ class Test_rotmatrix(unittest.TestCase):
         self.assertTrue(numpy.array_equal(return_new, [[0.98876227196606559, 0.12180329553973532, -0.086678294469630643], [-0.12147164162554232, 0.99255309355170718, 0.0091102558543636417], [0.087142468505889387, 0.0015210774457754552, 0.99619469809174555]]))
 
 
-
+# todo: modificato
 class Test_mulmat(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError)  as cm_new:
@@ -1621,7 +1896,7 @@ class Test_mulmat(unittest.TestCase):
         self.assertTrue(numpy.array_equal(return_new,[[23, 31, 29], [28, 38, 37], [48, 65, 66]]))
 
 
-
+# todo: modificato
 class Test_recmat(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError)  as cm_new:

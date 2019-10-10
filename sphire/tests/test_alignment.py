@@ -34,6 +34,455 @@ There are some opened issues in:
 6) Test_parabl there are not real case unitest since the output is always a null vector
 """
 
+"""
+pickle files stored under smb://billy.storage.mpi-dortmund.mpg.de/abt3/group/agraunser/transfer/Adnan/pickle files
+"""
+
+""" start: new in sphire 1.3"""
+from sphire.libpy import sp_alignment as oldfu
+from sphire.libpy_py3 import sp_alignment as fu
+
+class Test_crit2d(unittest.TestCase):
+    def test_crit2d(self):
+        v = oldfu.crit2d(args="", data="")
+        pass
+
+class Test_eqproj_cascaded_ccc_fitness_function(unittest.TestCase):
+    def test_eqproj_cascaded_ccc_fitness_function(self):
+        v1,v2 = oldfu.eqproj_cascaded_ccc_fitness_function(args="", data="")
+        pass
+
+class Test_format_list(unittest.TestCase):
+    def test_format_list(self):
+        l = oldfu.format_list(l=[])
+        pass
+
+class Test_objective_function_just_ccc_has_maximum(unittest.TestCase):
+    def test_objective_function_just_ccc_has_maximum(self):
+        v2 = oldfu.objective_function_just_ccc_has_maximum(args="", data="")
+        pass
+
+class Test_objective_function_just_ccc_has_minimum(unittest.TestCase):
+    def test_objective_function_just_ccc_has_minimum(self):
+        v2 = oldfu.objective_function_just_ccc_has_minimum(args="", data="")
+        pass
+
+class Test_objective_function_just_ccc_has_minimum_reduced(unittest.TestCase):
+    def test_objective_function_just_ccc_has_minimum_reduced(self):
+        v2 = oldfu.objective_function_just_ccc_has_minimum_reduced(args="", data="")
+        pass
+
+
+class Test_objective_function_just_ccc_has_minimum_reduced_only_shifts(unittest.TestCase):
+    def test_objective_function_just_ccc_has_minimum_reduced_only_shifts(self):
+        v2 = oldfu.objective_function_just_ccc_has_minimum_reduced_only_shifts(args="", data="")
+        pass
+
+
+class Test_objective_function_just_ccc_has_minimum2(unittest.TestCase):
+    def test_objective_function_just_ccc_has_minimum2(self):
+        v2 = oldfu.objective_function_just_ccc_has_minimum2(args="", data="")
+        pass
+
+class Test_objective_function_just_ccc_has_maximum___old(unittest.TestCase):
+    def test_objective_function_just_ccc_has_maximum___old(self):
+        v2 = oldfu.objective_function_just_ccc_has_maximum___old(args="", data="")
+        pass
+
+class Test_objective_function_just_ccc_rewrite(unittest.TestCase):
+    def test_objective_function_just_ccc_rewrite(self):
+        d_res = oldfu.objective_function_just_ccc_rewrite(params="", volft="", kb="", data_im="", mask2D="")
+        pass
+
+class Test_eqproj_cascaded_ccc(unittest.TestCase):
+    def test_eqproj_cascaded_ccc(self):
+        v1,v2 = oldfu.eqproj_cascaded_ccc(args="", data="")
+        pass
+
+class Test_twoD_fine_search(unittest.TestCase):
+    def test_twoD_fine_search(self):
+        v2 = oldfu.twoD_fine_search(args="", data="")
+        pass
+
+class Test_eqproj(unittest.TestCase):
+    def test_eqproj(self):
+        v2 = oldfu.eqproj(args="", data="")
+        pass
+
+class Test_eqprojDot(unittest.TestCase):
+    def test_eqprojDot(self):
+        v2 = oldfu.eqprojDot(args="", data="")
+        pass
+
+class Test_eqprojEuler(unittest.TestCase):
+    def test_eqprojEuler(self):
+        v2 = oldfu.eqprojEuler(args="", data="")
+        pass
+
+class Test_symm_func(unittest.TestCase):
+    def test_symm_func(self):
+        v2 = oldfu.symm_func(args="", data="")
+        pass
+
+class Test_find_symm(unittest.TestCase):
+    def test_find_symm(self):
+        d_res = oldfu.find_symm(vol="", mask="", sym_gp="", phi="", theta="", psi="", scale="", ftolerance="", xtolerance="")
+        pass
+
+class Test_kbt(unittest.TestCase):
+    def test_kbt(self):
+        d_res = oldfu.kbt(nx="",npad=2)
+        pass
+
+class Test_ormq_peaks(unittest.TestCase):
+    def test_ormq_peaks(self):
+        d_res = oldfu.ormq_peaks(image="", crefim="", xrng="", yrng="", step="", mode="", numr="", cnx="", cny="")
+        pass
+
+class Test_select_k(unittest.TestCase):
+    def test_select_k(self):
+        v = oldfu.select_k(dJe="", T="")
+        pass
+
+class Test_sim_anneal(unittest.TestCase):
+    def test_sim_anneal(self):
+        ang, sxs, sys, mirror, peak, select = oldfu.sim_anneal(peaks="", T="", step="", mode="", maxrin="")
+        pass
+
+class Test_sim_ccf(unittest.TestCase):
+    def test_sim_ccf(self):
+        ang, sxs, sys, mirror, peak, select = oldfu.sim_ccf(peaks="", T="", step="", mode="", maxrin="")
+        pass
+
+class Test_sim_anneal2(unittest.TestCase):
+    def test_sim_anneal2(self):
+        v = oldfu.sim_anneal2(peaks="", Iter="", T0="", F="", SA_stop="")
+        pass
+
+class Test_sim_anneal3(unittest.TestCase):
+    def test_sim_anneal3(self):
+        ang, sx, sy, mirror, peak, select = oldfu.sim_anneal3(peaks="", peakm="", peaks_major="", peakm_major="", Iter="", T0="", F="", SA_stop="")
+        pass
+
+class Test_prep_vol_kb(unittest.TestCase):
+    def test_prep_vol_kb(self):
+        v = oldfu.prep_vol_kb(vol="", kb="", npad=2)
+        pass
+
+class Test_prepare_refrings_projections(unittest.TestCase):
+    def test_prepare_refrings_projections(self):
+        refrings, projections = oldfu.prepare_refrings_projections( volft="", kb="", nz = -1, delta = 2.0, ref_a = "P", sym = "c1", mode = "H", numr = None, MPI=False, phiEqpsi = "Zero", initial_theta = None, delta_theta = None)
+        pass
+
+class Test_prepare_refrings2(unittest.TestCase):
+    def test_prepare_refrings2(self):
+        v = oldfu.prepare_refrings2( volft="", kb="", nz="", segmask="", delta="", ref_a="", sym="", numr="", MPI=False, phiEqpsi = "Minus", kbx = None, kby = None, initial_theta = None, delta_theta = None)
+        pass
+
+class Test_refprojs(unittest.TestCase):
+    def test_refprojs(self):
+        v = oldfu.refprojs( volft="", kb="", ref_angles="", cnx="", cny="", numr="", mode="", wr="" )
+        pass
+
+class Test_(unittest.TestCase):
+    def test_(self):
+        peak, pixel_error = oldfu.proj_ali_incore_zoom(data=None, refrings=None, numr=None, xrng=None, yrng=None, step=None, finfo=None, sym = "c1", delta_psi = 0.0)
+        pass
+
+class Test_proj_ali_incore_local_zoom(unittest.TestCase):
+    def test_proj_ali_incore_local_zoom(self):
+        d_res = oldfu.proj_ali_incore_local_zoom(data=None, refrings=None, list_of_reference_angles=None, numr=None, xrng=None, yrng=None, step=None, an=None, finfo=None, sym='c1', delta_psi = 0.0)
+        pass
+
+#  This function is obsoleted ... i'm not going to test it
+class Test_proj_ali_incore_delta(unittest.TestCase):
+    def test_proj_ali_incore_delta(self):
+        pass
+
+#  This function is obsoleted ... i'm not going to test it
+class Test_proj_ali_incore_local_psi(unittest.TestCase):
+    def test_proj_ali_incore_local_psi(self):
+        pass
+
+class Test_ornq_gridding(unittest.TestCase):
+    def test_ornq_gridding(self):
+        d_res = oldfu.ornq_gridding(image="", crefim="", shifts="", shrink="", kb="", mode="", numr="", cnx="", cny="", deltapsi = 0.0)
+        pass
+
+class Test_ali3D_gridding(unittest.TestCase):
+    def test_ali3D_gridding(self):
+        newpar,simis = oldfu.ali3D_gridding(data= None, volprep= None, refang= None, delta_psi= None, shifts= None, shrink= None, numr= None, wr= None, cnx= None, myid= None, main_node= None, kb3D = None)
+        pass
+
+class Test_ali3D_direct(unittest.TestCase):
+    def test_ali3D_direct(self):
+        v = oldfu.ali3D_direct(data= None, volprep= None, refang= None, delta_psi= None, shifts= None, myid= None, main_node= None, lentop = 1000, kb3D = None)
+        pass
+
+class Test_ali3D_direct_preselect(unittest.TestCase):
+    def test_ali3D_direct_preselect(self):
+        v = oldfu.ali3D_direct_preselect(data= None, volprep= None, oldcodedparams= None, refang= None, delta_psi= None, shifts= None, myid= None, main_node= None, lentop = 1000, kb3D = None)
+        pass
+
+class Test_ali3D_direct_local(unittest.TestCase):
+    def test_ali3D_direct_local(self):
+        v = oldfu.ali3D_direct_local(data= None, volprep= None, refang= None, delta_psi= None, shifts= None, an= None, oldangs= None, myid= None, main_node= None, lentop = 1000, kb3D = None)
+        pass
+
+class Test_proj_ali_incore_direct(unittest.TestCase):
+    def test_proj_ali_incore_direct(self):
+        peak, pixel_error = oldfu.proj_ali_incore_direct(data=None, ref_angs=None, numr=None, xrng=None, yrng=None, step=None, finfo=None, sym = "c1", delta_psi = 0.0, rshift = 0.0)
+        pass
+
+class Test_proj_ali_helical(unittest.TestCase):
+    def test_proj_ali_helical(self):
+        peak, phi, theta, psi, s2x, s2y = oldfu.proj_ali_helical(data=None, refrings=None, numr=None, xrng=None, yrng=None, stepx=None, ynumber=None, psi_max=180.0, finfo=None)
+        pass
+
+class Test_proj_ali_helical_local(unittest.TestCase):
+    def test_proj_ali_helical_local(self):
+        peak, phi, theta, psi, s2x, s2y = oldfu.proj_ali_helical_local(data=None, refrings=None, numr=None, xrng=None, yrng=None, stepx=None,ynumber=None, an=None, psi_max=180.0, finfo=None, yrnglocal=-1.0)
+        pass
+
+class Test_proj_ali_helical_90(unittest.TestCase):
+    def test_proj_ali_helical_90(self):
+        peak, phi, theta, psi, s2x, s2y = oldfu.proj_ali_helical_90(data=None, refrings=None, numr=None, xrng=None, yrng=None, stepx=None, ynumber=None, psi_max=180.0, finfo=None)
+        pass
+
+class Test_proj_ali_helical_90_local(unittest.TestCase):
+    def test_proj_ali_helical_90_local(self):
+        peak, phi, theta, psi, s2x, s2y  = oldfu.proj_ali_helical_90_local(data=None, refrings=None, numr=None, xrng=None, yrng=None, stepx=None, ynumber=None, an=None, psi_max=180.0, finfo=None, yrnglocal=-1.0)
+        pass
+
+class Test_proj_ali_helicon_local(unittest.TestCase):
+    def test_proj_ali_helicon_local(self):
+        peak, phi, theta, psi, s2x, s2y = oldfu.proj_ali_helicon_local(data=None, refrings=None, numr=None, xrng=None, yrng=None, stepx=None,ynumber=None, an=None, psi_max=180.0, finfo=None, yrnglocal=-1.0)
+        pass
+
+class Test_proj_ali_helicon_90_local_direct(unittest.TestCase):
+    def test_proj_ali_helicon_90_local_direct(self):
+        peak, phi, theta, psi, s2x, s2y = oldfu.proj_ali_helicon_90_local_direct(data=None, refrings=None, xrng=None, yrng=None, an=None, psi_max=180.0, psi_step=1.0, stepx = 1.0, stepy = 1.0, finfo=None, yrnglocal=-1.0)
+        pass
+
+class Test_proj_ali_helicon_90_local_direct1(unittest.TestCase):
+    def test_proj_ali_helicon_90_local_direct1(self):
+        peak, phi, theta, psi, s2x, s2y = oldfu.proj_ali_helicon_90_local_direct1(data= "", refrings= "", xrng= "", yrng = "", psi_max=180.0, psi_step=1.0, stepx = 1.0, stepy = 1.0, finfo=None, yrnglocal=-1.0, direction = "both")
+        pass
+
+class Test_proj_ali_helicon_90_local(unittest.TestCase):
+    def test_proj_ali_helicon_90_local(self):
+        peak, phi, theta, psi, s2x, s2y = oldfu.proj_ali_helicon_90_local(data="", refrings="", numr="", xrng="", yrng="", stepx="", ynumber="", an="", psi_max=180.0, finfo=None, yrnglocal=-1.0)
+        pass
+
+class Test_ali_vol_func_julio(unittest.TestCase):
+    def test_ali_vol_func_julio(self):
+        v = oldfu.ali_vol_func_julio(params="", data="")
+        pass
+
+class Test_ali_vol_func_grid(unittest.TestCase):
+    def test_ali_vol_func_grid(self):
+        v = oldfu.ali_vol_func_grid(params="", data="")
+        pass
+
+class Test_ali_vol_func_nopsi(unittest.TestCase):
+    def test_ali_vol_func_nopsi(self):
+        v = oldfu.ali_vol_func_nopsi(params="", data="")
+        pass
+
+class Test_ali_vol_func_rotate(unittest.TestCase):
+    def test_ali_vol_func_rotate(self):
+        v = oldfu.ali_vol_func_rotate(params="", data="")
+        pass
+
+class Test_ali_vol_func_shift(unittest.TestCase):
+    def test_ali_vol_func_shift(self):
+        v = oldfu.ali_vol_func_shift(params="", data="")
+        pass
+
+class Test_ali_vol_func_scale(unittest.TestCase):
+    def test_ali_vol_func_scale(self):
+        v = oldfu.ali_vol_func_scale(params="", data="")
+        pass
+
+class Test_ali_vol_func_only_scale(unittest.TestCase):
+    def test_ali_vol_func_only_scale(self):
+        v = oldfu.ali_vol_func_only_scale(params="", data="")
+        pass
+
+class Test_helios_func(unittest.TestCase):
+    def test_helios_func(self):
+        v = oldfu.helios_func(params="", data="")
+        pass
+
+
+class Test_helios(unittest.TestCase):
+    def test_helios(self):
+        v = oldfu.helios(vol="", pixel_size="", dp="", dphi="", section_use = 0.75, radius = 0.0, rmin = 0.0)
+        pass
+
+class Test_helios7(unittest.TestCase):
+    def test_helios7(self):
+        v = oldfu.helios7(vol="", pixel_size="", dp="", dphi="", section_use = 0.75, radius = 0.0, rmin = 0.0)
+        pass
+
+
+class Test_sub_favj(unittest.TestCase):
+    def test_sub_favj(self):
+        oldfu.sub_favj(ave="", data="", jtot="", mirror="", numr="")
+        pass
+
+
+class Test_update_favj(unittest.TestCase):
+    def test_update_favj(self):
+        oldfu.update_favj(ave="", data="", jtot="", mirror="", numr="")
+        pass
+
+
+class Test_fine_2D_refinement(unittest.TestCase):
+    def test_fine_2D_refinement(self):
+        oldfu.fine_2D_refinement(data="", br="", mask="", tavg="", group = -1)
+        pass
+
+
+class Test_multalign2dscf(unittest.TestCase):
+    def test_multalign2dscf(self):
+        sx,sy,iref,talpha,totpeak = oldfu.multalign2dscf(image="", refrings="", frotim="", numr="", xrng=-1, yrng=-1, ou = -1)
+        pass
+
+
+class Test_align2d_direct2(unittest.TestCase):
+    def test_align2d_direct2(self):
+        bang, bsx, bsy, ama = oldfu.align2d_direct2(image="", refim="", xrng=1, yrng=1, psimax=1, psistep=1, ou = -1)
+        pass
+
+
+class Test_align2d_direct3(unittest.TestCase):
+    def test_align2d_direct3(self):
+        v = oldfu.align2d_direct3(input_images="", refim="", xrng=1, yrng=1, psimax=180, psistep=1, ou = -1, CTF = None)
+        pass
+
+
+class Test_align2d_no_mirror(unittest.TestCase):
+    def test_align2d_no_mirror(self):
+        ang, sxs, sys, mirror, peak = oldfu.align2d_no_mirror(image="", refim="", xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
+        pass
+
+
+class Test_align2d_direct(unittest.TestCase):
+    def test_align2d_direct(self):
+        bang, bsx, bsy, ama = oldfu.align2d_direct(image="", refim="", xrng=1, yrng=1, psimax=1, psistep=1, ou = -1)
+        pass
+
+
+class Test_align2d_peaks(unittest.TestCase):
+    def test_align2d_peaks(self):
+        v = oldfu.align2d_peaks(image="", refim="", xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
+        pass
+
+
+class Test_align2d_g(unittest.TestCase):
+    def test_align2d_g(self):
+        v = oldfu.align2d_g(image="", refim="", xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
+        pass
+
+
+class Test_directali(unittest.TestCase):
+    def test_directali(self):
+        nalpha, ntx, nty, peak = oldfu.directali(inima="", refs="", psimax=1.0, psistep=1.0, xrng=1, yrng=1, updown = "both")
+        pass
+
+
+class Test_preparerefsgrid(unittest.TestCase):
+    def test_preparerefsgrid(self):
+        v = oldfu.preparerefsgrid(refs="", psimax=1.0, psistep=1.0)
+        pass
+
+
+class Test_preparerefsgrid2(unittest.TestCase):
+    def test_preparerefsgrid2(self):
+        v = oldfu.preparerefsgrid2(refs="", psimax=1.0, psistep=1.0)
+        pass
+
+
+class Test_directaligridding(unittest.TestCase):
+    def test_directaligridding(self):
+        nalpha, ntx, nty, peak = oldfu.directaligridding(inima="", refs="", psimax=1.0, psistep=1.0, xrng=1, yrng=1, updown = "both")
+        pass
+
+
+class Test_directaligridding1(unittest.TestCase):
+    def test_directaligridding1(self):
+        nalpha, ntx, nty, peak = oldfu.directaligridding1(inima="", refs="", psimax=1.0, psistep=1.0, xrng=1, yrng=1, updown = "both")
+        pass
+
+
+class Test_directaligriddingconstrained(unittest.TestCase):
+    def test_directaligriddingconstrained(self):
+        nalpha, ntx, nty, peak = oldfu.directaligriddingconstrained(inima="", kb="", ref="", psimax=1.0, psistep=1.0, xrng=1, yrng=1, stepx = 1.0, stepy = 1.0, psiref = 0., txref = 0., tyref = 0., updown = "up")
+        pass
+
+class Test_directaligriddingconstrained3dccf(unittest.TestCase):
+    def test_directaligriddingconstrained3dccf(self):
+        nalpha, ntx, nty, peak = oldfu.directaligriddingconstrained3dccf(inima="", kb="", ref="", psimax=1.0, psistep=1.0, xrng=1, yrng=1, stepx = 1.0, stepy = 1.0, psiref = 0., txref = 0., tyref = 0., updown = "up")
+        pass
+
+
+class Test_alignment3Dsnake(unittest.TestCase):
+    def test_alignment3Dsnake(self):
+        v = oldfu.alignment3Dsnake(partition="", snakeknots="", nsegs="", initialori="", ctx="", psistep="", stepx="", stepy="", txref="", tyref="", nc="", rnx="", rny="", updown = "up")
+        pass
+
+
+class Test_flexhelicalali(unittest.TestCase):
+    def test_flexhelicalali(self):
+        v = oldfu.flexhelicalali(params="",data="")
+        pass
+
+
+class Test_ali_nvol(unittest.TestCase):
+    def test_ali_nvol(self):
+        v = oldfu.ali_nvol(v="", mask="")
+        pass
+
+class Test_alivol_mask_getref(unittest.TestCase):
+    def test_alivol_mask_getref(self):
+        v = oldfu.alivol_mask_getref(v="", mask="")
+        pass
+
+class Test_ali_mvol(unittest.TestCase):
+    def test_ali_mvol(self):
+        v = oldfu.ali_mvol(v="", mask="")
+        pass
+
+class Test_alivol_mask(unittest.TestCase):
+    def test_alivol_mask(self):
+        d_res = oldfu.alivol_mask(v="",vref="", mask="")
+        pass
+
+class Test_alivol_m(unittest.TestCase):
+    def test_alivol_m(self):
+        d_res = oldfu.alivol_m(v="",vref="", mask="")
+        pass
+
+
+class Test_shc(unittest.TestCase):
+    def test_shc(self):
+        peak, pixel_error, number_of_checked_refs, iref = oldfu.shc(data="", refrings="", list_of_reference_angles="", numr="", xrng="", yrng="", step="", an = -1.0, sym = "c1", finfo=None)
+        pass
+
+
+class Test_center_projections_3D(unittest.TestCase):
+    def test_center_projections_3D(self):
+        v = oldfu.center_projections_3D(data=None, ref_vol = None, ali3d_options = None, onx = -1, shrinkage = 1.0, mpi_comm = None, myid = 0, main_node = 0, log = None )
+        pass
+
+
+class Test_reduce_indices_so_that_angles_map_only_to_asymmetrix_unit_and_keep_mirror_info(unittest.TestCase):
+    def test_reduce_indices_so_that_angles_map_only_to_asymmetrix_unit_and_keep_mirror_info(self):
+        d_res = oldfu.reduce_indices_so_that_angles_map_only_to_asymmetrix_unit_and_keep_mirror_info(all_refs_angles="", angle_index__to__all_refs_angles_within_asymmetric_unit_plus_mirror_and_symmetries="")
+        pass
+
+""" end: new in sphire 1.3"""
 
 class Test_ali2d_single_iter(unittest.TestCase):
     """

@@ -75,8 +75,614 @@ There are some opened issues in:
 pickle files stored under smb://billy.storage.mpi-dortmund.mpg.de/abt3/group/agraunser/transfer/Adnan/pickle files
 """
 
+""" start: new in sphire 1.3"""
+from sphire.libpy import sp_applications as oldfu
+from sphire.libpy_py3 import sp_applications as fu
+
+class Test_ali2d(unittest.TestCase):
+    def test_ali2d(self):
+        oldfu.ali2d(stack="", outdir="", maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", nomirror=False, dst=0.0, center=-1, maxit=0, CTF=False, snr=1.0, Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPUID="", MPI=False, template=None, random_method = "")
+        pass
+
+class Test_ali2d_data(unittest.TestCase):
+    def test_ali2d_data(self):
+        oldfu.ali2d_data(data="", outdir="", maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", nomirror=False, dst=0.0, center=-1, maxit=0, CTF=False, snr=1.0, Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPUID="", from_ali2d=False, template=None, random_method = "")
+        pass
 
 
+class Test_local_ali2d(unittest.TestCase):
+    def test_local_ali2d(self):
+        oldfu.local_ali2d(stack="", outdir="", maskfile = None, ou = -1, br = 1.75, center = 1, eps = 0.001, maxit = 10, CTF = False, snr = 1.0, user_func_name="ref_ali2d")
+        pass
+
+class Test_mref_ali2d(unittest.TestCase):
+    def test_mref_ali2d(self):
+        oldfu.mref_ali2d(stack="", refim="", outdir="", maskfile=None, ir=1, ou=-1, rs=1, xrng=0, yrng=0, step=1, center=1, maxit=0, CTF=False, snr=1.0, user_func_name="ref_ali2d", rand_seed=1000, MPI=False)
+        pass
+
+
+class Test_ali2d_ra(unittest.TestCase):
+    def test_ali2d_ra(self):
+        oldfu.ali2d_ra(stack="", maskfile = None, ir = 1, ou = -1, rs = 1, maxit = 10, check_mirror = False, CTF = False, rand_seed = 1000)
+        pass
+
+
+class Test_ali2d_rag(unittest.TestCase):
+    def test_ali2d_rag(self):
+        oldfu.ali2d_rag(stack="", maskfile = None, ir = 1, ou = -1, rs = 1, maxit = 10, check_mirror = False, CTF = False, rand_seed = 1000)
+        pass
+
+
+class Test_ali2d_rac(unittest.TestCase):
+    def test_ali2d_rac(self):
+        oldfu.ali2d_rac(stack="", maskfile = None, ir = 1, ou = -1, rs = 1, nclass = 2, maxit = 10, maxin = 10, check_mirror = False, rand_seed = 1000, MPI=False)
+        pass
+
+
+class Test_ali2d_ras(unittest.TestCase):
+    def test_ali2d_ras(self):
+        oldfu.ali2d_ras(data2d="", randomize = False, ir = 1, ou = -1, rs = 1, step = 1.0, dst = 0.0, maxit = 10, check_mirror = True, FH = 0.0, FF =0.0)
+        pass
+
+
+class Test_ali2d_rotationaltop(unittest.TestCase):
+    def test_ali2d_rotationaltop(self):
+        oldfu.ali2d_rotationaltop(outdir="", stack="", randomize = False, orient=True, ir = 4, ou = -1, rs = 1, psi_max = 180.0, mode = "F", maxit = 10)
+        pass
+
+
+class Test_ali2d_rotational(unittest.TestCase):
+    def test_ali2d_rotational(self):
+        oldfu.ali2d_rotational(data2d="", randomize = False, orient=True, ir = 1, ou = -1, rs = 1, psi_max = 180.0, mode = "F", maxit = 10)
+        pass
+
+
+class Test_ali2d_cross_res(unittest.TestCase):
+    def test_ali2d_cross_res(self):
+        oldfu.ali2d_cross_res(stack="", outdir="", maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=1, maxit=0, CTF=False, snr=1.0, user_func_name="ref_ali2d")
+        pass
+
+
+class Test_ali3d(unittest.TestCase):
+    def test_ali3d(self):
+        oldfu.ali3d(stack="", ref_vol="", outdir="", maskfile = None, ir = 1, ou = -1, rs = 1, xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", apsi = "-1", deltapsi = "-1", startpsi = "-1",center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",user_func_name = "ref_ali3d", fourvar = True, npad = 4, debug = False, MPI = False, termprec = 0.0)
+        pass
+
+
+class Test_ali3d_MPI(unittest.TestCase):
+    def test_ali3d_MPI(self):
+        oldfu.ali3d_MPI(stack="", ref_vol="", outdir="", maskfile = None, ir = 1, ou = -1, rs = 1, xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", apsi = "-1", deltapsi = "-1", startpsi = "-1",center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",  user_func_name = "ref_ali3d",fourvar = True, npad = 2, debug = False, termprec = 0.0)
+        pass
+
+
+class Test_sali3d_base(unittest.TestCase):
+    def test_sali3d_base(self):
+        p = oldfu.sali3d_base(stack="", ref_vol = None, Tracker = None, rangle = 0.0, rshift = 0.0, mpi_comm = None, log = None)
+        pass
+
+
+class Test_slocal_ali3d_base(unittest.TestCase):
+    def test_slocal_ali3d_base(self):
+        v= oldfu.slocal_ali3d_base(stack="", templatevol="", Tracker="", mpi_comm = None, log= None, chunk = -1.0, debug = False )
+        pass
+
+
+class Test_computenumberofrefs(unittest.TestCase):
+    def test_computenumberofrefs(self):
+        v= oldfu.computenumberofrefs(x="", dat="")
+        pass
+
+
+class Test_ali3dpsi_MPI(unittest.TestCase):
+    def test_ali3dpsi_MPI(self):
+        v= oldfu.ali3dpsi_MPI(stack="", ref_vol="", outdir="", maskfile = None, ir = 1, ou = -1, rs = 1, xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", apsi = "-1", deltapsi = "-1", startpsi = "-1",center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",  user_func_name = "ref_ali3d",fourvar = True, npad = 4, debug = False, termprec = 0.0)
+        pass
+
+
+class Test_ali3d_shcMPI(unittest.TestCase):
+    def test_ali3d_shcMPI(self):
+        v= oldfu.ali3d_shcMPI(stack="", ref_vol="", outdir="", maskfile = None, ir = 1, ou = -1, rs = 1, xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", apsi = "-1", deltapsi = "-1", startpsi = "-1",center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",  user_func_name = "ref_ali3d",fourvar = True, npad = 4, debug = False, termprec = 0.0, gamma=-1)
+        pass
+
+
+class Test_mref_ali3d(unittest.TestCase):
+    def test_mref_ali3d(self):
+        oldfu.mref_ali3d(stack="", ref_vol="", outdir="", maskfile=None, focus = None, maxit=1, ir=1, ou=-1, rs=1, xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta="10 6 4 4", an="-1", center = 1.0, nassign = 3, nrefine = 1, CTF = False, snr = 1.0,  ref_a = "S", sym="c1",user_func_name="ref_ali3d", MPI=False, npad = 4, debug = False, fourvar=False, termprec = 0.0)
+        pass
+
+
+class Test_Kmref2_ali3d_MPI(unittest.TestCase):
+    def test_Kmref2_ali3d_MPI(self):
+        oldfu.Kmref2_ali3d_MPI(stack="", ref_vol="", outdir="", maskfile=None, focus = None, maxit=1, ir=1, ou=-1, rs=1, xr ="4 2  2  1", yr="-1", ts="1 1 0.5 0.25",   delta="10  6  4  4", an="-1",center = -1, nassign = 3, nrefine= 1, CTF = False, snr = 1.0,  ref_a="S", sym="c1",user_func_name="ref_ali3d", npad = 4, debug = False, fourvar=False, termprec = 0.0, mpi_comm = None, log = None)
+        pass
+
+
+class Test_get_refiparams(unittest.TestCase):
+    def test_get_refiparams(self):
+        d= oldfu.get_refiparams(nx="") # {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
+        pass
+
+
+class Test_local_ali3dm_MPI_(unittest.TestCase):
+    def test_local_ali3dm_MPI_(self):
+        oldfu.local_ali3dm_MPI_(stack="", refvol="", outdir="", maskfile="", ou=-1,  delta=2, ts=0.25, maxit=10, nassign=4, nrefine=1, CTF = None,snr=1.0, sym="c1", user_func_name="ref_ali3d", fourvar=False, debug=False, termprec = 0.0 )
+        pass
+
+class Test_local_ali3dm_MPI(unittest.TestCase):
+    def test_local_ali3dm_MPI(self):
+        oldfu.local_ali3dm_MPI(stack="", refvol="", outdir="", maskfile="", ou=-1,  delta=2, ts=0.25, maxit=10, nassign=4, nrefine=1, CTF = None,snr=1.0, sym="c1", user_func_name="ref_ali3d", fourvar=False, debug=False, termprec = 0.0 )
+        pass
+
+
+class Test_local_ali3d(unittest.TestCase):
+    def test_local_ali3d(self):
+        v= oldfu.local_ali3d(stack="", outdir="", maskfile = None, ou = -1,  delta = 2, ts=0.25, center = -1, maxit = 10,CTF = False, snr = 1.0, sym = "c1", chunk = -1.0, user_func_name = "ref_ali3d",fourvar = True, npad = 4, debug = False, MPI = False)
+        pass
+
+class Test_local_ali3d_MPI(unittest.TestCase):
+    def test_local_ali3d_MPI(self):
+        v= oldfu.local_ali3d_MPI(stack="", outdir="", maskfile = None, ou = -1,  delta = 2, ts=0.25, center = -1, maxit = 10,CTF = False, snr = 1.0, sym = "c1", chunk = -1.0, user_func_name = "ref_ali3d",fourvar = True, npad = 4, debug = False, MPI = False)
+        pass
+
+class Test_local_ali3d_MPI_scipy_minimization(unittest.TestCase):
+    def test_local_ali3d_MPI_scipy_minimization(self):
+        v= oldfu.local_ali3d_MPI_scipy_minimization(stack="", outdir="", maskfile = None, ou = -1,  delta = 2, ts=0.25, center = -1, maxit = 10,CTF = False, snr = 1.0, sym = "c1", chunk = -1.0, user_func_name = "ref_ali3d",fourvar = True, npad = 4, debug = False, MPI = False)
+        pass
+
+
+class Test_local_ali3d_base_MPI(unittest.TestCase):
+    def test_local_ali3d_base_MPI(self):
+        oldfu.local_ali3d_base_MPI(stack="", templatevol="", ali3d_options="", shrinkage = 1.0,mpi_comm = None, log= None, chunk = -1.0, saturatecrit = 0.95, pixercutoff = 1.0, debug = False )
+        pass
+
+
+class Test_autowin(unittest.TestCase):
+    def test_autowin(self):
+        v= oldfu.autowin(indir="",outdir="", noisedoc="", noisemic="", templatefile="", deci="", CC_method="", p_size="", sigma="", hf_p="", n_peak_max="", contrast_invert=1, CTF = False, prm = "micrograph", MPI=False)
+        pass
+
+class Test_autowin_MPI(unittest.TestCase):
+    def test_autowin_MPI(self):
+        v= oldfu.autowin_MPI(indir="",outdir="", noisedoc="", noisemic="", templatefile="", deci="", CC_method="", p_size="", sigma="", hf_p="", n_peak_max="", contrast_invert=1,  prefix_of_micrograph = "micrograph")
+        pass
+
+
+class Test_ihrsr_MPI(unittest.TestCase):
+    def test_ihrsr_MPI(self):
+        oldfu.ihrsr_MPI(stack="", ref_vol="", outdir="", maskfile="", ir="", ou="", rs="", xr="", ynumber="",txs="", delta="", initial_theta="", delta_theta="", an="", maxit="", CTF="", snr="", dp="", ndp="", dp_step="", dphi="", ndphi="", dphi_step="", psi_max="",rmin="", rmax="", fract="", nise="", npad="", sym="", user_func_name="", datasym="", pixel_size="", debug="", y_restrict="", WRAP="")
+        pass
+
+
+class Test_copyfromtif(unittest.TestCase):
+    def test_copyfromtif(self):
+        oldfu.copyfromtif(indir="", outdir=None, input_extension="tif", film_or_CCD="f", output_extension="hdf", contrast_invert=1, Pixel_size=1, scanner_param_a=1,scanner_param_b=1, scan_step=63.5, magnification=40, MPI=False)
+        pass
+
+class Test_copyfromtif_MPI(unittest.TestCase):
+    def test_copyfromtif_MPI(self):
+        oldfu.copyfromtif_MPI(indir="", outdir=None, input_extension="tif", film_or_CCD="f", output_extension="hdf", contrast_invert=1, Pixel_size=1, scanner_param_a=1,scanner_param_b=1, scan_step=63.5, magnification=40, MPI=False)
+        pass
+
+
+class Test_dele_flist(unittest.TestCase):
+    def test_dele_flist(self):
+        oldfu.dele_flist(flist="")
+        pass
+
+
+class Test_defocus_calc(unittest.TestCase):
+    def test_defocus_calc(self):
+        oldfu.defocus_calc(roodir="", method="", writetodoc="w", Pixel_size=1, voltage=120, Cs=1, amp_contrast=.1, round_off=100, dz_max=50000., frequency_low=30, frequency_high=5, polynomial_rank_baseline=5, polynomial_rank_envelope=5, prefix="roo", format="spider", skip_comment="#", micdir = "no", print_screen="no")
+        pass
+
+
+class Test_pw2sp(unittest.TestCase):
+    def test_pw2sp(self):
+        oldfu.pw2sp(indir="", outdir = None, w =256, xo =50, yo = 50, xd = 0, yd = 0, r = 0, prefix_of_micrograph="micrograph", MPI=False)
+        pass
+
+class Test_pw2sp_MPI(unittest.TestCase):
+    def test_pw2sp_MPI(self):
+        oldfu.pw2sp_MPI(indir="", outdir = None, w =256, xo =50, yo = 50, xd = 0, yd = 0, r = 0, prefix_of_micrograph="micrograph")
+        pass
+
+class Test_ra_cef(unittest.TestCase):
+    def test_ra_cef(self):
+        oldfu.ra_cef(indir="", noise="", outdir="", prf="", num="")
+        pass
+
+
+class Test_ali_vol_2(unittest.TestCase):
+    def test_ali_vol_2(self):
+        v= oldfu.ali_vol_2(vol="", refv="", ang_scale="", shift_scale="", radius=None, discrepancy = "ccc")
+        pass
+
+class Test_ali_vol_3(unittest.TestCase):
+    def test_ali_vol_3(self):
+        v= oldfu.ali_vol_3(vol="", refv="", ang_scale="", shift_scale="", radius=None, discrepancy = "ccc", mask=None)
+        pass
+
+class Test_ali_vol_n(unittest.TestCase):
+    def test_ali_vol_n(self):
+        v= oldfu.ali_vol_n(vol="", refv="", ang_scale="", shift_scale="", radius=None, discrepancy = "ccc", rsdec=1)
+        pass
+
+class Test_ali_vol_grid(unittest.TestCase):
+    def test_ali_vol_grid(self):
+        v= oldfu.ali_vol_grid(vol="", params="", refv="", ang_scale="", shift_scale="", radius=None, discrepancy="dot", kb=None, wrap=False)
+        pass
+
+class Test_ali_vol_M(unittest.TestCase):
+    def test_ali_vol_M(self):
+        v= oldfu.ali_vol_M(vol="", refv="", ang_scale="", shift_scale="", mask=None, discrepancy = "ccc")
+        pass
+
+class Test_ali_vol_nopsi(unittest.TestCase):
+    def test_ali_vol_nopsi(self):
+        v= oldfu.ali_vol_nopsi(vol="", refv="", ang_scale="", shift_scale="", radius=None, discrepancy = "ccc")
+        pass
+
+class Test_ali_vol_rotate(unittest.TestCase):
+    def test_ali_vol_rotate(self):
+        v= oldfu.ali_vol_rotate(vol="", refv="", ang_scale="",  radius=None, discrepancy = "ccc")
+        pass
+
+class Test_ali_vol_shift(unittest.TestCase):
+    def test_ali_vol_shift(self):
+        v= oldfu.ali_vol_shift(vol="", refv="", shift_scale="",  radius=None, discrepancy = "ccc")
+        pass
+
+class Test_ali_vol_scale(unittest.TestCase):
+    def test_ali_vol_scale(self):
+        v= oldfu.ali_vol_scale(vol="", refv="", ang_scale="", shift_scale="", mag_scale="", radius=None, discrepancy = "ccc")
+        pass
+
+
+class Test_ali_vol_only_scale(unittest.TestCase):
+    def test_ali_vol_only_scale(self):
+        v= oldfu.ali_vol_only_scale(vol="", refv="", mag_scale="", radius=None, discrepancy = "ccc")
+        pass
+
+
+class Test_rot_sym(unittest.TestCase):
+    def test_rot_sym(self):
+        v= oldfu.rot_sym(infile="", outfile="", sym_gp="d4", radius=None, phi=0, theta=0, psi=0, phirange=20, thetarange=20, psirange=20, ftolerance=1.e-4, xtolerance=1.e-4)
+        pass
+
+
+class Test_transform2d(unittest.TestCase):
+    def test_transform2d(self):
+        v= oldfu.transform2d(stack_data="", stack_data_ali="", shift = False, ignore_mirror = False, method = "quadratic")
+        pass
+
+
+class Test_recons3d_n_MPI(unittest.TestCase):
+    def test_recons3d_n_MPI(self):
+        v= oldfu.recons3d_n_MPI(prj_stack="", pid_list="", vol_stack="", CTF=False, snr=1.0, sign=1, npad=2, sym="c1", listfile="", group=-1, verbose=0, xysize=-1, zsize=-1, smearstep = 0.0)
+        pass
+
+
+class Test_recons3d_trl_MPI(unittest.TestCase):
+    def test_recons3d_trl_MPI(self):
+        v= oldfu.recons3d_trl_MPI(prj_stack="", pid_list="", vol_stack="", CTF="", snr="", sign="", npad="", sym="", verbose = None, niter =10, compensate = False, target_window_size=-1)
+        pass
+
+
+class Test_recons3d_n_trl_MPI_one_node(unittest.TestCase):
+    def test_recons3d_n_trl_MPI_one_node(self):
+        v= oldfu.recons3d_n_trl_MPI_one_node(prjlist="", CTF="", snr="", sign="", npad="", sym="", group="", niter="", verbose="", upweighted="", compensate="", chunk_id="")
+        pass
+
+
+class Test_ssnr3d(unittest.TestCase):
+    def test_ssnr3d(self):
+        v= oldfu.ssnr3d(stack="", output_volume = None, ssnr_text_file = None, mask = None, reference_structure = None, ou = -1, rw = 1.0,  npad = 1, CTF = False, sign = 1, sym ="c1", MPI = False, random_angles = 0)
+        pass
+
+
+class Test_ssnr3d_MPI(unittest.TestCase):
+    def test_ssnr3d_MPI(self):
+        v= oldfu.ssnr3d_MPI(stack="", output_volume = None, ssnr_text_file = None, mask = None, reference_structure = None, ou = -1, rw = 1.0,  npad = 1, CTF = False, sign = 1, sym ="c1",  random_angles = 0)
+        pass
+
+
+class Test_varimax(unittest.TestCase):
+    def test_varimax(self):
+        v= oldfu.varimax(input_stack="", imglist="", output_stack="", maskfile="", mask_radius="", verbose ="")
+        pass
+
+
+class Test_bootstrap_genbuf(unittest.TestCase):
+    def test_bootstrap_genbuf(self):
+        v= oldfu.bootstrap_genbuf(prj_stack="", buf_prefix="", npad="", verbose="", CTF=False)
+        pass
+
+
+class Test_bootstrap_run(unittest.TestCase):
+    def test_bootstrap_run(self):
+        v= oldfu.bootstrap_run(prj_stack="", media="", outdir="", nvol="", CTF="", snr="", sym="", verbose="", MPI=False)
+        pass
+
+
+class Test_wrapper_params_2D_to_3D(unittest.TestCase):
+    def test_wrapper_params_2D_to_3D(self):
+        v= oldfu.wrapper_params_2D_to_3D(stack="")
+        pass
+
+
+class Test_wrapper_params_3D_to_2D(unittest.TestCase):
+    def test_wrapper_params_3D_to_2D(self):
+        v= oldfu.wrapper_params_3D_to_2D(stack="")
+        pass
+
+
+class Test_cml_find_structure_main(unittest.TestCase):
+    def test_cml_find_structure_main(self):
+        v= oldfu.cml_find_structure_main(stack="", out_dir="", ir="", ou="", delta="", dpsi="", lf="", hf="", rand_seed="", maxit="", given = False, first_zero = False, flag_weights = False, debug = False, trials = 1)
+        pass
+
+class Test_cml_find_structure_MPI2(unittest.TestCase):
+    def test_cml_find_structure_MPI2(self):
+        v= oldfu.cml_find_structure_MPI2(stack="", out_dir="", ir="", ou="", delta="", dpsi="", lf="", hf="", rand_seed="", maxit="", given = False, first_zero = False, flag_weights = False, debug = False, trials = 1)
+        pass
+
+
+class Test_cml_find_structure_MPI(unittest.TestCase):
+    def test_cml_find_structure_MPI(self):
+        v= oldfu.cml_find_structure_MPI(stack="", out_dir="", ir="", ou="", delta="", dpsi="", lf="", hf="", rand_seed="", maxit="", given = False, first_zero = False, flag_weights = False, debug = False, trials = 10)
+        pass
+
+
+class Test_imgstat_ccc(unittest.TestCase):
+    def test_imgstat_ccc(self):
+        v= oldfu.imgstat_ccc( stacks="", rad="" )
+        pass
+
+
+class Test_imgstat_fsc(unittest.TestCase):
+    def test_imgstat_fsc(self):
+        v= oldfu.imgstat_fsc( stacks="", fscfile="", rad ="")
+        pass
+
+
+class Test_imgstat_inf(unittest.TestCase):
+    def test_imgstat_inf(self):
+        v= oldfu.imgstat_inf( stacks="", rad="" )
+        pass
+
+
+class Test_imgstat(unittest.TestCase):
+    def test_imgstat(self):
+        v= oldfu.imgstat( stacks="", ifccc="", fscfile="", pinf="", rad ="")
+        pass
+
+
+class Test_normal_prj(unittest.TestCase):
+    def test_normal_prj(self):
+        v= oldfu.normal_prj( prj_stack="", outdir="", refvol="", weights="", r="", niter="", snr="", sym="", verbose = 0, CTF = False, MPI=False )
+        pass
+
+
+class Test_defvar(unittest.TestCase):
+    def test_defvar(self):
+        v= oldfu.defvar(files="", outdir="", fl="", aa="", radccc="", frepa = "default", pca=False, pcamask=None, pcanvec=None)
+        pass
+
+
+class Test_var_mpi(unittest.TestCase):
+    def test_var_mpi(self):
+        v= oldfu.var_mpi(files="", outdir="", fl="", aa="", radccc="", frepa = "default", pca=False, pcamask=None, pcanvec=None)
+        pass
+
+
+class Test_factcoords_vol(unittest.TestCase):
+    def test_factcoords_vol(self):
+        v= oldfu.factcoords_vol( vol_stacks="", avgvol_stack="", eigvol_stack="", prefix="", rad = -1, neigvol = -1, fl=0.0, aa=0.0, MPI=False)
+        pass
+
+
+class Test_factcoords_prj(unittest.TestCase):
+    def test_factcoords_prj(self):
+        v= oldfu.factcoords_prj( prj_stacks="", avgvol_stack="", eigvol_stack="", prefix="", rad="", neigvol="", fl=0.0, aa=0.0, CTF = False, MPI=False)
+        pass
+
+
+class Test_spill_out(unittest.TestCase):
+    def test_spill_out(self):
+        v= oldfu.spill_out(ltot="", base="", d="", neigvol="", foutput="")
+        pass
+
+
+class Test_k_means_main(unittest.TestCase):
+    def test_k_means_main(self):
+        v= oldfu.k_means_main(stack="", out_dir="", maskname="", opt_method="", K="", rand_seed="", maxit="", trials="", critname="",CTF = False, F = 0, T0 = 0, MPI = False, CUDA = False, DEBUG = False, flagnorm = False,init_method = 'rnd')
+        pass
+
+
+class Test_k_means_groups(unittest.TestCase):
+    def test_k_means_groups(self):
+        v= oldfu.k_means_groups(stack="", out_file="", maskname="", opt_method="", K1="", K2="", rand_seed="", maxit="", trials="", CTF=False, F=0.0, T0=0.0, MPI=False, CUDA=False, DEBUG=False, flagnorm=False)
+        pass
+
+
+class Test_HAC_clustering(unittest.TestCase):
+    def test_HAC_clustering(self):
+        v= oldfu.HAC_clustering(stack="", dendoname="", maskname="", kind_link="", kind_dist="", flag_diss="")
+        pass
+
+
+class Test_HAC_averages(unittest.TestCase):
+    def test_HAC_averages(self):
+        v= oldfu.HAC_averages(stack="", dendoname="", avename="", K="")
+        pass
+
+
+class Test_tomo(unittest.TestCase):
+    def test_tomo(self):
+        v= oldfu.tomo(box="")
+        pass
+
+
+class Test_ave_ali(unittest.TestCase):
+    def test_ave_ali(self):
+        v= oldfu.ave_ali(name_stack="", name_out = None, ali = False, param_to_save_size = None, set_as_member_id = None)
+        pass
+
+
+class Test_refinement_2d_local(unittest.TestCase):
+    def test_refinement_2d_local(self):
+        v= oldfu.refinement_2d_local(data="", ou="", arange="", xrng="", yrng="", CTF = True, SNR=1.0e10)
+        pass
+
+
+class Test_volalixshift_MPI(unittest.TestCase):
+    def test_volalixshift_MPI(self):
+        v= oldfu.volalixshift_MPI(stack="", ref_vol="", outdir="", search_rng="", pixel_size="", dp="", dphi="", fract="", rmax="", rmin="", maskfile = None, maxit = 1, CTF = False, snr = 1.0, sym = "c1",  user_func_name = "helical", npad = 2, debug = False, nearby=3)
+        pass
+
+
+class Test_diskali_MPI(unittest.TestCase):
+    def test_diskali_MPI(self):
+        v= oldfu.diskali_MPI(stack="", ref_vol="", outdir="", maskfile="", dp="", dphi="", pixel_size="", user_func_name="", zstep=1.0, fract=0.67, rmax=70, rmin=0, CTF=False, maxit=1, sym = "c1")
+        pass
+
+
+class Test_cylindrical_trans(unittest.TestCase):
+    def test_cylindrical_trans(self):
+        v= oldfu.cylindrical_trans(vol="", rmin="", rmax="", rise="", apply_weights = False)
+        pass
+
+
+class Test_alihelical3(unittest.TestCase):
+    def test_alihelical3(self):
+        v= oldfu.alihelical3(slices="", refslices="", zstep="", dphi="", rise="", rmin="", rmax="", sym="c1")
+        pass
+
+
+class Test_alihelical4(unittest.TestCase):
+    def test_alihelical4(self):
+        v= oldfu.alihelical4(slices="", refslices="", zstep="", dphi="", rise="", rmin="", rmax="", theta=0.0)
+        pass
+
+
+class Test_iang(unittest.TestCase):
+    def test_iang(self):
+        v= oldfu.iang(alpha="", maxrin="")
+        pass
+
+
+class Test_stack_disks(unittest.TestCase):
+    def test_stack_disks(self):
+        v= oldfu.stack_disks(v="", nx="", ny="", ref_nz="", dphi="", rise="")
+        pass
+
+
+class Test_imgstat_hfsc(unittest.TestCase):
+    def test_imgstat_hfsc(self):
+        v= oldfu.imgstat_hfsc( stack="", file_prefix="", fil_attr='filament')
+        pass
+
+
+class Test_match_pixel_rise(unittest.TestCase):
+    def test_match_pixel_rise(self):
+        v ,v2= oldfu.match_pixel_rise(dz="",px="", nz=-1, ndisk=-1, rele=0.1, stop=900000)
+        pass
+
+
+class Test_gendisks_MPI(unittest.TestCase):
+    def test_gendisks_MPI(self):
+        v = oldfu.gendisks_MPI(stack="", mask3d="", ref_nx="", pixel_size="", dp="", dphi="", fract=0.67, rmax=70, rmin=0, CTF=False, user_func_name = "helical", sym = "c1", dskfilename='bdb:disks', maxerror=0.01, new_pixel_size = -1, do_match_pixel_rise=False)
+        pass
+
+
+class Test_ehelix_MPI(unittest.TestCase):
+    def test_ehelix_MPI(self):
+        v = oldfu.ehelix_MPI(stack="", ref_vol="", outdir="", seg_ny="", delta="", phiwobble="", psi_max="", search_rng="", rng="", ywobble="", ystep="", pixel_size="", dp="", dphi="", fract="", rmax="", rmin="", FindPsi = True, maskfile = None, maxit = 1, CTF = False, snr = 1.0, sym = "c1",  user_func_name = "helical", npad = 2, debug = False, slowIO = False)
+        pass
+
+
+class Test_localhelicon_MPInew(unittest.TestCase):
+    def test_localhelicon_MPInew(self):
+        v = oldfu.localhelicon_MPInew(stack="", ref_vol="", outdir="", seg_ny="", maskfile="", ir="", ou="", rs="", xr="", ynumber="", txs="", delta="", initial_theta="", delta_theta="", an="", maxit="", CTF="", snr="", dp="", dphi="", psi_max="", rmin="", rmax="", fract="",  npad="", sym="", user_func_name="", pixel_size="", debug="", y_restrict="", search_iter="", slowIO="")
+        pass
+
+class Test_localhelicon_MPIming(unittest.TestCase):
+    def test_localhelicon_MPIming(self):
+        v = oldfu.localhelicon_MPIming(stack="", ref_vol="", outdir="", seg_ny="", maskfile="", ir="", ou="", rs="", xr="", ynumber="", txs="", delta="", initial_theta="", delta_theta="", an="", maxit="", CTF="", snr="", dp="", dphi="", psi_max="", rmin="", rmax="", fract="",  npad="", sym="", user_func_name="", pixel_size="", debug="", y_restrict="", search_iter="", slowIO="")
+        pass
+
+class Test_localhelicon_MPInew_fullrefproj(unittest.TestCase):
+    def test_localhelicon_MPInew_fullrefproj(self):
+        v = oldfu.localhelicon_MPInew_fullrefproj(stack="", ref_vol="", outdir="", seg_ny="", maskfile="", ir="", ou="", rs="", xr="", ynumber="", txs="", delta="", initial_theta="", delta_theta="", an="", maxit="", CTF="", snr="", dp="", dphi="", psi_max="", rmin="", rmax="", fract="",  npad="", sym="", user_func_name="", pixel_size="", debug="", y_restrict="", search_iter="", slowIO="")
+        pass
+
+class Test_localhelicon_MPI(unittest.TestCase):
+    def test_localhelicon_MPI(self):
+        v = oldfu.localhelicon_MPI(stack="", ref_vol="", outdir="", seg_ny="", maskfile="", ir="", ou="", rs="", xr="", ynumber="", txs="", delta="", initial_theta="", delta_theta="", an="", maxit="", CTF="", snr="", dp="", dphi="", psi_max="", rmin="", rmax="", fract="",  npad="", sym="", user_func_name="", pixel_size="", debug="", y_restrict="", search_iter="", slowIO="")
+        pass
+
+
+class Test_filamentupdown(unittest.TestCase):
+    def test_filamentupdown(self):
+        v = oldfu.filamentupdown(fildata="", pixel_size="", dp="", dphi="")
+        pass
+
+class Test_setfilori_SP(unittest.TestCase):
+    def test_setfilori_SP(self):
+        v = oldfu.setfilori_SP(fildata="", pixel_size="", dp="", dphi="")
+        pass
+
+
+
+class Test_prepare_refffts(unittest.TestCase):
+    def test_prepare_refffts(self):
+        v = oldfu.prepare_refffts( volft="", kb="", nx="",ny="",nz="", segmask="", delta="",  MPI=False, psimax=1.0, psistep=1.0, kbx = None, kby = None, initial_theta = None, delta_theta = None)
+        pass
+
+
+class Test_prepare_helical_refangles(unittest.TestCase):
+    def test_prepare_helical_refangles(self):
+        v = oldfu.prepare_helical_refangles(delta="", initial_theta = None, delta_theta = None)
+        pass
+
+
+class Test_prepare_reffft1(unittest.TestCase):
+    def test_prepare_reffft1(self):
+        v = oldfu.prepare_reffft1( volft="", kb="", ref_angles="", segmask="", psimax=1.0, psistep=1.0, kbx = None, kby = None)
+        pass
+
+
+class Test_prepare_reffft2(unittest.TestCase):
+    def test_prepare_reffft2(self):
+        v = oldfu.prepare_reffft2( volft="", kb="", ref_angles="", segmask="", psimax=1.0, psistep=1.0, kbx = None, kby = None)
+        pass
+
+
+class Test_symsearch_MPI(unittest.TestCase):
+    def test_symsearch_MPI(self):
+        v = oldfu.symsearch_MPI(ref_vol="", outdir="", maskfile="", dp="", ndp="", dp_step="", dphi="", ndphi="", dphi_step="",rmin="", rmax="", fract="", sym="", user_func_name="", datasym="",pixel_size="", debug="")
+        pass
+
+
+class Test_sali3d_base_old(unittest.TestCase):
+    def test_sali3d_base_old(self):
+        v = oldfu.sali3d_base_old(stack="", ref_vol = None, Tracker = None, mpi_comm = None, log = None)
+        pass
+
+
+class Test_slocal_ali3d_base_old(unittest.TestCase):
+    def test_slocal_ali3d_base_old(self):
+        v = oldfu.slocal_ali3d_base_old(stack="", templatevol="", Tracker="", mpi_comm = None, log= None, chunk = -1.0, debug = False )
+        pass
+
+
+class Test_ali3d_mref_Kmeans_MPI(unittest.TestCase):
+    def test_ali3d_mref_Kmeans_MPI(self):
+        v = oldfu.ali3d_mref_Kmeans_MPI(ref_list="", outdir="", this_data_list_file="", Tracker="")
+        pass
+
+
+""" start: end in sphire 1.3"""
 
 """IT SEEMS TO BE NOT USED"""
 class Test_ali2d_MPI(unittest.TestCase):

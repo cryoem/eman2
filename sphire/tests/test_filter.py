@@ -26,6 +26,133 @@ There are some opened issues in:
 """
 
 
+"""
+pickle files stored under smb://billy.storage.mpi-dortmund.mpg.de/abt3/group/agraunser/transfer/Adnan/pickle files
+"""
+
+""" start: new in sphire 1.3"""
+from sphire.libpy import sp_filter as oldfu
+from sphire.libpy_py3 import sp_filter as fu
+
+class Test_filt_median(unittest.TestCase):
+    def test_filt_median(self):
+        v = oldfu.filt_median(f="", nx="", ny="", nz = 1, kernelshape = "BLOCK")
+        pass
+
+
+class Test_filt_tophath(unittest.TestCase):
+    def test_filt_tophath(self):
+        v = oldfu.filt_tophath(e="", freq="", pad = False)
+        pass
+
+
+class Test_filt_tophatb(unittest.TestCase):
+    def test_filt_tophatb(self):
+        v = oldfu.filt_tophatb(e="", freql="", freqh="", pad = False)
+        pass
+
+
+class Test_filt_tophato(unittest.TestCase):
+    def test_filt_tophato(self):
+        v = oldfu.filt_tophato(e="", freql="", freqh="", value="", pad = False)
+        pass
+
+
+class Test_filt_gaussb(unittest.TestCase):
+    def test_filt_gaussb(self):
+        v = oldfu.filt_gaussb(e="", sigma="", center="", pad = False)
+        pass
+
+
+class Test_filt_gausso(unittest.TestCase):
+    def test_filt_gausso(self):
+        v = oldfu.filt_gausso(e="", sigma="", value="", pad = False)
+        pass
+
+class Test_filt_btwh(unittest.TestCase):
+    def test_filt_btwh(self):
+        v = oldfu.filt_btwh(e="", freql="", freqh="", pad = False)
+        pass
+
+class Test_filt_btwo(unittest.TestCase):
+    def test_filt_btwo(self):
+        v = oldfu.filt_btwo(e="", freql="", freqh="", value="", pad = False)
+        pass
+
+class Test_filt_tanh(unittest.TestCase):
+    def test_filt_tanh(self):
+        v = oldfu.filt_tanh(e="", freq="", fall_off="", pad = False)
+        pass
+
+
+class Test_filt_tanb(unittest.TestCase):
+    def test_filt_tanb(self):
+        v = oldfu.filt_tanb(e="", freql="", low_fall_off="", freqh="", high_fall_off="", pad = False)
+        pass
+
+
+class Test_filt_tano(unittest.TestCase):
+    def test_filt_tano(self):
+        v = oldfu.filt_tano(e="", freq="", fall_off="", value="", pad = False)
+        pass
+
+
+class Test_filt_kaisersinh(unittest.TestCase):
+    def test_filt_kaisersinh(self):
+        v = oldfu.filt_kaisersinh(e="", alpha="")
+        pass
+
+class Test_filt_kaisersinhp(unittest.TestCase):
+    def test_filt_kaisersinhp(self):
+        v = oldfu.filt_kaisersinhp(e="", alpha="")
+        pass
+class Test_filt_kaisersinhinv(unittest.TestCase):
+    def test_filt_kaisersinhinv(self):
+        v = oldfu.filt_kaisersinhinv(e="", alpha="")
+        pass
+class Test_filt_kaisersinhinvp(unittest.TestCase):
+    def test_filt_kaisersinhinvp(self):
+        v = oldfu.filt_kaisersinhinvp(e="", alpha="")
+        pass
+
+class Test_filt_unctf(unittest.TestCase):
+    def test_filt_unctf(self):
+        v = oldfu.filt_unctf(e="", dz="", cs="", voltage="", pixel="", wgh=0.1, b_factor=0.0, sign=-1.0, dza=0.0, azz=0.0)
+        pass
+
+class Test_filt_params(unittest.TestCase):
+    def test_filt_params(self):
+        v = oldfu.filt_params(dres=0, high = 0.95, low = 0.1)
+        pass
+
+class Test_filt_from_fsc(unittest.TestCase):
+    def test_filt_from_fsc(self):
+        v = oldfu.filt_from_fsc(dres=0, low = 0.1)
+        pass
+
+class Test_filt_from_fsc2(unittest.TestCase):
+    def test_filt_from_fsc2(self):
+        v = oldfu.filt_from_fsc2(dres=0, low = 0.1)
+        pass
+
+class Test_filt_from_fsc_bwt(unittest.TestCase):
+    def test_filt_from_fsc_bwt(self):
+        v = oldfu.filt_from_fsc_bwt(dres=0, low = 0.1)
+        pass
+
+class Test_tanhfilter(unittest.TestCase):
+    def test_tanhfilter(self):
+        v = oldfu.tanhfilter(nx="", fl="", aa="")
+        pass
+
+
+class Test_filt_matched(unittest.TestCase):
+    def test_filt_matched(self):
+        v = oldfu.filt_matched(ima="", SNR="", Pref="")
+        pass
+
+
+""" end: new in sphire 1.3"""
 class Test_filt_ctf(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError)  as cm_new:

@@ -46,6 +46,153 @@ There are some opened issues in:
 4) Test_gen_rings_ctf.test_null_nx_size_SOMETIMES_FAILED and test_default_case sometimes they pass sometimes no. It seems to be due to the approximation of some values in the dicts 
 """
 
+
+
+"""
+pickle files stored under smb://billy.storage.mpi-dortmund.mpg.de/abt3/group/agraunser/transfer/Adnan/pickle files
+"""
+
+
+""" start: new in sphire 1.3"""
+from sphire.libpy import sp_projection as oldfu
+from sphire.libpy_py3 import sp_projection as fu
+
+
+class Test_(unittest.TestCase):
+    def test_(self):
+        oldv = oldfu.prj(vol=0, params=0, stack = None)
+        v = fu.prj(vol=0, params=0, stack = None)
+        pass
+
+
+class Test_prgs1d(unittest.TestCase):
+    def test_prgs1d(self):
+        oldv = oldfu.prgs1d( prjft="", kb="", params ="")
+        v = fu.prgs1d( prjft="", kb="", params ="")
+        pass
+
+
+class Test_cml_refine_agls_wrap(unittest.TestCase):
+    def test_cml_refine_agls_wrap(self):
+        oldv = oldfu.cml_refine_agls_wrap(vec_in=0, data=0, flag_weights = False)
+        v = fu.cml_refine_agls_wrap(vec_in=0, data=0, flag_weights = False)
+        pass
+
+
+class Test_cml_refine_agls(unittest.TestCase):
+    def test_cml_refine_agls(self):
+        oldv = oldfu.cml_refine_agls(Prj="", Ori="", delta="")
+        v = fu.cml_refine_agls(Prj="", Ori="", delta="")
+        pass
+
+
+class Test_cml_init_rnd(unittest.TestCase):
+    def test_cml_init_rnd(self):
+        oldv = oldfu.cml_init_rnd(trials=0, rand_seed=0)
+        v = fu.cml_init_rnd(trials=0, rand_seed=0)
+        pass
+
+
+class Test_cml_disc(unittest.TestCase):
+    def test_cml_disc(self):
+        oldv = oldfu.cml_disc(Prj="", Ori="", Rot="", flag_weights=True)
+        v = fu.cml_disc(Prj="", Ori="", Rot="", flag_weights=True)
+        pass
+
+
+class Test_cml_export_progress(unittest.TestCase):
+    def test_cml_export_progress(self):
+        oldv = oldfu.cml_export_progress(outdir="", ite="", iprj="", iagl="", psi="", disc="", cmd="")
+        v = fu.cml_export_progress(outdir="", ite="", iprj="", iagl="", psi="", disc="", cmd="")
+        pass
+
+
+class Test_cml_export_txtagls(unittest.TestCase):
+    def test_cml_export_txtagls(self):
+        oldv = oldfu.cml_export_txtagls(outdir="", outname="", Ori="", disc="", title="")
+        v = fu.cml_export_txtagls(outdir="", outname="", Ori="", disc="", title="")
+        pass
+
+
+class Test_cml_init_global_var(unittest.TestCase):
+    def test_cml_init_global_var(self):
+        oldv = oldfu.cml_init_global_var(dpsi="", delta="", nprj="", debug="")
+        v = fu.cml_init_global_var(dpsi="", delta="", nprj="", debug="")
+        pass
+
+
+class Test_cml_export_struc(unittest.TestCase):
+    def test_cml_export_struc(self):
+        oldv = oldfu.cml_export_struc(stack="", outdir="", irun="", Ori="")
+        v = fu.cml_export_struc(stack="", outdir="", irun="", Ori="")
+        pass
+
+
+class Test_cml_open_proj(unittest.TestCase):
+    def test_cml_open_proj(self):
+        oldv = oldfu.cml_open_proj(stack="", ir="", ou="", lf="", hf="", dpsi = 1)
+        v = fu.cml_open_proj(stack="", ir="", ou="", lf="", hf="", dpsi = 1)
+        pass
+
+
+class Test_cml_sinogram(unittest.TestCase):
+    def test_cml_sinogram(self):
+        oldv = oldfu.cml_sinogram(image2D=0, diameter=0, d_psi = 1)
+        v = fu.cml_sinogram(image2D=0, diameter=0, d_psi = 1)
+        pass
+
+
+class Test_cml_sinogram_shift(unittest.TestCase):
+    def test_cml_sinogram_shift(self):
+        oldv = oldfu.cml_sinogram_shift(image2D=0, diameter=0, shifts = [0.0, 0.0], d_psi = 1)
+        v = fu.cml_sinogram_shift(image2D=0, diameter=0, shifts = [0.0, 0.0], d_psi = 1)
+        pass
+
+
+class Test_cml_head_log(unittest.TestCase):
+    def test_cml_head_log(self):
+        oldv = oldfu.cml_head_log(stack="", outdir="", delta="", ir="", ou="", lf="", hf="", rand_seed="", maxit="", given="", flag_weights="", trials="", ncpu="")
+        v = fu.cml_head_log(stack="", outdir="", delta="", ir="", ou="", lf="", hf="", rand_seed="", maxit="", given="", flag_weights="", trials="", ncpu="")
+        pass
+
+
+class Test_cml_end_log(unittest.TestCase):
+    def test_cml_end_log(self):
+        oldv = oldfu.cml_end_log(Ori=0)
+        v = fu.cml_end_log(Ori=0)
+        pass
+
+
+class Test_cml_find_structure(unittest.TestCase):
+    def test_cml_find_structure(self):
+        oldv = oldfu.cml_find_structure(Prj="", Ori="", Rot="", outdir="", outname="", maxit="", first_zero="", flag_weights="")
+        v = fu.cml_find_structure(Prj="", Ori="", Rot="", outdir="", outname="", maxit="", first_zero="", flag_weights="")
+        pass
+
+
+class Test_cml_find_structure2(unittest.TestCase):
+    def test_cml_find_structure2(self):
+        oldv = oldfu.cml_find_structure2(Prj="", Ori="", Rot="", outdir="", outname="", maxit="", first_zero="", flag_weights="", myid="", main_node="", number_of_proc="")
+        v = fu.cml_find_structure2(Prj="", Ori="", Rot="", outdir="", outname="", maxit="", first_zero="", flag_weights="", myid="", main_node="", number_of_proc="")
+        pass
+
+
+class Test_cml2_ori_collinearity(unittest.TestCase):
+    def test_cml2_ori_collinearity(self):
+        oldv = oldfu.cml2_ori_collinearity(Ori=0)
+        v = fu.cml2_ori_collinearity(Ori=0)
+        pass
+
+
+class Test_generate_templates(unittest.TestCase):
+    def test_generate_templates(self):
+        oldv = oldfu.generate_templates(volft="", kb="", x_half_size="", y_half_size="", psi_half_size="", projection_location="")
+        v = fu.generate_templates(volft="", kb="", x_half_size="", y_half_size="", psi_half_size="", projection_location="")
+        pass
+
+
+""" start: end in sphire 1.3"""
+
 class Test_project(unittest.TestCase):
     params = [21.850863880053172, 79.313172950615751, 0.0, 0.0, 0.0]    # got from 'pickle files/projection.prgl'
     volft=get_real_data(3)[0]

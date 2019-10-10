@@ -78,9 +78,432 @@ def create_setup_mrc():
 def clean_setup_mrc():
     remove_dir(ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER)
 
+
 """
 pickle files stored under smb://billy.storage.mpi-dortmund.mpg.de/abt3/group/agraunser/transfer/Adnan/pickle files
 """
+
+
+""" start: new in sphire 1.3"""
+from sphire.libpy import sp_morphology as oldfu
+from sphire.libpy_py3 import sp_morphology as fu
+
+
+class Test_fill_soft_edge_kernel_mask(unittest.TestCase):
+    def test_fill_soft_edge_kernel_mask(self):
+        oldv = oldfu.fill_soft_edge_kernel_mask(kernel_mask="", length="", mode="")
+        v = fu.fill_soft_edge_kernel_mask(kernel_mask="", length="", mode="")
+        pass
+
+
+class Test_soft_edge(unittest.TestCase):
+    def test_soft_edge(self):
+        oldv = oldfu.soft_edge(img="", length="", mode='c', do_approx=False)
+        v = fu.soft_edge(img="", length="", mode='c', do_approx=False)
+        pass
+
+class Test_invert(unittest.TestCase):
+    def test_invert(self):
+        oldv = oldfu.invert(im="")
+        v = fu.invert(im="")
+        pass
+
+class Test_expn(unittest.TestCase):
+    def test_expn(self):
+        oldv = oldfu.expn(img="", a = 1.0, b=0.0)
+        v = fu.expn(img="", a = 1.0, b=0.0)
+        pass
+
+
+class Test_alog10(unittest.TestCase):
+    def test_alog10(self):
+        oldv = oldfu.alog10(img="")
+        v = fu.alog10(img="")
+        pass
+
+
+class Test_threshold_to_minval(unittest.TestCase):
+    def test_threshold_to_zero(self):
+        oldv = oldfu.threshold_to_minval(img="", minval = 0.0)
+        v = fu.threshold_to_minval(img="", minval = 0.0)
+        pass
+
+class Test_threshold_inside(unittest.TestCase):
+    def test_threshold_to_inside(self):
+        oldv = oldfu.threshold_inside(img="", minval = 0.0,maxval=0)
+        v = fu.threshold_inside(img="", minval = 0.0,maxval=0)
+        pass
+
+class Test_threshold_to_zero(unittest.TestCase):
+    def test_threshold_to_zero(self):
+        oldv = oldfu.threshold_to_zero(img="", minval = 0.0)
+        v = fu.threshold_to_zero(img="", minval = 0.0)
+        pass
+
+class Test_threshold_maxval(unittest.TestCase):
+    def test_threshold_to_zero(self):
+        oldv = oldfu.threshold_maxval(img="", maxval = 0.0)
+        v = fu.threshold_maxval(img="", maxval = 0.0)
+        pass
+
+class Test_linchange(unittest.TestCase):
+    def test_linchange(self):
+        oldv = oldfu.linchange(a="", fct="")
+        v = fu.linchange(a="", fct="")
+        pass
+
+
+class Test_ideal_fsc(unittest.TestCase):
+    def test_ideal_fsc(self):
+        oldv = oldfu.ideal_fsc(n="",a="",N="",B="",g="")
+        v = fu.ideal_fsc(n="",a="",N="",B="",g="")
+        pass
+
+
+class Test_difsc(unittest.TestCase):
+    def test_difsc(self):
+        oldv = oldfu.difsc(args="",data="")
+        v = fu.difsc(args="",data="")
+        pass
+
+
+class Test_compare_ctfs(unittest.TestCase):
+    def test_compare_ctfs(self):
+        oldv = oldfu.compare_ctfs(nx="", ctf1="", ctf2="")
+        v = fu.compare_ctfs(nx="", ctf1="", ctf2="")
+        pass
+
+
+class Test_defocus_env_baseline_fit(unittest.TestCase):
+    def test_defocus_env_baseline_fit(self):
+        oldv = oldfu.defocus_env_baseline_fit(roo="", i_start="", i_stop="", nrank="", iswi="")
+        v = fu.defocus_env_baseline_fit(roo="", i_start="", i_stop="", nrank="", iswi="")
+        pass
+
+
+class Test_defocus_get(unittest.TestCase):
+    def test_defocus_get(self):
+        oldv = oldfu.defocus_get(fnam_roo="", volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_stop=-1, docf="a", skip="#", round_off=1, nr1=3, nr2=6)
+        v = fu.defocus_get(fnam_roo="", volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_stop=-1, docf="a", skip="#", round_off=1, nr1=3, nr2=6)
+        pass
+
+
+class Test_defocus_gett(unittest.TestCase):
+    def test_defocus_gett(self):
+        oldv = oldfu.defocus_gett(roo=0, voltage=300.0, Pixel_size=1.0, Cs=2.0, wgh=0.1, f_start=0.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None)
+        v = fu.defocus_gett(roo=0, voltage=300.0, Pixel_size=1.0, Cs=2.0, wgh=0.1, f_start=0.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None)
+        pass
+
+
+class Test_defocus_get_Eudis(unittest.TestCase):
+    def test_defocus_get_Eudis(self):
+        oldv = oldfu.defocus_get_Eudis(fnam_roo=0, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_stop=-1, docf="a" ,skip="#", round_off=1, nr1=3, nr2=6)
+        v = fu.defocus_get_Eudis(fnam_roo=0, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_stop=-1, docf="a" ,skip="#", round_off=1, nr1=3, nr2=6)
+        pass
+
+
+class Test_defocus_L2_euc(unittest.TestCase):
+    def test_defocus_L2_euc(self):
+        oldv = oldfu.defocus_L2_euc(v1="",v2="", ist="",istp=0)
+        v = fu.defocus_L2_euc(v1="",v2="", ist="",istp=0)
+        pass
+
+
+class Test_defocus_guess(unittest.TestCase):
+    def test_defocus_guess(self):
+        oldv = oldfu.defocus_guess(Res_roo="", Res_TE="", volt="", Cs="", Pixel_size="", ampcont=10.0, istart=0, istop=-1, defocus_estimation_method=2, round_off=1, dz_low=1000., dz_high=200000., nloop=100)
+        v = fu.defocus_guess(Res_roo="", Res_TE="", volt="", Cs="", Pixel_size="", ampcont=10.0, istart=0, istop=-1, defocus_estimation_method=2, round_off=1, dz_low=1000., dz_high=200000., nloop=100)
+        pass
+
+class Test_defocus_guess1(unittest.TestCase):
+    def test_defocus_guess1(self):
+        oldv = oldfu.defocus_guess1(Res_roo="", Res_TE="", volt="", Cs="", Pixel_size="", ampcont=10.0, istart=0, istop=-1, defocus_estimation_method=2, round_off=1, dz_low=1000., dz_high=200000., nloop=100)
+        v = fu.defocus_guess1(Res_roo="", Res_TE="", volt="", Cs="", Pixel_size="", ampcont=10.0, istart=0, istop=-1, defocus_estimation_method=2, round_off=1, dz_low=1000., dz_high=200000., nloop=100)
+        pass
+
+
+class Test_defocus_get_fast(unittest.TestCase):
+    def test_defocus_get_fast(self):
+        oldv = oldfu.defocus_get_fast(indir=0, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1, round_off=100, dz_max0=50000, f_l0=30, f_h0=5, nr_1=5, nr_2=5, prefix="roo", docf="a",skip="#", micdir="no", print_screen="p")
+        v = fu.defocus_get_fast(indir=0, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1, round_off=100, dz_max0=50000, f_l0=30, f_h0=5, nr_1=5, nr_2=5, prefix="roo", docf="a",skip="#", micdir="no", print_screen="p")
+        pass
+
+
+class Test_defocus_get_fast_MPI(unittest.TestCase):
+    def test_defocus_get_fast_MPI(self):
+        oldv = oldfu.defocus_get_fast_MPI(indir=0, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1, round_off=100, dz_max0=50000, f_l0=30, f_h0=5, nr_1=5, nr_2=5, prefix_of_="roo", docf="a",skip="#",print_screen="no")
+        v = fu.defocus_get_fast_MPI(indir=0, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1, round_off=100, dz_max0=50000, f_l0=30, f_h0=5, nr_1=5, nr_2=5, prefix_of_="roo", docf="a",skip="#",print_screen="no")
+        pass
+
+
+class Test_defocus_get_slow(unittest.TestCase):
+    def test_defocus_get_slow(self):
+        oldv = oldfu.defocus_get_slow(indir=0, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1, round_off=100, dz_max0=50000, f_l0=30, f_h0=5, prefix="roo", docf="s", skip=";",micdir="", print_screen="p")
+        v = fu.defocus_get_slow(indir=0, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1, round_off=100, dz_max0=50000, f_l0=30, f_h0=5, prefix="roo", docf="s", skip=";",micdir="", print_screen="p")
+        pass
+
+
+class Test_flcc(unittest.TestCase):
+    def test_flcc(self):
+        oldv = oldfu.flcc(t=0, e=0)
+        v = fu.flcc(t=0, e=0)
+        pass
+
+
+class Test_imf_B_factor_get(unittest.TestCase):
+    def test_imf_B_factor_get(self):
+        oldv = oldfu.imf_B_factor_get(res_N="", x="", ctf_params=0)
+        v = fu.imf_B_factor_get(res_N="", x="", ctf_params=0)
+        pass
+
+
+class Test_imf_residuals_B1(unittest.TestCase):
+    def test_imf_residuals_B1(self):
+        oldv = oldfu.imf_residuals_B1(p="",y="",x=0)
+        v = fu.imf_residuals_B1(p="",y="",x=0)
+        pass
+
+class Test_imf_residuals_B2(unittest.TestCase):
+    def test_imf_residuals_B2(self):
+        oldv = oldfu.imf_residuals_B2(p="",y="",ctf=0,x=0)
+        v = fu.imf_residuals_B2(p="",y="",ctf=0,x=0)
+        pass
+
+
+class Test_imf_params_get(unittest.TestCase):
+    def test_imf_params_get(self):
+        oldv = oldfu.imf_params_get(fstrN="", fstrP="", ctf_params="", pu="", nrank="", q="", lowf=0.01)
+        v = fu.imf_params_get(fstrN="", fstrP="", ctf_params="", pu="", nrank="", q="", lowf=0.01)
+        pass
+
+
+class Test_imf_fit_pu(unittest.TestCase):
+    def test_imf_fit_pu(self):
+        oldv = oldfu.imf_fit_pu(res_P="", x="", ctf_params="", pu="", C="", B="", q="", w=0)
+        v = fu.imf_fit_pu(res_P="", x="", ctf_params="", pu="", C="", B="", q="", w=0)
+        pass
+
+
+class Test_imf_residuals_pu(unittest.TestCase):
+    def test_imf_residuals_pu(self):
+        oldv = oldfu.imf_residuals_pu(p="",y="",pu="",x=0)
+        v = fu.imf_residuals_pu(p="",y="",pu="",x=0)
+        pass
+
+
+class Test_residuals_simplex(unittest.TestCase):
+    def test_residuals_simplex(self):
+        oldv = oldfu.residuals_simplex(args=0, data=0)
+        v = fu.residuals_simplex(args=0, data=0)
+        pass
+
+
+class Test_residuals_lsq(unittest.TestCase):
+    def test_residuals_lsq(self):
+        oldv = oldfu.residuals_lsq(p="",y="",x=0)
+        v = fu.residuals_lsq(p="",y="",x=0)
+        pass
+
+class Test_residuals_lsq_peak(unittest.TestCase):
+    def test_residuals_lsq_peak(self):
+        oldv = oldfu.residuals_lsq_peak(p="",y="",x=0,c=0)
+        v = fu.residuals_lsq_peak(p="",y="",x=0,c=0)
+        pass
+
+
+class Test_residual_1dpw2(unittest.TestCase):
+    def test_residual_1dpw2(self):
+        oldv = oldfu.residual_1dpw2(list_1dpw2=0, polynomial_rankB = 2, Pixel_size = 1, cut_off = 0)
+        v = fu.residual_1dpw2(list_1dpw2=0, polynomial_rankB = 2, Pixel_size = 1, cut_off = 0)
+        pass
+
+
+class Test_adaptive_mask_scipy(unittest.TestCase):
+    def test_adaptive_mask_scipy(self):
+        oldv = oldfu.adaptive_mask_scipy(vol=0, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5, mode = "C", allow_disconnected=False, nerosion = 0, do_approx=False, do_fill=False, do_print=False)
+        v = fu.adaptive_mask_scipy(vol=0, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5, mode = "C", allow_disconnected=False, nerosion = 0, do_approx=False, do_fill=False, do_print=False)
+        pass
+
+
+class Test_fill_cavities(unittest.TestCase):
+    def test_fill_cavities(self):
+        oldv = oldfu.fill_cavities(img=0)
+        v = fu.fill_cavities(img=0)
+        pass
+
+
+class Test_adaptive_mask2D(unittest.TestCase):
+    def test_adaptive_mask2D(self):
+        oldv = oldfu.adaptive_mask2D(img=0, nsigma = 1.0, ndilation = 3, kernel_size = 11, gauss_standard_dev =9)
+        v = fu.adaptive_mask2D(img=0, nsigma = 1.0, ndilation = 3, kernel_size = 11, gauss_standard_dev =9)
+        pass
+
+
+class Test_adaptive_mask_mass(unittest.TestCase):
+    def test_adaptive_mask_mass(self):
+        oldv = oldfu.adaptive_mask_mass(vol=0, mass=2000, Pixel_size=3.6)
+        v = fu.adaptive_mask_mass(vol=0, mass=2000, Pixel_size=3.6)
+        pass
+
+
+class Test_refine_with_mask(unittest.TestCase):
+    def test_refine_with_mask(self):
+        oldv = oldfu.refine_with_mask(vol=0)
+        v = fu.refine_with_mask(vol=0)
+        pass
+
+
+class Test_bracket_original(unittest.TestCase):
+    def test_bracket_original(self):
+        oldv = oldfu.bracket_original(f="", x1="", h=0)
+        v = fu.bracket_original(f="", x1="", h=0)
+        pass
+
+
+class Test_simpw2d(unittest.TestCase):
+    def test_simpw2d(self):
+        oldv = oldfu.simpw2d(defocus=0, data2d=0)
+        v = fu.simpw2d(defocus=0, data2d=0)
+        pass
+
+class Test_simpw1dc(unittest.TestCase):
+    def test_simpw1dc(self):
+        oldv = oldfu.simpw1dc(defocus=0, data=0)
+        v = fu.simpw1dc(defocus=0, data=0)
+        pass
+
+class Test_simpw2dc(unittest.TestCase):
+    def test_simpw2dc(self):
+        oldv = oldfu.simpw2dc(defocus=0, data2d=0)
+        v = fu.simpw2dc(defocus=0, data2d=0)
+        pass
+
+
+class Test_localvariance(unittest.TestCase):
+    def test_localvariance(self):
+        oldv = oldfu.localvariance(data=0, window_size=0, skip = 3)
+        v = fu.localvariance(data=0, window_size=0, skip = 3)
+        pass
+
+
+class Test_defocus_guessn(unittest.TestCase):
+    def test_defocus_guessn(self):
+        oldv = oldfu.defocus_guessn(roo="", volt="", Cs="", Pixel_size="", ampcont="", istart="", i_stop=0)
+        v = fu.defocus_guessn(roo="", volt="", Cs="", Pixel_size="", ampcont="", istart="", i_stop=0)
+        pass
+
+
+class Test_defocusgett_(unittest.TestCase):
+    def test_defocusgett_(self):
+        oldv = oldfu.defocusgett_(roo=0, voltage=300.0, Pixel_size=1.0, Cs=2.0, wgh=0.1, f_start=0.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None)
+        v = fu.defocusgett_(roo=0, voltage=300.0, Pixel_size=1.0, Cs=2.0, wgh=0.1, f_start=0.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None)
+        pass
+
+
+class Test_defocusget_from_crf(unittest.TestCase):
+    def test_defocusget_from_crf(self):
+        oldv = oldfu.defocusget_from_crf(roo=0, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=10., f_start=0.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6)
+        v = fu.defocusget_from_crf(roo=0, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=10., f_start=0.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6)
+        pass
+
+
+class Test_make_real(unittest.TestCase):
+    def test_make_real(self):
+        oldv = oldfu.make_real(t=0)
+        v = fu.make_real(t=0)
+        pass
+
+
+class Test_fastigmatism(unittest.TestCase):
+    def test_fastigmatism(self):
+        oldv = oldfu.fastigmatism(amp=0, data=0)
+        v = fu.fastigmatism(amp=0, data=0)
+        pass
+
+class Test_fastigmatism1(unittest.TestCase):
+    def test_fastigmatism1(self):
+        oldv = oldfu.fastigmatism(amp=0, data=0)
+        v = fu.fastigmatism1(amp=0, data=0)
+        pass
+
+class Test_fastigmatism2(unittest.TestCase):
+    def test_fastigmatism2(self):
+        oldv = oldfu.fastigmatism2(amp=0, data=0)
+        v = fu.fastigmatism2(amp=0, data=0)
+        pass
+
+class Test_simctf(unittest.TestCase):
+    def test_simctf(self):
+        oldv = oldfu.simctf(amp=0, data=0)
+        v = fu.simctf(amp=0, data=0)
+        pass
+
+class Test_simctf2out(unittest.TestCase):
+    def test_simctf2out(self):
+        oldv = oldfu.simctf2out(dz=0, data=0)
+        v = fu.simctf2out(dz=0, data=0)
+        pass
+
+class Test_simctf1d_crf(unittest.TestCase):
+    def test_simctf(self):
+        oldv = oldfu.simctf1d_crf(defocus=0, data=0)
+        v = fu.simctf1d_crf(defocus=0, data=0)
+        pass
+
+
+
+class Test_linregnp(unittest.TestCase):
+    def test_linregnp(self):
+        oldv = oldfu.linregnp(y=0)
+        v = fu.linregnp(y=0)
+        pass
+
+
+class Test_defocusgett_crf(unittest.TestCase):
+    def test_defocusgett_crf(self):
+        oldv = oldfu.defocusgett_crf(roo=0, nx=0, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_start=-1.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=False)
+        v = fu.defocusgett_crf(roo=0, nx=0, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_start=-1.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=False)
+        pass
+
+
+class Test_fufu(unittest.TestCase):
+    def test_fufu(self):
+        oldv = oldfu.fufu(args=0,data=0)
+        v = fu.fufu(args=0,data=0)
+        pass
+
+
+class Test_getastcrfNOE(unittest.TestCase):
+    def test_getastcrfNOE(self):
+        oldv = oldfu.getastcrfNOE(refvol=0, datfilesroot=0, voltage=300.0, Pixel_size= 1.264, Cs = 2.0, wgh = 7.0, kboot=16, DEBug = False)
+        v = fu.getastcrfNOE(refvol=0, datfilesroot=0, voltage=300.0, Pixel_size= 1.264, Cs = 2.0, wgh = 7.0, kboot=16, DEBug = False)
+        pass
+
+
+class Test_draw_power2d(unittest.TestCase):
+    def test_draw_power2d(self):
+        oldv = oldfu.draw_power2d(file_root="", input_pws="", ctf_params="", mask=None , outdir = '.', radius_1a = None)
+        v = fu.draw_power2d(file_root="", input_pws="", ctf_params="", mask=None , outdir = '.', radius_1a = None)
+        pass
+
+
+class Test_Xdefocusgett_vpp2(unittest.TestCase):
+    def test_Xdefocusgett_vpp2(self):
+        oldv = oldfu.Xdefocusgett_vpp2(qse=0, roo=0, nx=0, xdefc=0, xampcont=0, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=False)
+        v = fu.Xdefocusgett_vpp2(qse=0, roo=0, nx=0, xdefc=0, xampcont=0, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=False)
+        pass
+
+class Test_Xdefocusgett_vpp22(unittest.TestCase):
+    def test_Xdefocusgett_vpp22(self):
+        oldv = oldfu.Xdefocusgett_vpp22(qse=0, roo=0, nx=0, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=False)
+        v = fu.Xdefocusgett_vpp22(qse=0, roo=0, nx=0,  voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=False)
+        pass
+
+
+
+
+""" start: end in sphire 1.3"""
+
 class Test_binarize(unittest.TestCase):
 
     def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(self):

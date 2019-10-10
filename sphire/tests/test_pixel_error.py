@@ -278,6 +278,121 @@ from numpy import array_equal as numpy_array_equal
 from test_module import   get_arg_from_pickle_file
 from os import path
 
+"""
+pickle files stored under smb://billy.storage.mpi-dortmund.mpg.de/abt3/group/agraunser/transfer/Adnan/pickle files
+"""
+
+
+""" start: new in sphire 1.3"""
+from sphire.libpy import sp_pixel_error as oldfu
+from sphire.libpy_py3 import sp_pixel_error as fu
+
+
+class Test_angle_error(unittest.TestCase):
+    def test_angle_error(self):
+        oldv = oldfu.angle_error(ang1=0, ang2=0, delta_ang=0.0)
+        v = fu.angle_error(ang1=0, ang2=0, delta_ang=0.0)
+        pass
+
+
+class Test_align_diff(unittest.TestCase):
+    def test_align_diff(self):
+        oldv = oldfu.align_diff(data1=0, data2=None, suffix="_ideal")
+        v = fu.align_diff(data1=0, data2=None, suffix="_ideal")
+        pass
+
+
+class Test_align_diff_textfile(unittest.TestCase):
+    def test_align_diff_textfile(self):
+        oldv = oldfu.align_diff_textfile(textfile1=0, textfile2=0)
+        v = fu.align_diff_textfile(textfile1=0, textfile2=0)
+        pass
+
+
+class Test_ave_ali_err(unittest.TestCase):
+    def test_ave_ali_err(self):
+        oldv = oldfu.ave_ali_err(data1=0, data2=None, r=25, suffix="_ideal")
+        v = fu.ave_ali_err(data1=0, data2=None, r=25, suffix="_ideal")
+        pass
+
+class Test_ave_ali_err_textfile(unittest.TestCase):
+    def test_ave_ali_err_textfile(self):
+        oldv = oldfu.ave_ali_err_textfile(textfile1=0, textfile2=0,r=25)
+        v = fu.ave_ali_err_textfile(textfile1=0, textfile2=0, r=25)
+        pass
+
+class Test_multi_align_diff_params(unittest.TestCase):
+    def test_multi_align_diff_params(self):
+        oldv = oldfu.multi_align_diff_params(ali_params=0, verbose=0)
+        v = fu.multi_align_diff_params(ali_params=0, verbose=0)
+        pass
+
+
+class Test_calc_connect_list(unittest.TestCase):
+    def test_calc_connect_list(self):
+        oldv = oldfu.calc_connect_list(multi_align_results=0, pixel_error_threshold = 5.0, mirror_consistency_threshold = 0.8)
+        v = fu.calc_connect_list(multi_align_results=0, pixel_error_threshold = 5.0, mirror_consistency_threshold = 0.8)
+        pass
+
+
+class Test_ali_stable_list(unittest.TestCase):
+    def test_ali_stable_list(self):
+        oldv = oldfu.ali_stable_list(ali_params1="", ali_params2="", pixel_error_threshold="", r=25)
+        v = fu.ali_stable_list(ali_params1="", ali_params2="", pixel_error_threshold="", r=25)
+        pass
+
+
+class Test_ave2dtransform(unittest.TestCase):
+    def test_ave2dtransform(self):
+        oldv = oldfu.ave2dtransform(args=0, data=0, return_avg_pixel_error=False)
+        v = fu.ave2dtransform(args=0, data=0, return_avg_pixel_error=False)
+        pass
+
+
+class Test_rotate_angleset_to_match(unittest.TestCase):
+    def test_rotate_angleset_to_match(self):
+        oldv = oldfu.rotate_angleset_to_match(agls1=[], agls2=[])
+        v = fu.rotate_angleset_to_match(agls1=[], agls2=[])
+        pass
+
+
+class Test_ordersegments(unittest.TestCase):
+    def test_ordersegments(self):
+        oldv = oldfu.ordersegments(infilaments=0, ptclcoords=0)
+        v = fu.ordersegments(infilaments=0, ptclcoords=0)
+        pass
+
+
+class Test_mapcoords(unittest.TestCase):
+    def test_mapcoords(self):
+        oldv = oldfu.mapcoords(x="", y="", r="", nx="", ny="")
+        v = fu.mapcoords(x="", y="", r="", nx="", ny="")
+        pass
+
+
+class Test_consistency_params(unittest.TestCase):
+    def test_consistency_params(self):
+        oldv = oldfu.consistency_params(stack="", dphi="", dp="", pixel_size="", phithr=2.5, ythr=1.5, THR=3)
+        v = fu.consistency_params(stack="", dphi="", dp="", pixel_size="", phithr=2.5, ythr=1.5, THR=3)
+        pass
+
+
+class Test_getnewhelixcoords(unittest.TestCase):
+    def test_(self):
+        oldv = oldfu.getnewhelixcoords(hcoordsname="", outdir="", ratio="",nx="",ny="", newpref="resampled_", boxsize=-1)
+        v = fu.getnewhelixcoords(hcoordsname="", outdir="", ratio="",nx="",ny="", newpref="resampled_", boxsize=-1)
+        pass
+
+
+class Test_(unittest.TestCase):
+    def test_(self):
+        oldv = oldfu.helical_params_err(params1="", params2="", fil_list="")
+        v = fu.helical_params_err(params1="", params2="", fil_list="")
+        pass
+
+
+
+""" start: new in sphire 1.3"""
 
 class Test_pixel_error_2D(unittest.TestCase):
     ali_params1 = [0.0, 0.0, 0.0]
