@@ -129,6 +129,13 @@ def getInstallerExt() {
     else         return 'exe'
 }
 
+def getDeployFileName(size_type) {
+    stability_type = getBuildStabilityType()
+    installer_ext  = getInstallerExt()
+
+    return "eman2"+ binary_size_suffix[size_type] + ".${AGENT_OS_NAME}." + stability_type + "." + installer_ext
+}
+
 def testPackage(installer_file, installation_dir) {
     def script_file_base = convertToNativePath("tests/test_binary_installation.")
     installer_file       = convertToNativePath(installer_file)
@@ -145,7 +152,7 @@ def deployPackage(size_type='') {
     installer_ext  = getInstallerExt()
 
     def sourceFile  = "eman2" + binary_size_suffix[size_type] + ".${AGENT_OS_NAME}." + installer_ext
-    def targetFile  = "eman2" + binary_size_suffix[size_type] + ".${AGENT_OS_NAME}." + stability_type + "." + installer_ext
+    def targetFile  = getDeployFileName(size_type)
     def cdCommand   = "cd ${DEPLOY_PATH}/" + stability_type
     def mvCommand   = "mv " + sourceFile + " " + targetFile
     def execCommand = cdCommand + " && " + mvCommand
