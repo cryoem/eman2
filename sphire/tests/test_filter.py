@@ -35,124 +35,1261 @@ from sphire.libpy import sp_filter as oldfu
 from sphire.libpy_py3 import sphire_filter as fu
 
 class Test_filt_median(unittest.TestCase):
-    def test_filt_median(self):
-        v = oldfu.filt_median(f="", nx="", ny="", nz = 1, kernelshape = "BLOCK")
-        pass
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.filt_median()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.filt_median()
+        self.assertEqual(cm_new.exception.message, "filt_median() takes at least 3 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.filt_median(f=EMData(), nx=10, ny=10, nz = 1, kernelshape = "BLOCK")
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.filt_median(f=EMData(), nx=10, ny=10, nz = 1, kernelshape = "BLOCK")
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_new = fu.filt_median(f=None, nx=10, ny=10, nz = 1, kernelshape = "BLOCK")
+        return_old = oldfu.filt_median(f=None, nx=10, ny=10, nz = 1, kernelshape = "BLOCK")
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new,None)
+
+    def test_invalid_shape(self):
+        return_new = fu.filt_median(f=IMAGE_2D, nx=10, ny=10, nz = 1, kernelshape = "invalid")
+        return_old = oldfu.filt_median(f=IMAGE_2D, nx=10, ny=10, nz = 1, kernelshape = "invalid")
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new, "Unknown kernel shape.")
+
+    def test_Img2D_block(self):
+        return_new = fu.filt_median(f=IMAGE_2D, nx=10, ny=10, nz = 1, kernelshape = "BLOCK")
+        return_old = oldfu.filt_median(f=IMAGE_2D, nx=10, ny=10, nz = 1, kernelshape = "BLOCK")
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2D_circular(self):
+        return_new = fu.filt_median(f=IMAGE_2D, nx=10, ny=10, nz = 1, kernelshape = "CIRCULAR")
+        return_old = oldfu.filt_median(f=IMAGE_2D, nx=10, ny=10, nz = 1, kernelshape = "CIRCULAR")
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2D_cross(self):
+        return_new = fu.filt_median(f=IMAGE_2D, nx=10, ny=10, nz = 1, kernelshape = "CROSS")
+        return_old = oldfu.filt_median(f=IMAGE_2D, nx=10, ny=10, nz = 1, kernelshape = "CROSS")
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_block(self):
+        return_new = fu.filt_median(f=IMAGE_BLANK_2D, nx=10, ny=10, nz = 1, kernelshape = "BLOCK")
+        return_old = oldfu.filt_median(f=IMAGE_BLANK_2D, nx=10, ny=10, nz = 1, kernelshape = "BLOCK")
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_circular(self):
+        return_new = fu.filt_median(f=IMAGE_BLANK_2D, nx=10, ny=10, nz = 1, kernelshape = "CIRCULAR")
+        return_old = oldfu.filt_median(f=IMAGE_BLANK_2D, nx=10, ny=10, nz = 1, kernelshape = "CIRCULAR")
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_cross(self):
+        return_new = fu.filt_median(f=IMAGE_BLANK_2D, nx=10, ny=10, nz = 1, kernelshape = "CROSS")
+        return_old = oldfu.filt_median(f=IMAGE_BLANK_2D, nx=10, ny=10, nz = 1, kernelshape = "CROSS")
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_block(self):
+        return_new = fu.filt_median(f=IMAGE_3D, nx=10, ny=10, nz = 10, kernelshape = "BLOCK")
+        return_old = oldfu.filt_median(f=IMAGE_3D, nx=10, ny=10, nz = 10, kernelshape = "BLOCK")
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_circular(self):
+        return_new = fu.filt_median(f=IMAGE_3D, nx=10, ny=10, nz = 10, kernelshape = "CIRCULAR")
+        return_old = oldfu.filt_median(f=IMAGE_3D, nx=10, ny=10, nz = 10, kernelshape = "CIRCULAR")
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_cross(self):
+        return_new = fu.filt_median(f=IMAGE_3D, nx=10, ny=10, nz = 10, kernelshape = "CROSS")
+        return_old = oldfu.filt_median(f=IMAGE_3D, nx=10, ny=10, nz = 10, kernelshape = "CROSS")
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_block(self):
+        return_new = fu.filt_median(f=IMAGE_BLANK_3D, nx=10, ny=10, nz = 10, kernelshape = "BLOCK")
+        return_old = oldfu.filt_median(f=IMAGE_BLANK_3D, nx=10, ny=10, nz = 10, kernelshape = "BLOCK")
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_circular(self):
+        return_new = fu.filt_median(f=IMAGE_BLANK_3D, nx=10, ny=10, nz = 10, kernelshape = "CIRCULAR")
+        return_old = oldfu.filt_median(f=IMAGE_BLANK_3D, nx=10, ny=10, nz = 10, kernelshape = "CIRCULAR")
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_cross(self):
+        return_new = fu.filt_median(f=IMAGE_BLANK_3D, nx=10, ny=10, nz = 10, kernelshape = "CROSS")
+        return_old = oldfu.filt_median(f=IMAGE_BLANK_3D, nx=10, ny=10, nz = 10, kernelshape = "CROSS")
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 
 
 class Test_filt_tophath(unittest.TestCase):
-    def test_filt_tophath(self):
-        v = oldfu.filt_tophath(e="", freq="", pad = False)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.filt_tophath()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.filt_tophath()
+        self.assertEqual(cm_new.exception.message, "filt_tophatl() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.filt_tophath(e=EMData(), freq=0.25, pad=False)
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.filt_tophath(e=EMData(), freq=0.25, pad=False)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
 
-class Test_filt_tophatb(unittest.TestCase):
-    def test_filt_tophatb(self):
-        v = oldfu.filt_tophatb(e="", freql="", freqh="", pad = False)
-        pass
+    def test_NoneType_Img(self):
+        return_new = fu.filt_tophath(e=None, freq= 0.25, pad=False)
+        return_old = oldfu.filt_tophath(e=None,freq= 0.25, pad=False)
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new,None)
+
+    def test_Img2D_without_pad(self):
+        return_new = fu.filt_tophath(e=IMAGE_2D, freq= 0.25, pad=False)
+        return_old = oldfu.filt_tophath(e=IMAGE_2D,freq= 0.25, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2D_with_pad(self):
+        return_new = fu.filt_tophath(e=IMAGE_2D, freq= 0.25, pad=True)
+        return_old = oldfu.filt_tophath(e=IMAGE_2D,freq= 0.25, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_without_pad(self):
+        return_new = fu.filt_tophath(e=IMAGE_BLANK_2D, freq= 0.25, pad=False)
+        return_old = oldfu.filt_tophath(e=IMAGE_BLANK_2D,freq= 0.25, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_with_pad(self):
+        return_new = fu.filt_tophath(e=IMAGE_BLANK_2D, freq= 0.25, pad=True)
+        return_old = oldfu.filt_tophath(e=IMAGE_BLANK_2D,freq= 0.25, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_without_pad(self):
+        return_new = fu.filt_tophath(e=IMAGE_3D, freq= 0.25, pad=False)
+        return_old = oldfu.filt_tophath(e=IMAGE_3D,freq= 0.25, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_with_pad(self):
+        return_new = fu.filt_tophath(e=IMAGE_3D, freq= 0.25, pad=True)
+        return_old = oldfu.filt_tophath(e=IMAGE_3D,freq= 0.25, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_without_pad(self):
+        return_new = fu.filt_tophath(e=IMAGE_BLANK_3D, freq= 0.25, pad=False)
+        return_old = oldfu.filt_tophath(e=IMAGE_BLANK_3D,freq= 0.25, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_with_pad(self):
+        return_new = fu.filt_tophath(e=IMAGE_BLANK_3D, freq= 0.25, pad=True)
+        return_old = oldfu.filt_tophath(e=IMAGE_BLANK_3D,freq= 0.25, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 class Test_filt_tophato(unittest.TestCase):
-    def test_filt_tophato(self):
-        v = oldfu.filt_tophato(e="", freql="", freqh="", value="", pad = False)
-        pass
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.filt_tophato(e=EMData(), freql=0.25, value =0.2, freqh=0.35)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.filt_tophato(e=EMData(), freql=0.25, value =0.2, freqh=0.35)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalueidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.filt_tophato()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.filt_tophato()
+        self.assertEqual(cm_new.exception.message, "filt_tophato() takes at least 4 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_NoneType_Img(self):
+        return_new = fu.filt_tophato(e=None, freql=0.25, value =0.2, freqh=0.35, pad=True)
+        return_old = oldfu.filt_tophato(e=None, freql=0.25, value =0.2, freqh=0.35, pad=True)
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new,None)
+
+    def test_value_higher_freql(self):
+        return_new = fu.filt_tophato(e=IMAGE_2D, freql=0.25, value =0.3, freqh=0.35, pad=True)
+        return_old = oldfu.filt_tophato(e=IMAGE_2D, freql=0.25, value =0.3, freqh=0.35, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImg_with_pad(self):
+        return_new = fu.filt_tophato(e=IMAGE_2D, freql=0.25, value =0.2, freqh=0.35, pad=True)
+        return_old = oldfu.filt_tophato(e=IMAGE_2D, freql=0.25, value =0.2, freqh=0.35, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImg_without_pad(self):
+        return_new = fu.filt_tophato(e=IMAGE_2D, freql=0.25, value =0.2, freqh=0.35, pad=False)
+        return_old = oldfu.filt_tophato(e=IMAGE_2D, freql=0.25, value =0.2, freqh=0.35, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_with_pad(self):
+        return_new = fu.filt_tophato(e=IMAGE_BLANK_2D, freql=0.25, value =0.2, freqh=0.35, pad=True)
+        return_old = oldfu.filt_tophato(e=IMAGE_BLANK_2D, freql=0.25, value =0.2, freqh=0.35, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_without_pad(self):
+        return_new = fu.filt_tophato(e=IMAGE_BLANK_2D, freql=0.25, value =0.2, freqh=0.35, pad=False)
+        return_old = oldfu.filt_tophato(e=IMAGE_BLANK_2D, freql=0.25, value =0.2, freqh=0.35, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_with_pad(self):
+        return_new = fu.filt_tophato(e=IMAGE_3D, freql=0.25, value =0.2, freqh=0.35, pad=True)
+        return_old = oldfu.filt_tophato(e=IMAGE_3D, freql=0.25, value =0.2, freqh=0.35, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_without_pad(self):
+        return_new = fu.filt_tophato(e=IMAGE_3D, freql=0.25, value =0.2, freqh=0.35, pad=False)
+        return_old = oldfu.filt_tophato(e=IMAGE_3D, freql=0.25, value =0.2, freqh=0.35, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_with_pad(self):
+        return_new = fu.filt_tophato(e=IMAGE_BLANK_3D, freql=0.25, value =0.2, freqh=0.35, pad=True)
+        return_old = oldfu.filt_tophato(e=IMAGE_BLANK_3D, freql=0.25, value =0.2, freqh=0.35, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_without_pad(self):
+        return_new = fu.filt_tophato(e=IMAGE_BLANK_3D, freql=0.25, value =0.2, freqh=0.35, pad=False)
+        return_old = oldfu.filt_tophato(e=IMAGE_BLANK_3D, freql=0.25, value =0.2, freqh=0.35, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 
 
 class Test_filt_gaussb(unittest.TestCase):
-    def test_filt_gaussb(self):
-        v = oldfu.filt_gaussb(e="", sigma="", center="", pad = False)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.filt_gaussb()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.filt_gaussb()
+        self.assertEqual(cm_new.exception.message, "filt_gaussb() takes at least 3 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.filt_gaussb(e=EMData(), sigma=0.23, center=0.1)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.filt_gaussb(e=EMData(), sigma=0.23, center=0.1)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_new =  fu.filt_gaussb(e=None,sigma= 0.23, center = 0.1, pad=False )
+        return_old = oldfu.filt_gaussb(e=None,sigma= 0.23, center = 0.1, pad=False )
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new,None)
+
+    def test_2DImg_without_pad(self):
+        return_new = fu.filt_gaussb(e=IMAGE_2D,sigma= 0.23, center = 0.1, pad=False )
+        return_old = oldfu.filt_gaussb(e=IMAGE_2D,sigma= 0.23, center = 0.1, pad=False )
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImg_with_pad(self):
+        return_new = fu.filt_gaussb(e=IMAGE_2D,sigma= 0.23, center = 0.1, pad=True )
+        return_old = oldfu.filt_gaussb(e=IMAGE_2D,sigma= 0.23, center = 0.1, pad=True )
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_without_pad(self):
+        return_new = fu.filt_gaussb(e=IMAGE_BLANK_2D,sigma= 0.23, center = 0.1, pad=False )
+        return_old = oldfu.filt_gaussb(e=IMAGE_BLANK_2D,sigma= 0.23, center = 0.1, pad=False )
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_with_pad(self):
+        return_new = fu.filt_gaussb(e=IMAGE_BLANK_2D,sigma= 0.23, center = 0.1, pad=True )
+        return_old = oldfu.filt_gaussb(e=IMAGE_BLANK_2D,sigma= 0.23, center = 0.1, pad=True )
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_without_pad(self):
+        return_new = fu.filt_gaussb(e=IMAGE_3D,sigma= 0.23, center = 0.1, pad=False )
+        return_old = oldfu.filt_gaussb(e=IMAGE_3D,sigma= 0.23, center = 0.1, pad=False )
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_with_pad(self):
+        return_new = fu.filt_gaussb(e=IMAGE_3D,sigma= 0.23, center = 0.1, pad=True )
+        return_old = oldfu.filt_gaussb(e=IMAGE_3D,sigma= 0.23, center = 0.1, pad=True )
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_without_pad(self):
+        return_new = fu.filt_gaussb(e=IMAGE_BLANK_3D,sigma= 0.23, center = 0.1, pad=False )
+        return_old = oldfu.filt_gaussb(e=IMAGE_BLANK_3D,sigma= 0.23, center = 0.1, pad=False )
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_with_pad(self):
+        return_new = fu.filt_gaussb(e=IMAGE_BLANK_3D,sigma= 0.23, center = 0.1, pad=True )
+        return_old = oldfu.filt_gaussb(e=IMAGE_BLANK_3D,sigma= 0.23, center = 0.1, pad=True )
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 
 
 class Test_filt_gausso(unittest.TestCase):
-    def test_filt_gausso(self):
-        v = oldfu.filt_gausso(e="", sigma="", value="", pad = False)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.filt_gausso()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.filt_gausso()
+        self.assertEqual(cm_new.exception.message, "filt_gausso() takes at least 3 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.filt_gausso(e=EMData(), sigma=0.23, value=0.1)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.filt_gausso(e=EMData(), sigma=0.23, value=0.1)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_new =  fu.filt_gausso(e=None,sigma= 0.23, value = 0.1, pad=False )
+        return_old = oldfu.filt_gausso(e=None,sigma= 0.23, value = 0.1, pad=False )
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new,None)
+
+    def test_2DImg_without_pad(self):
+        return_new = fu.filt_gausso(e=IMAGE_2D,sigma= 0.23, value = 0.1, pad=False )
+        return_old = oldfu.filt_gausso(e=IMAGE_2D,sigma= 0.23, value = 0.1, pad=False )
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImg_with_pad(self):
+        return_new = fu.filt_gausso(e=IMAGE_2D,sigma= 0.23, value = 0.1, pad=True )
+        return_old = oldfu.filt_gausso(e=IMAGE_2D,sigma= 0.23, value = 0.1, pad=True )
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_without_pad(self):
+        return_new = fu.filt_gausso(e=IMAGE_BLANK_2D,sigma= 0.23, value = 0.1, pad=False )
+        return_old = oldfu.filt_gausso(e=IMAGE_BLANK_2D,sigma= 0.23, value = 0.1, pad=False )
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_with_pad(self):
+        return_new = fu.filt_gausso(e=IMAGE_BLANK_2D,sigma= 0.23, value = 0.1, pad=True )
+        return_old = oldfu.filt_gausso(e=IMAGE_BLANK_2D,sigma= 0.23, value = 0.1, pad=True )
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_without_pad(self):
+        return_new = fu.filt_gausso(e=IMAGE_3D,sigma= 0.23, value = 0.1, pad=False )
+        return_old = oldfu.filt_gausso(e=IMAGE_3D,sigma= 0.23, value = 0.1, pad=False )
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_with_pad(self):
+        return_new = fu.filt_gausso(e=IMAGE_3D,sigma= 0.23, value = 0.1, pad=True )
+        return_old = oldfu.filt_gausso(e=IMAGE_3D,sigma= 0.23, value = 0.1, pad=True )
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_without_pad(self):
+        return_new = fu.filt_gausso(e=IMAGE_BLANK_3D,sigma= 0.23, value = 0.1, pad=False )
+        return_old = oldfu.filt_gausso(e=IMAGE_BLANK_3D,sigma= 0.23, value = 0.1, pad=False )
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_with_pad(self):
+        return_new = fu.filt_gausso(e=IMAGE_BLANK_3D,sigma= 0.23, value = 0.1, pad=True )
+        return_old = oldfu.filt_gausso(e=IMAGE_BLANK_3D,sigma= 0.23, value = 0.1, pad=True )
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 
 class Test_filt_btwh(unittest.TestCase):
-    def test_filt_btwh(self):
-        v = oldfu.filt_btwh(e="", freql="", freqh="", pad = False)
-        pass
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.filt_btwh()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.filt_btwh()
+        self.assertEqual(cm_new.exception.message, "filt_btwh() takes at least 3 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.filt_btwh(e=EMData(), freql=0.25, freqh=0.35)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.filt_btwh(e=EMData(), freql=0.25, freqh=0.35)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_new =  fu.filt_btwh(e=None,  freql=0.25, freqh=0.35, pad=False )
+        return_old = oldfu.filt_btwh(e=None,  freql=0.25, freqh=0.35, pad=False )
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new,None)
+
+    def test_2DImg_without_pad(self):
+        return_new = fu.filt_btwh(e=IMAGE_2D, freql=0.25, freqh=0.35, pad=False)
+        return_old = oldfu.filt_btwh(e=IMAGE_2D, freql=0.25, freqh=0.35, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImg_with_pad(self):
+        return_new = fu.filt_btwh(e=IMAGE_2D, freql=0.25, freqh=0.35, pad=True)
+        return_old = oldfu.filt_btwh(e=IMAGE_2D, freql=0.25, freqh=0.35, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_without_pad(self):
+        return_new = fu.filt_btwh(e=IMAGE_BLANK_2D, freql=0.25, freqh=0.35, pad=False)
+        return_old = oldfu.filt_btwh(e=IMAGE_BLANK_2D, freql=0.25, freqh=0.35, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_with_pad(self):
+        return_new = fu.filt_btwh(e=IMAGE_BLANK_2D, freql=0.25, freqh=0.35, pad=True)
+        return_old = oldfu.filt_btwh(e=IMAGE_BLANK_2D, freql=0.25, freqh=0.35, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_without_pad(self):
+        return_new = fu.filt_btwh(e=IMAGE_3D, freql=0.25, freqh=0.35, pad=False)
+        return_old = oldfu.filt_btwh(e=IMAGE_3D, freql=0.25, freqh=0.35, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_with_pad(self):
+        return_new = fu.filt_btwh(e=IMAGE_3D, freql=0.25, freqh=0.35, pad=True)
+        return_old = oldfu.filt_btwh(e=IMAGE_3D, freql=0.25, freqh=0.35, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_without_pad(self):
+        return_new = fu.filt_btwh(e=IMAGE_BLANK_3D, freql=0.25, freqh=0.35, pad=False)
+        return_old = oldfu.filt_btwh(e=IMAGE_BLANK_3D, freql=0.25, freqh=0.35, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_with_pad(self):
+        return_new = fu.filt_btwh(e=IMAGE_BLANK_3D, freql=0.25, freqh=0.35, pad=True)
+        return_old = oldfu.filt_btwh(e=IMAGE_BLANK_3D, freql=0.25, freqh=0.35, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 
 class Test_filt_btwo(unittest.TestCase):
-    def test_filt_btwo(self):
-        v = oldfu.filt_btwo(e="", freql="", freqh="", value="", pad = False)
-        pass
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.filt_btwo()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.filt_btwo()
+        self.assertEqual(cm_new.exception.message, "filt_btwo() takes at least 4 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.filt_btwo(e=EMData(), freql=0.25, freqh=0.35, value= 0.1)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.filt_btwo(e=EMData(), freql=0.25, freqh=0.35, value= 0.1)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_new =  fu.filt_btwo(e=None,  freql=0.25, freqh=0.35, value= 0.1, pad=False )
+        return_old = oldfu.filt_btwo(e=None,  freql=0.25, freqh=0.35, value= 0.1, pad=False )
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new,None)
+
+    def test_2DImg_without_pad(self):
+        return_new = fu.filt_btwo(e=IMAGE_2D, freql=0.25, freqh=0.35, value= 0.1, pad=False)
+        return_old = oldfu.filt_btwo(e=IMAGE_2D, freql=0.25, freqh=0.35, value= 0.1, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImg_with_pad(self):
+        return_new = fu.filt_btwo(e=IMAGE_2D, freql=0.25, freqh=0.35, value= 0.1, pad=True)
+        return_old = oldfu.filt_btwo(e=IMAGE_2D, freql=0.25, freqh=0.35, value= 0.1, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_without_pad(self):
+        return_new = fu.filt_btwo(e=IMAGE_BLANK_2D, freql=0.25, freqh=0.35, value= 0.1, pad=False)
+        return_old = oldfu.filt_btwo(e=IMAGE_BLANK_2D, freql=0.25, freqh=0.35, value= 0.1, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_with_pad(self):
+        return_new = fu.filt_btwo(e=IMAGE_BLANK_2D, freql=0.25, freqh=0.35, value= 0.1, pad=True)
+        return_old = oldfu.filt_btwo(e=IMAGE_BLANK_2D, freql=0.25, freqh=0.35, value= 0.1, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_without_pad(self):
+        return_new = fu.filt_btwo(e=IMAGE_3D, freql=0.25, freqh=0.35, value= 0.1, pad=False)
+        return_old = oldfu.filt_btwo(e=IMAGE_3D, freql=0.25, freqh=0.35, value= 0.1, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_with_pad(self):
+        return_new = fu.filt_btwo(e=IMAGE_3D, freql=0.25, freqh=0.35, value= 0.1, pad=True)
+        return_old = oldfu.filt_btwo(e=IMAGE_3D, freql=0.25, freqh=0.35, value= 0.1, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_without_pad(self):
+        return_new = fu.filt_btwo(e=IMAGE_BLANK_3D, freql=0.25, freqh=0.35, value= 0.1, pad=False)
+        return_old = oldfu.filt_btwo(e=IMAGE_BLANK_3D, freql=0.25, freqh=0.35, value= 0.1, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_with_pad(self):
+        return_new = fu.filt_btwo(e=IMAGE_BLANK_3D, freql=0.25, freqh=0.35, value= 0.1, pad=True)
+        return_old = oldfu.filt_btwo(e=IMAGE_BLANK_3D, freql=0.25, freqh=0.35, value= 0.1, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 
 class Test_filt_tanh(unittest.TestCase):
-    def test_filt_tanh(self):
-        v = oldfu.filt_tanh(e="", freq="", fall_off="", pad = False)
-        pass
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.filt_tanh()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.filt_tanh()
+        self.assertEqual(cm_new.exception.message, "filt_tanh() takes at least 3 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.filt_tanh(e=EMData(), freq=0.25, fall_off=0.35)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.filt_tanh(e=EMData(), freq=0.25, fall_off=0.35)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_new =  fu.filt_tanh(e=None,  freq=0.25, fall_off=0.35, pad=False )
+        return_old = oldfu.filt_tanh(e=None,  freq=0.25, fall_off=0.35, pad=False )
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new,None)
+
+    def test_2DImg_without_pad(self):
+        return_new = fu.filt_tanh(e=IMAGE_2D, freq=0.25, fall_off=0.35, pad=False)
+        return_old = oldfu.filt_tanh(e=IMAGE_2D, freq=0.25, fall_off=0.35, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImg_with_pad(self):
+        return_new = fu.filt_tanh(e=IMAGE_2D, freq=0.25, fall_off=0.35, pad=True)
+        return_old = oldfu.filt_tanh(e=IMAGE_2D, freq=0.25, fall_off=0.35, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_without_pad(self):
+        return_new = fu.filt_tanh(e=IMAGE_BLANK_2D, freq=0.25, fall_off=0.35, pad=False)
+        return_old = oldfu.filt_tanh(e=IMAGE_BLANK_2D, freq=0.25, fall_off=0.35, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_with_pad(self):
+        return_new = fu.filt_tanh(e=IMAGE_BLANK_2D, freq=0.25, fall_off=0.35, pad=True)
+        return_old = oldfu.filt_tanh(e=IMAGE_BLANK_2D, freq=0.25, fall_off=0.35, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_without_pad(self):
+        return_new = fu.filt_tanh(e=IMAGE_3D, freq=0.25, fall_off=0.35, pad=False)
+        return_old = oldfu.filt_tanh(e=IMAGE_3D, freq=0.25, fall_off=0.35, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_with_pad(self):
+        return_new = fu.filt_tanh(e=IMAGE_3D, freq=0.25, fall_off=0.35, pad=True)
+        return_old = oldfu.filt_tanh(e=IMAGE_3D, freq=0.25, fall_off=0.35, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_without_pad(self):
+        return_new = fu.filt_tanh(e=IMAGE_BLANK_3D, freq=0.25, fall_off=0.35, pad=False)
+        return_old = oldfu.filt_tanh(e=IMAGE_BLANK_3D, freq=0.25, fall_off=0.35, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_with_pad(self):
+        return_new = fu.filt_tanh(e=IMAGE_BLANK_3D, freq=0.25, fall_off=0.35, pad=True)
+        return_old = oldfu.filt_tanh(e=IMAGE_BLANK_3D, freq=0.25, fall_off=0.35, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 class Test_filt_tanb(unittest.TestCase):
-    def test_filt_tanb(self):
-        v = oldfu.filt_tanb(e="", freql="", low_fall_off="", freqh="", high_fall_off="", pad = False)
-        pass
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.filt_tanb()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.filt_tanb()
+        self.assertEqual(cm_new.exception.message, "filt_tanb() takes at least 5 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.filt_tanb(e=EMData(), freql=0.25, freqh=0.35, low_fall_off = 0.1, high_fall_off=0.3 )
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.filt_tanb(e=EMData(), freql=0.25, freqh=0.35, low_fall_off = 0.1, high_fall_off=0.3 )
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_new =  fu.filt_tanb(e=None,  freql=0.25, freqh=0.35, low_fall_off = 0.1, high_fall_off=0.3 , pad=False )
+        return_old = oldfu.filt_tanb(e=None,  freql=0.25, freqh=0.35, low_fall_off = 0.1, high_fall_off=0.3 , pad=False )
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new,None)
+
+    def test_2DImg_without_pad(self):
+        return_new = fu.filt_tanb(e=IMAGE_2D, freql=0.25, freqh=0.35, low_fall_off = 0.1, high_fall_off=0.3 , pad=False)
+        return_old = oldfu.filt_tanb(e=IMAGE_2D, freql=0.25, freqh=0.35, low_fall_off = 0.1, high_fall_off=0.3 , pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImg_with_pad(self):
+        return_new = fu.filt_tanb(e=IMAGE_2D, freql=0.25, freqh=0.35, low_fall_off = 0.1, high_fall_off=0.3 , pad=True)
+        return_old = oldfu.filt_tanb(e=IMAGE_2D, freql=0.25, freqh=0.35, low_fall_off = 0.1, high_fall_off=0.3 , pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_without_pad(self):
+        return_new = fu.filt_tanb(e=IMAGE_BLANK_2D, freql=0.25, freqh=0.35, low_fall_off = 0.1, high_fall_off=0.3 , pad=False)
+        return_old = oldfu.filt_tanb(e=IMAGE_BLANK_2D, freql=0.25, freqh=0.35, low_fall_off = 0.1, high_fall_off=0.3 , pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_with_pad(self):
+        return_new = fu.filt_tanb(e=IMAGE_BLANK_2D, freql=0.25, freqh=0.35, low_fall_off = 0.1, high_fall_off=0.3 , pad=True)
+        return_old = oldfu.filt_tanb(e=IMAGE_BLANK_2D, freql=0.25, freqh=0.35, low_fall_off = 0.1, high_fall_off=0.3 , pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_without_pad(self):
+        return_new = fu.filt_tanb(e=IMAGE_3D, freql=0.25, freqh=0.35, low_fall_off = 0.1, high_fall_off=0.3 , pad=False)
+        return_old = oldfu.filt_tanb(e=IMAGE_3D, freql=0.25, freqh=0.35, low_fall_off = 0.1, high_fall_off=0.3 , pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_with_pad(self):
+        return_new = fu.filt_tanb(e=IMAGE_3D, freql=0.25, freqh=0.35, low_fall_off = 0.1, high_fall_off=0.3 , pad=True)
+        return_old = oldfu.filt_tanb(e=IMAGE_3D, freql=0.25, freqh=0.35, low_fall_off = 0.1, high_fall_off=0.3 , pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_without_pad(self):
+        return_new = fu.filt_tanb(e=IMAGE_BLANK_3D, freql=0.25, freqh=0.35, low_fall_off = 0.1, high_fall_off=0.3 , pad=False)
+        return_old = oldfu.filt_tanb(e=IMAGE_BLANK_3D, freql=0.25, freqh=0.35, low_fall_off = 0.1, high_fall_off=0.3 , pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_with_pad(self):
+        return_new = fu.filt_tanb(e=IMAGE_BLANK_3D, freql=0.25, freqh=0.35, low_fall_off = 0.1, high_fall_off=0.3 , pad=True)
+        return_old = oldfu.filt_tanb(e=IMAGE_BLANK_3D, freql=0.25, freqh=0.35, low_fall_off = 0.1, high_fall_off=0.3 , pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 
 
 class Test_filt_tano(unittest.TestCase):
-    def test_filt_tano(self):
-        v = oldfu.filt_tano(e="", freq="", fall_off="", value="", pad = False)
-        pass
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.filt_tano()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.filt_tano()
+        self.assertEqual(cm_new.exception.message, "filt_tano() takes at least 4 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.filt_tano(e=EMData(), freq=0.25, fall_off=0.35, value = 0.1)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.filt_tano(e=EMData(), freq=0.25, fall_off=0.35, value = 0.1)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_new =  fu.filt_tano(e=None,  freq=0.25, fall_off=0.35, value = 0.1, pad=False )
+        return_old = oldfu.filt_tano(e=None,  freq=0.25, fall_off=0.35, value = 0.1, pad=False )
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new,None)
+
+    def test_2DImg_without_pad(self):
+        return_new = fu.filt_tano(e=IMAGE_2D, freq=0.25, fall_off=0.35, value = 0.1, pad=False)
+        return_old = oldfu.filt_tano(e=IMAGE_2D, freq=0.25, fall_off=0.35, value = 0.1, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImg_with_pad(self):
+        return_new = fu.filt_tano(e=IMAGE_2D, freq=0.25, fall_off=0.35, value = 0.1, pad=True)
+        return_old = oldfu.filt_tano(e=IMAGE_2D, freq=0.25, fall_off=0.35, value = 0.1, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_without_pad(self):
+        return_new = fu.filt_tano(e=IMAGE_BLANK_2D, freq=0.25, fall_off=0.35, value = 0.1, pad=False)
+        return_old = oldfu.filt_tano(e=IMAGE_BLANK_2D, freq=0.25, fall_off=0.35, value = 0.1, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_with_pad(self):
+        return_new = fu.filt_tano(e=IMAGE_BLANK_2D, freq=0.25, fall_off=0.35, value = 0.1, pad=True)
+        return_old = oldfu.filt_tano(e=IMAGE_BLANK_2D, freq=0.25, fall_off=0.35, value = 0.1, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_without_pad(self):
+        return_new = fu.filt_tano(e=IMAGE_3D, freq=0.25, fall_off=0.35, value = 0.1, pad=False)
+        return_old = oldfu.filt_tano(e=IMAGE_3D, freq=0.25, fall_off=0.35, value = 0.1, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_with_pad(self):
+        return_new = fu.filt_tano(e=IMAGE_3D, freq=0.25, fall_off=0.35, value = 0.1, pad=True)
+        return_old = oldfu.filt_tano(e=IMAGE_3D, freq=0.25, fall_off=0.35, value = 0.1, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_without_pad(self):
+        return_new = fu.filt_tano(e=IMAGE_BLANK_3D, freq=0.25, fall_off=0.35, value = 0.1, pad=False)
+        return_old = oldfu.filt_tano(e=IMAGE_BLANK_3D, freq=0.25, fall_off=0.35, value = 0.1, pad=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_with_pad(self):
+        return_new = fu.filt_tano(e=IMAGE_BLANK_3D, freq=0.25, fall_off=0.35, value = 0.1, pad=True)
+        return_old = oldfu.filt_tano(e=IMAGE_BLANK_3D, freq=0.25, fall_off=0.35, value = 0.1, pad=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 class Test_filt_kaisersinh(unittest.TestCase):
-    def test_filt_kaisersinh(self):
-        v = oldfu.filt_kaisersinh(e="", alpha="")
-        pass
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.filt_kaisersinh(e=EMData(), alpha=0.1)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.filt_kaisersinh(e=EMData(), alpha=0.1)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalueidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.filt_kaisersinh()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.filt_kaisersinh()
+        self.assertEqual(cm_new.exception.message, "filt_kaisersinh() takes at least 4 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_NoneType_Img(self):
+        return_new = fu.filt_kaisersinh(e=None, alpha=0.1)
+        return_old = oldfu.filt_kaisersinh(e=None, alpha=0.1)
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new,None)
+
+    def test_value_higher_freql(self):
+        return_new = fu.filt_kaisersinh(e=IMAGE_2D,  alpha=0.1)
+        return_old = oldfu.filt_kaisersinh(e=IMAGE_2D , alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImg_with_pad(self):
+        return_new = fu.filt_kaisersinh(e=IMAGE_2D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinh(e=IMAGE_2D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImg_without_pad(self):
+        return_new = fu.filt_kaisersinh(e=IMAGE_2D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinh(e=IMAGE_2D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_with_pad(self):
+        return_new = fu.filt_kaisersinh(e=IMAGE_BLANK_2D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinh(e=IMAGE_BLANK_2D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_without_pad(self):
+        return_new = fu.filt_kaisersinh(e=IMAGE_BLANK_2D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinh(e=IMAGE_BLANK_2D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_with_pad(self):
+        return_new = fu.filt_kaisersinh(e=IMAGE_3D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinh(e=IMAGE_3D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_without_pad(self):
+        return_new = fu.filt_kaisersinh(e=IMAGE_3D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinh(e=IMAGE_3D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_with_pad(self):
+        return_new = fu.filt_kaisersinh(e=IMAGE_BLANK_3D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinh(e=IMAGE_BLANK_3D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_without_pad(self):
+        return_new = fu.filt_kaisersinh(e=IMAGE_BLANK_3D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinh(e=IMAGE_BLANK_3D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 class Test_filt_kaisersinhp(unittest.TestCase):
-    def test_filt_kaisersinhp(self):
-        v = oldfu.filt_kaisersinhp(e="", alpha="")
-        pass
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.filt_kaisersinhp(e=EMData(), alpha=0.1)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.filt_kaisersinhp(e=EMData(), alpha=0.1)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalueidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.filt_kaisersinhp()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.filt_kaisersinhp()
+        self.assertEqual(cm_new.exception.message, "filt_kaisersinhp() takes at least 4 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_NoneType_Img(self):
+        return_new = fu.filt_kaisersinhp(e=None, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhp(e=None, alpha=0.1)
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new,None)
+
+    def test_value_higher_freql(self):
+        return_new = fu.filt_kaisersinhp(e=IMAGE_2D,  alpha=0.1)
+        return_old = oldfu.filt_kaisersinhp(e=IMAGE_2D , alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImg_with_pad(self):
+        return_new = fu.filt_kaisersinhp(e=IMAGE_2D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhp(e=IMAGE_2D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImg_without_pad(self):
+        return_new = fu.filt_kaisersinhp(e=IMAGE_2D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhp(e=IMAGE_2D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_with_pad(self):
+        return_new = fu.filt_kaisersinhp(e=IMAGE_BLANK_2D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhp(e=IMAGE_BLANK_2D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_without_pad(self):
+        return_new = fu.filt_kaisersinhp(e=IMAGE_BLANK_2D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhp(e=IMAGE_BLANK_2D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_with_pad(self):
+        return_new = fu.filt_kaisersinhp(e=IMAGE_3D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhp(e=IMAGE_3D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_without_pad(self):
+        return_new = fu.filt_kaisersinhp(e=IMAGE_3D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhp(e=IMAGE_3D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_with_pad(self):
+        return_new = fu.filt_kaisersinhp(e=IMAGE_BLANK_3D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhp(e=IMAGE_BLANK_3D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_without_pad(self):
+        return_new = fu.filt_kaisersinhp(e=IMAGE_BLANK_3D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhp(e=IMAGE_BLANK_3D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 class Test_filt_kaisersinhinv(unittest.TestCase):
-    def test_filt_kaisersinhinv(self):
-        v = oldfu.filt_kaisersinhinv(e="", alpha="")
-        pass
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.filt_kaisersinhinv(e=EMData(), alpha=0.1)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.filt_kaisersinhinv(e=EMData(), alpha=0.1)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalueidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.filt_kaisersinhinv()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.filt_kaisersinhinv()
+        self.assertEqual(cm_new.exception.message, "filt_kaisersinhinv() takes at least 4 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_NoneType_Img(self):
+        return_new = fu.filt_kaisersinhinv(e=None, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhinv(e=None, alpha=0.1)
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new,None)
+
+    def test_value_higher_freql(self):
+        return_new = fu.filt_kaisersinhinv(e=IMAGE_2D,  alpha=0.1)
+        return_old = oldfu.filt_kaisersinhinv(e=IMAGE_2D , alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImg_with_pad(self):
+        return_new = fu.filt_kaisersinhinv(e=IMAGE_2D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhinv(e=IMAGE_2D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImg_without_pad(self):
+        return_new = fu.filt_kaisersinhinv(e=IMAGE_2D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhinv(e=IMAGE_2D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_with_pad(self):
+        return_new = fu.filt_kaisersinhinv(e=IMAGE_BLANK_2D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhinv(e=IMAGE_BLANK_2D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_without_pad(self):
+        return_new = fu.filt_kaisersinhinv(e=IMAGE_BLANK_2D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhinv(e=IMAGE_BLANK_2D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_with_pad(self):
+        return_new = fu.filt_kaisersinhinv(e=IMAGE_3D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhinv(e=IMAGE_3D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_without_pad(self):
+        return_new = fu.filt_kaisersinhinv(e=IMAGE_3D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhinv(e=IMAGE_3D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_with_pad(self):
+        return_new = fu.filt_kaisersinhinv(e=IMAGE_BLANK_3D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhinv(e=IMAGE_BLANK_3D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_without_pad(self):
+        return_new = fu.filt_kaisersinhinv(e=IMAGE_BLANK_3D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhinv(e=IMAGE_BLANK_3D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 class Test_filt_kaisersinhinvp(unittest.TestCase):
-    def test_filt_kaisersinhinvp(self):
-        v = oldfu.filt_kaisersinhinvp(e="", alpha="")
-        pass
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.filt_kaisersinhinvp(e=EMData(), alpha=0.1)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.filt_kaisersinhinvp(e=EMData(), alpha=0.1)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalueidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.filt_kaisersinhinvp()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.filt_kaisersinhinvp()
+        self.assertEqual(cm_new.exception.message, "filt_kaisersinhinvp() takes at least 4 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_NoneType_Img(self):
+        return_new = fu.filt_kaisersinhinvp(e=None, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhinvp(e=None, alpha=0.1)
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new,None)
+
+    def test_value_higher_freql(self):
+        return_new = fu.filt_kaisersinhinvp(e=IMAGE_2D,  alpha=0.1)
+        return_old = oldfu.filt_kaisersinhinvp(e=IMAGE_2D , alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImg_with_pad(self):
+        return_new = fu.filt_kaisersinhinvp(e=IMAGE_2D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhinvp(e=IMAGE_2D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImg_without_pad(self):
+        return_new = fu.filt_kaisersinhinvp(e=IMAGE_2D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhinvp(e=IMAGE_2D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_with_pad(self):
+        return_new = fu.filt_kaisersinhinvp(e=IMAGE_BLANK_2D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhinvp(e=IMAGE_BLANK_2D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_without_pad(self):
+        return_new = fu.filt_kaisersinhinvp(e=IMAGE_BLANK_2D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhinvp(e=IMAGE_BLANK_2D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_with_pad(self):
+        return_new = fu.filt_kaisersinhinvp(e=IMAGE_3D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhinvp(e=IMAGE_3D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_without_pad(self):
+        return_new = fu.filt_kaisersinhinvp(e=IMAGE_3D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhinvp(e=IMAGE_3D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_with_pad(self):
+        return_new = fu.filt_kaisersinhinvp(e=IMAGE_BLANK_3D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhinvp(e=IMAGE_BLANK_3D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_without_pad(self):
+        return_new = fu.filt_kaisersinhinvp(e=IMAGE_BLANK_3D, alpha=0.1)
+        return_old = oldfu.filt_kaisersinhinvp(e=IMAGE_BLANK_3D, alpha=0.1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 class Test_filt_unctf(unittest.TestCase):
-    def test_filt_unctf(self):
-        v = oldfu.filt_unctf(e="", dz="", cs="", voltage="", pixel="", wgh=0.1, b_factor=0.0, sign=-1.0, dza=0.0, azz=0.0)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.filt_unctf()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.filt_unctf()
+        self.assertEqual(cm_new.exception.message, "filt_unctf() takes at least 5 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.filt_unctf(e=EMData(), dz=1, cs=2, voltage=300, pixel=1.5, wgh=0.1, b_factor=0.0, sign=-1.0, dza=0.0, azz=0.0)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.filt_unctf(e=EMData(), dz=1, cs=2, voltage=300, pixel=1.5, wgh=0.1, b_factor=0.0, sign=-1.0, dza=0.0, azz=0.0)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_new =  fu.filt_unctf(e=None, dz=1, cs=2, voltage=300, pixel=1.5, wgh=0.1, b_factor=0.0, sign=-1.0, dza=0.0, azz=0.0)
+        return_old = oldfu.filt_unctf(e=None, dz=1, cs=2, voltage=300, pixel=1.5, wgh=0.1, b_factor=0.0, sign=-1.0, dza=0.0, azz=0.0)
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new,None)
+
+    def test_2DImg(self):
+        return_new =  fu.filt_unctf(e=IMAGE_2D, dz=1, cs=2, voltage=300, pixel=1.5, wgh=0.1, b_factor=0.0, sign=-1.0, dza=0.0, azz=0.0)
+        return_old = oldfu.filt_unctf(e=IMAGE_2D, dz=1, cs=2, voltage=300, pixel=1.5, wgh=0.1, b_factor=0.0, sign=-1.0, dza=0.0, azz=0.0)
+        self.assertEqual(return_new,return_old)
+
+    def test_2DblankImg(self):
+        return_new =  fu.filt_unctf(e=IMAGE_BLANK_2D, dz=1, cs=2, voltage=300, pixel=1.5, wgh=0.1, b_factor=0.0, sign=-1.0, dza=0.0, azz=0.0)
+        return_old = oldfu.filt_unctf(e=IMAGE_BLANK_2D, dz=1, cs=2, voltage=300, pixel=1.5, wgh=0.1, b_factor=0.0, sign=-1.0, dza=0.0, azz=0.0)
+        self.assertEqual(return_new,return_old)
+
+    def test_3DImg(self):
+        return_new =  fu.filt_unctf(e=IMAGE_3D, dz=1, cs=2, voltage=300, pixel=1.5, wgh=0.1, b_factor=0.0, sign=-1.0, dza=0.0, azz=0.0)
+        return_old = oldfu.filt_unctf(e=IMAGE_3D, dz=1, cs=2, voltage=300, pixel=1.5, wgh=0.1, b_factor=0.0, sign=-1.0, dza=0.0, azz=0.0)
+        self.assertEqual(return_new,return_old)
+
+    def test_3DblankImg(self):
+        return_new =  fu.filt_unctf(e=IMAGE_BLANK_3D, dz=1, cs=2, voltage=300, pixel=1.5, wgh=0.1, b_factor=0.0, sign=-1.0, dza=0.0, azz=0.0)
+        return_old = oldfu.filt_unctf(e=IMAGE_BLANK_3D, dz=1, cs=2, voltage=300, pixel=1.5, wgh=0.1, b_factor=0.0, sign=-1.0, dza=0.0, azz=0.0)
+        self.assertEqual(return_new,return_old)
+
 
 class Test_filt_params(unittest.TestCase):
+    dres = ((0.0, 0.05, 0, 10, 0.15, 0.20), (0, 0.2, 0.4, 0.6, 0.8, 1.0), (8, 9, 5, 77, 98, 200))
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.filt_params()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.filt_params()
+        self.assertEqual(cm_new.exception.message, "filt_params() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_emptyList_returns_IndexError_list_index_out_of_range(self):
+        with self.assertRaises(IndexError) as cm_new:
+            fu.filt_params(dres=[], high = 0.95, low = 0.1)
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.filt_params(dres=[], high = 0.95, low = 0.1)
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
     def test_filt_params(self):
-        v = oldfu.filt_params(dres=0, high = 0.95, low = 0.1)
-        pass
+        return_old = oldfu.filt_params(dres=self.dres, high = 0.95, low = 0.1)
+        return_new = oldfu.filt_params(dres=self.dres, high=0.95, low=0.1)
+
+        self.assertEqual(return_new[0] , return_old[0])
+        self.assertEqual(return_new[1], return_old[1])
+        self.assertEqual(return_new[0] , 0)
+        self.assertEqual(return_new[1], 0.1)
+
 
 class Test_filt_from_fsc(unittest.TestCase):
-    def test_filt_from_fsc(self):
-        v = oldfu.filt_from_fsc(dres=0, low = 0.1)
-        pass
+    dres = ((0.0, 0.05, 0, 10, 0.15, 0.20), (0, 0.2, 0.4, 0.6, 0.8, 1.0), (8, 9, 5, 77, 98, 200))
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.filt_from_fsc()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.filt_from_fsc()
+        self.assertEqual(cm_new.exception.message, "filt_from_fsc() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_emptyList_returns_IndexError_list_index_out_of_range(self):
+        with self.assertRaises(IndexError) as cm_new:
+            fu.filt_from_fsc(dres=[], low=0.1)
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.filt_from_fsc(dres=[], low=0.1)
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_filt_params(self):
+        return_old = oldfu.filt_from_fsc(dres=self.dres,  low=0.1)
+        return_new = oldfu.filt_from_fsc(dres=self.dres, low=0.1)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, 0)
+
 
 class Test_filt_from_fsc2(unittest.TestCase):
-    def test_filt_from_fsc2(self):
-        v = oldfu.filt_from_fsc2(dres=0, low = 0.1)
-        pass
+    dres = ((0.0, 0.05, 0, 10, 0.15, 0.20), (0, 0.2, 0.4, 0.6, 0.8, 1.0), (8, 9, 5, 77, 98, 200))
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.filt_from_fsc2()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.filt_from_fsc2()
+        self.assertEqual(cm_new.exception.message, "filt_from_fsc2() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_emptyList_returns_IndexError_list_index_out_of_range(self):
+        with self.assertRaises(IndexError) as cm_new:
+            fu.filt_from_fsc2(dres=[], low=0.1)
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.filt_from_fsc2(dres=[], low=0.1)
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_filt_params(self):
+        return_old = oldfu.filt_from_fsc2(dres=self.dres,  low=0.1)
+        return_new = oldfu.filt_from_fsc2(dres=self.dres, low=0.1)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, 0)
+
 
 class Test_filt_from_fsc_bwt(unittest.TestCase):
-    def test_filt_from_fsc_bwt(self):
-        v = oldfu.filt_from_fsc_bwt(dres=0, low = 0.1)
-        pass
+    dres = ((0.0, 0.05, 0, 10, 0.15, 0.20), (0, 0.2, 0.4, 0.6, 0.8, 1.0), (8, 9, 5, 77, 98, 200))
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.filt_from_fsc_bwt()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.filt_from_fsc_bwt()
+        self.assertEqual(cm_new.exception.message, "filt_from_fsc_bwt() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_emptyList_returns_IndexError_list_index_out_of_range(self):
+        with self.assertRaises(IndexError) as cm_new:
+            fu.filt_from_fsc_bwt(dres=[], low=0.1)
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.filt_from_fsc_bwt(dres=[], low=0.1)
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_filt_params(self):
+        return_old = oldfu.filt_from_fsc_bwt(dres=self.dres,  low=0.1)
+        return_new = oldfu.filt_from_fsc_bwt(dres=self.dres, low=0.1)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, 0)
+
 
 class Test_tanhfilter(unittest.TestCase):
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.tanhfilter()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.tanhfilter()
+        self.assertEqual(cm_new.exception.message, "filt_from_fsc_bwt() takes exactly 3 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
     def test_tanhfilter(self):
-        v = oldfu.tanhfilter(nx="", fl="", aa="")
-        pass
+        return_old = oldfu.tanhfilter(nx=100, fl=3, aa=4)
+        return_new = fu.tanhfilter(nx=100, fl=3, aa=4)
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, []))
 
 
 class Test_filt_matched(unittest.TestCase):
-    def test_filt_matched(self):
-        v = oldfu.filt_matched(ima="", SNR="", Pref="")
-        pass
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.filt_matched(ima=EMData(), SNR=[0.1,0.2], Pref=[0.1,0.2])
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.filt_matched(ima=EMData(), SNR=[0.1,0.2], Pref=[0.1,0.2])
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalueidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.filt_matched()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.filt_matched()
+        self.assertEqual(cm_new.exception.message, "filt_matched() takes at exactly 3 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_emptyListSNR_returns_IndexError_list_index_out_of_range(self):
+        with self.assertRaises(IndexError) as cm_new:
+            fu.filt_matched(ima=None,SNR=[], Pref=[0.1,0.2])
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.filt_matched(ima=None,SNR=[], Pref=[0.1,0.2])
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_emptyListPREF_returns_IndexError_list_index_out_of_range(self):
+        with self.assertRaises(IndexError) as cm_new:
+            fu.filt_matched(ima=None,Pref=[], SNR=[0.1,0.2])
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.filt_matched(ima=None, Pref=[], SNR=[0.1,0.2])
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_NoneType_Img(self):
+        return_new = fu.filt_matched(ima=None,SNR=[0.1,0.02], Pref=[0.1,0.2])
+        return_old = oldfu.filt_matched(ima=None,SNR=[0.1,0.02], Pref=[0.1,0.2])
+        self.assertTrue(array_equal(return_new, return_old))
+
+    def test_2DiImg_Img(self):
+        return_new = fu.filt_matched(ima=IMAGE_2D, SNR=[0.1, 0.02], Pref=[0.1, 0.2])
+        return_old = oldfu.filt_matched(ima=IMAGE_2D, SNR=[0.1, 0.02], Pref=[0.1, 0.2])
+        self.assertTrue(array_equal(return_new, return_old))
+
+    def test_2DblankImg_Img(self):
+        return_new = fu.filt_matched(ima=IMAGE_BLANK_2D, SNR=[0.1, 0.02], Pref=[0.1, 0.2])
+        return_old = oldfu.filt_matched(ima=IMAGE_BLANK_2D, SNR=[0.1, 0.02], Pref=[0.1, 0.2])
+        self.assertTrue(array_equal(return_new, return_old))
+
+    def test_3DiImg_Img(self):
+        return_new = fu.filt_matched(ima=IMAGE_3D, SNR=[0.1, 0.02], Pref=[0.1, 0.2])
+        return_old = oldfu.filt_matched(ima=IMAGE_3D, SNR=[0.1, 0.02], Pref=[0.1, 0.2])
+        self.assertTrue(array_equal(return_new, return_old))
+
+    def test_3DblankImg_Img(self):
+        return_new = fu.filt_matched(ima=IMAGE_BLANK_3D, SNR=[0.1, 0.02], Pref=[0.1, 0.2])
+        return_old = oldfu.filt_matched(ima=IMAGE_BLANK_3D, SNR=[0.1, 0.02], Pref=[0.1, 0.2])
+        self.assertTrue(array_equal(return_new, return_old))
+
 
 
 """ end: new in sphire 1.3"""
+
+
+
+
 class Test_filt_ctf(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError)  as cm_new:
