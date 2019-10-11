@@ -2,27 +2,13 @@ from __future__ import print_function
 from __future__ import division
 
 import unittest
-import numpy
-import copy
-import math
-import EMAN2_cppwrap as e2cpp
-
+from numpy import allclose, array_equal
 from mpi import *
 import global_def
 
-import os
-import shutil
-import sys
-import cPickle as pickle
-ABSOLUTE_PATH = os.path.dirname(os.path.realpath(__file__))
-
-
-from sphire.libpy import sparx_applications as fu
-from .sparx_lib import sparx_applications as oldfu
-
-
-mpi_init(0, [])
-
+from os import path, mkdir
+from cPickle import loads as pickle_loads
+ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 
 
 global_def.BATCH = True
@@ -31,16 +17,17 @@ global_def.MPI = True
 
 
 from test_module import  remove_list_of_file, remove_dir, get_arg_from_pickle_file, ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,returns_values_in_file,get_real_data
-from os import path
-import EMAN2db
-from ..libpy import sparx_utilities
+
+from EMAN2db import db_open_dict as EMAN2db_db_open_dict
+
+from sphire.libpy.sp_utilities import model_blank, model_circle, even_angles
 
 from EMAN2_cppwrap import EMData
 IMAGE_3D, STILL_NOT_VALID = get_real_data(dim=3)
 IMAGE_2D, IMAGE_2D_REFERENCE = get_real_data(dim=2)
-IMAGE_BLANK_2D = sparx_utilities.model_blank(10, 10)
-IMAGE_BLANK_3D = sparx_utilities.model_blank(10, 10, 10)
-MASK = sparx_utilities.model_circle(2, 5, 5)
+IMAGE_BLANK_2D = model_blank(10, 10)
+IMAGE_BLANK_3D = model_blank(10, 10, 10)
+MASK = model_circle(2, 5, 5)
 
 TOLERANCE = 0.0005
 ABSOLUTE_PATH_TO_STACK= "bdb:" + path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Substack/isac_substack")
@@ -700,8 +687,8 @@ class Test_ali2d_MPI(unittest.TestCase):
     def test_pickle_file_values(self):
         (stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, nomirror, dst, center, maxit, CTF, snr, Fourvar, user_func_name, random_method, log, number_of_proc, myid, main_node, mpi_comm) = self.argum[0]
 
-        outdirnewa = os.path.join( 'ali2d_MPI_NEW')
-        outdirnewb = os.path.join(  'ali2d_MPI__OLD')
+        outdirnewa = path.join( 'ali2d_MPI_NEW')
+        outdirnewb = path.join(  'ali2d_MPI__OLD')
 
         remove_dir(outdirnewa)
         remove_dir(outdirnewb)
@@ -720,11 +707,11 @@ class Test_ali2d_MPI(unittest.TestCase):
     def test_ali2d_MPI_error_directory_exists(self):
         (stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, nomirror, dst, center, maxit, CTF, snr, Fourvar, user_func_name, random_method, log, number_of_proc, myid, main_node, mpi_comm) = self.argum[0]
 
-        outdirnewa = os.path.join( 'ali2d_MPI_NEW')
-        outdirnewb = os.path.join(  'ali2d_MPI__OLD')
+        outdirnewa = path.join( 'ali2d_MPI_NEW')
+        outdirnewb = path.join(  'ali2d_MPI__OLD')
 
-        os.mkdir(outdirnewa)
-        os.mkdir(outdirnewb)
+        mkdir(outdirnewa)
+        mkdir(outdirnewb)
 
         with self.assertRaises(OSError) as cm_new:
             fu.ali2d_MPI(ABSOLUTE_PATH_TO_STACK, outdirnewa, maskfile=maskfile, ou=ou, xr=xr, yr=yr, ts=ts, dst=dst, maxit=4, CTF=True, snr=snr)
@@ -757,11 +744,11 @@ class Test_ali2d_base(unittest.TestCase):
         (stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, nomirror, dst, center, maxit, CTF, snr,
          Fourvar, user_func_name, random_method, log ,number_of_proc, myid, main_node, mpi_comm) = self.argum[0]
 
-        outdirnew = os.path.join( ABSOLUTE_PATH,'ali2d_base_new')
-        outdirnewold = os.path.join(ABSOLUTE_PATH,'ali2d_base_old')
+        outdirnew = path.join( ABSOLUTE_PATH,'ali2d_base_new')
+        outdirnewold = path.join(ABSOLUTE_PATH,'ali2d_base_old')
 
-        os.mkdir(outdirnew)
-        os.mkdir(outdirnewold)
+        mkdir(outdirnew)
+        mkdir(outdirnewold)
         number_of_proc = 1
         myid = 0
         main_node = 0
@@ -782,7 +769,7 @@ class Test_ali2d_base(unittest.TestCase):
 
         self.assertEqual(returns_values_in_file(path.join(outdirnew, "resolution001")),returns_values_in_file(path.join(outdirnewold, "resolution001")))
         self.assertEqual(returns_values_in_file(path.join(outdirnew, "resolution002")),returns_values_in_file(path.join(outdirnewold, "resolution002")))
-        self.assertTrue(numpy.allclose(return_new, return_old, atol=TOLERANCE,equal_nan=True))
+        self.assertTrue(allclose(return_new, return_old, atol=TOLERANCE,equal_nan=True))
         remove_dir(outdirnew)
         remove_dir(outdirnewold)
 
@@ -798,22 +785,22 @@ class Test_cpy(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_default_case(self):
-        ins_list = os.path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, 'Class2D/best.hdf')
+        ins_list = path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, 'Class2D/best.hdf')
         file_path_new = 'bdb:{0}#{1}'.format(ABSOLUTE_PATH, "new_substack")
         file_path_old = 'bdb:{0}#{1}'.format(ABSOLUTE_PATH, "old_substack")
         fu.cpy(ins_list,file_path_new)
         oldfu.cpy(ins_list, file_path_old)
-        db_new, keys = EMAN2db.db_open_dict( file_path_new, True, True)
+        db_new, keys = EMAN2db_db_open_dict( file_path_new, True, True)
         db_new.realopen()
-        db_old, keys = EMAN2db.db_open_dict( file_path_old, True, True)
+        db_old, keys = EMAN2db_db_open_dict( file_path_old, True, True)
         db_old.realopen()
 
         for index in db_new.bdb.keys():
-            self.assertEqual(str(pickle.loads(db_new.bdb.get(index))), str(pickle.loads(db_old.bdb.get(index))))
-        remove_dir( os.path.join(ABSOLUTE_PATH, 'EMAN2DB'))
+            self.assertEqual(str(pickle_loads(db_new.bdb.get(index))), str(pickle_loads(db_old.bdb.get(index))))
+        remove_dir( path.join(ABSOLUTE_PATH, 'EMAN2DB'))
 
     def test_error_hdf_not_found(self):
-        ins_list = os.path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, 'not_found.hdf')
+        ins_list = path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, 'not_found.hdf')
         file_path_new = 'bdb:{0}#{1}'.format(".", "new_substack")
         file_path_old = 'bdb:{0}#{1}'.format(".", "old_substack")
         with self.assertRaises(Exception) as cm_new:
@@ -830,7 +817,7 @@ class Test_project3d(unittest.TestCase):
     def test_all_the_conditions(self, return_new=(), return_old=()):
         self.assertEqual(len(return_new), len(return_old))
         for i, j in zip(return_new, return_old):
-            self.assertTrue(numpy.allclose(j.get_3dview(), i.get_3dview(), atol=TOLERANCE,equal_nan=True))
+            self.assertTrue(allclose(j.get_3dview(), i.get_3dview(), atol=TOLERANCE,equal_nan=True))
 
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -912,8 +899,8 @@ class Test_project3d(unittest.TestCase):
         self.test_all_the_conditions(return_new, return_old)
 
     def test_save_on_hdf(self):
-        outnew = os.path.join( ABSOLUTE_PATH,'project3dnew.hdf')
-        outold = os.path.join(ABSOLUTE_PATH,'project3old.hdf')
+        outnew = path.join( ABSOLUTE_PATH,'project3dnew.hdf')
+        outold = path.join(ABSOLUTE_PATH,'project3old.hdf')
         return_new = fu.project3d(volume=IMAGE_BLANK_3D, stack = outnew, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None , listctfs = None, noise = None, realsp = False, trillinear = False)
         return_old = oldfu.project3d(volume=IMAGE_BLANK_3D, stack = outold, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None , listctfs = None, noise = None, realsp = False, trillinear = False)
 
@@ -933,13 +920,13 @@ class Test_project3d(unittest.TestCase):
         self.test_all_the_conditions(return_new, return_old)
 
     def test_3Dimg_with_listagls(self):
-        listangls =sparx_utilities.even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method = 'S', phiEqpsi = "Minus", symmetry='sd1', ant = 0.0)
+        listangls =even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method = 'S', phiEqpsi = "Minus", symmetry='sd1', ant = 0.0)
         return_new = fu.project3d(volume=IMAGE_3D, stack = None, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = listangls , listctfs = None, noise = None, realsp = False, trillinear = False)
         return_old = oldfu.project3d(volume=IMAGE_3D, stack = None, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = listangls , listctfs = None, noise = None, realsp = False, trillinear = False)
         self.test_all_the_conditions(return_new, return_old)
 
     def test_blank_img_with_listagls(self):
-        listangls =sparx_utilities.even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method = 'S', phiEqpsi = "Minus", symmetry='sd1', ant = 0.0)
+        listangls =even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method = 'S', phiEqpsi = "Minus", symmetry='sd1', ant = 0.0)
         return_new = fu.project3d(volume=IMAGE_BLANK_3D, stack = None, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = listangls , listctfs = None, noise = None, realsp = False, trillinear = False)
         return_old = oldfu.project3d(volume=IMAGE_BLANK_3D, stack = None, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = listangls , listctfs = None, noise = None, realsp = False, trillinear = False)
         self.test_all_the_conditions(return_new, return_old)
@@ -947,14 +934,14 @@ class Test_project3d(unittest.TestCase):
     def test_3Dimg_empty_listagls(self):
         return_new = fu.project3d(volume=IMAGE_3D, stack = None, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = [] , listctfs = None, noise = None, realsp = False, trillinear = False)
         return_old = oldfu.project3d(volume=IMAGE_3D, stack = None, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = [], listctfs = None, noise = None, realsp = False, trillinear = False)
-        self.assertTrue(numpy.array_equal(return_old,return_new))
-        self.assertTrue(numpy.array_equal(return_new, []))
+        self.assertTrue(array_equal(return_old,return_new))
+        self.assertTrue(array_equal(return_new, []))
 
     def test_blank_img_empty_listagls(self):
         return_new = fu.project3d(volume=IMAGE_BLANK_3D, stack = None, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = [], listctfs = None, noise = None, realsp = False, trillinear = False)
         return_old = oldfu.project3d(volume=IMAGE_BLANK_3D, stack = None, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls =[], listctfs = None, noise = None, realsp = False, trillinear = False)
-        self.assertTrue(numpy.array_equal(return_old, return_new))
-        self.assertTrue(numpy.array_equal(return_new, []))
+        self.assertTrue(array_equal(return_old, return_new))
+        self.assertTrue(array_equal(return_new, []))
 
 
 class Test_ali_vol(unittest.TestCase):
@@ -1058,19 +1045,19 @@ class Test_ali_vol(unittest.TestCase):
         (vol,refv,ang_scale,shift_scale,radius) = self.argum[0]
         return_new = fu.ali_vol(vol =vol, refv=refv, ang_scale=ang_scale, shift_scale=shift_scale, radius=radius, discrepancy = "ccc")
         return_old = oldfu.ali_vol(vol =vol, refv=refv, ang_scale=ang_scale, shift_scale=shift_scale, radius=radius, discrepancy = "ccc")
-        self.assertTrue(numpy.allclose(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_default_values(self):
         (vol,refv,ang_scale,shift_scale,radius) = self.argum[0]
         return_new = fu.ali_vol(vol =vol, refv=refv, ang_scale=ang_scale, shift_scale=shift_scale, radius=None, discrepancy = "ccc")
         return_old = oldfu.ali_vol(vol =vol, refv=refv, ang_scale=ang_scale, shift_scale=shift_scale, radius=None, discrepancy = "ccc")
-        self.assertTrue(numpy.allclose(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_with_zero_radius(self):
         (vol,refv,ang_scale,shift_scale,radius) = self.argum[0]
         return_new = fu.ali_vol(vol =vol, refv=refv, ang_scale=ang_scale, shift_scale=shift_scale, radius=0, discrepancy = "ccc")
         return_old = oldfu.ali_vol(vol =vol, refv=refv, ang_scale=ang_scale, shift_scale=shift_scale, radius=0, discrepancy = "ccc")
-        self.assertTrue(numpy.allclose(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_with_zero_shift_returns_ZeroDivisionError(self):
         (vol,refv,ang_scale,shift_scale,radius) = self.argum[0]
@@ -1085,7 +1072,7 @@ class Test_ali_vol(unittest.TestCase):
         (vol,refv,ang_scale,shift_scale,radius) = self.argum[0]
         return_new = fu.ali_vol(vol =vol, refv=refv, ang_scale=ang_scale, shift_scale=shift_scale, radius=radius, discrepancy = "ccc")
         return_old = oldfu.ali_vol(vol =vol, refv=refv, ang_scale=ang_scale, shift_scale=shift_scale, radius=radius, discrepancy = "ccc")
-        self.assertTrue(numpy.allclose(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview()))
 
 
 class Test_recons3d_n_trl_MPI_one_node(unittest.TestCase):
@@ -1117,7 +1104,7 @@ class Test_recons3d_n_trl_MPI_one_node(unittest.TestCase):
         group=0
         return_old = fu.recons3d_n_trl_MPI_one_node(prjlist=pjrlist, CTF = False, snr="not_used", sign="not_used", npad="not_used", sym="d1", group=group, niter=2, verbose=False, upweighted=True, compensate=False, chunk_id=-1)
         return_new = oldfu.recons3d_n_trl_MPI_one_node(prjlist=pjrlist, CTF = False, snr="not_used", sign="not_used", npad="not_used", sym="d1", group=group, niter=2, verbose=False, upweighted=True, compensate=False, chunk_id=-1)
-        self.assertTrue(numpy.allclose(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview()))
 
 
 
@@ -1129,7 +1116,7 @@ class Test_pca(unittest.TestCase):
     def test_all_the_conditions(self, return_new=(), return_old=()):
         self.assertEqual(len(return_new), len(return_old))
         for i, j in zip(return_new, return_old):
-            self.assertTrue(numpy.allclose(j.get_3dview(), i.get_3dview(), atol=TOLERANCE,equal_nan=True))
+            self.assertTrue(allclose(j.get_3dview(), i.get_3dview(), atol=TOLERANCE,equal_nan=True))
 
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -1188,7 +1175,7 @@ class Test_prepare_2d_forPCA(unittest.TestCase):
     def test_all_the_conditions(self, return_new=(), return_old=()):
         self.assertEqual(len(return_new), len(return_old))
         for i, j in zip(return_new, return_old):
-            self.assertTrue(numpy.allclose(j.get_3dview(), i.get_3dview(), atol=TOLERANCE,equal_nan=True))
+            self.assertTrue(allclose(j.get_3dview(), i.get_3dview(), atol=TOLERANCE,equal_nan=True))
 
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -1201,30 +1188,30 @@ class Test_prepare_2d_forPCA(unittest.TestCase):
     def test_default_value(self):
         return_new_avg, return_new_outstack= fu.prepare_2d_forPCA(data = self.data, mode = "a", output_stack = None, CTF = False)
         return_old_avg, return_old_outstack = oldfu.prepare_2d_forPCA(data = self.data, mode = "a", output_stack = None, CTF = False)
-        self.assertTrue(numpy.allclose(return_new_avg.get_3dview(), return_old_avg.get_3dview(), atol=TOLERANCE,equal_nan=True))
+        self.assertTrue(allclose(return_new_avg.get_3dview(), return_old_avg.get_3dview(), atol=TOLERANCE,equal_nan=True))
         self.test_all_the_conditions(return_new_outstack,return_old_outstack)
 
     def test_notAmode(self):
         return_new_avg, return_new_outstack= fu.prepare_2d_forPCA(data = self.data, mode = "unknown", output_stack = None, CTF = False)
         return_old_avg, return_old_outstack = oldfu.prepare_2d_forPCA(data = self.data, mode = "unknown", output_stack = None, CTF = False)
-        self.assertTrue(numpy.allclose(return_new_avg.get_3dview(), return_old_avg.get_3dview(), atol=TOLERANCE,equal_nan=True))
+        self.assertTrue(allclose(return_new_avg.get_3dview(), return_old_avg.get_3dview(), atol=TOLERANCE,equal_nan=True))
         self.test_all_the_conditions(return_new_outstack,return_old_outstack)
 
     def test_notAmode_withCTF(self):
         return_new_avg, return_new_outstack= fu.prepare_2d_forPCA(data = self.data, mode = "unknown", output_stack = None, CTF = True)
         return_old_avg, return_old_outstack = oldfu.prepare_2d_forPCA(data = self.data, mode = "unknown", output_stack = None, CTF = True)
-        self.assertTrue(numpy.allclose(return_new_avg.get_3dview(), return_old_avg.get_3dview(), atol=TOLERANCE,equal_nan=True))
+        self.assertTrue(allclose(return_new_avg.get_3dview(), return_old_avg.get_3dview(), atol=TOLERANCE,equal_nan=True))
         self.test_all_the_conditions(return_new_outstack,return_old_outstack)
 
     def test_withCTF(self):
         return_new_avg, return_new_outstack= fu.prepare_2d_forPCA(data = self.data, mode = "a", output_stack = None, CTF = True)
         return_old_avg, return_old_outstack = oldfu.prepare_2d_forPCA(data = self.data, mode = "a", output_stack = None, CTF = True)
-        self.assertTrue(numpy.allclose(return_new_avg.get_3dview(), return_old_avg.get_3dview(), atol=TOLERANCE,equal_nan=True))
+        self.assertTrue(allclose(return_new_avg.get_3dview(), return_old_avg.get_3dview(), atol=TOLERANCE,equal_nan=True))
         self.test_all_the_conditions(return_new_outstack,return_old_outstack)
 
     def test_with_stack(self):
-        outnew= os.path.join(ABSOLUTE_PATH,'pcanew.hdf')
-        outold= os.path.join(ABSOLUTE_PATH, 'pcaold.hdf')
+        outnew= path.join(ABSOLUTE_PATH,'pcanew.hdf')
+        outold= path.join(ABSOLUTE_PATH, 'pcaold.hdf')
         return_new= fu.prepare_2d_forPCA(data = self.data, mode = "a", output_stack = outnew, CTF = False)
         return_old= oldfu.prepare_2d_forPCA(data = self.data, mode = "a", output_stack = outold, CTF = False)
         self.assertTrue(returns_values_in_file(outold), returns_values_in_file(outnew))
@@ -1264,8 +1251,8 @@ class Test_extract_value(unittest.TestCase):
 
 
 class Test_header(unittest.TestCase):
-    outnew= os.path.join(ABSOLUTE_PATH,'Headernew.hdf')
-    outold = os.path.join(ABSOLUTE_PATH, 'Headerold.hdf')
+    outnew= path.join(ABSOLUTE_PATH,'Headernew.hdf')
+    outold = path.join(ABSOLUTE_PATH, 'Headerold.hdf')
     params='xform.projection'
     data = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/applications.header"))[0]
     def test_wrong_number_params_too_few_parameters(self):
@@ -1314,14 +1301,14 @@ class Test_MPI_start_end(unittest.TestCase):
     def test_default_case(self):
         return_new = fu.MPI_start_end(nima=self.nima, nproc=self.nproc, myid=self.myid)
         return_old = fu.MPI_start_end(nima=self.nima, nproc=self.nproc, myid=self.myid)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, [8,16]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, [8,16]))
 
     def test_zero_nima(self):
         return_new = fu.MPI_start_end(nima=0, nproc=self.nproc, myid=self.myid)
         return_old = fu.MPI_start_end(nima=0, nproc=self.nproc, myid=self.myid)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, [0,0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, [0,0]))
 
     def test_zero_nproc(self):
         with self.assertRaises(ZeroDivisionError) as cm_new:
@@ -1334,8 +1321,8 @@ class Test_MPI_start_end(unittest.TestCase):
     def test_zero_myd(self):
         return_new = fu.MPI_start_end(nima=self.nima, nproc=self.nproc, myid=0)
         return_old = fu.MPI_start_end(nima=self.nima, nproc=self.nproc, myid=0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, [0,8]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, [0,8]))
 
 
 """seems to be never USED"""
@@ -1371,7 +1358,7 @@ class Test_within_group_refinement(unittest.TestCase):
         (data, maskfile, randomize_not_used, ir, ou, rs, xrng, yrng, step, dst, maxit, FH, FF) = self.argum
         return_new = fu.within_group_refinement(data=data, maskfile=maskfile, randomize=self.randomize, ir=ir, ou=ou, rs=rs, xrng=xrng, yrng=yrng, step=step, dst=dst, maxit=maxit, FH=FH, FF=FF,method = "", CTF = False)
         return_old = oldfu.within_group_refinement(data=data, maskfile=maskfile, randomize=self.randomize, ir=ir, ou=ou, rs=rs, xrng=xrng, yrng=yrng, step=step, dst=dst, maxit=maxit, FH=FH, FF=FF,method = "", CTF = False)
-        self.assertTrue(numpy.allclose(return_new.get_3dview(), return_old.get_3dview(), atol=TOLERANCE, equal_nan=True))
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), atol=TOLERANCE, equal_nan=True))
 
 
 
@@ -1401,8 +1388,7 @@ class Test_mref_ali3d_EQ_Kmeans(unittest.TestCase):
 
 
 
-
-
+"""
 def get_data(num):
     dim = 10
     data_list = []
@@ -1418,7 +1404,7 @@ class Test_lib_applications_compare(unittest.TestCase):
 
 
     def test_ali2d_MPI_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.ali2d_base")
+        filepath = path.join(ABSOLUTE_PATH, "pickle files/applications.ali2d_base")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
@@ -1426,14 +1412,14 @@ class Test_lib_applications_compare(unittest.TestCase):
          Fourvar, user_func_name, random_method, log, number_of_proc, myid, main_node, mpi_comm) = argum[0]
         maxit = 4
 
-        outdirnewa = os.path.join(ABSOLUTE_PATH, outdir+'AA')
-        outdirnewb = os.path.join(ABSOLUTE_PATH, outdir + 'ABB')
+        outdirnewa = path.join(ABSOLUTE_PATH, outdir+'AA')
+        outdirnewb = path.join(ABSOLUTE_PATH, outdir + 'ABB')
 
 
-        if (os.path.exists(outdirnewa)):
+        if (path.exists(outdirnewa)):
             shutil.rmtree(outdirnewa)
 
-        if (os.path.exists(outdirnewb)):
+        if (path.exists(outdirnewb)):
             shutil.rmtree(outdirnewb)
 
         stacka = "bdb:tests/Class2D/isac_substack"
@@ -1452,14 +1438,14 @@ class Test_lib_applications_compare(unittest.TestCase):
 
 
     def test_ali2d_base_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.ali2d_base")
+        filepath = path.join(ABSOLUTE_PATH, "pickle files/applications.ali2d_base")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
         (stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, nomirror, dst, center, maxit, CTF, snr,
          Fourvar, user_func_name, random_method, log ,number_of_proc, myid, main_node, mpi_comm) = argum[0]
 
-        outdirnew = os.path.join(ABSOLUTE_PATH, outdir+'B')
+        outdirnew = path.join(ABSOLUTE_PATH, outdir+'B')
 
         number_of_proc = 1
         myid = 0
@@ -1485,29 +1471,28 @@ class Test_lib_applications_compare(unittest.TestCase):
 
 
 
-    """  mref_ali3d_MPI is corrupted function so we wont create unit test for that 
-         below unittest is just to show where the problem lies inside the code """
+    #  mref_ali3d_MPI is corrupted function so we wont create unit test for that below unittest is just to show where the problem lies inside the code 
     # def test_mref_ali3d_MPI_true_should_return_equal_object(self):
     #
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.ali2d_base")
+    #     filepath = path.join(ABSOLUTE_PATH, "pickle files/applications.ali2d_base")
     #     with open(filepath, 'rb') as rb:
     #         argum = pickle.load(rb)
     #
     #     (stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, nomirror, dst, center, maxit, CTF, snr,
     #      Fourvar, user_func_name, random_method, log, number_of_proc, myid, main_node, mpi_comm) = argum[0]
     #
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.ali_vol")
+    #     filepath = path.join(ABSOLUTE_PATH, "pickle files/applications.ali_vol")
     #     with open(filepath, 'rb') as rb:
     #         argum = pickle.load(rb)
     #     (vol,refv,ang_scale,shift_scale,radius) = argum[0]
     #
     #     maxit = 4
-    #     outdirnewa = os.path.join(ABSOLUTE_PATH, outdir+'AA')
-    #     outdirnewb = os.path.join(ABSOLUTE_PATH, outdir + 'ABB')
+    #     outdirnewa = path.join(ABSOLUTE_PATH, outdir+'AA')
+    #     outdirnewb = path.join(ABSOLUTE_PATH, outdir + 'ABB')
     #
-    #     if (os.path.exists(outdirnewa)):
+    #     if (path.exists(outdirnewa)):
     #         shutil.rmtree(outdirnewa)
-    #     if (os.path.exists(outdirnewb)):
+    #     if (path.exists(outdirnewb)):
     #         shutil.rmtree(outdirnewb)
     #
     #     print(mpi_comm_rank(MPI_COMM_WORLD))
@@ -1525,10 +1510,9 @@ class Test_lib_applications_compare(unittest.TestCase):
         # self.assertTrue(return_new, return_old)
 
 
-    """  mref_ali3d_MPI is corrupted function so we wont create unit test for that 
-         below unittest is just to show where the problem lies inside the code """
+    #  mref_ali3d_MPI is corrupted function so we wont create unit test for that below unittest is just to show where the problem lies inside the code 
     # def test_Kmref_ali3d_MPI_true_should_return_equal_object(self):
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.ali2d_base")
+    #     filepath = path.join(ABSOLUTE_PATH, "pickle files/applications.ali2d_base")
     #     with open(filepath, 'rb') as rb:
     #         argum = pickle.load(rb)
     #         print(argum[0])
@@ -1539,9 +1523,9 @@ class Test_lib_applications_compare(unittest.TestCase):
     #
     #     outdir = "Class2D/Kmref_aligA"
     #
-    #     outdirnew = os.path.join(ABSOLUTE_PATH, outdir)
+    #     outdirnew = path.join(ABSOLUTE_PATH, outdir)
     #
-    #     if (os.path.exists(outdirnew)):
+    #     if (path.exists(outdirnew)):
     #         shutil.rmtree(outdirnew)
     #
     #     stacka = "bdb:tests/Class2D/isac_substack"
@@ -1553,7 +1537,7 @@ class Test_lib_applications_compare(unittest.TestCase):
     #     mpi_barrier(MPI_COMM_WORLD)
     #
     #     outdir = "Class2D/Kmref_aligB"
-    #     outdirnew = os.path.join(ABSOLUTE_PATH, outdir)
+    #     outdirnew = path.join(ABSOLUTE_PATH, outdir)
     #
     #     return_old = oldfu.Kmref_ali3d_MPI(stacka, vola, outdirnew, maskfile, focus = None, \
     #                                        ir=ir, ou=ou, rs=rs, xr=xr, yr=yr, ts=ts)
@@ -1565,7 +1549,7 @@ class Test_lib_applications_compare(unittest.TestCase):
 
 
     def test_cpy_true_should_return_equal_object(self):
-        ins_list = os.path.join(ABSOLUTE_PATH, 'Class2D/best_temp.hdf')
+        ins_list = path.join(ABSOLUTE_PATH, 'Class2D/best_temp.hdf')
         ous = "bdb:tests/Class2D/isac_substack"
 
         return_new = fu.cpy(ins_list,ous)
@@ -1575,7 +1559,7 @@ class Test_lib_applications_compare(unittest.TestCase):
 
 
     def test_project3d_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.ali_vol")
+        filepath = path.join(ABSOLUTE_PATH, "pickle files/applications.ali_vol")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
             # print(argum[0])
@@ -1591,7 +1575,7 @@ class Test_lib_applications_compare(unittest.TestCase):
 
 
     def test_ali_vol_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.ali_vol")
+        filepath = path.join(ABSOLUTE_PATH, "pickle files/applications.ali_vol")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
             print(argum[0])
@@ -1606,7 +1590,7 @@ class Test_lib_applications_compare(unittest.TestCase):
 
 
     def test_pca_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.ali2d_base")
+        filepath = path.join(ABSOLUTE_PATH, "pickle files/applications.ali2d_base")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
@@ -1627,7 +1611,7 @@ class Test_lib_applications_compare(unittest.TestCase):
 
 
     def test_prepare_2d_forPCA_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.prepare_2d_forPCA")
+        filepath = path.join(ABSOLUTE_PATH, "pickle files/applications.prepare_2d_forPCA")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
 
@@ -1652,7 +1636,7 @@ class Test_lib_applications_compare(unittest.TestCase):
 
 
     def test_header_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.header")
+        filepath = path.join(ABSOLUTE_PATH, "pickle files/applications.header")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
             print(argum)
@@ -1680,7 +1664,7 @@ class Test_lib_applications_compare(unittest.TestCase):
 
 
     def test_refvol_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.ali_vol")
+        filepath = path.join(ABSOLUTE_PATH, "pickle files/applications.ali_vol")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
             print(argum[0])
@@ -1699,7 +1683,7 @@ class Test_lib_applications_compare(unittest.TestCase):
 
 
     def test_within_group_refinement_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/applications.within_group_refinement")
+        filepath = path.join(ABSOLUTE_PATH, "pickle files/applications.within_group_refinement")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
             print(argum)
@@ -1717,7 +1701,7 @@ class Test_lib_applications_compare(unittest.TestCase):
 
     # def test_ali3d_mref_Kmeans_MPI_true_should_return_equal_object(self):
     #
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask")
+    #     filepath = path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask")
     #     with open(filepath, 'rb') as rb:
     #         argum = pickle.load(rb)
     #
@@ -1747,9 +1731,9 @@ class Test_lib_applications_compare(unittest.TestCase):
     #
     #     outdir = "Class2D/Kmref_alig_MPI_A"
     #
-    #     outdirnew = os.path.join(ABSOLUTE_PATH, outdir)
+    #     outdirnew = path.join(ABSOLUTE_PATH, outdir)
     #
-    #     if (os.path.exists(outdirnew)):
+    #     if (path.exists(outdirnew)):
     #         shutil.rmtree(outdirnew)
     #
     #     this_data_list_file = "sphire/tests/Sort3D/chunk_0.txt"
@@ -1761,7 +1745,7 @@ class Test_lib_applications_compare(unittest.TestCase):
     #     mpi_barrier(MPI_COMM_WORLD)
     #
     #     outdir = "Class2D/Kmref_alig_MPI_B"
-    #     outdirnew = os.path.join(ABSOLUTE_PATH, outdir)
+    #     outdirnew = path.join(ABSOLUTE_PATH, outdir)
     #
     #
     #     return_old = oldfu.ali3d_mref_Kmeans_MPI(ref_list, outdirnew, this_data_list_file, Tracker)
@@ -1772,7 +1756,8 @@ class Test_lib_applications_compare(unittest.TestCase):
     #     self.assertTrue(return_new, return_old)
 
 
-
+"""
 
 if __name__ == '__main__':
     unittest.main()
+

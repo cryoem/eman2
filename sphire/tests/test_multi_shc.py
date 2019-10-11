@@ -3,25 +3,7 @@ from __future__ import division
 import unittest
 
 
-import numpy
-import copy
-import math
-# import EMAN2_cppwrap as e2cpp
-import sys
-
-
-from sphire.libpy import sparx_multi_shc as fu
-
-from sphire.libpy import sparx_multi_shc as oldfu
-
-# from sphire.libpy import sparx_fundamentals
-# sys.modules['sparx_fundamentals'] = sparx_fundamentals
-
-# from ..libpy import sparx_utilities as ut
-
-import cPickle as pickle
-import os
-import sys
+from os import path
 from mpi import *
 import global_def
 
@@ -30,13 +12,13 @@ mpi_init(0, [])
 global_def.BATCH = True
 global_def.MPI = True
 
-ABSOLUTE_PATH = os.path.dirname(os.path.realpath(__file__))
+ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 
 
 
 from test_module import  get_arg_from_pickle_file
 from os import path
-from numpy import array_equal as numpy_array_equal
+from numpy import array_equal as numpy_array_equal,allclose
 from copy import deepcopy
 from EMAN2_cppwrap import EMData
 TOLERANCE = 0.00005
@@ -324,10 +306,10 @@ class Test_ali3d_multishc_2(unittest.TestCase):
         return_old = oldfu.ali3d_multishc_2(stack= self.stack, ref_vol = self.ref_vol, ali3d_options=self.ali3d_options, symmetry_class = self.symmetry_class,  mpi_comm = None, log = None)
         mpi_barrier(MPI_COMM_WORLD)
 
-        self.assertTrue(numpy.allclose(return_new[0], return_old[0], atol=TOLERANCE))
-        self.assertTrue(numpy.allclose(return_old[1].get_3dview(), return_new[1].get_3dview(), atol=TOLERANCE))
-        self.assertTrue(numpy.allclose(return_new[2], return_old[2], atol=TOLERANCE))
-        self.assertTrue(numpy.allclose(return_new[3], return_old[3], atol=TOLERANCE))
+        self.assertTrue(allclose(return_new[0], return_old[0], atol=TOLERANCE))
+        self.assertTrue(allclose(return_old[1].get_3dview(), return_new[1].get_3dview(), atol=TOLERANCE))
+        self.assertTrue(allclose(return_new[2], return_old[2], atol=TOLERANCE))
+        self.assertTrue(allclose(return_new[3], return_old[3], atol=TOLERANCE))
 
 
 
@@ -417,7 +399,7 @@ class Test_do_volume(unittest.TestCase):
         return_new = fu.do_volume(data=self.data,options=self.options,iter=None, mpi_comm = MPI_COMM_WORLD)
         mpi_barrier(MPI_COMM_WORLD)
         return_old = oldfu.do_volume(data=self.data,options=self.options,iter=None, mpi_comm = MPI_COMM_WORLD)
-        self.assertTrue(numpy.allclose(return_old.get_3dview(), return_new.get_3dview(), atol=TOLERANCE))
+        self.assertTrue(allclose(return_old.get_3dview(), return_new.get_3dview(), atol=TOLERANCE))
 
     def test_emptyData_returns_RuntimeError(self):
         mpi_barrier(MPI_COMM_WORLD)
@@ -460,7 +442,7 @@ class Test_do_volume(unittest.TestCase):
 
 
 
-""""""
+"""
 @unittest.skip("original adnans tests")
 class Test_lib_multi_shc_compare(unittest.TestCase):
 
@@ -503,9 +485,8 @@ class Test_lib_multi_shc_compare(unittest.TestCase):
         self.assertEqual(return_new, return_old)
 
 
-    """
-    Cannot Work without proper value of mpi_comm . have to ask markus for this
-    """
+    #    Cannot Work without proper value of mpi_comm . have to ask markus for this
+    
     def test_ali3d_multishc_true_should_return_equal_objects(self):
 
         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/multi_shc/multi_shc.ali3d_multishc")
@@ -572,9 +553,8 @@ class Test_lib_multi_shc_compare(unittest.TestCase):
     #
     #
 
-    """
-    Cannot Work without proper value of mpi_comm . have to ask markus for this
-    """
+    #    Cannot Work without proper value of mpi_comm . have to ask markus for this
+
     # def test_multi_shc_true_should_return_equal_object(self):
     #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/multi_shc.multi_shc")
     #     import sparx_fundamentals
@@ -629,9 +609,9 @@ class Test_lib_multi_shc_compare(unittest.TestCase):
             self.assertTrue(return_new, return_old)
 
 
-    """
-    Cannot Work without proper value of mpi_comm . have to ask markus for this
-    """
+    
+    #Cannot Work without proper value of mpi_comm . have to ask markus for this
+    
 
     def test_do_volume_true_should_return_equal_object(self):
         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/multi_shc/multi_shc.do_volume")
@@ -651,7 +631,7 @@ class Test_lib_multi_shc_compare(unittest.TestCase):
 
         if (return_old is not None  and return_new is not None) :
             self.assertTrue(return_new, return_old)
-
+"""
 
 if __name__ == '__main__':
     unittest.main()

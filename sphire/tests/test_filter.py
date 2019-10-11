@@ -3,18 +3,18 @@ from __future__ import division
 
 
 import unittest
-import numpy
-from ..libpy import sparx_utilities
+from numpy import array_equal, linspace, allclose
+from sphire.libpy.sp_utilities import model_blank,model_gauss_noise,model_circle
 from test_module import get_real_data
-
+from EMAN2_cppwrap import EMData,EMAN2Ctf
 from mpi import *
 mpi_init(0, [])
 
 IMAGE_2D, IMAGE_2D_REFERENCE = get_real_data(dim=2)
 IMAGE_3D, STILL_NOT_VALID = get_real_data(dim=3)
-IMAGE_BLANK_2D = sparx_utilities.model_blank(10, 10)
-IMAGE_BLANK_3D = sparx_utilities.model_blank(10, 10, 10)
-MASK = sparx_utilities.model_circle(2, 5, 5)
+IMAGE_BLANK_2D = model_blank(10, 10)
+IMAGE_BLANK_3D = model_blank(10, 10, 10)
+MASK = model_circle(2, 5, 5)
 
 
 
@@ -32,7 +32,7 @@ pickle files stored under smb://billy.storage.mpi-dortmund.mpg.de/abt3/group/agr
 
 """ start: new in sphire 1.3"""
 from sphire.libpy import sp_filter as oldfu
-from sphire.libpy_py3 import sp_filter as fu
+from sphire.libpy_py3 import sphire_filter as fu
 
 class Test_filt_median(unittest.TestCase):
     def test_filt_median(self):
@@ -163,7 +163,7 @@ class Test_filt_ctf(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_empty_input_image(self):
-        ctf = e2cpp.EMAN2Ctf()
+        ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0,"ampcont": 0.1})
         with self.assertRaises(AssertionError) as cm_new:
             fu.filt_ctf(EMData(),ctf, dopad=True, sign=1, binary=0)
@@ -182,68 +182,68 @@ class Test_filt_ctf(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_Img2D_with_pad(self):
-        ctf = e2cpp.EMAN2Ctf()
+        ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0,"ampcont": 0.1})
 
         return_new = fu.filt_ctf(IMAGE_2D,ctf, dopad=True, sign=1, binary=0)
         return_old = oldfu.filt_ctf(IMAGE_2D,ctf, dopad=True, sign=1, binary=0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_Img2D_without_pad(self):
-        ctf = e2cpp.EMAN2Ctf()
+        ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0,"ampcont": 0.1})
 
         return_new = fu.filt_ctf(IMAGE_2D,ctf, dopad=False, sign=1, binary=0)
         return_old = oldfu.filt_ctf(IMAGE_2D,ctf, dopad=False, sign=1, binary=0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_Img3D_with_pad(self):
-        ctf = e2cpp.EMAN2Ctf()
+        ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0,"ampcont": 0.1})
 
         return_new = fu.filt_ctf(IMAGE_3D,ctf, dopad=True, sign=1, binary=0)
         return_old = oldfu.filt_ctf(IMAGE_3D,ctf, dopad=True, sign=1, binary=0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_Img3D_without_pad(self):
-        ctf = e2cpp.EMAN2Ctf()
+        ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0,"ampcont": 0.1})
 
         return_new = fu.filt_ctf(IMAGE_3D,ctf, dopad=False, sign=1, binary=0)
         return_old = oldfu.filt_ctf(IMAGE_3D,ctf, dopad=False, sign=1, binary=0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_Img2Dblank_with_pad(self):
-        ctf = e2cpp.EMAN2Ctf()
+        ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0,"ampcont": 0.1})
 
         return_new = fu.filt_ctf(IMAGE_BLANK_2D,ctf, dopad=True, sign=1, binary=0)
         return_old = oldfu.filt_ctf(IMAGE_BLANK_2D,ctf, dopad=True, sign=1, binary=0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_Img2Dblank_without_pad(self):
-        ctf = e2cpp.EMAN2Ctf()
+        ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0,"ampcont": 0.1})
 
         return_new = fu.filt_ctf(IMAGE_BLANK_2D,ctf, dopad=False, sign=1, binary=0)
         return_old = oldfu.filt_ctf(IMAGE_BLANK_2D,ctf, dopad=False, sign=1, binary=0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_Img3Dblank_with_pad(self):
-        ctf = e2cpp.EMAN2Ctf()
+        ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0,"ampcont": 0.1})
 
         return_new = fu.filt_ctf(IMAGE_BLANK_3D,ctf, dopad=True, sign=1, binary=0)
         return_old = oldfu.filt_ctf(IMAGE_BLANK_3D,ctf, dopad=True, sign=1, binary=0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_Img3Dblank_without_pad(self):
-        ctf = e2cpp.EMAN2Ctf()
+        ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0,"ampcont": 0.1})
 
         return_new = fu.filt_ctf(IMAGE_BLANK_3D,ctf, dopad=False, sign=1, binary=0)
         return_old = oldfu.filt_ctf(IMAGE_BLANK_3D,ctf, dopad=False, sign=1, binary=0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 
@@ -278,42 +278,42 @@ class Test_filt_tophatl(unittest.TestCase):
     def test_Img2D_without_pad(self):
         return_new = fu.filt_tophatl(IMAGE_2D, freq= 0.25, pad=False)
         return_old = oldfu.filt_tophatl(IMAGE_2D,freq= 0.25, pad=False)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_Img2D_with_pad(self):
         return_new = fu.filt_tophatl(IMAGE_2D, freq= 0.25, pad=True)
         return_old = oldfu.filt_tophatl(IMAGE_2D,freq= 0.25, pad=True)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_Img2Dblank_without_pad(self):
         return_new = fu.filt_tophatl(IMAGE_BLANK_2D, freq= 0.25, pad=False)
         return_old = oldfu.filt_tophatl(IMAGE_BLANK_2D,freq= 0.25, pad=False)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_Img2Dblank_with_pad(self):
         return_new = fu.filt_tophatl(IMAGE_BLANK_2D, freq= 0.25, pad=True)
         return_old = oldfu.filt_tophatl(IMAGE_BLANK_2D,freq= 0.25, pad=True)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_Img3D_without_pad(self):
         return_new = fu.filt_tophatl(IMAGE_3D, freq= 0.25, pad=False)
         return_old = oldfu.filt_tophatl(IMAGE_3D,freq= 0.25, pad=False)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_Img3D_with_pad(self):
         return_new = fu.filt_tophatl(IMAGE_3D, freq= 0.25, pad=True)
         return_old = oldfu.filt_tophatl(IMAGE_3D,freq= 0.25, pad=True)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_Img3Dblank_without_pad(self):
         return_new = fu.filt_tophatl(IMAGE_BLANK_3D, freq= 0.25, pad=False)
         return_old = oldfu.filt_tophatl(IMAGE_BLANK_3D,freq= 0.25, pad=False)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_Img3Dblank_with_pad(self):
         return_new = fu.filt_tophatl(IMAGE_BLANK_3D, freq= 0.25, pad=True)
         return_old = oldfu.filt_tophatl(IMAGE_BLANK_3D,freq= 0.25, pad=True)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 class Test_filt_tophatb(unittest.TestCase):
@@ -346,42 +346,42 @@ class Test_filt_tophatb(unittest.TestCase):
     def test_2DImg_with_pad(self):
         return_new = fu.filt_tophatb(IMAGE_2D, freql=0.25, freqh=0.35, pad=True)
         return_old = oldfu.filt_tophatb(IMAGE_2D, freql=0.25, freqh=0.35, pad=True)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2DImg_without_pad(self):
         return_new = fu.filt_tophatb(IMAGE_2D, freql=0.25, freqh=0.35, pad=False)
         return_old = oldfu.filt_tophatb(IMAGE_2D, freql=0.25, freqh=0.35, pad=False)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2DImgBlank_with_pad(self):
         return_new = fu.filt_tophatb(IMAGE_BLANK_2D, freql=0.25, freqh=0.35, pad=True)
         return_old = oldfu.filt_tophatb(IMAGE_BLANK_2D, freql=0.25, freqh=0.35, pad=True)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2DImgBlank_without_pad(self):
         return_new = fu.filt_tophatb(IMAGE_BLANK_2D, freql=0.25, freqh=0.35, pad=False)
         return_old = oldfu.filt_tophatb(IMAGE_BLANK_2D, freql=0.25, freqh=0.35, pad=False)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImg_with_pad(self):
         return_new = fu.filt_tophatb(IMAGE_3D, freql=0.25, freqh=0.35, pad=True)
         return_old = oldfu.filt_tophatb(IMAGE_3D, freql=0.25, freqh=0.35, pad=True)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImg_without_pad(self):
         return_new = fu.filt_tophatb(IMAGE_3D, freql=0.25, freqh=0.35, pad=False)
         return_old = oldfu.filt_tophatb(IMAGE_3D, freql=0.25, freqh=0.35, pad=False)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImgBlank_with_pad(self):
         return_new = fu.filt_tophatb(IMAGE_BLANK_3D, freql=0.25, freqh=0.35, pad=True)
         return_old = oldfu.filt_tophatb(IMAGE_BLANK_3D, freql=0.25, freqh=0.35, pad=True)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImgBlank_without_pad(self):
         return_new = fu.filt_tophatb(IMAGE_BLANK_3D, freql=0.25, freqh=0.35, pad=False)
         return_old = oldfu.filt_tophatb(IMAGE_BLANK_3D, freql=0.25, freqh=0.35, pad=False)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 
@@ -416,42 +416,42 @@ class Test_filt_gaussl(unittest.TestCase):
     def test_2DImg_without_pad(self):
         return_new = fu.filt_gaussl(IMAGE_2D,sigma= 0.23, pad=False )
         return_old = oldfu.filt_gaussl(IMAGE_2D,sigma= 0.23, pad=False )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2DImg_with_pad(self):
         return_new = fu.filt_gaussl(IMAGE_2D,sigma= 0.23, pad=True )
         return_old = oldfu.filt_gaussl(IMAGE_2D,sigma= 0.23, pad=True )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2DImgBlank_without_pad(self):
         return_new = fu.filt_gaussl(IMAGE_BLANK_2D,sigma= 0.23, pad=False )
         return_old = oldfu.filt_gaussl(IMAGE_BLANK_2D,sigma= 0.23, pad=False )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2DImgBlank_with_pad(self):
         return_new = fu.filt_gaussl(IMAGE_BLANK_2D,sigma= 0.23, pad=True )
         return_old = oldfu.filt_gaussl(IMAGE_BLANK_2D,sigma= 0.23, pad=True )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImg_without_pad(self):
         return_new = fu.filt_gaussl(IMAGE_3D,sigma= 0.23, pad=False )
         return_old = oldfu.filt_gaussl(IMAGE_3D,sigma= 0.23, pad=False )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImg_with_pad(self):
         return_new = fu.filt_gaussl(IMAGE_3D,sigma= 0.23, pad=True )
         return_old = oldfu.filt_gaussl(IMAGE_3D,sigma= 0.23, pad=True )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImgBlank_without_pad(self):
         return_new = fu.filt_gaussl(IMAGE_BLANK_3D,sigma= 0.23, pad=False )
         return_old = oldfu.filt_gaussl(IMAGE_BLANK_3D,sigma= 0.23, pad=False )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImgBlank_with_pad(self):
         return_new = fu.filt_gaussl(IMAGE_BLANK_3D,sigma= 0.23, pad=True )
         return_old = oldfu.filt_gaussl(IMAGE_BLANK_3D,sigma= 0.23, pad=True )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 
@@ -485,42 +485,42 @@ class Test_filt_gaussinv(unittest.TestCase):
     def test_2DImg_without_pad(self):
         return_new = fu.filt_gaussinv(IMAGE_2D,sigma= 0.23, pad=False )
         return_old = oldfu.filt_gaussinv(IMAGE_2D,sigma= 0.23, pad=False )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2DImg_with_pad(self):
         return_new = fu.filt_gaussinv(IMAGE_2D,sigma= 0.23, pad=True )
         return_old = oldfu.filt_gaussinv(IMAGE_2D,sigma= 0.23, pad=True )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2DImgBlank_without_pad(self):
         return_new = fu.filt_gaussinv(IMAGE_BLANK_2D,sigma= 0.23, pad=False )
         return_old = oldfu.filt_gaussinv(IMAGE_BLANK_2D,sigma= 0.23, pad=False )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2DImgBlank_with_pad(self):
         return_new = fu.filt_gaussinv(IMAGE_BLANK_2D,sigma= 0.23, pad=True )
         return_old = oldfu.filt_gaussinv(IMAGE_BLANK_2D,sigma= 0.23, pad=True )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImg_without_pad(self):
         return_new = fu.filt_gaussinv(IMAGE_3D,sigma= 0.23, pad=False )
         return_old = oldfu.filt_gaussinv(IMAGE_3D,sigma= 0.23, pad=False )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImg_with_pad(self):
         return_new = fu.filt_gaussinv(IMAGE_3D,sigma= 0.23, pad=True )
         return_old = oldfu.filt_gaussinv(IMAGE_3D,sigma= 0.23, pad=True )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImgBlank_without_pad(self):
         return_new = fu.filt_gaussinv(IMAGE_BLANK_3D,sigma= 0.23, pad=False )
         return_old = oldfu.filt_gaussinv(IMAGE_BLANK_3D,sigma= 0.23, pad=False )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImgBlank_with_pad(self):
         return_new = fu.filt_gaussinv(IMAGE_BLANK_3D,sigma= 0.23, pad=True )
         return_old = oldfu.filt_gaussinv(IMAGE_BLANK_3D,sigma= 0.23, pad=True )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 
@@ -554,42 +554,42 @@ class Test_filt_gaussh(unittest.TestCase):
     def test_2DImg_without_pad(self):
         return_new = fu.filt_gaussh(IMAGE_2D,sigma= 0.23, pad=False )
         return_old = oldfu.filt_gaussh(IMAGE_2D,sigma= 0.23, pad=False )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2DImg_with_pad(self):
         return_new = fu.filt_gaussh(IMAGE_2D,sigma= 0.23, pad=True )
         return_old = oldfu.filt_gaussh(IMAGE_2D,sigma= 0.23, pad=True )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2DImgBlank_without_pad(self):
         return_new = fu.filt_gaussh(IMAGE_BLANK_2D,sigma= 0.23, pad=False )
         return_old = oldfu.filt_gaussh(IMAGE_BLANK_2D,sigma= 0.23, pad=False )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2DImgBlank_with_pad(self):
         return_new = fu.filt_gaussh(IMAGE_BLANK_2D,sigma= 0.23, pad=True )
         return_old = oldfu.filt_gaussh(IMAGE_BLANK_2D,sigma= 0.23, pad=True )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImg_without_pad(self):
         return_new = fu.filt_gaussh(IMAGE_3D,sigma= 0.23, pad=False )
         return_old = oldfu.filt_gaussh(IMAGE_3D,sigma= 0.23, pad=False )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImg_with_pad(self):
         return_new = fu.filt_gaussh(IMAGE_3D,sigma= 0.23, pad=True )
         return_old = oldfu.filt_gaussh(IMAGE_3D,sigma= 0.23, pad=True )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImgBlank_without_pad(self):
         return_new = fu.filt_gaussh(IMAGE_BLANK_3D,sigma= 0.23, pad=False )
         return_old = oldfu.filt_gaussh(IMAGE_BLANK_3D,sigma= 0.23, pad=False )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImgBlank_with_pad(self):
         return_new = fu.filt_gaussh(IMAGE_BLANK_3D,sigma= 0.23, pad=True )
         return_old = oldfu.filt_gaussh(IMAGE_BLANK_3D,sigma= 0.23, pad=True )
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 
@@ -624,42 +624,42 @@ class Test_filt_btwl(unittest.TestCase):
     def test_2DImg_without_pad(self):
         return_new = fu.filt_btwl(IMAGE_2D, freql=0.25, freqh=0.35, pad=False)
         return_old = oldfu.filt_btwl(IMAGE_2D, freql=0.25, freqh=0.35, pad=False)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2DImg_with_pad(self):
         return_new = fu.filt_btwl(IMAGE_2D, freql=0.25, freqh=0.35, pad=True)
         return_old = oldfu.filt_btwl(IMAGE_2D, freql=0.25, freqh=0.35, pad=True)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2DImgBlank_without_pad(self):
         return_new = fu.filt_btwl(IMAGE_BLANK_2D, freql=0.25, freqh=0.35, pad=False)
         return_old = oldfu.filt_btwl(IMAGE_BLANK_2D, freql=0.25, freqh=0.35, pad=False)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2DImgBlank_with_pad(self):
         return_new = fu.filt_btwl(IMAGE_BLANK_2D, freql=0.25, freqh=0.35, pad=True)
         return_old = oldfu.filt_btwl(IMAGE_BLANK_2D, freql=0.25, freqh=0.35, pad=True)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImg_without_pad(self):
         return_new = fu.filt_btwl(IMAGE_3D, freql=0.25, freqh=0.35, pad=False)
         return_old = oldfu.filt_btwl(IMAGE_3D, freql=0.25, freqh=0.35, pad=False)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImg_with_pad(self):
         return_new = fu.filt_btwl(IMAGE_3D, freql=0.25, freqh=0.35, pad=True)
         return_old = oldfu.filt_btwl(IMAGE_3D, freql=0.25, freqh=0.35, pad=True)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImgBlank_without_pad(self):
         return_new = fu.filt_btwl(IMAGE_BLANK_3D, freql=0.25, freqh=0.35, pad=False)
         return_old = oldfu.filt_btwl(IMAGE_BLANK_3D, freql=0.25, freqh=0.35, pad=False)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImgBlank_with_pad(self):
         return_new = fu.filt_btwl(IMAGE_BLANK_3D, freql=0.25, freqh=0.35, pad=True)
         return_old = oldfu.filt_btwl(IMAGE_BLANK_3D, freql=0.25, freqh=0.35, pad=True)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 
@@ -694,47 +694,47 @@ class Test_filt_tanl(unittest.TestCase):
     def test_2DImg_without_pad(self):
         return_new = fu.filt_tanl(IMAGE_2D, freq=0.25, fall_off=0.35, pad=False)
         return_old = oldfu.filt_tanl(IMAGE_2D, freq=0.25, fall_off=0.35, pad=False)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2DImg_with_pad(self):
         return_new = fu.filt_tanl(IMAGE_2D, freq=0.25, fall_off=0.35, pad=True)
         return_old = oldfu.filt_tanl(IMAGE_2D, freq=0.25, fall_off=0.35, pad=True)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2DImgBlank_without_pad(self):
         return_new = fu.filt_tanl(IMAGE_BLANK_2D, freq=0.25, fall_off=0.35, pad=False)
         return_old = oldfu.filt_tanl(IMAGE_BLANK_2D, freq=0.25, fall_off=0.35, pad=False)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2DImgBlank_with_pad(self):
         return_new = fu.filt_tanl(IMAGE_BLANK_2D, freq=0.25, fall_off=0.35, pad=True)
         return_old = oldfu.filt_tanl(IMAGE_BLANK_2D, freq=0.25, fall_off=0.35, pad=True)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImg_without_pad(self):
         return_new = fu.filt_tanl(IMAGE_3D, freq=0.25, fall_off=0.35, pad=False)
         return_old = oldfu.filt_tanl(IMAGE_3D, freq=0.25, fall_off=0.35, pad=False)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImg_with_pad(self):
         return_new = fu.filt_tanl(IMAGE_3D, freq=0.25, fall_off=0.35, pad=True)
         return_old = oldfu.filt_tanl(IMAGE_3D, freq=0.25, fall_off=0.35, pad=True)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImgBlank_without_pad(self):
         return_new = fu.filt_tanl(IMAGE_BLANK_3D, freq=0.25, fall_off=0.35, pad=False)
         return_old = oldfu.filt_tanl(IMAGE_BLANK_3D, freq=0.25, fall_off=0.35, pad=False)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImgBlank_with_pad(self):
         return_new = fu.filt_tanl(IMAGE_BLANK_3D, freq=0.25, fall_off=0.35, pad=True)
         return_old = oldfu.filt_tanl(IMAGE_BLANK_3D, freq=0.25, fall_off=0.35, pad=True)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 
 class Test_filt_table(unittest.TestCase):
-    table = [entry for entry in numpy.linspace(0, 0.5).tolist()]
+    table = [entry for entry in linspace(0, 0.5).tolist()]
 
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -765,22 +765,22 @@ class Test_filt_table(unittest.TestCase):
     def test_2DImg(self):
         return_new = fu.filt_table(IMAGE_2D, self.table)
         return_old = oldfu.filt_table(IMAGE_2D, self.table)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2DImgBlank(self):
         return_new = fu.filt_table(IMAGE_BLANK_2D, self.table)
         return_old = oldfu.filt_table(IMAGE_BLANK_2D, self.table)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImg(self):
         return_new = fu.filt_table(IMAGE_3D, self.table)
         return_old = oldfu.filt_table(IMAGE_3D, self.table)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DImgBlank(self):
         return_new = fu.filt_table(IMAGE_BLANK_3D, self.table)
         return_old = oldfu.filt_table(IMAGE_BLANK_3D, self.table)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 
@@ -860,14 +860,14 @@ class Test_fit_tanh1(unittest.TestCase):
 
 class Test_filt_vols(unittest.TestCase):
     dres = ((0.0, 0.05, 0, 10, 0.15, 0.20), (0, 0.2, 0.4, 0.6, 0.8, 1.0), (8, 9, 5, 77, 98, 200))
-    vols = [sparx_utilities.model_gauss_noise(0.25 , 10,10,10),sparx_utilities.model_gauss_noise(0.25 , 10,10,10),sparx_utilities.model_gauss_noise(0.25 , 10,10,10)]
+    vols = [model_gauss_noise(0.25 , 10,10,10),model_gauss_noise(0.25 , 10,10,10),model_gauss_noise(0.25 , 10,10,10)]
     fscs = (dres, dres, dres)
 
     def test_all_the_conditions(self,return_new=None,return_old=None, skip=True):
         if skip is False:
             self.assertEqual(len(return_old), len(return_new))
             for img1, img2 in zip(return_old, return_new):
-                self.assertTrue(numpy.allclose(img1.get_3dview(), img2.get_3dview(), equal_nan=True))
+                self.assertTrue(allclose(img1.get_3dview(), img2.get_3dview(), equal_nan=True))
 
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -913,11 +913,11 @@ class Test_filterlocal(unittest.TestCase):
     def test_filterlocal_true_should_return_equal_object(self):
         #mpi_barrier(MPI_COMM_WORLD)
         vols = []
-        vols.append(ut.model_gauss_noise(0.25 , 10,10,10))
-        vols.append(ut.model_gauss_noise(0.25 , 10,10,10))
-        vols.append(ut.model_gauss_noise(0.25 , 10,10,10))
-        ui =  ut.model_gauss_noise(0.25 , 10,10,10)     # or use ut.model_blank(1,1,1)
-        vi =  ut.model_gauss_noise(0.25 , 10,10,10)
+        vols.append(model_gauss_noise(0.25 , 10,10,10))
+        vols.append(model_gauss_noise(0.25 , 10,10,10))
+        vols.append(model_gauss_noise(0.25 , 10,10,10))
+        ui =  model_gauss_noise(0.25 , 10,10,10)     # or use ut.model_blank(1,1,1)
+        vi =  model_gauss_noise(0.25 , 10,10,10)
         m  = "sphire/tests/3d_volume.txt"
         falloff = 4
         myid =   1
@@ -932,13 +932,7 @@ class Test_filterlocal(unittest.TestCase):
 
 
 
-
-
-
-
-
-
-
+"""
 import numpy
 
 import EMAN2_cppwrap as e2cpp
@@ -1106,8 +1100,14 @@ class MyTestCase(unittest.TestCase):
         self.assertTrue(return_new, return_old)
 
 
-
+"""
 
 if __name__ == '__main__':
     unittest.main()
+
+
+
+
+
+
 

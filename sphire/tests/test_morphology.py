@@ -1,16 +1,17 @@
 from __future__ import print_function
 from __future__ import division
 
-from ..libpy import sparx_morphology as fu
-from .sparx_lib import sparx_morphology as oldfu
+from numpy import array_equal, allclose, array, isnan, arange
+from numpy import all as numpy_all
+from numpy import inf as numpy_inf
+from numpy import full as numpy_full
+from numpy import ones as numpy_ones
+from numpy import abs as numpy_abs
 
-from ..libpy import sparx_utilities
-
-import numpy
 import unittest
 
 from test_module import get_data, get_data_3d, remove_dir, get_arg_from_pickle_file,get_real_data,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER
-
+from sphire.libpy.sp_utilities import model_blank,model_circle,get_im, model_gauss_noise
 from EMAN2_cppwrap import EMData, EMAN2Ctf
 from copy import  deepcopy
 from os import path,mkdir
@@ -31,17 +32,17 @@ TOLERANCE = 0.0075
 
 IMAGE_2D, IMAGE_2D_REFERENCE = get_real_data(dim=2)
 IMAGE_3D, STILL_NOT_VALID = get_real_data(dim=3)
-IMAGE_BLANK_2D = sparx_utilities.model_blank(10, 10)
-IMAGE_BLANK_3D = sparx_utilities.model_blank(10, 10, 10)
-MASK = sparx_utilities.model_circle(2, 5, 5)
+IMAGE_BLANK_2D = model_blank(10, 10)
+IMAGE_BLANK_3D = model_blank(10, 10, 10)
+MASK = model_circle(2, 5, 5)
 
 """
 NB:
 In the validatin tests phase or in refactoring phase keep in mind that because of a NaN output or an numpy approximation some times can fail.
 In these cases replace
-    self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+    self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 with
-    self.assertTrue(numpy.allclose(return_new.get_3dview(), return_old.get_3dview(), atol=TOLERANCE,equal_nan=True))
+    self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), atol=TOLERANCE,equal_nan=True))
     
 If the test continues to fail you found a bug
 """
@@ -517,22 +518,22 @@ class Test_binarize(unittest.TestCase):
     def test_binarize_2Dimg(self):
         return_new = fu.binarize(IMAGE_2D, minval = 0.0)
         return_old = oldfu.binarize(IMAGE_2D, minval = 0.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_binarize_3Dimg(self):
         return_new = fu.binarize(IMAGE_3D, minval = 0.0)
         return_old = oldfu.binarize(IMAGE_3D, minval = 0.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_binarize_img_blank2D(self):
         return_new = fu.binarize(IMAGE_BLANK_2D, minval = 0.0)
         return_old = oldfu.binarize(IMAGE_BLANK_2D, minval = 0.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_binarize_img_blank3D(self):
         return_new = fu.binarize(IMAGE_BLANK_3D, minval = 0.0)
         return_old = oldfu.binarize(IMAGE_BLANK_3D, minval = 0.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_empty_input_image_returns_RuntimeError_stdException(self):
         """ We are not able to catch the 'NotExistingObjectException' C++ exception"""
@@ -566,22 +567,22 @@ class Test_collapse(unittest.TestCase):
     def test_collapse_2Dimg(self):
         return_new = fu.collapse(IMAGE_2D, minval = -1.0, maxval = 1.0)
         return_old = oldfu.collapse(IMAGE_2D, minval = -1.0, maxval = 1.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_collapse_3Dimg(self):
         return_new = fu.collapse(IMAGE_3D, minval = -1.0, maxval = 1.0)
         return_old = oldfu.collapse(IMAGE_3D, minval = -1.0, maxval = 1.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_collapse_img_blank2D(self):
         return_new = fu.collapse(IMAGE_BLANK_2D, minval = -1.0, maxval = 1.0)
         return_old = oldfu.collapse(IMAGE_BLANK_2D, minval = -1.0, maxval = 1.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_collapse_img_blank3D(self):
         return_new = fu.collapse(IMAGE_BLANK_3D, minval = -1.0, maxval = 1.0)
         return_old = oldfu.collapse(IMAGE_BLANK_3D, minval = -1.0, maxval = 1.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_empty_input_image_returns_RuntimeError_stdException(self):
         """ We are not able to catch the 'NotExistingObjectException' C++ exception"""
@@ -650,42 +651,42 @@ class Test_dilatation(unittest.TestCase):
     def test_bynary_img_blank2D_withMASK(self):
         return_new = fu.dilation(IMAGE_BLANK_2D, MASK, morphtype="BINARY")
         return_old = oldfu.dilation(IMAGE_BLANK_2D, MASK, morphtype="BINARY")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_bynary_img_blank3D_withMASK(self):
         return_new = fu.dilation(IMAGE_BLANK_3D, MASK, morphtype="BINARY")
         return_old = oldfu.dilation(IMAGE_BLANK_3D, MASK, morphtype="BINARY")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_bynary_img_blank2D_NOmask(self):
         return_new = fu.dilation(IMAGE_BLANK_2D, morphtype="BINARY")
         return_old = oldfu.dilation(IMAGE_BLANK_2D, morphtype="BINARY")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_bynary_img_blank3D_NOmask(self):
         return_new = fu.dilation(IMAGE_BLANK_3D, morphtype="BINARY")
         return_old = oldfu.dilation(IMAGE_BLANK_3D, morphtype="BINARY")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_graylevel_img_blank2D_withMASK(self):
         return_new = fu.dilation(IMAGE_BLANK_2D, MASK, morphtype="GRAYLEVEL")
         return_old = oldfu.dilation(IMAGE_BLANK_2D, MASK, morphtype="GRAYLEVEL")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_graylevel_img_blank3D_withMASK(self):
         return_new = fu.dilation(IMAGE_BLANK_3D, MASK, morphtype="GRAYLEVEL")
         return_old = oldfu.dilation(IMAGE_BLANK_3D, MASK, morphtype="GRAYLEVEL")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_graylevel_img_blank2D_NOmask(self):
         return_new = fu.dilation(IMAGE_BLANK_2D,morphtype="GRAYLEVEL")
         return_old = oldfu.dilation(IMAGE_BLANK_2D,morphtype="GRAYLEVEL")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_graylevel_img_blank3D_NOmask(self):
         return_new = fu.dilation(IMAGE_BLANK_3D,morphtype="GRAYLEVEL")
         return_old = oldfu.dilation(IMAGE_BLANK_3D,morphtype="GRAYLEVEL")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_invalid_type_Error_msg_unknown_dilatation_type(self):
         return_new = fu.dilation(IMAGE_BLANK_2D, MASK, morphtype="invalid_type")
@@ -748,22 +749,22 @@ class Test_dilatation(unittest.TestCase):
     def test_graylevel_img2D_withMASK(self):
         return_new = fu.dilation(IMAGE_2D, MASK, morphtype="GRAYLEVEL")
         return_old = oldfu.dilation(IMAGE_2D, MASK, morphtype="GRAYLEVEL")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_graylevel_img3D_withMASK(self):
         return_new = fu.dilation(IMAGE_3D, MASK, morphtype="GRAYLEVEL")
         return_old = oldfu.dilation(IMAGE_3D, MASK, morphtype="GRAYLEVEL")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_graylevel_img2D_NOmask(self):
         return_new = fu.dilation(IMAGE_2D,morphtype="GRAYLEVEL")
         return_old = oldfu.dilation(IMAGE_2D,morphtype="GRAYLEVEL")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_graylevel_img3D_NOmask(self):
         return_new = fu.dilation(IMAGE_BLANK_3D,morphtype="GRAYLEVEL")
         return_old = oldfu.dilation(IMAGE_BLANK_3D,morphtype="GRAYLEVEL")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 
@@ -817,42 +818,42 @@ class Test_erosion(unittest.TestCase):
     def test_bynary_img_blank2D_with_mask(self):
         return_new = fu.erosion(IMAGE_BLANK_2D, MASK, morphtype="BINARY")
         return_old = oldfu.erosion(IMAGE_BLANK_2D, MASK, morphtype="BINARY")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_bynary_img_blank3D_with_mask(self):
         return_new = fu.erosion(IMAGE_BLANK_3D, MASK, morphtype="BINARY")
         return_old = oldfu.erosion(IMAGE_BLANK_3D, MASK, morphtype="BINARY")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_bynary_img_blank2D_NOmask(self):
         return_new = fu.erosion(IMAGE_BLANK_2D, morphtype="BINARY")
         return_old = oldfu.erosion(IMAGE_BLANK_2D, morphtype="BINARY")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_bynary_img_blank3D_NOmask(self):
         return_new = fu.erosion(IMAGE_BLANK_3D, morphtype="BINARY")
         return_old = oldfu.erosion(IMAGE_BLANK_3D, morphtype="BINARY")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_graylevel_img_blank2D_with_mask(self):
         return_new = fu.erosion(IMAGE_BLANK_2D, MASK, morphtype="GRAYLEVEL")
         return_old = oldfu.erosion(IMAGE_BLANK_2D, MASK, morphtype="GRAYLEVEL")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_graylevel_img_blank3D_with_mask(self):
         return_new = fu.erosion(IMAGE_BLANK_3D, MASK, morphtype="GRAYLEVEL")
         return_old = oldfu.erosion(IMAGE_BLANK_3D, MASK, morphtype="GRAYLEVEL")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_graylevel_img_blank2D_NOmask(self):
         return_new = fu.erosion(IMAGE_BLANK_2D,morphtype="GRAYLEVEL")
         return_old = oldfu.erosion(IMAGE_BLANK_2D,morphtype="GRAYLEVEL")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_graylevel_img_blank3D_NOmask(self):
         return_new = fu.erosion(IMAGE_BLANK_3D,morphtype="GRAYLEVEL")
         return_old = oldfu.erosion(IMAGE_BLANK_3D,morphtype="GRAYLEVEL")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_invalid_type_Error_msg_unknown_erosion_type(self):
         return_new = fu.erosion(IMAGE_BLANK_2D, MASK, morphtype="invalid_type")
@@ -915,22 +916,22 @@ class Test_erosion(unittest.TestCase):
     def test_graylevel_img2D_with_mask(self):
         return_new = fu.erosion(IMAGE_2D, MASK, morphtype="GRAYLEVEL")
         return_old = oldfu.erosion(IMAGE_2D, MASK, morphtype="GRAYLEVEL")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_graylevel_img3D_with_mask(self):
         return_new = fu.erosion(IMAGE_3D, MASK, morphtype="GRAYLEVEL")
         return_old = oldfu.erosion(IMAGE_3D, MASK, morphtype="GRAYLEVEL")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_graylevel_img2D_NOmask(self):
         return_new = fu.erosion(IMAGE_2D,morphtype="GRAYLEVEL")
         return_old = oldfu.erosion(IMAGE_2D,morphtype="GRAYLEVEL")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_graylevel_img3D_NOmask(self):
         return_new = fu.erosion(IMAGE_3D,morphtype="GRAYLEVEL")
         return_old = oldfu.erosion(IMAGE_3D,morphtype="GRAYLEVEL")
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 
@@ -947,22 +948,22 @@ class Test_power(unittest.TestCase):
     def test_power_2Dimg(self):
         return_new = fu.power(IMAGE_2D, x = 3.0)
         return_old = oldfu.power(IMAGE_2D, x = 3.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_power_3Dimg(self):
         return_new = fu.power(IMAGE_3D, x = 3.0)
         return_old = oldfu.power(IMAGE_3D, x = 3.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_power_img_blank2D(self):
         return_new = fu.power(IMAGE_BLANK_2D, x = 3.0)
         return_old = oldfu.power(IMAGE_BLANK_2D, x = 3.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_power_img_blank3D(self):
         return_new = fu.power(IMAGE_BLANK_3D, x = 3.0)
         return_old = oldfu.power(IMAGE_BLANK_3D, x = 3.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_empty_input_image_returns_RuntimeError_stdException(self):
         with self.assertRaises(RuntimeError) as cm_new:
@@ -988,29 +989,29 @@ class Test_square_root(unittest.TestCase):
         """
         return_new = fu.square_root(None)
         return_old = oldfu.square_root(None)
-        self.assertTrue(numpy.allclose(return_new.get_3dview(), return_old.get_3dview(),equal_nan=True))
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(),equal_nan=True))
         """
 
     def test_positive_2Dimg(self):
         return_new = fu.square_root(IMAGE_2D)
         return_old = oldfu.square_root(IMAGE_2D)
-        self.assertTrue(numpy.allclose(return_new.get_3dview(), return_old.get_3dview(),equal_nan=True))
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(),equal_nan=True))
 
     def test_positive_3Dimg(self):
         return_new = fu.square_root(IMAGE_3D)
         return_old = oldfu.square_root(IMAGE_3D)
-        self.assertTrue(numpy.allclose(return_new.get_3dview(), return_old.get_3dview(),equal_nan=True))
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(),equal_nan=True))
 
     def test_positive_img_blank2D(self):
         return_new = fu.square_root(IMAGE_BLANK_2D)
         return_old = oldfu.square_root(IMAGE_BLANK_2D)
         a = len(return_new.get_3dview())
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_positive_img_blank3D(self):
         return_new = fu.square_root(IMAGE_BLANK_3D)
         return_old = oldfu.square_root(IMAGE_BLANK_3D)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
     def test_negative_2Dimg_error_Error_msg_cannot_calculate_sqaure_root_of_negative_pixel(self):
@@ -1018,15 +1019,15 @@ class Test_square_root(unittest.TestCase):
         img.sub(100)
         return_new = fu.square_root(img)
         return_old = oldfu.square_root(img)
-        self.assertTrue(numpy.all(numpy.isnan(return_old.get_3dview())))
-        self.assertTrue(numpy.all(numpy.isnan(return_new.get_3dview())))
+        self.assertTrue(numpy_all(isnan(return_old.get_3dview())))
+        self.assertTrue(numpy_all(isnan(return_new.get_3dview())))
 
     def test_negative_3Dimg_Error_msg_cannot_calculate_sqaure_root_of_negative_pixel(self):
         img= deepcopy(IMAGE_3D)
         img.sub(100)
         return_new = fu.square_root(img)
         return_old = oldfu.square_root(img)
-        self.assertTrue(numpy.allclose(return_new.get_3dview(), return_old.get_3dview(), equal_nan=True))
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), equal_nan=True))
 
     def test_empty_input_image_returns_RuntimeError_NotExistingObjectException_the_key_mean_doesnot_exist(self):
         with self.assertRaises(RuntimeError) as cm_new:
@@ -1064,17 +1065,17 @@ class Test_square(unittest.TestCase):
     def test_square_3Dimg(self):
         return_new = fu.square(IMAGE_3D)
         return_old = oldfu.square(IMAGE_3D)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_square_img_blank2D(self):
         return_new = fu.square(IMAGE_BLANK_2D)
         return_old = oldfu.square(IMAGE_BLANK_2D)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_square_img_blank3D(self):
         return_new = fu.square(IMAGE_BLANK_3D)
         return_old = oldfu.square(IMAGE_BLANK_3D)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_empty_input_image_returns_RuntimeError_stdException_and_NotExistingObjectException_the_key_maximum_doesnot_exist(self):
         with self.assertRaises(RuntimeError) as cm_new:
@@ -1107,22 +1108,22 @@ class Test_threshold(unittest.TestCase):
     def test_threshold_2Dimg(self):
         return_new = fu.threshold(IMAGE_2D)
         return_old = oldfu.threshold(IMAGE_2D)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_threshold_3Dimg(self):
         return_new = fu.threshold(IMAGE_3D)
         return_old = oldfu.threshold(IMAGE_3D)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_threshold_img_blank2D(self):
         return_new = fu.threshold(IMAGE_BLANK_2D)
         return_old = oldfu.threshold(IMAGE_BLANK_2D)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_threshold_img_blank3D(self):
         return_new = fu.threshold(IMAGE_BLANK_3D)
         return_old = oldfu.threshold(IMAGE_BLANK_3D)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_empty_input_image_returns_RuntimeError_stdException_and_NotExistingObjectException_the_key_maximum_doesnot_exist(self):
         with self.assertRaises(RuntimeError) as cm_new:
@@ -1154,27 +1155,27 @@ class Test_threshold_outside(unittest.TestCase):
     def test_threshold_outside_2Dimg(self):
         return_new = fu.threshold_outside(IMAGE_2D, 2 , 10)
         return_old = oldfu.threshold_outside(IMAGE_2D, 2 , 10)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_threshold_outside_3Dimg(self):
         return_new = fu.threshold_outside(IMAGE_3D, 2 , 10)
         return_old = oldfu.threshold_outside(IMAGE_3D, 2 , 10)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_threshold_outside_img_blank2D(self):
         return_new = fu.threshold_outside(IMAGE_BLANK_2D, 2 , 10)
         return_old = oldfu.threshold_outside(IMAGE_BLANK_2D, 2 , 10)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_threshold_outside_img_blank3D(self):
         return_new = fu.threshold_outside(IMAGE_BLANK_3D, 2 , 10)
         return_old = oldfu.threshold_outside(IMAGE_BLANK_3D, 2 , 10)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_empty_input_image(self):
         return_new = fu.threshold_outside(EMData(), 2 , 10)
         return_old = oldfu.threshold_outside(EMData(), 2 , 10)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -1199,22 +1200,22 @@ class Test_notzero(unittest.TestCase):
     def test_notzero_2Dimg(self):
         return_new = fu.notzero(IMAGE_2D)
         return_old = oldfu.notzero(IMAGE_2D)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_notzero_3Dimg(self):
         return_new = fu.notzero(IMAGE_3D)
         return_old = oldfu.notzero(IMAGE_3D)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_notzero_img_blank2D(self):
         return_new = fu.notzero(IMAGE_BLANK_2D)
         return_old = oldfu.notzero(IMAGE_BLANK_2D)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_notzero_img_blank3D(self):
         return_new = fu.notzero(IMAGE_BLANK_3D)
         return_old = oldfu.notzero(IMAGE_BLANK_3D)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_empty_input_image_returns_RuntimeError_stdException_and_NotExistingObjectException_the_key_maximum_doesnot_exist(self):
         with self.assertRaises(RuntimeError) as cm_new:
@@ -1247,8 +1248,8 @@ class Test_rotavg_ctf(unittest.TestCase):
     def test_empty_input_image(self):
         return_new = fu.rotavg_ctf(EMData(), defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(EMData(), defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, []))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, []))
 
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -1260,161 +1261,161 @@ class Test_rotavg_ctf(unittest.TestCase):
 
     def test_with_real_case_values(self):
         """ value got running 'fu.cter_vpp'"""
-        return_new = fu.rotavg_ctf(sparx_utilities.model_blank(512, 512), defocus= 1.21383448092, Cs =2, voltage=300, Pixel_size=1.09,amp = 0.0710737964085, ang = 36.5871642719)
-        return_old = oldfu.rotavg_ctf(sparx_utilities.model_blank(512, 512), defocus= 1.21383448092, Cs =2, voltage=300, Pixel_size=1.09,amp = 0.0710737964085, ang = 36.5871642719)
+        return_new = fu.rotavg_ctf(model_blank(512, 512), defocus= 1.21383448092, Cs =2, voltage=300, Pixel_size=1.09,amp = 0.0710737964085, ang = 36.5871642719)
+        return_old = oldfu.rotavg_ctf(model_blank(512, 512), defocus= 1.21383448092, Cs =2, voltage=300, Pixel_size=1.09,amp = 0.0710737964085, ang = 36.5871642719)
         # the results is a list with 256 0.0 values
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, return_old))
 
     def test_2DImg_null_spherical_abberation(self):
         return_new = fu.rotavg_ctf(IMAGE_2D, defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_2D, defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  [1.70115065574646, 1.637100413340181, 1.5626658388604528, 1.5877238570535175, 1.6073527532684859, 1.6285396248123731, 1.6862219024250527, 1.7918709978204321, 1.833842622531163, 1.8038479787811352, 1.670626069196044, 1.5445937923329951, 1.4375870249511704, 1.291464080929323, 1.1678499576514703, 1.080209356658163, 0.98063763851702723, 0.87710471571163617, 0.79967370701451634, 0.74335726570241278, 0.72842487985497761, 0.76921621939509399, 0.82873824858420686, 0.92015902816569195, 0.99326843451588009, 1.036344990166103, 1.1239513097090175, 1.1950542303816027, 1.2668782107769017, 1.3277971697472464, 1.4283932919945899, 1.5512929741057393, 1.6878518766149482, 1.7936299833448397, 1.8632609146953312, 1.9746279672252718, 2.0680614850701677, 2.1846912687582267, 2.3249417929031226, 2.4541867006859435, 2.5610395120540663, 2.6200277869395361, 2.6819228919573037, 2.7509776444271754, 2.828867383969953, 2.9172424329444051, 3.0068529631886478, 3.0675946053701351, 3.0815877715706699, 3.0686068438503278, 3.051013398152028, 2.9714335663028084, 2.8975250789984908, 2.8081753917330574, 2.7049357626651513, 2.569661174929458, 2.4190067846190066, 2.276418690519272, 2.166222073832563, 2.0688069478446596, 1.9702750625960683, 1.8747623097695565, 1.7782387899141654, 1.6550710776865847, 1.5298049859449097, 1.4096022275914468, 1.2695469046065659, 1.1273518925613535, 0.95182706641226311, 0.76917870873392158, 0.55826621289040712, 0.38217552513915276, 0.21394557234363798, 0.02325798054360588, -0.16214910720730566, -0.36657096010155421, -0.55703663732928821, -0.75684150302636355, -0.94446316556944221, -1.1122016684438918, -1.2591362905410439, -1.3866122243802503, -1.5305428874424387, -1.6798111982382542, -1.7983818298703047, -1.8982062004186111, -1.9665438697864752, -2.0055096408904882, -2.0240358777796947, -2.0227612266533064, -2.0144505951697993, -1.9850364846088546, -1.9594260233678016, -1.9007928202748985, -1.834125468838637, -1.75235785338134, -1.6880503658031627, -1.6217541131815856, -1.5742247123812489, -1.5164336597294907, -1.4340364163741159, -1.3519625876332004, -1.2755723485689432, -1.2155629597044812, -1.1673034985488453, -1.122310654044016, -1.0735887638270161, -1.0130177873825399, -0.95020746453534766, -0.89612350938060459, -0.84692270122197555, -0.81412182240371755, -0.77286404067580228, -0.74858433004617742, -0.73692738590361706, -0.71549717714274419, -0.68292262737137588, -0.65766488574599846, -0.61725120321813598, -0.58208878962035482, -0.56579957407267045, -0.55853370389585599, -0.54472876109008861, -0.54333963680264008, -0.55295116055426652, -0.54488973761707926, -0.54220236522340903, -0.54151475850782782, -0.538743973100965, -0.55947108751051755, -0.59637968225285798, -0.65366629476464977, -0.70257357075229421, -0.74196600078096575, -0.77386503625088698, -0.82884328024665288, -0.87922285955016732, -0.91852750923960258, -0.95355316444096616, -0.97556305333414239, -0.97690656186219016, -0.97031971068093981, -0.96193798495060778, -0.953383138922412, -0.93898374832667875, -0.89723172538851881, -0.86689933537929276, -0.84823505984529934, -0.84440274263284143, -0.84396165570070214, -0.83857892876700368, -0.82920299088244531, -0.81113565214605532, -0.7909438171205575, -0.77047281083183827, -0.7470839088636102, -0.72547646068447458, -0.69666543246542956, -0.67081658280011203, -0.64082246030100243, -0.61091100495949624, -0.58502978653740545, -0.55886603520246469, -0.54149943246130439, -0.52270307946372918, -0.50719826777191734, -0.49200738954273521, -0.47635885147141976, -0.46521395667507759, -0.45039401260684564, -0.44072376338692937, -0.43082498218055176, -0.41926515374333928, -0.41095512436184534, -0.39824365630033115, -0.39125707394412768]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  [1.70115065574646, 1.637100413340181, 1.5626658388604528, 1.5877238570535175, 1.6073527532684859, 1.6285396248123731, 1.6862219024250527, 1.7918709978204321, 1.833842622531163, 1.8038479787811352, 1.670626069196044, 1.5445937923329951, 1.4375870249511704, 1.291464080929323, 1.1678499576514703, 1.080209356658163, 0.98063763851702723, 0.87710471571163617, 0.79967370701451634, 0.74335726570241278, 0.72842487985497761, 0.76921621939509399, 0.82873824858420686, 0.92015902816569195, 0.99326843451588009, 1.036344990166103, 1.1239513097090175, 1.1950542303816027, 1.2668782107769017, 1.3277971697472464, 1.4283932919945899, 1.5512929741057393, 1.6878518766149482, 1.7936299833448397, 1.8632609146953312, 1.9746279672252718, 2.0680614850701677, 2.1846912687582267, 2.3249417929031226, 2.4541867006859435, 2.5610395120540663, 2.6200277869395361, 2.6819228919573037, 2.7509776444271754, 2.828867383969953, 2.9172424329444051, 3.0068529631886478, 3.0675946053701351, 3.0815877715706699, 3.0686068438503278, 3.051013398152028, 2.9714335663028084, 2.8975250789984908, 2.8081753917330574, 2.7049357626651513, 2.569661174929458, 2.4190067846190066, 2.276418690519272, 2.166222073832563, 2.0688069478446596, 1.9702750625960683, 1.8747623097695565, 1.7782387899141654, 1.6550710776865847, 1.5298049859449097, 1.4096022275914468, 1.2695469046065659, 1.1273518925613535, 0.95182706641226311, 0.76917870873392158, 0.55826621289040712, 0.38217552513915276, 0.21394557234363798, 0.02325798054360588, -0.16214910720730566, -0.36657096010155421, -0.55703663732928821, -0.75684150302636355, -0.94446316556944221, -1.1122016684438918, -1.2591362905410439, -1.3866122243802503, -1.5305428874424387, -1.6798111982382542, -1.7983818298703047, -1.8982062004186111, -1.9665438697864752, -2.0055096408904882, -2.0240358777796947, -2.0227612266533064, -2.0144505951697993, -1.9850364846088546, -1.9594260233678016, -1.9007928202748985, -1.834125468838637, -1.75235785338134, -1.6880503658031627, -1.6217541131815856, -1.5742247123812489, -1.5164336597294907, -1.4340364163741159, -1.3519625876332004, -1.2755723485689432, -1.2155629597044812, -1.1673034985488453, -1.122310654044016, -1.0735887638270161, -1.0130177873825399, -0.95020746453534766, -0.89612350938060459, -0.84692270122197555, -0.81412182240371755, -0.77286404067580228, -0.74858433004617742, -0.73692738590361706, -0.71549717714274419, -0.68292262737137588, -0.65766488574599846, -0.61725120321813598, -0.58208878962035482, -0.56579957407267045, -0.55853370389585599, -0.54472876109008861, -0.54333963680264008, -0.55295116055426652, -0.54488973761707926, -0.54220236522340903, -0.54151475850782782, -0.538743973100965, -0.55947108751051755, -0.59637968225285798, -0.65366629476464977, -0.70257357075229421, -0.74196600078096575, -0.77386503625088698, -0.82884328024665288, -0.87922285955016732, -0.91852750923960258, -0.95355316444096616, -0.97556305333414239, -0.97690656186219016, -0.97031971068093981, -0.96193798495060778, -0.953383138922412, -0.93898374832667875, -0.89723172538851881, -0.86689933537929276, -0.84823505984529934, -0.84440274263284143, -0.84396165570070214, -0.83857892876700368, -0.82920299088244531, -0.81113565214605532, -0.7909438171205575, -0.77047281083183827, -0.7470839088636102, -0.72547646068447458, -0.69666543246542956, -0.67081658280011203, -0.64082246030100243, -0.61091100495949624, -0.58502978653740545, -0.55886603520246469, -0.54149943246130439, -0.52270307946372918, -0.50719826777191734, -0.49200738954273521, -0.47635885147141976, -0.46521395667507759, -0.45039401260684564, -0.44072376338692937, -0.43082498218055176, -0.41926515374333928, -0.41095512436184534, -0.39824365630033115, -0.39125707394412768]))
 
     def test_3DImg_null_spherical_abberation(self):
         return_new = fu.rotavg_ctf(IMAGE_3D, defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_3D, defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
 
     def test_2DImg_with_spherical_abberation(self):
         return_new = fu.rotavg_ctf(IMAGE_2D, defocus= 1, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_2D, defocus= 1, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  [1.70115065574646, 1.6371004133396414, 1.5626658388605112, 1.5877238570535521, 1.6073527532685508, 1.6285396248123782, 1.6862219024249543, 1.7918709978204761, 1.8338426225311519, 1.8038479787811026, 1.6706260691959463, 1.5445937923331137, 1.4375870249512126, 1.2914640809292612, 1.1678499576515216, 1.0802093566581454, 0.98063763851704655, 0.87710471571163995, 0.79967370701455698, 0.74335726570240257, 0.72842487985497162, 0.76921621939510321, 0.82873824858421108, 0.92015902816565209, 0.99326843451590108, 1.0363449901660959, 1.1239513097090361, 1.1950542303815681, 1.2668782107769445, 1.3277971697472783, 1.4283932919945432, 1.5512929741057209, 1.6878518766149353, 1.793629983344855, 1.8632609146953347, 1.9746279672252758, 2.0680614850701518, 2.1846912687582534, 2.3249417929031169, 2.4541867006859852, 2.5610395120540468, 2.6200277869395343, 2.6819228919573099, 2.7509776444271803, 2.8288673839699716, 2.9172424329443829, 3.0068529631886585, 3.0675946053701639, 3.0815877715706477, 3.0686068438503193, 3.0510133981520267, 2.9714335663028106, 2.897525078998481, 2.8081753917330921, 2.7049357626651345, 2.5696611749294727, 2.4190067846189938, 2.2764186905192725, 2.1662220738325737, 2.0688069478446618, 1.9702750625960623, 1.874762309769564, 1.7782387899141652, 1.6550710776866007, 1.5298049859448926, 1.4096022275914588, 1.2695469046065748, 1.1273518925613493, 0.95182706641224057, 0.76917870873393468, 0.55826621289040679, 0.38217552513917108, 0.21394557234362721, 0.023257980543620053, -0.16214910720729764, -0.36657096010155665, -0.55703663732928943, -0.75684150302634901, -0.94446316556944876, -1.1122016684438731, -1.2591362905410615, -1.3866122243802423, -1.5305428874424536, -1.6798111982382473, -1.7983818298703076, -1.8982062004186162, -1.9665438697864641, -2.0055096408904802, -2.0240358777797063, -2.0227612266533033, -2.014450595169802, -1.9850364846088404, -1.9594260233678089, -1.9007928202749009, -1.8341254688386464, -1.7523578533813375, -1.68805036580316, -1.6217541131815836, -1.5742247123812529, -1.5164336597294812, -1.434036416374119, -1.3519625876332029, -1.2755723485689467, -1.2155629597044875, -1.1673034985488422, -1.1223106540440124, -1.0735887638270092, -1.0130177873825379, -0.95020746453535132, -0.89612350938060725, -0.84692270122198376, -0.81412182240371012, -0.77286404067580416, -0.74858433004617686, -0.73692738590361884, -0.71549717714273964, -0.68292262737138243, -0.65766488574600024, -0.6172512032181362, -0.58208878962035404, -0.56579957407266934, -0.55853370389585588, -0.5447287610900895, -0.54333963680264163, -0.55295116055426508, -0.54488973761707693, -0.54220236522341569, -0.54151475850782482, -0.538743973100965, -0.55947108751051999, -0.59637968225284932, -0.65366629476465266, -0.70257357075229365, -0.74196600078096842, -0.77386503625089309, -0.82884328024664244, -0.87922285955016921, -0.91852750923959892, -0.95355316444096372, -0.97556305333414817, -0.9769065618621896, -0.97031971068093359, -0.96193798495061189, -0.95338313892240845, -0.93898374832668052, -0.8972317253885157, -0.86689933537930031, -0.84823505984529712, -0.84440274263283532, -0.84396165570070725, -0.83857892876700502, -0.8292029908824452, -0.81113565214605554, -0.79094381712056283, -0.77047281083183328, -0.74708390886361176, -0.72547646068447491, -0.69666543246543511, -0.67081658280010603, -0.64082246030100387, -0.61091100495949924, -0.58502978653740789, -0.55886603520246436, -0.54149943246130139, -0.52270307946372985, -0.5071982677719139, -0.49200738954273793, -0.47635885147141843, -0.46521395667507959, -0.45039401260684137, -0.44072376338693181, -0.43082498218055132, -0.41926515374334145, -0.4109551243618465, -0.39824365630032804, -0.39125707394412712]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  [1.70115065574646, 1.6371004133396414, 1.5626658388605112, 1.5877238570535521, 1.6073527532685508, 1.6285396248123782, 1.6862219024249543, 1.7918709978204761, 1.8338426225311519, 1.8038479787811026, 1.6706260691959463, 1.5445937923331137, 1.4375870249512126, 1.2914640809292612, 1.1678499576515216, 1.0802093566581454, 0.98063763851704655, 0.87710471571163995, 0.79967370701455698, 0.74335726570240257, 0.72842487985497162, 0.76921621939510321, 0.82873824858421108, 0.92015902816565209, 0.99326843451590108, 1.0363449901660959, 1.1239513097090361, 1.1950542303815681, 1.2668782107769445, 1.3277971697472783, 1.4283932919945432, 1.5512929741057209, 1.6878518766149353, 1.793629983344855, 1.8632609146953347, 1.9746279672252758, 2.0680614850701518, 2.1846912687582534, 2.3249417929031169, 2.4541867006859852, 2.5610395120540468, 2.6200277869395343, 2.6819228919573099, 2.7509776444271803, 2.8288673839699716, 2.9172424329443829, 3.0068529631886585, 3.0675946053701639, 3.0815877715706477, 3.0686068438503193, 3.0510133981520267, 2.9714335663028106, 2.897525078998481, 2.8081753917330921, 2.7049357626651345, 2.5696611749294727, 2.4190067846189938, 2.2764186905192725, 2.1662220738325737, 2.0688069478446618, 1.9702750625960623, 1.874762309769564, 1.7782387899141652, 1.6550710776866007, 1.5298049859448926, 1.4096022275914588, 1.2695469046065748, 1.1273518925613493, 0.95182706641224057, 0.76917870873393468, 0.55826621289040679, 0.38217552513917108, 0.21394557234362721, 0.023257980543620053, -0.16214910720729764, -0.36657096010155665, -0.55703663732928943, -0.75684150302634901, -0.94446316556944876, -1.1122016684438731, -1.2591362905410615, -1.3866122243802423, -1.5305428874424536, -1.6798111982382473, -1.7983818298703076, -1.8982062004186162, -1.9665438697864641, -2.0055096408904802, -2.0240358777797063, -2.0227612266533033, -2.014450595169802, -1.9850364846088404, -1.9594260233678089, -1.9007928202749009, -1.8341254688386464, -1.7523578533813375, -1.68805036580316, -1.6217541131815836, -1.5742247123812529, -1.5164336597294812, -1.434036416374119, -1.3519625876332029, -1.2755723485689467, -1.2155629597044875, -1.1673034985488422, -1.1223106540440124, -1.0735887638270092, -1.0130177873825379, -0.95020746453535132, -0.89612350938060725, -0.84692270122198376, -0.81412182240371012, -0.77286404067580416, -0.74858433004617686, -0.73692738590361884, -0.71549717714273964, -0.68292262737138243, -0.65766488574600024, -0.6172512032181362, -0.58208878962035404, -0.56579957407266934, -0.55853370389585588, -0.5447287610900895, -0.54333963680264163, -0.55295116055426508, -0.54488973761707693, -0.54220236522341569, -0.54151475850782482, -0.538743973100965, -0.55947108751051999, -0.59637968225284932, -0.65366629476465266, -0.70257357075229365, -0.74196600078096842, -0.77386503625089309, -0.82884328024664244, -0.87922285955016921, -0.91852750923959892, -0.95355316444096372, -0.97556305333414817, -0.9769065618621896, -0.97031971068093359, -0.96193798495061189, -0.95338313892240845, -0.93898374832668052, -0.8972317253885157, -0.86689933537930031, -0.84823505984529712, -0.84440274263283532, -0.84396165570070725, -0.83857892876700502, -0.8292029908824452, -0.81113565214605554, -0.79094381712056283, -0.77047281083183328, -0.74708390886361176, -0.72547646068447491, -0.69666543246543511, -0.67081658280010603, -0.64082246030100387, -0.61091100495949924, -0.58502978653740789, -0.55886603520246436, -0.54149943246130139, -0.52270307946372985, -0.5071982677719139, -0.49200738954273793, -0.47635885147141843, -0.46521395667507959, -0.45039401260684137, -0.44072376338693181, -0.43082498218055132, -0.41926515374334145, -0.4109551243618465, -0.39824365630032804, -0.39125707394412712]))
 
     def test_3DImg_with_spherical_abberation(self):
         return_new = fu.rotavg_ctf(IMAGE_3D, defocus= 1, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_3D, defocus= 1, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
 
     def test_2DImg_null_spherical_abberation_and_defocus_RuntimeWarning_msg_invalid_value_encountered(self):
         return_new = fu.rotavg_ctf(IMAGE_2D, defocus= 0, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_2D, defocus= 0, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
 
     def test_3DImg_null_spherical_abberation_and_defocus_RuntimeWarning_msg_invalid_value_encountered(self):
         return_new = fu.rotavg_ctf(IMAGE_3D, defocus= 0, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_3D, defocus= 0, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
 
     def test_2DImg_with_spherical_abberation_and_defocus_RuntimeWarning_msg_invalid_value_encountered(self):
         return_new = fu.rotavg_ctf(IMAGE_2D, defocus= 0, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_2D, defocus= 0, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  [1.70115065574646, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  [1.70115065574646, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
 
     def test_3DImg_with_spherical_abberation_and_defocus_RuntimeWarning_msg_invalid_value_encountered(self):
         return_new = fu.rotavg_ctf(IMAGE_3D, defocus= 0, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_3D, defocus= 0, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
 
     def test_2DImg_null_spherical_abberation_and_voltage_RuntimeWarning_msg_invalid_value_encountered(self):
         return_new = fu.rotavg_ctf(IMAGE_2D, defocus= 1, Cs =0.0, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_2D, defocus= 1, Cs =0.0, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  [1.70115065574646, 1.637100413340181, 1.5626658388604528, 1.5877238570535175, 1.6073527532684859, 1.6285396248123731, 1.6862219024250527, 1.7918709978204321, 1.833842622531163, 1.8038479787811352, 1.670626069196044, 1.5445937923329951, 1.4375870249511704, 1.291464080929323, 1.1678499576514703, 1.080209356658163, 0.98063763851702723, 0.87710471571163617, 0.79967370701451634, 0.74335726570241278, 0.72842487985497761, 0.76921621939509399, 0.82873824858420686, 0.92015902816569195, 0.99326843451588009, 1.036344990166103, 1.1239513097090175, 1.1950542303816027, 1.2668782107769017, 1.3277971697472464, 1.4283932919945899, 1.5512929741057393, 1.6878518766149482, 1.7936299833448397, 1.8632609146953312, 1.9746279672252718, 2.0680614850701677, 2.1846912687582267, 2.3249417929031226, 2.4541867006859435, 2.5610395120540663, 2.6200277869395361, 2.6819228919573037, 2.7509776444271754, 2.828867383969953, 2.9172424329444051, 3.0068529631886478, 3.0675946053701351, 3.0815877715706699, 3.0686068438503278, 3.051013398152028, 2.9714335663028084, 2.8975250789984908, 2.8081753917330574, 2.7049357626651513, 2.569661174929458, 2.4190067846190066, 2.276418690519272, 2.166222073832563, 2.0688069478446596, 1.9702750625960683, 1.8747623097695565, 1.7782387899141654, 1.6550710776865847, 1.5298049859449097, 1.4096022275914468, 1.2695469046065659, 1.1273518925613535, 0.95182706641226311, 0.76917870873392158, 0.55826621289040712, 0.38217552513915276, 0.21394557234363798, 0.02325798054360588, -0.16214910720730566, -0.36657096010155421, -0.55703663732928821, -0.75684150302636355, -0.94446316556944221, -1.1122016684438918, -1.2591362905410439, -1.3866122243802503, -1.5305428874424387, -1.6798111982382542, -1.7983818298703047, -1.8982062004186111, -1.9665438697864752, -2.0055096408904882, -2.0240358777796947, -2.0227612266533064, -2.0144505951697993, -1.9850364846088546, -1.9594260233678016, -1.9007928202748985, -1.834125468838637, -1.75235785338134, -1.6880503658031627, -1.6217541131815856, -1.5742247123812489, -1.5164336597294907, -1.4340364163741159, -1.3519625876332004, -1.2755723485689432, -1.2155629597044812, -1.1673034985488453, -1.122310654044016, -1.0735887638270161, -1.0130177873825399, -0.95020746453534766, -0.89612350938060459, -0.84692270122197555, -0.81412182240371755, -0.77286404067580228, -0.74858433004617742, -0.73692738590361706, -0.71549717714274419, -0.68292262737137588, -0.65766488574599846, -0.61725120321813598, -0.58208878962035482, -0.56579957407267045, -0.55853370389585599, -0.54472876109008861, -0.54333963680264008, -0.55295116055426652, -0.54488973761707926, -0.54220236522340903, -0.54151475850782782, -0.538743973100965, -0.55947108751051755, -0.59637968225285798, -0.65366629476464977, -0.70257357075229421, -0.74196600078096575, -0.77386503625088698, -0.82884328024665288, -0.87922285955016732, -0.91852750923960258, -0.95355316444096616, -0.97556305333414239, -0.97690656186219016, -0.97031971068093981, -0.96193798495060778, -0.953383138922412, -0.93898374832667875, -0.89723172538851881, -0.86689933537929276, -0.84823505984529934, -0.84440274263284143, -0.84396165570070214, -0.83857892876700368, -0.82920299088244531, -0.81113565214605532, -0.7909438171205575, -0.77047281083183827, -0.7470839088636102, -0.72547646068447458, -0.69666543246542956, -0.67081658280011203, -0.64082246030100243, -0.61091100495949624, -0.58502978653740545, -0.55886603520246469, -0.54149943246130439, -0.52270307946372918, -0.50719826777191734, -0.49200738954273521, -0.47635885147141976, -0.46521395667507759, -0.45039401260684564, -0.44072376338692937, -0.43082498218055176, -0.41926515374333928, -0.41095512436184534, -0.39824365630033115, -0.39125707394412768]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  [1.70115065574646, 1.637100413340181, 1.5626658388604528, 1.5877238570535175, 1.6073527532684859, 1.6285396248123731, 1.6862219024250527, 1.7918709978204321, 1.833842622531163, 1.8038479787811352, 1.670626069196044, 1.5445937923329951, 1.4375870249511704, 1.291464080929323, 1.1678499576514703, 1.080209356658163, 0.98063763851702723, 0.87710471571163617, 0.79967370701451634, 0.74335726570241278, 0.72842487985497761, 0.76921621939509399, 0.82873824858420686, 0.92015902816569195, 0.99326843451588009, 1.036344990166103, 1.1239513097090175, 1.1950542303816027, 1.2668782107769017, 1.3277971697472464, 1.4283932919945899, 1.5512929741057393, 1.6878518766149482, 1.7936299833448397, 1.8632609146953312, 1.9746279672252718, 2.0680614850701677, 2.1846912687582267, 2.3249417929031226, 2.4541867006859435, 2.5610395120540663, 2.6200277869395361, 2.6819228919573037, 2.7509776444271754, 2.828867383969953, 2.9172424329444051, 3.0068529631886478, 3.0675946053701351, 3.0815877715706699, 3.0686068438503278, 3.051013398152028, 2.9714335663028084, 2.8975250789984908, 2.8081753917330574, 2.7049357626651513, 2.569661174929458, 2.4190067846190066, 2.276418690519272, 2.166222073832563, 2.0688069478446596, 1.9702750625960683, 1.8747623097695565, 1.7782387899141654, 1.6550710776865847, 1.5298049859449097, 1.4096022275914468, 1.2695469046065659, 1.1273518925613535, 0.95182706641226311, 0.76917870873392158, 0.55826621289040712, 0.38217552513915276, 0.21394557234363798, 0.02325798054360588, -0.16214910720730566, -0.36657096010155421, -0.55703663732928821, -0.75684150302636355, -0.94446316556944221, -1.1122016684438918, -1.2591362905410439, -1.3866122243802503, -1.5305428874424387, -1.6798111982382542, -1.7983818298703047, -1.8982062004186111, -1.9665438697864752, -2.0055096408904882, -2.0240358777796947, -2.0227612266533064, -2.0144505951697993, -1.9850364846088546, -1.9594260233678016, -1.9007928202748985, -1.834125468838637, -1.75235785338134, -1.6880503658031627, -1.6217541131815856, -1.5742247123812489, -1.5164336597294907, -1.4340364163741159, -1.3519625876332004, -1.2755723485689432, -1.2155629597044812, -1.1673034985488453, -1.122310654044016, -1.0735887638270161, -1.0130177873825399, -0.95020746453534766, -0.89612350938060459, -0.84692270122197555, -0.81412182240371755, -0.77286404067580228, -0.74858433004617742, -0.73692738590361706, -0.71549717714274419, -0.68292262737137588, -0.65766488574599846, -0.61725120321813598, -0.58208878962035482, -0.56579957407267045, -0.55853370389585599, -0.54472876109008861, -0.54333963680264008, -0.55295116055426652, -0.54488973761707926, -0.54220236522340903, -0.54151475850782782, -0.538743973100965, -0.55947108751051755, -0.59637968225285798, -0.65366629476464977, -0.70257357075229421, -0.74196600078096575, -0.77386503625088698, -0.82884328024665288, -0.87922285955016732, -0.91852750923960258, -0.95355316444096616, -0.97556305333414239, -0.97690656186219016, -0.97031971068093981, -0.96193798495060778, -0.953383138922412, -0.93898374832667875, -0.89723172538851881, -0.86689933537929276, -0.84823505984529934, -0.84440274263284143, -0.84396165570070214, -0.83857892876700368, -0.82920299088244531, -0.81113565214605532, -0.7909438171205575, -0.77047281083183827, -0.7470839088636102, -0.72547646068447458, -0.69666543246542956, -0.67081658280011203, -0.64082246030100243, -0.61091100495949624, -0.58502978653740545, -0.55886603520246469, -0.54149943246130439, -0.52270307946372918, -0.50719826777191734, -0.49200738954273521, -0.47635885147141976, -0.46521395667507759, -0.45039401260684564, -0.44072376338692937, -0.43082498218055176, -0.41926515374333928, -0.41095512436184534, -0.39824365630033115, -0.39125707394412768]))
 
     def test_3DImg_null_spherical_abberation_and_voltage_RuntimeWarning_msg_invalid_value_encountered(self):
         return_new = fu.rotavg_ctf(IMAGE_3D, defocus= 1, Cs =0.0, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_3D, defocus= 1, Cs =0.0, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,   [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,   [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
 
     def test_2DImg_with_spherical_abberation_and_voltage_RuntimeWarning_msg_invalid_value_encountered(self):
         return_new = fu.rotavg_ctf(IMAGE_2D, defocus= 1, Cs =2, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_2D, defocus= 1, Cs =2, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
 
     def test_3DImg_with_spherical_abberation_and_voltage_RuntimeWarning_msg_invalid_value_encountered(self):
         return_new = fu.rotavg_ctf(IMAGE_3D, defocus= 1, Cs =2, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_3D, defocus= 1, Cs =2, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
 
     def test_Null_pixelSize_RuntimeWarning_msg_invalid_value_encountered(self):
         return_new = fu.rotavg_ctf(IMAGE_2D, defocus= 1, Cs =2, voltage=300, Pixel_size=0,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_2D, defocus= 1, Cs =2, voltage=300, Pixel_size=0,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
 
     def test_img_blank2D_null_spherical_abberation(self):
         return_new = fu.rotavg_ctf(IMAGE_BLANK_2D, defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_BLANK_2D, defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  [0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  [0.0, 0.0, 0.0, 0.0, 0.0]))
 
     def test_img_blank3D_null_spherical_abberation(self):
         return_new = fu.rotavg_ctf(IMAGE_BLANK_3D, defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_BLANK_3D, defocus= 1, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  [0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  [0.0, 0.0, 0.0, 0.0, 0.0]))
 
     def test_img_blank2D_with_spherical_abberation(self):
         return_new = fu.rotavg_ctf(IMAGE_BLANK_2D, defocus= 1, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_BLANK_2D, defocus= 1, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0]))
 
     def test_img_blank3D_with_spherical_abberation(self):
         return_new = fu.rotavg_ctf(IMAGE_BLANK_3D, defocus= 1, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_BLANK_3D, defocus= 1, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0]))
 
     def test_img_blank2D_null_spherical_abberation_and_defocus_RuntimeWarning_msg_invalid_value_encountered(self):
         return_new = fu.rotavg_ctf(IMAGE_BLANK_2D, defocus= 0, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_BLANK_2D, defocus= 0, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0]))
-        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
 
     def test_img_blank3D_null_spherical_abberation_and_defocus_RuntimeWarning_msg_invalid_value_encountered(self):
         return_new = fu.rotavg_ctf(IMAGE_BLANK_3D, defocus= 0, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_BLANK_3D, defocus= 0, Cs =0.0, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,[0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,[0.0, 0.0, 0.0, 0.0, 0.0]))
 
     def test_img_blank2D_with_spherical_abberation_and_defocus_RuntimeWarning_msg_invalid_value_encountered(self):
         return_new = fu.rotavg_ctf(IMAGE_BLANK_2D, defocus= 0, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_BLANK_2D, defocus= 0, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  [0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  [0.0, 0.0, 0.0, 0.0, 0.0]))
 
     def test_3img_blank3D_with_spherical_abberation_and_defocus_RuntimeWarning_msg_invalid_value_encountered(self):
         return_new = fu.rotavg_ctf(IMAGE_BLANK_3D, defocus= 0, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_BLANK_3D, defocus= 0, Cs =2, voltage=300, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0]))
 
     def test_img_blank2D_null_spherical_abberation_and_voltage_RuntimeWarning_msg_invalid_value_encountered(self):
         return_new = fu.rotavg_ctf(IMAGE_BLANK_2D, defocus= 1, Cs =0.0, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_BLANK_2D, defocus= 1, Cs =0.0, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  [0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  [0.0, 0.0, 0.0, 0.0, 0.0]))
 
     def test_img_blank3D_null_spherical_abberation_and_voltage_RuntimeWarning_msg_invalid_value_encountered(self):
         return_new = fu.rotavg_ctf(IMAGE_BLANK_3D, defocus= 1, Cs =0.0, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_BLANK_3D, defocus= 1, Cs =0.0, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0]))
 
     def test_img_blank2D_with_spherical_abberation_and_voltage_RuntimeWarning_msg_invalid_value_encountered(self):
         return_new = fu.rotavg_ctf(IMAGE_BLANK_2D, defocus= 1, Cs =2, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_BLANK_2D, defocus= 1, Cs =2, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0]))
 
     def test_img_blank3D_with_spherical_abberation_and_voltage_RuntimeWarning_msg_invalid_value_encountered(self):
         return_new = fu.rotavg_ctf(IMAGE_BLANK_3D, defocus= 1, Cs =2, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
         return_old = oldfu.rotavg_ctf(IMAGE_BLANK_3D, defocus= 1, Cs =2, voltage=0, Pixel_size=1.5,amp = 0.0, ang = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0]))
 
 
 
@@ -1431,8 +1432,8 @@ class Test_ctf_1d(unittest.TestCase):
     def test_with_empty_ctfDict(self):
         return_new =fu.ctf_1d(nx=20, ctf= EMAN2Ctf())
         return_old= oldfu.ctf_1d(nx=20, ctf= EMAN2Ctf())
-        self.assertTrue(numpy.isnan(return_new).any())
-        self.assertTrue(numpy.isnan(return_old).any())
+        self.assertTrue(isnan(return_new).any())
+        self.assertTrue(isnan(return_old).any())
 
     def test_no_image_size_retuns_ZeroDivisionError(self):
         ctf = EMAN2Ctf()
@@ -1459,48 +1460,48 @@ class Test_ctf_1d(unittest.TestCase):
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_1d(nx=20, ctf=ctf, sign=0, doabs=False)
         return_old= oldfu.ctf_1d(nx=20, ctf=ctf, sign=0, doabs=False)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  [0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, 0.0, -0.0, -0.0, 0.0, -0.0, -0.0, 0.0, -0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  [0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, 0.0, -0.0, -0.0, 0.0, -0.0, -0.0, 0.0, -0.0]))
 
     def test_positive_sign(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_1d(nx=20, ctf=ctf, sign = 1,doabs=False)
         return_old= oldfu.ctf_1d(nx=20, ctf=ctf, sign = 1,doabs=False)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  [0.0010000000474974513, 0.634918749332428, 0.38622012734413147, -0.12106460332870483, -0.9971780180931091, -0.9602958559989929, -0.7004976272583008, 0.9997240304946899, -0.9365571141242981, -0.3102538585662842, 0.21025310456752777, -0.275928258895874, -0.9896091818809509, 0.7652478218078613, -0.7183574438095093]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  [0.0010000000474974513, 0.634918749332428, 0.38622012734413147, -0.12106460332870483, -0.9971780180931091, -0.9602958559989929, -0.7004976272583008, 0.9997240304946899, -0.9365571141242981, -0.3102538585662842, 0.21025310456752777, -0.275928258895874, -0.9896091818809509, 0.7652478218078613, -0.7183574438095093]))
 
     def test_negative_sign(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_1d(nx=20, ctf=ctf, sign = -1,doabs=False)
         return_old= oldfu.ctf_1d(nx=20, ctf=ctf, sign = -1,doabs=False)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  [-0.0010000000474974513, -0.634918749332428, -0.38622012734413147, 0.12106460332870483, 0.9971780180931091, 0.9602958559989929, 0.7004976272583008, -0.9997240304946899, 0.9365571141242981, 0.3102538585662842, -0.21025310456752777, 0.275928258895874, 0.9896091818809509, -0.7652478218078613, 0.7183574438095093]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  [-0.0010000000474974513, -0.634918749332428, -0.38622012734413147, 0.12106460332870483, 0.9971780180931091, 0.9602958559989929, 0.7004976272583008, -0.9997240304946899, 0.9365571141242981, 0.3102538585662842, -0.21025310456752777, 0.275928258895874, 0.9896091818809509, -0.7652478218078613, 0.7183574438095093]))
 
     def test_NOSign_withABS(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_1d(nx=20, ctf=ctf, sign=0, doabs=True)
         return_old= oldfu.ctf_1d(nx=20, ctf=ctf, sign=0, doabs=True)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
 
     def test_positive_sign_withABS(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_1d(nx=20, ctf=ctf, sign = 1,doabs=True)
         return_old= oldfu.ctf_1d(nx=20, ctf=ctf, sign = 1,doabs=True)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  [0.0010000000474974513, 0.634918749332428, 0.38622012734413147, 0.12106460332870483, 0.9971780180931091, 0.9602958559989929, 0.7004976272583008, 0.9997240304946899, 0.9365571141242981, 0.3102538585662842, 0.21025310456752777, 0.275928258895874, 0.9896091818809509, 0.7652478218078613, 0.7183574438095093]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  [0.0010000000474974513, 0.634918749332428, 0.38622012734413147, 0.12106460332870483, 0.9971780180931091, 0.9602958559989929, 0.7004976272583008, 0.9997240304946899, 0.9365571141242981, 0.3102538585662842, 0.21025310456752777, 0.275928258895874, 0.9896091818809509, 0.7652478218078613, 0.7183574438095093]))
 
     def test_negative_sign_withABS(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_1d(nx=20, ctf=ctf, sign = -1,doabs=True)
         return_old= oldfu.ctf_1d(nx=20, ctf=ctf, sign = -1,doabs=True)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,[0.0010000000474974513, 0.634918749332428, 0.38622012734413147, 0.12106460332870483, 0.9971780180931091, 0.9602958559989929, 0.7004976272583008, 0.9997240304946899, 0.9365571141242981, 0.3102538585662842, 0.21025310456752777, 0.275928258895874, 0.9896091818809509, 0.7652478218078613, 0.7183574438095093]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,[0.0010000000474974513, 0.634918749332428, 0.38622012734413147, 0.12106460332870483, 0.9971780180931091, 0.9602958559989929, 0.7004976272583008, 0.9997240304946899, 0.9365571141242981, 0.3102538585662842, 0.21025310456752777, 0.275928258895874, 0.9896091818809509, 0.7652478218078613, 0.7183574438095093]))
 
 
 
@@ -1527,8 +1528,8 @@ class Test_ctf_2(unittest.TestCase):
     def test_with_empty_ctfDict(self):
         return_new =fu.ctf_2(nx=20, ctf= EMAN2Ctf())
         return_old= oldfu.ctf_2(nx=20, ctf= EMAN2Ctf())
-        self.assertTrue(numpy.isnan(return_new).any())
-        self.assertTrue(numpy.isnan(return_old).any())
+        self.assertTrue(isnan(return_new).any())
+        self.assertTrue(isnan(return_old).any())
 
     def test_no_pixel_size_retuns_ZeroDivisionError(self):
         ctf = EMAN2Ctf()
@@ -1545,8 +1546,8 @@ class Test_ctf_2(unittest.TestCase):
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_2(nx =2, ctf=ctf)
         return_old= oldfu.ctf_2(nx=2, ctf=ctf)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, [1.0000000949949049e-06, 0.04420636798028377, 0.9463394080469243]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, [1.0000000949949049e-06, 0.04420636798028377, 0.9463394080469243]))
 
 
 
@@ -1563,8 +1564,8 @@ class Test_ctf_img(unittest.TestCase):
     def test_with_empty_ctfDict(self):
         return_new =fu.ctf_img(nx=20, ctf= EMAN2Ctf(), sign = 1, ny = 0, nz = 1)
         return_old= oldfu.ctf_img(nx=20, ctf= EMAN2Ctf(), sign = 1, ny = 0, nz = 1)
-        self.assertTrue(numpy.isnan(return_new.get_3dview()).any())
-        self.assertTrue(numpy.isnan(return_old.get_3dview()).any())
+        self.assertTrue(isnan(return_new.get_3dview()).any())
+        self.assertTrue(isnan(return_old.get_3dview()).any())
 
     def test_no_image_size_error_returns_RuntimeError_InvalidValueException(self):
         ctf = EMAN2Ctf()
@@ -1586,43 +1587,43 @@ class Test_ctf_img(unittest.TestCase):
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 0, "bfactor": 0, "ampcont": 0.1})
         return_new = fu.ctf_img(nx =2, ctf=ctf, sign = 1, ny = 0, nz = 1)
         return_old = oldfu.ctf_img(nx=2, ctf=ctf, sign = 1, ny = 0, nz = 1)
-        self.assertTrue(numpy.isnan(return_new.get_3dview()).any())
-        self.assertTrue(numpy.isnan(return_old.get_3dview()).any())
+        self.assertTrue(isnan(return_new.get_3dview()).any())
+        self.assertTrue(isnan(return_old.get_3dview()).any())
 
     def test_null_ny(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_img(nx =20, ctf=ctf, sign = 1, ny = 0, nz = 1)
         return_old=oldfu.ctf_img(nx=20, ctf=ctf, sign = 1, ny = 0, nz = 1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_positive_ny(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_img(nx =20, ctf=ctf, sign = 1, ny = 2, nz = 1)
         return_old=oldfu.ctf_img(nx=20, ctf=ctf, sign = 1, ny = 2, nz = 1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_negative_ny(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_img(nx =20, ctf=ctf, sign = 1, ny = -2, nz = 1)
         return_old=oldfu.ctf_img(nx=20, ctf=ctf, sign = 1, ny = -2, nz = 1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_null_ny_and_sign(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_img(nx =20, ctf=ctf, sign = 0, ny = 0, nz = 1)
         return_old=oldfu.ctf_img(nx=20, ctf=ctf, sign = 0, ny = 0, nz = 1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_positive_ny_null_sign(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_img(nx =20, ctf=ctf, sign = 0, ny = 2, nz = 1)
         return_old=oldfu.ctf_img(nx=20, ctf=ctf, sign = 0, ny = 2, nz = 1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_null_nz_error_returns_RuntimeError_InvalidValueException(self):
         ctf = EMAN2Ctf()
@@ -1654,8 +1655,8 @@ class Test_ctf_img_real(unittest.TestCase):
     def test_with_empty_ctfDict(self):
         return_new =fu.ctf_img_real(nx=20, ctf= EMAN2Ctf(), sign = 1, ny = 0, nz = 1)
         return_old= oldfu.ctf_img_real(nx=20, ctf= EMAN2Ctf(), sign = 1, ny = 0, nz = 1)
-        self.assertTrue(numpy.isnan(return_new.get_3dview()).any())
-        self.assertTrue(numpy.isnan(return_old.get_3dview()).any())
+        self.assertTrue(isnan(return_new.get_3dview()).any())
+        self.assertTrue(isnan(return_old.get_3dview()).any())
 
     def test_no_image_size_error_returns_RuntimeError_InvalidValueException(self):
         ctf = EMAN2Ctf()
@@ -1677,43 +1678,43 @@ class Test_ctf_img_real(unittest.TestCase):
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 0, "bfactor": 0, "ampcont": 0.1})
         return_new = fu.ctf_img_real(nx =2, ctf=ctf, sign = 1, ny = 0, nz = 1)
         return_old = oldfu.ctf_img_real(nx=2, ctf=ctf, sign = 1, ny = 0, nz = 1)
-        self.assertTrue(numpy.isnan(return_new.get_3dview()).any())
-        self.assertTrue(numpy.isnan(return_old.get_3dview()).any())
+        self.assertTrue(isnan(return_new.get_3dview()).any())
+        self.assertTrue(isnan(return_old.get_3dview()).any())
 
     def test_null_ny(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_img_real(nx =20, ctf=ctf, sign = 1, ny = 0, nz = 1)
         return_old=oldfu.ctf_img_real(nx=20, ctf=ctf, sign = 1, ny = 0, nz = 1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_positive_ny(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_img_real(nx =20, ctf=ctf, sign = 1, ny = 2, nz = 1)
         return_old=oldfu.ctf_img_real(nx=20, ctf=ctf, sign = 1, ny = 2, nz = 1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_negative_ny(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_img_real(nx =20, ctf=ctf, sign = 1, ny = -2, nz = 1)
         return_old=oldfu.ctf_img_real(nx=20, ctf=ctf, sign = 1, ny = -2, nz = 1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_null_ny_and_sign(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_img_real(nx =20, ctf=ctf, sign = 0, ny = 0, nz = 1)
         return_old=oldfu.ctf_img_real(nx=20, ctf=ctf, sign = 0, ny = 0, nz = 1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_positive_ny_null_sign(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_img_real(nx =20, ctf=ctf, sign = 0, ny = 2, nz = 1)
         return_old=oldfu.ctf_img_real(nx=20, ctf=ctf, sign = 0, ny = 2, nz = 1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_null_nz_error_returns_RuntimeError_InvalidValueException(self):
         ctf = EMAN2Ctf()
@@ -1745,8 +1746,8 @@ class Test_ctf_rimg(unittest.TestCase):
     def test_with_empty_ctfDict(self):
         return_new =fu.ctf_rimg(nx=20, ctf= EMAN2Ctf(), sign = 1, ny = 0, nz = 1)
         return_old= oldfu.ctf_rimg(nx=20, ctf= EMAN2Ctf(), sign = 1, ny = 0, nz = 1)
-        self.assertTrue(numpy.isnan(return_new.get_3dview()).any())
-        self.assertTrue(numpy.isnan(return_old.get_3dview()).any())
+        self.assertTrue(isnan(return_new.get_3dview()).any())
+        self.assertTrue(isnan(return_old.get_3dview()).any())
 
     def test_no_image_size_error_returns_RuntimeError_InvalidValueException(self):
         ctf = EMAN2Ctf()
@@ -1769,43 +1770,43 @@ class Test_ctf_rimg(unittest.TestCase):
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 0, "bfactor": 0, "ampcont": 0.1})
         return_new = fu.ctf_rimg(nx =2, ctf=ctf, sign = 1, ny = 0, nz = 1)
         return_old = oldfu.ctf_rimg(nx=2, ctf=ctf, sign = 1, ny = 0, nz = 1)
-        self.assertTrue(numpy.isnan(return_new.get_3dview()).any())
-        self.assertTrue(numpy.isnan(return_old.get_3dview()).any())
+        self.assertTrue(isnan(return_new.get_3dview()).any())
+        self.assertTrue(isnan(return_old.get_3dview()).any())
 
     def test_null_ny(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_rimg(nx =20, ctf=ctf, sign = 1, ny = 0, nz = 1)
         return_old=oldfu.ctf_rimg(nx=20, ctf=ctf, sign = 1, ny = 0, nz = 1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_positive_ny(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_rimg(nx =20, ctf=ctf, sign = 1, ny = 2, nz = 1)
         return_old=oldfu.ctf_rimg(nx=20, ctf=ctf, sign = 1, ny = 2, nz = 1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_negative_ny(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_rimg(nx =20, ctf=ctf, sign = 1, ny = -2, nz = 1)
         return_old=oldfu.ctf_rimg(nx=20, ctf=ctf, sign = 1, ny = -2, nz = 1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_null_ny_and_sign(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_rimg(nx =20, ctf=ctf, sign = 0, ny = 0, nz = 1)
         return_old=oldfu.ctf_rimg(nx=20, ctf=ctf, sign = 0, ny = 0, nz = 1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_positive_ny_null_sign(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf_rimg(nx =20, ctf=ctf, sign = 0, ny = 2, nz = 1)
         return_old=oldfu.ctf_rimg(nx=20, ctf=ctf, sign = 0, ny = 2, nz = 1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_null_nz_error_returns_RuntimeError_InvalidValueException(self):
         ctf = EMAN2Ctf()
@@ -1837,8 +1838,8 @@ class Test_ctf2_rimg(unittest.TestCase):
     def test_with_empty_ctfDict(self):
         return_new =fu.ctf2_rimg(nx=20, ctf= EMAN2Ctf(), sign = 1, ny = 0, nz = 1)
         return_old= oldfu.ctf2_rimg(nx=20, ctf= EMAN2Ctf(), sign = 1, ny = 0, nz = 1)
-        self.assertTrue(numpy.isnan(return_new.get_3dview()).any())
-        self.assertTrue(numpy.isnan(return_old.get_3dview()).any())
+        self.assertTrue(isnan(return_new.get_3dview()).any())
+        self.assertTrue(isnan(return_old.get_3dview()).any())
 
     def test_no_image_size_error_returns_RuntimeError_InvalidValueException(self):
         ctf = EMAN2Ctf()
@@ -1860,43 +1861,43 @@ class Test_ctf2_rimg(unittest.TestCase):
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 0, "bfactor": 0, "ampcont": 0.1})
         return_new = fu.ctf2_rimg(nx =2, ctf=ctf, sign = 1, ny = 0, nz = 1)
         return_old = oldfu.ctf2_rimg(nx=2, ctf=ctf, sign = 1, ny = 0, nz = 1)
-        self.assertTrue(numpy.isnan(return_new.get_3dview()).any())
-        self.assertTrue(numpy.isnan(return_old.get_3dview()).any())
+        self.assertTrue(isnan(return_new.get_3dview()).any())
+        self.assertTrue(isnan(return_old.get_3dview()).any())
 
     def test_null_ny(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf2_rimg(nx =20, ctf=ctf, sign = 1, ny = 0, nz = 1)
         return_old=oldfu.ctf2_rimg(nx=20, ctf=ctf, sign = 1, ny = 0, nz = 1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_positive_ny(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf2_rimg(nx =20, ctf=ctf, sign = 1, ny = 2, nz = 1)
         return_old=oldfu.ctf2_rimg(nx=20, ctf=ctf, sign = 1, ny = 2, nz = 1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_negative_ny(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf2_rimg(nx =20, ctf=ctf, sign = 1, ny = -2, nz = 1)
         return_old=oldfu.ctf2_rimg(nx=20, ctf=ctf, sign = 1, ny = -2, nz = 1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_null_ny_and_sign(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf2_rimg(nx =20, ctf=ctf, sign = 0, ny = 0, nz = 1)
         return_old=oldfu.ctf2_rimg(nx=20, ctf=ctf, sign = 0, ny = 0, nz = 1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_positive_ny_null_sign(self):
         ctf = EMAN2Ctf()
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0, "ampcont": 0.1})
         return_new =fu.ctf2_rimg(nx =20, ctf=ctf, sign = 0, ny = 2, nz = 1)
         return_old=oldfu.ctf2_rimg(nx=20, ctf=ctf, sign = 0, ny = 2, nz = 1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_null_nz_error_returns_RuntimeError_InvalidValueException(self):
         ctf = EMAN2Ctf()
@@ -1929,35 +1930,35 @@ class Test_ctflimit(unittest.TestCase):
         return_new = fu.ctflimit(nx=512, defocus=1.21383448092, cs=2, voltage=300, pix=1.09)
         return_old = oldfu.ctflimit(nx=512, defocus=1.21383448092, cs=2, voltage=300, pix=1.09)
         """    ctflim = {float} 0.45871559633    ctflim_abs = {int} 257      """
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, return_old))
 
     def test_null_voltage_crashes_because_LinAlgError(self):
         """ How can I catch the '"LinAlgError
         with self.assertRaises(ValueError):
             return_new = fu.ctflimit(nx=30, defocus=1, cs=2, voltage=0, pix=1.5)
             return_old = oldfu.ctflimit(nx=30, defocus=1, cs=2, voltage=0, pix=1.5)
-            self.assertTrue(numpy.array_equal(return_new, return_old))
+            self.assertTrue(array_equal(return_new, return_old))
         """
         self.assertTrue(True)
 
     def test_null_defocus(self):
         return_new = fu.ctflimit(nx=30, defocus=0, cs=2, voltage=300, pix=1.5)
         return_old = oldfu.ctflimit(nx=30, defocus=0, cs=2, voltage=300, pix=1.5)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  (16, 0.3333333333333333)))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  (16, 0.3333333333333333)))
 
     def test_null_spherical_abberation(self):
         return_new = fu.ctflimit(nx=30, defocus=1, cs=0, voltage=300, pix=1.5)
         return_old = oldfu.ctflimit(nx=30, defocus=1, cs=0, voltage=300, pix=1.5)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  (6, 0.13333333333333333)))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  (6, 0.13333333333333333)))
 
     def test_null_nx(self):
         return_new = fu.ctflimit(nx=0, defocus=1, cs=2, voltage=300, pix=1.5)
         return_old = oldfu.ctflimit(nx=0, defocus=1, cs=2, voltage=300, pix=1.5)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,(0, 0.3333333333333333)))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,(0, 0.3333333333333333)))
 
     def test_negative_nx_retuns_ZeroDivisionError(self):
         with self.assertRaises(ZeroDivisionError) as cm_new:
@@ -1979,7 +1980,7 @@ class Test_imf_params_cl1(unittest.TestCase):
     n = the polynomial rank +1
     iswi = integer between 1-8 is used in 'vector<float> Util::call_cl1' to calculate the interpolation value (lagracian?)
     """
-    pw = [entry for entry in numpy.arange(0, 10).tolist()]
+    pw = [entry for entry in arange(0, 10).tolist()]
 
 
     def test_all_the_conditions(self,return_new=None,return_old=None, skip=True):
@@ -1987,10 +1988,10 @@ class Test_imf_params_cl1(unittest.TestCase):
             self.assertEqual(len(return_new), len(return_old))
             for i,j in zip(return_new,return_old):
                 try:
-                    self.assertTrue(numpy.array_equal(i,j))
+                    self.assertTrue(array_equal(i,j))
                 except AssertionError:
-                    self.assertTrue(numpy.isnan(i).any())
-                    self.assertTrue(numpy.isnan(j).any())
+                    self.assertTrue(isnan(i).any())
+                    self.assertTrue(isnan(j).any())
 
 
     def test_wrong_number_params_too_few_parameters(self):
@@ -2149,7 +2150,7 @@ class Test_adaptive_mask(unittest.TestCase):
         """
         return_new = fu.adaptive_mask(IMAGE_2D,nsigma = 1.0, threshold = -9999.0,  ndilation = 3, edge_width = -5)
         return_old = oldfu.adaptive_mask(IMAGE_2D,nsigma = 1.0, threshold = -9999.0,  ndilation = 3, edge_width = -5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
         """
         self.assertTrue(True)
 
@@ -2170,40 +2171,40 @@ class Test_adaptive_mask(unittest.TestCase):
     def test_3dimg_default_values(self):
         return_new = fu.adaptive_mask(IMAGE_3D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
         return_old = oldfu.adaptive_mask(IMAGE_3D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3dimg_no_threshold_null_sigma(self):
         return_new = fu.adaptive_mask(IMAGE_3D, nsigma = 0, threshold = -9999.0, ndilation = 3, edge_width = 5)
         return_old = oldfu.adaptive_mask(IMAGE_3D, nsigma = 0, threshold = -9999.0, ndilation = 3, edge_width = 5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3dimg_no_threshold_negative_sigma(self):
         return_new = fu.adaptive_mask(IMAGE_3D, nsigma = -10, threshold = -9999.0, ndilation = 3, edge_width = 5)
         return_old = oldfu.adaptive_mask(IMAGE_3D, nsigma = -10, threshold = -9999.0, ndilation = 3, edge_width = 5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3dimg_no_dilation(self):
         return_new = fu.adaptive_mask(IMAGE_3D, nsigma = 1.0, threshold = -9999.0,  ndilation = 0, edge_width = 5)
         return_old = oldfu.adaptive_mask(IMAGE_3D, nsigma = 1.0, threshold = -9999.0,  ndilation = 0, edge_width = 5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3dimg_negative_dilation(self):
         return_new = fu.adaptive_mask(IMAGE_3D, nsigma = 1.0, threshold = -9999.0,  ndilation = -2, edge_width = 5)
         return_old = oldfu.adaptive_mask(IMAGE_3D, nsigma = 1.0, threshold = -9999.0,  ndilation = -2, edge_width = 5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3dimg_negative_edge_width_crashes_because_signal11SIGSEV(self):
         """
         return_new = fu.adaptive_mask(IMAGE_3D,nsigma = 1.0, threshold = -9999.0,  ndilation = 3, edge_width = -5)
         return_old = oldfu.adaptive_mask(IMAGE_3D,nsigma = 1.0, threshold = -9999.0,  ndilation = 3, edge_width = -5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
         """
         self.assertTrue(True)
 
     def test_3dimg_null_edge_width(self):
         return_new = fu.adaptive_mask(IMAGE_3D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width=0)
         return_old = oldfu.adaptive_mask(IMAGE_3D, nsigma = 1.0, threshold = -9999.0, ndilation = 3 ,edge_width=0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_img_blank2D_default_values(self):
         with self.assertRaises(RuntimeError) as cm_new:
@@ -2305,40 +2306,40 @@ class Test_adaptive_mask(unittest.TestCase):
     def test_img_blank3D_default_values(self):
         return_new = fu.adaptive_mask(IMAGE_BLANK_3D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
         return_old = oldfu.adaptive_mask(IMAGE_BLANK_3D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_img_blank3D_no_threshold_null_sigma(self):
         return_new = fu.adaptive_mask(IMAGE_BLANK_3D, nsigma = 0, threshold = -9999.0, ndilation = 3, edge_width = 5)
         return_old = oldfu.adaptive_mask(IMAGE_BLANK_3D, nsigma = 0, threshold = -9999.0, ndilation = 3, edge_width = 5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_img_blank3D_no_threshold_negative_sigma(self):
         return_new = fu.adaptive_mask(IMAGE_BLANK_3D, nsigma = -10, threshold = -9999.0, ndilation = 3, edge_width = 5)
         return_old = oldfu.adaptive_mask(IMAGE_BLANK_3D, nsigma = -10, threshold = -9999.0, ndilation = 3, edge_width = 5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_img_blank3D_no_dilation(self):
         return_new = fu.adaptive_mask(IMAGE_BLANK_3D, nsigma = 1.0, threshold = -9999.0,  ndilation = 0, edge_width = 5)
         return_old = oldfu.adaptive_mask(IMAGE_BLANK_3D, nsigma = 1.0, threshold = -9999.0,  ndilation = 0, edge_width = 5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_img_blank3D_negative_dilation(self):
         return_new = fu.adaptive_mask(IMAGE_BLANK_3D, nsigma = 1.0, threshold = -9999.0,  ndilation = -2, edge_width = 5)
         return_old = oldfu.adaptive_mask(IMAGE_BLANK_3D, nsigma = 1.0, threshold = -9999.0,  ndilation = -2, edge_width = 5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_img_blank3D_negative_edge_width_crashes_because_signal11SIGSEV(self):
 
         return_new = fu.adaptive_mask(IMAGE_BLANK_3D,nsigma = 1.0, threshold = -9999.0,  ndilation = 3, edge_width = -5)
         return_old = oldfu.adaptive_mask(IMAGE_BLANK_3D,nsigma = 1.0, threshold = -9999.0,  ndilation = 3, edge_width = -5)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
         self.assertTrue(True)
 
     def test_img_blank3D_null_edge_width(self):
         return_new = fu.adaptive_mask(IMAGE_BLANK_3D, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width=0)
         return_old = oldfu.adaptive_mask(IMAGE_BLANK_3D, nsigma = 1.0, threshold = -9999.0, ndilation = 3 ,edge_width=0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 
@@ -2370,16 +2371,16 @@ class Test_cosinemask(unittest.TestCase):
         bckg = EMData()
         return_new = fu.cosinemask(IMAGE_3D, bckg=bckg)
         return_old = oldfu.cosinemask(IMAGE_3D, bckg=bckg)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
         """
         self.assertTrue(True)
 
     def test_3d_img_with_bckg_crashes_because_signal11SIGSEV(self):
         """
-        bckg = sparx_utilities.model_gauss_noise(0.25 , 10,10,10)
+        bckg = model_gauss_noise(0.25 , 10,10,10)
         return_new = fu.cosinemask(IMAGE_3D, bckg=bckg)
         return_old = oldfu.cosinemask(IMAGE_3D, bckg=bckg)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
         """
         self.assertTrue(True)
 
@@ -2397,155 +2398,155 @@ class Test_cosinemask(unittest.TestCase):
     def test_3d_img_default_values(self):
         return_new = fu.cosinemask(IMAGE_3D, radius = -1, cosine_width = 5, bckg = None, s=999999.0)
         return_old = oldfu.cosinemask(IMAGE_3D, radius = -1, cosine_width = 5, bckg = None, s=999999.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3d_img_null_radius(self):
         return_new = fu.cosinemask(IMAGE_3D, radius = 0, cosine_width = 5, bckg = None, s=999999.0)
         return_old = oldfu.cosinemask(IMAGE_3D, radius = 0, cosine_width = 5, bckg = None, s=999999.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3d_img_positive_radius(self):
         return_new = fu.cosinemask(IMAGE_3D, radius = 10, cosine_width = 5, bckg = None, s=999999.0)
         return_old = oldfu.cosinemask(IMAGE_3D, radius = 10, cosine_width = 5, bckg = None, s=999999.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3d_img_null_cosine_width(self):
         return_new = fu.cosinemask(IMAGE_3D, radius = -1, cosine_width = 0, bckg = None, s=999999.0)
         return_old = oldfu.cosinemask(IMAGE_3D, radius = -1, cosine_width = 0, bckg = None, s=999999.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3d_img_negative_cosine_width(self):
         return_new = fu.cosinemask(IMAGE_3D, radius = -1, cosine_width = -5, bckg = None, s=999999.0)
         return_old = oldfu.cosinemask(IMAGE_3D, radius = -1, cosine_width = -5, bckg = None, s=999999.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3d_img_null_s(self):
         return_new = fu.cosinemask(IMAGE_3D, radius = -1, cosine_width = 5, bckg = None, s=0)
         return_old = oldfu.cosinemask(IMAGE_3D, radius = -1, cosine_width = 5, bckg = None, s=0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3d_img_negative_s(self):
         return_new = fu.cosinemask(IMAGE_3D, radius = -1, cosine_width = 5, bckg = None, s=-10)
         return_old = oldfu.cosinemask(IMAGE_3D, radius = -1, cosine_width = 5, bckg = None, s=-10)
-        self.assertTrue(numpy.allclose(return_new.get_3dview(), return_old.get_3dview(), atol=TOLERANCE,equal_nan=True))
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), atol=TOLERANCE,equal_nan=True))
 
     def test_2d_img_with_bckg_crashes_because_signal11SIGSEV(self):
         """
-        bckg = sparx_utilities.model_gauss_noise(0.25 , 10,10,10)
+        bckg = model_gauss_noise(0.25 , 10,10,10)
         return_new = fu.cosinemask(IMAGE_2D, bckg=bckg)
         return_old = oldfu.cosinemask(IMAGE_2D, bckg=bckg)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
         """
         self.assertTrue(True)
 
     def test_2d_img_default_values(self):
         return_new = fu.cosinemask(IMAGE_2D, radius = -1, cosine_width = 5, bckg = None, s=999999.0)
         return_old = oldfu.cosinemask(IMAGE_2D, radius = -1, cosine_width = 5, bckg = None, s=999999.0)
-        self.assertTrue(numpy.allclose(return_new.get_3dview(), return_old.get_3dview(), equal_nan=True))
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), equal_nan=True))
 
     def test_2d_img_null_radius(self):
         return_new = fu.cosinemask(IMAGE_2D, radius = 0, cosine_width = 5, bckg = None, s=999999.0)
         return_old = oldfu.cosinemask(IMAGE_2D, radius = 0, cosine_width = 5, bckg = None, s=999999.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2d_img_positive_radius(self):
         return_new = fu.cosinemask(IMAGE_2D, radius = 10, cosine_width = 5, bckg = None, s=999999.0)
         return_old = oldfu.cosinemask(IMAGE_2D, radius = 10, cosine_width = 5, bckg = None, s=999999.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2d_img_null_cosine_width(self):
         return_new = fu.cosinemask(IMAGE_2D, radius = -1, cosine_width = 0, bckg = None, s=999999.0)
         return_old = oldfu.cosinemask(IMAGE_2D, radius = -1, cosine_width = 0, bckg = None, s=999999.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2d_img_negative_cosine_width(self):
         return_new = fu.cosinemask(IMAGE_2D, radius = -1, cosine_width = -5, bckg = None, s=999999.0)
         return_old = oldfu.cosinemask(IMAGE_2D, radius = -1, cosine_width = -5, bckg = None, s=999999.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2d_img_null_s(self):
         return_new = fu.cosinemask(IMAGE_2D, radius = -1, cosine_width = 5, bckg = None, s=0)
         return_old = oldfu.cosinemask(IMAGE_2D, radius = -1, cosine_width = 5, bckg = None, s=0)
-        self.assertTrue(numpy.allclose(return_new.get_3dview(), return_old.get_3dview(), atol=TOLERANCE,equal_nan=True))
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), atol=TOLERANCE,equal_nan=True))
 
     def test_2d_img_negative_s(self):
         return_new = fu.cosinemask(IMAGE_2D, radius = -1, cosine_width = 5, bckg = None, s=-10)
         return_old = oldfu.cosinemask(IMAGE_2D, radius = -1, cosine_width = 5, bckg = None, s=-10)
-        self.assertTrue(numpy.allclose(return_new.get_3dview(), return_old.get_3dview(), atol=TOLERANCE,equal_nan=True))
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), atol=TOLERANCE,equal_nan=True))
 
     def test_img_blank3D_default_values(self):
         return_new = fu.cosinemask(IMAGE_BLANK_3D, radius = -1, cosine_width = 5, bckg = None, s=999999.0)
         return_old = oldfu.cosinemask(IMAGE_BLANK_3D, radius = -1, cosine_width = 5, bckg = None, s=999999.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_img_blank3D_null_radius(self):
         return_new = fu.cosinemask(IMAGE_BLANK_3D, radius = 0, cosine_width = 5, bckg = None, s=999999.0)
         return_old = oldfu.cosinemask(IMAGE_BLANK_3D, radius = 0, cosine_width = 5, bckg = None, s=999999.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_img_blank3D_positive_radius(self):
         return_new = fu.cosinemask(IMAGE_BLANK_3D, radius = 10, cosine_width = 5, bckg = None, s=999999.0)
         return_old = oldfu.cosinemask(IMAGE_BLANK_3D, radius = 10, cosine_width = 5, bckg = None, s=999999.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_img_blank3D_null_cosine_width(self):
         return_new = fu.cosinemask(IMAGE_BLANK_3D, radius = -1, cosine_width = 0, bckg = None, s=999999.0)
         return_old = oldfu.cosinemask(IMAGE_BLANK_3D, radius = -1, cosine_width = 0, bckg = None, s=999999.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_img_blank3D_negative_cosine_width(self):
         return_new = fu.cosinemask(IMAGE_BLANK_3D, radius = -1, cosine_width = -5, bckg = None, s=999999.0)
         return_old = oldfu.cosinemask(IMAGE_BLANK_3D, radius = -1, cosine_width = -5, bckg = None, s=999999.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_img_blank3D_null_s(self):
         return_new = fu.cosinemask(IMAGE_BLANK_3D, radius = -1, cosine_width = 5, bckg = None, s=0)
         return_old = oldfu.cosinemask(IMAGE_BLANK_3D, radius = -1, cosine_width = 5, bckg = None, s=0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_img_blank3D_negative_s(self):
         return_new = fu.cosinemask(IMAGE_BLANK_3D, radius = -1, cosine_width = 5, bckg = None, s=-10)
         return_old = oldfu.cosinemask(IMAGE_BLANK_3D, radius = -1, cosine_width = 5, bckg = None, s=-10)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_img_blank2D_with_bckg_crashes_because_signal11SIGSEV(self):
         """
-        bckg = sparx_utilities.model_gauss_noise(0.25 , 10,10,10)
+        bckg = model_gauss_noise(0.25 , 10,10,10)
         return_new = fu.cosinemask(IMAGE_BLANK_2D, bckg=bckg)
         return_old = oldfu.cosinemask(IMAGE_BLANK_2D, bckg=bckg)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
         """
         self.assertTrue(True)
 
     def test_img_blank2D_default_values(self):
         return_new = fu.cosinemask(IMAGE_BLANK_2D, radius = -1, cosine_width = 5, bckg = None, s=999999.0)
         return_old = oldfu.cosinemask(IMAGE_BLANK_2D, radius = -1, cosine_width = 5, bckg = None, s=999999.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_img_blank2D_null_radius(self):
         return_new = fu.cosinemask(IMAGE_BLANK_2D, radius = 0, cosine_width = 5, bckg = None, s=999999.0)
         return_old = oldfu.cosinemask(IMAGE_BLANK_2D, radius = 0, cosine_width = 5, bckg = None, s=999999.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_img_blank2D_positive_radius(self):
         return_new = fu.cosinemask(IMAGE_BLANK_2D, radius = 10, cosine_width = 5, bckg = None, s=999999.0)
         return_old = oldfu.cosinemask(IMAGE_BLANK_2D, radius = 10, cosine_width = 5, bckg = None, s=999999.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_img_blank2D_null_cosine_width(self):
         return_new = fu.cosinemask(IMAGE_BLANK_2D, radius = -1, cosine_width = 0, bckg = None, s=999999.0)
         return_old = oldfu.cosinemask(IMAGE_BLANK_2D, radius = -1, cosine_width = 0, bckg = None, s=999999.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_img_blank2D_negative_cosine_width(self):
         return_new = fu.cosinemask(IMAGE_BLANK_2D, radius = -1, cosine_width = -5, bckg = None, s=999999.0)
         return_old = oldfu.cosinemask(IMAGE_BLANK_2D, radius = -1, cosine_width = -5, bckg = None, s=999999.0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_img_blank2D_null_s(self):
         return_new = fu.cosinemask(IMAGE_BLANK_2D, radius = -1, cosine_width = 5, bckg = None, s=0)
         return_old = oldfu.cosinemask(IMAGE_BLANK_2D, radius = -1, cosine_width = 5, bckg = None, s=0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 class Test_get_shrink_3dmask(unittest.TestCase):
@@ -2601,31 +2602,31 @@ class Test_get_shrink_3dmask(unittest.TestCase):
         """ the get_data_3d(1) is a list with one EMdata element"""
         return_new = fu.get_shrink_3dmask(nxinit = 4, mask_file_name = [IMAGE_BLANK_3D])
         return_old = oldfu.get_shrink_3dmask(nxinit = 4, mask_file_name = [IMAGE_BLANK_3D])
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2Dmask(self):
         return_new = fu.get_shrink_3dmask(nxinit = 4, mask_file_name = [IMAGE_2D])
         return_old = oldfu.get_shrink_3dmask(nxinit = 4, mask_file_name = [IMAGE_2D])
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
     def test_2Dimage_blank_mask(self):
         return_new = fu.get_shrink_3dmask(nxinit = 4, mask_file_name = [IMAGE_BLANK_2D])
         return_old = oldfu.get_shrink_3dmask(nxinit = 4, mask_file_name = [IMAGE_BLANK_2D])
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3Dimage_blank_mask(self):
         """ the get_data_3d(1) is a list with one EMdata element"""
         return_new = fu.get_shrink_3dmask(nxinit = 4, mask_file_name = [IMAGE_BLANK_3D])
         return_old = oldfu.get_shrink_3dmask(nxinit = 4, mask_file_name = [IMAGE_BLANK_3D])
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_nx_equal_size3Dmask(self):
         mask_file_name = get_data_3d(1)
-        nx =sparx_utilities.get_im(mask_file_name).get_xsize()
+        nx =get_im(mask_file_name).get_xsize()
         return_new = fu.get_shrink_3dmask(nxinit = nx, mask_file_name = mask_file_name)
         return_old = oldfu.get_shrink_3dmask(nxinit = nx, mask_file_name = mask_file_name)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 
@@ -2664,33 +2665,33 @@ class Test_get_biggest_cluster(unittest.TestCase):
     def test_2Dimg(self):
         return_new = fu.get_biggest_cluster(IMAGE_2D)
         return_old = oldfu.get_biggest_cluster(IMAGE_2D)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3Dimg(self):
         return_new = fu.get_biggest_cluster(IMAGE_3D)
         return_old = oldfu.get_biggest_cluster(IMAGE_3D)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_img_blank2D(self):
         return_new = fu.get_biggest_cluster(IMAGE_BLANK_2D)
         return_old = oldfu.get_biggest_cluster(IMAGE_BLANK_2D)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_img_blank3D(self):
         return_new = fu.get_biggest_cluster(IMAGE_BLANK_3D)
         return_old = oldfu.get_biggest_cluster(IMAGE_BLANK_3D)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_gauss_noise_img(self):
-        image = sparx_utilities.model_gauss_noise(0.25 , 10,10,10)
+        image = model_gauss_noise(0.25 , 10,10,10)
         return_new = fu.get_biggest_cluster(image)
         return_old = oldfu.get_biggest_cluster(image)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 
 class Test_compute_bfactor(unittest.TestCase):
-    pw = [entry for entry in numpy.arange(0, 10).tolist()]
+    pw = [entry for entry in arange(0, 10).tolist()]
 
     def test_all_the_conditions(self,return_new=None,return_old=None, skip=True):
         if skip is False:
@@ -2699,8 +2700,8 @@ class Test_compute_bfactor(unittest.TestCase):
             self.assertEqual(return_new[3], return_old[3])
             self.assertEqual(len(return_new[1]), len(return_old[1]))
             for i, j in zip(return_new[1], return_old[1]):
-                self.assertTrue(numpy.array_equal(i, j))
-            self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
+                self.assertTrue(array_equal(i, j))
+            self.assertTrue(array_equal(return_new[1], return_old[1]))
 
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -2850,7 +2851,7 @@ class Test_cter_mrk(unittest.TestCase):
         remove_dir(self.output_directory)
         mpi_barrier(MPI_COMM_WORLD)
         return_old = oldfu.cter_mrk(ABSOLUTE_PATH_TO_STACK, self.output_directory, selection_list=None, wn=self.wn,pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start,f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0,check_consistency=False, stack_mode=True, debug_mode=False,program_name="cter_mrk() in morphology.py", RUNNING_UNDER_MPI=True, main_mpi_proc=0,my_mpi_proc_id=0, n_mpi_procs=1)
-        self.assertTrue(numpy.allclose(return_new, return_old, atol=TOLERANCE, equal_nan=True))
+        self.assertTrue(allclose(return_new, return_old, atol=TOLERANCE, equal_nan=True))
         """
 
     def test_cter_mrk_default_value_runningundermpiTrue_and_notStandardValues_stackMode_notTestable(self):
@@ -2872,7 +2873,7 @@ class Test_cter_mrk(unittest.TestCase):
         remove_dir(self.output_directory)
         mpi_barrier(MPI_COMM_WORLD)
         return_old = oldfu.cter_mrk(ABSOLUTE_PATH_TO_STACK, self.output_directory, selection_list=None, wn=100,pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start,f_stop=self.i_stop, kboot=3, overlap_x=10, overlap_y=10, edge_x=0, edge_y=0,check_consistency=True, stack_mode=True, debug_mode=False,program_name="cter_mrk() in morphology.py", RUNNING_UNDER_MPI=True, main_mpi_proc=0,my_mpi_proc_id=0, n_mpi_procs=1)
-        self.assertTrue(numpy.allclose(return_new, return_old, atol=TOLERANCE, equal_nan=True))
+        self.assertTrue(allclose(return_new, return_old, atol=TOLERANCE, equal_nan=True))
         """
 
 
@@ -2971,7 +2972,7 @@ class Test_cter_pap(unittest.TestCase):
         remove_dir(self.output_directory)
         mpi_barrier(MPI_COMM_WORLD)
         return_old = oldfu.cter_pap(ABSOLUTE_PATH_TO_STACK, self.output_directory, selection_list=None, wn=self.wn, pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot=3, overlap_x=50, overlap_y=50, edge_x=0, edge_y=0, check_consistency=False, stack_mode=True, debug_mode=False, program_name="cter_pap() in morphology.py", RUNNING_UNDER_MPI=True, main_mpi_proc=0, my_mpi_proc_id=0, n_mpi_procs=1)
-        self.assertTrue(numpy.allclose(return_new, return_old, atol=TOLERANCE, equal_nan=True))
+        self.assertTrue(allclose(return_new, return_old, atol=TOLERANCE, equal_nan=True))
         """
 
     def test_cter_pap_default_value_runningundermpiTrue_and_notStandardValues_stackMode_notTestable(self):
@@ -2993,7 +2994,7 @@ class Test_cter_pap(unittest.TestCase):
         remove_dir(self.output_directory)
         mpi_barrier(MPI_COMM_WORLD)
         return_old = oldfu.cter_pap(ABSOLUTE_PATH_TO_STACK, self.output_directory, selection_list=None, wn=100, pixel_size=self.pixel_size, Cs=self.cs, voltage=self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot=3, overlap_x=10, overlap_y=10, edge_x=0, edge_y=0, check_consistency=True, stack_mode=True, debug_mode=False, program_name="cter_pap() in morphology.py", RUNNING_UNDER_MPI=True, main_mpi_proc=0, my_mpi_proc_id=0, n_mpi_procs=1)
-        self.assertTrue(numpy.allclose(return_new, return_old, atol=TOLERANCE, equal_nan=True))
+        self.assertTrue(allclose(return_new, return_old, atol=TOLERANCE, equal_nan=True))
         """
 
 
@@ -3083,7 +3084,7 @@ class Test_cter_vpp(unittest.TestCase):
         remove_dir(self.output_directory)
         mpi_barrier(MPI_COMM_WORLD)
         return_old = oldfu.cter_vpp(ABSOLUTE_PATH_TO_STACK, self.output_directory, selection_list = None, wn = self.wn,  pixel_size=self.pixel_size, Cs= self.cs, voltage = self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot = 3, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, check_consistency = False, stack_mode = True, debug_mode = False, program_name = "cter_vpp() in morphology.py", vpp_options = self.vpp_options, RUNNING_UNDER_MPI = True, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1)
-        self.assertTrue(numpy.allclose(return_new, return_old, atol=TOLERANCE, equal_nan=True))
+        self.assertTrue(allclose(return_new, return_old, atol=TOLERANCE, equal_nan=True))
         """
 
     def test_cter_vpp__default_value_runningundermpi_and_notStandardValues_stackMode_WarningMessagges_failed(self):
@@ -3105,7 +3106,7 @@ class Test_cter_vpp(unittest.TestCase):
         remove_dir(self.output_directory)
         mpi_barrier(MPI_COMM_WORLD)
         return_old = oldfu.cter_vpp(ABSOLUTE_PATH_TO_STACK, self.output_directory, selection_list = None, wn = 100,  pixel_size=self.pixel_size, Cs= self.cs, voltage = self.voltage, f_start=self.i_start, f_stop=self.i_stop, kboot = 3, overlap_x = 10, overlap_y = 10, edge_x = 0, edge_y = 0, check_consistency = True, stack_mode = True, debug_mode = False, program_name = "cter_vpp() in morphology.py", vpp_options = self.vpp_options, RUNNING_UNDER_MPI = True, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1)
-        self.assertTrue(numpy.allclose(return_new, return_old, atol=TOLERANCE, equal_nan=True))
+        self.assertTrue(allclose(return_new, return_old, atol=TOLERANCE, equal_nan=True))
         """
 
 
@@ -3124,25 +3125,25 @@ class Test_ampcont2angle(unittest.TestCase):
     def test_A_equal_minus100(self):
         return_new = fu.ampcont2angle(100.0)
         return_old = oldfu.ampcont2angle(100.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, return_old))
         self.assertEqual(return_new,90.0)
 
     def test_A_equal100(self):
         return_new = fu.ampcont2angle(-100.0)
         return_old = oldfu.ampcont2angle(-100.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, return_old))
         self.assertEqual(return_new,90.0)
 
     def test_negative_A(self):
         return_new = fu.ampcont2angle(-1)
         return_old = oldfu.ampcont2angle(-1)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, return_old))
         self.assertEqual(return_new, 179.42703265514285)
 
     def test_positive_A(self):
         return_new = fu.ampcont2angle(8)
         return_old = oldfu.ampcont2angle(8)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, return_old))
         self.assertEqual(return_new, 4.5885657357858358)
 
 
@@ -3161,19 +3162,19 @@ class Test_angle2ampcont(unittest.TestCase):
     def test_positive_phi(self):
         return_new = fu.angle2ampcont(0.45)
         return_old = oldfu.angle2ampcont(0.45)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, return_old))
         self.assertEqual(return_new, 0.78539008887113337)
 
     def test_negativetive_phi(self):
         return_new = fu.angle2ampcont(-0.45)
         return_old = oldfu.angle2ampcont(-0.45)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, return_old))
         self.assertEqual(return_new, -0.78539008887113337)
 
     def test_null_phi(self):
         return_new = fu.angle2ampcont(0)
         return_old = oldfu.angle2ampcont(0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, return_old))
         self.assertEqual(return_new, 0.0)
 
 
@@ -3195,14 +3196,14 @@ class Test_bracket_def(unittest.TestCase):
     def test_f2_greater_f1_outputmsg_Bracket_didnot_find_a_minimum(self):
         return_new = fu.bracket_def(self.function1, dat=5, x1=3, h=3)
         return_old = oldfu.bracket_def(self.function1, dat=5, x1=3, h=3)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  (None, -6.221005235266456e+21)))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  (None, -6.221005235266456e+21)))
 
     def test_f2_not_greater_f1_outputmsg_Bracket_didnot_find_a_minimum(self):
         return_new = fu.bracket_def(self.function1, dat=5, x1=3, h=0)
         return_old = oldfu.bracket_def(self.function1, dat=5, x1=3, h=0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  (None,3)))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  (None,3)))
 
 
 
@@ -3223,8 +3224,8 @@ class Test_bracket(unittest.TestCase):
     def test_f3_greater_f1(self):
         return_new = fu.bracket(self.function1, dat=5, h=4)
         return_old = oldfu.bracket(self.function1, dat=5, h=4)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, (0.0, 10.472135955999999)))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, (0.0, 10.472135955999999)))
 
     def test_f3_not_greater_f1_outputmsg_Bracket_didnot_find_a_minimum(self):
         self.assertTrue(fu.bracket(self.function1, dat=0, h=0) is None)
@@ -3283,20 +3284,20 @@ class Test_goldsearch_astigmatism(unittest.TestCase):
     def test_f2_greater_f1(self):
         return_new = fu.goldsearch_astigmatism(self.function1, 5, 3, 4)
         return_old = oldfu.goldsearch_astigmatism(self.function1, 5, 3, 4)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, (3.0002800335807187, 8.000280033580719)))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, (3.0002800335807187, 8.000280033580719)))
 
     def test_return_f2_greater_f1(self):
         return_new = fu.goldsearch_astigmatism(self.function_return_0, 5, 3, 4)
         return_old = oldfu.goldsearch_astigmatism(self.function_return_0, 5, 3, 4)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, (3.0004531038514113, 0)))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, (3.0004531038514113, 0)))
 
     def test_test_f1_greater_f2(self):
         return_new = fu.goldsearch_astigmatism(self.function1, 5, 4, 3)
         return_old = oldfu.goldsearch_astigmatism(self.function1, 5, 4, 3)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, (3.0002800335807187, 8.000280033580719)))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, (3.0002800335807187, 8.000280033580719)))
 
 
 
@@ -3319,26 +3320,26 @@ class Test_defocus_baseline_fit(unittest.TestCase):
     def test_iswi3(self):
         return_new = fu.defocus_baseline_fit(roo=self.roo, i_start=0, i_stop=10, nrank=6, iswi=3)
         return_old = oldfu.defocus_baseline_fit(roo=self.roo, i_start=0, i_stop=10, nrank=6, iswi=3)
-        expected_output= numpy.full(257,numpy.inf)
+        expected_output= numpy_full(257,numpy_inf)
         cont = 0
         for value in [  2.47491812e-07, 2.57499129e-01, 1.13008652e+01, 1.17266912e+01 , 7.23312950e+00, 7.44119501e+00, 9.95157623e+00, 9.32174778e+00, 5.66901159e+00, 8.88306713e+00, 1.51658350e+03, 3.16336230e+10 , 5.96541553e+27  ]:
             expected_output[cont] = value
             cont+=1
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.allclose(return_new, expected_output, atol=TOLERANCE))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(allclose(return_new, expected_output, atol=TOLERANCE))
 
     def test_iswi_not3(self):
         return_new = fu.defocus_baseline_fit(roo=self.roo, i_start=0, i_stop=10, nrank=6, iswi=0)
         return_old = oldfu.defocus_baseline_fit(roo=self.roo, i_start=0, i_stop=10, nrank=6, iswi=0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, numpy.ones((257,), dtype=float)))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, numpy_ones((257,), dtype=float)))
 
 
     def test_start_is_bigger_than_stop_error_because_signal6SIGABRT(self):
         """
         return_new = fu.defocus_baseline_fit(roo=self.roo, i_start=10, i_stop=7, nrank=2, iswi=3)
         return_old = oldfu.defocus_baseline_fit(roo=self.roo, i_start=10, i_stop=7, nrank=2, iswi=3)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, return_old))
         """
         self.assertTrue(True)
 
@@ -3346,7 +3347,7 @@ class Test_defocus_baseline_fit(unittest.TestCase):
         """
         return_new = fu.defocus_baseline_fit(roo=self.roo, i_start=9, i_stop=9, nrank=2, iswi=3)
         return_old = oldfu.defocus_baseline_fit(roo=self.roo, i_start=9, i_stop=9, nrank=2, iswi=3)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, return_old))
         """
         self.assertTrue(True)
 
@@ -3354,7 +3355,7 @@ class Test_defocus_baseline_fit(unittest.TestCase):
         """
         return_new = fu.defocus_baseline_fit(roo=self.roo, i_start=0, i_stop=10, nrank=-1, iswi=2)
         return_old = oldfu.defocus_baseline_fit(roo=self.roo, i_start=0, i_stop=10, nrank=-1, iswi=2)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, return_old))
         """
         self.assertTrue(True)
 
@@ -3378,7 +3379,7 @@ class Test_defocus_baseline_fit(unittest.TestCase):
 
 class Test_simpw1d(unittest.TestCase):
     """ I got this value from the pickle file"""
-    data = [entry for entry in numpy.arange(1, 256).tolist()]
+    data = [entry for entry in arange(1, 256).tolist()]
     defocus = 1
     Cs = 2
     voltage = 300
@@ -3433,7 +3434,7 @@ class Test_simpw1d(unittest.TestCase):
 
 
 class Test_simpw1d_pap(unittest.TestCase):
-    data = [entry for entry in numpy.arange(1, 256).tolist()]
+    data = [entry for entry in arange(1, 256).tolist()]
     defocus = 1
     Cs = 2
     voltage = 300
@@ -3494,7 +3495,7 @@ class Test_simpw1d_pap(unittest.TestCase):
 
 
 class Test_simpw1d_print(unittest.TestCase):
-    data = [entry for entry in numpy.arange(1, 256).tolist()]
+    data = [entry for entry in arange(1, 256).tolist()]
     defocus = 1
     Cs = 2
     voltage = 300
@@ -3556,7 +3557,7 @@ class Test_simpw1d_print(unittest.TestCase):
 
 
 class Test_movingaverage(unittest.TestCase):
-    data = [entry for entry in numpy.arange(0, 10).tolist()]
+    data = [entry for entry in arange(0, 10).tolist()]
 
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -3570,13 +3571,13 @@ class Test_movingaverage(unittest.TestCase):
     def test_default_value(self):
         return_new = fu.movingaverage(self.data,window_size=2, skip=3)
         return_old = oldfu.movingaverage(self.data, window_size=2, skip=3)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(list(return_new), [  9.,  9.,  7.5, 6.5, 6.,  7.5, 9., 10.5  ,12., 13. ]))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(list(return_new), [  9.,  9.,  7.5, 6.5, 6.,  7.5, 9., 10.5  ,12., 13. ]))
 
     def test_null_skip(self):
         return_new = fu.movingaverage(self.data,window_size=2, skip=0)
         return_old = oldfu.movingaverage(self.data, window_size=2, skip=0)
-        self.assertTrue(numpy.array_equal(list(return_new), [  1.5, 1.5, 3.,  4.5, 6.,  7.5, 9., 10.5 , 12., 13. ]))
+        self.assertTrue(array_equal(list(return_new), [  1.5, 1.5, 3.,  4.5, 6.,  7.5, 9., 10.5 , 12., 13. ]))
 
     def test_windows_size_negative_Value_returns_ValueError_negative_dimensions_arenot_allowed(self):
         with self.assertRaises(ValueError) as cm_new:
@@ -3625,7 +3626,7 @@ class Test_defocusgett(unittest.TestCase):
             for i in [0,5,6]:
                 self.assertEqual(return_new[i], return_old[i])
             for i in [1,2,3,4]:
-                self.assertTrue(numpy.allclose(return_new[i], return_old[i], atol=TOLERANCE, equal_nan=True))
+                self.assertTrue(allclose(return_new[i], return_old[i], atol=TOLERANCE, equal_nan=True))
 
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -3655,7 +3656,7 @@ class Test_defocusgett(unittest.TestCase):
         return_new = fu.defocusgett(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
         return_old = oldfu.defocusgett(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
         self.test_all_the_conditions(return_new,return_old)
-        self.test_all_the_conditions(return_new,(1.2978713763985994, numpy.array([  0.00000000e+00,   0.00000000e+00,   3.32535601e+00,
+        self.test_all_the_conditions(return_new,(1.2978713763985994, array([  0.00000000e+00,   0.00000000e+00,   3.32535601e+00,
          3.89052868e+00,   3.09235334e+00,   2.46089840e+00,
          2.51289177e+00,   2.00900078e+00,   1.45311737e+00,
          1.81239080e+00,   2.01346397e+00,   2.19944096e+00,
@@ -3740,7 +3741,7 @@ class Test_defocusgett(unittest.TestCase):
          1.16451383e-02,   1.27562284e-02,   1.17495656e-02,
          9.73826647e-03,   8.92198086e-03,   7.08878040e-03,
          5.37168980e-03,   5.26952744e-03,   3.19033861e-03,
-         1.33591890e-03,   0.00000000e+00], dtype=float), [1.0000000949949049e-06, 0.37418381547924184], numpy.array([ 8.26501846,  8.11838913,  7.97549009,  7.83619595,  7.70038462,
+         1.33591890e-03,   0.00000000e+00], dtype=float), [1.0000000949949049e-06, 0.37418381547924184], array([ 8.26501846,  8.11838913,  7.97549009,  7.83619595,  7.70038462,
         7.56794071,  7.43875599,  7.3127203 ,  7.18973351,  7.069695  ,
         6.95251179,  6.8380928 ,  6.72634792,  6.61719513,  6.51055288,
         6.40634251,  6.30448866,  6.20491934,  6.1075654 ,  6.01235867,
@@ -3791,7 +3792,7 @@ class Test_defocusgett(unittest.TestCase):
         0.66208464,  0.66080827,  0.65962708,  0.65854132,  0.65755129,
         0.65665734,  0.65585989,  0.65515935,  0.65455633,  0.65405118,
         0.6536445 ,  0.65333688,  0.65312904,  0.65302151,  0.6530152 ,
-        0.65311074,  0.65330893], dtype=float), numpy.array([ 1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
+        0.65311074,  0.65330893], dtype=float), array([ 1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
         1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
         1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
         1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
@@ -3824,7 +3825,7 @@ class Test_defocusgett(unittest.TestCase):
         return_new = fu.defocusgett(self.roo, self.nx, self.voltage, self.pixel_size, 0, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
         return_old = oldfu.defocusgett(self.roo, self.nx, self.voltage, self.pixel_size, 0, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
         self.test_all_the_conditions(return_new,return_old,False)
-        self.test_all_the_conditions(return_new, (2.561803398865436, numpy.array([  0.00000000e+00,   0.00000000e+00,   3.32535601e+00,
+        self.test_all_the_conditions(return_new, (2.561803398865436, array([  0.00000000e+00,   0.00000000e+00,   3.32535601e+00,
          3.89052868e+00,   3.09235334e+00,   2.46089840e+00,
          2.51289177e+00,   2.00900078e+00,   1.45311737e+00,
          1.81239080e+00,   2.01346397e+00,   2.19944096e+00,
@@ -3909,7 +3910,7 @@ class Test_defocusgett(unittest.TestCase):
          1.16451383e-02,   1.27562284e-02,   1.17495656e-02,
          9.73826647e-03,   8.92198086e-03,   7.08878040e-03,
          5.37168980e-03,   5.26952744e-03,   3.19033861e-03,
-         1.33591890e-03,   0.00000000e+00], dtype=float), [1.0000000949949049e-06, 0.7615132848231951], numpy.array([ 8.26501846,  8.11838913,  7.97549009,  7.83619595,  7.70038462,
+         1.33591890e-03,   0.00000000e+00], dtype=float), [1.0000000949949049e-06, 0.7615132848231951], array([ 8.26501846,  8.11838913,  7.97549009,  7.83619595,  7.70038462,
         7.56794071,  7.43875599,  7.3127203 ,  7.18973351,  7.069695  ,
         6.95251179,  6.8380928 ,  6.72634792,  6.61719513,  6.51055288,
         6.40634251,  6.30448866,  6.20491934,  6.1075654 ,  6.01235867,
@@ -3960,7 +3961,7 @@ class Test_defocusgett(unittest.TestCase):
         0.66208464,  0.66080827,  0.65962708,  0.65854132,  0.65755129,
         0.65665734,  0.65585989,  0.65515935,  0.65455633,  0.65405118,
         0.6536445 ,  0.65333688,  0.65312904,  0.65302151,  0.6530152 ,
-        0.65311074,  0.65330893], dtype=float), numpy.array([ 1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
+        0.65311074,  0.65330893], dtype=float), array([ 1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
         1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
         1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
         1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
@@ -3985,7 +3986,7 @@ class Test_defocusgett(unittest.TestCase):
         return_new = fu.defocusgett(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, 0, nr2=self.nr2)
         return_old = oldfu.defocusgett(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, 0, nr2=self.nr2)
         self.test_all_the_conditions(return_new,return_old,False)
-        self.test_all_the_conditions(return_new, (5.918033988733576, numpy.array([  0.00000000e+00,   0.00000000e+00,   3.32535601e+00,
+        self.test_all_the_conditions(return_new, (5.918033988733576, array([  0.00000000e+00,   0.00000000e+00,   3.32535601e+00,
          3.89052868e+00,   3.09235334e+00,   2.46089840e+00,
          2.51289177e+00,   2.00900078e+00,   1.45311737e+00,
          1.81239080e+00,   2.01346397e+00,   2.19944096e+00,
@@ -4070,7 +4071,7 @@ class Test_defocusgett(unittest.TestCase):
          1.16451383e-02,   1.27562284e-02,   1.17495656e-02,
          9.73826647e-03,   8.92198086e-03,   7.08878040e-03,
          5.37168980e-03,   5.26952744e-03,   3.19033861e-03,
-         1.33591890e-03,   0.00000000e+00], dtype=float), [1.0000000949949049e-06, 0.43095912248518076], numpy.array([ 8.26501846,  8.11838913,  7.97549009,  7.83619595,  7.70038462,
+         1.33591890e-03,   0.00000000e+00], dtype=float), [1.0000000949949049e-06, 0.43095912248518076], array([ 8.26501846,  8.11838913,  7.97549009,  7.83619595,  7.70038462,
         7.56794071,  7.43875599,  7.3127203 ,  7.18973351,  7.069695  ,
         6.95251179,  6.8380928 ,  6.72634792,  6.61719513,  6.51055288,
         6.40634251,  6.30448866,  6.20491934,  6.1075654 ,  6.01235867,
@@ -4121,7 +4122,7 @@ class Test_defocusgett(unittest.TestCase):
         0.66208464,  0.66080827,  0.65962708,  0.65854132,  0.65755129,
         0.65665734,  0.65585989,  0.65515935,  0.65455633,  0.65405118,
         0.6536445 ,  0.65333688,  0.65312904,  0.65302151,  0.6530152 ,
-        0.65311074,  0.65330893], dtype=float), numpy.array([ 1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
+        0.65311074,  0.65330893], dtype=float), array([ 1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
         1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
         1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
         1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
@@ -4188,7 +4189,7 @@ class Test_defocusgett_pap(unittest.TestCase):
             for i in [0,5,6]:
                 self.assertEqual(return_new[i], return_old[i])
             for i in [1,2,3,4]:
-                self.assertTrue(numpy.allclose(return_new[i], return_old[i], atol=TOLERANCE, equal_nan=True))
+                self.assertTrue(allclose(return_new[i], return_old[i], atol=TOLERANCE, equal_nan=True))
 
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -4218,7 +4219,7 @@ class Test_defocusgett_pap(unittest.TestCase):
         return_new = fu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
         return_old = oldfu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
         self.test_all_the_conditions(return_new,return_old,False)
-        self.test_all_the_conditions(return_new, (1.2414488486307103, numpy.array([  2.04661703e+00,   2.04661703e+00,   5.24815893e+00,
+        self.test_all_the_conditions(return_new, (1.2414488486307103, array([  2.04661703e+00,   2.04661703e+00,   5.24815893e+00,
          5.69506121e+00,   4.78397322e+00,   4.04477930e+00,
          3.99403429e+00,   3.39222670e+00,   2.74308205e+00,
          3.01358080e+00,   3.13020754e+00,   3.23590851e+00,
@@ -4303,7 +4304,7 @@ class Test_defocusgett_pap(unittest.TestCase):
          1.30345821e-02,   1.41077638e-02,   1.30448341e-02,
          1.09574199e-02,   1.00436807e-02,   8.09019804e-03,
          6.22850657e-03,   5.95557690e-03,   3.67796421e-03,
-         1.59549713e-03,   0.00000000e+00], dtype=float), [0.0010000000474974513, 0.0034652412869036198, 0.010860749520361423, 0.02318497933447361, 0.04043235257267952, 0.06258878111839294, 0.08962540328502655, 0.121490478515625, 0.15809977054595947, 0.1993250548839569, 0.24498122930526733, 0.2948123812675476, 0.3484761714935303, 0.40552836656570435, 0.4654068052768707, 0.5274160504341125, 0.5907129645347595, 0.654295802116394, 0.7169950008392334, 0.7774702310562134, 0.8342134356498718, 0.8855584859848022, 0.9297018051147461, 0.9647326469421387, 0.9886764883995056, 0.9995506405830383, 0.995435357093811, 0.9745574593544006, 0.9353881478309631, 0.8767511248588562, 0.7979393005371094, 0.6988360285758972, 0.5800313353538513, 0.44293099641799927, 0.28984537720680237, 0.12404847890138626, 0.050200723111629486, 0.22768962383270264, 0.40234488248825073, 0.5673930644989014, 0.715599536895752, 0.8395806550979614, 0.9321912527084351, 0.9869728684425354, 0.9986444711685181, 0.9636079668998718, 0.8804355263710022, 0.7502927184104919, 0.5772567391395569, 0.3684709370136261, 0.13409820199012756, 0.11297184973955154, 0.35768231749534607, 0.5836414694786072, 0.7742146253585815, 0.9138171672821045, 0.9893233776092529, 0.991492748260498, 0.9162591695785522, 0.7657355070114136, 0.5487765669822693, 0.2809595763683319, 0.016130883246660233, 0.3163447678089142, 0.5911065936088562, 0.812130868434906, 0.954495906829834, 0.9997549057006836, 0.9387165307998657, 0.7734877467155457, 0.5183954834938049, 0.19949160516262054, 0.14754030108451843, 0.4809805750846863, 0.7580004334449768, 0.9402877688407898, 0.9997861981391907, 0.923597514629364, 0.7172496914863586, 0.4055541753768921, 0.03057217039167881, 0.35337403416633606, 0.6872223615646362, 0.9163534045219421, 0.9999821186065674, 0.9192268252372742, 0.6821759939193726, 0.32465073466300964, 0.09401582181453705, 0.500046968460083, 0.8179534077644348, 0.9848885536193848, 0.9639043807983398, 0.7532867789268494, 0.38953253626823425, 0.0574350468814373, 0.4966377317905426, 0.8341708183288574, 0.9936670064926147, 0.9346218109130859, 0.6641416549682617, 0.2385433465242386, 0.2466745227575302, 0.6772194504737854, 0.9468592405319214, 0.9844669103622437, 0.7743889689445496, 0.36402636766433716, 0.14464901387691498, 0.6190195083618164, 0.9299967885017395, 0.9879971146583557, 0.7705188989639282, 0.33258792757987976, 0.204653799533844, 0.6858837604522705, 0.9661991000175476, 0.9559153318405151, 0.6514270305633545, 0.14117206633090973, 0.41749370098114014, 0.8455065488815308, 0.9998371601104736, 0.8231514096260071, 0.3677961230278015, 0.2164074182510376, 0.7293500304222107, 0.9888116121292114, 0.8967489004135132, 0.47922617197036743, 0.11699043959379196, 0.6733413338661194, 0.9788181781768799, 0.9114044904708862, 0.48990586400032043, 0.12677988409996033, 0.6965723037719727, 0.9884230494499207, 0.8776131272315979, 0.40249836444854736, 0.2442290186882019, 0.7907546162605286, 0.9999405145645142, 0.774478018283844, 0.20608311891555786, 0.45738646388053894, 0.9175982475280762, 0.9603772759437561, 0.558700680732727, 0.1067904531955719, 0.7250187993049622, 0.9986801743507385, 0.7892455458641052, 0.19154003262519836, 0.5041019916534424, 0.9501314163208008, 0.9161661267280579, 0.4120180010795593, 0.3081568479537964, 0.8700925707817078, 0.9734609723091125, 0.5558747053146362, 0.16447508335113525, 0.7980263829231262, 0.9932621121406555, 0.6346670389175415, 0.08352183550596237, 0.7571301460266113, 0.9977206587791443, 0.659209668636322, 0.06777205318212509, 0.7574940323829651, 0.996440589427948, 0.6339258551597595, 0.11693687736988068, 0.7986542582511902, 0.9862329959869385, 0.5553515553474426, 0.22905144095420837, 0.8698946237564087, 0.9517096877098083, 0.41408076882362366, 0.39756274223327637, 0.9485421776771545, 0.8670943379402161, 0.20036566257476807, 0.605019211769104, 0.9978501200675964, 0.7011932730674744, 0.08601155132055283, 0.8152661323547363, 0.9680882096290588, 0.4283788800239563, 0.422222375869751, 0.9683007597923279, 0.8057811260223389, 0.04691966623067856, 0.749231219291687, 0.984946072101593, 0.4756195545196533, 0.39813998341560364, 0.9683157801628113, 0.7898669838905334, 0.005769689567387104, 0.7991155982017517, 0.9613912105560303, 0.3565613925457001, 0.536712110042572, 0.9975864291191101, 0.6456504464149475, 0.23786695301532745, 0.926816463470459, 0.8449404835700989, 0.05353856459259987, 0.7851317524909973, 0.9576318264007568, 0.30986207723617554, 0.6068496704101562, 0.9986487030982971, 0.5180912017822266, 0.41968950629234314, 0.9877812266349792, 0.6762035489082336, 0.243089959025383, 0.9448619484901428, 0.7891093492507935, 0.08901401609182358, 0.8871061205863953, 0.8650603890419006, 0.036562394350767136, 0.827987551689148, 0.9130284786224365, 0.13151100277900696, 0.7772161960601807, 0.9411216378211975, 0.1959078162908554, 0.7411880493164062, 0.9555256366729736, 0.23076143860816956, 0.723581075668335, 0.9601514935493469, 0.2370067983865738, 0.725818932056427, 0.9564749002456665, 0.21510691940784454, 0.7474545240402222, 0.9435480237007141, 0.1651088297367096, 0.786169707775116, 0.9181837439537048, 0.08672330528497696, 0.8376127481460571, 0.875239908695221, 0.01990979164838791, 0.895147442817688, 0.8081169128417969, 0.15332353115081787, 0.9495524168014526, 0.7096153497695923, 0.30965569615364075, 0.9888870120048523, 0.5731455087661743, 0.4813587963581085, 0.9989009499549866, 0.39452680945396423, 0.6561211347579956, 0.9640554189682007, 0.17409665882587433, 0.8161569237709045, 0.8695818185806274, 0.08085839450359344, 0.9387527108192444, 0.7045477032661438, 0.3539331257343292, 0.9980322122573853, 0.4658339321613312, 0.6186971068382263, 0.9687560200691223, 0.16243696212768555, 0.8395452499389648, 0.832098662853241, 0.18097111582756042, 0.9755929112434387, 0.5827882885932922, 0.5230323076248169, 0.9880489110946655, 0.23615679144859314, 0.8085606098175049, 0.8506600856781006, 0.1670692265033722, 0.9768885970115662, 0.5614805817604065, 0.5614992380142212, 0.9758399128913879, 0.15276825428009033, 0.8655163049697876, 0.7792490124702454, 0.30577877163887024, 0.9985715746879578, 0.40354853868484497, 0.7143689393997192, 0.9054522514343262, 0.08309189975261688, 0.9638381600379944, 0.5814045667648315, 0.566121518611908, 0.9675438404083252, 0.08862145990133286, 0.9086154699325562, 0.6966807246208191, 0.44587624073028564, 0.9920187592506409, 0.20582804083824158, 0.8582422733306885, 0.7634249925613403, 0.3658521771430969, 0.998803973197937, 0.2713130712509155, 0.8273149132728577, 0.7933233380317688, 0.3303309381008148, 0.9997867345809937, 0.2892128825187683, 0.8221098184585571, 0.7932211756706238, 0.3392295241355896, 0.9992287158966064, 0.2626049518585205, 0.842443585395813, 0.7646620869636536, 0.38986238837242126, 0.9947655200958252, 0.19279256463050842, 0.8828991651535034, 0.7046497464179993, 0.4771725535392761, 0.9785465002059937, 0.08069252222776413, 0.9332144856452942, 0.6073649525642395, 0.5927058458328247, 0.938612699508667, 0.07143032550811768, 0.9785091876983643, 0.46666088700294495, 0.7235645055770874, 0.8607971668243408, 0.2574540972709656, 0.9999300837516785, 0.27898645401000977, 0.8513391017913818, 0.7315158843994141, 0.46465522050857544, 0.976433277130127, 0.04696755111217499, 0.9522486329078674, 0.541608452796936, 0.6724414825439453, 0.8880177140235901, 0.21736381947994232, 0.999261736869812], numpy.array([ 6.08884954,  6.07177114,  6.05268717,  6.03166342,  6.00876474,
+         1.59549713e-03,   0.00000000e+00], dtype=float), [0.0010000000474974513, 0.0034652412869036198, 0.010860749520361423, 0.02318497933447361, 0.04043235257267952, 0.06258878111839294, 0.08962540328502655, 0.121490478515625, 0.15809977054595947, 0.1993250548839569, 0.24498122930526733, 0.2948123812675476, 0.3484761714935303, 0.40552836656570435, 0.4654068052768707, 0.5274160504341125, 0.5907129645347595, 0.654295802116394, 0.7169950008392334, 0.7774702310562134, 0.8342134356498718, 0.8855584859848022, 0.9297018051147461, 0.9647326469421387, 0.9886764883995056, 0.9995506405830383, 0.995435357093811, 0.9745574593544006, 0.9353881478309631, 0.8767511248588562, 0.7979393005371094, 0.6988360285758972, 0.5800313353538513, 0.44293099641799927, 0.28984537720680237, 0.12404847890138626, 0.050200723111629486, 0.22768962383270264, 0.40234488248825073, 0.5673930644989014, 0.715599536895752, 0.8395806550979614, 0.9321912527084351, 0.9869728684425354, 0.9986444711685181, 0.9636079668998718, 0.8804355263710022, 0.7502927184104919, 0.5772567391395569, 0.3684709370136261, 0.13409820199012756, 0.11297184973955154, 0.35768231749534607, 0.5836414694786072, 0.7742146253585815, 0.9138171672821045, 0.9893233776092529, 0.991492748260498, 0.9162591695785522, 0.7657355070114136, 0.5487765669822693, 0.2809595763683319, 0.016130883246660233, 0.3163447678089142, 0.5911065936088562, 0.812130868434906, 0.954495906829834, 0.9997549057006836, 0.9387165307998657, 0.7734877467155457, 0.5183954834938049, 0.19949160516262054, 0.14754030108451843, 0.4809805750846863, 0.7580004334449768, 0.9402877688407898, 0.9997861981391907, 0.923597514629364, 0.7172496914863586, 0.4055541753768921, 0.03057217039167881, 0.35337403416633606, 0.6872223615646362, 0.9163534045219421, 0.9999821186065674, 0.9192268252372742, 0.6821759939193726, 0.32465073466300964, 0.09401582181453705, 0.500046968460083, 0.8179534077644348, 0.9848885536193848, 0.9639043807983398, 0.7532867789268494, 0.38953253626823425, 0.0574350468814373, 0.4966377317905426, 0.8341708183288574, 0.9936670064926147, 0.9346218109130859, 0.6641416549682617, 0.2385433465242386, 0.2466745227575302, 0.6772194504737854, 0.9468592405319214, 0.9844669103622437, 0.7743889689445496, 0.36402636766433716, 0.14464901387691498, 0.6190195083618164, 0.9299967885017395, 0.9879971146583557, 0.7705188989639282, 0.33258792757987976, 0.204653799533844, 0.6858837604522705, 0.9661991000175476, 0.9559153318405151, 0.6514270305633545, 0.14117206633090973, 0.41749370098114014, 0.8455065488815308, 0.9998371601104736, 0.8231514096260071, 0.3677961230278015, 0.2164074182510376, 0.7293500304222107, 0.9888116121292114, 0.8967489004135132, 0.47922617197036743, 0.11699043959379196, 0.6733413338661194, 0.9788181781768799, 0.9114044904708862, 0.48990586400032043, 0.12677988409996033, 0.6965723037719727, 0.9884230494499207, 0.8776131272315979, 0.40249836444854736, 0.2442290186882019, 0.7907546162605286, 0.9999405145645142, 0.774478018283844, 0.20608311891555786, 0.45738646388053894, 0.9175982475280762, 0.9603772759437561, 0.558700680732727, 0.1067904531955719, 0.7250187993049622, 0.9986801743507385, 0.7892455458641052, 0.19154003262519836, 0.5041019916534424, 0.9501314163208008, 0.9161661267280579, 0.4120180010795593, 0.3081568479537964, 0.8700925707817078, 0.9734609723091125, 0.5558747053146362, 0.16447508335113525, 0.7980263829231262, 0.9932621121406555, 0.6346670389175415, 0.08352183550596237, 0.7571301460266113, 0.9977206587791443, 0.659209668636322, 0.06777205318212509, 0.7574940323829651, 0.996440589427948, 0.6339258551597595, 0.11693687736988068, 0.7986542582511902, 0.9862329959869385, 0.5553515553474426, 0.22905144095420837, 0.8698946237564087, 0.9517096877098083, 0.41408076882362366, 0.39756274223327637, 0.9485421776771545, 0.8670943379402161, 0.20036566257476807, 0.605019211769104, 0.9978501200675964, 0.7011932730674744, 0.08601155132055283, 0.8152661323547363, 0.9680882096290588, 0.4283788800239563, 0.422222375869751, 0.9683007597923279, 0.8057811260223389, 0.04691966623067856, 0.749231219291687, 0.984946072101593, 0.4756195545196533, 0.39813998341560364, 0.9683157801628113, 0.7898669838905334, 0.005769689567387104, 0.7991155982017517, 0.9613912105560303, 0.3565613925457001, 0.536712110042572, 0.9975864291191101, 0.6456504464149475, 0.23786695301532745, 0.926816463470459, 0.8449404835700989, 0.05353856459259987, 0.7851317524909973, 0.9576318264007568, 0.30986207723617554, 0.6068496704101562, 0.9986487030982971, 0.5180912017822266, 0.41968950629234314, 0.9877812266349792, 0.6762035489082336, 0.243089959025383, 0.9448619484901428, 0.7891093492507935, 0.08901401609182358, 0.8871061205863953, 0.8650603890419006, 0.036562394350767136, 0.827987551689148, 0.9130284786224365, 0.13151100277900696, 0.7772161960601807, 0.9411216378211975, 0.1959078162908554, 0.7411880493164062, 0.9555256366729736, 0.23076143860816956, 0.723581075668335, 0.9601514935493469, 0.2370067983865738, 0.725818932056427, 0.9564749002456665, 0.21510691940784454, 0.7474545240402222, 0.9435480237007141, 0.1651088297367096, 0.786169707775116, 0.9181837439537048, 0.08672330528497696, 0.8376127481460571, 0.875239908695221, 0.01990979164838791, 0.895147442817688, 0.8081169128417969, 0.15332353115081787, 0.9495524168014526, 0.7096153497695923, 0.30965569615364075, 0.9888870120048523, 0.5731455087661743, 0.4813587963581085, 0.9989009499549866, 0.39452680945396423, 0.6561211347579956, 0.9640554189682007, 0.17409665882587433, 0.8161569237709045, 0.8695818185806274, 0.08085839450359344, 0.9387527108192444, 0.7045477032661438, 0.3539331257343292, 0.9980322122573853, 0.4658339321613312, 0.6186971068382263, 0.9687560200691223, 0.16243696212768555, 0.8395452499389648, 0.832098662853241, 0.18097111582756042, 0.9755929112434387, 0.5827882885932922, 0.5230323076248169, 0.9880489110946655, 0.23615679144859314, 0.8085606098175049, 0.8506600856781006, 0.1670692265033722, 0.9768885970115662, 0.5614805817604065, 0.5614992380142212, 0.9758399128913879, 0.15276825428009033, 0.8655163049697876, 0.7792490124702454, 0.30577877163887024, 0.9985715746879578, 0.40354853868484497, 0.7143689393997192, 0.9054522514343262, 0.08309189975261688, 0.9638381600379944, 0.5814045667648315, 0.566121518611908, 0.9675438404083252, 0.08862145990133286, 0.9086154699325562, 0.6966807246208191, 0.44587624073028564, 0.9920187592506409, 0.20582804083824158, 0.8582422733306885, 0.7634249925613403, 0.3658521771430969, 0.998803973197937, 0.2713130712509155, 0.8273149132728577, 0.7933233380317688, 0.3303309381008148, 0.9997867345809937, 0.2892128825187683, 0.8221098184585571, 0.7932211756706238, 0.3392295241355896, 0.9992287158966064, 0.2626049518585205, 0.842443585395813, 0.7646620869636536, 0.38986238837242126, 0.9947655200958252, 0.19279256463050842, 0.8828991651535034, 0.7046497464179993, 0.4771725535392761, 0.9785465002059937, 0.08069252222776413, 0.9332144856452942, 0.6073649525642395, 0.5927058458328247, 0.938612699508667, 0.07143032550811768, 0.9785091876983643, 0.46666088700294495, 0.7235645055770874, 0.8607971668243408, 0.2574540972709656, 0.9999300837516785, 0.27898645401000977, 0.8513391017913818, 0.7315158843994141, 0.46465522050857544, 0.976433277130127, 0.04696755111217499, 0.9522486329078674, 0.541608452796936, 0.6724414825439453, 0.8880177140235901, 0.21736381947994232, 0.999261736869812], array([ 6.08884954,  6.07177114,  6.05268717,  6.03166342,  6.00876474,
         5.98405981,  5.95761347,  5.92949438,  5.89976883,  5.868505  ,
         5.83576822,  5.80162525,  5.76614237,  5.7293849 ,  5.69141722,
         5.65230513,  5.61210918,  5.57089233,  5.52871656,  5.48564196,
@@ -4354,7 +4355,7 @@ class Test_defocusgett_pap(unittest.TestCase):
         0.66078377,  0.65946102,  0.65824455,  0.65713573,  0.6561361 ,
         0.65524709,  0.65447044,  0.65380782,  0.65326107,  0.65283203,
         0.6525228 ,  0.65233546,  0.65227222,  0.65233546,  0.65252757,
-        0.65285116,  0.65330899], dtype=float), numpy.array([ 1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
+        0.65285116,  0.65330899], dtype=float), array([ 1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
         1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
         1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
         1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
@@ -4379,7 +4380,7 @@ class Test_defocusgett_pap(unittest.TestCase):
         return_new = fu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, 0, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
         return_old = oldfu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, 0, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
         self.test_all_the_conditions(return_new,return_old,False)
-        self.test_all_the_conditions(return_new, (1.2273615450999222, numpy.array([  2.04661703e+00,   2.04661703e+00,   5.24815893e+00,
+        self.test_all_the_conditions(return_new, (1.2273615450999222, array([  2.04661703e+00,   2.04661703e+00,   5.24815893e+00,
          5.69506121e+00,   4.78397322e+00,   4.04477930e+00,
          3.99403429e+00,   3.39222670e+00,   2.74308205e+00,
          3.01358080e+00,   3.13020754e+00,   3.23590851e+00,
@@ -4464,7 +4465,7 @@ class Test_defocusgett_pap(unittest.TestCase):
          1.30345821e-02,   1.41077638e-02,   1.30448341e-02,
          1.09574199e-02,   1.00436807e-02,   8.09019804e-03,
          6.22850657e-03,   5.95557690e-03,   3.67796421e-03,
-         1.59549713e-03,   0.00000000e+00], dtype=float), [0.0010000000474974513, 0.003437269479036331, 0.010748897679150105, 0.0229334756731987, 0.03998575359582901, 0.0618923120200634, 0.08862552046775818, 0.12013565003871918, 0.15634165704250336, 0.19711995124816895, 0.24229203164577484, 0.29161080718040466, 0.3447456359863281, 0.40126702189445496, 0.4606311023235321, 0.5221647024154663, 0.5850507616996765, 0.6483176946640015, 0.7108299136161804, 0.7712844610214233, 0.8282123804092407, 0.8799888491630554, 0.9248502254486084, 0.9609233736991882, 0.9862659573554993, 0.9989191293716431, 0.9969749450683594, 0.9786564111709595, 0.9424113035202026, 0.887016773223877, 0.811692476272583, 0.7162197232246399, 0.6010562181472778, 0.4674455523490906, 0.31750914454460144, 0.15431050956249237, 0.01811622641980648, 0.19478514790534973, 0.36983752250671387, 0.536685585975647, 0.6882315874099731, 0.8171610832214355, 0.9163081049919128, 0.979088306427002, 0.999974250793457, 0.9749956130981445, 0.902228832244873, 0.7822331190109253, 0.6183965802192688, 0.41713011264801025, 0.18787215650081635, 0.05713817849755287, 0.30335310101509094, 0.534674882888794, 0.7344878911972046, 0.8868926763534546, 0.9780967235565186, 0.9978407025337219, 0.9407318234443665, 0.8073344230651855, 0.6048544645309448, 0.34728381037712097, 0.05486087501049042, 0.24718114733695984, 0.5305968523025513, 0.7667179107666016, 0.9294785261154175, 0.9985616207122803, 0.9623191952705383, 0.8200506567955017, 0.5832453370094299, 0.2754558324813843, 0.06941301375627518, 0.41038087010383606, 0.7040990591049194, 0.9104230403900146, 0.9982917308807373, 0.9509692788124084, 0.7698309421539307, 0.47584620118141174, 0.10818584263324738, 0.28020337224006653, 0.6297889947891235, 0.8835707306861877, 0.9967744946479797, 0.94553542137146, 0.7328239679336548, 0.39016711711883545, 0.025707142427563667, 0.44135451316833496, 0.7791945934295654, 0.9722179174423218, 0.9780832529067993, 0.7895940542221069, 0.43890222907066345, 0.006268524099141359, 0.4544812738895416, 0.8088417053222656, 0.9882656931877136, 0.9470758438110352, 0.6881825923919678, 0.26585569977760315, 0.22376649081707, 0.6633731126785278, 0.9424347877502441, 0.9858493804931641, 0.7758748531341553, 0.36064469814300537, 0.15443366765975952, 0.6318556666374207, 0.9383090734481812, 0.9828352928161621, 0.7458011507987976, 0.2891583740711212, 0.25699377059936523, 0.7298151254653931, 0.9820536971092224, 0.929349422454834, 0.5809462070465088, 0.04224149137735367, 0.5143591165542603, 0.9034014344215393, 0.988904595375061, 0.7342513799667358, 0.22072109580039978, 0.3749329149723053, 0.8393466472625732, 0.9991217255592346, 0.7878894805908203, 0.2773115634918213, 0.3431413471698761, 0.8340369462966919, 0.9983987808227539, 0.7632430791854858, 0.21585588157176971, 0.42418497800827026, 0.89055335521698, 0.9814057946205139, 0.6498640179634094, 0.03227159380912781, 0.6033695340156555, 0.9717630743980408, 0.8997758030891418, 0.41197705268859863, 0.27142709493637085, 0.830071747303009, 0.9930824637413025, 0.6735327839851379, 0.019977057352662086, 0.6471901535987854, 0.9904701113700867, 0.8278908729553223, 0.23463097214698792, 0.4851463735103607, 0.9504765272140503, 0.9059881567955017, 0.3669350743293762, 0.3775617182254791, 0.9147501587867737, 0.9370487332344055, 0.42285358905792236, 0.33893638849258423, 0.9056982398033142, 0.9378767609596252, 0.4072732925415039, 0.37314075231552124, 0.9280490279197693, 0.9089885354042053, 0.31870195269584656, 0.4767933487892151, 0.9695149660110474, 0.8345134258270264, 0.1506834477186203, 0.6362298727035522, 0.9993715286254883, 0.685751736164093, 0.09967411309480667, 0.8193024396896362, 0.9677554965019226, 0.43140316009521484, 0.4158949851989746, 0.9658693075180054, 0.812296450138092, 0.05843242257833481, 0.7419638633728027, 0.9864894151687622, 0.48117613792419434, 0.3959566652774811, 0.9689841270446777, 0.7843600511550903, 0.02207246609032154, 0.8138061761856079, 0.9513023495674133, 0.3137165307998657, 0.5843880772590637, 0.9999989867210388, 0.5780845880508423, 0.33485737442970276, 0.9646685719490051, 0.7642062306404114, 0.10248789936304092, 0.8819717764854431, 0.8816587328910828, 0.09212443977594376, 0.7831460237503052, 0.9474037885665894, 0.24092847108840942, 0.6913042664527893, 0.9792711734771729, 0.3433649241924286, 0.6215458512306213, 0.9920715689659119, 0.4021006226539612, 0.5826995372772217, 0.9957746267318726, 0.41983214020729065, 0.5787677764892578, 0.9948265552520752, 0.3975200057029724, 0.610159158706665, 0.9879434108734131, 0.3339833617210388, 0.6736912131309509, 0.9681738018989563, 0.22637465596199036, 0.7617340683937073, 0.923224925994873, 0.07223255932331085, 0.8606988787651062, 0.8366301655769348, 0.1272672563791275, 0.9493605494499207, 0.6903347969055176, 0.3629058599472046, 0.9981279969215393, 0.4696683883666992, 0.6123501062393188, 0.9710807204246521, 0.1711691915988922, 0.8363404870033264, 0.8324706554412842, 0.1876261979341507, 0.9790933132171631, 0.5593068599700928, 0.559196412563324, 0.9770984649658203, 0.158983051776886, 0.8633714914321899, 0.7790912389755249, 0.3127649128437042, 0.9993339776992798, 0.3766805827617645, 0.7444615364074707, 0.8776921033859253, 0.1639135628938675, 0.9863267540931702, 0.47142377495765686, 0.6885108351707458, 0.9031192064285278, 0.13269756734371185, 0.9851142168045044, 0.4561989903450012, 0.7180155515670776, 0.8728761076927185, 0.22153788805007935, 0.9983137249946594, 0.32846519351005554, 0.8216933608055115, 0.766435444355011, 0.42190730571746826, 0.9841199517250061, 0.07373854517936707, 0.9488736987113953, 0.5342538356781006, 0.6958281397819519, 0.8593419790267944, 0.3040781617164612, 0.9963049292564392, 0.13172484934329987, 0.9409549832344055, 0.5258497595787048, 0.7267662882804871, 0.8167874217033386, 0.40890222787857056, 0.9731239676475525, 0.048402659595012665, 0.9914715886116028, 0.3002638518810272, 0.8896152377128601, 0.596224308013916, 0.6978223323822021, 0.8152356743812561, 0.4508894681930542, 0.9483431577682495, 0.18166646361351013, 0.9988755583763123, 0.08281857520341873, 0.9783557057380676, 0.3231172561645508, 0.9027116894721985, 0.5275102853775024, 0.7889907360076904, 0.6909155249595642, 0.6531859636306763, 0.8136223554611206, 0.508906900882721, 0.8994329571723938, 0.3668111562728882, 0.9542444348335266, 0.23450149595737457, 0.9848037958145142, 0.11707375198602676, 0.9978916049003601, 0.01744147203862667, 0.9996837377548218, 0.06288234144449234, 0.9954115748405457, 0.1234876960515976, 0.9892247319221497, 0.16439959406852722, 0.9840984344482422, 0.18596750497817993, 0.9818809628486633, 0.1883220076560974, 0.9832487106323242, 0.17146436870098114, 0.9877868294715881, 0.13527604937553406, 0.9939484596252441, 0.07952184230089188, 0.9990220665931702, 0.004009394906461239, 0.9991526007652283, 0.09101919084787369, 0.9893630743026733, 0.20431360602378845, 0.9636754989624023, 0.3333607017993927, 0.9154320955276489, 0.47365111112594604, 0.837783694267273, 0.6182827353477478, 0.7245656251907349, 0.7572984099388123, 0.5712584853172302, 0.8778177499771118, 0.3766583800315857, 0.96431565284729, 0.1443183273077011, 0.9998579621315002, 0.11578825861215591, 0.9679785370826721, 0.38606271147727966, 0.8557294011116028, 0.6412919759750366, 0.6574144959449768, 0.8497635126113892, 0.37861141562461853, 0.9766780734062195, 0.039688002318143845, 0.9899476170539856], numpy.array([ 6.08884954,  6.07177114,  6.05268717,  6.03166342,  6.00876474,
+         1.59549713e-03,   0.00000000e+00], dtype=float), [0.0010000000474974513, 0.003437269479036331, 0.010748897679150105, 0.0229334756731987, 0.03998575359582901, 0.0618923120200634, 0.08862552046775818, 0.12013565003871918, 0.15634165704250336, 0.19711995124816895, 0.24229203164577484, 0.29161080718040466, 0.3447456359863281, 0.40126702189445496, 0.4606311023235321, 0.5221647024154663, 0.5850507616996765, 0.6483176946640015, 0.7108299136161804, 0.7712844610214233, 0.8282123804092407, 0.8799888491630554, 0.9248502254486084, 0.9609233736991882, 0.9862659573554993, 0.9989191293716431, 0.9969749450683594, 0.9786564111709595, 0.9424113035202026, 0.887016773223877, 0.811692476272583, 0.7162197232246399, 0.6010562181472778, 0.4674455523490906, 0.31750914454460144, 0.15431050956249237, 0.01811622641980648, 0.19478514790534973, 0.36983752250671387, 0.536685585975647, 0.6882315874099731, 0.8171610832214355, 0.9163081049919128, 0.979088306427002, 0.999974250793457, 0.9749956130981445, 0.902228832244873, 0.7822331190109253, 0.6183965802192688, 0.41713011264801025, 0.18787215650081635, 0.05713817849755287, 0.30335310101509094, 0.534674882888794, 0.7344878911972046, 0.8868926763534546, 0.9780967235565186, 0.9978407025337219, 0.9407318234443665, 0.8073344230651855, 0.6048544645309448, 0.34728381037712097, 0.05486087501049042, 0.24718114733695984, 0.5305968523025513, 0.7667179107666016, 0.9294785261154175, 0.9985616207122803, 0.9623191952705383, 0.8200506567955017, 0.5832453370094299, 0.2754558324813843, 0.06941301375627518, 0.41038087010383606, 0.7040990591049194, 0.9104230403900146, 0.9982917308807373, 0.9509692788124084, 0.7698309421539307, 0.47584620118141174, 0.10818584263324738, 0.28020337224006653, 0.6297889947891235, 0.8835707306861877, 0.9967744946479797, 0.94553542137146, 0.7328239679336548, 0.39016711711883545, 0.025707142427563667, 0.44135451316833496, 0.7791945934295654, 0.9722179174423218, 0.9780832529067993, 0.7895940542221069, 0.43890222907066345, 0.006268524099141359, 0.4544812738895416, 0.8088417053222656, 0.9882656931877136, 0.9470758438110352, 0.6881825923919678, 0.26585569977760315, 0.22376649081707, 0.6633731126785278, 0.9424347877502441, 0.9858493804931641, 0.7758748531341553, 0.36064469814300537, 0.15443366765975952, 0.6318556666374207, 0.9383090734481812, 0.9828352928161621, 0.7458011507987976, 0.2891583740711212, 0.25699377059936523, 0.7298151254653931, 0.9820536971092224, 0.929349422454834, 0.5809462070465088, 0.04224149137735367, 0.5143591165542603, 0.9034014344215393, 0.988904595375061, 0.7342513799667358, 0.22072109580039978, 0.3749329149723053, 0.8393466472625732, 0.9991217255592346, 0.7878894805908203, 0.2773115634918213, 0.3431413471698761, 0.8340369462966919, 0.9983987808227539, 0.7632430791854858, 0.21585588157176971, 0.42418497800827026, 0.89055335521698, 0.9814057946205139, 0.6498640179634094, 0.03227159380912781, 0.6033695340156555, 0.9717630743980408, 0.8997758030891418, 0.41197705268859863, 0.27142709493637085, 0.830071747303009, 0.9930824637413025, 0.6735327839851379, 0.019977057352662086, 0.6471901535987854, 0.9904701113700867, 0.8278908729553223, 0.23463097214698792, 0.4851463735103607, 0.9504765272140503, 0.9059881567955017, 0.3669350743293762, 0.3775617182254791, 0.9147501587867737, 0.9370487332344055, 0.42285358905792236, 0.33893638849258423, 0.9056982398033142, 0.9378767609596252, 0.4072732925415039, 0.37314075231552124, 0.9280490279197693, 0.9089885354042053, 0.31870195269584656, 0.4767933487892151, 0.9695149660110474, 0.8345134258270264, 0.1506834477186203, 0.6362298727035522, 0.9993715286254883, 0.685751736164093, 0.09967411309480667, 0.8193024396896362, 0.9677554965019226, 0.43140316009521484, 0.4158949851989746, 0.9658693075180054, 0.812296450138092, 0.05843242257833481, 0.7419638633728027, 0.9864894151687622, 0.48117613792419434, 0.3959566652774811, 0.9689841270446777, 0.7843600511550903, 0.02207246609032154, 0.8138061761856079, 0.9513023495674133, 0.3137165307998657, 0.5843880772590637, 0.9999989867210388, 0.5780845880508423, 0.33485737442970276, 0.9646685719490051, 0.7642062306404114, 0.10248789936304092, 0.8819717764854431, 0.8816587328910828, 0.09212443977594376, 0.7831460237503052, 0.9474037885665894, 0.24092847108840942, 0.6913042664527893, 0.9792711734771729, 0.3433649241924286, 0.6215458512306213, 0.9920715689659119, 0.4021006226539612, 0.5826995372772217, 0.9957746267318726, 0.41983214020729065, 0.5787677764892578, 0.9948265552520752, 0.3975200057029724, 0.610159158706665, 0.9879434108734131, 0.3339833617210388, 0.6736912131309509, 0.9681738018989563, 0.22637465596199036, 0.7617340683937073, 0.923224925994873, 0.07223255932331085, 0.8606988787651062, 0.8366301655769348, 0.1272672563791275, 0.9493605494499207, 0.6903347969055176, 0.3629058599472046, 0.9981279969215393, 0.4696683883666992, 0.6123501062393188, 0.9710807204246521, 0.1711691915988922, 0.8363404870033264, 0.8324706554412842, 0.1876261979341507, 0.9790933132171631, 0.5593068599700928, 0.559196412563324, 0.9770984649658203, 0.158983051776886, 0.8633714914321899, 0.7790912389755249, 0.3127649128437042, 0.9993339776992798, 0.3766805827617645, 0.7444615364074707, 0.8776921033859253, 0.1639135628938675, 0.9863267540931702, 0.47142377495765686, 0.6885108351707458, 0.9031192064285278, 0.13269756734371185, 0.9851142168045044, 0.4561989903450012, 0.7180155515670776, 0.8728761076927185, 0.22153788805007935, 0.9983137249946594, 0.32846519351005554, 0.8216933608055115, 0.766435444355011, 0.42190730571746826, 0.9841199517250061, 0.07373854517936707, 0.9488736987113953, 0.5342538356781006, 0.6958281397819519, 0.8593419790267944, 0.3040781617164612, 0.9963049292564392, 0.13172484934329987, 0.9409549832344055, 0.5258497595787048, 0.7267662882804871, 0.8167874217033386, 0.40890222787857056, 0.9731239676475525, 0.048402659595012665, 0.9914715886116028, 0.3002638518810272, 0.8896152377128601, 0.596224308013916, 0.6978223323822021, 0.8152356743812561, 0.4508894681930542, 0.9483431577682495, 0.18166646361351013, 0.9988755583763123, 0.08281857520341873, 0.9783557057380676, 0.3231172561645508, 0.9027116894721985, 0.5275102853775024, 0.7889907360076904, 0.6909155249595642, 0.6531859636306763, 0.8136223554611206, 0.508906900882721, 0.8994329571723938, 0.3668111562728882, 0.9542444348335266, 0.23450149595737457, 0.9848037958145142, 0.11707375198602676, 0.9978916049003601, 0.01744147203862667, 0.9996837377548218, 0.06288234144449234, 0.9954115748405457, 0.1234876960515976, 0.9892247319221497, 0.16439959406852722, 0.9840984344482422, 0.18596750497817993, 0.9818809628486633, 0.1883220076560974, 0.9832487106323242, 0.17146436870098114, 0.9877868294715881, 0.13527604937553406, 0.9939484596252441, 0.07952184230089188, 0.9990220665931702, 0.004009394906461239, 0.9991526007652283, 0.09101919084787369, 0.9893630743026733, 0.20431360602378845, 0.9636754989624023, 0.3333607017993927, 0.9154320955276489, 0.47365111112594604, 0.837783694267273, 0.6182827353477478, 0.7245656251907349, 0.7572984099388123, 0.5712584853172302, 0.8778177499771118, 0.3766583800315857, 0.96431565284729, 0.1443183273077011, 0.9998579621315002, 0.11578825861215591, 0.9679785370826721, 0.38606271147727966, 0.8557294011116028, 0.6412919759750366, 0.6574144959449768, 0.8497635126113892, 0.37861141562461853, 0.9766780734062195, 0.039688002318143845, 0.9899476170539856], array([ 6.08884954,  6.07177114,  6.05268717,  6.03166342,  6.00876474,
         5.98405981,  5.95761347,  5.92949438,  5.89976883,  5.868505  ,
         5.83576822,  5.80162525,  5.76614237,  5.7293849 ,  5.69141722,
         5.65230513,  5.61210918,  5.57089233,  5.52871656,  5.48564196,
@@ -4515,7 +4516,7 @@ class Test_defocusgett_pap(unittest.TestCase):
         0.66078377,  0.65946102,  0.65824455,  0.65713573,  0.6561361 ,
         0.65524709,  0.65447044,  0.65380782,  0.65326107,  0.65283203,
         0.6525228 ,  0.65233546,  0.65227222,  0.65233546,  0.65252757,
-        0.65285116,  0.65330899], dtype=float), numpy.array([ 1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
+        0.65285116,  0.65330899], dtype=float), array([ 1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
         1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
         1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
         1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
@@ -4548,7 +4549,7 @@ class Test_defocusgett_pap(unittest.TestCase):
         return_new = fu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, 0, nr2=self.nr2)
         return_old = oldfu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, 0, nr2=self.nr2)
         self.test_all_the_conditions(return_new,return_old,False)
-        self.test_all_the_conditions(return_new, (1.2414488486307103, numpy.array([  2.04661703e+00,   2.04661703e+00,   5.24815893e+00,
+        self.test_all_the_conditions(return_new, (1.2414488486307103, array([  2.04661703e+00,   2.04661703e+00,   5.24815893e+00,
          5.69506121e+00,   4.78397322e+00,   4.04477930e+00,
          3.99403429e+00,   3.39222670e+00,   2.74308205e+00,
          3.01358080e+00,   3.13020754e+00,   3.23590851e+00,
@@ -4633,7 +4634,7 @@ class Test_defocusgett_pap(unittest.TestCase):
          1.30345821e-02,   1.41077638e-02,   1.30448341e-02,
          1.09574199e-02,   1.00436807e-02,   8.09019804e-03,
          6.22850657e-03,   5.95557690e-03,   3.67796421e-03,
-         1.59549713e-03,   0.00000000e+00], dtype=float), [0.0010000000474974513, 0.0034652412869036198, 0.010860749520361423, 0.02318497933447361, 0.04043235257267952, 0.06258878111839294, 0.08962540328502655, 0.121490478515625, 0.15809977054595947, 0.1993250548839569, 0.24498122930526733, 0.2948123812675476, 0.3484761714935303, 0.40552836656570435, 0.4654068052768707, 0.5274160504341125, 0.5907129645347595, 0.654295802116394, 0.7169950008392334, 0.7774702310562134, 0.8342134356498718, 0.8855584859848022, 0.9297018051147461, 0.9647326469421387, 0.9886764883995056, 0.9995506405830383, 0.995435357093811, 0.9745574593544006, 0.9353881478309631, 0.8767511248588562, 0.7979393005371094, 0.6988360285758972, 0.5800313353538513, 0.44293099641799927, 0.28984537720680237, 0.12404847890138626, 0.050200723111629486, 0.22768962383270264, 0.40234488248825073, 0.5673930644989014, 0.715599536895752, 0.8395806550979614, 0.9321912527084351, 0.9869728684425354, 0.9986444711685181, 0.9636079668998718, 0.8804355263710022, 0.7502927184104919, 0.5772567391395569, 0.3684709370136261, 0.13409820199012756, 0.11297184973955154, 0.35768231749534607, 0.5836414694786072, 0.7742146253585815, 0.9138171672821045, 0.9893233776092529, 0.991492748260498, 0.9162591695785522, 0.7657355070114136, 0.5487765669822693, 0.2809595763683319, 0.016130883246660233, 0.3163447678089142, 0.5911065936088562, 0.812130868434906, 0.954495906829834, 0.9997549057006836, 0.9387165307998657, 0.7734877467155457, 0.5183954834938049, 0.19949160516262054, 0.14754030108451843, 0.4809805750846863, 0.7580004334449768, 0.9402877688407898, 0.9997861981391907, 0.923597514629364, 0.7172496914863586, 0.4055541753768921, 0.03057217039167881, 0.35337403416633606, 0.6872223615646362, 0.9163534045219421, 0.9999821186065674, 0.9192268252372742, 0.6821759939193726, 0.32465073466300964, 0.09401582181453705, 0.500046968460083, 0.8179534077644348, 0.9848885536193848, 0.9639043807983398, 0.7532867789268494, 0.38953253626823425, 0.0574350468814373, 0.4966377317905426, 0.8341708183288574, 0.9936670064926147, 0.9346218109130859, 0.6641416549682617, 0.2385433465242386, 0.2466745227575302, 0.6772194504737854, 0.9468592405319214, 0.9844669103622437, 0.7743889689445496, 0.36402636766433716, 0.14464901387691498, 0.6190195083618164, 0.9299967885017395, 0.9879971146583557, 0.7705188989639282, 0.33258792757987976, 0.204653799533844, 0.6858837604522705, 0.9661991000175476, 0.9559153318405151, 0.6514270305633545, 0.14117206633090973, 0.41749370098114014, 0.8455065488815308, 0.9998371601104736, 0.8231514096260071, 0.3677961230278015, 0.2164074182510376, 0.7293500304222107, 0.9888116121292114, 0.8967489004135132, 0.47922617197036743, 0.11699043959379196, 0.6733413338661194, 0.9788181781768799, 0.9114044904708862, 0.48990586400032043, 0.12677988409996033, 0.6965723037719727, 0.9884230494499207, 0.8776131272315979, 0.40249836444854736, 0.2442290186882019, 0.7907546162605286, 0.9999405145645142, 0.774478018283844, 0.20608311891555786, 0.45738646388053894, 0.9175982475280762, 0.9603772759437561, 0.558700680732727, 0.1067904531955719, 0.7250187993049622, 0.9986801743507385, 0.7892455458641052, 0.19154003262519836, 0.5041019916534424, 0.9501314163208008, 0.9161661267280579, 0.4120180010795593, 0.3081568479537964, 0.8700925707817078, 0.9734609723091125, 0.5558747053146362, 0.16447508335113525, 0.7980263829231262, 0.9932621121406555, 0.6346670389175415, 0.08352183550596237, 0.7571301460266113, 0.9977206587791443, 0.659209668636322, 0.06777205318212509, 0.7574940323829651, 0.996440589427948, 0.6339258551597595, 0.11693687736988068, 0.7986542582511902, 0.9862329959869385, 0.5553515553474426, 0.22905144095420837, 0.8698946237564087, 0.9517096877098083, 0.41408076882362366, 0.39756274223327637, 0.9485421776771545, 0.8670943379402161, 0.20036566257476807, 0.605019211769104, 0.9978501200675964, 0.7011932730674744, 0.08601155132055283, 0.8152661323547363, 0.9680882096290588, 0.4283788800239563, 0.422222375869751, 0.9683007597923279, 0.8057811260223389, 0.04691966623067856, 0.749231219291687, 0.984946072101593, 0.4756195545196533, 0.39813998341560364, 0.9683157801628113, 0.7898669838905334, 0.005769689567387104, 0.7991155982017517, 0.9613912105560303, 0.3565613925457001, 0.536712110042572, 0.9975864291191101, 0.6456504464149475, 0.23786695301532745, 0.926816463470459, 0.8449404835700989, 0.05353856459259987, 0.7851317524909973, 0.9576318264007568, 0.30986207723617554, 0.6068496704101562, 0.9986487030982971, 0.5180912017822266, 0.41968950629234314, 0.9877812266349792, 0.6762035489082336, 0.243089959025383, 0.9448619484901428, 0.7891093492507935, 0.08901401609182358, 0.8871061205863953, 0.8650603890419006, 0.036562394350767136, 0.827987551689148, 0.9130284786224365, 0.13151100277900696, 0.7772161960601807, 0.9411216378211975, 0.1959078162908554, 0.7411880493164062, 0.9555256366729736, 0.23076143860816956, 0.723581075668335, 0.9601514935493469, 0.2370067983865738, 0.725818932056427, 0.9564749002456665, 0.21510691940784454, 0.7474545240402222, 0.9435480237007141, 0.1651088297367096, 0.786169707775116, 0.9181837439537048, 0.08672330528497696, 0.8376127481460571, 0.875239908695221, 0.01990979164838791, 0.895147442817688, 0.8081169128417969, 0.15332353115081787, 0.9495524168014526, 0.7096153497695923, 0.30965569615364075, 0.9888870120048523, 0.5731455087661743, 0.4813587963581085, 0.9989009499549866, 0.39452680945396423, 0.6561211347579956, 0.9640554189682007, 0.17409665882587433, 0.8161569237709045, 0.8695818185806274, 0.08085839450359344, 0.9387527108192444, 0.7045477032661438, 0.3539331257343292, 0.9980322122573853, 0.4658339321613312, 0.6186971068382263, 0.9687560200691223, 0.16243696212768555, 0.8395452499389648, 0.832098662853241, 0.18097111582756042, 0.9755929112434387, 0.5827882885932922, 0.5230323076248169, 0.9880489110946655, 0.23615679144859314, 0.8085606098175049, 0.8506600856781006, 0.1670692265033722, 0.9768885970115662, 0.5614805817604065, 0.5614992380142212, 0.9758399128913879, 0.15276825428009033, 0.8655163049697876, 0.7792490124702454, 0.30577877163887024, 0.9985715746879578, 0.40354853868484497, 0.7143689393997192, 0.9054522514343262, 0.08309189975261688, 0.9638381600379944, 0.5814045667648315, 0.566121518611908, 0.9675438404083252, 0.08862145990133286, 0.9086154699325562, 0.6966807246208191, 0.44587624073028564, 0.9920187592506409, 0.20582804083824158, 0.8582422733306885, 0.7634249925613403, 0.3658521771430969, 0.998803973197937, 0.2713130712509155, 0.8273149132728577, 0.7933233380317688, 0.3303309381008148, 0.9997867345809937, 0.2892128825187683, 0.8221098184585571, 0.7932211756706238, 0.3392295241355896, 0.9992287158966064, 0.2626049518585205, 0.842443585395813, 0.7646620869636536, 0.38986238837242126, 0.9947655200958252, 0.19279256463050842, 0.8828991651535034, 0.7046497464179993, 0.4771725535392761, 0.9785465002059937, 0.08069252222776413, 0.9332144856452942, 0.6073649525642395, 0.5927058458328247, 0.938612699508667, 0.07143032550811768, 0.9785091876983643, 0.46666088700294495, 0.7235645055770874, 0.8607971668243408, 0.2574540972709656, 0.9999300837516785, 0.27898645401000977, 0.8513391017913818, 0.7315158843994141, 0.46465522050857544, 0.976433277130127, 0.04696755111217499, 0.9522486329078674, 0.541608452796936, 0.6724414825439453, 0.8880177140235901, 0.21736381947994232, 0.999261736869812], numpy.array([ 6.08884954,  6.07177114,  6.05268717,  6.03166342,  6.00876474,
+         1.59549713e-03,   0.00000000e+00], dtype=float), [0.0010000000474974513, 0.0034652412869036198, 0.010860749520361423, 0.02318497933447361, 0.04043235257267952, 0.06258878111839294, 0.08962540328502655, 0.121490478515625, 0.15809977054595947, 0.1993250548839569, 0.24498122930526733, 0.2948123812675476, 0.3484761714935303, 0.40552836656570435, 0.4654068052768707, 0.5274160504341125, 0.5907129645347595, 0.654295802116394, 0.7169950008392334, 0.7774702310562134, 0.8342134356498718, 0.8855584859848022, 0.9297018051147461, 0.9647326469421387, 0.9886764883995056, 0.9995506405830383, 0.995435357093811, 0.9745574593544006, 0.9353881478309631, 0.8767511248588562, 0.7979393005371094, 0.6988360285758972, 0.5800313353538513, 0.44293099641799927, 0.28984537720680237, 0.12404847890138626, 0.050200723111629486, 0.22768962383270264, 0.40234488248825073, 0.5673930644989014, 0.715599536895752, 0.8395806550979614, 0.9321912527084351, 0.9869728684425354, 0.9986444711685181, 0.9636079668998718, 0.8804355263710022, 0.7502927184104919, 0.5772567391395569, 0.3684709370136261, 0.13409820199012756, 0.11297184973955154, 0.35768231749534607, 0.5836414694786072, 0.7742146253585815, 0.9138171672821045, 0.9893233776092529, 0.991492748260498, 0.9162591695785522, 0.7657355070114136, 0.5487765669822693, 0.2809595763683319, 0.016130883246660233, 0.3163447678089142, 0.5911065936088562, 0.812130868434906, 0.954495906829834, 0.9997549057006836, 0.9387165307998657, 0.7734877467155457, 0.5183954834938049, 0.19949160516262054, 0.14754030108451843, 0.4809805750846863, 0.7580004334449768, 0.9402877688407898, 0.9997861981391907, 0.923597514629364, 0.7172496914863586, 0.4055541753768921, 0.03057217039167881, 0.35337403416633606, 0.6872223615646362, 0.9163534045219421, 0.9999821186065674, 0.9192268252372742, 0.6821759939193726, 0.32465073466300964, 0.09401582181453705, 0.500046968460083, 0.8179534077644348, 0.9848885536193848, 0.9639043807983398, 0.7532867789268494, 0.38953253626823425, 0.0574350468814373, 0.4966377317905426, 0.8341708183288574, 0.9936670064926147, 0.9346218109130859, 0.6641416549682617, 0.2385433465242386, 0.2466745227575302, 0.6772194504737854, 0.9468592405319214, 0.9844669103622437, 0.7743889689445496, 0.36402636766433716, 0.14464901387691498, 0.6190195083618164, 0.9299967885017395, 0.9879971146583557, 0.7705188989639282, 0.33258792757987976, 0.204653799533844, 0.6858837604522705, 0.9661991000175476, 0.9559153318405151, 0.6514270305633545, 0.14117206633090973, 0.41749370098114014, 0.8455065488815308, 0.9998371601104736, 0.8231514096260071, 0.3677961230278015, 0.2164074182510376, 0.7293500304222107, 0.9888116121292114, 0.8967489004135132, 0.47922617197036743, 0.11699043959379196, 0.6733413338661194, 0.9788181781768799, 0.9114044904708862, 0.48990586400032043, 0.12677988409996033, 0.6965723037719727, 0.9884230494499207, 0.8776131272315979, 0.40249836444854736, 0.2442290186882019, 0.7907546162605286, 0.9999405145645142, 0.774478018283844, 0.20608311891555786, 0.45738646388053894, 0.9175982475280762, 0.9603772759437561, 0.558700680732727, 0.1067904531955719, 0.7250187993049622, 0.9986801743507385, 0.7892455458641052, 0.19154003262519836, 0.5041019916534424, 0.9501314163208008, 0.9161661267280579, 0.4120180010795593, 0.3081568479537964, 0.8700925707817078, 0.9734609723091125, 0.5558747053146362, 0.16447508335113525, 0.7980263829231262, 0.9932621121406555, 0.6346670389175415, 0.08352183550596237, 0.7571301460266113, 0.9977206587791443, 0.659209668636322, 0.06777205318212509, 0.7574940323829651, 0.996440589427948, 0.6339258551597595, 0.11693687736988068, 0.7986542582511902, 0.9862329959869385, 0.5553515553474426, 0.22905144095420837, 0.8698946237564087, 0.9517096877098083, 0.41408076882362366, 0.39756274223327637, 0.9485421776771545, 0.8670943379402161, 0.20036566257476807, 0.605019211769104, 0.9978501200675964, 0.7011932730674744, 0.08601155132055283, 0.8152661323547363, 0.9680882096290588, 0.4283788800239563, 0.422222375869751, 0.9683007597923279, 0.8057811260223389, 0.04691966623067856, 0.749231219291687, 0.984946072101593, 0.4756195545196533, 0.39813998341560364, 0.9683157801628113, 0.7898669838905334, 0.005769689567387104, 0.7991155982017517, 0.9613912105560303, 0.3565613925457001, 0.536712110042572, 0.9975864291191101, 0.6456504464149475, 0.23786695301532745, 0.926816463470459, 0.8449404835700989, 0.05353856459259987, 0.7851317524909973, 0.9576318264007568, 0.30986207723617554, 0.6068496704101562, 0.9986487030982971, 0.5180912017822266, 0.41968950629234314, 0.9877812266349792, 0.6762035489082336, 0.243089959025383, 0.9448619484901428, 0.7891093492507935, 0.08901401609182358, 0.8871061205863953, 0.8650603890419006, 0.036562394350767136, 0.827987551689148, 0.9130284786224365, 0.13151100277900696, 0.7772161960601807, 0.9411216378211975, 0.1959078162908554, 0.7411880493164062, 0.9555256366729736, 0.23076143860816956, 0.723581075668335, 0.9601514935493469, 0.2370067983865738, 0.725818932056427, 0.9564749002456665, 0.21510691940784454, 0.7474545240402222, 0.9435480237007141, 0.1651088297367096, 0.786169707775116, 0.9181837439537048, 0.08672330528497696, 0.8376127481460571, 0.875239908695221, 0.01990979164838791, 0.895147442817688, 0.8081169128417969, 0.15332353115081787, 0.9495524168014526, 0.7096153497695923, 0.30965569615364075, 0.9888870120048523, 0.5731455087661743, 0.4813587963581085, 0.9989009499549866, 0.39452680945396423, 0.6561211347579956, 0.9640554189682007, 0.17409665882587433, 0.8161569237709045, 0.8695818185806274, 0.08085839450359344, 0.9387527108192444, 0.7045477032661438, 0.3539331257343292, 0.9980322122573853, 0.4658339321613312, 0.6186971068382263, 0.9687560200691223, 0.16243696212768555, 0.8395452499389648, 0.832098662853241, 0.18097111582756042, 0.9755929112434387, 0.5827882885932922, 0.5230323076248169, 0.9880489110946655, 0.23615679144859314, 0.8085606098175049, 0.8506600856781006, 0.1670692265033722, 0.9768885970115662, 0.5614805817604065, 0.5614992380142212, 0.9758399128913879, 0.15276825428009033, 0.8655163049697876, 0.7792490124702454, 0.30577877163887024, 0.9985715746879578, 0.40354853868484497, 0.7143689393997192, 0.9054522514343262, 0.08309189975261688, 0.9638381600379944, 0.5814045667648315, 0.566121518611908, 0.9675438404083252, 0.08862145990133286, 0.9086154699325562, 0.6966807246208191, 0.44587624073028564, 0.9920187592506409, 0.20582804083824158, 0.8582422733306885, 0.7634249925613403, 0.3658521771430969, 0.998803973197937, 0.2713130712509155, 0.8273149132728577, 0.7933233380317688, 0.3303309381008148, 0.9997867345809937, 0.2892128825187683, 0.8221098184585571, 0.7932211756706238, 0.3392295241355896, 0.9992287158966064, 0.2626049518585205, 0.842443585395813, 0.7646620869636536, 0.38986238837242126, 0.9947655200958252, 0.19279256463050842, 0.8828991651535034, 0.7046497464179993, 0.4771725535392761, 0.9785465002059937, 0.08069252222776413, 0.9332144856452942, 0.6073649525642395, 0.5927058458328247, 0.938612699508667, 0.07143032550811768, 0.9785091876983643, 0.46666088700294495, 0.7235645055770874, 0.8607971668243408, 0.2574540972709656, 0.9999300837516785, 0.27898645401000977, 0.8513391017913818, 0.7315158843994141, 0.46465522050857544, 0.976433277130127, 0.04696755111217499, 0.9522486329078674, 0.541608452796936, 0.6724414825439453, 0.8880177140235901, 0.21736381947994232, 0.999261736869812], array([ 6.08884954,  6.07177114,  6.05268717,  6.03166342,  6.00876474,
         5.98405981,  5.95761347,  5.92949438,  5.89976883,  5.868505  ,
         5.83576822,  5.80162525,  5.76614237,  5.7293849 ,  5.69141722,
         5.65230513,  5.61210918,  5.57089233,  5.52871656,  5.48564196,
@@ -4684,7 +4685,7 @@ class Test_defocusgett_pap(unittest.TestCase):
         0.66078377,  0.65946102,  0.65824455,  0.65713573,  0.6561361 ,
         0.65524709,  0.65447044,  0.65380782,  0.65326107,  0.65283203,
         0.6525228 ,  0.65233546,  0.65227222,  0.65233546,  0.65252757,
-        0.65285116,  0.65330899], dtype=float), numpy.array([ 1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
+        0.65285116,  0.65330899], dtype=float), array([ 1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
         1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
         1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
         1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,
@@ -4751,7 +4752,7 @@ class Test_defocusgett_vpp(unittest.TestCase):
             for i in [0,1,5,6]:
                 self.assertEqual(return_new[i], return_old[i])
             for i in [2,3,4]:
-                self.assertTrue(numpy.allclose(return_new[i], return_old[i], atol=TOLERANCE, equal_nan=True))
+                self.assertTrue(allclose(return_new[i], return_old[i], atol=TOLERANCE, equal_nan=True))
 
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -4789,7 +4790,7 @@ class Test_defocusgett_vpp(unittest.TestCase):
         return_new = fu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.f_start, self.f_stop, self.vpp_options, nr2=self.nr2)
         return_old = oldfu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.f_start, self.f_stop, self.vpp_options, nr2=self.nr2)
         self.test_all_the_conditions(return_new, return_old, self.skip)
-        self.test_all_the_conditions(return_new, (1.2, 34.202014332566876, [2.046617031097412, 2.046617031097412, 5.248158931732178, 5.695061206817627, 4.783973217010498, 4.044779300689697, 3.9940342903137207, 3.3922266960144043, 2.743082046508789, 3.013580799102783, 3.1302075386047363, 3.2359085083007812, 3.400866985321045, 3.58583402633667, 3.7645344734191895, 3.8814339637756348, 4.141592025756836, 4.346562385559082, 4.42345666885376, 4.521812915802002, 4.460953235626221, 4.475826263427734, 4.5370683670043945, 4.506109714508057, 4.245870590209961, 4.020811080932617, 3.7224416732788086, 3.3394908905029297, 2.9705514907836914, 2.4504785537719727, 2.0189428329467773, 1.5463948249816895, 1.073160171508789, 0.6362051963806152, 0.31493473052978516, 0.06615829467773438, 0.0, 0.09079265594482422, 0.30223798751831055, 0.6037716865539551, 0.959197998046875, 1.206087589263916, 1.3766770362854004, 1.4075055122375488, 1.3799309730529785, 1.2447385787963867, 1.006777286529541, 0.7345080375671387, 0.4602384567260742, 0.2105240821838379, 0.057382822036743164, 0.0, 0.10758137702941895, 0.2857215404510498, 0.4993162155151367, 0.6388113498687744, 0.6898548603057861, 0.6910374164581299, 0.5799849033355713, 0.4090282917022705, 0.2402327060699463, 0.07669949531555176, 0.004343509674072266, 0.0580897331237793, 0.16643333435058594, 0.28627896308898926, 0.41701602935791016, 0.4778106212615967, 0.4225897789001465, 0.2694675922393799, 0.1359560489654541, 0.04989290237426758, 0.024133920669555664, 0.08386850357055664, 0.17662429809570312, 0.23775887489318848, 0.2778191566467285, 0.2556118965148926, 0.18243122100830078, 0.07839822769165039, 0.01361393928527832, 0.019960641860961914, 0.09974908828735352, 0.17735695838928223, 0.23326992988586426, 0.21385526657104492, 0.13902592658996582, 0.06584787368774414, 0.03738260269165039, 0.0501253604888916, 0.11444878578186035, 0.16000723838806152, 0.1501920223236084, 0.10492610931396484, 0.04671764373779297, 0.031340837478637695, 0.0747835636138916, 0.13916754722595215, 0.17604446411132812, 0.15452957153320312, 0.07142806053161621, 0.008783817291259766, 0.0, 0.0594785213470459, 0.10857093334197998, 0.10516369342803955, 0.0716315507888794, 0.03879404067993164, 0.044341206550598145, 0.0889359712600708, 0.13829028606414795, 0.13266921043395996, 0.08943343162536621, 0.04989778995513916, 0.04269909858703613, 0.0756763219833374, 0.08947217464447021, 0.0810549259185791, 0.035045742988586426, 0.010996103286743164, 0.03033757209777832, 0.06867420673370361, 0.08150196075439453, 0.04281485080718994, 0.008866667747497559, 0.013623356819152832, 0.07641100883483887, 0.105202317237854, 0.08213305473327637, 0.048670053482055664, 0.052475690841674805, 0.07929658889770508, 0.09823226928710938, 0.07746565341949463, 0.04434990882873535, 0.0509340763092041, 0.07370269298553467, 0.07819163799285889, 0.059372544288635254, 0.029207825660705566, 0.026052117347717285, 0.046050429344177246, 0.04525721073150635, 0.025297045707702637, 0.017155885696411133, 0.03644883632659912, 0.050061702728271484, 0.03893780708312988, 0.0215684175491333, 0.020253658294677734, 0.03790569305419922, 0.03498029708862305, 0.019713401794433594, 0.02399623394012451, 0.04025852680206299, 0.03754305839538574, 0.022193074226379395, 0.023427248001098633, 0.05391955375671387, 0.07055521011352539, 0.05343830585479736, 0.046872496604919434, 0.053012728691101074, 0.06483685970306396, 0.05145895481109619, 0.045789241790771484, 0.053226470947265625, 0.055028438568115234, 0.04882097244262695, 0.04399299621582031, 0.04610830545425415, 0.04496389627456665, 0.037654340267181396, 0.03744173049926758, 0.03954339027404785, 0.03948032855987549, 0.03446441888809204, 0.03562110662460327, 0.03647559881210327, 0.0324246883392334, 0.02869623899459839, 0.034060537815093994, 0.03306686878204346, 0.027150511741638184, 0.027069091796875, 0.01810765266418457, 0.00505375862121582, 0.005866050720214844, 0.006675601005554199, 0.005635738372802734, 0.0, 0.0035986900329589844, 0.003906667232513428, 0.0006630420684814453, 0.002478480339050293, 0.001273810863494873, 0.002044081687927246, 0.0018482804298400879, 0.0017834901809692383, 0.000794529914855957, 0.001870870590209961, 0.004552662372589111, 0.00322568416595459, 0.0021381378173828125, 0.0028291940689086914, 0.0023550987243652344, 0.004174351692199707, 0.004745125770568848, 0.003681361675262451, 0.003470301628112793, 0.0027672648429870605, 0.0036693215370178223, 0.003409266471862793, 0.003725588321685791, 0.0036997199058532715, 0.001735687255859375, 0.0022568106651306152, 0.0020532608032226562, 0.002288341522216797, 0.00389939546585083, 0.002639591693878174, 0.0013660192489624023, 0.001558542251586914, 0.0012502074241638184, 0.0009219646453857422, 0.0011370182037353516, 0.0, 0.0016494393348693848, 0.003872990608215332, 0.020138442516326904, 0.027946412563323975, 0.025853097438812256, 0.027076780796051025, 0.027231156826019287, 0.024324238300323486, 0.023008227348327637, 0.023547589778900146, 0.022031009197235107, 0.022735297679901123, 0.021755218505859375, 0.022083401679992676, 0.019377946853637695, 0.018839895725250244, 0.01794499158859253, 0.014655113220214844, 0.015541374683380127, 0.013034582138061523, 0.014107763767242432, 0.01304483413696289, 0.010957419872283936, 0.010043680667877197, 0.008090198040008545, 0.006228506565093994, 0.0059555768966674805, 0.003677964210510254, 0.0015954971313476562, 0.0], numpy.array([ 6.08884954,  6.07177114,  6.05268717,  6.03166342,  6.00876474,
+        self.test_all_the_conditions(return_new, (1.2, 34.202014332566876, [2.046617031097412, 2.046617031097412, 5.248158931732178, 5.695061206817627, 4.783973217010498, 4.044779300689697, 3.9940342903137207, 3.3922266960144043, 2.743082046508789, 3.013580799102783, 3.1302075386047363, 3.2359085083007812, 3.400866985321045, 3.58583402633667, 3.7645344734191895, 3.8814339637756348, 4.141592025756836, 4.346562385559082, 4.42345666885376, 4.521812915802002, 4.460953235626221, 4.475826263427734, 4.5370683670043945, 4.506109714508057, 4.245870590209961, 4.020811080932617, 3.7224416732788086, 3.3394908905029297, 2.9705514907836914, 2.4504785537719727, 2.0189428329467773, 1.5463948249816895, 1.073160171508789, 0.6362051963806152, 0.31493473052978516, 0.06615829467773438, 0.0, 0.09079265594482422, 0.30223798751831055, 0.6037716865539551, 0.959197998046875, 1.206087589263916, 1.3766770362854004, 1.4075055122375488, 1.3799309730529785, 1.2447385787963867, 1.006777286529541, 0.7345080375671387, 0.4602384567260742, 0.2105240821838379, 0.057382822036743164, 0.0, 0.10758137702941895, 0.2857215404510498, 0.4993162155151367, 0.6388113498687744, 0.6898548603057861, 0.6910374164581299, 0.5799849033355713, 0.4090282917022705, 0.2402327060699463, 0.07669949531555176, 0.004343509674072266, 0.0580897331237793, 0.16643333435058594, 0.28627896308898926, 0.41701602935791016, 0.4778106212615967, 0.4225897789001465, 0.2694675922393799, 0.1359560489654541, 0.04989290237426758, 0.024133920669555664, 0.08386850357055664, 0.17662429809570312, 0.23775887489318848, 0.2778191566467285, 0.2556118965148926, 0.18243122100830078, 0.07839822769165039, 0.01361393928527832, 0.019960641860961914, 0.09974908828735352, 0.17735695838928223, 0.23326992988586426, 0.21385526657104492, 0.13902592658996582, 0.06584787368774414, 0.03738260269165039, 0.0501253604888916, 0.11444878578186035, 0.16000723838806152, 0.1501920223236084, 0.10492610931396484, 0.04671764373779297, 0.031340837478637695, 0.0747835636138916, 0.13916754722595215, 0.17604446411132812, 0.15452957153320312, 0.07142806053161621, 0.008783817291259766, 0.0, 0.0594785213470459, 0.10857093334197998, 0.10516369342803955, 0.0716315507888794, 0.03879404067993164, 0.044341206550598145, 0.0889359712600708, 0.13829028606414795, 0.13266921043395996, 0.08943343162536621, 0.04989778995513916, 0.04269909858703613, 0.0756763219833374, 0.08947217464447021, 0.0810549259185791, 0.035045742988586426, 0.010996103286743164, 0.03033757209777832, 0.06867420673370361, 0.08150196075439453, 0.04281485080718994, 0.008866667747497559, 0.013623356819152832, 0.07641100883483887, 0.105202317237854, 0.08213305473327637, 0.048670053482055664, 0.052475690841674805, 0.07929658889770508, 0.09823226928710938, 0.07746565341949463, 0.04434990882873535, 0.0509340763092041, 0.07370269298553467, 0.07819163799285889, 0.059372544288635254, 0.029207825660705566, 0.026052117347717285, 0.046050429344177246, 0.04525721073150635, 0.025297045707702637, 0.017155885696411133, 0.03644883632659912, 0.050061702728271484, 0.03893780708312988, 0.0215684175491333, 0.020253658294677734, 0.03790569305419922, 0.03498029708862305, 0.019713401794433594, 0.02399623394012451, 0.04025852680206299, 0.03754305839538574, 0.022193074226379395, 0.023427248001098633, 0.05391955375671387, 0.07055521011352539, 0.05343830585479736, 0.046872496604919434, 0.053012728691101074, 0.06483685970306396, 0.05145895481109619, 0.045789241790771484, 0.053226470947265625, 0.055028438568115234, 0.04882097244262695, 0.04399299621582031, 0.04610830545425415, 0.04496389627456665, 0.037654340267181396, 0.03744173049926758, 0.03954339027404785, 0.03948032855987549, 0.03446441888809204, 0.03562110662460327, 0.03647559881210327, 0.0324246883392334, 0.02869623899459839, 0.034060537815093994, 0.03306686878204346, 0.027150511741638184, 0.027069091796875, 0.01810765266418457, 0.00505375862121582, 0.005866050720214844, 0.006675601005554199, 0.005635738372802734, 0.0, 0.0035986900329589844, 0.003906667232513428, 0.0006630420684814453, 0.002478480339050293, 0.001273810863494873, 0.002044081687927246, 0.0018482804298400879, 0.0017834901809692383, 0.000794529914855957, 0.001870870590209961, 0.004552662372589111, 0.00322568416595459, 0.0021381378173828125, 0.0028291940689086914, 0.0023550987243652344, 0.004174351692199707, 0.004745125770568848, 0.003681361675262451, 0.003470301628112793, 0.0027672648429870605, 0.0036693215370178223, 0.003409266471862793, 0.003725588321685791, 0.0036997199058532715, 0.001735687255859375, 0.0022568106651306152, 0.0020532608032226562, 0.002288341522216797, 0.00389939546585083, 0.002639591693878174, 0.0013660192489624023, 0.001558542251586914, 0.0012502074241638184, 0.0009219646453857422, 0.0011370182037353516, 0.0, 0.0016494393348693848, 0.003872990608215332, 0.020138442516326904, 0.027946412563323975, 0.025853097438812256, 0.027076780796051025, 0.027231156826019287, 0.024324238300323486, 0.023008227348327637, 0.023547589778900146, 0.022031009197235107, 0.022735297679901123, 0.021755218505859375, 0.022083401679992676, 0.019377946853637695, 0.018839895725250244, 0.01794499158859253, 0.014655113220214844, 0.015541374683380127, 0.013034582138061523, 0.014107763767242432, 0.01304483413696289, 0.010957419872283936, 0.010043680667877197, 0.008090198040008545, 0.006228506565093994, 0.0059555768966674805, 0.003677964210510254, 0.0015954971313476562, 0.0], array([ 6.08884954,  6.07177114,  6.05268717,  6.03166342,  6.00876474,
         5.98405981,  5.95761347,  5.92949438,  5.89976883,  5.868505  ,
         5.83576822,  5.80162525,  5.76614237,  5.7293849 ,  5.69141722,
         5.65230513,  5.61210918,  5.57089233,  5.52871656,  5.48564196,
@@ -4840,7 +4841,7 @@ class Test_defocusgett_vpp(unittest.TestCase):
         0.66078377,  0.65946102,  0.65824455,  0.65713573,  0.6561361 ,
         0.65524709,  0.65447044,  0.65380782,  0.65326107,  0.65283203,
         0.6525228 ,  0.65233546,  0.65227222,  0.65233546,  0.65252757,
-        0.65285116,  0.65330899], dtype=float), numpy.array([ 3.33949089,  3.33949089,  3.33949089,  3.33949089,  3.33949089,
+        0.65285116,  0.65330899], dtype=float), array([ 3.33949089,  3.33949089,  3.33949089,  3.33949089,  3.33949089,
         3.33949089,  3.33949089,  3.33949089,  3.33949089,  3.33949089,
         3.33949089,  3.33949089,  3.33949089,  3.33949089,  3.33949089,
         3.33949089,  3.33949089,  3.33949089,  3.33949089,  3.33949089,
@@ -4897,7 +4898,7 @@ class Test_defocusgett_vpp(unittest.TestCase):
         return_new = fu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, 0, self.f_start, self.f_stop, self.vpp_options, nr2=self.nr2)
         return_old = oldfu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, 0, self.f_start, self.f_stop, self.vpp_options, nr2=self.nr2)
         self.test_all_the_conditions(return_new, return_old, self.skip)
-        self.test_all_the_conditions(return_new, (1.2, 42.261826174069945, [2.046617031097412, 2.046617031097412, 5.248158931732178, 5.695061206817627, 4.783973217010498, 4.044779300689697, 3.9940342903137207, 3.3922266960144043, 2.743082046508789, 3.013580799102783, 3.1302075386047363, 3.2359085083007812, 3.400866985321045, 3.58583402633667, 3.7645344734191895, 3.8814339637756348, 4.141592025756836, 4.346562385559082, 4.42345666885376, 4.521812915802002, 4.460953235626221, 4.475826263427734, 4.5370683670043945, 4.506109714508057, 4.245870590209961, 4.020811080932617, 3.7224416732788086, 3.3394908905029297, 2.9705514907836914, 2.4504785537719727, 2.0189428329467773, 1.5463948249816895, 1.073160171508789, 0.6362051963806152, 0.31493473052978516, 0.06615829467773438, 0.0, 0.09079265594482422, 0.30223798751831055, 0.6037716865539551, 0.959197998046875, 1.206087589263916, 1.3766770362854004, 1.4075055122375488, 1.3799309730529785, 1.2447385787963867, 1.006777286529541, 0.7345080375671387, 0.4602384567260742, 0.2105240821838379, 0.057382822036743164, 0.0, 0.10758137702941895, 0.2857215404510498, 0.4993162155151367, 0.6388113498687744, 0.6898548603057861, 0.6910374164581299, 0.5799849033355713, 0.4090282917022705, 0.2402327060699463, 0.07669949531555176, 0.004343509674072266, 0.0580897331237793, 0.16643333435058594, 0.28627896308898926, 0.41701602935791016, 0.4778106212615967, 0.4225897789001465, 0.2694675922393799, 0.1359560489654541, 0.04989290237426758, 0.024133920669555664, 0.08386850357055664, 0.17662429809570312, 0.23775887489318848, 0.2778191566467285, 0.2556118965148926, 0.18243122100830078, 0.07839822769165039, 0.01361393928527832, 0.019960641860961914, 0.09974908828735352, 0.17735695838928223, 0.23326992988586426, 0.21385526657104492, 0.13902592658996582, 0.06584787368774414, 0.03738260269165039, 0.0501253604888916, 0.11444878578186035, 0.16000723838806152, 0.1501920223236084, 0.10492610931396484, 0.04671764373779297, 0.031340837478637695, 0.0747835636138916, 0.13916754722595215, 0.17604446411132812, 0.15452957153320312, 0.07142806053161621, 0.008783817291259766, 0.0, 0.0594785213470459, 0.10857093334197998, 0.10516369342803955, 0.0716315507888794, 0.03879404067993164, 0.044341206550598145, 0.0889359712600708, 0.13829028606414795, 0.13266921043395996, 0.08943343162536621, 0.04989778995513916, 0.04269909858703613, 0.0756763219833374, 0.08947217464447021, 0.0810549259185791, 0.035045742988586426, 0.010996103286743164, 0.03033757209777832, 0.06867420673370361, 0.08150196075439453, 0.04281485080718994, 0.008866667747497559, 0.013623356819152832, 0.07641100883483887, 0.105202317237854, 0.08213305473327637, 0.048670053482055664, 0.052475690841674805, 0.07929658889770508, 0.09823226928710938, 0.07746565341949463, 0.04434990882873535, 0.0509340763092041, 0.07370269298553467, 0.07819163799285889, 0.059372544288635254, 0.029207825660705566, 0.026052117347717285, 0.046050429344177246, 0.04525721073150635, 0.025297045707702637, 0.017155885696411133, 0.03644883632659912, 0.050061702728271484, 0.03893780708312988, 0.0215684175491333, 0.020253658294677734, 0.03790569305419922, 0.03498029708862305, 0.019713401794433594, 0.02399623394012451, 0.04025852680206299, 0.03754305839538574, 0.022193074226379395, 0.023427248001098633, 0.05391955375671387, 0.07055521011352539, 0.05343830585479736, 0.046872496604919434, 0.053012728691101074, 0.06483685970306396, 0.05145895481109619, 0.045789241790771484, 0.053226470947265625, 0.055028438568115234, 0.04882097244262695, 0.04399299621582031, 0.04610830545425415, 0.04496389627456665, 0.037654340267181396, 0.03744173049926758, 0.03954339027404785, 0.03948032855987549, 0.03446441888809204, 0.03562110662460327, 0.03647559881210327, 0.0324246883392334, 0.02869623899459839, 0.034060537815093994, 0.03306686878204346, 0.027150511741638184, 0.027069091796875, 0.01810765266418457, 0.00505375862121582, 0.005866050720214844, 0.006675601005554199, 0.005635738372802734, 0.0, 0.0035986900329589844, 0.003906667232513428, 0.0006630420684814453, 0.002478480339050293, 0.001273810863494873, 0.002044081687927246, 0.0018482804298400879, 0.0017834901809692383, 0.000794529914855957, 0.001870870590209961, 0.004552662372589111, 0.00322568416595459, 0.0021381378173828125, 0.0028291940689086914, 0.0023550987243652344, 0.004174351692199707, 0.004745125770568848, 0.003681361675262451, 0.003470301628112793, 0.0027672648429870605, 0.0036693215370178223, 0.003409266471862793, 0.003725588321685791, 0.0036997199058532715, 0.001735687255859375, 0.0022568106651306152, 0.0020532608032226562, 0.002288341522216797, 0.00389939546585083, 0.002639591693878174, 0.0013660192489624023, 0.001558542251586914, 0.0012502074241638184, 0.0009219646453857422, 0.0011370182037353516, 0.0, 0.0016494393348693848, 0.003872990608215332, 0.020138442516326904, 0.027946412563323975, 0.025853097438812256, 0.027076780796051025, 0.027231156826019287, 0.024324238300323486, 0.023008227348327637, 0.023547589778900146, 0.022031009197235107, 0.022735297679901123, 0.021755218505859375, 0.022083401679992676, 0.019377946853637695, 0.018839895725250244, 0.01794499158859253, 0.014655113220214844, 0.015541374683380127, 0.013034582138061523, 0.014107763767242432, 0.01304483413696289, 0.010957419872283936, 0.010043680667877197, 0.008090198040008545, 0.006228506565093994, 0.0059555768966674805, 0.003677964210510254, 0.0015954971313476562, 0.0], numpy.array([ 6.08884954,  6.07177114,  6.05268717,  6.03166342,  6.00876474,
+        self.test_all_the_conditions(return_new, (1.2, 42.261826174069945, [2.046617031097412, 2.046617031097412, 5.248158931732178, 5.695061206817627, 4.783973217010498, 4.044779300689697, 3.9940342903137207, 3.3922266960144043, 2.743082046508789, 3.013580799102783, 3.1302075386047363, 3.2359085083007812, 3.400866985321045, 3.58583402633667, 3.7645344734191895, 3.8814339637756348, 4.141592025756836, 4.346562385559082, 4.42345666885376, 4.521812915802002, 4.460953235626221, 4.475826263427734, 4.5370683670043945, 4.506109714508057, 4.245870590209961, 4.020811080932617, 3.7224416732788086, 3.3394908905029297, 2.9705514907836914, 2.4504785537719727, 2.0189428329467773, 1.5463948249816895, 1.073160171508789, 0.6362051963806152, 0.31493473052978516, 0.06615829467773438, 0.0, 0.09079265594482422, 0.30223798751831055, 0.6037716865539551, 0.959197998046875, 1.206087589263916, 1.3766770362854004, 1.4075055122375488, 1.3799309730529785, 1.2447385787963867, 1.006777286529541, 0.7345080375671387, 0.4602384567260742, 0.2105240821838379, 0.057382822036743164, 0.0, 0.10758137702941895, 0.2857215404510498, 0.4993162155151367, 0.6388113498687744, 0.6898548603057861, 0.6910374164581299, 0.5799849033355713, 0.4090282917022705, 0.2402327060699463, 0.07669949531555176, 0.004343509674072266, 0.0580897331237793, 0.16643333435058594, 0.28627896308898926, 0.41701602935791016, 0.4778106212615967, 0.4225897789001465, 0.2694675922393799, 0.1359560489654541, 0.04989290237426758, 0.024133920669555664, 0.08386850357055664, 0.17662429809570312, 0.23775887489318848, 0.2778191566467285, 0.2556118965148926, 0.18243122100830078, 0.07839822769165039, 0.01361393928527832, 0.019960641860961914, 0.09974908828735352, 0.17735695838928223, 0.23326992988586426, 0.21385526657104492, 0.13902592658996582, 0.06584787368774414, 0.03738260269165039, 0.0501253604888916, 0.11444878578186035, 0.16000723838806152, 0.1501920223236084, 0.10492610931396484, 0.04671764373779297, 0.031340837478637695, 0.0747835636138916, 0.13916754722595215, 0.17604446411132812, 0.15452957153320312, 0.07142806053161621, 0.008783817291259766, 0.0, 0.0594785213470459, 0.10857093334197998, 0.10516369342803955, 0.0716315507888794, 0.03879404067993164, 0.044341206550598145, 0.0889359712600708, 0.13829028606414795, 0.13266921043395996, 0.08943343162536621, 0.04989778995513916, 0.04269909858703613, 0.0756763219833374, 0.08947217464447021, 0.0810549259185791, 0.035045742988586426, 0.010996103286743164, 0.03033757209777832, 0.06867420673370361, 0.08150196075439453, 0.04281485080718994, 0.008866667747497559, 0.013623356819152832, 0.07641100883483887, 0.105202317237854, 0.08213305473327637, 0.048670053482055664, 0.052475690841674805, 0.07929658889770508, 0.09823226928710938, 0.07746565341949463, 0.04434990882873535, 0.0509340763092041, 0.07370269298553467, 0.07819163799285889, 0.059372544288635254, 0.029207825660705566, 0.026052117347717285, 0.046050429344177246, 0.04525721073150635, 0.025297045707702637, 0.017155885696411133, 0.03644883632659912, 0.050061702728271484, 0.03893780708312988, 0.0215684175491333, 0.020253658294677734, 0.03790569305419922, 0.03498029708862305, 0.019713401794433594, 0.02399623394012451, 0.04025852680206299, 0.03754305839538574, 0.022193074226379395, 0.023427248001098633, 0.05391955375671387, 0.07055521011352539, 0.05343830585479736, 0.046872496604919434, 0.053012728691101074, 0.06483685970306396, 0.05145895481109619, 0.045789241790771484, 0.053226470947265625, 0.055028438568115234, 0.04882097244262695, 0.04399299621582031, 0.04610830545425415, 0.04496389627456665, 0.037654340267181396, 0.03744173049926758, 0.03954339027404785, 0.03948032855987549, 0.03446441888809204, 0.03562110662460327, 0.03647559881210327, 0.0324246883392334, 0.02869623899459839, 0.034060537815093994, 0.03306686878204346, 0.027150511741638184, 0.027069091796875, 0.01810765266418457, 0.00505375862121582, 0.005866050720214844, 0.006675601005554199, 0.005635738372802734, 0.0, 0.0035986900329589844, 0.003906667232513428, 0.0006630420684814453, 0.002478480339050293, 0.001273810863494873, 0.002044081687927246, 0.0018482804298400879, 0.0017834901809692383, 0.000794529914855957, 0.001870870590209961, 0.004552662372589111, 0.00322568416595459, 0.0021381378173828125, 0.0028291940689086914, 0.0023550987243652344, 0.004174351692199707, 0.004745125770568848, 0.003681361675262451, 0.003470301628112793, 0.0027672648429870605, 0.0036693215370178223, 0.003409266471862793, 0.003725588321685791, 0.0036997199058532715, 0.001735687255859375, 0.0022568106651306152, 0.0020532608032226562, 0.002288341522216797, 0.00389939546585083, 0.002639591693878174, 0.0013660192489624023, 0.001558542251586914, 0.0012502074241638184, 0.0009219646453857422, 0.0011370182037353516, 0.0, 0.0016494393348693848, 0.003872990608215332, 0.020138442516326904, 0.027946412563323975, 0.025853097438812256, 0.027076780796051025, 0.027231156826019287, 0.024324238300323486, 0.023008227348327637, 0.023547589778900146, 0.022031009197235107, 0.022735297679901123, 0.021755218505859375, 0.022083401679992676, 0.019377946853637695, 0.018839895725250244, 0.01794499158859253, 0.014655113220214844, 0.015541374683380127, 0.013034582138061523, 0.014107763767242432, 0.01304483413696289, 0.010957419872283936, 0.010043680667877197, 0.008090198040008545, 0.006228506565093994, 0.0059555768966674805, 0.003677964210510254, 0.0015954971313476562, 0.0], array([ 6.08884954,  6.07177114,  6.05268717,  6.03166342,  6.00876474,
         5.98405981,  5.95761347,  5.92949438,  5.89976883,  5.868505  ,
         5.83576822,  5.80162525,  5.76614237,  5.7293849 ,  5.69141722,
         5.65230513,  5.61210918,  5.57089233,  5.52871656,  5.48564196,
@@ -4948,7 +4949,7 @@ class Test_defocusgett_vpp(unittest.TestCase):
         0.66078377,  0.65946102,  0.65824455,  0.65713573,  0.6561361 ,
         0.65524709,  0.65447044,  0.65380782,  0.65326107,  0.65283203,
         0.6525228 ,  0.65233546,  0.65227222,  0.65233546,  0.65252757,
-        0.65285116,  0.65330899], dtype=float), numpy.array([ 3.33949089,  3.33949089,  3.33949089,  3.33949089,  3.33949089,
+        0.65285116,  0.65330899], dtype=float), array([ 3.33949089,  3.33949089,  3.33949089,  3.33949089,  3.33949089,
         3.33949089,  3.33949089,  3.33949089,  3.33949089,  3.33949089,
         3.33949089,  3.33949089,  3.33949089,  3.33949089,  3.33949089,
         3.33949089,  3.33949089,  3.33949089,  3.33949089,  3.33949089,
@@ -5013,7 +5014,7 @@ class Test_defocusgett_vpp(unittest.TestCase):
         return_new = fu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, 0, self.f_stop, self.vpp_options, nr2=self.nr2)
         return_old = oldfu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, 0, self.f_stop, self.vpp_options, nr2=self.nr2)
         self.test_all_the_conditions(return_new, return_old, self.skip)
-        self.test_all_the_conditions(return_new, (1.2, 34.202014332566876, [8.118387222290039, 8.118387222290039, 11.3008451461792, 11.726722717285156, 10.792733192443848, 10.028830528259277, 9.951632499694824, 9.32169246673584, 8.642799377441406, 8.881996154785156, 8.9658203125, 9.037272453308105, 9.166576385498047, 9.3145170211792, 9.454833984375, 9.531991004943848, 9.751016616821289, 9.913403511047363, 9.946163177490234, 9.998682975769043, 9.890080451965332, 9.855039596557617, 9.863861083984375, 9.777570724487305, 9.458608627319336, 9.170886039733887, 8.805301666259766, 8.349918365478516, 7.902630805969238, 7.2975754737854, 6.773719310760498, 6.200843811035156, 5.618675231933594, 5.063680648803711, 4.614893913269043, 4.228911876678467, 4.015829086303711, 3.9501471519470215, 3.9959487915039062, 4.123266696929932, 4.296713829040527, 4.354869365692139, 4.3311614990234375, 4.1634745597839355, 3.9346389770507812, 3.5969982147216797, 3.157014846801758, 2.6847732067108154, 2.2141811847686768, 1.7733323574066162, 1.4356868267059326, 1.2017533779144287, 1.1419107913970947, 1.162764310836792, 1.2300422191619873, 1.2348401546478271, 1.1632695198059082, 1.0542008876800537, 0.8453669548034668, 0.5890419483184814, 0.34708309173583984, 0.12225127220153809, 3.814697265625e-06, 0.014711856842041016, 0.09423613548278809, 0.19478583335876465, 0.31501054763793945, 0.3733081817626953, 0.3228261470794678, 0.18089604377746582, 0.06425952911376953, 5.0067901611328125e-06, 0.00026798248291015625, 0.08955192565917969, 0.21474003791809082, 0.3105885982513428, 0.3870890140533447, 0.4025397300720215, 0.36777496337890625, 0.3025016784667969, 0.27645182609558105, 0.3211848735809326, 0.43872761726379395, 0.5532145500183105, 0.6449246406555176, 0.6600513458251953, 0.6183652877807617, 0.5768183469772339, 0.5783830881118774, 0.6194882392883301, 0.7104599475860596, 0.7809238433837891, 0.7942584753036499, 0.7703866958618164, 0.7318278551101685, 0.7343777418136597, 0.7940530776977539, 0.8730114698410034, 0.9228460788726807, 0.912717342376709, 0.8394790887832642, 0.7852262258529663, 0.7834144830703735, 0.8484995365142822, 0.9018865823745728, 0.9015159606933594, 0.8698157072067261, 0.8376579284667969, 0.84278404712677, 0.8859069347381592, 0.9327874183654785, 0.9237377643585205, 0.8761637210845947, 0.8314239978790283, 0.8181974291801453, 0.8443629741668701, 0.850601851940155, 0.8339191675186157, 0.7789711356163025, 0.7453427314758301, 0.7544975280761719, 0.7820702791213989, 0.7835859656333923, 0.7330667972564697, 0.6867932677268982, 0.6787571310997009, 0.7283094525337219, 0.7434467673301697, 0.7063281536102295, 0.658443033695221, 0.6474761366844177, 0.6591958999633789, 0.6627229452133179, 0.626261830329895, 0.577186644077301, 0.5675678253173828, 0.5739113092422485, 0.5617746114730835, 0.5261510014533997, 0.4790251851081848, 0.4587748050689697, 0.4615681767463684, 0.44348353147506714, 0.406170129776001, 0.38063955307006836, 0.3825327754020691, 0.3787629008293152, 0.35030096769332886, 0.31566697359085083, 0.29719066619873047, 0.29781460762023926, 0.2780260443687439, 0.24609273672103882, 0.2339390516281128, 0.23402786254882812, 0.21543627977371216, 0.18454188108444214, 0.170598566532135, 0.18631517887115479, 0.18861258029937744, 0.15762978792190552, 0.13770544528961182, 0.13102930784225464, 0.13061290979385376, 0.10560345649719238, 0.08894354104995728, 0.08606237173080444, 0.0782473087310791, 0.06315171718597412, 0.05019021034240723, 0.044950127601623535, 0.03724950551986694, 0.024201512336730957, 0.019084036350250244, 0.01712709665298462, 0.013861358165740967, 0.006505131721496582, 0.006186783313751221, 0.006430983543395996, 0.002630472183227539, 5.364418029785156e-06, 0.0073146820068359375, 0.00909268856048584, 0.006756305694580078, 0.011041045188903809, 0.007206737995147705, 1.239776611328125e-05, 0.007385075092315674, 0.015421390533447266, 0.022237718105316162, 0.025047898292541504, 0.037641286849975586, 0.04744887351989746, 0.054165005683898926, 0.06635439395904541, 0.07589060068130493, 0.08772134780883789, 0.09885752201080322, 0.11034852266311646, 0.12109154462814331, 0.13402903079986572, 0.14865535497665405, 0.15931111574172974, 0.17020118236541748, 0.182822585105896, 0.19419139623641968, 0.20772784948349, 0.21985387802124023, 0.23014920949935913, 0.24106919765472412, 0.2512395977973938, 0.2627299427986145, 0.2727479934692383, 0.28300929069519043, 0.29257458448410034, 0.2998291552066803, 0.3091796636581421, 0.31740131974220276, 0.32564422488212585, 0.3348340094089508, 0.34071335196495056, 0.3461299538612366, 0.3525552749633789, 0.35801440477371216, 0.3629807233810425, 0.36800989508628845, 0.37119847536087036, 0.376677542924881, 0.38222450017929077, 0.40129661560058594, 0.4113819897174835, 0.41102197766304016, 0.4134170413017273, 0.4141598343849182, 0.4112328290939331, 0.4092578887939453, 0.40846309065818787, 0.4048936069011688, 0.40277427434921265, 0.398138165473938, 0.3939041495323181, 0.3856424391269684, 0.3784494400024414, 0.36967605352401733, 0.3571351170539856, 0.3472192585468292, 0.33214548230171204, 0.318629652261734, 0.30064553022384644, 0.2789295017719269, 0.25522395968437195, 0.22675949335098267, 0.19398629665374756, 0.15756267309188843, 0.11285686492919922, 0.06077677011489868, 0.0], numpy.array([  2.47491812e-07,   5.24443067e-07,   1.08356267e-06,
+        self.test_all_the_conditions(return_new, (1.2, 34.202014332566876, [8.118387222290039, 8.118387222290039, 11.3008451461792, 11.726722717285156, 10.792733192443848, 10.028830528259277, 9.951632499694824, 9.32169246673584, 8.642799377441406, 8.881996154785156, 8.9658203125, 9.037272453308105, 9.166576385498047, 9.3145170211792, 9.454833984375, 9.531991004943848, 9.751016616821289, 9.913403511047363, 9.946163177490234, 9.998682975769043, 9.890080451965332, 9.855039596557617, 9.863861083984375, 9.777570724487305, 9.458608627319336, 9.170886039733887, 8.805301666259766, 8.349918365478516, 7.902630805969238, 7.2975754737854, 6.773719310760498, 6.200843811035156, 5.618675231933594, 5.063680648803711, 4.614893913269043, 4.228911876678467, 4.015829086303711, 3.9501471519470215, 3.9959487915039062, 4.123266696929932, 4.296713829040527, 4.354869365692139, 4.3311614990234375, 4.1634745597839355, 3.9346389770507812, 3.5969982147216797, 3.157014846801758, 2.6847732067108154, 2.2141811847686768, 1.7733323574066162, 1.4356868267059326, 1.2017533779144287, 1.1419107913970947, 1.162764310836792, 1.2300422191619873, 1.2348401546478271, 1.1632695198059082, 1.0542008876800537, 0.8453669548034668, 0.5890419483184814, 0.34708309173583984, 0.12225127220153809, 3.814697265625e-06, 0.014711856842041016, 0.09423613548278809, 0.19478583335876465, 0.31501054763793945, 0.3733081817626953, 0.3228261470794678, 0.18089604377746582, 0.06425952911376953, 5.0067901611328125e-06, 0.00026798248291015625, 0.08955192565917969, 0.21474003791809082, 0.3105885982513428, 0.3870890140533447, 0.4025397300720215, 0.36777496337890625, 0.3025016784667969, 0.27645182609558105, 0.3211848735809326, 0.43872761726379395, 0.5532145500183105, 0.6449246406555176, 0.6600513458251953, 0.6183652877807617, 0.5768183469772339, 0.5783830881118774, 0.6194882392883301, 0.7104599475860596, 0.7809238433837891, 0.7942584753036499, 0.7703866958618164, 0.7318278551101685, 0.7343777418136597, 0.7940530776977539, 0.8730114698410034, 0.9228460788726807, 0.912717342376709, 0.8394790887832642, 0.7852262258529663, 0.7834144830703735, 0.8484995365142822, 0.9018865823745728, 0.9015159606933594, 0.8698157072067261, 0.8376579284667969, 0.84278404712677, 0.8859069347381592, 0.9327874183654785, 0.9237377643585205, 0.8761637210845947, 0.8314239978790283, 0.8181974291801453, 0.8443629741668701, 0.850601851940155, 0.8339191675186157, 0.7789711356163025, 0.7453427314758301, 0.7544975280761719, 0.7820702791213989, 0.7835859656333923, 0.7330667972564697, 0.6867932677268982, 0.6787571310997009, 0.7283094525337219, 0.7434467673301697, 0.7063281536102295, 0.658443033695221, 0.6474761366844177, 0.6591958999633789, 0.6627229452133179, 0.626261830329895, 0.577186644077301, 0.5675678253173828, 0.5739113092422485, 0.5617746114730835, 0.5261510014533997, 0.4790251851081848, 0.4587748050689697, 0.4615681767463684, 0.44348353147506714, 0.406170129776001, 0.38063955307006836, 0.3825327754020691, 0.3787629008293152, 0.35030096769332886, 0.31566697359085083, 0.29719066619873047, 0.29781460762023926, 0.2780260443687439, 0.24609273672103882, 0.2339390516281128, 0.23402786254882812, 0.21543627977371216, 0.18454188108444214, 0.170598566532135, 0.18631517887115479, 0.18861258029937744, 0.15762978792190552, 0.13770544528961182, 0.13102930784225464, 0.13061290979385376, 0.10560345649719238, 0.08894354104995728, 0.08606237173080444, 0.0782473087310791, 0.06315171718597412, 0.05019021034240723, 0.044950127601623535, 0.03724950551986694, 0.024201512336730957, 0.019084036350250244, 0.01712709665298462, 0.013861358165740967, 0.006505131721496582, 0.006186783313751221, 0.006430983543395996, 0.002630472183227539, 5.364418029785156e-06, 0.0073146820068359375, 0.00909268856048584, 0.006756305694580078, 0.011041045188903809, 0.007206737995147705, 1.239776611328125e-05, 0.007385075092315674, 0.015421390533447266, 0.022237718105316162, 0.025047898292541504, 0.037641286849975586, 0.04744887351989746, 0.054165005683898926, 0.06635439395904541, 0.07589060068130493, 0.08772134780883789, 0.09885752201080322, 0.11034852266311646, 0.12109154462814331, 0.13402903079986572, 0.14865535497665405, 0.15931111574172974, 0.17020118236541748, 0.182822585105896, 0.19419139623641968, 0.20772784948349, 0.21985387802124023, 0.23014920949935913, 0.24106919765472412, 0.2512395977973938, 0.2627299427986145, 0.2727479934692383, 0.28300929069519043, 0.29257458448410034, 0.2998291552066803, 0.3091796636581421, 0.31740131974220276, 0.32564422488212585, 0.3348340094089508, 0.34071335196495056, 0.3461299538612366, 0.3525552749633789, 0.35801440477371216, 0.3629807233810425, 0.36800989508628845, 0.37119847536087036, 0.376677542924881, 0.38222450017929077, 0.40129661560058594, 0.4113819897174835, 0.41102197766304016, 0.4134170413017273, 0.4141598343849182, 0.4112328290939331, 0.4092578887939453, 0.40846309065818787, 0.4048936069011688, 0.40277427434921265, 0.398138165473938, 0.3939041495323181, 0.3856424391269684, 0.3784494400024414, 0.36967605352401733, 0.3571351170539856, 0.3472192585468292, 0.33214548230171204, 0.318629652261734, 0.30064553022384644, 0.2789295017719269, 0.25522395968437195, 0.22675949335098267, 0.19398629665374756, 0.15756267309188843, 0.11285686492919922, 0.06077677011489868, 0.0], array([  2.47491812e-07,   5.24443067e-07,   1.08356267e-06,
          2.18413788e-06,   4.29759393e-06,   8.25914685e-06,
          1.55113976e-05,   2.84846683e-05,   5.11740691e-05,
          8.99909355e-05,   1.54983340e-04,   2.61536770e-04,
@@ -5098,7 +5099,7 @@ class Test_defocusgett_vpp(unittest.TestCase):
          3.35359544e-01,   3.49285930e-01,   3.65660369e-01,
          3.84859949e-01,   4.07342523e-01,   4.33666170e-01,
          4.64514434e-01,   5.00728369e-01,   5.43348670e-01,
-         5.93669891e-01,   6.53311968e-01], dtype=float), numpy.array([  2.14939480e+01,   2.06633244e+01,   1.98753376e+01,
+         5.93669891e-01,   6.53311968e-01], dtype=float), array([  2.14939480e+01,   2.06633244e+01,   1.98753376e+01,
          1.91274109e+01,   1.84171352e+01,   1.77422695e+01,
          1.71007271e+01,   1.64905453e+01,   1.59099131e+01,
          1.53571119e+01,   1.48305416e+01,   1.43287096e+01,
@@ -5189,7 +5190,7 @@ class Test_defocusgett_vpp(unittest.TestCase):
         return_new = fu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.f_start, 0, self.vpp_options, nr2=self.nr2)
         return_old = oldfu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.f_start, 0, self.vpp_options, nr2=self.nr2)
         self.test_all_the_conditions(return_new, return_old, self.skip)
-        self.test_all_the_conditions(return_new, (1.2, 34.202014332566876, [2.046617031097412, 2.046617031097412, 5.248158931732178, 5.695061206817627, 4.783973217010498, 4.044779300689697, 3.9940342903137207, 3.3922266960144043, 2.743082046508789, 3.013580799102783, 3.1302075386047363, 3.2359085083007812, 3.400866985321045, 3.58583402633667, 3.7645344734191895, 3.8814339637756348, 4.141592025756836, 4.346562385559082, 4.42345666885376, 4.521812915802002, 4.460953235626221, 4.475826263427734, 4.5370683670043945, 4.506109714508057, 4.245870590209961, 4.020811080932617, 3.7224416732788086, 3.3394908905029297, 2.9705514907836914, 2.4504785537719727, 2.0189428329467773, 1.5463948249816895, 1.073160171508789, 0.6362051963806152, 0.31493473052978516, 0.06615829467773438, 0.0, 0.09079265594482422, 0.30223798751831055, 0.6037716865539551, 0.959197998046875, 1.206087589263916, 1.3766770362854004, 1.4075055122375488, 1.3799309730529785, 1.2447385787963867, 1.006777286529541, 0.7345080375671387, 0.4602384567260742, 0.2105240821838379, 0.057382822036743164, 0.0, 0.10758137702941895, 0.2857215404510498, 0.4993162155151367, 0.6388113498687744, 0.6898548603057861, 0.6910374164581299, 0.5799849033355713, 0.4090282917022705, 0.2402327060699463, 0.07669949531555176, 0.004343509674072266, 0.0580897331237793, 0.16643333435058594, 0.28627896308898926, 0.41701602935791016, 0.4778106212615967, 0.4225897789001465, 0.2694675922393799, 0.1359560489654541, 0.04989290237426758, 0.024133920669555664, 0.08386850357055664, 0.17662429809570312, 0.23775887489318848, 0.2778191566467285, 0.2556118965148926, 0.18243122100830078, 0.07839822769165039, 0.01361393928527832, 0.019960641860961914, 0.09974908828735352, 0.17735695838928223, 0.23326992988586426, 0.21385526657104492, 0.13902592658996582, 0.06584787368774414, 0.03738260269165039, 0.0501253604888916, 0.11444878578186035, 0.16000723838806152, 0.1501920223236084, 0.10492610931396484, 0.04671764373779297, 0.031340837478637695, 0.0747835636138916, 0.13916754722595215, 0.17604446411132812, 0.15452957153320312, 0.07142806053161621, 0.008783817291259766, 0.0, 0.0594785213470459, 0.10857093334197998, 0.10516369342803955, 0.0716315507888794, 0.03879404067993164, 0.044341206550598145, 0.0889359712600708, 0.13829028606414795, 0.13266921043395996, 0.08943343162536621, 0.04989778995513916, 0.04269909858703613, 0.0756763219833374, 0.08947217464447021, 0.0810549259185791, 0.035045742988586426, 0.010996103286743164, 0.03033757209777832, 0.06867420673370361, 0.08150196075439453, 0.04281485080718994, 0.008866667747497559, 0.013623356819152832, 0.07641100883483887, 0.105202317237854, 0.08213305473327637, 0.048670053482055664, 0.052475690841674805, 0.07929658889770508, 0.09823226928710938, 0.07746565341949463, 0.04434990882873535, 0.0509340763092041, 0.07370269298553467, 0.07819163799285889, 0.059372544288635254, 0.029207825660705566, 0.026052117347717285, 0.046050429344177246, 0.04525721073150635, 0.025297045707702637, 0.017155885696411133, 0.03644883632659912, 0.050061702728271484, 0.03893780708312988, 0.0215684175491333, 0.020253658294677734, 0.03790569305419922, 0.03498029708862305, 0.019713401794433594, 0.02399623394012451, 0.04025852680206299, 0.03754305839538574, 0.022193074226379395, 0.023427248001098633, 0.05391955375671387, 0.07055521011352539, 0.05343830585479736, 0.046872496604919434, 0.053012728691101074, 0.06483685970306396, 0.05145895481109619, 0.045789241790771484, 0.053226470947265625, 0.055028438568115234, 0.04882097244262695, 0.04399299621582031, 0.04610830545425415, 0.04496389627456665, 0.037654340267181396, 0.03744173049926758, 0.03954339027404785, 0.03948032855987549, 0.03446441888809204, 0.03562110662460327, 0.03647559881210327, 0.0324246883392334, 0.02869623899459839, 0.034060537815093994, 0.03306686878204346, 0.027150511741638184, 0.027069091796875, 0.01810765266418457, 0.00505375862121582, 0.005866050720214844, 0.006675601005554199, 0.005635738372802734, 0.0, 0.0035986900329589844, 0.003906667232513428, 0.0006630420684814453, 0.002478480339050293, 0.001273810863494873, 0.002044081687927246, 0.0018482804298400879, 0.0017834901809692383, 0.000794529914855957, 0.001870870590209961, 0.004552662372589111, 0.00322568416595459, 0.0021381378173828125, 0.0028291940689086914, 0.0023550987243652344, 0.004174351692199707, 0.004745125770568848, 0.003681361675262451, 0.003470301628112793, 0.0027672648429870605, 0.0036693215370178223, 0.003409266471862793, 0.003725588321685791, 0.0036997199058532715, 0.001735687255859375, 0.0022568106651306152, 0.0020532608032226562, 0.002288341522216797, 0.00389939546585083, 0.002639591693878174, 0.0013660192489624023, 0.001558542251586914, 0.0012502074241638184, 0.0009219646453857422, 0.0011370182037353516, 0.0, 0.0016494393348693848, 0.003872990608215332, 0.020138442516326904, 0.027946412563323975, 0.025853097438812256, 0.027076780796051025, 0.027231156826019287, 0.024324238300323486, 0.023008227348327637, 0.023547589778900146, 0.022031009197235107, 0.022735297679901123, 0.021755218505859375, 0.022083401679992676, 0.019377946853637695, 0.018839895725250244, 0.01794499158859253, 0.014655113220214844, 0.015541374683380127, 0.013034582138061523, 0.014107763767242432, 0.01304483413696289, 0.010957419872283936, 0.010043680667877197, 0.008090198040008545, 0.006228506565093994, 0.0059555768966674805, 0.003677964210510254, 0.0015954971313476562, 0.0], numpy.array([ 6.08884954,  6.07177114,  6.05268717,  6.03166342,  6.00876474,
+        self.test_all_the_conditions(return_new, (1.2, 34.202014332566876, [2.046617031097412, 2.046617031097412, 5.248158931732178, 5.695061206817627, 4.783973217010498, 4.044779300689697, 3.9940342903137207, 3.3922266960144043, 2.743082046508789, 3.013580799102783, 3.1302075386047363, 3.2359085083007812, 3.400866985321045, 3.58583402633667, 3.7645344734191895, 3.8814339637756348, 4.141592025756836, 4.346562385559082, 4.42345666885376, 4.521812915802002, 4.460953235626221, 4.475826263427734, 4.5370683670043945, 4.506109714508057, 4.245870590209961, 4.020811080932617, 3.7224416732788086, 3.3394908905029297, 2.9705514907836914, 2.4504785537719727, 2.0189428329467773, 1.5463948249816895, 1.073160171508789, 0.6362051963806152, 0.31493473052978516, 0.06615829467773438, 0.0, 0.09079265594482422, 0.30223798751831055, 0.6037716865539551, 0.959197998046875, 1.206087589263916, 1.3766770362854004, 1.4075055122375488, 1.3799309730529785, 1.2447385787963867, 1.006777286529541, 0.7345080375671387, 0.4602384567260742, 0.2105240821838379, 0.057382822036743164, 0.0, 0.10758137702941895, 0.2857215404510498, 0.4993162155151367, 0.6388113498687744, 0.6898548603057861, 0.6910374164581299, 0.5799849033355713, 0.4090282917022705, 0.2402327060699463, 0.07669949531555176, 0.004343509674072266, 0.0580897331237793, 0.16643333435058594, 0.28627896308898926, 0.41701602935791016, 0.4778106212615967, 0.4225897789001465, 0.2694675922393799, 0.1359560489654541, 0.04989290237426758, 0.024133920669555664, 0.08386850357055664, 0.17662429809570312, 0.23775887489318848, 0.2778191566467285, 0.2556118965148926, 0.18243122100830078, 0.07839822769165039, 0.01361393928527832, 0.019960641860961914, 0.09974908828735352, 0.17735695838928223, 0.23326992988586426, 0.21385526657104492, 0.13902592658996582, 0.06584787368774414, 0.03738260269165039, 0.0501253604888916, 0.11444878578186035, 0.16000723838806152, 0.1501920223236084, 0.10492610931396484, 0.04671764373779297, 0.031340837478637695, 0.0747835636138916, 0.13916754722595215, 0.17604446411132812, 0.15452957153320312, 0.07142806053161621, 0.008783817291259766, 0.0, 0.0594785213470459, 0.10857093334197998, 0.10516369342803955, 0.0716315507888794, 0.03879404067993164, 0.044341206550598145, 0.0889359712600708, 0.13829028606414795, 0.13266921043395996, 0.08943343162536621, 0.04989778995513916, 0.04269909858703613, 0.0756763219833374, 0.08947217464447021, 0.0810549259185791, 0.035045742988586426, 0.010996103286743164, 0.03033757209777832, 0.06867420673370361, 0.08150196075439453, 0.04281485080718994, 0.008866667747497559, 0.013623356819152832, 0.07641100883483887, 0.105202317237854, 0.08213305473327637, 0.048670053482055664, 0.052475690841674805, 0.07929658889770508, 0.09823226928710938, 0.07746565341949463, 0.04434990882873535, 0.0509340763092041, 0.07370269298553467, 0.07819163799285889, 0.059372544288635254, 0.029207825660705566, 0.026052117347717285, 0.046050429344177246, 0.04525721073150635, 0.025297045707702637, 0.017155885696411133, 0.03644883632659912, 0.050061702728271484, 0.03893780708312988, 0.0215684175491333, 0.020253658294677734, 0.03790569305419922, 0.03498029708862305, 0.019713401794433594, 0.02399623394012451, 0.04025852680206299, 0.03754305839538574, 0.022193074226379395, 0.023427248001098633, 0.05391955375671387, 0.07055521011352539, 0.05343830585479736, 0.046872496604919434, 0.053012728691101074, 0.06483685970306396, 0.05145895481109619, 0.045789241790771484, 0.053226470947265625, 0.055028438568115234, 0.04882097244262695, 0.04399299621582031, 0.04610830545425415, 0.04496389627456665, 0.037654340267181396, 0.03744173049926758, 0.03954339027404785, 0.03948032855987549, 0.03446441888809204, 0.03562110662460327, 0.03647559881210327, 0.0324246883392334, 0.02869623899459839, 0.034060537815093994, 0.03306686878204346, 0.027150511741638184, 0.027069091796875, 0.01810765266418457, 0.00505375862121582, 0.005866050720214844, 0.006675601005554199, 0.005635738372802734, 0.0, 0.0035986900329589844, 0.003906667232513428, 0.0006630420684814453, 0.002478480339050293, 0.001273810863494873, 0.002044081687927246, 0.0018482804298400879, 0.0017834901809692383, 0.000794529914855957, 0.001870870590209961, 0.004552662372589111, 0.00322568416595459, 0.0021381378173828125, 0.0028291940689086914, 0.0023550987243652344, 0.004174351692199707, 0.004745125770568848, 0.003681361675262451, 0.003470301628112793, 0.0027672648429870605, 0.0036693215370178223, 0.003409266471862793, 0.003725588321685791, 0.0036997199058532715, 0.001735687255859375, 0.0022568106651306152, 0.0020532608032226562, 0.002288341522216797, 0.00389939546585083, 0.002639591693878174, 0.0013660192489624023, 0.001558542251586914, 0.0012502074241638184, 0.0009219646453857422, 0.0011370182037353516, 0.0, 0.0016494393348693848, 0.003872990608215332, 0.020138442516326904, 0.027946412563323975, 0.025853097438812256, 0.027076780796051025, 0.027231156826019287, 0.024324238300323486, 0.023008227348327637, 0.023547589778900146, 0.022031009197235107, 0.022735297679901123, 0.021755218505859375, 0.022083401679992676, 0.019377946853637695, 0.018839895725250244, 0.01794499158859253, 0.014655113220214844, 0.015541374683380127, 0.013034582138061523, 0.014107763767242432, 0.01304483413696289, 0.010957419872283936, 0.010043680667877197, 0.008090198040008545, 0.006228506565093994, 0.0059555768966674805, 0.003677964210510254, 0.0015954971313476562, 0.0], array([ 6.08884954,  6.07177114,  6.05268717,  6.03166342,  6.00876474,
         5.98405981,  5.95761347,  5.92949438,  5.89976883,  5.868505  ,
         5.83576822,  5.80162525,  5.76614237,  5.7293849 ,  5.69141722,
         5.65230513,  5.61210918,  5.57089233,  5.52871656,  5.48564196,
@@ -5240,7 +5241,7 @@ class Test_defocusgett_vpp(unittest.TestCase):
         0.66078377,  0.65946102,  0.65824455,  0.65713573,  0.6561361 ,
         0.65524709,  0.65447044,  0.65380782,  0.65326107,  0.65283203,
         0.6525228 ,  0.65233546,  0.65227222,  0.65233546,  0.65252757,
-        0.65285116,  0.65330899], dtype=float), numpy.array([ 3.33949089,  3.33949089,  3.33949089,  3.33949089,  3.33949089,
+        0.65285116,  0.65330899], dtype=float), array([ 3.33949089,  3.33949089,  3.33949089,  3.33949089,  3.33949089,
         3.33949089,  3.33949089,  3.33949089,  3.33949089,  3.33949089,
         3.33949089,  3.33949089,  3.33949089,  3.33949089,  3.33949089,
         3.33949089,  3.33949089,  3.33949089,  3.33949089,  3.33949089,
@@ -5307,7 +5308,7 @@ class Test_defocusgett_vpp(unittest.TestCase):
         return_new = fu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.f_start, self.f_stop, vpp_options, nr2=self.nr2)
         return_old = oldfu.defocusgett_vpp(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.f_start, self.f_stop, vpp_options, nr2=self.nr2)
         self.test_all_the_conditions(return_new, return_old, self.skip)
-        self.test_all_the_conditions(return_new, (1.2, 25.881904510252081, [2.046617031097412, 2.046617031097412, 5.248158931732178, 5.695061206817627, 4.783973217010498, 4.044779300689697, 3.9940342903137207, 3.3922266960144043, 2.743082046508789, 3.013580799102783, 3.1302075386047363, 3.2359085083007812, 3.400866985321045, 3.58583402633667, 3.7645344734191895, 3.8814339637756348, 4.141592025756836, 4.346562385559082, 4.42345666885376, 4.521812915802002, 4.460953235626221, 4.475826263427734, 4.5370683670043945, 4.506109714508057, 4.245870590209961, 4.020811080932617, 3.7224416732788086, 3.3394908905029297, 2.9705514907836914, 2.4504785537719727, 2.0189428329467773, 1.5463948249816895, 1.073160171508789, 0.6362051963806152, 0.31493473052978516, 0.06615829467773438, 0.0, 0.09079265594482422, 0.30223798751831055, 0.6037716865539551, 0.959197998046875, 1.206087589263916, 1.3766770362854004, 1.4075055122375488, 1.3799309730529785, 1.2447385787963867, 1.006777286529541, 0.7345080375671387, 0.4602384567260742, 0.2105240821838379, 0.057382822036743164, 0.0, 0.10758137702941895, 0.2857215404510498, 0.4993162155151367, 0.6388113498687744, 0.6898548603057861, 0.6910374164581299, 0.5799849033355713, 0.4090282917022705, 0.2402327060699463, 0.07669949531555176, 0.004343509674072266, 0.0580897331237793, 0.16643333435058594, 0.28627896308898926, 0.41701602935791016, 0.4778106212615967, 0.4225897789001465, 0.2694675922393799, 0.1359560489654541, 0.04989290237426758, 0.024133920669555664, 0.08386850357055664, 0.17662429809570312, 0.23775887489318848, 0.2778191566467285, 0.2556118965148926, 0.18243122100830078, 0.07839822769165039, 0.01361393928527832, 0.019960641860961914, 0.09974908828735352, 0.17735695838928223, 0.23326992988586426, 0.21385526657104492, 0.13902592658996582, 0.06584787368774414, 0.03738260269165039, 0.0501253604888916, 0.11444878578186035, 0.16000723838806152, 0.1501920223236084, 0.10492610931396484, 0.04671764373779297, 0.031340837478637695, 0.0747835636138916, 0.13916754722595215, 0.17604446411132812, 0.15452957153320312, 0.07142806053161621, 0.008783817291259766, 0.0, 0.0594785213470459, 0.10857093334197998, 0.10516369342803955, 0.0716315507888794, 0.03879404067993164, 0.044341206550598145, 0.0889359712600708, 0.13829028606414795, 0.13266921043395996, 0.08943343162536621, 0.04989778995513916, 0.04269909858703613, 0.0756763219833374, 0.08947217464447021, 0.0810549259185791, 0.035045742988586426, 0.010996103286743164, 0.03033757209777832, 0.06867420673370361, 0.08150196075439453, 0.04281485080718994, 0.008866667747497559, 0.013623356819152832, 0.07641100883483887, 0.105202317237854, 0.08213305473327637, 0.048670053482055664, 0.052475690841674805, 0.07929658889770508, 0.09823226928710938, 0.07746565341949463, 0.04434990882873535, 0.0509340763092041, 0.07370269298553467, 0.07819163799285889, 0.059372544288635254, 0.029207825660705566, 0.026052117347717285, 0.046050429344177246, 0.04525721073150635, 0.025297045707702637, 0.017155885696411133, 0.03644883632659912, 0.050061702728271484, 0.03893780708312988, 0.0215684175491333, 0.020253658294677734, 0.03790569305419922, 0.03498029708862305, 0.019713401794433594, 0.02399623394012451, 0.04025852680206299, 0.03754305839538574, 0.022193074226379395, 0.023427248001098633, 0.05391955375671387, 0.07055521011352539, 0.05343830585479736, 0.046872496604919434, 0.053012728691101074, 0.06483685970306396, 0.05145895481109619, 0.045789241790771484, 0.053226470947265625, 0.055028438568115234, 0.04882097244262695, 0.04399299621582031, 0.04610830545425415, 0.04496389627456665, 0.037654340267181396, 0.03744173049926758, 0.03954339027404785, 0.03948032855987549, 0.03446441888809204, 0.03562110662460327, 0.03647559881210327, 0.0324246883392334, 0.02869623899459839, 0.034060537815093994, 0.03306686878204346, 0.027150511741638184, 0.027069091796875, 0.01810765266418457, 0.00505375862121582, 0.005866050720214844, 0.006675601005554199, 0.005635738372802734, 0.0, 0.0035986900329589844, 0.003906667232513428, 0.0006630420684814453, 0.002478480339050293, 0.001273810863494873, 0.002044081687927246, 0.0018482804298400879, 0.0017834901809692383, 0.000794529914855957, 0.001870870590209961, 0.004552662372589111, 0.00322568416595459, 0.0021381378173828125, 0.0028291940689086914, 0.0023550987243652344, 0.004174351692199707, 0.004745125770568848, 0.003681361675262451, 0.003470301628112793, 0.0027672648429870605, 0.0036693215370178223, 0.003409266471862793, 0.003725588321685791, 0.0036997199058532715, 0.001735687255859375, 0.0022568106651306152, 0.0020532608032226562, 0.002288341522216797, 0.00389939546585083, 0.002639591693878174, 0.0013660192489624023, 0.001558542251586914, 0.0012502074241638184, 0.0009219646453857422, 0.0011370182037353516, 0.0, 0.0016494393348693848, 0.003872990608215332, 0.020138442516326904, 0.027946412563323975, 0.025853097438812256, 0.027076780796051025, 0.027231156826019287, 0.024324238300323486, 0.023008227348327637, 0.023547589778900146, 0.022031009197235107, 0.022735297679901123, 0.021755218505859375, 0.022083401679992676, 0.019377946853637695, 0.018839895725250244, 0.01794499158859253, 0.014655113220214844, 0.015541374683380127, 0.013034582138061523, 0.014107763767242432, 0.01304483413696289, 0.010957419872283936, 0.010043680667877197, 0.008090198040008545, 0.006228506565093994, 0.0059555768966674805, 0.003677964210510254, 0.0015954971313476562, 0.0], numpy.array([ 6.08884954,  6.07177114,  6.05268717,  6.03166342,  6.00876474,
+        self.test_all_the_conditions(return_new, (1.2, 25.881904510252081, [2.046617031097412, 2.046617031097412, 5.248158931732178, 5.695061206817627, 4.783973217010498, 4.044779300689697, 3.9940342903137207, 3.3922266960144043, 2.743082046508789, 3.013580799102783, 3.1302075386047363, 3.2359085083007812, 3.400866985321045, 3.58583402633667, 3.7645344734191895, 3.8814339637756348, 4.141592025756836, 4.346562385559082, 4.42345666885376, 4.521812915802002, 4.460953235626221, 4.475826263427734, 4.5370683670043945, 4.506109714508057, 4.245870590209961, 4.020811080932617, 3.7224416732788086, 3.3394908905029297, 2.9705514907836914, 2.4504785537719727, 2.0189428329467773, 1.5463948249816895, 1.073160171508789, 0.6362051963806152, 0.31493473052978516, 0.06615829467773438, 0.0, 0.09079265594482422, 0.30223798751831055, 0.6037716865539551, 0.959197998046875, 1.206087589263916, 1.3766770362854004, 1.4075055122375488, 1.3799309730529785, 1.2447385787963867, 1.006777286529541, 0.7345080375671387, 0.4602384567260742, 0.2105240821838379, 0.057382822036743164, 0.0, 0.10758137702941895, 0.2857215404510498, 0.4993162155151367, 0.6388113498687744, 0.6898548603057861, 0.6910374164581299, 0.5799849033355713, 0.4090282917022705, 0.2402327060699463, 0.07669949531555176, 0.004343509674072266, 0.0580897331237793, 0.16643333435058594, 0.28627896308898926, 0.41701602935791016, 0.4778106212615967, 0.4225897789001465, 0.2694675922393799, 0.1359560489654541, 0.04989290237426758, 0.024133920669555664, 0.08386850357055664, 0.17662429809570312, 0.23775887489318848, 0.2778191566467285, 0.2556118965148926, 0.18243122100830078, 0.07839822769165039, 0.01361393928527832, 0.019960641860961914, 0.09974908828735352, 0.17735695838928223, 0.23326992988586426, 0.21385526657104492, 0.13902592658996582, 0.06584787368774414, 0.03738260269165039, 0.0501253604888916, 0.11444878578186035, 0.16000723838806152, 0.1501920223236084, 0.10492610931396484, 0.04671764373779297, 0.031340837478637695, 0.0747835636138916, 0.13916754722595215, 0.17604446411132812, 0.15452957153320312, 0.07142806053161621, 0.008783817291259766, 0.0, 0.0594785213470459, 0.10857093334197998, 0.10516369342803955, 0.0716315507888794, 0.03879404067993164, 0.044341206550598145, 0.0889359712600708, 0.13829028606414795, 0.13266921043395996, 0.08943343162536621, 0.04989778995513916, 0.04269909858703613, 0.0756763219833374, 0.08947217464447021, 0.0810549259185791, 0.035045742988586426, 0.010996103286743164, 0.03033757209777832, 0.06867420673370361, 0.08150196075439453, 0.04281485080718994, 0.008866667747497559, 0.013623356819152832, 0.07641100883483887, 0.105202317237854, 0.08213305473327637, 0.048670053482055664, 0.052475690841674805, 0.07929658889770508, 0.09823226928710938, 0.07746565341949463, 0.04434990882873535, 0.0509340763092041, 0.07370269298553467, 0.07819163799285889, 0.059372544288635254, 0.029207825660705566, 0.026052117347717285, 0.046050429344177246, 0.04525721073150635, 0.025297045707702637, 0.017155885696411133, 0.03644883632659912, 0.050061702728271484, 0.03893780708312988, 0.0215684175491333, 0.020253658294677734, 0.03790569305419922, 0.03498029708862305, 0.019713401794433594, 0.02399623394012451, 0.04025852680206299, 0.03754305839538574, 0.022193074226379395, 0.023427248001098633, 0.05391955375671387, 0.07055521011352539, 0.05343830585479736, 0.046872496604919434, 0.053012728691101074, 0.06483685970306396, 0.05145895481109619, 0.045789241790771484, 0.053226470947265625, 0.055028438568115234, 0.04882097244262695, 0.04399299621582031, 0.04610830545425415, 0.04496389627456665, 0.037654340267181396, 0.03744173049926758, 0.03954339027404785, 0.03948032855987549, 0.03446441888809204, 0.03562110662460327, 0.03647559881210327, 0.0324246883392334, 0.02869623899459839, 0.034060537815093994, 0.03306686878204346, 0.027150511741638184, 0.027069091796875, 0.01810765266418457, 0.00505375862121582, 0.005866050720214844, 0.006675601005554199, 0.005635738372802734, 0.0, 0.0035986900329589844, 0.003906667232513428, 0.0006630420684814453, 0.002478480339050293, 0.001273810863494873, 0.002044081687927246, 0.0018482804298400879, 0.0017834901809692383, 0.000794529914855957, 0.001870870590209961, 0.004552662372589111, 0.00322568416595459, 0.0021381378173828125, 0.0028291940689086914, 0.0023550987243652344, 0.004174351692199707, 0.004745125770568848, 0.003681361675262451, 0.003470301628112793, 0.0027672648429870605, 0.0036693215370178223, 0.003409266471862793, 0.003725588321685791, 0.0036997199058532715, 0.001735687255859375, 0.0022568106651306152, 0.0020532608032226562, 0.002288341522216797, 0.00389939546585083, 0.002639591693878174, 0.0013660192489624023, 0.001558542251586914, 0.0012502074241638184, 0.0009219646453857422, 0.0011370182037353516, 0.0, 0.0016494393348693848, 0.003872990608215332, 0.020138442516326904, 0.027946412563323975, 0.025853097438812256, 0.027076780796051025, 0.027231156826019287, 0.024324238300323486, 0.023008227348327637, 0.023547589778900146, 0.022031009197235107, 0.022735297679901123, 0.021755218505859375, 0.022083401679992676, 0.019377946853637695, 0.018839895725250244, 0.01794499158859253, 0.014655113220214844, 0.015541374683380127, 0.013034582138061523, 0.014107763767242432, 0.01304483413696289, 0.010957419872283936, 0.010043680667877197, 0.008090198040008545, 0.006228506565093994, 0.0059555768966674805, 0.003677964210510254, 0.0015954971313476562, 0.0], array([ 6.08884954,  6.07177114,  6.05268717,  6.03166342,  6.00876474,
         5.98405981,  5.95761347,  5.92949438,  5.89976883,  5.868505  ,
         5.83576822,  5.80162525,  5.76614237,  5.7293849 ,  5.69141722,
         5.65230513,  5.61210918,  5.57089233,  5.52871656,  5.48564196,
@@ -5358,7 +5359,7 @@ class Test_defocusgett_vpp(unittest.TestCase):
         0.66078377,  0.65946102,  0.65824455,  0.65713573,  0.6561361 ,
         0.65524709,  0.65447044,  0.65380782,  0.65326107,  0.65283203,
         0.6525228 ,  0.65233546,  0.65227222,  0.65233546,  0.65252757,
-        0.65285116,  0.65330899], dtype=float), numpy.array([ 3.33949089,  3.33949089,  3.33949089,  3.33949089,  3.33949089,
+        0.65285116,  0.65330899], dtype=float), array([ 3.33949089,  3.33949089,  3.33949089,  3.33949089,  3.33949089,
         3.33949089,  3.33949089,  3.33949089,  3.33949089,  3.33949089,
         3.33949089,  3.33949089,  3.33949089,  3.33949089,  3.33949089,
         3.33949089,  3.33949089,  3.33949089,  3.33949089,  3.33949089,
@@ -5458,8 +5459,8 @@ class Test_defocusgett_vpp2(unittest.TestCase):
     f_stop = -1
     nr2=6
     skip =False
-    new_defc, new_ampcont, new_subpw, new_baseline, new_envelope, new_istart, new_istop = fu.defocusgett_vpp([entry for entry in numpy.arange(1, 258).tolist()], wn, voltage, pixel_size, Cs, 0.048, -1, [0.3, 9.0, 0.1, 5.0, 175.0, 5.0], nr2=6)
-    old_defc, old_ampcont, old_subpw, old_baseline, old_envelope, old_istart, old_istop = oldfu.defocusgett_vpp([entry for entry in numpy.arange(1, 258).tolist()], wn, voltage, pixel_size, Cs, 0.048, -1, [0.3, 9.0, 0.1, 5.0, 175.0, 5.0], nr2=6)
+    new_defc, new_ampcont, new_subpw, new_baseline, new_envelope, new_istart, new_istop = fu.defocusgett_vpp([entry for entry in arange(1, 258).tolist()], wn, voltage, pixel_size, Cs, 0.048, -1, [0.3, 9.0, 0.1, 5.0, 175.0, 5.0], nr2=6)
+    old_defc, old_ampcont, old_subpw, old_baseline, old_envelope, old_istart, old_istop = oldfu.defocusgett_vpp([entry for entry in arange(1, 258).tolist()], wn, voltage, pixel_size, Cs, 0.048, -1, [0.3, 9.0, 0.1, 5.0, 175.0, 5.0], nr2=6)
 
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -5473,28 +5474,28 @@ class Test_defocusgett_vpp2(unittest.TestCase):
         """
         return_new = fu.defocusgett_vpp2(EMData(), self.wn, self.new_defc, self.new_ampcont, self.voltage, self.pixel_size,self.Cs, self.new_istart, self.new_istop)
         return_old = oldfu.defocusgett_vpp2(EMData(), self.wn, self.old_defc, self.old_ampcont, self.voltage, self.pixel_size,self.Cs, self.old_istart, self.old_istop)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, return_old))
         """
         self.assertTrue(True)
 
     def test_no_pixel_size_error(self):
         return_new = fu.defocusgett_vpp2(IMAGE_3D, self.wn, self.new_defc, self.new_ampcont, self.voltage, 0,self.Cs, self.new_istart, self.new_istop)
         return_old = oldfu.defocusgett_vpp2(IMAGE_3D, self.wn, self.old_defc, self.old_ampcont, self.voltage, 0,self.Cs, self.old_istart, self.old_istop)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, (6.0, -90.630778703665001, 0.0, 179.82421875, 1e+20)))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, (6.0, -90.630778703665001, 0.0, 179.82421875, 1e+20)))
 
     def test_img3D_default_value(self):
         return_new = fu.defocusgett_vpp2(IMAGE_3D, self.wn, self.new_defc, self.new_ampcont, self.voltage, self.pixel_size,self.Cs, self.new_istart, self.new_istop)
         return_old = oldfu.defocusgett_vpp2(IMAGE_3D, self.wn, self.old_defc, self.old_ampcont, self.voltage, self.pixel_size,self.Cs, self.old_istart, self.old_istop)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, (6.0, -90.630778703665001, 0.0, 179.82421875, -0.0)))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, (6.0, -90.630778703665001, 0.0, 179.82421875, -0.0)))
 
     """ sometimes th output is (6.0, -65.050398467363308, 0.0, 65.065138936042786, -4.797284381217452e+35) why???"""
     def test_img2D_default_value(self):
         return_new = fu.defocusgett_vpp2(IMAGE_2D, self.wn, self.new_defc, self.new_ampcont, self.voltage, self.pixel_size,self.Cs, self.new_istart, self.new_istop)
         return_old = oldfu.defocusgett_vpp2(IMAGE_2D, self.wn, self.old_defc, self.old_ampcont, self.voltage, self.pixel_size,self.Cs, self.old_istart, self.old_istop)
-        self.assertTrue(numpy.allclose(return_new, return_old, atol=TOLERANCE, equal_nan=True))
-        self.assertTrue(numpy.allclose(return_new, (6.0, -90.630778703665001, 0.0, 179.82421875, 1e+20), atol=TOLERANCE, equal_nan=True))
+        self.assertTrue(allclose(return_new, return_old, atol=TOLERANCE, equal_nan=True))
+        self.assertTrue(allclose(return_new, (6.0, -90.630778703665001, 0.0, 179.82421875, 1e+20), atol=TOLERANCE, equal_nan=True))
 
     def test_null_window_sizereturns_RuntimeError_InvalidValueException(self):
         with self.assertRaises(RuntimeError) as cm_new:
@@ -5511,27 +5512,27 @@ class Test_defocusgett_vpp2(unittest.TestCase):
     def test_img2D_null_voltage(self):
         return_new = fu.defocusgett_vpp2(IMAGE_2D, self.wn, self.new_defc, self.new_ampcont, 0, self.pixel_size,self.Cs, self.new_istart, self.new_istop)
         return_old = oldfu.defocusgett_vpp2(IMAGE_2D, self.wn, self.old_defc, self.old_ampcont, 0, self.pixel_size,self.Cs, self.old_istart, self.old_istop)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  (6.0, -90.630778703665001, 0.0, 179.82421875, 1e+20)))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  (6.0, -90.630778703665001, 0.0, 179.82421875, 1e+20)))
 
     """ sometimes th output is (6.0, -65.050398467363308, 0.0, 65.065138936042786, -4.797284381217452e+35) why???"""
     def test_img2D_null_spherical_aberration(self):
         return_new = fu.defocusgett_vpp2(IMAGE_2D, self.wn, self.new_defc, self.new_ampcont, self.voltage, self.pixel_size, 0, self.new_istart, self.new_istop)
         return_old = oldfu.defocusgett_vpp2(IMAGE_2D, self.wn, self.old_defc, self.old_ampcont, self.voltage, self.pixel_size, 0, self.old_istart, self.old_istop)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.allclose(return_new, (6.0, -90.630778703665001, 0.0, 179.82421875, 1e+20), atol=TOLERANCE, equal_nan=True))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(allclose(return_new, (6.0, -90.630778703665001, 0.0, 179.82421875, 1e+20), atol=TOLERANCE, equal_nan=True))
 
     def test_img3D_null_voltage(self):
         return_new = fu.defocusgett_vpp2(IMAGE_3D, self.wn, self.new_defc, self.new_ampcont, 0, self.pixel_size,self.Cs, self.new_istart, self.new_istop)
         return_old = oldfu.defocusgett_vpp2(IMAGE_3D, self.wn, self.old_defc, self.old_ampcont, 0, self.pixel_size,self.Cs, self.old_istart, self.old_istop)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, (6.0, -90.630778703665001, 0.0, 179.82421875, 1e+20)))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, (6.0, -90.630778703665001, 0.0, 179.82421875, 1e+20)))
 
     def test_img3D_null_spherical_aberration(self):
         return_new = fu.defocusgett_vpp2(IMAGE_3D, self.wn, self.new_defc, self.new_ampcont, self.voltage, self.pixel_size, 0, self.new_istart, self.new_istop)
         return_old = oldfu.defocusgett_vpp2(IMAGE_3D, self.wn, self.old_defc, self.old_ampcont, self.voltage, self.pixel_size, 0, self.old_istart, self.old_istop)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  (6.0, -90.630778703665001, 0.0, 179.82421875, -0.0)))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  (6.0, -90.630778703665001, 0.0, 179.82421875, -0.0)))
 
     def test_NoneType_as_input_image_crashes_because_signal11SIGSEV(self):
         self.assertTrue(True)
@@ -5547,27 +5548,27 @@ class Test_defocusgett_vpp2(unittest.TestCase):
     def test_img_blank2D_null_voltage(self):
         return_new = fu.defocusgett_vpp2(IMAGE_BLANK_2D, self.wn, self.new_defc, self.new_ampcont, 0, self.pixel_size,self.Cs, self.new_istart, self.new_istop)
         return_old = oldfu.defocusgett_vpp2(IMAGE_BLANK_2D, self.wn, self.old_defc, self.old_ampcont, 0, self.pixel_size,self.Cs, self.old_istart, self.old_istop)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, (6.0, -90.630778703665001, 0.0, 179.82421875, 1e+20)))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, (6.0, -90.630778703665001, 0.0, 179.82421875, 1e+20)))
 
     def test_img_blank2D_null_spherical_aberration(self):
         return_new = fu.defocusgett_vpp2(IMAGE_BLANK_2D, self.wn, self.new_defc, self.new_ampcont, self.voltage, self.pixel_size, 0, self.new_istart, self.new_istop)
         return_old = oldfu.defocusgett_vpp2(IMAGE_BLANK_2D, self.wn, self.old_defc, self.old_ampcont, self.voltage, self.pixel_size, 0, self.old_istart, self.old_istop)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new,  (6.0, -90.630778703665001, 0.0, 179.82421875, 1e+20)))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new,  (6.0, -90.630778703665001, 0.0, 179.82421875, 1e+20)))
 
     def test_img_blank3D_null_voltage(self):
         return_new = fu.defocusgett_vpp2(IMAGE_BLANK_3D, self.wn, self.new_defc, self.new_ampcont, 0, self.pixel_size,self.Cs, self.new_istart, self.new_istop)
         return_old = oldfu.defocusgett_vpp2(IMAGE_BLANK_3D, self.wn, self.old_defc, self.old_ampcont, 0, self.pixel_size,self.Cs, self.old_istart, self.old_istop)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, (6.0, -90.630778703665001, 0.0, 179.82421875, 1e+20)))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, (6.0, -90.630778703665001, 0.0, 179.82421875, 1e+20)))
 
     def test_img_blank3D_null_spherical_aberration(self):
         # i cannot write a real unit test the output seems to change randomly
         return_new = fu.defocusgett_vpp2(IMAGE_BLANK_3D, self.wn, self.new_defc, self.new_ampcont, self.voltage, self.pixel_size, 0, self.new_istart, self.new_istop)
         return_old = oldfu.defocusgett_vpp2(IMAGE_BLANK_3D, self.wn, self.old_defc, self.old_ampcont, self.voltage, self.pixel_size, 0, self.old_istart, self.old_istop)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-#        self.assertTrue(numpy.allclose(return_new, (6.0, -90.296974691331684, 0.05106336805555556, 173.7871241569519, -8.216244828619659e+34), atol=TOLERANCE, equal_nan=True))
+        self.assertTrue(array_equal(return_new, return_old))
+#        self.assertTrue(allclose(return_new, (6.0, -90.296974691331684, 0.05106336805555556, 173.7871241569519, -8.216244828619659e+34), atol=TOLERANCE, equal_nan=True))
 
 
 class Test_fastigmatism3(unittest.TestCase):
@@ -5865,8 +5866,8 @@ class Test_simctf2(unittest.TestCase):
     def test_no_pixel_size(self):
         image = get_data(1, self.nx)[0]
         data = [image, image, self.nx,  self.dfdiff, self.cs, self.voltage, 0, self.amp_contrast ,self.dfang ]
-        self.assertTrue(numpy.isnan(fu.simctf2(self.defocus, data)))
-        self.assertTrue(numpy.isnan(oldfu.simctf2(self.defocus, data)))
+        self.assertTrue(isnan(fu.simctf2(self.defocus, data)))
+        self.assertTrue(isnan(oldfu.simctf2(self.defocus, data)))
 
     def test_empty_input_image_crashes_because_signal11SIGSEGV(self):
         """
@@ -5929,8 +5930,8 @@ class Test_simctf2_pap(unittest.TestCase):
     def test_no_pixel_size(self):
         image = get_data(1, self.nx)[0]
         data = [image, image, self.nx,  self.dfdiff, self.cs, self.voltage, 0, self.amp_contrast ,self.dfang ]
-        self.assertTrue(numpy.isnan(fu.simctf2_pap(self.defocus, data)))
-        self.assertTrue(numpy.isnan(oldfu.simctf2_pap(self.defocus, data)))
+        self.assertTrue(isnan(fu.simctf2_pap(self.defocus, data)))
+        self.assertTrue(isnan(oldfu.simctf2_pap(self.defocus, data)))
 
     def test_empty_input_image2_crashes_because_signal11SIGSEGV(self):
         """
@@ -5977,7 +5978,7 @@ class Test_fupw(unittest.TestCase):
 
         #(image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         #data = [EMData(), numr, self.nx, self.defocus, self.Cs, self.voltage, self.pixel_size, self.bfactor, self.amp_contrast,1]
-        #self.assertTrue(TOLERANCE > numpy.abs(fu.fupw(self.args, data) - oldfu.fupw(self.args, data)))
+        #self.assertTrue(TOLERANCE > numpy_abs(fu.fupw(self.args, data) - oldfu.fupw(self.args, data)))
         
         self.assertTrue(True)
 
@@ -6063,7 +6064,7 @@ class Test_fupw_pap(unittest.TestCase):
         """
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         data = [EMData(), numr, self.nx, self.defocus, self.Cs, self.voltage, self.pixel_size, self.bfactor, self.amp_contrast,1]
-        self.assertTrue(TOLERANCE > numpy.abs(fu.fupw_pap(self.args, data) - oldfu.fupw_pap(self.args, data)))
+        self.assertTrue(TOLERANCE > numpy_abs(fu.fupw_pap(self.args, data) - oldfu.fupw_pap(self.args, data)))
         """
         self.assertTrue(True)
 
@@ -6161,7 +6162,7 @@ class Test_fupw_vpp(unittest.TestCase):
         """
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         data = [EMData(), numr, self.nx, self.defocus, self.Cs, self.voltage, self.pixel_size, self.bfactor, self.amp_contrast,1]
-        self.assertTrue(TOLERANCE > numpy.abs(fu.fupw_vpp(self.args, data) - oldfu.fupw_vpp(self.args, data)))
+        self.assertTrue(TOLERANCE > numpy_abs(fu.fupw_vpp(self.args, data) - oldfu.fupw_vpp(self.args, data)))
         """
         self.assertTrue(True)
 
@@ -6219,7 +6220,7 @@ class Test_ornq_vpp(unittest.TestCase):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         return_new = fu.ornq_vpp(EMData(), crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         return_old = oldfu.ornq_vpp(EMData(), crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, return_old))
         """
         self.assertTrue(True)
 
@@ -6228,7 +6229,7 @@ class Test_ornq_vpp(unittest.TestCase):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         return_new = fu.ornq_vpp(image, EMData(),  xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         return_old = oldfu.ornq_vpp(image, EMData(),  xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, return_old))
         """
         self.assertTrue(True)
 
@@ -6246,7 +6247,7 @@ class Test_ornq_vpp(unittest.TestCase):
         numr = []
         return_new = fu.ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         return_old = oldfu.ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, return_old))
         """
         self.assertTrue(True)
 
@@ -6274,8 +6275,8 @@ class Test_ornq_vpp(unittest.TestCase):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         return_new = fu.ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, -5, -5, deltapsi=0.0)
         return_old = oldfu.ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, -5, -5, deltapsi=0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, (178.59375, 0.0, 0.0, 0, -1e+20)))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, (178.59375, 0.0, 0.0, 0, -1e+20)))
 
     def test_null_skip_value_returns_ZeroDivisionError(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0] #mode is H
@@ -6290,49 +6291,44 @@ class Test_ornq_vpp(unittest.TestCase):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0] #mode is H
         return_new = fu.ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         return_old = oldfu.ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.allclose(return_new, (90.661003589630127, 0.0, 0.0, 0, 130.8737071466116)))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(allclose(return_new, (90.661003589630127, 0.0, 0.0, 0, 130.8737071466116)))
 
     def test_Full_mode(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         mode ='f'
         return_new = fu.ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         return_old = oldfu.ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.allclose(return_new, (271.48785352706909, 0.0, -0.0, 0, 119.75029623666397)))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(allclose(return_new, (271.48785352706909, 0.0, -0.0, 0, 119.75029623666397)))
 
     def test_invalid_mode(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         mode ='invalid'
         return_new = fu.ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         return_old = oldfu.ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.allclose(return_new,  (90.661003589630127, 0.0, 0.0, 0, 130.8737071466116)))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(allclose(return_new,  (90.661003589630127, 0.0, 0.0, 0, 130.8737071466116)))
 
 
-
-
-
-
-
-
-""" Adnan helper functions to run the reference tests"""
+"""
+# Adnan helper functions to run the reference tests
 from ..libpy import sparx_utilities as ut
 import EMAN2_cppwrap as e2cpp
-""" 
-I commented the following lines of codeto avoid conflict when I run the other tests
-from ..libpy_py3 import sphire_filter as fu
-from .sparx_lib import sparx_filter as oldfu
-def get_data(num):
-    dim = 10
-    data_list = []
-    for i in range(num):
-        a = e2cpp.EMData(dim, dim)
-        data_a = a.get_3dview()
-        data_a[...] = numpy.arange(dim * dim, dtype=numpy.float32).reshape(dim, dim) + i
-        data_list.append(a)
-    return data_list
-"""
+
+#I commented the following lines of codeto avoid conflict when I run the other tests
+#from ..libpy_py3 import sphire_filter as fu
+#from .sparx_lib import sparx_filter as oldfu
+#def get_data(num):
+#    dim = 10
+#    data_list = []
+#    for i in range(num):
+#        a = e2cpp.EMData(dim, dim)
+#        data_a = a.get_3dview()
+#        data_a[...] = numpy.arange(dim * dim, dtype=numpy.float32).reshape(dim, dim) + i
+#        data_list.append(a)
+#    return data_list
+
 
 def get_data_3d(num):
     dim = 10
@@ -6499,6 +6495,7 @@ class MyTestCase(unittest.TestCase):
 
         self.assertTrue(return_new, return_old)
 
-
+"""
 if __name__ == '__main__':
     unittest.main()
+

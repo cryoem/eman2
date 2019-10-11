@@ -1,35 +1,17 @@
 from __future__ import print_function
 from __future__ import division
 
-import numpy
-from math import isnan as math_isnan
+from numpy import array_equal, allclose
 from copy import deepcopy
-from EMAN2_cppwrap import EMData,Util
-from EMAN2_cppwrap import EMData, EMAN2Ctf
 import unittest
-import os
-import pickle
-
-import test_module as tm
+from os import path
 import EMAN2_cppwrap as e2cpp
 
-from sphire.libpy_py3 import sphire_projection as fu
-from .sparx_lib import sparx_projection as oldfu
-
-from .sparx_lib import sparx_utilities
-
-ABSOLUTE_PATH = os.path.dirname(os.path.realpath(__file__))
-
-
-
-
-
-
-
+ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 
 
 from test_module import get_arg_from_pickle_file, get_real_data, create_kb, get_data
-from os import path
+
 from mpi import *
 import global_def
 mpi_init(0, [])
@@ -233,26 +215,26 @@ class Test_project(unittest.TestCase):
     def test_radiusNegative_and_parameter4and5Null(self):
         return_new = fu.project(volume=self.volft, params=self.params, radius=-1)
         return_old = oldfu.project(volume=self.volft, params=self.params, radius=-1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_radiusPositive_and_parameter4and5Null(self):
         return_new = fu.project(volume=self.volft, params=self.params, radius=1)
         return_old = oldfu.project(volume=self.volft, params=self.params, radius=1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_radiusNegative_and_parameter4and5Not_both_Null(self):
         params = deepcopy(self.params)
         params[4] = 1
         return_new = fu.project(volume=self.volft, params=params, radius=-1)
         return_old = oldfu.project(volume=self.volft, params=params, radius=-1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_radiusPositive_and_parameter4and5Not_both_Null(self):
         params = deepcopy(self.params)
         params[4] = 1
         return_new = fu.project(volume=self.volft, params=params, radius=1)
         return_old = oldfu.project(volume=self.volft, params=params, radius=1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 
@@ -320,20 +302,20 @@ class Test_prgs(unittest.TestCase):
     def test_kbx_is_None_and_parameter4and5Null(self):
         return_new = fu.prgs(volft=self.volft,kb=self.kb,params=self.params,kbx=None, kby=None)
         return_old = oldfu.prgs(volft=self.volft,kb=self.kb,params=self.params,kbx=None, kby=None)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_kbx_is_None_and_parameter4and5Not_both_Null(self):
         params = deepcopy(self.params)
         params[4] = 1
         return_new = fu.prgs(volft=self.volft,kb=self.kb,params=params,kbx=None, kby=None)
         return_old = oldfu.prgs(volft=self.volft,kb=self.kb,params=params,kbx=None, kby=None)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_kbx_not_None_and_parameter4and5Null(self):
         kbx, kby, kbz = create_kb(3)
         return_new = fu.prgs(volft=self.volft,kb=kbx,params=self.params,kbx=kbx, kby=kby)
         return_old = oldfu.prgs(volft=self.volft,kb=kbx,params=self.params,kbx=kbx, kby=kby)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_kbx_not_None_and_parameter4and5Not_both_Null(self):
         kbx, kby, kbz = create_kb(3)
@@ -341,7 +323,7 @@ class Test_prgs(unittest.TestCase):
         params[4] = 1
         return_new = fu.prgs(volft=self.volft,kb=kbx,params=params,kbx=kbx, kby=kby)
         return_old = oldfu.prgs(volft=self.volft,kb=kbx,params=params,kbx=kbx, kby=kby)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_kby_None_returns_ArgumentError_in_EMData_extract_plane_function(self):
         kbx, kby, kbz = create_kb(3)
@@ -400,55 +382,55 @@ class Test_prgl(unittest.TestCase):
     def test_invalid_interpolation_print_error_msg(self):
         return_new = fu.prgl(volft=self.volft, params=self.params, interpolation_method=10,return_real=False)
         return_old = oldfu.prgl(volft=self.volft, params=self.params, interpolation_method=10,return_real=False)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_interpolation1_returnReal_True_params4and5Null(self):
         return_new = fu.prgl(volft=self.volft, params=self.params, interpolation_method=self.interpolation_method,return_real=True)
         return_old = oldfu.prgl(volft=self.volft, params=self.params, interpolation_method=self.interpolation_method,return_real=True)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_interpolation1_returnReal_False_params4and5Null(self):
         return_new = fu.prgl(volft=self.volft, params=self.params, interpolation_method=self.interpolation_method,return_real=False)
         return_old = oldfu.prgl(volft=self.volft, params=self.params, interpolation_method=self.interpolation_method,return_real=False)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_interpolation1_returnReal_True_params4and5Not_both_Nulll(self):
         params = deepcopy(self.params)
         params[4] = 1
         return_new = fu.prgl(volft=self.volft, params=self.params, interpolation_method=self.interpolation_method,return_real=True)
         return_old = oldfu.prgl(volft=self.volft, params=self.params, interpolation_method=self.interpolation_method,return_real=True)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_interpolation1_returnReal_False_params4and5Not_both_Null(self):
         params = deepcopy(self.params)
         params[4] = 1
         return_new = fu.prgl(volft=self.volft, params=self.params, interpolation_method=self.interpolation_method,return_real=False)
         return_old = oldfu.prgl(volft=self.volft, params=self.params, interpolation_method=self.interpolation_method,return_real=False)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_interpolation0_returnReal_True_params4and5Null(self):
         return_new = fu.prgl(volft=self.volft, params=self.params, interpolation_method=0,return_real=True)
         return_old = oldfu.prgl(volft=self.volft, params=self.params, interpolation_method=0,return_real=True)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_interpolation0_returnReal_False_params4and5Null(self):
         return_new = fu.prgl(volft=self.volft, params=self.params, interpolation_method=0,return_real=False)
         return_old = oldfu.prgl(volft=self.volft, params=self.params, interpolation_method=0,return_real=False)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_interpolation0_returnReal_True_params4and5Not_both_Nulll(self):
         params = deepcopy(self.params)
         params[4] = 1
         return_new = fu.prgl(volft=self.volft, params=self.params, interpolation_method=0,return_real=True)
         return_old = oldfu.prgl(volft=self.volft, params=self.params, interpolation_method=0,return_real=True)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_interpolation0_returnReal_False_params4and5Not_both_Null(self):
         params = deepcopy(self.params)
         params[4] = 1
         return_new = fu.prgl(volft=self.volft, params=self.params, interpolation_method=0,return_real=False)
         return_old = oldfu.prgl(volft=self.volft, params=self.params, interpolation_method=0,return_real=False)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 
@@ -514,25 +496,25 @@ class Test_prgq(unittest.TestCase):
         return_new =  fu.prgq(volft=self.volft, kb=self.kb, nx=4, delta=15, ref_a="S", sym="c1", MPI=False)
         return_old = oldfu.prgq(volft=self.volft, kb=self.kb, nx=4, delta=15, ref_a="S", sym="c1", MPI=False)
         for i,j in zip(return_new,return_old):
-            self.assertTrue(numpy.array_equal(i.get_3dview(), j.get_3dview()))
+            self.assertTrue(array_equal(i.get_3dview(), j.get_3dview()))
 
     def test_symC1_ref_a_S_MPI_True(self):
         return_new =  fu.prgq(volft=self.volft, kb=self.kb, nx=4, delta=15, ref_a="S", sym="c1", MPI=True)
         return_old = oldfu.prgq(volft=self.volft, kb=self.kb, nx=4, delta=15, ref_a="S", sym="c1", MPI=True)
         for i,j in zip(return_new,return_old):
-            self.assertTrue(numpy.array_equal(i.get_3dview(), j.get_3dview()))
+            self.assertTrue(array_equal(i.get_3dview(), j.get_3dview()))
 
     def test_symC5_ref_a_S_MPI_False(self):
         return_new =  fu.prgq(volft=self.volft, kb=self.kb, nx=4, delta=15, ref_a="S", sym="c5", MPI=False)
         return_old = oldfu.prgq(volft=self.volft, kb=self.kb, nx=4, delta=15, ref_a="S", sym="c5", MPI=False)
         for i,j in zip(return_new,return_old):
-            self.assertTrue(numpy.array_equal(i.get_3dview(), j.get_3dview()))
+            self.assertTrue(array_equal(i.get_3dview(), j.get_3dview()))
 
     def test_symC5_ref_a_S_MPI_True(self):
         return_new =  fu.prgq(volft=self.volft, kb=self.kb, nx=4, delta=15, ref_a="S", sym="c5", MPI=True)
         return_old = oldfu.prgq(volft=self.volft, kb=self.kb, nx=4, delta=15, ref_a="S", sym="c5", MPI=True)
         for i,j in zip(return_new,return_old):
-            self.assertTrue(numpy.array_equal(i.get_3dview(), j.get_3dview()))
+            self.assertTrue(array_equal(i.get_3dview(), j.get_3dview()))
 
     def test_default_values_with_P_ref_a_leads_to_deadlock(self):
         self.assertTrue(True)
@@ -541,7 +523,7 @@ class Test_prgq(unittest.TestCase):
         return_new =  fu.prgq(volft=self.volft, kb=self.kb, nx=4, delta=15, ref_a="P", sym="c1", MPI=False)
         return_old = oldfu.prgq(volft=self.volft, kb=self.kb, nx=4, delta=15, ref_a="P", sym="c1", MPI=False)
         for i,j in zip(return_new,return_old):
-            self.assertTrue(numpy.array_equal(i.get_3dview(), j.get_3dview()))
+            self.assertTrue(array_equal(i.get_3dview(), j.get_3dview()))
         """
 
 
@@ -580,13 +562,13 @@ class Test_prg(unittest.TestCase):
         volft_2dimg=get_real_data(2)[0]
         return_new =  fu.prg(volume=volft_2dimg, params=self.params)
         return_old = oldfu.prg(volume=volft_2dimg, params=self.params)
-        self.assertTrue(numpy.allclose(return_new.get_3dview(), return_old.get_3dview(), equal_nan=True))
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), equal_nan=True))
         """
 
     def test_3Dimg_as_volume(self):
         return_new =  fu.prg(volume=self.volft_3dimg, params=self.params)
         return_old = oldfu.prg(volume=self.volft_3dimg, params=self.params)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 
@@ -613,36 +595,36 @@ class Test_prep_vol(unittest.TestCase):
     def test_3Dimg_as_volume_interpolation_gridding_method(self):
         return_new =  fu.prep_vol(vol=self.volft_3dimg, npad=2, interpolation_method=-1)
         return_old = oldfu.prep_vol(vol=self.volft_3dimg, npad=2, interpolation_method=-1)
-        self.assertTrue(numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
+        self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         """ to test if the kaiser bessel are the same"""
         self.assertEqual(return_new[1].I0table_maxerror(),return_old[1].I0table_maxerror())
 
     def test_3Dimg_as_volume_interpolation_NN_method(self):
         return_new =  fu.prep_vol(vol=self.volft_3dimg, npad=2, interpolation_method=0)
         return_old = oldfu.prep_vol(vol=self.volft_3dimg, npad=2, interpolation_method=0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3Dimg_as_volume_interpolation_trilinear_method(self):
         return_new =  fu.prep_vol(vol=self.volft_3dimg, npad=2, interpolation_method=1)
         return_old = oldfu.prep_vol(vol=self.volft_3dimg, npad=2, interpolation_method=1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2Dimg_as_volume_interpolation_gridding_method(self):
         return_new =  fu.prep_vol(vol=self.volft_2dimg, npad=2, interpolation_method=-1)
         return_old = oldfu.prep_vol(vol=self.volft_2dimg, npad=2, interpolation_method=-1)
-        self.assertTrue(numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
+        self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         """ to test if the kaiser bessel are the same"""
         self.assertEqual(return_new[1].I0table_maxerror(),return_old[1].I0table_maxerror())
 
     def test_2Dimg_as_volume_interpolation_NN_method(self):
         return_new =  fu.prep_vol(vol=self.volft_2dimg, npad=2, interpolation_method=0)
         return_old = oldfu.prep_vol(vol=self.volft_2dimg, npad=2, interpolation_method=0)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2Dimg_as_volume_interpolation_trilinear_method(self):
         return_new =  fu.prep_vol(vol=self.volft_2dimg, npad=2, interpolation_method=1)
         return_old = oldfu.prep_vol(vol=self.volft_2dimg, npad=2, interpolation_method=1)
-        self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 
@@ -672,8 +654,8 @@ class Test_gen_rings_ctf(unittest.TestCase):
         ctf.from_dict({"defocus": 1, "cs": 2, "voltage": 300, "apix": 1.5, "bfactor": 0,"ampcont": 0.1})
         return_new = fu.gen_rings_ctf(prjref=[], nx=4, ctf=ctf, numr=self.numr)
         return_old = oldfu.gen_rings_ctf(prjref=[], nx=4, ctf=ctf, numr=self.numr)
-        self.assertTrue(numpy.array_equal(return_new, return_old))
-        self.assertTrue(numpy.array_equal(return_new, []))
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, []))
 
     def test_numr_is_emptyList_IndexError_list_index_out_of_range(self):
         ctf = e2cpp.EMAN2Ctf()
@@ -708,7 +690,7 @@ class Test_gen_rings_ctf(unittest.TestCase):
         """
 
 
-
+"""
 @unittest.skip("skip addnan tests")
 class Test_lib_projection_compare(unittest.TestCase):
 
@@ -759,7 +741,7 @@ class Test_lib_projection_compare(unittest.TestCase):
 
         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    """Function works but is too slow , takes 506 secs to test"""
+    #Function works but is too slow , takes 506 secs to test
     # def test_prgq_should_return_same_result(self):
     #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/projection.prgl")
     #     with open(filepath, 'rb') as rb:
@@ -826,7 +808,7 @@ class Test_lib_projection_compare(unittest.TestCase):
         return_old = oldfu.gen_rings_ctf(prjref, nx , ctf, numr)
         self.assertEqual(return_new[0].get_attr_dict(), return_old[0].get_attr_dict())
         self.assertEqual(return_new[1].get_attr_dict(), return_old[1].get_attr_dict())
-
+"""
 
 if __name__ == '__main__':
     unittest.main()

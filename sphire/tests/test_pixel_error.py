@@ -255,10 +255,7 @@ from __future__ import print_function
 from __future__ import division
 
 import unittest
-
-import cPickle as pickle
-import os
-import sys
+from os import path
 from mpi import *
 import global_def
 
@@ -266,17 +263,12 @@ mpi_init(0, [])
 global_def.BATCH = True
 global_def.MPI = True
 
-ABSOLUTE_PATH = os.path.dirname(os.path.realpath(__file__))
-
-
-from sphire.libpy_py3 import sphire_pixel_error as fu
-
-from sphire.tests.sparx_lib import sparx_pixel_error as oldfu
+ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 
 
 from numpy import array_equal as numpy_array_equal
 from test_module import   get_arg_from_pickle_file
-from os import path
+
 
 """
 pickle files stored under smb://billy.storage.mpi-dortmund.mpg.de/abt3/group/agraunser/transfer/Adnan/pickle files
@@ -719,7 +711,7 @@ class Test_multi_align_stability(unittest.TestCase):
 
 
 
-
+"""
 @unittest.skip("adnan's tests")
 class Test_lib_pixel_error_compare(unittest.TestCase):
 
@@ -829,7 +821,7 @@ class Test_lib_pixel_error_compare(unittest.TestCase):
         return_old = oldfu.multi_align_stability(ali_params, mir_stab_thld, grp_err_thld, err_thld, print_individual, d)
 
         self.assertEqual(return_new, return_old)
-
+"""
 
 
 
