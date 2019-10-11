@@ -309,11 +309,22 @@ pipeline {
 
       parallel {
         stage('notify') { steps { notifyGitHub('PENDING') } }
-        stage('mini')   { steps { testDeployedPackage(STAGE_NAME) } }
+
+        stage('mini') {
+          steps {
+            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                testDeployedPackage(STAGE_NAME)
+            }
+          }
+        }
 
         stage('huge') {
           when { expression { AGENT_OS_NAME != 'linux' } }
-          steps { testDeployedPackage(STAGE_NAME) }
+          steps {
+            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                testDeployedPackage(STAGE_NAME)
+            }
+          }
         }
       }
 
