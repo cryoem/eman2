@@ -1,4 +1,8 @@
-def binary_size_suffix = ['mini':'', 'huge':'_huge']
+binary_size_suffix = ['mini':'', 'huge':'_huge']
+
+def convertToNativePath(path) {
+    return sh(returnStdout: true, script: "python -c 'import os; print(os.path.normpath(\"" + path + "\"))'").trim()
+}
 
 def getOSName() {
     if(!isUnix()) return 'win'
@@ -24,34 +28,50 @@ def getJobType() {
 
 def notifyGitHub(status) {
     if(JOB_TYPE == "push" || NOTIFY_GITHUB == "true") {
-        if(status == 'PENDING') { message = 'Stage: ' + (env.PARENT_STAGE_NAME ?: STAGE_NAME) }
-        if(status == 'SUCCESS') { message = 'Build succeeded!' }
-        if(status == 'FAILURE') { message = 'Build failed!' }
-        if(status == 'ABORTED') { message = 'Build aborted!'; status == 'ERROR' }
-        step([$class: 'GitHubCommitStatusSetter', 
-              contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "JenkinsCI/${AGENT_OS_NAME.capitalize()}"],
-              statusResultSource: [$class: 'ConditionalStatusResultSource', 
+        switch(status) {
+            case 'PENDING':
+                message = 'Stage: ' + (env.PARENT_STAGE_NAME ?: STAGE_NAME)
+                break
+            case 'SUCCESS':
+                message = 'Build succeeded!'
+                break
+            case 'FAILURE':
+                message = 'Build failed!'
+                break
+            case 'ABORTED':
+                message = 'Build aborted!'
+                status == 'ERROR'
+                break
+        }
+
+        context = "JenkinsCI/${AGENT_OS_NAME.capitalize()}"
+
+        step([$class: 'GitHubCommitStatusSetter',
+              contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: context],
+              statusResultSource: [$class: 'ConditionalStatusResultSource',
                                    results: [[$class: 'AnyBuildResult', message: message, state: status]]]])
     }
 }
 
 def notifyEmail() {
+    from    = "JenkinsCI ($AGENT_OS_NAME) <jenkins@jenkins>"
+    body    = '''${SCRIPT, template="groovy-text.template"}'''
+    subject = '$BUILD_STATUS! ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER'
+
     if(JOB_TYPE == "push" || NOTIFY_EMAIL == "true") {
-        emailext(to: "$GIT_AUTHOR_EMAIL",
-                 from: "JenkinsCI ($AGENT_OS_NAME) <jenkins@jenkins>",
-                 subject: '$BUILD_STATUS! ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER',
-                 body: '''${SCRIPT, template="groovy-text.template"}''',
-                 attachLog: true
-                 )
+        to      = "$GIT_AUTHOR_EMAIL"
     }
     if(JOB_TYPE == "cron") {
-        emailext(to: '$DEFAULT_RECIPIENTS',
-                 from: "JenkinsCI ($SLAVE_OS) <jenkins@jenkins>",
-                 subject: '[cron] - $BUILD_STATUS! ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER',
-                 body: '''${SCRIPT, template="groovy-text.template"}''',
-                 attachLog: true
-                 )
+        to      = '$DEFAULT_RECIPIENTS'
+        subject = '[cron] - ' + subject
     }
+
+    emailext(to:        to,
+             from:      from,
+             subject:   subject,
+             body:      body,
+             attachLog: true
+             )
 }
 
 def selectNotifications() {
@@ -83,52 +103,80 @@ def isReleaseBranch() {
     return GIT_BRANCH_SHORT ==~ /release.*/
 }
 
+// Can't be called to set pipeline envvars, because depends on CI_BUILD
 def isContinuousBuild() {
     return (CI_BUILD == "1" && isMasterBranch()) || isReleaseBranch() || JOB_TYPE == "cron"
 }
 
+// Can't be called to set pipeline envvars, because depends on CI_BUILD
 def isExperimentalBuild() {
     return CI_BUILD == "1" && !(isMasterBranch() || isReleaseBranch())
 }
 
+// Can't be called to set pipeline envvars, because depends on CI_BUILD indirectly
 def isBinaryBuild() {
     return isContinuousBuild() || isExperimentalBuild()
 }
 
-def testPackage(suffix, dir) {
+def getBuildStabilityType() {
+    if(isContinuousBuild())        return 'unstable'
+    else if(isExperimentalBuild()) return 'experimental'
+    else                           return 'NONE'
+}
+
+def getInstallerExt() {
+    if(isUnix()) return 'sh'
+    else         return 'exe'
+}
+
+def getDeployFileName(size_type) {
+    stability_type = getBuildStabilityType()
+    installer_ext  = getInstallerExt()
+
+    return "eman2"+ binary_size_suffix[size_type] + ".${AGENT_OS_NAME}." + stability_type + "." + installer_ext
+}
+
+def testPackage(installer_file, installation_dir) {
+    def script_file_base = convertToNativePath("tests/test_binary_installation.")
+    installer_file       = convertToNativePath(installer_file)
+    installation_dir     = convertToNativePath(installation_dir)
+    
     if(isUnix())
-        sh  "bash tests/test_binary_installation.sh   ${WORKSPACE}/eman2"  + suffix + ".${AGENT_OS_NAME}.sh ${INSTALLERS_DIR}/"  + dir
+        sh  "bash " + script_file_base + "sh "  + installer_file + " " + installation_dir
     else
-        bat "call tests\\test_binary_installation.bat ${WORKSPACE}\\eman2" + suffix + ".win.exe        ${INSTALLERS_DIR}\\" + dir
+        bat "call " + script_file_base + "bat " + installer_file + " " + installation_dir
 }
 
 def deployPackage(size_type='') {
-    if(isContinuousBuild())   stability_type = 'unstable'
-    if(isExperimentalBuild()) stability_type = 'experimental'
+    stability_type = getBuildStabilityType()
+    installer_ext  = getInstallerExt()
 
-    if(isUnix()) installer_ext = 'sh'
-    else         installer_ext = 'exe'
-
+    def sourceFile  = "eman2" + binary_size_suffix[size_type] + ".${AGENT_OS_NAME}." + installer_ext
+    def targetFile  = getDeployFileName(size_type)
+    def cdCommand   = "cd ${DEPLOY_PATH}/" + stability_type
+    def mvCommand   = "mv " + sourceFile + " " + targetFile
+    def execCommand = cdCommand + " && " + mvCommand
+    
     sshPublisher(publishers: [
                               sshPublisherDesc(configName: 'Installer-Server',
                                                transfers:
-                                                          [sshTransfer(sourceFiles: "eman2" + size_type + ".${AGENT_OS_NAME}." + installer_ext,
-                                                                       removePrefix: "",
-                                                                       remoteDirectory: stability_type,
+                                                          [sshTransfer(sourceFiles:        sourceFile,
+                                                                       removePrefix:       "",
+                                                                       remoteDirectory:    stability_type,
                                                                        remoteDirectorySDF: false,
-                                                                       cleanRemote: false,
-                                                                       excludes: '',
-                                                                       execCommand: "cd ${DEPLOY_PATH}/" + stability_type + " && mv eman2" + size_type + ".${AGENT_OS_NAME}." + installer_ext + " eman2" + size_type + ".${AGENT_OS_NAME}." + stability_type + "." + installer_ext,
-                                                                       execTimeout: 120000,
-                                                                       flatten: false,
-                                                                       makeEmptyDirs: false,
-                                                                       noDefaultExcludes: false,
-                                                                       patternSeparator: '[, ]+'
+                                                                       cleanRemote:        false,
+                                                                       excludes:           '',
+                                                                       execCommand:        execCommand,
+                                                                       execTimeout:        120000,
+                                                                       flatten:            false,
+                                                                       makeEmptyDirs:      false,
+                                                                       noDefaultExcludes:  false,
+                                                                       patternSeparator:   '[, ]+'
                                                                       )
                                                           ],
-                                                          usePromotionTimestamp: false,
+                                                          usePromotionTimestamp:   false,
                                                           useWorkspaceInPromotion: false,
-                                                          verbose: true
+                                                          verbose:                 true
                                               )
                              ]
                 )
@@ -157,7 +205,7 @@ pipeline {
     GIT_AUTHOR_EMAIL = sh(returnStdout: true, script: 'git log -1 --format="%ae"').trim()
     HOME_DIR = getHomeDir()
     HOME = "${HOME_DIR}"     // on Windows HOME is set to something like C:\Program Files\home\eman
-    INSTALLERS_DIR = sh(returnStdout: true, script: "python -c 'import os; print(os.path.join(\"${HOME_DIR}\", \"workspace\", \"jenkins-eman-installers\"))'").trim()
+    INSTALLERS_DIR = convertToNativePath("${HOME_DIR}/workspace/jenkins-eman-installers")
 
     CI_BUILD       = sh(script: "! git log -1 | grep '.*\\[ci build\\].*'",       returnStatus: true)
   }
@@ -205,12 +253,15 @@ pipeline {
     
     stage('test-package') {
       when { expression { isBinaryBuild() } }
-      environment { PARENT_STAGE_NAME = "${STAGE_NAME}" }
+      environment {
+        PARENT_STAGE_NAME = "${STAGE_NAME}"
+        INSTALLER_EXT     = getInstallerExt()
+      }
       
       parallel {
         stage('notify') { steps { notifyGitHub('PENDING') } }
-        stage('mini')   { steps { testPackage(binary_size_suffix[STAGE_NAME], STAGE_NAME) } }
-        stage('huge')   { steps { testPackage(binary_size_suffix[STAGE_NAME], STAGE_NAME) } }
+        stage('mini')   { steps { testPackage("${WORKSPACE}/eman2" + binary_size_suffix[STAGE_NAME] + ".${AGENT_OS_NAME}.${INSTALLER_EXT}", "${INSTALLERS_DIR}/" + STAGE_NAME) } }
+        stage('huge')   { steps { testPackage("${WORKSPACE}/eman2" + binary_size_suffix[STAGE_NAME] + ".${AGENT_OS_NAME}.${INSTALLER_EXT}", "${INSTALLERS_DIR}/" + STAGE_NAME) } }
       }
     }
     
@@ -220,8 +271,8 @@ pipeline {
 
       parallel {
         stage('notify') { steps { notifyGitHub('PENDING') } }
-        stage('mini')   { steps { deployPackage(binary_size_suffix[STAGE_NAME]) } }
-        stage('huge')   { steps { deployPackage(binary_size_suffix[STAGE_NAME]) } }
+        stage('mini')   { steps { deployPackage(STAGE_NAME) } }
+        stage('huge')   { steps { deployPackage(STAGE_NAME) } }
       }
     }
   }
