@@ -133,7 +133,7 @@ def getDeployFileName(size_type) {
     stability_type = getBuildStabilityType()
     installer_ext  = getInstallerExt()
 
-    return "eman2"+ binary_size_suffix[size_type] + ".${AGENT_OS_NAME}." + stability_type + "." + installer_ext
+    return "eman2_sphire_sparx"+ binary_size_suffix[size_type] + ".${AGENT_OS_NAME}." + stability_type + "." + installer_ext
 }
 
 def testPackage(installer_file, installation_dir) {
