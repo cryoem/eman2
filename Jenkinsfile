@@ -28,23 +28,29 @@ def getJobType() {
 
 def notifyGitHub(status) {
     if(JOB_TYPE == "push" || NOTIFY_GITHUB == "true") {
+        context = "JenkinsCI/${AGENT_OS_NAME.capitalize()}"
+        run_type = 'Build'
+
+        if(STAGE_NAME == 'test-continuous') {
+            context = context + "/test-continuous"
+            run_type = 'Continuous test'
+        }
+
         switch(status) {
             case 'PENDING':
                 message = 'Stage: ' + (env.PARENT_STAGE_NAME ?: STAGE_NAME)
                 break
             case 'SUCCESS':
-                message = 'Build succeeded!'
+                message = run_type + ' succeeded!'
                 break
             case 'FAILURE':
-                message = 'Build failed!'
+                message = run_type + ' failed!'
                 break
             case 'ABORTED':
-                message = 'Build aborted!'
+                message = run_type + ' aborted!'
                 status == 'ERROR'
                 break
         }
-
-        context = "JenkinsCI/${AGENT_OS_NAME.capitalize()}"
 
         step([$class: 'GitHubCommitStatusSetter',
               contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: context],
@@ -60,6 +66,11 @@ def notifyEmail() {
 
     if(JOB_TYPE == "push" || NOTIFY_EMAIL == "true") {
         to      = "$GIT_AUTHOR_EMAIL"
+        if(STAGE_NAME == 'test-continuous') {
+            to      = '$DEFAULT_RECIPIENTS'
+            subject = '[test-continuous] - ' + subject
+            body    = 'Continuous binary test: $BUILD_STATUS'
+        }
     }
     if(JOB_TYPE == "cron") {
         to      = '$DEFAULT_RECIPIENTS'
@@ -182,6 +193,22 @@ def deployPackage(size_type='') {
                 )
 }
 
+def testDeployedPackage(size_type) {
+    stability_type = getBuildStabilityType()
+
+    def file_name = getDeployFileName(size_type)
+    def download_dir = "${HOME_DIR}/workspace/jenkins-continuous-download/"
+
+    fileOperations([fileDownloadOperation(url: 'https://cryoem.bcm.edu/cryoem/static/software/' + stability_type + "/" + file_name,
+                                          targetLocation: download_dir,
+                                          targetFileName: file_name,
+                                          userName: '',
+                                          password: ''
+                                          )])
+    
+    testPackage(download_dir + file_name, download_dir + size_type)
+}
+
 def getHomeDir() {
     if(!isUnix()) return "${USERPROFILE}"
     else          return "${HOME}"
@@ -273,6 +300,39 @@ pipeline {
         stage('notify') { steps { notifyGitHub('PENDING') } }
         stage('mini')   { steps { deployPackage(STAGE_NAME) } }
         stage('huge')   { steps { deployPackage(STAGE_NAME) } }
+      }
+    }
+
+    stage('test-continuous') {
+      when { expression { isContinuousBuild() } }
+      environment { PARENT_STAGE_NAME = "${STAGE_NAME}" }
+
+      parallel {
+        stage('notify') { steps { notifyGitHub('PENDING') } }
+
+        stage('mini') {
+          steps {
+            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                testDeployedPackage(STAGE_NAME)
+            }
+          }
+        }
+
+        stage('huge') {
+          when { expression { AGENT_OS_NAME != 'linux' } }
+          steps {
+            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                testDeployedPackage(STAGE_NAME)
+            }
+          }
+        }
+      }
+
+      post {
+        always {
+          notifyGitHub("${currentBuild.result}")
+          notifyEmail()
+        }
       }
     }
   }
