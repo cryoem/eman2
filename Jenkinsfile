@@ -241,7 +241,7 @@ def isSkipStage() {
 
 pipeline {
   agent {
-    node { label "eman-build-agent" }
+    node { label "${AGENT_NAME}" }
   }
   
   options {
