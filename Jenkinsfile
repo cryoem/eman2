@@ -254,6 +254,7 @@ pipeline {
     GIT_BRANCH_SHORT = sh(returnStdout: true, script: 'echo ${GIT_BRANCH##origin/}').trim()
     GIT_COMMIT_SHORT = sh(returnStdout: true, script: 'echo ${GIT_COMMIT:0:7}').trim()
     GIT_AUTHOR_EMAIL = sh(returnStdout: true, script: 'git log -1 --format="%ae"').trim()
+    GIT_MESSAGE_SHORT = sprintf("%-30s",sh(returnStdout: true, script: 'git log -1 --format="%s"')).substring(0,30)
     HOME_DIR = getHomeDir()
     HOME = "${HOME_DIR}"     // on Windows HOME is set to something like C:\Program Files\home\eman
     INSTALLERS_DIR = convertToNativePath("${HOME_DIR}/workspace/jenkins-eman-installers")
@@ -266,6 +267,10 @@ pipeline {
       options { timeout(time: 10, unit: 'MINUTES') }
       
       steps {
+        script {
+            currentBuild.displayName = currentBuild.displayName + " - ${NODE_NAME}"
+            currentBuild.description = "${GIT_COMMIT_SHORT}: ${GIT_MESSAGE_SHORT}"
+        }
         selectNotifications()
         notifyGitHub('PENDING')
         sh 'env | sort'
