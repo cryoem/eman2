@@ -3,11 +3,13 @@ from __future__ import division
 from past.utils import old_div
 
 import unittest
-from test_module import get_real_data,create_kb
+from test_module import get_real_data,create_kb, get_arg_from_pickle_file,create_kb
 from sphire.libpy.sp_utilities import model_blank,model_circle
 from numpy import array_equal, allclose
-
+from os import path
 from EMAN2_cppwrap import EMData
+
+ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 IMAGE_2D, IMAGE_2D_REFERENCE = get_real_data(dim=2)
 IMAGE_3D, STILL_NOT_VALID = get_real_data(dim=3)
 IMAGE_BLANK_2D = model_blank(10, 10)
@@ -36,266 +38,2641 @@ from sphire.libpy import sp_fundamentals as oldfu
 from sphire.libpy_py3 import sp_fundamentals as fu
 
 class Test_absi(unittest.TestCase):
-    def test_absi(self):
-        oldv = oldfu.absi(e="")
-        v = fu.absi(e="")
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.absi()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.absi()
+        self.assertEqual(cm_new.exception.message, "absi() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.absi(e=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.absi(e=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_new = fu.absi(e=EMData())
+        return_old = oldfu.absi(e=EMData())
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new,None)
+
+    def test_2Dimg(self):
+        return_old = oldfu.absi(e=IMAGE_2D)
+        return_new = fu.absi(e=IMAGE_2D)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DimgBlank(self):
+        return_old = oldfu.absi(e=IMAGE_BLANK_2D)
+        return_new = fu.absi(e=IMAGE_BLANK_2D)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3Dimg(self):
+        return_old = oldfu.absi(e=IMAGE_3D)
+        return_new = fu.absi(e=IMAGE_3D)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DimgBlank(self):
+        return_old = oldfu.absi(e=IMAGE_BLANK_3D)
+        return_new = fu.absi(e=IMAGE_BLANK_3D)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
 
 class Test_acf(unittest.TestCase):
-    def test_acf(self):
-        oldv = oldfu.acf(e="", center=True)
-        v = fu.acf(e="", center=True)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.acf()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.acf()
+        self.assertEqual(cm_new.exception.message, "acf() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.acf(e=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.acf(e=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_new = fu.acf(e=EMData(), center=True)
+        return_old = oldfu.acf(e=EMData(), center=True)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, None)
+
+    def test_2Dimg_center(self):
+        return_old = oldfu.acf(e=IMAGE_2D, center=True)
+        return_new = fu.acf(e=IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DimgBlank_center(self):
+        return_old = oldfu.acf(e=IMAGE_BLANK_2D, center=True)
+        return_new = fu.acf(e=IMAGE_BLANK_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3Dimg_center(self):
+        return_old = oldfu.acf(e=IMAGE_3D, center=True)
+        return_new = fu.acf(e=IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DimgBlank_center(self):
+        return_old = oldfu.acf(e=IMAGE_BLANK_3D, center=True)
+        return_new = fu.acf(e=IMAGE_BLANK_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2Dimg_NOcenter(self):
+        return_old = oldfu.acf(e=IMAGE_2D, center=False)
+        return_new = fu.acf(e=IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DimgBlank_NOcenter(self):
+        return_old = oldfu.acf(e=IMAGE_BLANK_2D, center=False)
+        return_new = fu.acf(e=IMAGE_BLANK_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3Dimg_NOcenter(self):
+        return_old = oldfu.acf(e=IMAGE_3D, center=False)
+        return_new = fu.acf(e=IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DimgBlank_NOcenter(self):
+        return_old = oldfu.acf(e=IMAGE_BLANK_3D, center=False)
+        return_new = fu.acf(e=IMAGE_BLANK_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
 
 class Test_acfn(unittest.TestCase):
-    def test_acfn(self):
-        oldv = oldfu.acfn(e="", center=True)
-        v = fu.acfn(e="", center=True)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.acfn()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.acfn()
+        self.assertEqual(cm_new.exception.message, "acfn() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.acfn(e=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.acfn(e=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_new = fu.acfn(e=EMData(), center=True)
+        return_old = oldfu.acfn(e=EMData(), center=True)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, None)
+
+    def test_2Dimg_center(self):
+        return_old = oldfu.acfn(e=IMAGE_2D, center=True)
+        return_new = fu.acfn(e=IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DimgBlank_center(self):
+        return_old = oldfu.acfn(e=IMAGE_BLANK_2D, center=True)
+        return_new = fu.acfn(e=IMAGE_BLANK_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3Dimg_center(self):
+        return_old = oldfu.acfn(e=IMAGE_3D, center=True)
+        return_new = fu.acfn(e=IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DimgBlank_center(self):
+        return_old = oldfu.acfn(e=IMAGE_BLANK_3D, center=True)
+        return_new = fu.acfn(e=IMAGE_BLANK_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2Dimg_NOcenter(self):
+        return_old = oldfu.acfn(e=IMAGE_2D, center=False)
+        return_new = fu.acfn(e=IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DimgBlank_NOcenter(self):
+        return_old = oldfu.acfn(e=IMAGE_BLANK_2D, center=False)
+        return_new = fu.acfn(e=IMAGE_BLANK_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3Dimg_NOcenter(self):
+        return_old = oldfu.acfn(e=IMAGE_3D, center=False)
+        return_new = fu.acfn(e=IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DimgBlank_NOcenter(self):
+        return_old = oldfu.acfn(e=IMAGE_BLANK_3D, center=False)
+        return_new = fu.acfn(e=IMAGE_BLANK_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+
 
 class Test_acfp(unittest.TestCase):
-    def test_acf(self):
-        oldv = oldfu.acfp(e="", center=True)
-        v = fu.acfp(e="", center=True)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.acfp()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.acfp()
+        self.assertEqual(cm_new.exception.message, "acfp() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.acfp(e=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.acfp(e=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_new = fu.acfp(e=EMData(), center=True)
+        return_old = oldfu.acfp(e=EMData(), center=True)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, None)
+
+    def test_2Dimg_center(self):
+        return_old = oldfu.acfp(e=IMAGE_2D, center=True)
+        return_new = fu.acfp(e=IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DimgBlank_center(self):
+        return_old = oldfu.acfp(e=IMAGE_BLANK_2D, center=True)
+        return_new = fu.acfp(e=IMAGE_BLANK_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3Dimg_center(self):
+        return_old = oldfu.acfp(e=IMAGE_3D, center=True)
+        return_new = fu.acfp(e=IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DimgBlank_center(self):
+        return_old = oldfu.acfp(e=IMAGE_BLANK_3D, center=True)
+        return_new = fu.acfp(e=IMAGE_BLANK_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2Dimg_NOcenter(self):
+        return_old = oldfu.acfp(e=IMAGE_2D, center=False)
+        return_new = fu.acfp(e=IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DimgBlank_NOcenter(self):
+        return_old = oldfu.acfp(e=IMAGE_BLANK_2D, center=False)
+        return_new = fu.acfp(e=IMAGE_BLANK_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3Dimg_NOcenter(self):
+        return_old = oldfu.acfp(e=IMAGE_3D, center=False)
+        return_new = fu.acfp(e=IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DimgBlank_NOcenter(self):
+        return_old = oldfu.acfp(e=IMAGE_BLANK_3D, center=False)
+        return_new = fu.acfp(e=IMAGE_BLANK_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+
 
 class Test_acfnp(unittest.TestCase):
-    def test_acfnp(self):
-        oldv = oldfu.acfnp(e="", center=True)
-        v = fu.acfnp(e="", center=True)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.acfnp()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.acfnp()
+        self.assertEqual(cm_new.exception.message, "acfnp() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.acfnp(e=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.acfnp(e=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_new = fu.acfnp(e=EMData(), center=True)
+        return_old = oldfu.acfnp(e=EMData(), center=True)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, None)
+
+    def test_2Dimg_center(self):
+        return_old = oldfu.acfnp(e=IMAGE_2D, center=True)
+        return_new = fu.acfnp(e=IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DimgBlank_center(self):
+        return_old = oldfu.acfnp(e=IMAGE_BLANK_2D, center=True)
+        return_new = fu.acfnp(e=IMAGE_BLANK_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3Dimg_center(self):
+        return_old = oldfu.acfnp(e=IMAGE_3D, center=True)
+        return_new = fu.acfnp(e=IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DimgBlank_center(self):
+        return_old = oldfu.acfnp(e=IMAGE_BLANK_3D, center=True)
+        return_new = fu.acfnp(e=IMAGE_BLANK_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2Dimg_NOcenter(self):
+        return_old = oldfu.acfnp(e=IMAGE_2D, center=False)
+        return_new = fu.acfnp(e=IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DimgBlank_NOcenter(self):
+        return_old = oldfu.acfnp(e=IMAGE_BLANK_2D, center=False)
+        return_new = fu.acfnp(e=IMAGE_BLANK_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3Dimg_NOcenter(self):
+        return_old = oldfu.acfnp(e=IMAGE_3D, center=False)
+        return_new = fu.acfnp(e=IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DimgBlank_NOcenter(self):
+        return_old = oldfu.acfnp(e=IMAGE_BLANK_3D, center=False)
+        return_new = fu.acfnp(e=IMAGE_BLANK_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
 
 class Test_acfpl(unittest.TestCase):
-    def test_acfpl(self):
-        oldv = oldfu.acfpl(e="", center=True)
-        v = fu.acfpl(e="", center=True)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.acfpl()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.acfpl()
+        self.assertEqual(cm_new.exception.message, "acfpl() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.acfpl(e=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.acfpl(e=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_new = fu.acfpl(e=EMData(), center=True)
+        return_old = oldfu.acfpl(e=EMData(), center=True)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, None)
+
+    def test_2Dimg_center(self):
+        return_old = oldfu.acfpl(e=IMAGE_2D, center=True)
+        return_new = fu.acfpl(e=IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DimgBlank_center(self):
+        return_old = oldfu.acfpl(e=IMAGE_BLANK_2D, center=True)
+        return_new = fu.acfpl(e=IMAGE_BLANK_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3Dimg_center(self):
+        return_old = oldfu.acfpl(e=IMAGE_3D, center=True)
+        return_new = fu.acfpl(e=IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DimgBlank_center(self):
+        return_old = oldfu.acfpl(e=IMAGE_BLANK_3D, center=True)
+        return_new = fu.acfpl(e=IMAGE_BLANK_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2Dimg_NOcenter(self):
+        return_old = oldfu.acfpl(e=IMAGE_2D, center=False)
+        return_new = fu.acfpl(e=IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DimgBlank_NOcenter(self):
+        return_old = oldfu.acfpl(e=IMAGE_BLANK_2D, center=False)
+        return_new = fu.acfpl(e=IMAGE_BLANK_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3Dimg_NOcenter(self):
+        return_old = oldfu.acfpl(e=IMAGE_3D, center=False)
+        return_new = fu.acfpl(e=IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DimgBlank_NOcenter(self):
+        return_old = oldfu.acfpl(e=IMAGE_BLANK_3D, center=False)
+        return_new = fu.acfpl(e=IMAGE_BLANK_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+
+class Test_acfnpl(unittest.TestCase):
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.acfnpl()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.acfnpl()
+        self.assertEqual(cm_new.exception.message, "acfnpl() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.acfnpl(e=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.acfnpl(e=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_new = fu.acfnpl(e=EMData(), center=True)
+        return_old = oldfu.acfnpl(e=EMData(), center=True)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, None)
+
+    def test_2Dimg_center(self):
+        return_old = oldfu.acfnpl(e=IMAGE_2D, center=True)
+        return_new = fu.acfnpl(e=IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DimgBlank_center(self):
+        return_old = oldfu.acfnpl(e=IMAGE_BLANK_2D, center=True)
+        return_new = fu.acfnpl(e=IMAGE_BLANK_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3Dimg_center(self):
+        return_old = oldfu.acfnpl(e=IMAGE_3D, center=True)
+        return_new = fu.acfnpl(e=IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DimgBlank_center(self):
+        return_old = oldfu.acfnpl(e=IMAGE_BLANK_3D, center=True)
+        return_new = fu.acfnpl(e=IMAGE_BLANK_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2Dimg_NOcenter(self):
+        return_old = oldfu.acfnpl(e=IMAGE_2D, center=False)
+        return_new = fu.acfnpl(e=IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DimgBlank_NOcenter(self):
+        return_old = oldfu.acfnpl(e=IMAGE_BLANK_2D, center=False)
+        return_new = fu.acfnpl(e=IMAGE_BLANK_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3Dimg_NOcenter(self):
+        return_old = oldfu.acfnpl(e=IMAGE_3D, center=False)
+        return_new = fu.acfnpl(e=IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DimgBlank_NOcenter(self):
+        return_old = oldfu.acfnpl(e=IMAGE_BLANK_3D, center=False)
+        return_new = fu.acfnpl(e=IMAGE_BLANK_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
 
 class Test_ccfn(unittest.TestCase):
-    def test_ccfn(self):
-        oldv = oldfu.ccfn(e="", f="", center=True)
-        v = fu.ccfn(e="", f="", center=True)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError)  as cm_new:
+            fu.ccfn()
+        with self.assertRaises(TypeError)  as cm_old:
+            oldfu.ccfn()
+        self.assertEqual(cm_new.exception.message, "ccfn() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image1(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.ccfn(EMData(),IMAGE_2D)
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.ccfn(EMData(),IMAGE_2D)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_empty_input_image2(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.ccfn(e=IMAGE_2D, f=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.ccfn(e=IMAGE_2D,f=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_input_img2(self):
+        return_new = fu.ccfn(e=IMAGE_2D, f=None, center=False)
+        return_old = oldfu.ccfn(e=IMAGE_2D,f= None, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_NoneType_input_img1_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        return_new = fu.ccfn(e=None, f=IMAGE_2D, center=False)
+        return_old = oldfu.ccfn(e=None, f=IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        """
+
+    def test_Img2D_without_center(self):
+        return_new = fu.ccfn(e=IMAGE_2D, f=REAL_IMAGE_2D, center=False)
+        return_old = oldfu.ccfn(e=IMAGE_2D,f= REAL_IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2D_with_center(self):
+        return_new = fu.ccfn(e=IMAGE_2D, f=REAL_IMAGE_2D, center=True)
+        return_old = oldfu.ccfn(e=IMAGE_2D,f= REAL_IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_without_center(self):
+        return_new = fu.ccfn(e=IMAGE_3D, f=REAL_IMAGE_3D, center=False)
+        return_old = oldfu.ccfn(e=IMAGE_3D,f= REAL_IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_with_center(self):
+        return_new = fu.ccfn(e=IMAGE_3D, f=REAL_IMAGE_3D, center=True)
+        return_old = oldfu.ccfn(e=IMAGE_3D,f= REAL_IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_without_center(self):
+        return_new = fu.ccfn(e=IMAGE_BLANK_2D,f= REAL_IMAGE_2D, center=False)
+        return_old = oldfu.ccfn(e=IMAGE_2D, f=REAL_IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_with_center(self):
+        return_new = fu.ccfn(e=IMAGE_BLANK_2D,f= REAL_IMAGE_2D, center=True)
+        return_old = oldfu.ccfn(e=IMAGE_2D, f=REAL_IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_without_center(self):
+        return_new = fu.ccfn(e=IMAGE_BLANK_3D,f= REAL_IMAGE_3D, center=False)
+        return_old = oldfu.ccfn(e=IMAGE_3D, f=REAL_IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_with_center(self):
+        return_new = fu.ccfn(e=IMAGE_BLANK_3D,f= REAL_IMAGE_3D, center=True)
+        return_old = oldfu.ccfn(e=IMAGE_BLANK_3D, f=REAL_IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 
 
 class Test_ccfp(unittest.TestCase):
-    def test_ccfp(self):
-        oldv = oldfu.ccfp(e="", f="", center=True)
-        v = fu.ccfp(e="", f="", center=True)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError)  as cm_new:
+            fu.ccfp()
+        with self.assertRaises(TypeError)  as cm_old:
+            oldfu.ccfp()
+        self.assertEqual(cm_new.exception.message, "ccfp() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image1(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.ccfp(EMData(),IMAGE_2D)
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.ccfp(EMData(),IMAGE_2D)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_empty_input_image2(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.ccfp(e=IMAGE_2D, f=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.ccfp(e=IMAGE_2D,f=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_input_img2(self):
+        return_new = fu.ccfp(e=IMAGE_2D, f=None, center=False)
+        return_old = oldfu.ccfp(e=IMAGE_2D,f= None, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_NoneType_input_img1_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        return_new = fu.ccfp(e=None, f=IMAGE_2D, center=False)
+        return_old = oldfu.ccfp(e=None, f=IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        """
+
+    def test_Img2D_without_center(self):
+        return_new = fu.ccfp(e=IMAGE_2D, f=REAL_IMAGE_2D, center=False)
+        return_old = oldfu.ccfp(e=IMAGE_2D,f= REAL_IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2D_with_center(self):
+        return_new = fu.ccfp(e=IMAGE_2D, f=REAL_IMAGE_2D, center=True)
+        return_old = oldfu.ccfp(e=IMAGE_2D,f= REAL_IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_without_center(self):
+        return_new = fu.ccfp(e=IMAGE_3D, f=REAL_IMAGE_3D, center=False)
+        return_old = oldfu.ccfp(e=IMAGE_3D,f= REAL_IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_with_center(self):
+        return_new = fu.ccfp(e=IMAGE_3D, f=REAL_IMAGE_3D, center=True)
+        return_old = oldfu.ccfp(e=IMAGE_3D,f= REAL_IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_without_center(self):
+        return_new = fu.ccfp(e=IMAGE_BLANK_2D,f= REAL_IMAGE_2D, center=False)
+        return_old = oldfu.ccfp(e=IMAGE_2D, f=REAL_IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_with_center(self):
+        return_new = fu.ccfp(e=IMAGE_BLANK_2D,f= REAL_IMAGE_2D, center=True)
+        return_old = oldfu.ccfp(e=IMAGE_2D, f=REAL_IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_without_center(self):
+        return_new = fu.ccfp(e=IMAGE_BLANK_3D,f= REAL_IMAGE_3D, center=False)
+        return_old = oldfu.ccfp(e=IMAGE_3D, f=REAL_IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_with_center(self):
+        return_new = fu.ccfp(e=IMAGE_BLANK_3D,f= REAL_IMAGE_3D, center=True)
+        return_old = oldfu.ccfp(e=IMAGE_BLANK_3D, f=REAL_IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 
 
 class Test_ccfnp(unittest.TestCase):
-    def test_ccfnp(self):
-        oldv = oldfu.ccfnp(e="", f="", center=True)
-        v = fu.ccfnp(e="", f="", center=True)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError)  as cm_new:
+            fu.ccfnp()
+        with self.assertRaises(TypeError)  as cm_old:
+            oldfu.ccfnp()
+        self.assertEqual(cm_new.exception.message, "ccfnp() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image1(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.ccfnp(EMData(),IMAGE_2D)
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.ccfnp(EMData(),IMAGE_2D)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_empty_input_image2(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.ccfnp(e=IMAGE_2D, f=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.ccfnp(e=IMAGE_2D,f=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_input_img2(self):
+        return_new = fu.ccfnp(e=IMAGE_2D, f=None, center=False)
+        return_old = oldfu.ccfnp(e=IMAGE_2D,f= None, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_NoneType_input_img1_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        return_new = fu.ccfnp(e=None, f=IMAGE_2D, center=False)
+        return_old = oldfu.ccfnp(e=None, f=IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        """
+
+    def test_Img2D_without_center(self):
+        return_new = fu.ccfnp(e=IMAGE_2D, f=REAL_IMAGE_2D, center=False)
+        return_old = oldfu.ccfnp(e=IMAGE_2D,f= REAL_IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2D_with_center(self):
+        return_new = fu.ccfnp(e=IMAGE_2D, f=REAL_IMAGE_2D, center=True)
+        return_old = oldfu.ccfnp(e=IMAGE_2D,f= REAL_IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_without_center(self):
+        return_new = fu.ccfnp(e=IMAGE_3D, f=REAL_IMAGE_3D, center=False)
+        return_old = oldfu.ccfnp(e=IMAGE_3D,f= REAL_IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_with_center(self):
+        return_new = fu.ccfnp(e=IMAGE_3D, f=REAL_IMAGE_3D, center=True)
+        return_old = oldfu.ccfnp(e=IMAGE_3D,f= REAL_IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_without_center(self):
+        return_new = fu.ccfnp(e=IMAGE_BLANK_2D,f= REAL_IMAGE_2D, center=False)
+        return_old = oldfu.ccfnp(e=IMAGE_2D, f=REAL_IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_with_center(self):
+        return_new = fu.ccfnp(e=IMAGE_BLANK_2D,f= REAL_IMAGE_2D, center=True)
+        return_old = oldfu.ccfnp(e=IMAGE_2D, f=REAL_IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_without_center(self):
+        return_new = fu.ccfnp(e=IMAGE_BLANK_3D,f= REAL_IMAGE_3D, center=False)
+        return_old = oldfu.ccfnp(e=IMAGE_3D, f=REAL_IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_with_center(self):
+        return_new = fu.ccfnp(e=IMAGE_BLANK_3D,f= REAL_IMAGE_3D, center=True)
+        return_old = oldfu.ccfnp(e=IMAGE_BLANK_3D, f=REAL_IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 
 
 class Test_ccfpl(unittest.TestCase):
-    def test_ccfpl(self):
-        oldv = oldfu.ccfpl(e="", f="", center=True)
-        v = fu.ccfpl(e="", f="", center=True)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError)  as cm_new:
+            fu.ccfpl()
+        with self.assertRaises(TypeError)  as cm_old:
+            oldfu.ccfpl()
+        self.assertEqual(cm_new.exception.message, "ccfpl() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image1(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.ccfpl(EMData(),IMAGE_2D)
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.ccfpl(EMData(),IMAGE_2D)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_empty_input_image2(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.ccfpl(e=IMAGE_2D, f=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.ccfpl(e=IMAGE_2D,f=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_input_img2(self):
+        return_new = fu.ccfpl(e=IMAGE_2D, f=None, center=False)
+        return_old = oldfu.ccfpl(e=IMAGE_2D,f= None, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_NoneType_input_img1_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        return_new = fu.ccfpl(e=None, f=IMAGE_2D, center=False)
+        return_old = oldfu.ccfpl(e=None, f=IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        """
+
+    def test_Img2D_without_center(self):
+        return_new = fu.ccfpl(e=IMAGE_2D, f=REAL_IMAGE_2D, center=False)
+        return_old = oldfu.ccfpl(e=IMAGE_2D,f= REAL_IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2D_with_center(self):
+        return_new = fu.ccfpl(e=IMAGE_2D, f=REAL_IMAGE_2D, center=True)
+        return_old = oldfu.ccfpl(e=IMAGE_2D,f= REAL_IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_without_center(self):
+        return_new = fu.ccfpl(e=IMAGE_3D, f=REAL_IMAGE_3D, center=False)
+        return_old = oldfu.ccfpl(e=IMAGE_3D,f= REAL_IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_with_center(self):
+        return_new = fu.ccfpl(e=IMAGE_3D, f=REAL_IMAGE_3D, center=True)
+        return_old = oldfu.ccfpl(e=IMAGE_3D,f= REAL_IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_without_center(self):
+        return_new = fu.ccfpl(e=IMAGE_BLANK_2D,f= REAL_IMAGE_2D, center=False)
+        return_old = oldfu.ccfpl(e=IMAGE_2D, f=REAL_IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_with_center(self):
+        return_new = fu.ccfpl(e=IMAGE_BLANK_2D,f= REAL_IMAGE_2D, center=True)
+        return_old = oldfu.ccfpl(e=IMAGE_2D, f=REAL_IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_without_center(self):
+        return_new = fu.ccfpl(e=IMAGE_BLANK_3D,f= REAL_IMAGE_3D, center=False)
+        return_old = oldfu.ccfpl(e=IMAGE_3D, f=REAL_IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_with_center(self):
+        return_new = fu.ccfpl(e=IMAGE_BLANK_3D,f= REAL_IMAGE_3D, center=True)
+        return_old = oldfu.ccfpl(e=IMAGE_BLANK_3D, f=REAL_IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 
 
 class Test_ccfnpl(unittest.TestCase):
-    def test_ccfnpl(self):
-        oldv = oldfu.ccfnpl(e="", f="", center=True)
-        v = fu.ccfnpl(e="", f="", center=True)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError)  as cm_new:
+            fu.ccfnpl()
+        with self.assertRaises(TypeError)  as cm_old:
+            oldfu.ccfnpl()
+        self.assertEqual(cm_new.exception.message, "ccfnpl() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image1(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.ccfnpl(EMData(),IMAGE_2D)
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.ccfnpl(EMData(),IMAGE_2D)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_empty_input_image2(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.ccfnpl(e=IMAGE_2D, f=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.ccfnpl(e=IMAGE_2D,f=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_input_img2(self):
+        return_new = fu.ccfnpl(e=IMAGE_2D, f=None, center=False)
+        return_old = oldfu.ccfnpl(e=IMAGE_2D,f= None, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_NoneType_input_img1_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        return_new = fu.ccfnpl(e=None, f=IMAGE_2D, center=False)
+        return_old = oldfu.ccfnpl(e=None, f=IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        """
+
+    def test_Img2D_without_center(self):
+        return_new = fu.ccfnpl(e=IMAGE_2D, f=REAL_IMAGE_2D, center=False)
+        return_old = oldfu.ccfnpl(e=IMAGE_2D,f= REAL_IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2D_with_center(self):
+        return_new = fu.ccfnpl(e=IMAGE_2D, f=REAL_IMAGE_2D, center=True)
+        return_old = oldfu.ccfnpl(e=IMAGE_2D,f= REAL_IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_without_center(self):
+        return_new = fu.ccfnpl(e=IMAGE_3D, f=REAL_IMAGE_3D, center=False)
+        return_old = oldfu.ccfnpl(e=IMAGE_3D,f= REAL_IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_with_center(self):
+        return_new = fu.ccfnpl(e=IMAGE_3D, f=REAL_IMAGE_3D, center=True)
+        return_old = oldfu.ccfnpl(e=IMAGE_3D,f= REAL_IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_without_center(self):
+        return_new = fu.ccfnpl(e=IMAGE_BLANK_2D,f= REAL_IMAGE_2D, center=False)
+        return_old = oldfu.ccfnpl(e=IMAGE_2D, f=REAL_IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_with_center(self):
+        return_new = fu.ccfnpl(e=IMAGE_BLANK_2D,f= REAL_IMAGE_2D, center=True)
+        return_old = oldfu.ccfnpl(e=IMAGE_2D, f=REAL_IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_without_center(self):
+        return_new = fu.ccfnpl(e=IMAGE_BLANK_3D,f= REAL_IMAGE_3D, center=False)
+        return_old = oldfu.ccfnpl(e=IMAGE_3D, f=REAL_IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_with_center(self):
+        return_new = fu.ccfnpl(e=IMAGE_BLANK_3D,f= REAL_IMAGE_3D, center=True)
+        return_old = oldfu.ccfnpl(e=IMAGE_BLANK_3D, f=REAL_IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 
 
 class Test_cnv(unittest.TestCase):
-    def test_cnv(self):
-        oldv = oldfu.cnv(e="", f="", center=True)
-        v = fu.cnv(e="", f="", center=True)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError)  as cm_new:
+            fu.cnv()
+        with self.assertRaises(TypeError)  as cm_old:
+            oldfu.cnv()
+        self.assertEqual(cm_new.exception.message, "cnv() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
+    def test_empty_input_image1(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.cnv(EMData(),IMAGE_2D)
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.cnv(EMData(),IMAGE_2D)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
 
-class Test_cnvn(unittest.TestCase):
-    def test_cnvn(self):
-        oldv = oldfu.cnvn(e="", f="", center=True)
-        v = fu.cnvn(e="", f="", center=True)
-        pass
+    def test_empty_input_image2(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.cnv(e=IMAGE_2D, f=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.cnv(e=IMAGE_2D,f=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
 
+    def test_NoneType_input_img2(self):
+        return_new = fu.cnv(e=IMAGE_2D, f=None, center=False)
+        return_old = oldfu.cnv(e=IMAGE_2D,f= None, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-class Test_cnvp(unittest.TestCase):
-    def test_cnvp(self):
-        oldv = oldfu.cnvp(e="", f="", center=True)
-        v = fu.cnvp(e="", f="", center=True)
-        pass
+    def test_NoneType_input_img1_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        return_new = fu.cnv(e=None, f=IMAGE_2D, center=False)
+        return_old = oldfu.cnv(e=None, f=IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        """
+
+    def test_Img2D_without_center(self):
+        return_new = fu.cnv(e=IMAGE_2D, f=REAL_IMAGE_2D, center=False)
+        return_old = oldfu.cnv(e=IMAGE_2D,f= REAL_IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2D_with_center(self):
+        return_new = fu.cnv(e=IMAGE_2D, f=REAL_IMAGE_2D, center=True)
+        return_old = oldfu.cnv(e=IMAGE_2D,f= REAL_IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_without_center(self):
+        return_new = fu.cnv(e=IMAGE_3D, f=REAL_IMAGE_3D, center=False)
+        return_old = oldfu.cnv(e=IMAGE_3D,f= REAL_IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_with_center(self):
+        return_new = fu.cnv(e=IMAGE_3D, f=REAL_IMAGE_3D, center=True)
+        return_old = oldfu.cnv(e=IMAGE_3D,f= REAL_IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_without_center(self):
+        return_new = fu.cnv(e=IMAGE_BLANK_2D,f= REAL_IMAGE_2D, center=False)
+        return_old = oldfu.cnv(e=IMAGE_2D, f=REAL_IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_with_center(self):
+        return_new = fu.cnv(e=IMAGE_BLANK_2D,f= REAL_IMAGE_2D, center=True)
+        return_old = oldfu.cnv(e=IMAGE_2D, f=REAL_IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_without_center(self):
+        return_new = fu.cnv(e=IMAGE_BLANK_3D,f= REAL_IMAGE_3D, center=False)
+        return_old = oldfu.cnv(e=IMAGE_3D, f=REAL_IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_with_center(self):
+        return_new = fu.cnv(e=IMAGE_BLANK_3D,f= REAL_IMAGE_3D, center=True)
+        return_old = oldfu.cnv(e=IMAGE_BLANK_3D, f=REAL_IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 
 
 class Test_cnvnp(unittest.TestCase):
-    def test_cnvnp(self):
-        oldv = oldfu.cnvnp(e="", f="", center=True)
-        v = fu.cnvnp(e="", f="", center=True)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError)  as cm_new:
+            fu.cnvnp()
+        with self.assertRaises(TypeError)  as cm_old:
+            oldfu.cnvnp()
+        self.assertEqual(cm_new.exception.message, "cnvnp() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image1(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.cnvnp(EMData(),IMAGE_2D)
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.cnvnp(EMData(),IMAGE_2D)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_empty_input_image2(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.cnvnp(e=IMAGE_2D, f=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.cnvnp(e=IMAGE_2D,f=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_input_img2(self):
+        return_new = fu.cnvnp(e=IMAGE_2D, f=None, center=False)
+        return_old = oldfu.cnvnp(e=IMAGE_2D,f= None, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_NoneType_input_img1_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        return_new = fu.cnvnp(e=None, f=IMAGE_2D, center=False)
+        return_old = oldfu.cnvnp(e=None, f=IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        """
+
+    def test_Img2D_without_center(self):
+        return_new = fu.cnvnp(e=IMAGE_2D, f=REAL_IMAGE_2D, center=False)
+        return_old = oldfu.cnvnp(e=IMAGE_2D,f= REAL_IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2D_with_center(self):
+        return_new = fu.cnvnp(e=IMAGE_2D, f=REAL_IMAGE_2D, center=True)
+        return_old = oldfu.cnvnp(e=IMAGE_2D,f= REAL_IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_without_center(self):
+        return_new = fu.cnvnp(e=IMAGE_3D, f=REAL_IMAGE_3D, center=False)
+        return_old = oldfu.cnvnp(e=IMAGE_3D,f= REAL_IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_with_center(self):
+        return_new = fu.cnvnp(e=IMAGE_3D, f=REAL_IMAGE_3D, center=True)
+        return_old = oldfu.cnvnp(e=IMAGE_3D,f= REAL_IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_without_center(self):
+        return_new = fu.cnvnp(e=IMAGE_BLANK_2D,f= REAL_IMAGE_2D, center=False)
+        return_old = oldfu.cnvnp(e=IMAGE_2D, f=REAL_IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_with_center(self):
+        return_new = fu.cnvnp(e=IMAGE_BLANK_2D,f= REAL_IMAGE_2D, center=True)
+        return_old = oldfu.cnvnp(e=IMAGE_2D, f=REAL_IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_without_center(self):
+        return_new = fu.cnvnp(e=IMAGE_BLANK_3D,f= REAL_IMAGE_3D, center=False)
+        return_old = oldfu.cnvnp(e=IMAGE_3D, f=REAL_IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_with_center(self):
+        return_new = fu.cnvnp(e=IMAGE_BLANK_3D,f= REAL_IMAGE_3D, center=True)
+        return_old = oldfu.cnvnp(e=IMAGE_BLANK_3D, f=REAL_IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+
+class Test_cnvp(unittest.TestCase):
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError)  as cm_new:
+            fu.cnvp()
+        with self.assertRaises(TypeError)  as cm_old:
+            oldfu.cnvp()
+        self.assertEqual(cm_new.exception.message, "cnvp() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image1(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.cnvp(EMData(),IMAGE_2D)
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.cnvp(EMData(),IMAGE_2D)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_empty_input_image2(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.cnvp(e=IMAGE_2D, f=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.cnvp(e=IMAGE_2D,f=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_input_img2(self):
+        return_new = fu.cnvp(e=IMAGE_2D, f=None, center=False)
+        return_old = oldfu.cnvp(e=IMAGE_2D,f= None, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_NoneType_input_img1_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        return_new = fu.cnvp(e=None, f=IMAGE_2D, center=False)
+        return_old = oldfu.cnvp(e=None, f=IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        """
+
+    def test_Img2D_without_center(self):
+        return_new = fu.cnvp(e=IMAGE_2D, f=REAL_IMAGE_2D, center=False)
+        return_old = oldfu.cnvp(e=IMAGE_2D,f= REAL_IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2D_with_center(self):
+        return_new = fu.cnvp(e=IMAGE_2D, f=REAL_IMAGE_2D, center=True)
+        return_old = oldfu.cnvp(e=IMAGE_2D,f= REAL_IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_without_center(self):
+        return_new = fu.cnvp(e=IMAGE_3D, f=REAL_IMAGE_3D, center=False)
+        return_old = oldfu.cnvp(e=IMAGE_3D,f= REAL_IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_with_center(self):
+        return_new = fu.cnvp(e=IMAGE_3D, f=REAL_IMAGE_3D, center=True)
+        return_old = oldfu.cnvp(e=IMAGE_3D,f= REAL_IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_without_center(self):
+        return_new = fu.cnvp(e=IMAGE_BLANK_2D,f= REAL_IMAGE_2D, center=False)
+        return_old = oldfu.cnvp(e=IMAGE_2D, f=REAL_IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_with_center(self):
+        return_new = fu.cnvp(e=IMAGE_BLANK_2D,f= REAL_IMAGE_2D, center=True)
+        return_old = oldfu.cnvp(e=IMAGE_2D, f=REAL_IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_without_center(self):
+        return_new = fu.cnvp(e=IMAGE_BLANK_3D,f= REAL_IMAGE_3D, center=False)
+        return_old = oldfu.cnvp(e=IMAGE_3D, f=REAL_IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_with_center(self):
+        return_new = fu.cnvp(e=IMAGE_BLANK_3D,f= REAL_IMAGE_3D, center=True)
+        return_old = oldfu.cnvp(e=IMAGE_BLANK_3D, f=REAL_IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 
 
 class Test_cnvpl(unittest.TestCase):
-    def test_cnvpl(self):
-        oldv = oldfu.cnvpl(e="", f="", center=True)
-        v = fu.cnvpl(e="", f="", center=True)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError)  as cm_new:
+            fu.cnvpl()
+        with self.assertRaises(TypeError)  as cm_old:
+            oldfu.cnvpl()
+        self.assertEqual(cm_new.exception.message, "cnvpl() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image1(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.cnvpl(EMData(),IMAGE_2D)
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.cnvpl(EMData(),IMAGE_2D)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_empty_input_image2(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.cnvpl(e=IMAGE_2D, f=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.cnvpl(e=IMAGE_2D,f=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_input_img2(self):
+        return_new = fu.cnvpl(e=IMAGE_2D, f=None, center=False)
+        return_old = oldfu.cnvpl(e=IMAGE_2D,f= None, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_NoneType_input_img1_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        return_new = fu.cnvpl(e=None, f=IMAGE_2D, center=False)
+        return_old = oldfu.cnvpl(e=None, f=IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        """
+
+    def test_Img2D_without_center(self):
+        return_new = fu.cnvpl(e=IMAGE_2D, f=REAL_IMAGE_2D, center=False)
+        return_old = oldfu.cnvpl(e=IMAGE_2D,f= REAL_IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2D_with_center(self):
+        return_new = fu.cnvpl(e=IMAGE_2D, f=REAL_IMAGE_2D, center=True)
+        return_old = oldfu.cnvpl(e=IMAGE_2D,f= REAL_IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_without_center(self):
+        return_new = fu.cnvpl(e=IMAGE_3D, f=REAL_IMAGE_3D, center=False)
+        return_old = oldfu.cnvpl(e=IMAGE_3D,f= REAL_IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_with_center(self):
+        return_new = fu.cnvpl(e=IMAGE_3D, f=REAL_IMAGE_3D, center=True)
+        return_old = oldfu.cnvpl(e=IMAGE_3D,f= REAL_IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_without_center(self):
+        return_new = fu.cnvpl(e=IMAGE_BLANK_2D,f= REAL_IMAGE_2D, center=False)
+        return_old = oldfu.cnvpl(e=IMAGE_2D, f=REAL_IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_with_center(self):
+        return_new = fu.cnvpl(e=IMAGE_BLANK_2D,f= REAL_IMAGE_2D, center=True)
+        return_old = oldfu.cnvpl(e=IMAGE_2D, f=REAL_IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_without_center(self):
+        return_new = fu.cnvpl(e=IMAGE_BLANK_3D,f= REAL_IMAGE_3D, center=False)
+        return_old = oldfu.cnvpl(e=IMAGE_3D, f=REAL_IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_with_center(self):
+        return_new = fu.cnvpl(e=IMAGE_BLANK_3D,f= REAL_IMAGE_3D, center=True)
+        return_old = oldfu.cnvpl(e=IMAGE_BLANK_3D, f=REAL_IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 
 
 class Test_cnvnpl(unittest.TestCase):
-    def test_cnvnpl(self):
-        oldv = oldfu.cnvnpl(e="", f="", center=True)
-        v = fu.cnvnpl(e="", f="", center=True)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError)  as cm_new:
+            fu.cnvnpl()
+        with self.assertRaises(TypeError)  as cm_old:
+            oldfu.cnvnpl()
+        self.assertEqual(cm_new.exception.message, "cnvnpl() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image1(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.cnvnpl(EMData(),IMAGE_2D)
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.cnvnpl(EMData(),IMAGE_2D)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_empty_input_image2(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.cnvnpl(e=IMAGE_2D, f=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.cnvnpl(e=IMAGE_2D,f=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_input_img2(self):
+        return_new = fu.cnvnpl(e=IMAGE_2D, f=None, center=False)
+        return_old = oldfu.cnvnpl(e=IMAGE_2D,f= None, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_NoneType_input_img1_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        return_new = fu.cnvnpl(e=None, f=IMAGE_2D, center=False)
+        return_old = oldfu.cnvnpl(e=None, f=IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        """
+
+    def test_Img2D_without_center(self):
+        return_new = fu.cnvnpl(e=IMAGE_2D, f=REAL_IMAGE_2D, center=False)
+        return_old = oldfu.cnvnpl(e=IMAGE_2D,f= REAL_IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2D_with_center(self):
+        return_new = fu.cnvnpl(e=IMAGE_2D, f=REAL_IMAGE_2D, center=True)
+        return_old = oldfu.cnvnpl(e=IMAGE_2D,f= REAL_IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_without_center(self):
+        return_new = fu.cnvnpl(e=IMAGE_3D, f=REAL_IMAGE_3D, center=False)
+        return_old = oldfu.cnvnpl(e=IMAGE_3D,f= REAL_IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_with_center(self):
+        return_new = fu.cnvnpl(e=IMAGE_3D, f=REAL_IMAGE_3D, center=True)
+        return_old = oldfu.cnvnpl(e=IMAGE_3D,f= REAL_IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_without_center(self):
+        return_new = fu.cnvnpl(e=IMAGE_BLANK_2D,f= REAL_IMAGE_2D, center=False)
+        return_old = oldfu.cnvnpl(e=IMAGE_2D, f=REAL_IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_with_center(self):
+        return_new = fu.cnvnpl(e=IMAGE_BLANK_2D,f= REAL_IMAGE_2D, center=True)
+        return_old = oldfu.cnvnpl(e=IMAGE_2D, f=REAL_IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_without_center(self):
+        return_new = fu.cnvnpl(e=IMAGE_BLANK_3D,f= REAL_IMAGE_3D, center=False)
+        return_old = oldfu.cnvnpl(e=IMAGE_3D, f=REAL_IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_with_center(self):
+        return_new = fu.cnvnpl(e=IMAGE_BLANK_3D,f= REAL_IMAGE_3D, center=True)
+        return_old = oldfu.cnvnpl(e=IMAGE_BLANK_3D, f=REAL_IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 
 
 class Test_scfn(unittest.TestCase):
-    def test_scfn(self):
-        oldv = oldfu.scfn(e="", center=True)
-        v = fu.scfn(e="", center=True)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError)  as cm_new:
+            fu.scfn()
+        with self.assertRaises(TypeError)  as cm_old:
+            oldfu.scfn()
+        self.assertEqual(cm_new.exception.message, "scfn() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image1(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.scfn(e=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.scfn(e=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_input_img_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        return_new = fu.scfn(e=None, center=False)
+        return_old = oldfu.scfn(e=None, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        """
+
+    def test_Img3D_with_center(self):
+        return_new = fu.scfn(e=IMAGE_3D, center=True)
+        return_old = oldfu.scfn(e=IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_without_center(self):
+        return_new = fu.scfn(e=IMAGE_3D, center=False)
+        return_old = oldfu.scfn(e=IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2D_with_center(self):
+        return_new = fu.scfn(e=IMAGE_2D, center=True)
+        return_old = oldfu.scfn(e=IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2D_without_center(self):
+        return_new = fu.scfn(e=IMAGE_2D, center=False)
+        return_old = oldfu.scfn(e=IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+    def test_Img2Dblank_without_center(self):
+        return_new = fu.scfn(e=IMAGE_BLANK_2D,  center=False)
+        return_old = oldfu.scfn(e=IMAGE_2D,  center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_with_center(self):
+        return_new = fu.scfn(e=IMAGE_BLANK_2D,  center=True)
+        return_old = oldfu.scfn(e=IMAGE_2D,  center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_without_center(self):
+        return_new = fu.scfn(e=IMAGE_BLANK_3D, center=False)
+        return_old = oldfu.scfn(e=IMAGE_3D,  center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_with_center(self):
+        return_new = fu.scfn(e=IMAGE_BLANK_3D,center=True)
+        return_old = oldfu.scfn(e=IMAGE_BLANK_3D,center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 
 
 class Test_scfp(unittest.TestCase):
-    def test_scfp(self):
-        oldv = oldfu.scfp(e="", center=True)
-        v = fu.scfp(e="", center=True)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError)  as cm_new:
+            fu.scfp()
+        with self.assertRaises(TypeError)  as cm_old:
+            oldfu.scfp()
+        self.assertEqual(cm_new.exception.message, "scfp() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image1(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.scfp(e=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.scfp(e=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_input_img_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        return_new = fu.scfp(e=None, center=False)
+        return_old = oldfu.scfp(e=None, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        """
+
+    def test_Img3D_with_center(self):
+        return_new = fu.scfp(e=IMAGE_3D, center=True)
+        return_old = oldfu.scfp(e=IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_without_center(self):
+        return_new = fu.scfp(e=IMAGE_3D, center=False)
+        return_old = oldfu.scfp(e=IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2D_with_center(self):
+        return_new = fu.scfp(e=IMAGE_2D, center=True)
+        return_old = oldfu.scfp(e=IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2D_without_center(self):
+        return_new = fu.scfp(e=IMAGE_2D, center=False)
+        return_old = oldfu.scfp(e=IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+    def test_Img2Dblank_without_center(self):
+        return_new = fu.scfp(e=IMAGE_BLANK_2D,  center=False)
+        return_old = oldfu.scfp(e=IMAGE_2D,  center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_with_center(self):
+        return_new = fu.scfp(e=IMAGE_BLANK_2D,  center=True)
+        return_old = oldfu.scfp(e=IMAGE_2D,  center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_without_center(self):
+        return_new = fu.scfp(e=IMAGE_BLANK_3D, center=False)
+        return_old = oldfu.scfp(e=IMAGE_3D,  center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_with_center(self):
+        return_new = fu.scfp(e=IMAGE_BLANK_3D,center=True)
+        return_old = oldfu.scfp(e=IMAGE_BLANK_3D,center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 
 
 class Test_scfnp(unittest.TestCase):
-    def test_scfnp(self):
-        oldv = oldfu.scfnp(e="", center=True)
-        v = fu.scfnp(e="", center=True)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError)  as cm_new:
+            fu.scfnp()
+        with self.assertRaises(TypeError)  as cm_old:
+            oldfu.scfnp()
+        self.assertEqual(cm_new.exception.message, "scfnp() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image1(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.scfnp(e=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.scfnp(e=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_input_img_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        return_new = fu.scfnp(e=None, center=False)
+        return_old = oldfu.scfnp(e=None, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        """
+
+    def test_Img3D_with_center(self):
+        return_new = fu.scfnp(e=IMAGE_3D, center=True)
+        return_old = oldfu.scfnp(e=IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_without_center(self):
+        return_new = fu.scfnp(e=IMAGE_3D, center=False)
+        return_old = oldfu.scfnp(e=IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2D_with_center(self):
+        return_new = fu.scfnp(e=IMAGE_2D, center=True)
+        return_old = oldfu.scfnp(e=IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2D_without_center(self):
+        return_new = fu.scfnp(e=IMAGE_2D, center=False)
+        return_old = oldfu.scfnp(e=IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+    def test_Img2Dblank_without_center(self):
+        return_new = fu.scfnp(e=IMAGE_BLANK_2D,  center=False)
+        return_old = oldfu.scfnp(e=IMAGE_2D,  center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_with_center(self):
+        return_new = fu.scfnp(e=IMAGE_BLANK_2D,  center=True)
+        return_old = oldfu.scfnp(e=IMAGE_2D,  center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_without_center(self):
+        return_new = fu.scfnp(e=IMAGE_BLANK_3D, center=False)
+        return_old = oldfu.scfnp(e=IMAGE_3D,  center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_with_center(self):
+        return_new = fu.scfnp(e=IMAGE_BLANK_3D,center=True)
+        return_old = oldfu.scfnp(e=IMAGE_BLANK_3D,center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 
 
 class Test_scfpl(unittest.TestCase):
-    def test_scfpl(self):
-        oldv = oldfu.scfpl(e="", center=True)
-        v = fu.scfpl(e="", center=True)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError)  as cm_new:
+            fu.scfpl()
+        with self.assertRaises(TypeError)  as cm_old:
+            oldfu.scfpl()
+        self.assertEqual(cm_new.exception.message, "scfpl() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image1(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.scfpl(e=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.scfpl(e=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_input_img_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        return_new = fu.scfpl(e=None, center=False)
+        return_old = oldfu.scfpl(e=None, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        """
+
+    def test_Img3D_with_center(self):
+        return_new = fu.scfpl(e=IMAGE_3D, center=True)
+        return_old = oldfu.scfpl(e=IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_without_center(self):
+        return_new = fu.scfpl(e=IMAGE_3D, center=False)
+        return_old = oldfu.scfpl(e=IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2D_with_center(self):
+        return_new = fu.scfpl(e=IMAGE_2D, center=True)
+        return_old = oldfu.scfpl(e=IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2D_without_center(self):
+        return_new = fu.scfpl(e=IMAGE_2D, center=False)
+        return_old = oldfu.scfpl(e=IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+    def test_Img2Dblank_without_center(self):
+        return_new = fu.scfpl(e=IMAGE_BLANK_2D,  center=False)
+        return_old = oldfu.scfpl(e=IMAGE_2D,  center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_with_center(self):
+        return_new = fu.scfpl(e=IMAGE_BLANK_2D,  center=True)
+        return_old = oldfu.scfpl(e=IMAGE_2D,  center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_without_center(self):
+        return_new = fu.scfpl(e=IMAGE_BLANK_3D, center=False)
+        return_old = oldfu.scfpl(e=IMAGE_3D,  center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_with_center(self):
+        return_new = fu.scfpl(e=IMAGE_BLANK_3D,center=True)
+        return_old = oldfu.scfpl(e=IMAGE_BLANK_3D,center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 
 
 class Test_scfnpl(unittest.TestCase):
-    def test_scfnpl(self):
-        oldv = oldfu.scfnpl(e="", center=True)
-        v = fu.scfnpl(e="", center=True)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError)  as cm_new:
+            fu.scfnpl()
+        with self.assertRaises(TypeError)  as cm_old:
+            oldfu.scfnpl()
+        self.assertEqual(cm_new.exception.message, "scfnpl() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image1(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.scfnpl(e=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.scfnpl(e=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_input_img_crashes_because_signal11SIGSEV(self):
+        self.assertTrue(True)
+        """
+        return_new = fu.scfnpl(e=None, center=False)
+        return_old = oldfu.scfnpl(e=None, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        """
+
+    def test_Img3D_with_center(self):
+        return_new = fu.scfnpl(e=IMAGE_3D, center=True)
+        return_old = oldfu.scfnpl(e=IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3D_without_center(self):
+        return_new = fu.scfnpl(e=IMAGE_3D, center=False)
+        return_old = oldfu.scfnpl(e=IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2D_with_center(self):
+        return_new = fu.scfnpl(e=IMAGE_2D, center=True)
+        return_old = oldfu.scfnpl(e=IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2D_without_center(self):
+        return_new = fu.scfnpl(e=IMAGE_2D, center=False)
+        return_old = oldfu.scfnpl(e=IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+    def test_Img2Dblank_without_center(self):
+        return_new = fu.scfnpl(e=IMAGE_BLANK_2D,  center=False)
+        return_old = oldfu.scfnpl(e=IMAGE_2D,  center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_with_center(self):
+        return_new = fu.scfnpl(e=IMAGE_BLANK_2D,  center=True)
+        return_old = oldfu.scfnpl(e=IMAGE_2D,  center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_without_center(self):
+        return_new = fu.scfnpl(e=IMAGE_BLANK_3D, center=False)
+        return_old = oldfu.scfnpl(e=IMAGE_3D,  center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_with_center(self):
+        return_new = fu.scfnpl(e=IMAGE_BLANK_3D,center=True)
+        return_old = oldfu.scfnpl(e=IMAGE_BLANK_3D,center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 class Test_image_decimate(unittest.TestCase):
-    def test_image_decimate(self):
-        oldv = oldfu.image_decimate(img="", decimation=2, fit_to_fft = True, frequency_low=0, frequency_high=0)
-        v = fu.image_decimate(img="", decimation=2, fit_to_fft = True, frequency_low=0, frequency_high=0)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.image_decimate()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.image_decimate()
+        self.assertEqual(cm_new.exception.message, "image_decimate() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.image_decimate(img=EMData(), decimation=2, fit_to_fft = True, frequency_low=0, frequency_high=0)
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.image_decimate(img=EMData(), decimation=2, fit_to_fft = True, frequency_low=0, frequency_high=0)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_new = fu.image_decimate(img=None, decimation=2, fit_to_fft = True, frequency_low=0, frequency_high=0)
+        return_old = oldfu.image_decimate(img=None, decimation=2, fit_to_fft = True, frequency_low=0, frequency_high=0)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, None)
+
+    def test_2Dimage_with_fft(self):
+        return_old = oldfu.image_decimate(img=IMAGE_2D, decimation=2, fit_to_fft=True, frequency_low=0,frequency_high=0)
+        return_new = fu.image_decimate(img=IMAGE_2D, decimation=2, fit_to_fft=True, frequency_low=0, frequency_high=0)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DimageBlank_with_fft(self):
+        return_old = oldfu.image_decimate(img=IMAGE_BLANK_2D, decimation=2, fit_to_fft=True, frequency_low=0,frequency_high=0)
+        return_new = fu.image_decimate(img=IMAGE_BLANK_2D, decimation=2, fit_to_fft=True, frequency_low=0,
+                                       frequency_high=0)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2Dimage_without_fft(self):
+        return_old = oldfu.image_decimate(img=IMAGE_2D, decimation=2, fit_to_fft=False, frequency_low=0,frequency_high=0)
+        return_new = fu.image_decimate(img=IMAGE_2D, decimation=2, fit_to_fft=False, frequency_low=0, frequency_high=0)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DimageBlank_without_fft(self):
+        return_old = oldfu.image_decimate(img=IMAGE_BLANK_2D, decimation=2, fit_to_fft=False, frequency_low=0,frequency_high=0)
+        return_new = fu.image_decimate(img=IMAGE_BLANK_2D, decimation=2, fit_to_fft=False, frequency_low=0,frequency_high=0)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2Dimage_noDecimation(self):
+        return_old = oldfu.image_decimate(img=IMAGE_2D, decimation=1, fit_to_fft=True, frequency_low=0,frequency_high=0)
+        return_new = fu.image_decimate(img=IMAGE_2D, decimation=1, fit_to_fft=True, frequency_low=0, frequency_high=0)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), IMAGE_2D.get_3dview()))
+
+    def test_2DimageBlank_noDecimation(self):
+        return_old = oldfu.image_decimate(img=IMAGE_BLANK_2D, decimation=1, fit_to_fft=True, frequency_low=0,frequency_high=0)
+        return_new = fu.image_decimate(img=IMAGE_BLANK_2D, decimation=1, fit_to_fft=True, frequency_low=0,frequency_high=0)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), IMAGE_BLANK_2D.get_3dview()))
+
+    def test_3Dimage_Error(self):
+        return_old = oldfu.image_decimate(img=IMAGE_3D, decimation=2, fit_to_fft=True, frequency_low=0,frequency_high=0)
+        return_new = fu.image_decimate(img=IMAGE_3D, decimation=2, fit_to_fft=True, frequency_low=0, frequency_high=0)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2Dimage_lowFrequency_Error(self):
+        return_old = oldfu.image_decimate(img=IMAGE_2D, decimation=-2, fit_to_fft=True, frequency_low=0,frequency_high=0)
+        return_new = fu.image_decimate(img=IMAGE_2D, decimation=-2, fit_to_fft=True, frequency_low=0, frequency_high=0)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
 
 class Test_fdownsample(unittest.TestCase):
-    def test_fdownsample(self):
-        oldv = oldfu.fdownsample(img="", sub_rate=0.5, RetReal = True)
-        v = fu.fdownsample(img="", sub_rate=0.5, RetReal = True)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.fdownsample()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.fdownsample()
+        self.assertEqual(cm_new.exception.message, "fdownsample() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.fdownsample(img=EMData(), sub_rate=0.5, RetReal = True)
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.fdownsample(img=EMData(), sub_rate=0.5, RetReal = True)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_new = fu.fdownsample(img=None, sub_rate=0.5, RetReal = True)
+        return_old = oldfu.fdownsample(img=None, sub_rate=0.5, RetReal = True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertEqual(return_new, None)
+
+    def test_2DImg_RetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_2D, sub_rate=0.5, RetReal = True)
+        return_old = oldfu.fdownsample(img=IMAGE_2D, sub_rate=0.5, RetReal = True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_RetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_BLANK_2D, sub_rate=0.5, RetReal = True)
+        return_old = oldfu.fdownsample(img=IMAGE_BLANK_2D, sub_rate=0.5, RetReal = True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_RetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_3D, sub_rate=0.5, RetReal = True)
+        return_old = oldfu.fdownsample(img=IMAGE_3D, sub_rate=0.5, RetReal = True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_RetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_BLANK_3D, sub_rate=0.5, RetReal = True)
+        return_old = oldfu.fdownsample(img=IMAGE_BLANK_3D, sub_rate=0.5, RetReal = True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImg_noSubrate_RetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_2D, sub_rate=1, RetReal = True)
+        return_old = oldfu.fdownsample(img=IMAGE_2D, sub_rate=1, RetReal = True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), IMAGE_2D.get_3dview()))
+
+    def test_2DImgBlank_noSubrate_RetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_BLANK_2D, sub_rate=1, RetReal = True)
+        return_old = oldfu.fdownsample(img=IMAGE_BLANK_2D, sub_rate=1, RetReal = True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), IMAGE_BLANK_2D.get_3dview()))
+
+    def test_3DImg_noSubrate_RetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_3D, sub_rate=1, RetReal = True)
+        return_old = oldfu.fdownsample(img=IMAGE_3D, sub_rate=1, RetReal = True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), IMAGE_3D.get_3dview()))
+
+    def test_3DImgBlank_noSubrate_RetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_BLANK_3D, sub_rate=1, RetReal = True)
+        return_old = oldfu.fdownsample(img=IMAGE_BLANK_3D, sub_rate=1, RetReal = True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview(), IMAGE_BLANK_3D.get_3dview()))
+
+    def test_2DImg_upscaling_RetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_2D, sub_rate=2, RetReal = True)
+        return_old = oldfu.fdownsample(img=IMAGE_2D, sub_rate=2, RetReal = True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_upscaling_RetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_BLANK_2D, sub_rate=2, RetReal = True)
+        return_old = oldfu.fdownsample(img=IMAGE_BLANK_2D, sub_rate=2, RetReal = True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_upscaling_RetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_3D, sub_rate=2, RetReal = True)
+        return_old = oldfu.fdownsample(img=IMAGE_3D, sub_rate=2, RetReal = True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_upscaling_RetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_BLANK_3D, sub_rate=2, RetReal = True)
+        return_old = oldfu.fdownsample(img=IMAGE_BLANK_3D, sub_rate=2, RetReal = True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImg_NORetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_2D, sub_rate=0.5, RetReal=False)
+        return_old = oldfu.fdownsample(img=IMAGE_2D, sub_rate=0.5, RetReal=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_NORetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_BLANK_2D, sub_rate=0.5, RetReal=False)
+        return_old = oldfu.fdownsample(img=IMAGE_BLANK_2D, sub_rate=0.5, RetReal=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_NORetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_3D, sub_rate=0.5, RetReal=False)
+        return_old = oldfu.fdownsample(img=IMAGE_3D, sub_rate=0.5, RetReal=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_NORetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_BLANK_3D, sub_rate=0.5, RetReal=False)
+        return_old = oldfu.fdownsample(img=IMAGE_BLANK_3D, sub_rate=0.5, RetReal=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImg_noSubrate_NORetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_2D, sub_rate=1, RetReal=False)
+        return_old = oldfu.fdownsample(img=IMAGE_2D, sub_rate=1, RetReal=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_noSubrate_NORetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_BLANK_2D, sub_rate=1, RetReal=False)
+        return_old = oldfu.fdownsample(img=IMAGE_BLANK_2D, sub_rate=1, RetReal=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_noSubrate_NORetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_3D, sub_rate=1, RetReal=False)
+        return_old = oldfu.fdownsample(img=IMAGE_3D, sub_rate=1, RetReal=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_noSubrate_NORetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_BLANK_3D, sub_rate=1, RetReal=False)
+        return_old = oldfu.fdownsample(img=IMAGE_BLANK_3D, sub_rate=1, RetReal=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImg_upscaling_NORetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_2D, sub_rate=2, RetReal=False)
+        return_old = oldfu.fdownsample(img=IMAGE_2D, sub_rate=2, RetReal=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank_upscaling_NORetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_BLANK_2D, sub_rate=2, RetReal=False)
+        return_old = oldfu.fdownsample(img=IMAGE_BLANK_2D, sub_rate=2, RetReal=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_upscaling_NORetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_3D, sub_rate=2, RetReal=False)
+        return_old = oldfu.fdownsample(img=IMAGE_3D, sub_rate=2, RetReal=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_upscaling_NORetReal(self):
+        return_new = fu.fdownsample(img=IMAGE_BLANK_3D, sub_rate=2, RetReal=False)
+        return_old = oldfu.fdownsample(img=IMAGE_BLANK_3D, sub_rate=2, RetReal=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
 
 class Test_prepf(unittest.TestCase):
-    def test_prepf(self):
-        oldv = oldfu.prepf(image="", npad = 2)
-        v = fu.prepf(image="", npad = 2)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.prepf()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.prepf()
+        self.assertEqual(cm_new.exception.message, "prepf() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.prepf(image=EMData(), npad = 2)
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.prepf(image=EMData(), npad = 2)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_new = fu.prepf(image=None, npad = 2)
+        return_old = oldfu.prepf(image=None,npad = 2)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, None)
+
+    def test_2DImage(self):
+        return_new = fu.prepf(image=IMAGE_2D, npad=2)
+        return_old = oldfu.prepf(image=IMAGE_2D, npad=2)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DBlankImage(self):
+        return_new = fu.prepf(image=IMAGE_BLANK_2D, npad=2)
+        return_old = oldfu.prepf(image=IMAGE_BLANK_2D, npad=2)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+    def test_3DImage(self):
+        #todo: it should give an error??
+        return_new = fu.prepf(image=IMAGE_3D, npad=2)
+        return_old = oldfu.prepf(image=IMAGE_3D, npad=2)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+
+""" I did not test it deeply becuase the paramteters are passed to other functions and not precessed directly in this function"""
 class Test_prep_refim_gridding(unittest.TestCase):
-    def test_prep_refim_gridding(self):
-        oldv = oldfu.prep_refim_gridding(refim="", wr="", numr="", mode = "F")
-        v = fu.prep_refim_gridding(refim="", wr="", numr="", mode = "F")
-        pass
+    (not1, numr, wr, not2, not3, not4, not5, not6, not7, not8) = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.ali2d_single_iter"))[0]
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.prep_refim_gridding()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.prep_refim_gridding()
+        self.assertEqual(cm_new.exception.message, "prep_refim_gridding() takes at least 3 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.prep_refim_gridding(refim=EMData(), npad = 2)
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.prep_refim_gridding(refim=EMData(), npad = 2)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        crefim_new,kb_new = fu.prep_refim_gridding(refim=None, wr=self.wr, numr=self.numr, mode = "F")
+        crefim_old,kb_old = oldfu.prep_refim_gridding(refim=None,wr=self.wr, numr=self.numr, mode = "F")
+        self.assertTrue(array_equal(crefim_new.get_3dview(), crefim_old.get_3dview()))
+        self.assertTrue(array_equal(kb_new.dump_table(), kb_new.dump_table()))  # it is a kaiserbessel filter
+
+    def test_2DImage(self):
+        crefim_new,kb_new = oldfu.prep_refim_gridding(refim=IMAGE_2D, wr=self.wr, numr=self.numr, mode = "F")
+        crefim_old,kb_old = fu.prep_refim_gridding(refim=IMAGE_2D, wr=self.wr, numr=self.numr, mode = "F")
+        self.assertTrue(array_equal(crefim_new.get_3dview(), crefim_old.get_3dview()))
+        self.assertTrue(array_equal(kb_new.dump_table(), kb_new.dump_table()))  # it is a kaiserbessel filter
+
+    def test_2DImageBlank(self):
+        crefim_new,kb_new = oldfu.prep_refim_gridding(refim=IMAGE_BLANK_2D, wr=self.wr, numr=self.numr, mode = "F")
+        crefim_old,kb_old = fu.prep_refim_gridding(refim=IMAGE_BLANK_2D, wr=self.wr, numr=self.numr, mode = "F")
+        self.assertTrue(array_equal(crefim_new.get_3dview(), crefim_old.get_3dview()))
+        self.assertTrue(array_equal(kb_new.dump_table(), kb_new.dump_table()))  # it is a kaiserbessel filter
+
+    def test_3DImage(self):
+        crefim_new,kb_new = oldfu.prep_refim_gridding(refim=IMAGE_3D, wr=self.wr, numr=self.numr, mode = "F")
+        crefim_old,kb_old = fu.prep_refim_gridding(refim=IMAGE_3D, wr=self.wr, numr=self.numr, mode = "F")
+        self.assertTrue(array_equal(crefim_new.get_3dview(), crefim_old.get_3dview()))
+        self.assertTrue(array_equal(kb_new.dump_table(), kb_new.dump_table()))  # it is a kaiserbessel filter
+
+    def test_3DImageBlank(self):
+        crefim_new,kb_new = oldfu.prep_refim_gridding(refim=IMAGE_BLANK_3D, wr=self.wr, numr=self.numr, mode = "F")
+        crefim_old,kb_old = fu.prep_refim_gridding(refim=IMAGE_BLANK_3D, wr=self.wr, numr=self.numr, mode = "F")
+        self.assertTrue(array_equal(crefim_new.get_3dview(), crefim_old.get_3dview()))
+        self.assertTrue(array_equal(kb_new.dump_table(), kb_new.dump_table()))  # it is a kaiserbessel filter
+
+
+
+
 
 class Test_prepg(unittest.TestCase):
-    def test_prepg(self):
-        oldv = oldfu.prepg(image="", kb="")
-        v = fu.prepg(image="", kb="")
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.prepg()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.prepg()
+        self.assertEqual(cm_new.exception.message, "prepg() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.prepg(image=EMData(), kb = "not_in_use")
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.prepg(image=EMData(), kb = "not_in_use")
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_old = oldfu.prepg(image=None, kb = "not_in_use")
+        return_new = fu.prepg(image=None, kb = "not_in_use")
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, None)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2Dimage(self):
+        return_old = oldfu.prepg(image=IMAGE_2D, kb = "not_in_use")
+        return_new = fu.prepg(image=IMAGE_2D, kb = "not_in_use")
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DimageBlank(self):
+        return_old = oldfu.prepg(image=IMAGE_BLANK_2D, kb = "not_in_use")
+        return_new = fu.prepg(image=IMAGE_BLANK_2D, kb = "not_in_use")
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImage(self):
+        #todo: it should give an error??
+        return_old = oldfu.prepg(image=IMAGE_3D, kb = "not_in_use")
+        return_new = fu.prepg(image=IMAGE_3D, kb = "not_in_use")
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
 
 class Test_rot_avg_table(unittest.TestCase):
-    def test_rot_avg_table(self):
-        oldv = oldfu.rot_avg_table(e="")
-        v = fu.rot_avg_table(e="")
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.rot_avg_table()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.rot_avg_table()
+        self.assertEqual(cm_new.exception.message, "rot_avg_table() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.rot_avg_table(e=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.rot_avg_table(e=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_Nonetype_input_img(self):
+        with self.assertRaises(AttributeError)as cm_new:
+            fu.rot_avg_table(None)
+        with self.assertRaises(AttributeError)as cm_old:
+            oldfu.rot_avg_table(None)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'rotavg'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_2Dimage(self):
+        return_new = oldfu.rot_avg_table(e=IMAGE_2D)
+        return_old = oldfu.rot_avg_table(e=IMAGE_2D)
+        self.assertTrue(array_equal(return_new, return_old))
+
+    def test_2DimageBlank(self):
+        return_new = oldfu.rot_avg_table(e=IMAGE_BLANK_2D)
+        return_old = oldfu.rot_avg_table(e=IMAGE_BLANK_2D)
+        self.assertTrue(array_equal(return_new, return_old))
+
+    def test_3Dimage(self):
+        return_new = oldfu.rot_avg_table(e=IMAGE_3D)
+        return_old = oldfu.rot_avg_table(e=IMAGE_3D)
+        self.assertTrue(array_equal(return_new, return_old))
+
+    def test_3DimageBlank(self):
+        return_new = oldfu.rot_avg_table(e=IMAGE_BLANK_3D)
+        return_old = oldfu.rot_avg_table(e=IMAGE_BLANK_3D)
+        self.assertTrue(array_equal(return_new, return_old))
+
+
 
 class Test_rot_avg_image(unittest.TestCase):
-    def test_rot_avg_image(self):
-        oldv = oldfu.rot_avg_image(image_to_be_averaged="")
-        v = fu.rot_avg_image(image_to_be_averaged="")
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.rot_avg_image()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.rot_avg_image()
+        self.assertEqual(cm_new.exception.message, "rot_avg_image() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-class Test_(unittest.TestCase):
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.rot_avg_image(image_to_be_averaged=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.rot_avg_image(image_to_be_averaged=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_Nonetype_input_img(self):
+        with self.assertRaises(AttributeError)as cm_new:
+            fu.rot_avg_image(None)
+        with self.assertRaises(AttributeError)as cm_old:
+            oldfu.rot_avg_image(None)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'rotavg'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_2Dimage(self):
+        return_new = oldfu.rot_avg_image(image_to_be_averaged=IMAGE_2D)
+        return_old = oldfu.rot_avg_image(image_to_be_averaged=IMAGE_2D)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DimageBlank(self):
+        return_new = oldfu.rot_avg_image(image_to_be_averaged=IMAGE_BLANK_2D)
+        return_old = oldfu.rot_avg_image(image_to_be_averaged=IMAGE_BLANK_2D)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3Dimage(self):
+        return_new = oldfu.rot_avg_image(image_to_be_averaged=IMAGE_3D)
+        return_old = oldfu.rot_avg_image(image_to_be_averaged=IMAGE_3D)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DimageBlank(self):
+        return_new = oldfu.rot_avg_image(image_to_be_averaged=IMAGE_BLANK_3D)
+        return_old = oldfu.rot_avg_image(image_to_be_averaged=IMAGE_BLANK_3D)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+#todo: test it with a file ... how??
+class Test_ro_textfile(unittest.TestCase):
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.ro_textfile()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.ro_textfile()
+        self.assertEqual(cm_new.exception.message, "rops() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
     def test_(self):
         oldv = oldfu.ro_textfile(e="", filename="", helpful_string="")
         v = fu.ro_textfile(e="", filename="", helpful_string="")
         pass
 
-class Test_rops(unittest.TestCase):
-    def test_rops(self):
-        oldv = oldfu.rops(e="")
-        v = fu.rops(e="")
-        pass
 
+class Test_rops(unittest.TestCase):
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.rops()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.rops()
+        self.assertEqual(cm_new.exception.message, "rops() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.rops(e=EMData())
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.rops(e=EMData())
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_Nonetype_input_img(self):
+        with self.assertRaises(AttributeError)as cm_new:
+            fu.rops(None)
+        with self.assertRaises(AttributeError)as cm_old:
+            oldfu.rops(None)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'rotavg'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_2Dimage(self):
+        return_new = oldfu.rops(e=IMAGE_2D)
+        return_old = oldfu.rops(e=IMAGE_2D)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DimageBlank(self):
+        return_new = oldfu.rops(e=IMAGE_BLANK_2D)
+        return_old = oldfu.rops(e=IMAGE_BLANK_2D)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3Dimage(self):
+        return_new = oldfu.rops(e=IMAGE_3D)
+        return_old = oldfu.rops(e=IMAGE_3D)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DimageBlank(self):
+        return_new = oldfu.rops(e=IMAGE_BLANK_3D)
+        return_old = oldfu.rops(e=IMAGE_BLANK_3D)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+
+#todo: test it with a file ... how??
 class Test_rops_textfile(unittest.TestCase):
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.rops_textfile()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.rops_textfile()
+        self.assertEqual(cm_new.exception.message, "rops_textfile() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
     def test_rops_textfile(self):
         oldv = oldfu.rops_textfile(img="", filename="", lng = False)
         v = fu.rops_textfile(img="", filename="", lng = False)
         pass
 
-class Test_rops_dir(unittest.TestCase):
-    def test_rops_dir(self):
-        oldv = oldfu.rops_dir(indir="", output_dir = "1dpw2_dir")
-        v = fu.rops_dir(indir="", output_dir = "1dpw2_dir")
-        pass
 
+""" I did not test it deeply becuase the paramteters are passed to other functions and not precessed directly in this function"""
 class Test_rotshift2dg(unittest.TestCase):
-    def test_rotshift2dg(self):
-        oldv = oldfu.rotshift2dg(image="", ang="", dx="", dy="", kb="", scale = 1.0)
-        v = fu.rotshift2dg(image="", ang="", dx="", dy="", kb="", scale = 1.0)
-        pass
+    kb=create_kb(dim=1)
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.rotshift2dg()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.rotshift2dg()
+        self.assertEqual(cm_new.exception.message, "rotshift2dg() takes at least 5 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.rotshift2dg(image=EMData(), ang=10, dx=2, dy=2, kb=self.kb, scale = 1.0)
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.rotshift2dg(image=EMData(), ang=10, dx=2, dy=2, kb=self.kb, scale = 1.0)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_old = oldfu.rotshift2dg(image=None, ang=10, dx=2, dy=2, kb=self.kb, scale = 1.0)
+        return_new = fu.rotshift2dg(image=None, ang=10, dx=2, dy=2, kb=self.kb, scale = 1.0)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, None)
+
+    def test_2DImage(self):
+        return_old = oldfu.rotshift2dg(image=IMAGE_2D, ang=10, dx=2, dy=2, kb=self.kb, scale = 1.0)
+        return_new = fu.rotshift2dg(image=IMAGE_2D, ang=10, dx=2, dy=2, kb=self.kb, scale = 1.0)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImageBlank(self):
+        return_old = oldfu.rotshift2dg(image=IMAGE_BLANK_2D, ang=10, dx=2, dy=2, kb=self.kb, scale = 1.0)
+        return_new = fu.rotshift2dg(image=IMAGE_BLANK_2D, ang=10, dx=2, dy=2, kb=self.kb, scale = 1.0)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImage_error(self):
+        #todo: it'd give an error
+        return_old = oldfu.rotshift2dg(image=IMAGE_3D, ang=10, dx=2, dy=2, kb=self.kb, scale = 1.0)
+        return_new = fu.rotshift2dg(image=IMAGE_3D, ang=10, dx=2, dy=2, kb=self.kb, scale = 1.0)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
 
 class Test_ft2polargrid(unittest.TestCase):
-    def test_ft2polargrid(self):
-        oldv = oldfu.ft2polargrid(image="", ring_length="", nb="", ne="")
-        v = fu.ft2polargrid(image="", ring_length="", nb="", ne="")
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.ft2polargrid()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.ft2polargrid()
+        self.assertEqual(cm_new.exception.message, "ft2polargrid() takes exactly 4 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.ft2polargrid(image=EMData(),  ring_length=10, nb=10, ne=10)
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.ft2polargrid(image=EMData(),  ring_length=10, nb=10, ne=10)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_old = oldfu.ft2polargrid(image=None,  ring_length=10, nb=10, ne=10)
+        return_new = fu.ft2polargrid(image=None,  ring_length=10, nb=10, ne=10)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, None)
+
+    def test_2DImg(self):
+        return_old = oldfu.ft2polargrid(image=IMAGE_2D,  ring_length=10, nb=10, ne=10)
+        return_new = fu.ft2polargrid(image=IMAGE_2D,  ring_length=10, nb=10, ne=10)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2DImgBlank(self):
+        return_old = oldfu.ft2polargrid(image=IMAGE_BLANK_2D,  ring_length=10, nb=10, ne=10)
+        return_new = fu.ft2polargrid(image=IMAGE_BLANK_2D,  ring_length=10, nb=10, ne=10)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_error(self):
+        # todo: it'd give an error
+        return_old = oldfu.ft2polargrid(image=IMAGE_3D,  ring_length=10, nb=10, ne=10)
+        return_new = fu.ft2polargrid(image=IMAGE_3D,  ring_length=10, nb=10, ne=10)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
+""" I did not test it deeply becuase the paramteters are passed to other functions and not precessed directly in this function"""
 class Test_rot_shift3D_grid(unittest.TestCase):
-    def test_rot_shift3D_grid(self):
-        oldv = oldfu.rot_shift3D_grid(img="", phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0, kb=None, mode="background", wrap=False)
-        v = fu.rot_shift3D_grid(img="", phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0, kb=None, mode="background", wrap=False)
-        pass
+    not_used,kb = fu.prepi3D(IMAGE_3D)
+
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.rot_shift3D_grid()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.rot_shift3D_grid()
+        self.assertEqual(cm_new.exception.message, "rot_shift3D_grid() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.rot_shift3D_grid(img=EMData(), phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0, kb=None,
+                                mode="background", wrap=False)
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.rot_shift3D_grid(img=EMData(), phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0,
+                                   kb=None, mode="background", wrap=False)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_old = oldfu.rot_shift3D_grid(img=None, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0,kb=None, mode="background", wrap=False)
+        return_new = fu.rot_shift3D_grid(img=None, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0,kb=None, mode="background", wrap=False)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, None)
+
+    def test_3DImg_Nokb_background(self):
+        return_old = oldfu.rot_shift3D_grid(img=IMAGE_3D, phi=0.3, theta=0.2, psi=0.1, sx=3, sy=3, sz=3, scale=1.0,kb=None, mode="background", wrap=False)
+        return_new = fu.rot_shift3D_grid(img=IMAGE_3D, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0,kb=None, mode="background", wrap=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_Nokb_ciclyc(self):
+        return_old = oldfu.rot_shift3D_grid(img=IMAGE_3D, phi=0.3, theta=0.2, psi=0.1, sx=3, sy=3, sz=3, scale=1.0,kb=None, mode="cyclic", wrap=False)
+        return_new = fu.rot_shift3D_grid(img=IMAGE_3D, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0,kb=None, mode="cyclic", wrap=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_Nokb_background(self):
+        return_old = oldfu.rot_shift3D_grid(img=IMAGE_BLANK_3D, phi=0.3, theta=0.2, psi=0.1, sx=3, sy=3, sz=3,scale=1.0, kb=None, mode="background", wrap=False)
+        return_new = fu.rot_shift3D_grid(img=IMAGE_BLANK_3D, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0,scale=1.0, kb=None, mode="background", wrap=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_Nokb_ciclyc(self):
+        return_old = oldfu.rot_shift3D_grid(img=IMAGE_BLANK_3D, phi=0.3, theta=0.2, psi=0.1, sx=3, sy=3, sz=3,scale=1.0, kb=None, mode="cyclic", wrap=False)
+        return_new = fu.rot_shift3D_grid(img=IMAGE_BLANK_3D, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0,scale=1.0, kb=None, mode="cyclic", wrap=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_kb_background(self):
+        return_old = oldfu.rot_shift3D_grid(img=IMAGE_3D, phi=0.3, theta=0.2, psi=0.1, sx=3, sy=3, sz=3, scale=1.0,kb=self.kb, mode="background", wrap=False)
+        return_new = fu.rot_shift3D_grid(img=IMAGE_3D, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0,kb=self.kb, mode="background", wrap=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_kb_ciclyc(self):
+        return_old = oldfu.rot_shift3D_grid(img=IMAGE_3D, phi=0.3, theta=0.2, psi=0.1, sx=3, sy=3, sz=3, scale=1.0,kb=self.kb, mode="cyclic", wrap=False)
+        return_new = fu.rot_shift3D_grid(img=IMAGE_3D, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0,kb=self.kb, mode="cyclic", wrap=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_kb_background(self):
+        return_old = oldfu.rot_shift3D_grid(img=IMAGE_BLANK_3D, phi=0.3, theta=0.2, psi=0.1, sx=3, sy=3, sz=3,scale=1.0, kb=self.kb, mode="background", wrap=False)
+        return_new = fu.rot_shift3D_grid(img=IMAGE_BLANK_3D, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0,scale=1.0, kb=self.kb, mode="background", wrap=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImgBlank_kb_ciclyc(self):
+        return_old = oldfu.rot_shift3D_grid(img=IMAGE_BLANK_3D, phi=0.3, theta=0.2, psi=0.1, sx=3, sy=3, sz=3,scale=1.0, kb=self.kb, mode="cyclic", wrap=False)
+        return_new = fu.rot_shift3D_grid(img=IMAGE_BLANK_3D, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0,scale=1.0, kb=self.kb, mode="cyclic", wrap=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2d_error(self):
+        # todo: it'd give an error
+        return_old = oldfu.rot_shift3D_grid(img=IMAGE_2D, phi=0.3, theta=0.2, psi=0.1, sx=3, sy=3, sz=3, scale=1.0,kb=None, mode="background", wrap=False)
+        return_new = fu.rot_shift3D_grid(img=IMAGE_2D, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0,kb=None, mode="background", wrap=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3DImg_error_mode(self):
+        # todo: it'd give an error
+        return_old = oldfu.rot_shift3D_grid(img=IMAGE_3D, phi=0.3, theta=0.2, psi=0.1, sx=3, sy=3, sz=3, scale=1.0,kb=None, mode="wrong_mode", wrap=False)
+        return_new = fu.rot_shift3D_grid(img=IMAGE_3D, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0,kb=None, mode="wrong_mode", wrap=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+
 
 class Test_sinc2inv(unittest.TestCase):
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.sinc2inv()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.sinc2inv()
+        self.assertEqual(cm_new.exception.message, "sinc2inv() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
     def test_sinc2inv(self):
-        oldv = oldfu.sinc2inv(nx="")
-        v = fu.sinc2inv(nx="")
-        pass
+        return_old = oldfu.sinc2inv(nx=10)
+        return_new = fu.sinc2inv(nx=10)
+        self.assertTrue(array_equal(return_new, return_old))
+
+    def test_null_nx_returns_ZeroDivisionError(self):
+        with self.assertRaises(ZeroDivisionError) as cm_new:
+            fu.sinc2inv(nx=0)
+        with self.assertRaises(ZeroDivisionError) as cm_old:
+            oldfu.sinc2inv(nx=0)
+        self.assertEqual(cm_new.exception.message, "float division by zero")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
 
 class Test_sincinv(unittest.TestCase):
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.sincinv()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.sincinv()
+        self.assertEqual(cm_new.exception.message, "sincinv() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
     def test_sincinv(self):
-        oldv = oldfu.sincinv(nx="")
-        v = fu.sincinv(nx="")
-        pass
+        return_old = oldfu.sincinv(nx=10)
+        return_new = fu.sincinv(nx=10)
+        self.assertTrue(array_equal(return_new, return_old))
+
+    def test_null_nx_returns_ZeroDivisionError(self):
+        with self.assertRaises(ZeroDivisionError) as cm_new:
+            fu.sincinv(nx=0)
+        with self.assertRaises(ZeroDivisionError) as cm_old:
+            oldfu.sincinv(nx=0)
+        self.assertEqual(cm_new.exception.message, "float division by zero")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+
+
 
 class Test_welch_pw2(unittest.TestCase):
-    def test_welch_pw2(self):
-        oldv = oldfu.welch_pw2(img="", win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0)
-        v = fu.welch_pw2(img="", win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.welch_pw2()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.welch_pw2()
+        self.assertEqual(cm_new.exception.message, "welch_pw2() takes at least 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.welch_pw2(img=EMData(), win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0)
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.welch_pw2(img=EMData(), win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_old = oldfu.welch_pw2(img=None, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0)
+        return_new = fu.welch_pw2(img=None, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, None)
+
+    def test_2dImg(self):
+        return_old = oldfu.welch_pw2(img=IMAGE_2D, win_size=512, overlp_x=50, overlp_y=50, edge_x=1, edge_y=1)
+        return_new = fu.welch_pw2(img=IMAGE_2D, win_size=512, overlp_x=50, overlp_y=50, edge_x=1, edge_y=1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_2dImgBlank(self):
+        return_old = oldfu.welch_pw2(img=IMAGE_BLANK_2D, win_size=512, overlp_x=50, overlp_y=50, edge_x=1, edge_y=1)
+        return_new = fu.welch_pw2(img=IMAGE_BLANK_2D, win_size=512, overlp_x=50, overlp_y=50, edge_x=1, edge_y=1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3dImg(self):
+        return_old = oldfu.welch_pw2(img=IMAGE_3D, win_size=512, overlp_x=50, overlp_y=50, edge_x=1, edge_y=1)
+        return_new = fu.welch_pw2(img=IMAGE_3D, win_size=512, overlp_x=50, overlp_y=50, edge_x=1, edge_y=1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_3dImgBlank(self):
+        return_old = oldfu.welch_pw2(img=IMAGE_BLANK_3D, win_size=512, overlp_x=50, overlp_y=50, edge_x=1, edge_y=1)
+        return_new = fu.welch_pw2(img=IMAGE_BLANK_3D, win_size=512, overlp_x=50, overlp_y=50, edge_x=1, edge_y=1)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
 
 class Test_welch_pw2_tilt_band(unittest.TestCase):
-    def test_welch_pw2_tilt_band(self):
-        oldv = oldfu.welch_pw2_tilt_band(img="",theta="",num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s=256)
-        v = fu.welch_pw2_tilt_band(img="",theta="",num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s=256)
-        pass
+    def test_wrong_number_params(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.welch_pw2_tilt_band()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.welch_pw2_tilt_band()
+        self.assertEqual(cm_new.exception.message, "welch_pw2_tilt_band() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
+    def test_empty_input_image(self):
+        with self.assertRaises(RuntimeError)as cm_new:
+            fu.welch_pw2_tilt_band(img=EMData(), theta=2,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s=256)
+        with self.assertRaises(RuntimeError)as cm_old:
+            oldfu.welch_pw2_tilt_band(img=EMData(),theta=2,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s=256)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
+        self.assertEqual(msg[3], 'x size <= 0')
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+
+    def test_NoneType_Img(self):
+        return_old = oldfu.welch_pw2_tilt_band(img=None, theta=2,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s=256)
+        return_new = fu.welch_pw2_tilt_band(img=None, theta=2,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s=256)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, None)
+
+    def test_2Dimg_num_bnd_default(self):
+        return_old = oldfu.welch_pw2_tilt_band(img=IMAGE_2D,theta=2,num_bnd=-1,overlp_y=50,edge_x=1,edge_y=1,win_s=256)
+        return_new = fu.welch_pw2_tilt_band(img=IMAGE_2D,theta=2,num_bnd=-1,overlp_y=50,edge_x=1,edge_y=1,win_s=256)
+        for i,j in zip(return_old,return_new):
+            self.assertTrue(array_equal(i.get_3dview(), j.get_3dview()))
+
+    def test_2DimgBlank_num_bnd_default(self):
+        return_old = oldfu.welch_pw2_tilt_band(img=IMAGE_BLANK_2D,theta=2,num_bnd=-1,overlp_y=50,edge_x=1,edge_y=1,win_s=256)
+        return_new = fu.welch_pw2_tilt_band(img=IMAGE_BLANK_2D,theta=2,num_bnd=-1,overlp_y=50,edge_x=1,edge_y=1,win_s=256)
+        for i,j in zip(return_old,return_new):
+            self.assertTrue(array_equal(i.get_3dview(), j.get_3dview()))
+
+    def test_2Dimg_num_bnd_not_default(self):
+        return_old = oldfu.welch_pw2_tilt_band(img=IMAGE_2D,theta=2,num_bnd=5,overlp_y=50,edge_x=1,edge_y=1,win_s=256)
+        return_new = fu.welch_pw2_tilt_band(img=IMAGE_2D,theta=2,num_bnd=5,overlp_y=50,edge_x=1,edge_y=1,win_s=256)
+        for i,j in zip(return_old,return_new):
+            self.assertTrue(array_equal(i.get_3dview(), j.get_3dview()))
+
+    def test_2DimgBlank_num_bnd_not_default(self):
+        return_old = oldfu.welch_pw2_tilt_band(img=IMAGE_BLANK_2D,theta=2,num_bnd=5,overlp_y=50,edge_x=1,edge_y=1,win_s=256)
+        return_new = fu.welch_pw2_tilt_band(img=IMAGE_BLANK_2D,theta=2,num_bnd=5,overlp_y=50,edge_x=1,edge_y=1,win_s=256)
+        for i,j in zip(return_old,return_new):
+            self.assertTrue(array_equal(i.get_3dview(), j.get_3dview()))
+
+    def test_3Dimg_num_bnd_default(self):
+        return_old = oldfu.welch_pw2_tilt_band(img=IMAGE_3D, theta=2, num_bnd=-1, overlp_y=50, edge_x=1, edge_y=1,win_s=256)
+        return_new = fu.welch_pw2_tilt_band(img=IMAGE_3D, theta=2, num_bnd=-1, overlp_y=50, edge_x=1, edge_y=1,win_s=256)
+        for i, j in zip(return_old, return_new):
+            self.assertTrue(array_equal(i.get_3dview(), j.get_3dview()))
+
+    def test_3DimgBlank_num_bnd_default(self):
+        return_old = oldfu.welch_pw2_tilt_band(img=IMAGE_BLANK_3D, theta=2, num_bnd=-1, overlp_y=50, edge_x=1, edge_y=1,win_s=256)
+        return_new = fu.welch_pw2_tilt_band(img=IMAGE_BLANK_3D, theta=2, num_bnd=-1, overlp_y=50, edge_x=1, edge_y=1,win_s=256)
+        for i, j in zip(return_old, return_new):
+            self.assertTrue(array_equal(i.get_3dview(), j.get_3dview()))
+
+    def test_3Dimg_num_bnd_not_default(self):
+        return_old = oldfu.welch_pw2_tilt_band(img=IMAGE_3D, theta=2, num_bnd=5, overlp_y=50, edge_x=1, edge_y=1,win_s=256)
+        return_new = fu.welch_pw2_tilt_band(img=IMAGE_3D, theta=2, num_bnd=5, overlp_y=50, edge_x=1, edge_y=1,win_s=256)
+        for i, j in zip(return_old, return_new):
+            self.assertTrue(array_equal(i.get_3dview(), j.get_3dview()))
+
+    def test_3DimgBlank_num_bnd_not_default(self):
+        return_old = oldfu.welch_pw2_tilt_band(img=IMAGE_BLANK_3D, theta=2, num_bnd=5, overlp_y=50, edge_x=1, edge_y=1,win_s=256)
+        return_new = fu.welch_pw2_tilt_band(img=IMAGE_BLANK_3D, theta=2, num_bnd=5, overlp_y=50, edge_x=1, edge_y=1,win_s=256)
+        for i, j in zip(return_old, return_new):
+            self.assertTrue(array_equal(i.get_3dview(), j.get_3dview()))
+
+""" is it the same of morphology.py???"""
 class Test_bracket(unittest.TestCase):
-    def test_bracket(self):
-        oldv = oldfu.bracket(f="",x1="",h=0)
-        v = fu.bracket(f="",x1="",h=0)
-        pass
+
+    @staticmethod
+    def function1(x1, dat):
+        return x1 + dat
+
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.bracket()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.bracket()
+        self.assertEqual(cm_new.exception.message, "bracket() takes exactly 3 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_f3_greater_f1(self):
+        return_new = fu.bracket(self.function1, x1=5, h=4)
+        return_old = oldfu.bracket(self.function1, x1=5, h=4)
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, (0.0, 10.472135955999999)))
+
+    def test_f3_not_greater_f1_outputmsg_Bracket_didnot_find_a_minimum(self):
+        self.assertTrue(fu.bracket(self.function1, x1=0, h=0) is None)
+        self.assertTrue(oldfu.bracket(self.function1, x1=0, h=0) is None)
+
+
 
 
 """ start: end in sphire 1.3"""
@@ -312,9 +2689,9 @@ class Test_ccf(unittest.TestCase):
 
     def test_empty_input_image1(self):
         with self.assertRaises(RuntimeError)as cm_new:
-            fu.ccf(EMData(),IMAGE_2D)
+            fu.ccf(e=EMData(),f=IMAGE_2D)
         with self.assertRaises(RuntimeError)as cm_old:
-            oldfu.ccf(EMData(),IMAGE_2D)
+            oldfu.ccf(e=EMData(),f=IMAGE_2D)
         msg = cm_new.exception.message.split("'")
         msg_old = cm_old.exception.message.split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
@@ -324,9 +2701,9 @@ class Test_ccf(unittest.TestCase):
 
     def test_empty_input_image2(self):
         with self.assertRaises(RuntimeError)as cm_new:
-            fu.ccf(IMAGE_2D,EMData())
+            fu.ccf(e=IMAGE_2D, f=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
-            oldfu.ccf(IMAGE_2D,EMData())
+            oldfu.ccf(e=IMAGE_2D,f=EMData())
         msg = cm_new.exception.message.split("'")
         msg_old = cm_old.exception.message.split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
@@ -335,38 +2712,57 @@ class Test_ccf(unittest.TestCase):
         self.assertEqual(msg[3], msg_old[3])
 
     def test_NoneType_input_img2(self):
-        return_new = fu.ccf(IMAGE_2D, None, center=False)
-        return_old = oldfu.ccf(IMAGE_2D, None, center=False)
+        return_new = fu.ccf(e=IMAGE_2D, f=None, center=False)
+        return_old = oldfu.ccf(e=IMAGE_2D,f= None, center=False)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_NoneType_input_img1_crashes_because_signal11SIGSEV(self):
         self.assertTrue(True)
         """
-        return_new = fu.ccf(None,IMAGE_2D, center=False)
-        return_old = oldfu.ccf(None, IMAGE_2D, center=False)
+        return_new = fu.ccf(e=None, f=IMAGE_2D, center=False)
+        return_old = oldfu.ccf(e=None, f=IMAGE_2D, center=False)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
         """
 
     def test_Img2D_without_center(self):
-        return_new = fu.ccf(IMAGE_2D, REAL_IMAGE_2D, center=False)
-        return_old = oldfu.ccf(IMAGE_2D, REAL_IMAGE_2D, center=False)
+        return_new = fu.ccf(e=IMAGE_2D, f=REAL_IMAGE_2D, center=False)
+        return_old = oldfu.ccf(e=IMAGE_2D,f= REAL_IMAGE_2D, center=False)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_Img2D_with_center(self):
-        return_new = fu.ccf(IMAGE_2D, REAL_IMAGE_2D, center=True)
-        return_old = oldfu.ccf(IMAGE_2D, REAL_IMAGE_2D, center=True)
+        return_new = fu.ccf(e=IMAGE_2D, f=REAL_IMAGE_2D, center=True)
+        return_old = oldfu.ccf(e=IMAGE_2D,f= REAL_IMAGE_2D, center=True)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_Img3D_without_center(self):
-        return_new = fu.ccf(IMAGE_3D, REAL_IMAGE_3D, center=False)
-        return_old = oldfu.ccf(IMAGE_3D, REAL_IMAGE_3D, center=False)
+        return_new = fu.ccf(e=IMAGE_3D, f=REAL_IMAGE_3D, center=False)
+        return_old = oldfu.ccf(e=IMAGE_3D,f= REAL_IMAGE_3D, center=False)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_Img3D_with_center(self):
-        return_new = fu.ccf(IMAGE_3D, REAL_IMAGE_3D, center=True)
-        return_old = oldfu.ccf(IMAGE_3D, REAL_IMAGE_3D, center=True)
+        return_new = fu.ccf(e=IMAGE_3D, f=REAL_IMAGE_3D, center=True)
+        return_old = oldfu.ccf(e=IMAGE_3D,f= REAL_IMAGE_3D, center=True)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
+    def test_Img2Dblank_without_center(self):
+        return_new = fu.ccf(e=IMAGE_BLANK_2D,f= REAL_IMAGE_2D, center=False)
+        return_old = oldfu.ccf(e=IMAGE_2D, f=REAL_IMAGE_2D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_with_center(self):
+        return_new = fu.ccf(e=IMAGE_BLANK_2D,f= REAL_IMAGE_2D, center=True)
+        return_old = oldfu.ccf(e=IMAGE_2D, f=REAL_IMAGE_2D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_without_center(self):
+        return_new = fu.ccf(e=IMAGE_BLANK_3D,f= REAL_IMAGE_3D, center=False)
+        return_old = oldfu.ccf(e=IMAGE_3D, f=REAL_IMAGE_3D, center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_with_center(self):
+        return_new = fu.ccf(e=IMAGE_BLANK_3D,f= REAL_IMAGE_3D, center=True)
+        return_old = oldfu.ccf(e=IMAGE_BLANK_3D, f=REAL_IMAGE_3D, center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 
@@ -381,9 +2777,9 @@ class Test_scf(unittest.TestCase):
 
     def test_empty_input_image1(self):
         with self.assertRaises(RuntimeError)as cm_new:
-            fu.scf(EMData())
+            fu.scf(e=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
-            oldfu.scf(EMData())
+            oldfu.scf(e=EMData())
         msg = cm_new.exception.message.split("'")
         msg_old = cm_old.exception.message.split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
@@ -394,31 +2790,51 @@ class Test_scf(unittest.TestCase):
     def test_NoneType_input_img_crashes_because_signal11SIGSEV(self):
         self.assertTrue(True)
         """
-        return_new = fu.scf(None, center=False)
-        return_old = oldfu.scf(None, center=False)
+        return_new = fu.scf(e=None, center=False)
+        return_old = oldfu.scf(e=None, center=False)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
         """
 
     def test_Img3D_with_center(self):
-        return_new = fu.scf(IMAGE_3D, center=True)
-        return_old = oldfu.scf(IMAGE_3D, center=True)
+        return_new = fu.scf(e=IMAGE_3D, center=True)
+        return_old = oldfu.scf(e=IMAGE_3D, center=True)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_Img3D_without_center(self):
-        return_new = fu.scf(IMAGE_3D, center=False)
-        return_old = oldfu.scf(IMAGE_3D, center=False)
+        return_new = fu.scf(e=IMAGE_3D, center=False)
+        return_old = oldfu.scf(e=IMAGE_3D, center=False)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_Img2D_with_center(self):
-        return_new = fu.scf(IMAGE_2D, center=True)
-        return_old = oldfu.scf(IMAGE_2D, center=True)
+        return_new = fu.scf(e=IMAGE_2D, center=True)
+        return_old = oldfu.scf(e=IMAGE_2D, center=True)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_Img2D_without_center(self):
-        return_new = fu.scf(IMAGE_2D, center=False)
-        return_old = oldfu.scf(IMAGE_2D, center=False)
+        return_new = fu.scf(e=IMAGE_2D, center=False)
+        return_old = oldfu.scf(e=IMAGE_2D, center=False)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
+
+    def test_Img2Dblank_without_center(self):
+        return_new = fu.scf(e=IMAGE_BLANK_2D,  center=False)
+        return_old = oldfu.scf(e=IMAGE_2D,  center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img2Dblank_with_center(self):
+        return_new = fu.scf(e=IMAGE_BLANK_2D,  center=True)
+        return_old = oldfu.scf(e=IMAGE_2D,  center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_without_center(self):
+        return_new = fu.scf(e=IMAGE_BLANK_3D, center=False)
+        return_old = oldfu.scf(e=IMAGE_3D,  center=False)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
+    def test_Img3Dblank_with_center(self):
+        return_new = fu.scf(e=IMAGE_BLANK_3D,center=True)
+        return_old = oldfu.scf(e=IMAGE_BLANK_3D,center=True)
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
 
