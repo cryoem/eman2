@@ -2612,14 +2612,14 @@ class Test_bracket(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_f3_greater_f1(self):
-        return_new = fu.bracket(self.function1, x1=5, h=4)
-        return_old = oldfu.bracket(self.function1, x1=5, h=4)
+        return_new = fu.bracket(f=self.function1, x1=5, h=4)
+        return_old = oldfu.bracket(f=self.function1, x1=5, h=4)
         self.assertTrue(array_equal(return_new, return_old))
         self.assertTrue(array_equal(return_new, (0.0, 10.472135955999999)))
 
     def test_f3_not_greater_f1_outputmsg_Bracket_didnot_find_a_minimum(self):
-        self.assertTrue(fu.bracket(self.function1, x1=0, h=0) is None)
-        self.assertTrue(oldfu.bracket(self.function1, x1=0, h=0) is None)
+        self.assertTrue(fu.bracket(f=self.function1, x1=0, h=0) is None)
+        self.assertTrue(oldfu.bracket(f=self.function1, x1=0, h=0) is None)
 
 
 
