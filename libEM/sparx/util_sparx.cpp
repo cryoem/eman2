@@ -29612,7 +29612,7 @@ void Util::cleanup_threads() {
 
 void Util::version()
 {
-	cout <<"   Source modification date: 03/02/2019" <<  endl;
+	cout <<"   Source modification date: 10/15/2019" <<  endl;
 
 /*
 This is test program for testing FFT speed 02/16/2019 PAP
@@ -31085,6 +31085,41 @@ void Util::put_slice(EMData *vol, EMData *slice, int dim, int index) {
 	vol->update();
 	EXITFUNC;
 }
+
+
+void Util::plane_through_volume(EMData *vol, EMData *weight, EMData *plane, float phi, float theta, float psi, int fact) {
+// fact indicates whether plane has to be added fact=+1, or subtracted fact=-1.
+// There are two ways of passing the orientation of the slice, either by passing full transform object as in cut_slice,
+// which makes sense if we use all possible parameters (rotation, translation, magnification), or simply three Euler angles,
+// as I generally do in my code, as it is somewhat more transparent.
+//  I just realized that there are problems with passing Transform object, see comment in util_sparx.h.
+//  Unless you want to struggle with the issue, I suggest using simple parameters.
+	int nx = vol->get_xsize();
+	int ny = vol->get_ysize();
+	int nz = vol->get_zsize();
+	// get pointers to data in EMData objects
+	float *vol_data = vol->get_data();
+	float *weight_data = weight->get_data();
+	float *plane_data = plane->get_data();
+	int new_nx, new_ny;
+
+	if (nz == 1)
+		throw ImageDimensionException("Error: Input must be a 3-D object");
+	/*  One can add more sanity checks
+	if ((dim < 1) || (dim > 3))
+		throw ImageDimensionException("Error: dim must be 1 (x-dimension), 2 (y-dimension) or 3 (z-dimension)");
+	if (((dim == 1) && (index < 0 || index > nx-1)) ||
+	  ((dim == 1) && (index < 0 || index > nx-1)) ||
+	  ((dim == 1) && (index < 0 || index > nx-1)))
+		throw ImageDimensionException("Error: index exceeds the size of the 3-D object");
+	*/
+
+	// We do not return anything as this procedure only modifies vol and weight.
+	vol->update();
+	weight->update();
+	EXITFUNC;
+}
+
 
 void Util::image_mutation(EMData *img, float mutation_rate) {
 	int nx = img->get_xsize();
