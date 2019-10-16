@@ -1,7 +1,10 @@
 binary_size_suffix = ['mini':'', 'huge':'_huge']
 
 def convertToNativePath(path) {
-    return sh(returnStdout: true, script: "python -c 'import os; print(os.path.normpath(\"" + path + "\"))'").trim()
+    if(!isUnix())
+        return path.replaceAll('/','\\\\')
+    else
+        return path
 }
 
 def getOSName() {
