@@ -59,8 +59,8 @@ class Test_absi(unittest.TestCase):
         self.assertEqual(msg[3], msg_old[3])
 
     def test_NoneType_Img(self):
-        return_new = fu.absi(e=EMData())
-        return_old = oldfu.absi(e=EMData())
+        return_new = fu.absi(e=None)
+        return_old = oldfu.absi(e=None)
         self.assertEqual(return_new,return_old)
         self.assertEqual(return_new,None)
 
@@ -108,8 +108,8 @@ class Test_acf(unittest.TestCase):
         self.assertEqual(msg[3], msg_old[3])
 
     def test_NoneType_Img(self):
-        return_new = fu.acf(e=EMData(), center=True)
-        return_old = oldfu.acf(e=EMData(), center=True)
+        return_new = fu.acf(e=None, center=True)
+        return_old = oldfu.acf(e=None, center=True)
         self.assertEqual(return_new, return_old)
         self.assertEqual(return_new, None)
 
@@ -177,8 +177,8 @@ class Test_acfn(unittest.TestCase):
         self.assertEqual(msg[3], msg_old[3])
 
     def test_NoneType_Img(self):
-        return_new = fu.acfn(e=EMData(), center=True)
-        return_old = oldfu.acfn(e=EMData(), center=True)
+        return_new = fu.acfn(e=None, center=True)
+        return_old = oldfu.acfn(e=None, center=True)
         self.assertEqual(return_new, return_old)
         self.assertEqual(return_new, None)
 
@@ -247,8 +247,8 @@ class Test_acfp(unittest.TestCase):
         self.assertEqual(msg[3], msg_old[3])
 
     def test_NoneType_Img(self):
-        return_new = fu.acfp(e=EMData(), center=True)
-        return_old = oldfu.acfp(e=EMData(), center=True)
+        return_new = fu.acfp(e=None, center=True)
+        return_old = oldfu.acfp(e=None, center=True)
         self.assertEqual(return_new, return_old)
         self.assertEqual(return_new, None)
 
@@ -317,8 +317,8 @@ class Test_acfnp(unittest.TestCase):
         self.assertEqual(msg[3], msg_old[3])
 
     def test_NoneType_Img(self):
-        return_new = fu.acfnp(e=EMData(), center=True)
-        return_old = oldfu.acfnp(e=EMData(), center=True)
+        return_new = fu.acfnp(e=None, center=True)
+        return_old = oldfu.acfnp(e=None, center=True)
         self.assertEqual(return_new, return_old)
         self.assertEqual(return_new, None)
 
@@ -386,8 +386,8 @@ class Test_acfpl(unittest.TestCase):
         self.assertEqual(msg[3], msg_old[3])
 
     def test_NoneType_Img(self):
-        return_new = fu.acfpl(e=EMData(), center=True)
-        return_old = oldfu.acfpl(e=EMData(), center=True)
+        return_new = fu.acfpl(e=None, center=True)
+        return_old = oldfu.acfpl(e=None, center=True)
         self.assertEqual(return_new, return_old)
         self.assertEqual(return_new, None)
 
@@ -455,8 +455,8 @@ class Test_acfnpl(unittest.TestCase):
         self.assertEqual(msg[3], msg_old[3])
 
     def test_NoneType_Img(self):
-        return_new = fu.acfnpl(e=EMData(), center=True)
-        return_old = oldfu.acfnpl(e=EMData(), center=True)
+        return_new = fu.acfnpl(e=None, center=True)
+        return_old = oldfu.acfnpl(e=None, center=True)
         self.assertEqual(return_new, return_old)
         self.assertEqual(return_new, None)
 
