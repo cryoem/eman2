@@ -110,7 +110,7 @@ def selectNotifications() {
 }
 
 def isMasterBranch() {
-    return GIT_BRANCH_SHORT == "master"
+    return GIT_BRANCH_SHORT == "master" || GIT_BRANCH_SHORT == "master-dev"
 }
 
 def isReleaseBranch() {
