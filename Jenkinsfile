@@ -1,7 +1,10 @@
 binary_size_suffix = ['mini':'', 'huge':'_huge']
 
 def convertToNativePath(path) {
-    return sh(returnStdout: true, script: "python -c 'import os; print(os.path.normpath(\"" + path + "\"))'").trim()
+    if(!isUnix())
+        return path.replaceAll('/','\\\\')
+    else
+        return path
 }
 
 def getOSName() {
@@ -66,15 +69,16 @@ def notifyEmail() {
 
     if(JOB_TYPE == "push" || NOTIFY_EMAIL == "true") {
         to      = "$GIT_AUTHOR_EMAIL"
-        if(STAGE_NAME == 'test-continuous') {
-            to      = '$DEFAULT_RECIPIENTS'
-            subject = '[test-continuous] - ' + subject
-            body    = 'Continuous binary test: $BUILD_STATUS'
-        }
     }
     if(JOB_TYPE == "cron") {
         to      = '$DEFAULT_RECIPIENTS'
         subject = '[cron] - ' + subject
+    }
+    
+    if(STAGE_NAME == 'test-continuous') {
+        to      = '$DEFAULT_RECIPIENTS'
+        subject = '[test-continuous] - ' + subject
+        body    = 'Continuous binary test: $BUILD_STATUS'
     }
 
     emailext(to:        to,
@@ -107,7 +111,7 @@ def selectNotifications() {
 }
 
 def isMasterBranch() {
-    return GIT_BRANCH_SHORT == "master"
+    return GIT_BRANCH_SHORT == "master" || GIT_BRANCH_SHORT == "master-dev"
 }
 
 def isReleaseBranch() {
