@@ -731,6 +731,11 @@ class Test_helical_params_err(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, "list index out of range")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
+    def test_helical_params_err(self):
+        return_new = fu.helical_params_err(params1= self.params1, params2= self.params2, fil_list=self.fillist)
+        return_old = oldfu.helical_params_err(params1=self.params1, params2=self.params2, fil_list=self.fillist)
+        for i,j in zip(return_new,return_old):
+            self.assertTrue(numpy_array_equal(i, j))
 
 
 
