@@ -70,6 +70,7 @@ def notifyEmail() {
     if(JOB_TYPE == "push" || NOTIFY_EMAIL == "true") {
         to      = "$GIT_AUTHOR_EMAIL"
     }
+    
     if(JOB_TYPE == "cron") {
         to      = '$DEFAULT_RECIPIENTS'
         subject = '[cron] - ' + subject
@@ -81,12 +82,14 @@ def notifyEmail() {
         body    = 'Continuous binary test: $BUILD_STATUS'
     }
 
-    emailext(to:        to,
-             from:      from,
-             subject:   subject,
-             body:      body,
-             attachLog: true
-             )
+    if(NOTIFY_EMAIL != "false") {
+        emailext(to:        to,
+                 from:      from,
+                 subject:   subject,
+                 body:      body,
+                 attachLog: true
+                 )
+    }
 }
 
 def selectNotifications() {
@@ -218,6 +221,24 @@ def getHomeDir() {
     else          return "${HOME}"
 }
 
+// For debugging purposes
+def isSkipStage() {
+    return 0
+//     return NODE_NAME != "linux-1"
+//     return AGENT_OS_NAME != "mac"
+//     return STAGE_NAME != "package"
+// 
+//     stages = [
+//         'build-local',
+//         'build-recipe',
+//         'package',
+//         'test-package',
+//         'deploy',
+//         'test-continuous'
+//     ]
+//     return !stages.contains(STAGE_NAME)
+}
+
 pipeline {
   agent {
     node { label "eman-build-agent" }
@@ -256,6 +277,7 @@ pipeline {
       when {
         not { expression { isBinaryBuild() } }
         expression { isUnix() }
+        not { expression { isSkipStage() } }
       }
       
       steps {
@@ -265,6 +287,7 @@ pipeline {
     }
     
     stage('build-recipe') {
+      when { not { expression { isSkipStage() } } }
       steps {
         notifyGitHub('PENDING')
         sh 'bash ci_support/build_recipe.sh'
@@ -272,7 +295,10 @@ pipeline {
     }
     
     stage('package') {
-      when { expression { isBinaryBuild() } }
+      when {
+        expression { isBinaryBuild() }
+        not { expression { isSkipStage() } }
+      }
       environment { PARENT_STAGE_NAME = "${STAGE_NAME}" }
       
       parallel {
@@ -283,7 +309,10 @@ pipeline {
     }
     
     stage('test-package') {
-      when { expression { isBinaryBuild() } }
+      when {
+        expression { isBinaryBuild() }
+        not { expression { isSkipStage() } }
+      }
       environment {
         PARENT_STAGE_NAME = "${STAGE_NAME}"
         INSTALLER_EXT     = getInstallerExt()
@@ -297,7 +326,10 @@ pipeline {
     }
     
     stage('deploy') {
-      when { expression { isBinaryBuild() } }
+      when {
+        expression { isBinaryBuild() }
+        not { expression { isSkipStage() } }
+      }
       environment { PARENT_STAGE_NAME = "${STAGE_NAME}" }
 
       parallel {
@@ -308,7 +340,10 @@ pipeline {
     }
 
     stage('test-continuous') {
-      when { expression { isContinuousBuild() } }
+      when {
+        expression { isBinaryBuild() }
+        not { expression { isSkipStage() } }
+      }
       environment { PARENT_STAGE_NAME = "${STAGE_NAME}" }
 
       parallel {
