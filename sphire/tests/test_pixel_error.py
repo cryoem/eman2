@@ -283,8 +283,7 @@ from sphire.libpy_py3 import sp_pixel_error as fu
 
 
 class Test_angle_error(unittest.TestCase):
-    angle1 = [-358.1422162327943, 335.90588778212316, -81.05934436345304, 88.94114972876307, 230.3400198158369,179.6066808748772, -179.05318018749753, -267.2248149400371, 168.26126969747668, 177.5181948630324,90.44012904554053]
-    angle2 = [-270.32559871309775, 359.28047486975726, -271.30870341528345, 65.26503368866545, 359.68416319428593,182.75795469476327, -86.79404676631873, -357.78252122233323, 220.67100196439736, 347.68044245436516,229.87355240518391]
+
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.angle_error()
@@ -295,27 +294,28 @@ class Test_angle_error(unittest.TestCase):
 
     def test_empty_ang1_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
-            fu.angle_error(ang1=[], ang2=self.angle2, delta_ang=0.1)
+            fu.angle_error(ang1=[], ang2=[0.6804220676422119, 0.6526213884353638, 0.3333333432674408], delta_ang=0.1)
         with self.assertRaises(IndexError) as cm_old:
-            oldfu.angle_error(ang1=[], ang2=self.angle2, delta_ang=0.1)
+            oldfu.angle_error(ang1=[], ang2=[0.6804220676422119, 0.6526213884353638, 0.3333333432674408], delta_ang=0.1)
         self.assertEqual(cm_new.exception.message, "list index out of range")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_empty_ang2_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
-            fu.angle_error(ang2=[], ang1=self.angle2, delta_ang=0.1)
+            fu.angle_error(ang2=[], ang1=[0.6804220676422119, 0.6526213884353638, 0.3333333432674408], delta_ang=0.1)
         with self.assertRaises(IndexError) as cm_old:
-            oldfu.angle_error(ang2=[], ang1=self.angle2, delta_ang=0.1)
+            oldfu.angle_error(ang2=[], ang1=[0.6804220676422119, 0.6526213884353638, 0.3333333432674408], delta_ang=0.1)
         self.assertEqual(cm_new.exception.message, "list index out of range")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_angle_error(self):
-        return_new =fu.angle_error(ang1=self.angle1, ang2=self.angle2, delta_ang=0.1)
-        return_old =oldfu.angle_error(ang1=self.angle1, ang2=self.angle2, delta_ang=0.1)
+        return_new =fu.angle_error(ang1=[0.6804220676422119, 0.6526213884353638, 0.3333333432674408], ang2=[0.6804220676422119, 0.65262184353638, 0.3333333432674408], delta_ang=0.1)
+        return_old =oldfu.angle_error(ang1=[0.6804220676422119, 0.6526213884353638, 0.3333333432674408], ang2=[0.6804220676422119, 0.65262184353638, 0.3333333432674408], delta_ang=0.1)
         self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new, 2.99999543075)
 
 
-
+#todo: find a new image -->RuntimeError: NotExistingObjectException at /home/lusnig/src_sphire_1_3/eman2/libEM/emdata_metadata.cpp:1203: error with 'xform.align2d': 'The requested key does not exist' caught
 class Test_align_diff(unittest.TestCase):
     data = [IMAGE_2D, IMAGE_2D_REFERENCE]
     data2 = [IMAGE_3D, IMAGE_3D]
@@ -384,6 +384,7 @@ class Test_align_diff_textfile(unittest.TestCase):
         pass
 
 
+#todo: find a new image -->RuntimeError: NotExistingObjectException at /home/lusnig/src_sphire_1_3/eman2/libEM/emdata_metadata.cpp:1203: error with 'xform.align2d': 'The requested key does not exist' caught
 class Test_ave_ali_err(unittest.TestCase):
     data = [IMAGE_2D, IMAGE_2D_REFERENCE]
     data2 = [IMAGE_3D, IMAGE_3D]
@@ -471,8 +472,8 @@ class Test_multi_align_diff_params(unittest.TestCase):
     def test_multi_align_diff_params(self):
         return_new = fu.multi_align_diff_params(ali_params=[[13, 23, 31,0,1, 23, 31,0,13, 3, 31,0], [13, 23, 31,0,0,1, 2, 3,13, 23, 31,0]], verbose=0)
         return_old = oldfu.multi_align_diff_params(ali_params=[[13, 23, 31,0,1, 23, 31,0,13, 3, 31,0], [13, 23, 31,0,0,1, 2, 3,13, 23, 31,0]], verbose=0)
-        for i,j in zip(return_old,return_new):
-            self.assertTrue(numpy_array_equal(i, j))
+        self.assertTrue(numpy_array_equal(return_new, return_old))
+        self.assertTrue(numpy_array_equal(return_new, [[100.00000000000001, 0.6666666666666666, 0, 1, 0.0, 10.0, 0.0, 0]]))
 
 
 
@@ -492,9 +493,10 @@ class Test_calc_connect_list(unittest.TestCase):
     def test_calc_connect_list(self):
         return_old = oldfu.calc_connect_list(multi_align_results=self.multi_align_results_old, pixel_error_threshold = 5.0, mirror_consistency_threshold = 0.8)
         return_new = fu.calc_connect_list(multi_align_results=self.multi_align_results_new, pixel_error_threshold = 5.0, mirror_consistency_threshold = 0.8)
-        for i, j in zip(return_old[0], return_new[0]):
-            self.assertTrue(numpy_array_equal(i, j))
+        self.assertTrue(numpy_array_equal(return_old[0], return_new[0]))
         self.assertEqual(return_old[1], return_new[1])
+        self.assertTrue(numpy_array_equal([], return_new[0]))
+        self.assertEqual(0, return_new[1])
 
     def test_empty_multi_align_results_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
@@ -531,9 +533,10 @@ class Test_ali_stable_list(unittest.TestCase):
         return_new = oldfu.ali_stable_list(ali_params1=self.ali_params1, ali_params2=self.ali_params2, pixel_error_threshold=0.3, r=25)
         return_old = fu.ali_stable_list(ali_params1=self.ali_params1, ali_params2=self.ali_params2, pixel_error_threshold=0.3, r=25)
         self.assertTrue(numpy_array_equal(return_new, return_old))
+        self.assertTrue(numpy_array_equal(return_new, [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]))
 
 
-
+#todo: look the params
 class Test_ave2dtransform(unittest.TestCase):
     ali_params = [358.142216327943, 1.5746676921844482, 2.359189510345459, 1, 335.90588778212316, 0.22259289026260376, 1.6781892776489258, 0, 81.05934436345304, 2.0682716369628906, 2.3159945011138916, 1, 88.94114972876307, 2.3903369903564453, 2.760911226272583, 0, 230.3400198158369, -1.2752182483673096, -1.0786179304122925, 0, 179.6066808748772, 0.3892550766468048, -0.7324743270874023, 0, 179.05318018749753, -0.694373607635498, -0.10197801142930984, 1, 267.2248149400371, 0.5244513750076294, 0.7750062346458435, 1, 168.26126969747668, 1.208488941192627, 1.3360750675201416, 0, 177.5181948630324, 1.0620733499526978, -1.5996335744857788, 0, 90.44012904554053, 0.8572239875793457, -1.572252869606018, 0]
     data=[ali_params,3]
@@ -599,7 +602,8 @@ class Test_rotate_angleset_to_match(unittest.TestCase):
     def test_return_avg_pixel_error(self):
         return_new = fu.rotate_angleset_to_match(agls1=self.agls1, agls2=self.agls2)
         return_old = oldfu.rotate_angleset_to_match(agls1=self.agls1, agls2=self.agls2)
-        self.assertEqual(return_new, return_old)
+        self.assertTrue(numpy_array_equal(return_new, return_old))
+        self.assertTrue(numpy_array_equal( return_old, [[1.000000002215, 0.0, 0.0], [0.680422069857, 0.652621388435, 0.333333343267], [359.589582117627, 0.848790943622, 0.333333343267], [179.065925779173, 0.128039821983, 180.333333343267], [179.833128096888, 0.927923858166, 180.333333343267], [180.830941738913, 0.445448815823, 180.333333343267], [359.000000089638, 0.0, 0.0], [0.934074225257, 0.128039702772, 359.666666686535], [0.166871773431, 0.927923858166, 359.666666686535], [359.169058146308, 0.445448696613, 359.666666686535], [179.319577874968, 0.652621328831, 179.666666686535], [180.41041797621, 0.848790884018, 179.666666686535]]))
 
 
 
@@ -631,15 +635,15 @@ class Test_mapcoords(unittest.TestCase):
 
     def test_r_lowe_than1(self):
         return_old = oldfu.mapcoords(x=1, y=1, r=0.1, nx=5, ny=5)
-        return_new = oldfu.mapcoords(x=1, y=1, r=0.1, nx=5, ny=5)
-        self.assertEqual(return_new[0],return_old[0])
-        self.assertEqual(return_new[1], return_old[1])
+        return_new = fu.mapcoords(x=1, y=1, r=0.1, nx=5, ny=5)
+        self.assertTrue(numpy_array_equal(return_new, return_old))
+        self.assertTrue(numpy_array_equal((0, 0), return_old))
 
     def test_r_higher_than1(self):
         return_old = oldfu.mapcoords(x=1, y=1, r=1.1, nx=5, ny=5)
-        return_new = oldfu.mapcoords(x=1, y=1, r=1.1, nx=5, ny=5)
-        self.assertEqual(return_new[0],return_old[0])
-        self.assertEqual(return_new[1], return_old[1])
+        return_new = fu.mapcoords(x=1, y=1, r=1.1, nx=5, ny=5)
+        self.assertTrue(numpy_array_equal(return_new, return_old))
+        self.assertTrue(numpy_array_equal((0, 0), return_old))
 
 
 #todo: need stack data
@@ -675,7 +679,7 @@ class Test_getnewhelixcoords(unittest.TestCase):
         pass
 
 
-
+#todo: look into the params
 class Test_helical_params_err(unittest.TestCase):
     (t1, t2, r) = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/pixel_error/pixel_error.max_3D_pixel_error"))[0]
     params2=[t2,t2]
