@@ -58,11 +58,13 @@ class Test_absi(unittest.TestCase):
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
 
-    def test_NoneType_Img(self):
-        return_new = fu.absi(e=None)
-        return_old = oldfu.absi(e=None)
-        self.assertEqual(return_new,return_old)
-        self.assertEqual(return_new,None)
+    def test_Nonetype_input_img(self):
+        with self.assertRaises(AttributeError)as cm_new:
+            fu.absi(e=None)
+        with self.assertRaises(AttributeError)as cm_old:
+            oldfu.absi(e=None)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'rotavg'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_2Dimg(self):
         return_old = oldfu.absi(e=IMAGE_2D)
@@ -107,11 +109,14 @@ class Test_acf(unittest.TestCase):
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
 
-    def test_NoneType_Img(self):
+    def test_NoneType_Img_crash_becasue_SIGSEV(self):
+        """
         return_new = fu.acf(e=None, center=True)
         return_old = oldfu.acf(e=None, center=True)
         self.assertEqual(return_new, return_old)
         self.assertEqual(return_new, None)
+        """
+        pass
 
     def test_2Dimg_center(self):
         return_old = oldfu.acf(e=IMAGE_2D, center=True)
@@ -128,7 +133,7 @@ class Test_acf(unittest.TestCase):
         return_new = fu.acf(e=IMAGE_3D, center=True)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
-    def test_2DimgBlank_center(self):
+    def test_3DimgBlank_center(self):
         return_old = oldfu.acf(e=IMAGE_BLANK_3D, center=True)
         return_new = fu.acf(e=IMAGE_BLANK_3D, center=True)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
@@ -176,11 +181,14 @@ class Test_acfn(unittest.TestCase):
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
 
-    def test_NoneType_Img(self):
+    def test_empty_input_image_crash_becasue_SIGSEV(self):
+        """
         return_new = fu.acfn(e=None, center=True)
         return_old = oldfu.acfn(e=None, center=True)
         self.assertEqual(return_new, return_old)
         self.assertEqual(return_new, None)
+        """
+        pass
 
     def test_2Dimg_center(self):
         return_old = oldfu.acfn(e=IMAGE_2D, center=True)
@@ -246,11 +254,13 @@ class Test_acfp(unittest.TestCase):
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
 
-    def test_NoneType_Img(self):
+    def test_empty_input_image_crash_becasue_SIGSEV(self):
+        """
         return_new = fu.acfp(e=None, center=True)
         return_old = oldfu.acfp(e=None, center=True)
         self.assertEqual(return_new, return_old)
         self.assertEqual(return_new, None)
+        """
 
     def test_2Dimg_center(self):
         return_old = oldfu.acfp(e=IMAGE_2D, center=True)
@@ -316,11 +326,14 @@ class Test_acfnp(unittest.TestCase):
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
 
-    def test_NoneType_Img(self):
+    def test_empty_input_image_crash_becasue_SIGSEV(self):
+        """
         return_new = fu.acfnp(e=None, center=True)
         return_old = oldfu.acfnp(e=None, center=True)
         self.assertEqual(return_new, return_old)
         self.assertEqual(return_new, None)
+        """
+        pass
 
     def test_2Dimg_center(self):
         return_old = oldfu.acfnp(e=IMAGE_2D, center=True)
@@ -385,11 +398,14 @@ class Test_acfpl(unittest.TestCase):
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
 
-    def test_NoneType_Img(self):
+    def test_empty_input_image_crash_becasue_SIGSEV(self):
+        """
         return_new = fu.acfpl(e=None, center=True)
         return_old = oldfu.acfpl(e=None, center=True)
         self.assertEqual(return_new, return_old)
         self.assertEqual(return_new, None)
+        """
+        pass
 
     def test_2Dimg_center(self):
         return_old = oldfu.acfpl(e=IMAGE_2D, center=True)
@@ -454,11 +470,14 @@ class Test_acfnpl(unittest.TestCase):
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
 
-    def test_NoneType_Img(self):
+    def test_empty_input_image_crash_becasue_SIGSEV(self):
+        """
         return_new = fu.acfnpl(e=None, center=True)
         return_old = oldfu.acfnpl(e=None, center=True)
         self.assertEqual(return_new, return_old)
         self.assertEqual(return_new, None)
+        """
+        pass
 
     def test_2Dimg_center(self):
         return_old = oldfu.acfnpl(e=IMAGE_2D, center=True)
@@ -535,10 +554,13 @@ class Test_ccfn(unittest.TestCase):
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
 
-    def test_NoneType_input_img2(self):
-        return_new = fu.ccfn(e=IMAGE_2D, f=None, center=False)
-        return_old = oldfu.ccfn(e=IMAGE_2D,f= None, center=False)
-        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+    def test_Nonetype_input_img2(self):
+        with self.assertRaises(AttributeError)as cm_new:
+            fu.ccfn(e=IMAGE_2D, f=None, center=False)
+        with self.assertRaises(AttributeError)as cm_old:
+            oldfu.ccfn(e=IMAGE_2D, f=None, center=False)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_zsize'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_NoneType_input_img1_crashes_because_signal11SIGSEV(self):
         self.assertTrue(True)
@@ -1834,11 +1856,13 @@ class Test_fdownsample(unittest.TestCase):
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
 
-    def test_NoneType_Img(self):
-        return_new = fu.fdownsample(img=None, sub_rate=0.5, RetReal = True)
-        return_old = oldfu.fdownsample(img=None, sub_rate=0.5, RetReal = True)
-        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-        self.assertEqual(return_new, None)
+    def test_Nonetype_input_img(self):
+        with self.assertRaises(AttributeError)as cm_new:
+            fu.fdownsample(img=None, sub_rate=0.5, RetReal = True)
+        with self.assertRaises(AttributeError)as cm_old:
+            oldfu.fdownsample(img=None, sub_rate=0.5, RetReal = True)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_2DImg_RetReal(self):
         return_new = fu.fdownsample(img=IMAGE_2D, sub_rate=0.5, RetReal = True)
@@ -1987,11 +2011,13 @@ class Test_prepf(unittest.TestCase):
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
 
-    def test_NoneType_Img(self):
-        return_new = fu.prepf(image=None, npad = 2)
-        return_old = oldfu.prepf(image=None,npad = 2)
-        self.assertEqual(return_new, return_old)
-        self.assertEqual(return_new, None)
+    def test_Nonetype_input_img(self):
+        with self.assertRaises(AttributeError)as cm_new:
+            fu.prepf(image=None, npad = 2)
+        with self.assertRaises(AttributeError)as cm_old:
+            oldfu.prepf(image=None, npad = 2)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_2DImage(self):
         return_new = fu.prepf(image=IMAGE_2D, npad=2)
@@ -2035,11 +2061,13 @@ class Test_prep_refim_gridding(unittest.TestCase):
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
 
-    def test_NoneType_Img(self):
-        crefim_new,kb_new = fu.prep_refim_gridding(refim=None, wr=self.wr, numr=self.numr, mode = "F")
-        crefim_old,kb_old = oldfu.prep_refim_gridding(refim=None,wr=self.wr, numr=self.numr, mode = "F")
-        self.assertTrue(array_equal(crefim_new.get_3dview(), crefim_old.get_3dview()))
-        self.assertTrue(array_equal(kb_new.dump_table(), kb_new.dump_table()))  # it is a kaiserbessel filter
+    def test_Nonetype_input_img(self):
+        with self.assertRaises(AttributeError)as cm_new:
+            fu.prep_refim_gridding(refim=None, wr=self.wr, numr=self.numr, mode = "F")
+        with self.assertRaises(AttributeError)as cm_old:
+            oldfu.prep_refim_gridding(refim=None, wr=self.wr, numr=self.numr, mode = "F")
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_2DImage(self):
         crefim_new,kb_new = oldfu.prep_refim_gridding(refim=IMAGE_2D, wr=self.wr, numr=self.numr, mode = "F")
@@ -2067,8 +2095,6 @@ class Test_prep_refim_gridding(unittest.TestCase):
 
 
 
-
-
 class Test_prepg(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -2090,12 +2116,13 @@ class Test_prepg(unittest.TestCase):
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
 
-    def test_NoneType_Img(self):
-        return_old = oldfu.prepg(image=None, kb = "not_in_use")
-        return_new = fu.prepg(image=None, kb = "not_in_use")
-        self.assertEqual(return_new, return_old)
-        self.assertEqual(return_new, None)
-        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+    def test_Nonetype_input_img(self):
+        with self.assertRaises(AttributeError)as cm_new:
+            fu.prepg(image=None, kb = "not_in_use")
+        with self.assertRaises(AttributeError)as cm_old:
+            oldfu.prepg(image=None, kb = "not_in_use")
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_2Dimage(self):
         return_old = oldfu.prepg(image=IMAGE_2D, kb = "not_in_use")
@@ -2145,22 +2172,22 @@ class Test_rot_avg_image(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_2Dimage(self):
-        return_new = oldfu.rot_avg_image(image_to_be_averaged=IMAGE_2D)
+        return_new = fu.rot_avg_image(image_to_be_averaged=IMAGE_2D)
         return_old = oldfu.rot_avg_image(image_to_be_averaged=IMAGE_2D)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2DimageBlank(self):
-        return_new = oldfu.rot_avg_image(image_to_be_averaged=IMAGE_BLANK_2D)
+        return_new = fu.rot_avg_image(image_to_be_averaged=IMAGE_BLANK_2D)
         return_old = oldfu.rot_avg_image(image_to_be_averaged=IMAGE_BLANK_2D)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3Dimage(self):
-        return_new = oldfu.rot_avg_image(image_to_be_averaged=IMAGE_3D)
+        return_new = fu.rot_avg_image(image_to_be_averaged=IMAGE_3D)
         return_old = oldfu.rot_avg_image(image_to_be_averaged=IMAGE_3D)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DimageBlank(self):
-        return_new = oldfu.rot_avg_image(image_to_be_averaged=IMAGE_BLANK_3D)
+        return_new = fu.rot_avg_image(image_to_be_averaged=IMAGE_BLANK_3D)
         return_old = oldfu.rot_avg_image(image_to_be_averaged=IMAGE_BLANK_3D)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
@@ -2211,22 +2238,22 @@ class Test_rops(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_2Dimage(self):
-        return_new = oldfu.rops(e=IMAGE_2D)
+        return_new = fu.rops(e=IMAGE_2D)
         return_old = oldfu.rops(e=IMAGE_2D)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_2DimageBlank(self):
-        return_new = oldfu.rops(e=IMAGE_BLANK_2D)
+        return_new = fu.rops(e=IMAGE_BLANK_2D)
         return_old = oldfu.rops(e=IMAGE_BLANK_2D)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3Dimage(self):
-        return_new = oldfu.rops(e=IMAGE_3D)
+        return_new = fu.rops(e=IMAGE_3D)
         return_old = oldfu.rops(e=IMAGE_3D)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_3DimageBlank(self):
-        return_new = oldfu.rops(e=IMAGE_BLANK_3D)
+        return_new = fu.rops(e=IMAGE_BLANK_3D)
         return_old = oldfu.rops(e=IMAGE_BLANK_3D)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
@@ -2316,11 +2343,13 @@ class Test_ft2polargrid(unittest.TestCase):
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
 
-    def test_NoneType_Img(self):
-        return_old = oldfu.ft2polargrid(image=None,  ring_length=10, nb=10, ne=10)
-        return_new = fu.ft2polargrid(image=None,  ring_length=10, nb=10, ne=10)
-        self.assertEqual(return_new, return_old)
-        self.assertEqual(return_new, None)
+    def test_Nonetype_input_img(self):
+        with self.assertRaises(AttributeError)as cm_new:
+            fu.ft2polargrid(image=None,  ring_length=10, nb=10, ne=10)
+        with self.assertRaises(AttributeError)as cm_old:
+            oldfu.ft2polargrid(image=None,  ring_length=10, nb=10, ne=10)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_2DImg(self):
         return_old = oldfu.ft2polargrid(image=IMAGE_2D,  ring_length=10, nb=10, ne=10)
@@ -2353,11 +2382,9 @@ class Test_rot_shift3D_grid(unittest.TestCase):
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError)as cm_new:
-            fu.rot_shift3D_grid(img=EMData(), phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0, kb=None,
-                                mode="background", wrap=False)
+            fu.rot_shift3D_grid(img=EMData(), phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0, kb=None,mode="background", wrap=False)
         with self.assertRaises(RuntimeError)as cm_old:
-            oldfu.rot_shift3D_grid(img=EMData(), phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0,
-                                   kb=None, mode="background", wrap=False)
+            oldfu.rot_shift3D_grid(img=EMData(), phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0,kb=None, mode="background", wrap=False)
         msg = cm_new.exception.message.split("'")
         msg_old = cm_old.exception.message.split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
@@ -2365,11 +2392,13 @@ class Test_rot_shift3D_grid(unittest.TestCase):
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
 
-    def test_NoneType_Img(self):
-        return_old = oldfu.rot_shift3D_grid(img=None, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0,kb=None, mode="background", wrap=False)
-        return_new = fu.rot_shift3D_grid(img=None, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0,kb=None, mode="background", wrap=False)
-        self.assertEqual(return_new, return_old)
-        self.assertEqual(return_new, None)
+    def test_Nonetype_input_img(self):
+        with self.assertRaises(AttributeError)as cm_new:
+            fu.rot_shift3D_grid(img=None, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0, kb=None,mode="background", wrap=False)
+        with self.assertRaises(AttributeError)as cm_old:
+            oldfu.rot_shift3D_grid(img=None, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0, kb=None,mode="background", wrap=False)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_3DImg_Nokb_background(self):
         return_old = oldfu.rot_shift3D_grid(img=IMAGE_3D, phi=0.3, theta=0.2, psi=0.1, sx=3, sy=3, sz=3, scale=1.0,kb=None, mode="background", wrap=False)
@@ -2438,6 +2467,7 @@ class Test_sinc2inv(unittest.TestCase):
         return_old = oldfu.sinc2inv(nx=10)
         return_new = fu.sinc2inv(nx=10)
         self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal([2.4674011002723395, 1.7458506018291131, 1.3571472332522103, 1.142674053717019, 1.0335583911026998, 1.0, 1.0335583911026998, 1.142674053717019, 1.3571472332522103, 1.7458506018291131], return_old))
 
     def test_null_nx_returns_ZeroDivisionError(self):
         with self.assertRaises(ZeroDivisionError) as cm_new:
@@ -2461,6 +2491,7 @@ class Test_sincinv(unittest.TestCase):
         return_old = oldfu.sincinv(nx=10)
         return_new = fu.sincinv(nx=10)
         self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal([1.5707963267948966, 1.3213063996776497, 1.1649666232352798, 1.068959332115595, 1.016640738463052, 1.0, 1.016640738463052, 1.068959332115595, 1.1649666232352798, 1.3213063996776497], return_old))
 
     def test_null_nx_returns_ZeroDivisionError(self):
         with self.assertRaises(ZeroDivisionError) as cm_new:

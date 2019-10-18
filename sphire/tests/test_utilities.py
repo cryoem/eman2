@@ -69,6 +69,7 @@ import global_def
 from numpy import allclose, array_equal, array
 from numpy import full as numpy_full
 from numpy import float32 as numpy_float32
+from numpy import ones as numpy_ones
 from zlib import compress
 
 from sphire.libpy import sp_utilities as oldfu
@@ -451,8 +452,8 @@ class Test_center_2D(unittest.TestCase):
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertTrue(array_equal(return_new[1], return_old[1]))
         self.assertTrue(array_equal(return_new[2], return_old[2]))
-        self.assertTrue(array_equal(return_new[1], -5.0))
-        self.assertTrue(array_equal(return_new[2], -5.0))
+        self.assertTrue(array_equal(return_old[1], -5.0))
+        self.assertTrue(array_equal(return_old[2], -5.0))
 
     #todo: should be error??
     def test_3DImg(self):
@@ -461,8 +462,8 @@ class Test_center_2D(unittest.TestCase):
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertTrue(array_equal(return_new[1], return_old[1]))
         self.assertTrue(array_equal(return_new[2], return_old[2]))
-        self.assertTrue(array_equal(return_new[1], 0.000186920166015625))
-        self.assertTrue(array_equal(return_new[2], -0.00138092041015625))
+        self.assertTrue(array_equal(return_old[1], 0.000186920166015625))
+        self.assertTrue(array_equal(return_old[2], -0.00138092041015625))
 
     def test_2DImgcenter_method0(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=0,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
@@ -471,8 +472,8 @@ class Test_center_2D(unittest.TestCase):
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
         self.assertTrue(array_equal(return_new[0].get_3dview(), IMAGE_2D))
-        self.assertTrue(array_equal(return_new[1], 0.0))
-        self.assertTrue(array_equal(return_new[2], 0.0))
+        self.assertTrue(array_equal(return_old[1], 0.0))
+        self.assertTrue(array_equal(return_old[2], 0.0))
 
     def test_2DImgcenter_method1searching_range_negativeself_defined_referenceTrue(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
@@ -480,21 +481,21 @@ class Test_center_2D(unittest.TestCase):
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
-        self.assertTrue(array_equal(return_new[1], 15.868728637695312))
-        self.assertTrue(array_equal(return_new[2], -13.827560424804688))
+        self.assertTrue(array_equal(return_old[1], 15.868728637695312))
+        self.assertTrue(array_equal(return_old[2], -13.827560424804688))
 
     def test_2DImgcenter_method2searching_range_negativeself_defined_referenceTrue(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=2,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
-        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
+        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=2,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
-        self.assertTrue(array_equal(return_new[1], 24.0))
-        self.assertTrue(array_equal(return_new[2], 57.0))
+        self.assertTrue(array_equal(return_old[1], 24.0))
+        self.assertTrue(array_equal(return_old[2], 57.0))
 
     def test_2DImgcenter_method3searching_range_negativeself_defined_referenceTrue(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=3,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
-        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
+        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=3,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
@@ -504,7 +505,7 @@ class Test_center_2D(unittest.TestCase):
     #todo: BUG! with center_method=4 the parameters 'self_defined_reference' will be used as EMData::EMData* (the reference parameter) by 'fondamentals.ccf(image_to_be_centered, reference) but it is a boolean
     def test_2DImgcenter_method4searching_range_negativeself_defined_referenceTrue(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=4,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
-        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
+        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=4,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
@@ -520,17 +521,17 @@ class Test_center_2D(unittest.TestCase):
 
     def test_2DImgcenter_method6searching_range_negativeself_defined_referenceTrue(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=6,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
-        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
+        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=6,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
-        self.assertTrue(array_equal(return_new[1], -0.8430328369140625))
-        self.assertTrue(array_equal(return_new[2], 8.518508911132812))
+        self.assertTrue(array_equal(return_old[1], -0.8430328369140625))
+        self.assertTrue(array_equal(return_old[2], 8.518508911132812))
 
     # todo: BUG! with center_method=7 the parameters 'self_defined_reference' will be used as EMData::EMData* (the reference parameter) by 'fondamentals.ccf(image_to_be_centered, reference) but it is a boolean
     def test_2DImgcenter_method7searching_range_negativeself_defined_referenceTrue(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=7,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
-        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
+        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=7,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
@@ -541,45 +542,47 @@ class Test_center_2D(unittest.TestCase):
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
-        self.assertTrue(array_equal(return_new[1], 0))
-        self.assertTrue(array_equal(return_new[2], 0))
+        self.assertTrue(array_equal(return_old[1], 0))
+        self.assertTrue(array_equal(return_old[2], 0))
 
     def test_2DImgcenter_method2searching_range_positiveself_defined_referenceTrue(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=2,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
-        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
+        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=2,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
-        self.assertTrue(array_equal(return_new[1], 0))
-        self.assertTrue(array_equal(return_new[2], 0))
+        self.assertTrue(array_equal(return_old[1], 0))
+        self.assertTrue(array_equal(return_old[2], 0))
 
     def test_2DImgcenter_method3searching_range_positiveself_defined_referenceTrue(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=3,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
-        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
+        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=3,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
+        self.assertTrue(array_equal(return_old[1], 0.0))
+        self.assertTrue(array_equal(return_old[2], 0.0))
 
     # todo: BUG! with center_method=7 the parameters 'self_defined_reference' will be used as EMData::EMData* (the reference parameter) by 'fondamentals.ccf(image_to_be_centered, reference) but it is a boolean
     def test_2DImgcenter_method4searching_range_positiveself_defined_referenceTrue(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=4,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
-        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
+        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=4,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
 
     def test_2DImgcenter_method5searching_range_positiveself_defined_referenceTrue(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=5,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
-        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
+        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=5,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
-        self.assertTrue(array_equal(return_new[1], 0.0))
-        self.assertTrue(array_equal(return_new[2], 0.0))
+        self.assertTrue(array_equal(return_old[1], 0.0))
+        self.assertTrue(array_equal(return_old[2], 0.0))
 
     def test_2DImgcenter_method6searching_range_positiveself_defined_referenceTrue(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=6,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
-        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
+        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=6,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
@@ -589,7 +592,7 @@ class Test_center_2D(unittest.TestCase):
     # todo: BUG! with center_method=7 the parameters 'self_defined_reference=True' will be used as EMData::EMData* (the reference parameter) by 'fondamentals.ccf(image_to_be_centered, reference) but it is a boolean
     def test_2DImgcenter_method7searching_range_positiveself_defined_referenceTrue(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=7,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
-        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
+        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=7,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=True)
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
@@ -601,58 +604,62 @@ class Test_center_2D(unittest.TestCase):
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
-        self.assertTrue(array_equal(return_new[1], 15.868728637695312))
-        self.assertTrue(array_equal(return_new[2], -13.827560424804688))
+        self.assertTrue(array_equal(return_old[1], 15.868728637695312))
+        self.assertTrue(array_equal(return_old[2], -13.827560424804688))
 
     def test_2DImgcenter_method2searching_range_negativeself_defined_referenceFalse(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=2,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
-        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
+        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=2,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
-        self.assertTrue(array_equal(return_new[1], 24))
-        self.assertTrue(array_equal(return_new[2], 57))
+        self.assertTrue(array_equal(return_old[1], 24))
+        self.assertTrue(array_equal(return_old[2], 57))
 
     def test_2DImgcenter_method3searching_range_negativeself_defined_referenceFalse(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=3,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
-        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
+        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=3,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
-        self.assertTrue(array_equal(return_new[1], 22))
-        self.assertTrue(array_equal(return_new[2], 49))
+        self.assertTrue(array_equal(return_old[1], 22))
+        self.assertTrue(array_equal(return_old[2], 49))
 
     def test_2DImgcenter_method4searching_range_negativeself_defined_referenceFalse(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=4,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
-        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
+        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=4,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
+        self.assertTrue(array_equal(return_old[1], 15.868728637695312))
+        self.assertTrue(array_equal(return_old[2], -13.827560424804688))
 
     def test_2DImgcenter_method5searching_range_negativeself_defined_referenceFalse(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=5,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
-        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
+        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=5,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
-        self.assertTrue(array_equal(return_new[1], 22))
-        self.assertTrue(array_equal(return_new[2], 49))
+        self.assertTrue(array_equal(return_old[1], 22))
+        self.assertTrue(array_equal(return_old[2], 49))
 
     def test_2DImgcenter_method6searching_range_negativeself_defined_referenceFalse(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=6,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
-        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
+        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=6,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
+        self.assertTrue(array_equal(return_old[1], 15.868728637695312))
+        self.assertTrue(array_equal(return_old[2], -13.827560424804688))
 
     def test_2DImgcenter_method7searching_range_negativeself_defined_referenceFalse(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=7,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
-        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
+        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=7,searching_range=-1,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
-        self.assertTrue(array_equal(return_new[1], -0.8430328369140625))
-        self.assertTrue(array_equal(return_new[2], 8.518508911132812))
+        self.assertTrue(array_equal(return_old[1], -0.8430328369140625))
+        self.assertTrue(array_equal(return_old[2], 8.518508911132812))
 
     def test_2DImgcenter_method1searching_range_positiveself_defined_referenceFalse(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
@@ -660,59 +667,63 @@ class Test_center_2D(unittest.TestCase):
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
-        self.assertTrue(array_equal(return_new[1], 0.0))
-        self.assertTrue(array_equal(return_new[2], 0.0))
+        self.assertTrue(array_equal(return_old[1], 0.0))
+        self.assertTrue(array_equal(return_old[2], 0.0))
 
     def test_2DImgcenter_method2searching_range_positiveself_defined_referenceFalse(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=2,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
-        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
+        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=2,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
-        self.assertTrue(array_equal(return_new[1], 0.0))
-        self.assertTrue(array_equal(return_new[2], 0.0))
+        self.assertTrue(array_equal(return_old[1], 0.0))
+        self.assertTrue(array_equal(return_old[2], 0.0))
 
     def test_2DImgcenter_method3searching_range_positiveself_defined_referenceFalse(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=3,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
-        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
+        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=3,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
-        self.assertTrue(array_equal(return_new[1], 0.0))
-        self.assertTrue(array_equal(return_new[2], 0.0))
+        self.assertTrue(array_equal(return_old[1], 0.0))
+        self.assertTrue(array_equal(return_old[2], 0.0))
 
     # todo: BUG! with center_method=4 the parameters 'self_defined_reference' will be used as EMData::EMData* (the reference parameter) by 'fondamentals.ccf(image_to_be_centered, reference) but it is a boolean
     def test_2DImgcenter_method4searching_range_positiveself_defined_referenceFalse(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=4,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
-        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
+        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=4,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
+        self.assertTrue(array_equal(return_old[1], 0.0))
+        self.assertTrue(array_equal(return_old[2], 0.0))
 
     def test_2DImgcenter_method5searching_range_positiveself_defined_referenceFalse(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=5,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
-        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
+        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=5,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
-        self.assertTrue(array_equal(return_new[1], 0.0))
-        self.assertTrue(array_equal(return_new[2], 0.0))
+        self.assertTrue(array_equal(return_old[1], 0.0))
+        self.assertTrue(array_equal(return_old[2], 0.0))
 
     def test_2DImgcenter_method6searching_range_positiveself_defined_referenceFalse(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=6,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
-        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
+        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=6,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
+        self.assertTrue(array_equal(return_old[1], -0.8430328369140625))
+        self.assertTrue(array_equal(return_old[2], 0.0))
 
     def test_2DImgcenter_method7searching_range_positiveself_defined_referenceFalse(self):
         return_new = fu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=7,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
-        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=1,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
+        return_old = oldfu.center_2D(image_to_be_centered=IMAGE_2D ,center_method=7,searching_range=2,Gauss_radius_inner=2,Gauss_radius_outter=7,self_defined_reference=False)
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
-        self.assertTrue(array_equal(return_new[1], -0.8430328369140625))
-        self.assertTrue(array_equal(return_new[2], 0.0))
+        self.assertTrue(array_equal(return_old[1], 0.0))
+        self.assertTrue(array_equal(return_old[2], 0.0))
 
 
 
@@ -729,7 +740,7 @@ class Test_common_line_in3D(unittest.TestCase):
         return_old = oldfu.common_line_in3D(phiA=2, thetaA=1, phiB=4, thetaB=3)
         return_new = fu.common_line_in3D(phiA=2, thetaA=1, phiB=4, thetaB=3)
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, (45.11342420305066, 89.00320412303714)))
+        self.assertTrue(array_equal(return_old, (45.11342420305066, 89.00320412303714)))
 
 
 
@@ -746,7 +757,7 @@ class Test_compose_transform2m(unittest.TestCase):
         return_old = oldfu.compose_transform2m(alpha1=1.0,sx1=2.0,sy1=3.0,mirror1=0,scale1=1.0,alpha2=2.0,sx2=3.0,sy2=4.0,mirror2=0,scale2=1.0)
         return_new = fu.compose_transform2m(alpha1=1.0,sx1=2.0,sy1=3.0,mirror1=0,scale1=1.0,alpha2=2.0,sx2=3.0,sy2=4.0,mirror2=0,scale2=1.0)
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, (2.999999834763278, 5.103480339050293, 6.928373336791992, 0, 1.0)))
+        self.assertTrue(array_equal(return_old, (2.999999834763278, 5.103480339050293, 6.928373336791992, 0, 1.0)))
 
 
 
@@ -763,7 +774,7 @@ class Test_compose_transform3m(unittest.TestCase):
         return_old = oldfu.compose_transform3(phi1=1.0,theta1=2, psi1=2,sx1=2.0,sy1=3.0,sz1=1,scale1=1.0,phi2=2.0,theta2=3, psi2=4,sx2=3.0,sy2=4.0,scale2=1.0,sz2=2)
         return_new = fu.compose_transform3(phi1=1.0,theta1=2, psi1=2,sx1=2.0,sy1=3.0,sz1=1,mirror1=0,scale1=1.0,phi2=2.0,theta2=3, psi2=4,sx2=3.0,sy2=4.0,mirror2=0,scale2=1.0,sz2=2)
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, 3.402106069683171, 4.997074136852235, 5.60154991083283, 5.24754524230957, 6.778360366821289, 3.108717203140259, 1.0)))
+        self.assertTrue(array_equal(return_old, [3.402106069683171, 4.997074136852235, 5.60154991083283, 5.24754524230957, 6.778360366821289, 3.108717203140259, 1.0]))
 
 
 
@@ -870,7 +881,7 @@ class Test_find_inplane_to_match(unittest.TestCase):
         return_old = oldfu.find_inplane_to_match(phiA=1, thetaA=1, phiB=2, thetaB=2, psiA=0, psiB=0)
         return_new = fu.find_inplane_to_match(phiA=1, thetaA=1, phiB=2, thetaB=2, psiA=0, psiB=0)
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, (-359.0003071638985, 1.0003045023348265)))
+        self.assertTrue(array_equal(return_old, (-359.0003071638985, 1.0003045023348265)))
 
 
 
@@ -887,7 +898,7 @@ class Test_get_sym(unittest.TestCase):
         return_old = oldfu.get_sym(symmetry="c1")
         return_new = fu.get_sym(symmetry="c1")
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, [[0.0, 0.0, 0.0]]))
+        self.assertTrue(array_equal(return_old, [[0.0, 0.0, 0.0]]))
 
 
 
@@ -956,7 +967,7 @@ class Test_info(unittest.TestCase):
         return_old = oldfu.info(image=IMAGE_2D, mask=None, Comment="")
         return_new = fu.info(image=IMAGE_2D, mask=None, Comment="")
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, (-0.34738418459892273, 1.3910515308380127, -4.196987152099609, 6.156104564666748, 352, 352, 1)))
+        self.assertTrue(array_equal(return_old, (-0.34738418459892273, 1.3910515308380127, -4.196987152099609, 6.156104564666748, 352, 352, 1)))
 
     def test_2dImgwith_wrongsize_mask_RuntimeError_ImageDimensionException(self):
         with self.assertRaises(RuntimeError) as cm_new:
@@ -975,7 +986,7 @@ class Test_info(unittest.TestCase):
         return_old = oldfu.info(image=IMAGE_2D, mask=None, Comment="")
         return_new = fu.info(image=IMAGE_2D, mask=None, Comment="")
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, (1.617922306060791, 0.3879293203353882, 1.0218865871429443, 2.2291574478149414, 352, 352, 1)))
+        self.assertTrue(array_equal(return_old, (1.617922306060791, 0.3879293203353882, 1.0218865871429443, 2.2291574478149414, 352, 352, 1)))
 
     def test_2dImgBlankwith_wrongsize_mask_RuntimeError_ImageDimensionException(self):
         with self.assertRaises(RuntimeError) as cm_new:
@@ -994,19 +1005,19 @@ class Test_info(unittest.TestCase):
         return_old = oldfu.info(image=IMAGE_BLANK_2D, mask=None, Comment="")
         return_new = fu.info(image=IMAGE_BLANK_2D, mask=None, Comment="")
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, (0.0, 0.0, 0.0, 0.0, 10, 10, 1)))
+        self.assertTrue(array_equal(return_old, (0.0, 0.0, 0.0, 0.0, 10, 10, 1)))
 
     def test_2dblankImgwith_mask(self):
         return_old = oldfu.info(image=IMAGE_BLANK_2D, mask=MASK_IMAGE_BLANK_2D, Comment="")
         return_new = fu.info(image=IMAGE_BLANK_2D, mask=MASK_IMAGE_BLANK_2D, Comment="")
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, (0.0, 0.0, 0.0, 0.0, 10, 10, 1)))
+        self.assertTrue(array_equal(return_old, (0.0, 0.0, 0.0, 0.0, 10, 10, 1)))
 
     def test_3dImg(self):
         return_old = oldfu.info(image=IMAGE_3D, mask=None, Comment="")
         return_new = fu.info(image=IMAGE_3D, mask=None, Comment="")
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, (1.640047550201416, 8.512676239013672, -10.731719017028809, 144.96165466308594, 76, 76, 76)))
+        self.assertTrue(array_equal(return_old, (1.640047550201416, 8.512676239013672, -10.731719017028809, 144.96165466308594, 76, 76, 76)))
 
     def test_3dImgwith_wrongsize_mask_RuntimeError_ImageDimensionException(self):
         with self.assertRaises(RuntimeError) as cm_new:
@@ -1025,20 +1036,19 @@ class Test_info(unittest.TestCase):
         return_old = oldfu.info(image=IMAGE_3D, mask=MASK_3DIMAGE, Comment="")
         return_new = fu.info(image=IMAGE_3D, mask=MASK_3DIMAGE, Comment="")
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, (
-        24.25007438659668, 14.403861045837402, -10.731719017028809, 45.90932083129883, 76, 76, 76)))
+        self.assertTrue(array_equal(return_old, (24.25007438659668, 14.403861045837402, -10.731719017028809, 45.90932083129883, 76, 76, 76)))
 
     def test_3dblankImg(self):
         return_old = oldfu.info(image=IMAGE_BLANK_3D, mask=None, Comment="")
         return_new = fu.info(image=IMAGE_BLANK_3D, mask=None, Comment="")
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, (0.0, 0.0, 0.0, 0.0, 10, 10, 10)))
+        self.assertTrue(array_equal(return_old, (0.0, 0.0, 0.0, 0.0, 10, 10, 10)))
 
     def test_3dblankImgwith_mask(self):
         return_old = oldfu.info(image=IMAGE_BLANK_3D, mask=MASK_IMAGE_BLANK_3D, Comment="")
         return_new = fu.info(image=IMAGE_BLANK_3D, mask=MASK_IMAGE_BLANK_3D, Comment="")
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, (0.0, 0.0, 0.0, 0.0, 10, 10, 10)))
+        self.assertTrue(array_equal(return_old, (0.0, 0.0, 0.0, 0.0, 10, 10, 10)))
 
     def test_3dImgBlankwith_wrongsize_mask_RuntimeError_ImageDimensionException(self):
         with self.assertRaises(RuntimeError) as cm_new:
@@ -1055,7 +1065,7 @@ class Test_info(unittest.TestCase):
 
 
 
-    class Test_model_square(unittest.TestCase):
+class Test_model_square(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.model_square()
@@ -1080,10 +1090,17 @@ class Test_model_cylinder(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, "model_cylinder() takes at least 3 arguments (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-    #todo: it is crashing .... why??
+    def test_empty_input_image_returns_RuntimeError_ImageFormatException_image_not_same_size(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.model_cylinder(radius=3, nx=100, ny=100, nz=10)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.model_cylinder(radius=3, nx=100, ny=100, nz=10)
+        self.assertEqual(cm_new.exception.message, "std::exception")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
     def test_model_cylinder(self):
-        return_old = oldfu.model_cylinder(radius=3, nx=100, ny=100, nz=1)
-        return_new = fu.model_cylinder(radius=3, nx=100, ny=100, nz=1)
+        return_old = oldfu.model_cylinder(radius=3, nx=100, ny=100, nz=10)
+        return_new = fu.model_cylinder(radius=3, nx=100, ny=100, nz=10)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
 
@@ -1136,7 +1153,7 @@ class Test_parse_spider_fname(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
 
-#todo: need to let it run
+#todo: it is not running because a --> UnboundLocalError: local variable 'image_mask_applied' referenced before assignment
 class Test_reconstitute_mask(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -1167,7 +1184,7 @@ class Test_rotate_about_center(unittest.TestCase):
         return_old = oldfu.rotate_about_center(alpha=1, cx=2, cy=3)
         return_new = fu.rotate_about_center(alpha=1, cx=2, cy=3)
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, (0.9999999465488011, -0.05205273628234863, 0.035361528396606445, 1.0)))
+        self.assertTrue(array_equal(return_old, (0.9999999465488011, -0.05205273628234863, 0.035361528396606445, 1.0)))
 
 
 # not able to test it. why??
@@ -1346,20 +1363,20 @@ class Test_parse_user_function(unittest.TestCase):
     def test_not_valid_optstr(self):
         return_old = oldfu.parse_user_function(opt_string="invalid")
         return_new = fu.parse_user_function(opt_string="invalid")
-        self.assertEqual(return_new,"invalid")
+        self.assertEqual(return_old,"invalid")
         self.assertEqual(return_new,return_old)
 
     def test__2str_in_optstr(self):
         return_old = oldfu.parse_user_function(opt_string="[valid,valid2]")
         return_new = fu.parse_user_function(opt_string="[valid,valid2]")
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, ["valid","valid2"]))
+        self.assertTrue(array_equal(return_old, ["valid","valid2"]))
 
     def test__3str_in_optstr(self):
         return_old = oldfu.parse_user_function(opt_string="[valid,valid2,valid3]")
         return_new = fu.parse_user_function(opt_string="[valid,valid2,valid3]")
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, ['valid2', 'valid3', 'valid']))
+        self.assertTrue(array_equal(return_old, ['valid2', 'valid3', 'valid']))
 
 
 
@@ -1376,7 +1393,7 @@ class Test_getang(unittest.TestCase):
         return_old = oldfu.getang(n=[0.1,0.13,0.15])
         return_new = fu.getang(n=[0.1,0.13,0.15])
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, [52.43140797117251, 81.37307344132137]))
+        self.assertTrue(array_equal(return_old, [52.43140797117251, 81.37307344132137]))
 
 
 
@@ -1401,7 +1418,7 @@ class Test_nearest_ang(unittest.TestCase):
         return_old = oldfu.nearest_ang(vecs=[1,2,3], phi=3, tht=4)
         return_new = fu.nearest_ang(vecs=[1,2,3], phi=3, tht=4)
         self.assertEqual(return_new, return_old)
-        self.assertEqual(return_new, 0)
+        self.assertEqual(return_old, 0)
 
 
 
@@ -1426,19 +1443,19 @@ class Test_nearestk_projangles(unittest.TestCase):
         return_old = oldfu.nearestk_projangles(projangles=[[1,2,3,4,5],[1,2,30,4,5],[11,2,3,4,5]], whichone=0, howmany=1, sym="c1")
         return_new = fu.nearestk_projangles(projangles=[[1,2,3,4,5],[1,2,30,4,5],[11,2,3,4,5]], whichone=0, howmany=1, sym="c1")
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, [1]))
+        self.assertTrue(array_equal(return_old, [1]))
 
     def test_nearestk_projangles_d1(self):
         return_old = oldfu.nearestk_projangles(projangles=[[1,2,3,4,5],[1,2,30,4,5],[11,2,3,4,5]], whichone=0, howmany=1, sym="d1")
         return_new = fu.nearestk_projangles(projangles=[[1,2,3,4,5],[1,2,30,4,5],[11,2,3,4,5]], whichone=0, howmany=1, sym="d1")
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, [1]))
+        self.assertTrue(array_equal(return_old, [1]))
 
     def test_nearestk_projangles_error_symmetry(self):
         return_old = oldfu.nearestk_projangles(projangles=[[1,2,3,4,5],[1,2,30,4,5],[11,2,3,4,5]], whichone=0, howmany=1, sym="invalid")
         return_new = fu.nearestk_projangles(projangles=[[1,2,3,4,5],[1,2,30,4,5],[11,2,3,4,5]], whichone=0, howmany=1, sym="invalid")
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, []))
+        self.assertTrue(array_equal(return_old, []))
 
 
 #todo: i cannot test it
@@ -1541,6 +1558,7 @@ class Test_nearestk_to_refdir(unittest.TestCase):
         return_old = oldfu.nearestk_to_refdir(refnormal=[1,3,5], refdir=[1,3,2], howmany=1)
         return_new = fu.nearestk_to_refdir(refnormal=[1,3,5], refdir=[1,3,2], howmany=1)
         self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal([0], return_old))
 
 
 
@@ -1573,10 +1591,10 @@ class Test_nearestk_to_refdirs(unittest.TestCase):
         return_old = oldfu.nearestk_to_refdirs(refnormal=[1, 3, 5,1, 3, 5,1, 3, 5,1, 3, 5,1, 3, 5], refdir=[[1, 3, 2], [1, 3, 2]], howmany=1)
         return_new = fu.nearestk_to_refdirs(refnormal=[1, 3, 5,1, 3, 5,1, 3, 5,1, 3, 5,1, 3, 5], refdir=[[1, 3, 2], [1, 3, 2]], howmany=1)
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, [[0], [1]]))
+        self.assertTrue(array_equal(return_old, [[0], [1]]))
 
 
-
+#todo: how can i test it?
 class Test_assign_projangles_f(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -1634,19 +1652,19 @@ class Test_cone_ang(unittest.TestCase):
         return_old = oldfu.cone_ang(projangles=[[1,2,3,4],[21,22,23,24],[11,12,13,14]], phi = 1, tht=2 , ant=3, symmetry="c1")
         return_new = fu.cone_ang(projangles=[[1,2,3,4],[21,22,23,24],[11,12,13,14]], phi = 1, tht=2 , ant=3, symmetry="c1")
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, [[1, 2, 3, 4]]))
+        self.assertTrue(array_equal(return_old, [[1, 2, 3, 4]]))
 
     def test_sym_c2(self):
         return_old = oldfu.cone_ang(projangles=[[1,2,3,4],[21,22,23,24],[11,12,13,14]], phi = 1, tht=2 , ant=3, symmetry="c2")
         return_new = fu.cone_ang(projangles=[[1,2,3,4],[21,22,23,24],[11,12,13,14]], phi = 1, tht=2 , ant=3, symmetry="c2")
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, [[1, 2, 3, 4]]))
+        self.assertTrue(array_equal(return_old, [[1, 2, 3, 4]]))
 
     def test_sym_d2(self):
         return_old = oldfu.cone_ang(projangles=[[1, 2, 3, 4], [21, 22, 23, 24], [11, 12, 13, 14]], phi=1, tht=2, ant=3,symmetry="d2")
         return_new = fu.cone_ang(projangles=[[1, 2, 3, 4], [21, 22, 23, 24], [11, 12, 13, 14]], phi=1, tht=2, ant=3,symmetry="d2")
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, [[1, 2, 3, 4]]))
+        self.assertTrue(array_equal(return_old, [[1, 2, 3, 4]]))
 
 
 
@@ -1671,19 +1689,19 @@ class Test_cone_ang_f(unittest.TestCase):
         return_old = oldfu.cone_ang_f(projangles=[[1,2,3,4],[21,22,23,24],[11,12,13,14]], phi = 1, tht=2 , ant=3, symmetry="c1")
         return_new = fu.cone_ang_f(projangles=[[1,2,3,4],[21,22,23,24],[11,12,13,14]], phi = 1, tht=2 , ant=3, symmetry="c1")
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, [[1, 2, 3, 4]]))
+        self.assertTrue(array_equal(return_old, [[1, 2, 3, 4]]))
 
     def test_sym_c(self):
         return_old = oldfu.cone_ang_f(projangles=[[1,2,3,4],[21,22,23,24],[11,12,13,14]], phi = 1, tht=2 , ant=3, symmetry="c2")
         return_new = fu.cone_ang_f(projangles=[[1,2,3,4],[21,22,23,24],[11,12,13,14]], phi = 1, tht=2 , ant=3, symmetry="c2")
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, [[1, 2, 3, 4]]))
+        self.assertTrue(array_equal(return_old, [[1, 2, 3, 4]]))
 
     def test_sym_d(self):
         return_old = oldfu.cone_ang_f(projangles=[[1, 2, 3, 4], [21, 22, 23, 24], [11, 12, 13, 14]], phi=1, tht=2, ant=3,symmetry="d2")
         return_new = fu.cone_ang_f(projangles=[[1, 2, 3, 4], [21, 22, 23, 24], [11, 12, 13, 14]], phi=1, tht=2, ant=3,symmetry="d2")
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, [[1, 2, 3, 4]]))
+        self.assertTrue(array_equal(return_old, [[1, 2, 3, 4]]))
 
 
 
@@ -1709,8 +1727,8 @@ class Test_cone_ang_with_index(unittest.TestCase):
         return_new = fu.cone_ang_with_index(projangles=[[1,2,3,4],[21,22,23,24],[11,12,13,14]], phi = 1, tht=2 , ant=3)
         self.assertTrue(array_equal(return_new[0], return_old[0]))
         self.assertEqual(return_new[1], return_old[1])
-        self.assertTrue(array_equal(return_new[0], [[1, 2, 3, 4, 0]]))
-        self.assertEqual(return_new[1], 1)
+        self.assertTrue(array_equal(return_old[0], [[1, 2, 3, 4, 0]]))
+        self.assertEqual(return_old[1], 1)
 
 
 
@@ -1755,13 +1773,13 @@ class Test_angles_between_anglesets(unittest.TestCase):
         return_old = oldfu.angles_between_anglesets(angleset1=self.agls1, angleset2=self.agls2, indexes=None)
         return_new = fu.angles_between_anglesets(angleset1=self.agls1, angleset2=self.agls2, indexes=None)
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, [0.0, 0.22190159831597722, 0.28859380708484916, 0.04353735746084626, 0.3154949948578467, 0.15146310888536912, 0.0, 0.04353731692694007, 0.31549499485669147, 0.15146306834889342, 0.22190157805124192, 0.28859378682155445]))
+        self.assertTrue(array_equal(return_old, [0.0, 0.22190159831597722, 0.28859380708484916, 0.04353735746084626, 0.3154949948578467, 0.15146310888536912, 0.0, 0.04353731692694007, 0.31549499485669147, 0.15146306834889342, 0.22190157805124192, 0.28859378682155445]))
 
     def test_angles_between_anglesets_Index(self):
         return_old = oldfu.angles_between_anglesets(angleset1=[1,2,3,4], angleset2=[1,2,3,4], indexes=[1,2,3,4])
         return_new = fu.angles_between_anglesets(angleset1=[1,2,3,4], angleset2=[1,2,3,4], indexes=[1,2,3,4])
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, [0.18403868911316032, 0.2507530674355067, 0.08137682850104319, 0.35334686263089815]))
+        self.assertTrue(array_equal(return_old, [0.18403868911316032, 0.2507530674355067, 0.08137682850104319, 0.35334686263089815]))
 
 
 #todo: i cannot test it
@@ -1857,7 +1875,7 @@ class Test_mulvec(unittest.TestCase):
         return_old = oldfu.mulvec(v1=[0.1,0.13,0.15],v2=[0.1,0.13,0.15])
         return_new = fu.mulvec(v1=[0.1,0.13,0.15],v2=[0.1,0.13,0.15])
         self.assertEqual(return_new, return_old)
-        self.assertEqual(return_new, 0.0494)
+        self.assertEqual(return_old, 0.0494)
 
 
 
@@ -1874,13 +1892,13 @@ class Test_assignments_to_groups(unittest.TestCase):
         return_old = oldfu.assignments_to_groups(assignments=[1,2,3,4,5,6,7,8,9,], n=20)
         return_new = fu.assignments_to_groups(assignments=[1,2,3,4,5,6,7,8,9,], n=20)
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, [[], [0], [1], [2], [3], [4], [5], [6], [7], [8], [], [], [], [], [], [], [], [], [], [], []]))
+        self.assertTrue(array_equal(return_old, [[], [0], [1], [2], [3], [4], [5], [6], [7], [8], [], [], [], [], [], [], [], [], [], [], []]))
 
     def test_default_n(self):
         return_old = oldfu.assignments_to_groups(assignments=[1,2,3,4,5,6,7,8,9,], n=-1)
         return_new = fu.assignments_to_groups(assignments=[1,2,3,4,5,6,7,8,9,], n=-1)
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new,[[], [0], [1], [2], [3], [4], [5], [6], [7], [8]]))
+        self.assertTrue(array_equal(return_old,[[], [0], [1], [2], [3], [4], [5], [6], [7], [8]]))
 
 
 
@@ -1897,13 +1915,13 @@ class Test_groups_assignments(unittest.TestCase):
         return_old = oldfu.groups_assignments(groups=[ [0], [1], [2], [3], [4], [5], [6], [7], [8]], n=-1)
         return_new = fu.groups_assignments(groups=[ [0], [1], [2], [3], [4], [5], [6], [7], [8]], n=-1)
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, [0, 1, 2, 3, 4, 5, 6, 7, 8]))
+        self.assertTrue(array_equal(return_old, [0, 1, 2, 3, 4, 5, 6, 7, 8]))
 
     def test_n(self):
         return_old = oldfu.groups_assignments(groups=[[0], [1], [2], [3], [4], [5], [6], [7], [8]], n=13)
         return_new = fu.groups_assignments(groups=[[0], [1], [2], [3], [4], [5], [6], [7], [8]], n=-13)
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, [0, 1, 2, 3, 4, 5, 6, 7, 8, -1, -1, -1, -1, -1]))
+        self.assertTrue(array_equal(return_old, [0, 1, 2, 3, 4, 5, 6, 7, 8, -1, -1, -1, -1, -1]))
 
 
 
@@ -1944,7 +1962,7 @@ class Test_chunks_distribution(unittest.TestCase):
         return_old = oldfu.chunks_distribution(chunks=[[1,2,3],[1,2,3]],procs=5)
         return_new = fu.chunks_distribution(chunks=[[1,2,3],[1,2,3]],procs=5)
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, [[[1, 2, 3]], [[1, 2, 3]], [], [], []]))
+        self.assertTrue(array_equal(return_old, [[[1, 2, 3]], [[1, 2, 3]], [], [], []]))
 
 
 
@@ -1961,13 +1979,13 @@ class Test_rearrange_ranks_of_processors(unittest.TestCase):
         return_old = oldfu.rearrange_ranks_of_processors(mode="to fit round-robin assignment")
         return_new = fu.rearrange_ranks_of_processors(mode="")
         self.assertEqual(return_new, return_old)
-        self.assertEqual(return_new, 139702819159776)
+        self.assertEqual(return_old, 139702819159776)
 
     def test_rearrange_ranks_of_processors_NodeAssignment(self):
         return_old = oldfu.rearrange_ranks_of_processors(mode="to fit by-node assignment")
         return_new = fu.rearrange_ranks_of_processors(mode="")
         self.assertEqual(return_new, return_old)
-        self.assertEqual(return_new, 140095636451040)
+        self.assertEqual(return_old, 140095636451040)
 
 
 
@@ -1989,413 +2007,564 @@ class Test_wrap_mpi_split_shared_memory(unittest.TestCase):
 
 #it is genereting a random string, it is not unit-testable
 class Test_random_string(unittest.TestCase):
-    def test_wrong_number_params(self):
-        with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
-        with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+    pass
 
 
+#todo: how test it?
 class Test_get_nonexistent_directory_increment_value(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.get_nonexistent_directory_increment_value()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.get_nonexistent_directory_increment_value()
+        self.assertEqual(cm_new.exception.message, "get_nonexistent_directory_increment_value() takes at least 2 arguments (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_get_nonexistent_directory_increment_value(self):
-        return_old = oldfu.get_nonexistent_directory_increment_value(directory_location, directory_name, start_value=1, myformat="%03d")
-        return_new = fu.get_nonexistent_directory_increment_value(directory_location, directory_name, start_value=1, myformat="%03d")
+        return_old = oldfu.get_nonexistent_directory_increment_value(directory_location="", directory_name="", start_value=1, myformat="%03d")
+        return_new = fu.get_nonexistent_directory_increment_value(directory_location="", directory_name="", start_value=1, myformat="%03d")
         self.assertTrue(array_equal(return_new, return_old))
 
+
+#todo: need a file
 class Test_store_program_state(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.store_program_state()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.store_program_state()
+        self.assertEqual(cm_new.exception.message, "store_program_state() takes exactly 3 arguments (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_store_program_state(self):
-        return_old = oldfu.store_program_state(filename, state, stack)
-        return_new = fu.store_program_state(filename, state, stack)
+        return_old = oldfu.store_program_state(filename="", state="", stack="")
+        return_new = fu.store_program_state(filename="", state="", stack="")
         self.assertTrue(array_equal(return_new, return_old))
 
+
+#todo: need a file
 class Test_restore_program_stack_and_state(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.restore_program_stack_and_state()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.restore_program_stack_and_state()
+        self.assertEqual(cm_new.exception.message, "restore_program_stack_and_state() takes exactly 1 argument (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_restore_program_stack_and_state(self):
-        return_old = oldfu.restore_program_stack_and_state(file_name_of_saved_state)
-        return_new = fu.restore_program_stack_and_state(file_name_of_saved_state)
+        return_old = oldfu.restore_program_stack_and_state(file_name_of_saved_state="")
+        return_new = fu.restore_program_stack_and_state(file_name_of_saved_state="")
         self.assertTrue(array_equal(return_new, return_old))
 
+
+#todo need data
 class Test_program_state_stack(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.program_state_stack()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.program_state_stack()
+        self.assertEqual(cm_new.exception.message, "program_state_stack() takes at least 2 arguments (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_program_state_stack(self):
-        return_old = oldfu.program_state_stack(full_current_state,frameinfo,file_name_of_saved_state=None,last_call="",force_starting_execution=False)
-        return_new = fu.program_state_stack(full_current_state,frameinfo,file_name_of_saved_state=None,last_call="",force_starting_execution=False)
+        return_old = oldfu.program_state_stack(full_current_state="",frameinfo="",file_name_of_saved_state=None,last_call="",force_starting_execution=False)
+        return_new = fu.program_state_stack(full_current_state="",frameinfo="",file_name_of_saved_state=None,last_call="",force_starting_execution=False)
         self.assertTrue(array_equal(return_new, return_old))
+
+
 
 class Test_qw(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.qw()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.qw()
+        self.assertEqual(cm_new.exception.message, "qw() takes exactly 1 argument (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_qw(self):
-        return_old = oldfu.qw(s)
-        return_new = fu.qw(s)
+        return_old = oldfu.qw(s="ciao\nciao\t")
+        return_new = fu.qw(s="ciao\nciao\t")
         self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(['ciao', 'ciao'], return_old))
+
+
 
 class Test_list_prod(unittest.TestCase):
+
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.list_prod()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.list_prod()
+        self.assertEqual(cm_new.exception.message, "list_prod() takes exactly 1 argument1 (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_list_prod(self):
-        return_old = oldfu.list_prod(list_whose_elements_are_going_to_be_multiplied)
-        return_new = fu.list_prod(list_whose_elements_are_going_to_be_multiplied)
-        self.assertTrue(array_equal(return_new, return_old))
+        return_old = oldfu.list_prod(list_whose_elements_are_going_to_be_multiplied=[1,2,3,4])
+        return_new = fu.list_prod(list_whose_elements_are_going_to_be_multiplied=[1,2,3,4])
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(24, return_old)
+
+
 
 class Test_calculate_space_size(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.calculate_space_size()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.calculate_space_size()
+        self.assertEqual(cm_new.exception.message, "calculate_space_size() takes exactly 3 arguments (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_calculate_space_size(self):
-        return_old = oldfu.calculate_space_size(x_half_size, y_half_size, psi_half_size)
-        return_new = fu.calculate_space_size(x_half_size, y_half_size, psi_half_size)
+        return_old = oldfu.calculate_space_size(x_half_size=3, y_half_size=2, psi_half_size=5)
+        return_new = fu.calculate_space_size(x_half_size=3, y_half_size=2, psi_half_size=5)
         self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal([7, 5, 11], return_old))
 
+
+
+#cannot test it, mpi stuff are involved
 class Test_mpi_exit(unittest.TestCase):
-    def test_wrong_number_params(self):
-        with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
-        with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
-
     def test_mpi_exit(self):
         return_old = oldfu.mpi_exit()
         return_new = fu.mpi_exit()
-        self.assertTrue(array_equal(return_new, return_old))
+
+
 
 class Test_get_attr_stack(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.get_attr_stack()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.get_attr_stack()
+        self.assertEqual(cm_new.exception.message, "get_attr_stack() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_attribute_no_found_runTimeError(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.get_attr_stack(data_stack=[IMAGE_2D,IMAGE_2D], attr_string="notfound")
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.get_attr_stack(data_stack=[IMAGE_2D,IMAGE_2D], attr_string="apix_x")
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
+        self.assertEqual(msg[3], "The requested key does not exist")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_get_attr_stack(self):
-        return_old = oldfu.get_attr_stack(data_stack, attr_string)
-        return_new = fu.get_attr_stack(data_stack, attr_string)
+        return_old = oldfu.get_attr_stack(data_stack=[IMAGE_2D,IMAGE_2D], attr_string="apix_x")
+        return_new = fu.get_attr_stack(data_stack=[IMAGE_2D,IMAGE_2D], attr_string="")
         self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal([1.0, 1.0], return_old))
 
+
+#todo: need a stack with  'group' key -->  error with 'group': 'The requested key does not exist' caught
 class Test_get_sorting_params(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.get_sorting_params()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.get_sorting_params()
+        self.assertEqual(cm_new.exception.message, "get_sorting_params() takes at least 2 arguments (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_get_sorting_params(self):
-        return_old = oldfu.get_sorting_params(Tracker, data)
-        return_new = fu.get_sorting_params(Tracker, data)
+        Tracker = deepcopy(TRACKER)
+        Tracker["constants"]["myid"] = 0
+        Tracker["constants"]["main_node"] = 0
+        Tracker["constants"]["nproc"] = 3
+        Tracker["total_stack"] = 2
+        return_old =oldfu.get_sorting_params(Tracker=TRACKER, data=[IMAGE_2D,IMAGE_2D])
+        return_new = fu.get_sorting_params(Tracker=TRACKER, data=[IMAGE_2D,IMAGE_2D])
         self.assertTrue(array_equal(return_new, return_old))
+
 
 
 class Test_remove_small_groups(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.remove_small_groups()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.remove_small_groups()
+        self.assertEqual(cm_new.exception.message, "remove_small_groups() takes at least 2 arguments (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-    def test_remove_small_groups(self):
-        return_old = oldfu.remove_small_groups(class_list, minimum_number_of_objects_in_a_group)
-        return_new = fu.remove_small_groups(class_list, minimum_number_of_objects_in_a_group)
+    def test_empty_class_list(self):
+        return_old = oldfu.remove_small_groups(class_list=[], minimum_number_of_objects_in_a_group=4)
+        return_new = fu.remove_small_groups(class_list=[], minimum_number_of_objects_in_a_group=4)
         self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal([[], []], return_old))
+
+    def test_remove_small_groups(self):
+        return_old = oldfu.remove_small_groups(class_list=[[1,2,3,4,5],[1,20,40,50]], minimum_number_of_objects_in_a_group=4)
+        return_new = fu.remove_small_groups(class_list=[[1,2,3,4,5],[1,20,40,50]], minimum_number_of_objects_in_a_group=4)
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal([[1, 1, 2, 3, 4, 5, 20, 40, 50], [[1, 2, 3, 4, 5], [1, 20, 40, 50]]], return_old))
+
+
 
 class Test_get_outliers(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.get_outliers()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.get_outliers()
+        self.assertEqual(cm_new.exception.message, "get_outliers() takes at least 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_too_few_total_number_return_KeyError(self):
+        with self.assertRaises(KeyError) as cm_new:
+            fu.oldfu.get_outliers(total_number=5, plist=range(20))
+        with self.assertRaises(KeyError) as cm_old:
+            oldfu.get_outliers(total_number=5, plist=range(20))
+        self.assertEqual(cm_new.exception.message, "5")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_get_outliers(self):
-        return_old = oldfu.get_outliers(total_number, plist)
-        return_new = fu.get_outliers(total_number, plist)
+        return_old = oldfu.get_outliers(total_number=50, plist=range(20))
+        return_new = fu.get_outliers(total_number=50, plist=range(20))
         self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal([20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49], return_old))
 
+
+##todo: need a stack with  Tracker["P_chunk0"] .... which attribute can have it?
 class Test_get_margin_of_error(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.get_margin_of_error()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.get_margin_of_error()
+        self.assertEqual(cm_new.exception.message, "get_margin_of_error() takes at least 2 arguments (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_get_margin_of_error(self):
-        return_old = oldfu.get_margin_of_error(this_group_of_data, Tracker)
-        return_new = fu.get_margin_of_error(this_group_of_data, Tracker)
+        return_old = oldfu.get_margin_of_error(this_group_of_data="", Tracker="")
+        return_new = fu.get_margin_of_error(this_group_of_data="", Tracker="")
         self.assertTrue(array_equal(return_new, return_old))
 
+
+#todo need a test file
 class Test_get_ali3d_params(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.get_ali3d_params()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.get_ali3d_params()
+        self.assertEqual(cm_new.exception.message, "get_ali3d_params() takes at least 2 arguments (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_get_ali3d_params(self):
-        return_old = oldfu.get_ali3d_params(ali3d_old_text_file, shuffled_list)
-        return_new = fu.get_ali3d_params(ali3d_old_text_file, shuffled_list)
+        return_old = oldfu.get_ali3d_params(ali3d_old_text_file="", shuffled_list="")
+        return_new = fu.get_ali3d_params(ali3d_old_text_file="", shuffled_list="")
         self.assertTrue(array_equal(return_new, return_old))
+
+
 
 class Test_get_number_of_groups(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.get_number_of_groups()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.get_number_of_groups()
+        self.assertEqual(cm_new.exception.message, "get_number_of_groups() takes at least 2 arguments (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_get_number_of_groups(self):
-        return_old = oldfu.get_number_of_groups(total_particles, number_of_images_per_group, round_off=0.2)
-        return_new = fu.get_number_of_groups(total_particles, number_of_images_per_group, round_off=0.2)
-        self.assertTrue(array_equal(return_new, return_old))
+        return_old = oldfu.get_number_of_groups(total_particles=1000, number_of_images_per_group=20)
+        return_new = fu.get_number_of_groups(total_particles=1000, number_of_images_per_group=20)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(50, return_old)
+
 
 
 class Test_get_complementary_elements_total(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.get_complementary_elements_total()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.get_complementary_elements_total()
+        self.assertEqual(cm_new.exception.message, "get_complementary_elements_total() takes exactly 2 arguments (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_get_complementary_elements_total(self):
-        return_old = oldfu.get_complementary_elements_total(total_stack, data_list)
-        return_new = fu.get_complementary_elements_total(total_stack, data_list)
+        return_old = oldfu.get_complementary_elements_total(total_stack=10, data_list=[1,8,3,4,5])
+        return_new = fu.get_complementary_elements_total(total_stack=10, data_list=[1,8,3,4,5])
         self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal([0, 2, 6, 7, 9], return_old))
+
+    def test_empty_list(self):
+        return_old = oldfu.get_complementary_elements_total(total_stack=10, data_list=[])
+        return_new = fu.get_complementary_elements_total(total_stack=10, data_list=[])
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], return_old))
 
 
+#todo: need a tracker with valid values in Tracker["orgstack"]
 class Test_get_two_chunks_from_stack(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.get_two_chunks_from_stack()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.get_two_chunks_from_stack()
+        self.assertEqual(cm_new.exception.message, "get_two_chunks_from_stack() takes exactly 1 argument (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_get_two_chunks_from_stack(self):
-        return_old = oldfu.get_two_chunks_from_stack(Tracker)
-        return_new = fu.get_two_chunks_from_stack(Tracker)
+        return_old = oldfu.get_two_chunks_from_stack(Tracker="")
+        return_new = fu.get_two_chunks_from_stack(Tracker='')
         self.assertTrue(array_equal(return_new, return_old))
 
+
+#todo: cannot test it becasue NameError: global name 'adjust_fsc_down' is not defined
 class Test_set_filter_parameters_from_adjusted_fsc(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.set_filter_parameters_from_adjusted_fsc()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.set_filter_parameters_from_adjusted_fsc()
+        self.assertEqual(cm_new.exception.message, "set_filter_parameters_from_adjusted_fsc() takes exactly 3 arguments (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_set_filter_parameters_from_adjusted_fsc(self):
-        return_old = oldfu.set_filter_parameters_from_adjusted_fsc(n1, n2, Tracker)
-        return_new = fu.set_filter_parameters_from_adjusted_fsc(n1, n2, Tracker)
+        return_old = oldfu.set_filter_parameters_from_adjusted_fsc(n1="", n2="", Tracker="")
+        return_new = fu.set_filter_parameters_from_adjusted_fsc(n1="", n2="", Tracker="")
         self.assertTrue(array_equal(return_new, return_old))
 
+
+#todo: need a valid directory
 class Test_get_class_members(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.get_class_members()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.get_class_members()
+        self.assertEqual(cm_new.exception.message, "get_class_members() takes exactly 1 argument (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_get_class_members(self):
-        return_old = oldfu.get_class_members(sort3d_dir)
-        return_new = fu.get_class_members(sort3d_dir)
+        return_old = oldfu.get_class_members(sort3d_dir="")
+        return_new = fu.get_class_members(sort3d_dir="")
         self.assertTrue(array_equal(return_new, return_old))
+
+    def test_dir_not_found(self):
+        return_old = oldfu.get_class_members(sort3d_dir="invalid_dir")
+        return_new = fu.get_class_members(sort3d_dir="invalid_dir")
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal([], return_old))
+
+
 
 class Test_get_stable_members_from_two_runs(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.get_stable_members_from_two_runs()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.get_stable_members_from_two_runs()
+        self.assertEqual(cm_new.exception.message, "get_stable_members_from_two_runs() takes exactly 3 arguments (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-    def test_get_stable_members_from_two_runs(self):
-        return_old = oldfu.get_stable_members_from_two_runs(SORT3D_rootdirs, ad_hoc_number, log_main)
-        return_new = fu.get_stable_members_from_two_runs(SORT3D_rootdirs, ad_hoc_number, log_main)
-        self.assertTrue(array_equal(return_new, return_old))
+    def test_dir_not_found_returns_indexError(self):
+        with self.assertRaises(IndexError) as cm_new:
+            fu.get_stable_members_from_two_runs(SORT3D_rootdirs="", ad_hoc_number=1, log_main=1)
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.get_stable_members_from_two_runs(SORT3D_rootdirs="", ad_hoc_number=1, log_main=1)
+        self.assertEqual(cm_new.exception.message, "tuple index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
+
+#todo: need data
 class Test_two_way_comparison_single(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.two_way_comparison_single()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.two_way_comparison_single()
+        self.assertEqual(cm_new.exception.message, "two_way_comparison_single() takes exactly 3 arguments (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_two_way_comparison_single(self):
-        return_old = oldfu.two_way_comparison_single(partition_A, partition_B, Tracker)
-        return_new = fu.two_way_comparison_single(partition_A, partition_B, Tracker)
+        return_old = oldfu.two_way_comparison_single(partition_A="", partition_B="", Tracker="")
+        return_new = fu.two_way_comparison_single(partition_A="", partition_B="", Tracker="")
         self.assertTrue(array_equal(return_new, return_old))
+
 
 
 class Test_get_leftover_from_stable(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.get_leftover_from_stable()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.get_leftover_from_stable()
+        self.assertEqual(cm_new.exception.message, "get_leftover_from_stable() takes exactly 3 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_stable_list_returns_IndexError_list_index_out_of_range(self):
+        with self.assertRaises(IndexError) as cm_new:
+            fu.get_leftover_from_stable(stable_list=[], N_total=10, smallest_group=3)
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.get_leftover_from_stable(stable_list=[], N_total=10, smallest_group=3)
+        self.assertEqual(cm_new.exception.message, "tuple index out of range")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_get_leftover_from_stable(self):
-        return_old = oldfu.get_leftover_from_stable(stable_list, N_total, smallest_group)
-        return_new = fu.get_leftover_from_stable(stable_list, N_total, smallest_group)
+        return_old = oldfu.get_leftover_from_stable(stable_list=[range(10),range(10,20),range(20,30)], N_total=35, smallest_group=5)
+        return_new = fu.get_leftover_from_stable(stable_list=[range(10),range(10,20),range(20,30)], N_total=35, smallest_group=5)
         self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal([[30, 31, 32, 33, 34], [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [10, 11, 12, 13, 14, 15, 16, 17, 18, 19], [20, 21, 22, 23, 24, 25, 26, 27, 28, 29]]], return_old))
 
+    def test_N_total_lower_than_elements_in_list(self):
+        part_list = [0, 1, 20]
+        with self.assertRaises(KeyError) as cm_new:
+            fu.get_leftover_from_stable(stable_list=[range(10),range(10,20),range(20,30)], N_total=3, smallest_group=5)
+        with self.assertRaises(KeyError) as cm_old:
+            oldfu.get_leftover_from_stable(stable_list=[range(10),range(10,20),range(20,30)], N_total=3, smallest_group=5)
+        self.assertEqual(cm_new.exception.message, 3)
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+
+
+#todo: how can i run it?
 class Test_Kmeans_exhaustive_run(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.Kmeans_exhaustive_run()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.Kmeans_exhaustive_run()
+        self.assertEqual(cm_new.exception.message, "Kmeans_exhaustive_run() takes exactly 2 arguments (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_Kmeans_exhaustive_run(self):
-        return_old = oldfu.Kmeans_exhaustive_run(ref_vol_list, Tracker)
-        return_new = fu.Kmeans_exhaustive_run(ref_vol_list, Tracker)
+        return_old = oldfu.Kmeans_exhaustive_run(ref_vol_list="", Tracker="")
+        return_new = fu.Kmeans_exhaustive_run(ref_vol_list="", Tracker="")
         self.assertTrue(array_equal(return_new, return_old))
 
 
+#todo: cannot test because NameError: global name 'data_list' is not defined
 class Test_split_a_group(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.split_a_group()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.split_a_group()
+        self.assertEqual(cm_new.exception.message, "split_a_group() takes exactly 3 arguments (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_split_a_group(self):
-        return_old = oldfu.split_a_group(workdir, list_of_a_group, Tracker)
-        return_new = fu.split_a_group(workdir, list_of_a_group, Tracker)
+        Tracker = deepcopy(TRACKER)
+        Tracker["constants"]["myid"] = 0
+        Tracker["constants"]["main_node"] = 0
+        Tracker["constants"]["nproc"] = 3
+
+        return_old = oldfu.split_a_group(workdir="", list_of_a_group=[1,2,3], Tracker=Tracker)
+        return_new = fu.split_a_group(workdir="", list_of_a_group=[1,2,3], Tracker=Tracker)
         self.assertTrue(array_equal(return_new, return_old))
+
 
 class Test_search_lowpass(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.search_lowpass()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.search_lowpass()
+        self.assertEqual(cm_new.exception.message, "search_lowpass() takes exactly 1 argument (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_first(self):
+        return_old = oldfu.search_lowpass(fsc=[[],[1,2]])
+        return_new = fu.search_lowpass(fsc=[[],[1,2]])
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(0.45, return_old)
+
+    def test_empty_second_returns_UnboundLocalError_imgtype_referenced_before_assignment(self):
+        destination ='output.hdf'
+        with self.assertRaises(UnboundLocalError) as cm_new:
+            fu.search_lowpass(fsc=[[1,2],[]])
+        with self.assertRaises(UnboundLocalError) as cm_old:
+            oldfu.search_lowpass(fsc=[[1,2],[]])
+        self.assertEqual(cm_new.exception.message, "local variable 'i' referenced before assignment")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_search_lowpass(self):
-        return_old = oldfu.search_lowpass(fsc)
-        return_new = fu.search_lowpass(fsc)
-        self.assertTrue(array_equal(return_new, return_old))
+        fsc = [[1, 2, 3, 4, 5, 6], [1.1, 2.1, 3.1, 4.1, 5.1, 6.1]]
+        return_old = oldfu.search_lowpass(fsc=fsc)
+        return_new = fu.search_lowpass(fsc=fsc)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(0.45, return_old)
+
 
 
 class Test_split_chunks_bad(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.split_chunks_bad()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.split_chunks_bad()
+        self.assertEqual(cm_new.exception.message, "split_chunks_bad() takes exactly 2 arguments (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_split_chunks_bad(self):
-        return_old = oldfu.split_chunks_bad(l, n)
-        return_new = fu.split_chunks_bad(l, n)
+        return_old = oldfu.split_chunks_bad(l=range(100), n=10)
+        return_new = fu.split_chunks_bad(l=range(100), n=10)
         self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal([[0, 1, 11, 21, 31, 41, 51, 61, 71, 81, 91], [2, 12, 22, 32, 42, 52, 62, 72, 82, 92], [3, 13, 23, 33, 43, 53, 63, 73, 83, 93], [4, 14, 24, 34, 44, 54, 64, 74, 84, 94], [5, 15, 25, 35, 45, 55, 65, 75, 85, 95], [6, 16, 26, 36, 46, 56, 66, 76, 86, 96], [7, 17, 27, 37, 47, 57, 67, 77, 87, 97], [8, 18, 28, 38, 48, 58, 68, 78, 88, 98], [9, 19, 29, 39, 49, 59, 69, 79, 89, 99], [10, 20, 30, 40, 50, 60, 70, 80, 90]], return_old))
+
+    def test_emptylist_returns_IndexError_list_index_out_of_range(self):
+        with self.assertRaises(IndexError) as cm_new:
+            fu.split_chunks_bad(l=[], n=10)
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.split_chunks_bad(l=[], n=10)
+        self.assertEqual(cm_new.exception.message, "tuple index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+
 
 class Test_convert_to_float(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.convert_to_float()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.convert_to_float()
+        self.assertEqual(cm_new.exception.message, "convert_to_float() takes exactly 1 argument (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_convert_to_float(self):
-        return_old = oldfu.convert_to_float(value)
-        return_new = fu.convert_to_float(value)
-        self.assertTrue(array_equal(return_new, return_old))
+        return_old=oldfu.convert_to_float(value=30)
+        return_new = fu.convert_to_float(value=30)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(0.0, return_old)
+
+    def test_not_integer_value(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.convert_to_float(value=30)
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.convert_to_float(value=30)
+        self.assertEqual(cm_new.exception.message, "hex() argument can't be converted to hex")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+
 
 class Test_numpy2em_python(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
-            fu.reconstitute_mask()
+            fu.numpy2em_python()
         with self.assertRaises(TypeError) as cm_old:
-            oldfu.reconstitute_mask()
-        self.assertEqual(cm_new.exception.message, "reconstitute_mask() takes at least 2 arguments (0 given)")
+            oldfu.numpy2em_python()
+        self.assertEqual(cm_new.exception.message, "numpy2em_python() takes exactly 1 argument (0 given)")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_numpy2em_python(self):
-        return_old = oldfu.numpy2em_python(numpy_array)
-        return_new = fu.numpy2em_python(numpy_array)
-        self.assertTrue(array_equal(return_new, return_old))
+        return_old = oldfu.numpy2em_python(numpy_ones((3,100,100)))
+        return_new = fu.numpy2em_python(numpy_ones((3,100,100)))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
+
+#todo: need data
 class Test_create_summovie_command(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -2406,8 +2575,8 @@ class Test_create_summovie_command(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
     def test_create_summovie_command(self):
-        return_old = oldfu.create_summovie_command(temp_name, micrograph_name, shift_name, frc_name, opt)
-        return_new = fu.create_summovie_command(temp_name, micrograph_name, shift_name, frc_name, opt)
+        return_old = oldfu.create_summovie_command(temp_name="", micrograph_name="", shift_name="", frc_name="", opt="")
+        return_new = fu.create_summovie_command(temp_name="", micrograph_name="", shift_name="", frc_name="", opt="")
         self.assertTrue(array_equal(return_new, return_old))
 
 """ end: new in sphire 1.3"""

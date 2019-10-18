@@ -2347,7 +2347,7 @@ class Test_fastigmatism(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
 
-
+#todo: look into the data nput
 class Test_fastigmatism1(unittest.TestCase):
     argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq"))
     amp = 4
@@ -2423,7 +2423,7 @@ class Test_fastigmatism1(unittest.TestCase):
 
 
 
-
+#todo: look into the data nput
 class Test_fastigmatism2(unittest.TestCase):
     """
     sometimes some test fails because a very large difference of value e.g.: -11.974973537555098 != 1e+20 or 178.59375 != 142.71600723266602
@@ -2507,7 +2507,7 @@ class Test_fastigmatism2(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
 
-
+#todo: look into the data nput
 class Test_simctf(unittest.TestCase):
     argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq"))
     amp = 4
@@ -2581,7 +2581,7 @@ class Test_simctf(unittest.TestCase):
         self.assertEqual(cm_new.exception.message, "list index out of range")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
 
-
+#todo: look into the data nput
 class Test_simctf2out(unittest.TestCase):
     amp = 4
     defocus = 0
@@ -2669,7 +2669,7 @@ class Test_linregnp(unittest.TestCase):
         self.assertTrue(array_equal(return_new, return_old))
 
 
-
+#todo: look into the data nput
 class Test_defocusgett_crf(unittest.TestCase):
     # values got from the run of cter_mrk
     roo = [2.4749172666815866e-07, 8.118388175964355, 11.300846099853516, 11.726724624633789, 10.79273796081543,10.028839111328125, 9.951647758483887, 9.321721076965332, 8.642850875854492, 8.882085800170898,8.965975761413574, 9.0375337600708, 9.167009353637695, 9.315218925476074, 9.455951690673828,9.53373908996582, 9.753701210021973, 9.917454719543457, 9.952173233032227, 10.007454872131348,9.902679443359375, 9.872855186462402, 9.888672828674316, 9.811619758605957, 9.504669189453125,9.23233413696289, 8.886175155639648, 8.454972267150879, 8.037365913391113, 7.468257427215576,6.987364292144775, 6.465179920196533, 5.942073345184326, 5.455051422119141, 5.083559036254883,4.784443378448486, 4.66786527633667, 4.708193778991699, 4.869163513183594, 5.120243549346924,5.425268650054932, 5.62183952331543, 5.742221355438232, 5.722979545593262, 5.6454997062683105,5.460589408874512, 5.173122882843018, 4.851582050323486, 4.528295993804932, 4.229840278625488,4.028250217437744, 3.9227302074432373, 3.9825022220611572, 4.113175868988037, 4.279661655426025,4.372419357299805, 4.377109527587891, 4.332334041595459, 4.175729751586914, 3.9596383571624756,3.7461330890655518, 3.5383243560791016, 3.4221343994140625, 3.432495355606079, 3.497908353805542,3.575284242630005, 3.6640164852142334, 3.6832754611968994, 3.5869927406311035, 3.3932852745056152,3.219667673110962, 3.0939791202545166, 3.0290780067443848, 3.0501537322998047, 3.104736089706421,3.1281819343566895, 3.131038188934326, 3.0721113681793213, 2.9626951217651367, 2.822908639907837,2.722851276397705, 2.6944046020507812, 2.7398765087127686, 2.783642530441284, 2.8061859607696533,2.753870725631714, 2.6466071605682373, 2.5414578914642334, 2.4814810752868652, 2.4631683826446533,2.4968883991241455, 2.512291669845581, 2.4727656841278076, 2.3982291221618652, 2.311185598373413,2.2674052715301514, 2.2828712463378906, 2.3197007179260254, 2.3294408321380615, 2.2812020778656006,2.1717848777770996, 2.08322811126709, 2.0489301681518555, 2.0832881927490234, 2.1076486110687256,2.079892873764038, 2.022390842437744, 1.9659569263458252, 1.9482762813568115, 1.9700067043304443,1.9968551397323608, 1.9690818786621094, 1.9040422439575195, 1.8430463075637817, 1.8147259950637817,1.8269151449203491, 1.8202515840530396, 1.7916988134384155, 1.7258731126785278, 1.6823210716247559,1.6824694871902466, 1.7019177675247192, 1.6961569786071777, 1.6391767263412476, 1.5872260332107544,1.5742663145065308, 1.6196192502975464, 1.6312528848648071, 1.5912986993789673, 1.5412189960479736,1.5286720991134644, 1.539400339126587, 1.5424988269805908, 1.5061465501785278, 1.4576923847198486,1.4491815567016602, 1.4570945501327515, 1.4469634294509888, 1.4137557744979858, 1.3694301843643188,1.3523378372192383, 1.3586199283599854, 1.3443272113800049, 1.3110806941986084, 1.289863109588623,1.2962857484817505, 1.2972313165664673, 1.2736396789550781, 1.2439988851547241, 1.2306058406829834,1.2363694906234741, 1.2217427492141724, 1.194958209991455, 1.1879044771194458, 1.1930080652236938,1.1793091297149658, 1.15314781665802, 1.1437404155731201, 1.1637579202651978, 1.1700831651687622,1.142817497253418, 1.1262619495391846, 1.1225693225860596, 1.124714732170105, 1.1018099784851074,1.0867631435394287, 1.084970474243164, 1.0776877403259277, 1.062538504600525, 1.0489096641540527,1.042362928390503, 1.0326932668685913, 1.0169932842254639, 1.0085232257843018, 1.0024985074996948,0.9944382905960083, 0.98155277967453, 0.9749655723571777, 0.9682003259658813, 0.9566521644592285,0.945547342300415, 0.9436546564102173, 0.9355219006538391, 0.9225828647613525, 0.9155938029289246,0.8998383283615112, 0.880102813243866, 0.874344527721405, 0.8686933517456055, 0.8613014221191406,0.8494209051132202, 0.846881628036499, 0.8411567807197571, 0.8319846391677856, 0.8279749155044556,0.8210474252700806, 0.8161963820457458, 0.8104798793792725, 0.8049942255020142, 0.7986834049224854,0.7945361137390137, 0.7920919060707092, 0.7857357859611511, 0.7797154188156128, 0.7755693197250366,0.7703532576560974, 0.7675251364707947, 0.7635427713394165, 0.7580195665359497, 0.7534424662590027,0.748466432094574, 0.7451881766319275, 0.7408402562141418, 0.7371609210968018, 0.7332314252853394,0.7274556756019592, 0.7242568731307983, 0.7204251289367676, 0.7171236872673035, 0.7152900099754333,0.7106772661209106, 0.7061426043510437, 0.7031661868095398, 0.6997811794281006, 0.6964687705039978,0.693792462348938, 0.6898569464683533, 0.6888021230697632, 0.6884151101112366, 0.7021644711494446,0.7075514197349548, 0.7031327486038208, 0.7021273374557495, 0.7001497149467468, 0.6952085494995117,0.6919569373130798, 0.6906602382659912, 0.6874080896377563, 0.6864782571792603, 0.6839666962623596,0.682867169380188, 0.6788389682769775, 0.6770844459533691, 0.6750807166099548, 0.6707912087440491,0.6707884669303894, 0.6675050258636475, 0.6679155826568604, 0.6663058996200562, 0.6637894511222839,0.6625664830207825, 0.6604256629943848, 0.6585007309913635, 0.6582910418510437, 0.6562055349349976, 0.6544466614723206, 0.6533088684082031]
@@ -2759,6 +2759,7 @@ class Test_fufu(unittest.TestCase):
     amp_contrast = 0.1
     bfactor = 0.0
     nx = 12
+    args=[0,4]
 
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -2780,8 +2781,8 @@ class Test_fufu(unittest.TestCase):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         data = [crefim, numr, self.nx, self.defocus, self.Cs, self.voltage, self.pixel_size, self.bfactor, self.amp_contrast]
         data2 = deepcopy(data)
-        result_new = fu.fufu(amp=self.amp,data= data)
-        result_old = oldfu.fufu(amp=self.amp,data= data2)
+        result_new = fu.fufu(args=self.args,data= data)
+        result_old = oldfu.fufu(args=self.args,data= data2)
         self.assertTrue(True)
         #self.assertEqual(data[8], data2[8])
         #self.assertEqual(result_new, result_old)
@@ -2790,8 +2791,8 @@ class Test_fufu(unittest.TestCase):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         data = [crefim, numr, self.nx, self.defocus, self.Cs, self.voltage, self.pixel_size, self.bfactor, -self.amp_contrast]
         data2=deepcopy(data)
-        result_new = fu.fufu(amp=self.amp,data= data)
-        result_old = oldfu.fufu(amp=self.amp,data= data2)
+        result_new = fu.fufu(args=self.args,data= data)
+        result_old = oldfu.fufu(args=self.args,data= data2)
         self.assertTrue(True)
         #self.assertEqual(data[8], data2[8])
         #self.assertEqual(result_new, result_old)
@@ -2800,9 +2801,9 @@ class Test_fufu(unittest.TestCase):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         data = [crefim, numr, 0, self.defocus, self.Cs, self.voltage, self.pixel_size, self.bfactor, self.amp_contrast]
         with self.assertRaises(RuntimeError)  as cm_new:
-            fu.fufu(amp=self.amp, data=deepcopy(data))
+            fu.fufu(args=self.args, data=deepcopy(data))
         with self.assertRaises(RuntimeError)  as cm_old:
-            oldfu.fufu(amp=self.amp, data=deepcopy(data))
+            oldfu.fufu(args=self.args, data=deepcopy(data))
         msg = cm_new.exception.message.split("'")
         msg_old = cm_old.exception.message.split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
@@ -2814,19 +2815,20 @@ class Test_fufu(unittest.TestCase):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         data = [crefim, numr, self.nx, self.defocus, self.Cs, self.voltage, 0, self.bfactor, self.amp_contrast]
         data2 = deepcopy(data)
-        result_new = fu.fufu(amp=self.amp,data= data)
-        result_old = oldfu.fufu(amp=self.amp,data= data2)
+        result_new = fu.fufu(args=self.args,data= data)
+        result_old = oldfu.fufu(args=self.args,data= data2)
         self.assertTrue(True)
         #self.assertEqual(data[8], data2[8])
         #self.assertEqual(result_new, result_old)
 
     def test_empty_array_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
-            fu.fufu(amp=self.amp, data=[])
+            fu.fufu(args=self.args, data=[])
         with self.assertRaises(IndexError) as cm_old:
-            oldfu.fufu(amp=self.amp, data=[])
+            oldfu.fufu(args=self.args, data=[])
         self.assertEqual(cm_new.exception.message, "list index out of range")
         self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
 
 
 
