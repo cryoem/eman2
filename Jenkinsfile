@@ -82,7 +82,7 @@ def notifyEmail() {
         body    = 'Continuous binary test: $BUILD_STATUS'
     }
 
-    if(NOTIFY_EMAIL != "false") {
+    if(NOTIFY_EMAIL != "false" || JOB_TYPE == "cron") {
         emailext(to:        to,
                  from:      from,
                  subject:   subject,
