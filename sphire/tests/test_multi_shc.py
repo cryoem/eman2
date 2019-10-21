@@ -43,79 +43,267 @@ pickle files stored under smb://billy.storage.mpi-dortmund.mpg.de/abt3/group/agr
 
 
 """ start: new in sphire 1.3"""
+#from sphire.libpy_py3 import sp_alignment as new_sp_alignment
+#from sphire.libpy import sp_alignment as old_sp_alignment
 from sphire.libpy import sp_multi_shc as oldfu
 from sphire.libpy_py3 import sp_multi_shc as fu
 
-
-class Test_find_common_subset(unittest.TestCase):
-    def test_find_common_subset(self):
-        oldv = oldfu.find_common_subset(projs=0, target_threshold=2.0, minimal_subset_size=3, symmetry_class = None)
-        v = fu.find_common_subset(projs=0, target_threshold=2.0, minimal_subset_size=3, symmetry_class = None)
-        pass
-
-
-class Test_shuffle_configurations(unittest.TestCase):
-    def test_shuffle_configurations(self):
-        oldv = oldfu.shuffle_configurations(params=0)
-        v = fu.shuffle_configurations(params=0)
-        pass
-
-
+#todo: need data. I tried to use "pickle files/multi_shc/multi_shc.do_volume BUT it seems that this pickle file is not usable now!!!
+# anyway the data are just a stack
+# options should be a parser:
+    #1) look wich value it need
+    # fake it like https://stackoverflow.com/questions/18160078/how-do-you-write-tests-for-the-argparse-portion-of-a-python-module
 class Test_volume_reconstruction(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.volume_reconstruction()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.volume_reconstruction()
+        self.assertEqual(cm_new.exception.message, "volume_reconstruction() takes exactly 3 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
     def test_volume_reconstruction(self):
-        oldv = oldfu.volume_reconstruction(data="", options="", mpi_comm=0)
-        v = fu.volume_reconstruction(data="", options="", mpi_comm=0)
-        pass
+        return_old = oldfu.volume_reconstruction(data="", options="", mpi_comm=0)
+        return_new = fu.volume_reconstruction(data="", options="", mpi_comm=0)
+        self.assertTrue(numpy_array_equal(return_new, return_old))
 
 
 class Test_volume_recsp(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.volume_recsp()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.volume_recsp()
+        self.assertEqual(cm_new.exception.message, "volume_recsp() takes exactly 2 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
     def test_volume_recsp(self):
-        oldv = oldfu.volume_recsp(data=0, options=0)
-        v = fu.volume_recsp(data=0, options=0)
-        pass
+        return_old = oldfu.volume_recsp(data=0, options=0)
+        return_new = fu.volume_recsp(data=0, options=0)
+        self.assertTrue(numpy_array_equal(return_new, return_old))
 
-
-class Test_mirror_and_reduce_dsym(unittest.TestCase):
-    def test_mirror_and_reduce_dsym(self):
-        oldv = oldfu.mirror_and_reduce_dsym(params="", indexes="", symmetry_class=0)
-        v = fu.mirror_and_reduce_dsym(params="", indexes="", symmetry_class=0)
-        pass
 
 
 class Test_proj_ali_incore_multi(unittest.TestCase):
-    def test_(self):
-        oldv = oldfu.proj_ali_incore_multi(data=0, refrings=0, numr=0, xrng = 0.0, yrng = 0.0, step=1.0, an = 1.0, nsoft = -1, finfo=None, sym="c1")
-        v = fu.proj_ali_incore_multi(data=0, refrings=0, numr=0, xrng = 0.0, yrng = 0.0, step=1.0, an = 1.0, nsoft = -1, finfo=None, sym="c1")
+    (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.shc"))[0]
+
+    def test_wrong_number_params_returns_TypeError_too_few_parameters(self):
+        with self.assertRaises(TypeError):
+            fu.proj_ali_incore_multi()
+            oldfu.proj_ali_incore_multi()
+
+    def test_empty_input_image_returns_runtimeError_NotExistingObjectException(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.proj_ali_incore_multi(data=EMData(), refrings=self.refrings,  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.proj_ali_incore_multi(data=EMData(), refrings=self.refrings,  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
+        self.assertEqual(msg[3], "The requested key does not exist")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(self):
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.proj_ali_incore_multi(data=None, refrings=self.refrings,  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.proj_ali_incore_multi(data=None, refrings=self.refrings,  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image_refrings_returns_runtimeError_NotExistingObjectException(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.proj_ali_incore_multi(data=self.data, refrings= [EMData(),EMData(),EMData()],  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.proj_ali_incore_multi(data=self.data, refrings= [EMData(),EMData(),EMData()],  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
+        self.assertEqual(msg[3], "The requested key does not exist")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_None_input_image_refrings_crash_because_SIGSEGV(self):
         pass
+        """
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.proj_ali_incore_multi(data=self.data, refrings= [None,None,None],  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.proj_ali_incore_multi(data=self.data, refrings= [None,None,None],  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
+        self.assertEqual(msg[3], "The requested key does not exist")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        """
+
+    def test_empty_list_numr_returns_IndexError_list_index_out_of_range(self):
+        with self.assertRaises(IndexError) as cm_new:
+            fu.proj_ali_incore_multi(data=self.data, refrings=self.refrings,  numr=[], xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
+        with self.assertRaises(IndexError) as cm_old:
+            oldfu.proj_ali_incore_multi(data=self.data, refrings=self.refrings,  numr=[], xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
+        self.assertEqual(cm_new.exception.message, "list index out of range")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_negative_nsoft(self):
+        return_old = oldfu.proj_ali_incore_multi(data=self.data, refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0, step=self.step,an=1.0, nsoft=-1, finfo=None, sym="not_used")
+        return_new = fu.proj_ali_incore_multi(data=self.data, refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0, step=self.step,an=1.0, nsoft=-1, finfo=None, sym="not_used")
+        self.assertEqual(return_old,return_new)
+        self.assertEqual(return_old, 4022.77539062)
+
+    def test_positive_nsoft(self):
+        return_old = oldfu.proj_ali_incore_multi(data=self.data, refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0, step=self.step,an=1.0, nsoft=3, finfo=None, sym="not_used")
+        return_new = fu.proj_ali_incore_multi(data=self.data, refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0, step=self.step,an=1.0, nsoft=3, finfo=None, sym="not_used")
+        self.assertEqual(return_old,return_new)
+        self.assertEqual(return_old, 30659.9891357)
+
+
+    def test_null_nsoft(self):
+        return_old = oldfu.proj_ali_incore_multi(data=self.data, refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0, step=self.step,an=1.0, nsoft=0, finfo=None, sym="not_used")
+        return_new = fu.proj_ali_incore_multi(data=self.data, refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0, step=self.step,an=1.0, nsoft=0, finfo=None, sym="not_used")
+        self.assertEqual(return_old,return_new)
+        self.assertEqual(return_old, 0)
+
+
 
 
 class Test_shc_multi(unittest.TestCase):
-    def test_shc_multi(self):
-        oldv = oldfu.shc_multi(data="", refrings="", numr="", xrng="", yrng="", step="", an="", nsoft="", sym="", finfo=None)
-        v = fu.shc_multi(data="", refrings="", numr="", xrng="", yrng="", step="", an="", nsoft="", sym="", finfo=None)
+    (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.shc"))[0]
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.shc_multi()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.shc_multi()
+        self.assertEqual(cm_new.exception.message, "shc_multi() takes at least 9 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image_returns_runtimeError_NotExistingObjectException(self):
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.shc_multi(data=EMData(), refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0, step=self.step, an=1.0, nsoft=-1, sym="c1", finfo=None)
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.shc_multi(data=EMData(), refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0, step=self.step, an=1.0, nsoft=-1, sym="c1", finfo=None)
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
+        self.assertEqual(msg[3], "The requested key does not exist")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+
+    def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_get_Attr(self):
+        with self.assertRaises(AttributeError) as cm_new:
+            fu.shc_multi(data=None, refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0, step=self.step, an=1.0, nsoft=-1, sym="c1", finfo=None)
+        with self.assertRaises(AttributeError) as cm_old:
+            oldfu.shc_multi(data=None, refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0, step=self.step, an=1.0, nsoft=-1, sym="c1", finfo=None)
+        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_attr'")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
+    def test_empty_input_image_refrings_crash_because_SIGSEGV(self):
         pass
+        """
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.proj_ali_incore_multi(data=self.data, refrings= [EMData(),EMData(),EMData()],  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.proj_ali_incore_multi(data=self.data, refrings= [EMData(),EMData(),EMData()],  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
+        self.assertEqual(msg[3], "The requested key does not exist")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        """
+
+    def test_Noneinput_image_refrings_crash_because_SIGSEGV(self):
+        pass
+        """
+        with self.assertRaises(RuntimeError) as cm_new:
+            fu.proj_ali_incore_multi(data=self.data, refrings= [None,None,None],  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
+        with self.assertRaises(RuntimeError) as cm_old:
+            oldfu.proj_ali_incore_multi(data=self.data, refrings=[None,None,None],  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
+        msg = cm_new.exception.message.split("'")
+        msg_old = cm_old.exception.message.split("'")
+        self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
+        self.assertEqual(msg[3], "The requested key does not exist")
+        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
+        self.assertEqual(msg[3], msg_old[3])
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        """
+
+    def test_shc_multi_negative_nsoft_c1(self):
+        return_old = oldfu.shc_multi(data=self.data, refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0, step=self.step, an=1.0, nsoft=-1, sym="c1", finfo=None)
+        return_new = fu.shc_multi(data=self.data, refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0, step=self.step, an=1.0, nsoft=-1, sym="c1", finfo=None)
+        self.assertTrue(numpy_array_equal(return_new, return_old))
+        self.assertTrue(numpy_array_equal((1338.955078125, 48.97479809939048, 0, 2127), return_old))
+
+    def test_shc_multi_negative_nsoft_d1(self):
+        return_old = oldfu.shc_multi(data=self.data, refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0, step=self.step, an=1.0, nsoft=-1, sym="d1", finfo=None)
+        return_new = fu.shc_multi(data=self.data, refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0, step=self.step, an=1.0, nsoft=-1, sym="d1", finfo=None)
+        self.assertTrue(numpy_array_equal(return_new, return_old))
+        self.assertTrue(numpy_array_equal((1349.222412109375, 49.23334842295393, 0, 2127), return_old))
+
+    def test_shc_multi_positive_nsoft_c1(self):
+        return_old = oldfu.shc_multi(data=self.data, refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0, step=self.step, an=1.0, nsoft=1, sym="c1", finfo=None)
+        return_new = fu.shc_multi(data=self.data, refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0, step=self.step, an=1.0, nsoft=1, sym="c1", finfo=None)
+        self.assertTrue(numpy_array_equal(return_new, return_old))
+        self.assertTrue(numpy_array_equal((1065.65380859375, 55.0943717956543, 0, 1), return_old))
+
+    def test_shc_multi_positive_nsoft_d1(self):
+        return_old = oldfu.shc_multi(data=self.data, refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0, step=self.step, an=1.0, nsoft=1, sym="d1", finfo=None)
+        return_new = fu.shc_multi(data=self.data, refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0, step=self.step, an=1.0, nsoft=1, sym="d1", finfo=None)
+        self.assertTrue(numpy_array_equal(return_new, return_old))
+        self.assertTrue(numpy_array_equal((1225.196533203125, 56.53429412841797, 0, 1), return_old))
+
+    def test_shc_multi_null_nsoft_c1(self):
+        return_old = oldfu.shc_multi(data=self.data, refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0,step=self.step, an=1.0, nsoft=0, sym="c1", finfo=None)
+        return_new = fu.shc_multi(data=self.data, refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0,step=self.step, an=1.0, nsoft=0, sym="c1", finfo=None)
+        self.assertTrue(numpy_array_equal(return_new, return_old))
+        self.assertTrue(numpy_array_equal((0,0,0,0), return_old))
+
+    def test_shc_multi_null_nsoft_d1(self):
+        return_old = oldfu.shc_multi(data=self.data, refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0,step=self.step, an=1.0, nsoft=-1, sym="d1", finfo=None)
+        return_new = fu.shc_multi(data=self.data, refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0,step=self.step, an=1.0, nsoft=-1, sym="d1", finfo=None)
+        self.assertTrue(numpy_array_equal(return_new, return_old))
+        self.assertTrue(numpy_array_equal((0,0,0,0), return_old))
 
 
+
+#todo: need data. I tried to use "pickle files/multi_shc/multi_shc.do_volume BUT it seems that this pickle file is not usable now!!!
 class Test_ali3d_multishc_soft(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.ali3d_multishc_soft()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.ali3d_multishc_soft()
+        self.assertEqual(cm_new.exception.message, "ali3d_multishc_soft() takes at least 3 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
     def test_ali3d_multishc_soft(self):
-        oldv = oldfu.ali3d_multishc_soft(stack="", ref_vol="", ali3d_options="", mpi_comm = None, log = None, nsoft=2 )
-        v = fu.ali3d_multishc_soft(stack="", ref_vol="", ali3d_options="", mpi_comm = None, log = None, nsoft=2 )
-        pass
+        return_old = oldfu.ali3d_multishc_soft(stack="", ref_vol="", ali3d_options="", mpi_comm = None, log = None, nsoft=2 )
+        return_new = fu.ali3d_multishc_soft(stack="", ref_vol="", ali3d_options="", mpi_comm = None, log = None, nsoft=2 )
+        self.assertTrue(numpy_array_equal(return_new, return_old))
 
 
+#todo: need data. I tried to use "pickle files/multi_shc/multi_shc.do_volume BUT it seems that this pickle file is not usable now!!!
 class Test_no_of_processors_restricted_by_data__do_volume(unittest.TestCase):
+    def test_wrong_number_params_too_few_parameters(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.no_of_processors_restricted_by_data__do_volume()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.no_of_processors_restricted_by_data__do_volume()
+        self.assertEqual(cm_new.exception.message, "angle_error() takes exactly 4 arguments (0 given)")
+        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+
     def test_no_of_processors_restricted_by_data__do_volume(self):
-        oldv = oldfu.no_of_processors_restricted_by_data__do_volume(projections="", ali3d_options="", iter="", mpi_comm=0)
-        v = fu.no_of_processors_restricted_by_data__do_volume(projections="", ali3d_options="", iter="", mpi_comm=0)
-        pass
-
-
-class Test_calculate_matrix_rot(unittest.TestCase):
-    def test_calculate_matrix_rot(self):
-        oldv = oldfu.calculate_matrix_rot(projs=0)
-        v = fu.calculate_matrix_rot(projs=0)
-        pass
-
+        return_old = oldfu.no_of_processors_restricted_by_data__do_volume(projections="", ali3d_options="", iter="", mpi_comm=0)
+        return_new = fu.no_of_processors_restricted_by_data__do_volume(projections="", ali3d_options="", iter="", mpi_comm=0)
+        self.assertTrue(numpy_array_equal(return_new, return_old))
 
 """ start: end in sphire 1.3"""
 
