@@ -250,6 +250,7 @@ def main():
                         comments_lines.append(line)
                         wrote_comment = True
                 else:
+                    comments_lines.append('\n')
                     used_lines.append(line)
 
                 print_all_info(

@@ -74,24 +74,7 @@ KNOWN_UNKNOWN = {
     'sp_user_functions' : (
         'factory',
         ),
-    'user_functions' : (
-        'factory',
-        ),
     'sp_global_def' : (
-        'SPARXVERSION',
-        'CACHE_DISABLE',
-        'SPARX_MPI_TAG_UNIVERSAL',
-        'interpolation_method_2D',
-        'Eulerian_Angles',
-        'BATCH',
-        'MPI',
-        'LOGFILE',
-        'SPARX_DOCUMENTATION_WEBSITE',
-        'IS_LOGFILE_OPEN',
-        'LOGFILE_HANDLE',
-        'sxprint',
-        ),
-    'global_def' : (
         'SPARXVERSION',
         'CACHE_DISABLE',
         'SPARX_MPI_TAG_UNIVERSAL',
@@ -289,9 +272,11 @@ def remove_unused(file_path, folder, function_dict):
                 if first:
                     first = False
                     unused_list.append('from __future__ import print_function\n')
+                    used_list.append('\n')
                 unused_list.append(line)
                 used_list.append('\n')
             else:
+                unused_list.append('\n')
                 used_list.append(line)
 
     if used_list:

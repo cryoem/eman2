@@ -49,8 +49,8 @@ LIB_FOLDER = ('libpy', 'templates', 'libpyEM', 'libpyEM/qtgui')
 EMAN2_GUI_DICT = {}
 
 IGNORE_FILES = (
-    'sparx.py',
-    'development.py',
+    'sp_sparx.py',
+    'sp_development.py',
     )
 IGNORE_MODULES = (
     '__future__',
@@ -186,8 +186,11 @@ def my_to_list(self):
 
 def my_exception(self, filename, msg, lineno, offset, text):
     if msg == 'expected an indented block':
-        print(filename, msg, lineno, offset, text.strip())
+        print('ERROR:', filename, msg, lineno, offset, text.strip())
         self.indent_error.append([int(lineno), text])
+    else:
+        print('ERROR:', filename, msg, lineno, offset, text.strip())
+        self.general_error.append([int(lineno), text])
 
 
 ERRORS = {}
@@ -224,6 +227,7 @@ def reset_lists():
 modReporter.Reporter.syntaxError = my_exception
 GLOBAL_REPORTER = modReporter._makeDefaultReporter()
 GLOBAL_REPORTER.indent_error = []
+GLOBAL_REPORTER.general_error = []
 
 GLOBAL_CHECKER = Checker
 GLOBAL_CHECKER.report = my_report
@@ -285,7 +289,7 @@ def get_library_funcs(file_dict):
                 for entry in lines
                 if FUNCDEF_RE.match(entry)
                 ]
-            if 'sp_global_def' in name:
+            if 'global_def' in name:
                 lib_modules[name].append('IS_LOGFILE_OPEN')
                 lib_modules[name].append('LOGFILE_HANDLE')
                 lib_modules[name].append('SPARXVERSION')
@@ -297,6 +301,7 @@ def get_library_funcs(file_dict):
                 lib_modules[name].append('MPI')
                 lib_modules[name].append('LOGFILE')
                 lib_modules[name].append('SPARX_DOCUMENTATION_WEBSITE')
+                lib_modules[name].append('ERROR')
                 lib_modules[name].append('sxprint')
             elif 'EMAN2_meta' == name:
                 lib_modules[name].append('EMANVERSION')
@@ -481,6 +486,8 @@ def fix_missing(file_dict, missing_modules_local, lib_modules, lib_modules_ext, 
                 for entry in matches[:]:
                     if 'eman2_gui.' in entry:
                         matches.remove(entry)
+                    elif 'sparx' in entry:
+                        matches.remove(entry)
 
                 search_line = lines[missing[0]-1][max(missing[1]-1, 0):]
                 if len(matches) == 1 or len(set(matches)) == 1:
@@ -511,7 +518,7 @@ def fix_missing(file_dict, missing_modules_local, lib_modules, lib_modules_ext, 
                         used_module = REPLACE_DICT[missing[2]][1]
                         replace = REPLACE_DICT[missing[2]][0]
                     elif matches:
-                        #print('CONFUSION', basename, missing, matches)
+                        print('CONFUSION', basename, missing, matches)
                         continue
                     else:
                         #print('TYPO', basename, missing, matches)
