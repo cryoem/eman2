@@ -51,20 +51,25 @@ import sys
 import numpy as np
 import traceback
 
-try:
-	from PyQt5 import QtCore, QtGui, QtOpenGL
-	from PyQt5.QtCore import Qt
-	from PyQt5.QtCore import QTimer
-	from PyQt5.QtWidgets import QListWidget, QLabel, QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QSizePolicy, QComboBox, QMessageBox, QFileDialog, QListWidgetItem, qApp
-except ImportError:
-	try:
-		from PyQt4 import QtCore, QtGui, QtOpenGL
-		from PyQt4.QtCore import Qt
-		from PyQt4.QtCore import QTimer
-		from PyQt4.QtGui import QListWidget, QLabel, QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QSizePolicy, QComboBox, QMessageBox, QFileDialog, QListWidgetItem, qApp
-	except:
-		print("Warning: PyQt4 or 5 must be installed")
-		sys.exit(1)
+# try:
+# 	from PyQt5 import QtCore, QtGui, QtOpenGL
+# 	from PyQt5.QtCore import Qt
+# 	from PyQt5.QtCore import QTimer
+# 	from PyQt5.QtWidgets import QListWidget, QLabel, QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QSizePolicy, QComboBox, QMessageBox, QFileDialog, QListWidgetItem, qApp
+# except:
+from PyQt5 import QtCore, QtGui, QtOpenGL
+from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QListWidget, QLabel, QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QSizePolicy, QComboBox, QMessageBox, QFileDialog, QListWidgetItem, qApp
+# except ImportError:
+# 	try:
+# 		from PyQt4 import QtCore, QtGui, QtOpenGL
+# 		from PyQt4.QtCore import Qt
+# 		from PyQt4.QtCore import QTimer
+# 		from PyQt4.QtGui import QListWidget, QLabel, QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QSizePolicy, QComboBox, QMessageBox, QFileDialog, QListWidgetItem, qApp
+# 	except:
+# 		print("Warning: PyQt4 or 5 must be installed")
+# 		sys.exit(1)
 
 from sp_sparx import *
 from optparse import OptionParser

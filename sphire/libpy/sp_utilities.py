@@ -2368,11 +2368,12 @@ def read_spider_doc(fnam):
 
 
 def chooseformat(t, form_float="  %12.5f"):
+	import string
 	from string import replace, strip, split, atoi
 
 	e_form = replace(form_float, "f", "e")
 	ee = strip(form_float) % t
-	if len(ee) > atoi(split(strip(form_float), ".")[0][1:]):
+	if len(ee) > atoi(string.split(strip(form_float), ".")[0][1:]):
 		return e_form
 	df1 = float(ee)
 	df2 = float(strip(e_form) % t)
@@ -5518,10 +5519,7 @@ def angles_between_anglesets(angleset1, angleset2, indexes=None):
 	  The third parameter (indexes) is optional and may be set to list of indexes. In that case only elements from given list are taken into account.
 	"""
 	from sp_fundamentals import rotate_params
-	from sp_utilities import (
-		rotation_between_anglesets,
-		angle_between_projections_directions,
-	)
+	from sp_utilities import (rotation_between_anglesets,angle_between_projections_directions)
 
 	if indexes != None:
 		new_ang1 = []
@@ -7671,7 +7669,7 @@ def fill_in_mpi_list(mpi_list, data_list, index_start, index_end):
 		mpi_list[index] = data_list[index - index_start]
 	return mpi_list
 
-
+"""
 def get_groups_from_partition(partition, initial_ID_list, number_of_groups):
 	# sort out Kmref results to individual groups that has initial IDs
 	# make a dictionary
@@ -7687,8 +7685,9 @@ def get_groups_from_partition(partition, initial_ID_list, number_of_groups):
 				class_one.append(orginal_id)
 		res.append(class_one)
 	return res
+"""
 
-
+"""
 def remove_small_groups(class_list, minimum_number_of_objects_in_a_group):
 	new_class = []
 	final_list = []
@@ -7699,7 +7698,7 @@ def remove_small_groups(class_list, minimum_number_of_objects_in_a_group):
 				final_list.append(element)
 	final_list.sort()
 	return final_list, new_class
-
+"""
 
 #### Used in the main programm
 
@@ -7727,7 +7726,7 @@ def get_initial_ID(part_list, full_ID_dict):
 		# new_dict[iptl] = id
 	return part_initial_id_list  # , new_dict
 
-
+"""
 def remove_small_groups(class_list, minimum_number_of_objects_in_a_group):
 	new_class = []
 	final_list = []
@@ -7738,7 +7737,7 @@ def remove_small_groups(class_list, minimum_number_of_objects_in_a_group):
 				final_list.append(element)
 	final_list.sort()
 	return final_list, new_class
-
+"""
 
 def print_upper_triangular_matrix(data_table_dict, N_indep, log_main):
 	msg = ""
@@ -7754,12 +7753,12 @@ def print_upper_triangular_matrix(data_table_dict, N_indep, log_main):
 				msg += "      "
 		log_main.add(msg)
 
-
+"""
 def print_a_line_with_timestamp(string_to_be_printed):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	sxprint((line, string_to_be_printed))
 	return string_to_be_printed
-
+"""
 
 def convertasi(asig, K):
 	from numpy import array
@@ -8262,7 +8261,7 @@ def create_random_list(Tracker):
 		indep_list.append(ll)
 	Tracker["this_indep_list"] = indep_list
 
-
+"""
 def get_number_of_groups(total_particles, number_of_images_per_group, round_off=0.2):
 	number_of_groups = float(total_particles) / number_of_images_per_group
 	if number_of_groups - int(number_of_groups) < round_off:
@@ -8270,7 +8269,7 @@ def get_number_of_groups(total_particles, number_of_images_per_group, round_off=
 	else:
 		number_of_groups = int(number_of_groups) + 1
 	return number_of_groups
-
+"""
 
 def recons_mref(Tracker):
 	from mpi import mpi_barrier, MPI_COMM_WORLD
@@ -8350,7 +8349,7 @@ def get_groups_from_partition(partition, initial_ID_list, number_of_groups):
 		res.append(class_one)
 	return res
 
-
+"""
 def get_number_of_groups(total_particles, number_of_images_per_group):
 	# soft partition groups
 	number_of_groups = float(total_particles) / number_of_images_per_group
@@ -8359,7 +8358,7 @@ def get_number_of_groups(total_particles, number_of_images_per_group):
 	else:
 		number_of_groups = int(number_of_groups) + 1
 	return number_of_groups
-
+"""
 
 def get_complementary_elements(total_list, sub_data_list):
 	if len(total_list) < len(sub_data_list):

@@ -1487,7 +1487,7 @@ def main(args):
 
 	# get total number of images (nima) and broadcast
 	if(myid == main_node): 
-		Blockdata["total_nima"] = sp_global_def.EMUtil.get_image_count(Blockdata["stack"])
+		Blockdata["total_nima"] = EMUtil.get_image_count(Blockdata["stack"])
 	else: 
 		Blockdata["total_nima"] = 0
 
