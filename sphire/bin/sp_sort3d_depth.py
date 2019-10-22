@@ -76,7 +76,7 @@ import types
 import sp_global_def
 from sp_global_def import *
 from optparse import OptionParser
-from sparx import *
+from sp_sparx import *
 from EMAN2 import *
 from numpy import array
 from sp_logger import Logger, BaseLogger_Files

@@ -44,14 +44,14 @@ import sys
 import collections
 from builtins import range
 from builtins import object
-try:
-    from PyQt4.Qt import *
-    from PyQt4 import QtGui
-    from PyQt4 import QtCore
-except ImportError:
-    from PyQt5.Qt import *
-    from PyQt5 import QtWidgets as QtGui
-    from PyQt5 import QtCore
+# try:
+#     from PyQt4.Qt import *
+#     from PyQt4 import QtGui
+#     from PyQt4 import QtCore
+# except ImportError:
+from PyQt5.Qt import *
+from PyQt5 import QtWidgets as QtGui
+from PyQt5 import QtCore
 from EMAN2 import *
 from EMAN2_cppwrap import *
 from sp_global_def import *
