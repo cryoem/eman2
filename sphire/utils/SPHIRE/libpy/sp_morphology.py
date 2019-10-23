@@ -110,7 +110,7 @@ def soft_edge(img, length, mode='c', do_approx=False):
 
 	# Create the outline for the array by erosing it once.
 	# Pad the outline with the edge mask to avoid edge effects later.
-	outline = img_data - snm.binary_erosion(img_data)
+	outline = img_data - scipy.ndimage.morphology.binary_erosion(img_data)
 	outline = scipy.ndimage.morphology.numpy.pad(outline, length + 1, mode='constant', constant_values=0)
 	outline_index = scipy.ndimage.morphology.numpy.where(outline == 1)
 

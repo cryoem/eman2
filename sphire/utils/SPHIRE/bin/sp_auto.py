@@ -42,6 +42,7 @@ from __future__ import division
 import argparse
 import sp_global_def
 import subprocess
+import collections
 import sys
 
 
@@ -611,7 +612,7 @@ def main(args_as_dict):
 		sys.exit(1)
 
 	#show_variables()
-	function_dict = co.OrderedDict()
+	function_dict = collections.OrderedDict()
 	# [Function name, MPI support]
 	function_dict['do_unblur'] = [get_unblur_cmd, True]
 	function_dict['do_cter'] = [get_cter_cmd, True]

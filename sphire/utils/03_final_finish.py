@@ -55,7 +55,7 @@ NO_UNUSED = os.path.join(CURRENT_DIR, '02_NO_UNUSED')
 NO_WILDCARDS_DIR = os.path.join(CURRENT_DIR, '01_NO_WILDCARDS')
 
 IMPORTS_SPHIRE_DIR = os.path.join(CURRENT_DIR, '03_SPHIRE_IMPORTS')
-SPHIRE_DIR = os.path.join(CURRENT_DIR, '03_SPHIRE')
+SPHIRE_DIR = os.path.join(CURRENT_DIR, 'SPHIRE')
 try:
     shutil.rmtree(IMPORTS_SPHIRE_DIR)
 except:

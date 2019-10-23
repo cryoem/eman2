@@ -62,7 +62,9 @@ from builtins import object
 # except ImportError:
 
 
-
+from PyQt5.Qt import *
+from PyQt5 import QtWidgets as QtGui
+from PyQt5 import QtCore
 
 # ========================================================================================
 # Helper Functions

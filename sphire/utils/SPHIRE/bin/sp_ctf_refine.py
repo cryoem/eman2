@@ -47,11 +47,17 @@ import multiprocessing
 import numpy
 import sp_global_def
 import sp_projection
+import sp_statistics
+import sp_utilities
+import sp_ctf_refine_io
+import sp_ctf_refine_plotting
+import sp_filter
+import itertools
 import sys
 import time
 import tqdm
 import traceback
-
+from scipy import ndimage
 
 
 
@@ -118,7 +124,7 @@ def apply_ctf(projection_2d, ctf):
 	:param ctf: CTF
 	:return: CTF filtered projection
 	"""
-	projection_filtered = fltr.filt_ctf(projection_2d, ctf)
+	projection_filtered = sp_filter.filt_ctf(projection_2d, ctf)
 	return projection_filtered
 
 
@@ -231,7 +237,7 @@ def refine_defocus_with_error_est(
 	defocus_bootstrap = [ctf.defocus for ctf in best_ctfs_bootstrap]
 	unique_defocuses = set(defocus_bootstrap)
 	ctf_list_fine = []
-	current_ctf_cpy = copy.copy.copy(current_ctf)
+	current_ctf_cpy = copy.copy(current_ctf)
 	for unique_def in unique_defocuses:
 		current_ctf_cpy.defocus = unique_def
 		ctf_list_fine.extend(create_ctf_list(current_ctf_cpy, def_step_size * 10, def_step_size))
@@ -757,7 +763,7 @@ def _main_():
 		)
 
 	sp_global_def.sxprint("####Start refinement####")
-	start = time.time.time()
+	start = time.time()
 
 	# for chunk in particle_chunks:
 	#   refine_set(chunk)
@@ -783,7 +789,7 @@ def _main_():
 			pbar.update(len(subset_chunk))
 	#####################################################################
 
-	end = time.time.time()
+	end = time.time()
 	sp_global_def.sxprint("Time for ", number_of_particles, " Particles:", end - start)
 
 	# Ouput results
