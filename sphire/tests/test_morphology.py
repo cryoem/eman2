@@ -9,10 +9,13 @@ from numpy import ones as numpy_ones
 from numpy import float32 as numpy_float32
 from random import sample as random_sample
 
+from ..libpy.sp_utilities import model_blank,model_circle,get_im, model_gauss_noise
+
+
 import unittest
 
 from test_module import get_data, get_data_3d, remove_dir, get_arg_from_pickle_file,get_real_data,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER
-from sphire.libpy.sp_utilities import model_blank,model_circle,get_im, model_gauss_noise
+
 from EMAN2_cppwrap import EMData, EMAN2Ctf
 from copy import  deepcopy
 from os import path,mkdir
@@ -88,7 +91,7 @@ pickle files stored under smb://billy.storage.mpi-dortmund.mpg.de/abt3/group/agr
 
 """ start: new in sphire 1.3"""
 from sphire.libpy import sp_morphology as oldfu
-from sphire.libpy_py3 import sp_morphology as fu
+from sphire.libpy import sp_morphology as fu
 
 
 

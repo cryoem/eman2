@@ -6,9 +6,9 @@ FILE_LIST_NOSE_TEST = ["test_morphology.py","test_projection.py","test_reconstru
 CURRENT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 # in order to be able to run it from pycharm too, we have to specify the whole path of the commands. change them with your own path or set to FALSE and run it from the commandLine
-PYCHARM_RUN = False
-PYTEST_PATH = "/home/lusnig/SPHIRE_1_1/bin/"
-MPI_PATH = "/home/lusnig/SPHIRE_1_1/bin/"
+PYCHARM_RUN = True
+PYTEST_PATH = "/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
+MPI_PATH = "/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
 
 
 OUTPUTFILE = "ALL_TEST_LOG_FILE"

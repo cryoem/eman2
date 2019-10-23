@@ -23,7 +23,7 @@ or directly from http://sphire.mpg.de/wiki/doku.php?id=downloads:sphire_1_0
 And set the variable 'ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER' to its path on your HD
 """
 
-ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER = "/home/lusnig/Downloads/SphireDemoResults"
+ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER = "/home/adnan/Downloads/sphire_1_0_precalculated_results/SphireDemoResults"
 
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 

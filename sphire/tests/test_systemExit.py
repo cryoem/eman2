@@ -1,11 +1,11 @@
 from __future__ import print_function
 from __future__ import division
 
-from ..libpy import sparx_morphology as fu
-from .sparx_lib import sparx_morphology as oldfu
+from ..libpy import sp_morphology as fu
+from ..libpy import sp_morphology as oldfu
 
-from ..libpy import sparx_utilities
-from .sparx_lib import sparx_utilities as oldsparx_utilities
+from ..libpy import sp_utilities
+from ..libpy import sp_utilities as oldsparx_utilities
 
 
 import unittest
@@ -22,14 +22,14 @@ ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 """
 change it when you run the tests with your path.In this folder I copied 'TcdA1-0010_frames.mrc' got from the sphire tutorial i.e.: 'SphireDemoResults/CorrectedSums/corrsum':
 """
-ABSOLUTE_PATH_TO_MRC_FILES="/home/lusnig/Downloads/mrc_files_for_unit_test"
+ABSOLUTE_PATH_TO_MRC_FILES="/home/adnan/Downloads/sphire_1_0_precalculated_results/SphireDemoResults/"
 TOLERANCE = 0.0075
 
 IMAGE_2D, IMAGE_2D_REFERENCE = get_real_data(dim=2)
 IMAGE_3D, STILL_NOT_VALID = get_real_data(dim=3)
-IMAGE_BLANK_2D = sparx_utilities.model_blank(10, 10)
-IMAGE_BLANK_3D = sparx_utilities.model_blank(10, 10, 10)
-MASK = sparx_utilities.model_circle(2, 5, 5)
+IMAGE_BLANK_2D = sp_utilities.model_blank(10, 10)
+IMAGE_BLANK_3D = sp_utilities.model_blank(10, 10, 10)
+MASK = sp_utilities.model_circle(2, 5, 5)
 
 
 class Test_MORPHOLOGY(unittest.TestCase):
