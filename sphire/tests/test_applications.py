@@ -680,8 +680,8 @@ class Test_ali2d_MPI(unittest.TestCase):
             fu.ali2d_MPI()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali2d_MPI()
-        self.assertEqual(cm_new.exception.message, "ali2d_MPI() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ali2d_MPI() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     @unittest.skip("The result are not the same")
     def test_pickle_file_values(self):
@@ -736,8 +736,8 @@ class Test_ali2d_base(unittest.TestCase):
             fu.ali2d_base()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali2d_base()
-        self.assertEqual(cm_new.exception.message, "ali2d_base() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ali2d_base() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     @unittest.skip("The result are not the same")
     def test_ali2d_base_true_should_return_equal_object(self):
@@ -781,8 +781,8 @@ class Test_cpy(unittest.TestCase):
             fu.cpy()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.cpy()
-        self.assertEqual(cm_new.exception.message, "cpy() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "cpy() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_default_case(self):
         ins_list = path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, 'Class2D/best.hdf')
@@ -824,8 +824,8 @@ class Test_project3d(unittest.TestCase):
             fu.project3d()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.project3d()
-        self.assertEqual(cm_new.exception.message, "project3d() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "project3d() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2Dimg_crashes_because_signal11SIGSEGV(self):
         self.assertTrue(True)
@@ -840,16 +840,16 @@ class Test_project3d(unittest.TestCase):
             fu.project3d(volume=None, stack = None, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None , listctfs = None, noise = None, realsp = False, trillinear = False)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.project3d(volume=None, stack = None, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None , listctfs = None, noise = None, realsp = False, trillinear = False)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_img_returns_ZeroDivisionError(self):
         with self.assertRaises(ZeroDivisionError) as cm_new:
             fu.project3d(volume=EMData(), stack = None, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None , listctfs = None, noise = None, realsp = False, trillinear = False)
         with self.assertRaises(ZeroDivisionError) as cm_old:
             oldfu.project3d(volume=EMData(), stack = None, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None , listctfs = None, noise = None, realsp = False, trillinear = False)
-        self.assertEqual(cm_new.exception.message, "float division by zero")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "float division by zero")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_3Dimg_realsp_and_trilinear_error_msg(self):
         return_new = fu.project3d(volume=IMAGE_3D, stack = None, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None , listctfs = None, noise = None, realsp = True, trillinear = True)
@@ -951,8 +951,8 @@ class Test_ali_vol(unittest.TestCase):
             fu.ali_vol()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali_vol()
-        self.assertEqual(cm_new.exception.message, "ali_vol() takes at least 4 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ali_vol() takes at least 4 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_with_empty_refv_returns_RuntimeError(self):
         (vol,refv,ang_scale,shift_scale,radius) = self.argum[0]
@@ -960,13 +960,13 @@ class Test_ali_vol(unittest.TestCase):
             fu.ali_vol(vol =vol, refv=EMData(), ang_scale=ang_scale, shift_scale=shift_scale, radius=radius, discrepancy = "ccc")
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.ali_vol(vol =vol, refv=EMData(), ang_scale=ang_scale, shift_scale=shift_scale, radius=radius, discrepancy = "ccc")
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], "x size <= 0")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_with_empty_vol_returns_RuntimeError(self):
@@ -975,13 +975,13 @@ class Test_ali_vol(unittest.TestCase):
             fu.ali_vol(vol =EMData(), refv=refv, ang_scale=ang_scale, shift_scale=shift_scale, radius=radius, discrepancy = "ccc")
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.ali_vol(vol =EMData(), refv=refv, ang_scale=ang_scale, shift_scale=shift_scale, radius=radius, discrepancy = "ccc")
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
         self.assertEqual(msg[3], "The requested key does not exist")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_with_NoneType_vol_returns_RuntimeError(self):
@@ -990,13 +990,13 @@ class Test_ali_vol(unittest.TestCase):
             fu.ali_vol(vol =None, refv=refv, ang_scale=ang_scale, shift_scale=shift_scale, radius=radius, discrepancy = "ccc")
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.ali_vol(vol =None, refv=refv, ang_scale=ang_scale, shift_scale=shift_scale, radius=radius, discrepancy = "ccc")
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
         self.assertEqual(msg[3], "The requested key does not exist")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_with_NoneType_refv_returns_RuntimeError(self):
         (vol,refv,ang_scale,shift_scale,radius) = self.argum[0]
@@ -1004,13 +1004,13 @@ class Test_ali_vol(unittest.TestCase):
             fu.ali_vol(vol =vol, refv=None, ang_scale=ang_scale, shift_scale=shift_scale, radius=radius, discrepancy = "ccc")
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.ali_vol(vol =vol, refv=None, ang_scale=ang_scale, shift_scale=shift_scale, radius=radius, discrepancy = "ccc")
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], "x size <= 0")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2Dimg_as_vol_returns_RuntimeError(self):
         (vol,refv,ang_scale,shift_scale,radius) = self.argum[0]
@@ -1018,13 +1018,13 @@ class Test_ali_vol(unittest.TestCase):
             fu.ali_vol(vol =IMAGE_2D, refv=refv, ang_scale=ang_scale, shift_scale=shift_scale, radius=radius, discrepancy = "ccc")
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.ali_vol(vol =IMAGE_2D, refv=refv, ang_scale=ang_scale, shift_scale=shift_scale, radius=radius, discrepancy = "ccc")
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
         self.assertEqual(msg[3], "The requested key does not exist")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2Dimg_as_refvol_returns_RuntimeError(self):
         (vol,refv,ang_scale,shift_scale,radius) = self.argum[0]
@@ -1032,13 +1032,13 @@ class Test_ali_vol(unittest.TestCase):
             fu.ali_vol(vol =vol, refv=IMAGE_2D, ang_scale=ang_scale, shift_scale=shift_scale, radius=radius, discrepancy = "ccc")
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.ali_vol(vol =vol, refv=IMAGE_2D, ang_scale=ang_scale, shift_scale=shift_scale, radius=radius, discrepancy = "ccc")
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
         self.assertEqual(msg[3], "The requested key does not exist")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_with_pickle_values(self):
@@ -1065,8 +1065,8 @@ class Test_ali_vol(unittest.TestCase):
             fu.ali_vol(vol =vol, refv=refv, ang_scale=ang_scale, shift_scale=0, radius=radius, discrepancy = "ccc")
         with self.assertRaises(ZeroDivisionError) as cm_old:
             oldfu.ali_vol(vol =vol, refv=refv, ang_scale=ang_scale, shift_scale=0, radius=radius, discrepancy = "ccc")
-        self.assertEqual(cm_new.exception.message, "float division by zero")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "float division by zero")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_with_zero_ang(self):
         (vol,refv,ang_scale,shift_scale,radius) = self.argum[0]
@@ -1082,8 +1082,8 @@ class Test_recons3d_n_trl_MPI_one_node(unittest.TestCase):
             fu.recons3d_n_trl_MPI_one_node()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.recons3d_n_trl_MPI_one_node()
-        self.assertEqual(cm_new.exception.message, "recons3d_n_trl_MPI_one_node() takes exactly 12 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "recons3d_n_trl_MPI_one_node() takes exactly 12 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     """
     the fftvol that produces the error is created in the code and I cannot understand why 
@@ -1123,8 +1123,8 @@ class Test_pca(unittest.TestCase):
             fu.pca()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.pca()
-        self.assertEqual(cm_new.exception.message, "pca() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "pca() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_default_value(self):
         return_new = fu.pca(input_stacks=self.grp_imgdata, subavg="", mask_radius=-1, nvec=3, incore=False, shuffle=False, genbuf=True, maskfile="", MPI=False, verbose=False)
@@ -1182,8 +1182,8 @@ class Test_prepare_2d_forPCA(unittest.TestCase):
             fu.prepare_2d_forPCA()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prepare_2d_forPCA()
-        self.assertEqual(cm_new.exception.message, "prepare_2d_forPCA() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "prepare_2d_forPCA() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_default_value(self):
         return_new_avg, return_new_outstack= fu.prepare_2d_forPCA(data = self.data, mode = "a", output_stack = None, CTF = False)
@@ -1227,8 +1227,8 @@ class Test_extract_value(unittest.TestCase):
             fu.extract_value()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.extract_value()
-        self.assertEqual(cm_new.exception.message, "extract_value() takes exactly 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "extract_value() takes exactly 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_string_integer(self):
         return_new = fu.extract_value('20')
@@ -1260,8 +1260,8 @@ class Test_header(unittest.TestCase):
             fu.header()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.header()
-        self.assertEqual(cm_new.exception.message, "header() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "header() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_default_No_option_errorMsg(self):
         return_new = fu.header(stack=[], params = [], zero=False, one=False, set = 0.0, randomize=False, rand_alpha=False, fimport=None, fexport=None, fprint=False, backup=False, suffix='_backup', restore=False, delete=False, consecutive=False)
@@ -1294,8 +1294,8 @@ class Test_MPI_start_end(unittest.TestCase):
             fu.MPI_start_end()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.MPI_start_end()
-        self.assertEqual(cm_new.exception.message, "MPI_start_end() takes exactly 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "MPI_start_end() takes exactly 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_default_case(self):
@@ -1315,8 +1315,8 @@ class Test_MPI_start_end(unittest.TestCase):
             fu.MPI_start_end(nima=self.nima, nproc=0, myid=self.myid)
         with self.assertRaises(ZeroDivisionError) as cm_old:
             fu.MPI_start_end(nima=self.nima, nproc=0, myid=self.myid)
-        self.assertEqual(cm_new.exception.message, "float division by zero")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "float division by zero")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_zero_myd(self):
         return_new = fu.MPI_start_end(nima=self.nima, nproc=self.nproc, myid=0)
@@ -1333,8 +1333,8 @@ class Test_refvol(unittest.TestCase):
             fu.refvol()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.refvol()
-        self.assertEqual(cm_new.exception.message, "refvol() takes exactly 4 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "refvol() takes exactly 4 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 """
@@ -1351,8 +1351,8 @@ class Test_within_group_refinement(unittest.TestCase):
             fu.within_group_refinement()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.within_group_refinement()
-        self.assertEqual(cm_new.exception.message, "within_group_refinement() takes at least 13 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "within_group_refinement() takes at least 13 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_pickle_file(self):
         (data, maskfile, randomize_not_used, ir, ou, rs, xrng, yrng, step, dst, maxit, FH, FF) = self.argum
@@ -1369,8 +1369,8 @@ class Test_ali3d_mref_Kmeans_MPI(unittest.TestCase):
             fu.ali3d_mref_Kmeans_MPI()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali3d_mref_Kmeans_MPI()
-        self.assertEqual(cm_new.exception.message, "ali3d_mref_Kmeans_MPI() takes exactly 4 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ali3d_mref_Kmeans_MPI() takes exactly 4 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -1381,8 +1381,8 @@ class Test_mref_ali3d_EQ_Kmeans(unittest.TestCase):
             fu.mref_ali3d_EQ_Kmeans()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.mref_ali3d_EQ_Kmeans()
-        self.assertEqual(cm_new.exception.message, "mref_ali3d_EQ_Kmeans() takes exactly 4 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "mref_ali3d_EQ_Kmeans() takes exactly 4 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 

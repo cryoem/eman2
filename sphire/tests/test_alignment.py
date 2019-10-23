@@ -63,32 +63,32 @@ class Test_crit2d(unittest.TestCase):
             fu.crit2d()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.crit2d()
-        self.assertEqual(cm_new.exception.message, "crit2d() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "crit2d() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_args_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.crit2d(args=[], data=[KB_IMAGE2D_SIZE,MASK_2DIMAGE,2,self.img2D,self.img2D])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.crit2d(args=[], data=[KB_IMAGE2D_SIZE,MASK_2DIMAGE,2,self.img2D,self.img2D])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_data_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.crit2d(data=[], args=[3,3,4])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.crit2d(data=[], args=[3,3,4])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_None_img_in_data_returns_RuntimeError_NullPointerException(self):
         with self.assertRaises(RuntimeError) as cm_new:
             fu.crit2d(args=[3,3,4], data=[KB_IMAGE2D_SIZE,MASK_2DIMAGE,2,None,self.img2D])
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.crit2d(args=[3,3,4], data=[KB_IMAGE2D_SIZE,MASK_2DIMAGE,2,None,self.img2D])
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NullPointerException")
         self.assertEqual(msg[3], 'NULL input image')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -100,8 +100,8 @@ class Test_crit2d(unittest.TestCase):
         with self.assertRaises(TypeError) as cm_old:
             oldfu.crit2d(args=[3, 3, 4], data=[None, MASK_2DIMAGE, 2, self.img2D, self.img2D])
         output_msg = "Python argument types in\n    Util.shc(EMData, list, list, list, int, float, str, list, float, float, str)\ndid not match C++ signature:\n    shc(EMAN::EMData*, std::vector<EMAN::EMData*, std::allocator<EMAN::EMData*> > image, std::vector<std::vector<float, std::allocator<float> >, std::allocator<std::vector<float, std::allocator<float> > > > crefim, std::vector<float, std::allocator<float> > list_of_reference_angles, std::vector<float, std::allocator<float> > xrng, float yrng, float step, std::string ant, std::vector<int, std::allocator<int> > mode, float numr, float cnx, std::string cny)"
-        self.assertEqual(cm_new.exception.message, output_msg)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), output_msg)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_crit2dIMG(self):
         return_old = oldfu.crit2d(args=[3,3,4], data=[KB_IMAGE2D_SIZE,MASK_2DIMAGE,2,self.img2D, self.img2D])
@@ -122,8 +122,8 @@ class Test_eqproj_cascaded_ccc_fitness_function(unittest.TestCase):
             fu.eqproj_cascaded_ccc_fitness_function()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.eqproj_cascaded_ccc_fitness_function()
-        self.assertEqual(cm_new.exception.message, "eqproj_cascaded_ccc_fitness_function() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "eqproj_cascaded_ccc_fitness_function() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_empty_args_returns_IndexError_list_index_out_of_range(self):
@@ -131,16 +131,16 @@ class Test_eqproj_cascaded_ccc_fitness_function(unittest.TestCase):
             fu.crit2d(args=[], data=[0,1,2,3,4,5,6])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.crit2d(args=[], data=[0,1,2,3,4,5,6])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_data_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.crit2d(data=[], args=[3,3,4])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.crit2d(data=[], args=[3,3,4])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_eqproj_cascaded_ccc_fitness_function(self):
@@ -158,16 +158,16 @@ class Test_format_list(unittest.TestCase):
             fu.format_list()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.format_list()
-        self.assertEqual(cm_new.exception.message, "format_list() takes exactly 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "format_list() takes exactly 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_list_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.format_list(l=[])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.format_list(l=[])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_format_list(self):
         return_old = oldfu.format_list(l=[1.1,2,3])
@@ -184,24 +184,24 @@ class Test_objective_function_just_ccc_has_maximum(unittest.TestCase):
             fu.objective_function_just_ccc_has_maximum()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.objective_function_just_ccc_has_maximum()
-        self.assertEqual(cm_new.exception.message, "objective_function_just_ccc_has_maximum takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "objective_function_just_ccc_has_maximum takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_args_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.objective_function_just_ccc_has_maximum(args=[], data=[self.volft,"",IMAGE_2D,"","","",""])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.objective_function_just_ccc_has_maximum(args=[], data=[self.volft,"",IMAGE_2D,"","","",""])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_data_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.objective_function_just_ccc_has_maximum(data=[], args=self.params)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.objective_function_just_ccc_has_maximum(data=[], args=self.params)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_None_img_data_crash_because_SIGSEGV(self):
         pass
@@ -210,8 +210,8 @@ class Test_objective_function_just_ccc_has_maximum(unittest.TestCase):
             fu.objective_function_just_ccc_has_maximum(data=[self.volft,"",None,"","","",""], args=self.params)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.objective_function_just_ccc_has_maximum(data=[self.volft,"",None,"","","",""], args=self.params)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
         """
 
     def test_objective_function_just_ccc_has_maximum(self):
@@ -229,8 +229,8 @@ class Test_objective_function_just_ccc_has_minimum(unittest.TestCase):
             fu.objective_function_just_ccc_has_minimum()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.objective_function_just_ccc_has_minimum()
-        self.assertEqual(cm_new.exception.message, "objective_function_just_ccc_has_minimum() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "objective_function_just_ccc_has_minimum() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_objective_function_just_ccc_has_minimum(self):
         return_old = oldfu.objective_function_just_ccc_has_minimum(args=self.params,data=[self.volft, "", IMAGE_2D])
@@ -243,16 +243,16 @@ class Test_objective_function_just_ccc_has_minimum(unittest.TestCase):
             fu.objective_function_just_ccc_has_minimum(args=[], data=[self.volft, "", IMAGE_2D])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.objective_function_just_ccc_has_minimum(args=[], data=[self.volft,"",IMAGE_2D,])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_data_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.objective_function_just_ccc_has_minimum(data=[], args=self.params)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.objective_function_just_ccc_has_minimum(data=[], args=self.params)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_None_img_data_crash_because_SIGSEGV(self):
         pass
@@ -261,8 +261,8 @@ class Test_objective_function_just_ccc_has_minimum(unittest.TestCase):
             fu.objective_function_just_ccc_has_minimum(data=[self.volft,"",None,"","","",""], args=self.params)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.objective_function_just_ccc_has_minimum(data=[self.volft,"",None,"","","",""], args=self.params)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
         """
 
     def test_NoneType_as_volft_returns_AttributeError_NoneType_obj_hasnot_attribute_get_attr_default(self):
@@ -270,8 +270,8 @@ class Test_objective_function_just_ccc_has_minimum(unittest.TestCase):
             fu.objective_function_just_ccc_has_minimum(args=self.params, data=[None,"",IMAGE_2D,"","","",""])
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.objective_function_just_ccc_has_minimum(args=self.params, data=[None,"",IMAGE_2D,"","","",""])
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_attr_default'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_attr_default'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -282,8 +282,8 @@ class Test_objective_function_just_ccc_has_minimum_only_reduced(unittest.TestCas
             fu.objective_function_just_ccc_has_minimum_reduced()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.objective_function_just_ccc_has_minimum_reduced()
-        self.assertEqual(cm_new.exception.message, "objective_function_just_ccc_has_minimum_reduced() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "objective_function_just_ccc_has_minimum_reduced() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_objective_function_just_ccc_has_minimum_only(self):
         return_old = oldfu.objective_function_just_ccc_has_minimum_reduced(args=self.params,data=[self.volft, "", IMAGE_2D])
@@ -296,16 +296,16 @@ class Test_objective_function_just_ccc_has_minimum_only_reduced(unittest.TestCas
             fu.objective_function_just_ccc_has_minimum_reduced(args=[], data=[self.volft, "", IMAGE_2D])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.objective_function_just_ccc_has_minimum_reduced(args=[], data=[self.volft,"",IMAGE_2D,])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_data_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.objective_function_just_ccc_has_minimum_reduced(data=[], args=self.params)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.objective_function_just_ccc_has_minimum_reduced(data=[], args=self.params)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_None_img_data_crash_because_SIGSEGV(self):
         pass
@@ -314,8 +314,8 @@ class Test_objective_function_just_ccc_has_minimum_only_reduced(unittest.TestCas
             fu.objective_function_just_ccc_has_minimum_only(data=[self.volft,"",None,1,1,1,1], args=self.params)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.objective_function_just_ccc_has_minimum_only(data=[self.volft,"",None,1,1,1,1], args=self.params)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
         """
 
     def test_NoneType_as_volft_returns_AttributeError_NoneType_obj_hasnot_attribute_get_attr_default(self):
@@ -323,8 +323,8 @@ class Test_objective_function_just_ccc_has_minimum_only_reduced(unittest.TestCas
             fu.objective_function_just_ccc_has_minimum_reduced(args=self.params, data=[None,"",IMAGE_2D,1,1,1,1])
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.objective_function_just_ccc_has_minimum_reduced(args=self.params, data=[None,"",IMAGE_2D,1,1,1,1])
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_attr_default'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_attr_default'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -337,8 +337,8 @@ class Test_objective_function_just_ccc_has_minimum_reduced_only_shifts(unittest.
             fu.objective_function_just_ccc_has_minimum_reduced_only_shifts()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.objective_function_just_ccc_has_minimum_reduced_only_shifts()
-        self.assertEqual(cm_new.exception.message, "objective_function_just_ccc_has_minimum_reduced_only_shifts() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "objective_function_just_ccc_has_minimum_reduced_only_shifts() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_empty_args_returns_IndexError_list_index_out_of_range(self):
@@ -346,16 +346,16 @@ class Test_objective_function_just_ccc_has_minimum_reduced_only_shifts(unittest.
             fu.objective_function_just_ccc_has_minimum_reduced_only_shifts(args=[], data=[self.volft, "", IMAGE_2D, IMAGE_2D])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.objective_function_just_ccc_has_minimum_reduced_only_shifts(args=[], data=[self.volft,"",IMAGE_2D, IMAGE_2D])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_data_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.objective_function_just_ccc_has_minimum_reduced_only_shifts(data=[], args=self.params)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.objective_function_just_ccc_has_minimum_reduced_only_shifts(data=[], args=self.params)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -366,8 +366,8 @@ class Test_objective_function_just_ccc_has_minimum2(unittest.TestCase):
             fu.objective_function_just_ccc_has_minimum2()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.objective_function_just_ccc_has_minimum2()
-        self.assertEqual(cm_new.exception.message, "objective_function_just_ccc_has_minimum2() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "objective_function_just_ccc_has_minimum2() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_objective_function_just_ccc_has_minimum2(self):
         return_old = oldfu.objective_function_just_ccc_has_minimum2(args=self.params,data=[self.volft, "", IMAGE_2D])
@@ -380,16 +380,16 @@ class Test_objective_function_just_ccc_has_minimum2(unittest.TestCase):
             fu.objective_function_just_ccc_has_minimum2(args=[], data=[self.volft, "", IMAGE_2D])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.objective_function_just_ccc_has_minimum2(args=[], data=[self.volft,"",IMAGE_2D,])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_data_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.objective_function_just_ccc_has_minimum2(data=[], args=self.params)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.objective_function_just_ccc_has_minimum2(data=[], args=self.params)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_None_img_data_crash_because_SIGSEGV(self):
         pass
@@ -398,8 +398,8 @@ class Test_objective_function_just_ccc_has_minimum2(unittest.TestCase):
             fu.objective_function_just_ccc_has_minimum2(data=[self.volft,"",None,"","","",""], args=self.params)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.objective_function_just_ccc_has_minimum2(data=[self.volft,"",None,"","","",""], args=self.params)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
         """
 
     def test_NoneType_as_volft_returns_AttributeError_NoneType_obj_hasnot_attribute_get_attr_default(self):
@@ -407,8 +407,8 @@ class Test_objective_function_just_ccc_has_minimum2(unittest.TestCase):
             fu.objective_function_just_ccc_has_minimum2(args=self.params, data=[None,"",IMAGE_2D,"","","",""])
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.objective_function_just_ccc_has_minimum2(args=self.params, data=[None,"",IMAGE_2D,"","","",""])
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_attr_default'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_attr_default'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 #todo: it sounds a little bit obsolete. do I have to test it?
@@ -418,8 +418,8 @@ class Test_objective_function_just_ccc_has_maximum___old(unittest.TestCase):
             fu.objective_function_just_ccc_has_maximum___old()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.objective_function_just_ccc_has_maximum___old()
-        self.assertEqual(cm_new.exception.message, "objective_function_just_ccc_has_maximum___old() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "objective_function_just_ccc_has_maximum___old() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_objective_function_just_ccc_has_maximum___old(self):
         v2 = oldfu.objective_function_just_ccc_has_maximum___old(args="", data="")
@@ -434,24 +434,24 @@ class Test_objective_function_just_ccc_rewrite(unittest.TestCase):
             fu.objective_function_just_ccc_rewrite()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.objective_function_just_ccc_rewrite()
-        self.assertEqual(cm_new.exception.message, "objective_function_just_ccc_rewrite() takes exactly 5 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "objective_function_just_ccc_rewrite() takes exactly 5 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_params_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.objective_function_just_ccc_rewrite(params=[], volft="", kb="", data_im="", mask2D="")
         with self.assertRaises(IndexError) as cm_old:
             oldfu.objective_function_just_ccc_rewrite(params=[], volft="", kb="", data_im="", mask2D="")
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NoneType_as_volume_returns_AttributeError_object_has_no_attribute_extractplane(self):
         with self.assertRaises(AttributeError)as cm_new:
             fu.objective_function_just_ccc_rewrite(params=[1,2,1,3,4,], volft=None, kb=KB_IMAGE2D_SIZE, data_im=IMAGE_2D, mask2D=MASK_2DIMAGE)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.objective_function_just_ccc_rewrite(params=[1,2,1,3,4,], volft=None, kb=KB_IMAGE2D_SIZE, data_im=IMAGE_2D, mask2D=MASK_2DIMAGE)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
-        self.assertEqual(cm_new.exception.message,"'NoneType' object has no attribute 'extract_plane'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+        self.assertEqual(str(cm_new.exception),"'NoneType' object has no attribute 'extract_plane'")
 
     def test_objective_function_just_ccc_rewrite(self):
         d_res = oldfu.objective_function_just_ccc_rewrite(params=[1,2,1,3,4,], volft="", kb="", data_im=IMAGE_2D, mask2D=MASK_2DIMAGE)
@@ -466,24 +466,24 @@ class Test_eqproj_cascaded_ccc(unittest.TestCase):
             fu.eqproj_cascaded_ccc()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.eqproj_cascaded_ccc()
-        self.assertEqual(cm_new.exception.message, "eqproj_cascaded_ccc() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "eqproj_cascaded_ccc() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_args_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.eqproj_cascaded_ccc(args=[], data=[self.volft,KB_IMAGE2D_SIZE,IMAGE_2D,"not_used",[1,2],1])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.eqproj_cascaded_ccc(args=[], data=[self.volft,KB_IMAGE2D_SIZE,IMAGE_2D,"not_used",[1,2],1])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_data_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.eqproj_cascaded_ccc(data=[], args=[1,2,3,4,5,6])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.eqproj_cascaded_ccc(data=[], args=self.[1,2,3,4,5,6])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_eqproj_cascaded_ccc(self):
         v1, v2 = oldfu.eqproj_cascaded_ccc(args="", data="")
@@ -499,24 +499,24 @@ class Test_twoD_fine_search(unittest.TestCase):
             fu.twoD_fine_search()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.twoD_fine_search()
-        self.assertEqual(cm_new.exception.message, "twoD_fine_search() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "twoD_fine_search() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_args_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.twoD_fine_search(args=[], data=[IMAGE_2D,1,2,3])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.twoD_fine_search(args=[], data=[IMAGE_2D,1,2,3])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_data_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.twoD_fine_search(data=[], args=[IMAGE_2D,1])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.twoD_fine_search(data=[], args=[IMAGE_2D,1])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_twoD_fine_search(self):
         return_old = oldfu.twoD_fine_search(args=[2, 1], data=[IMAGE_2D, KB_IMAGE2D_SIZE, 2, 3])
@@ -535,24 +535,24 @@ class Test_eqproj(unittest.TestCase):
             fu.eqproj()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.eqproj()
-        self.assertEqual(cm_new.exception.message, "eqproj() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "eqproj() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_args_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.eqproj(args=[], data=[IMAGE_2D,KB_IMAGE2D_SIZE,IMAGE_2D_REFERENCE,MASK_2DIMAGE])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.eqproj(args=[], data=[IMAGE_2D,KB_IMAGE2D_SIZE,IMAGE_2D_REFERENCE,MASK_2DIMAGE])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_data_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.eqproj(data=[], args=[1,2,3,4,5])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.eqproj(data=[], args=[1,2,3,4,5])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_eqproj(self):
         v2 = oldfu.eqproj(args=[1,2,3,4,5], data=[IMAGE_2D,KB_IMAGE2D_SIZE,IMAGE_2D_REFERENCE,MASK_2DIMAGE])
@@ -578,24 +578,24 @@ class Test_eqprojDot(unittest.TestCase):
             fu.eqprojDot()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.eqprojDot()
-        self.assertEqual(cm_new.exception.message, "eqprojDot() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "eqprojDot() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_args_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.eqprojDot(args=[], data=[1,2,3,4,5,6,7])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.eqprojDot(args=[], data=[1,2,3,4,5,6,7])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_data_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.eqprojDot(data=[], args=[0,1,2])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.eqprojDot(data=[], args=[0,1,2])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_eqprojDot(self):
         img=deepcopy(IMAGE_2D)
@@ -613,8 +613,8 @@ class Test_eqprojEuler(unittest.TestCase):
             fu.eqprojEuler()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.eqprojEuler()
-        self.assertEqual(cm_new.exception.message, "eqprojEuler() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "eqprojEuler() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_empty_args_returns_IndexError_list_index_out_of_range(self):
@@ -622,16 +622,16 @@ class Test_eqprojEuler(unittest.TestCase):
             fu.eqprojEuler(args=[], data=[1,2,3,4,5,6,7])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.eqprojEuler(args=[], data=[1,2,3,4,5,6,7])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_data_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.eqprojEuler(data=[], args=[0,1,2])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.eqprojEuler(data=[], args=[0,1,2])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_eqprojEuler(self):
@@ -647,8 +647,8 @@ class Test_symm_func(unittest.TestCase):
             fu.symm_func()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.symm_func()
-        self.assertEqual(cm_new.exception.message, "symm_func() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "symm_func() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_empty_args_returns_IndexError_list_index_out_of_range(self):
@@ -656,16 +656,16 @@ class Test_symm_func(unittest.TestCase):
             fu.symm_func(args=[], data=[1,2,3,4,5,6,7])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.symm_func(args=[], data=[1,2,3,4,5,6,7])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_data_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.symm_func(data=[], args=[0,1,2])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.symm_func(data=[], args=[0,1,2])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_none_mask_crash_because_SIGSEGV(self):
         pass
@@ -674,8 +674,8 @@ class Test_symm_func(unittest.TestCase):
             fu.symm_func(data=[IMAGE_2D,None,"c1"], args=[1,1,2])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.symm_func(data=[IMAGE_2D,None,"c1"], args=[1,1,2])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
         """
 
     def test_empty_mask_crash_because_SIGSEGV(self):
@@ -685,8 +685,8 @@ class Test_symm_func(unittest.TestCase):
             fu.symm_func(data=[IMAGE_2D,EMData(),"c1"], args=[1,1,2])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.symm_func(data=[IMAGE_2D,EMData(),"c1"], args=[1,1,2])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
         """
 
     def test_empty_data_images_returns_RuntimeError_InvalidValueException_xsize_not_positive(self):
@@ -694,8 +694,8 @@ class Test_symm_func(unittest.TestCase):
             fu.symm_func(data=[EMData(),MASK_2DIMAGE,"c1"], args=[1,1,2])
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.symm_func(data=[EMData(),MASK_2DIMAGE,"c1"], args=[1,1,2])
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], "x size <= 0")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -706,8 +706,8 @@ class Test_symm_func(unittest.TestCase):
             fu.symm_func(data=[None,MASK_2DIMAGE,"c1"], args=[1,1,2])
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.symm_func(data=[None,MASK_2DIMAGE,"c1"], args=[1,1,2])
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'rot_scale_trans_background'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'rot_scale_trans_background'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_symm_func(self):
@@ -727,24 +727,24 @@ class Test_find_symm(unittest.TestCase):
             fu.find_symm()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.find_symm()
-        self.assertEqual(cm_new.exception.message, "find_symm() takes exactly 9 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "find_symm() takes exactly 9 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NoneType_as_vol_returns_AttributeError_NoneType_obj_hasnot_attribute_process(self):
         with self.assertRaises(AttributeError) as cm_new:
             fu.find_symm(vol=None, mask=MASK_2DIMAGE, sym_gp="d4", phi=1, theta=3, psi=2, scale=[20,20,20], ftolerance=1.e-4, xtolerance=1.e-4,)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.find_symm(vol=None, mask=MASK_2DIMAGE, sym_gp="d4", phi=1, theta=3, psi=2, scale=[20,20,20], ftolerance=1.e-4, xtolerance=1.e-4,)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'rot_scale_trans_background'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'rot_scale_trans_background'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NoneType_as_mask_crashes_because_SIGSEGV(self):
         with self.assertRaises(AttributeError) as cm_new:
             fu.find_symm(vol=IMAGE_2D, mask=None, sym_gp="d4", phi=1, theta=3, psi=2, scale=[20,20,20], ftolerance=1.e-4, xtolerance=1.e-4,)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.find_symm(vol=IMAGE_2D, mask=None, sym_gp="d4", phi=1, theta=3, psi=2, scale=[20,20,20], ftolerance=1.e-4, xtolerance=1.e-4,)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'rot_scale_trans_background'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'rot_scale_trans_background'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2DIMAGE(self):
         return_old = oldfu.find_symm(vol=IMAGE_2D, mask=MASK_2DIMAGE, sym_gp="d4", phi=1, theta=3, psi=2,scale=[20, 20, 20], ftolerance=1.e-4, xtolerance=1.e-4, )
@@ -786,8 +786,8 @@ class Test_kbt(unittest.TestCase):
             fu.kbt()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.kbt()
-        self.assertEqual(cm_new.exception.message, "kbt() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "kbt() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_kbt(self):
         return_old= oldfu.kbt(nx=100, npad=2)
@@ -809,24 +809,24 @@ class Test_ormq_peaks(unittest.TestCase):
             fu.ormq_peaks()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ormq_peaks()
-        self.assertEqual(cm_new.exception.message, "ormq_peaks() takes exactly 9 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ormq_peaks() takes exactly 9 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_Empty_image_returns_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.ormq_peaks(image=EMData(), crefim=IMAGE_BLANK_2D, xrng=self.xrng, yrng=self.yrng, step=self.step, mode=self.mode, numr=self.numr, cnx=self.cnx, cny=self.cny)
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ormq_peaks(image=EMData(), crefim=IMAGE_BLANK_2D, xrng=self.xrng, yrng=self.yrng, step=self.step, mode=self.mode, numr=self.numr, cnx=self.cnx, cny=self.cny)
-        self.assertEqual(cm_new.exception.message, "float argument required, not list")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "float argument required, not list")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_get_xsize(self):
         with self.assertRaises(AttributeError) as cm_new:
             fu.ormq_peaks(image=None, crefim=IMAGE_BLANK_2D, xrng=self.xrng, yrng=self.yrng, step=self.step, mode=self.mode, numr=self.numr, cnx=self.cnx, cny=self.cny)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.ormq_peaks(image=None, crefim=IMAGE_BLANK_2D, xrng=self.xrng, yrng=self.yrng, step=self.step, mode=self.mode, numr=self.numr, cnx=self.cnx, cny=self.cny)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NoneType_as_crefim_crash_because_SIGSEGV(self):
         pass
@@ -835,8 +835,8 @@ class Test_ormq_peaks(unittest.TestCase):
             fu.ormq_peaks(image=IMAGE_2D, crefim=None, xrng=self.xrng, yrng=self.yrng, step=self.step, mode=self.mode, numr=self.numr, cnx=self.cnx, cny=self.cny)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.ormq_peaks(image=IMAGE_2D, crefim=None, xrng=self.xrng, yrng=self.yrng, step=self.step, mode=self.mode, numr=self.numr, cnx=self.cnx, cny=self.cny)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
         """
 
     def test_empty_data_as_crefim_crash_because_SIGSEGV(self):
@@ -846,8 +846,8 @@ class Test_ormq_peaks(unittest.TestCase):
             fu.ormq_peaks(image=IMAGE_2D, crefim=EMData(), xrng=self.xrng, yrng=self.yrng, step=self.step, mode=self.mode, numr=self.numr, cnx=self.cnx, cny=self.cny)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.ormq_peaks(image=IMAGE_2D, crefim=EMData(), xrng=self.xrng, yrng=self.yrng, step=self.step, mode=self.mode, numr=self.numr, cnx=self.cnx, cny=self.cny)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
         """
 
     def test_ormq_peaks_3DIMAGE(self):
@@ -870,16 +870,16 @@ class Test_select_k(unittest.TestCase):
             fu.select_k()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.select_k()
-        self.assertEqual(cm_new.exception.message, "select_k() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "select_k() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.select_k(dJe=[], T=3)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.select_k(dJe=[], T=3)
-        self.assertEqual(cm_new.exception.message, "tuple index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "tuple index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_select_k(self):
         return_old = oldfu.select_k(dJe=range(100), T=3)
@@ -896,16 +896,16 @@ class Test_sim_anneal(unittest.TestCase):
             fu.sim_anneal()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.sim_anneal()
-        self.assertEqual(cm_new.exception.message, "sim_anneal() takes exactly 5 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "sim_anneal() takes exactly 5 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.sim_anneal(peaks=[], T=0, step=1, mode="nF", maxrin=1)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.sim_anneal(peaks=[], T=0, step=1, mode="nF", maxrin=1)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_modeF_Tpositive(self):
         return_old = oldfu.sim_anneal(peaks=self.peaks, T=1, step=1, mode="F", maxrin=1)
@@ -952,16 +952,16 @@ class Test_sim_ccf(unittest.TestCase):
             fu.sim_ccf()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.sim_ccf()
-        self.assertEqual(cm_new.exception.message, "sim_ccf() takes exactly 5 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "sim_ccf() takes exactly 5 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.sim_ccf(peaks=[], T=0, step=1, mode="nF", maxrin=1)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.sim_ccf(peaks=[], T=0, step=1, mode="nF", maxrin=1)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_modeF_Tpositive(self):
         return_old = oldfu.sim_ccf(peaks=[1, 2, 3, 4, 5, 6], T=1, step=1, mode="nF", maxrin=1)
@@ -1007,8 +1007,8 @@ class Test_sim_anneal2(unittest.TestCase):
             fu.sim_anneal2()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.sim_anneal2()
-        self.assertEqual(cm_new.exception.message, "sim_anneal2() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "sim_anneal2() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_returns_IndexError_list_index_out_of_range(self):
@@ -1016,8 +1016,8 @@ class Test_sim_anneal2(unittest.TestCase):
             fu.sim_anneal2(peaks=[], Iter=1, T0=1, F=1, SA_stop=1)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.sim_anneal2(peaks=[], Iter=1, T0=1, F=1, SA_stop=1)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_T_lower_0000001_and_iter_lower_SA(self):
         return_old = oldfu.sim_anneal2(peaks=self.peaks,  Iter=1, T0=0.000001, F=2, SA_stop=2)
@@ -1051,8 +1051,8 @@ class Test_sim_anneal3(unittest.TestCase):
             fu.sim_anneal3()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.sim_anneal3()
-        self.assertEqual(cm_new.exception.message, "sim_anneal3() takes exactly 8 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "sim_anneal3() takes exactly 8 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_T_lower_0000001_and_iter_lower_SA(self):
         return_old = oldfu.sim_anneal3(peaks=self.peaks, peakm=self.peakm, peaks_major=self.peaks_major, peakm_major=self.peakm_major, Iter=1, T0=0.000001, F=2, SA_stop=2)
@@ -1075,16 +1075,16 @@ class Test_prep_vol_kb(unittest.TestCase):
             fu.prep_vol_kb()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prep_vol_kb()
-        self.assertEqual(cm_new.exception.message, "prep_vol_kb() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "prep_vol_kb() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_data_images_returns_RuntimeError_InvalidValueException_xsize_not_positive(self):
         with self.assertRaises(RuntimeError) as cm_new:
             fu.prep_vol_kb(vol=EMData(), kb=KB_IMAGE2D_SIZE, npad=2)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.prep_vol_kb(vol=EMData(), kb=KB_IMAGE2D_SIZE, npad=2)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], "x size <= 0")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1095,16 +1095,16 @@ class Test_prep_vol_kb(unittest.TestCase):
             fu.prep_vol_kb(vol=None, kb=KB_IMAGE2D_SIZE, npad=2)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.prep_vol_kb(vol=None, kb=KB_IMAGE2D_SIZE, npad=2)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'copy'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'copy'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_kb_images_returns_ArgumentError(self):
         with self.assertRaises(RuntimeError) as cm_new:
             fu.prep_vol_kb(vol=IMAGE_2D, kb=EMData(), npad=2)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.prep_vol_kb(vol=IMAGE_2D, kb=EMData(), npad=2)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], "x size <= 0")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1115,8 +1115,8 @@ class Test_prep_vol_kb(unittest.TestCase):
             fu.prep_vol_kb(vol=EMData(), kb=None, npad=2)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.prep_vol_kb(vol=EMData(), kb=None, npad=2)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'copy'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'copy'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_prep_vol_kb(self):
         return_old = oldfu.prep_vol_kb(vol=IMAGE_2D, kb=KB_IMAGE2D_SIZE, npad=2)
@@ -1153,8 +1153,8 @@ class Test_prepare_refrings_projections(unittest.TestCase):
             fu.prepare_refrings_projections()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prepare_refrings_projections()
-        self.assertEqual(cm_new.exception.message, "prepare_refrings_projections() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "prepare_refrings_projections() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_volume_returns_RuntimeError_ImageFormatException_extractplane_requires_complex_img(self):
         volft, kb = prep_vol(self.volft)
@@ -1162,8 +1162,8 @@ class Test_prepare_refrings_projections(unittest.TestCase):
             fu.prepare_refrings_projections(volft=EMData(), kb=kb, nz=4, delta=2.0, ref_a="P", sym="c1", mode="H", numr=self.numr, MPI=False, phiEqpsi="Minus",   initial_theta=0.1, delta_theta=0.5)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.prepare_refrings_projections(volft=EMData(), kb=kb, nz=4, delta=2.0, ref_a="P", sym="c1", mode="H", numr=self.numr, MPI=False,phiEqpsi="Minus",   initial_theta=0.1, delta_theta=0.5)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "ImageFormatException")
         self.assertEqual(msg[1], "extractplane requires a complex image")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1175,8 +1175,8 @@ class Test_prepare_refrings_projections(unittest.TestCase):
             fu.prepare_refrings_projections(volft=None, kb=kb, nz=4, delta=2.0, ref_a="P", sym="c1", mode="H", numr=self.numr, MPI=False, phiEqpsi="Minus",   initial_theta=0.1, delta_theta=0.5)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.prepare_refrings_projections(volft=None, kb=kb, nz=4, delta=2.0, ref_a="P", sym="c1", mode="H", numr=self.numr, MPI=False,phiEqpsi="Minus",   initial_theta=0.1, delta_theta=0.5)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
-        self.assertEqual(cm_new.exception.message,"'NoneType' object has no attribute 'extract_plane'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+        self.assertEqual(str(cm_new.exception),"'NoneType' object has no attribute 'extract_plane'")
 
     def test_empty_list_Numrinit_returns_IndexError_list_index_out_of_range_modeH(self):
         volft, kb = prep_vol(self.volft)
@@ -1184,8 +1184,8 @@ class Test_prepare_refrings_projections(unittest.TestCase):
             fu.prepare_refrings_projections(volft=volft, kb=kb,nz=4, delta=2.0, ref_a="P", sym="c1", mode="H", numr=[], MPI=False, phiEqpsi="Minus",   initial_theta=0.1, delta_theta=0.5)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.prepare_refrings_projections(volft=volft, kb=kb,nz=4, delta=2.0, ref_a="P", sym="c1", mode="H", numr=[], MPI=False, phiEqpsi="Minus",   initial_theta=0.1, delta_theta=0.5)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_list_referenceAngle_returns_IndexError_list_index_out_of_range_modeH(self):
         volft, kb = prep_vol(self.volft)
@@ -1193,8 +1193,8 @@ class Test_prepare_refrings_projections(unittest.TestCase):
             fu.prepare_refrings_projections(volft=volft, kb=kb,nz=4, delta=2.0, ref_a=[], sym="c1", mode="H", numr=[], MPI=False, phiEqpsi="Minus",   initial_theta=0.1, delta_theta=0.5)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.prepare_refrings_projections(volft=volft, kb=kb,nz=4, delta=2.0, ref_a=[], sym="c1", mode="H", numr=[], MPI=False, phiEqpsi="Minus",   initial_theta=0.1, delta_theta=0.5)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_No_kb_ArgumentError_in_EMData_extract_plane_function_modeH(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -1202,8 +1202,8 @@ class Test_prepare_refrings_projections(unittest.TestCase):
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prepare_refrings_projections(volft=self.volft, kb=None,nz=4, delta=2.0, ref_a= even_angles(60.0), sym="c1", mode="H", numr=self.numr, MPI=False, phiEqpsi="Minus",   initial_theta=0.1, delta_theta=0.5)
         output_msg = "Python argument types in\n    EMData.extract_plane(EMData, Transform, NoneType)\ndid not match C++ signature:\n    extract_plane(EMAN::EMData {lvalue}, EMAN::Transform tf, EMAN::Util::KaiserBessel {lvalue} kb)"
-        self.assertEqual(cm_new.exception.message, output_msg)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), output_msg)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_with_sym_c1_MPI_flag_deprecationWarning_outputmsg_PyArray_FromDims_AND_NPYCHAR_type_num_is_deprecated_modeH(self):
         volft,kb = prep_vol(self.volft)
@@ -1388,8 +1388,8 @@ class Test_prepare_refrings2(unittest.TestCase):
             fu.prepare_refrings2()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prepare_refrings2()
-        self.assertEqual(cm_new.exception.message, "prepare_refrings2() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "prepare_refrings2() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_volume_returns_RuntimeError_ImageFormatException_extractplane_requires_complex_img(self):
         volft, kb = prep_vol(self.volft)
@@ -1398,8 +1398,8 @@ class Test_prepare_refrings2(unittest.TestCase):
             fu.prepare_refrings2(volft=EMData(), kb=kb, nz=4, segmask= mask, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.prepare_refrings2(volft=EMData(),kb= kb, nz=4, segmask= mask, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=False,phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "ImageFormatException")
         self.assertEqual(msg[1], "extractplane requires a complex image")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1412,8 +1412,8 @@ class Test_prepare_refrings2(unittest.TestCase):
             fu.prepare_refrings2(volft=None, kb=kb, nz=4, segmask= mask, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.prepare_refrings2(volft=None, kb=kb, nz=4, segmask= mask, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=False,phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
-        self.assertEqual(cm_new.exception.message,"'NoneType' object has no attribute 'extract_plane'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+        self.assertEqual(str(cm_new.exception),"'NoneType' object has no attribute 'extract_plane'")
 
     def test_empty_list_Numrinit_returns_IndexError_list_index_out_of_range(self):
         volft, kb = prep_vol(self.volft)
@@ -1422,8 +1422,8 @@ class Test_prepare_refrings2(unittest.TestCase):
             fu.prepare_refrings2(volft=volft, kb=kb,nz=4, segmask= mask, delta=2.0, ref_a="P", sym="c1", numr=[], MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.prepare_refrings2(volft=volft, kb=kb,nz=4, segmask= mask, delta=2.0, ref_a="P", sym="c1", numr=[], MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_list_referenceAngle_returns_IndexError_list_index_out_of_range(self):
         volft, kb = prep_vol(self.volft)
@@ -1432,8 +1432,8 @@ class Test_prepare_refrings2(unittest.TestCase):
             fu.prepare_refrings2(volft=volft, kb=kb,nz=4, segmask= mask, delta=2.0, ref_a=[], sym="c1", numr=[], MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.prepare_refrings2(volft=volft, kb=kb,nz=4, segmask= mask, delta=2.0, ref_a=[], sym="c1", numr=[], MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_No_kb_ArgumentError_in_EMData_extract_plane_function(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -1441,8 +1441,8 @@ class Test_prepare_refrings2(unittest.TestCase):
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prepare_refrings2(volft=self.volft,kb= None,nz=4, segmask= MASK_2DIMAGE, delta=2.0, ref_a= even_angles(60.0), sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5)
         output_msg = "Python argument types in\n    EMData.extract_plane(EMData, Transform, NoneType)\ndid not match C++ signature:\n    extract_plane(EMAN::EMData {lvalue}, EMAN::Transform tf, EMAN::Util::KaiserBessel {lvalue} kb)"
-        self.assertEqual(cm_new.exception.message, output_msg)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), output_msg)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_with_sym_c1_MPI_flag_deprecationWarning_outputmsg_PyArray_FromDims_AND_NPYCHAR_type_num_is_deprecated(self):
         volft,kb = prep_vol(self.volft)
@@ -1601,24 +1601,24 @@ class Test_refprojs(unittest.TestCase):
             fu.refprojs()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.refprojs()
-        self.assertEqual(cm_new.exception.message, "refprojs() takes exactly 8 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "refprojs() takes exactly 8 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_Nonetype_input_img_returns_attributeError(self):
         with self.assertRaises(AttributeError)as cm_new:
             fu.refprojs(volft=None, kb=self.kb, ref_angles=self.ref_angle, cnx=36, cny=36, numr=self.numr, mode="H", wr=self.wr)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.refprojs(volft=None, kb=self.kb, ref_angles=self.ref_angle, cnx=36, cny=36, numr=self.numr, mode="H", wr=self.wr)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'extract_plane'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'extract_plane'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_data_images_returns_RuntimeError_InvalidValueException(self):
         with self.assertRaises(RuntimeError) as cm_new:
             fu.refprojs(volft=EMData(), kb=self.kb, ref_angles=self.ref_angle, cnx=36, cny=36, numr=self.numr, mode="H", wr=self.wr)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.refprojs(volft=EMData(), kb=self.kb, ref_angles=self.ref_angle, cnx=36, cny=36, numr=self.numr,mode="H", wr=self.wr)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], "extractplane requires a complex image")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1629,16 +1629,16 @@ class Test_refprojs(unittest.TestCase):
             fu.refprojs(volft=self.volft, kb=None, ref_angles=self.ref_angle, cnx=36, cny=36, numr=self.numr, mode="H", wr=self.wr)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.refprojs(volft=self.volft, kb=None, ref_angles=self.ref_angle, cnx=36, cny=36, numr=self.numr, mode="H", wr=self.wr)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'extract_plane'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'extract_plane'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_EMpty_input_img_returns_ArgumentError(self):
         with self.assertRaises(AttributeError)as cm_new:
             fu.refprojs(volft=self.volft, kb=EMData(), ref_angles=self.ref_angle, cnx=36, cny=36, numr=self.numr, mode="H", wr=self.wr)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.refprojs(volft=self.volft, kb=EMData(), ref_angles=self.ref_angle, cnx=36, cny=36, numr=self.numr, mode="H", wr=self.wr)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'extract_plane'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'extract_plane'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_modeH(self):
         return_old = oldfu.refprojs(volft=self.volft, kb=self.kb, ref_angles=self.ref_angle, cnx=36, cny=36, numr=self.numr, mode="H", wr=self.wr)
@@ -1661,8 +1661,8 @@ class Test_(unittest.TestCase):
             fu.proj_ali_incore_zoom()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.proj_ali_incore_zoom()
-        self.assertEqual(cm_new.exception.message, "proj_ali_incore_zoom() takes at least 6 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "proj_ali_incore_zoom() takes at least 6 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_(self):
         peak, pixel_error = oldfu.proj_ali_incore_zoom(data=IMAGE_2D, refrings=[IMAGE_2D,IMAGE_2D], numr=self.numr, xrng=[], yrng=[],
@@ -1676,8 +1676,8 @@ class Test_proj_ali_incore_local_zoom(unittest.TestCase):
             fu.proj_ali_incore_local_zoom()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.proj_ali_incore_local_zoom()
-        self.assertEqual(cm_new.exception.message, "proj_ali_incore_local_zoom() takes at least 8 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "proj_ali_incore_local_zoom() takes at least 8 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_proj_ali_incore_local_zoom(self):
         d_res = oldfu.proj_ali_incore_local_zoom(data=None, refrings=None, list_of_reference_angles=None, numr=None,
@@ -1693,8 +1693,8 @@ class Test_proj_ali_incore_delta(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_proj_ali_incore_delta(self):
         pass
@@ -1707,8 +1707,8 @@ class Test_proj_ali_incore_local_psi(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_proj_ali_incore_local_psi(self):
         pass
@@ -1723,16 +1723,16 @@ class Test_ornq_gridding(unittest.TestCase):
             fu.ornq_gridding()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ornq_gridding()
-        self.assertEqual(cm_new.exception.message, "ornq_gridding() takes at least 9 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ornq_gridding() takes at least 9 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.ornq_gridding(image=[], crefim=IMAGE_2D_REFERENCE,shifts=[[1, 1], [2, 1], [1, 2]], shrink=2, kb=KB_IMAGE2D_SIZE, mode="H",numr=self.numr, cnx=36, cny=36, deltapsi=0.0)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.ornq_gridding(image=[], crefim=IMAGE_2D_REFERENCE,shifts=[[1, 1], [2, 1], [1, 2]], shrink=2, kb=KB_IMAGE2D_SIZE, mode="H",numr=self.numr, cnx=36, cny=36, deltapsi=0.0)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_None_img_crashes_because_SIGSEGV(self):
         pass
@@ -1741,8 +1741,8 @@ class Test_ornq_gridding(unittest.TestCase):
             fu.ornq_gridding(image=[None,None,None], crefim=IMAGE_2D_REFERENCE,shifts=[[1, 1], [2, 1], [1, 2]], shrink=2, kb=KB_IMAGE2D_SIZE, mode="H",numr=self.numr, cnx=36, cny=36, deltapsi=0.0)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.ornq_gridding(image=[None,None,None], crefim=IMAGE_2D_REFERENCE,shifts=[[1, 1], [2, 1], [1, 2]], shrink=2, kb=KB_IMAGE2D_SIZE, mode="H",numr=self.numr, cnx=36, cny=36, deltapsi=0.0)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
         """
 
     @unittest.skip("test_EMpty_img_leads_to_deadlock")
@@ -1775,16 +1775,16 @@ class Test_ornq_gridding(unittest.TestCase):
             oldfu.ornq_gridding(image=[IMAGE_2D, IMAGE_2D, IMAGE_2D], crefim=IMAGE_2D_REFERENCE,shifts=[[1, 1], [2, 1], [1, 2]], shrink=2, kb=None, mode="H",numr=self.numr, cnx=36, cny=36, deltapsi=0.0)
         with self.assertRaises(IndexError) as cm_new:
             fu.ornq_gridding(image=[IMAGE_2D, IMAGE_2D, IMAGE_2D], crefim=IMAGE_2D_REFERENCE,shifts=[[1, 1], [2, 1], [1, 2]], shrink=2, kb=None, mode="H",numr=self.numr, cnx=36, cny=36, deltapsi=0.0)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_kb_python_boost_ArgumentError(self):
         with self.assertRaises(IndexError) as cm_old:
             oldfu.ornq_gridding(image=[IMAGE_2D, IMAGE_2D, IMAGE_2D], crefim=IMAGE_2D_REFERENCE,shifts=[[1, 1], [2, 1], [1, 2]], shrink=2, kb=EMData(), mode="H",numr=self.numr, cnx=36, cny=36, deltapsi=0.0)
         with self.assertRaises(IndexError) as cm_new:
             fu.ornq_gridding(image=[IMAGE_2D, IMAGE_2D, IMAGE_2D], crefim=IMAGE_2D_REFERENCE,shifts=[[1, 1], [2, 1], [1, 2]], shrink=2, kb=EMData(), mode="H",numr=self.numr, cnx=36, cny=36, deltapsi=0.0)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_modeH(self):
         return_old = oldfu.ornq_gridding(image=[IMAGE_2D, IMAGE_2D, IMAGE_2D], crefim=IMAGE_2D_REFERENCE,shifts=[[1, 1], [2, 1], [1, 2]], shrink=2, kb=KB_IMAGE2D_SIZE, mode="H",numr=self.numr, cnx=36, cny=36, deltapsi=0.0)
@@ -1805,8 +1805,8 @@ class Test_ali3D_gridding(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ali3D_gridding(self):
         newpar, simis = oldfu.ali3D_gridding(data=None, volprep=None, refang=None, delta_psi=None, shifts=None,
@@ -1821,8 +1821,8 @@ class Test_ali3D_direct(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ali3D_direct(self):
         v = oldfu.ali3D_direct(data=None, volprep=None, refang=None, delta_psi=None, shifts=None, myid=None,
@@ -1836,8 +1836,8 @@ class Test_ali3D_direct_preselect(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ali3D_direct_preselect(self):
         v = oldfu.ali3D_direct_preselect(data=None, volprep=None, oldcodedparams=None, refang=None, delta_psi=None,
@@ -1851,8 +1851,8 @@ class Test_ali3D_direct_local(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ali3D_direct_local(self):
         v = oldfu.ali3D_direct_local(data=None, volprep=None, refang=None, delta_psi=None, shifts=None, an=None,
@@ -1866,8 +1866,8 @@ class Test_proj_ali_incore_direct(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_proj_ali_incore_direct(self):
         peak, pixel_error = oldfu.proj_ali_incore_direct(data=None, ref_angs=None, numr=None, xrng=None, yrng=None,
@@ -1881,8 +1881,8 @@ class Test_proj_ali_helical(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_proj_ali_helical(self):
         peak, phi, theta, psi, s2x, s2y = oldfu.proj_ali_helical(data=None, refrings=None, numr=None, xrng=None,
@@ -1897,8 +1897,8 @@ class Test_proj_ali_helical_local(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_proj_ali_helical_local(self):
         peak, phi, theta, psi, s2x, s2y = oldfu.proj_ali_helical_local(data=None, refrings=None, numr=None, xrng=None,
@@ -1913,8 +1913,8 @@ class Test_proj_ali_helical_90(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_proj_ali_helical_90(self):
         peak, phi, theta, psi, s2x, s2y = oldfu.proj_ali_helical_90(data=None, refrings=None, numr=None, xrng=None,
@@ -1929,8 +1929,8 @@ class Test_proj_ali_helical_90_local(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_proj_ali_helical_90_local(self):
         peak, phi, theta, psi, s2x, s2y = oldfu.proj_ali_helical_90_local(data=None, refrings=None, numr=None,
@@ -1946,8 +1946,8 @@ class Test_proj_ali_helicon_local(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_proj_ali_helicon_local(self):
         peak, phi, theta, psi, s2x, s2y = oldfu.proj_ali_helicon_local(data=None, refrings=None, numr=None, xrng=None,
@@ -1962,8 +1962,8 @@ class Test_proj_ali_helicon_90_local_direct(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_proj_ali_helicon_90_local_direct(self):
         peak, phi, theta, psi, s2x, s2y = oldfu.proj_ali_helicon_90_local_direct(data=None, refrings=None, xrng=None,
@@ -1979,8 +1979,8 @@ class Test_proj_ali_helicon_90_local_direct1(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_proj_ali_helicon_90_local_direct1(self):
         peak, phi, theta, psi, s2x, s2y = oldfu.proj_ali_helicon_90_local_direct1(data="", refrings="", xrng="",
@@ -1996,8 +1996,8 @@ class Test_proj_ali_helicon_90_local(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_proj_ali_helicon_90_local(self):
         peak, phi, theta, psi, s2x, s2y = oldfu.proj_ali_helicon_90_local(data="", refrings="", numr="", xrng="",
@@ -2012,8 +2012,8 @@ class Test_ali_vol_func_julio(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ali_vol_func_julio(self):
         v = oldfu.ali_vol_func_julio(params="", data="")
@@ -2026,8 +2026,8 @@ class Test_ali_vol_func_grid(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ali_vol_func_grid(self):
         v = oldfu.ali_vol_func_grid(params="", data="")
@@ -2040,8 +2040,8 @@ class Test_ali_vol_func_nopsi(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ali_vol_func_nopsi(self):
         v = oldfu.ali_vol_func_nopsi(params="", data="")
@@ -2054,8 +2054,8 @@ class Test_ali_vol_func_rotate(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ali_vol_func_rotate(self):
         v = oldfu.ali_vol_func_rotate(params="", data="")
@@ -2068,8 +2068,8 @@ class Test_ali_vol_func_shift(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ali_vol_func_shift(self):
         v = oldfu.ali_vol_func_shift(params="", data="")
@@ -2082,8 +2082,8 @@ class Test_ali_vol_func_scale(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ali_vol_func_scale(self):
         v = oldfu.ali_vol_func_scale(params="", data="")
@@ -2096,8 +2096,8 @@ class Test_ali_vol_func_only_scale(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ali_vol_func_only_scale(self):
         v = oldfu.ali_vol_func_only_scale(params="", data="")
@@ -2110,8 +2110,8 @@ class Test_helios_func(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_helios_func(self):
         v = oldfu.helios_func(params="", data="")
@@ -2124,8 +2124,8 @@ class Test_helios(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_helios(self):
         v = oldfu.helios(vol="", pixel_size="", dp="", dphi="", section_use=0.75, radius=0.0, rmin=0.0)
@@ -2138,8 +2138,8 @@ class Test_helios7(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_helios7(self):
         v = oldfu.helios7(vol="", pixel_size="", dp="", dphi="", section_use=0.75, radius=0.0, rmin=0.0)
@@ -2152,8 +2152,8 @@ class Test_sub_favj(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_sub_favj(self):
         oldfu.sub_favj(ave="", data="", jtot="", mirror="", numr="")
@@ -2166,8 +2166,8 @@ class Test_update_favj(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_update_favj(self):
         oldfu.update_favj(ave="", data="", jtot="", mirror="", numr="")
@@ -2180,8 +2180,8 @@ class Test_fine_2D_refinement(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_fine_2D_refinement(self):
         oldfu.fine_2D_refinement(data="", br="", mask="", tavg="", group=-1)
@@ -2194,8 +2194,8 @@ class Test_multalign2dscf(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_multalign2dscf(self):
         sx, sy, iref, talpha, totpeak = oldfu.multalign2dscf(image="", refrings="", frotim="", numr="", xrng=-1,
@@ -2209,8 +2209,8 @@ class Test_align2d_direct2(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_align2d_direct2(self):
         bang, bsx, bsy, ama = oldfu.align2d_direct2(image="", refim="", xrng=1, yrng=1, psimax=1, psistep=1, ou=-1)
@@ -2223,8 +2223,8 @@ class Test_align2d_direct3(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_align2d_direct3(self):
         v = oldfu.align2d_direct3(input_images="", refim="", xrng=1, yrng=1, psimax=180, psistep=1, ou=-1, CTF=None)
@@ -2237,8 +2237,8 @@ class Test_align2d_no_mirror(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_align2d_no_mirror(self):
         ang, sxs, sys, mirror, peak = oldfu.align2d_no_mirror(image="", refim="", xrng=0, yrng=0, step=1, first_ring=1,
@@ -2252,8 +2252,8 @@ class Test_align2d_direct(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_align2d_direct(self):
         bang, bsx, bsy, ama = oldfu.align2d_direct(image="", refim="", xrng=1, yrng=1, psimax=1, psistep=1, ou=-1)
@@ -2266,8 +2266,8 @@ class Test_align2d_peaks(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_align2d_peaks(self):
         v = oldfu.align2d_peaks(image="", refim="", xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rstep=1,
@@ -2281,8 +2281,8 @@ class Test_align2d_g(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_align2d_g(self):
         v = oldfu.align2d_g(image="", refim="", xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rstep=1, mode="F")
@@ -2295,8 +2295,8 @@ class Test_directali(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_directali(self):
         nalpha, ntx, nty, peak = oldfu.directali(inima="", refs="", psimax=1.0, psistep=1.0, xrng=1, yrng=1,
@@ -2310,8 +2310,8 @@ class Test_preparerefsgrid(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_preparerefsgrid(self):
         v = oldfu.preparerefsgrid(refs="", psimax=1.0, psistep=1.0)
@@ -2324,8 +2324,8 @@ class Test_preparerefsgrid1(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_preparerefsgrid2(self):
         v = oldfu.preparerefsgrid1(refs="", psimax=1.0, psistep=1.0)
@@ -2338,8 +2338,8 @@ class Test_directaligridding(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_directaligridding(self):
         nalpha, ntx, nty, peak = oldfu.directaligridding(inima="", refs="", psimax=1.0, psistep=1.0, xrng=1, yrng=1,
@@ -2353,8 +2353,8 @@ class Test_directaligridding1(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_directaligridding1(self):
         nalpha, ntx, nty, peak = oldfu.directaligridding1(inima=0, kb=0, ref=0, psimax=1.0, psistep=1.0, xrng=1, yrng=1,
@@ -2368,8 +2368,8 @@ class Test_directaligriddingconstrained(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_directaligriddingconstrained(self):
         nalpha, ntx, nty, peak = oldfu.directaligriddingconstrained(inima="", kb="", ref="", psimax=1.0, psistep=1.0,
@@ -2384,8 +2384,8 @@ class Test_directaligriddingconstrained3dccf(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_directaligriddingconstrained3dccf(self):
         nalpha, ntx, nty, peak = oldfu.directaligriddingconstrained3dccf(inima="", kb="", ref="", psimax=1.0,
@@ -2401,8 +2401,8 @@ class Test_alignment3Dsnake(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_alignment3Dsnake(self):
         v = oldfu.alignment3Dsnake(partition="", snakeknots="", nsegs="", initialori="", ctx="", psistep="", stepx="",
@@ -2416,8 +2416,8 @@ class Test_flexhelicalali(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_flexhelicalali(self):
         v = oldfu.flexhelicalali(params="", data="")
@@ -2430,8 +2430,8 @@ class Test_ali_nvol(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ali_nvol(self):
         v = oldfu.ali_nvol(v="", mask="")
@@ -2444,8 +2444,8 @@ class Test_alivol_mask_getref(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_alivol_mask_getref(self):
         v = oldfu.alivol_mask_getref(v="", mask="")
@@ -2458,8 +2458,8 @@ class Test_ali_mvol(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ali_mvol(self):
         v = oldfu.ali_mvol(v="", mask="")
@@ -2472,8 +2472,8 @@ class Test_alivol_mask(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_alivol_mask(self):
         d_res = oldfu.alivol_mask(v="", vref="", mask="")
@@ -2486,8 +2486,8 @@ class Test_alivol_m(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_alivol_m(self):
         d_res = oldfu.alivol_m(v="", vref="", mask="")
@@ -2500,8 +2500,8 @@ class Test_shc(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_shc(self):
         peak, pixel_error, number_of_checked_refs, iref = oldfu.shc(data="", refrings="", list_of_reference_angles="",
@@ -2516,8 +2516,8 @@ class Test_center_projections_3D(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_center_projections_3D(self):
         v = oldfu.center_projections_3D(data=None, ref_vol=None, ali3d_options=None, onx=-1, shrinkage=1.0,
@@ -2531,8 +2531,8 @@ class Test_reduce_indices_so_that_angles_map_only_to_asymmetrix_unit_and_keep_mi
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_reduce_indices_so_that_angles_map_only_to_asymmetrix_unit_and_keep_mirror_info(self):
         d_res = oldfu.reduce_indices_so_that_angles_map_only_to_asymmetrix_unit_and_keep_mirror_info(all_refs_angles="",
@@ -2554,8 +2554,8 @@ class Test_ali2d_single_iter(unittest.TestCase):
             fu.ali2d_single_iter()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali2d_single_iter()
-        self.assertEqual(cm_new.exception.message, "ali2d_single_iter() takes at least 10 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ali2d_single_iter() takes at least 10 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_images_to_align_returns_RuntimeError_NotExistingObjectException_the_key_ctf_doesnot_exist(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -2564,8 +2564,8 @@ class Test_ali2d_single_iter(unittest.TestCase):
             fu.ali2d_single_iter(images, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="H", CTF=True, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.ali2d_single_iter(images, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="H", CTF=True, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
         self.assertEqual(msg[3], 'The requested key does not exist')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -2587,8 +2587,8 @@ class Test_ali2d_single_iter(unittest.TestCase):
             fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="H", CTF=True, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="H", CTF=True, random_method="SCF", ali_params="xform.align2d", delta = 0.0)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_too_shift_params(self):
         (not_used, numr, wr, not_used2, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -2615,8 +2615,8 @@ class Test_ali2d_single_iter(unittest.TestCase):
             fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_Unknown_ali_params_returns_RuntimeError_NotExistingObjectException_the_key_Unknown_doesnot_exist(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -2624,8 +2624,8 @@ class Test_ali2d_single_iter(unittest.TestCase):
             fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="F", CTF=False, random_method="", ali_params="Unknown", delta = 0.0)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="F", CTF=False, random_method="", ali_params="Unknown", delta = 0.0)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
         self.assertEqual(msg[3], 'The requested key does not exist')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -2646,8 +2646,8 @@ class Test_ali2d_single_iter(unittest.TestCase):
             fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, -1, 0, step, nomirror = False, mode="F", CTF=False, random_method="", ali_params="xform.align2d", delta = 0.0)
         with self.assertRaises(UnboundLocalError) as cm_old:
             oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, -1, 0, step, nomirror = False, mode="F", CTF=False, random_method="", ali_params="xform.align2d", delta = 0.0)
-        self.assertEqual(cm_new.exception.message, "local variable 'ang' referenced before assignment")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "local variable 'ang' referenced before assignment")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     @unittest.skip("The output seems to be random")
     def test_negative_center_warning_msg_shift_of_paricle_too_large(self):
@@ -2665,8 +2665,8 @@ class Test_ali2d_single_iter(unittest.TestCase):
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="H", CTF=True, random_method="SHC", ali_params="xform.align2d", delta = 0.0)
         output_msg = "Python argument types in\n    Util.shc(EMData, list, list, list, int, float, str, list, float, float, str)\ndid not match C++ signature:\n    shc(EMAN::EMData*, std::vector<EMAN::EMData*, std::allocator<EMAN::EMData*> > image, std::vector<std::vector<float, std::allocator<float> >, std::allocator<std::vector<float, std::allocator<float> > > > crefim, std::vector<float, std::allocator<float> > list_of_reference_angles, std::vector<float, std::allocator<float> > xrng, float yrng, float step, std::string ant, std::vector<int, std::allocator<int> > mode, float numr, float cnx, std::string cny)"
-        self.assertEqual(cm_new.exception.message, output_msg)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), output_msg)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NOmirror_mode_H_NOCTF_randomMethod_SHC_ArgumentError_in_Util_shc_function(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -2675,8 +2675,8 @@ class Test_ali2d_single_iter(unittest.TestCase):
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="h", CTF=False, random_method="SHC", ali_params="xform.align2d", delta = 0.0)
         output_msg = "Python argument types in\n    Util.shc(EMData, list, list, list, int, float, str, list, float, float, str)\ndid not match C++ signature:\n    shc(EMAN::EMData*, std::vector<EMAN::EMData*, std::allocator<EMAN::EMData*> > image, std::vector<std::vector<float, std::allocator<float> >, std::allocator<std::vector<float, std::allocator<float> > > > crefim, std::vector<float, std::allocator<float> > list_of_reference_angles, std::vector<float, std::allocator<float> > xrng, float yrng, float step, std::string ant, std::vector<int, std::allocator<int> > mode, float numr, float cnx, std::string cny)"
-        self.assertEqual(cm_new.exception.message, output_msg)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), output_msg)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NOmirror_mode_F_NOCTF_randomMethod_SHC_ArgumentError_in_Util_shc_function(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -2685,8 +2685,8 @@ class Test_ali2d_single_iter(unittest.TestCase):
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="F", CTF=False, random_method="SHC", ali_params="xform.align2d", delta = 0.0)
         output_msg = "Python argument types in\n    Util.shc(EMData, list, list, list, int, float, str, list, float, float, str)\ndid not match C++ signature:\n    shc(EMAN::EMData*, std::vector<EMAN::EMData*, std::allocator<EMAN::EMData*> > image, std::vector<std::vector<float, std::allocator<float> >, std::allocator<std::vector<float, std::allocator<float> > > > crefim, std::vector<float, std::allocator<float> > list_of_reference_angles, std::vector<float, std::allocator<float> > xrng, float yrng, float step, std::string ant, std::vector<int, std::allocator<int> > mode, float numr, float cnx, std::string cny)"
-        self.assertEqual(cm_new.exception.message, output_msg)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), output_msg)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
         
     def test_NOmirror_mode_F_withCTF_randomMethod_SHC_ArgumentError_in_Util_shc_function(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -2695,8 +2695,8 @@ class Test_ali2d_single_iter(unittest.TestCase):
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="F", CTF=True, random_method="SHC", ali_params="xform.align2d", delta = 0.0)
         output_msg = "Python argument types in\n    Util.shc(EMData, list, list, list, int, float, str, list, float, float, str)\ndid not match C++ signature:\n    shc(EMAN::EMData*, std::vector<EMAN::EMData*, std::allocator<EMAN::EMData*> > image, std::vector<std::vector<float, std::allocator<float> >, std::allocator<std::vector<float, std::allocator<float> > > > crefim, std::vector<float, std::allocator<float> > list_of_reference_angles, std::vector<float, std::allocator<float> > xrng, float yrng, float step, std::string ant, std::vector<int, std::allocator<int> > mode, float numr, float cnx, std::string cny)"
-        self.assertEqual(cm_new.exception.message, output_msg)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), output_msg)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_mirror_mode_H_NOCTF_randomMethod_SHC_ArgumentError_in_Util_shc_function(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -2705,8 +2705,8 @@ class Test_ali2d_single_iter(unittest.TestCase):
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="h", CTF=False, random_method="SHC", ali_params="xform.align2d", delta = 0.0)
         output_msg = "Python argument types in\n    Util.shc(EMData, list, list, list, int, float, str, list, float, float, str)\ndid not match C++ signature:\n    shc(EMAN::EMData*, std::vector<EMAN::EMData*, std::allocator<EMAN::EMData*> > image, std::vector<std::vector<float, std::allocator<float> >, std::allocator<std::vector<float, std::allocator<float> > > > crefim, std::vector<float, std::allocator<float> > list_of_reference_angles, std::vector<float, std::allocator<float> > xrng, float yrng, float step, std::string ant, std::vector<int, std::allocator<int> > mode, float numr, float cnx, std::string cny)"
-        self.assertEqual(cm_new.exception.message, output_msg)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), output_msg)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_mirror_mode_H_WITHCTF_randomMethod_SHC_ArgumentError_in_Util_shc_function(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -2715,8 +2715,8 @@ class Test_ali2d_single_iter(unittest.TestCase):
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="h", CTF=True, random_method="SHC", ali_params="xform.align2d", delta = 0.0)
         output_msg = "Python argument types in\n    Util.shc(EMData, list, list, list, int, float, str, list, float, float, str)\ndid not match C++ signature:\n    shc(EMAN::EMData*, std::vector<EMAN::EMData*, std::allocator<EMAN::EMData*> > image, std::vector<std::vector<float, std::allocator<float> >, std::allocator<std::vector<float, std::allocator<float> > > > crefim, std::vector<float, std::allocator<float> > list_of_reference_angles, std::vector<float, std::allocator<float> > xrng, float yrng, float step, std::string ant, std::vector<int, std::allocator<int> > mode, float numr, float cnx, std::string cny)"
-        self.assertEqual(cm_new.exception.message, output_msg)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), output_msg)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_mirror_mode_F_WITHCTF_randomMethod_SHC_ArgumentError_in_Util_shc_function(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -2725,8 +2725,8 @@ class Test_ali2d_single_iter(unittest.TestCase):
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="F", CTF=True, random_method="SHC", ali_params="xform.align2d", delta = 0.0)
         output_msg = "Python argument types in\n    Util.shc(EMData, list, list, list, int, float, str, list, float, float, str)\ndid not match C++ signature:\n    shc(EMAN::EMData*, std::vector<EMAN::EMData*, std::allocator<EMAN::EMData*> > image, std::vector<std::vector<float, std::allocator<float> >, std::allocator<std::vector<float, std::allocator<float> > > > crefim, std::vector<float, std::allocator<float> > list_of_reference_angles, std::vector<float, std::allocator<float> > xrng, float yrng, float step, std::string ant, std::vector<int, std::allocator<int> > mode, float numr, float cnx, std::string cny)"
-        self.assertEqual(cm_new.exception.message, output_msg)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), output_msg)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_mirror_mode_F_NOCTF_randomMethod_SHC_ArgumentError_in_Util_shc_function(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -2735,8 +2735,8 @@ class Test_ali2d_single_iter(unittest.TestCase):
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="F", CTF=False, random_method="SHC", ali_params="xform.align2d", delta = 0.0)
         output_msg = "Python argument types in\n    Util.shc(EMData, list, list, list, int, float, str, list, float, float, str)\ndid not match C++ signature:\n    shc(EMAN::EMData*, std::vector<EMAN::EMData*, std::allocator<EMAN::EMData*> > image, std::vector<std::vector<float, std::allocator<float> >, std::allocator<std::vector<float, std::allocator<float> > > > crefim, std::vector<float, std::allocator<float> > list_of_reference_angles, std::vector<float, std::allocator<float> > xrng, float yrng, float step, std::string ant, std::vector<int, std::allocator<int> > mode, float numr, float cnx, std::string cny)"
-        self.assertEqual(cm_new.exception.message, output_msg)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), output_msg)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NOmirror_mode_H_WITHCTF_randomMethod_SCF(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -2857,8 +2857,8 @@ class Test_ali2d_single_iter(unittest.TestCase):
             fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="H", CTF=True, random_method="PCP", ali_params="xform.align2d", delta = 0.0)
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="H", CTF=True, random_method="PCP", ali_params="xform.align2d", delta = 0.0)
-        self.assertEqual(cm_new.exception.message, "'float' object has no attribute '__getitem__'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'float' object has no attribute '__getitem__'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NOmirror_mode_H_NOCTF_randomMethod_PCP_returns_typeError_object_float_hasnot_attibute__getitem__(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -2866,8 +2866,8 @@ class Test_ali2d_single_iter(unittest.TestCase):
             fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="h", CTF=False, random_method="PCP", ali_params="xform.align2d", delta = 0.0)
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="h", CTF=False, random_method="PCP", ali_params="xform.align2d", delta = 0.0)
-        self.assertEqual(cm_new.exception.message, "'float' object has no attribute '__getitem__'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'float' object has no attribute '__getitem__'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NOmirror_mode_F_NOCTF_randomMethod_PCP_returns_typeError_object_float_hasnot_attibute__getitem__(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -2875,8 +2875,8 @@ class Test_ali2d_single_iter(unittest.TestCase):
             fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="F", CTF=False, random_method="PCP", ali_params="xform.align2d", delta = 0.0)
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="F", CTF=False, random_method="PCP", ali_params="xform.align2d", delta = 0.0)
-        self.assertEqual(cm_new.exception.message, "'float' object has no attribute '__getitem__'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'float' object has no attribute '__getitem__'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NOmirror_mode_F_withCTF_randomMethod_PCP_returns_typeError_object_float_hasnot_attibute__getitem__(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -2884,8 +2884,8 @@ class Test_ali2d_single_iter(unittest.TestCase):
             fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="F", CTF=True, random_method="PCP", ali_params="xform.align2d", delta = 0.0)
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="F", CTF=True, random_method="PCP", ali_params="xform.align2d", delta = 0.0)
-        self.assertEqual(cm_new.exception.message, "'float' object has no attribute '__getitem__'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'float' object has no attribute '__getitem__'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_mirror_mode_H_NOCTF_randomMethod_PCP_returns_typeError_object_float_hasnot_attibute__getitem__(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -2893,8 +2893,8 @@ class Test_ali2d_single_iter(unittest.TestCase):
             fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="h", CTF=False, random_method="PCP", ali_params="xform.align2d", delta = 0.0)
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="h", CTF=False, random_method="PCP", ali_params="xform.align2d", delta = 0.0)
-        self.assertEqual(cm_new.exception.message, "'float' object has no attribute '__getitem__'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'float' object has no attribute '__getitem__'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_mirror_mode_H_WITHCTF_randomMethod_PCP_typeError_object_float_hasnot_attibute__getitem__(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -2902,8 +2902,8 @@ class Test_ali2d_single_iter(unittest.TestCase):
             fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="h", CTF=True, random_method="PCP", ali_params="xform.align2d", delta = 0.0)
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="h", CTF=True, random_method="PCP", ali_params="xform.align2d", delta = 0.0)
-        self.assertEqual(cm_new.exception.message, "'float' object has no attribute '__getitem__'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'float' object has no attribute '__getitem__'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_mirror_mode_F_WITHCTF_randomMethod_PCP_typeError_object_float_hasnot_attibute__getitem__(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -2911,8 +2911,8 @@ class Test_ali2d_single_iter(unittest.TestCase):
             fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="F", CTF=True, random_method="PCP", ali_params="xform.align2d", delta = 0.0)
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="F", CTF=True, random_method="PCP", ali_params="xform.align2d", delta = 0.0)
-        self.assertEqual(cm_new.exception.message, "'float' object has no attribute '__getitem__'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'float' object has no attribute '__getitem__'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_mirror_mode_F_NOCTF_randomMethod_PCP_typeError_object_float_hasnot_attibute__getitem__(self):
         (not_used, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -2920,8 +2920,8 @@ class Test_ali2d_single_iter(unittest.TestCase):
             fu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="F", CTF=False, random_method="PCP", ali_params="xform.align2d", delta = 0.0)
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali2d_single_iter(deepcopy(self.argum[0][0]), numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = True, mode="F", CTF=False, random_method="PCP", ali_params="xform.align2d", delta = 0.0)
-        self.assertEqual(cm_new.exception.message, "'float' object has no attribute '__getitem__'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'float' object has no attribute '__getitem__'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -2932,8 +2932,8 @@ class Test_ang_n(unittest.TestCase):
             fu.ang_n()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ang_n()
-        self.assertEqual(cm_new.exception.message, "ang_n() takes exactly 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ang_n() takes exactly 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_Full_mode(self):
         return_new = fu.ang_n(2, 'f', 3)
@@ -2946,8 +2946,8 @@ class Test_ang_n(unittest.TestCase):
             fu.ang_n(3, 'f', 0)
         with self.assertRaises(ZeroDivisionError) as cm_old:
             oldfu.ang_n(3, 'f', 0)
-        self.assertEqual(cm_new.exception.message, "float division by zero")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "float division by zero")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_Half_mode(self):
         return_new = fu.ang_n(2, 'not_f', 3)
@@ -2964,8 +2964,8 @@ class Test_log2(unittest.TestCase):
             fu.log2()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.log2()
-        self.assertEqual(cm_new.exception.message, "log2() takes exactly 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "log2() takes exactly 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_positive_number(self):
         return_new = fu.log2(10)
@@ -2986,8 +2986,8 @@ class Test_Numrinit(unittest.TestCase):
             fu.Numrinit()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.Numrinit()
-        self.assertEqual(cm_new.exception.message, "Numrinit() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "Numrinit() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_null_skip_value_returns_ValueError_this_arg_cannot_be_null(self):
         with self.assertRaises(ValueError):
@@ -3016,16 +3016,16 @@ class Test_ringwe(unittest.TestCase):
             fu.ringwe()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ringwe()
-        self.assertEqual(cm_new.exception.message, "ringwe() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ringwe() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_list_Numrinit_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.ringwe([], mode="F")
         with self.assertRaises(IndexError) as cm_old:
             oldfu.ringwe([], mode="F")
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_Full_mode(self):
         return_new = fu.ringwe(self.argum[0][0], mode="F")
@@ -3085,8 +3085,8 @@ class Test_ornq(unittest.TestCase):
             fu.ornq()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ornq()
-        self.assertEqual(cm_new.exception.message, "ornq() takes at least 9 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ornq() takes at least 9 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_list_Numrinit_crashes_because_signal11SIGSEV(self):
         """
@@ -3105,8 +3105,8 @@ class Test_ornq(unittest.TestCase):
             fu.ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_empty_list_yrng_returns_IndexError_list_index_out_of_range(self):
@@ -3116,8 +3116,8 @@ class Test_ornq(unittest.TestCase):
             fu.ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_with_negative_center(self):
         #I cannot write a unit test because the output seems to be randon
@@ -3132,8 +3132,8 @@ class Test_ornq(unittest.TestCase):
             fu.ornq(image, crefim, xrng, yrng, 0, mode, numr, cnx, cny, deltapsi = 0.0)
         with self.assertRaises(ZeroDivisionError) as cm_old:
             oldfu.ornq(image, crefim, xrng, yrng, 0, mode, numr, cnx, cny, deltapsi = 0.0)
-        self.assertEqual(cm_new.exception.message, "float division by zero")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "float division by zero")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_Half_mode(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0] #mode is H
@@ -3206,8 +3206,8 @@ class Test_ormq(unittest.TestCase):
             fu.ormq()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ormq()
-        self.assertEqual(cm_new.exception.message, "ormq() takes at least 9 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ormq() takes at least 9 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_list_xrng_returns_IndexError_list_index_out_of_range(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
@@ -3217,8 +3217,8 @@ class Test_ormq(unittest.TestCase):
             oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_list_yrng_returns_IndexError_list_index_out_of_range(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
@@ -3227,8 +3227,8 @@ class Test_ormq(unittest.TestCase):
             fu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_list_Numrinit_crashes_because_signal11SIGSEV(self):
         """
@@ -3238,8 +3238,8 @@ class Test_ormq(unittest.TestCase):
             fu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
         """
         self.assertTrue(True)
 
@@ -3250,8 +3250,8 @@ class Test_ormq(unittest.TestCase):
             fu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
         with self.assertRaises(ZeroDivisionError) as cm_old:
             oldfu.ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta)
-        self.assertEqual(cm_new.exception.message, "integer division or modulo by zero")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "integer division or modulo by zero")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_Full_mode(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]  # mode is F
@@ -3330,8 +3330,8 @@ class Test_prepref(unittest.TestCase):
             fu.prepref()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prepref()
-        self.assertEqual(cm_new.exception.message, "prepref() takes exactly 9 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "prepref() takes exactly 9 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_image_mask_returns_RuntimeError_ImageDimensionException_img_dimension_doesnot_match_with_its_dimension(self):
         (data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -3339,8 +3339,8 @@ class Test_prepref(unittest.TestCase):
             fu.prepref(data, EMData(), cnx, cny, numr, mode = 'f', maxrangex = 4, maxrangey = 4, step =step)
         with self.assertRaises(RuntimeError)  as cm_old:
             oldfu.prepref(data, EMData(), cnx, cny, numr, mode = 'f', maxrangex = 4, maxrangey = 4, step =step)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
         self.assertEqual(msg[1], "The dimension of the image does not match the dimension of the mask!")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3353,8 +3353,8 @@ class Test_prepref(unittest.TestCase):
             fu.prepref(data, None, cnx, cny, numr, mode = 'f', maxrangex = 4, maxrangey = 4, step =step)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.prepref(data, None, cnx, cny, numr, mode = 'f', maxrangex = 4, maxrangey = 4, step =step)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
         self.assertEqual(msg[3], 'The requested key does not exist')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3366,8 +3366,8 @@ class Test_prepref(unittest.TestCase):
             fu.prepref(data, None, cnx, cny, [], mode = 'f', maxrangex = 4, maxrangey = 4, step =step)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.prepref(data, None, cnx, cny, [], mode = 'f', maxrangex = 4, maxrangey = 4, step =step)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_full_mode_without_mask(self):
         """
@@ -3397,8 +3397,8 @@ class Test_prepref(unittest.TestCase):
             fu.prepref(data, mask, cnx, cny, numr, mode = 'f', maxrangex = 4, maxrangey = 4, step =step)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.prepref(data, mask, cnx, cny, numr, mode = 'f', maxrangex = 4, maxrangey = 4, step =step)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
         self.assertEqual(msg[1], "The dimension of the image does not match the dimension of the mask!")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3464,8 +3464,8 @@ class Test_prepare_refrings(unittest.TestCase):
             fu.prepare_refrings()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prepare_refrings()
-        self.assertEqual(cm_new.exception.message, "prepare_refrings() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "prepare_refrings() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_volume_returns_RuntimeError_ImageFormatException_extractplane_requires_complex_img(self):
         volft, kb = prep_vol(self.volft)
@@ -3473,8 +3473,8 @@ class Test_prepare_refrings(unittest.TestCase):
             fu.prepare_refrings(EMData(), kb, nz=4, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5,initial_phi=0.1)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.prepare_refrings(EMData(), kb, nz=4, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=False,phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5,initial_phi=0.1)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "ImageFormatException")
         self.assertEqual(msg[1], "extractplane requires a complex image")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3487,8 +3487,8 @@ class Test_prepare_refrings(unittest.TestCase):
             fu.prepare_refrings(None, kb, nz=4, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5,initial_phi=0.1)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.prepare_refrings(None, kb, nz=4, delta=2.0, ref_a="P", sym="c1", numr=self.numr, MPI=False,phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5,initial_phi=0.1)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
-        self.assertEqual(cm_new.exception.message,"'NoneType' object has no attribute 'extract_plane'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+        self.assertEqual(str(cm_new.exception),"'NoneType' object has no attribute 'extract_plane'")
 
     def test_empty_list_Numrinit_returns_IndexError_list_index_out_of_range(self):
         volft, kb = prep_vol(self.volft)
@@ -3496,8 +3496,8 @@ class Test_prepare_refrings(unittest.TestCase):
             fu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="P", sym="c1", numr=[], MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a="P", sym="c1", numr=[], MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_list_referenceAngle_returns_IndexError_list_index_out_of_range(self):
         volft, kb = prep_vol(self.volft)
@@ -3505,8 +3505,8 @@ class Test_prepare_refrings(unittest.TestCase):
             fu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a=[], sym="c1", numr=[], MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.prepare_refrings(volft, kb,nz=4, delta=2.0, ref_a=[], sym="c1", numr=[], MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_No_kb_ArgumentError_in_EMData_extract_plane_function(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -3514,8 +3514,8 @@ class Test_prepare_refrings(unittest.TestCase):
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prepare_refrings(self.volft, None,nz=4, delta=2.0, ref_a= even_angles(60.0), sym="c1", numr=self.numr, MPI=False, phiEqpsi="Minus", kbx=None, kby=None, initial_theta=0.1, delta_theta=0.5, initial_phi=0.1)
         output_msg = "Python argument types in\n    EMData.extract_plane(EMData, Transform, NoneType)\ndid not match C++ signature:\n    extract_plane(EMAN::EMData {lvalue}, EMAN::Transform tf, EMAN::Util::KaiserBessel {lvalue} kb)"
-        self.assertEqual(cm_new.exception.message, output_msg)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), output_msg)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_with_sym_c1_MPI_flag_deprecationWarning_outputmsg_PyArray_FromDims_AND_NPYCHAR_type_num_is_deprecated(self):
         volft,kb = prep_vol(self.volft)
@@ -3652,8 +3652,8 @@ class Test_proj_ali_incore(unittest.TestCase):
             fu.proj_ali_incore()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.proj_ali_incore()
-        self.assertEqual(cm_new.exception.message, "proj_ali_incore() takes at least 6 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "proj_ali_incore() takes at least 6 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image_refrings_crashes_because_signal11SIGSEV(self):
         """
@@ -3672,8 +3672,8 @@ class Test_proj_ali_incore(unittest.TestCase):
             fu.proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = 0.0, rshift = 0.0)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = 0.0, rshift = 0.0)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
         self.assertEqual(msg[3], 'The requested key does not exist')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3686,8 +3686,8 @@ class Test_proj_ali_incore(unittest.TestCase):
             fu.proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = 0.0, rshift = 0.0)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = 0.0, rshift = 0.0)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_sym_c1(self):
         (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = self.argum[0]
@@ -3778,8 +3778,8 @@ class Test_proj_ali_incore_local(unittest.TestCase):
             fu.proj_ali_incore_local(data, refrings, list_of_ref_ang_new, numr, xrng= 2.0, yrng=2.0, step=step, an=-1.0)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.proj_ali_incore_local(data, refrings, list_of_ref_ang_old, numr, xrng= 2.0, yrng=2.0, step=step, an=-1.0)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_empty_list_of_ref_ang(self):
@@ -3789,8 +3789,8 @@ class Test_proj_ali_incore_local(unittest.TestCase):
             fu.proj_ali_incore_local(data, refrings, [], numr, xrng= 2.0, yrng=2.0, step=step, an=-1.0)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.proj_ali_incore_local(data, refrings, [], numr, xrng= 2.0, yrng=2.0, step=step, an=-1.0)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_too_short_list_of_ref_ang(self):
         (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = self.argum[0]
@@ -3831,8 +3831,8 @@ class Test_ali_vol_func(unittest.TestCase):
             fu.ali_vol_func()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali_vol_func()
-        self.assertEqual(cm_new.exception.message, "ali_vol_func() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ali_vol_func() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_few_params_params_returns_IndexError_list_index_out_of_range(self):
         param = [1,1,1,1]
@@ -3840,8 +3840,8 @@ class Test_ali_vol_func(unittest.TestCase):
             fu.ali_vol_func(param,self.data)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.ali_vol_func(param, self.data)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_too_few_data_params_returns_IndexError_list_index_out_of_range(self):
         data =get_data(2)
@@ -3849,8 +3849,8 @@ class Test_ali_vol_func(unittest.TestCase):
             fu.ali_vol_func(self.param, data)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.ali_vol_func(self.param, data)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ali_vol_func(self):
         return_new = fu.ali_vol_func(self.param, self.data)
@@ -3864,8 +3864,8 @@ class Test_ali_vol_func(unittest.TestCase):
             fu.ali_vol_func(self.param, data)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.ali_vol_func(self.param, data)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'rot_scale_trans_background'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'rot_scale_trans_background'")
 
     def test_empty_data_images_returns_RuntimeError_InvalidValueException_xsize_not_positive(self):
         data = [EMData(), EMData(), EMData()]
@@ -3873,8 +3873,8 @@ class Test_ali_vol_func(unittest.TestCase):
             fu.ali_vol_func(self.param,data)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.ali_vol_func(self.param,data)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], "x size <= 0")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3910,8 +3910,8 @@ class Test_align2d(unittest.TestCase):
             fu.align2d(image, None, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.align2d(image, None, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
 
     def test_empty_image_reference_returns_IndexError_list_index_out_of_range(self):
         (image, refim, xrng, yrng) = self.argum[0]
@@ -3920,8 +3920,8 @@ class Test_align2d(unittest.TestCase):
             fu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode="F")
         with self.assertRaises(IndexError) as cm_old:
             oldfu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode="F")
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_list_xrng_returns_ValueError_arg_af_max_f_is_empty_list(self):
         (image, refim, xrng, yrng) = self.argum[0]
@@ -3929,8 +3929,8 @@ class Test_align2d(unittest.TestCase):
             fu.align2d(image, refim, xrng=[], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
         with self.assertRaises(ValueError) as cm_old:
             oldfu.align2d(image, refim, xrng=[], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
-        self.assertEqual(cm_new.exception.message, "max() arg is an empty sequence")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "max() arg is an empty sequence")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_empty_list_yrngreturns_ValueError_arg_af_max_f_is_empty_list(self):
@@ -3939,16 +3939,16 @@ class Test_align2d(unittest.TestCase):
             fu.align2d(image, refim, xrng=[0, 0], yrng=[], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
         with self.assertRaises(ValueError) as cm_old:
             oldfu.align2d(image, refim, xrng=[0, 0], yrng=[], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
-        self.assertEqual(cm_new.exception.message, "max() arg is an empty sequence")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "max() arg is an empty sequence")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_wrong_number_params_returns_TypeError_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.align2d()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.align2d()
-        self.assertEqual(cm_new.exception.message, "align2d() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "align2d() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_wrong_enumerate_rings_error_crashes_because_signal11SIGSEV(self):
         """
@@ -3965,8 +3965,8 @@ class Test_align2d(unittest.TestCase):
             fu.align2d(image, refim, xrng=[0, 0], yrng=[], step=1, first_ring=1, last_ring=0, rstep=0, mode = "F")
         with self.assertRaises(ValueError) as cm_old:
             oldfu.align2d(image, refim, xrng=[0, 0], yrng=[], step=1, first_ring=1, last_ring=0, rstep=0, mode = "F")
-        self.assertEqual(cm_new.exception.message, "max() arg is an empty sequence")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "max() arg is an empty sequence")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_null_step_value_returns_ZeroDivisionError(self):
         (image, refim, xrng, yrng) = self.argum[0]
@@ -3974,8 +3974,8 @@ class Test_align2d(unittest.TestCase):
             fu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=0, first_ring=1, last_ring=0, rstep=1, mode = "F")
         with self.assertRaises(ZeroDivisionError) as cm_old:
             oldfu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=0, first_ring=1, last_ring=0, rstep=1, mode = "F")
-        self.assertEqual(cm_new.exception.message, "float division by zero")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "float division by zero")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_Full_mode_zero_lastRing(self):
@@ -4016,8 +4016,8 @@ class Test_align2d_scf(unittest.TestCase):
             fu.align2d_scf()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.align2d_scf()
-        self.assertEqual(cm_new.exception.message, "align2d_scf() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "align2d_scf() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_image_to_align_returns_RuntimeError_InvalidValueException_xsize_not_positive(self):
         (image, refim, xrng, yrng) = self.argum[0]
@@ -4026,8 +4026,8 @@ class Test_align2d_scf(unittest.TestCase):
             fu.align2d_scf(image, refim, xrng, yrng, self.argum[1]['ou'])
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.align2d_scf(image, refim, xrng, yrng, self.argum[1]['ou'])
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], "x size <= 0")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -4039,8 +4039,8 @@ class Test_align2d_scf(unittest.TestCase):
             fu.align2d_scf(None, refim, xrng, yrng, self.argum[1]['ou'])
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.align2d_scf(None, refim, xrng, yrng, self.argum[1]['ou'])
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
 
     def test_empty_reference_image_returns_RuntimeError_InvalidValueException_xsize_not_positive(self):
         (image, refim, xrng, yrng) = self.argum[0]
@@ -4049,8 +4049,8 @@ class Test_align2d_scf(unittest.TestCase):
             fu.align2d_scf(image, refim, xrng, yrng, self.argum[1]['ou'])
         with self.assertRaises(RuntimeError) as cm_new:
             oldfu.align2d_scf(image, refim, xrng, yrng, self.argum[1]['ou'])
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], "x size <= 0")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -4064,8 +4064,8 @@ class Test_align2d_scf(unittest.TestCase):
             fu.align2d_scf(image, None, xrng, yrng, self.argum[1]['ou'])
         with self.assertRaises(RuntimeError) as cm_new:
             oldfu.align2d_scf(image, None, xrng, yrng, self.argum[1]['ou'])
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], "x size <= 0")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -4103,8 +4103,8 @@ class Test_align2d_scf(unittest.TestCase):
             fu.align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_with_DEFAULT_params_but_validOU_returns_IndexError_list_index_out_of_range(self):
         (image, refim, xrng, yrng) = self.argum[0]
@@ -4112,8 +4112,8 @@ class Test_align2d_scf(unittest.TestCase):
             fu.align2d_scf(image, refim, xrng=-1, yrng=-1, ou=self.argum[1]['ou'])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.align2d_scf(image, refim,xrng=-1, yrng=-1, ou = self.argum[1]['ou'])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -4171,8 +4171,8 @@ class Test_multialign2d_scf(unittest.TestCase):
             fu.multalign2d_scf(dataa[0], [cimage], None, numr, xrng, yrng, ou=174)
         with self.assertRaises(TypeError) as cm_old:
             oldfu.multalign2d_scf(dataa[0], [cimage], None, numr, xrng, yrng, ou=174)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute '__getitem__'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute '__getitem__'")
 
     def test_empty_list_Numrinit_crashes_because_signal11SIGSEV(self):
         """
@@ -4193,8 +4193,8 @@ class Test_multialign2d_scf(unittest.TestCase):
             fu.multalign2d_scf()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.multalign2d_scf()
-        self.assertEqual(cm_new.exception.message, "multalign2d_scf() takes at least 4 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "multalign2d_scf() takes at least 4 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_returns_RuntimeError_InvalidValueException_xsize_not_positive(self):
         (dataa, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -4206,8 +4206,8 @@ class Test_multialign2d_scf(unittest.TestCase):
             fu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=174)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=174)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], "x size <= 0")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -4223,8 +4223,8 @@ class Test_multialign2d_scf(unittest.TestCase):
             fu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=174)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=174)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
 
     def test_with_valid_params_cimage_with_mode_F(self):
         (dataa, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
@@ -4271,8 +4271,8 @@ class Test_multialign2d_scf(unittest.TestCase):
             fu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng=-1, yrng=-1, ou = -1)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng=-1, yrng=-1, ou = -1)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -4284,8 +4284,8 @@ class Test_parabl(unittest.TestCase):
             fu.parabl()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.parabl()
-        self.assertEqual(cm_new.exception.message, "parabl() takes exactly 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "parabl() takes exactly 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         return_new = fu.parabl(EMData())
@@ -4298,8 +4298,8 @@ class Test_parabl(unittest.TestCase):
             fu.parabl(None)
         with self.assertRaises(TypeError) as cm_old:
             oldfu.parabl(None)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute '__getitem__'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute '__getitem__'")
 
     def test_peak_found(self):
         return_new = fu.parabl(self.argum[0][0])
@@ -4328,8 +4328,8 @@ class Test_shc(unittest.TestCase):
             fu.shc()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.shc()
-        self.assertEqual(cm_new.exception.message, "shc() takes at least 7 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "shc() takes at least 7 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image_refringscrashes_because_signal11SIGSEV(self):
         """
@@ -4349,8 +4349,8 @@ class Test_shc(unittest.TestCase):
             fu.shc(data, refrings, list_of_ref_ang, numr, xrng, yrng, step, an =-1.0)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.shc(data, refrings, list_of_ref_ang, numr, xrng, yrng, step, an =-1.0)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
         self.assertEqual(msg[3], 'The requested key does not exist')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -4363,8 +4363,8 @@ class Test_shc(unittest.TestCase):
             fu.shc(data, refrings, list_of_ref_ang, numr, xrng, yrng, step, an =-1.0)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.shc(data, refrings, list_of_ref_ang, numr, xrng, yrng, step, an =-1.0)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_sym_c1_failed(self):
         (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = self.argum[0]
@@ -4434,8 +4434,8 @@ class Test_generate_list_of_reference_angles_for_search(unittest.TestCase):
             fu.generate_list_of_reference_angles_for_search()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.generate_list_of_reference_angles_for_search()
-        self.assertEqual(cm_new.exception.message, "generate_list_of_reference_angles_for_search() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "generate_list_of_reference_angles_for_search() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_c5Sym(self):
         sym = 'c5'
@@ -4464,8 +4464,8 @@ class Test_generate_list_of_reference_angles_for_search(unittest.TestCase):
             fu.generate_list_of_reference_angles_for_search([], 'invalid')
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.generate_list_of_reference_angles_for_search([], 'invalid')
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
         self.assertEqual(msg[3], 'No such an instance existing')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])

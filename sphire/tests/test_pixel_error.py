@@ -289,24 +289,24 @@ class Test_angle_error(unittest.TestCase):
             fu.angle_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_error()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_ang1_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.angle_error(ang1=[], ang2=[0.6804220676422119, 0.6526213884353638, 0.3333333432674408], delta_ang=0.1)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.angle_error(ang1=[], ang2=[0.6804220676422119, 0.6526213884353638, 0.3333333432674408], delta_ang=0.1)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_ang2_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.angle_error(ang2=[], ang1=[0.6804220676422119, 0.6526213884353638, 0.3333333432674408], delta_ang=0.1)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.angle_error(ang2=[], ang1=[0.6804220676422119, 0.6526213884353638, 0.3333333432674408], delta_ang=0.1)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_angle_error(self):
         return_new =fu.angle_error(ang1=[0.6804220676422119, 0.6526213884353638, 0.3333333432674408], ang2=[0.6804220676422119, 0.65262184353638, 0.3333333432674408], delta_ang=0.1)
@@ -325,24 +325,24 @@ class Test_align_diff(unittest.TestCase):
             fu.align_diff()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.align_diff()
-        self.assertEqual(cm_new.exception.message, "align_diff() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "align_diff() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_data_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.align_diff(data1=[], data2=None, suffix="_ideal")
         with self.assertRaises(IndexError) as cm_old:
             oldfu.align_diff(data1=[], data2=None, suffix="_ideal")
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_data2_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.align_diff(data1=self.data, data2=[], suffix="_ideal")
         with self.assertRaises(IndexError) as cm_old:
             oldfu.align_diff(data1=self.data, data2=[], suffix="_ideal")
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_align_diff(self):
         return_new = fu.align_diff(data1=self.data, data2=None, suffix="_ideal")
@@ -375,8 +375,8 @@ class Test_align_diff_textfile(unittest.TestCase):
             fu.align_diff_textfile()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.align_diff_textfile()
-        self.assertEqual(cm_new.exception.message, "align_diff_textfile() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "align_diff_textfile() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_align_diff_textfile(self):
         oldv = oldfu.align_diff_textfile(textfile1=0, textfile2=0)
@@ -393,24 +393,24 @@ class Test_ave_ali_err(unittest.TestCase):
             fu.ave_ali_err()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ave_ali_err()
-        self.assertEqual(cm_new.exception.message, "ave_ali_err() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ave_ali_err() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_data_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.ave_ali_err(data1=[], data2=None, suffix="_ideal", r=25)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.ave_ali_err(data1=[], data2=None, suffix="_ideal", r=25)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_data2_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.ave_ali_err(data1=self.data, data2=[], suffix="_ideal", r=25)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.ave_ali_err(data1=self.data, data2=[], suffix="_ideal", r=25)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ave_ali_err(self):
         return_new = fu.ave_ali_err(data1=self.data, data2=None, suffix="_ideal", r=25)
@@ -450,24 +450,24 @@ class Test_multi_align_diff_params(unittest.TestCase):
             fu.multi_align_diff_params()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.multi_align_diff_params()
-        self.assertEqual(cm_new.exception.message, "multi_align_diff_params() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "multi_align_diff_params() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_ali_params_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.multi_align_diff_params(ali_params=[], verbose=0)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.multi_align_diff_params(ali_params=[], verbose=0)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_ali_params0_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.multi_align_diff_params(ali_params=[[],[1,2,3]], verbose=0)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.multi_align_diff_params(ali_params=[[],[1,2,3]], verbose=0)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_multi_align_diff_params(self):
         return_new = fu.multi_align_diff_params(ali_params=[[13, 23, 31,0,1, 23, 31,0,13, 3, 31,0], [13, 23, 31,0,0,1, 2, 3,13, 23, 31,0]], verbose=0)
@@ -487,8 +487,8 @@ class Test_calc_connect_list(unittest.TestCase):
             fu.calc_connect_list()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.calc_connect_list()
-        self.assertEqual(cm_new.exception.message, "calc_connect_list() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "calc_connect_list() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_calc_connect_list(self):
         return_old = oldfu.calc_connect_list(multi_align_results=self.multi_align_results_old, pixel_error_threshold = 5.0, mirror_consistency_threshold = 0.8)
@@ -503,16 +503,16 @@ class Test_calc_connect_list(unittest.TestCase):
             fu.calc_connect_list(multi_align_results=[], pixel_error_threshold = 5.0, mirror_consistency_threshold = 0.8)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.calc_connect_list(multi_align_results=[], pixel_error_threshold = 5.0, mirror_consistency_threshold = 0.8)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_multi_align_results0_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.calc_connect_list(multi_align_results=[[], [1, 2, 3]], pixel_error_threshold = 5.0, mirror_consistency_threshold = 0.8)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.calc_connect_list(multi_align_results=[[], [1, 2, 3]], pixel_error_threshold = 5.0, mirror_consistency_threshold = 0.8)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -526,8 +526,8 @@ class Test_ali_stable_list(unittest.TestCase):
             fu.ali_stable_list()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali_stable_list()
-        self.assertEqual(cm_new.exception.message, "ali_stable_list() takes at least 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ali_stable_list() takes at least 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ali_stable_list(self):
         return_new = oldfu.ali_stable_list(ali_params1=self.ali_params1, ali_params2=self.ali_params2, pixel_error_threshold=0.3, r=25)
@@ -546,32 +546,32 @@ class Test_ave2dtransform(unittest.TestCase):
             fu.ave2dtransform()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ave2dtransform()
-        self.assertEqual(cm_new.exception.message, "ave2dtransform() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ave2dtransform() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_args_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.ave2dtransform(args=[], data=[1,2,3], return_avg_pixel_error = False)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.ave2dtransform(args=[], data=[1,2,3], return_avg_pixel_error = False)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_args0_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.ave2dtransform(args=[[],self.ali_params], data=[1,2,3], return_avg_pixel_error = False)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.ave2dtransform(args=[], data=[1,2,3], return_avg_pixel_error = False)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_data_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.ave2dtransform(args=[1, 2, 3], data=[], return_avg_pixel_error = False)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.ave2dtransform(args= [1, 2, 3], data=[], return_avg_pixel_error = False)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_return_NOavg_pixel_error(self):
         return_new = fu.ave2dtransform(args=self.args, data=self.data, return_avg_pixel_error = False)
@@ -596,8 +596,8 @@ class Test_rotate_angleset_to_match(unittest.TestCase):
             fu.rotate_angleset_to_match()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.rotate_angleset_to_match()
-        self.assertEqual(cm_new.exception.message, "rotate_angleset_to_match() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "rotate_angleset_to_match() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_return_avg_pixel_error(self):
         return_new = fu.rotate_angleset_to_match(agls1=self.agls1, agls2=self.agls2)
@@ -614,8 +614,8 @@ class Test_ordersegments(unittest.TestCase):
             fu.ordersegments()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ordersegments()
-        self.assertEqual(cm_new.exception.message, "ordersegments() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ordersegments() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ordersegments(self):
         oldv = oldfu.ordersegments(infilaments=0, ptclcoords=0)
@@ -630,8 +630,8 @@ class Test_mapcoords(unittest.TestCase):
             fu.mapcoords()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.mapcoords()
-        self.assertEqual(cm_new.exception.message, "ordersegments() takes exactly 4 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ordersegments() takes exactly 4 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_r_lowe_than1(self):
         return_old = oldfu.mapcoords(x=1, y=1, r=0.1, nx=5, ny=5)
@@ -653,8 +653,8 @@ class Test_consistency_params(unittest.TestCase):
             fu.consistency_params()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.consistency_params()
-        self.assertEqual(cm_new.exception.message, "ordersegments() takes at least 4 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ordersegments() takes at least 4 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_consistency_params(self):
         oldv = oldfu.consistency_params(stack="", dphi="", dp="", pixel_size="", phithr=2.5, ythr=1.5, THR=3)
@@ -670,8 +670,8 @@ class Test_getnewhelixcoords(unittest.TestCase):
             fu.getnewhelixcoords()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.getnewhelixcoords()
-        self.assertEqual(cm_new.exception.message, "ordersegments() takes at least 5 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ordersegments() takes at least 5 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_(self):
         oldv = oldfu.getnewhelixcoords(hcoordsname="", outdir="", ratio="",nx="",ny="", newpref="resampled_", boxsize=-1)
@@ -690,8 +690,8 @@ class Test_helical_params_err(unittest.TestCase):
             fu.helical_params_err()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.helical_params_err()
-        self.assertEqual(cm_new.exception.message, "helical_params_err() takes exactly 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "helical_params_err() takes exactly 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_params1_emptyList_returns_IndexError(self):
@@ -699,32 +699,32 @@ class Test_helical_params_err(unittest.TestCase):
             fu.helical_params_err(params1= [], params2= self.params2, fil_list=self.fillist)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.helical_params_err(params1= [], params2= self.params2, fil_list=self.fillist)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_params2_emptyList_returns_IndexError(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.helical_params_err(params1= self.params1, params2= [], fil_list=self.fillist)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.helical_params_err(params1= self.params1, params2= [], fil_list=self.fillist)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_params1_0_emptyList_returns_IndexError(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.helical_params_err(params1= [[],self.t2], params2= self.params2, fil_list=self.fillist)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.helical_params_err(params1= [[],self.t2], params2= self.params2, fil_list=self.fillist)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_params2_0_emptyList_returns_IndexError(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.helical_params_err(params1= self.params1, params2= [[],self.t2], fil_list=self.fillist)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.helical_params_err(params1= self.params1, params2= [[],self.t2], fil_list=self.fillist)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_fil_list_emptyList_returns_IndexError(self):
@@ -732,8 +732,8 @@ class Test_helical_params_err(unittest.TestCase):
             fu.helical_params_err(params1= self.params1, params2= self.params2, fil_list=[])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.helical_params_err(params1= self.params1, params2= self.params2, fil_list=[])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_helical_params_err(self):
         return_new = fu.helical_params_err(params1= self.params1, params2= self.params2, fil_list=self.fillist)
@@ -756,8 +756,8 @@ class Test_pixel_error_2D(unittest.TestCase):
             fu.pixel_error_2D()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.pixel_error_2D()
-        self.assertEqual(cm_new.exception.message, "pixel_error_2D() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "pixel_error_2D() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_pickle_file(self):
         return_new = fu.pixel_error_2D(ali_params1= self.ali_params1, ali_params2= self.ali_params2, r= self.r)
@@ -777,24 +777,24 @@ class Test_pixel_error_2D(unittest.TestCase):
             fu.pixel_error_2D(ali_params1= [], ali_params2= self.ali_params2, r= self.r)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.pixel_error_2D(ali_params1= [], ali_params2= self.ali_params2, r= self.r)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ali_params2_emptyList_returns_IndexError(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.pixel_error_2D(ali_params1= self.ali_params1, ali_params2= [], r= self.r)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.pixel_error_2D(ali_params1= self.ali_params1, ali_params2= [], r= self.r)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ali_params_both_emptyList_returns_IndexError(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.pixel_error_2D(ali_params1= [], ali_params2= [], r= self.r)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.pixel_error_2D(ali_params1= [], ali_params2= [], r= self.r)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 class Test_max_3D_pixel_error(unittest.TestCase):
@@ -805,8 +805,8 @@ class Test_max_3D_pixel_error(unittest.TestCase):
             fu.max_3D_pixel_error()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.max_3D_pixel_error()
-        self.assertEqual(cm_new.exception.message, "max_3D_pixel_error() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "max_3D_pixel_error() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_pickle_file(self):
         return_new = fu.max_3D_pixel_error(t1=self.t1, t2=self.t2, r=self.r)
@@ -825,24 +825,24 @@ class Test_max_3D_pixel_error(unittest.TestCase):
             fu.max_3D_pixel_error(t1=[], t2=self.t2, r=self.r)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.max_3D_pixel_error(t1=[], t2=self.t2, r=self.r)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_t2_emptyList_returns_IndexError(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.max_3D_pixel_error(t1=self.t1, t2=[], r=self.r)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.max_3D_pixel_error(t1=self.t1, t2=[], r=self.r)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ali_params_both_emptyList_returns_IndexError(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.max_3D_pixel_error(t1=[], t2=[], r=self.r)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.max_3D_pixel_error(t1=[], t2=[], r=self.r)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -854,8 +854,8 @@ class Test_angle_ave(unittest.TestCase):
             fu.angle_ave()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_ave()
-        self.assertEqual(cm_new.exception.message, "angle_ave() takes exactly 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_ave() takes exactly 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_pickle_value(self):
         return_new = fu.angle_ave(angle1=self.angle1)
@@ -868,8 +868,8 @@ class Test_angle_ave(unittest.TestCase):
             fu.angle_ave(angle1=[])
         with self.assertRaises(ZeroDivisionError) as cm_old:
             oldfu.angle_ave(angle1=[])
-        self.assertEqual(cm_new.exception.message, "float division by zero")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "float division by zero")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -882,8 +882,8 @@ class Test_angle_diff(unittest.TestCase):
             fu.angle_diff()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_diff()
-        self.assertEqual(cm_new.exception.message, "angle_diff() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_diff() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_pickle_value(self):
         return_new = fu.angle_diff(angle1 = self.angle1,angle2= self.angle2)
@@ -896,8 +896,8 @@ class Test_angle_diff(unittest.TestCase):
             fu.angle_diff(angle1 = self.angle1+[2,2],angle2= self.angle2)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.angle_diff(angle1 = self.angle1+[2,2],angle2= self.angle2)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_angle2_bigger_than_angle1_printout_errorMsg(self):
         return_new = fu.angle_diff(angle1 = self.angle1,angle2= self.angle2+[2,2])
@@ -916,8 +916,8 @@ class Test_angle_diff(unittest.TestCase):
             fu.angle_diff(angle1 = self.angle1,angle2= [])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.angle_diff(angle1 = self.angle1,angle2= [])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_angle_both_emptyList(self):
         return_new = fu.angle_diff(angle1 = [],angle2= [])
@@ -936,8 +936,8 @@ class Test_angle_diff_sym(unittest.TestCase):
             fu.angle_diff_sym()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_diff_sym()
-        self.assertEqual(cm_new.exception.message, "angle_diff_sym() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_diff_sym() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_pickle_value(self):
         return_new = fu.angle_diff_sym(angle1=self.angle1, angle2=self.angle2, simi=1)
@@ -950,16 +950,16 @@ class Test_angle_diff_sym(unittest.TestCase):
             fu.angle_diff_sym(angle1=self.angle1, angle2=self.angle2, simi=0)
         with self.assertRaises(ZeroDivisionError) as cm_old:
             oldfu.angle_diff_sym(angle1=self.angle1, angle2=self.angle2, simi=0)
-        self.assertEqual(cm_new.exception.message, "float division by zero")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "float division by zero")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_angle1_bigger_than_angle2(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.angle_diff_sym(angle1=self.angle1+[2], angle2=self.angle2, simi=1)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.angle_diff_sym(angle1=self.angle1+[2], angle2=self.angle2, simi=1)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_angle2_bigger_than_angle1_printout_errorMsg(self):
         return_new = fu.angle_diff_sym(angle1=self.angle1, angle2=self.angle2+[2], simi=1)
@@ -997,8 +997,8 @@ class Test_align_diff_params(unittest.TestCase):
             fu.align_diff_params()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.align_diff_params()
-        self.assertEqual(cm_new.exception.message, "align_diff_params() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "align_diff_params() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_pickle_file(self):
         return_new = fu.align_diff_params(ali_params1= self.ali_params1, ali_params2= self.ali_params2)
@@ -1023,8 +1023,8 @@ class Test_align_diff_params(unittest.TestCase):
             fu.align_diff_params(ali_params1= [], ali_params2= [])
         with self.assertRaises(ZeroDivisionError) as cm_old:
             oldfu.align_diff_params(ali_params1= [], ali_params2= [])
-        self.assertEqual(cm_new.exception.message, "float division by zero")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "float division by zero")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -1039,8 +1039,8 @@ class Test_multi_align_stability(unittest.TestCase):
             fu.multi_align_stability()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.multi_align_stability()
-        self.assertEqual(cm_new.exception.message, "multi_align_stability() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "multi_align_stability() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_pickle_value(self):
         return_new = fu.multi_align_stability(ali_params=self.ali_params, mir_stab_thld=self.mir_stab_thld, grp_err_thld=self.grp_err_thld, err_thld=self.err_thld, print_individual=False, d=self.d)
@@ -1053,8 +1053,8 @@ class Test_multi_align_stability(unittest.TestCase):
             fu.multi_align_stability(ali_params=[], mir_stab_thld=self.mir_stab_thld, grp_err_thld=self.grp_err_thld, err_thld=self.err_thld, print_individual=False, d=self.d)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.multi_align_stability(ali_params=[], mir_stab_thld=self.mir_stab_thld, grp_err_thld=self.grp_err_thld, err_thld=self.err_thld, print_individual=False, d=self.d)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_grp_err_thld_is0(self):
         return_new = fu.multi_align_stability(ali_params=self.ali_params, mir_stab_thld=self.mir_stab_thld, grp_err_thld=self.grp_err_thld, err_thld=0, print_individual=False, d=self.d)

@@ -215,8 +215,8 @@ class Test_insert_slices(unittest.TestCase):
             fu.insert_slices()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.insert_slices()
-        self.assertEqual(cm_new.exception.message, "insert_slices() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "insert_slices() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_defalut_case(self):
         params = {"size": self.size, "npad": 2, "symmetry": "c1", "fftvol":deepcopy(self.img), "weight": deepcopy(self.img), "snr": 2}
@@ -246,8 +246,8 @@ class Test_insert_slices(unittest.TestCase):
             fu.insert_slices(reconstructor=r, proj=None)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.insert_slices(reconstructor=r, proj=None)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_attr'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_attr'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_image_proj_case_returns_RuntimeError_NotExistingObjectException_the_key_mean_doesnot_exist(self):
         params = {"size": self.size, "npad": 2, "symmetry": "c1", "fftvol": deepcopy(self.img), "weight": deepcopy(self.img), "snr": 2}
@@ -257,8 +257,8 @@ class Test_insert_slices(unittest.TestCase):
             fu.insert_slices(reconstructor=r, proj=EMData())
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.insert_slices(reconstructor=r, proj=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
         self.assertEqual(msg[3], "The requested key does not exist")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -272,8 +272,8 @@ class Test_insert_slices(unittest.TestCase):
             fu.insert_slices(reconstructor=r, proj=get_real_data(2)[0])
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.insert_slices(reconstructor=r, proj=get_real_data(2)[0])
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
         self.assertEqual(msg[3], "The requested key does not exist")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -289,8 +289,8 @@ class Test_insert_slices_pdf(unittest.TestCase):
             fu.insert_slices_pdf()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.insert_slices_pdf()
-        self.assertEqual(cm_new.exception.message, "insert_slices_pdf() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "insert_slices_pdf() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_defalut_case(self):
         params = {"size": self.size, "npad": 2, "symmetry": "c1", "fftvol":deepcopy(self.img), "weight": deepcopy(self.img), "snr": 2}
@@ -320,8 +320,8 @@ class Test_insert_slices_pdf(unittest.TestCase):
             fu.insert_slices_pdf(reconstructor=r, proj=None)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.insert_slices_pdf(reconstructor=r, proj=None)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_attr'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_attr'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_image_proj_case_returns_RuntimeError_NotExistingObjectException_the_key_mean_doesnot_exist(self):
         params = {"size": self.size, "npad": 2, "symmetry": "c1", "fftvol": deepcopy(self.img), "weight": deepcopy(self.img), "snr": 2}
@@ -331,8 +331,8 @@ class Test_insert_slices_pdf(unittest.TestCase):
             fu.insert_slices_pdf(reconstructor=r, proj=EMData())
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.insert_slices_pdf(reconstructor=r, proj=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
         self.assertEqual(msg[3], "The requested key does not exist")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -346,8 +346,8 @@ class Test_insert_slices_pdf(unittest.TestCase):
             fu.insert_slices_pdf(reconstructor=r, proj=get_real_data(2)[0])
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.insert_slices_pdf(reconstructor=r, proj=get_real_data(2)[0])
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
         self.assertEqual(msg[3], "The requested key does not exist")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -404,8 +404,8 @@ class Test_recons3d_4nn_MPI(unittest.TestCase):
             fu.recons3d_4nn_MPI()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.recons3d_4nn_MPI()
-        self.assertEqual(cm_new.exception.message, "recons3d_4nn_MPI() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "recons3d_4nn_MPI() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_default_case(self):
         return_new = fu.recons3d_4nn_MPI(myid = 0, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr = 1.0, npad=2, xysize=-1, zsize=-1, mpi_comm=MPI_COMM_WORLD)
@@ -466,8 +466,8 @@ class Test_recons3d_4nn_MPI(unittest.TestCase):
         with self.assertRaises(IndexError) as cm_old:
             oldfu.recons3d_4nn_MPI(myid= 0, prjlist=[], symmetry="c1", finfo=None, snr = 1.0, npad=2, xysize=-1, zsize=-1, mpi_comm=MPI_COMM_WORLD)
         mpi_barrier(MPI_COMM_WORLD)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -477,8 +477,8 @@ class Test_recons3d_trl_struct_MPI(unittest.TestCase):
             fu.recons3d_trl_struct_MPI()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.recons3d_trl_struct_MPI()
-        self.assertEqual(cm_new.exception.message, "recons3d_trl_struct_MPI() takes at least 7 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "recons3d_trl_struct_MPI() takes at least 7 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 class Test_recons3d_4nn_ctf_MPI(unittest.TestCase):
@@ -487,8 +487,8 @@ class Test_recons3d_4nn_ctf_MPI(unittest.TestCase):
             fu.recons3d_4nn_ctf_MPI()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.recons3d_4nn_ctf_MPI()
-        self.assertEqual(cm_new.exception.message, "recons3d_4nn_ctf_MPI() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "recons3d_4nn_ctf_MPI() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -526,8 +526,8 @@ class Test_recons3d_4nn_ctf_MPI(unittest.TestCase):
         with self.assertRaises(NameError) as cm_old:
             oldfu.recons3d_4nn_ctf_MPI(0, [proj], snr = 1.0, sign=1, symmetry="c1", finfo=None, npad=2, xysize=1, zsize=1, mpi_comm=None, smearstep = 0.5)
         mpi_barrier(MPI_COMM_WORLD)
-        self.assertEqual(cm_new.exception.message, "global name 'sizeprojection' is not defined")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "global name 'sizeprojection' is not defined")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_default_case_xy_size_NameError_sizeprojection_BEACUASE_A_BUG(self):
         nima = EMUtil.get_image_count(STACK_NAME)
@@ -540,8 +540,8 @@ class Test_recons3d_4nn_ctf_MPI(unittest.TestCase):
         with self.assertRaises(NameError) as cm_old:
             oldfu.recons3d_4nn_ctf_MPI(0, [proj], snr = 1.0, sign=1, symmetry="c1", finfo=None, npad=2, xysize=1, zsize=-1, mpi_comm=None, smearstep = 0.5)
         mpi_barrier(MPI_COMM_WORLD)
-        self.assertEqual(cm_new.exception.message, "global name 'sizeprojection' is not defined")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "global name 'sizeprojection' is not defined")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     @unittest.skip("crash if run togheter with the other tests of this class because a bad implementation of the code")
     def test_default_case_negative_sign(self):
@@ -562,8 +562,8 @@ class Test_recons3d_4nn_ctf_MPI(unittest.TestCase):
         with self.assertRaises(IndexError) as cm_old:
             oldfu.recons3d_4nn_ctf_MPI(0, [], snr = -1.0, sign=-1, symmetry="c1", finfo=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.5)
         mpi_barrier(MPI_COMM_WORLD)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -574,8 +574,8 @@ class Test_recons3d_nn_SSNR_MPI(unittest.TestCase):
             fu.recons3d_nn_SSNR_MPI()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.recons3d_nn_SSNR_MPI()
-        self.assertEqual(cm_new.exception.message, "recons3d_nn_SSNR_MPI() takes at least 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "recons3d_nn_SSNR_MPI() takes at least 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_withoutMask2D_and_CTF_randomangles0(self):
         nima = EMUtil.get_image_count(STACK_NAME)
@@ -850,8 +850,8 @@ class Test_recons3d_nn_SSNR_MPI(unittest.TestCase):
             oldfu.recons3d_nn_SSNR_MPI(myid=0, prjlist=[proj], mask2D=EMData(), ring_width=1, npad =1, sign=1, symmetry="c1", CTF = False, random_angles = 0, mpi_comm = None)
         mpi_barrier(MPI_COMM_WORLD)
 
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
         self.assertEqual(msg[1], "The dimension of the image does not match the dimension of the mask!")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -868,8 +868,8 @@ class Test_prepare_recons(unittest.TestCase):
             fu.prepare_recons()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prepare_recons()
-        self.assertEqual(cm_new.exception.message, "prepare_recons() takes at least 7 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "prepare_recons() takes at least 7 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_data_is_emptylist_IndexError_list_index_out_of_range(self):
@@ -879,8 +879,8 @@ class Test_prepare_recons(unittest.TestCase):
         with self.assertRaises(IndexError) as cm_old:
             oldfu.prepare_recons(data=[], symmetry='c5', myid=0 , main_node_half=0, half_start=4, step=2, index=5, npad=2, mpi_comm = MPI_COMM_WORLD)
         mpi_barrier(MPI_COMM_WORLD)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_index_equal_group(self):
         return_new = fu.prepare_recons(data=deepcopy(self.data), symmetry='c5', myid=0 , main_node_half=0, half_start=0, step=1, index=self.index, npad=2, mpi_comm = MPI_COMM_WORLD)
@@ -946,8 +946,8 @@ class Test_prepare_recons_ctf(unittest.TestCase):
             fu.prepare_recons_ctf()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prepare_recons_ctf()
-        self.assertEqual(cm_new.exception.message, "prepare_recons_ctf() takes at least 8 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "prepare_recons_ctf() takes at least 8 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_index_equal_group_crashes_because_signal11SIGSEV(self):
         self.assertTrue(True)
@@ -979,8 +979,8 @@ class Test_recons_from_fftvol(unittest.TestCase):
             fu.recons_from_fftvol()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.recons_from_fftvol()
-        self.assertEqual(cm_new.exception.message, "recons_from_fftvol() takes at least 4 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "recons_from_fftvol() takes at least 4 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_recons_from_fftvol_default_case(self):
         size = 76
@@ -1020,8 +1020,8 @@ class Test_recons_ctf_from_fftvol(unittest.TestCase):
             fu.recons_ctf_from_fftvol()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.recons_ctf_from_fftvol()
-        self.assertEqual(cm_new.exception.message, "recons_ctf_from_fftvol() takes at least 5 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "recons_ctf_from_fftvol() takes at least 5 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_default_case(self):
         size = 76
@@ -1061,8 +1061,8 @@ class Test_get_image_size(unittest.TestCase):
             fu.get_image_size()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.get_image_size()
-        self.assertEqual(cm_new.exception.message, "get_image_size() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "get_image_size() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_get_image_default_case(self):
         size=76
@@ -1097,8 +1097,8 @@ class Test_get_image_size(unittest.TestCase):
             fu.get_image_size(imgdata=[None],myid= 0 )
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.get_image_size(imgdata=[None],myid= 0 )
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -1111,8 +1111,8 @@ class Test_rec3D_MPI(unittest.TestCase):
             fu.rec3D_MPI()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.rec3D_MPI()
-        self.assertEqual(cm_new.exception.message, "rec3D_MPI() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "rec3D_MPI() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_rec3D_MPI_should_return_True(self):
         """ it is the Adnan starting test and not a default value case because 'odd_start' is not 0 """
@@ -1145,8 +1145,8 @@ class Test_rec3D_MPI(unittest.TestCase):
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.rec3D_MPI( [None], 1.0, self.sym, mask3D = None, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, odd_start=4, eve_start=1, finfo=None, index=-1, npad = 2, mpi_comm=None, smearstep = 0.0)
         mpi_barrier(MPI_COMM_WORLD)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_with3Dmask(self):
         return_new = fu.rec3D_MPI( PRJLIST, 1.0, self.sym, mask3D = get_real_data(3)[0], fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, odd_start=4, eve_start=1, finfo=None, index=-1, npad = 2, mpi_comm=None, smearstep = 0.0)
@@ -1165,8 +1165,8 @@ class Test_rec3D_MPI_noCTF(unittest.TestCase):
             fu.rec3D_MPI_noCTF()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.rec3D_MPI_noCTF()
-        self.assertEqual(cm_new.exception.message, "rec3D_MPI_noCTF() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "rec3D_MPI_noCTF() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_myidi_zero(self):
@@ -1197,8 +1197,8 @@ class Test_rec3D_MPI_noCTF(unittest.TestCase):
             oldfu.rec3D_MPI_noCTF(PRJLIST, symmetry = self.sym, mask3D = None, fsc_curve = None, myid = 2, main_node = 0, rstep = 1.0, odd_start=4, eve_start=4, finfo=None, index = 5, npad = self.npad, mpi_comm=None)
         mpi_barrier(MPI_COMM_WORLD)
 
-        self.assertEqual(cm_new.exception.message, "cannot concatenate 'str' and 'NoneType' objects")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "cannot concatenate 'str' and 'NoneType' objects")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -1211,8 +1211,8 @@ class Test_prepare_recons_ctf_two_chunks(unittest.TestCase):
             fu.prepare_recons_ctf_two_chunks()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prepare_recons_ctf_two_chunks()
-        self.assertEqual(cm_new.exception.message, "prepare_recons_ctf_two_chunks() takes at least 7 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "prepare_recons_ctf_two_chunks() takes at least 7 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_None_data_returns_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -1221,8 +1221,8 @@ class Test_prepare_recons_ctf_two_chunks(unittest.TestCase):
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prepare_recons_ctf_two_chunks(100, None, snr =1 , symmetry="c1", myid=0 , main_node_half=0, chunk_ID =2,  npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.5)
             mpi_barrier(MPI_COMM_WORLD)
-        self.assertEqual(cm_new.exception.message, "object of type 'NoneType' has no len()")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "object of type 'NoneType' has no len()")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_image_data_returns_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -1231,8 +1231,8 @@ class Test_prepare_recons_ctf_two_chunks(unittest.TestCase):
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prepare_recons_ctf_two_chunks(100, EMData(), snr =1 , symmetry="c1", myid=0 , main_node_half=0, chunk_ID =2,  npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.5)
             mpi_barrier(MPI_COMM_WORLD)
-        self.assertEqual(cm_new.exception.message, "object of type 'EMData' has no len()")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "object of type 'EMData' has no len()")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_image_data_returns_RunTimeError(self):
         with self.assertRaises(RuntimeError) as cm_new:
@@ -1241,8 +1241,8 @@ class Test_prepare_recons_ctf_two_chunks(unittest.TestCase):
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.prepare_recons_ctf_two_chunks(100, [EMData()], snr =1 , symmetry="c1", myid=0 , main_node_half=0, chunk_ID =2,  npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.5)
             mpi_barrier(MPI_COMM_WORLD)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
         self.assertEqual(msg[1] + msg[2] + msg[3] + msg[4], "chunk_id: The requested key does not exist caught\n")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1263,8 +1263,8 @@ class Test_prepare_recons_ctf_two_chunks(unittest.TestCase):
                                                 smearstep=0.5)
         mpi_barrier(MPI_COMM_WORLD)
 
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
         self.assertEqual(msg[1] + msg[2] + msg[3] + msg[4], "not_valid: No such an instance existing caught\n")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1281,8 +1281,8 @@ class Test_prepare_recons_ctf_two_chunks(unittest.TestCase):
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.prepare_recons_ctf_two_chunks(-10, d, snr =1 , symmetry=sym, myid=0 , main_node_half=0, chunk_ID =2,  npad=self.option.npad, mpi_comm = MPI_COMM_WORLD, smearstep = 0.0)
         mpi_barrier(MPI_COMM_WORLD)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], "x size <= 0")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1404,8 +1404,8 @@ class Test_rec3D_two_chunks_MPI(unittest.TestCase):
             fu.rec3D_two_chunks_MPI()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.rec3D_two_chunks_MPI()
-        self.assertEqual(cm_new.exception.message, "rec3D_two_chunks_MPI() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "rec3D_two_chunks_MPI() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_None_data_returns_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -1413,8 +1413,8 @@ class Test_rec3D_two_chunks_MPI(unittest.TestCase):
         mpi_barrier(MPI_COMM_WORLD)
         with self.assertRaises(TypeError) as cm_old:
             oldfu.rec3D_two_chunks_MPI(None, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, finfo=None, index=-1, npad = self.option.npad, mpi_comm=MPI_COMM_WORLD, smearstep = 0.0)
-        self.assertEqual(cm_new.exception.message, "object of type 'NoneType' has no len()")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "object of type 'NoneType' has no len()")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_image_data_returns_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -1423,8 +1423,8 @@ class Test_rec3D_two_chunks_MPI(unittest.TestCase):
         with self.assertRaises(TypeError) as cm_old:
             oldfu.rec3D_two_chunks_MPI(EMData(), snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, finfo=None, index=-1, npad = self.option.npad, mpi_comm=MPI_COMM_WORLD, smearstep = 0.0)
         mpi_barrier(MPI_COMM_WORLD)
-        self.assertEqual(cm_new.exception.message, "object of type 'EMData' has no len()")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "object of type 'EMData' has no len()")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_image_data_print_warning_message(self):
         return_new = fu.rec3D_two_chunks_MPI([EMData()], snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, finfo=None, index=-1, npad = self.option.npad, mpi_comm=MPI_COMM_WORLD, smearstep = 0.0)
@@ -1463,8 +1463,8 @@ class Test_rec3D_two_chunks_MPI(unittest.TestCase):
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.rec3D_two_chunks_MPI(d, snr = 1.0, symmetry = "c1", mask3D = mask, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, finfo=None, index=-1, npad = self.option.npad, mpi_comm=MPI_COMM_WORLD, smearstep = 0.0)
         mpi_barrier(MPI_COMM_WORLD)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
         self.assertEqual(msg[1], "The dimension of the image does not match the dimension of the mask!")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])

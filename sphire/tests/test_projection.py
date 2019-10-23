@@ -184,24 +184,24 @@ class Test_project(unittest.TestCase):
             fu.project()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.project()
-        self.assertEqual(cm_new.exception.message, "project() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "project() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NoneType_as_volume_returns_AttributeError_NoneType_obj_hasnot_attribute_process(self):
         with self.assertRaises(AttributeError) as cm_new:
             fu.project(volume=None, params=self.params, radius=-1)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.project(volume=None, params=self.params, radius=-1)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'project'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'project'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_params_is_emptyList_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.project(volume=self.volft, params=[], radius=-1)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.project(volume=self.volft, params=[], radius=-1)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_with_2Dimg_returns_AttributeError_NoneType_hasnot_attribute_set_attr(self):
         volft = get_real_data(2)[0]
@@ -209,8 +209,8 @@ class Test_project(unittest.TestCase):
             fu.project(volume=volft, params=self.params, radius=-1)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.project(volume=volft, params=self.params, radius=-1)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'set_attr'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'set_attr'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_radiusNegative_and_parameter4and5Null(self):
         return_new = fu.project(volume=self.volft, params=self.params, radius=-1)
@@ -247,24 +247,24 @@ class Test_prgs(unittest.TestCase):
             fu.prgs()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prgs()
-        self.assertEqual(cm_new.exception.message, "prgs() takes at least 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "prgs() takes at least 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NoneType_as_volume_returns_AttributeError_NoneType_obj_hasnot_attribute_extract_plane(self):
         with self.assertRaises(AttributeError) as cm_new:
             fu.prgs(volft=None,kb=self.kb,params=self.params,kbx=None, kby=None)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.prgs(volft=None,kb=self.kb,params=self.params,kbx=None, kby=None)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'extract_plane'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'extract_plane'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_params_is_emptyList_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.prgs(volft=self.volft,kb=self.kb,params=[],kbx=None, kby=None)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.prgs(volft=self.volft,kb=self.kb,params=[],kbx=None, kby=None)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_with_realimg_returns_RuntimeError_ImageFormatException_image_not_same_size(self):
         volft = get_real_data(2)[0]
@@ -272,13 +272,13 @@ class Test_prgs(unittest.TestCase):
             fu.prgs(volft=volft,kb=self.kb,params=self.params,kbx=None, kby=None)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.prgs(volft=volft,kb=self.kb,params=self.params,kbx=None, kby=None)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "ImageFormatException")
         self.assertEqual(msg[1], "extractplane requires a complex image")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[1], msg_old[1])
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_wrong_kb_ArgumentError_in_EMData_extract_plane_function(self):
         kb = create_kb(3)
@@ -287,8 +287,8 @@ class Test_prgs(unittest.TestCase):
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prgs(volft=self.volft,kb=kb,params=self.params,kbx=None, kby=None)
         output_msg = "Python argument types in\n    EMData.extract_plane(EMData, Transform, tuple)\ndid not match C++ signature:\n    extract_plane(EMAN::EMData {lvalue}, EMAN::Transform tf, EMAN::Util::KaiserBessel {lvalue} kb)"
-        self.assertEqual(cm_new.exception.message, output_msg)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), output_msg)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_kb_is_None_ArgumentError_in_EMData_extract_planec_function(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -296,8 +296,8 @@ class Test_prgs(unittest.TestCase):
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prgs(volft=self.volft,kb=None,params=self.params,kbx=None, kby=None)
         output_msg = "Python argument types in\n    EMData.extract_plane(EMData, Transform, NoneType)\ndid not match C++ signature:\n    extract_plane(EMAN::EMData {lvalue}, EMAN::Transform tf, EMAN::Util::KaiserBessel {lvalue} kb)"
-        self.assertEqual(cm_new.exception.message, output_msg)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), output_msg)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_kbx_is_None_and_parameter4and5Null(self):
         return_new = fu.prgs(volft=self.volft,kb=self.kb,params=self.params,kbx=None, kby=None)
@@ -332,8 +332,8 @@ class Test_prgs(unittest.TestCase):
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prgs(self.volft,kb=kbx,params=self.params,kbx=kbx,kby=None)
         output_msg = "Python argument types in\n    EMData.extract_plane_rect(EMData, Transform, KaiserBessel, NoneType, KaiserBessel)\ndid not match C++ signature:\n    extract_plane_rect(EMAN::EMData {lvalue}, EMAN::Transform tf, EMAN::Util::KaiserBessel {lvalue} kbx, EMAN::Util::KaiserBessel {lvalue} kby, EMAN::Util::KaiserBessel {lvalue} kbz)"
-        self.assertEqual(cm_new.exception.message, output_msg)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), output_msg)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -346,24 +346,24 @@ class Test_prgl(unittest.TestCase):
             fu.prgl()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prgl()
-        self.assertEqual(cm_new.exception.message, "prgl() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "prgl() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NoneType_as_volume_returns_AttributeError_NoneType_obj_hasnot_attribute_get_attr_default(self):
         with self.assertRaises(AttributeError) as cm_new:
             fu.prgl(volft=None, params=self.params, interpolation_method=0, return_real=True)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.prgl(volft=None, params=self.params, interpolation_method=0, return_real=True)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_attr_default'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_attr_default'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_params_is_emptyList_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.prgl(volft=self.volft, params=[], interpolation_method=0, return_real=True)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.prgl(volft=self.volft, params=[], interpolation_method=0, return_real=True)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_with_realimg_returns_RuntimeError_ImageFormatException_image_not_same_size(self):
         volft = get_real_data(2)[0]
@@ -371,13 +371,13 @@ class Test_prgl(unittest.TestCase):
             fu.prgl(volft=volft, params=self.params, interpolation_method=0, return_real=True)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.prgl(volft=volft, params=self.params, interpolation_method=0, return_real=True)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "ImageFormatException")
         self.assertEqual(msg[1], "extract_section requires a complex image")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[1], msg_old[1])
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_invalid_interpolation_print_error_msg(self):
         return_new = fu.prgl(volft=self.volft, params=self.params, interpolation_method=10,return_real=False)
@@ -443,16 +443,16 @@ class Test_prgq(unittest.TestCase):
             fu.prgq()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prgq()
-        self.assertEqual(cm_new.exception.message, "prgq() takes at least 6 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "prgq() takes at least 6 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NoneType_as_volume_returns_AttributeError_NoneType_obj_hasnot_attribute_extract_plane(self):
         with self.assertRaises(AttributeError) as cm_new:
             fu.prgq(volft=None, kb=self.kb, nx=4, delta=0.5, ref_a="S", sym="c1", MPI=False)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.prgq(volft=None, kb=self.kb, nx=4, delta=0.5, ref_a="S", sym="c1", MPI=False)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'extract_plane'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'extract_plane'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_with_realimg_returns_RuntimeError_ImageFormatException_image_not_same_size(self):
@@ -461,13 +461,13 @@ class Test_prgq(unittest.TestCase):
             fu.prgq(volft=volft, kb=self.kb, nx=4, delta=0.5, ref_a="S", sym="c1", MPI=False)
         with self.assertRaises(RuntimeError) as cm_old:
             fu.prgq(volft=volft, kb=self.kb, nx=4, delta=0.5, ref_a="S", sym="c1", MPI=False)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "ImageFormatException")
         self.assertEqual(msg[1], "extractplane requires a complex image")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[1], msg_old[1])
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_wrong_kb_ArgumentError_in_EMData_extract_plane_function(self):
         kb = create_kb(3)
@@ -476,21 +476,21 @@ class Test_prgq(unittest.TestCase):
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prgq(volft=self.volft, kb=kb, nx=4, delta=0.5, ref_a="S", sym="c1", MPI=False)
         output_msg = "Python argument types in\n    EMData.extract_plane(EMData, Transform, tuple)\ndid not match C++ signature:\n    extract_plane(EMAN::EMData {lvalue}, EMAN::Transform tf, EMAN::Util::KaiserBessel {lvalue} kb)"
-        self.assertEqual(cm_new.exception.message, output_msg)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), output_msg)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_null_nx_size_returns_RuntimeError_InvalidValueException(self):
         with self.assertRaises(RuntimeError) as cm_new:
             fu.prgq(volft=self.volft, kb=self.kb, nx=0, delta=15, ref_a="S", sym="c1", MPI=False)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.prgq(volft=self.volft, kb=self.kb, nx=0, delta=15, ref_a="S", sym="c1", MPI=False)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], "x size <= 0")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_symC1_ref_a_S_MPI_False(self):
         return_new =  fu.prgq(volft=self.volft, kb=self.kb, nx=4, delta=15, ref_a="S", sym="c1", MPI=False)
@@ -537,24 +537,24 @@ class Test_prg(unittest.TestCase):
             fu.prg()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prg()
-        self.assertEqual(cm_new.exception.message, "prg() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "prg() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NoneType_as_volume_returns_AttributeError_NoneType_obj_hasnot_attribute_get_xsize(self):
         with self.assertRaises(AttributeError) as cm_new:
             fu.prg(volume=None, params=self.params)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.prg(volume=None, params=self.params)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_params_is_emptyList_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.prg(volume=self.volft_3dimg, params=[])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.prg(volume=self.volft_3dimg, params=[])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2Dimg_as_volume_FAILED(self):
         self.assertTrue(True)
@@ -581,16 +581,16 @@ class Test_prep_vol(unittest.TestCase):
             fu.prep_vol()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prep_vol()
-        self.assertEqual(cm_new.exception.message, "prep_vol() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "prep_vol() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NoneType_as_volume_returns_AttributeError_NoneType_obj_hasnot_attribute_get_xsize(self):
         with self.assertRaises(AttributeError) as cm_new:
             fu.prep_vol(vol=None, npad=2, interpolation_method=-1)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.prep_vol(vol=None, npad=2, interpolation_method=-1)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_3Dimg_as_volume_interpolation_gridding_method(self):
         return_new =  fu.prep_vol(vol=self.volft_3dimg, npad=2, interpolation_method=-1)
@@ -646,8 +646,8 @@ class Test_gen_rings_ctf(unittest.TestCase):
             fu.gen_rings_ctf()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.gen_rings_ctf()
-        self.assertEqual(cm_new.exception.message, "gen_rings_ctf() takes exactly 4 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "gen_rings_ctf() takes exactly 4 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_prjref_empty_list_(self):
         ctf = e2cpp.EMAN2Ctf()
@@ -664,8 +664,8 @@ class Test_gen_rings_ctf(unittest.TestCase):
             fu.gen_rings_ctf(prjref=deepcopy(self.get_prjref()), nx=4, ctf=ctf, numr=[])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.gen_rings_ctf(prjref=deepcopy(self.get_prjref()), nx=4, ctf=ctf, numr=[])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_null_nx_size_SOMETIMES_FAILED(self):
         self.assertTrue(True)

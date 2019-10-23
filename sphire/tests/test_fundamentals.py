@@ -43,16 +43,16 @@ class Test_absi(unittest.TestCase):
             fu.absi()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.absi()
-        self.assertEqual(cm_new.exception.message, "absi() takes exactly 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "absi() takes exactly 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.absi(e=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.absi(e=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -63,8 +63,8 @@ class Test_absi(unittest.TestCase):
             fu.absi(e=None)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.absi(e=None)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'rotavg'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'rotavg'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2Dimg(self):
         return_old = oldfu.absi(e=IMAGE_2D)
@@ -94,16 +94,16 @@ class Test_acf(unittest.TestCase):
             fu.acf()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.acf()
-        self.assertEqual(cm_new.exception.message, "acf() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "acf() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.acf(e=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.acf(e=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -166,16 +166,16 @@ class Test_acfn(unittest.TestCase):
             fu.acfn()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.acfn()
-        self.assertEqual(cm_new.exception.message, "acfn() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "acfn() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.acfn(e=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.acfn(e=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -239,16 +239,16 @@ class Test_acfp(unittest.TestCase):
             fu.acfp()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.acfp()
-        self.assertEqual(cm_new.exception.message, "acfp() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "acfp() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.acfp(e=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.acfp(e=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -311,16 +311,16 @@ class Test_acfnp(unittest.TestCase):
             fu.acfnp()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.acfnp()
-        self.assertEqual(cm_new.exception.message, "acfnp() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "acfnp() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.acfnp(e=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.acfnp(e=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -383,16 +383,16 @@ class Test_acfpl(unittest.TestCase):
             fu.acfpl()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.acfpl()
-        self.assertEqual(cm_new.exception.message, "acfpl() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "acfpl() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.acfpl(e=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.acfpl(e=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -455,16 +455,16 @@ class Test_acfnpl(unittest.TestCase):
             fu.acfnpl()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.acfnpl()
-        self.assertEqual(cm_new.exception.message, "acfnpl() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "acfnpl() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.acfnpl(e=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.acfnpl(e=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -527,16 +527,16 @@ class Test_ccfn(unittest.TestCase):
             fu.ccfn()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.ccfn()
-        self.assertEqual(cm_new.exception.message, "ccfn() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ccfn() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image1(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.ccfn(EMData(),IMAGE_2D)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.ccfn(EMData(),IMAGE_2D)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -547,8 +547,8 @@ class Test_ccfn(unittest.TestCase):
             fu.ccfn(e=IMAGE_2D, f=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.ccfn(e=IMAGE_2D,f=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -559,8 +559,8 @@ class Test_ccfn(unittest.TestCase):
             fu.ccfn(e=IMAGE_2D, f=None, center=False)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.ccfn(e=IMAGE_2D, f=None, center=False)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_zsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_zsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NoneType_input_img1_crashes_because_signal11SIGSEV(self):
         self.assertTrue(True)
@@ -618,16 +618,16 @@ class Test_ccfp(unittest.TestCase):
             fu.ccfp()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.ccfp()
-        self.assertEqual(cm_new.exception.message, "ccfp() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ccfp() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image1(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.ccfp(EMData(),IMAGE_2D)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.ccfp(EMData(),IMAGE_2D)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -638,8 +638,8 @@ class Test_ccfp(unittest.TestCase):
             fu.ccfp(e=IMAGE_2D, f=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.ccfp(e=IMAGE_2D,f=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -706,16 +706,16 @@ class Test_ccfnp(unittest.TestCase):
             fu.ccfnp()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.ccfnp()
-        self.assertEqual(cm_new.exception.message, "ccfnp() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ccfnp() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image1(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.ccfnp(EMData(),IMAGE_2D)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.ccfnp(EMData(),IMAGE_2D)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -726,8 +726,8 @@ class Test_ccfnp(unittest.TestCase):
             fu.ccfnp(e=IMAGE_2D, f=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.ccfnp(e=IMAGE_2D,f=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -794,16 +794,16 @@ class Test_ccfpl(unittest.TestCase):
             fu.ccfpl()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.ccfpl()
-        self.assertEqual(cm_new.exception.message, "ccfpl() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ccfpl() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image1(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.ccfpl(EMData(),IMAGE_2D)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.ccfpl(EMData(),IMAGE_2D)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -814,8 +814,8 @@ class Test_ccfpl(unittest.TestCase):
             fu.ccfpl(e=IMAGE_2D, f=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.ccfpl(e=IMAGE_2D,f=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -882,16 +882,16 @@ class Test_ccfnpl(unittest.TestCase):
             fu.ccfnpl()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.ccfnpl()
-        self.assertEqual(cm_new.exception.message, "ccfnpl() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ccfnpl() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image1(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.ccfnpl(EMData(),IMAGE_2D)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.ccfnpl(EMData(),IMAGE_2D)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -902,8 +902,8 @@ class Test_ccfnpl(unittest.TestCase):
             fu.ccfnpl(e=IMAGE_2D, f=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.ccfnpl(e=IMAGE_2D,f=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -970,16 +970,16 @@ class Test_cnv(unittest.TestCase):
             fu.cnv()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.cnv()
-        self.assertEqual(cm_new.exception.message, "cnv() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "cnv() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image1(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.cnv(EMData(),IMAGE_2D)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.cnv(EMData(),IMAGE_2D)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -990,8 +990,8 @@ class Test_cnv(unittest.TestCase):
             fu.cnv(e=IMAGE_2D, f=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.cnv(e=IMAGE_2D,f=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1058,16 +1058,16 @@ class Test_cnvnp(unittest.TestCase):
             fu.cnvnp()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.cnvnp()
-        self.assertEqual(cm_new.exception.message, "cnvnp() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "cnvnp() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image1(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.cnvnp(EMData(),IMAGE_2D)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.cnvnp(EMData(),IMAGE_2D)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1078,8 +1078,8 @@ class Test_cnvnp(unittest.TestCase):
             fu.cnvnp(e=IMAGE_2D, f=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.cnvnp(e=IMAGE_2D,f=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1146,16 +1146,16 @@ class Test_cnvp(unittest.TestCase):
             fu.cnvp()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.cnvp()
-        self.assertEqual(cm_new.exception.message, "cnvp() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "cnvp() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image1(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.cnvp(EMData(),IMAGE_2D)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.cnvp(EMData(),IMAGE_2D)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1166,8 +1166,8 @@ class Test_cnvp(unittest.TestCase):
             fu.cnvp(e=IMAGE_2D, f=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.cnvp(e=IMAGE_2D,f=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1234,16 +1234,16 @@ class Test_cnvpl(unittest.TestCase):
             fu.cnvpl()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.cnvpl()
-        self.assertEqual(cm_new.exception.message, "cnvpl() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "cnvpl() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image1(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.cnvpl(EMData(),IMAGE_2D)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.cnvpl(EMData(),IMAGE_2D)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1254,8 +1254,8 @@ class Test_cnvpl(unittest.TestCase):
             fu.cnvpl(e=IMAGE_2D, f=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.cnvpl(e=IMAGE_2D,f=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1322,16 +1322,16 @@ class Test_cnvnpl(unittest.TestCase):
             fu.cnvnpl()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.cnvnpl()
-        self.assertEqual(cm_new.exception.message, "cnvnpl() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "cnvnpl() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image1(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.cnvnpl(EMData(),IMAGE_2D)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.cnvnpl(EMData(),IMAGE_2D)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1342,8 +1342,8 @@ class Test_cnvnpl(unittest.TestCase):
             fu.cnvnpl(e=IMAGE_2D, f=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.cnvnpl(e=IMAGE_2D,f=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1410,16 +1410,16 @@ class Test_scfn(unittest.TestCase):
             fu.scfn()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.scfn()
-        self.assertEqual(cm_new.exception.message, "scfn() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "scfn() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image1(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.scfn(e=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.scfn(e=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1482,16 +1482,16 @@ class Test_scfp(unittest.TestCase):
             fu.scfp()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.scfp()
-        self.assertEqual(cm_new.exception.message, "scfp() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "scfp() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image1(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.scfp(e=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.scfp(e=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1554,16 +1554,16 @@ class Test_scfnp(unittest.TestCase):
             fu.scfnp()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.scfnp()
-        self.assertEqual(cm_new.exception.message, "scfnp() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "scfnp() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image1(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.scfnp(e=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.scfnp(e=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1626,16 +1626,16 @@ class Test_scfpl(unittest.TestCase):
             fu.scfpl()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.scfpl()
-        self.assertEqual(cm_new.exception.message, "scfpl() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "scfpl() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image1(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.scfpl(e=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.scfpl(e=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1698,16 +1698,16 @@ class Test_scfnpl(unittest.TestCase):
             fu.scfnpl()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.scfnpl()
-        self.assertEqual(cm_new.exception.message, "scfnpl() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "scfnpl() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image1(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.scfnpl(e=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.scfnpl(e=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1769,16 +1769,16 @@ class Test_image_decimate(unittest.TestCase):
             fu.image_decimate()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.image_decimate()
-        self.assertEqual(cm_new.exception.message, "image_decimate() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "image_decimate() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.image_decimate(img=EMData(), decimation=2, fit_to_fft = True, frequency_low=0, frequency_high=0)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.image_decimate(img=EMData(), decimation=2, fit_to_fft = True, frequency_low=0, frequency_high=0)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1841,16 +1841,16 @@ class Test_fdownsample(unittest.TestCase):
             fu.fdownsample()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.fdownsample()
-        self.assertEqual(cm_new.exception.message, "fdownsample() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "fdownsample() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.fdownsample(img=EMData(), sub_rate=0.5, RetReal = True)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.fdownsample(img=EMData(), sub_rate=0.5, RetReal = True)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1861,8 +1861,8 @@ class Test_fdownsample(unittest.TestCase):
             fu.fdownsample(img=None, sub_rate=0.5, RetReal = True)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.fdownsample(img=None, sub_rate=0.5, RetReal = True)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2DImg_RetReal(self):
         return_new = fu.fdownsample(img=IMAGE_2D, sub_rate=0.5, RetReal = True)
@@ -1996,16 +1996,16 @@ class Test_prepf(unittest.TestCase):
             fu.prepf()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prepf()
-        self.assertEqual(cm_new.exception.message, "prepf() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "prepf() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.prepf(image=EMData(), npad = 2)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.prepf(image=EMData(), npad = 2)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -2016,8 +2016,8 @@ class Test_prepf(unittest.TestCase):
             fu.prepf(image=None, npad = 2)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.prepf(image=None, npad = 2)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2DImage(self):
         return_new = fu.prepf(image=IMAGE_2D, npad=2)
@@ -2046,16 +2046,16 @@ class Test_prep_refim_gridding(unittest.TestCase):
             fu.prep_refim_gridding()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prep_refim_gridding()
-        self.assertEqual(cm_new.exception.message, "prep_refim_gridding() takes at least 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "prep_refim_gridding() takes at least 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.prep_refim_gridding(refim=EMData(), npad = 2)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.prep_refim_gridding(refim=EMData(), npad = 2)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -2066,8 +2066,8 @@ class Test_prep_refim_gridding(unittest.TestCase):
             fu.prep_refim_gridding(refim=None, wr=self.wr, numr=self.numr, mode = "F")
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.prep_refim_gridding(refim=None, wr=self.wr, numr=self.numr, mode = "F")
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2DImage(self):
         crefim_new,kb_new = oldfu.prep_refim_gridding(refim=IMAGE_2D, wr=self.wr, numr=self.numr, mode = "F")
@@ -2101,16 +2101,16 @@ class Test_prepg(unittest.TestCase):
             fu.prepg()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.prepg()
-        self.assertEqual(cm_new.exception.message, "prepg() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "prepg() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.prepg(image=EMData(), kb = "not_in_use")
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.prepg(image=EMData(), kb = "not_in_use")
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -2121,8 +2121,8 @@ class Test_prepg(unittest.TestCase):
             fu.prepg(image=None, kb = "not_in_use")
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.prepg(image=None, kb = "not_in_use")
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2Dimage(self):
         return_old = oldfu.prepg(image=IMAGE_2D, kb = "not_in_use")
@@ -2148,16 +2148,16 @@ class Test_rot_avg_image(unittest.TestCase):
             fu.rot_avg_image()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.rot_avg_image()
-        self.assertEqual(cm_new.exception.message, "rot_avg_image() takes exactly 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "rot_avg_image() takes exactly 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.rot_avg_image(image_to_be_averaged=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.rot_avg_image(image_to_be_averaged=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -2168,8 +2168,8 @@ class Test_rot_avg_image(unittest.TestCase):
             fu.rot_avg_image(None)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.rot_avg_image(None)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'rotavg'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'rotavg'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2Dimage(self):
         return_new = fu.rot_avg_image(image_to_be_averaged=IMAGE_2D)
@@ -2199,8 +2199,8 @@ class Test_ro_textfile(unittest.TestCase):
             fu.ro_textfile()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ro_textfile()
-        self.assertEqual(cm_new.exception.message, "rops() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "rops() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_(self):
         oldv = oldfu.ro_textfile(e="", filename="", helpful_string="")
@@ -2214,16 +2214,16 @@ class Test_rops(unittest.TestCase):
             fu.rops()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.rops()
-        self.assertEqual(cm_new.exception.message, "rops() takes exactly 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "rops() takes exactly 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.rops(e=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.rops(e=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -2234,8 +2234,8 @@ class Test_rops(unittest.TestCase):
             fu.rops(None)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.rops(None)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'rotavg'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'rotavg'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2Dimage(self):
         return_new = fu.rops(e=IMAGE_2D)
@@ -2266,8 +2266,8 @@ class Test_rops_textfile(unittest.TestCase):
             fu.rops_textfile()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.rops_textfile()
-        self.assertEqual(cm_new.exception.message, "rops_textfile() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "rops_textfile() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_rops_textfile(self):
         oldv = oldfu.rops_textfile(img="", filename="", lng = False)
@@ -2283,16 +2283,16 @@ class Test_rotshift2dg(unittest.TestCase):
             fu.rotshift2dg()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.rotshift2dg()
-        self.assertEqual(cm_new.exception.message, "rotshift2dg() takes at least 5 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "rotshift2dg() takes at least 5 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.rotshift2dg(image=EMData(), ang=10, dx=2, dy=2, kb=self.kb, scale = 1.0)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.rotshift2dg(image=EMData(), ang=10, dx=2, dy=2, kb=self.kb, scale = 1.0)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -2328,16 +2328,16 @@ class Test_ft2polargrid(unittest.TestCase):
             fu.ft2polargrid()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ft2polargrid()
-        self.assertEqual(cm_new.exception.message, "ft2polargrid() takes exactly 4 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ft2polargrid() takes exactly 4 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.ft2polargrid(image=EMData(),  ring_length=10, nb=10, ne=10)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.ft2polargrid(image=EMData(),  ring_length=10, nb=10, ne=10)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -2348,8 +2348,8 @@ class Test_ft2polargrid(unittest.TestCase):
             fu.ft2polargrid(image=None,  ring_length=10, nb=10, ne=10)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.ft2polargrid(image=None,  ring_length=10, nb=10, ne=10)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2DImg(self):
         return_old = oldfu.ft2polargrid(image=IMAGE_2D,  ring_length=10, nb=10, ne=10)
@@ -2377,16 +2377,16 @@ class Test_rot_shift3D_grid(unittest.TestCase):
             fu.rot_shift3D_grid()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.rot_shift3D_grid()
-        self.assertEqual(cm_new.exception.message, "rot_shift3D_grid() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "rot_shift3D_grid() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.rot_shift3D_grid(img=EMData(), phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0, kb=None,mode="background", wrap=False)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.rot_shift3D_grid(img=EMData(), phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0,kb=None, mode="background", wrap=False)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -2397,8 +2397,8 @@ class Test_rot_shift3D_grid(unittest.TestCase):
             fu.rot_shift3D_grid(img=None, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0, kb=None,mode="background", wrap=False)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.rot_shift3D_grid(img=None, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.0, kb=None,mode="background", wrap=False)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_3DImg_Nokb_background(self):
         return_old = oldfu.rot_shift3D_grid(img=IMAGE_3D, phi=0.3, theta=0.2, psi=0.1, sx=3, sy=3, sz=3, scale=1.0,kb=None, mode="background", wrap=False)
@@ -2460,8 +2460,8 @@ class Test_sinc2inv(unittest.TestCase):
             fu.sinc2inv()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.sinc2inv()
-        self.assertEqual(cm_new.exception.message, "sinc2inv() takes exactly 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "sinc2inv() takes exactly 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_sinc2inv(self):
         return_old = oldfu.sinc2inv(nx=10)
@@ -2474,8 +2474,8 @@ class Test_sinc2inv(unittest.TestCase):
             fu.sinc2inv(nx=0)
         with self.assertRaises(ZeroDivisionError) as cm_old:
             oldfu.sinc2inv(nx=0)
-        self.assertEqual(cm_new.exception.message, "float division by zero")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "float division by zero")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 class Test_sincinv(unittest.TestCase):
@@ -2484,8 +2484,8 @@ class Test_sincinv(unittest.TestCase):
             fu.sincinv()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.sincinv()
-        self.assertEqual(cm_new.exception.message, "sincinv() takes exactly 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "sincinv() takes exactly 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_sincinv(self):
         return_old = oldfu.sincinv(nx=10)
@@ -2498,8 +2498,8 @@ class Test_sincinv(unittest.TestCase):
             fu.sincinv(nx=0)
         with self.assertRaises(ZeroDivisionError) as cm_old:
             oldfu.sincinv(nx=0)
-        self.assertEqual(cm_new.exception.message, "float division by zero")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "float division by zero")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -2510,16 +2510,16 @@ class Test_welch_pw2(unittest.TestCase):
             fu.welch_pw2()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.welch_pw2()
-        self.assertEqual(cm_new.exception.message, "welch_pw2() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "welch_pw2() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.welch_pw2(img=EMData(), win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.welch_pw2(img=EMData(), win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -2558,16 +2558,16 @@ class Test_welch_pw2_tilt_band(unittest.TestCase):
             fu.welch_pw2_tilt_band()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.welch_pw2_tilt_band()
-        self.assertEqual(cm_new.exception.message, "welch_pw2_tilt_band() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "welch_pw2_tilt_band() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.welch_pw2_tilt_band(img=EMData(), theta=2,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s=256)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.welch_pw2_tilt_band(img=EMData(),theta=2,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s=256)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -2639,8 +2639,8 @@ class Test_bracket(unittest.TestCase):
             fu.bracket()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.bracket()
-        self.assertEqual(cm_new.exception.message, "bracket() takes exactly 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "bracket() takes exactly 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_f3_greater_f1(self):
         return_new = fu.bracket(f=self.function1, x1=5, h=4)
@@ -2664,16 +2664,16 @@ class Test_ccf(unittest.TestCase):
             fu.ccf()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.ccf()
-        self.assertEqual(cm_new.exception.message, "ccf() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ccf() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image1(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.ccf(e=EMData(),f=IMAGE_2D)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.ccf(e=EMData(),f=IMAGE_2D)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -2684,8 +2684,8 @@ class Test_ccf(unittest.TestCase):
             fu.ccf(e=IMAGE_2D, f=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.ccf(e=IMAGE_2D,f=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -2752,16 +2752,16 @@ class Test_scf(unittest.TestCase):
             fu.scf()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.scf()
-        self.assertEqual(cm_new.exception.message, "scf() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "scf() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image1(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.scf(e=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.scf(e=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -2824,16 +2824,16 @@ class Test_cyclic_shift(unittest.TestCase):
             fu.cyclic_shift()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.cyclic_shift()
-        self.assertEqual(cm_new.exception.message, "cyclic_shift() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "cyclic_shift() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NoneType_input_img_returns_AttributeError(self):
         with self.assertRaises(AttributeError)  as cm_new:
             fu.cyclic_shift(img=None)
         with self.assertRaises(AttributeError)  as cm_old:
             oldfu.cyclic_shift(img=None)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'copy'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'copy'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_Img2D_with_no_shift(self):
         return_new = fu.cyclic_shift(img=IMAGE_2D, dx=0, dy=0, dz=0)
@@ -2864,8 +2864,8 @@ class Test_mirror(unittest.TestCase):
             fu.mirror()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.mirror()
-        self.assertEqual(cm_new.exception.message, "mirror() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "mirror() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_img(self):
         return_new = fu.mirror(img=EMData(), axis='x')
@@ -2877,8 +2877,8 @@ class Test_mirror(unittest.TestCase):
             fu.mirror(img=None)
         with self.assertRaises(AttributeError)  as cm_old:
             oldfu.mirror(img=None)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'copy'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'copy'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2Dimg(self):
         return_new = fu.mirror(img=IMAGE_2D, axis='x')
@@ -2903,8 +2903,8 @@ class Test_fft(unittest.TestCase):
             fu.fft()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.fft()
-        self.assertEqual(cm_new.exception.message, "fft() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "fft() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_empty_input_img(self):
@@ -2912,8 +2912,8 @@ class Test_fft(unittest.TestCase):
             fu.fft(e=EMData(), npad=1)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.fft(e=EMData(), npad=1)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -2924,8 +2924,8 @@ class Test_fft(unittest.TestCase):
             fu.fft(e=None, npad=1)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.fft(e=None, npad=1)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'is_complex'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'is_complex'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_3Dimg_withPad1(self):
         return_new = fu.fft(e=IMAGE_3D, npad=1)
@@ -2957,8 +2957,8 @@ class Test_fftip(unittest.TestCase):
             fu.fftip()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.fftip()
-        self.assertEqual(cm_new.exception.message, "fftip() takes exactly 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "fftip() takes exactly 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_empty_input_img(self):
@@ -2966,8 +2966,8 @@ class Test_fftip(unittest.TestCase):
             fu.fftip(e=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.fftip(e=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'y size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -2978,8 +2978,8 @@ class Test_fftip(unittest.TestCase):
             fu.fftip(e=None)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.fftip(e=None)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'is_complex'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'is_complex'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_wrong_3Dimg_returns_attributeError(self):
@@ -3003,16 +3003,16 @@ class Test_fpol(unittest.TestCase):
             fu.fpol()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.fpol()
-        self.assertEqual(cm_new.exception.message, "fpol() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "fpol() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_img(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.fpol(image=EMData(),nnx=100)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.fpol(image=EMData(),nnx=100)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3023,16 +3023,16 @@ class Test_fpol(unittest.TestCase):
             fu.fpol(None,100)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.fpol(None,100)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2Dimg_wrong_size_newimg_return_RuntimeError_ImageDimensionException(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.fpol(image=IMAGE_2D, nnx=int(IMAGE_2D.get_xsize()/2), nny=IMAGE_2D.get_ysize(), nnz=IMAGE_2D.get_zsize(), RetReal=True, normalize=True )
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.fpol(image=IMAGE_2D, nnx=int(IMAGE_2D.get_xsize()/2), nny=IMAGE_2D.get_ysize(), nnz=IMAGE_2D.get_zsize(), RetReal=True, normalize=True )
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
         self.assertEqual(msg[1], 'Cannot reduce the image size')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3087,16 +3087,16 @@ class Test_fdecimate(unittest.TestCase):
             fu.fdecimate()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.fdecimate()
-        self.assertEqual(cm_new.exception.message, "fdecimate() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "fdecimate() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_img(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.fdecimate(image=EMData(),nnx=100)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.fdecimate(image=EMData(),nnx=100)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
         self.assertEqual(msg[1], 'Cannot increase the image size')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3107,8 +3107,8 @@ class Test_fdecimate(unittest.TestCase):
             fu.fdecimate(None,100)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.fdecimate(None,100)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'FourTruncate'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'FourTruncate'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_2Dimg_different_size_newimg(self):
@@ -3165,8 +3165,8 @@ class Test_fshift(unittest.TestCase):
             fu.fshift()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.fshift()
-        self.assertEqual(cm_new.exception.message, "fshift() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "fshift() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_empty_input_img(self):
@@ -3174,8 +3174,8 @@ class Test_fshift(unittest.TestCase):
             fu.fshift(e=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.fshift(e=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3218,8 +3218,8 @@ class Test_subsample(unittest.TestCase):
             fu.subsample()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.subsample()
-        self.assertEqual(cm_new.exception.message, "subsample() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "subsample() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_empty_input_img(self):
@@ -3232,8 +3232,8 @@ class Test_subsample(unittest.TestCase):
             fu.subsample(image=None)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.subsample(image=None)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'copy'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'copy'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2Dimg_default_value(self):
         return_new = fu.subsample(image=IMAGE_2D, subsample_rate=1.0)
@@ -3250,8 +3250,8 @@ class Test_subsample(unittest.TestCase):
             fu.subsample(image=IMAGE_2D, subsample_rate=-1.0)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.subsample(image=IMAGE_2D, subsample_rate=-1.0)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3262,8 +3262,8 @@ class Test_subsample(unittest.TestCase):
             fu.subsample(image=IMAGE_2D, subsample_rate=0)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.subsample(image=IMAGE_2D, subsample_rate=0)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3274,8 +3274,8 @@ class Test_subsample(unittest.TestCase):
             fu.subsample(image=IMAGE_2D, subsample_rate=1000.0)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.subsample(image=IMAGE_2D, subsample_rate=1000.0)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "BadAllocException")
         self.assertEqual(msg[1], 'Cannot allocate 495616 GB - not enough memory.')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3302,8 +3302,8 @@ class Test_resample(unittest.TestCase):
             fu.resample()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.resample()
-        self.assertEqual(cm_new.exception.message, "resample() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "resample() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_empty_input_img(self):
@@ -3311,8 +3311,8 @@ class Test_resample(unittest.TestCase):
             fu.resample(img=EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.resample(img=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3324,8 +3324,8 @@ class Test_resample(unittest.TestCase):
             fu.resample(img=None)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.resample(img=None)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2Dimg_default_value(self):
         return_new = fu.resample(img=IMAGE_2D, sub_rate=1.0)
@@ -3352,8 +3352,8 @@ class Test_resample(unittest.TestCase):
             fu.resample(img=IMAGE_2D, sub_rate=-1.0)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.resample(img=IMAGE_2D, sub_rate=-1.0)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3364,8 +3364,8 @@ class Test_resample(unittest.TestCase):
             fu.resample(img=IMAGE_2D, sub_rate=0)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.resample(img=IMAGE_2D, sub_rate=0)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3376,8 +3376,8 @@ class Test_resample(unittest.TestCase):
             fu.resample(img=IMAGE_2D, sub_rate=1000.0)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.resample(img=IMAGE_2D, sub_rate=1000.0)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "BadAllocException")
         self.assertEqual(msg[1], 'Cannot allocate 495.616 GB - not enough memory.')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3411,8 +3411,8 @@ class Test_prepi(unittest.TestCase):
             fu.prepi()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.prepi()
-        self.assertEqual(cm_new.exception.message, "prepi() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "prepi() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_empty_input_img_returns_ZeroDivisionError(self):
@@ -3420,8 +3420,8 @@ class Test_prepi(unittest.TestCase):
             fu.prepi(image=EMData())
         with self.assertRaises(ZeroDivisionError) as cm_old:
             oldfu.prepi(image=EMData())
-        self.assertEqual(cm_new.exception.message, "float division by zero")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "float division by zero")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_Nonetype_input_img(self):
@@ -3429,8 +3429,8 @@ class Test_prepi(unittest.TestCase):
             fu.prepi(image=None)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.prepi(image=None)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2Dimg_retFour(self):
         return_new = fu.prepi(image=IMAGE_2D,RetReal = False)
@@ -3449,8 +3449,8 @@ class Test_prepi(unittest.TestCase):
             fu.prepi(image=IMAGE_3D,RetReal = False)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.prepi(image=IMAGE_3D,RetReal = False)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
         self.assertEqual(msg[1], 'Cannot reduce the image size')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3464,16 +3464,16 @@ class Test_prepi3D(unittest.TestCase):
             fu.prepi3D()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.prepi3D()
-        self.assertEqual(cm_new.exception.message, "prepi3D() takes exactly 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "prepi3D() takes exactly 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_img_returns_ZeroDivisionError(self):
         with self.assertRaises(ZeroDivisionError) as cm_new:
             fu.prepi3D(image=EMData())
         with self.assertRaises(ZeroDivisionError) as cm_old:
             oldfu.prepi3D(image=EMData())
-        self.assertEqual(cm_new.exception.message, "float division by zero")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "float division by zero")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_Nonetype_input_img(self):
@@ -3481,8 +3481,8 @@ class Test_prepi3D(unittest.TestCase):
             fu.prepi3D(image=None)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.prepi3D(image=None)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_3Dimg(self):
         return_new = fu.prepi3D(image=IMAGE_3D)
@@ -3504,8 +3504,8 @@ class Test_ramp(unittest.TestCase):
             fu.ramp()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.ramp()
-        self.assertEqual(cm_new.exception.message, "ramp() takes exactly 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ramp() takes exactly 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_img(self):
         return_new = fu.ramp(inputimage=EMData())
@@ -3517,8 +3517,8 @@ class Test_ramp(unittest.TestCase):
             fu.ramp(inputimage=None)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.ramp(inputimage=None)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'copy'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'copy'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2Dimg(self):
         return_new = fu.ramp(inputimage=IMAGE_2D)
@@ -3530,8 +3530,8 @@ class Test_ramp(unittest.TestCase):
             fu.ramp(inputimage=IMAGE_3D)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.ramp(inputimage=IMAGE_3D)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "std::exception")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 
@@ -3544,16 +3544,16 @@ class Test_rot_avg_table(unittest.TestCase):
             fu.rot_avg_table()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.rot_avg_table()
-        self.assertEqual(cm_new.exception.message, "rot_avg_table() takes exactly 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "rot_avg_table() takes exactly 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_img(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.rot_avg_table(EMData())
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.rot_avg_table(EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
         self.assertEqual(msg[1], 'No 1D images!')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3564,8 +3564,8 @@ class Test_rot_avg_table(unittest.TestCase):
             fu.rot_avg_table(e=None)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.rot_avg_table(e=None)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'rotavg'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'rotavg'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2Dimg(self):
         return_new = fu.rot_avg_table(e=IMAGE_2D)
@@ -3599,8 +3599,8 @@ class Test_rops_table(unittest.TestCase):
             fu.rops_table()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.rops_table()
-        self.assertEqual(cm_new.exception.message, "rops_table() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "rops_table() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -3612,24 +3612,24 @@ class Test_gridrot_shift2D(unittest.TestCase):
             fu.gridrot_shift2D()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.gridrot_shift2D()
-        self.assertEqual(cm_new.exception.message, "gridrot_shift2D() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "gridrot_shift2D() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_img(self):
         with self.assertRaises(ZeroDivisionError) as cm_new:
             fu.gridrot_shift2D(image=EMData())
         with self.assertRaises(ZeroDivisionError) as cm_old:
             oldfu.gridrot_shift2D(image=EMData())
-        self.assertEqual(cm_new.exception.message, "float division by zero")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "float division by zero")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_Nonetype_input_img(self):
         with self.assertRaises(AttributeError)as cm_new:
             fu.gridrot_shift2D(image=None)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.gridrot_shift2D(image=None)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2Dimg_default_value(self):
         return_new = fu.gridrot_shift2D(image=IMAGE_2D, ang=0.0, sx=0.0, sy=0.0, scale=1.0)
@@ -3686,8 +3686,8 @@ class Test_gridrot_shift2D(unittest.TestCase):
             fu.gridrot_shift2D(IMAGE_3D, ang=0.0, sx=0.0, sy=0.0, scale=1.0)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.gridrot_shift2D(IMAGE_3D, ang=0.0, sx=0.0, sy=0.0, scale=1.0)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
         self.assertEqual(msg[1], 'fouriergridrot2d needs a 2-D image.')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3704,16 +3704,16 @@ class Test_rot_shift2D(unittest.TestCase):
             fu.rot_shift2D()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.rot_shift2D()
-        self.assertEqual(cm_new.exception.message, "rot_shift2D() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "rot_shift2D() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_3Dimg_returns_RuntimeError(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.rot_shift2D(IMAGE_3D)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.rot_shift2D(IMAGE_3D)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
         self.assertEqual(msg[1], 'Volume not currently supported')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3724,8 +3724,8 @@ class Test_rot_shift2D(unittest.TestCase):
             fu.rot_shift2D(img=EMData())
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.rot_shift2D(img=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
         self.assertEqual(msg[1]+msg[2]+msg[3], 'Cant rotate 1D image caught\n')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3736,8 +3736,8 @@ class Test_rot_shift2D(unittest.TestCase):
             fu.rot_shift2D(img=None)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.rot_shift2D(img=None)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'rot_scale_trans2D_background'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'rot_scale_trans2D_background'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2Dimg_InvalidMethod_returns_None_print_errorMsg(self):
         return_new = fu.rot_shift2D(img=IMAGE_2D, angle=0.0, sx=0.0, sy=0.0, mirror=0, scale=1.0, interpolation_method=None, mode="Invalid")
@@ -3891,16 +3891,16 @@ class Test_rot_shift3D(unittest.TestCase):
             fu.rot_shift3D()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.rot_shift3D()
-        self.assertEqual(cm_new.exception.message, "rot_shift3D() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "rot_shift3D() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_img(self):
         with self.assertRaises(RuntimeError) as cm_new:
             fu.rot_shift3D(image=EMData())
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.rot_shift3D(image=EMData())
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3911,8 +3911,8 @@ class Test_rot_shift3D(unittest.TestCase):
             fu.rot_shift3D(image=None)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.rot_shift3D(image=None)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'rot_scale_trans_background'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'rot_scale_trans_background'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2Dimg(self):
         return_new = fu.rot_shift3D(image=IMAGE_2D, phi=0, theta=0, psi=0, sx=0, sy=0, sz=0, scale=1.0, mode="background")
@@ -3924,8 +3924,8 @@ class Test_rot_shift3D(unittest.TestCase):
             fu.rot_shift3D(image=IMAGE_3D, phi=0, theta=0, psi=0, sx=0, sy=0, sz=0, scale=0, mode="background")
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.rot_shift3D(image=IMAGE_3D, phi=0, theta=0, psi=0, sx=0, sy=0, sz=0, scale=0, mode="background")
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'The scale factor in a Transform object must be positive and non zero')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -3954,32 +3954,32 @@ class Test_rtshg(unittest.TestCase):
             fu.rtshg()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.rtshg()
-        self.assertEqual(cm_new.exception.message, "rtshg() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "rtshg() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_img(self):
         with self.assertRaises(ZeroDivisionError) as cm_new:
             fu.rtshg(image=EMData())
         with self.assertRaises(ZeroDivisionError) as cm_old:
             oldfu.rtshg(image=EMData())
-        self.assertEqual(cm_new.exception.message, "float division by zero")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "float division by zero")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_Nonetype_input_img(self):
         with self.assertRaises(AttributeError)as cm_new:
             fu.rtshg(image=None)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.rtshg(image=None)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_3Dimg(self):
         with self.assertRaises(RuntimeError)  as cm_new:
             fu.rtshg(image=IMAGE_3D, angle=0.0, sx=0.0, sy=0.0, scale=1.0)
         with self.assertRaises(RuntimeError)  as cm_old:
             oldfu.rtshg(image=IMAGE_3D, angle=0.0, sx=0.0, sy=0.0, scale=1.0)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
         self.assertEqual(msg[1], 'Cannot reduce the image size')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -4033,8 +4033,8 @@ class Test_rtshgkb(unittest.TestCase):
             fu.rtshgkb()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.rtshgkb()
-        self.assertEqual(cm_new.exception.message, "rtshgkb() takes at least 5 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "rtshgkb() takes at least 5 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_wrongKb(self):
@@ -4043,8 +4043,8 @@ class Test_rtshgkb(unittest.TestCase):
             fu.rtshgkb(image=IMAGE_2D, angle=0.0, sx=0.0, sy=0.0, kb=kb, scale=1.0)
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.rtshgkb(image=IMAGE_2D, angle=0.0, sx=0.0, sy=0.0, kb=kb, scale=1.0)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
 
         self.assertEqual(msg[0].split("\n")[0]+msg[0].split("\n")[1], "Python argument types in    EMData.rot_scale_conv_new(EMData, numpy.float64, float, float, tuple, float)")
         self.assertEqual(msg[0].split("\n")[0]+msg[0].split("\n")[1], msg_old[0].split("\n")[0]+msg_old[0].split("\n")[1])
@@ -4054,8 +4054,8 @@ class Test_rtshgkb(unittest.TestCase):
             fu.rtshgkb(image=EMData(), angle=0.0, sx=0.0, sy=0.0, kb=self.kb, scale=1.0)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.rtshgkb(image=EMData(), angle=0.0, sx=0.0, sy=0.0, kb=self.kb, scale=1.0)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
         self.assertEqual(msg[1]+msg[2]+msg[3], 'Cant rotate 1D image caught\n')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -4066,16 +4066,16 @@ class Test_rtshgkb(unittest.TestCase):
             fu.rtshgkb(image=None, angle=0.0, sx=0.0, sy=0.0, kb=self.kb, scale=1.0)
         with self.assertRaises(AttributeError)  as cm_old:
             oldfu.rtshgkb(image=None, angle=0.0, sx=0.0, sy=0.0, kb=self.kb, scale=1.0)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'rot_scale_conv_new'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'rot_scale_conv_new'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_3Dimg_default_value(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.rtshgkb(image=IMAGE_3D, angle=0.0, sx=0.0, sy=0.0, kb=self.kb, scale=1.0)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.rtshgkb(image=IMAGE_3D, angle=0.0, sx=0.0, sy=0.0, kb=self.kb, scale=1.0)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "ImageDimensionException")
         self.assertEqual(msg[1], 'Use rot_scale_conv_new_3D for volumes')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -4139,8 +4139,8 @@ class Test_smallprime(unittest.TestCase):
             fu.smallprime()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.smallprime()
-        self.assertEqual(cm_new.exception.message, "smallprime() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "smallprime() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_default_value(self):
         return_new = fu.smallprime(arbit_num=300, numprime=3)
@@ -4159,8 +4159,8 @@ class Test_smallprime(unittest.TestCase):
             fu.smallprime(arbit_num=0, numprime=3)
         with self.assertRaises(UnboundLocalError)  as cm_old:
             oldfu.smallprime(arbit_num=0, numprime=3)
-        self.assertEqual(cm_new.exception.message, "local variable 'i' referenced before assignment")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "local variable 'i' referenced before assignment")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -4170,24 +4170,24 @@ class Test_tilemic(unittest.TestCase):
             fu.tilemic()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.tilemic()
-        self.assertEqual(cm_new.exception.message, "tilemic() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "tilemic() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NoneType_img(self):
         with self.assertRaises(AttributeError)  as cm_new:
             fu.tilemic(img=None, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0)
         with self.assertRaises(AttributeError)  as cm_old:
             oldfu.tilemic(img=None, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_emptyImg_returns_UnboundLocalError(self):
         with self.assertRaises(UnboundLocalError)  as cm_new:
             fu.tilemic(img=EMData(), win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0)
         with self.assertRaises(UnboundLocalError)  as cm_old:
             oldfu.tilemic(img=EMData(), win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0)
-        self.assertEqual(cm_new.exception.message, "local variable 'i' referenced before assignment")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "local variable 'i' referenced before assignment")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2Dimg_default_value(self):
         return_new = fu.tilemic(img=IMAGE_2D, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0)
@@ -4205,8 +4205,8 @@ class Test_tilemic(unittest.TestCase):
             fu.tilemic(img=IMAGE_3D, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0)
         with self.assertRaises(RuntimeError)  as cm_old:
             oldfu.tilemic(img=IMAGE_3D, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'z size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -4217,8 +4217,8 @@ class Test_tilemic(unittest.TestCase):
             fu.tilemic(img=IMAGE_2D, win_size=0, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0)
         with self.assertRaises(ZeroDivisionError) as cm_old:
             oldfu.tilemic(img=IMAGE_2D, win_size=0, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0)
-        self.assertEqual(cm_new.exception.message, "float division by zero")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "float division by zero")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_2Dimg_no_overlap(self):
         return_new = fu.tilemic(img=IMAGE_2D, win_size=120, overlp_x=0, overlp_y=0, edge_x=0, edge_y=0)
@@ -4235,16 +4235,16 @@ class Test_window2d(unittest.TestCase):
             fu.window2d()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.window2d()
-        self.assertEqual(cm_new.exception.message, "window2d() takes at least 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "window2d() takes at least 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NoneType_img(self):
         with self.assertRaises(AttributeError)  as cm_new:
             fu.window2d(img=None, isize_x=100, isize_y=100, opt="c", ix=0, iy=0)
         with self.assertRaises(AttributeError)  as cm_old:
             oldfu.window2d(img=None, isize_x=100, isize_y=100, opt="c", ix=0, iy=0)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_emptyImg(self):
         return_new = fu.window2d(img=EMData(), isize_x=100, isize_y=100, opt="c", ix=0, iy=0)
@@ -4271,16 +4271,16 @@ class Test_window2d(unittest.TestCase):
             fu.window2d(img=IMAGE_2D, isize_x=100, isize_y=100, opt="invalid", ix=0, iy=0)
         with self.assertRaises(UnboundLocalError)  as cm_old:
             oldfu.window2d(img=IMAGE_2D, isize_x=100, isize_y=100, opt="invalid", ix=0, iy=0)
-        self.assertEqual(cm_new.exception.message, "local variable 'reg' referenced before assignment")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "local variable 'reg' referenced before assignment")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_3Dimg_returns_RuntimeError(self):
         with self.assertRaises(RuntimeError)  as cm_new:
             fu.window2d(img=IMAGE_3D, isize_x=100, isize_y=100, opt="c", ix=0, iy=0)
         with self.assertRaises(RuntimeError)  as cm_old:
             oldfu.window2d(img=IMAGE_3D, isize_x=100, isize_y=100, opt="c", ix=0, iy=0)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'z size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -4294,8 +4294,8 @@ class Test_goldsearch(unittest.TestCase):
             fu.goldsearch()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.goldsearch()
-        self.assertEqual(cm_new.exception.message, "goldsearch() takes at least 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "goldsearch() takes at least 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 # todo: modificato
@@ -4305,8 +4305,8 @@ class Test_rotate_params(unittest.TestCase):
             fu.rotate_params()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.rotate_params()
-        self.assertEqual(cm_new.exception.message, "rotate_params() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "rotate_params() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_few_trans_value_returns_IndexError(self):
@@ -4314,24 +4314,24 @@ class Test_rotate_params(unittest.TestCase):
             fu.rotate_params(params=[1,2,3],transf=[1],tolistconv=True)
         with self.assertRaises(IndexError)  as cm_old:
             oldfu.rotate_params(params=[1,2,3],transf=[1],tolistconv=True)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_few_params_value_returns_IndexError(self):
         with self.assertRaises(IndexError)  as cm_new:
             fu.rotate_params(params=[[1],[1]],transf=[1,2,3],tolistconv=True)
         with self.assertRaises(IndexError)  as cm_old:
             oldfu.rotate_params(params=[[1],[1]],transf=[1,2,3],tolistconv=True)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_few_params_value_returns_TypeError(self):
         with self.assertRaises(TypeError)  as cm_new:
             fu.rotate_params(params=[1],transf=[1,2,3],tolistconv=True)
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.rotate_params(params=[1],transf=[1,2,3],tolistconv=True)
-        self.assertEqual(cm_new.exception.message, "'int' object has no attribute '__getitem__'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'int' object has no attribute '__getitem__'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_rotate_params(self):
         a = [[1, 2, 3], [3, 4, 5]]
@@ -4349,8 +4349,8 @@ class Test_rotmatrix(unittest.TestCase):
             fu.rotmatrix()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.rotmatrix()
-        self.assertEqual(cm_new.exception.message, "rotmatrix() takes exactly 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "rotmatrix() takes exactly 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_rotmatrix(self):
         return_new = fu.rotmatrix(phi=1,theta=5, psi=6,tolistconv=True)
@@ -4366,8 +4366,8 @@ class Test_mulmat(unittest.TestCase):
             fu.mulmat()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.mulmat()
-        self.assertEqual(cm_new.exception.message, "mulmat() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "mulmat() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_few_m1_value_returns_IndexError(self):
         a = [[1,  2], [2, 5, 3], [3, 8, 6]]
@@ -4376,8 +4376,8 @@ class Test_mulmat(unittest.TestCase):
             fu.mulmat(m1=a,m2=b,tolistconv=True)
         with self.assertRaises(IndexError)  as cm_old:
             oldfu.mulmat(m1=a,m2=b,tolistconv=True)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_few_m2_value_returns_IndexError(self):
         a = [[1, 3, 2], [2, 5, 3], [3, 8, 6]]
@@ -4386,8 +4386,8 @@ class Test_mulmat(unittest.TestCase):
             fu.mulmat(m1=a,m2=b,tolistconv=True)
         with self.assertRaises(IndexError)  as cm_old:
             oldfu.mulmat(m1=a,m2=b,tolistconv=True)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_mulmat(self):
         a = [[1, 5, 2], [2, 5, 3], [3, 8, 6]]
@@ -4405,8 +4405,8 @@ class Test_recmat(unittest.TestCase):
             fu.recmat()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.recmat()
-        self.assertEqual(cm_new.exception.message, "recmat() takes exactly 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "recmat() takes exactly 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_fewElement(self):
         a = [[1, 5, 2], [2, 5, 3], [3, 1]]
@@ -4414,8 +4414,8 @@ class Test_recmat(unittest.TestCase):
             fu.recmat(mat=a, tolistconv=True)
         with self.assertRaises(IndexError)  as cm_old:
             oldfu.recmat(mat=a, tolistconv=True)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_recmat(self):
         a = [[1, 5, 2], [2, 5, 3], [3, 8, 1]]

@@ -41,16 +41,16 @@ class Test_filt_median(unittest.TestCase):
             fu.filt_median()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_median()
-        self.assertEqual(cm_new.exception.message, "filt_median() takes at least 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_median() takes at least 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.filt_median(f=EMData(), nx=10, ny=10, nz = 1, kernelshape = "BLOCK")
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.filt_median(f=EMData(), nx=10, ny=10, nz = 1, kernelshape = "BLOCK")
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -136,16 +136,16 @@ class Test_filt_tophath(unittest.TestCase):
             fu.filt_tophath()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_tophath()
-        self.assertEqual(cm_new.exception.message, "filt_tophatl() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_tophatl() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.filt_tophath(e=EMData(), freq=0.25, pad=False)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.filt_tophath(e=EMData(), freq=0.25, pad=False)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -205,8 +205,8 @@ class Test_filt_tophato(unittest.TestCase):
             fu.filt_tophato(e=EMData(), freql=0.25, value =0.2, freqh=0.35)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.filt_tophato(e=EMData(), freql=0.25, value =0.2, freqh=0.35)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalueidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -217,8 +217,8 @@ class Test_filt_tophato(unittest.TestCase):
             fu.filt_tophato()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_tophato()
-        self.assertEqual(cm_new.exception.message, "filt_tophato() takes at least 4 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_tophato() takes at least 4 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NoneType_Img(self):
         return_new = fu.filt_tophato(e=None, freql=0.25, value =0.2, freqh=0.35, pad=True)
@@ -279,16 +279,16 @@ class Test_filt_gaussb(unittest.TestCase):
             fu.filt_gaussb()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_gaussb()
-        self.assertEqual(cm_new.exception.message, "filt_gaussb() takes at least 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_gaussb() takes at least 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError) as cm_new:
             fu.filt_gaussb(e=EMData(), sigma=0.23, center=0.1)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.filt_gaussb(e=EMData(), sigma=0.23, center=0.1)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -348,16 +348,16 @@ class Test_filt_gausso(unittest.TestCase):
             fu.filt_gausso()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_gausso()
-        self.assertEqual(cm_new.exception.message, "filt_gausso() takes at least 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_gausso() takes at least 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError) as cm_new:
             fu.filt_gausso(e=EMData(), sigma=0.23, value=0.1)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.filt_gausso(e=EMData(), sigma=0.23, value=0.1)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -417,16 +417,16 @@ class Test_filt_btwh(unittest.TestCase):
             fu.filt_btwh()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_btwh()
-        self.assertEqual(cm_new.exception.message, "filt_btwh() takes at least 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_btwh() takes at least 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError) as cm_new:
             fu.filt_btwh(e=EMData(), freql=0.25, freqh=0.35)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.filt_btwh(e=EMData(), freql=0.25, freqh=0.35)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -486,16 +486,16 @@ class Test_filt_btwo(unittest.TestCase):
             fu.filt_btwo()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_btwo()
-        self.assertEqual(cm_new.exception.message, "filt_btwo() takes at least 4 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_btwo() takes at least 4 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError) as cm_new:
             fu.filt_btwo(e=EMData(), freql=0.25, freqh=0.35, value= 0.1)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.filt_btwo(e=EMData(), freql=0.25, freqh=0.35, value= 0.1)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -555,16 +555,16 @@ class Test_filt_tanh(unittest.TestCase):
             fu.filt_tanh()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_tanh()
-        self.assertEqual(cm_new.exception.message, "filt_tanh() takes at least 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_tanh() takes at least 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError) as cm_new:
             fu.filt_tanh(e=EMData(), freq=0.25, fall_off=0.35)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.filt_tanh(e=EMData(), freq=0.25, fall_off=0.35)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -624,16 +624,16 @@ class Test_filt_tanb(unittest.TestCase):
             fu.filt_tanb()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_tanb()
-        self.assertEqual(cm_new.exception.message, "filt_tanb() takes at least 5 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_tanb() takes at least 5 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError) as cm_new:
             fu.filt_tanb(e=EMData(), freql=0.25, freqh=0.35, low_fall_off = 0.1, high_fall_off=0.3 )
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.filt_tanb(e=EMData(), freql=0.25, freqh=0.35, low_fall_off = 0.1, high_fall_off=0.3 )
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -694,8 +694,8 @@ class Test_filt_tano(unittest.TestCase):
             fu.filt_tano()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_tano()
-        self.assertEqual(cm_new.exception.message, "filt_tano() takes at least 4 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_tano() takes at least 4 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_empty_input_image(self):
@@ -703,8 +703,8 @@ class Test_filt_tano(unittest.TestCase):
             fu.filt_tano(e=EMData(), freq=0.25, fall_off=0.35, value = 0.1)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.filt_tano(e=EMData(), freq=0.25, fall_off=0.35, value = 0.1)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -764,8 +764,8 @@ class Test_filt_kaisersinh(unittest.TestCase):
             fu.filt_kaisersinh(e=EMData(), alpha=0.1)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.filt_kaisersinh(e=EMData(), alpha=0.1)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalueidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -776,8 +776,8 @@ class Test_filt_kaisersinh(unittest.TestCase):
             fu.filt_kaisersinh()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_kaisersinh()
-        self.assertEqual(cm_new.exception.message, "filt_kaisersinh() takes at least 4 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_kaisersinh() takes at least 4 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NoneType_Img(self):
         return_new = fu.filt_kaisersinh(e=None, alpha=0.1)
@@ -837,8 +837,8 @@ class Test_filt_kaisersinhp(unittest.TestCase):
             fu.filt_kaisersinhp(e=EMData(), alpha=0.1)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.filt_kaisersinhp(e=EMData(), alpha=0.1)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalueidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -849,8 +849,8 @@ class Test_filt_kaisersinhp(unittest.TestCase):
             fu.filt_kaisersinhp()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_kaisersinhp()
-        self.assertEqual(cm_new.exception.message, "filt_kaisersinhp() takes at least 4 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_kaisersinhp() takes at least 4 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NoneType_Img(self):
         return_new = fu.filt_kaisersinhp(e=None, alpha=0.1)
@@ -910,8 +910,8 @@ class Test_filt_kaisersinhinv(unittest.TestCase):
             fu.filt_kaisersinhinv(e=EMData(), alpha=0.1)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.filt_kaisersinhinv(e=EMData(), alpha=0.1)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalueidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -922,8 +922,8 @@ class Test_filt_kaisersinhinv(unittest.TestCase):
             fu.filt_kaisersinhinv()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_kaisersinhinv()
-        self.assertEqual(cm_new.exception.message, "filt_kaisersinhinv() takes at least 4 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_kaisersinhinv() takes at least 4 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NoneType_Img(self):
         return_new = fu.filt_kaisersinhinv(e=None, alpha=0.1)
@@ -983,8 +983,8 @@ class Test_filt_kaisersinhinvp(unittest.TestCase):
             fu.filt_kaisersinhinvp(e=EMData(), alpha=0.1)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.filt_kaisersinhinvp(e=EMData(), alpha=0.1)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalueidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -995,8 +995,8 @@ class Test_filt_kaisersinhinvp(unittest.TestCase):
             fu.filt_kaisersinhinvp()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_kaisersinhinvp()
-        self.assertEqual(cm_new.exception.message, "filt_kaisersinhinvp() takes at least 4 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_kaisersinhinvp() takes at least 4 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NoneType_Img(self):
         return_new = fu.filt_kaisersinhinvp(e=None, alpha=0.1)
@@ -1055,16 +1055,16 @@ class Test_filt_unctf(unittest.TestCase):
             fu.filt_unctf()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_unctf()
-        self.assertEqual(cm_new.exception.message, "filt_unctf() takes at least 5 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_unctf() takes at least 5 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError) as cm_new:
             fu.filt_unctf(e=EMData(), dz=1, cs=2, voltage=300, pixel=1.5, wgh=0.1, b_factor=0.0, sign=-1.0, dza=0.0, azz=0.0)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.filt_unctf(e=EMData(), dz=1, cs=2, voltage=300, pixel=1.5, wgh=0.1, b_factor=0.0, sign=-1.0, dza=0.0, azz=0.0)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1105,16 +1105,16 @@ class Test_filt_params(unittest.TestCase):
             fu.filt_params()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_params()
-        self.assertEqual(cm_new.exception.message, "filt_params() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_params() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_emptyList_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.filt_params(dres=[], high = 0.95, low = 0.1)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.filt_params(dres=[], high = 0.95, low = 0.1)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_filt_params(self):
         return_old = oldfu.filt_params(dres=self.dres, high = 0.95, low = 0.1)
@@ -1134,16 +1134,16 @@ class Test_filt_from_fsc(unittest.TestCase):
             fu.filt_from_fsc()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_from_fsc()
-        self.assertEqual(cm_new.exception.message, "filt_from_fsc() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_from_fsc() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_emptyList_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.filt_from_fsc(dres=[], low=0.1)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.filt_from_fsc(dres=[], low=0.1)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_filt_params(self):
         return_old = oldfu.filt_from_fsc(dres=self.dres,  low=0.1)
@@ -1160,16 +1160,16 @@ class Test_filt_from_fsc2(unittest.TestCase):
             fu.filt_from_fsc2()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_from_fsc2()
-        self.assertEqual(cm_new.exception.message, "filt_from_fsc2() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_from_fsc2() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_emptyList_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.filt_from_fsc2(dres=[], low=0.1)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.filt_from_fsc2(dres=[], low=0.1)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_filt_params(self):
         return_old = oldfu.filt_from_fsc2(dres=self.dres,  low=0.1)
@@ -1186,16 +1186,16 @@ class Test_filt_from_fsc_bwt(unittest.TestCase):
             fu.filt_from_fsc_bwt()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_from_fsc_bwt()
-        self.assertEqual(cm_new.exception.message, "filt_from_fsc_bwt() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_from_fsc_bwt() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_emptyList_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.filt_from_fsc_bwt(dres=[], low=0.1)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.filt_from_fsc_bwt(dres=[], low=0.1)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_filt_params(self):
         return_old = oldfu.filt_from_fsc_bwt(dres=self.dres,  low=0.1)
@@ -1210,8 +1210,8 @@ class Test_tanhfilter(unittest.TestCase):
             fu.tanhfilter()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.tanhfilter()
-        self.assertEqual(cm_new.exception.message, "filt_from_fsc_bwt() takes exactly 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_from_fsc_bwt() takes exactly 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_tanhfilter(self):
         return_old = oldfu.tanhfilter(nx=100, fl=3, aa=4)
@@ -1227,8 +1227,8 @@ class Test_filt_matched(unittest.TestCase):
             fu.filt_matched(ima=EMData(), SNR=[0.1,0.2], Pref=[0.1,0.2])
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.filt_matched(ima=EMData(), SNR=[0.1,0.2], Pref=[0.1,0.2])
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalueidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1239,24 +1239,24 @@ class Test_filt_matched(unittest.TestCase):
             fu.filt_matched()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_matched()
-        self.assertEqual(cm_new.exception.message, "filt_matched() takes at exactly 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_matched() takes at exactly 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_emptyListSNR_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.filt_matched(ima=None,SNR=[], Pref=[0.1,0.2])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.filt_matched(ima=None,SNR=[], Pref=[0.1,0.2])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_emptyListPREF_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.filt_matched(ima=None,Pref=[], SNR=[0.1,0.2])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.filt_matched(ima=None, Pref=[], SNR=[0.1,0.2])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NoneType_Img(self):
         return_new = fu.filt_matched(ima=None,SNR=[0.1,0.02], Pref=[0.1,0.2])
@@ -1296,8 +1296,8 @@ class Test_filt_ctf(unittest.TestCase):
             fu.filt_ctf()
         with self.assertRaises(TypeError)  as cm_old:
             oldfu.filt_ctf()
-        self.assertEqual(cm_new.exception.message, "filt_ctf() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_ctf() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         ctf = EMAN2Ctf()
@@ -1306,8 +1306,8 @@ class Test_filt_ctf(unittest.TestCase):
             fu.filt_ctf(EMData(),ctf, dopad=True, sign=1, binary=0)
         with self.assertRaises(AssertionError) as cm_old:
             oldfu.filt_ctf(EMData(),ctf, dopad=True, sign=1, binary=0)
-        self.assertEqual(cm_new.exception.message, "")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_None_value_raiseError(self):
         # Since there is no try-except paradigma but only an assert I suppose that the most common error is given a None vuole instead an image
@@ -1315,8 +1315,8 @@ class Test_filt_ctf(unittest.TestCase):
             fu.filt_ctf(None, None)
         with self.assertRaises(AttributeError)  as cm_old:
             oldfu.filt_ctf(None,None)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_ysize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_ysize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_Img2D_with_pad(self):
         ctf = EMAN2Ctf()
@@ -1391,16 +1391,16 @@ class Test_filt_tophatl(unittest.TestCase):
             fu.filt_tophatl()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_tophatl()
-        self.assertEqual(cm_new.exception.message, "filt_tophatl() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_tophatl() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError)as cm_new:
             fu.filt_tophatl(EMData(), freq=0.25, pad=False)
         with self.assertRaises(RuntimeError)as cm_old:
             oldfu.filt_tophatl(EMData(), freq=0.25, pad=False)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1459,8 +1459,8 @@ class Test_filt_tophatb(unittest.TestCase):
             fu.filt_tophatb(EMData(), freql=0.25, freqh=0.35)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.filt_tophatb(EMData(), freql=0.25, freqh=0.35)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1471,8 +1471,8 @@ class Test_filt_tophatb(unittest.TestCase):
             fu.filt_tophatb()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_tophatb()
-        self.assertEqual(cm_new.exception.message, "filt_tophatb() takes at least 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_tophatb() takes at least 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NoneType_Img(self):
         return_new = fu.filt_tophatb(None, freql=0.25, freqh=0.35, pad=True)
@@ -1529,16 +1529,16 @@ class Test_filt_gaussl(unittest.TestCase):
             fu.filt_gaussl()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_gaussl()
-        self.assertEqual(cm_new.exception.message, "filt_gaussl() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_gaussl() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError) as cm_new:
             fu.filt_gaussl(EMData(), sigma=0.23)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.filt_gaussl(EMData(), sigma=0.23)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1598,16 +1598,16 @@ class Test_filt_gaussinv(unittest.TestCase):
             fu.filt_gaussinv()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_gaussinv()
-        self.assertEqual(cm_new.exception.message, "filt_gaussinv() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_gaussinv() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError) as cm_new:
             fu.filt_gaussinv(EMData(), sigma=0.23)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.filt_gaussinv(EMData(), sigma=0.23)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1667,16 +1667,16 @@ class Test_filt_gaussh(unittest.TestCase):
             fu.filt_gaussh()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_gaussh()
-        self.assertEqual(cm_new.exception.message, "filt_gaussh() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_gaussh() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError) as cm_new:
             fu.filt_gaussh(EMData(), sigma=0.23)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.filt_gaussh(EMData(), sigma=0.23)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1737,16 +1737,16 @@ class Test_filt_btwl(unittest.TestCase):
             fu.filt_btwl()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_btwl()
-        self.assertEqual(cm_new.exception.message, "filt_btwl() takes at least 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_btwl() takes at least 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError) as cm_new:
             fu.filt_btwl(EMData(), freql=0.25, freqh=0.35)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.filt_btwl(EMData(), freql=0.25, freqh=0.35)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1807,16 +1807,16 @@ class Test_filt_tanl(unittest.TestCase):
             fu.filt_tanl()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_tanl()
-        self.assertEqual(cm_new.exception.message, "filt_tanl() takes at least 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_tanl() takes at least 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError) as cm_new:
             fu.filt_tanl(EMData(), freq=0.25, fall_off=0.35)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.filt_tanl(EMData(), freq=0.25, fall_off=0.35)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1878,16 +1878,16 @@ class Test_filt_table(unittest.TestCase):
             fu.filt_table()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_table()
-        self.assertEqual(cm_new.exception.message, "filt_table() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_table() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image(self):
         with self.assertRaises(RuntimeError) as cm_new:
             fu.filt_table(EMData(), self.table)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.filt_table(EMData(), self.table)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], 'x size <= 0')
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
@@ -1928,16 +1928,16 @@ class Test_fit_tanh(unittest.TestCase):
             fu.fit_tanh()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.fit_tanh()
-        self.assertEqual(cm_new.exception.message, "fit_tanh() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "fit_tanh() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_emptyList_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.fit_tanh([])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.fit_tanh([])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_fit_tanh(self):
         return_new = fu.fit_tanh(self.dres, low=0.1)
@@ -1953,8 +1953,8 @@ class Test_fit_tanh(unittest.TestCase):
             fu.fit_tanh(self.dres, low=10)
         with self.assertRaises(TypeError) as cm_old:
             oldfu.fit_tanh(self.dres, low=10 )
-        self.assertEqual(cm_new.exception.message, "'tuple' object does not support item assignment")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'tuple' object does not support item assignment")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -1965,16 +1965,16 @@ class Test_fit_tanh1(unittest.TestCase):
             fu.fit_tanh1()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.fit_tanh1()
-        self.assertEqual(cm_new.exception.message, "fit_tanh1() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "fit_tanh1() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_emptyList_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.fit_tanh1([])
         with self.assertRaises(IndexError) as cm_old:
             oldfu.fit_tanh1([])
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_fit_tanh1(self):
         return_new = fu.fit_tanh1(self.dres, low=0.1)
@@ -1990,8 +1990,8 @@ class Test_fit_tanh1(unittest.TestCase):
             fu.fit_tanh1(self.dres, low=10)
         with self.assertRaises(TypeError) as cm_old:
             oldfu.fit_tanh(self.dres, low=10 )
-        self.assertEqual(cm_new.exception.message, "'tuple' object does not support item assignment")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'tuple' object does not support item assignment")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -2011,8 +2011,8 @@ class Test_filt_vols(unittest.TestCase):
             fu.filt_vols()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filt_vols()
-        self.assertEqual(cm_new.exception.message, "filt_vols() takes exactly 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filt_vols() takes exactly 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_with_circularMASK(self):
         return_new = fu.filt_vols(self.vols, self.fscs, MASK)
@@ -2043,8 +2043,8 @@ class Test_filterlocal(unittest.TestCase):
             fu.filterlocal()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.filterlocal()
-        self.assertEqual(cm_new.exception.message, "filterlocal() takes exactly 7 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "filterlocal() takes exactly 7 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     @unittest.skip("not able to tst it")
     def test_filterlocal_true_should_return_equal_object(self):
