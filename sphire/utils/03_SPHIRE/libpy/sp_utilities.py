@@ -3493,7 +3493,7 @@ def rotation_between_anglesets(agls1, agls2):
 
 
 
-getang3 = angle_between_projections_directions
+
 
 
 
@@ -5350,7 +5350,7 @@ def angle_between_projections_directions(proj1, proj2):
 	temp = numpy.sin(theta1) * numpy.sin(theta2) * cp1cp2_sp1sp2 + numpy.cos(theta1) * numpy.cos(theta2)
 	return lacos(temp)
 
-
+getang3 = angle_between_projections_directions
 
 
 
