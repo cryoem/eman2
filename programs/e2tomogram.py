@@ -82,12 +82,11 @@ def main():
 	parser.add_argument("--xdrift", action="store_true",help="apply extra correction for drifting along x axis", default=False,guitype='boolbox',row=13, col=0, rowspan=1, colspan=1,mode="easy")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
-	
 	parser.add_argument("--reconmode", type=str, help="Intepolation mode for reconstruction. default is gauss_2. check e2help.py for details. Not recommended to change.",default="gauss_2")
-	
 	parser.add_argument("--maxshift", type=float,help="Maximum shift between tilt(/image size). default is 0.35", default=.35,guitype='floatbox',row=11, col=0, rowspan=1, colspan=1,mode="easy")
-	
 	parser.add_argument("--badone", action="store_true",help="Remove one bad tilt during coarse alignment. seem to work better with smaller maxshift...", default=False)#, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
+	
+	parser.add_argument("--autoclipxy", action="store_true",help="Optimize the x-y shape of the tomogram to fit in the tilt images. only works in bytile reconstruction. useful for non square cameras.", default=False)
 
 
 	(options, args) = parser.parse_args()
@@ -166,32 +165,33 @@ def main():
 	## the translation numbers used in this program are based on 2k tomograms. so binfac is the factor from the input to 2k images
 	#binfac=max(1, int(np.round(imgs[0]["nx"]/2048.)))
 	#options.binfac=binfac
-	if imgs[0]["nx"]<=512:
+	imgsz=min(imgs[0]["nx"],imgs[0]["ny"])
+	if imgsz<=512:
 		print("Tilt series image too small. Only support 2K or larger input images...")
 		return
 	
-	elif imgs[0]["nx"]<=1024:
+	elif imgsz<=1024:
 		imgs_1k=imgs_2k=imgs_4k=imgs
 		itnum[3]=itnum[2]=0
 		options.outsize="1k"
 		
-	elif imgs[0]["nx"]<=2048:
+	elif imgsz<=2048:
 		#### 2k or smaller input. skip 4k refinement
 		imgs_2k=imgs_4k=imgs
 		itnum[3]=0
-	elif imgs[0]["nx"]<=4096:
+	elif imgsz<=4096:
 		#### 4k input
 		imgs_4k=imgs
 		imgs_2k=[img.process("math.meanshrink", {"n":2}).process("normalize.edgemean") for img in imgs_4k]
 			
 	else:
 		#### even larger images.. hopefully 8k at most
-		bf=imgs[0]["nx"]//4096+1
+		bf=imgsz//4096+1
 		imgs_4k=[img.process("math.meanshrink", {"n":bf}).process("normalize.edgemean") for img in imgs]
 		imgs_2k=[img.process("math.meanshrink", {"n":2}).process("normalize.edgemean") for img in imgs_4k]
 		imgs=imgs_4k
 	
-	if imgs[0]["nx"]>1024:
+	if imgsz>1024:
 		imgs_1k=[img.process("math.meanshrink", {"n":2}).process("normalize.edgemean") for img in imgs_2k]
 	
 	#### 500x500 images. this is used for the initial coarse alignment so we need to filter it a bit. 
@@ -952,9 +952,10 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	
 	num=len(imgs)
 	scale=imgs[0]["apix_x"]/options.apix_init
-	if imgs[0]["nx"]<=1024*1.1:
+	imgsz=min(imgs[0]["nx"],imgs[0]["ny"])
+	if imgsz<=1024*1.1:
 		b=1
-	elif imgs[0]["nx"]<=2048*1.1:
+	elif imgsz<=2048*1.1:
 		b=2
 	else:
 		b=4
@@ -972,8 +973,27 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 		nrange=np.argsort(errtlt)[:int(num*options.tltkeep)]
 
 	print("Using {} out of {} tilts..".format(len(nrange), num))
-
-	outxy=1024*b
+	nx, ny=imgs[0]["nx"], imgs[0]["ny"]
+	
+	if options.autoclipxy:
+		bds=[]
+		for t in tpm:
+			rot=Transform({"type":"2d","tx":t[0], "ty":t[1],"alpha":t[2]})
+			p=np.array([rot.transform([nx/2, ny/2, 0]),rot.transform([nx/2, -ny/2, 0])])
+			p=np.max(abs(p), axis=0)
+			
+			bds.append(p)
+			
+		bds=np.array(bds)
+		bds=np.median(abs(bds), axis=0)*2 ## so we clip a rectangle area that covers half of the tilt images
+		
+		outx=good_boxsize(bds[0])
+		outy=good_boxsize(bds[1])
+		print("Final tomogram shape: {} x {}".format(outx, outy))
+	else:
+		outx=outy=1024*b
+	
+	#outxy=1024*b
 	sz=max(int(clipz*0.8), 256*b) #### this is the output 3D size 
 	step=sz//2 #### distance between each tile
 	if options.extrapad:
@@ -987,18 +1007,19 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 		outz=sz#good_boxsize(sz*1.2)
 
 	#### we make 2 tomograms with half a box shift and average them together to compensate for boundary artifacts.
-	mem=(outxy*outxy*outz*4+pad*pad*pad*options.threads*4)
-	print("This will take {}x{}x{}x4 + {}x{}x{}x{}x4 = {:.1f} GB of memory...".format(outxy, outxy, outz, pad, pad, pad,options.threads, mem/1024**3))
+	mem=(outx*outy*outz*4+pad*pad*pad*options.threads*4)
+	print("This will take {}x{}x{}x4 + {}x{}x{}x{}x4 = {:.1f} GB of memory...".format(outx, outy, outz, pad, pad, pad,options.threads, mem/1024**3))
 	
 	
-	full3d=EMData(outxy, outxy, outz)
+	full3d=EMData(outx, outy, outz)
 	
 	jsd=queue.Queue(0)
 	jobs=[]
-	nstep=int(outxy/step/2)
-	for stepx in range(-nstep,nstep+1):
+	nstepx=int(outx/step/2)
+	nstepy=int(outy/step/2)
+	for stepx in range(-nstepx,nstepx+1):
 		#### shift y by half a tile
-		for stepy in range(-nstep+stepx%2,nstep+1,2):
+		for stepy in range(-nstepy+stepx%2,nstepy+1,2):
 			tiles=[]
 			for i in range(num):
 				if i in nrange:
@@ -1046,7 +1067,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 				#outz//2-threed["nz"]//2))
 				
 			full3d.insert_scaled_sum(
-				threed,(int(stepx*step+outxy//2),int(stepy*step+outxy//2), outz//2))
+				threed,(int(stepx*step+outx//2),int(stepy*step+outy//2), outz//2))
 				
 			
 			#wt.insert_scaled_sum(msk,(int(stepx*step+outxy//2),int(stepy*step+outxy//2), outz//2))
@@ -1087,7 +1108,7 @@ def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[], clip
 
 	nx=imgs[0]["nx"]
 	ny=imgs[0]["ny"]
-	outxy=good_size(max(nx, ny))
+	outxy=good_size(min(nx, ny))
 
 	pad=good_size(outxy*padr)
 	#############
