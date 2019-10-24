@@ -671,14 +671,14 @@ class EMImage2DWidget(EMGLWidget):
 
 	def get_origin(self) : return self.origin
 
-	def scroll_to(self,x=None,y=None):
+	def scroll_to(self,x=None,y=None,quiet=False):
 		"""center the point on the screen"""
 		if x==None:
 			if y==None: return
-			self.set_origin(self.origin[0],y*self.scale-old_div(self.height(),2))
+			self.set_origin(self.origin[0],y*self.scale-old_div(self.height(),2),quiet)
 		elif y==None:
-			self.set_origin(x*self.scale-old_div(self.width(),2),self.origin[1])
-		else: self.set_origin(x*self.scale-old_div(self.width(),2),y*self.scale-old_div(self.height(),2))
+			self.set_origin(x*self.scale-old_div(self.width(),2),self.origin[1],quiet)
+		else: self.set_origin(x*self.scale-old_div(self.width(),2),y*self.scale-old_div(self.height(),2),quiet)
 
 	def set_shapes(self,shapes):
 		self.shapes = shapes
