@@ -255,7 +255,7 @@ def run_summovie( opt ):
     nr_files = len(opt['mic_list'])
 
     # Timeing stuff
-    time_start = time.time.time()
+    time_start = time.time()
     time_list = []
 
     # Loop over all files
@@ -272,7 +272,7 @@ def run_summovie( opt ):
                 )
 
         # Time begin
-        t1 = time.time.time()
+        t1 = time.time()
 
         # Get the output names
         file_name = inputfile[len(opt['input_dir']):-len(opt['mic_suffix'])]
@@ -382,7 +382,7 @@ def run_summovie( opt ):
             else:
                 sp_global_def.ERROR('e2proc2d.py error. File was not created:\n{0}'.format(inputfile), action=0)
 
-        time_list.append(time.time.time() - t1)
+        time_list.append(time.time() - t1)
         
         # Check if SumMovie finished cleanly
         with open(log_name, 'r') as r:
@@ -408,7 +408,7 @@ def run_summovie( opt ):
                     estimated_time_h*3600 -
                     estimated_time_m*60
                     )
-            current_time = time.time.time() - time_start
+            current_time = time.time() - time_start
             current_time_h = current_time // 3600
             current_time_m = (current_time - current_time_h*3600) // 60
             current_time_s = (

@@ -24,9 +24,7 @@ from __future__ import print_function
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import PyQt5
-import PyQt5.QtCore
-import PyQt5.QtWidgets
+
 import glob
 import matplotlib
 import matplotlib.pyplot
@@ -35,6 +33,13 @@ import sp_global_def
 import sys
 from builtins import range
 from builtins import object
+
+import PyQt5
+import PyQt5.QtCore
+import PyQt5.QtWidgets
+
+
+from PyQt5.QtWidgets import QFileDialog as PyQt5QFileDialog
 
 try:
 
@@ -1661,9 +1666,9 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
         # Find Directory
         try:
-            strInputFile = str(PyQt4QFileDialog.getOpenFileName(
+            strInputFile = str(PyQt5QFileDialog.getOpenFileName(
                 directory=os.getcwd(),
-                options=PyQt4QFileDialog.DontUseNativeDialog,
+                options=PyQt5QFileDialog.DontUseNativeDialog,
                 filter='cisTEM 1.0.0 (*.log);;Unblur (*.txt);;MotionCor2 (*.log);;All (*)'))
         except:
             strInputFile, not_in_use = PyQt5QFileDialog.getOpenFileName(
@@ -1781,7 +1786,7 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             path = '{:s}/{:s}'.format(strDirectory, strSuffix)
             self.outputDir = os.path.relpath(path[:-len(path.split('/')[-1])])
 
-            self.listFile = glob.glob.glob(os.path.relpath(path))
+            self.listFile = glob.glob(os.path.relpath(path))
 
             # Try to find micrograph numbers
             if len(strSuffix.split('/')) == 1:
@@ -3568,9 +3573,9 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         """Load shift files from list"""
 
         try:
-            self.fileName = str(PyQt4QFileDialog.getOpenFileName(
+            self.fileName = str(PyQt5QFileDialog.getOpenFileName(
                 directory=os.getcwd(),
-                options=PyQt4QFileDialog.DontUseNativeDialog,
+                options=PyQt5QFileDialog.DontUseNativeDialog,
                 filter='Text files (*.txt)'
             ))
         except:
@@ -3625,9 +3630,9 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
         # Get output path and file name
         try:
-            outputPath = PyQt4QFileDialog.getExistingDirectory(
+            outputPath = PyQt5QFileDialog.getExistingDirectory(
                 directory=os.getcwd(),
-                options=PyQt4QFileDialog.DontUseNativeDialog
+                options=PyQt5QFileDialog.DontUseNativeDialog
                 )
         except:
             outputPath = PyQt5QFileDialog.getExistingDirectory(
@@ -3738,9 +3743,9 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
         # Output file name
         try:
-            strSaveName = str(PyQt4QFileDialog.getSaveFileName(
+            strSaveName = str(PyQt5QFileDialog.getSaveFileName(
                 directory=os.getcwd(),
-                options=PyQt4QFileDialog.DontUseNativeDialog
+                options=PyQt5QFileDialog.DontUseNativeDialog
                 ))
         except:
             strSaveName, not_in_use = PyQt5QFileDialog.getSaveFileName(
@@ -3836,9 +3841,9 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
         # Input file
         try:
-            strLoadName = str(PyQt4QFileDialog.getOpenFileName(
+            strLoadName = str(PyQt5QFileDialog.getOpenFileName(
                 directory=os.getcwd(),
-                options=PyQt4QFileDialog.DontUseNativeDialog
+                options=PyQt5QFileDialog.DontUseNativeDialog
             ))
         except:
             strLoadName, not_in_used = PyQt5QFileDialog.getOpenFileName(

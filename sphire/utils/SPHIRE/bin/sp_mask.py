@@ -36,7 +36,9 @@ from __future__ import division
 import argparse
 import os
 import sp_global_def
-
+import sp_utilities
+import sp_morphology
+import sp_filter
 
 
 
@@ -411,7 +413,7 @@ def main():
 	# Filter volume if specified
 	if command_args.low_pass_filter_resolution is not None:
 		sp_global_def.sxprint('Filter volume to {0}A.'.format(command_args.low_pass_filter_resolution))
-		input_vol = sparx_filter.filt_tanl(
+		input_vol = sp_filter.filt_tanl(
 			input_vol,
 			command_args.pixel_size / command_args.low_pass_filter_resolution,
 			command_args.low_pass_filter_falloff

@@ -760,7 +760,7 @@ def resample_micrographs(args):
 		# Generate the list of micrograph paths in the input directory
 		sp_global_def.sxprint(" ")
 		sp_global_def.sxprint("Checking the input directory...")
-		input_mic_path_list = glob.glob.glob(mic_pattern)
+		input_mic_path_list = glob.glob(mic_pattern)
 		# Check error condition of input micrograph file path list
 		sp_global_def.sxprint("Found %d microgarphs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern)))
 		if error_status is None and len(input_mic_path_list) == 0:
@@ -1201,7 +1201,7 @@ def organize_micrographs(args):
 	# Generate the list of micrograph paths in the source directory
 	sp_global_def.sxprint(" ")
 	sp_global_def.sxprint("Checking the source directory...")
-	src_mic_path_list = glob.glob.glob(src_mic_pattern)
+	src_mic_path_list = glob.glob(src_mic_pattern)
 	# Check error condition of source micrograph file path list
 	sp_global_def.sxprint("Found %d microgarphs in %s."%(len(src_mic_path_list), src_dir))
 	if len(src_mic_path_list) == 0:
@@ -1230,7 +1230,7 @@ def organize_micrographs(args):
 		# Generate the list of micrograph paths in the output directory
 		sp_global_def.sxprint(" ")
 		sp_global_def.sxprint("Checking the destination directory...")
-		dst_mic_path_list = glob.glob.glob(dst_mic_pattern)
+		dst_mic_path_list = glob.glob(dst_mic_pattern)
 		# Check error condition of destination micrograph file path list
 		sp_global_def.sxprint("Found %d microgarphs in %s."%(len(dst_mic_path_list), dst_dir))
 		

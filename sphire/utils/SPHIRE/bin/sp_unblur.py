@@ -39,6 +39,8 @@ import glob
 import mpi
 import os
 import sp_global_def
+import sp_utilities
+import sp_applications
 import subprocess
 import time
 
@@ -135,7 +137,7 @@ def sanity_checks(args, myid):
 	if args['selection_file'] is not None and not os.path.isfile(args.selection_file):
 		sp_global_def.ERROR('If the selection_file option is provided, the specified file needs to exist!', myid=myid)
 
-	if not glob.glob.glob(args['input_micrograph_pattern']):
+	if not glob.glob(args['input_micrograph_pattern']):
 		sp_global_def.ERROR('No files found with the specified pattern!: {0}'.format(args['input_micrograph_pattern']), myid=myid)
 
 	if os.path.exists(args['output_directory']) and not args['overwrite']:
@@ -153,7 +155,7 @@ def load_file_names_by_pattern(pattern, selection_file):
 	Returns:
 	None
 	"""
-	file_names_raw = sorted(glob.glob.glob(pattern))
+	file_names_raw = sorted(glob.glob(pattern))
 	sp_global_def.sxprint('Found {0} movie files based on the provided pattern.'.format(len(file_names_raw)))
 
 	if selection_file is not None:
@@ -308,10 +310,10 @@ def main(args):
 	except OSError:
 		pass
 	sp_global_def.write_command(args['output_directory'])
-	start_unblur = time.time.time()
+	start_unblur = time.time()
 	for idx, file_path in enumerate(file_names[idx_start:idx_end]):
 		if my_mpi_proc_id == mpi_print_id:
-			total_time = time.time.time() - start_unblur
+			total_time = time.time() - start_unblur
 			if idx == 0:
 				average_time = 0
 			else:
@@ -390,18 +392,18 @@ def main(args):
 				args['unblur_path']
 				)
 			with open(output_name_log, 'w') as log, open(output_name_err, 'w') as err:
-				start = time.time.time()
+				start = time.time()
 				child = subprocess.Popen(execute_command, shell=True, stdout=log, stderr=err)
 				child.wait()
 				if child.returncode != 0:
 					sp_global_def.sxprint('Process failed for image {0}.\nPlease make sure that the unblur path is correct\nand check the respective logfile.'.format(file_path))
-				log.write('Time => {0:.2f} for command: {1}'.format(time.time.time() - start, execute_command))
+				log.write('Time => {0:.2f} for command: {1}'.format(time.time() - start, execute_command))
 
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	if my_mpi_proc_id == mpi_print_id:
 		idx = idx + 1
-		total_time = time.time.time() - start_unblur
+		total_time = time.time() - start_unblur
 		average_time = total_time / float(idx)
 		sp_global_def.sxprint('{0: 6.2f}% => Elapsed time: {1: 6.2f}min | Estimated total time: {2: 6.2f}min | Time per micrograph: {3: 5.2f}min/mic'.format(
 			100 * idx / float(max_nima),

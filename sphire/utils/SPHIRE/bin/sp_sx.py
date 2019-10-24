@@ -44,7 +44,7 @@ import platform
 spreal = platform.os.path.join(platform.os.path.abspath(platform.os.path.dirname(__file__)), "sp_real.py")
 ipython = platform.os.path.join(platform.os.path.abspath(platform.os.path.dirname(__file__)), "ipython")
 try:
-	if platform.platform.system()=="Linux" and platform.os.getenv("DISPLAY")==None: raise Exception
+	if platform.system()=="Linux" and platform.os.getenv("DISPLAY")==None: raise Exception
 	platform.os.execlp(ipython,"ipython","-i","--gui=qt5",spreal)
 except:
 	print("Warning: No DISPLAY available, running in non-GUI mode.")

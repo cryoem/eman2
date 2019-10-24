@@ -499,14 +499,14 @@ def output_clusters(output_dir, partition, unaccounted_list, not_include_unaccou
     if len(unaccounted_list) > 1:
         unaccounted_list.sort()
         sp_utilities.write_text_file(unaccounted_list, os.path.join(output_dir, "Unaccounted.txt"))
-    nclasses = copy.copy.deepcopy(identified_clusters)
+    nclasses = copy.deepcopy(identified_clusters)
     del identified_clusters
 
     if len(unaccounted_list) > 1:  # output unaccounted as the last cluster
         if not not_include_unaccounted:
             sp_utilities.write_text_file(unaccounted_list, os.path.join(output_dir, "Cluster_%03d.txt" % nc))
     if not not_include_unaccounted:
-        unclasses = copy.copy.deepcopy(nclasses)
+        unclasses = copy.deepcopy(nclasses)
         unclasses.append(unaccounted_list)
         alist, partition = merge_classes_into_partition_list(unclasses)
         del unclasses
@@ -1078,7 +1078,7 @@ def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", lo
     K = min(NMAX, len(clusters))
     replicas = []
     for ic in range(K):
-        ll = copy.copy.deepcopy(clusters[ic])
+        ll = copy.deepcopy(clusters[ic])
         ll1 = [None for i in range(len(ll))]
         for ie in range(len(ll)):
             ll1[ie] = value_list[ll[ie]]
@@ -1477,7 +1477,7 @@ def AI_MGSKmeans(iter_assignment, last_iter_assignment, best_assignment, keepgoi
         changed_nptls = 100. - ratio * 100.
         if best_score >= changed_nptls:
             best_score = changed_nptls
-            best_assignment = copy.copy.copy(iter_assignment)
+            best_assignment = copy.copy(iter_assignment)
         if changed_nptls < stopercnt: keepgoing = 0
     else:
         msg = "Unicorn cluster is found. shuffle assignment."
@@ -1487,7 +1487,7 @@ def AI_MGSKmeans(iter_assignment, last_iter_assignment, best_assignment, keepgoi
         best_score = 100.
         changed_nptls = 100.
         keepgoing = 1
-        best_assignment = copy.copy.copy(iter_assignment)
+        best_assignment = copy.copy(iter_assignment)
     return best_score, changed_nptls, keepgoing, best_assignment, iter_assignment
 
 
@@ -1599,8 +1599,8 @@ def Kmeans_minimum_group_size_orien_groups(cdata, fdata, srdata, \
     # del rdata
     # mpi_barrier(MPI_COMM_WORLD)
 
-    last_iter_assignment = copy.copy.copy(iter_assignment)
-    best_assignment = copy.copy.copy(iter_assignment)
+    last_iter_assignment = copy.copy(iter_assignment)
+    best_assignment = copy.copy(iter_assignment)
     total_iter = 0
     keepgoing = 1
     do_partial_rec3d = 0
@@ -1679,7 +1679,7 @@ def Kmeans_minimum_group_size_orien_groups(cdata, fdata, srdata, \
                     for im in range(len(local_peaks)): dmatrix[im / iproc_nima][im % iproc_nima + proc_list[iproc][0]] = \
                     local_peaks[im]
         dmatrix = sp_utilities.wrap_mpi_bcast(dmatrix, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-        last_iter_assignment = copy.copy.copy(iter_assignment)
+        last_iter_assignment = copy.copy(iter_assignment)
         iter_assignment = [-1 for iptl in range(Tracker["total_stack"])]
         for iorien in range(len(ptls_in_orien_groups)):
             if iorien % Blockdata["nproc"] == Blockdata["myid"]:
@@ -1726,7 +1726,7 @@ def Kmeans_minimum_group_size_orien_groups(cdata, fdata, srdata, \
         times_around_fixed_value = sp_utilities.bcast_number_to_all(times_around_fixed_value, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
         keepgoing = sp_utilities.bcast_number_to_all(keepgoing, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
         total_iter += 1
-        last_iter_assignment = copy.copy.copy(iter_assignment)
+        last_iter_assignment = copy.copy(iter_assignment)
         if times_around_fixed_value >= 3: keepgoing = 0
         if keepgoing == 0: break
     # Finalize
@@ -2202,7 +2202,7 @@ def precalculate_shifted_data_for_recons3D(prjlist, paramstructure, refang, rshi
     nny = prjlist[0].get_ysize()
     if not nosmearing:
         recdata_list = [[] for im in range(len(prjlist))]
-        rshifts_shrank = copy.copy.deepcopy(rshifts)
+        rshifts_shrank = copy.deepcopy(rshifts)
         for im in range(len(rshifts_shrank)):
             rshifts_shrank[im][0] *= float(nxinit) / float(nnxo)
             rshifts_shrank[im][1] *= float(nxinit) / float(nnxo)
@@ -2553,7 +2553,7 @@ def create_nrandom_lists(partids, number_of_groups, number_of_runs):
         group_size = len(sorting_data_list) // number_of_groups
         for index_of_random in range(number_of_runs):
             particle_dict = {}
-            ll = copy.copy.deepcopy(sorting_data_list)
+            ll = copy.deepcopy(sorting_data_list)
             random.shuffle(ll)
             group_list = []
             for index_of_groups in range(number_of_groups):
@@ -2592,7 +2592,7 @@ def create_nrandom_lists_from_given_pids(work_dir, partids, number_of_groups, nu
         group_size = len(sorting_data_list) // number_of_groups
         for index_of_random in range(number_of_runs):
             particle_dict = {}
-            ll = copy.copy.deepcopy(sorting_data_list)
+            ll = copy.deepcopy(sorting_data_list)
             random.shuffle(ll)
             group_list = []
             for index_of_groups in range(number_of_groups):
@@ -2646,7 +2646,7 @@ def assign_unaccounted_elements_mpi(glist, clusters, img_per_grp):
                 slist.append(max(1. - float(len(clusters[ic])) / float(img_per_grp), 0.05))
             else:
                 slist.append(0.05)
-        uplist = copy.copy.deepcopy(glist)
+        uplist = copy.deepcopy(glist)
         image_start, image_end = sp_applications.MPI_start_end(len(uplist), Blockdata["nproc"], Blockdata["myid"])
         uplist = uplist[image_start:image_end]
         nsize = len(uplist) // 3
@@ -2767,7 +2767,7 @@ def swap_clusters_small_NUACC(glist, clusters, swap_ratio):
 def swap_clusters_large_NUACC(glist, clusters, swap_ratio):
     slist = [None for i in range(len(clusters))]
     temp_list = []
-    ulist = copy.copy.deepcopy(glist)
+    ulist = copy.deepcopy(glist)
     for ic in range(len(clusters)):
         slist[ic] = int(swap_ratio * len(clusters[ic]))
         random.shuffle(clusters[ic])
@@ -2825,7 +2825,7 @@ def fill_no_large_groups_and_unaccounted_to_m_and_rcluster_mpi( \
 
 def assign_unaccounted_inverse_proportion_to_size(glist, clusters, img_per_grp):
     # assign unaccounted images by group probabilities, single processor version
-    ulist = copy.copy.deepcopy(glist)
+    ulist = copy.deepcopy(glist)
     number_of_groups = len(clusters)
     slist = []
     for ic in range(len(clusters)):
@@ -3842,7 +3842,7 @@ def recons3d_4nnsorting_group_MPI(myid, main_node, prjlist, random_subset, group
     fftvol = EMAN2_cppwrap.EMData()
     weight = EMAN2_cppwrap.EMData()
     try:
-        qt = projlist[0].get_attr("qt")
+        qt = prjlist[0].get_attr("qt")
     except:
         qt = 1.0
     params = {"size": target_size, "npad": 2, "snr": 1.0, "sign": 1, "symmetry": "c1", "refvol": refvol,
@@ -5050,7 +5050,7 @@ def recons3d_trl_struct_group_MPI(myid, main_node, prjlist, random_subset, group
     if not nosmearing:
         delta = Tracker["delta"]
         refang = Tracker["refang"]
-        rshifts_shrank = copy.copy.deepcopy(Tracker["rshifts"])
+        rshifts_shrank = copy.deepcopy(Tracker["rshifts"])
         nshifts = len(rshifts_shrank)
         for im in range(len(rshifts_shrank)):
             rshifts_shrank[im][0] *= float(Tracker["nxinit"]) / float(Tracker["constants"]["nnxo"])
@@ -5351,7 +5351,7 @@ def recons3d_4nnsorting_group_fsc_MPI(myid, main_node, prjlist, fsc_half, random
     fftvol = EMAN2_cppwrap.EMData()
     weight = EMAN2_cppwrap.EMData()
     try:
-        qt = projlist[0].get_attr("qt")
+        qt = prjlist[0].get_attr("qt")
     except:
         qt = 1.0
     params = {"size": target_size, "npad": 2, "snr": 1.0, "sign": 1, "symmetry": "c1", "refvol": refvol,
@@ -5363,7 +5363,7 @@ def recons3d_4nnsorting_group_fsc_MPI(myid, main_node, prjlist, fsc_half, random
     if not Tracker["nosmearing"]:
         delta = Tracker["delta"]
         refang = Tracker["refang"]
-        rshifts_shrank = copy.copy.deepcopy(Tracker["rshifts"])
+        rshifts_shrank = copy.deepcopy(Tracker["rshifts"])
         nshifts = len(rshifts_shrank)
         for im in range(nshifts):
             rshifts_shrank[im][0] *= float(Tracker["nxinit"]) / float(Tracker["constants"]["nnxo"])

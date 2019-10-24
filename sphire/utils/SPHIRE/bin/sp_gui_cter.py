@@ -183,6 +183,150 @@ class SXLogoButton(PyQt5.QtWidgets.QLabel):
 		sxmenu_item_btn_subarea_widget.addWidget(self)
 
 
+class SXCterParam:
+	"""
+	Class containing the following attributes:
+		idx_cter : index
+		label : text label
+		widget: Qt widget
+	"""
+
+	def __init__(self, idx_cter, label=None, widget=None):
+		self.idx_cter = idx_cter
+		self.label = label
+		self.widget = widget
+
+	def list_info(self):
+		info = []
+		info.append(self.idx_cter)
+		info.append(self.label)
+		info.append(self.widget)
+
+		return info
+
+
+class SXCterSorted:
+	"""
+	Class containing the following attributes:
+		idx_cter : index from SXCterParam
+		idx_sort : sorted index (in current class)
+		param_name : parameter name
+	"""
+
+	def __init__(self, idx_cter, idx_sort, param_name):
+		self.idx_cter = idx_cter
+		self.idx_sort = idx_sort
+		self.param_name = param_name
+
+	def list_info(self):
+		info = []
+		info.append(self.idx_cter)
+		info.append(self.idx_sort)
+		info.append(self.param_name)
+
+		return info
+
+
+class SXHistMap:
+	"""
+	Class containing the following attributes:
+		param_name: parameter name
+		idx_cter : index from SXCterParam
+		idx_sort : index from SXCterSorted
+		val_min : minimum value over all entries
+		val_max : maximum value over all entries
+		unapply_threshold_lower : unapplied lower threshold
+		unapply_threshold_upper : unapplied upper threshold
+		unapply_widget_lower : Qt widget for unapplied lower threshold
+		unapply_widget_upper : Qt widget for unapplied upper hreshold
+		apply_threshold_lower : applied lower threshold
+		apply_threshold_upper : applied upper threshold
+		apply_widget_lower : Qt widget for applied lower threshold
+		apply_widget_upper : Qt widget for applied upper threshold
+		label : text label
+	"""
+
+	def __init__(self, param_name, idx_cter, idx_sort, val_min, val_max, unapply_threshold_lower,
+				 unapply_threshold_upper,
+				 unapply_widget_lower, unapply_widget_upper, apply_threshold_lower, apply_threshold_upper,
+				 apply_widget_lower, apply_widget_upper, label):
+		self.param_name = param_name
+		self.idx_cter = idx_cter
+		self.idx_sort = idx_sort
+		self.val_min = val_min
+		self.val_max = val_max
+		self.unapply_threshold_lower = unapply_threshold_lower
+		self.unapply_threshold_upper = unapply_threshold_upper
+		self.unapply_widget_lower = unapply_widget_lower
+		self.unapply_widget_upper = unapply_widget_upper
+		self.apply_threshold_lower = apply_threshold_lower
+		self.apply_threshold_upper = apply_threshold_upper
+		self.apply_widget_lower = apply_widget_lower
+		self.apply_widget_upper = apply_widget_upper
+		self.label = label
+
+	def list_info(self):
+		info = []
+		info.append(self.param_name)
+		info.append(self.idx_cter)
+		info.append(self.idx_sort)
+		info.append(self.val_min)
+		info.append(self.val_max)
+		info.append(self.unapply_threshold_lower)
+		info.append(self.unapply_threshold_upper)
+		info.append(self.unapply_widget_lower)
+		info.append(self.unapply_widget_upper)
+		info.append(self.apply_threshold_lower)
+		info.append(self.apply_threshold_upper)
+		info.append(self.apply_widget_lower)
+		info.append(self.apply_widget_upper)
+		info.append(self.label)
+
+		return info
+
+
+class SXCheckboxMap:
+	"""
+	Class containing the following attributes:
+		item_name : item name
+		item_label : text label
+		idx_rotinf : index
+		item_widget : Qt Widget
+	"""
+
+	def __init__(self, item_name, item_label, idx_rotinf, item_widget):
+		self.item_name = item_name
+		self.item_label = item_label
+		self.idx_rotinf = idx_rotinf
+		self.item_widget = item_widget
+
+	def list_info():
+		info = []
+		info.append(self.item_name)
+		info.append(self.item_label)
+		info.append(self.idx_rotinf)
+		info.append(self.item_widget)
+
+		return info
+
+class SXThresholdMap:
+	"""
+	Class containing the following attributes: label, color, index
+	"""
+
+	def __init__(self, label, color, index):
+		self.label = label
+		self.color = color
+		self.index = index
+
+	def list_info():
+		info = []
+		info.append(self.label)
+		info.append(self.color)
+		info.append(self.index)
+
+		return info
+
 class SXGuiCter(PyQt5.QtWidgets.QWidget):
 	####def __init__(self, use_ctffind=None, pwrot_dir='pwrot', power2d_dir='power2d', micthumb_dir='micthumb'):
 	def __init__(self, options):

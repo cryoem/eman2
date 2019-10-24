@@ -66,6 +66,8 @@ from PyQt5.Qt import *
 from PyQt5 import QtWidgets as QtGui
 from PyQt5 import QtCore
 
+from PyQt5.QtWidgets import *
+
 # ========================================================================================
 # Helper Functions
 # 
@@ -1875,7 +1877,7 @@ class SXCmdWidget(QWidget):
 	"""Multiline Comment0"""
 
 
-class SXLineEdit(PyQt5.QtGui.QLineEdit):
+class SXLineEdit(QtGui.QLineEdit):
 	my_changed_state = PyQt5.QtCore.pyqtSignal(str, str)
 
 	def __init__(self, dependency, parent=None):
@@ -1884,7 +1886,7 @@ class SXLineEdit(PyQt5.QtGui.QLineEdit):
 		self.textChanged.connect(lambda x: self.my_changed_state.emit(self.dependency, x))
 
 
-class SXCheckBox(PyQt5.QtGui.QCheckBox):
+class SXCheckBox(QtGui.QCheckBox):
 	my_changed_state = PyQt5.QtCore.pyqtSignal(str, int)
 
 	def __init__(self, dependency, parent=None):
@@ -4680,10 +4682,10 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 			# --------------------------------------------------------------------------------
 			# Start widget
 			# --------------------------------------------------------------------------------
-			start_widget = PyQt5.QtGui.QWidget()
-			logo_container = PyQt5.QtGui.QWidget()
-			layout_start_widget = PyQt5.QtGui.QHBoxLayout()
-			layout_logo_container = PyQt5.QtGui.QVBoxLayout()
+			start_widget = QtGui.QWidget()
+			logo_container = QtGui.QWidget()
+			layout_start_widget = QtGui.QHBoxLayout()
+			layout_logo_container = QtGui.QVBoxLayout()
 			logo_container.setStyleSheet('border-image: url("{0}sxgui_pictograph_info.png")'.format(EMAN2.get_image_directory()))
 			logo_container.setFixedSize(100, 100)
 			layout_start_widget.setContentsMargins(0, 0, 0, 20)

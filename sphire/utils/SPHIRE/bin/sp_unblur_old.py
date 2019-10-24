@@ -282,7 +282,7 @@ def run_unblur(
     nr_files = len(file_list)
 
     # Timeing stuff
-    time_start = time.time.time()
+    time_start = time.time()
     time_list = []
 
     # Loop over all files
@@ -299,7 +299,7 @@ def run_unblur(
                 )
 
         # Time begin
-        t1 = time.time.time()
+        t1 = time.time()
 
         # Get the output names
         file_name = inputfile[len(input_dir):-len(input_suffix) - 1]
@@ -543,7 +543,7 @@ def run_unblur(
         else:
             sp_global_def.ERROR('summovie error. check the logfile for more information: {0}'.format(log_name), action=0 )
 
-        time_list.append(time.time.time() - t1)
+        time_list.append(time.time() - t1)
 
         # Do progress output
         percent = round(100 * (index + 1) / float(nr_files), 2)
@@ -556,7 +556,7 @@ def run_unblur(
                 estimated_time_h*3600 -
                 estimated_time_m*60
                 )
-        current_time = time.time.time() - time_start
+        current_time = time.time() - time_start
         current_time_h = current_time // 3600
         current_time_m = (current_time - current_time_h*3600) // 60
         current_time_s = (

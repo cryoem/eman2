@@ -45,6 +45,10 @@ import numpy
 import optparse
 import sp_fundamentals
 import sp_global_def
+import sp_utilities
+import sp_morphology
+import sp_statistics
+import sp_filter
 import sys
 from builtins import range
 

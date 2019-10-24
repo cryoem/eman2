@@ -467,7 +467,7 @@ For negative staining data, use --skip_invert.
 		# Generate the list of micrograph paths in the input directory
 		sp_global_def.sxprint(" ")
 		sp_global_def.sxprint("Checking the input directory...")
-		input_mic_path_list = glob.glob.glob(mic_pattern)
+		input_mic_path_list = glob.glob(mic_pattern)
 		# Check error condition of input micrograph file path list
 		sp_global_def.sxprint("Found %d microgarphs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern)))
 		if error_status is None and len(input_mic_path_list) == 0:
@@ -560,7 +560,7 @@ For negative staining data, use --skip_invert.
 		# --------------------------------------------------------------------------------
 		sp_global_def.sxprint(" ")
 		sp_global_def.sxprint("Checking the rebox files...")
-		rebox_path_list = glob.glob.glob(rebox_pattern)
+		rebox_path_list = glob.glob(rebox_pattern)
 		
 		# Check error condition of rebox file path list
 		sp_global_def.sxprint("Found %d rebox files in %s directory." % (len(rebox_path_list), os.path.dirname(rebox_pattern)))

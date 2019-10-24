@@ -54,17 +54,18 @@ import subprocess
 import sys
 from builtins import range
 from builtins import object
-# try:
-#     from PyQt4.Qt import *
-#     from PyQt4 import QtGui
-#     from PyQt4 import QtCore
-# except ImportError:
+
+from PyQt5.Qt import *
+from PyQt5 import QtWidgets as QtGui
+from PyQt5 import QtCore
+
 
 # ========================================================================================
 # Helper Functions
 # 
 # This function is added here because db_convert_path in EMAN2db.py has a bug.
 # 
+
 
 
 def translate_to_bdb_path(std_path):

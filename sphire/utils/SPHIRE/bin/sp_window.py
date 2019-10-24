@@ -713,7 +713,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		# Generate the list of micrograph paths in the input directory
 		sp_global_def.sxprint(" ")
 		sp_global_def.sxprint("Checking the input directory...")
-		input_mic_path_list = glob.glob.glob(mic_pattern)
+		input_mic_path_list = glob.glob(mic_pattern)
 		# Check error condition of input micrograph file path list
 		sp_global_def.sxprint(
 			"Found %d microgarphs in %s."
@@ -852,7 +852,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		# --------------------------------------------------------------------------------
 		sp_global_def.sxprint(" ")
 		sp_global_def.sxprint("Checking the coordinates files...")
-		coords_path_list = glob.glob.glob(coords_pattern)
+		coords_path_list = glob.glob(coords_pattern)
 
 		# Check error condition of coordinates file path list
 		sp_global_def.sxprint( "Found %d coordinates files in %s directory." % (len(coords_path_list), os.path.dirname(coords_pattern)) )

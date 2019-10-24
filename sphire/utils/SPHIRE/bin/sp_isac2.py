@@ -38,13 +38,15 @@ this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 Place, Suite 330, Boston, MA  02111-1307 USA
 """
 
-
+import EMAN2
 import EMAN2_cppwrap
+from EMAN2db import db_open_dict
 import ctypes
 import mpi
 import numpy
 import os
-import scipy.stats
+import optparse
+import sp_statistics
 import sp_alignment
 import sp_applications
 import sp_filter
@@ -53,10 +55,12 @@ import sp_global_def
 import sp_logger
 import sp_pixel_error
 import sp_utilities
+import sp_isac
 import string
 import subprocess
 import sys
 import time
+import random
 #====================================================================[ import ]
 
 # compatibility
@@ -242,7 +246,7 @@ def normalize_particle_images( aligned_images, shrink_ratio, target_radius, targ
 		
 		# crop images if necessary
 		if new_dim > target_dim:
-			aligned_images[im] = E2.Util.window( aligned_images[im], target_dim, target_dim, 1 )
+			aligned_images[im] = EMAN2.Util.window( aligned_images[im], target_dim, target_dim, 1 )
 		
 		current_dim = aligned_images[im].get_xsize()
 		# create custom masks for filament particle images
@@ -252,9 +256,9 @@ def normalize_particle_images( aligned_images, shrink_ratio, target_radius, targ
 													  nx=current_dim, ny=current_dim, angle=aligned_images[im].get_attr("segment_angle") )
 
 		# normalize using mean of the data and variance of the noise
-		p = E2.Util.infomask( aligned_images[im], mask, False )
+		p = EMAN2.Util.infomask( aligned_images[im], mask, False )
 		aligned_images[im] -= p[0]
-		p = E2.Util.infomask( aligned_images[im], mask, True )
+		p = EMAN2.Util.infomask( aligned_images[im], mask, True )
 		aligned_images[im] /= p[1]
 		
 		# optional: burn helical mask into particle images
@@ -387,11 +391,11 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
 	myid = Blockdata["myid"]
 	main_node = Blockdata["main_node"]
 
-	rnd.seed(myid)
-	rand1 = rnd.randint(1,1000111222)
-	rnd.seed(random_seed)
-	rand2 = rnd.randint(1,1000111222)
-	rnd.seed(rand1 + rand2)
+	random.seed(myid)
+	rand1 = random.randint(1,1000111222)
+	random.seed(random_seed)
+	rand2 = random.randint(1,1000111222)
+	random.seed(rand1 + rand2)
 
 	if generation == 0:
 		sp_global_def.ERROR( "Generation should begin from 1, please reset it and restart the program", myid=myid )
@@ -413,7 +417,7 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
 	nx     = alldata[0].get_xsize()
 	ndata  = len(alldata)
 	data   = [None]*ndata
-	tdummy = E2.Transform({"type":"2D"})
+	tdummy = EMAN2.Transform({"type":"2D"})
 
 	for im in range(ndata):
 		# This is the absolute ID, the only time we use it is
@@ -479,7 +483,7 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
 			all_ali_params[i] = [alpha, sx, sy, mirror]
 
 		sp_global_def.sxprint("****************************************************************************************************")
-		sp_global_def.sxprint("*         Generation finished                 "+time.time.strftime("%a, %d %b %Y %H:%M:%S", time.time.localtime())+"                            *")
+		sp_global_def.sxprint("*         Generation finished                 "+time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())+"                            *")
 		sp_global_def.sxprint("****************************************************************************************************")
 
 		return refi, all_ali_params
@@ -613,7 +617,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 	for im in range( nima ):  
 		ctypes.util.set_params2D( alldata[im], [0.,0.,0.,0, 1.0] )
 
-	image_start, image_end = apps.MPI_start_end(nima, number_of_proc, myid)
+	image_start, image_end = sp_applications.MPI_start_end(nima, number_of_proc, myid)
 
 	if maskfile:
 		if type(maskfile) is bytes:  
@@ -646,16 +650,16 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 	#------------------------------------------------------[ precalculate rings]
 
 	# calculates the necessary information for the 2D polar interpolation (finds the number of rings)
-	numr = align.Numrinit(first_ring, last_ring, rstep, mode)
+	numr = sp_alignment.Numrinit(first_ring, last_ring, rstep, mode)
 	# Calculate ring weights for rotational alignment
-	wr = align.ringwe(numr, mode)
+	wr = sp_alignment.ringwe(numr, mode)
 
 	if rand_seed > -1:
-		rnd.seed(rand_seed)
+		random.seed(rand_seed)
 	else:
-		rnd.seed(rnd.randint(1,2000111222))
+		random.seed(random.randint(1,2000111222))
 	if myid != main_node:
-		rnd.jumpahead(17*myid + 12345)
+		random.jumpahead(17*myid + 12345)
 
 	previous_agreement = 0.0
 	previous_members   = [None]*numref
@@ -670,7 +674,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 
 		Iter += 1
 		if my_abs_id == main_node: 
-			sp_global_def.sxprint("Iteration within isac_MPI Iter =>", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start,"   ",time.time.strftime("%a, %d %b %Y %H:%M:%S", time.time.localtime()))
+			sp_global_def.sxprint("Iteration within isac_MPI Iter =>", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start,"   ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()))
 		mashi = cnx-ou-2
 		
 		for j in range(numref):
@@ -731,7 +735,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 			# First check number of nodes, if only one, no reduction necessary.
 			if(Blockdata["no_of_groups"] > 1):
 				# do reduction using numref chunks nima long (it does not matter what is the actual ordering in d)
-				at = time.time.time()
+				at = time.time()
 				for j in range(numref):
 					dbuf = numpy.zeros(nima, dtype=numpy.float32)
 					numpy.copyto(dbuf,d[j*nima:(j+1)*nima])
@@ -897,7 +901,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 			#----------------------------------------------[ Broadcast the alignment parameters to all nodes ]
 
 			for i in range(number_of_proc):
-				im_start, im_end = apps.MPI_start_end(nima, number_of_proc, i)
+				im_start, im_end = sp_applications.MPI_start_end(nima, number_of_proc, i)
 				if myid == i:
 					ali_params = []
 					for im in range(image_start, image_end):
@@ -938,7 +942,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 
 				randomize = True  # I think there is no reason not to be True
 				class_data = [alldata[im] for im in assign]
-				refi[j] = apps.within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, \
+				refi[j] = sp_applications.within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, \
 												[xrng], [yrng], [step], dst, maxit, FH, FF, method = method)
 
 				if check_stability:
@@ -946,7 +950,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 					ali_params = [[] for qq in range(stab_ali)]
 					for ii in range(stab_ali):
 						if ii > 0:  # The first one does not have to be repeated
-							dummy = apps.within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, [xrng], [yrng], [step], \
+							dummy = sp_applications.within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, [xrng], [yrng], [step], \
 															dst, maxit, FH, FF, method = method)
 						for im in range(len(class_data)):
 							alpha, sx, sy, mirror, scale = ctypes.util.get_params2D(class_data[im])
@@ -963,7 +967,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 						duplicate = True
 						while duplicate:
 							duplicate = False
-							p = rnd.randint(0, len(class_data)-1)
+							p = random.randint(0, len(class_data)-1)
 							for ss in stable_set:
 								if p == ss[1]: duplicate = True
 						stable_set.append([100.0, p, [0.0, 0.0, 0.0, 0]])
@@ -976,7 +980,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 						ctypes.util.set_params2D( class_data[im], [err[2][0], err[2][1], err[2][2], int(err[2][3]), 1.0] )
 					stable_members.sort()
 
-					refi[j] = sp_filter.filt_tanl(scipy.stats.ave_series(stable_data), FH, FF)
+					refi[j] = sp_filter.filt_tanl(sp_statistics.ave_series(stable_data), FH, FF)
 					refi[j].set_attr('members', stable_members)
 					refi[j].set_attr('n_objects', len(stable_members))
 					#print  "Class %4d ...... Size of the stable subset = %4d  "%(j, len(stable_members))
@@ -1034,7 +1038,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 					j = agreement - previous_agreement
 					if( (agreement>0.5) and (j > 0.0) and (j < 0.05) ): terminate = 1
 					previous_agreement = agreement
-					sp_global_def.sxprint(">>>  Assignment agreement with previous iteration  %5.1f"%(agreement*100),"   ",time.time.strftime("%a, %d %b %Y %H:%M:%S", time.time.localtime()))
+					sp_global_def.sxprint(">>>  Assignment agreement with previous iteration  %5.1f"%(agreement*100),"   ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()))
 				terminate = sp_utilities.bcast_number_to_all(terminate, source_node = main_node)
 
 
@@ -1043,7 +1047,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 				gpixer = ctypes.util.wrap_mpi_gatherv(gpixer, main_node, comm)
 				if my_abs_id == main_node and color == 0:
 					lhist = 12
-					region, histo = scipy.stats.hist_list(gpixer, lhist)
+					region, histo = sp_statistics.hist_list(gpixer, lhist)
 					sp_global_def.sxprint("\n=== Histogram of average within-class pixel errors prior to class pruning ===")
 					for lhx in range(lhist):  sp_global_def.sxprint("     %10.3f     %7d"%(region[lhx], histo[lhx]))
 					sp_global_def.sxprint("=============================================================================\n")
@@ -1055,7 +1059,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 	if myid == main_node:
 		i = [refi[j].get_attr("n_objects") for j in range(numref)]
 		lhist = max(12, numref/2)
-		region, histo = scipy.stats.hist_list(i, lhist)
+		region, histo = sp_statistics.hist_list(i, lhist)
 		sp_global_def.sxprint("\n=== Histogram of group sizes ================================================")
 		for lhx in range(lhist):  sp_global_def.sxprint("     %10.1f     %7d"%(region[lhx], histo[lhx]))
 		sp_global_def.sxprint("=============================================================================\n")
@@ -1185,7 +1189,7 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 
 	if( Blockdata["myid"] == 0 ):
 		sp_global_def.sxprint("*************************************************************************************")
-		sp_global_def.sxprint("     Main iteration: %3d,  Generation: %3d. "%(main_iter,generation_iter)+"   "+time.time.strftime("%a, %d %b %Y %H:%M:%S", time.time.localtime()))
+		sp_global_def.sxprint("     Main iteration: %3d,  Generation: %3d. "%(main_iter,generation_iter)+"   "+time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()))
 
 	ave, all_params = iter_isac_pap(alldata, options.ir, target_radius, options.rs, target_xr, target_yr, options.ts, options.maxit, False, 1.0,\
 		options.dst, options.FL, options.FH, options.FF, options.init_iter, dummy_main_iter, options.iter_reali, match_first, \
@@ -1274,7 +1278,7 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 					junk = sp_utilities.cmdexecute(cmd)
 					cmd = "{} {}".format("touch", os.path.join(Blockdata["masterdir"], "finished"))
 					junk = sp_utilities.cmdexecute(cmd)
-					sp_global_def.sxprint("*         There are no more images to form averages, program finishes     "+time.time.strftime("%a, %d %b %Y %H:%M:%S", time.time.localtime())+"     *")
+					sp_global_def.sxprint("*         There are no more images to form averages, program finishes     "+time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())+"     *")
 				else:
 					#  Will have to increase main, which means putting all bad left as new good, 
 					keepdoing_main = True
@@ -1402,7 +1406,7 @@ def main(args):
 	# main process creates the master directory
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		if( Blockdata["masterdir"] == ""):
-			timestring = time.time.strftime( "_%d_%b_%Y_%H_%M_%S", time.time.localtime() )
+			timestring = time.strftime( "_%d_%b_%Y_%H_%M_%S", time.localtime() )
 			Blockdata["masterdir"] = "isac_directory" + timestring
 			li = len(Blockdata["masterdir"])
 			cmd = "{} {}".format("mkdir -p", Blockdata["masterdir"])
@@ -1430,7 +1434,7 @@ def main(args):
 	if(myid == main_node):
 		sp_global_def.sxprint("****************************************************************************************************")
 		sp_global_def.sxprint("*                                                                                                  *")
-		sp_global_def.sxprint("* ISAC (Iterative Stable Alignment and Clustering)   "+time.time.strftime("%a, %d %b %Y %H:%M:%S", time.time.localtime())+"                     *")
+		sp_global_def.sxprint("* ISAC (Iterative Stable Alignment and Clustering)   "+time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())+"                     *")
 		sp_global_def.sxprint("* By Zhengfan Yang, Jia Fang, Francisco Asturias and Pawel A. Penczek                              *")
 		sp_global_def.sxprint("*                                                                                                  *")
 		sp_global_def.sxprint('* REFERENCE: Z. Yang, J. Fang, J. Chittuluru, F. J. Asturias and P. A. Penczek, "Iterative Stable  *')
@@ -1439,7 +1443,7 @@ def main(args):
 		sp_global_def.sxprint("*                                                                                                  *")
 		sp_global_def.sxprint("* Last updated: 05/30/2017 PAP                                                                     *")
 		sp_global_def.sxprint("****************************************************************************************************")
-		E2.Util.version()
+		EMAN2.Util.version()
 		sp_global_def.sxprint("****************************************************************************************************")
 		sys.stdout.flush()
 
@@ -1581,7 +1585,7 @@ def main(args):
 			nnxo = 0
 		nnxo = sp_utilities.bcast_number_to_all(nnxo, source_node = main_node)
 
-		image_start, image_end = apps.MPI_start_end(Blockdata["total_nima"], nproc, myid)
+		image_start, image_end = sp_applications.MPI_start_end(Blockdata["total_nima"], nproc, myid)
 
 		original_images = EMAN2_cppwrap.EMData.read_images(Blockdata["stack"], list(range(image_start,image_end)))
 		
@@ -1638,9 +1642,9 @@ def main(args):
 			
 			# perform the 2D alignment
 			if(Blockdata["myid"] == 0): 
-				sp_global_def.sxprint( "* 2D alignment   " + time.time.strftime("%a, %d %b %Y %H:%M:%S", time.time.localtime()) )
+				sp_global_def.sxprint( "* 2D alignment   " + time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()) )
 
-			params2d = apps.ali2d_base(original_images, init2dir, None, 1, target_radius, 1, txr, txr, tss,
+			params2d = sp_applications.ali2d_base(original_images, init2dir, None, 1, target_radius, 1, txr, txr, tss,
 				False, 90.0, center_method, 14, options.CTF, 1.0, False,
 				"ref_ali2d", "", log2d, nproc, myid, main_node, mpi.MPI_COMM_WORLD, write_headers = False)
 
@@ -1678,7 +1682,7 @@ def main(args):
 		newx = int(nx*shrink_ratio + 0.5)
 	
 		while not os.path.exists(os.path.join(init2dir, "initial2Dparams.txt")):
-			time.time.sleep(1)
+			time.sleep(1)
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		
 		params = sp_utilities.read_text_row(os.path.join(init2dir, "initial2Dparams.txt"))
@@ -1744,7 +1748,7 @@ def main(args):
 				aligned_images[i].write_image(Blockdata["stack_ali2d"],i)
 			del aligned_images
 			#  It has to be explicitly closed
-			DB = E2_db_open_dict(Blockdata["stack_ali2d"])
+			DB = db_open_dict(Blockdata["stack_ali2d"])
 			DB.close()
 	
 			fp = open(os.path.join(Blockdata["masterdir"],"README_shrink_ratio.txt"), "w")

@@ -58,6 +58,7 @@ import sp_statistics
 import sp_utilities
 import sys
 import time
+import subprocess
 from builtins import range
 
 
@@ -755,7 +756,7 @@ def main():
 		#except:  str = -1
 		uu = os.path.split(d)
 		uu = os.path.join(uu[0],'EMAN2DB',uu[1]+'.bdb')
-		flist = glob.glob.glob(uu)
+		flist = glob.glob(uu)
 		for i in range(len(flist)):
 			root,name = os.path.split(flist[i])
 			root = root[:-7]
@@ -787,15 +788,15 @@ def main():
 				sp_utilities.write_text_row(gctfp, ctfpfile)
 				cmd = "{} {} {} {}".format('e2bdb.py',fil,'--makevstack=bdb:'+root+'G'+name,'--list='+grpfile)
 				#print cmd
-				matplotlib.subprocess.call(cmd, shell=True)
+				subprocess.call(cmd, shell=True)
 				cmd = "{} {} {} {}".format('sxheader.py','bdb:'+root+'G'+name,'--params=ctf','--import='+ctfpfile)
 				#print cmd
-				matplotlib.subprocess.call(cmd, shell=True)
+				subprocess.call(cmd, shell=True)
 			else:
 				print(' >>>  Group ',name,'  skipped.')
 
 		cmd = "{} {} {}".format("rm -f",grpfile,ctfpfile)
-		matplotlib.subprocess.call(cmd, shell=True)
+		subprocess.call(cmd, shell=True)
 
 	elif options.scale > 0.0:
 		scale = options.scale
@@ -905,7 +906,7 @@ def main():
 		cluster_id_substr_head_idx = None
 		if nargs == 1: # 2D case, 3D single map case, or 3D single maps case
 			if args[0].find("*") != -1: # 3D single maps case
-				input_path_list = glob.glob.glob(args[0])
+				input_path_list = glob.glob(args[0])
 				# Check error condition of input file path list
 				if len(input_path_list) == 0:
 					sp_global_def.ERROR( "No input files are found with the provided path pattern %s (--combinemaps option for 3-D)"%(args[0]) )
@@ -983,7 +984,7 @@ def main():
 					global_b = b*4
 					log_main.add( "The estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(-b,2))
 				else:
-					global_b = option.B_enhance
+					global_b = options.B_enhance
 					log_main.add( "User provided B_factor is %f"%global_b)
 				sigma_of_inverse = numpy.sqrt(2./global_b)
 				e1 = sp_filter.filt_gaussinv(e1,sigma_of_inverse)
@@ -1049,7 +1050,7 @@ def main():
 				log_main.add("The first input volume: %s"%map1_path)
 				try: map1 = sp_utilities.get_im(map1_path)
 				except:
-					sp_global_def.ERROR( "Sphire combinemaps fails to read the first map " + map1_pat + "(--combinemaps option for 3-D)" )
+					sp_global_def.ERROR( "Sphire combinemaps fails to read the first map " + map1_path + "(--combinemaps option for 3-D)" )
 					return
 			
 				if single_map:
@@ -1059,7 +1060,7 @@ def main():
 					try:
 						map2 = sp_utilities.get_im(map2_path)
 					except:
-						sp_global_def.ERROR( "Sphire combinemaps fails to read the second map " + map2_pat + "(--combinemaps option for 3-D)" )
+						sp_global_def.ERROR( "Sphire combinemaps fails to read the second map " + map2_path + "(--combinemaps option for 3-D)" )
 						return
 				
 					if (map2.get_xsize() != map1.get_xsize()) or (map2.get_ysize() != map1.get_ysize()) or (map2.get_zsize() != map1.get_zsize()):

@@ -770,7 +770,7 @@ def mode_meridien(reconfile, classavgstack, classdocs, partangles, selectdoc, ma
 	outalignlist = []
 
 	# Read class lists
-	classdoclist = glob.glob.glob(classdocs)
+	classdoclist = glob.glob(classdocs)
 	partangleslist = sp_utilities.read_text_row(partangles)
 	
 	# Loop through class lists
