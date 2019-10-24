@@ -23,7 +23,7 @@ def alifn(jsd,fsp,i,a,options):
 	b.process_inplace("xform.phaseorigin.tocorner")
 
 	# we align backwards due to symmetry
-	c=a.xform_align_nbest("rotate_translate_3d_tree",b,{"verbose":0,"sym":"c1","sigmathis":.1,"sigmato":1},1)
+	c=a.xform_align_nbest("rotate_translate_3d_tree",b,{"maxshift":10,"verbose":0,"sym":"c1","sigmathis":.1,"sigmato":1},1)
 	for cc in c : cc["xform.align3d"]=cc["xform.align3d"].inverse()
 
 	jsd.put((fsp,i,c[0]))
@@ -181,7 +181,7 @@ def main():
 			ddm=dmap*dmap
 			cc.append(ddm["mean_nonzero"])
 			
-			ref0=ref.copy()
+			ref0=ref#.copy()
 			if options.mask:
 				if os.path.isfile(options.mask):
 				
@@ -192,6 +192,9 @@ def main():
 
 			#ref.write_image(tmpout,-1)
 			ref0.write_image(os.path.join(path,"output.hdf"))
+			ref.write_image(os.path.join(path,"testref.hdf"), -1)
+			avg.write_image(os.path.join(path,"testavg.hdf"), -1)
+			
 			if options.writemovie:
 				ref0.write_image(os.path.join(path,"output_all.hdf"), -1)
 			sys.stdout.write('#')

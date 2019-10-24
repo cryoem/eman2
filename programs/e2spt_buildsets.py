@@ -46,6 +46,8 @@ def main():
 	
 		cmd="e2proclst.py {} --create {}".format(' '.join(pts), out)
 		run(cmd)
+		n=EMUtil.get_image_count(out)
+		print("{} particles in {}".format(n, out))
 		if options.spliteo:
 			print("Splitting even/odd sets...")
 			lsts=[]

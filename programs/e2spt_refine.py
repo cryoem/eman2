@@ -40,6 +40,7 @@ def main():
 
 	parser.add_argument("--path", type=str,help="Specify name of refinement folder. Default is spt_XX.", default=None)#, guitype='strbox', row=10, col=0,rowspan=1, colspan=3, mode="model")
 	parser.add_argument("--maxang",type=float,help="maximum anglular difference in refine mode.",default=30)
+	parser.add_argument("--maxshift",type=float,help="maximum shift in pixel.",default=-1)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="")
@@ -135,6 +136,9 @@ def main():
 		if options.refine:
 			gd+=" --refine --maxang {:.1f}".format(options.maxang)
 		#curres=0
+		
+		if options.maxshift>0:
+			gd+=" --maxshift {:.1f}".format(options.maxshift)
 
 		cmd="e2spt_align.py {} {} --parallel {} --path {} --iter {} --sym {} --nsoln 1 {}".format(ptcls, ref,  options.parallel, options.path, itr, options.sym, gd)
 		
@@ -219,8 +223,13 @@ def main():
 			
 		ref=os.path.join(options.path, "threed_{:02d}.hdf".format(itr))
 		fsc=np.loadtxt(os.path.join(options.path, "fsc_masked_{:02d}.txt".format(itr)))
-		rs=1./fsc[fsc[:,1]<0.3, 0][0]
-		print("Resolution (FSC<0.3) is ~{:.1f} A".format(rs))
+		
+		fi=fsc[:,1]<0.3
+		if np.sum(fi)==0:
+			print("something wrong with the FSC curve. Cannot estimate resolution. Please check.")
+		else:
+			rs=1./fsc[fi, 0][0]
+			print("Resolution (FSC<0.3) is ~{:.1f} A".format(rs))
 		curres=rs
 		if curres>40.:
 			curres=40

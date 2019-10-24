@@ -207,6 +207,7 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 		towrite=[]
 		if options.curves>=0:
 			print("Generating particles along curves...")
+			info=[]
 			overlap=options.curves_overlap
 			if overlap>=1 or overlap<0:
 				print("Overlap has to be in [0,1)")
@@ -226,6 +227,7 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 					if "apix_unbin" in js:
 						pts[:,:3]/=options.shrink
 					else:
+						## this is to deal with the old metadata format...
 						pts[:,:3]-=[e["nx"]//2, e["ny"]//2, e["nz"]//2]
 						pts[:,:3]*=scale
 						pts[:,2]-=zshift
@@ -239,25 +241,39 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 					outname=str(base_name(pfile)+"__"+lab+".hdf")
 					
 					sz=int(options.boxsz//2)
-					
+					spacing=options.boxsz*(1-overlap)*apix_tlt
+					curves=np.unique(pts[:,3])
 					
 					bxs=[]
 					drs=[]
-					for li in np.unique(pts[:,3]):
+					for li in curves:
+						## points on one curve
 						pt=pts[pts[:,3]==li][:,:3].copy()
-						pt=pt[np.append(True, np.linalg.norm(np.diff(pt, axis=0), axis=1)>0.1)]
-						ln=np.linalg.norm(pt[-1]-pt[0])
-						#     print np.round(ln)//2
+						
 						if len(pt)<2: continue
-						ipt=interp_points(pt, npt=int(np.round(ln/options.boxsz/(1-overlap))))
+					
+						## total length in A
+						ln=np.sum(np.linalg.norm(np.diff(pt, axis=0), axis=1))*apix_tlt
+						
+						## interpolate to the given spacing
+						ipt=interp_points(pt, npt=int(np.round(ln/spacing)))
 						
 						if len(ipt)<4: continue
-						bxs.append(ipt[1:-1])
-						drs.append(ipt[2:]-ipt[:-2])
+						
+						## skip one point on the edge
+						cc=(ipt[:-1]+ipt[1:])/2.
+						dd=ipt[:-1]-ipt[1:]
+						
+						od=np.arange(len(cc),dtype=float)/(len(cc)-1)
+						info.extend([{"cv_id":li, "cv_len":ln, "cv_pos":o} for o in od])
+						
+						bxs.append(cc)
+						drs.append(dd)
 					
 					bxs=np.vstack(bxs)
 					drs=np.vstack(drs)
 					bxs=np.hstack([bxs,drs])
+					print(" {:d} curves, {:d} points with {:.1f}A spacing".format(len(curves), len(bxs), spacing))
 					
 					towrite.append((bxs, outname, sz, info))
 		

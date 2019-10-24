@@ -141,6 +141,7 @@ def main():
 				tlts=[np.where(lst[:,it]==t)[0] for t in fid]
 			else:
 				tlts=[np.arange(len(lst), dtype=int)]
+				it=0
 			
 			
 			try:
