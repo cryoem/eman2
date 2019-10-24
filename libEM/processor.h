@@ -2650,6 +2650,40 @@ The data itself will remain stored in single precision floating point format, so
 		static const string NAME;
 
 	};
+	
+	
+	class TransformTomoProcessor:public Processor
+	{
+		public:
+			virtual string get_name() const
+			{
+				return NAME;
+			}
+			static Processor *NEW()
+			{
+				return new TransformTomoProcessor();
+			}
+
+			virtual void process_inplace(EMData* image);
+
+			virtual EMData* process(const EMData* const image);
+
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("transform", EMObject::TRANSFORM, "The Transform object that will be applied to the image" );
+				d.put("zerocorners", EMObject::INT, "To keep consistent with xform processor. not used" );
+				return d;
+			}
+
+			virtual string get_desc() const
+			{
+				return "Testing for complex image with missing value rotation. do not use...";
+			}
+
+			static const string NAME;
+
+	};
 
 
 	/**Rotate by 180 using pixel swapping, works for 2D only
