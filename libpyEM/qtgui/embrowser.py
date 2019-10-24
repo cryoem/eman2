@@ -520,7 +520,7 @@ class EMFileType(object) :
 		"""Show a single 3-D volume as a 2-D image"""
 
 		brws.busy()
-		print(self.path)
+		#print(self.path)
 
 		data = EMData(self.path,1)
 
@@ -569,13 +569,16 @@ class EMFileType(object) :
 
 	def showFilterTool(self, brws) :
 		"""Open in e2filtertool.py"""
-		
 		modifiers = QtWidgets.QApplication.keyboardModifiers()
+		cmd="e2filtertool.py {}".format(self.path)
 		if modifiers == QtCore.Qt.ShiftModifier:
-			print("Running filter tool in safe mode...")
-			os.system("e2filtertool.py %s --safemode&"%self.path)
-		else:
-			os.system("e2filtertool.py %s &"%self.path)
+			#print("Running filter tool in safe mode...")
+			cmd+=" --safemode"
+		
+		if self.n>=0:
+			cmd+=" --idx {:d} ".format(self.n)
+			
+		os.system(cmd+"&");
 
 
 class EMTextFileType(EMFileType) :

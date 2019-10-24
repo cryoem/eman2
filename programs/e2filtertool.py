@@ -67,6 +67,7 @@ def main():
 #	parser.add_argument("--force2d",action="store_true",help="Display 3-D data as 2-D slices",default=False)
 	parser.add_argument("--safemode",action="store_true",help="Safe mode without the timer...",default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--idx", type=int, help="index for an image in a stack",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
@@ -81,7 +82,7 @@ def main():
 
 	app = EMApp()
 	pix_init()
-	control=EMFilterTool(datafile=args[0],apix=options.apix,force2d=False,verbose=options.verbose, safemode=options.safemode)
+	control=EMFilterTool(datafile=args[0],apix=options.apix,force2d=False,verbose=options.verbose, safemode=options.safemode, idx=options.idx)
 #	control=EMFilterTool(datafile=args[0],apix=options.apix,force2d=options.force2d,verbose=options.verbose)
 	control.show()
 	try: control.raise_()
@@ -419,12 +420,13 @@ class EMFilterTool(QtWidgets.QMainWindow):
 	"""This class represents the EMFilterTool application instance.  """
 	module_closed = QtCore.pyqtSignal()
 
-	def __init__(self,datafile=None,apix=0.0,force2d=False,verbose=0, safemode=False):
+	def __init__(self,datafile=None,apix=0.0,force2d=False,verbose=0, safemode=False, idx=-1):
 		QtWidgets.QMainWindow.__init__(self)
 
 		app=QtWidgets.qApp
 		self.apix=apix
 		self.force2d=force2d
+		self.dataidx=idx
 		self.setWindowTitle("e2filtertool.py")
 
 		# Menu Bar
@@ -706,9 +708,16 @@ class EMFilterTool(QtWidgets.QMainWindow):
 		elif isinstance(data,str) :
 			self.datafile=data
 			self.nimg=EMUtil.get_image_count(data)
+			
+			if self.dataidx>=0 and self.dataidx<self.nimg:
+				ii=self.dataidx
+				self.nimg=1
+			else:
+				ii=0
+			
 			hdr=EMData(data,0,1)
 
-			self.origdata=EMData(data,0)
+			self.origdata=EMData(data,ii)
 
 			if self.origdata["nz"]==1:
 				if self.nimg>20 and hdr["ny"]>512:
