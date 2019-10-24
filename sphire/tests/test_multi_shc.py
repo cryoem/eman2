@@ -59,8 +59,8 @@ class Test_volume_reconstruction(unittest.TestCase):
             fu.volume_reconstruction()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.volume_reconstruction()
-        self.assertEqual(cm_new.exception.message, "volume_reconstruction() takes exactly 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "volume_reconstruction() takes exactly 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_volume_reconstruction(self):
         return_old = oldfu.volume_reconstruction(data="", options="", mpi_comm=0)
@@ -74,8 +74,8 @@ class Test_volume_recsp(unittest.TestCase):
             fu.volume_recsp()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.volume_recsp()
-        self.assertEqual(cm_new.exception.message, "volume_recsp() takes exactly 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "volume_recsp() takes exactly 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_volume_recsp(self):
         return_old = oldfu.volume_recsp(data=0, options=0)
@@ -97,34 +97,34 @@ class Test_proj_ali_incore_multi(unittest.TestCase):
             fu.proj_ali_incore_multi(data=EMData(), refrings=self.refrings,  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.proj_ali_incore_multi(data=EMData(), refrings=self.refrings,  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
         self.assertEqual(msg[3], "The requested key does not exist")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(self):
         with self.assertRaises(AttributeError) as cm_new:
             fu.proj_ali_incore_multi(data=None, refrings=self.refrings,  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.proj_ali_incore_multi(data=None, refrings=self.refrings,  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_xsize'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image_refrings_returns_runtimeError_NotExistingObjectException(self):
         with self.assertRaises(RuntimeError) as cm_new:
             fu.proj_ali_incore_multi(data=self.data, refrings= [EMData(),EMData(),EMData()],  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.proj_ali_incore_multi(data=self.data, refrings= [EMData(),EMData(),EMData()],  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
         self.assertEqual(msg[3], "The requested key does not exist")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_None_input_image_refrings_crash_because_SIGSEGV(self):
         pass
@@ -133,13 +133,13 @@ class Test_proj_ali_incore_multi(unittest.TestCase):
             fu.proj_ali_incore_multi(data=self.data, refrings= [None,None,None],  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.proj_ali_incore_multi(data=self.data, refrings= [None,None,None],  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
         self.assertEqual(msg[3], "The requested key does not exist")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
         """
 
     def test_empty_list_numr_returns_IndexError_list_index_out_of_range(self):
@@ -147,8 +147,8 @@ class Test_proj_ali_incore_multi(unittest.TestCase):
             fu.proj_ali_incore_multi(data=self.data, refrings=self.refrings,  numr=[], xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
         with self.assertRaises(IndexError) as cm_old:
             oldfu.proj_ali_incore_multi(data=self.data, refrings=self.refrings,  numr=[], xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_negative_nsoft(self):
         return_old = oldfu.proj_ali_incore_multi(data=self.data, refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0, step=self.step,an=1.0, nsoft=-1, finfo=None, sym="not_used")
@@ -179,21 +179,21 @@ class Test_shc_multi(unittest.TestCase):
             fu.shc_multi()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.shc_multi()
-        self.assertEqual(cm_new.exception.message, "shc_multi() takes at least 9 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "shc_multi() takes at least 9 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image_returns_runtimeError_NotExistingObjectException(self):
         with self.assertRaises(RuntimeError) as cm_new:
             fu.shc_multi(data=EMData(), refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0, step=self.step, an=1.0, nsoft=-1, sym="c1", finfo=None)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.shc_multi(data=EMData(), refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0, step=self.step, an=1.0, nsoft=-1, sym="c1", finfo=None)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
         self.assertEqual(msg[3], "The requested key does not exist")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_get_Attr(self):
@@ -201,8 +201,8 @@ class Test_shc_multi(unittest.TestCase):
             fu.shc_multi(data=None, refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0, step=self.step, an=1.0, nsoft=-1, sym="c1", finfo=None)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.shc_multi(data=None, refrings=self.refrings, numr=self.numr, xrng=2.0, yrng=2.0, step=self.step, an=1.0, nsoft=-1, sym="c1", finfo=None)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'get_attr'")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_attr'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_empty_input_image_refrings_crash_because_SIGSEGV(self):
         pass
@@ -211,13 +211,13 @@ class Test_shc_multi(unittest.TestCase):
             fu.proj_ali_incore_multi(data=self.data, refrings= [EMData(),EMData(),EMData()],  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.proj_ali_incore_multi(data=self.data, refrings= [EMData(),EMData(),EMData()],  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
         self.assertEqual(msg[3], "The requested key does not exist")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
         """
 
     def test_Noneinput_image_refrings_crash_because_SIGSEGV(self):
@@ -227,13 +227,13 @@ class Test_shc_multi(unittest.TestCase):
             fu.proj_ali_incore_multi(data=self.data, refrings= [None,None,None],  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.proj_ali_incore_multi(data=self.data, refrings=[None,None,None],  numr=self.numr, xrng= 2.0, yrng=2.0, step=self.step, an = 1.0, nsoft = -1, finfo=None, sym="not_used")
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
         self.assertEqual(msg[3], "The requested key does not exist")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
         """
 
     def test_shc_multi_negative_nsoft_c1(self):
@@ -281,8 +281,8 @@ class Test_ali3d_multishc_soft(unittest.TestCase):
             fu.ali3d_multishc_soft()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali3d_multishc_soft()
-        self.assertEqual(cm_new.exception.message, "ali3d_multishc_soft() takes at least 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ali3d_multishc_soft() takes at least 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ali3d_multishc_soft(self):
         return_old = oldfu.ali3d_multishc_soft(stack="", ref_vol="", ali3d_options="", mpi_comm = None, log = None, nsoft=2 )
@@ -297,8 +297,8 @@ class Test_no_of_processors_restricted_by_data__do_volume(unittest.TestCase):
             fu.no_of_processors_restricted_by_data__do_volume()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.no_of_processors_restricted_by_data__do_volume()
-        self.assertEqual(cm_new.exception.message, "angle_error() takes exactly 4 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "angle_error() takes exactly 4 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_no_of_processors_restricted_by_data__do_volume(self):
         return_old = oldfu.no_of_processors_restricted_by_data__do_volume(projections="", ali3d_options="", iter="", mpi_comm=0)
@@ -318,8 +318,8 @@ class Test_orient_params(unittest.TestCase):
             fu.orient_params()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.orient_params()
-        self.assertEqual(cm_new.exception.message, "orient_params() takes at least 2 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "orient_params() takes at least 2 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_default_value_returns_AttributeError(self):
         with self.assertRaises(AttributeError)as cm_new:
@@ -327,8 +327,8 @@ class Test_orient_params(unittest.TestCase):
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.orient_params(params=self.params, refparams=self.refparams, indexes= None,symmetry_class=None)
 
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'sym'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'sym'")
 
     def test_symmetry_class_noneType_returns_AttributeError(self):
         with self.assertRaises(AttributeError)as cm_new:
@@ -336,8 +336,8 @@ class Test_orient_params(unittest.TestCase):
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.orient_params(params=self.params, refparams=self.refparams, indexes= self.indexes,symmetry_class=None)
 
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'sym'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'sym'")
 
     def test_indexes_empty_list(self):
         return_new = fu.orient_params(params=self.params, refparams=self.refparams, indexes= [],symmetry_class=self.symmetry_class)
@@ -350,24 +350,24 @@ class Test_orient_params(unittest.TestCase):
             fu.orient_params(params=[], refparams=self.refparams, indexes= self.indexes,symmetry_class=self.symmetry_class)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.orient_params(params=[], refparams=self.refparams, indexes= self.indexes,symmetry_class=self.symmetry_class)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_refparams_empty_list_returns_IndexError(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.orient_params(params=self.params, refparams=[], indexes= self.indexes,symmetry_class=self.symmetry_class)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.orient_params(params=self.params, refparams=[], indexes= self.indexes,symmetry_class=self.symmetry_class)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_refparams_and_params_empty_list_returns_IndexError(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.orient_params(params=[], refparams=[], indexes=self.indexes,symmetry_class=self.symmetry_class)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.orient_params(params=[], refparams=[], indexes=self.indexes,symmetry_class=self.symmetry_class)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_refparams_and_params_indexes_empty_list_returns_IndexError(self):
         return_new = fu.orient_params(params=[], refparams=[], indexes=[],symmetry_class=self.symmetry_class)
@@ -402,8 +402,8 @@ class Test_orient_params(unittest.TestCase):
             fu.orient_params(params=self.params, refparams=self.refparams, indexes= self.indexes,symmetry_class=symmetry_class)
         with self.assertRaises(UnboundLocalError) as cm_old:
             oldfu.orient_params(params=self.params, refparams=self.refparams, indexes= self.indexes,symmetry_class=symmetry_class)
-        self.assertEqual(cm_new.exception.message, "local variable 'out' referenced before assignment")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "local variable 'out' referenced before assignment")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -415,24 +415,24 @@ class Test_find_common_subset(unittest.TestCase):
             fu.find_common_subset()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.find_common_subset()
-        self.assertEqual(cm_new.exception.message, "find_common_subset() takes at least 1 argument (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "find_common_subset() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_emptyProjslist_returns_IndexError(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.find_common_subset([], target_threshold = self.target_threshold ,minimal_subset_size = self.minimal_subset_size ,symmetry_class =self.symmetry_class)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.find_common_subset([], target_threshold = self.target_threshold ,minimal_subset_size = self.minimal_subset_size ,symmetry_class =self.symmetry_class)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_None_symClass_returns_AttributeError(self):
         with self.assertRaises(AttributeError)as cm_new:
             fu.find_common_subset(projs= self.projs, target_threshold = self.target_threshold ,minimal_subset_size = self.minimal_subset_size ,symmetry_class =None)
         with self.assertRaises(AttributeError)as cm_old:
             oldfu.find_common_subset(projs= self.projs, target_threshold = self.target_threshold ,minimal_subset_size = self.minimal_subset_size ,symmetry_class =None)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
-        self.assertEqual(cm_new.exception.message, "'NoneType' object has no attribute 'sym'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'sym'")
 
     def test_pickle_file_value(self):
         return_new = fu.find_common_subset(projs= self.projs, target_threshold = self.target_threshold ,minimal_subset_size = self.minimal_subset_size ,symmetry_class =self.symmetry_class)
@@ -450,8 +450,8 @@ class Test_ali3d_multishc(unittest.TestCase):
             fu.ali3d_multishc()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali3d_multishc()
-        self.assertEqual(cm_new.exception.message, "ali3d_multishc() takes at least 4 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ali3d_multishc() takes at least 4 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     @unittest.skip("ZeroDivisionError on the pickle file value")
@@ -483,8 +483,8 @@ class Test_ali3d_multishc_2(unittest.TestCase):
             fu.ali3d_multishc_2()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.ali3d_multishc_2()
-        self.assertEqual(cm_new.exception.message, "ali3d_multishc_2() takes at least 4 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "ali3d_multishc_2() takes at least 4 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     @unittest.skip("PROBLEM: not have the same results")
     def test_pickleFile(self):
@@ -508,8 +508,8 @@ class Test_multi_shc(unittest.TestCase):
             fu.multi_shc()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.multi_shc()
-        self.assertEqual(cm_new.exception.message, "multi_shc() takes at least 5 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "multi_shc() takes at least 5 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 
@@ -522,16 +522,16 @@ class Test_mirror_and_reduce_dsym(unittest.TestCase):
             fu.mirror_and_reduce_dsym()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.mirror_and_reduce_dsym()
-        self.assertEqual(cm_new.exception.message, "mirror_and_reduce_dsym() takes exactly 3 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "mirror_and_reduce_dsym() takes exactly 3 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_No_params_returns_IndexError(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.mirror_and_reduce_dsym(params = [], indexes=self.subset, symmetry_class=self.symmetry_class)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.mirror_and_reduce_dsym(params =[], indexes=self.subset, symmetry_class=self.symmetry_class)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_No_subset(self):
         new_copy=deepcopy(self.projs)
@@ -579,8 +579,8 @@ class Test_do_volume(unittest.TestCase):
             fu.do_volume()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.do_volume()
-        self.assertEqual(cm_new.exception.message, "do_volume() takes exactly 4 arguments (0 given)")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "do_volume() takes exactly 4 arguments (0 given)")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_pickle_file(self):
         mpi_barrier(MPI_COMM_WORLD)
@@ -596,13 +596,13 @@ class Test_do_volume(unittest.TestCase):
         mpi_barrier(MPI_COMM_WORLD)
         with self.assertRaises(RuntimeError) as cm_old:
             oldfu.do_volume(data=[EMData()],options=self.options,iter=None, mpi_comm = MPI_COMM_WORLD)
-        msg = cm_new.exception.message.split("'")
-        msg_old = cm_old.exception.message.split("'")
+        msg = str(cm_new.exception).split("'")
+        msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
         self.assertEqual(msg[3], "The requested key does not exist")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_no_data_returns_indexError(self):
         mpi_barrier(MPI_COMM_WORLD)
@@ -611,8 +611,8 @@ class Test_do_volume(unittest.TestCase):
         mpi_barrier(MPI_COMM_WORLD)
         with self.assertRaises(IndexError) as cm_old:
             oldfu.do_volume(data=[],options=self.options,iter=None, mpi_comm = MPI_COMM_WORLD)
-        self.assertEqual(cm_new.exception.message, "list index out of range")
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
+        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
     def test_empty_options_returns_AttributeError(self):
@@ -622,8 +622,8 @@ class Test_do_volume(unittest.TestCase):
         mpi_barrier(MPI_COMM_WORLD)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.do_volume(data=self.data,options={},iter=None, mpi_comm = MPI_COMM_WORLD)
-        self.assertEqual(cm_new.exception.message, cm_old.exception.message)
-        self.assertEqual(cm_new.exception.message, "'dict' object has no attribute 'sym'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+        self.assertEqual(str(cm_new.exception), "'dict' object has no attribute 'sym'")
 
 
 
