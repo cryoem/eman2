@@ -6,9 +6,9 @@ installer_filename: eman2.linux.sh  # [linux]
 installer_filename: eman2.win.exe   # [win]
 
 channels:
+    - file:///place_holder_conda_prefix/conda-bld
     - https://repo.anaconda.com/pkgs/main
     - https://repo.anaconda.com/pkgs/msys2          # [win]
-    - file:///place_holder_conda_prefix/conda-bld
 
 channels_remap:                                       # [not win]
   -                                                   # [not win]
