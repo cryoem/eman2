@@ -141,7 +141,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	parser.add_argument("--listfile",type=str,help="Specify a filename containing a list of integer particle numbers to include in the average, one per line, first is 0. Additional exclusions may apply.",default=None)
 	parser.add_argument("--automaskexpand", default=-1, type=int,help="Default=boxsize/20. Specify number of voxels to expand mask before soft edge. Use this if low density peripheral features are cut off by the mask.",guitype='intbox', row=12, col=1, rowspan=1, colspan=1, mode="refinement[-1]" )
 	parser.add_argument("--symalimasked",type=str,default=None,help="This will translationally realign each asymmetric unit to the specified (usually masked) reference ")
-	parser.add_argument("--sym",type=str,default=None,help="Symmetry of the input. Must be aligned in standard orientation to work properly.")
+	parser.add_argument("--sym",type=str,default="c1",help="Symmetry of the input. Must be aligned in standard orientation to work properly.")
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder containing current results (default = highest spt_XX)")
 	parser.add_argument("--skippostp", action="store_true", default=False ,help="Skip post process steps (fsc, mask and filters)")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
@@ -200,7 +200,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	newang={}
 	if options.keep>0 and options.keep<=1:
 		score=[float(angs[k]["score"]) for k in keys]
-		options.simthr=np.sort(score)[int(len(score)*options.keep)]
+		options.simthr=np.sort(score)[int(len(score)*options.keep)-1]
 		print("Keeping {:.0f}% particles with score below {:.2f}".format(options.keep*100, options.simthr))
 	
 	for k in keys:
@@ -211,10 +211,10 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 		if val["score"]<=options.simthr and inrange(options.minalt,val["xform.align3d"].get_params("eman")["alt"],options.maxalt):
 			newkey.append(k)
 			newang[k]=val
-			
+	
+	if options.verbose : print("{}/{} particles after filters".format(len(newkey),len(list(angs.keys()))))		
 	keys=newkey
 	angs=newang
-	if options.verbose : print("{}/{} particles after filters".format(len(keys),len(list(angs.keys()))))
 
 			
 			

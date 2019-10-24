@@ -72,8 +72,8 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 	parser.add_argument("--iter",type=int,help="Iteration number within path. Default = start a new iteration",default=0)
 	parser.add_argument("--goldstandard",type=float,help="If specified, will phase randomize the even and odd references past the specified resolution (in A, not 1/A)",default=0)
 	parser.add_argument("--goldcontinue",action="store_true",help="Will use even/odd refs corresponding to specified reference to continue refining without phase randomizing again",default=False)
-	parser.add_argument("--saveali",action="store_true",help="Save a stack file (aliptcls.hdf) containing the aligned subtomograms.",default=False)
-	parser.add_argument("--savealibin",type=int,help="shrink aligned particles before saving",default=1)
+	#parser.add_argument("--saveali",action="store_true",help="Save a stack file (aliptcls.hdf) containing the aligned subtomograms.",default=False)
+	#parser.add_argument("--savealibin",type=int,help="shrink aligned particles before saving",default=1)
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder where results should be stored, following standard naming conventions (default = spt_XX)")
 	parser.add_argument("--sym",type=str,default="c1",help="Symmetry of the input. Must be aligned in standard orientation to work properly.")
 	parser.add_argument("--maxres",type=float,help="Maximum resolution to consider in alignment (in A, not 1/A)",default=0)
@@ -207,8 +207,7 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 	from EMAN2PAR import EMTaskCustomer
 	etc=EMTaskCustomer(options.parallel, module="e2spt_align.SptAlignTask")
 	num_cpus = etc.cpu_est()
-	
-	#tasks=tasks[:6]
+	options.nowtime=time.time()
 	print("{} jobs on {} CPUs".format(len(tasks), num_cpus))
 	njob=num_cpus#*4
 	
@@ -292,11 +291,13 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 	
 def reduce_sym(xf, s):
 	sym=parsesym(s)
+	xf.invert()
 	trans=xf.get_trans()
 	xf.set_trans(0,0,0)
 	xi=sym.in_which_asym_unit(xf)
 	xf.set_trans(trans)
 	xf=xf.get_sym(s, -xi)
+	xf.invert()
 	return xf
 
 class SptAlignTask(JSTask):
@@ -336,7 +337,10 @@ class SptAlignTask(JSTask):
 				
 			
 		rets=[]
-		for data in self.data:
+		
+		myid=self.data[0][1]
+		#print(myid, len(self.data))
+		for di,data in enumerate(self.data):
 			
 			fsp=data[0]
 			i=data[1]
@@ -368,7 +372,6 @@ class SptAlignTask(JSTask):
 					initxf=dataxf
 				else:
 					initxf=b["xform.align3d"]
-				
 				xfs=[initxf]
 				
 				for ii in range(len(xfs), ntry):
@@ -390,7 +393,8 @@ class SptAlignTask(JSTask):
 					xfs.append(xf*ixf)
 				
 				## rotate back to the first asym unit
-				xfs=[reduce_sym(xf.inverse(), options.sym).inverse() for xf in xfs]
+				if options.sym!="c1":
+					xfs=[reduce_sym(xf, options.sym) for xf in xfs]
 					
 				aligndic["initxform"]=xfs
 				if options.maxshift<0:
@@ -407,6 +411,7 @@ class SptAlignTask(JSTask):
 			# we align backwards due to symmetry
 			if options.verbose>2 : print("Aligning: ",fsp,i)
 			
+			#print(myid,di,i,time.time()-options.nowtime)
 			
 	
 			ref=refs[data[3]]
@@ -421,18 +426,34 @@ class SptAlignTask(JSTask):
 			
 			if options.breaksym:
 				xf=c[0]["xform.align3d"]
+				
 				b.process_inplace("xform", {"transform":xf})
+				#b.translate(0,0,5)
 				cs=[]
+				transxf=[]
 				for si in range(nsym):
 					ref=refasym[data[3]][si]
-					ccc=b.cmp("fsc.tomo.auto", ref, {"sigmaimgval":1.0, "sigmawithval":0.1})
+					
+					bb=b.align("translational",ref,{"intonly":1, "maxshift":options.maxshift})
+					ts=bb["xform.align3d"]
+					bb=b.process("xform",{"transform":ts})
+					
+					#print(bb["xform.align3d"].get_trans())
+					ccc=bb.cmp("fsc.tomo.auto", ref, {"sigmaimgval":3.0, "sigmawithval":0.})
 					cs.append(ccc)
+					transxf.append(ts)
 					
 				#print(xf, cs, np.argmin(cs))
+				
+				
 				ci=np.argmin(cs)
-				#ci=0
+				txf=transxf[ci]
 				x=Transform()
-				xf=x.get_sym(options.breaksymsym, ci)*xf
+				x=x.get_sym(options.breaksymsym, ci).inverse()
+
+				xf.translate(txf.get_trans())
+				xf=x*xf
+				#xf=txf.inverse()*xf
 				c[0]["xform.align3d"]=xf
 				c[0]["score"]=cs[ci]
 					
