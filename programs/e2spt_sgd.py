@@ -192,11 +192,12 @@ def main():
 
 			#ref.write_image(tmpout,-1)
 			ref0.write_image(os.path.join(path,"output.hdf"))
-			ref.write_image(os.path.join(path,"testref.hdf"), -1)
-			avg.write_image(os.path.join(path,"testavg.hdf"), -1)
 			
 			if options.writemovie:
 				ref0.write_image(os.path.join(path,"output_all.hdf"), -1)
+				ref.write_image(os.path.join(path,"testref.hdf"), -1)
+				avg.write_image(os.path.join(path,"testavg.hdf"), -1)
+				
 			sys.stdout.write('#')
 			sys.stdout.flush()
 
