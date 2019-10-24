@@ -27,7 +27,7 @@ conda info -a
 conda list
 conda list --explicit
 
-if [ -z "$JENKINS_HOME" ];then
+if [ ! -z "$JENKINS_HOME" ];then
     CPU_COUNT=4
 else
     CPU_COUNT=2
