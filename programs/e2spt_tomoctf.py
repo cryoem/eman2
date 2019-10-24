@@ -305,7 +305,7 @@ def main():
 	tltsrt=np.argsort(abs(tltparams[:,3]))	
 	if options.checkhand:
 		print("Checking handedness of the tomogram. Will NOT write metadata output...")
-		rot=np.mean(tltparams[:,2])
+		rot=tltparams[nz//2,2]
 		print("Current tilt axis rotation {:.2f}".format(-rot))
 		signs=[-1, 1]
 		scores=[[], []]
