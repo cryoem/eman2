@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+
 # sxgui_unblur for analyzing drift parameters made by Unblur and MotionCor2
 # Author: Markus Stabrin 2016-2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
@@ -44,38 +45,60 @@ from PyQt5.QtWidgets import QFileDialog as PyQt5QFileDialog
 try:
 
     try:
-        from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvasQTAgg
+        from matplotlib.backends.backend_qt4agg import (
+            FigureCanvasQTAgg as FigureCanvasQTAgg,
+        )
     except ImportError:
-        from matplotlib.backends.backend_qt4agg import FigureCanvasQT as FigureCanvasQTAgg
+        from matplotlib.backends.backend_qt4agg import (
+            FigureCanvasQT as FigureCanvasQTAgg,
+        )
     try:
-        from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar2QTAgg
+        from matplotlib.backends.backend_qt4agg import (
+            NavigationToolbar2QTAgg as NavigationToolbar2QTAgg,
+        )
     except ImportError:
-        from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar2QTAgg
+        from matplotlib.backends.backend_qt4agg import (
+            NavigationToolbar2QT as NavigationToolbar2QTAgg,
+        )
 except ImportError:
 
     try:
-        from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvasQTAgg
+        from matplotlib.backends.backend_qt5agg import (
+            FigureCanvasQTAgg as FigureCanvasQTAgg,
+        )
     except ImportError:
-        from matplotlib.backends.backend_qt5agg import FigureCanvasQT as FigureCanvasQTAgg
+        from matplotlib.backends.backend_qt5agg import (
+            FigureCanvasQT as FigureCanvasQTAgg,
+        )
     try:
-        from matplotlib.backends.backend_qt5agg import NavigationToolbar2QTAgg as NavigationToolbar2QTAgg
+        from matplotlib.backends.backend_qt5agg import (
+            NavigationToolbar2QTAgg as NavigationToolbar2QTAgg,
+        )
     except ImportError:
-        from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar2QTAgg
-
-
+        from matplotlib.backends.backend_qt5agg import (
+            NavigationToolbar2QT as NavigationToolbar2QTAgg,
+        )
 
 
 try:
     _fromUtf8 = PyQt5.QtCore.QString.fromUtf8
 except AttributeError:
+
     def _fromUtf8(s):
         return s
 
+
 try:
     _encoding = PyQt5.QtWidgets.QApplication.UnicodeUTF8
+
     def _translate(context, text, disambig):
-        return PyQt5.QtWidgets.QApplication.translate(context, text, disambig, _encoding)
+        return PyQt5.QtWidgets.QApplication.translate(
+            context, text, disambig, _encoding
+        )
+
+
 except AttributeError:
+
     def _translate(context, text, disambig):
         return PyQt5.QtWidgets.QApplication.translate(context, text, disambig)
 
@@ -114,17 +137,19 @@ class Ui_MSMainWidget(object):
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
         layout_v.addLayout(layout_h)
-        
-        label = PyQt5.QtWidgets.QLabel('Pattern:', self)
+
+        label = PyQt5.QtWidgets.QLabel("Pattern:", self)
         self.lePattern = PyQt5.QtWidgets.QLineEdit(self)
-        self.pbSelectTxt = PyQt5.QtWidgets.QPushButton('Find pattern', self)
+        self.pbSelectTxt = PyQt5.QtWidgets.QPushButton("Find pattern", self)
         layout_h.addWidget(label)
         layout_h.addWidget(self.lePattern)
         layout_h.addWidget(self.pbSelectTxt)
 
-        self.pbImportPattern = PyQt5.QtWidgets.QPushButton('Load files by pattern', self)
+        self.pbImportPattern = PyQt5.QtWidgets.QPushButton(
+            "Load files by pattern", self
+        )
         layout_v.addWidget(self.pbImportPattern)
-        self.pbImportList = PyQt5.QtWidgets.QPushButton('Load files by list', self)
+        self.pbImportList = PyQt5.QtWidgets.QPushButton("Load files by list", self)
         layout_v.addWidget(self.pbImportList)
         return widget
 
@@ -143,14 +168,14 @@ class Ui_MSMainWidget(object):
         layout_v = PyQt5.QtWidgets.QVBoxLayout(widget)
         layout_v.setContentsMargins(5, 5, 5, 5)
 
-        label = PyQt5.QtWidgets.QLabel('Info of current entry:', self)
+        label = PyQt5.QtWidgets.QLabel("Info of current entry:", self)
         layout_v.addWidget(label)
-        label = PyQt5.QtWidgets.QLabel('', self)
+        label = PyQt5.QtWidgets.QLabel("", self)
         layout_v.addWidget(label)
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = PyQt5.QtWidgets.QLabel('Micrograph name', self)
+        label = PyQt5.QtWidgets.QLabel("Micrograph name", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leCurrentMicName = PyQt5.QtWidgets.QLineEdit(self)
@@ -162,7 +187,7 @@ class Ui_MSMainWidget(object):
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = PyQt5.QtWidgets.QLabel('Overall drift [A]', self)
+        label = PyQt5.QtWidgets.QLabel("Overall drift [A]", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leCurrentOverallDrift = PyQt5.QtWidgets.QLineEdit(self)
@@ -173,7 +198,7 @@ class Ui_MSMainWidget(object):
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = PyQt5.QtWidgets.QLabel('Drift per frame [A]', self)
+        label = PyQt5.QtWidgets.QLabel("Drift per frame [A]", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leCurrentFrameDrift = PyQt5.QtWidgets.QLineEdit(self)
@@ -184,7 +209,7 @@ class Ui_MSMainWidget(object):
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = PyQt5.QtWidgets.QLabel('End to end length [A]', self)
+        label = PyQt5.QtWidgets.QLabel("End to end length [A]", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leCurrentEndToEndDrift = PyQt5.QtWidgets.QLineEdit(self)
@@ -195,7 +220,7 @@ class Ui_MSMainWidget(object):
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = PyQt5.QtWidgets.QLabel('Maximum distance between frames [A]', self)
+        label = PyQt5.QtWidgets.QLabel("Maximum distance between frames [A]", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leCurrentMaxDistance = PyQt5.QtWidgets.QLineEdit(self)
@@ -206,7 +231,7 @@ class Ui_MSMainWidget(object):
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = PyQt5.QtWidgets.QLabel('Maximum distance from start frame [A]', self)
+        label = PyQt5.QtWidgets.QLabel("Maximum distance from start frame [A]", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leCurrentMaxDistanceZero = PyQt5.QtWidgets.QLineEdit(self)
@@ -215,16 +240,16 @@ class Ui_MSMainWidget(object):
         layout_h.addWidget(self.leCurrentMaxDistanceZero)
         layout_v.addLayout(layout_h)
 
-        label = PyQt5.QtWidgets.QLabel('', self)
+        label = PyQt5.QtWidgets.QLabel("", self)
         layout_v.addWidget(label)
-        label = PyQt5.QtWidgets.QLabel('Drift info for selected micrographs:', self)
+        label = PyQt5.QtWidgets.QLabel("Drift info for selected micrographs:", self)
         layout_v.addWidget(label)
-        label = PyQt5.QtWidgets.QLabel('', self)
+        label = PyQt5.QtWidgets.QLabel("", self)
         layout_v.addWidget(label)
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = PyQt5.QtWidgets.QLabel('Nr. of micrographs', self)
+        label = PyQt5.QtWidgets.QLabel("Nr. of micrographs", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leAllMicNumber = PyQt5.QtWidgets.QLineEdit(self)
@@ -235,7 +260,7 @@ class Ui_MSMainWidget(object):
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = PyQt5.QtWidgets.QLabel('Checked micrographs', self)
+        label = PyQt5.QtWidgets.QLabel("Checked micrographs", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leMicChecked = PyQt5.QtWidgets.QLineEdit(self)
@@ -246,7 +271,7 @@ class Ui_MSMainWidget(object):
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = PyQt5.QtWidgets.QLabel('Average overall drift [A]', self)
+        label = PyQt5.QtWidgets.QLabel("Average overall drift [A]", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leAllOverallDrift = PyQt5.QtWidgets.QLineEdit(self)
@@ -257,7 +282,7 @@ class Ui_MSMainWidget(object):
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = PyQt5.QtWidgets.QLabel('Average drift per frame [A]', self)
+        label = PyQt5.QtWidgets.QLabel("Average drift per frame [A]", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leAllFrameDrift = PyQt5.QtWidgets.QLineEdit(self)
@@ -268,7 +293,7 @@ class Ui_MSMainWidget(object):
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = PyQt5.QtWidgets.QLabel('Average end to end length [A]', self)
+        label = PyQt5.QtWidgets.QLabel("Average end to end length [A]", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leAllEndToEndDrift = PyQt5.QtWidgets.QLineEdit(self)
@@ -279,7 +304,9 @@ class Ui_MSMainWidget(object):
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = PyQt5.QtWidgets.QLabel('Average maximum distance between frames [A]', self)
+        label = PyQt5.QtWidgets.QLabel(
+            "Average maximum distance between frames [A]", self
+        )
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leAllMaxDistance = PyQt5.QtWidgets.QLineEdit(self)
@@ -290,7 +317,9 @@ class Ui_MSMainWidget(object):
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = PyQt5.QtWidgets.QLabel('Average maximum distance from start frame [A]', self)
+        label = PyQt5.QtWidgets.QLabel(
+            "Average maximum distance from start frame [A]", self
+        )
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leAllMaxDistanceZero = PyQt5.QtWidgets.QLineEdit(self)
@@ -298,25 +327,25 @@ class Ui_MSMainWidget(object):
         self.leAllMaxDistanceZero.setEnabled(False)
         layout_h.addWidget(self.leAllMaxDistanceZero)
         layout_v.addLayout(layout_h)
-        
+
         return widget
-    
+
     def sort_section(self):
         widget = PyQt5.QtWidgets.QWidget(self)
         layout_v = PyQt5.QtWidgets.QVBoxLayout(widget)
         layout_v.setContentsMargins(5, 20, 5, 5)
 
-        label = PyQt5.QtWidgets.QLabel('Sort entries:', self)
+        label = PyQt5.QtWidgets.QLabel("Sort entries:", self)
         layout_v.addWidget(label)
 
         entries = [
-            'File name',
-            'Overall drift',
-            'Drift per frame',
-            'End to end length',
-            'Maximum distance between frames',
-            'Maximum distance from start frame'
-            ]
+            "File name",
+            "Overall drift",
+            "Drift per frame",
+            "End to end length",
+            "Maximum distance between frames",
+            "Maximum distance from start frame",
+        ]
         self.cbSort = PyQt5.QtWidgets.QComboBox(self)
         self.cbSort.setEnabled(False)
         self.cbSort.addItems(entries)
@@ -325,10 +354,10 @@ class Ui_MSMainWidget(object):
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
         layout_v.addLayout(layout_h)
-        self.chDescending = PyQt5.QtWidgets.QCheckBox('Descending', self)
+        self.chDescending = PyQt5.QtWidgets.QCheckBox("Descending", self)
         self.chDescending.setEnabled(False)
         layout_h.addWidget(self.chDescending)
-        self.chSortSelected = PyQt5.QtWidgets.QCheckBox('Sort selected', self)
+        self.chSortSelected = PyQt5.QtWidgets.QCheckBox("Sort selected", self)
         self.chSortSelected.setEnabled(False)
         layout_h.addWidget(self.chSortSelected)
 
@@ -346,42 +375,46 @@ class Ui_MSMainWidget(object):
         layout_h.addLayout(layout_v1)
         layout_h.addLayout(layout_v2)
 
-        label = PyQt5.QtWidgets.QLabel('Show plots of current entry:', self)
+        label = PyQt5.QtWidgets.QLabel("Show plots of current entry:", self)
         layout_v1.addWidget(label)
 
-        self.chPlotDriftMic = PyQt5.QtWidgets.QCheckBox('Drift', self)
+        self.chPlotDriftMic = PyQt5.QtWidgets.QCheckBox("Drift", self)
         self.chPlotDriftMic.setEnabled(False)
         layout_v1.addWidget(self.chPlotDriftMic)
 
-        self.chPlotFrameMic = PyQt5.QtWidgets.QCheckBox('Drift per frame', self)
+        self.chPlotFrameMic = PyQt5.QtWidgets.QCheckBox("Drift per frame", self)
         self.chPlotFrameMic.setEnabled(False)
         layout_v1.addWidget(self.chPlotFrameMic)
 
-        self.chPlotAngleMic = PyQt5.QtWidgets.QCheckBox('Angle per frame', self)
+        self.chPlotAngleMic = PyQt5.QtWidgets.QCheckBox("Angle per frame", self)
         self.chPlotAngleMic.setEnabled(False)
         layout_v1.addWidget(self.chPlotAngleMic)
 
-        label = PyQt5.QtWidgets.QLabel('Show plots of all micrographs:', self)
+        label = PyQt5.QtWidgets.QLabel("Show plots of all micrographs:", self)
         label.setEnabled(False)
         layout_v2.addWidget(label)
 
-        self.chAverageDriftPerFrame = PyQt5.QtWidgets.QCheckBox('Average drift per frame', self)
+        self.chAverageDriftPerFrame = PyQt5.QtWidgets.QCheckBox(
+            "Average drift per frame", self
+        )
         self.chAverageDriftPerFrame.setEnabled(False)
         layout_v2.addWidget(self.chAverageDriftPerFrame)
 
-        self.chPlotDrift = PyQt5.QtWidgets.QCheckBox('Overall drift histogram', self)
+        self.chPlotDrift = PyQt5.QtWidgets.QCheckBox("Overall drift histogram", self)
         self.chPlotDrift.setEnabled(False)
         layout_v2.addWidget(self.chPlotDrift)
 
-        self.chPlotFrame = PyQt5.QtWidgets.QCheckBox('Drift per frame histogram', self)
+        self.chPlotFrame = PyQt5.QtWidgets.QCheckBox("Drift per frame histogram", self)
         self.chPlotFrame.setEnabled(False)
         layout_v2.addWidget(self.chPlotFrame)
 
-        self.chPlotAngle = PyQt5.QtWidgets.QCheckBox('Angle per frame histogram', self)
+        self.chPlotAngle = PyQt5.QtWidgets.QCheckBox("Angle per frame histogram", self)
         self.chPlotAngle.setEnabled(False)
         layout_v2.addWidget(self.chPlotAngle)
 
-        self.chPlotPerMic = PyQt5.QtWidgets.QCheckBox('Overall drift per micrograph', self)
+        self.chPlotPerMic = PyQt5.QtWidgets.QCheckBox(
+            "Overall drift per micrograph", self
+        )
         self.chPlotPerMic.setEnabled(False)
         layout_v2.addWidget(self.chPlotPerMic)
 
@@ -394,29 +427,31 @@ class Ui_MSMainWidget(object):
         widget = PyQt5.QtWidgets.QWidget(self)
         layout_v = PyQt5.QtWidgets.QVBoxLayout(widget)
         layout_v.setContentsMargins(5, 20, 5, 5)
-        
+
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 5, 0, 5)
-        label = PyQt5.QtWidgets.QLabel('Start frame:', self)
+        label = PyQt5.QtWidgets.QLabel("Start frame:", self)
         layout_h.addWidget(label)
         self.leFrameStart = PyQt5.QtWidgets.QLineEdit(self)
         self.leFrameStart.setEnabled(False)
         self.leFrameStart.setMaximumWidth(50)
         layout_h.addWidget(self.leFrameStart)
         layout_h.addStretch(1)
-        label = PyQt5.QtWidgets.QLabel('End frame:', self)
+        label = PyQt5.QtWidgets.QLabel("End frame:", self)
         layout_h.addWidget(label)
         self.leFrameStop = PyQt5.QtWidgets.QLineEdit(self)
         self.leFrameStop.setEnabled(False)
         self.leFrameStop.setMaximumWidth(50)
         layout_h.addWidget(self.leFrameStop)
         layout_v.addLayout(layout_h)
-        
+
         layout_v.addWidget(self.threshold_section_overall())
         layout_v.addWidget(self.threshold_section_frame())
         layout_v.addWidget(self.threshold_section_angle())
 
-        self.pbApply = PyQt5.QtWidgets.QPushButton('Apply settings marked as criterion', self)
+        self.pbApply = PyQt5.QtWidgets.QPushButton(
+            "Apply settings marked as criterion", self
+        )
         self.pbApply.setEnabled(False)
         layout_v.addWidget(self.pbApply)
         return widget
@@ -430,15 +465,15 @@ class Ui_MSMainWidget(object):
         layout_v1 = PyQt5.QtWidgets.QVBoxLayout()
         layout_v2 = PyQt5.QtWidgets.QVBoxLayout()
 
-        label = PyQt5.QtWidgets.QLabel('Threshold overall drift', self)
+        label = PyQt5.QtWidgets.QLabel("Threshold overall drift", self)
         layout_v.addWidget(label)
-        
+
         layout_v.addLayout(layout_h1)
         layout_h1.addLayout(layout_v1)
         layout_h1.addLayout(layout_v2)
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
-        label = PyQt5.QtWidgets.QLabel('Start [A]', self)
+        label = PyQt5.QtWidgets.QLabel("Start [A]", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leStartOverall = PyQt5.QtWidgets.QLineEdit(self)
@@ -448,7 +483,7 @@ class Ui_MSMainWidget(object):
         layout_v1.addLayout(layout_h)
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
-        label = PyQt5.QtWidgets.QLabel('Stop [A]', self)
+        label = PyQt5.QtWidgets.QLabel("Stop [A]", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leStopOverall = PyQt5.QtWidgets.QLineEdit(self)
@@ -458,7 +493,7 @@ class Ui_MSMainWidget(object):
         layout_v1.addLayout(layout_h)
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
-        label = PyQt5.QtWidgets.QLabel('Registered start [A]', self)
+        label = PyQt5.QtWidgets.QLabel("Registered start [A]", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leStartSaveOverall = PyQt5.QtWidgets.QLineEdit(self)
@@ -468,7 +503,7 @@ class Ui_MSMainWidget(object):
         layout_v1.addLayout(layout_h)
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
-        label = PyQt5.QtWidgets.QLabel('Registered stop [A]', self)
+        label = PyQt5.QtWidgets.QLabel("Registered stop [A]", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leStopSaveOverall = PyQt5.QtWidgets.QLineEdit(self)
@@ -477,10 +512,10 @@ class Ui_MSMainWidget(object):
         layout_h.addWidget(self.leStopSaveOverall)
         layout_v1.addLayout(layout_h)
 
-        self.pbSaveOverall = PyQt5.QtWidgets.QPushButton('Register', self)
+        self.pbSaveOverall = PyQt5.QtWidgets.QPushButton("Register", self)
         self.pbSaveOverall.setEnabled(False)
         layout_v2.addWidget(self.pbSaveOverall)
-        self.chOverallCriterion = PyQt5.QtWidgets.QCheckBox('Use as criterion', self)
+        self.chOverallCriterion = PyQt5.QtWidgets.QCheckBox("Use as criterion", self)
         self.chOverallCriterion.setEnabled(False)
         layout_v2.addWidget(self.chOverallCriterion)
         layout_v2.addStretch(1)
@@ -492,8 +527,8 @@ class Ui_MSMainWidget(object):
         tab_1 = PyQt5.QtWidgets.QWidget(self)
         tab_2 = PyQt5.QtWidgets.QWidget(self)
 
-        tabWidget.addTab(tab_1, 'General')
-        tabWidget.addTab(tab_2, 'Per frame')
+        tabWidget.addTab(tab_1, "General")
+        tabWidget.addTab(tab_2, "Per frame")
 
         layout_v = PyQt5.QtWidgets.QVBoxLayout(tab_1)
         layout_v.setContentsMargins(5, 5, 5, 0)
@@ -502,15 +537,15 @@ class Ui_MSMainWidget(object):
         layout_v1 = PyQt5.QtWidgets.QVBoxLayout()
         layout_v2 = PyQt5.QtWidgets.QVBoxLayout()
 
-        label = PyQt5.QtWidgets.QLabel('Threshold for the drift of every frame', self)
+        label = PyQt5.QtWidgets.QLabel("Threshold for the drift of every frame", self)
         layout_v.addWidget(label)
-        
+
         layout_v.addLayout(layout_h1)
         layout_h1.addLayout(layout_v1)
         layout_h1.addLayout(layout_v2)
-        
+
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
-        label = PyQt5.QtWidgets.QLabel('Start [A]', self)
+        label = PyQt5.QtWidgets.QLabel("Start [A]", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leStartGeneral = PyQt5.QtWidgets.QLineEdit(self)
@@ -520,7 +555,7 @@ class Ui_MSMainWidget(object):
         layout_v1.addLayout(layout_h)
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
-        label = PyQt5.QtWidgets.QLabel('Stop [A]', self)
+        label = PyQt5.QtWidgets.QLabel("Stop [A]", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leStopGeneral = PyQt5.QtWidgets.QLineEdit(self)
@@ -529,10 +564,10 @@ class Ui_MSMainWidget(object):
         layout_h.addWidget(self.leStopGeneral)
         layout_v1.addLayout(layout_h)
 
-        self.pbSaveGeneral = PyQt5.QtWidgets.QPushButton('Register', self)
+        self.pbSaveGeneral = PyQt5.QtWidgets.QPushButton("Register", self)
         self.pbSaveGeneral.setEnabled(False)
         layout_v2.addWidget(self.pbSaveGeneral)
-        self.chGeneralCriterion = PyQt5.QtWidgets.QCheckBox('Use as criterion', self)
+        self.chGeneralCriterion = PyQt5.QtWidgets.QCheckBox("Use as criterion", self)
         self.chGeneralCriterion.setEnabled(False)
         layout_v2.addWidget(self.chGeneralCriterion)
         layout_v2.addStretch(1)
@@ -545,15 +580,15 @@ class Ui_MSMainWidget(object):
         layout_v1 = PyQt5.QtWidgets.QVBoxLayout()
         layout_v2 = PyQt5.QtWidgets.QVBoxLayout()
 
-        label = PyQt5.QtWidgets.QLabel('Threshold drift per frame', self)
+        label = PyQt5.QtWidgets.QLabel("Threshold drift per frame", self)
         layout_v.addWidget(label)
-        
+
         layout_v.addLayout(layout_h1)
         layout_h1.addLayout(layout_v1)
         layout_h1.addLayout(layout_v2)
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
-        label = PyQt5.QtWidgets.QLabel('Start [A]', self)
+        label = PyQt5.QtWidgets.QLabel("Start [A]", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leStartFrame = PyQt5.QtWidgets.QLineEdit(self)
@@ -563,7 +598,7 @@ class Ui_MSMainWidget(object):
         layout_v1.addLayout(layout_h)
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
-        label = PyQt5.QtWidgets.QLabel('Stop [A]', self)
+        label = PyQt5.QtWidgets.QLabel("Stop [A]", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leStopFrame = PyQt5.QtWidgets.QLineEdit(self)
@@ -573,7 +608,7 @@ class Ui_MSMainWidget(object):
         layout_v1.addLayout(layout_h)
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
-        label = PyQt5.QtWidgets.QLabel('Registered start [A]', self)
+        label = PyQt5.QtWidgets.QLabel("Registered start [A]", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leStartSaveFrame = PyQt5.QtWidgets.QLineEdit(self)
@@ -583,7 +618,7 @@ class Ui_MSMainWidget(object):
         layout_v1.addLayout(layout_h)
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
-        label = PyQt5.QtWidgets.QLabel('Registered stop [A]', self)
+        label = PyQt5.QtWidgets.QLabel("Registered stop [A]", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leStopSaveFrame = PyQt5.QtWidgets.QLineEdit(self)
@@ -595,10 +630,10 @@ class Ui_MSMainWidget(object):
         self.cbFrame = PyQt5.QtWidgets.QComboBox(self)
         self.cbFrame.setEnabled(False)
         layout_v2.addWidget(self.cbFrame)
-        self.pbSaveFrame = PyQt5.QtWidgets.QPushButton('Register', self)
+        self.pbSaveFrame = PyQt5.QtWidgets.QPushButton("Register", self)
         self.pbSaveFrame.setEnabled(False)
         layout_v2.addWidget(self.pbSaveFrame)
-        self.chFrameCriterion = PyQt5.QtWidgets.QCheckBox('Use as criterion', self)
+        self.chFrameCriterion = PyQt5.QtWidgets.QCheckBox("Use as criterion", self)
         self.chFrameCriterion.setEnabled(False)
         layout_v2.addWidget(self.chFrameCriterion)
         layout_v2.addStretch(1)
@@ -614,15 +649,15 @@ class Ui_MSMainWidget(object):
         layout_v1 = PyQt5.QtWidgets.QVBoxLayout()
         layout_v2 = PyQt5.QtWidgets.QVBoxLayout()
 
-        label = PyQt5.QtWidgets.QLabel('Threshold angle', self)
+        label = PyQt5.QtWidgets.QLabel("Threshold angle", self)
         layout_v.addWidget(label)
-        
+
         layout_v.addLayout(layout_h1)
         layout_h1.addLayout(layout_v1)
         layout_h1.addLayout(layout_v2)
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
-        label = PyQt5.QtWidgets.QLabel('Start [Degree]', self)
+        label = PyQt5.QtWidgets.QLabel("Start [Degree]", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leStartAngle = PyQt5.QtWidgets.QLineEdit(self)
@@ -632,7 +667,7 @@ class Ui_MSMainWidget(object):
         layout_v1.addLayout(layout_h)
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
-        label = PyQt5.QtWidgets.QLabel('Stop [Degree]', self)
+        label = PyQt5.QtWidgets.QLabel("Stop [Degree]", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leStopAngle = PyQt5.QtWidgets.QLineEdit(self)
@@ -642,7 +677,7 @@ class Ui_MSMainWidget(object):
         layout_v1.addLayout(layout_h)
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
-        label = PyQt5.QtWidgets.QLabel('Registered start [Degree]', self)
+        label = PyQt5.QtWidgets.QLabel("Registered start [Degree]", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leStartSaveAngle = PyQt5.QtWidgets.QLineEdit(self)
@@ -652,7 +687,7 @@ class Ui_MSMainWidget(object):
         layout_v1.addLayout(layout_h)
 
         layout_h = PyQt5.QtWidgets.QHBoxLayout()
-        label = PyQt5.QtWidgets.QLabel('Registered stop [Degree]', self)
+        label = PyQt5.QtWidgets.QLabel("Registered stop [Degree]", self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
         self.leStopSaveAngle = PyQt5.QtWidgets.QLineEdit(self)
@@ -664,13 +699,13 @@ class Ui_MSMainWidget(object):
         self.cbAngle = PyQt5.QtWidgets.QComboBox(self)
         self.cbAngle.setEnabled(False)
         layout_v2.addWidget(self.cbAngle)
-        self.pbSaveAngle = PyQt5.QtWidgets.QPushButton('Register', self)
+        self.pbSaveAngle = PyQt5.QtWidgets.QPushButton("Register", self)
         self.pbSaveAngle.setEnabled(False)
         layout_v2.addWidget(self.pbSaveAngle)
-        self.chAngleCriterion = PyQt5.QtWidgets.QCheckBox('Use as criterion', self)
+        self.chAngleCriterion = PyQt5.QtWidgets.QCheckBox("Use as criterion", self)
         self.chAngleCriterion.setEnabled(False)
         layout_v2.addWidget(self.chAngleCriterion)
-        self.pbUncheckCriterion = PyQt5.QtWidgets.QPushButton('Uncheck criteria')
+        self.pbUncheckCriterion = PyQt5.QtWidgets.QPushButton("Uncheck criteria")
         self.pbUncheckCriterion.setEnabled(False)
         layout_v2.addWidget(self.pbUncheckCriterion)
 
@@ -681,28 +716,30 @@ class Ui_MSMainWidget(object):
         layout_h = PyQt5.QtWidgets.QHBoxLayout(widget)
         layout_h.setContentsMargins(5, 0, 5, 0)
 
-        label = PyQt5.QtWidgets.QLabel('Output prefix:', self)
+        label = PyQt5.QtWidgets.QLabel("Output prefix:", self)
         layout_h.addWidget(label)
-        
-        self.leOutputName = PyQt5.QtWidgets.QLineEdit('Trial00', self)
+
+        self.leOutputName = PyQt5.QtWidgets.QLineEdit("Trial00", self)
         self.leOutputName.setEnabled(False)
         self.leOutputName.setMinimumWidth(300)
         layout_h.addWidget(self.leOutputName)
 
-        self.pbSaveSelected = PyQt5.QtWidgets.QPushButton('Select output directory and save selection', self)
+        self.pbSaveSelected = PyQt5.QtWidgets.QPushButton(
+            "Select output directory and save selection", self
+        )
         self.pbSaveSelected.setEnabled(False)
         layout_h.addWidget(self.pbSaveSelected)
 
         layout_h.addStretch(1)
 
-        self.pbSaveSettings = PyQt5.QtWidgets.QPushButton('Save settings', self)
+        self.pbSaveSettings = PyQt5.QtWidgets.QPushButton("Save settings", self)
         self.pbSaveSettings.setEnabled(False)
         layout_h.addWidget(self.pbSaveSettings)
 
-        self.pbLoadSettings = PyQt5.QtWidgets.QPushButton('Load settings', self)
+        self.pbLoadSettings = PyQt5.QtWidgets.QPushButton("Load settings", self)
         layout_h.addWidget(self.pbLoadSettings)
 
-        self.pbAbout = PyQt5.QtWidgets.QPushButton('About', self)
+        self.pbAbout = PyQt5.QtWidgets.QPushButton("About", self)
         layout_h.addWidget(self.pbAbout)
 
         return widget
@@ -762,16 +799,14 @@ class SXUnblurPlot(PyQt5.QtWidgets.QWidget):
 
         # Fill canvas with the figure and connect it to the click event
         canvas = FigureCanvasQTAgg(frame)
-        canvas.mpl_connect('button_press_event', self._change_frame)
+        canvas.mpl_connect("button_press_event", self._change_frame)
 
         # Canvas Layout settings
         canvas.setMinimumSize(canvas.size())
         layoutContent.addWidget(canvas)
 
         # Fill dictionary
-        self.dictFrames.update({
-            '{:s}'.format(canvas): '{:s} {:d}'.format(name, 1)
-            })
+        self.dictFrames.update({"{:s}".format(canvas): "{:s} {:d}".format(name, 1)})
 
         # Set Layout
         self.scrollArea.setWidget(scrollContent)
@@ -811,26 +846,28 @@ class SXUnblurPlot(PyQt5.QtWidgets.QWidget):
             figWidgetLower = PyQt5.QtWidgets.QWidget(scrollContentLower)
             # Add the figure to the Canvas.
             canvasUpper = FigureCanvasQTAgg(framesaslist[number])
-            canvasLower = FigureCanvasQTAgg(
-                framesaslist[intNrFrames - 1 - number]
-                )
+            canvasLower = FigureCanvasQTAgg(framesaslist[intNrFrames - 1 - number])
             canvasUpper.setParent(figWidgetLower)
             canvasLower.setParent(figWidgetUpper)
             # Set a pressed Signal to the Canvas.
-            canvasUpper.mpl_connect('button_press_event', self._change_frame)
-            canvasLower.mpl_connect('button_press_event', self._change_frame)
+            canvasUpper.mpl_connect("button_press_event", self._change_frame)
+            canvasLower.mpl_connect("button_press_event", self._change_frame)
             # Create a relationship between the name of the Canvas
             # and the Frame number.
-            self.dictFrames.update({
-                '{:s}'.format(canvasUpper): '{:s} {:d}'.format(
-                    name, framestart + number
+            self.dictFrames.update(
+                {
+                    "{:s}".format(canvasUpper): "{:s} {:d}".format(
+                        name, framestart + number
                     )
-                })
-            self.dictFrames.update({
-                '{:s}'.format(canvasLower): '{:s} {:d}'.format(
-                    name, framestop - 1 - number
+                }
+            )
+            self.dictFrames.update(
+                {
+                    "{:s}".format(canvasLower): "{:s} {:d}".format(
+                        name, framestop - 1 - number
                     )
-                })
+                }
+            )
             # Create a layout, add the canvas to it and
             # set it to the figWidget.
             figLayoutUpper = PyQt5.QtWidgets.QVBoxLayout()
@@ -854,21 +891,21 @@ class SXUnblurPlot(PyQt5.QtWidgets.QWidget):
             # Add the figure to the Canvas, funny plot for the missing one
             figFunny = self._funny_plot()
             canvasUpper = FigureCanvasQTAgg(framesaslist[number + 1])
-            canvasLower = FigureCanvasQTAgg(
-                figFunny
-                )
+            canvasLower = FigureCanvasQTAgg(figFunny)
             matplotlib.pyplot.close(figFunny)
             canvasUpper.setParent(figWidgetLower)
             canvasLower.setParent(figWidgetUpper)
             # Set a pressed Signal to the Canvas
-            canvasUpper.mpl_connect('button_press_event', self._change_frame)
+            canvasUpper.mpl_connect("button_press_event", self._change_frame)
             # Create a relationship between the name of the Canvas
             # and the Frame number.
-            self.dictFrames.update({
-                '{:s}'.format(canvasUpper): '{:s} {:d}'.format(
-                    name, framestart + number + 1
+            self.dictFrames.update(
+                {
+                    "{:s}".format(canvasUpper): "{:s} {:d}".format(
+                        name, framestart + number + 1
                     )
-                })
+                }
+            )
             # Create a layout, add the canvas to it and
             # set it to the figWidget.
             figLayoutUpper = PyQt5.QtWidgets.QVBoxLayout()
@@ -913,9 +950,7 @@ class SXUnblurPlot(PyQt5.QtWidgets.QWidget):
         self.canvas.setParent(self.widgetPlot)
 
         # Prepare for events
-        self.canvas.mpl_connect(
-            'button_press_event', self._unsaved_settings
-            )
+        self.canvas.mpl_connect("button_press_event", self._unsaved_settings)
         self.mode = mode
 
         # Create Navigation widget for the canvas
@@ -929,7 +964,7 @@ class SXUnblurPlot(PyQt5.QtWidgets.QWidget):
         """Event when one clicks on one of the frames"""
 
         # Emit a signal with the current frame
-        self.sigFrame.emit(self.dictFrames['{:s}'.format(event.canvas)])
+        self.sigFrame.emit(self.dictFrames["{:s}".format(event.canvas)])
 
     def _unsaved_settings(self, event):
         """Event when one clicks on the plot"""
@@ -945,9 +980,8 @@ class SXUnblurPlot(PyQt5.QtWidgets.QWidget):
         # If the click is inaxis and it was a left or right click,
         # emit the button and the xData
         if event.inaxes is not None and (
-                event.button == eventMouseLeft or
-                event.button == eventMouseRight
-                ):
+            event.button == eventMouseLeft or event.button == eventMouseRight
+        ):
             listEvent[idxMouse] = event.button
             listEvent[idxValue] = event.xdata
             listEvent[idxMode] = self.mode
@@ -957,12 +991,12 @@ class SXUnblurPlot(PyQt5.QtWidgets.QWidget):
         """Plot a list which shows that there is no Plot"""
 
         figFunny = matplotlib.pyplot.figure(figsize=(3, 2), dpi=100)
-        matplotlib.pyplot.plot([0, 0, 1, 1], [0, 2, 0, 2], 'b')
-        matplotlib.pyplot.plot([2, 2, 3, 3, 2], [0, 2, 2, 0, 0], 'b')
-        matplotlib.pyplot.plot([4, 4, 5, 5, 4], [0, 2, 2, 1, 1], 'b')
-        matplotlib.pyplot.plot([6, 6, 7], [2, 0, 0], 'b')
-        matplotlib.pyplot.plot([8, 8, 9, 9, 8], [0, 2, 2, 0, 0], 'b')
-        matplotlib.pyplot.plot([10, 10.5, 10.5, 10.5, 11], [2, 2, 0, 2, 2], 'b')
+        matplotlib.pyplot.plot([0, 0, 1, 1], [0, 2, 0, 2], "b")
+        matplotlib.pyplot.plot([2, 2, 3, 3, 2], [0, 2, 2, 0, 0], "b")
+        matplotlib.pyplot.plot([4, 4, 5, 5, 4], [0, 2, 2, 1, 1], "b")
+        matplotlib.pyplot.plot([6, 6, 7], [2, 0, 0], "b")
+        matplotlib.pyplot.plot([8, 8, 9, 9, 8], [0, 2, 2, 0, 0], "b")
+        matplotlib.pyplot.plot([10, 10.5, 10.5, 10.5, 11], [2, 2, 0, 2, 2], "b")
         listCoordX = []
         listCoordY = []
         arrPhiFace = matplotlib.numpy.linspace(0, 2 * matplotlib.numpy.pi, 100)
@@ -970,20 +1004,18 @@ class SXUnblurPlot(PyQt5.QtWidgets.QWidget):
         for i in arrPhiFace:
             listCoordX.append(matplotlib.numpy.cos(i) + 13)
             listCoordY.append(matplotlib.numpy.sin(i) + 1)
-        matplotlib.pyplot.plot(listCoordX, listCoordY, 'b')
+        matplotlib.pyplot.plot(listCoordX, listCoordY, "b")
         listCoordX = []
         listCoordY = []
         for i in arrPhiMouth:
             listCoordX.append(0.5 * matplotlib.numpy.cos(i) + 13)
             listCoordY.append(0.5 * matplotlib.numpy.sin(i) + 0.25)
-        matplotlib.pyplot.plot(listCoordX, listCoordY, 'b')
-        matplotlib.pyplot.plot([12.75, 12.75], [1.25, 1.5], 'b')
-        matplotlib.pyplot.plot([13.25, 13.25], [1.25, 1.5], 'b')
+        matplotlib.pyplot.plot(listCoordX, listCoordY, "b")
+        matplotlib.pyplot.plot([12.75, 12.75], [1.25, 1.5], "b")
+        matplotlib.pyplot.plot([13.25, 13.25], [1.25, 1.5], "b")
         matplotlib.pyplot.plot(
-            [-0.25, -0.25, 14.25, 14.25, -0.25],
-            [-0.25, 2.25, 2.25, -0.25, -0.25],
-            'r'
-            )
+            [-0.25, -0.25, 14.25, 14.25, -0.25], [-0.25, 2.25, 2.25, -0.25, -0.25], "r"
+        )
 
         matplotlib.pyplot.xlim([-1, 15])
         matplotlib.pyplot.ylim([-0.5, 2.5])
@@ -1007,7 +1039,6 @@ class SXUnblurPlot(PyQt5.QtWidgets.QWidget):
 
 
 class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
-
     def __init__(self, inputlist=None, inputfile=None, parent=None):
         super(SXDriftUnblur, self).__init__(parent)
 
@@ -1021,75 +1052,103 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         # Check parsed arguments
         if inputlist is not None:
             result = self._check_list_or_file(inputlist)
-            if result == 'list':
+            if result == "list":
                 try:
-                    listOfShiftFiles = matplotlib.numpy.genfromtxt(inputlist, dtype=None, unpack=True)
+                    listOfShiftFiles = matplotlib.numpy.genfromtxt(
+                        inputlist, dtype=None, unpack=True
+                    )
                 except TypeError:
                     message = PyQt5.QtWidgets.QMessageBox(self)
-                    message.setText('Empty File:\n{0}'.format(inputlist))
+                    message.setText("Empty File:\n{0}".format(inputlist))
                     message.exec_()
                 except ValueError:
                     message = PyQt5.QtWidgets.QMessageBox(self)
-                    message.setText('File is not valid, only one column allowed:\n{0}'.format(inputlist))
+                    message.setText(
+                        "File is not valid, only one column allowed:\n{0}".format(
+                            inputlist
+                        )
+                    )
                     message.exec_()
                 else:
                     if len(matplotlib.numpy.shape(listOfShiftFiles)) > 1:
                         message = PyQt5.QtWidgets.QMessageBox(self)
-                        message.setText('Too many columns. Expected one column:\n{0}'.format(inputlist))
+                        message.setText(
+                            "Too many columns. Expected one column:\n{0}".format(
+                                inputlist
+                            )
+                        )
                         message.exec_()
                     elif len(matplotlib.numpy.shape(listOfShiftFiles)) == 0:
-                        self._fill_gui(inputlist=[str(listOfShiftFiles)], inputfile=inputfile)
+                        self._fill_gui(
+                            inputlist=[str(listOfShiftFiles)], inputfile=inputfile
+                        )
                     else:
-                        listOfShiftFiles = [os.path.relpath(name) for name in listOfShiftFiles]
-                        self._fill_gui(inputlist=list(listOfShiftFiles), inputfile=inputfile)
+                        listOfShiftFiles = [
+                            os.path.relpath(name) for name in listOfShiftFiles
+                        ]
+                        self._fill_gui(
+                            inputlist=list(listOfShiftFiles), inputfile=inputfile
+                        )
             else:
                 message = PyQt5.QtWidgets.QMessageBox(self)
-                message.setText('Not a valid file name. Try again:\n{0}'.format(inputlist))
+                message.setText(
+                    "Not a valid file name. Try again:\n{0}".format(inputlist)
+                )
                 message.exec_()
         elif inputfile is not None:
             result = self._check_list_or_file(inputfile)
-            if result == 'file':
+            if result == "file":
                 self._fill_gui(inputfile=inputfile)
-            elif result == 'list':
+            elif result == "list":
                 try:
-                    listOfShiftFiles = matplotlib.numpy.genfromtxt(inputfile, dtype=None, unpack=True)
+                    listOfShiftFiles = matplotlib.numpy.genfromtxt(
+                        inputfile, dtype=None, unpack=True
+                    )
                 except TypeError:
                     message = PyQt5.QtWidgets.QMessageBox(self)
-                    message.setText('Empty File:\n{0}'.format(inputfile))
+                    message.setText("Empty File:\n{0}".format(inputfile))
                     message.exec_()
                 except ValueError:
                     message = PyQt5.QtWidgets.QMessageBox(self)
-                    message.setText('File is not valid, only one column allowed:\n{0}'.format(inputfile))
+                    message.setText(
+                        "File is not valid, only one column allowed:\n{0}".format(
+                            inputfile
+                        )
+                    )
                     message.exec_()
                 else:
                     if len(matplotlib.numpy.shape(listOfShiftFiles)) > 1:
                         message = PyQt5.QtWidgets.QMessageBox(self)
-                        message.setText('Too many columns. Expected one column:\n{0}'.format(inputfile))
+                        message.setText(
+                            "Too many columns. Expected one column:\n{0}".format(
+                                inputfile
+                            )
+                        )
                         message.exec_()
                     elif len(matplotlib.numpy.shape(listOfShiftFiles)) == 0:
                         self._fill_gui(inputfile=str(listOfShiftFiles))
                     else:
                         self._fill_gui(inputlist=list(listOfShiftFiles))
             else:
-                print( 'Error: {0} not found! Try again'.format(inputfile) )
+                print("Error: {0} not found! Try again".format(inputfile))
 
     def _check_list_or_file(self, data):
         """Check if the input name is a file or a list of files"""
-        
-        if '*' in data:
-            return 'file'
+
+        if "*" in data:
+            return "file"
         else:
             try:
-                with open(data, 'r') as r:
+                with open(data, "r") as r:
                     first_line = r.readline()
-                    if first_line.startswith('# Unblur'):
-                        return 'file'
-                    elif first_line.startswith('# full frame alignment'):
-                        return 'file'
-                    elif first_line.startswith('# Patch based alignment'):
-                        return 'file'
+                    if first_line.startswith("# Unblur"):
+                        return "file"
+                    elif first_line.startswith("# full frame alignment"):
+                        return "file"
+                    elif first_line.startswith("# Patch based alignment"):
+                        return "file"
                     else:
-                        return 'list'
+                        return "list"
             except IOError:
                 return None
 
@@ -1129,49 +1188,47 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         self.outputDir = None
 
         # Modes
-        self.modeOverall = 'Overall'
-        self.modeFrame = 'Frame'
-        self.modeAngle = 'Angle'
-        self.modeGeneral = 'General'
-        self.modeAverage = 'Average'
-        self.modeDrift = 'Drift'
-        self.modeDriftPerFrame = 'Drift per Frame'
-        self.modeAnglePerFrame = 'Angle per Frame'
-        self.modePerMic = 'Drift per Micrograph'
+        self.modeOverall = "Overall"
+        self.modeFrame = "Frame"
+        self.modeAngle = "Angle"
+        self.modeGeneral = "General"
+        self.modeAverage = "Average"
+        self.modeDrift = "Drift"
+        self.modeDriftPerFrame = "Drift per Frame"
+        self.modeAnglePerFrame = "Angle per Frame"
+        self.modePerMic = "Drift per Micrograph"
 
         # DType
-        self.dFile = 'fileName'
-        self.dFileRaw = 'fileNameRaw'
-        self.dMic = 'micName'
-        self.dOverall = 'driftOverall'
-        self.dFrame = 'driftFrame'
-        self.dEnd = 'endToEndDrift'
-        self.dMax = 'maxDistance'
-        self.dMaxFirst = 'maxDistanceFirst'
+        self.dFile = "fileName"
+        self.dFileRaw = "fileNameRaw"
+        self.dMic = "micName"
+        self.dOverall = "driftOverall"
+        self.dFrame = "driftFrame"
+        self.dEnd = "endToEndDrift"
+        self.dMax = "maxDistance"
+        self.dMaxFirst = "maxDistanceFirst"
 
         # Sort
-        self.sortFile = 'File name'
-        self.sortOverall = 'Overall drift'
-        self.sortFrame = 'Drift per frame'
-        self.sortEnd = 'End to end length'
-        self.sortMax = 'Maximum distance between frames'
-        self.sortMaxFirst = 'Maximum distance from start frame'
+        self.sortFile = "File name"
+        self.sortOverall = "Overall drift"
+        self.sortFrame = "Drift per frame"
+        self.sortEnd = "End to end length"
+        self.sortMax = "Maximum distance between frames"
+        self.sortMaxFirst = "Maximum distance from start frame"
 
         # Plot Widgets
-        self.msPlotDrift = SXUnblurPlot(title='Drift Plot')
-        self.msPlotFrame = SXUnblurPlot(title='Drift per Frame Plot')
-        self.msPlotAngle = SXUnblurPlot(title='Angle per Frame')
-        self.msAllPlotFrameAvg = SXUnblurPlot(title='Average Drift per Frame')
-        self.msAllPlotDrift = SXUnblurPlot(
-            title='Overall Drift Histogram'
-            )
+        self.msPlotDrift = SXUnblurPlot(title="Drift Plot")
+        self.msPlotFrame = SXUnblurPlot(title="Drift per Frame Plot")
+        self.msPlotAngle = SXUnblurPlot(title="Angle per Frame")
+        self.msAllPlotFrameAvg = SXUnblurPlot(title="Average Drift per Frame")
+        self.msAllPlotDrift = SXUnblurPlot(title="Overall Drift Histogram")
         self.msAllPlotFrame = SXUnblurPlot(
-            title='Drift per Frame Histogram', setframes=True
-            )
+            title="Drift per Frame Histogram", setframes=True
+        )
         self.msAllPlotAngle = SXUnblurPlot(
-            title='Angle per Frame Histogram', setframes=True
-            )
-        self.msAllPlotPerMic = SXUnblurPlot(title='Drift per Micrograph')
+            title="Angle per Frame Histogram", setframes=True
+        )
+        self.msAllPlotPerMic = SXUnblurPlot(title="Drift per Micrograph")
 
         # Dictionarys
         self.dictThresh = {}
@@ -1181,23 +1238,23 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
                 self.leStopFrame,
                 self.leStartSaveFrame,
                 self.leStopSaveFrame,
-                self.chFrameCriterion
-                ],
+                self.chFrameCriterion,
+            ],
             self.modeAngle: [
                 self.leStartAngle,
                 self.leStopAngle,
                 self.leStartSaveAngle,
                 self.leStopSaveAngle,
-                self.chAngleCriterion
-                ],
+                self.chAngleCriterion,
+            ],
             self.modeOverall: [
                 self.leStartOverall,
                 self.leStopOverall,
                 self.leStartSaveOverall,
                 self.leStopSaveOverall,
-                self.chOverallCriterion
-                ]
-            }
+                self.chOverallCriterion,
+            ],
+        }
         self.dictShow = {
             self.chPlotDriftMic: self.msPlotDrift,
             self.chPlotFrameMic: self.msPlotFrame,
@@ -1206,8 +1263,8 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             self.chPlotDrift: self.msAllPlotDrift,
             self.chPlotFrame: self.msAllPlotFrame,
             self.chPlotAngle: self.msAllPlotAngle,
-            self.chPlotPerMic: self.msAllPlotPerMic
-            }
+            self.chPlotPerMic: self.msAllPlotPerMic,
+        }
         self.dictHide = {
             self.msPlotDrift: self.chPlotDriftMic,
             self.msPlotFrame: self.chPlotFrameMic,
@@ -1216,71 +1273,69 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             self.msAllPlotDrift: self.chPlotDrift,
             self.msAllPlotFrame: self.chPlotFrame,
             self.msAllPlotAngle: self.chPlotAngle,
-            self.msAllPlotPerMic: self.chPlotPerMic
-            }
+            self.msAllPlotPerMic: self.chPlotPerMic,
+        }
         self.dictSort = {
             self.sortFile: self.dMic,
             self.sortOverall: self.dOverall,
             self.sortFrame: self.dFrame,
             self.sortEnd: self.dEnd,
             self.sortMax: self.dMax,
-            self.sortMaxFirst: self.dMaxFirst
-            }
-        self.dictTranslate = {
-            self.modeOverall: self.dOverall
-            }
+            self.sortMaxFirst: self.dMaxFirst,
+        }
+        self.dictTranslate = {self.modeOverall: self.dOverall}
         self.dictButton = {
             self.modeOverall: self.pbSaveOverall,
             self.modeFrame: self.pbSaveFrame,
             self.modeAngle: self.pbSaveAngle,
-            self.modeGeneral: self.pbSaveGeneral
-            }
+            self.modeGeneral: self.pbSaveGeneral,
+        }
         self.dictColor = {
-            'modified': "color: rgb(0, 150, 255);",
-            'done': "color: rgb(0, 0, 0);"
-            }
+            "modified": "color: rgb(0, 150, 255);",
+            "done": "color: rgb(0, 0, 0);",
+        }
         self.dictVisible = {
             self.msPlotDrift: [
                 self.msPlotDrift.isVisible(),
                 self.msPlotDrift.rect(),
-                self.msPlotDrift.pos()
-                ],
+                self.msPlotDrift.pos(),
+            ],
             self.msPlotFrame: [
                 self.msPlotFrame.isVisible(),
                 self.msPlotFrame.rect(),
-                self.msPlotFrame.pos()
-                ],
+                self.msPlotFrame.pos(),
+            ],
             self.msPlotAngle: [
                 self.msPlotAngle.isVisible(),
                 self.msPlotAngle.rect(),
-                self.msPlotAngle.pos()
-                ],
+                self.msPlotAngle.pos(),
+            ],
             self.msAllPlotFrameAvg: [
                 self.msAllPlotFrameAvg.isVisible(),
                 self.msAllPlotFrameAvg.rect(),
-                self.msAllPlotFrameAvg.pos()
-                ],
+                self.msAllPlotFrameAvg.pos(),
+            ],
             self.msAllPlotDrift: [
                 self.msAllPlotDrift.isVisible(),
                 self.msAllPlotDrift.rect(),
-                self.msAllPlotDrift.pos()
-                ],
+                self.msAllPlotDrift.pos(),
+            ],
             self.msAllPlotFrame: [
                 self.msAllPlotFrame.isVisible(),
                 self.msAllPlotFrame.rect(),
-                self.msAllPlotFrame.pos()
-                ],
+                self.msAllPlotFrame.pos(),
+            ],
             self.msAllPlotAngle: [
                 self.msAllPlotAngle.isVisible(),
                 self.msAllPlotAngle.rect(),
-                self.msAllPlotAngle.pos()
-                ],
+                self.msAllPlotAngle.pos(),
+            ],
             self.msAllPlotPerMic: [
                 self.msAllPlotPerMic.isVisible(),
                 self.msAllPlotPerMic.rect(),
-                self.msAllPlotPerMic.pos()
-                ]
-            }
+                self.msAllPlotPerMic.pos(),
+            ],
+        }
 
         # Lists
         self.listChecked = []
@@ -1294,10 +1349,11 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         self.connectedWidgets = []
 
         # List widget flags
-        self.newItemFlags = \
-            PyQt5.QtCore.Qt.ItemFlags(PyQt5.QtCore.Qt.ItemIsSelectable) | \
-            PyQt5.QtCore.Qt.ItemFlags(PyQt5.QtCore.Qt.ItemIsEnabled) | \
-            PyQt5.QtCore.Qt.ItemFlags(PyQt5.QtCore.Qt.ItemIsUserCheckable)
+        self.newItemFlags = (
+            PyQt5.QtCore.Qt.ItemFlags(PyQt5.QtCore.Qt.ItemIsSelectable)
+            | PyQt5.QtCore.Qt.ItemFlags(PyQt5.QtCore.Qt.ItemIsEnabled)
+            | PyQt5.QtCore.Qt.ItemFlags(PyQt5.QtCore.Qt.ItemIsUserCheckable)
+        )
 
     def _disconnect_events(self):
         """disconnect the widgets to the events"""
@@ -1314,29 +1370,29 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         self.connectedWidgets.append(self.pbImportList.clicked)
         self.pbImportPattern.clicked.connect(self._load_from_pattern)
         self.connectedWidgets.append(self.pbImportPattern.clicked)
-        #self.pbSelectAll.clicked.connect(self._select_all)
-        #self.connectedWidgets.append(self.pbSelectAll.clicked)
-        #self.pbInvert.clicked.connect(self._invert_selection)
-        #self.connectedWidgets.append(self.pbInvert.clicked)
+        # self.pbSelectAll.clicked.connect(self._select_all)
+        # self.connectedWidgets.append(self.pbSelectAll.clicked)
+        # self.pbInvert.clicked.connect(self._invert_selection)
+        # self.connectedWidgets.append(self.pbInvert.clicked)
         self.pbAbout.clicked.connect(self._show_about)
         self.connectedWidgets.append(self.pbAbout.clicked)
         self.pbSaveSelected.clicked.connect(self._write_selection)
         self.connectedWidgets.append(self.pbSaveSelected.clicked)
         self.pbSaveOverall.clicked.connect(
             lambda: self._save_settings(mode=self.modeOverall)
-            )
+        )
         self.connectedWidgets.append(self.pbSaveOverall.clicked)
         self.pbSaveGeneral.clicked.connect(
             lambda: self._save_settings(mode=self.modeGeneral)
-            )
+        )
         self.connectedWidgets.append(self.pbSaveGeneral.clicked)
         self.pbSaveFrame.clicked.connect(
             lambda: self._save_settings(mode=self.modeFrame)
-            )
+        )
         self.connectedWidgets.append(self.pbSaveFrame.clicked)
         self.pbSaveAngle.clicked.connect(
             lambda: self._save_settings(mode=self.modeAngle)
-            )
+        )
         self.connectedWidgets.append(self.pbSaveAngle.clicked)
         self.pbApply.clicked.connect(self._apply_setting)
         self.connectedWidgets.append(self.pbApply.clicked)
@@ -1357,114 +1413,78 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         self.leFrameStop.returnPressed.connect(self._refresh_calculations)
         self.connectedWidgets.append(self.leFrameStop.returnPressed)
         self.leStartOverall.editingFinished.connect(
-            lambda: self._refresh_histogram_widget(
-                event='start', mode=self.modeOverall
-                )
-            )
+            lambda: self._refresh_histogram_widget(event="start", mode=self.modeOverall)
+        )
         self.connectedWidgets.append(self.leStartOverall.editingFinished)
         self.leStopOverall.editingFinished.connect(
-            lambda: self._refresh_histogram_widget(
-                event='stop', mode=self.modeOverall
-                )
-            )
+            lambda: self._refresh_histogram_widget(event="stop", mode=self.modeOverall)
+        )
         self.connectedWidgets.append(self.leStopOverall.editingFinished)
         self.leStartGeneral.editingFinished.connect(
-            lambda: self._refresh_histogram_widget(
-                event='start', mode=self.modeGeneral
-                )
-            )
+            lambda: self._refresh_histogram_widget(event="start", mode=self.modeGeneral)
+        )
         self.connectedWidgets.append(self.leStartGeneral.editingFinished)
         self.leStopGeneral.editingFinished.connect(
-            lambda: self._refresh_histogram_widget(
-                event='stop', mode=self.modeGeneral
-                )
-            )
+            lambda: self._refresh_histogram_widget(event="stop", mode=self.modeGeneral)
+        )
         self.connectedWidgets.append(self.leStopGeneral.editingFinished)
         self.leStartFrame.editingFinished.connect(
-            lambda: self._refresh_histogram_widget(
-                event='start', mode=self.modeFrame
-                )
-            )
+            lambda: self._refresh_histogram_widget(event="start", mode=self.modeFrame)
+        )
         self.connectedWidgets.append(self.leStartFrame.editingFinished)
         self.leStopFrame.editingFinished.connect(
-            lambda: self._refresh_histogram_widget(
-                event='stop', mode=self.modeFrame
-                )
-            )
+            lambda: self._refresh_histogram_widget(event="stop", mode=self.modeFrame)
+        )
         self.connectedWidgets.append(self.leStopFrame.editingFinished)
         self.leStartAngle.editingFinished.connect(
-            lambda: self._refresh_histogram_widget(
-                event='start', mode=self.modeAngle
-                )
-            )
+            lambda: self._refresh_histogram_widget(event="start", mode=self.modeAngle)
+        )
         self.connectedWidgets.append(self.leStartAngle.editingFinished)
         self.leStopAngle.editingFinished.connect(
-            lambda: self._refresh_histogram_widget(
-                event='stop', mode=self.modeAngle
-                )
-            )
+            lambda: self._refresh_histogram_widget(event="stop", mode=self.modeAngle)
+        )
         self.connectedWidgets.append(self.leStopAngle.editingFinished)
 
         # Connect entry widgets to change color
         self.leFrameStart.textChanged.connect(
-            lambda: self._change_color(
-                widget=self.leFrameStart
-                )
-            )
+            lambda: self._change_color(widget=self.leFrameStart)
+        )
         self.connectedWidgets.append(self.leFrameStart.textChanged)
         self.leFrameStop.textChanged.connect(
-            lambda: self._change_color(
-                widget=self.leFrameStop
-                )
-            )
+            lambda: self._change_color(widget=self.leFrameStop)
+        )
         self.connectedWidgets.append(self.leFrameStop.textChanged)
         self.leStartOverall.textChanged.connect(
-            lambda: self._change_color(
-                widget=self.leStartOverall
-                )
-            )
+            lambda: self._change_color(widget=self.leStartOverall)
+        )
         self.connectedWidgets.append(self.leStartOverall.textChanged)
         self.leStopOverall.textChanged.connect(
-            lambda: self._change_color(
-                widget=self.leStopOverall
-                )
-            )
+            lambda: self._change_color(widget=self.leStopOverall)
+        )
         self.connectedWidgets.append(self.leStopOverall.textChanged)
         self.leStartGeneral.textChanged.connect(
-            lambda: self._change_color(
-                widget=self.leStartGeneral
-                )
-            )
+            lambda: self._change_color(widget=self.leStartGeneral)
+        )
         self.connectedWidgets.append(self.leStartGeneral.textChanged)
         self.leStopGeneral.textChanged.connect(
-            lambda: self._change_color(
-                widget=self.leStopGeneral
-                )
-            )
+            lambda: self._change_color(widget=self.leStopGeneral)
+        )
         self.connectedWidgets.append(self.leStopGeneral.textChanged)
         self.leStartFrame.textChanged.connect(
-            lambda: self._change_color(
-                widget=self.leStartFrame
-                )
-            )
+            lambda: self._change_color(widget=self.leStartFrame)
+        )
         self.connectedWidgets.append(self.leStartFrame.textChanged)
         self.leStopFrame.textChanged.connect(
-            lambda: self._change_color(
-                widget=self.leStopFrame
-                )
-            )
+            lambda: self._change_color(widget=self.leStopFrame)
+        )
         self.connectedWidgets.append(self.leStopFrame.textChanged)
         self.leStartAngle.textChanged.connect(
-            lambda: self._change_color(
-                widget=self.leStartAngle
-                )
-            )
+            lambda: self._change_color(widget=self.leStartAngle)
+        )
         self.connectedWidgets.append(self.leStartAngle.textChanged)
         self.leStopAngle.textChanged.connect(
-            lambda: self._change_color(
-                widget=self.leStopAngle
-                )
-            )
+            lambda: self._change_color(widget=self.leStopAngle)
+        )
         self.connectedWidgets.append(self.leStopAngle.textChanged)
 
         # Connect check boxes
@@ -1477,62 +1497,62 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         self.chOverallCriterion.setChecked(False)
         self.chOverallCriterion.stateChanged.connect(
             lambda: self._mark_as_criterion(mode=self.modeOverall)
-            )
+        )
         self.connectedWidgets.append(self.chOverallCriterion.stateChanged)
         self.chGeneralCriterion.setChecked(False)
         self.chGeneralCriterion.stateChanged.connect(
             lambda: self._mark_as_criterion(mode=self.modeGeneral)
-            )
+        )
         self.connectedWidgets.append(self.chGeneralCriterion.stateChanged)
         self.chFrameCriterion.setChecked(False)
         self.chFrameCriterion.stateChanged.connect(
             lambda: self._mark_as_criterion(mode=self.modeFrame)
-            )
+        )
         self.connectedWidgets.append(self.chFrameCriterion.stateChanged)
         self.chAngleCriterion.setChecked(False)
         self.chAngleCriterion.stateChanged.connect(
             lambda: self._mark_as_criterion(mode=self.modeAngle)
-            )
+        )
         self.connectedWidgets.append(self.chAngleCriterion.stateChanged)
         self.chPlotDriftMic.setChecked(False)
         self.chPlotDriftMic.stateChanged.connect(
             lambda: self._show_plot(checkbox=self.chPlotDriftMic)
-            )
+        )
         self.connectedWidgets.append(self.chPlotDriftMic.stateChanged)
         self.chPlotFrameMic.setChecked(False)
         self.chPlotFrameMic.stateChanged.connect(
             lambda: self._show_plot(checkbox=self.chPlotFrameMic)
-            )
+        )
         self.connectedWidgets.append(self.chPlotFrameMic.stateChanged)
         self.chPlotAngleMic.setChecked(False)
         self.chPlotAngleMic.stateChanged.connect(
             lambda: self._show_plot(checkbox=self.chPlotAngleMic)
-            )
+        )
         self.connectedWidgets.append(self.chPlotAngleMic.stateChanged)
         self.chAverageDriftPerFrame.setChecked(False)
         self.chAverageDriftPerFrame.stateChanged.connect(
             lambda: self._show_plot(checkbox=self.chAverageDriftPerFrame)
-            )
+        )
         self.connectedWidgets.append(self.chAverageDriftPerFrame.stateChanged)
         self.chPlotDrift.setChecked(False)
         self.chPlotDrift.stateChanged.connect(
             lambda: self._show_plot(checkbox=self.chPlotDrift)
-            )
+        )
         self.connectedWidgets.append(self.chPlotDrift.stateChanged)
         self.chPlotFrame.setChecked(False)
         self.chPlotFrame.stateChanged.connect(
             lambda: self._show_plot(checkbox=self.chPlotFrame)
-            )
+        )
         self.connectedWidgets.append(self.chPlotFrame.stateChanged)
         self.chPlotAngle.setChecked(False)
         self.chPlotAngle.stateChanged.connect(
             lambda: self._show_plot(checkbox=self.chPlotAngle)
-            )
+        )
         self.connectedWidgets.append(self.chPlotAngle.stateChanged)
         self.chPlotPerMic.setChecked(False)
         self.chPlotPerMic.stateChanged.connect(
             lambda: self._show_plot(checkbox=self.chPlotPerMic)
-            )
+        )
         self.connectedWidgets.append(self.chPlotPerMic.stateChanged)
 
         # Connect combo boxes
@@ -1540,45 +1560,45 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         self.connectedWidgets.append(self.cbSort.activated)
         self.cbFrame.activated.connect(
             lambda: self._plot_threshold(mode=self.modeFrame, fill=True)
-            )
+        )
         self.connectedWidgets.append(self.cbFrame.activated)
         self.cbAngle.activated.connect(
             lambda: self._plot_threshold(mode=self.modeAngle, fill=True)
-            )
+        )
         self.connectedWidgets.append(self.cbAngle.activated)
 
         # Connect canvas close events
         self.msPlotDrift.sigClose.connect(
             lambda: self._hide_plot(msplot=self.msPlotDrift)
-            )
+        )
         self.connectedWidgets.append(self.msPlotDrift.sigClose)
         self.msPlotFrame.sigClose.connect(
             lambda: self._hide_plot(msplot=self.msPlotFrame)
-            )
+        )
         self.connectedWidgets.append(self.msPlotFrame.sigClose)
         self.msPlotAngle.sigClose.connect(
             lambda: self._hide_plot(msplot=self.msPlotAngle)
-            )
+        )
         self.connectedWidgets.append(self.msPlotAngle.sigClose)
         self.msAllPlotFrameAvg.sigClose.connect(
             lambda: self._hide_plot(msplot=self.msAllPlotFrameAvg)
-            )
+        )
         self.connectedWidgets.append(self.msAllPlotFrameAvg.sigClose)
         self.msAllPlotDrift.sigClose.connect(
             lambda: self._hide_plot(msplot=self.msAllPlotDrift)
-            )
+        )
         self.connectedWidgets.append(self.msAllPlotDrift.sigClose)
         self.msAllPlotFrame.sigClose.connect(
             lambda: self._hide_plot(msplot=self.msAllPlotFrame)
-            )
+        )
         self.connectedWidgets.append(self.msAllPlotFrame.sigClose)
         self.msAllPlotAngle.sigClose.connect(
             lambda: self._hide_plot(msplot=self.msAllPlotAngle)
-            )
+        )
         self.connectedWidgets.append(self.msAllPlotAngle.sigClose)
         self.msAllPlotPerMic.sigClose.connect(
             lambda: self._hide_plot(msplot=self.msAllPlotPerMic)
-            )
+        )
         self.connectedWidgets.append(self.msAllPlotPerMic.sigClose)
 
         # Connect canvas refresh frame event
@@ -1588,25 +1608,19 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         self.connectedWidgets.append(self.msAllPlotAngle.sigFrame)
 
         # Connect canvas refresh plot event
-        self.msAllPlotDrift.sigRefresh.connect(
-            self._refresh_histogram_mouse
-            )
+        self.msAllPlotDrift.sigRefresh.connect(self._refresh_histogram_mouse)
         self.connectedWidgets.append(self.msAllPlotDrift.sigRefresh)
-        self.msAllPlotFrame.sigRefresh.connect(
-            self._refresh_histogram_mouse
-            )
+        self.msAllPlotFrame.sigRefresh.connect(self._refresh_histogram_mouse)
         self.connectedWidgets.append(self.msAllPlotFrame.sigRefresh)
-        self.msAllPlotAngle.sigRefresh.connect(
-            self._refresh_histogram_mouse
-            )
+        self.msAllPlotAngle.sigRefresh.connect(self._refresh_histogram_mouse)
         self.connectedWidgets.append(self.msAllPlotAngle.sigRefresh)
 
     def _enable_all(self):
         """Enable all widgets"""
 
         self.pbSelectTxt.setEnabled(True)
-        #self.pbSelectAll.setEnabled(True)
-        #self.pbInvert.setEnabled(True)
+        # self.pbSelectAll.setEnabled(True)
+        # self.pbInvert.setEnabled(True)
         self.pbAbout.setEnabled(True)
         self.pbSaveSelected.setEnabled(True)
         self.pbSaveGeneral.setEnabled(True)
@@ -1645,39 +1659,43 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
     def _default_color(self):
         """Set all colors to black"""
 
-        self.leFrameStart.setStyleSheet(self.dictColor['done'])
-        self.leFrameStop.setStyleSheet(self.dictColor['done'])
-        self.leStartOverall.setStyleSheet(self.dictColor['done'])
-        self.leStopOverall.setStyleSheet(self.dictColor['done'])
-        self.leStartGeneral.setStyleSheet(self.dictColor['done'])
-        self.leStopGeneral.setStyleSheet(self.dictColor['done'])
-        self.leStartFrame.setStyleSheet(self.dictColor['done'])
-        self.leStopFrame.setStyleSheet(self.dictColor['done'])
-        self.leStartAngle.setStyleSheet(self.dictColor['done'])
-        self.leStopAngle.setStyleSheet(self.dictColor['done'])
+        self.leFrameStart.setStyleSheet(self.dictColor["done"])
+        self.leFrameStop.setStyleSheet(self.dictColor["done"])
+        self.leStartOverall.setStyleSheet(self.dictColor["done"])
+        self.leStopOverall.setStyleSheet(self.dictColor["done"])
+        self.leStartGeneral.setStyleSheet(self.dictColor["done"])
+        self.leStopGeneral.setStyleSheet(self.dictColor["done"])
+        self.leStartFrame.setStyleSheet(self.dictColor["done"])
+        self.leStopFrame.setStyleSheet(self.dictColor["done"])
+        self.leStartAngle.setStyleSheet(self.dictColor["done"])
+        self.leStopAngle.setStyleSheet(self.dictColor["done"])
 
     def _change_color(self, widget):
         """Changes the color of the text to red"""
 
-        widget.setStyleSheet(self.dictColor['modified'])
+        widget.setStyleSheet(self.dictColor["modified"])
 
     def _select_txt(self):
         """Open the drift files and do the drift calculations"""
 
         # Find Directory
         try:
-            strInputFile = str(PyQt5QFileDialog.getOpenFileName(
-                directory=os.getcwd(),
-                options=PyQt5QFileDialog.DontUseNativeDialog,
-                filter='cisTEM 1.0.0 (*.log);;Unblur (*.txt);;MotionCor2 (*.log);;All (*)'))
+            strInputFile = str(
+                PyQt5QFileDialog.getOpenFileName(
+                    directory=os.getcwd(),
+                    options=PyQt5QFileDialog.DontUseNativeDialog,
+                    filter="cisTEM 1.0.0 (*.log);;Unblur (*.txt);;MotionCor2 (*.log);;All (*)",
+                )
+            )
         except:
             strInputFile, not_in_use = PyQt5QFileDialog.getOpenFileName(
                 directory=os.getcwd(),
                 options=PyQt5QFileDialog.DontUseNativeDialog,
-                filter='cisTEM 1.0.0 (*.log);;Unblur (*.txt);;MotionCor2 (*.log);;All (*)')
+                filter="cisTEM 1.0.0 (*.log);;Unblur (*.txt);;MotionCor2 (*.log);;All (*)",
+            )
 
         # If the return value is not empty, fill the line edit
-        if self.strInputDir != '':
+        if self.strInputDir != "":
             self.lePattern.clear()
             self.lePattern.insert(strInputFile)
 
@@ -1690,31 +1708,27 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             # Create an empty array for entrys
             arrChecked = matplotlib.numpy.empty(
                 len(self.listChecked), dtype=self.listDType
-                )
+            )
             arrUnchecked = matplotlib.numpy.empty(
                 len(self.listUnchecked), dtype=self.listDType
-                )
+            )
 
             # Fill the arrays with the entrys from the lists
             for number, entry in enumerate(self.listChecked):
-                arrChecked[number] = self.arrData[
-                    self.arrData[self.dFile] == entry
-                    ]
+                arrChecked[number] = self.arrData[self.arrData[self.dFile] == entry]
             for number, entry in enumerate(self.listUnchecked):
-                arrUnchecked[number] = self.arrData[
-                    self.arrData[self.dFile] == entry
-                    ]
+                arrUnchecked[number] = self.arrData[self.arrData[self.dFile] == entry]
 
             # Sort the arrays in ascending or descending order
             arrSortedChecked = matplotlib.numpy.sort(
                 arrChecked, order=self.dictSort[str(self.cbSort.currentText())]
-                )
+            )
             if self.chDescending.isChecked():
                 arrSortedChecked = arrSortedChecked[::-1]
 
             arrSortedUnchecked = matplotlib.numpy.sort(
                 arrUnchecked, order=self.dictSort[str(self.cbSort.currentText())]
-                )
+            )
             if self.chDescending.isChecked():
                 arrSortedUnchecked = arrSortedUnchecked[::-1]
 
@@ -1739,7 +1753,7 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             setChecked = set(self.listChecked)
             arrSorted = matplotlib.numpy.sort(
                 self.arrData, order=self.dictSort[str(self.cbSort.currentText())]
-                )
+            )
             if self.chDescending.isChecked():
                 arrSorted = arrSorted[::-1]
 
@@ -1774,48 +1788,52 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
         # Message Box!
         messageBox = PyQt5.QtWidgets.QMessageBox()
-        messageBox.setText('Do drift calculations...')
+        messageBox.setText("Do drift calculations...")
         messageBox.setStandardButtons(PyQt5.QtWidgets.QMessageBox().NoButton)
         messageBox.show()
-        print('Do drift calculations...')
+        print("Do drift calculations...")
 
         # Clear the list widget and load the shift files as list
         if inputfile is not None:
             strDirectory = os.getcwd()
             strSuffix = os.path.relpath(inputfile)
-            path = '{:s}/{:s}'.format(strDirectory, strSuffix)
-            self.outputDir = os.path.relpath(path[:-len(path.split('/')[-1])])
+            path = "{:s}/{:s}".format(strDirectory, strSuffix)
+            self.outputDir = os.path.relpath(path[: -len(path.split("/")[-1])])
 
             self.listFile = glob.glob(os.path.relpath(path))
 
             # Try to find micrograph numbers
-            if len(strSuffix.split('/')) == 1:
-                listSplit = strSuffix.split('*')
+            if len(strSuffix.split("/")) == 1:
+                listSplit = strSuffix.split("*")
             else:
-                listSplit = strSuffix.split('/')[-1].split('*')
+                listSplit = strSuffix.split("/")[-1].split("*")
             if len(listSplit) != 2:
                 self.arrMicNumber = matplotlib.numpy.arange(len(self.listFile))
-                print((
-                    'Warning: Could not identify micrograph serial number.\n' +
-                    'X-axis of the plots do not represent' +
-                    'the serial micrograph number.'
-                    ))
+                print(
+                    (
+                        "Warning: Could not identify micrograph serial number.\n"
+                        + "X-axis of the plots do not represent"
+                        + "the serial micrograph number."
+                    )
+                )
             else:
                 listMicNumber = []
                 varBreak = False
                 for file in self.listFile:
-                    name = file.split('/')[-1]
+                    name = file.split("/")[-1]
                     prefix = name.split(listSplit[-1])
                     try:
                         number = int(prefix[0].split(listSplit[0])[-1])
                     except:
                         self.arrMicNumber = matplotlib.numpy.arange(len(self.listFile))
                         varBreak = True
-                        print((
-                            'Warning: Could not identify micrograph serial number.\n' +
-                            'X-axis of the plots do not represent' +
-                            'the serial micrograph number.'
-                            ))
+                        print(
+                            (
+                                "Warning: Could not identify micrograph serial number.\n"
+                                + "X-axis of the plots do not represent"
+                                + "the serial micrograph number."
+                            )
+                        )
                         break
                     else:
                         listMicNumber.append(number)
@@ -1825,7 +1843,9 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
         if inputlist is not None:
             if inputfile is not None:
-                self.listFile = [name for name in inputlist if os.path.relpath(name) in self.listFile]
+                self.listFile = [
+                    name for name in inputlist if os.path.relpath(name) in self.listFile
+                ]
             else:
                 self.listFile = inputlist
             self.arrMicNumber = matplotlib.numpy.arange(len(self.listFile))
@@ -1834,36 +1854,40 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         if not self.listFile:
             messageBox2 = PyQt5.QtWidgets.QMessageBox()
             messageBox2.setText(
-                'Error: No matching drift files found or pattern' + 
-                ' and list entries does not match\n{:s}'.format(inputfile)
-                )
+                "Error: No matching drift files found or pattern"
+                + " and list entries does not match\n{:s}".format(inputfile)
+            )
             messageBox2.exec_()
             messageBox.hide()
             return None
         elif len(self.listFile) <= 5:
             self.varAnalyzeOne = True
-            print((
-                '\nWarning: !!!! Only few shift files selected, ' +
-                'so plots of all micrographs could not work as expected. !!!!\n'
-                ))
+            print(
+                (
+                    "\nWarning: !!!! Only few shift files selected, "
+                    + "so plots of all micrographs could not work as expected. !!!!\n"
+                )
+            )
 
         # Load and calculate data for the first time
         value = self._first_time_calculations()
 
         if len(self.arrMicNumber) != len(self.listFile):
             self.arrMicNumber = matplotlib.numpy.arange(len(self.listFile))
-            print((
-                'Warning: Files were corrupt, lost track of micrograph serial number.\n' +
-                'X-axis of the plots do not represent' +
-                'the serial micrograph number.'
-                ))
+            print(
+                (
+                    "Warning: Files were corrupt, lost track of micrograph serial number.\n"
+                    + "X-axis of the plots do not represent"
+                    + "the serial micrograph number."
+                )
+            )
 
         if value is not None:
             # Fill list widget
             self.lsFiles.clear()
             for file in self.listFile:
                 if os.path.exists(file) and file in self.arrData[self.dFileRaw]:
-                    file = file.split('/')[-1]
+                    file = file.split("/")[-1]
                     newItem = PyQt5.QtWidgets.QListWidgetItem(file)
                     newItem.setFlags(self.newItemFlags)
                     newItem.setCheckState(PyQt5.QtCore.Qt.Checked)
@@ -1872,20 +1896,20 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             # Fill the frame widgets
             self.leFrameStart.clear()
             self.leFrameStop.clear()
-            self.leFrameStart.insert('1')
-            self.leFrameStop.insert('{:d}'.format(self.intFrames))
+            self.leFrameStart.insert("1")
+            self.leFrameStop.insert("{:d}".format(self.intFrames))
 
             # Do Calculations
             self._calculations(oldfirst=1, oldlast=self.intFrames)
 
             # Fill the GUI
             self._refresh_gui()
-            
+
             # Enable all widges
             self._enable_all()
 
             # Go use the GUI
-            print('Done')
+            print("Done")
         messageBox.hide()
 
     def _refresh_gui(self):
@@ -1895,19 +1919,15 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         self._fill_dictionary()
 
         # Select the first item
-        #self.lsFiles.setItemSelected(self.lsFiles.item(0), True)   todo> it should be for default ... test it monday 11feb
+        # self.lsFiles.setItemSelected(self.lsFiles.item(0), True)   todo> it should be for default ... test it monday 11feb
         self._current_info(item=self.lsFiles.item(0))
 
         # Fill the General widgets with maximum and minimum values
-        arrFrames = matplotlib.numpy.array([
-            item for entry in self.arrData[self.listFrames] for item in entry
-            ])
-        self.leStartGeneral.setText(
-            '{:f}'.format(matplotlib.numpy.amin(arrFrames))
-            )
-        self.leStopGeneral.setText(
-            '{:f}'.format(matplotlib.numpy.amax(arrFrames))
-            )
+        arrFrames = matplotlib.numpy.array(
+            [item for entry in self.arrData[self.listFrames] for item in entry]
+        )
+        self.leStartGeneral.setText("{:f}".format(matplotlib.numpy.amin(arrFrames)))
+        self.leStopGeneral.setText("{:f}".format(matplotlib.numpy.amax(arrFrames)))
 
         self.varOldStartGeneral = matplotlib.numpy.amin(arrFrames)
         self.varOldStopGeneral = matplotlib.numpy.amax(arrFrames)
@@ -1947,21 +1967,21 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         input_typ = None
         for files in self.listFile:
             try:
-                with open(files, 'r') as f:
+                with open(files, "r") as f:
                     first_line = f.readline()
-                    if first_line.startswith('# Unblur'):
-                        input_typ = 'Unblur'
+                    if first_line.startswith("# Unblur"):
+                        input_typ = "Unblur"
                         for linenumber, line in enumerate(f):
                             if linenumber == 2:
                                 self.intFrames = int(line.split()[-1])
                                 break
-                    elif first_line.startswith('# full frame alignment'):
-                        input_typ = 'MotionCor2'
+                    elif first_line.startswith("# full frame alignment"):
+                        input_typ = "MotionCor2"
                         for linenumber, line in enumerate(f):
                             pass
                         self.intFrames = linenumber + 1
-                    elif first_line.startswith('# Patch based alignment'):
-                        input_typ = 'MotionCor2'
+                    elif first_line.startswith("# Patch based alignment"):
+                        input_typ = "MotionCor2"
                         for linenumber, line in enumerate(f):
                             pass
                         self.intFrames = linenumber - 1
@@ -1970,10 +1990,10 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
                         if "Unblur" not in lines[1]:
                             raise IOError
                         for line in lines:
-                            l=line.replace(",","").replace("=","").split()
-                            if len(l) == 4 and l[0]=="image":
-                                self.intFrames+=1
-                        input_typ = 'Unblur_for_logFile'
+                            l = line.replace(",", "").replace("=", "").split()
+                            if len(l) == 4 and l[0] == "image":
+                                self.intFrames += 1
+                        input_typ = "Unblur_for_logFile"
 
                 break
             except IOError:
@@ -1981,79 +2001,94 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         else:
             message = PyQt5.QtWidgets.QMessageBox(self)
             message.setText(
-                    'No files in given file list available:\n{0}'.format(
-                        self.fileName
-                        )
-                    )
+                "No files in given file list available:\n{0}".format(self.fileName)
+            )
             message.exec_()
             return None
 
         # Fill the listDType with the right number of frames and angles.
         # Add entrys to the lists and fill the translation Dictionary.
         self.listDType = [
-            (self.dFile, '|S200'),
-            (self.dFileRaw, '|S200'),
-            (self.dMic, '|S200'),
-            (self.dOverall, '<f8'),
-            (self.dFrame, '<f8'),
-            (self.dEnd, '<f8'),
-            (self.dMax, '<f8'),
-            (self.dMaxFirst, '<f8')
-            ]
+            (self.dFile, "|S200"),
+            (self.dFileRaw, "|S200"),
+            (self.dMic, "|S200"),
+            (self.dOverall, "<f8"),
+            (self.dFrame, "<f8"),
+            (self.dEnd, "<f8"),
+            (self.dMax, "<f8"),
+            (self.dMaxFirst, "<f8"),
+        ]
         for index in range(1, self.intFrames + 1):
-            self.listDType.append(('x{:d}'.format(index), '<f8'))
-            self.listDType.append(('y{:d}'.format(index), '<f8'))
-            self.listCoordX.append('x{:d}'.format(index))
-            self.listCoordY.append('y{:d}'.format(index))
+            self.listDType.append(("x{:d}".format(index), "<f8"))
+            self.listDType.append(("y{:d}".format(index), "<f8"))
+            self.listCoordX.append("x{:d}".format(index))
+            self.listCoordY.append("y{:d}".format(index))
 
             if index <= self.intFrames - 1:
-                self.listDType.append(('frame{:d}'.format(index), '<f8'))
-                self.listFrames.append('frame{:d}'.format(index))
-                self.dictTranslate.update({
-                    'Frame {:d}'.format(index): 'frame{:d}'.format(index)
-                    })
+                self.listDType.append(("frame{:d}".format(index), "<f8"))
+                self.listFrames.append("frame{:d}".format(index))
+                self.dictTranslate.update(
+                    {"Frame {:d}".format(index): "frame{:d}".format(index)}
+                )
 
             if index <= self.intFrames - 2:
-                self.listDType.append(('angle{:d}'.format(index), '<f8'))
-                self.listAngles.append('angle{:d}'.format(index))
-                self.dictTranslate.update({
-                    'Angle {:d}'.format(index): 'angle{:d}'.format(index)
-                    })
+                self.listDType.append(("angle{:d}".format(index), "<f8"))
+                self.listAngles.append("angle{:d}".format(index))
+                self.dictTranslate.update(
+                    {"Angle {:d}".format(index): "angle{:d}".format(index)}
+                )
 
         validFiles = []
 
         """Multiline Comment0"""
         values_from_logFile = dict()
         for file in self.listFile:
-            arrCoord=[]             # I storage the data here for each case, in order to avoid to change the logic of the original code
+            arrCoord = (
+                []
+            )  # I storage the data here for each case, in order to avoid to change the logic of the original code
             # Import the data
             try:
-                if input_typ == 'Unblur':
+                if input_typ == "Unblur":
                     arrCoord = matplotlib.numpy.genfromtxt(file, unpack=True)
-                elif input_typ == 'Unblur_for_logFile':
-                    with open(file, 'r') as f:
+                elif input_typ == "Unblur_for_logFile":
+                    with open(file, "r") as f:
                         lines = f.readlines()
                     for line in lines:
                         l = line.replace(",", "").replace("=", "").split()
                         if len(l) == 4 and l[0] == "image":
                             arrCoord.append([float(l[-2]), float(l[-1])])
-                    input_stack_file_name = lines[8].split(':')[1].replace(" ", "").replace("\n", "")
-                    values_from_logFile.update({file: {input_stack_file_name: matplotlib.numpy.array(arrCoord)}})
-                elif input_typ == 'MotionCor2':
+                    input_stack_file_name = (
+                        lines[8].split(":")[1].replace(" ", "").replace("\n", "")
+                    )
+                    values_from_logFile.update(
+                        {
+                            file: {
+                                input_stack_file_name: matplotlib.numpy.array(arrCoord)
+                            }
+                        }
+                    )
+                elif input_typ == "MotionCor2":
                     arrCoord = matplotlib.numpy.genfromtxt(file, unpack=True)[1:]
                     # Transpose the array
                     arrCoord = matplotlib.numpy.transpose(arrCoord)
             except ValueError:
-                print(('Warning: File corrupt, skip:', file))
+                print(("Warning: File corrupt, skip:", file))
                 continue
 
             if len(arrCoord) != self.intFrames:
-                print(('Warning: File does not have {0} Frames, skip:'.format(self.intFrames), file))
+                print(
+                    (
+                        "Warning: File does not have {0} Frames, skip:".format(
+                            self.intFrames
+                        ),
+                        file,
+                    )
+                )
                 continue
 
             # Get the micrograph name
             try:
-                with open(file, 'r') as f:
+                with open(file, "r") as f:
                     pass
             except IOError:
                 continue
@@ -2071,60 +2106,78 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
             # Import the data
             try:
-                if input_typ == 'Unblur':
+                if input_typ == "Unblur":
                     arrCoord = matplotlib.numpy.genfromtxt(file, unpack=True)
-                elif input_typ == 'Unblur_for_logFile':
+                elif input_typ == "Unblur_for_logFile":
                     arrCoord = values_from_logFile[file].values()[0]
-                elif input_typ == 'MotionCor2':
+                elif input_typ == "MotionCor2":
                     arrCoord = matplotlib.numpy.genfromtxt(file, unpack=True)[1:]
                     # Transpose the array
                     arrCoord = matplotlib.numpy.transpose(arrCoord)
             except ValueError:
-                print(('Warning: File corrupt, skip:', file))
+                print(("Warning: File corrupt, skip:", file))
                 continue
 
             if len(arrCoord) != self.intFrames:
-                print(('Warning: File does not have {0} Frames, skip:'.format(self.intFrames), file))
+                print(
+                    (
+                        "Warning: File does not have {0} Frames, skip:".format(
+                            self.intFrames
+                        ),
+                        file,
+                    )
+                )
                 continue
 
             # Get the micrograph name
             try:
-                if input_typ == 'Unblur' :
-                    with open(file, 'r') as f:
+                if input_typ == "Unblur":
+                    with open(file, "r") as f:
                         self.arrData[self.dMic][number] = f.readline().split()[-1]
-                if input_typ == 'Unblur_for_logFile':
-                    self.arrData[self.dMic][number] = values_from_logFile[file].keys()[0]
-                elif input_typ == 'MotionCor2':
-                    self.arrData[self.dMic][number] = file.split('/')[-1].replace('0-Patch-Full.log', '').replace('0-Full.log', '')
+                if input_typ == "Unblur_for_logFile":
+                    self.arrData[self.dMic][number] = values_from_logFile[file].keys()[
+                        0
+                    ]
+                elif input_typ == "MotionCor2":
+                    self.arrData[self.dMic][number] = (
+                        file.split("/")[-1]
+                        .replace("0-Patch-Full.log", "")
+                        .replace("0-Full.log", "")
+                    )
             except IOError:
                 continue
 
             # Get the file name
-            self.arrData[self.dFile][number] = file.split('/')[-1]
+            self.arrData[self.dFile][number] = file.split("/")[-1]
             self.arrData[self.dFileRaw][number] = file
 
             for linenumber, coord in enumerate(arrCoord):
-                self.arrData['x{:d}'.format(linenumber + 1)][number] = \
-                    round(coord[idxX], 6)
-                self.arrData['y{:d}'.format(linenumber + 1)][number] = \
-                    round(coord[idxY], 6)
+                self.arrData["x{:d}".format(linenumber + 1)][number] = round(
+                    coord[idxX], 6
+                )
+                self.arrData["y{:d}".format(linenumber + 1)][number] = round(
+                    coord[idxY], 6
+                )
 
             # Calculate per frame drift
             for index in range(1, self.intFrames):
 
-                fltDistanceX = \
-                    self.arrData['x{:d}'.format(index)][number] - \
-                    self.arrData['x{:d}'.format(index + 1)][number]
+                fltDistanceX = (
+                    self.arrData["x{:d}".format(index)][number]
+                    - self.arrData["x{:d}".format(index + 1)][number]
+                )
 
-                fltDistanceY = \
-                    self.arrData['y{:d}'.format(index)][number] - \
-                    self.arrData['y{:d}'.format(index + 1)][number]
+                fltDistanceY = (
+                    self.arrData["y{:d}".format(index)][number]
+                    - self.arrData["y{:d}".format(index + 1)][number]
+                )
 
-                fltDistance = matplotlib.numpy.sqrt(fltDistanceX**2 + fltDistanceY**2)
+                fltDistance = matplotlib.numpy.sqrt(
+                    fltDistanceX ** 2 + fltDistanceY ** 2
+                )
 
-                self.arrData['frame{:d}'.format(index)][number] = \
-                    round(fltDistance, 6)
-        return 'Done!'
+                self.arrData["frame{:d}".format(index)][number] = round(fltDistance, 6)
+        return "Done!"
 
     def _calculations(self, oldfirst, oldlast):
         """Calculate End-to-End drift, Overall drift, Maximum Distance
@@ -2137,12 +2190,12 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             self.idxLastFrame = int(self.leFrameStop.text())
         except ValueError:
             messageBox = PyQt5.QtWidgets.QMessageBox(self)
-            messageBox.setText('Frame must be integer!')
+            messageBox.setText("Frame must be integer!")
             messageBox.exec_()
-            self.leFrameStart.setText('{:d}'.format(oldfirst))
-            self.leFrameStop.setText('{:d}'.format(oldlast))
-            self.leFrameStart.setStyleSheet(self.dictColor['done'])
-            self.leFrameStop.setStyleSheet(self.dictColor['done'])
+            self.leFrameStart.setText("{:d}".format(oldfirst))
+            self.leFrameStop.setText("{:d}".format(oldlast))
+            self.leFrameStart.setStyleSheet(self.dictColor["done"])
+            self.leFrameStop.setStyleSheet(self.dictColor["done"])
             self.idxFirstFrame = oldfirst
             self.idxLastFrame = oldlast
             return False
@@ -2151,52 +2204,53 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         if self.idxFirstFrame < 1:
             # Warning box when refreshing frames
             warningBox = PyQt5.QtWidgets.QMessageBox(self)
-            warningBox.setStandardButtons(PyQt5.QtWidgets.QMessageBox.No | PyQt5.QtWidgets.QMessageBox.Yes)
+            warningBox.setStandardButtons(
+                PyQt5.QtWidgets.QMessageBox.No | PyQt5.QtWidgets.QMessageBox.Yes
+            )
             warningBox.setDefaultButton(PyQt5.QtWidgets.QMessageBox.Yes)
             warningBox.setText(
-                'Start frame too small (minimum 1)!\n' +
-                'Continue with minimum value?'
-                )
+                "Start frame too small (minimum 1)!\n" + "Continue with minimum value?"
+            )
             warningBox.exec_()
             if warningBox.result() == PyQt5.QtWidgets.QMessageBox.No:
-                self.leFrameStart.setText('{:d}'.format(oldfirst))
-                self.leFrameStart.setStyleSheet(self.dictColor['done'])
+                self.leFrameStart.setText("{:d}".format(oldfirst))
+                self.leFrameStart.setStyleSheet(self.dictColor["done"])
                 self.idxFirstFrame = oldfirst
                 return False
             elif warningBox.result() == PyQt5.QtWidgets.QMessageBox.Yes:
-                self.leFrameStart.setText('{:d}'.format(1))
-                self.leFrameStart.setStyleSheet(self.dictColor['done'])
+                self.leFrameStart.setText("{:d}".format(1))
+                self.leFrameStart.setStyleSheet(self.dictColor["done"])
                 self.idxFirstFrame = 1
 
         if self.idxLastFrame > self.intFrames:
             warningBox = PyQt5.QtWidgets.QMessageBox(self)
-            warningBox.setStandardButtons(PyQt5.QtWidgets.QMessageBox.No | PyQt5.QtWidgets.QMessageBox.Yes)
+            warningBox.setStandardButtons(
+                PyQt5.QtWidgets.QMessageBox.No | PyQt5.QtWidgets.QMessageBox.Yes
+            )
             warningBox.setDefaultButton(PyQt5.QtWidgets.QMessageBox.Yes)
             warningBox.setText(
-                'Stop frame too large (maximum {:d})!\n'.format(self.intFrames) +
-                'Continue with maximum value?'
-                )
+                "Stop frame too large (maximum {:d})!\n".format(self.intFrames)
+                + "Continue with maximum value?"
+            )
             warningBox.exec_()
             if warningBox.result() == PyQt5.QtWidgets.QMessageBox.No:
-                self.leFrameStart.setText('{:d}'.format(oldlast))
-                self.leFrameStart.setStyleSheet(self.dictColor['done'])
+                self.leFrameStart.setText("{:d}".format(oldlast))
+                self.leFrameStart.setStyleSheet(self.dictColor["done"])
                 self.idxLastFrame = oldlast
                 return False
             elif warningBox.result() == PyQt5.QtWidgets.QMessageBox.Yes:
-                self.leFrameStop.setText('{:d}'.format(self.intFrames))
-                self.leFrameStop.setStyleSheet(self.dictColor['done'])
+                self.leFrameStop.setText("{:d}".format(self.intFrames))
+                self.leFrameStop.setStyleSheet(self.dictColor["done"])
                 self.idxLastFrame = self.intFrames
 
         if self.idxLastFrame <= self.idxFirstFrame:
             messageBox = PyQt5.QtWidgets.QMessageBox(self)
-            messageBox.setText(
-                'Start frame must be smaller stop frame!'
-                )
+            messageBox.setText("Start frame must be smaller stop frame!")
             messageBox.exec_()
-            self.leFrameStart.setText('{:d}'.format(oldfirst))
-            self.leFrameStop.setText('{:d}'.format(oldlast))
-            self.leFrameStart.setStyleSheet(self.dictColor['done'])
-            self.leFrameStop.setStyleSheet(self.dictColor['done'])
+            self.leFrameStart.setText("{:d}".format(oldfirst))
+            self.leFrameStop.setText("{:d}".format(oldlast))
+            self.leFrameStart.setStyleSheet(self.dictColor["done"])
+            self.leFrameStop.setStyleSheet(self.dictColor["done"])
             self.idxFirstFrame = oldfirst
             self.idxLastFrame = oldlast
             return False
@@ -2214,35 +2268,35 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
                 # Calculate Angles
                 if index <= self.idxLastFrame - 2:
-                    fltDistanceX1 = \
-                        entry['x{:d}'.format(index)] - \
-                        entry['x{:d}'.format(index + 1)]
+                    fltDistanceX1 = (
+                        entry["x{:d}".format(index)] - entry["x{:d}".format(index + 1)]
+                    )
 
-                    fltDistanceY1 = \
-                        entry['y{:d}'.format(index)] - \
-                        entry['y{:d}'.format(index + 1)]
+                    fltDistanceY1 = (
+                        entry["y{:d}".format(index)] - entry["y{:d}".format(index + 1)]
+                    )
 
-                    fltDistanceX2 = \
-                        entry['x{:d}'.format(index + 1)] - \
-                        entry['x{:d}'.format(index + 2)]
+                    fltDistanceX2 = (
+                        entry["x{:d}".format(index + 1)]
+                        - entry["x{:d}".format(index + 2)]
+                    )
 
-                    fltDistanceY2 = \
-                        entry['y{:d}'.format(index + 1)] - \
-                        entry['y{:d}'.format(index + 2)]
+                    fltDistanceY2 = (
+                        entry["y{:d}".format(index + 1)]
+                        - entry["y{:d}".format(index + 2)]
+                    )
 
-                    fltPointProduct = \
-                        fltDistanceX1 * fltDistanceX2 + \
-                        fltDistanceY1 * fltDistanceY2
+                    fltPointProduct = (
+                        fltDistanceX1 * fltDistanceX2 + fltDistanceY1 * fltDistanceY2
+                    )
 
                     fltAbsOne = matplotlib.numpy.sqrt(
-                        fltDistanceX1**2 +
-                        fltDistanceY1**2
-                        )
+                        fltDistanceX1 ** 2 + fltDistanceY1 ** 2
+                    )
 
                     fltAbsTwo = matplotlib.numpy.sqrt(
-                        fltDistanceX2**2 +
-                        fltDistanceY2**2
-                        )
+                        fltDistanceX2 ** 2 + fltDistanceY2 ** 2
+                    )
 
                     fltAbsProduct = fltAbsOne * fltAbsTwo
 
@@ -2259,28 +2313,32 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
                     angleDeg = angleRad * 180 / matplotlib.numpy.pi
 
                     # Save calculations of angles
-                    entry['angle{:d}'.format(index)] = round(angleDeg, 6)
+                    entry["angle{:d}".format(index)] = round(angleDeg, 6)
 
                 # Calculate Overall drift and maximum drift
                 if index <= self.idxLastFrame - 1:
 
                     # Maximum Drift between two frames
-                    if varMaximum < entry['frame{:d}'.format(index)]:
-                        varMaximum = entry['frame{:d}'.format(index)]
+                    if varMaximum < entry["frame{:d}".format(index)]:
+                        varMaximum = entry["frame{:d}".format(index)]
 
-                    varOverallDrift += entry['frame{:d}'.format(index)]
+                    varOverallDrift += entry["frame{:d}".format(index)]
 
                 # Calculate end to end distance and maximum distance from
                 # first frame
-                fltDistanceX = \
-                    entry['x{:d}'.format(self.idxFirstFrame)] - \
-                    entry['x{:d}'.format(index)]
+                fltDistanceX = (
+                    entry["x{:d}".format(self.idxFirstFrame)]
+                    - entry["x{:d}".format(index)]
+                )
 
-                fltDistanceY = \
-                    entry['y{:d}'.format(self.idxFirstFrame)] - \
-                    entry['y{:d}'.format(index)]
+                fltDistanceY = (
+                    entry["y{:d}".format(self.idxFirstFrame)]
+                    - entry["y{:d}".format(index)]
+                )
 
-                fltDistance = matplotlib.numpy.sqrt(fltDistanceX**2 + fltDistanceY**2)
+                fltDistance = matplotlib.numpy.sqrt(
+                    fltDistanceX ** 2 + fltDistanceY ** 2
+                )
 
                 if fltDistance > varMaximumFirst:
                     varMaximumFirst = fltDistance
@@ -2292,7 +2350,7 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             entry[self.dMax] = round(varMaximum, 6)
             entry[self.dFrame] = round(
                 varOverallDrift / (self.idxLastFrame - self.idxFirstFrame), 6
-                )
+            )
 
         return True
 
@@ -2304,125 +2362,118 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         self.cbFrame.clear()
 
         # Fill the dictionary with overall information
-        self.dictThresh.update({
-            self.modeOverall: [
-                self.idxStart,
-                self.idxStop,
-                self.idxStartSave,
-                self.idxStopSave,
-                self.idxCriterion,
-                self.idxSaved,
-                None
-                ]
-            })
-
-        # Fill the entry
-        self.dictThresh[self.modeOverall][
-            self.idxStart
-            ] = matplotlib.numpy.min(self.arrData[self.dOverall])
-        self.dictThresh[self.modeOverall][
-            self.idxStop
-            ] = matplotlib.numpy.max(self.arrData[self.dOverall])
-        self.dictThresh[self.modeOverall][
-            self.idxStartSave
-            ] = matplotlib.numpy.min(self.arrData[self.dOverall])
-        self.dictThresh[self.modeOverall][
-            self.idxStopSave
-            ] = matplotlib.numpy.max(self.arrData[self.dOverall])
-        self.dictThresh[self.modeOverall][
-            self.idxCriterion
-            ] = False
-        self.dictThresh[self.modeOverall][
-            self.idxSaved
-            ] = True
-
-        # Fill the dictionary with frame and angle
-        for index in range(self.idxFirstFrame, self.idxLastFrame):
-
-            # With angles
-            if index <= self.idxLastFrame - 1 \
-                    and index <= self.intFrames - 2:
-                # Update the Entry
-                self.dictThresh.update({
-                    'Angle {:d}'.format(index): [
-                        self.idxStart,
-                        self.idxStop,
-                        self.idxStartSave,
-                        self.idxStopSave,
-                        self.idxCriterion,
-                        self.idxSaved,
-                        self.idxName
-                        ]
-                    })
-
-                # Fill the entry
-                self.dictThresh['Angle {:d}'.format(index)][
-                    self.idxName
-                    ] = 'angle{:d}'.format(index)
-                self.dictThresh['Angle {:d}'.format(index)][
-                    self.idxStart
-                    ] = matplotlib.numpy.min(self.arrData['angle{:d}'.format(index)])
-                self.dictThresh['Angle {:d}'.format(index)][
-                    self.idxStop
-                    ] = matplotlib.numpy.max(self.arrData['angle{:d}'.format(index)])
-                self.dictThresh['Angle {:d}'.format(index)][
-                    self.idxStartSave
-                    ] = matplotlib.numpy.min(self.arrData['angle{:d}'.format(index)])
-                self.dictThresh['Angle {:d}'.format(index)][
-                    self.idxStopSave
-                    ] = matplotlib.numpy.max(self.arrData['angle{:d}'.format(index)])
-                self.dictThresh['Angle {:d}'.format(index)][
-                    self.idxCriterion
-                    ] = False
-                self.dictThresh['Angle {:d}'.format(index)][
-                    self.idxSaved
-                    ] = True
-
-                # Add to combo box
-
-                self.cbAngle.addItem('Angle {:d}'.format(index))
-
-            # With frames, Update the entry
-            self.dictThresh.update({
-                'Frame {:d}'.format(index): [
+        self.dictThresh.update(
+            {
+                self.modeOverall: [
                     self.idxStart,
                     self.idxStop,
                     self.idxStartSave,
                     self.idxStopSave,
                     self.idxCriterion,
                     self.idxSaved,
+                    None,
+                ]
+            }
+        )
+
+        # Fill the entry
+        self.dictThresh[self.modeOverall][self.idxStart] = matplotlib.numpy.min(
+            self.arrData[self.dOverall]
+        )
+        self.dictThresh[self.modeOverall][self.idxStop] = matplotlib.numpy.max(
+            self.arrData[self.dOverall]
+        )
+        self.dictThresh[self.modeOverall][self.idxStartSave] = matplotlib.numpy.min(
+            self.arrData[self.dOverall]
+        )
+        self.dictThresh[self.modeOverall][self.idxStopSave] = matplotlib.numpy.max(
+            self.arrData[self.dOverall]
+        )
+        self.dictThresh[self.modeOverall][self.idxCriterion] = False
+        self.dictThresh[self.modeOverall][self.idxSaved] = True
+
+        # Fill the dictionary with frame and angle
+        for index in range(self.idxFirstFrame, self.idxLastFrame):
+
+            # With angles
+            if index <= self.idxLastFrame - 1 and index <= self.intFrames - 2:
+                # Update the Entry
+                self.dictThresh.update(
+                    {
+                        "Angle {:d}".format(index): [
+                            self.idxStart,
+                            self.idxStop,
+                            self.idxStartSave,
+                            self.idxStopSave,
+                            self.idxCriterion,
+                            self.idxSaved,
+                            self.idxName,
+                        ]
+                    }
+                )
+
+                # Fill the entry
+                self.dictThresh["Angle {:d}".format(index)][
                     self.idxName
+                ] = "angle{:d}".format(index)
+                self.dictThresh["Angle {:d}".format(index)][
+                    self.idxStart
+                ] = matplotlib.numpy.min(self.arrData["angle{:d}".format(index)])
+                self.dictThresh["Angle {:d}".format(index)][
+                    self.idxStop
+                ] = matplotlib.numpy.max(self.arrData["angle{:d}".format(index)])
+                self.dictThresh["Angle {:d}".format(index)][
+                    self.idxStartSave
+                ] = matplotlib.numpy.min(self.arrData["angle{:d}".format(index)])
+                self.dictThresh["Angle {:d}".format(index)][
+                    self.idxStopSave
+                ] = matplotlib.numpy.max(self.arrData["angle{:d}".format(index)])
+                self.dictThresh["Angle {:d}".format(index)][self.idxCriterion] = False
+                self.dictThresh["Angle {:d}".format(index)][self.idxSaved] = True
+
+                # Add to combo box
+
+                self.cbAngle.addItem("Angle {:d}".format(index))
+
+            # With frames, Update the entry
+            self.dictThresh.update(
+                {
+                    "Frame {:d}".format(index): [
+                        self.idxStart,
+                        self.idxStop,
+                        self.idxStartSave,
+                        self.idxStopSave,
+                        self.idxCriterion,
+                        self.idxSaved,
+                        self.idxName,
                     ]
-                })
+                }
+            )
 
             # Fill the entry
-            self.dictThresh['Frame {:d}'.format(index)][
+            self.dictThresh["Frame {:d}".format(index)][
                 self.idxName
-                ] = 'frame{:d}'.format(index)
-            self.dictThresh['Frame {:d}'.format(index)][
+            ] = "frame{:d}".format(index)
+            self.dictThresh["Frame {:d}".format(index)][
                 self.idxStart
-                ] = matplotlib.numpy.min(self.arrData['frame{:d}'.format(index)])
-            self.dictThresh['Frame {:d}'.format(index)][
+            ] = matplotlib.numpy.min(self.arrData["frame{:d}".format(index)])
+            self.dictThresh["Frame {:d}".format(index)][
                 self.idxStop
-                ] = matplotlib.numpy.max(self.arrData['frame{:d}'.format(index)])
-            self.dictThresh['Frame {:d}'.format(index)][
+            ] = matplotlib.numpy.max(self.arrData["frame{:d}".format(index)])
+            self.dictThresh["Frame {:d}".format(index)][
                 self.idxStartSave
-                ] = matplotlib.numpy.min(self.arrData['frame{:d}'.format(index)])
-            self.dictThresh['Frame {:d}'.format(index)][
+            ] = matplotlib.numpy.min(self.arrData["frame{:d}".format(index)])
+            self.dictThresh["Frame {:d}".format(index)][
                 self.idxStopSave
-                ] = matplotlib.numpy.max(self.arrData['frame{:d}'.format(index)])
-            self.dictThresh['Frame {:d}'.format(index)][
-                self.idxCriterion
-                ] = False
-            self.dictThresh['Frame {:d}'.format(index)][
-                self.idxSaved
-                ] = True
+            ] = matplotlib.numpy.max(self.arrData["frame{:d}".format(index)])
+            self.dictThresh["Frame {:d}".format(index)][self.idxCriterion] = False
+            self.dictThresh["Frame {:d}".format(index)][self.idxSaved] = True
 
             # Add to combo box
-            self.cbFrame.addItem('Frame {:d}'.format(index))
+            self.cbFrame.addItem("Frame {:d}".format(index))
 
     def _refresh_calculations(self, goon=False):
-        ''''Refresh the calculations for the chosen frames'''
+        """'Refresh the calculations for the chosen frames"""
 
         # Skip warning when loading from saved data
         # Safe old state of first and last frame
@@ -2431,12 +2482,14 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
         # Warning box when refreshing frames
         warningBox = PyQt5.QtWidgets.QMessageBox(self)
-        warningBox.setStandardButtons(PyQt5.QtWidgets.QMessageBox.No | PyQt5.QtWidgets.QMessageBox.Yes)
+        warningBox.setStandardButtons(
+            PyQt5.QtWidgets.QMessageBox.No | PyQt5.QtWidgets.QMessageBox.Yes
+        )
         warningBox.setDefaultButton(PyQt5.QtWidgets.QMessageBox.Yes)
         warningBox.setText(
-            'Threshold settings will be lost when calculating new drift data!\n' +
-            'Do you really want to continue?'
-            )
+            "Threshold settings will be lost when calculating new drift data!\n"
+            + "Do you really want to continue?"
+        )
         if not goon:
             warningBox.exec_()
 
@@ -2444,10 +2497,10 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
             # Message Box!
             messageBox = PyQt5.QtWidgets.QMessageBox()
-            messageBox.setText('Do drift calculations...')
+            messageBox.setText("Do drift calculations...")
             messageBox.setStandardButtons(PyQt5.QtWidgets.QMessageBox().NoButton)
             messageBox.show()
-            print('Do drift calculations...')
+            print("Do drift calculations...")
 
             # Set all criterions to False
             for key in self.dictThresh:
@@ -2464,13 +2517,13 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             self._invert_selection()
             # Use the GUI!
             messageBox.hide()
-            print('Done')
+            print("Done")
 
         else:
-            self.leFrameStart.setText('{:d}'.format(intOldFirst))
-            self.leFrameStop.setText('{:d}'.format(intOldLast))
-            self.leFrameStart.setStyleSheet(self.dictColor['done'])
-            self.leFrameStop.setStyleSheet(self.dictColor['done'])
+            self.leFrameStart.setText("{:d}".format(intOldFirst))
+            self.leFrameStop.setText("{:d}".format(intOldLast))
+            self.leFrameStart.setStyleSheet(self.dictColor["done"])
+            self.leFrameStop.setStyleSheet(self.dictColor["done"])
 
     def _fill_widgets(self, mode):
         """Fill the Widget with the current Setting"""
@@ -2480,45 +2533,39 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             mode = self.modeFrame
             entry = str(self.cbFrame.currentText())
         elif mode == self.modeAngle:
-            if str(self.cbAngle.currentText()) != '':
+            if str(self.cbAngle.currentText()) != "":
                 entry = str(self.cbAngle.currentText())
             else:
                 # If there is no Angle entry
-                self.dictWidgets[mode][self.idxStart].setText(
-                    '{:s}'.format('No Entry')
-                    )
-                self.dictWidgets[mode][self.idxStop].setText(
-                    '{:s}'.format('No Entry')
-                    )
+                self.dictWidgets[mode][self.idxStart].setText("{:s}".format("No Entry"))
+                self.dictWidgets[mode][self.idxStop].setText("{:s}".format("No Entry"))
                 self.dictWidgets[mode][self.idxStartSave].setText(
-                    '{:s}'.format('No Entry')
-                    )
+                    "{:s}".format("No Entry")
+                )
                 self.dictWidgets[mode][self.idxStopSave].setText(
-                    '{:s}'.format('No Entry')
-                    )
-                self.dictWidgets[mode][self.idxCriterion].setChecked(
-                    False
-                    )
+                    "{:s}".format("No Entry")
+                )
+                self.dictWidgets[mode][self.idxCriterion].setChecked(False)
                 return None
         elif mode == self.modeOverall:
             entry = self.modeOverall
 
         # Fill the widgets
         self.dictWidgets[mode][self.idxStart].setText(
-            '{:f}'.format(self.dictThresh[entry][self.idxStart])
-            )
+            "{:f}".format(self.dictThresh[entry][self.idxStart])
+        )
         self.dictWidgets[mode][self.idxStop].setText(
-            '{:f}'.format(self.dictThresh[entry][self.idxStop])
-            )
+            "{:f}".format(self.dictThresh[entry][self.idxStop])
+        )
         self.dictWidgets[mode][self.idxStartSave].setText(
-            '{:f}'.format(self.dictThresh[entry][self.idxStartSave])
-            )
+            "{:f}".format(self.dictThresh[entry][self.idxStartSave])
+        )
         self.dictWidgets[mode][self.idxStopSave].setText(
-            '{:f}'.format(self.dictThresh[entry][self.idxStopSave])
-            )
+            "{:f}".format(self.dictThresh[entry][self.idxStopSave])
+        )
         self.dictWidgets[mode][self.idxCriterion].setChecked(
             self.dictThresh[entry][self.idxCriterion]
-            )
+        )
 
         # Enable or disable the save button, depending on the
         # save index.
@@ -2528,10 +2575,10 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             self.dictButton[mode].setEnabled(True)
 
         # Black is the color
-        self.dictWidgets[mode][self.idxStart].setStyleSheet(self.dictColor['done'])
-        self.dictWidgets[mode][self.idxStop].setStyleSheet(self.dictColor['done'])
-        self.dictWidgets[mode][self.idxStartSave].setStyleSheet(self.dictColor['done'])
-        self.dictWidgets[mode][self.idxStopSave].setStyleSheet(self.dictColor['done'])
+        self.dictWidgets[mode][self.idxStart].setStyleSheet(self.dictColor["done"])
+        self.dictWidgets[mode][self.idxStop].setStyleSheet(self.dictColor["done"])
+        self.dictWidgets[mode][self.idxStartSave].setStyleSheet(self.dictColor["done"])
+        self.dictWidgets[mode][self.idxStopSave].setStyleSheet(self.dictColor["done"])
 
     def _plot_scroll(self, mode):
         """Plot the plots for the Scroll Widget"""
@@ -2540,18 +2587,20 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         listFigure = []
 
         # Special case for angle: Just the last frame is selected
-        if self.idxFirstFrame == self.idxLastFrame - 1 and \
-                self.idxLastFrame >= self.intFrames and \
-                mode == self.modeAngle:
+        if (
+            self.idxFirstFrame == self.idxLastFrame - 1
+            and self.idxLastFrame >= self.intFrames
+            and mode == self.modeAngle
+        ):
 
             # Create a funny plot
             figFunny = matplotlib.pyplot.figure(figsize=(3, 2), dpi=100)
-            matplotlib.pyplot.plot([0, 0, 1, 1], [0, 2, 0, 2], 'b')
-            matplotlib.pyplot.plot([2, 2, 3, 3, 2], [0, 2, 2, 0, 0], 'b')
-            matplotlib.pyplot.plot([4, 4, 5, 5, 4], [0, 2, 2, 1, 1], 'b')
-            matplotlib.pyplot.plot([6, 6, 7], [2, 0, 0], 'b')
-            matplotlib.pyplot.plot([8, 8, 9, 9, 8], [0, 2, 2, 0, 0], 'b')
-            matplotlib.pyplot.plot([10, 10.5, 10.5, 10.5, 11], [2, 2, 0, 2, 2], 'b')
+            matplotlib.pyplot.plot([0, 0, 1, 1], [0, 2, 0, 2], "b")
+            matplotlib.pyplot.plot([2, 2, 3, 3, 2], [0, 2, 2, 0, 0], "b")
+            matplotlib.pyplot.plot([4, 4, 5, 5, 4], [0, 2, 2, 1, 1], "b")
+            matplotlib.pyplot.plot([6, 6, 7], [2, 0, 0], "b")
+            matplotlib.pyplot.plot([8, 8, 9, 9, 8], [0, 2, 2, 0, 0], "b")
+            matplotlib.pyplot.plot([10, 10.5, 10.5, 10.5, 11], [2, 2, 0, 2, 2], "b")
             listCoordX = []
             listCoordY = []
             arrPhiFace = matplotlib.numpy.linspace(0, 2 * matplotlib.numpy.pi, 100)
@@ -2559,28 +2608,26 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             for i in arrPhiFace:
                 listCoordX.append(matplotlib.numpy.cos(i) + 13)
                 listCoordY.append(matplotlib.numpy.sin(i) + 1)
-            matplotlib.pyplot.plot(listCoordX, listCoordY, 'b')
+            matplotlib.pyplot.plot(listCoordX, listCoordY, "b")
             listCoordX = []
             listCoordY = []
             for i in arrPhiMouth:
                 listCoordX.append(0.5 * matplotlib.numpy.cos(i) + 13)
                 listCoordY.append(0.5 * matplotlib.numpy.sin(i) + 0.25)
-            matplotlib.pyplot.plot(listCoordX, listCoordY, 'b')
-            matplotlib.pyplot.plot([12.75, 12.75], [1.25, 1.5], 'b')
-            matplotlib.pyplot.plot([13.25, 13.25], [1.25, 1.5], 'b')
+            matplotlib.pyplot.plot(listCoordX, listCoordY, "b")
+            matplotlib.pyplot.plot([12.75, 12.75], [1.25, 1.5], "b")
+            matplotlib.pyplot.plot([13.25, 13.25], [1.25, 1.5], "b")
             matplotlib.pyplot.plot(
                 [-0.25, -0.25, 14.25, 14.25, -0.25],
                 [-0.25, 2.25, 2.25, -0.25, -0.25],
-                'r'
-                )
+                "r",
+            )
 
             matplotlib.pyplot.xlim([-1, 15])
             matplotlib.pyplot.ylim([-0.5, 2.5])
             matplotlib.pyplot.grid()
             matplotlib.pyplot.tight_layout()
-            self.msAllPlotAngle._fill_widget_frames_single(
-                frame=figFunny, name=mode
-                )
+            self.msAllPlotAngle._fill_widget_frames_single(frame=figFunny, name=mode)
 
             matplotlib.pyplot.close(figFunny)
 
@@ -2609,9 +2656,9 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
                     break
 
                 # Find name and plot histogram
-                strName = self.dictThresh['{:s} {:d}'.format(mode, number)][
+                strName = self.dictThresh["{:s} {:d}".format(mode, number)][
                     self.idxName
-                    ]
+                ]
                 figFrames = matplotlib.pyplot.figure(figsize=(3, 2), dpi=100)
                 if self.varAnalyzeOne:
                     intBins = 3
@@ -2620,22 +2667,21 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
                 arrBins = matplotlib.numpy.linspace(
                     matplotlib.numpy.min(self.arrData[strName]),
                     matplotlib.numpy.max(self.arrData[strName]) + 0.0001,
-                    intBins
-                    )
-                hist = matplotlib.numpy.histogram(
-                    self.arrData[strName],
-                    bins=arrBins
-                    )
-                matplotlib.pyplot.plot(hist[1][:-1], hist[0], 'k.')
+                    intBins,
+                )
+                hist = matplotlib.numpy.histogram(self.arrData[strName], bins=arrBins)
+                matplotlib.pyplot.plot(hist[1][:-1], hist[0], "k.")
                 matplotlib.pyplot.grid()
-                matplotlib.pyplot.xlim([hist[1][0] - hist[1][-1] * 0.1, hist[1][-1] * 1.1])
+                matplotlib.pyplot.xlim(
+                    [hist[1][0] - hist[1][-1] * 0.1, hist[1][-1] * 1.1]
+                )
                 matplotlib.pyplot.ylim([0, matplotlib.numpy.max(hist[0]) + 1])
                 if mode == self.modeFrame:
-                    matplotlib.pyplot.xlabel(r'Drift / Angstrom')
+                    matplotlib.pyplot.xlabel(r"Drift / Angstrom")
                 if mode == self.modeAngle:
-                    matplotlib.pyplot.xlabel(r'Angle / Degree')
-                matplotlib.pyplot.ylabel(r'Nr. of Micrographs')
-                matplotlib.pyplot.title('{:s} {:d}'.format(mode, number))
+                    matplotlib.pyplot.xlabel(r"Angle / Degree")
+                matplotlib.pyplot.ylabel(r"Nr. of Micrographs")
+                matplotlib.pyplot.title("{:s} {:d}".format(mode, number))
                 matplotlib.pyplot.tight_layout()
                 listFigure.append(figFrames)
                 matplotlib.pyplot.close(figFrames)
@@ -2645,25 +2691,27 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
                 if mode == self.modeFrame:
                     self.msAllPlotFrame._fill_widget_frames_single(
                         frame=listFigure[0], name=mode
-                        )
+                    )
                 elif mode == self.modeAngle:
                     self.msAllPlotAngle._fill_widget_frames_single(
                         frame=listFigure[0], name=mode
-                        )
+                    )
             # More than one figure
             else:
                 if mode == self.modeFrame:
                     self.msAllPlotFrame._fill_widget_frames(
-                        framesaslist=listFigure, name=mode,
+                        framesaslist=listFigure,
+                        name=mode,
                         framestart=self.idxFirstFrame,
-                        framestop=self.idxLastFrame
-                        )
+                        framestop=self.idxLastFrame,
+                    )
                 elif mode == self.modeAngle:
                     self.msAllPlotAngle._fill_widget_frames(
-                        framesaslist=listFigure, name=mode,
+                        framesaslist=listFigure,
+                        name=mode,
                         framestart=self.idxFirstFrame,
-                        framestop=self.idxLastFrame - 1
-                        )
+                        framestop=self.idxLastFrame - 1,
+                    )
 
     def _plot_threshold(self, mode, fill=False):
         """Plot the right values for selecting a threshold"""
@@ -2676,18 +2724,20 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             intBins = int(self.lsFiles.count() / 3)
 
         # Special case, if there is no angle available
-        if self.idxFirstFrame == self.idxLastFrame - 1 and \
-                self.idxLastFrame >= self.intFrames and \
-                mode == self.modeAngle:
+        if (
+            self.idxFirstFrame == self.idxLastFrame - 1
+            and self.idxLastFrame >= self.intFrames
+            and mode == self.modeAngle
+        ):
 
             # Plot a list which shows that there is no Plot
             figFrames = matplotlib.pyplot.figure(figsize=(3, 2), dpi=100)
-            matplotlib.pyplot.plot([0, 0, 1, 1], [0, 2, 0, 2], 'b')
-            matplotlib.pyplot.plot([2, 2, 3, 3, 2], [0, 2, 2, 0, 0], 'b')
-            matplotlib.pyplot.plot([4, 4, 5, 5, 4], [0, 2, 2, 1, 1], 'b')
-            matplotlib.pyplot.plot([6, 6, 7], [2, 0, 0], 'b')
-            matplotlib.pyplot.plot([8, 8, 9, 9, 8], [0, 2, 2, 0, 0], 'b')
-            matplotlib.pyplot.plot([10, 10.5, 10.5, 10.5, 11], [2, 2, 0, 2, 2], 'b')
+            matplotlib.pyplot.plot([0, 0, 1, 1], [0, 2, 0, 2], "b")
+            matplotlib.pyplot.plot([2, 2, 3, 3, 2], [0, 2, 2, 0, 0], "b")
+            matplotlib.pyplot.plot([4, 4, 5, 5, 4], [0, 2, 2, 1, 1], "b")
+            matplotlib.pyplot.plot([6, 6, 7], [2, 0, 0], "b")
+            matplotlib.pyplot.plot([8, 8, 9, 9, 8], [0, 2, 2, 0, 0], "b")
+            matplotlib.pyplot.plot([10, 10.5, 10.5, 10.5, 11], [2, 2, 0, 2, 2], "b")
             listCoordX = []
             listCoordY = []
             arrPhiFace = matplotlib.numpy.linspace(0, 2 * matplotlib.numpy.pi, 100)
@@ -2695,28 +2745,26 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             for i in arrPhiFace:
                 listCoordX.append(matplotlib.numpy.cos(i) + 13)
                 listCoordY.append(matplotlib.numpy.sin(i) + 1)
-            matplotlib.pyplot.plot(listCoordX, listCoordY, 'b')
+            matplotlib.pyplot.plot(listCoordX, listCoordY, "b")
             listCoordX = []
             listCoordY = []
             for i in arrPhiMouth:
                 listCoordX.append(0.5 * matplotlib.numpy.cos(i) + 13)
                 listCoordY.append(0.5 * matplotlib.numpy.sin(i) + 0.25)
-            matplotlib.pyplot.plot(listCoordX, listCoordY, 'b')
-            matplotlib.pyplot.plot([12.75, 12.75], [1.25, 1.5], 'b')
-            matplotlib.pyplot.plot([13.25, 13.25], [1.25, 1.5], 'b')
+            matplotlib.pyplot.plot(listCoordX, listCoordY, "b")
+            matplotlib.pyplot.plot([12.75, 12.75], [1.25, 1.5], "b")
+            matplotlib.pyplot.plot([13.25, 13.25], [1.25, 1.5], "b")
             matplotlib.pyplot.plot(
                 [-0.25, -0.25, 14.25, 14.25, -0.25],
                 [-0.25, 2.25, 2.25, -0.25, -0.25],
-                'r'
-                )
+                "r",
+            )
 
             matplotlib.pyplot.xlim([-1, 15])
             matplotlib.pyplot.ylim([-0.5, 2.5])
             matplotlib.pyplot.grid()
             matplotlib.pyplot.tight_layout()
-            self.msAllPlotAngle._refresh_plot(
-                figure=figFrames
-                )
+            self.msAllPlotAngle._refresh_plot(figure=figFrames)
             matplotlib.pyplot.close(figFrames)
 
         # Normal case
@@ -2727,92 +2775,95 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
                 arrBins = matplotlib.numpy.linspace(
                     matplotlib.numpy.min(self.arrData[self.dOverall]),
                     matplotlib.numpy.max(self.arrData[self.dOverall]) + 0.0001,
-                    intBins
-                    )
+                    intBins,
+                )
                 arrInput = self.arrData[self.dOverall]
                 fltStart = self.dictThresh[mode][self.idxStart]
                 fltStop = self.dictThresh[mode][self.idxStop]
                 fltStartSave = self.dictThresh[mode][self.idxStartSave]
                 fltStopSave = self.dictThresh[mode][self.idxStopSave]
-                strTitle = r'Overall Drift Histogram'
-                strXLabel = r'Drift / Angstrom'
+                strTitle = r"Overall Drift Histogram"
+                strXLabel = r"Drift / Angstrom"
                 varOutput = self.msAllPlotDrift
 
             if mode == self.modeFrame:
                 strCurrent = str(self.cbFrame.currentText())
                 # Abort if there is no current entry
-                if strCurrent == '':
+                if strCurrent == "":
                     return None
                 idxCurrent = self.dictTranslate[strCurrent]
                 arrBins = matplotlib.numpy.linspace(
                     matplotlib.numpy.min(self.arrData[idxCurrent]),
                     matplotlib.numpy.max(self.arrData[idxCurrent]) + 0.0001,
-                    intBins
-                    )
+                    intBins,
+                )
                 arrInput = self.arrData[idxCurrent]
                 fltStart = self.dictThresh[strCurrent][self.idxStart]
                 fltStop = self.dictThresh[strCurrent][self.idxStop]
                 fltStartSave = self.dictThresh[strCurrent][self.idxStartSave]
                 fltStopSave = self.dictThresh[strCurrent][self.idxStopSave]
-                strTitle = r'{:s} Histogram'.format(strCurrent)
-                strXLabel = r'Drift / Angstrom'
+                strTitle = r"{:s} Histogram".format(strCurrent)
+                strXLabel = r"Drift / Angstrom"
                 varOutput = self.msAllPlotFrame
 
             if mode == self.modeAngle:
                 strCurrent = str(self.cbAngle.currentText())
                 # Abort if there is no current entry
-                if strCurrent == '':
+                if strCurrent == "":
                     return None
                 idxCurrent = self.dictTranslate[strCurrent]
                 arrBins = matplotlib.numpy.linspace(
                     matplotlib.numpy.min(self.arrData[idxCurrent]),
                     matplotlib.numpy.max(self.arrData[idxCurrent]) + 0.0001,
-                    intBins
-                    )
+                    intBins,
+                )
                 arrInput = self.arrData[idxCurrent]
                 fltStart = self.dictThresh[strCurrent][self.idxStart]
                 fltStop = self.dictThresh[strCurrent][self.idxStop]
                 fltStartSave = self.dictThresh[strCurrent][self.idxStartSave]
                 fltStopSave = self.dictThresh[strCurrent][self.idxStopSave]
-                strTitle = r'{:s} Histogram'.format(strCurrent)
-                strXLabel = r'Angle / Degree'
+                strTitle = r"{:s} Histogram".format(strCurrent)
+                strXLabel = r"Angle / Degree"
                 varOutput = self.msAllPlotAngle
 
             # Calculate and plot the histogram
-            hist = matplotlib.numpy.histogram(
-                arrInput,
-                bins=arrBins
-                )
-            matplotlib.pyplot.plot(hist[1][:-1], hist[0], 'k.')
+            hist = matplotlib.numpy.histogram(arrInput, bins=arrBins)
+            matplotlib.pyplot.plot(hist[1][:-1], hist[0], "k.")
             matplotlib.pyplot.vlines(
-                fltStart, 0, matplotlib.numpy.max(hist[0]) + 1,
-                color='b', linestyle='dashed'
-                )
+                fltStart,
+                0,
+                matplotlib.numpy.max(hist[0]) + 1,
+                color="b",
+                linestyle="dashed",
+            )
             matplotlib.pyplot.vlines(
-                fltStop, 0, matplotlib.numpy.max(hist[0]) + 1,
-                color='r', linestyle='dashed'
-                )
+                fltStop,
+                0,
+                matplotlib.numpy.max(hist[0]) + 1,
+                color="r",
+                linestyle="dashed",
+            )
             matplotlib.pyplot.vlines(
-                fltStartSave, 0, matplotlib.numpy.max(hist[0]) + 1,
-                color='b', linestyle='solid'
-                )
+                fltStartSave,
+                0,
+                matplotlib.numpy.max(hist[0]) + 1,
+                color="b",
+                linestyle="solid",
+            )
             matplotlib.pyplot.vlines(
-                fltStopSave, 0, matplotlib.numpy.max(hist[0]) + 1,
-                color='r', linestyle='solid'
-                )
-            matplotlib.pyplot.vlines(
-                hist[1][0], 0, 3,
-                color='k', linestyle='solid'
-                )
-            matplotlib.pyplot.vlines(
-                hist[1][-1], 0, 3,
-                color='k', linestyle='solid'
-                )
+                fltStopSave,
+                0,
+                matplotlib.numpy.max(hist[0]) + 1,
+                color="r",
+                linestyle="solid",
+            )
+            matplotlib.pyplot.vlines(hist[1][0], 0, 3, color="k", linestyle="solid")
+            matplotlib.pyplot.vlines(hist[1][-1], 0, 3, color="k", linestyle="solid")
             matplotlib.pyplot.grid()
             matplotlib.pyplot.xlim([hist[1][0] - hist[1][-1] * 0.1, hist[1][-1] * 1.1])
             matplotlib.pyplot.ylim([0, matplotlib.numpy.max(hist[0]) + 1])
             matplotlib.pyplot.xlabel(strXLabel)
-            matplotlib.pyplot.ylabel(r'Nr. of Micrographs')
+            matplotlib.pyplot.ylabel(r"Nr. of Micrographs")
             matplotlib.pyplot.title(strTitle)
             matplotlib.pyplot.tight_layout()
             varOutput._refresh_plot(figure=figThresh, mode=mode)
@@ -2830,10 +2881,12 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         if mode == self.modeOverall:
 
             # Equalize saved and not saved and fill the widgets
-            self.dictThresh[mode][self.idxStartSave] = \
-                self.dictThresh[mode][self.idxStart]
-            self.dictThresh[mode][self.idxStopSave] = \
-                self.dictThresh[mode][self.idxStop]
+            self.dictThresh[mode][self.idxStartSave] = self.dictThresh[mode][
+                self.idxStart
+            ]
+            self.dictThresh[mode][self.idxStopSave] = self.dictThresh[mode][
+                self.idxStop
+            ]
             self.dictThresh[mode][self.idxSaved] = True
 
         # Frame mode
@@ -2841,10 +2894,12 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
             # Equalize saved and not saved and fill the widgets
             strCurrent = str(self.cbFrame.currentText())
-            self.dictThresh[strCurrent][self.idxStartSave] = \
-                self.dictThresh[strCurrent][self.idxStart]
-            self.dictThresh[strCurrent][self.idxStopSave] = \
-                self.dictThresh[strCurrent][self.idxStop]
+            self.dictThresh[strCurrent][self.idxStartSave] = self.dictThresh[
+                strCurrent
+            ][self.idxStart]
+            self.dictThresh[strCurrent][self.idxStopSave] = self.dictThresh[strCurrent][
+                self.idxStop
+            ]
             self.dictThresh[strCurrent][self.idxSaved] = True
 
             # Enable the general save button
@@ -2855,10 +2910,12 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
             # Equalize saved and not saved and fill the widgets
             strCurrent = str(self.cbAngle.currentText())
-            self.dictThresh[strCurrent][self.idxStartSave] = \
-                self.dictThresh[strCurrent][self.idxStart]
-            self.dictThresh[strCurrent][self.idxStopSave] = \
-                self.dictThresh[strCurrent][self.idxStop]
+            self.dictThresh[strCurrent][self.idxStartSave] = self.dictThresh[
+                strCurrent
+            ][self.idxStart]
+            self.dictThresh[strCurrent][self.idxStopSave] = self.dictThresh[strCurrent][
+                self.idxStop
+            ]
             self.dictThresh[strCurrent][self.idxSaved] = True
 
         # General mode
@@ -2870,7 +2927,7 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
                 fltStop = float(self.leStopGeneral.text())
             except ValueError:
                 messageBox = PyQt5.QtWidgets.QMessageBox()
-                messageBox.setText('General input needs to be a float!')
+                messageBox.setText("General input needs to be a float!")
                 messageBox.exec_()
 
             # If it not fails equalize saved and not saved and fill the widgets
@@ -2878,24 +2935,22 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
                 # Set all frames to the general settings
                 for index in range(self.idxFirstFrame, self.idxLastFrame):
-                    self.dictThresh['Frame {:d}'.format(index)][
+                    self.dictThresh["Frame {:d}".format(index)][
                         self.idxStartSave
-                        ] = fltStart
-                    self.dictThresh['Frame {:d}'.format(index)][
+                    ] = fltStart
+                    self.dictThresh["Frame {:d}".format(index)][
                         self.idxStopSave
-                        ] = fltStop
-                    self.dictThresh['Frame {:d}'.format(index)][
+                    ] = fltStop
+                    self.dictThresh["Frame {:d}".format(index)][
                         self.idxStart
-                        ] = fltStart
-                    self.dictThresh['Frame {:d}'.format(index)][
-                        self.idxStop
-                        ] = fltStop
+                    ] = fltStart
+                    self.dictThresh["Frame {:d}".format(index)][self.idxStop] = fltStop
 
                 # Disable the general and frame save button
                 # and set the mode to frames.
                 self.dictButton[mode].setEnabled(False)
                 for index in range(self.idxFirstFrame, self.idxLastFrame):
-                    self.dictThresh['Frame {:d}'.format(index)][self.idxSaved] = True
+                    self.dictThresh["Frame {:d}".format(index)][self.idxSaved] = True
                 mode = self.modeFrame
 
         # Refresh Plot and widgets, disable the save button
@@ -2925,10 +2980,12 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
                 # mark the general check box as checked.
                 # Else partially checked.
                 for index in range(self.idxFirstFrame, self.idxLastFrame):
-                    if not self.dictThresh['Frame {:d}'.format(index)][
-                            self.idxCriterion
-                            ]:
-                        self.chGeneralCriterion.setCheckState(PyQt5.QtCore.Qt.PartiallyChecked)
+                    if not self.dictThresh["Frame {:d}".format(index)][
+                        self.idxCriterion
+                    ]:
+                        self.chGeneralCriterion.setCheckState(
+                            PyQt5.QtCore.Qt.PartiallyChecked
+                        )
                         break
                     elif index == self.idxLastFrame - 1:
                         self.chGeneralCriterion.setCheckState(PyQt5.QtCore.Qt.Checked)
@@ -2941,10 +2998,10 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
                 # mark the general check box as unchecked.
                 # Else partially checked.
                 for index in range(self.idxFirstFrame, self.idxLastFrame):
-                    if self.dictThresh['Frame {:d}'.format(index)][
-                            self.idxCriterion
-                            ]:
-                        self.chGeneralCriterion.setCheckState(PyQt5.QtCore.Qt.PartiallyChecked)
+                    if self.dictThresh["Frame {:d}".format(index)][self.idxCriterion]:
+                        self.chGeneralCriterion.setCheckState(
+                            PyQt5.QtCore.Qt.PartiallyChecked
+                        )
                         break
                     elif index == self.idxLastFrame - 1:
                         self.chGeneralCriterion.setCheckState(PyQt5.QtCore.Qt.Unchecked)
@@ -2965,10 +3022,9 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
                 # If all check boxes are unchecked, disable the button
                 for index in range(
-                        self.idxFirstFrame,
-                        self.idxFirstFrame + self.cbAngle.count()
-                        ):
-                    if self.dictThresh['Angle {:d}'.format(index)][self.idxCriterion]:
+                    self.idxFirstFrame, self.idxFirstFrame + self.cbAngle.count()
+                ):
+                    if self.dictThresh["Angle {:d}".format(index)][self.idxCriterion]:
                         break
                     if index == self.idxFirstFrame + self.cbAngle.count() - 1:
                         self.pbUncheckCriterion.setEnabled(False)
@@ -2979,9 +3035,9 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             # If its checked, check all frames
             if self.chGeneralCriterion.checkState() == PyQt5.QtCore.Qt.Checked:
                 for index in range(self.idxFirstFrame, self.idxLastFrame):
-                    self.dictThresh['Frame {:d}'.format(index)][
+                    self.dictThresh["Frame {:d}".format(index)][
                         self.idxCriterion
-                        ] = True
+                    ] = True
 
                 # Set the current frame check box as checked
                 self.chFrameCriterion.setChecked(True)
@@ -2989,9 +3045,9 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             # If its unchecked, uncheck all frames
             elif self.chGeneralCriterion.checkState() == PyQt5.QtCore.Qt.Unchecked:
                 for index in range(self.idxFirstFrame, self.idxLastFrame):
-                    self.dictThresh['Frame {:d}'.format(index)][
+                    self.dictThresh["Frame {:d}".format(index)][
                         self.idxCriterion
-                        ] = False
+                    ] = False
 
                 # Set the current frame check box unchecked.
                 # Disable the Tristate mode of the general check box.
@@ -3008,9 +3064,7 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         for index in range(self.idxFirstFrame, self.idxLastFrame):
             if index >= self.intFrames - 1:
                 break
-            self.dictThresh['Angle {:d}'.format(index)][
-                self.idxCriterion
-                ] = False
+            self.dictThresh["Angle {:d}".format(index)][self.idxCriterion] = False
 
         self.chAngleCriterion.setChecked(False)
         self.pbUncheckCriterion.setEnabled(False)
@@ -3020,12 +3074,13 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
         # Ask the user if he really wants to continue
         warningBox = PyQt5.QtWidgets.QMessageBox(self)
-        warningBox.setStandardButtons(PyQt5.QtWidgets.QMessageBox.No | PyQt5.QtWidgets.QMessageBox.Yes)
+        warningBox.setStandardButtons(
+            PyQt5.QtWidgets.QMessageBox.No | PyQt5.QtWidgets.QMessageBox.Yes
+        )
         warningBox.setDefaultButton(PyQt5.QtWidgets.QMessageBox.Yes)
         warningBox.setText(
-                'Do you really want to apply criteria?\n' +
-                'All selections will be lost.'
-            )
+            "Do you really want to apply criteria?\n" + "All selections will be lost."
+        )
         warningBox.exec_()
 
         if warningBox.result() == PyQt5.QtWidgets.QMessageBox.No:
@@ -3038,13 +3093,13 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         for key in self.dictThresh:
             if self.dictThresh[key][self.idxCriterion]:
                 arrBetweenThres = arrBetweenThres[
-                    arrBetweenThres[self.dictTranslate[key]] >=
-                    self.dictThresh[key][self.idxStartSave]
-                    ]
+                    arrBetweenThres[self.dictTranslate[key]]
+                    >= self.dictThresh[key][self.idxStartSave]
+                ]
                 arrBetweenThres = arrBetweenThres[
-                    arrBetweenThres[self.dictTranslate[key]] <=
-                    self.dictThresh[key][self.idxStopSave]
-                    ]
+                    arrBetweenThres[self.dictTranslate[key]]
+                    <= self.dictThresh[key][self.idxStopSave]
+                ]
 
         # Set the file names for faster search and select this files
         setFileNames = set(arrBetweenThres[self.dFile])
@@ -3081,13 +3136,9 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         # Choose the right widget, depending on the mouse event
         if eventaslist[idxMouse] == eventMouseLeft:
             fltStart = eventaslist[idxValue]
-            fltStop = self.dictThresh[varInput][
-                self.idxStop
-                ]
+            fltStop = self.dictThresh[varInput][self.idxStop]
         if eventaslist[idxMouse] == eventMouseRight:
-            fltStart = self.dictThresh[varInput][
-                self.idxStart
-                ]
+            fltStart = self.dictThresh[varInput][self.idxStart]
             fltStop = eventaslist[idxValue]
 
         # Start value must be smaller then stop value
@@ -3095,30 +3146,18 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
             # If event left, both values are the start value
             if eventaslist[idxMouse] == eventMouseLeft:
-                self.dictThresh[varInput][
-                    self.idxStop
-                    ] = fltStart
-                self.dictThresh[varInput][
-                    self.idxStart
-                    ] = fltStart
+                self.dictThresh[varInput][self.idxStop] = fltStart
+                self.dictThresh[varInput][self.idxStart] = fltStart
 
             # If event left, both values are the stop value
             if eventaslist[idxMouse] == eventMouseRight:
-                self.dictThresh[varInput][
-                    self.idxStop
-                    ] = fltStop
-                self.dictThresh[varInput][
-                    self.idxStart
-                    ] = fltStop
+                self.dictThresh[varInput][self.idxStop] = fltStop
+                self.dictThresh[varInput][self.idxStart] = fltStop
 
         # If everything is alright
         else:
-            self.dictThresh[varInput][
-                self.idxStart
-                ] = fltStart
-            self.dictThresh[varInput][
-                self.idxStop
-                ] = fltStop
+            self.dictThresh[varInput][self.idxStart] = fltStart
+            self.dictThresh[varInput][self.idxStop] = fltStop
 
         # Fill the widgets and refresh plot
         self._fill_widgets(mode=eventaslist[idxMode])
@@ -3158,17 +3197,13 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             fltStop = float(varStop.text())
         except ValueError:
             messageBox = PyQt5.QtWidgets.QMessageBox()
-            messageBox.setText(
-                'Error with {:s}! Input must be float!'.format(
-                    mode
-                    )
-                )
+            messageBox.setText("Error with {:s}! Input must be float!".format(mode))
             messageBox.exec_()
 
-            varStart.setText('{:f}'.format(varStartOld))
-            varStop.setText('{:f}'.format(varStopOld))
-            varStart.setStyleSheet(self.dictColor['done'])
-            varStop.setStyleSheet(self.dictColor['done'])
+            varStart.setText("{:f}".format(varStartOld))
+            varStop.setText("{:f}".format(varStopOld))
+            varStart.setStyleSheet(self.dictColor["done"])
+            varStop.setStyleSheet(self.dictColor["done"])
 
         # Everything is alright
         else:
@@ -3180,15 +3215,15 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
                 if fltStart > fltStop:
                     messageBox = PyQt5.QtWidgets.QMessageBox()
                     messageBox.setText(
-                        'Error with {:s}! Larger must be smaller then Smaller! ;)'.format(
+                        "Error with {:s}! Larger must be smaller then Smaller! ;)".format(
                             mode
-                            )
                         )
+                    )
                     messageBox.exec_()
-                    varStart.setText('{:f}'.format(varStartOld))
-                    varStop.setText('{:f}'.format(varStopOld))
-                    varStart.setStyleSheet(self.dictColor['done'])
-                    varStop.setStyleSheet(self.dictColor['done'])
+                    varStart.setText("{:f}".format(varStartOld))
+                    varStop.setText("{:f}".format(varStopOld))
+                    varStart.setStyleSheet(self.dictColor["done"])
+                    varStop.setStyleSheet(self.dictColor["done"])
                     return None
 
                 self.varOldStartGeneral = fltStart
@@ -3196,23 +3231,21 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
                 # Set the settings to all frames
                 for index in range(self.idxFirstFrame, self.idxLastFrame - 1):
-                    self.dictThresh['Frame {:d}'.format(index)][
+                    self.dictThresh["Frame {:d}".format(index)][
                         self.idxStart
-                        ] = fltStart
-                    self.dictThresh['Frame {:d}'.format(index)][
-                        self.idxStop
-                        ] = fltStop
+                    ] = fltStart
+                    self.dictThresh["Frame {:d}".format(index)][self.idxStop] = fltStop
 
                 # Enable the save button for general and all frames
                 self.dictButton[mode].setEnabled(True)
                 for index in range(self.idxFirstFrame, self.idxLastFrame):
-                    self.dictThresh['Frame {:d}'.format(index)][self.idxSaved] = False
+                    self.dictThresh["Frame {:d}".format(index)][self.idxSaved] = False
 
                 # Set the Text to the general widgets and turn it black
-                varStart.setText('{:f}'.format(fltStart))
-                varStop.setText('{:f}'.format(fltStop))
-                varStart.setStyleSheet(self.dictColor['done'])
-                varStop.setStyleSheet(self.dictColor['done'])
+                varStart.setText("{:f}".format(fltStart))
+                varStop.setText("{:f}".format(fltStop))
+                varStart.setStyleSheet(self.dictColor["done"])
+                varStop.setStyleSheet(self.dictColor["done"])
 
                 # Set the mode to Frame
                 mode = self.modeFrame
@@ -3222,31 +3255,19 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
                 # Check, if start is smaller then stop
                 if fltStart > fltStop:
-                    if event == 'start':
+                    if event == "start":
                         # Set both to start
-                        self.dictThresh[varInput][
-                            self.idxStop
-                            ] = fltStart
-                        self.dictThresh[varInput][
-                            self.idxStart
-                            ] = fltStart
-                    if event == 'stop':
+                        self.dictThresh[varInput][self.idxStop] = fltStart
+                        self.dictThresh[varInput][self.idxStart] = fltStart
+                    if event == "stop":
                         # Set both to stop
-                        self.dictThresh[varInput][
-                            self.idxStop
-                            ] = fltStop
-                        self.dictThresh[varInput][
-                            self.idxStart
-                            ] = fltStop
+                        self.dictThresh[varInput][self.idxStop] = fltStop
+                        self.dictThresh[varInput][self.idxStart] = fltStop
                 # If everything is finde
                 else:
                     # Set the things where they belong
-                    self.dictThresh[varInput][
-                        self.idxStart
-                        ] = fltStart
-                    self.dictThresh[varInput][
-                        self.idxStop
-                        ] = fltStop
+                    self.dictThresh[varInput][self.idxStart] = fltStart
+                    self.dictThresh[varInput][self.idxStop] = fltStop
 
                 # Set it unsaved
                 self.dictThresh[varInput][self.idxSaved] = False
@@ -3280,13 +3301,9 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         # Uncheck the related check box and hide the widget
         msplot.hide()
         self.dictHide[msplot].setCheckState(PyQt5.QtCore.Qt.Unchecked)
-        self.dictVisible.update({
-            msplot: [
-                msplot.isVisible(),
-                msplot.rect(),
-                msplot.pos()
-                ]
-            })
+        self.dictVisible.update(
+            {msplot: [msplot.isVisible(), msplot.rect(), msplot.pos()]}
+        )
 
     def _show_plot(self, checkbox):
         """Show the Plot Widget"""
@@ -3297,33 +3314,25 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             msplot.move(self.dictVisible[msplot][self.idxPos])
             msplot.activateWindow()
             msplot.show()
-            self.dictVisible.update({
-                msplot: [
-                    msplot.isVisible(),
-                    msplot.rect(),
-                    msplot.pos()
-                    ]
-                })
+            self.dictVisible.update(
+                {msplot: [msplot.isVisible(), msplot.rect(), msplot.pos()]}
+            )
         # Otherwise hide it
         elif checkbox.checkState() == PyQt5.QtCore.Qt.Unchecked:
             msplot.hide()
-            self.dictVisible.update({
-            msplot: [
-                    msplot.isVisible(),
-                    msplot.rect(),
-                    msplot.pos()
-                    ]
-                })
+            self.dictVisible.update(
+                {msplot: [msplot.isVisible(), msplot.rect(), msplot.pos()]}
+            )
 
-#    def _select_all(self):
-#        """Select all entrys"""
-#
-#        # Set all items to checked and save the current selection state
-#        for index in xrange(self.lsFiles.count()):
-#            self.lsFiles.item(index).setCheckState(Qt.Checked)
-#
-#        # Save new selection in cache
-#        self._save_selection()
+    #    def _select_all(self):
+    #        """Select all entrys"""
+    #
+    #        # Set all items to checked and save the current selection state
+    #        for index in xrange(self.lsFiles.count()):
+    #            self.lsFiles.item(index).setCheckState(Qt.Checked)
+    #
+    #        # Save new selection in cache
+    #        self._save_selection()
 
     def _invert_selection(self):
         """Invert Selection"""
@@ -3342,9 +3351,7 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         """Refresh the Plots and Entrys of the current Info"""
 
         # get the current entry
-        arrCurrentEntry = self.arrData[
-            self.arrData[self.dFile] == str(item.text())
-            ]
+        arrCurrentEntry = self.arrData[self.arrData[self.dFile] == str(item.text())]
 
         # Clear all widgets
         self.leCurrentMicName.clear()
@@ -3356,23 +3363,17 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
         # Fill all entrys
         self.leCurrentMicName.insert(
-            '{:s}'.format(arrCurrentEntry[self.dMic][0].split('/')[-1])
-            )
+            "{:s}".format(arrCurrentEntry[self.dMic][0].split("/")[-1])
+        )
         self.leCurrentOverallDrift.insert(
-            '{:f}'.format(arrCurrentEntry[self.dOverall][0])
-            )
-        self.leCurrentFrameDrift.insert(
-            '{:f}'.format(arrCurrentEntry[self.dFrame][0])
-            )
-        self.leCurrentEndToEndDrift.insert(
-            '{:f}'.format(arrCurrentEntry[self.dEnd][0])
-            )
-        self.leCurrentMaxDistance.insert(
-            '{:f}'.format(arrCurrentEntry[self.dMax][0])
-            )
+            "{:f}".format(arrCurrentEntry[self.dOverall][0])
+        )
+        self.leCurrentFrameDrift.insert("{:f}".format(arrCurrentEntry[self.dFrame][0]))
+        self.leCurrentEndToEndDrift.insert("{:f}".format(arrCurrentEntry[self.dEnd][0]))
+        self.leCurrentMaxDistance.insert("{:f}".format(arrCurrentEntry[self.dMax][0]))
         self.leCurrentMaxDistanceZero.insert(
-            '{:f}'.format(arrCurrentEntry[self.dMaxFirst][0])
-            )
+            "{:f}".format(arrCurrentEntry[self.dMaxFirst][0])
+        )
 
         # Plot info
         self._plot_single(mode=self.modeDrift, item=item)
@@ -3395,12 +3396,12 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             arrX = matplotlib.numpy.linspace(1, self.intFrames - 1, self.intFrames - 1)
             arrY = matplotlib.numpy.zeros(self.intFrames - 1)
             for number in arrX:
-                arrY[int(number - 1)] = \
-                    matplotlib.numpy.sum(self.arrData['frame{:d}'.format(int(number))]) / \
-                    int(self.lsFiles.count())
-            strTitle = r'Average drift per Frame'
-            strXLabel = r'Frame'
-            strYLabel = r'Average Drift / Angstrom'
+                arrY[int(number - 1)] = matplotlib.numpy.sum(
+                    self.arrData["frame{:d}".format(int(number))]
+                ) / int(self.lsFiles.count())
+            strTitle = r"Average drift per Frame"
+            strXLabel = r"Frame"
+            strYLabel = r"Average Drift / Angstrom"
             varOutput = self.msAllPlotFrameAvg
             matplotlib.pyplot.xlim([arrX[0] - arrX[-1] * 0.1, arrX[-1] * 1.1])
 
@@ -3408,19 +3409,19 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
             # Sort array by number
             listDType = []
-            listDType.append(('micDrift', '<f8'))
-            listDType.append(('micNum', '<i8'))
+            listDType.append(("micDrift", "<f8"))
+            listDType.append(("micNum", "<i8"))
             arrXY = matplotlib.numpy.empty(len(self.arrMicNumber), dtype=listDType)
-            arrXY['micNum'] = self.arrMicNumber
-            arrXY['micDrift'] = self.arrData[self.dOverall]
-            arrXY = matplotlib.numpy.sort(arrXY, order='micNum')
+            arrXY["micNum"] = self.arrMicNumber
+            arrXY["micDrift"] = self.arrData[self.dOverall]
+            arrXY = matplotlib.numpy.sort(arrXY, order="micNum")
 
             # Define plot settings
-            arrX = arrXY['micNum']
-            arrY = arrXY['micDrift']
-            strTitle = r'Drift per Micrograph'
-            strXLabel = r'Micrograph'
-            strYLabel = r'Overall Drift / Angstrom'
+            arrX = arrXY["micNum"]
+            arrY = arrXY["micDrift"]
+            strTitle = r"Drift per Micrograph"
+            strXLabel = r"Micrograph"
+            strYLabel = r"Overall Drift / Angstrom"
             varOutput = self.msAllPlotPerMic
             matplotlib.pyplot.xlim([arrX[0] - arrX[-1] * 0.01, arrX[-1] * 1.01])
 
@@ -3428,62 +3429,58 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         else:
 
             # Get the array entry of the current selected list item
-            arrCurrentEntry = self.arrData[
-                self.arrData[self.dFile] == str(item.text())
-                ]
+            arrCurrentEntry = self.arrData[self.arrData[self.dFile] == str(item.text())]
 
             # Plot settings depending on the mode
             if mode == self.modeDrift:
                 arrX = list(arrCurrentEntry[self.listCoordX][0])
                 arrY = list(arrCurrentEntry[self.listCoordY][0])
-                strTitle = r'Drift of file {:s}'.format(arrCurrentEntry[self.dFile][0])
-                strXLabel = r'Drift X / Angstrom'
-                strYLabel = r'Drift Y / Angstrom'
+                strTitle = r"Drift of file {:s}".format(arrCurrentEntry[self.dFile][0])
+                strXLabel = r"Drift X / Angstrom"
+                strYLabel = r"Drift Y / Angstrom"
                 varOutput = self.msPlotDrift
                 matplotlib.pyplot.plot(
                     arrCurrentEntry[self.listCoordX[0]],
                     arrCurrentEntry[self.listCoordY[0]],
-                    'dg', label=r'Frame 1'
-                    )
+                    "dg",
+                    label=r"Frame 1",
+                )
                 matplotlib.pyplot.plot(
                     arrCurrentEntry[self.listCoordX[-1]],
                     arrCurrentEntry[self.listCoordY[-1]],
-                    'dr', label=r'Frame {:d}'.format(self.intFrames)
-                    )
-                matplotlib.pyplot.legend(loc='best')
+                    "dr",
+                    label=r"Frame {:d}".format(self.intFrames),
+                )
+                matplotlib.pyplot.legend(loc="best")
 
             if mode == self.modeDriftPerFrame:
-                arrX = matplotlib.numpy.linspace(1, self.intFrames - 1, self.intFrames - 1)
+                arrX = matplotlib.numpy.linspace(
+                    1, self.intFrames - 1, self.intFrames - 1
+                )
                 arrY = list(arrCurrentEntry[self.listFrames][0])
-                strTitle = r'Frame to frame drift of file {:s}'.format(
+                strTitle = r"Frame to frame drift of file {:s}".format(
                     arrCurrentEntry[self.dFile][0]
-                    )
-                strXLabel = r'Frame'
-                strYLabel = r'Drift / Angstrom'
+                )
+                strXLabel = r"Frame"
+                strYLabel = r"Drift / Angstrom"
                 varOutput = self.msPlotFrame
 
             if mode == self.modeAnglePerFrame:
-                arrX = matplotlib.numpy.linspace(1, self.intFrames - 2, self.intFrames - 2)
+                arrX = matplotlib.numpy.linspace(
+                    1, self.intFrames - 2, self.intFrames - 2
+                )
                 arrY = list(arrCurrentEntry[self.listAngles][0])
-                strTitle = 'Frame to frame angle of file {:s}'.format(
+                strTitle = "Frame to frame angle of file {:s}".format(
                     arrCurrentEntry[self.dFile][0]
-                    )
-                strXLabel = r'Frame'
-                strYLabel = r'Angle / Degree'
+                )
+                strXLabel = r"Frame"
+                strYLabel = r"Angle / Degree"
                 varOutput = self.msPlotAngle
 
         # Plot it!
         if not mode == self.modePerMic:
-            matplotlib.pyplot.plot(
-                arrX,
-                arrY,
-                'kx'
-                )
-        matplotlib.pyplot.plot(
-            arrX,
-            arrY,
-            'k-'
-            )
+            matplotlib.pyplot.plot(arrX, arrY, "kx")
+        matplotlib.pyplot.plot(arrX, arrY, "k-")
         matplotlib.pyplot.grid()
         matplotlib.pyplot.title(strTitle)
         matplotlib.pyplot.xlabel(strXLabel)
@@ -3514,11 +3511,9 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             # Create an array for the checked entrys and add all checked data to it
             arrChecked = matplotlib.numpy.empty(
                 len(self.listChecked), dtype=self.listDType
-                )
+            )
             for number, entry in enumerate(self.listChecked):
-                arrChecked[number] = self.arrData[
-                    self.arrData[self.dFile] == entry
-                    ]
+                arrChecked[number] = self.arrData[self.arrData[self.dFile] == entry]
 
             # If no item is selected, set everything to 0
             if len(self.listChecked) == 0:
@@ -3530,80 +3525,78 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
             # Else calculate the entrys
             else:
-                fltOverallDrift = \
-                    matplotlib.numpy.sum(arrChecked[self.dOverall]) / \
-                    len(self.listChecked)
-                fltFrameDrift = \
-                    matplotlib.numpy.sum(arrChecked[self.dFrame]) / \
-                    len(self.listChecked)
-                fltEndToEndDrift = \
-                    matplotlib.numpy.sum(arrChecked[self.dEnd]) / \
-                    len(self.listChecked)
-                fltMaxDistance = \
-                    matplotlib.numpy.sum(arrChecked[self.dMax]) / \
-                    len(self.listChecked)
-                fltMaxDistanceZero = \
-                    matplotlib.numpy.sum(arrChecked[self.dMaxFirst]) / \
-                    len(self.listChecked)
+                fltOverallDrift = matplotlib.numpy.sum(arrChecked[self.dOverall]) / len(
+                    self.listChecked
+                )
+                fltFrameDrift = matplotlib.numpy.sum(arrChecked[self.dFrame]) / len(
+                    self.listChecked
+                )
+                fltEndToEndDrift = matplotlib.numpy.sum(arrChecked[self.dEnd]) / len(
+                    self.listChecked
+                )
+                fltMaxDistance = matplotlib.numpy.sum(arrChecked[self.dMax]) / len(
+                    self.listChecked
+                )
+                fltMaxDistanceZero = matplotlib.numpy.sum(
+                    arrChecked[self.dMaxFirst]
+                ) / len(self.listChecked)
 
             # Fill the widgets
-            self.leAllMicNumber.setText(
-                '{:d}'.format(self.lsFiles.count())
-                )
-            self.leMicChecked.setText(
-                '{:d}'.format(len(self.listChecked))
-                )
-            self.leAllOverallDrift.setText(
-                '{:f}'.format(fltOverallDrift)
-                )
-            self.leAllFrameDrift.setText(
-                '{:f}'.format(fltFrameDrift)
-                )
-            self.leAllEndToEndDrift.setText(
-                '{:f}'.format(fltEndToEndDrift)
-                )
-            self.leAllMaxDistance.setText(
-                '{:f}'.format(fltMaxDistance)
-                )
-            self.leAllMaxDistanceZero.setText(
-                '{:f}'.format(fltMaxDistanceZero)
-                )
+            self.leAllMicNumber.setText("{:d}".format(self.lsFiles.count()))
+            self.leMicChecked.setText("{:d}".format(len(self.listChecked)))
+            self.leAllOverallDrift.setText("{:f}".format(fltOverallDrift))
+            self.leAllFrameDrift.setText("{:f}".format(fltFrameDrift))
+            self.leAllEndToEndDrift.setText("{:f}".format(fltEndToEndDrift))
+            self.leAllMaxDistance.setText("{:f}".format(fltMaxDistance))
+            self.leAllMaxDistanceZero.setText("{:f}".format(fltMaxDistanceZero))
 
     def _load_from_list(self):
         """Load shift files from list"""
 
         try:
-            self.fileName = str(PyQt5QFileDialog.getOpenFileName(
-                directory=os.getcwd(),
-                options=PyQt5QFileDialog.DontUseNativeDialog,
-                filter='Text files (*.txt)'
-            ))
+            self.fileName = str(
+                PyQt5QFileDialog.getOpenFileName(
+                    directory=os.getcwd(),
+                    options=PyQt5QFileDialog.DontUseNativeDialog,
+                    filter="Text files (*.txt)",
+                )
+            )
         except:
             self.fileName, not_in_use = PyQt5QFileDialog.getOpenFileName(
                 directory=os.getcwd(),
                 options=PyQt5QFileDialog.DontUseNativeDialog,
-                filter='Text files (*.txt)'
+                filter="Text files (*.txt)",
             )
         # Abort if empty
-        if self.fileName == '':
+        if self.fileName == "":
             return None
         else:
-            assert(self.fileName != '')
-        if self._check_list_or_file(self.fileName) == 'list':
+            assert self.fileName != ""
+        if self._check_list_or_file(self.fileName) == "list":
             try:
-                listOfShiftFiles = matplotlib.numpy.genfromtxt(self.fileName, dtype=None, unpack=True)
+                listOfShiftFiles = matplotlib.numpy.genfromtxt(
+                    self.fileName, dtype=None, unpack=True
+                )
             except TypeError:
                 message = PyQt5.QtWidgets.QMessageBox(self)
-                message.setText('Empty File:\n{0}'.format(self.fileName))
+                message.setText("Empty File:\n{0}".format(self.fileName))
                 message.exec_()
             except ValueError:
                 message = PyQt5.QtWidgets.QMessageBox(self)
-                message.setText('File is not valid, only one column allowed:\n{0}'.format(self.fileName))
+                message.setText(
+                    "File is not valid, only one column allowed:\n{0}".format(
+                        self.fileName
+                    )
+                )
                 message.exec_()
             else:
                 if len(matplotlib.numpy.shape(listOfShiftFiles)) > 1:
                     message = PyQt5.QtWidgets.QMessageBox(self)
-                    message.setText('Too many columns. Expected one column:\n{0}'.format(self.fileName))
+                    message.setText(
+                        "Too many columns. Expected one column:\n{0}".format(
+                            self.fileName
+                        )
+                    )
                     message.exec_()
                 else:
                     if matplotlib.numpy.ndim(listOfShiftFiles) == 0:
@@ -3612,17 +3605,17 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
                         listOfShiftFiles = list(listOfShiftFiles)
                     self._fill_gui(inputlist=listOfShiftFiles)
         else:
-            print('Error: Input is no valid list')
+            print("Error: Input is no valid list")
 
     def _load_from_pattern(self):
         """Load files from pattern"""
 
-        filePattern = str(self.lePattern.text()).replace('\n','')
-        if self._check_list_or_file(filePattern) == 'file':
+        filePattern = str(self.lePattern.text()).replace("\n", "")
+        if self._check_list_or_file(filePattern) == "file":
             self._fill_gui(inputfile=filePattern)
         else:
             message = PyQt5.QtWidgets.QMessageBox(self)
-            message.setText('Not valid unblur shift files:\n{0}'.format(filePattern))
+            message.setText("Not valid unblur shift files:\n{0}".format(filePattern))
             message.exec_()
 
     def _write_selection(self):
@@ -3631,110 +3624,94 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         # Get output path and file name
         try:
             outputPath = PyQt5QFileDialog.getExistingDirectory(
-                directory=os.getcwd(),
-                options=PyQt5QFileDialog.DontUseNativeDialog
-                )
+                directory=os.getcwd(), options=PyQt5QFileDialog.DontUseNativeDialog
+            )
         except:
             outputPath = PyQt5QFileDialog.getExistingDirectory(
-                directory=os.getcwd(),
-                options=PyQt5QFileDialog.DontUseNativeDialog
-                )
+                directory=os.getcwd(), options=PyQt5QFileDialog.DontUseNativeDialog
+            )
         if not outputPath:
             return None
 
         # Output names
-        outputPrefix = str(self.leOutputName.text()).replace('.txt', '')
-        outputSelected = '{0}/{1}_selected.txt'.format(outputPath, outputPrefix)
-        outputDiscarded = '{0}/{1}_discarded.txt'.format(outputPath, outputPrefix)
-        shiftSelected = '{0}/{1}_shift_selected.txt'.format(outputPath, outputPrefix)
-        shiftDiscarded = '{0}/{1}_shift_discarded.txt'.format(outputPath, outputPrefix)
+        outputPrefix = str(self.leOutputName.text()).replace(".txt", "")
+        outputSelected = "{0}/{1}_selected.txt".format(outputPath, outputPrefix)
+        outputDiscarded = "{0}/{1}_discarded.txt".format(outputPath, outputPrefix)
+        shiftSelected = "{0}/{1}_shift_selected.txt".format(outputPath, outputPrefix)
+        shiftDiscarded = "{0}/{1}_shift_discarded.txt".format(outputPath, outputPrefix)
 
         # Check if output files already exists
-        if os.path.exists(outputSelected) or \
-                os.path.exists(outputDiscarded) or\
-                os.path.exists(shiftSelected) or \
-                os.path.exists(shiftDiscarded):
+        if (
+            os.path.exists(outputSelected)
+            or os.path.exists(outputDiscarded)
+            or os.path.exists(shiftSelected)
+            or os.path.exists(shiftDiscarded)
+        ):
             # Ask the user if he really wants to continue
             warningBox = PyQt5.QtWidgets.QMessageBox(self)
             warningBox.setStandardButtons(
                 PyQt5.QtWidgets.QMessageBox.No | PyQt5.QtWidgets.QMessageBox.Yes
-                )
+            )
             warningBox.setDefaultButton(PyQt5.QtWidgets.QMessageBox.Yes)
             warningBox.setText(
-                    'Do you really want to save?\n\n' +
-                    '{0}\nor\n{1}\nor\n{2}\nor\n{3}\nalready exists.'.format(
-                        outputSelected,
-                        outputDiscarded,
-                        shiftSelected,
-                        shiftDiscarded
-                        )
+                "Do you really want to save?\n\n"
+                + "{0}\nor\n{1}\nor\n{2}\nor\n{3}\nalready exists.".format(
+                    outputSelected, outputDiscarded, shiftSelected, shiftDiscarded
                 )
+            )
             warningBox.exec_()
 
             if warningBox.result() == PyQt5.QtWidgets.QMessageBox.No:
                 return None
 
-        with open(outputSelected, 'w') as w:
-            with open(shiftSelected, 'w') as f:
+        with open(outputSelected, "w") as w:
+            with open(shiftSelected, "w") as f:
                 for name in sorted(self.listChecked):
                     arrCurrentEntry = self.arrData[self.arrData[self.dFile] == name]
-                    micName = arrCurrentEntry[self.dMic][0]\
-                        .split('/')[-1]
-                    w.write(
-                        '{:s}\n'.format(
-                            micName
-                            )
-                        )
+                    micName = arrCurrentEntry[self.dMic][0].split("/")[-1]
+                    w.write("{:s}\n".format(micName))
                     f.write(
-                        '{:s}\n'.format(
+                        "{:s}\n".format(
                             os.path.relpath(arrCurrentEntry[self.dFileRaw][0])
-                            )
                         )
+                    )
 
-        with open(outputDiscarded, 'w') as w:
-            with open(shiftDiscarded, 'w') as f:
+        with open(outputDiscarded, "w") as w:
+            with open(shiftDiscarded, "w") as f:
                 for name in sorted(self.listUnchecked):
-                    arrCurrentEntry = self.arrData[
-                            self.arrData[self.dFile] == name
-                            ]
-                    micName = arrCurrentEntry[self.dMic][0]\
-                        .split('/')[-1]
-                    w.write(
-                        '{:s}\n'.format(
-                            micName
-                            )
-                        )
+                    arrCurrentEntry = self.arrData[self.arrData[self.dFile] == name]
+                    micName = arrCurrentEntry[self.dMic][0].split("/")[-1]
+                    w.write("{:s}\n".format(micName))
                     f.write(
-                        '{:s}\n'.format(
+                        "{:s}\n".format(
                             os.path.relpath(arrCurrentEntry[self.dFileRaw][0])
-                            )
                         )
+                    )
 
         # Ask the user if he really wants to continue
         warningBox = PyQt5.QtWidgets.QMessageBox(self)
-        warningBox.setStandardButtons(
-            PyQt5.QtWidgets.QMessageBox.Yes
-            )
+        warningBox.setStandardButtons(PyQt5.QtWidgets.QMessageBox.Yes)
         warningBox.setDefaultButton(PyQt5.QtWidgets.QMessageBox.Yes)
         warningBox.setText(
-                'Selection saved to:\n\n' +
-                '{0}\n{1}\n{2}\n{3}\n\n'.format(
-                    outputSelected,
-                    outputDiscarded,
-                    shiftSelected,
-                    shiftDiscarded
-                    ) +
-                'You selected {0} of {1} micrographs ({2}%).\n'.format(
-                    len(self.listChecked),
-                    len(self.listChecked) + len(self.listUnchecked),
-                    100 * len(self.listChecked) / (len(self.listChecked) + len(self.listUnchecked))
-                    ) +
-                'You discarded {0} of {1} micrographs ({2}%).'.format(
-                    len(self.listUnchecked),
-                    len(self.listChecked) + len(self.listUnchecked),
-                    100 * len(self.listUnchecked) / (len(self.listChecked) + len(self.listUnchecked))
-                    )
+            "Selection saved to:\n\n"
+            + "{0}\n{1}\n{2}\n{3}\n\n".format(
+                outputSelected, outputDiscarded, shiftSelected, shiftDiscarded
             )
+            + "You selected {0} of {1} micrographs ({2}%).\n".format(
+                len(self.listChecked),
+                len(self.listChecked) + len(self.listUnchecked),
+                100
+                * len(self.listChecked)
+                / (len(self.listChecked) + len(self.listUnchecked)),
+            )
+            + "You discarded {0} of {1} micrographs ({2}%).".format(
+                len(self.listUnchecked),
+                len(self.listChecked) + len(self.listUnchecked),
+                100
+                * len(self.listUnchecked)
+                / (len(self.listChecked) + len(self.listUnchecked)),
+            )
+        )
         warningBox.exec_()
 
     @PyQt5.QtCore.pyqtSlot()
@@ -3743,84 +3720,90 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
         # Output file name
         try:
-            strSaveName = str(PyQt5QFileDialog.getSaveFileName(
-                directory=os.getcwd(),
-                options=PyQt5QFileDialog.DontUseNativeDialog
-                ))
+            strSaveName = str(
+                PyQt5QFileDialog.getSaveFileName(
+                    directory=os.getcwd(), options=PyQt5QFileDialog.DontUseNativeDialog
+                )
+            )
         except:
             strSaveName, not_in_use = PyQt5QFileDialog.getSaveFileName(
-                directory=os.getcwd(),
-                options=PyQt5QFileDialog.DontUseNativeDialog
-                )
+                directory=os.getcwd(), options=PyQt5QFileDialog.DontUseNativeDialog
+            )
 
         # Save data to file
-        if strSaveName != '':
-            with open(strSaveName, 'w') as f:
-                f.write('# Frames\n')
-                f.write('{:d} {:d} {:d}\n'.format(
-                    self.idxFirstFrame, self.idxLastFrame, self.intFrames
-                    ))
-                f.write('# DType\n')
+        if strSaveName != "":
+            with open(strSaveName, "w") as f:
+                f.write("# Frames\n")
+                f.write(
+                    "{:d} {:d} {:d}\n".format(
+                        self.idxFirstFrame, self.idxLastFrame, self.intFrames
+                    )
+                )
+                f.write("# DType\n")
                 for row in self.listDType:
                     for element in row:
-                        f.write('{0} '.format(element))
-                    f.write('\n')
-                f.write('# Array\n')
+                        f.write("{0} ".format(element))
+                    f.write("\n")
+                f.write("# Array\n")
                 for row in self.arrData:
                     for element in row:
-                        f.write('{0} '.format(element))
-                    f.write('\n')
-                f.write('# Checked\n')
+                        f.write("{0} ".format(element))
+                    f.write("\n")
+                f.write("# Checked\n")
                 if self.listChecked:
                     for element in self.listChecked:
-                        f.write('{0} '.format(element))
+                        f.write("{0} ".format(element))
                 else:
-                    f.write('No checked files')
-                f.write('\n')
-                f.write('# Unchecked\n')
+                    f.write("No checked files")
+                f.write("\n")
+                f.write("# Unchecked\n")
                 if self.listUnchecked:
                     for element in self.listUnchecked:
-                        f.write('{0} '.format(element))
+                        f.write("{0} ".format(element))
                 else:
-                    f.write('No unchecked files')
-                f.write('\n')
-                f.write('# listCoordX\n')
+                    f.write("No unchecked files")
+                f.write("\n")
+                f.write("# listCoordX\n")
                 for element in self.listCoordX:
-                    f.write('{0} '.format(element))
-                f.write('\n')
-                f.write('# listCoordY\n')
+                    f.write("{0} ".format(element))
+                f.write("\n")
+                f.write("# listCoordY\n")
                 for element in self.listCoordY:
-                    f.write('{0} '.format(element))
-                f.write('\n')
-                f.write('# listFrames\n')
+                    f.write("{0} ".format(element))
+                f.write("\n")
+                f.write("# listFrames\n")
                 for element in self.listFrames:
-                    f.write('{0} '.format(element))
-                f.write('\n')
-                f.write('# listAngles\n')
+                    f.write("{0} ".format(element))
+                f.write("\n")
+                f.write("# listAngles\n")
                 for element in self.listAngles:
-                    f.write('{0} '.format(element))
-                f.write('\n')
-                f.write('# dictTranslate\n')
+                    f.write("{0} ".format(element))
+                f.write("\n")
+                f.write("# dictTranslate\n")
                 for key in self.dictTranslate:
                     if key == self.modeOverall:
-                        f.write('{0} {1} {2}\n'.format(key, 'None', self.dictTranslate[key]))
+                        f.write(
+                            "{0} {1} {2}\n".format(key, "None", self.dictTranslate[key])
+                        )
                     else:
-                        f.write('{0} {1}\n'.format(key, self.dictTranslate[key]))
-                f.write('# dictThresh\n')
+                        f.write("{0} {1}\n".format(key, self.dictTranslate[key]))
+                f.write("# dictThresh\n")
                 for key in self.dictTranslate:
                     if key == self.modeOverall:
-                        f.write('{0} {1} '.format(key, 'None'))
+                        f.write("{0} {1} ".format(key, "None"))
                     else:
-                        f.write('{0} '.format(key))
+                        f.write("{0} ".format(key))
                     for element in self.dictThresh[key]:
-                        f.write('{0} '.format(element))
-                    f.write('\n')
-                f.write('# General\n')
-                f.write('{0} {1}\n'.format(self.varOldStartGeneral, self.varOldStopGeneral))
-                f.write('# MicNumber\n')
+                        f.write("{0} ".format(element))
+                    f.write("\n")
+                f.write("# General\n")
+                f.write(
+                    "{0} {1}\n".format(self.varOldStartGeneral, self.varOldStopGeneral)
+                )
+                f.write("# MicNumber\n")
                 for entry in self.arrMicNumber:
-                    f.write('{0}\n'.format(entry))
-                f.write('# End\n')
+                    f.write("{0}\n".format(entry))
+                f.write("# End\n")
 
     @PyQt5.QtCore.pyqtSlot()
     def _load_settings(self):
@@ -3828,12 +3811,14 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
         # Warning box when refreshing frames
         warningBox = PyQt5.QtWidgets.QMessageBox(self)
-        warningBox.setStandardButtons(PyQt5.QtWidgets.QMessageBox.No | PyQt5.QtWidgets.QMessageBox.Yes)
+        warningBox.setStandardButtons(
+            PyQt5.QtWidgets.QMessageBox.No | PyQt5.QtWidgets.QMessageBox.Yes
+        )
         warningBox.setDefaultButton(PyQt5.QtWidgets.QMessageBox.Yes)
         warningBox.setText(
-            'Not saved changes will be lost when loading drift data!\n' +
-            'Do you really want to continue?'
-            )
+            "Not saved changes will be lost when loading drift data!\n"
+            + "Do you really want to continue?"
+        )
         warningBox.exec_()
 
         if warningBox.result() == PyQt5.QtWidgets.QMessageBox.No:
@@ -3841,22 +3826,21 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
         # Input file
         try:
-            strLoadName = str(PyQt5QFileDialog.getOpenFileName(
-                directory=os.getcwd(),
-                options=PyQt5QFileDialog.DontUseNativeDialog
-            ))
+            strLoadName = str(
+                PyQt5QFileDialog.getOpenFileName(
+                    directory=os.getcwd(), options=PyQt5QFileDialog.DontUseNativeDialog
+                )
+            )
         except:
             strLoadName, not_in_used = PyQt5QFileDialog.getOpenFileName(
-                directory=os.getcwd(),
-                options=PyQt5QFileDialog.DontUseNativeDialog
+                directory=os.getcwd(), options=PyQt5QFileDialog.DontUseNativeDialog
             )
 
-
         # If not cancel
-        if strLoadName == '':
+        if strLoadName == "":
             return None
         else:
-            assert(strLoadName != '')
+            assert strLoadName != ""
 
         # Reset variables
         self._disconnect_events()
@@ -3868,7 +3852,9 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         except TypeError:
             arrThresh, arrGeneral = self._load_settings_old_v2(strLoadName=strLoadName)
         except IndexError:
-            print('Detected old settings file! Save the settings now again to convert it to the latest version.')
+            print(
+                "Detected old settings file! Save the settings now again to convert it to the latest version."
+            )
             arrThresh, arrGeneral = self._load_settings_old_v1(strLoadName=strLoadName)
 
         # Refresh everything
@@ -3893,37 +3879,25 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             for index in range(2, len(row)):
                 listElement.append(row[index])
             if row[0] != self.modeOverall:
-                self.dictThresh.update({'{0} {1}'.format(row[0], row[1]): listElement})
+                self.dictThresh.update({"{0} {1}".format(row[0], row[1]): listElement})
             else:
-                self.dictThresh.update({'{0}'.format(row[0]): listElement})
+                self.dictThresh.update({"{0}".format(row[0]): listElement})
 
         # Refresh histograms
         self._fill_widgets(mode=self.modeOverall)
-        self._refresh_histogram_widget(
-            event='start', mode=self.modeOverall
-            )
-        self._refresh_histogram_widget(
-            event='stop', mode=self.modeOverall
-            )
+        self._refresh_histogram_widget(event="start", mode=self.modeOverall)
+        self._refresh_histogram_widget(event="stop", mode=self.modeOverall)
         for index in range(self.cbFrame.count()):
             self.cbFrame.setCurrentIndex(index)
             self._fill_widgets(mode=self.modeFrame)
-            self._refresh_histogram_widget(
-                event='start', mode=self.modeFrame
-                )
-            self._refresh_histogram_widget(
-                event='stop', mode=self.modeFrame
-                )
+            self._refresh_histogram_widget(event="start", mode=self.modeFrame)
+            self._refresh_histogram_widget(event="stop", mode=self.modeFrame)
         self.cbFrame.setCurrentIndex(0)
         for index in range(self.cbAngle.count()):
             self.cbAngle.setCurrentIndex(index)
             self._fill_widgets(mode=self.modeAngle)
-            self._refresh_histogram_widget(
-                event='start', mode=self.modeAngle
-                )
-            self._refresh_histogram_widget(
-                event='stop', mode=self.modeAngle
-                )
+            self._refresh_histogram_widget(event="start", mode=self.modeAngle)
+            self._refresh_histogram_widget(event="stop", mode=self.modeAngle)
         self.cbAngle.setCurrentIndex(0)
 
         self.leStartGeneral.setText(arrGeneral[0])
@@ -3933,7 +3907,6 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         # Enable everything and color all black
         self._default_color()
         self._enable_all()
-
 
     def _load_settings_new(self, strLoadName):
         """Load the settings in the new way"""
@@ -3953,36 +3926,49 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         idxGeneral = 11
         idxMicNumber = 12
         idxEnd = 13
-        with open(strLoadName, 'r') as f:
+        with open(strLoadName, "r") as f:
             # Append line of keywords
             for linenumber, line in enumerate(f):
-                if line == '# Frames\n' or line == '# DType\n' or \
-                        line == '# Array\n' or line == '# Checked\n' or  \
-                        line == '# Unchecked\n' or line == '# listCoordX\n' or \
-                        line == '# listCoordY\n' or line == '# listFrames\n' or \
-                        line == '# listAngles\n' or line == '# dictTranslate\n' or \
-                        line == '# dictThresh\n' or line == '# General\n' or \
-                        line == '# MicNumber\n' or line == '# End\n':
+                if (
+                    line == "# Frames\n"
+                    or line == "# DType\n"
+                    or line == "# Array\n"
+                    or line == "# Checked\n"
+                    or line == "# Unchecked\n"
+                    or line == "# listCoordX\n"
+                    or line == "# listCoordY\n"
+                    or line == "# listFrames\n"
+                    or line == "# listAngles\n"
+                    or line == "# dictTranslate\n"
+                    or line == "# dictThresh\n"
+                    or line == "# General\n"
+                    or line == "# MicNumber\n"
+                    or line == "# End\n"
+                ):
                     separate_list.append(linenumber)
 
         # Fill frame widgets
         end = separate_list[idxEnd] - separate_list[idxDType] + 1
         self.idxFirstFrame, self.idxLastFrame, self.intFrames = matplotlib.numpy.genfromtxt(
             strLoadName,
-            skip_header=separate_list[idxFrames] + 1, skip_footer=end,
-            comments='$', dtype='<i8'
-            )
-        self.leFrameStart.setText('{:d}'.format(self.idxFirstFrame))
-        self.leFrameStop.setText('{:d}'.format(self.idxLastFrame))
+            skip_header=separate_list[idxFrames] + 1,
+            skip_footer=end,
+            comments="$",
+            dtype="<i8",
+        )
+        self.leFrameStart.setText("{:d}".format(self.idxFirstFrame))
+        self.leFrameStop.setText("{:d}".format(self.idxLastFrame))
 
         # Get Dtype
         end = separate_list[idxEnd] - separate_list[idxArray] + 1
         arrName, arrType = matplotlib.numpy.genfromtxt(
             strLoadName,
             skip_header=separate_list[idxDType] + 1,
-            skip_footer=end, comments='$',
-            dtype=None, unpack=True
-            )
+            skip_footer=end,
+            comments="$",
+            dtype=None,
+            unpack=True,
+        )
 
         self.listDType = []
         for name, dtype in zip(arrName, arrType):
@@ -3993,9 +3979,10 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         self.arrData = matplotlib.numpy.genfromtxt(
             strLoadName,
             skip_header=separate_list[idxArray] + 1,
-            skip_footer=end, comments='$',
-            dtype=self.listDType
-            )
+            skip_footer=end,
+            comments="$",
+            dtype=self.listDType,
+        )
         self.arrData = matplotlib.numpy.atleast_1d(self.arrData)
 
         # Load checked list
@@ -4003,15 +3990,16 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         loaded_data = matplotlib.numpy.genfromtxt(
             strLoadName,
             skip_header=separate_list[idxChecked] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            )
+            skip_footer=end,
+            comments="$",
+            dtype=None,
+        )
         if len(matplotlib.numpy.shape(loaded_data)) == 0:
             self.listChecked = [str(loaded_data)]
         else:
             self.listChecked = list(loaded_data)
 
-        if self.listChecked[0] == 'No':
+        if self.listChecked[0] == "No":
             self.listChecked = []
 
         # Load unchecked list
@@ -4019,94 +4007,118 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         loaded_data = matplotlib.numpy.genfromtxt(
             strLoadName,
             skip_header=separate_list[idxUnchecked] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            )
+            skip_footer=end,
+            comments="$",
+            dtype=None,
+        )
         if len(matplotlib.numpy.shape(loaded_data)) == 0:
             self.listUnchecked = [str(loaded_data)]
         else:
             self.listUnchecked = list(loaded_data)
 
-        if self.listUnchecked[0] == 'No':
+        if self.listUnchecked[0] == "No":
             self.listUnchecked = []
 
         # Load coord x list
         end = separate_list[idxEnd] - separate_list[idxCoordY] + 1
-        self.listCoordX = list(matplotlib.numpy.genfromtxt(
-            strLoadName,
-            skip_header=separate_list[idxCoordX] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            ))
+        self.listCoordX = list(
+            matplotlib.numpy.genfromtxt(
+                strLoadName,
+                skip_header=separate_list[idxCoordX] + 1,
+                skip_footer=end,
+                comments="$",
+                dtype=None,
+            )
+        )
 
         # Load coord y list
         end = separate_list[idxEnd] - separate_list[idxFrame] + 1
-        self.listCoordY = list(matplotlib.numpy.genfromtxt(
-            strLoadName,
-            skip_header=separate_list[idxCoordY] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            ))
+        self.listCoordY = list(
+            matplotlib.numpy.genfromtxt(
+                strLoadName,
+                skip_header=separate_list[idxCoordY] + 1,
+                skip_footer=end,
+                comments="$",
+                dtype=None,
+            )
+        )
 
         # Load frame list
         end = separate_list[idxEnd] - separate_list[idxAngles] + 1
-        self.listFrames = list(matplotlib.numpy.genfromtxt(
-            strLoadName,
-            skip_header=separate_list[idxFrame] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            ))
+        self.listFrames = list(
+            matplotlib.numpy.genfromtxt(
+                strLoadName,
+                skip_header=separate_list[idxFrame] + 1,
+                skip_footer=end,
+                comments="$",
+                dtype=None,
+            )
+        )
 
         # Load angle list
         end = separate_list[idxEnd] - separate_list[idxTranslate] + 1
-        self.listAngles = list(matplotlib.numpy.genfromtxt(
-            strLoadName,
-            skip_header=separate_list[idxAngles] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            ))
+        self.listAngles = list(
+            matplotlib.numpy.genfromtxt(
+                strLoadName,
+                skip_header=separate_list[idxAngles] + 1,
+                skip_footer=end,
+                comments="$",
+                dtype=None,
+            )
+        )
 
         # Load Translate dictionary
         end = separate_list[idxEnd] - separate_list[idxThresh] + 1
-        arrNames, arrNumber, arrTrans = list(matplotlib.numpy.genfromtxt(
-            strLoadName,
-            skip_header=separate_list[idxTranslate] + 1,
-            skip_footer=end, comments='$',
-            dtype=None, unpack=True
-            ))
+        arrNames, arrNumber, arrTrans = list(
+            matplotlib.numpy.genfromtxt(
+                strLoadName,
+                skip_header=separate_list[idxTranslate] + 1,
+                skip_footer=end,
+                comments="$",
+                dtype=None,
+                unpack=True,
+            )
+        )
 
         for name, number, trans in zip(arrNames, arrNumber, arrTrans):
             if name != self.modeOverall:
-                self.dictTranslate.update({'{0} {1}'.format(name, number): trans})
+                self.dictTranslate.update({"{0} {1}".format(name, number): trans})
             else:
                 self.dictTranslate.update({name: trans})
 
         # Load Thresh dictionary
         end = separate_list[idxEnd] - separate_list[idxGeneral] + 1
-        arrThresh = list(matplotlib.numpy.genfromtxt(
-            strLoadName,
-            skip_header=separate_list[idxThresh] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            ))
+        arrThresh = list(
+            matplotlib.numpy.genfromtxt(
+                strLoadName,
+                skip_header=separate_list[idxThresh] + 1,
+                skip_footer=end,
+                comments="$",
+                dtype=None,
+            )
+        )
 
         # Load general settings
         end = separate_list[idxEnd] - separate_list[idxMicNumber] + 1
-        arrGeneral = list(matplotlib.numpy.genfromtxt(
-            strLoadName,
-            skip_header=separate_list[idxGeneral] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            ))
+        arrGeneral = list(
+            matplotlib.numpy.genfromtxt(
+                strLoadName,
+                skip_header=separate_list[idxGeneral] + 1,
+                skip_footer=end,
+                comments="$",
+                dtype=None,
+            )
+        )
 
         # Load MicNumber settings
         end = separate_list[idxEnd] - separate_list[idxEnd] + 1
         loaded_data = matplotlib.numpy.genfromtxt(
             strLoadName,
             skip_header=separate_list[idxMicNumber] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            )
+            skip_footer=end,
+            comments="$",
+            dtype=None,
+        )
         if len(matplotlib.numpy.shape(loaded_data)) == 0:
             self.arrMicNumber = [str(loaded_data)]
         else:
@@ -4115,13 +4127,14 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         # Check if there are less than 5
         if len(self.arrMicNumber) <= 5:
             self.varAnalyzeOne = True
-            print((
-                '\nWarning: !!!! Only few shift files selected, ' +
-                'so plots of all micrographs could not work as expected. !!!!\n'
-                ))
+            print(
+                (
+                    "\nWarning: !!!! Only few shift files selected, "
+                    + "so plots of all micrographs could not work as expected. !!!!\n"
+                )
+            )
 
         return arrThresh, arrGeneral
-
 
     def _load_settings_old_v2(self, strLoadName):
         """Load the settings in the new way"""
@@ -4141,36 +4154,49 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         idxGeneral = 11
         idxMicNumber = 12
         idxEnd = 13
-        with open(strLoadName, 'r') as f:
+        with open(strLoadName, "r") as f:
             # Append line of keywords
             for linenumber, line in enumerate(f):
-                if line == '# Frames\n' or line == '# DType\n' or \
-                        line == '# Array\n' or line == '# Checked\n' or  \
-                        line == '# Unchecked\n' or line == '# listCoordX\n' or \
-                        line == '# listCoordY\n' or line == '# listFrames\n' or \
-                        line == '# listAngles\n' or line == '# dictTranslate\n' or \
-                        line == '# dictThresh\n' or line == '# General\n' or \
-                        line == '# MicNumber\n' or line == '# End\n':
+                if (
+                    line == "# Frames\n"
+                    or line == "# DType\n"
+                    or line == "# Array\n"
+                    or line == "# Checked\n"
+                    or line == "# Unchecked\n"
+                    or line == "# listCoordX\n"
+                    or line == "# listCoordY\n"
+                    or line == "# listFrames\n"
+                    or line == "# listAngles\n"
+                    or line == "# dictTranslate\n"
+                    or line == "# dictThresh\n"
+                    or line == "# General\n"
+                    or line == "# MicNumber\n"
+                    or line == "# End\n"
+                ):
                     separate_list.append(linenumber)
 
         # Fill frame widgets
         end = separate_list[idxEnd] - separate_list[idxDType] + 1
         self.idxFirstFrame, self.idxLastFrame, self.intFrames = matplotlib.numpy.genfromtxt(
             strLoadName,
-            skiprows=separate_list[idxFrames] + 1, skip_footer=end,
-            comments='$', dtype='<i8'
-            )
-        self.leFrameStart.setText('{:d}'.format(self.idxFirstFrame))
-        self.leFrameStop.setText('{:d}'.format(self.idxLastFrame))
+            skiprows=separate_list[idxFrames] + 1,
+            skip_footer=end,
+            comments="$",
+            dtype="<i8",
+        )
+        self.leFrameStart.setText("{:d}".format(self.idxFirstFrame))
+        self.leFrameStop.setText("{:d}".format(self.idxLastFrame))
 
         # Get Dtype
         end = separate_list[idxEnd] - separate_list[idxArray] + 1
         arrName, arrType = matplotlib.numpy.genfromtxt(
             strLoadName,
             skiprows=separate_list[idxDType] + 1,
-            skip_footer=end, comments='$',
-            dtype=None, unpack=True
-            )
+            skip_footer=end,
+            comments="$",
+            dtype=None,
+            unpack=True,
+        )
 
         self.listDType = []
         for name, dtype in zip(arrName, arrType):
@@ -4181,9 +4207,10 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         self.arrData = matplotlib.numpy.genfromtxt(
             strLoadName,
             skiprows=separate_list[idxArray] + 1,
-            skip_footer=end, comments='$',
-            dtype=self.listDType
-            )
+            skip_footer=end,
+            comments="$",
+            dtype=self.listDType,
+        )
         self.arrData = matplotlib.numpy.atleast_1d(self.arrData)
 
         # Load checked list
@@ -4191,15 +4218,16 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         loaded_data = matplotlib.numpy.genfromtxt(
             strLoadName,
             skiprows=separate_list[idxChecked] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            )
+            skip_footer=end,
+            comments="$",
+            dtype=None,
+        )
         if len(matplotlib.numpy.shape(loaded_data)) == 0:
             self.listChecked = [str(loaded_data)]
         else:
             self.listChecked = list(loaded_data)
 
-        if self.listChecked[0] == 'No':
+        if self.listChecked[0] == "No":
             self.listChecked = []
 
         # Load unchecked list
@@ -4207,94 +4235,118 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         loaded_data = matplotlib.numpy.genfromtxt(
             strLoadName,
             skiprows=separate_list[idxUnchecked] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            )
+            skip_footer=end,
+            comments="$",
+            dtype=None,
+        )
         if len(matplotlib.numpy.shape(loaded_data)) == 0:
             self.listUnchecked = [str(loaded_data)]
         else:
             self.listUnchecked = list(loaded_data)
 
-        if self.listUnchecked[0] == 'No':
+        if self.listUnchecked[0] == "No":
             self.listUnchecked = []
 
         # Load coord x list
         end = separate_list[idxEnd] - separate_list[idxCoordY] + 1
-        self.listCoordX = list(matplotlib.numpy.genfromtxt(
-            strLoadName,
-            skiprows=separate_list[idxCoordX] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            ))
+        self.listCoordX = list(
+            matplotlib.numpy.genfromtxt(
+                strLoadName,
+                skiprows=separate_list[idxCoordX] + 1,
+                skip_footer=end,
+                comments="$",
+                dtype=None,
+            )
+        )
 
         # Load coord y list
         end = separate_list[idxEnd] - separate_list[idxFrame] + 1
-        self.listCoordY = list(matplotlib.numpy.genfromtxt(
-            strLoadName,
-            skiprows=separate_list[idxCoordY] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            ))
+        self.listCoordY = list(
+            matplotlib.numpy.genfromtxt(
+                strLoadName,
+                skiprows=separate_list[idxCoordY] + 1,
+                skip_footer=end,
+                comments="$",
+                dtype=None,
+            )
+        )
 
         # Load frame list
         end = separate_list[idxEnd] - separate_list[idxAngles] + 1
-        self.listFrames = list(matplotlib.numpy.genfromtxt(
-            strLoadName,
-            skiprows=separate_list[idxFrame] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            ))
+        self.listFrames = list(
+            matplotlib.numpy.genfromtxt(
+                strLoadName,
+                skiprows=separate_list[idxFrame] + 1,
+                skip_footer=end,
+                comments="$",
+                dtype=None,
+            )
+        )
 
         # Load angle list
         end = separate_list[idxEnd] - separate_list[idxTranslate] + 1
-        self.listAngles = list(matplotlib.numpy.genfromtxt(
-            strLoadName,
-            skiprows=separate_list[idxAngles] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            ))
+        self.listAngles = list(
+            matplotlib.numpy.genfromtxt(
+                strLoadName,
+                skiprows=separate_list[idxAngles] + 1,
+                skip_footer=end,
+                comments="$",
+                dtype=None,
+            )
+        )
 
         # Load Translate dictionary
         end = separate_list[idxEnd] - separate_list[idxThresh] + 1
-        arrNames, arrNumber, arrTrans = list(matplotlib.numpy.genfromtxt(
-            strLoadName,
-            skiprows=separate_list[idxTranslate] + 1,
-            skip_footer=end, comments='$',
-            dtype=None, unpack=True
-            ))
+        arrNames, arrNumber, arrTrans = list(
+            matplotlib.numpy.genfromtxt(
+                strLoadName,
+                skiprows=separate_list[idxTranslate] + 1,
+                skip_footer=end,
+                comments="$",
+                dtype=None,
+                unpack=True,
+            )
+        )
 
         for name, number, trans in zip(arrNames, arrNumber, arrTrans):
             if name != self.modeOverall:
-                self.dictTranslate.update({'{0} {1}'.format(name, number): trans})
+                self.dictTranslate.update({"{0} {1}".format(name, number): trans})
             else:
                 self.dictTranslate.update({name: trans})
 
         # Load Thresh dictionary
         end = separate_list[idxEnd] - separate_list[idxGeneral] + 1
-        arrThresh = list(matplotlib.numpy.genfromtxt(
-            strLoadName,
-            skiprows=separate_list[idxThresh] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            ))
+        arrThresh = list(
+            matplotlib.numpy.genfromtxt(
+                strLoadName,
+                skiprows=separate_list[idxThresh] + 1,
+                skip_footer=end,
+                comments="$",
+                dtype=None,
+            )
+        )
 
         # Load general settings
         end = separate_list[idxEnd] - separate_list[idxMicNumber] + 1
-        arrGeneral = list(matplotlib.numpy.genfromtxt(
-            strLoadName,
-            skiprows=separate_list[idxGeneral] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            ))
+        arrGeneral = list(
+            matplotlib.numpy.genfromtxt(
+                strLoadName,
+                skiprows=separate_list[idxGeneral] + 1,
+                skip_footer=end,
+                comments="$",
+                dtype=None,
+            )
+        )
 
         # Load MicNumber settings
         end = separate_list[idxEnd] - separate_list[idxEnd] + 1
         loaded_data = matplotlib.numpy.genfromtxt(
             strLoadName,
             skiprows=separate_list[idxMicNumber] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            )
+            skip_footer=end,
+            comments="$",
+            dtype=None,
+        )
         if len(matplotlib.numpy.shape(loaded_data)) == 0:
             self.arrMicNumber = [str(loaded_data)]
         else:
@@ -4303,13 +4355,14 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         # Check if there are less than 5
         if len(self.arrMicNumber) <= 5:
             self.varAnalyzeOne = True
-            print((
-                '\nWarning: !!!! Only few shift files selected, ' +
-                'so plots of all micrographs could not work as expected. !!!!\n'
-                ))
+            print(
+                (
+                    "\nWarning: !!!! Only few shift files selected, "
+                    + "so plots of all micrographs could not work as expected. !!!!\n"
+                )
+            )
 
         return arrThresh, arrGeneral
-
 
     def _load_settings_old_v1(self, strLoadName):
         """Load the settings in the new way"""
@@ -4330,36 +4383,48 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         idxEnd = 12
 
         # Check for the keywords
-        with open(strLoadName, 'r') as f:
+        with open(strLoadName, "r") as f:
             # Append line of keywords
             for linenumber, line in enumerate(f):
-                if line == '# Frames\n' or line == '# DType\n' or \
-                        line == '# Array\n' or line == '# Checked\n' or  \
-                        line == '# Unchecked\n' or line == '# listCoordX\n' or \
-                        line == '# listCoordY\n' or line == '# listFrames\n' or \
-                        line == '# listAngles\n' or line == '# dictTranslate\n' or \
-                        line == '# dictThresh\n' or line == '# General\n' or \
-                        line == '# End\n':
+                if (
+                    line == "# Frames\n"
+                    or line == "# DType\n"
+                    or line == "# Array\n"
+                    or line == "# Checked\n"
+                    or line == "# Unchecked\n"
+                    or line == "# listCoordX\n"
+                    or line == "# listCoordY\n"
+                    or line == "# listFrames\n"
+                    or line == "# listAngles\n"
+                    or line == "# dictTranslate\n"
+                    or line == "# dictThresh\n"
+                    or line == "# General\n"
+                    or line == "# End\n"
+                ):
                     separate_list.append(linenumber)
 
         # Fill frame widgets
         end = separate_list[idxEnd] - separate_list[idxDType] + 1
         self.idxFirstFrame, self.idxLastFrame, self.intFrames = matplotlib.numpy.genfromtxt(
             strLoadName,
-            skiprows=separate_list[idxFrames] + 1, skip_footer=end,
-            comments='$', dtype='<i8'
-            )
-        self.leFrameStart.setText('{:d}'.format(self.idxFirstFrame))
-        self.leFrameStop.setText('{:d}'.format(self.idxLastFrame))
+            skiprows=separate_list[idxFrames] + 1,
+            skip_footer=end,
+            comments="$",
+            dtype="<i8",
+        )
+        self.leFrameStart.setText("{:d}".format(self.idxFirstFrame))
+        self.leFrameStop.setText("{:d}".format(self.idxLastFrame))
 
         # Get Dtype
         end = separate_list[idxEnd] - separate_list[idxArray] + 1
         arrName, arrType = matplotlib.numpy.genfromtxt(
             strLoadName,
             skiprows=separate_list[idxDType] + 1,
-            skip_footer=end, comments='$',
-            dtype=None, unpack=True
-            )
+            skip_footer=end,
+            comments="$",
+            dtype=None,
+            unpack=True,
+        )
 
         self.listDType = []
         for name, dtype in zip(arrName, arrType):
@@ -4370,9 +4435,10 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         self.arrData = matplotlib.numpy.genfromtxt(
             strLoadName,
             skiprows=separate_list[idxArray] + 1,
-            skip_footer=end, comments='$',
-            dtype=self.listDType
-            )
+            skip_footer=end,
+            comments="$",
+            dtype=self.listDType,
+        )
         self.arrData = matplotlib.numpy.atleast_1d(self.arrData)
 
         # Load checked list
@@ -4380,15 +4446,16 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         loaded_data = matplotlib.numpy.genfromtxt(
             strLoadName,
             skiprows=separate_list[idxChecked] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            )
+            skip_footer=end,
+            comments="$",
+            dtype=None,
+        )
         if len(matplotlib.numpy.shape(loaded_data)) == 0:
             self.listChecked = [str(loaded_data)]
         else:
             self.listChecked = list(loaded_data)
 
-        if self.listChecked[0] == 'No':
+        if self.listChecked[0] == "No":
             self.listChecked = []
 
         # Load unchecked list
@@ -4396,102 +4463,127 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         loaded_data = matplotlib.numpy.genfromtxt(
             strLoadName,
             skiprows=separate_list[idxUnchecked] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            )
+            skip_footer=end,
+            comments="$",
+            dtype=None,
+        )
         if len(matplotlib.numpy.shape(loaded_data)) == 0:
             self.listUnchecked = [str(loaded_data)]
         else:
             self.listUnchecked = list(loaded_data)
 
-        if self.listUnchecked[0] == 'No':
+        if self.listUnchecked[0] == "No":
             self.listUnchecked = []
 
         # Load coord x list
         end = separate_list[idxEnd] - separate_list[idxCoordY] + 1
-        self.listCoordX = list(matplotlib.numpy.genfromtxt(
-            strLoadName,
-            skiprows=separate_list[idxCoordX] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            ))
+        self.listCoordX = list(
+            matplotlib.numpy.genfromtxt(
+                strLoadName,
+                skiprows=separate_list[idxCoordX] + 1,
+                skip_footer=end,
+                comments="$",
+                dtype=None,
+            )
+        )
 
         # Load coord y list
         end = separate_list[idxEnd] - separate_list[idxFrame] + 1
-        self.listCoordY = list(matplotlib.numpy.genfromtxt(
-            strLoadName,
-            skiprows=separate_list[idxCoordY] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            ))
+        self.listCoordY = list(
+            matplotlib.numpy.genfromtxt(
+                strLoadName,
+                skiprows=separate_list[idxCoordY] + 1,
+                skip_footer=end,
+                comments="$",
+                dtype=None,
+            )
+        )
 
         # Load frame list
         end = separate_list[idxEnd] - separate_list[idxAngles] + 1
-        self.listFrames = list(matplotlib.numpy.genfromtxt(
-            strLoadName,
-            skiprows=separate_list[idxFrame] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            ))
+        self.listFrames = list(
+            matplotlib.numpy.genfromtxt(
+                strLoadName,
+                skiprows=separate_list[idxFrame] + 1,
+                skip_footer=end,
+                comments="$",
+                dtype=None,
+            )
+        )
 
         # Load angle list
         end = separate_list[idxEnd] - separate_list[idxTranslate] + 1
-        self.listAngles = list(matplotlib.numpy.genfromtxt(
-            strLoadName,
-            skiprows=separate_list[idxAngles] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            ))
+        self.listAngles = list(
+            matplotlib.numpy.genfromtxt(
+                strLoadName,
+                skiprows=separate_list[idxAngles] + 1,
+                skip_footer=end,
+                comments="$",
+                dtype=None,
+            )
+        )
 
         # Load Translate dictionary
         end = separate_list[idxEnd] - separate_list[idxThresh] + 1
-        arrNames, arrNumber, arrTrans = list(matplotlib.numpy.genfromtxt(
-            strLoadName,
-            skiprows=separate_list[idxTranslate] + 1,
-            skip_footer=end, comments='$',
-            dtype=None, unpack=True
-            ))
+        arrNames, arrNumber, arrTrans = list(
+            matplotlib.numpy.genfromtxt(
+                strLoadName,
+                skiprows=separate_list[idxTranslate] + 1,
+                skip_footer=end,
+                comments="$",
+                dtype=None,
+                unpack=True,
+            )
+        )
 
         for name, number, trans in zip(arrNames, arrNumber, arrTrans):
             if name != self.modeOverall:
-                self.dictTranslate.update({'{0} {1}'.format(name, number): trans})
+                self.dictTranslate.update({"{0} {1}".format(name, number): trans})
             else:
                 self.dictTranslate.update({name: trans})
 
         # Load Thresh dictionary
         end = separate_list[idxEnd] - separate_list[idxGeneral] + 1
-        arrThresh = list(matplotlib.numpy.genfromtxt(
-            strLoadName,
-            skiprows=separate_list[idxThresh] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            ))
+        arrThresh = list(
+            matplotlib.numpy.genfromtxt(
+                strLoadName,
+                skiprows=separate_list[idxThresh] + 1,
+                skip_footer=end,
+                comments="$",
+                dtype=None,
+            )
+        )
 
         # Load general settings
         end = separate_list[idxEnd] - separate_list[idxEnd] + 1
-        arrGeneral = list(matplotlib.numpy.genfromtxt(
-            strLoadName,
-            skiprows=separate_list[idxGeneral] + 1,
-            skip_footer=end, comments='$',
-            dtype=None
-            ))
+        arrGeneral = list(
+            matplotlib.numpy.genfromtxt(
+                strLoadName,
+                skiprows=separate_list[idxGeneral] + 1,
+                skip_footer=end,
+                comments="$",
+                dtype=None,
+            )
+        )
 
-        print((
-            'Warning: Could not identify micrograph serial number due to an old settings file.\n' +
-            'X-axis of the plots do not represent' +
-            'the serial micrograph number.'
-            ))
+        print(
+            (
+                "Warning: Could not identify micrograph serial number due to an old settings file.\n"
+                + "X-axis of the plots do not represent"
+                + "the serial micrograph number."
+            )
+        )
         self.arrMicNumber = matplotlib.numpy.arange(len(self.arrData))
 
         return arrThresh, arrGeneral
-
 
     def _show_about(self):
         """Show the about info"""
 
         # Generate a about message box
         about = PyQt5.QtWidgets.QMessageBox()
-        about.setText("""
+        about.setText(
+            """
             sxgui_drift for analyzing drift parameters
             made by Unblur
             Author 2016  Markus Stabrin
@@ -4534,68 +4626,85 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             FITNESS FOR A PARTICULAR PURPOSE.
             See the GNU General Public License
             for more details.
-            """)
+            """
+        )
         about.exec_()
 
     def changeEvent(self, event):
         if event.type() == PyQt5.QtCore.QEvent.WindowStateChange:
             if self.isMinimized():
-                self.dictVisible.update({
-                    self.msPlotDrift: [
-                        self.msPlotDrift.isVisible(),
-                        self.msPlotDrift.rect(),
-                        self.msPlotDrift.pos()
+                self.dictVisible.update(
+                    {
+                        self.msPlotDrift: [
+                            self.msPlotDrift.isVisible(),
+                            self.msPlotDrift.rect(),
+                            self.msPlotDrift.pos(),
                         ]
-                    })
-                self.dictVisible.update({
-                    self.msPlotFrame: [
-                        self.msPlotFrame.isVisible(),
-                        self.msPlotFrame.rect(),
-                        self.msPlotFrame.pos()
+                    }
+                )
+                self.dictVisible.update(
+                    {
+                        self.msPlotFrame: [
+                            self.msPlotFrame.isVisible(),
+                            self.msPlotFrame.rect(),
+                            self.msPlotFrame.pos(),
                         ]
-                    })
-                self.dictVisible.update({
-                    self.msPlotAngle: [
-                        self.msPlotAngle.isVisible(),
-                        self.msPlotAngle.rect(),
-                        self.msPlotAngle.pos()
+                    }
+                )
+                self.dictVisible.update(
+                    {
+                        self.msPlotAngle: [
+                            self.msPlotAngle.isVisible(),
+                            self.msPlotAngle.rect(),
+                            self.msPlotAngle.pos(),
                         ]
-                    })
-                self.dictVisible.update({
-                    self.msAllPlotFrameAvg: [
-                        self.msAllPlotFrameAvg.isVisible(),
-                        self.msAllPlotFrameAvg.rect(),
-                        self.msAllPlotFrameAvg.pos()
+                    }
+                )
+                self.dictVisible.update(
+                    {
+                        self.msAllPlotFrameAvg: [
+                            self.msAllPlotFrameAvg.isVisible(),
+                            self.msAllPlotFrameAvg.rect(),
+                            self.msAllPlotFrameAvg.pos(),
                         ]
-                    })
-                self.dictVisible.update({
-                    self.msAllPlotDrift: [
-                        self.msAllPlotDrift.isVisible(),
-                        self.msAllPlotDrift.rect(),
-                        self.msAllPlotDrift.pos()
+                    }
+                )
+                self.dictVisible.update(
+                    {
+                        self.msAllPlotDrift: [
+                            self.msAllPlotDrift.isVisible(),
+                            self.msAllPlotDrift.rect(),
+                            self.msAllPlotDrift.pos(),
                         ]
-                    })
-                self.dictVisible.update({
-                    self.msAllPlotFrame: [
-                        self.msAllPlotFrame.isVisible(),
-                        self.msAllPlotFrame.rect(),
-                        self.msAllPlotFrame.pos()
+                    }
+                )
+                self.dictVisible.update(
+                    {
+                        self.msAllPlotFrame: [
+                            self.msAllPlotFrame.isVisible(),
+                            self.msAllPlotFrame.rect(),
+                            self.msAllPlotFrame.pos(),
                         ]
-                    })
-                self.dictVisible.update({
-                    self.msAllPlotAngle: [
-                        self.msAllPlotAngle.isVisible(),
-                        self.msAllPlotAngle.rect(),
-                        self.msAllPlotAngle.pos()
+                    }
+                )
+                self.dictVisible.update(
+                    {
+                        self.msAllPlotAngle: [
+                            self.msAllPlotAngle.isVisible(),
+                            self.msAllPlotAngle.rect(),
+                            self.msAllPlotAngle.pos(),
                         ]
-                    })
-                self.dictVisible.update({
-                    self.msAllPlotPerMic: [
-                        self.msAllPlotPerMic.isVisible(),
-                        self.msAllPlotPerMic.rect(),
-                        self.msAllPlotPerMic.pos()
+                    }
+                )
+                self.dictVisible.update(
+                    {
+                        self.msAllPlotPerMic: [
+                            self.msAllPlotPerMic.isVisible(),
+                            self.msAllPlotPerMic.rect(),
+                            self.msAllPlotPerMic.pos(),
                         ]
-                    })
+                    }
+                )
 
                 for key in self.dictVisible:
                     if self.dictVisible[key]:
@@ -4630,7 +4739,7 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         # Ignore the incomming event when pressing the "X" and
         # quit the application instead
         event.ignore()
-        print('Bye Bye!')
+        print("Bye Bye!")
         PyQt5.QtCore.QCoreApplication.instance().quit()
 
 
@@ -4639,11 +4748,11 @@ def _main():
 
     if len(sys.argv) > 3:
         print(
-            'Too many arguments!\n'
-            'Please start the GUI without argument or use \n'
+            "Too many arguments!\n"
+            "Please start the GUI without argument or use \n"
             'quote marks around the wildcard "example-*_shift.txt".\n'
             'Usage: sxgui_unblur.py "shift_files" "list_file"\n'
-            )
+        )
         return None
     elif len(sys.argv) == 3:
         shiftFiles, shiftList = sys.argv[-2:]
@@ -4660,8 +4769,8 @@ def _main():
     app.exec_()
 
 
-if __name__ == '__main__':
-    sp_global_def.print_timestamp( "Start" )
+if __name__ == "__main__":
+    sp_global_def.print_timestamp("Start")
     sp_global_def.write_command()
     _main()
-    sp_global_def.print_timestamp( "Finish" )
+    sp_global_def.print_timestamp("Finish")

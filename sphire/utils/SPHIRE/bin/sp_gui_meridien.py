@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+
 # sxgui_meridien for analysing meridien outputs.
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
@@ -37,16 +38,19 @@ from builtins import range
 from builtins import object
 
 
-
-matplotlib.pyplot.matplotlib.use('AGG')
+matplotlib.pyplot.matplotlib.use("AGG")
 
 try:
     from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-    from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
+    from matplotlib.backends.backend_qt4agg import (
+        NavigationToolbar2QT as NavigationToolbar,
+    )
 
 except ImportError:
     from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-    from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+    from matplotlib.backends.backend_qt5agg import (
+        NavigationToolbar2QT as NavigationToolbar,
+    )
 
 
 class DriverFileReader(PyQt5.QtCore.QObject):
@@ -55,7 +59,6 @@ class DriverFileReader(PyQt5.QtCore.QObject):
     sig_readfolders = PyQt5.QtCore.pyqtSignal(str)
     sig_sendfolders = PyQt5.QtCore.pyqtSignal(str)
     sig_sendfsc = PyQt5.QtCore.pyqtSignal(list, list, list, list)
-
 
     def __init__(self):
         super(DriverFileReader, self).__init__()
@@ -72,18 +75,16 @@ class DriverFileReader(PyQt5.QtCore.QObject):
         runnumbers = [word[-3:] for word in paths]
         pixelsizes = []
         nnxos = []
-        for i,path in enumerate(paths):
+        for i, path in enumerate(paths):
             tracker_reader = TrackerFileReader()
-            trackerPath = "{0}Tracker_{1}.json".format(path+"/", runnumbers[i])
+            trackerPath = "{0}Tracker_{1}.json".format(path + "/", runnumbers[i])
             v = tracker_reader.read_pixelsize_and_nnxo(trackerPath)
             pixelsizes.append(v[0])
             nnxos.append(v[1])
 
-        self.sig_sendfsc.emit(self.read_fsc_values(paths),runnames,pixelsizes,nnxos)
+        self.sig_sendfsc.emit(self.read_fsc_values(paths), runnames, pixelsizes, nnxos)
 
-
-
-    def read_fsc_values(self,paths):
+    def read_fsc_values(self, paths):
         """
         Reads the fsc value from the driver.txt file
 
@@ -94,14 +95,14 @@ class DriverFileReader(PyQt5.QtCore.QObject):
         dataOfRuns = []
 
         for path in paths:
-            driver_path = "{0}/driver_{1}.txt".format(path,path[-3:])
+            driver_path = "{0}/driver_{1}.txt".format(path, path[-3:])
             data = matplotlib.pyplot.np.genfromtxt(driver_path, usecols=0)
             dataOfRuns.append(data)
 
         return dataOfRuns
 
     @PyQt5.QtCore.pyqtSlot(str)
-    def handle_read_refinement_folders(self,path):
+    def handle_read_refinement_folders(self, path):
 
         self.sig_sendfolders.emit(path)
 
@@ -116,10 +117,13 @@ class DriverFileReader(PyQt5.QtCore.QObject):
         """
         main_dict = []
         for dict in sorted(os.listdir(path)):
-            combined_path = os.path.join(str(path),dict)
+            combined_path = os.path.join(str(path), dict)
 
-
-            if os.path.isdir(combined_path) and ("main" in dict) and ("000" not in dict):
+            if (
+                os.path.isdir(combined_path)
+                and ("main" in dict)
+                and ("000" not in dict)
+            ):
                 valid = False
                 for files in os.listdir(combined_path):
                     if "Tracker" in files:
@@ -130,10 +134,8 @@ class DriverFileReader(PyQt5.QtCore.QObject):
 
 
 class FSCPlot(PyQt5.QtWidgets.QDialog):
-
-
-    def __init__(self,parent=None):
-        super(FSCPlot,self).__init__(parent)
+    def __init__(self, parent=None):
+        super(FSCPlot, self).__init__(parent)
         self.figure = matplotlib.pyplot.figure()
 
         # this is the Canvas Widget that displays the `figure`
@@ -164,12 +166,12 @@ class FSCPlot(PyQt5.QtWidgets.QDialog):
         # create an axis
         ax = self.figure.add_subplot(111)
 
-        for i,entry in enumerate(fscvalues):
+        for i, entry in enumerate(fscvalues):
             fsc_x = matplotlib.pyplot.np.empty(len(entry), dtype=float)
             for fsc_value in range(len(entry)):
                 fsc_x[fsc_value] = float(fsc_value) / float(pixelsizes[i] * boxsizes[i])
 
-            ax.plot(fsc_x, entry,label=names[i])
+            ax.plot(fsc_x, entry, label=names[i])
 
         matplotlib.pyplot.grid()
         matplotlib.pyplot.title("Fourier shell correlation curves")
@@ -182,7 +184,6 @@ class FSCPlot(PyQt5.QtWidgets.QDialog):
 
 
 class MonitorRefinementFolder(PyQt5.QtCore.QObject):
-
     def __init__(self, path, sig_update_tree, parent=None):
         super(MonitorRefinementFolder, self).__init__(parent)
         self.refinement_folder = path
@@ -192,25 +193,36 @@ class MonitorRefinementFolder(PyQt5.QtCore.QObject):
 
     @PyQt5.QtCore.pyqtSlot()
     def update(self):
-        '''
+        """
         Checks if there is a new main folder in a specified refinement folder and updates the QTree. If the
         refinement folder was deleted, the corresponding element in the QTree is deleted.
         :return:
-        '''
+        """
         if os.path.exists(self.refinement_folder):
-            current_dictionaries = set(self.reader.read_refinement_folders(self.refinement_folder))
+            current_dictionaries = set(
+                self.reader.read_refinement_folders(self.refinement_folder)
+            )
 
             new_dictionaries = current_dictionaries.difference(self.mainDicts)
             if len(new_dictionaries) >= 1:
                 list_new_dictionaries = list(new_dictionaries)
 
                 for dictionary in list_new_dictionaries:
-                    if os.path.isfile("{0}/{1}/driver_{2}.txt".format(self.refinement_folder, dictionary, dictionary[-3:])) and \
-                            os.path.isfile("{0}/{1}/Tracker_{2}.json".format(self.refinement_folder, dictionary, dictionary[-3:])):
+                    if os.path.isfile(
+                        "{0}/{1}/driver_{2}.txt".format(
+                            self.refinement_folder, dictionary, dictionary[-3:]
+                        )
+                    ) and os.path.isfile(
+                        "{0}/{1}/Tracker_{2}.json".format(
+                            self.refinement_folder, dictionary, dictionary[-3:]
+                        )
+                    ):
                         next_item = PyQt5.QtGui.QTreeWidgetItem([dictionary])
                         next_item.setCheckState(0, PyQt5.QtCore.Qt.Unchecked)
-                        delete=False
-                        self.sig_update_tree.emit(next_item, self.refinement_folder, delete)
+                        delete = False
+                        self.sig_update_tree.emit(
+                            next_item, self.refinement_folder, delete
+                        )
                         self.mainDicts = current_dictionaries
         else:
             delete = True
@@ -251,10 +263,10 @@ class ResolutionOverviewPlot(PyQt5.QtWidgets.QDialog):
             return
         # create an axis
         ax = self.figure.add_subplot(111)
-        xruns = list(range(1,len(resolution_0143)+1))
+        xruns = list(range(1, len(resolution_0143) + 1))
 
-        ax.plot(xruns, resolution_0143, "x-",label="Resolution FSC 0.143")
-        xruns = list(range(1, len(resolutions_05)+1))
+        ax.plot(xruns, resolution_0143, "x-", label="Resolution FSC 0.143")
+        xruns = list(range(1, len(resolutions_05) + 1))
         ax.plot(xruns, resolutions_05, "x-", label="Resolution FSC 0.5")
 
         matplotlib.pyplot.grid()
@@ -267,7 +279,6 @@ class ResolutionOverviewPlot(PyQt5.QtWidgets.QDialog):
 
 
 class TrackerFileReader(object):
-
     def __init__(self):
         pass
 
@@ -277,10 +288,10 @@ class TrackerFileReader(object):
         :param path:  Path to run folder
         :return: list of pixel and boxsize
         """
-        with open(path, 'r') as read:
+        with open(path, "r") as read:
             tracker = json.load(read)
-        pixel_size = tracker['constants']['pixel_size']
-        nnxo = tracker['constants']['nnxo']
+        pixel_size = tracker["constants"]["pixel_size"]
+        nnxo = tracker["constants"]["nnxo"]
 
         return [pixel_size, nnxo]
 
@@ -288,11 +299,10 @@ class TrackerFileReader(object):
         """
         :param path: Paths to run folder
         """
-        with open(path, 'r') as read:
+        with open(path, "r") as read:
             tracker = json.load(read)
-        res_05 = tracker['currentres']
-        res_0143 = tracker['fsc143']
-
+        res_05 = tracker["currentres"]
+        res_0143 = tracker["fsc143"]
 
         return [res_0143, res_05]
 
@@ -310,7 +320,7 @@ class TrackerFileReader(object):
             runnumber = main_path[-3:]
             tracker_path = "{0}/{1}/Tracker_{2}.json".format(path, main_path, runnumber)
             if os.path.isfile(tracker_path):
-                pixelsize,boxsize = self.read_pixelsize_and_nnxo(tracker_path)
+                pixelsize, boxsize = self.read_pixelsize_and_nnxo(tracker_path)
                 res0143, res05 = self._read_res0143_and_res05(tracker_path)
                 res0143 = float(pixelsize * boxsize) / float(res0143)
                 res05 = float(pixelsize * boxsize) / float(res05)
@@ -332,33 +342,39 @@ class MainWindow(PyQt5.QtWidgets.QMainWindow):
         central_widget = PyQt5.QtWidgets.QWidget(self)
         self.setCentralWidget(central_widget)
 
-        #Center on screen
+        # Center on screen
         resolution = PyQt5.QtWidgets.QDesktopWidget().screenGeometry()
-        self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
-                  (resolution.height() / 2) - (self.frameSize().height() / 2))
+        self.move(
+            (resolution.width() / 2) - (self.frameSize().width() / 2),
+            (resolution.height() / 2) - (self.frameSize().height() / 2),
+        )
 
         """Multiline Comment0"""
 
-        close_action = PyQt5.QtWidgets.QAction('Close', self)
+        close_action = PyQt5.QtWidgets.QAction("Close", self)
         close_action.setShortcut("Ctrl+Q")
-        close_action.setStatusTip('Leave the app')
+        close_action.setStatusTip("Leave the app")
         close_action.triggered.connect(lambda: self.close())
 
-        open_refinement_folder = PyQt5.QtWidgets.QAction('Open Refinement Folder', self)
+        open_refinement_folder = PyQt5.QtWidgets.QAction("Open Refinement Folder", self)
         open_refinement_folder.triggered.connect(self.open_refinement_folder)
 
         self.mainMenu = self.menuBar()
-        self.fileMenu = self.mainMenu.addMenu('&File')
+        self.fileMenu = self.mainMenu.addMenu("&File")
         self.fileMenu.addAction(open_refinement_folder)
         self.fileMenu.addAction(close_action)
         self.refinement_folder = ""
 
-        create_new_fsc_plot = PyQt5.QtWidgets.QAction('&New FSC plot', self)
+        create_new_fsc_plot = PyQt5.QtWidgets.QAction("&New FSC plot", self)
         create_new_fsc_plot.triggered.connect(self.event_ontriggered_show_fsc_plot)
 
-        create_new_overview_plot = PyQt5.QtWidgets.QAction('&New resolution overview plot', self)
-        create_new_overview_plot.triggered.connect(self.event_show_resolution_overview_plot)
-        self.plotMenu = self.mainMenu.addMenu('&Plot')
+        create_new_overview_plot = PyQt5.QtWidgets.QAction(
+            "&New resolution overview plot", self
+        )
+        create_new_overview_plot.triggered.connect(
+            self.event_show_resolution_overview_plot
+        )
+        self.plotMenu = self.mainMenu.addMenu("&Plot")
         self.plotMenu.addAction(create_new_fsc_plot)
         self.plotMenu.addAction(create_new_overview_plot)
 
@@ -371,7 +387,6 @@ class MainWindow(PyQt5.QtWidgets.QMainWindow):
         self.layout.addWidget(self.tree, 1, 0)
 
         self.root_items_path_dictionary = {}
-
 
         # Threads
         self.threadpool = PyQt5.QtCore.QThreadPool()
@@ -395,15 +410,15 @@ class MainWindow(PyQt5.QtWidgets.QMainWindow):
 
         self.monitor = None
 
-    @PyQt5.QtCore.pyqtSlot(object,object,object)
+    @PyQt5.QtCore.pyqtSlot(object, object, object)
     def update_tree(self, item, monitored_folder, delete):
-        '''
+        """
 
         :param item: main folder to add to tree item belonging to folder montiored_folder
         :param monitored_folder: Refinement folder
         :param delete: if this is true, it will delete the monitored folder
         :return:
-        '''
+        """
         if delete:
             root = self.root_items_path_dictionary[monitored_folder]
             index = self.tree.indexOfTopLevelItem(root)
@@ -440,7 +455,6 @@ class MainWindow(PyQt5.QtWidgets.QMainWindow):
         res_plot.setWindowTitle(self.refinement_folder)
         res_plot.plot(res_05, res_0143)
 
-
     def event_ontriggered_show_fsc_plot(self):
         """
         Trigger for fsc plot
@@ -458,11 +472,11 @@ class MainWindow(PyQt5.QtWidgets.QMainWindow):
         self.reader.sig_readfsc.emit(paths)
 
     def _event_select_deselect_all(self, root_tree_item):
-        '''
+        """
         Checks all childs of root_tree_item
         :param root_tree_item: QTreeWidgetItem which represents a refinement folder
         :return:
-        '''
+        """
 
         if root_tree_item in list(self.root_items_path_dictionary.values()):
             number_of_runs = root_tree_item.childCount()
@@ -490,7 +504,11 @@ class MainWindow(PyQt5.QtWidgets.QMainWindow):
         Let the user choose the refinement folder and adds it to the RefinementFolder-Tree
         :return: none
         """
-        self.refinement_folder = str(PyQt5.QtWidgets.QFileDialog.getExistingDirectory(self, "Select Refinement Directory"))
+        self.refinement_folder = str(
+            PyQt5.QtWidgets.QFileDialog.getExistingDirectory(
+                self, "Select Refinement Directory"
+            )
+        )
         if self.refinement_folder == "":
             return
         if self.refinement_folder in self.root_items_path_dictionary:
@@ -505,9 +523,9 @@ class MainWindow(PyQt5.QtWidgets.QMainWindow):
 
         """
 
-        if path != '':
+        if path != "":
 
-            #for i in reversed(range(self.root.childCount())):
+            # for i in reversed(range(self.root.childCount())):
             #    self.root.removeChild(self.root.child(i))
             name = os.path.basename(path)
             # qname = QString(name)
@@ -516,31 +534,31 @@ class MainWindow(PyQt5.QtWidgets.QMainWindow):
             self.tree.addTopLevelItem(root)
             fm = PyQt5.QtGui.QFontMetrics(self.font)
             w = fm.width(path)
-            self.tree.setMinimumWidth(w+150)
-            #self.root.setText(0, qname)
+            self.tree.setMinimumWidth(w + 150)
+            # self.root.setText(0, qname)
             self.reader.sig_readfolders.emit(path)
-            self.monitor = MonitorRefinementFolder(path, self.sig_update_tree,self)
+            self.monitor = MonitorRefinementFolder(path, self.sig_update_tree, self)
             self.timer = PyQt5.QtCore.QTimer(self)
             self.timer.timeout.connect(self.monitor.update)
             self.timer.start(2000)
 
     def closeEvent(self, close_event):
-        '''
+        """
         Closes all threads.
-        '''
+        """
         for thr in self.thread_list:
             thr.quit()
             thr.wait()
 
     @PyQt5.QtCore.pyqtSlot(str)
     def fill_tree(self, path_to_refinement_folder):
-        '''
+        """
         Reads all runs in path_to_refinement_folder and add them as child to the corresponding root element in the tree
         :param path_to_refinement_folder: Path to refinement folder
         :return: none
-        '''
+        """
         root = self.root_items_path_dictionary[str(path_to_refinement_folder)]
-        root.setCheckState(0,PyQt5.QtCore.Qt.Unchecked)
+        root.setCheckState(0, PyQt5.QtCore.Qt.Unchecked)
         main_dicts = DriverFileReader.read_refinement_folders(path_to_refinement_folder)
         for dictionary in main_dicts:
             next_item = PyQt5.QtWidgets.QTreeWidgetItem([dictionary])
@@ -548,10 +566,10 @@ class MainWindow(PyQt5.QtWidgets.QMainWindow):
             root.addChild(next_item)
 
     def close_application(self):
-        '''
+        """
         Close the application
         :return: none
-        '''
+        """
         sys.exit()
 
 
@@ -561,8 +579,9 @@ def run(args=None):
     gui = MainWindow(app.font())
     sys.exit(app.exec_())
 
-if __name__ == '__main__':
-    sp_global_def.print_timestamp( "Start" )
+
+if __name__ == "__main__":
+    sp_global_def.print_timestamp("Start")
     sp_global_def.write_command()
     run()
-    sp_global_def.print_timestamp( "Finish" )
+    sp_global_def.print_timestamp("Finish")

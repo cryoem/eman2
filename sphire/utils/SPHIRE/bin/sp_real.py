@@ -1,7 +1,8 @@
 #! /usr/bin/env python
 from __future__ import print_function
+
 #
-# Do not run this script directly. You could run this as 
+# Do not run this script directly. You could run this as
 # ipython --gui=qt -i e2_real.py
 # otherwise it is normally run via the e2.py script
 #
@@ -51,34 +52,35 @@ import eman2_gui.emimage
 import os
 import sp_global_def
 
-GUIUSE=True
+GUIUSE = True
 
 try:
-	if EMAN2.get_platform()=="Linux" and os.getenv("DISPLAY")==None: raise Exception
+    if EMAN2.get_platform() == "Linux" and os.getenv("DISPLAY") == None:
+        raise Exception
 
-	#import IPython.lib.inputhook
+    # import IPython.lib.inputhook
 
+    app = eman2_gui.emapplication.EMApp()
+    # IPython.lib.inputhook.enable_qt4(app)
 
-	app=eman2_gui.emapplication.EMApp()
-	#IPython.lib.inputhook.enable_qt4(app)
+    def ipy_on_timer():
+        eman2_gui.emimage.image_update()
 
+    ipytimer = PyQt5.QtCore.QTimer()
+    ipytimer.timeout.connect(ipy_on_timer)
+    ipytimer.start(200)
 
-	def ipy_on_timer():
-		eman2_gui.emimage.image_update()
-
-	ipytimer = PyQt5.QtCore.QTimer()
-	ipytimer.timeout.connect(ipy_on_timer)
-	ipytimer.start(200)
-	
-	EMAN2.GUIMode=True
-	EMAN2.app=app
+    EMAN2.GUIMode = True
+    EMAN2.app = app
 except:
-	GUIUSE=False
+    GUIUSE = False
 
 
 if GUIUSE:
-	print( "Welcome to the interactive SPARX-GUI Python interface, provided by ipython" )
+    print("Welcome to the interactive SPARX-GUI Python interface, provided by ipython")
 else:
-	print( "Welcome to the interactive SPARX-NoGUI Python interface, provided by ipython" )
+    print(
+        "Welcome to the interactive SPARX-NoGUI Python interface, provided by ipython"
+    )
 
-print( "  ", sp_global_def.SPARXVERSION )
+print("  ", sp_global_def.SPARXVERSION)
