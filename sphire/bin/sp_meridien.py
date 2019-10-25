@@ -7577,7 +7577,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 		carryon = bcast_number_to_all(carryon, source_node = Blockdata["main_node"], mpi_comm = comm)
 		if carryon == 0: 
 			ERROR("Failed to read refang and rshifts: %s %s "%(os.path.join(final_dir, "refang.txt"),\
-			  os.path.join(final_dir, "rshifts.txt")), "do_final_rec3d", 1, data["subgroup_myid"])
+			  os.path.join(final_dir, "rshifts.txt")), "do_final_rec3d", 1, Blockdata["subgroup_myid"])
 		refang  = wrap_mpi_bcast(refang,  Blockdata["main_node"], comm)
 		rshifts = wrap_mpi_bcast(rshifts, Blockdata["main_node"], comm)
 
@@ -9158,7 +9158,7 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 							tvol0 = filt_table(tvol0, cfsc)
 							if( Blockdata["no_of_groups"] > 1 ):  del cfsc
 
-						user_func = user_functions.factory[Tracker["constants"]["user_func"]]
+						user_func = sp_user_functions.factory[Tracker["constants"]["user_func"]]
 						#ref_data = [tvol0, Tracker, mainiteration]
 						ref_data = [tvol0, Tracker, Tracker["mainiteration"]]
 						#--  #--  memory_check(Blockdata["myid"],"first node, after masking")
@@ -9190,7 +9190,7 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 								elif( i > Tracker["constants"]["inires"]+1 ):  cfsc[i]  = 0.0
 							tvol1 = filt_table(tvol1, cfsc)
 							del cfsc
-						user_func = user_functions.factory[Tracker["constants"]["user_func"]]
+						user_func = sp_user_functions.factory[Tracker["constants"]["user_func"]]
 						#ref_data = [tvol1, Tracker, mainiteration]
 						ref_data = [tvol1, Tracker, Tracker["mainiteration"]]
 						#--  #--  memory_check(Blockdata["myid"],"first node, after masking")
