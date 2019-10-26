@@ -10,13 +10,14 @@ List:
 7) returns_values_in_file --> read the file and give back the text
 """
 
+from os import system as os_system
 from copy import deepcopy
-import numpy
+from numpy import arange, float32 as np_float32
 from sphire.libpy.sp_utilities import model_blank,model_circle
 from EMAN2_cppwrap import Util,EMData
 from cPickle import load as pickle_load
 from os import path,remove
-from shutil import rmtree
+
 
 """ 
 In order to run automatically all the tests download the precalculated results from the tutorial page http://sphire.mpg.de/wiki/doku.php?id=downloads:sphire_1_0.
@@ -24,7 +25,8 @@ or directly from http://sphire.mpg.de/wiki/doku.php?id=downloads:sphire_1_0
 And set the variable 'ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER' to its path on your HD
 """
 
-ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER = "/home/adnan/Downloads/sphire_1_0_precalculated_results/SphireDemoResults"
+#ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER = "/home/adnan/Downloads/sphire_1_0_precalculated_results/SphireDemoResults"
+ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER = "/home/lusnig/Downloads/SphireDemoResults"
 
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 
@@ -59,7 +61,7 @@ def get_data(num,dim = 10):
     for i in range(num):
         a = EMData(dim, dim)
         data_a = a.get_3dview()
-        data_a[...] = numpy.arange(dim * dim, dtype=numpy.float32).reshape(dim, dim) + i
+        data_a[...] = arange(dim * dim, dtype=np_float32).reshape(dim, dim) + i
         data_list.append(a)
     return data_list
 
@@ -75,7 +77,7 @@ def get_data_3d(num, dim=10):
     for i in range(num):
         a = EMData(dim, dim,dim)
         data_a = a.get_3dview()
-        data_a[...] = numpy.arange(dim * dim * dim, dtype=numpy.float32).reshape(dim, dim, dim) + i
+        data_a[...] = arange(dim * dim * dim, dtype=np_float32).reshape(dim, dim, dim) + i
         data_list.append(a)
     return data_list
 
@@ -91,11 +93,12 @@ def get_arg_from_pickle_file(filepath):
 
 def remove_dir(d):
     """
+    I do not know why "shutil.rmtree" does not work
     Remove the given directory with all its files
     :param d: path to the directory
     """
     if path.isdir(d):
-        rmtree(d)
+        os_system("rm -rf "+str(d))
 
 def remove_list_of_file(l):
     """
