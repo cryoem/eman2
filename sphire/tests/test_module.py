@@ -10,8 +10,9 @@ List:
 7) returns_values_in_file --> read the file and give back the text
 """
 
+from copy import deepcopy
 import numpy
-
+from sphire.libpy.sp_utilities import model_blank,model_circle
 from EMAN2_cppwrap import Util,EMData
 from cPickle import load as pickle_load
 from os import path,remove
@@ -26,6 +27,7 @@ And set the variable 'ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER' to its path o
 ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER = "/home/adnan/Downloads/sphire_1_0_precalculated_results/SphireDemoResults"
 
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
+
 
 def get_real_data(dim =2):
     """
@@ -148,3 +150,21 @@ def create_kb(dim,  sizex=100 ,sizey=80 ,sizez=70):
     exit(-1)
 
 
+
+""" In order to unittest the function which output is an EMData() we have to shrink the original images."""
+IMAGE_2D, IMAGE_2D_REFERENCE = get_real_data(dim=2)
+IMAGE_3D = deepcopy(IMAGE_2D)
+IMAGE_2D.set_size(10, 10)
+IMAGE_2D_REFERENCE.set_size(10, 10)
+IMAGE_BLANK_2D = model_blank(nx=20, ny=20, bckg=0.0)
+
+"""The resized 3DIMAGE is blank --> hence I fake the 2DImage to be a 3DIMAGE """
+
+IMAGE_3D.set_size(10,10,10)
+IMAGE_BLANK_3D = model_blank(nx=10, ny=10, nz=10,bckg=0.0)
+
+MASK = model_circle(r=2, nx=5, ny=5, nz=1)
+MASK_2DIMAGE= model_circle(r=2, nx=IMAGE_2D.get_xsize(),ny=IMAGE_2D.get_ysize(),nz=1)
+MASK_IMAGE_BLANK_2D= model_circle(r=2, nx=IMAGE_BLANK_2D.get_xsize(),ny=IMAGE_BLANK_2D.get_ysize(),nz=1)
+MASK_3DIMAGE= model_circle(r=2, nx=IMAGE_3D.get_xsize(),ny=IMAGE_3D.get_ysize(), nz=IMAGE_3D.get_zsize())
+MASK_IMAGE_BLANK_3D= model_circle(r=2, nx=IMAGE_BLANK_3D.get_xsize(),ny=IMAGE_BLANK_3D.get_ysize(), nz=IMAGE_BLANK_3D.get_zsize())

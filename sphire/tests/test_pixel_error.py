@@ -264,24 +264,41 @@ global_def.BATCH = True
 global_def.MPI = True
 
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
-from test_module import get_real_data
 
+from EMAN2 import Transform
 from numpy import array_equal as numpy_array_equal
-from test_module import   get_arg_from_pickle_file
+from test_module import   IMAGE_2D,IMAGE_3D,IMAGE_2D_REFERENCE
 
-IMAGE_2D, IMAGE_2D_REFERENCE = get_real_data(dim=2)
-IMAGE_3D, STILL_NOT_VALID = get_real_data(dim=3)
+from sphire.libpy import sp_pixel_error as oldfu
+from sphire.utils.SPHIRE.libpy import sp_pixel_error as fu
 
 """
 pickle files stored under smb://billy.storage.mpi-dortmund.mpg.de/abt3/group/agraunser/transfer/Adnan/pickle files
 """
 
+"""
+WHAT IS MISSING:
+0) in all the cases where the input file is an image. I did not test the case with a complex image. I was not able to generate it 
 
-""" start: new in sphire 1.3"""
-from sphire.libpy import sp_pixel_error as oldfu
-from sphire.libpy_py3 import sp_pixel_error as fu
+
+RESULT AND KNOWN ISSUES
+Some compatibility tests for the following functions fail!!!
+1) 
+
+In these tests there is a bug --> syntax error:
+1) 
+
+In these tests there is a strange behavior:
+1) 
+"""
 
 
+
+
+
+
+#   THESE FUNCTIONS ARE COMMENTED BECAUSE NOT INVOLVED IN THE PYTHON3 CONVERSION. THEY HAVE TO BE TESTED ANYWAY
+""" start: new in sphire 1.3
 class Test_angle_error(unittest.TestCase):
 
     def test_wrong_number_params_too_few_parameters(self):
@@ -681,7 +698,9 @@ class Test_getnewhelixcoords(unittest.TestCase):
 
 #todo: look into the params
 class Test_helical_params_err(unittest.TestCase):
-    (t1, t2, r) = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/pixel_error/pixel_error.max_3D_pixel_error"))[0]
+    r=29
+    t1 = Transform({"az": 123.155, "alt": 119.102, "phi": 318.812, "tx": -0.00, "ty": -0.00, "tz": -0.00, "mirror": 0,"scale": 1.0000, "type":"eman"})
+    t2 = Transform({"az": 146.608, "alt": 143.005, "phi": 146.656, "tx": -0.00, "ty": -0.00, "tz": -0.00, "mirror": 0,"scale": 1.0000, "type":"eman"})
     params2=[t2,t2]
     params1 = [t1,t1]
     fillist = [1,2,3]
@@ -744,7 +763,9 @@ class Test_helical_params_err(unittest.TestCase):
 
 
 
-""" end: new in sphire 1.3"""
+ end: new in sphire 1.3"""
+
+
 
 class Test_pixel_error_2D(unittest.TestCase):
     ali_params1 = [0.0, 0.0, 0.0]
@@ -798,8 +819,9 @@ class Test_pixel_error_2D(unittest.TestCase):
 
 
 class Test_max_3D_pixel_error(unittest.TestCase):
-    (t1, t2, r) = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/pixel_error/pixel_error.max_3D_pixel_error"))[0]
-
+    r=29
+    t1 = Transform({"az": 123.155, "alt": 119.102, "phi": 318.812, "tx": -0.00, "ty": -0.00, "tz": -0.00, "mirror": 0,"scale": 1.0000, "type":"eman"})
+    t2 = Transform({"az": 146.608, "alt": 143.005, "phi": 146.656, "tx": -0.00, "ty": -0.00, "tz": -0.00, "mirror": 0,"scale": 1.0000, "type":"eman"})
     def test_wrong_number_params_returns_TypeError_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.max_3D_pixel_error()
@@ -812,7 +834,7 @@ class Test_max_3D_pixel_error(unittest.TestCase):
         return_new = fu.max_3D_pixel_error(t1=self.t1, t2=self.t2, r=self.r)
         return_old = oldfu.max_3D_pixel_error(t1=self.t1, t2=self.t2, r=self.r)
         self.assertEqual(return_new, return_old)
-        self.assertEqual(return_new, 57.89787673950195)
+        self.assertEqual(return_new, 57.86697769165039)
 
     def test_r_is0(self):
         return_new = fu.max_3D_pixel_error(t1=self.t1, t2=self.t2, r=0)
