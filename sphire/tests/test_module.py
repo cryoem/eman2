@@ -10,12 +10,14 @@ List:
 7) returns_values_in_file --> read the file and give back the text
 """
 
-import numpy
-
+from os import system as os_system
+from copy import deepcopy
+from numpy import arange, float32 as np_float32
+from sphire.libpy.sp_utilities import model_blank,model_circle
 from EMAN2_cppwrap import Util,EMData
 from cPickle import load as pickle_load
 from os import path,remove
-from shutil import rmtree
+
 
 """ 
 In order to run automatically all the tests download the precalculated results from the tutorial page http://sphire.mpg.de/wiki/doku.php?id=downloads:sphire_1_0.
@@ -23,9 +25,11 @@ or directly from http://sphire.mpg.de/wiki/doku.php?id=downloads:sphire_1_0
 And set the variable 'ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER' to its path on your HD
 """
 
-ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER = "/home/adnan/Downloads/sphire_1_0_precalculated_results/SphireDemoResults"
+#ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER = "/home/adnan/Downloads/sphire_1_0_precalculated_results/SphireDemoResults"
+ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER = "/home/lusnig/Downloads/SphireDemoResults"
 
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
+
 
 def get_real_data(dim =2):
     """
@@ -57,7 +61,7 @@ def get_data(num,dim = 10):
     for i in range(num):
         a = EMData(dim, dim)
         data_a = a.get_3dview()
-        data_a[...] = numpy.arange(dim * dim, dtype=numpy.float32).reshape(dim, dim) + i
+        data_a[...] = arange(dim * dim, dtype=np_float32).reshape(dim, dim) + i
         data_list.append(a)
     return data_list
 
@@ -73,7 +77,7 @@ def get_data_3d(num, dim=10):
     for i in range(num):
         a = EMData(dim, dim,dim)
         data_a = a.get_3dview()
-        data_a[...] = numpy.arange(dim * dim * dim, dtype=numpy.float32).reshape(dim, dim, dim) + i
+        data_a[...] = arange(dim * dim * dim, dtype=np_float32).reshape(dim, dim, dim) + i
         data_list.append(a)
     return data_list
 
@@ -89,11 +93,12 @@ def get_arg_from_pickle_file(filepath):
 
 def remove_dir(d):
     """
+    I do not know why "shutil.rmtree" does not work
     Remove the given directory with all its files
     :param d: path to the directory
     """
     if path.isdir(d):
-        rmtree(d)
+        os_system("rm -rf "+str(d))
 
 def remove_list_of_file(l):
     """
@@ -148,3 +153,23 @@ def create_kb(dim,  sizex=100 ,sizey=80 ,sizez=70):
     exit(-1)
 
 
+
+""" In order to unittest the function which output is an EMData() we have to shrink the original images."""
+IMAGE_2D, IMAGE_2D_REFERENCE = get_real_data(dim=2)
+IMAGE_3D = deepcopy(IMAGE_2D)
+IMAGE_2D.set_size(10, 10)
+IMAGE_2D_REFERENCE.set_size(10, 10)
+IMAGE_BLANK_2D = model_blank(nx=20, ny=20, bckg=0.0)
+
+"""The resized 3DIMAGE is blank --> hence I fake the 2DImage to be a 3DIMAGE """
+
+IMAGE_3D.set_size(10,10,10)
+IMAGE_BLANK_3D = model_blank(nx=10, ny=10, nz=10,bckg=0.0)
+
+MASK = model_circle(r=2, nx=5, ny=5, nz=1)
+MASK_2DIMAGE= model_circle(r=2, nx=IMAGE_2D.get_xsize(),ny=IMAGE_2D.get_ysize(),nz=1)
+MASK_IMAGE_BLANK_2D= model_circle(r=2, nx=IMAGE_BLANK_2D.get_xsize(),ny=IMAGE_BLANK_2D.get_ysize(),nz=1)
+MASK_3DIMAGE= model_circle(r=2, nx=IMAGE_3D.get_xsize(),ny=IMAGE_3D.get_ysize(), nz=IMAGE_3D.get_zsize())
+MASK_IMAGE_BLANK_3D= model_circle(r=2, nx=IMAGE_BLANK_3D.get_xsize(),ny=IMAGE_BLANK_3D.get_ysize(), nz=IMAGE_BLANK_3D.get_zsize())
+
+KB_IMAGE2D_SIZE=create_kb(dim=1,sizex=IMAGE_2D.get_xsize())
