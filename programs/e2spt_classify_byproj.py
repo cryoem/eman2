@@ -134,6 +134,7 @@ produce new sets/ for each class, which could be further-refined.
 	NTHREADS=max(options.threads,2)		# we have one thread just writing results
 	thrds=[threading.Thread(target=ptclextract,args=(jsd,db,ks[i::NTHREADS-1],options.shrink,options.layers,options.verbose>1 and i==0)) for i in range(NTHREADS-1)]
 
+	os.unlink("{}/alisecs_{:02d}.hdf".format(options.path,options.iter))
 	# here we run the threads and save the results, no actual alignment done here
 	if options.verbose: print(len(thrds)," threads")
 	thrtolaunch=0
@@ -164,7 +165,7 @@ produce new sets/ for each class, which could be further-refined.
 	if options.verbose: print("Classifying")
 	# classification
 	an=Analyzers.get("kmeans")
-	an.set_params({"ncls":options.ncls,"minchange":len(ks)//(options.ncls*25),"verbose":options.verbose-1,"slowseed":1,"outlierclass":1,"mininclass":max(2,len(ks)//(options.ncls*10))})
+	an.set_params({"ncls":options.ncls,"maxiter":100,"minchange":len(ks)//(options.ncls*25),"verbose":options.verbose-1,"slowseed":1,"outlierclass":0,"mininclass":2})
 	
 	an.insert_images_list(prjs)
 	centers=an.analyze()
@@ -209,6 +210,8 @@ produce new sets/ for each class, which could be further-refined.
 		sets[cls].write(-1,im["orig_n"],im["orig_file"])
 	
 	if options.verbose: print("\nSaving classes")
+	os.unlink("{}/classes_sec_{:02d}.hdf".format(options.path,options.iter))
+	os.unlink("{}/classes_{:02d}.hdf".format(options.path,options.iter))
 	# write class averages
 	for i in range(options.ncls):
 		n=centers[i]["ptcl_repr"]
