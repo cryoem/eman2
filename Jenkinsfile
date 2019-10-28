@@ -31,7 +31,7 @@ def getJobType() {
 
 def notifyGitHub(status) {
     if(JOB_TYPE == "push" || NOTIFY_GITHUB == "true") {
-        context = "JenkinsCI/${AGENT_OS_NAME.capitalize()}"
+        context = "JenkinsCI/${NODE_NAME}"
         run_type = 'Build'
 
         if(STAGE_NAME == 'test-continuous') {
@@ -63,7 +63,7 @@ def notifyGitHub(status) {
 }
 
 def notifyEmail() {
-    from    = "JenkinsCI ($AGENT_OS_NAME) <jenkins@jenkins>"
+    from    = "JenkinsCI ($NODE_NAME) <jenkins@jenkins>"
     body    = '''${SCRIPT, template="groovy-text.template"}'''
     subject = '$BUILD_STATUS! ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER'
 
@@ -241,11 +241,10 @@ def isSkipStage() {
 
 pipeline {
   agent {
-    node { label "eman-build-agent" }
+    node { label "${AGENT_NAME}" }
   }
   
   options {
-    disableConcurrentBuilds()
     timestamps()
   }
   
@@ -255,6 +254,7 @@ pipeline {
     GIT_BRANCH_SHORT = sh(returnStdout: true, script: 'echo ${GIT_BRANCH##origin/}').trim()
     GIT_COMMIT_SHORT = sh(returnStdout: true, script: 'echo ${GIT_COMMIT:0:7}').trim()
     GIT_AUTHOR_EMAIL = sh(returnStdout: true, script: 'git log -1 --format="%ae"').trim()
+    GIT_MESSAGE_SHORT = sprintf("%-30s",sh(returnStdout: true, script: 'git log -1 --format="%s"')).substring(0,30)
     HOME_DIR = getHomeDir()
     HOME = "${HOME_DIR}"     // on Windows HOME is set to something like C:\Program Files\home\eman
     INSTALLERS_DIR = convertToNativePath("${HOME_DIR}/workspace/jenkins-eman-installers")
@@ -267,6 +267,10 @@ pipeline {
       options { timeout(time: 10, unit: 'MINUTES') }
       
       steps {
+        script {
+            currentBuild.displayName = currentBuild.displayName + " - ${NODE_NAME}"
+            currentBuild.description = "${GIT_COMMIT_SHORT}: ${GIT_MESSAGE_SHORT}"
+        }
         selectNotifications()
         notifyGitHub('PENDING')
         sh 'env | sort'
