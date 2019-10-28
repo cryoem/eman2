@@ -36,6 +36,7 @@ def main():
 	parser.add_argument("--rmgold", action="store_true",help="Remove particles near gold fiducial.", default=False, guitype='boolbox', row=6, col=1,rowspan=1, colspan=1, mode="boxing[True]")
 
 	parser.add_argument("--boxsz", type=int,help="Overwrite box size", default=-1, guitype='intbox', row=7, col=0,rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--threads", type=int,help="number of threads to use", default=12, guitype='intbox', row=8, col=0,rowspan=1, colspan=1, mode="boxing")
 
 	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
 
@@ -89,7 +90,7 @@ def main():
 		ndone=0
 		while thrtolaunch<len(thrds) or threading.active_count()>tsleep:
 			if thrtolaunch<len(thrds) :
-				while (threading.active_count()==13 ) : time.sleep(.1)
+				while (threading.active_count()==options.threads+tsleep ) : time.sleep(.1)
 				thrds[thrtolaunch].start()
 				thrtolaunch+=1
 			else: time.sleep(1)
