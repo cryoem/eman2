@@ -210,8 +210,10 @@ produce new sets/ for each class, which could be further-refined.
 		sets[cls].write(-1,im["orig_n"],im["orig_file"])
 	
 	if options.verbose: print("\nSaving classes")
-	os.unlink("{}/classes_sec_{:02d}.hdf".format(options.path,options.iter))
-	os.unlink("{}/classes_{:02d}.hdf".format(options.path,options.iter))
+	try: os.unlink("{}/classes_sec_{:02d}.hdf".format(options.path,options.iter))
+	except: pass
+	try: os.unlink("{}/classes_{:02d}.hdf".format(options.path,options.iter))
+	except: pass
 	# write class averages
 	for i in range(options.ncls):
 		n=centers[i]["ptcl_repr"]
