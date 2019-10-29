@@ -134,7 +134,8 @@ produce new sets/ for each class, which could be further-refined.
 	NTHREADS=max(options.threads,2)		# we have one thread just writing results
 	thrds=[threading.Thread(target=ptclextract,args=(jsd,db,ks[i::NTHREADS-1],options.shrink,options.layers,options.verbose>1 and i==0)) for i in range(NTHREADS-1)]
 
-	os.unlink("{}/alisecs_{:02d}.hdf".format(options.path,options.iter))
+	try: os.unlink("{}/alisecs_{:02d}.hdf".format(options.path,options.iter))
+	except: pass
 	# here we run the threads and save the results, no actual alignment done here
 	if options.verbose: print(len(thrds)," threads")
 	thrtolaunch=0
