@@ -173,3 +173,4 @@ MASK_3DIMAGE= model_circle(r=2, nx=IMAGE_3D.get_xsize(),ny=IMAGE_3D.get_ysize(),
 MASK_IMAGE_BLANK_3D= model_circle(r=2, nx=IMAGE_BLANK_3D.get_xsize(),ny=IMAGE_BLANK_3D.get_ysize(), nz=IMAGE_BLANK_3D.get_zsize())
 
 KB_IMAGE2D_SIZE=create_kb(dim=1,sizex=IMAGE_2D.get_xsize())
+KB_IMAGE3D_SIZE_CUBIC=create_kb(dim=1,sizex=IMAGE_3D.get_xsize())
