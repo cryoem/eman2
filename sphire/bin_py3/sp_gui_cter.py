@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function, division
 from past.utils import old_div
+
 #
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
@@ -191,7 +192,9 @@ class SXLogoButton(PyQt5.QtWidgets.QLabel):
         # Non-square option
         if keep_aspect:
             logo_map = PyQt5.QtGui.QPixmap(logo_file_path)
-            logo_height = round(old_div(logo_map.height() * logo_width, logo_map.width()))
+            logo_height = round(
+                old_div(logo_map.height() * logo_width, logo_map.width())
+            )
         else:
             logo_height = logo_width
 
@@ -2017,8 +2020,8 @@ class SXGuiCter(PyQt5.QtWidgets.QWidget):
             self.curentryperbin = 1
             self.vsentryperbin.setValue(self.curentryperbin)
             # self.vsentryperbin.setRange(1,len(self.cter_entry_list))
-        n_bin = (
-           old_div(len(self.cter_entry_list), self.curentryperbin)
+        n_bin = old_div(
+            len(self.cter_entry_list), self.curentryperbin
         )  # needs to be an integer
         assert len(val_list) >= n_bin, "MRK_DEBUG"
         assert n_bin > 0, "MRK_DEBUG"

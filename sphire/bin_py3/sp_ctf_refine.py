@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 from past.utils import old_div
+from __future__ import division
 # CTF Refinement with error assessment for SPHIRE
 #
 #
@@ -256,9 +257,10 @@ def refine_defocus_with_error_est(
 
     defocus_bootstrap = [ctf.defocus for ctf in best_ctfs_bootstrap]
     error_sd = numpy.std(defocus_bootstrap)
-    drratio = old_div(numpy.abs(best_ctf_no_boostrap.defocus - current_ctf.defocus) , (
-        error_sd + 0.0005
-    ))
+    drratio = old_div(
+        numpy.abs(best_ctf_no_boostrap.defocus - current_ctf.defocus),
+        (error_sd + 0.0005),
+    )
 
     # #########
     # Cleaning!

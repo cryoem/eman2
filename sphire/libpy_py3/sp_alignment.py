@@ -1,6 +1,6 @@
 from past.utils import old_div
 from __future__ import print_function
-
+from __future__ import division
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
 # Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
@@ -279,8 +279,8 @@ def ringwe(numr, mode="F"):
     wr = [0.0] * nring
     maxrin = float(numr[len(numr) - 1])
     for i in range(0, nring):
-        wr[i] = (
-            old_div(numr[i * 3] * dpi , float(numr[2 + i * 3])) * old_div(maxrin, float(numr[2 + i * 3]))
+        wr[i] = old_div(numr[i * 3] * dpi, float(numr[2 + i * 3])) * old_div(
+            maxrin, float(numr[2 + i * 3])
         )
     return wr
 
@@ -436,7 +436,7 @@ def prepref(data, maskfile, cnx, cny, numr, mode, maxrangex, maxrangey, step):
     for im in range(nima):
         sts = EMAN2_cppwrap.Util.infomask(data[im], maskfile, False)
         data[im] -= sts[0]
-        data[im]  = old_div(data[im], sts[1])
+        data[im] = old_div(data[im], sts[1])
         alpha, sx, sy, mirror, dummy = sp_utilities.get_params2D(data[im])
         # alpha, sx, sy, dummy         = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
         alphai, sxi, syi, dummy = sp_utilities.combine_params2(
@@ -1018,65 +1018,80 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou=-1):
 
 def parabl(Z):
     #  parabolic fit to a peak, C indexing
-    C1 = old_div((
-        26.0 * Z[0, 0]
-        - Z[0, 1]
-        + 2 * Z[0, 2]
-        - Z[1, 0]
-        - 19.0 * Z[1, 1]
-        - 7.0 * Z[1, 2]
-        + 2.0 * Z[2, 0]
-        - 7.0 * Z[2, 1]
-        + 14.0 * Z[2, 2]
-    ), 9.0)
+    C1 = old_div(
+        (
+            26.0 * Z[0, 0]
+            - Z[0, 1]
+            + 2 * Z[0, 2]
+            - Z[1, 0]
+            - 19.0 * Z[1, 1]
+            - 7.0 * Z[1, 2]
+            + 2.0 * Z[2, 0]
+            - 7.0 * Z[2, 1]
+            + 14.0 * Z[2, 2]
+        ),
+        9.0,
+    )
 
-    C2 = old_div((
-        8.0 * Z[0, 0]
-        - 8.0 * Z[0, 1]
-        + 5.0 * Z[1, 0]
-        - 8.0 * Z[1, 1]
-        + 3.0 * Z[1, 2]
-        + 2.0 * Z[2, 0]
-        - 8.0 * Z[2, 1]
-        + 6.0 * Z[2, 2]
-    ), (-6.0))
+    C2 = old_div(
+        (
+            8.0 * Z[0, 0]
+            - 8.0 * Z[0, 1]
+            + 5.0 * Z[1, 0]
+            - 8.0 * Z[1, 1]
+            + 3.0 * Z[1, 2]
+            + 2.0 * Z[2, 0]
+            - 8.0 * Z[2, 1]
+            + 6.0 * Z[2, 2]
+        ),
+        (-6.0),
+    )
 
-    C3 = old_div((
-        Z[0, 0]
-        - 2.0 * Z[0, 1]
-        + Z[0, 2]
-        + Z[1, 0]
-        - 2.0 * Z[1, 1]
-        + Z[1, 2]
-        + Z[2, 0]
-        - 2.0 * Z[2, 1]
-        + Z[2, 2]
-    ), 6.0)
+    C3 = old_div(
+        (
+            Z[0, 0]
+            - 2.0 * Z[0, 1]
+            + Z[0, 2]
+            + Z[1, 0]
+            - 2.0 * Z[1, 1]
+            + Z[1, 2]
+            + Z[2, 0]
+            - 2.0 * Z[2, 1]
+            + Z[2, 2]
+        ),
+        6.0,
+    )
 
-    C4 = old_div((
-        8.0 * Z[0, 0]
-        + 5.0 * Z[0, 1]
-        + 2.0 * Z[0, 2]
-        - 8.0 * Z[1, 0]
-        - 8.0 * Z[1, 1]
-        - 8.0 * Z[1, 2]
-        + 3.0 * Z[2, 1]
-        + 6.0 * Z[2, 2]
-    ), (-6.0))
+    C4 = old_div(
+        (
+            8.0 * Z[0, 0]
+            + 5.0 * Z[0, 1]
+            + 2.0 * Z[0, 2]
+            - 8.0 * Z[1, 0]
+            - 8.0 * Z[1, 1]
+            - 8.0 * Z[1, 2]
+            + 3.0 * Z[2, 1]
+            + 6.0 * Z[2, 2]
+        ),
+        (-6.0),
+    )
 
     C5 = old_div((Z[0, 0] - Z[0, 2] - Z[2, 0] + Z[2, 2]), 4.0)
 
-    C6 = old_div((
-        Z[0, 0]
-        + Z[0, 1]
-        + Z[0, 2]
-        - 2.0 * Z[1, 0]
-        - 2.0 * Z[1, 1]
-        - 2.0 * Z[1, 2]
-        + Z[2, 0]
-        + Z[2, 1]
-        + Z[2, 2]
-    ), 6.0)
+    C6 = old_div(
+        (
+            Z[0, 0]
+            + Z[0, 1]
+            + Z[0, 2]
+            - 2.0 * Z[1, 0]
+            - 2.0 * Z[1, 1]
+            - 2.0 * Z[1, 2]
+            + Z[2, 0]
+            + Z[2, 1]
+            + Z[2, 2]
+        ),
+        6.0,
+    )
 
     DENOM = 4.0 * C3 * C6 - C5 * C5
     if DENOM == 0.0:
@@ -1363,7 +1378,10 @@ def ali_nvol(v, mask):
         ave, var = sp_statistics.ave_var(v)
         p = EMAN2_cppwrap.Util.infomask(var, mask, True)
         crit = p[1]
-        if old_div(old_div((crit - ocrit), (crit + ocrit)), 2.0) > -1.0e-2 or niter > 10:
+        if (
+            old_div(old_div((crit - ocrit), (crit + ocrit)), 2.0) > -1.0e-2
+            or niter > 10
+        ):
             gogo = False
         niter += 1
         ocrit = crit

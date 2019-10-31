@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from past.utils import old_div
+from __future__ import division
 #
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
@@ -98,8 +99,8 @@ def main():
 
     progname = optparse.os.path.basename(sys.argv[0])
     usage = (
-            progname
-            + " prj_stack  --ave2D= --var2D=  --ave3D= --var3D= --img_per_grp= --fl=  --aa=   --sym=symmetry --CTF"
+        progname
+        + " prj_stack  --ave2D= --var2D=  --ave3D= --var3D= --img_per_grp= --fl=  --aa=   --sym=symmetry --CTF"
     )
     parser = optparse.OptionParser(usage, version=sp_global_def.SPARXVERSION)
 
@@ -236,7 +237,7 @@ def main():
             sp_global_def.write_command(current_output_dir)
 
         if optparse.os.path.exists(
-                optparse.os.path.join(current_output_dir, "log.txt")
+            optparse.os.path.join(current_output_dir, "log.txt")
         ):
             optparse.os.remove(optparse.os.path.join(current_output_dir, "log.txt"))
         log_main = sp_logger.Logger(sp_logger.BaseLogger_Files())
@@ -670,8 +671,8 @@ def main():
             tnumber = dnumber + pnumber
             vol_size2 = old_div(nx ** 3 * 4.0 * 8, 1.0e9)
             vol_size1 = old_div(2.0 * nnxo ** 3 * 4.0 * 8, 1.0e9)
-            proj_size = (
-                    old_div(nnxo * nnyo * len(proj_list) * 4.0 * 2.0, 1.0e9)
+            proj_size = old_div(
+                nnxo * nnyo * len(proj_list) * 4.0 * 2.0, 1.0e9
             )  # both aveList and varList
             orig_data_size = old_div(nnxo * nnyo * 4.0 * tnumber, 1.0e9)
             reduced_data_size = old_div(nx * nx * 4.0 * tnumber, 1.0e9)
@@ -755,12 +756,13 @@ def main():
                 if myid == heavy_load_myid and index_of_proj % 100 == 0:
                     log_main.add(
                         " ...... %6.2f%% "
-                        % ( old_div(index_of_proj, float(len(all_proj)))  * 100.0)
+                        % (old_div(index_of_proj, float(len(all_proj))) * 100.0)
                     )
             mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
             if myid == heavy_load_myid:
                 log_main.add(
-                    "All_proj preprocessing cost %7.2f m" % (old_div((time.time() - ttt), 60.0))
+                    "All_proj preprocessing cost %7.2f m"
+                    % (old_div((time.time() - ttt), 60.0))
                 )
                 log_main.add("Wait untill reading on all CPUs done...")
             """Multiline Comment1"""
@@ -972,7 +974,9 @@ def main():
                 sp_utilities.bcast_EMData_to_all(ave3D, myid)
                 if myid == main_node:
                     if current_decimate != 1.0:
-                        ave3D = sp_fundamentals.resample(ave3D, old_div(1.0, current_decimate))
+                        ave3D = sp_fundamentals.resample(
+                            ave3D, old_div(1.0, current_decimate)
+                        )
                     ave3D = sp_fundamentals.fpol(
                         ave3D, nnxo, nnxo, nnxo
                     )  # always to the orignal image size
@@ -1073,10 +1077,12 @@ def main():
                     % ("The reconstructed var3D is saved as ", options.var3D)
                 )
                 log_main.add(
-                    "Var3D reconstruction took %f12.1 [m]" % (old_div((time.time() - t6), 60.0))
+                    "Var3D reconstruction took %f12.1 [m]"
+                    % (old_div((time.time() - t6), 60.0))
                 )
                 log_main.add(
-                    "Total computation time %f12.1 [m]" % (old_div((time.time() - t0), 60.0))
+                    "Total computation time %f12.1 [m]"
+                    % (old_div((time.time() - t0), 60.0))
                 )
                 log_main.add("sx3dvariability finishes")
 

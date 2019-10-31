@@ -1,6 +1,6 @@
 from past.utils import old_div
 from __future__ import print_function
-
+from __future__ import division
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
 # Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
@@ -348,7 +348,9 @@ def ali2d_MPI(
     cs = [0.0] * 2
 
     if CUDA:
-        RING_LENGTH = 2 ** (int(old_div(numpy.log(2 * numpy.pi * last_ring), numpy.log(2))) + 1)
+        RING_LENGTH = 2 ** (
+            int(old_div(numpy.log(2 * numpy.pi * last_ring), numpy.log(2))) + 1
+        )
         NRING = 2 ** (int(old_div(numpy.log(last_ring), numpy.log(2))) + 1)
 
     for N_step in range(len(xrng)):
@@ -389,8 +391,8 @@ def ali2d_MPI(
                 # FFT and IFFT, so we want to decrease it such that the criterion is in line with non-CUDA version
                 # However, this step is not mandatory.
                 if CTF:
-                    ave1 = old_div(ave1,(nx * 2) ** 2)
-                    ave2 = old_div(ave2,(nx * 2) ** 2)
+                    ave1 = old_div(ave1, (nx * 2) ** 2)
+                    ave2 = old_div(ave2, (nx * 2) ** 2)
             else:
                 ave1, ave2 = sp_statistics.sum_oe(
                     data, "a", CTF, EMAN2_cppwrap.EMData()
@@ -1424,10 +1426,14 @@ def mref_ali2d(
                         # Calculate averages at least ones, meaning even if no within group refinement was requested
                         if CTF:
                             for i in range(lctf):
-                                ctm[i] = old_div(1.0, (ctf2[j][0][i] + old_div(1.0, snr)))
+                                ctm[i] = old_div(
+                                    1.0, (ctf2[j][0][i] + old_div(1.0, snr))
+                                )
                             av1 = sp_filter.filt_table(refi[j][0], ctm)
                             for i in range(lctf):
-                                ctm[i] = old_div(1.0, (ctf2[j][1][i] + old_div(1.0, snr)))
+                                ctm[i] = old_div(
+                                    1.0, (ctf2[j][1][i] + old_div(1.0, snr))
+                                )
                             av2 = sp_filter.filt_table(refi[j][1], ctm)
                             frsc = sp_statistics.fsc(
                                 av1,
@@ -1437,9 +1443,10 @@ def mref_ali2d(
                             )
                             # Now the total average
                             for i in range(lctf):
-                                ctm[i] = old_div(1.0, (
-                                    ctf2[j][0][i] + ctf2[j][1][i] + old_div(1.0, snr)
-                                ))
+                                ctm[i] = old_div(
+                                    1.0,
+                                    (ctf2[j][0][i] + ctf2[j][1][i] + old_div(1.0, snr)),
+                                )
                             refi[j][0] = sp_filter.filt_table(
                                 EMAN2_cppwrap.Util.addn_img(refi[j][0], refi[j][1]), ctm
                             )
@@ -1848,7 +1855,9 @@ def mref_ali2d_MPI(
                         )
                         # Now the total average
                         for i in range(lctf):
-                            ctm[i] = old_div(1.0, (ctf2[j][0][i] + ctf2[j][1][i] + old_div(1.0, snr)))
+                            ctm[i] = old_div(
+                                1.0, (ctf2[j][0][i] + ctf2[j][1][i] + old_div(1.0, snr))
+                            )
                         refi[j][0] = sp_filter.filt_table(
                             EMAN2_cppwrap.Util.addn_img(refi[j][0], refi[j][1]), ctm
                         )
@@ -1878,7 +1887,7 @@ def mref_ali2d_MPI(
             # print 'sum', sum(ave_fsc)
             if sum(ave_fsc) != 0:
                 for i in range(len(ave_fsc)):
-                    ave_fsc[i] = old_div(ave_fsc[i],float(c_fsc))
+                    ave_fsc[i] = old_div(ave_fsc[i], float(c_fsc))
                     frsc[1][i] = ave_fsc[i]
 
             for j in range(numref):
@@ -2361,7 +2370,9 @@ def ali_vol(vol, refv, ang_scale, shift_scale, radius=None, discrepancy="ccc"):
     if radius != None:
         mask = sp_utilities.model_circle(radius, nx, ny, nz)
     else:
-        mask = sp_utilities.model_circle(float(old_div(min(nx, ny, nz), 2) - 2), nx, ny, nz)
+        mask = sp_utilities.model_circle(
+            float(old_div(min(nx, ny, nz), 2) - 2), nx, ny, nz
+        )
 
     # names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z", "scale"]
     phi, theta, psi, s3x, s3y, s3z, mirror, scale = sp_utilities.get_params3D(ref)
@@ -2688,7 +2699,9 @@ def recons3d_trl_MPI(
         fftvol = EMAN2_cppwrap.Util.window(
             fftvol, target_window_size, target_window_size, target_window_size
         )
-        fftvol = sp_morphology.cosinemask(fftvol, old_div(target_window_size, 2) - 1, 5, None)
+        fftvol = sp_morphology.cosinemask(
+            fftvol, old_div(target_window_size, 2) - 1, 5, None
+        )
         fftvol.div_sinc(1)
         fftvol.write_image(vol_stack)
 
@@ -4121,7 +4134,9 @@ def ali_vol_rotate(vol, refv, ang_scale, radius=None, discrepancy="ccc"):
     if radius != None:
         mask = sp_utilities.model_circle(radius, nx, ny, nz)
     else:
-        mask = sp_utilities.model_circle(float(old_div(min(nx, ny, nz), 2) - 2), nx, ny, nz)
+        mask = sp_utilities.model_circle(
+            float(old_div(min(nx, ny, nz), 2) - 2), nx, ny, nz
+        )
 
     # names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z", "scale"]
     params = sp_utilities.get_params3D(ref)
@@ -4184,7 +4199,9 @@ def ali_vol_shift(vol, refv, shift_scale, radius=None, discrepancy="ccc"):
     if radius != None:
         mask = sp_utilities.model_circle(radius, nx, ny, nz)
     else:
-        mask = sp_utilities.model_circle(float(old_div(min(nx, ny, nz), 2) - 2), nx, ny, nz)
+        mask = sp_utilities.model_circle(
+            float(old_div(min(nx, ny, nz), 2) - 2), nx, ny, nz
+        )
 
     # names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z", "scale"]
     params = sp_utilities.get_params3D(ref)

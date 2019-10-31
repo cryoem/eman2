@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from past.utils import old_div
+from __future__ import division
 #
 # Author: Markus Stabrin 2016-2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
@@ -541,8 +542,12 @@ class SXLookFeelConst(object):
             )
 
         SXLookFeelConst.sxmain_window_width = SXLookFeelConst.sxmain_window_min_width
-        if SXLookFeelConst.sxmain_window_width >= old_div(SXLookFeelConst.screen_width * 3, 4):
-            SXLookFeelConst.sxmain_window_width = old_div(SXLookFeelConst.screen_width * 3, 4)
+        if SXLookFeelConst.sxmain_window_width >= old_div(
+            SXLookFeelConst.screen_width * 3, 4
+        ):
+            SXLookFeelConst.sxmain_window_width = old_div(
+                SXLookFeelConst.screen_width * 3, 4
+            )
             if SXLookFeelConst.sxmain_window_width < 960:
                 SXLookFeelConst.sxmain_window_width = 960
 
@@ -552,7 +557,9 @@ class SXLookFeelConst(object):
         SXLookFeelConst.sxmenu_item_btn_width = (
             SXLookFeelConst.sxmain_window_height * 0.125
         )
-        SXLookFeelConst.grid_distance = old_div(SXLookFeelConst.sxmenu_item_btn_width, 10)
+        SXLookFeelConst.grid_distance = old_div(
+            SXLookFeelConst.sxmenu_item_btn_width, 10
+        )
 
         SXLookFeelConst.sxmenu_btn_area_min_width = (
             2 * SXLookFeelConst.sxmenu_item_btn_width

@@ -1,6 +1,6 @@
 from past.utils import old_div
 from __future__ import print_function
-
+from __future__ import division
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
 # Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
@@ -55,15 +55,15 @@ standard_library.install_aliases()
 
 
 def add_ave_varf_MPI(
-        myid,
-        data,
-        mask=None,
-        mode="a",
-        CTF=False,
-        ctf_2_sum=None,
-        ali_params="xform.align2d",
-        main_node=0,
-        comm=-1,
+    myid,
+    data,
+    mask=None,
+    mode="a",
+    CTF=False,
+    ctf_2_sum=None,
+    ali_params="xform.align2d",
+    main_node=0,
+    comm=-1,
 ):
     """
 		Calculate sum of an image series and sum of squares in Fourier space
@@ -180,7 +180,7 @@ def add_ave_varf_MPI(
 
 
 def sum_oe(
-        data, mode="a", CTF=False, ctf_2_sum=None, ctf_eo_sum=False, return_params=False
+    data, mode="a", CTF=False, ctf_2_sum=None, ctf_eo_sum=False, return_params=False
 ):
     """
 		Calculate average of an image series
@@ -527,7 +527,7 @@ def fsc(img1, img2, w=1.0, filename=None):
     size = old_div(len(result), 3)
     frsc = []
     for i in range(3):
-        frsc.append(result[i * size: (i + 1) * size])
+        frsc.append(result[i * size : (i + 1) * size])
     if filename:
         outf = open(filename, "w")
         for i in range(size):
@@ -834,9 +834,9 @@ See the module documentation for usage.
         for i in range(n):
             for j in range(n):
                 if (
-                        (self.C[i][j] == 0)
-                        and (not self.col_covered[j])
-                        and (not self.row_covered[i])
+                    (self.C[i][j] == 0)
+                    and (not self.col_covered[j])
+                    and (not self.row_covered[i])
                 ):
                     self.marked[i][j] = 1
                     self.col_covered[j] = True
@@ -973,9 +973,9 @@ See the module documentation for usage.
             j = 0
             while True:
                 if (
-                        (self.C[i][j] == 0)
-                        and (not self.row_covered[i])
-                        and (not self.col_covered[j])
+                    (self.C[i][j] == 0)
+                    and (not self.row_covered[i])
+                    and (not self.col_covered[j])
                 ):
                     row = i
                     col = j
@@ -1171,7 +1171,10 @@ def pearson(X, Y):
         Sxx += x * x
         Syy += y * y
         Sxy += x * y
-    return old_div((Sxy - old_div(Sx * Sy, N)), numpy.sqrt((Sxx - old_div(Sx * Sx, N)) * (Syy - old_div(Sy * Sy, N))))
+    return old_div(
+        (Sxy - old_div(Sx * Sy, N)),
+        numpy.sqrt((Sxx - old_div(Sx * Sx, N)) * (Syy - old_div(Sy * Sy, N))),
+    )
 
 
 def table_stat(X):
@@ -1194,22 +1197,22 @@ def table_stat(X):
 
 
 def k_means_stab_bbenum(
-        PART,
-        T=10,
-        nguesses=5,
-        J=50,
-        max_branching=40,
-        stmult=0.25,
-        branchfunc=2,
-        LIM=-1,
-        doMPI_init=False,
-        njobs=-1,
-        do_mpi=False,
-        K=-1,
-        cdim=[],
-        nstart=-1,
-        nstop=-1,
-        top_Matches=[],
+    PART,
+    T=10,
+    nguesses=5,
+    J=50,
+    max_branching=40,
+    stmult=0.25,
+    branchfunc=2,
+    LIM=-1,
+    doMPI_init=False,
+    njobs=-1,
+    do_mpi=False,
+    K=-1,
+    cdim=[],
+    nstart=-1,
+    nstop=-1,
+    top_Matches=[],
 ):
     """
 
@@ -1416,23 +1419,23 @@ def k_means_stab_bbenum(
 
 
 def k_means_match_bbenum(
-        PART,
-        T=10,
-        J=1,
-        max_branching=40,
-        stmult=0.25,
-        nguesses=5,
-        branchfunc=2,
-        LIM=-1,
-        DoMPI_init=False,
-        Njobs=-1,
-        DoMPI=False,
-        K=-1,
-        np=-1,
-        c_dim=[],
-        N_start=-1,
-        N_stop=-1,
-        topMatches=[],
+    PART,
+    T=10,
+    J=1,
+    max_branching=40,
+    stmult=0.25,
+    nguesses=5,
+    branchfunc=2,
+    LIM=-1,
+    DoMPI_init=False,
+    Njobs=-1,
+    DoMPI=False,
+    K=-1,
+    np=-1,
+    c_dim=[],
+    N_start=-1,
+    N_stop=-1,
+    topMatches=[],
 ):
     MATCH = []
     output = []
@@ -1537,7 +1540,7 @@ def k_means_match_bbenum(
 
     for j in range(num_matches):
         # get the j-th match
-        ar_match = numpy.array(output[j * np + 2: j * np + 2 + np], "int32")
+        ar_match = numpy.array(output[j * np + 2 : j * np + 2 + np], "int32")
         MATCH.append(ar_match)
 
     # order Matches in Match by group in first partition
