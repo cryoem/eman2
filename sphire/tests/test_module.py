@@ -1,4 +1,3 @@
-
 """
 # Author: Adnan Ali 2019 (adnan.ali@mpi-dortmund.mpg.de)
 # Author: Luca Lusnig 2019 (luca.lusnig@mpi-dortmund.mpg.de)
@@ -52,10 +51,10 @@ List:
 from os import system as os_system
 from copy import deepcopy
 from numpy import arange, float32 as np_float32
-from sphire.libpy.sp_utilities import model_blank,model_circle
-from EMAN2_cppwrap import Util,EMData
+from sphire.libpy.sp_utilities import model_blank, model_circle
+from EMAN2_cppwrap import Util, EMData
 from cPickle import load as pickle_load
-from os import path,remove
+from os import path, remove
 
 
 """ 
@@ -64,13 +63,13 @@ or directly from http://sphire.mpg.de/wiki/doku.php?id=downloads:sphire_1_0
 And set the variable 'ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER' to its path on your HD
 """
 
-#ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER = "/home/adnan/Downloads/sphire_1_0_precalculated_results/SphireDemoResults"
+# ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER = "/home/adnan/Downloads/sphire_1_0_precalculated_results/SphireDemoResults"
 ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER = "/home/lusnig/Downloads/SphireDemoResults"
 
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 
 
-def get_real_data(dim =2):
+def get_real_data(dim=2):
     """
     In order to run our tests with valid value this function returns the value got from pickle file.
     It returns the iamge and the reference image
@@ -79,17 +78,22 @@ def get_real_data(dim =2):
     :return: image,refim #todo: in 3d case the refim is None ...i have to look for a better pickle file, maybe'projection.prgl'
     """
     if dim == 2:
-        argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.align2d_scf"))
+        argum = get_arg_from_pickle_file(
+            path.join(ABSOLUTE_PATH, "pickle files/alignment.align2d_scf")
+        )
         image, refim, xrng, yrng = argum[0]
-        return image,refim
+        return image, refim
     if dim == 3:
-        argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.ali_vol_func"))
-        return argum[1].get('data')[0], None
+        argum = get_arg_from_pickle_file(
+            path.join(ABSOLUTE_PATH, "pickle files/alignment.ali_vol_func")
+        )
+        return argum[1].get("data")[0], None
 
-    print ("ERROR: the dimension has to be 2 or 3. Given "+str(dim))
+    print("ERROR: the dimension has to be 2 or 3. Given " + str(dim))
     exit(-1)
 
-def get_data(num,dim = 10):
+
+def get_data(num, dim=10):
     """
     Create a list of 2D EMData image
     :param num: number of the images to create
@@ -114,9 +118,11 @@ def get_data_3d(num, dim=10):
     """
     data_list = []
     for i in range(num):
-        a = EMData(dim, dim,dim)
+        a = EMData(dim, dim, dim)
         data_a = a.get_3dview()
-        data_a[...] = arange(dim * dim * dim, dtype=np_float32).reshape(dim, dim, dim) + i
+        data_a[...] = (
+            arange(dim * dim * dim, dtype=np_float32).reshape(dim, dim, dim) + i
+        )
         data_list.append(a)
     return data_list
 
@@ -127,8 +133,9 @@ def get_arg_from_pickle_file(filepath):
     :param filepath: path of the pickle file
     :return: args saved in the file
     """
-    with open(filepath, 'rb') as rb:
+    with open(filepath, "rb") as rb:
         return pickle_load(rb)
+
 
 def remove_dir(d):
     """
@@ -137,7 +144,8 @@ def remove_dir(d):
     :param d: path to the directory
     """
     if path.isdir(d):
-        os_system("rm -rf "+str(d))
+        os_system("rm -rf " + str(d))
+
 
 def remove_list_of_file(l):
     """
@@ -148,7 +156,8 @@ def remove_list_of_file(l):
         if path.isfile(f):
             remove(f)
 
-def returns_values_in_file(f, mode = 'r'):
+
+def returns_values_in_file(f, mode="r"):
     """
     read a file and returns all its lines
     :param f: path to file
@@ -160,10 +169,11 @@ def returns_values_in_file(f, mode = 'r'):
         values_f1 = f1.readlines()
         f1.close()
         return values_f1
-    print ("ERROR> the given file '"+str(f)+"' is not present!")
+    print("ERROR> the given file '" + str(f) + "' is not present!")
     exit(-1)
 
-def create_kb(dim,  sizex=100 ,sizey=80 ,sizez=70):
+
+def create_kb(dim, sizex=100, sizey=80, sizez=70):
     """
     Return a kb filter. If you need more info about the code, please take a look of 'prep_vol' in sparx_projection.py
     if dim =3 returns kbx,kby, kbz the interpolants along x, y and z direction (tabulated Kaiser-Bessel function) because the volume is rectangular
@@ -176,21 +186,20 @@ def create_kb(dim,  sizex=100 ,sizey=80 ,sizez=70):
     """
     K = 6
     alpha = 1.75
-    npad =2
+    npad = 2
     if dim == 3:
         Nx = sizex * npad
         Ny = sizey * npad
         Nz = sizez * npad
-        kbx = Util.KaiserBessel(alpha, K, sizex / 2, K / (2. * Nx), Nx)
-        kby = Util.KaiserBessel(alpha, K, sizey / 2, K / (2. * Ny), Ny)
-        kbz = Util.KaiserBessel(alpha, K, sizez / 2, K / (2. * Nz), Nz)
+        kbx = Util.KaiserBessel(alpha, K, sizex / 2, K / (2.0 * Nx), Nx)
+        kby = Util.KaiserBessel(alpha, K, sizey / 2, K / (2.0 * Ny), Ny)
+        kbz = Util.KaiserBessel(alpha, K, sizez / 2, K / (2.0 * Nz), Nz)
         return kbx, kby, kbz
     elif dim == 1:
         N = sizex * npad
-        return Util.KaiserBessel(alpha, K, sizex / 2, K / (2. * N), N)
-    print ("Error: The value of dim has to be 1 or 3. You inserted " + str(dim))
+        return Util.KaiserBessel(alpha, K, sizex / 2, K / (2.0 * N), N)
+    print("Error: The value of dim has to be 1 or 3. You inserted " + str(dim))
     exit(-1)
-
 
 
 """ In order to unittest the function which output is an EMData() we have to shrink the original images."""
@@ -202,14 +211,23 @@ IMAGE_BLANK_2D = model_blank(nx=20, ny=20, bckg=0.0)
 
 """The resized 3DIMAGE is blank --> hence I fake the 2DImage to be a 3DIMAGE """
 
-IMAGE_3D.set_size(10,10,10)
-IMAGE_BLANK_3D = model_blank(nx=10, ny=10, nz=10,bckg=0.0)
+IMAGE_3D.set_size(10, 10, 10)
+IMAGE_BLANK_3D = model_blank(nx=10, ny=10, nz=10, bckg=0.0)
 
 MASK = model_circle(r=2, nx=5, ny=5, nz=1)
-MASK_2DIMAGE= model_circle(r=2, nx=IMAGE_2D.get_xsize(),ny=IMAGE_2D.get_ysize(),nz=1)
-MASK_IMAGE_BLANK_2D= model_circle(r=2, nx=IMAGE_BLANK_2D.get_xsize(),ny=IMAGE_BLANK_2D.get_ysize(),nz=1)
-MASK_3DIMAGE= model_circle(r=2, nx=IMAGE_3D.get_xsize(),ny=IMAGE_3D.get_ysize(), nz=IMAGE_3D.get_zsize())
-MASK_IMAGE_BLANK_3D= model_circle(r=2, nx=IMAGE_BLANK_3D.get_xsize(),ny=IMAGE_BLANK_3D.get_ysize(), nz=IMAGE_BLANK_3D.get_zsize())
+MASK_2DIMAGE = model_circle(r=2, nx=IMAGE_2D.get_xsize(), ny=IMAGE_2D.get_ysize(), nz=1)
+MASK_IMAGE_BLANK_2D = model_circle(
+    r=2, nx=IMAGE_BLANK_2D.get_xsize(), ny=IMAGE_BLANK_2D.get_ysize(), nz=1
+)
+MASK_3DIMAGE = model_circle(
+    r=2, nx=IMAGE_3D.get_xsize(), ny=IMAGE_3D.get_ysize(), nz=IMAGE_3D.get_zsize()
+)
+MASK_IMAGE_BLANK_3D = model_circle(
+    r=2,
+    nx=IMAGE_BLANK_3D.get_xsize(),
+    ny=IMAGE_BLANK_3D.get_ysize(),
+    nz=IMAGE_BLANK_3D.get_zsize(),
+)
 
-KB_IMAGE2D_SIZE=create_kb(dim=1,sizex=IMAGE_2D.get_xsize())
-KB_IMAGE3D_SIZE_CUBIC=create_kb(dim=1,sizex=IMAGE_3D.get_xsize())
+KB_IMAGE2D_SIZE = create_kb(dim=1, sizex=IMAGE_2D.get_xsize())
+KB_IMAGE3D_SIZE_CUBIC = create_kb(dim=1, sizex=IMAGE_3D.get_xsize())

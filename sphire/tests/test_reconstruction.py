@@ -2,24 +2,31 @@ import unittest
 from copy import deepcopy
 from EMAN2_cppwrap import EMData, Reconstructors, EMUtil
 
-from numpy import array_equal, allclose,zeros as numpy_zeros
+from numpy import array_equal, allclose, zeros as numpy_zeros
 from test_module import get_arg_from_pickle_file
 from os import path
+
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 
 from mpi import *
+
 mpi_init(0, [])
 
 from sphire.libpy import sp_reconstruction as oldfu
-from sphire.utils.SPHIRE.libpy  import sp_reconstruction as fu
+from sphire.utils.SPHIRE.libpy import sp_reconstruction as fu
 
 
+from test_module import get_real_data, ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER
 
-from test_module import get_real_data,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER
-XFORM_PROJECTION_IMG =get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.shc"))[0][0]
-PRJLIST = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/multi_shc/multi_shc.do_volume"))[0][0]
-STACK_NAME = 'bdb:' + path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, 'Substack/sort3d_substack_003')
-
+XFORM_PROJECTION_IMG = get_arg_from_pickle_file(
+    path.join(ABSOLUTE_PATH, "pickle files/alignment.shc")
+)[0][0]
+PRJLIST = get_arg_from_pickle_file(
+    path.join(ABSOLUTE_PATH, "pickle files/multi_shc/multi_shc.do_volume")
+)[0][0]
+STACK_NAME = "bdb:" + path.join(
+    ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Substack/sort3d_substack_003"
+)
 
 
 """
@@ -62,7 +69,6 @@ There are some opened issues in:
     b) where can I find a valid file with for  the fsc curve"
     c) how can I reach the nproc !+ 1? --> I have to use mpi_comm !=MPI_COMM_WORLD. But I got always MPI_ERRORS_ARE_FATAL
 """
-
 
 
 """
@@ -236,52 +242,498 @@ class Test_recons3d_4nnw_MPI(unittest.TestCase):
 """
 """ end: new in sphire 1.3"""
 
-#I have to use the pickle file, nosetests is able to read it but pytest not, to have a 'xform.projection' IMAGE
+# I have to use the pickle file, nosetests is able to read it but pytest not, to have a 'xform.projection' IMAGE
 class Test_insert_slices(unittest.TestCase):
     size = 76
-    img = EMData(size,size)
+    img = EMData(size, size)
+
     def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.insert_slices()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.insert_slices()
-        self.assertEqual(str(cm_new.exception), "insert_slices() takes exactly 2 arguments (0 given)")
+        self.assertEqual(
+            str(cm_new.exception), "insert_slices() takes exactly 2 arguments (0 given)"
+        )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_defalut_case(self):
-        params = {"size": self.size, "npad": 2, "symmetry": "c1", "fftvol":deepcopy(self.img), "weight": deepcopy(self.img), "snr": 2}
-        r_new = Reconstructors.get( "nn4", params )
+        params = {
+            "size": self.size,
+            "npad": 2,
+            "symmetry": "c1",
+            "fftvol": deepcopy(self.img),
+            "weight": deepcopy(self.img),
+            "snr": 2,
+        }
+        r_new = Reconstructors.get("nn4", params)
         r_new.setup()
-        r_old = Reconstructors.get( "nn4", params )
+        r_old = Reconstructors.get("nn4", params)
         r_old.setup()
-        return_new = fu.insert_slices(reconstructor=r_new, proj=deepcopy(XFORM_PROJECTION_IMG))
-        return_old = oldfu.insert_slices(reconstructor=r_old, proj= deepcopy(XFORM_PROJECTION_IMG))
-        fftvol_new=r_new.get_params()['fftvol']
-        fftvol_old = r_old.get_params()['fftvol']
-        weight_new=r_new.get_params()['weight']
-        weight_old = r_old.get_params()['weight']
+        return_new = fu.insert_slices(
+            reconstructor=r_new, proj=deepcopy(XFORM_PROJECTION_IMG)
+        )
+        return_old = oldfu.insert_slices(
+            reconstructor=r_old, proj=deepcopy(XFORM_PROJECTION_IMG)
+        )
+        fftvol_new = r_new.get_params()["fftvol"]
+        fftvol_old = r_old.get_params()["fftvol"]
+        weight_new = r_new.get_params()["weight"]
+        weight_old = r_old.get_params()["weight"]
         self.assertTrue(array_equal(fftvol_new.get_3dview(), fftvol_old.get_3dview()))
-        self.assertTrue(array_equal(fftvol_new.get_3dview().flatten().tolist()[20000:20200], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -44.357994079589844, -51.45708465576172, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
-        self.assertTrue(array_equal(weight_new.get_3dview().flatten().tolist()[20000:20200], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] ))
+        self.assertTrue(
+            array_equal(
+                fftvol_new.get_3dview().flatten().tolist()[20000:20200],
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    -44.357994079589844,
+                    -51.45708465576172,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
+            )
+        )
+        self.assertTrue(
+            array_equal(
+                weight_new.get_3dview().flatten().tolist()[20000:20200],
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    4.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    2.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
+            )
+        )
         self.assertTrue(array_equal(weight_new.get_3dview(), weight_old.get_3dview()))
         self.assertEqual(return_new, return_old)
         self.assertTrue(return_new is None)
-        #self.assertTrue(array_equal(r_new.get_params()['fftvol'].get_3dview(), r_old.get_params()['fftvol'].get_3dview())) leads to segmentation fault
+        # self.assertTrue(array_equal(r_new.get_params()['fftvol'].get_3dview(), r_old.get_params()['fftvol'].get_3dview())) leads to segmentation fault
 
-    def test_None_proj_case_returns_AttributeError_NoneType_obj_hasnot_attribute_get_attr(self):
-        params = {"size": self.size, "npad": 2, "symmetry": "c1", "fftvol": deepcopy(self.img), "weight": deepcopy(self.img), "snr": 2}
-        r = Reconstructors.get( "nn4", params )
+    def test_None_proj_case_returns_AttributeError_NoneType_obj_hasnot_attribute_get_attr(
+        self
+    ):
+        params = {
+            "size": self.size,
+            "npad": 2,
+            "symmetry": "c1",
+            "fftvol": deepcopy(self.img),
+            "weight": deepcopy(self.img),
+            "snr": 2,
+        }
+        r = Reconstructors.get("nn4", params)
         r.setup()
         with self.assertRaises(AttributeError) as cm_new:
             fu.insert_slices(reconstructor=r, proj=None)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.insert_slices(reconstructor=r, proj=None)
-        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_attr'")
+        self.assertEqual(
+            str(cm_new.exception), "'NoneType' object has no attribute 'get_attr'"
+        )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
-    def test_empty_image_proj_case_returns_RuntimeError_NotExistingObjectException_the_key_mean_doesnot_exist(self):
-        params = {"size": self.size, "npad": 2, "symmetry": "c1", "fftvol": deepcopy(self.img), "weight": deepcopy(self.img), "snr": 2}
-        r = Reconstructors.get( "nn4", params )
+    def test_empty_image_proj_case_returns_RuntimeError_NotExistingObjectException_the_key_mean_doesnot_exist(
+        self
+    ):
+        params = {
+            "size": self.size,
+            "npad": 2,
+            "symmetry": "c1",
+            "fftvol": deepcopy(self.img),
+            "weight": deepcopy(self.img),
+            "snr": 2,
+        }
+        r = Reconstructors.get("nn4", params)
         r.setup()
         with self.assertRaises(RuntimeError) as cm_new:
             fu.insert_slices(reconstructor=r, proj=EMData())
@@ -294,9 +746,18 @@ class Test_insert_slices(unittest.TestCase):
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
 
-    def test_img_not_xform_projection_returns_RuntimeError_NotExistingObjectException_the_key_mean_doesnot_exist(self):
-        params = {"size": self.size, "npad": 2, "symmetry": "c1", "fftvol": deepcopy(self.img), "weight": deepcopy(self.img), "snr": 2}
-        r = Reconstructors.get( "nn4", params )
+    def test_img_not_xform_projection_returns_RuntimeError_NotExistingObjectException_the_key_mean_doesnot_exist(
+        self
+    ):
+        params = {
+            "size": self.size,
+            "npad": 2,
+            "symmetry": "c1",
+            "fftvol": deepcopy(self.img),
+            "weight": deepcopy(self.img),
+            "snr": 2,
+        }
+        r = Reconstructors.get("nn4", params)
         r.setup()
         with self.assertRaises(RuntimeError) as cm_new:
             fu.insert_slices(reconstructor=r, proj=get_real_data(2)[0])
@@ -308,7 +769,6 @@ class Test_insert_slices(unittest.TestCase):
         self.assertEqual(msg[3], "The requested key does not exist")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
-
 
 
 """ These functions have been cleaned
@@ -437,51 +897,268 @@ class Test_recons3d_4nn_MPI(unittest.TestCase):
             fu.recons3d_4nn_MPI()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.recons3d_4nn_MPI()
-        self.assertEqual(str(cm_new.exception), "recons3d_4nn_MPI() takes at least 2 arguments (0 given)")
+        self.assertEqual(
+            str(cm_new.exception),
+            "recons3d_4nn_MPI() takes at least 2 arguments (0 given)",
+        )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_default_case(self):
-        return_new = fu.recons3d_4nn_MPI(myid=0, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
-                                         npad=2, xysize=-1, zsize=-1, mpi_comm=MPI_COMM_WORLD)
+        return_new = fu.recons3d_4nn_MPI(
+            myid=0,
+            prjlist=[XFORM_PROJECTION_IMG],
+            symmetry="c1",
+            finfo=None,
+            snr=1.0,
+            npad=2,
+            xysize=-1,
+            zsize=-1,
+            mpi_comm=MPI_COMM_WORLD,
+        )
         mpi_barrier(MPI_COMM_WORLD)
-        return_old = oldfu.recons3d_4nn_MPI(myid=0, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
-                                            npad=2, xysize=-1, zsize=-1, mpi_comm=MPI_COMM_WORLD)
+        return_old = oldfu.recons3d_4nn_MPI(
+            myid=0,
+            prjlist=[XFORM_PROJECTION_IMG],
+            symmetry="c1",
+            finfo=None,
+            snr=1.0,
+            npad=2,
+            xysize=-1,
+            zsize=-1,
+            mpi_comm=MPI_COMM_WORLD,
+        )
         mpi_barrier(MPI_COMM_WORLD)
-        self.assertTrue(allclose(return_new.get_3dview().flatten().tolist()[2925:3000],[0.0, 5.451178731163964e-05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],0.001))
+        self.assertTrue(
+            allclose(
+                return_new.get_3dview().flatten().tolist()[2925:3000],
+                [
+                    0.0,
+                    5.451178731163964e-05,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
+                0.001,
+            )
+        )
         self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), 0.5))
 
     def test_default_case_xy_z_size_both_not_negative(self):
-        return_new = fu.recons3d_4nn_MPI(myid=0, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
-                                         npad=2, xysize=1, zsize=1, mpi_comm=MPI_COMM_WORLD)
+        return_new = fu.recons3d_4nn_MPI(
+            myid=0,
+            prjlist=[XFORM_PROJECTION_IMG],
+            symmetry="c1",
+            finfo=None,
+            snr=1.0,
+            npad=2,
+            xysize=1,
+            zsize=1,
+            mpi_comm=MPI_COMM_WORLD,
+        )
         mpi_barrier(MPI_COMM_WORLD)
-        return_old = oldfu.recons3d_4nn_MPI(myid=0, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
-                                            npad=2, xysize=1, zsize=1, mpi_comm=MPI_COMM_WORLD)
+        return_old = oldfu.recons3d_4nn_MPI(
+            myid=0,
+            prjlist=[XFORM_PROJECTION_IMG],
+            symmetry="c1",
+            finfo=None,
+            snr=1.0,
+            npad=2,
+            xysize=1,
+            zsize=1,
+            mpi_comm=MPI_COMM_WORLD,
+        )
         mpi_barrier(MPI_COMM_WORLD)
-        self.assertTrue(allclose(return_new.get_3dview().flatten(), [float('NaN')], equal_nan=True))
-        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), equal_nan=True))
+        self.assertTrue(
+            allclose(return_new.get_3dview().flatten(), [float("NaN")], equal_nan=True)
+        )
+        self.assertTrue(
+            allclose(return_new.get_3dview(), return_old.get_3dview(), equal_nan=True)
+        )
 
     def test_default_case_xy_size_not_negative(self):
-        return_new = fu.recons3d_4nn_MPI(myid=0, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
-                                         npad=2, xysize=1, zsize=-1, mpi_comm=MPI_COMM_WORLD)
+        return_new = fu.recons3d_4nn_MPI(
+            myid=0,
+            prjlist=[XFORM_PROJECTION_IMG],
+            symmetry="c1",
+            finfo=None,
+            snr=1.0,
+            npad=2,
+            xysize=1,
+            zsize=-1,
+            mpi_comm=MPI_COMM_WORLD,
+        )
         mpi_barrier(MPI_COMM_WORLD)
-        return_old = oldfu.recons3d_4nn_MPI(myid=0, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
-                                            npad=2, xysize=1, zsize=-1, mpi_comm=MPI_COMM_WORLD)
+        return_old = oldfu.recons3d_4nn_MPI(
+            myid=0,
+            prjlist=[XFORM_PROJECTION_IMG],
+            symmetry="c1",
+            finfo=None,
+            snr=1.0,
+            npad=2,
+            xysize=1,
+            zsize=-1,
+            mpi_comm=MPI_COMM_WORLD,
+        )
         mpi_barrier(MPI_COMM_WORLD)
-        self.assertTrue(allclose(return_new.get_3dview().flatten(),
-                                 [float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
-                                  float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
-                                  float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
-                                  float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
-                                  float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
-                                  float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
-                                  float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
-                                  float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
-                                  float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
-                                  float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
-                                  float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
-                                  float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
-                                  float('NaN'), float('NaN'), float('NaN'), float('NaN')], equal_nan=True))
-        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), 0.5, equal_nan=True))
+        self.assertTrue(
+            allclose(
+                return_new.get_3dview().flatten(),
+                [
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                    float("NaN"),
+                ],
+                equal_nan=True,
+            )
+        )
+        self.assertTrue(
+            allclose(
+                return_new.get_3dview(), return_old.get_3dview(), 0.5, equal_nan=True
+            )
+        )
 
     def test_default_case_z_size_both_not_negative_FAILEd(self):
         self.assertTrue(True)
@@ -494,52 +1171,202 @@ class Test_recons3d_4nn_MPI(unittest.TestCase):
         """
 
     def test_default_case_xy_z_size_both_not_negative_myid_not_null(self):
-        return_new = fu.recons3d_4nn_MPI(myid=1, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
-                                         npad=2, xysize=1, zsize=1, mpi_comm=MPI_COMM_WORLD)
+        return_new = fu.recons3d_4nn_MPI(
+            myid=1,
+            prjlist=[XFORM_PROJECTION_IMG],
+            symmetry="c1",
+            finfo=None,
+            snr=1.0,
+            npad=2,
+            xysize=1,
+            zsize=1,
+            mpi_comm=MPI_COMM_WORLD,
+        )
         mpi_barrier(MPI_COMM_WORLD)
-        return_old = oldfu.recons3d_4nn_MPI(myid=1, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
-                                            npad=2, xysize=1, zsize=1, mpi_comm=MPI_COMM_WORLD)
+        return_old = oldfu.recons3d_4nn_MPI(
+            myid=1,
+            prjlist=[XFORM_PROJECTION_IMG],
+            symmetry="c1",
+            finfo=None,
+            snr=1.0,
+            npad=2,
+            xysize=1,
+            zsize=1,
+            mpi_comm=MPI_COMM_WORLD,
+        )
         mpi_barrier(MPI_COMM_WORLD)
         self.assertTrue(array_equal(return_new.get_3dview().flatten(), [0.0]))
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_default_case_xy_size_not_negative_myid_not_null(self):
-        return_new = fu.recons3d_4nn_MPI(myid=1, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
-                                         npad=2, xysize=1, zsize=-1, mpi_comm=MPI_COMM_WORLD)
+        return_new = fu.recons3d_4nn_MPI(
+            myid=1,
+            prjlist=[XFORM_PROJECTION_IMG],
+            symmetry="c1",
+            finfo=None,
+            snr=1.0,
+            npad=2,
+            xysize=1,
+            zsize=-1,
+            mpi_comm=MPI_COMM_WORLD,
+        )
         mpi_barrier(MPI_COMM_WORLD)
-        return_old = oldfu.recons3d_4nn_MPI(myid=1, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
-                                            npad=2, xysize=1, zsize=-1, mpi_comm=MPI_COMM_WORLD)
+        return_old = oldfu.recons3d_4nn_MPI(
+            myid=1,
+            prjlist=[XFORM_PROJECTION_IMG],
+            symmetry="c1",
+            finfo=None,
+            snr=1.0,
+            npad=2,
+            xysize=1,
+            zsize=-1,
+            mpi_comm=MPI_COMM_WORLD,
+        )
         mpi_barrier(MPI_COMM_WORLD)
-        self.assertTrue(array_equal(return_new.get_3dview().flatten(),
-                                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(
+            array_equal(
+                return_new.get_3dview().flatten(),
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
+            )
+        )
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_default_case_z_size_both_not_negative__myid_not_null(self):
-        return_new = fu.recons3d_4nn_MPI(myid=1, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
-                                         npad=2, xysize=-1, zsize=1, mpi_comm=MPI_COMM_WORLD)
+        return_new = fu.recons3d_4nn_MPI(
+            myid=1,
+            prjlist=[XFORM_PROJECTION_IMG],
+            symmetry="c1",
+            finfo=None,
+            snr=1.0,
+            npad=2,
+            xysize=-1,
+            zsize=1,
+            mpi_comm=MPI_COMM_WORLD,
+        )
         mpi_barrier(MPI_COMM_WORLD)
-        return_old = oldfu.recons3d_4nn_MPI(myid=1, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
-                                            npad=2, xysize=-1, zsize=1, mpi_comm=MPI_COMM_WORLD)
+        return_old = oldfu.recons3d_4nn_MPI(
+            myid=1,
+            prjlist=[XFORM_PROJECTION_IMG],
+            symmetry="c1",
+            finfo=None,
+            snr=1.0,
+            npad=2,
+            xysize=-1,
+            zsize=1,
+            mpi_comm=MPI_COMM_WORLD,
+        )
         mpi_barrier(MPI_COMM_WORLD)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-        self.assertTrue(array_equal(return_new.get_3dview().flatten()[:100], numpy_zeros(100)))
+        self.assertTrue(
+            array_equal(return_new.get_3dview().flatten()[:100], numpy_zeros(100))
+        )
 
     def test_prjlist_is_emptylist_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
-            fu.recons3d_4nn_MPI(myid=0, prjlist=[], symmetry="c1", finfo=None, snr=1.0, npad=2, xysize=-1, zsize=-1,
-                                mpi_comm=MPI_COMM_WORLD)
+            fu.recons3d_4nn_MPI(
+                myid=0,
+                prjlist=[],
+                symmetry="c1",
+                finfo=None,
+                snr=1.0,
+                npad=2,
+                xysize=-1,
+                zsize=-1,
+                mpi_comm=MPI_COMM_WORLD,
+            )
         mpi_barrier(MPI_COMM_WORLD)
         with self.assertRaises(IndexError) as cm_old:
-            oldfu.recons3d_4nn_MPI(myid=0, prjlist=[], symmetry="c1", finfo=None, snr=1.0, npad=2, xysize=-1, zsize=-1,
-                                   mpi_comm=MPI_COMM_WORLD)
+            oldfu.recons3d_4nn_MPI(
+                myid=0,
+                prjlist=[],
+                symmetry="c1",
+                finfo=None,
+                snr=1.0,
+                npad=2,
+                xysize=-1,
+                zsize=-1,
+                mpi_comm=MPI_COMM_WORLD,
+            )
         mpi_barrier(MPI_COMM_WORLD)
         self.assertEqual(str(cm_new.exception), "list index out of range")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-
 
 
 class Test_recons3d_trl_struct_MPI(unittest.TestCase):
@@ -548,7 +1375,10 @@ class Test_recons3d_trl_struct_MPI(unittest.TestCase):
             fu.recons3d_trl_struct_MPI()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.recons3d_trl_struct_MPI()
-        self.assertEqual(str(cm_new.exception), "recons3d_trl_struct_MPI() takes at least 7 arguments (0 given)")
+        self.assertEqual(
+            str(cm_new.exception),
+            "recons3d_trl_struct_MPI() takes at least 7 arguments (0 given)",
+        )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
@@ -558,7 +1388,10 @@ class Test_recons3d_4nn_ctf_MPI(unittest.TestCase):
             fu.recons3d_4nn_ctf_MPI()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.recons3d_4nn_ctf_MPI()
-        self.assertEqual(str(cm_new.exception), "recons3d_4nn_ctf_MPI() takes at least 2 arguments (0 given)")
+        self.assertEqual(
+            str(cm_new.exception),
+            "recons3d_4nn_ctf_MPI() takes at least 2 arguments (0 given)",
+        )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_default_case(self):
@@ -566,37 +1399,231 @@ class Test_recons3d_4nn_ctf_MPI(unittest.TestCase):
         list_proj = list(range(nima))
         proj = EMData()
         proj.read_image(STACK_NAME, list_proj[0])
-        return_new = fu.recons3d_4nn_ctf_MPI(0, [proj], snr = 1.0, sign=1, symmetry="c1", finfo=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.5)
+        return_new = fu.recons3d_4nn_ctf_MPI(
+            0,
+            [proj],
+            snr=1.0,
+            sign=1,
+            symmetry="c1",
+            finfo=None,
+            npad=2,
+            xysize=-1,
+            zsize=-1,
+            mpi_comm=None,
+            smearstep=0.5,
+        )
         mpi_barrier(MPI_COMM_WORLD)
-        return_old = oldfu.recons3d_4nn_ctf_MPI(0, [proj], snr = 1.0, sign=1, symmetry="c1", finfo=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.5)
+        return_old = oldfu.recons3d_4nn_ctf_MPI(
+            0,
+            [proj],
+            snr=1.0,
+            sign=1,
+            symmetry="c1",
+            finfo=None,
+            npad=2,
+            xysize=-1,
+            zsize=-1,
+            mpi_comm=None,
+            smearstep=0.5,
+        )
         mpi_barrier(MPI_COMM_WORLD)
-        self.assertTrue(allclose(return_new.get_3dview().flatten().tolist()[179691:179800],[0.004414418246597052, 0.0027832286432385445, 0.0031159124337136745, 0.0014303999487310648, -0.0010390577372163534, -0.0009075439302250743, -0.0013101220829412341, -0.0010013339342549443, 0.0023415705654770136, 0.001426796312443912, -0.0010065339738503098, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 0.01 ))
-        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), 0.5  ))
+        self.assertTrue(
+            allclose(
+                return_new.get_3dview().flatten().tolist()[179691:179800],
+                [
+                    0.004414418246597052,
+                    0.0027832286432385445,
+                    0.0031159124337136745,
+                    0.0014303999487310648,
+                    -0.0010390577372163534,
+                    -0.0009075439302250743,
+                    -0.0013101220829412341,
+                    -0.0010013339342549443,
+                    0.0023415705654770136,
+                    0.001426796312443912,
+                    -0.0010065339738503098,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
+                0.01,
+            )
+        )
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), 0.5))
 
-    @unittest.skip("crash if run togheter with the other tests of this class because a bad implementation of the code")
+    @unittest.skip(
+        "crash if run togheter with the other tests of this class because a bad implementation of the code"
+    )
     def test_negative_smearstep(self):
         nima = EMUtil.get_image_count(STACK_NAME)
         list_proj = list(range(nima))
         proj = EMData()
         proj.read_image(STACK_NAME, list_proj[0])
-        return_new = fu.recons3d_4nn_ctf_MPI(0, [proj], snr = 1.0, sign=1, symmetry="c1", finfo=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = -0.5)
+        return_new = fu.recons3d_4nn_ctf_MPI(
+            0,
+            [proj],
+            snr=1.0,
+            sign=1,
+            symmetry="c1",
+            finfo=None,
+            npad=2,
+            xysize=-1,
+            zsize=-1,
+            mpi_comm=None,
+            smearstep=-0.5,
+        )
         mpi_barrier(MPI_COMM_WORLD)
-        return_old = oldfu.recons3d_4nn_ctf_MPI(0, [proj], snr = 1.0, sign=1, symmetry="c1", finfo=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = -0.5)
+        return_old = oldfu.recons3d_4nn_ctf_MPI(
+            0,
+            [proj],
+            snr=1.0,
+            sign=1,
+            symmetry="c1",
+            finfo=None,
+            npad=2,
+            xysize=-1,
+            zsize=-1,
+            mpi_comm=None,
+            smearstep=-0.5,
+        )
         mpi_barrier(MPI_COMM_WORLD)
-        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), 0.5  ))
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), 0.5))
 
-    def test_default_case_xy_z_size_both_not_negative_NameError_sizeprojection_BEACUASE_A_BUG(self):
+    def test_default_case_xy_z_size_both_not_negative_NameError_sizeprojection_BEACUASE_A_BUG(
+        self
+    ):
         nima = EMUtil.get_image_count(STACK_NAME)
         list_proj = list(range(nima))
         proj = EMData()
         proj.read_image(STACK_NAME, list_proj[0])
         with self.assertRaises(NameError) as cm_new:
-            fu.recons3d_4nn_ctf_MPI(0, [proj], snr = 1.0, sign=1, symmetry="c1", finfo=None, npad=2, xysize=1, zsize=1, mpi_comm=None, smearstep = 0.5)
+            fu.recons3d_4nn_ctf_MPI(
+                0,
+                [proj],
+                snr=1.0,
+                sign=1,
+                symmetry="c1",
+                finfo=None,
+                npad=2,
+                xysize=1,
+                zsize=1,
+                mpi_comm=None,
+                smearstep=0.5,
+            )
         mpi_barrier(MPI_COMM_WORLD)
         with self.assertRaises(NameError) as cm_old:
-            oldfu.recons3d_4nn_ctf_MPI(0, [proj], snr = 1.0, sign=1, symmetry="c1", finfo=None, npad=2, xysize=1, zsize=1, mpi_comm=None, smearstep = 0.5)
+            oldfu.recons3d_4nn_ctf_MPI(
+                0,
+                [proj],
+                snr=1.0,
+                sign=1,
+                symmetry="c1",
+                finfo=None,
+                npad=2,
+                xysize=1,
+                zsize=1,
+                mpi_comm=None,
+                smearstep=0.5,
+            )
         mpi_barrier(MPI_COMM_WORLD)
-        self.assertEqual(str(cm_new.exception), "global name 'sizeprojection' is not defined")
+        self.assertEqual(
+            str(cm_new.exception), "global name 'sizeprojection' is not defined"
+        )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_default_case_xy_size_NameError_sizeprojection_BEACUASE_A_BUG(self):
@@ -605,32 +1632,108 @@ class Test_recons3d_4nn_ctf_MPI(unittest.TestCase):
         proj = EMData()
         proj.read_image(STACK_NAME, list_proj[0])
         with self.assertRaises(NameError) as cm_new:
-            fu.recons3d_4nn_ctf_MPI(0, [proj], snr = 1.0, sign=1, symmetry="c1", finfo=None, npad=2, xysize=1, zsize=-1, mpi_comm=None, smearstep = 0.5)
+            fu.recons3d_4nn_ctf_MPI(
+                0,
+                [proj],
+                snr=1.0,
+                sign=1,
+                symmetry="c1",
+                finfo=None,
+                npad=2,
+                xysize=1,
+                zsize=-1,
+                mpi_comm=None,
+                smearstep=0.5,
+            )
         mpi_barrier(MPI_COMM_WORLD)
         with self.assertRaises(NameError) as cm_old:
-            oldfu.recons3d_4nn_ctf_MPI(0, [proj], snr = 1.0, sign=1, symmetry="c1", finfo=None, npad=2, xysize=1, zsize=-1, mpi_comm=None, smearstep = 0.5)
+            oldfu.recons3d_4nn_ctf_MPI(
+                0,
+                [proj],
+                snr=1.0,
+                sign=1,
+                symmetry="c1",
+                finfo=None,
+                npad=2,
+                xysize=1,
+                zsize=-1,
+                mpi_comm=None,
+                smearstep=0.5,
+            )
         mpi_barrier(MPI_COMM_WORLD)
-        self.assertEqual(str(cm_new.exception), "global name 'sizeprojection' is not defined")
+        self.assertEqual(
+            str(cm_new.exception), "global name 'sizeprojection' is not defined"
+        )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
-    @unittest.skip("crash if run togheter with the other tests of this class because a bad implementation of the code")
+    @unittest.skip(
+        "crash if run togheter with the other tests of this class because a bad implementation of the code"
+    )
     def test_default_case_negative_sign(self):
         nima = EMUtil.get_image_count(STACK_NAME)
         list_proj = list(range(nima))
         proj = EMData()
         proj.read_image(STACK_NAME, list_proj[0])
-        return_new = fu.recons3d_4nn_ctf_MPI(0, [proj], snr = 1.0, sign=-1, symmetry="c1", finfo=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.5)
+        return_new = fu.recons3d_4nn_ctf_MPI(
+            0,
+            [proj],
+            snr=1.0,
+            sign=-1,
+            symmetry="c1",
+            finfo=None,
+            npad=2,
+            xysize=-1,
+            zsize=-1,
+            mpi_comm=None,
+            smearstep=0.5,
+        )
         mpi_barrier(MPI_COMM_WORLD)
-        return_old = oldfu.recons3d_4nn_ctf_MPI(0, [proj], snr = 1.0, sign=-1, symmetry="c1", finfo=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.5)
+        return_old = oldfu.recons3d_4nn_ctf_MPI(
+            0,
+            [proj],
+            snr=1.0,
+            sign=-1,
+            symmetry="c1",
+            finfo=None,
+            npad=2,
+            xysize=-1,
+            zsize=-1,
+            mpi_comm=None,
+            smearstep=0.5,
+        )
         mpi_barrier(MPI_COMM_WORLD)
-        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), 0.5  ))
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), 0.5))
 
     def test_prjlist_is_emptylist_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
-            fu.recons3d_4nn_ctf_MPI(0, [], snr = -1.0, sign=-1, symmetry="c1", finfo=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.5)
+            fu.recons3d_4nn_ctf_MPI(
+                0,
+                [],
+                snr=-1.0,
+                sign=-1,
+                symmetry="c1",
+                finfo=None,
+                npad=2,
+                xysize=-1,
+                zsize=-1,
+                mpi_comm=None,
+                smearstep=0.5,
+            )
         mpi_barrier(MPI_COMM_WORLD)
         with self.assertRaises(IndexError) as cm_old:
-            oldfu.recons3d_4nn_ctf_MPI(0, [], snr = -1.0, sign=-1, symmetry="c1", finfo=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.5)
+            oldfu.recons3d_4nn_ctf_MPI(
+                0,
+                [],
+                snr=-1.0,
+                sign=-1,
+                symmetry="c1",
+                finfo=None,
+                npad=2,
+                xysize=-1,
+                zsize=-1,
+                mpi_comm=None,
+                smearstep=0.5,
+            )
         mpi_barrier(MPI_COMM_WORLD)
         self.assertEqual(str(cm_new.exception), "list index out of range")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
@@ -1828,6 +2931,5 @@ class Test_lib_compare_for_reconstruction(unittest.TestCase):
 """
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
-
