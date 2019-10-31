@@ -1368,7 +1368,8 @@ class Test_ali_vol(unittest.TestCase):
             fu.ali_vol(vol =vol, refv=refv, ang_scale=0, shift_scale=shift_scale, radius=radius, discrepancy = "ccc")
         with self.assertRaises(ZeroDivisionError) as cm_old:
             oldfu.ali_vol(vol =vol, refv=refv, ang_scale=0, shift_scale=shift_scale, radius=radius, discrepancy = "ccc")
-
+        self.assertEqual(str(cm_new.exception), "float division by zero")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 """These functions have been cleaned
 class Test_recons3d_n_trl_MPI_one_node(unittest.TestCase):
