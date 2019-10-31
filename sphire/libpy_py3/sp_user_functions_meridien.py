@@ -159,7 +159,8 @@ def ai_spa(Tracker, fff, anger, shifter, do_local, chout=False):
         Tracker["currentres"] = l05
         Tracker["fsc143"] = l01
         Tracker["large_at_Nyquist"] = bool(
-            fff[old_div(Tracker["nxinit"], 2)] > 0.1 or fff[old_div(Tracker["nxinit"], 2) - 1] > 0.2
+            fff[old_div(Tracker["nxinit"], 2)] > 0.1
+            or fff[old_div(Tracker["nxinit"], 2) - 1] > 0.2
         )
         Tracker["nxinit"] = min(
             2 * Tracker["fsc143"], Tracker["constants"]["nnxo"]
@@ -178,12 +179,16 @@ def ai_spa(Tracker, fff, anger, shifter, do_local, chout=False):
                     Tracker["mainiteration"],
                     Tracker["currentres"],
                     Tracker["fsc143"],
-                    old_div(Tracker["constants"]["pixel_size"]
-                    * Tracker["constants"]["nnxo"]
-                    , float(Tracker["currentres"])) ,
-                    old_div( Tracker["constants"]["pixel_size"]
-                    * Tracker["constants"]["nnxo"]
-                    , float(Tracker["fsc143"])),
+                    old_div(
+                        Tracker["constants"]["pixel_size"]
+                        * Tracker["constants"]["nnxo"],
+                        float(Tracker["currentres"]),
+                    ),
+                    old_div(
+                        Tracker["constants"]["pixel_size"]
+                        * Tracker["constants"]["nnxo"],
+                        float(Tracker["fsc143"]),
+                    ),
                 )
             )
 
@@ -203,7 +208,9 @@ def ai_spa(Tracker, fff, anger, shifter, do_local, chout=False):
                 or fff[old_div(Tracker["nxinit"], 2) - 1] > 0.2
             )
         else:
-            Tracker["large_at_Nyquist"] = bool(fff[old_div(Tracker["nxinit"], 2) - 1] > 0.2)
+            Tracker["large_at_Nyquist"] = bool(
+                fff[old_div(Tracker["nxinit"], 2) - 1] > 0.2
+            )
 
         if Tracker["mainiteration"] == 2 and not do_local:
             maxres = Tracker["constants"]["inires"]
@@ -336,7 +343,7 @@ def ai_spa(Tracker, fff, anger, shifter, do_local, chout=False):
                     )
                 Tracker["xr"] = step_range
                 Tracker["ts"] = step
-                Tracker["delta"] = old_div(Tracker["delta"] ,2.0)
+                Tracker["delta"] = old_div(Tracker["delta"], 2.0)
                 Tracker["changed_delta"] = True
                 if (
                     Tracker["delta"] <= old_div(3.75, 2.0) or do_local
@@ -445,7 +452,8 @@ def ai_filament(Tracker, fff, anger, shifter, do_local, chout=False):
         Tracker["currentres"] = l05
         Tracker["fsc143"] = l01
         Tracker["large_at_Nyquist"] = bool(
-            fff[old_div(Tracker["nxinit"], 2)] > 0.1 or fff[old_div(Tracker["nxinit"], 2) - 1] > 0.2
+            fff[old_div(Tracker["nxinit"], 2)] > 0.1
+            or fff[old_div(Tracker["nxinit"], 2) - 1] > 0.2
         )
         Tracker["nxinit"] = min(
             2 * Tracker["fsc143"], Tracker["constants"]["nnxo"]
@@ -464,12 +472,16 @@ def ai_filament(Tracker, fff, anger, shifter, do_local, chout=False):
                     Tracker["mainiteration"],
                     Tracker["currentres"],
                     Tracker["fsc143"],
-                    old_div(Tracker["constants"]["pixel_size"]
-                    * Tracker["constants"]["nnxo"]
-                    , float(Tracker["currentres"])),
-                    old_div(Tracker["constants"]["pixel_size"]
-                    * Tracker["constants"]["nnxo"]
-                    , float(Tracker["fsc143"])),
+                    old_div(
+                        Tracker["constants"]["pixel_size"]
+                        * Tracker["constants"]["nnxo"],
+                        float(Tracker["currentres"]),
+                    ),
+                    old_div(
+                        Tracker["constants"]["pixel_size"]
+                        * Tracker["constants"]["nnxo"],
+                        float(Tracker["fsc143"]),
+                    ),
                 )
             )
 
@@ -507,7 +519,9 @@ def ai_filament(Tracker, fff, anger, shifter, do_local, chout=False):
                 or fff[old_div(Tracker["nxinit"], 2) - 1] > 0.2
             )
         else:
-            Tracker["large_at_Nyquist"] = bool(fff[old_div(Tracker["nxinit"], 2) - 1] > 0.2)
+            Tracker["large_at_Nyquist"] = bool(
+                fff[old_div(Tracker["nxinit"], 2) - 1] > 0.2
+            )
 
         if Tracker["mainiteration"] == 2 and not do_local:
             maxres = Tracker["constants"]["inires"]

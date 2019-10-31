@@ -1,6 +1,6 @@
 from past.utils import old_div
 from __future__ import print_function
-
+from __future__ import division
 """
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
@@ -252,7 +252,7 @@ def amoeba(
         simscale = 0.0
         for i in range(nvar):
             simscale += old_div(abs(pavg[i] - simplex[ssworst][i]), scale[i])
-        simscale = old_div(simscale nvar)
+        simscale = old_div(simscale, nvar)
 
         # find the range of the function values
         fscale = old_div((abs(fvalue[ssbest]) + abs(fvalue[ssworst])), 2.0)
@@ -1031,8 +1031,10 @@ def model_rotated_rectangle2D(
     offx = 0 if nx % 2 == 0 else 1  # add one column if nx is odd
     offy = 0 if nx % 2 == 0 else 1  # add one row if ny is odd
     mask = mask[  # otherwise this only creates even-sized masks
-        (old_div(sizex, 2) - old_div(nx, 2)) : (old_div(sizex, 2) + old_div(nx, 2)) + offy,
-        (old_div(sizey, 2) - old_div(ny, 2)) : (old_div(sizey, 2) + old_div(ny, 2)) + offx,
+        (old_div(sizex, 2) - old_div(nx, 2)) : (old_div(sizex, 2) + old_div(nx, 2))
+        + offy,
+        (old_div(sizey, 2) - old_div(ny, 2)) : (old_div(sizey, 2) + old_div(ny, 2))
+        + offx,
     ]
 
     # eliminate round-off errors introduced by the rotation
@@ -1156,13 +1158,24 @@ def peak_search(e, npeak=1, invert=1, print_screen=0):
         elif ndim == 2:
             nx = e.get_xsize()
             ny = e.get_ysize()
-            outpeaks = [[1.0, float(old_div(nx, 2)), float(old_div(ny, 2)), 1.0, 0.0, 0.0]]
+            outpeaks = [
+                [1.0, float(old_div(nx, 2)), float(old_div(ny, 2)), 1.0, 0.0, 0.0]
+            ]
         elif ndim == 3:
             nx = e.get_xsize()
             ny = e.get_ysize()
             nz = e.get_ysize()
             outpeaks = [
-                [1.0, float(old_div(nx, 2)), float(old_div(ny, 2)), float(old_div(nz, 2)), 1.0, 0.0, 0.0, 0.0]
+                [
+                    1.0,
+                    float(old_div(nx, 2)),
+                    float(old_div(ny, 2)),
+                    float(old_div(nz, 2)),
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]
             ]
     return outpeaks
 
@@ -1536,7 +1549,8 @@ def reshape_1d(
     if length_interpolated == 0:
         if Pixel_size_interpolated != Pixel_size_current:
             length_interpolated = int(
-                old_div( length_current * Pixel_size_current, Pixel_size_interpolated) + 0.5
+                old_div(length_current * Pixel_size_current, Pixel_size_interpolated)
+                + 0.5
             )
         else:
             sp_global_def.ERROR("Incorrect input parameters", "reshape_1d", 1)
@@ -1544,8 +1558,8 @@ def reshape_1d(
 
     if Pixel_size_current == 0.0:
         Pixel_size_current = 1.0
-        Pixel_size_interpolated = (
-            old_div(Pixel_size_current * float(length_current), float(length_interpolated))
+        Pixel_size_interpolated = old_div(
+            Pixel_size_current * float(length_current), float(length_interpolated)
         )
     qt = old_div(Pixel_size_interpolated, Pixel_size_current)
 
@@ -3987,9 +4001,10 @@ def angular_distribution(
     radius_array = radius_array[nonzero_mask]
 
     # Calculate best width and length for the bins in 3D
-    width = old_div((
-        pixel_size * particle_radius * matplotlib.numpy.radians(delta) * 2
-    ) , float(2 * 3))
+    width = old_div(
+        (pixel_size * particle_radius * matplotlib.numpy.radians(delta) * 2),
+        float(2 * 3),
+    )
     length = particle_radius * 0.2
 
     # Normalize the radii so that the maximum value is 1

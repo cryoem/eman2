@@ -1,6 +1,6 @@
 from past.utils import old_div
 from __future__ import print_function
-
+from __future__ import division
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
 # Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
@@ -221,7 +221,9 @@ def prep_vol(vol, npad=2, interpolation_method=-1):
             # padd two times
             N = M * npad
             # support of the window
-            kb = EMAN2_cppwrap.Util.KaiserBessel(alpha, K, old_div(M, 2), old_div(K, (2.0 * N)), N)
+            kb = EMAN2_cppwrap.Util.KaiserBessel(
+                alpha, K, old_div(M, 2), old_div(K, (2.0 * N)), N
+            )
             volft = vol.copy()
             volft.divkbsinh(kb)
             volft = volft.norm_pad(False, npad)
@@ -234,9 +236,15 @@ def prep_vol(vol, npad=2, interpolation_method=-1):
             Ny = My * npad
             Nz = Mz * npad
             # support of the window
-            kbx = EMAN2_cppwrap.Util.KaiserBessel(alpha, K, old_div(Mx, 2), old_div(K, (2.0 * Nx)), Nx)
-            kby = EMAN2_cppwrap.Util.KaiserBessel(alpha, K, old_div(My, 2), old_div(K, (2.0 * Ny)), Ny)
-            kbz = EMAN2_cppwrap.Util.KaiserBessel(alpha, K, old_div(Mz, 2), old_div(K, (2.0 * Nz)), Nz)
+            kbx = EMAN2_cppwrap.Util.KaiserBessel(
+                alpha, K, old_div(Mx, 2), old_div(K, (2.0 * Nx)), Nx
+            )
+            kby = EMAN2_cppwrap.Util.KaiserBessel(
+                alpha, K, old_div(My, 2), old_div(K, (2.0 * Ny)), Ny
+            )
+            kbz = EMAN2_cppwrap.Util.KaiserBessel(
+                alpha, K, old_div(Mz, 2), old_div(K, (2.0 * Nz)), Nz
+            )
             volft = vol.copy()
             volft.divkbsinh_rect(kbx, kby, kbz)
             volft = volft.norm_pad(False, npad)

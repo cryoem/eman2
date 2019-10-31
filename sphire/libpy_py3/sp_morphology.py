@@ -1,5 +1,6 @@
 from past.utils import old_div
 from __future__ import print_function
+from __future__ import division
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
 # Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
@@ -76,7 +77,9 @@ def fill_soft_edge_kernel_mask(kernel_mask, length, mode):
             scipy.ndimage.morphology.numpy.multiply(
                 0.5,
                 scipy.ndimage.morphology.numpy.cos(
-                    old_div(scipy.ndimage.morphology.numpy.pi * kernel_mask, float(length)),
+                    old_div(
+                        scipy.ndimage.morphology.numpy.pi * kernel_mask, float(length)
+                    ),
                     out=kernel_mask,
                 ),
                 out=kernel_mask,
@@ -136,24 +139,26 @@ def soft_edge(img, length, mode="c", do_approx=False):
     cosine_falloff = 100
     if dimension == 2:
         x, y = scipy.ndimage.morphology.numpy.ogrid[
-               0:kernel_mask_dim, 0:kernel_mask_dim
-               ]
+            0:kernel_mask_dim, 0:kernel_mask_dim
+        ]
         kernel_mask = (
-                scipy.ndimage.morphology.numpy.sqrt(
-                    old_div(((x - length) ** 2 + (y - length) ** 2), float(edge_norm))
-                )
-                * cosine_falloff
+            scipy.ndimage.morphology.numpy.sqrt(
+                old_div(((x - length) ** 2 + (y - length) ** 2), float(edge_norm))
+            )
+            * cosine_falloff
         )
     elif dimension == 3:
         x, y, z = scipy.ndimage.morphology.numpy.ogrid[
-                  0:kernel_mask_dim, 0:kernel_mask_dim, 0:kernel_mask_dim
-                  ]
+            0:kernel_mask_dim, 0:kernel_mask_dim, 0:kernel_mask_dim
+        ]
         kernel_mask = (
-                scipy.ndimage.morphology.numpy.sqrt(old_div(
-                    ((x - length) ** 2 + (y - length) ** 2 + (z - length) ** 2)
-                    , float(edge_norm))
+            scipy.ndimage.morphology.numpy.sqrt(
+                old_div(
+                    ((x - length) ** 2 + (y - length) ** 2 + (z - length) ** 2),
+                    float(edge_norm),
                 )
-                * cosine_falloff
+            )
+            * cosine_falloff
         )
     else:
         assert False
@@ -178,9 +183,9 @@ def soft_edge(img, length, mode="c", do_approx=False):
             mask_slice = outline[x_start:x_stop, y_start:y_stop]
             scipy.ndimage.morphology.numpy.maximum(kernel_mask, mask_slice, mask_slice)
         outline = outline[
-                  length + 1: outline.shape[0] - length - 1,
-                  length + 1: outline.shape[1] - length - 1,
-                  ]
+            length + 1 : outline.shape[0] - length - 1,
+            length + 1 : outline.shape[1] - length - 1,
+        ]
     elif dimension == 3:
         for x, y, z in zip(*outline_index):
             x_start = x - length
@@ -192,10 +197,10 @@ def soft_edge(img, length, mode="c", do_approx=False):
             mask_slice = outline[x_start:x_stop, y_start:y_stop, z_start:z_stop]
             scipy.ndimage.morphology.numpy.maximum(kernel_mask, mask_slice, mask_slice)
         outline = outline[
-                  length + 1: outline.shape[0] - length - 1,
-                  length + 1: outline.shape[1] - length - 1,
-                  length + 1: outline.shape[2] - length - 1,
-                  ]
+            length + 1 : outline.shape[0] - length - 1,
+            length + 1 : outline.shape[1] - length - 1,
+            length + 1 : outline.shape[2] - length - 1,
+        ]
     else:
         assert False
 
@@ -447,24 +452,19 @@ def rotavg_ctf(img, defocus, Cs, voltage, Pixel_size, amp=0.0, ang=0.0):
                     # print  defc
                     # print  defc - sqrt( defc**2 + Cst**2*lam**4*s**4 - 2*Cst*lam**2*s**2*dfa)
                     try:
-                        u = (
-                            old_div(
-                                numpy.sqrt(
-                                    Cst
-                                    * (
-                                            defc
-                                            - numpy.sqrt(
+                        u = old_div(
+                            numpy.sqrt(
+                                Cst
+                                * (
+                                    defc
+                                    - numpy.sqrt(
                                         defc ** 2
                                         + Cst ** 2 * lam ** 4 * s ** 4
                                         - 2 * Cst * lam ** 2 * s ** 2 * dfa
                                     )
-                                    )
                                 )
-                                , (Cst * lam)
-                                  * nc
-                                  * 2
-                                  * Pixel_size
-                            )
+                            ),
+                            (Cst * lam) * nc * 2 * Pixel_size,
                         )
                         iu = int(u)
                         du = u - iu
@@ -727,19 +727,19 @@ def defocus_env_baseline_fit(roo, i_start, i_stop, nrank, iswi):
 
 
 def defocus_guess(
-        Res_roo,
-        Res_TE,
-        volt,
-        Cs,
-        Pixel_size,
-        ampcont=10.0,
-        istart=0,
-        istop=-1,
-        defocus_estimation_method=2,
-        round_off=1,
-        dz_low=1000.0,
-        dz_high=200000.0,
-        nloop=100,
+    Res_roo,
+    Res_TE,
+    volt,
+    Cs,
+    Pixel_size,
+    ampcont=10.0,
+    istart=0,
+    istop=-1,
+    defocus_estimation_method=2,
+    round_off=1,
+    dz_low=1000.0,
+    dz_high=200000.0,
+    nloop=100,
 ):
     """
 		Use specified frequencies area (istart-istop)to estimate defocus
@@ -813,19 +813,19 @@ def defocus_guess(
 
 
 def defocus_guess1(
-        Res_roo,
-        Res_TE,
-        volt,
-        Cs,
-        Pixel_size,
-        ampcont=10.0,
-        istart=0,
-        istop=-1,
-        defocus_estimation_method=2,
-        round_off=1,
-        dz_low=1000.0,
-        dz_high=200000.0,
-        nloop=100,
+    Res_roo,
+    Res_TE,
+    volt,
+    Cs,
+    Pixel_size,
+    ampcont=10.0,
+    istart=0,
+    istop=-1,
+    defocus_estimation_method=2,
+    round_off=1,
+    dz_low=1000.0,
+    dz_high=200000.0,
+    nloop=100,
 ):
     """
 		Use specified frequencies area (istart-istop) to estimate defocus from crossresolution curve
@@ -927,7 +927,7 @@ def imf_params_cl1(pw, n=2, iswi=3, Pixel_size=1):
 
 
 def adaptive_mask(
-        vol, nsigma=1.0, threshold=-9999.0, ndilation=3, edge_width=5, mode="C"
+    vol, nsigma=1.0, threshold=-9999.0, ndilation=3, edge_width=5, mode="C"
 ):
     """
 		Name
@@ -941,9 +941,9 @@ def adaptive_mask(
     nx = vol.get_xsize()
     ny = vol.get_ysize()
     nz = vol.get_zsize()
-    mc = sp_utilities.model_circle(old_div(nx, 2), nx, ny, nz) - sp_utilities.model_circle(
-        old_div(nx, 3), nx, ny, nz
-    )
+    mc = sp_utilities.model_circle(
+        old_div(nx, 2), nx, ny, nz
+    ) - sp_utilities.model_circle(old_div(nx, 3), nx, ny, nz)
     s1 = EMAN2_cppwrap.Util.infomask(
         vol, mc, True
     )  # flip true: find statistics under the mask (mask >0.5)
@@ -966,17 +966,17 @@ def adaptive_mask(
 
 
 def adaptive_mask_scipy(
-        vol,
-        nsigma=1.0,
-        threshold=-9999.0,
-        ndilation=3,
-        edge_width=5,
-        mode="C",
-        allow_disconnected=False,
-        nerosion=0,
-        do_approx=False,
-        do_fill=False,
-        do_print=False,
+    vol,
+    nsigma=1.0,
+    threshold=-9999.0,
+    ndilation=3,
+    edge_width=5,
+    mode="C",
+    allow_disconnected=False,
+    nerosion=0,
+    do_approx=False,
+    do_fill=False,
+    do_print=False,
 ):
     """
 		Name
@@ -991,9 +991,9 @@ def adaptive_mask_scipy(
     nx = vol.get_xsize()
     ny = vol.get_ysize()
     nz = vol.get_zsize()
-    mc = sp_utilities.model_circle(old_div(nx, 2), nx, ny, nz) - sp_utilities.model_circle(
-        old_div(nx, 3), nx, ny, nz
-    )
+    mc = sp_utilities.model_circle(
+        old_div(nx, 2), nx, ny, nz
+    ) - sp_utilities.model_circle(old_div(nx, 3), nx, ny, nz)
     s1 = EMAN2_cppwrap.Util.infomask(
         vol, mc, True
     )  # flip true: find statistics under the mask (mask >0.5)
@@ -1233,29 +1233,29 @@ def compute_bfactor(pws, freq_min, freq_max, pixel_size=1.0):
 
 
 def cter_mrk(
-        input_image_path,
-        output_directory,
-        selection_list=None,
-        wn=512,
-        pixel_size=-1.0,
-        Cs=2.0,
-        voltage=300.0,
-        wgh=10.0,
-        f_start=-1.0,
-        f_stop=-1.0,
-        kboot=16,
-        overlap_x=50,
-        overlap_y=50,
-        edge_x=0,
-        edge_y=0,
-        check_consistency=False,
-        stack_mode=False,
-        debug_mode=False,
-        program_name="cter_mrk() in sp_morphology.py",
-        RUNNING_UNDER_MPI=False,
-        main_mpi_proc=0,
-        my_mpi_proc_id=0,
-        n_mpi_procs=1,
+    input_image_path,
+    output_directory,
+    selection_list=None,
+    wn=512,
+    pixel_size=-1.0,
+    Cs=2.0,
+    voltage=300.0,
+    wgh=10.0,
+    f_start=-1.0,
+    f_stop=-1.0,
+    kboot=16,
+    overlap_x=50,
+    overlap_y=50,
+    edge_x=0,
+    edge_y=0,
+    check_consistency=False,
+    stack_mode=False,
+    debug_mode=False,
+    program_name="cter_mrk() in sp_morphology.py",
+    RUNNING_UNDER_MPI=False,
+    main_mpi_proc=0,
+    my_mpi_proc_id=0,
+    n_mpi_procs=1,
 ):
     """Multiline Comment6"""
 
@@ -1344,9 +1344,9 @@ def cter_mrk(
 
         if cter_mode_idx == idx_cter_mode_single_mic:
             if not os.path.exists(
-                    os.path.join(
-                        os.path.dirname(input_image_path), os.path.basename(selection_list)
-                    )
+                os.path.join(
+                    os.path.dirname(input_image_path), os.path.basename(selection_list)
+                )
             ):
                 error_message_list.append(
                     "Micrograph specified by selection_list option (%s) for %s does not exist. Please check selection_list option."
@@ -1442,8 +1442,8 @@ def cter_mrk(
                 sp_global_def.sxprint(" ")
                 sp_global_def.sxprint(
                     (
-                            "WARNING!!! --selection_list option will be ignored in %s."
-                            % (cter_mode_name)
+                        "WARNING!!! --selection_list option will be ignored in %s."
+                        % (cter_mode_name)
                     )
                 )
             if wn != 512:
@@ -1455,40 +1455,40 @@ def cter_mrk(
                 sp_global_def.sxprint(" ")
                 sp_global_def.sxprint(
                     (
-                            "WARNING!!! --overlap_x option will be ignored in %s."
-                            % (cter_mode_name)
+                        "WARNING!!! --overlap_x option will be ignored in %s."
+                        % (cter_mode_name)
                     )
                 )
             if overlap_y != 50:
                 sp_global_def.sxprint(" ")
                 sp_global_def.sxprint(
                     (
-                            "WARNING!!! --overlap_y option will be ignored in %s."
-                            % (cter_mode_name)
+                        "WARNING!!! --overlap_y option will be ignored in %s."
+                        % (cter_mode_name)
                     )
                 )
             if edge_x != 0:
                 sp_global_def.sxprint(" ")
                 sp_global_def.sxprint(
                     (
-                            "WARNING!!! --edge_x option will be ignored in %s."
-                            % (cter_mode_name)
+                        "WARNING!!! --edge_x option will be ignored in %s."
+                        % (cter_mode_name)
                     )
                 )
             if edge_y != 0:
                 sp_global_def.sxprint(" ")
                 sp_global_def.sxprint(
                     (
-                            "WARNING!!! --edge_y option will be ignored in %s."
-                            % (cter_mode_name)
+                        "WARNING!!! --edge_y option will be ignored in %s."
+                        % (cter_mode_name)
                     )
                 )
             if check_consistency:
                 sp_global_def.sxprint(" ")
                 sp_global_def.sxprint(
                     (
-                            "WARNING!!! --check_consistency option will be ignored in %s."
-                            % (cter_mode_name)
+                        "WARNING!!! --check_consistency option will be ignored in %s."
+                        % (cter_mode_name)
                     )
                 )
 
@@ -1543,8 +1543,8 @@ def cter_mrk(
             # Check error condition of input  file path list
             sp_global_def.sxprint(
                 (
-                        "Found %d micrographs in %s."
-                        % (len(input_mic_path_list), os.path.dirname(mic_pattern))
+                    "Found %d micrographs in %s."
+                    % (len(input_mic_path_list), os.path.dirname(mic_pattern))
                 )
             )
             if len(input_mic_path_list) == 0:
@@ -1564,8 +1564,8 @@ def cter_mrk(
                     mic_basename_tokens[1]
                 )
                 mic_id_substr = input_mic_basename[
-                                mic_id_substr_head_idx:mic_id_substr_tail_idx
-                                ]
+                    mic_id_substr_head_idx:mic_id_substr_tail_idx
+                ]
                 if not mic_id_substr in global_entry_dict:
                     # sxprint("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from input_mic_path_list " % (mic_id_substr))
                     global_entry_dict[mic_id_substr] = {}
@@ -1590,8 +1590,8 @@ def cter_mrk(
                     # Check error condition of  entry lists
                     sp_global_def.sxprint(
                         (
-                                "Found %d microgarph entries in %s."
-                                % (len(selected_mic_path_list), selection_list)
+                            "Found %d microgarph entries in %s."
+                            % (len(selected_mic_path_list), selection_list)
                         )
                     )
                     if len(selected_mic_path_list) == 0:
@@ -1612,8 +1612,8 @@ def cter_mrk(
                 if selected_mic_directory != "":
                     sp_global_def.sxprint(
                         (
-                                "    NOTE: Program disregards the directory paths in the selection list (%s)."
-                                % (selected_mic_directory)
+                            "    NOTE: Program disregards the directory paths in the selection list (%s)."
+                            % (selected_mic_directory)
                         )
                     )
 
@@ -1625,8 +1625,8 @@ def cter_mrk(
                     mic_basename_tokens[1]
                 )
                 mic_id_substr = selected_mic_basename[
-                                mic_id_substr_head_idx:mic_id_substr_tail_idx
-                                ]
+                    mic_id_substr_head_idx:mic_id_substr_tail_idx
+                ]
                 if not mic_id_substr in global_entry_dict:
                     # sxprint("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from selected_mic_path_list " % (mic_id_substr))
                     global_entry_dict[mic_id_substr] = {}
@@ -1667,8 +1667,8 @@ def cter_mrk(
                     if len(warinnig_messages) > 0:
                         sp_global_def.sxprint(
                             (
-                                    "WARNING!!! Micrograph ID %s does not have:"
-                                    % (mic_id_substr)
+                                "WARNING!!! Micrograph ID %s does not have:"
+                                % (mic_id_substr)
                             )
                         )
                         for warinnig_message in warinnig_messages:
@@ -1689,8 +1689,8 @@ def cter_mrk(
                 sp_global_def.sxprint(" ")
                 sp_global_def.sxprint(
                     (
-                            "Generating the input datasets consistency report in %s..."
-                            % (inconsist_mic_list_path)
+                        "Generating the input datasets consistency report in %s..."
+                        % (inconsist_mic_list_path)
                     )
                 )
                 inconsist_mic_list_file = open(inconsist_mic_list_path, "w")
@@ -1764,14 +1764,14 @@ def cter_mrk(
             )
             sp_global_def.sxprint(
                 (
-                        "  Rejected by no input        : %6d"
-                        % (len(no_input_mic_id_substr_list))
+                    "  Rejected by no input        : %6d"
+                    % (len(no_input_mic_id_substr_list))
                 )
             )
             sp_global_def.sxprint(
                 (
-                        "  Valid Entries               : %6d"
-                        % (len(valid_mic_id_substr_list))
+                    "  Valid Entries               : %6d"
+                    % (len(valid_mic_id_substr_list))
                 )
             )
 
@@ -1899,9 +1899,9 @@ def cter_mrk(
             sp_global_def.sxprint(
                 "  Micrographs processed by main process (including percent of progress):"
             )
-            progress_percent_step = old_div((
-                    set_end - set_start
-            ), 100.0)  # the number of micrograms for main mpi processer divided by 100
+            progress_percent_step = old_div(
+                (set_end - set_start), 100.0
+            )  # the number of micrograms for main mpi processer divided by 100
 
     totresi = []
     missing_img_names = []
@@ -1922,8 +1922,8 @@ def cter_mrk(
             if my_mpi_proc_id == main_mpi_proc:
                 sp_global_def.sxprint(
                     (
-                            "    Processing %s ---> %6.2f%%"
-                            % (img_name, old_div((ifi - set_start), progress_percent_step))
+                        "    Processing %s ---> %6.2f%%"
+                        % (img_name, old_div((ifi - set_start), progress_percent_step))
                     )
                 )
 
@@ -2092,8 +2092,8 @@ def cter_mrk(
             # qa.write_image("rs1.hdf")
 
             mask = sp_utilities.model_circle(istop - 1, wn, wn) * (
-                    sp_utilities.model_blank(wn, wn, 1, 1.0)
-                    - sp_utilities.model_circle(istart, wn, wn)
+                sp_utilities.model_blank(wn, wn, 1, 1.0)
+                - sp_utilities.model_circle(istart, wn, wn)
             )
             qse = threshold((qa - bckg))  # *envl
             # (qse*mask).write_image("rs2.hdf")
@@ -2239,8 +2239,8 @@ def cter_mrk(
         if ad2 <= 0.0:
             sp_global_def.sxprint(
                 (
-                        "    %s %s: Detected the variance less than zero (defocus statistics: avg = %f, var = %f, min = %f, max = %f)."
-                        % (img_type, img_name, ad1, ad2, ad3, ad4)
+                    "    %s %s: Detected the variance less than zero (defocus statistics: avg = %f, var = %f, min = %f, max = %f)."
+                    % (img_type, img_name, ad1, ad2, ad3, ad4)
                 )
             )
             sp_global_def.sxprint(("           The program ignores this estimate..."))
@@ -2252,8 +2252,8 @@ def cter_mrk(
             if abs(adefocus[i] - ad1) > thr:
                 sp_global_def.sxprint(
                     (
-                            "    %s %s: Rejected an outlier defocus estimate (defocus = %f, average defocus = %f, threshold = %f)."
-                            % (img_type, img_name, adefocus[i], ad1, thr)
+                        "    %s %s: Rejected an outlier defocus estimate (defocus = %f, average defocus = %f, threshold = %f)."
+                        % (img_type, img_name, adefocus[i], ad1, thr)
                     )
                 )
                 reject.append(i)
@@ -2261,8 +2261,8 @@ def cter_mrk(
         if len(reject) > 0:
             sp_global_def.sxprint(
                 (
-                        "    %s %s: Total number of rejects %s"
-                        % (img_type, img_name, len(reject))
+                    "    %s %s: Total number of rejects %s"
+                    % (img_type, img_name, len(reject))
                 )
             )
             for i in range(len(reject) - 1, -1, -1):
@@ -2273,8 +2273,8 @@ def cter_mrk(
         if len(adefocus) < 2:
             sp_global_def.sxprint(
                 (
-                        "    %s %s: After rejection of outliers, there is too few estimated defocus values. Skipping the estimation and CTF parameters are not stored..."
-                        % (img_type, img_name)
+                    "    %s %s: After rejection of outliers, there is too few estimated defocus values. Skipping the estimation and CTF parameters are not stored..."
+                    % (img_type, img_name)
                 )
             )
         else:
@@ -2491,7 +2491,10 @@ def cter_mrk(
                 sp_utilities.write_text_file(
                     [
                         list(range(lnsb)),
-                        [old_div(old_div(float(i), wn), pixel_size) for i in range(lnsb)],
+                        [
+                            old_div(old_div(float(i), wn), pixel_size)
+                            for i in range(lnsb)
+                        ],
                         pwrot1,
                         crot1,
                         pwrot2,
@@ -2521,7 +2524,7 @@ def cter_mrk(
                         extremum_i = i - 1
                         extremum_counts += 1
                         extremum_diff_sum += (
-                                pwrot2[extremum_i] - pwrot1[extremum_i]
+                            pwrot2[extremum_i] - pwrot1[extremum_i]
                         )  # This should be positive if astigmatism estimation is good
                         # print "MRK_DEBUG: Peak Search  : extremum_i = %03d, freq[extremum_i] = %12.5g, extremum_counts = %03d, (pwrot2[extremum_i] - pwrot1[extremum_i]) = %12.5g, extremum_diff_sum = %12.5g " % (extremum_i, freq[extremum_i] , extremum_counts, (pwrot2[extremum_i] - pwrot1[extremum_i]), extremum_diff_sum)
                         is_peak_target = False
@@ -2530,7 +2533,7 @@ def cter_mrk(
                         extremum_i = i - 1
                         extremum_counts += 1
                         extremum_diff_sum += (
-                                pwrot1[extremum_i] - pwrot2[extremum_i]
+                            pwrot1[extremum_i] - pwrot2[extremum_i]
                         )  # This should be positive if astigmatism estimation is good
                         # print "MRK_DEBUG: Trough Search: extremum_i = %03d, freq[extremum_i] = %12.5g, extremum_counts = %03d, (pwrot1[extremum_i] - pwrot2[extremum_i]) = %12.5g, extremum_diff_sum = %12.5g " % (extremum_i, freq[extremum_i] , extremum_counts, (pwrot1[extremum_i] - pwrot2[extremum_i]), extremum_diff_sum)
                         is_peak_target = True
@@ -2550,8 +2553,8 @@ def cter_mrk(
                 stdaved1 = (
                     0.0
                 )  # dummy value for error of total amplitude contrast estimation
-                max_freq = (
-                    old_div(0.5, pixel_size)
+                max_freq = old_div(
+                    0.5, pixel_size
                 )  # dummy value for maximum frequency. set to Nyquist frequency for now. let's add the implementation in near future (Toshio 2017/12/06)
                 reserved = (
                     0.0
@@ -2564,13 +2567,13 @@ def cter_mrk(
                 if debug_mode:
                     sp_global_def.sxprint(
                         (
-                                "    %s %s: Process %04d finished the processing. Estimated CTF parmaters are stored in %s."
-                                % (
-                                    img_type,
-                                    img_name,
-                                    ifi,
-                                    os.path.join(output_directory, "partres.txt"),
-                                )
+                            "    %s %s: Process %04d finished the processing. Estimated CTF parmaters are stored in %s."
+                            % (
+                                img_type,
+                                img_name,
+                                ifi,
+                                os.path.join(output_directory, "partres.txt"),
+                            )
                         )
                     )
                 # 				if debug_mode: sxprint((ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim))
@@ -2729,29 +2732,29 @@ def cter_mrk(
 
 
 def cter_pap(
-        input_image_path,
-        output_directory,
-        selection_list=None,
-        wn=512,
-        pixel_size=-1.0,
-        Cs=2.0,
-        voltage=300.0,
-        wgh=10.0,
-        f_start=-1.0,
-        f_stop=-1.0,
-        kboot=16,
-        overlap_x=50,
-        overlap_y=50,
-        edge_x=0,
-        edge_y=0,
-        check_consistency=False,
-        stack_mode=False,
-        debug_mode=False,
-        program_name="cter_pap() in sp_morphology.py",
-        RUNNING_UNDER_MPI=False,
-        main_mpi_proc=0,
-        my_mpi_proc_id=0,
-        n_mpi_procs=1,
+    input_image_path,
+    output_directory,
+    selection_list=None,
+    wn=512,
+    pixel_size=-1.0,
+    Cs=2.0,
+    voltage=300.0,
+    wgh=10.0,
+    f_start=-1.0,
+    f_stop=-1.0,
+    kboot=16,
+    overlap_x=50,
+    overlap_y=50,
+    edge_x=0,
+    edge_y=0,
+    check_consistency=False,
+    stack_mode=False,
+    debug_mode=False,
+    program_name="cter_pap() in sp_morphology.py",
+    RUNNING_UNDER_MPI=False,
+    main_mpi_proc=0,
+    my_mpi_proc_id=0,
+    n_mpi_procs=1,
 ):
     """Multiline Comment12"""
 
@@ -2840,9 +2843,9 @@ def cter_pap(
 
         if cter_mode_idx == idx_cter_mode_single_mic:
             if not os.path.exists(
-                    os.path.join(
-                        os.path.dirname(input_image_path), os.path.basename(selection_list)
-                    )
+                os.path.join(
+                    os.path.dirname(input_image_path), os.path.basename(selection_list)
+                )
             ):
                 error_message_list.append(
                     "Micrograph specified by selection_list option (%s) for %s does not exist. Please check selection_list option."
@@ -2938,8 +2941,8 @@ def cter_pap(
                 sp_global_def.sxprint(" ")
                 sp_global_def.sxprint(
                     (
-                            "WARNING!!! --selection_list option will be ignored in %s."
-                            % (cter_mode_name)
+                        "WARNING!!! --selection_list option will be ignored in %s."
+                        % (cter_mode_name)
                     )
                 )
             if wn != 512:
@@ -2951,40 +2954,40 @@ def cter_pap(
                 sp_global_def.sxprint(" ")
                 sp_global_def.sxprint(
                     (
-                            "WARNING!!! --overlap_x option will be ignored in %s."
-                            % (cter_mode_name)
+                        "WARNING!!! --overlap_x option will be ignored in %s."
+                        % (cter_mode_name)
                     )
                 )
             if overlap_y != 50:
                 sp_global_def.sxprint(" ")
                 sp_global_def.sxprint(
                     (
-                            "WARNING!!! --overlap_y option will be ignored in %s."
-                            % (cter_mode_name)
+                        "WARNING!!! --overlap_y option will be ignored in %s."
+                        % (cter_mode_name)
                     )
                 )
             if edge_x != 0:
                 sp_global_def.sxprint(" ")
                 sp_global_def.sxprint(
                     (
-                            "WARNING!!! --edge_x option will be ignored in %s."
-                            % (cter_mode_name)
+                        "WARNING!!! --edge_x option will be ignored in %s."
+                        % (cter_mode_name)
                     )
                 )
             if edge_y != 0:
                 sp_global_def.sxprint(" ")
                 sp_global_def.sxprint(
                     (
-                            "WARNING!!! --edge_y option will be ignored in %s."
-                            % (cter_mode_name)
+                        "WARNING!!! --edge_y option will be ignored in %s."
+                        % (cter_mode_name)
                     )
                 )
             if check_consistency:
                 sp_global_def.sxprint(" ")
                 sp_global_def.sxprint(
                     (
-                            "WARNING!!! --check_consistency option will be ignored in %s."
-                            % (cter_mode_name)
+                        "WARNING!!! --check_consistency option will be ignored in %s."
+                        % (cter_mode_name)
                     )
                 )
 
@@ -3039,8 +3042,8 @@ def cter_pap(
             # Check error condition of input  file path list
             sp_global_def.sxprint(
                 (
-                        "Found %d micrographs in %s."
-                        % (len(input_mic_path_list), os.path.dirname(mic_pattern))
+                    "Found %d micrographs in %s."
+                    % (len(input_mic_path_list), os.path.dirname(mic_pattern))
                 )
             )
             if len(input_mic_path_list) == 0:
@@ -3060,8 +3063,8 @@ def cter_pap(
                     mic_basename_tokens[1]
                 )
                 mic_id_substr = input_mic_basename[
-                                mic_id_substr_head_idx:mic_id_substr_tail_idx
-                                ]
+                    mic_id_substr_head_idx:mic_id_substr_tail_idx
+                ]
                 if not mic_id_substr in global_entry_dict:
                     # sxprint("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from input_mic_path_list " % (mic_id_substr))
                     global_entry_dict[mic_id_substr] = {}
@@ -3086,8 +3089,8 @@ def cter_pap(
                     # Check error condition of  entry lists
                     sp_global_def.sxprint(
                         (
-                                "Found %d microgarph entries in %s."
-                                % (len(selected_mic_path_list), selection_list)
+                            "Found %d microgarph entries in %s."
+                            % (len(selected_mic_path_list), selection_list)
                         )
                     )
                     if len(selected_mic_path_list) == 0:
@@ -3108,8 +3111,8 @@ def cter_pap(
                 if selected_mic_directory != "":
                     sp_global_def.sxprint(
                         (
-                                "    NOTE: Program disregards the directory paths in the selection list (%s)."
-                                % (selected_mic_directory)
+                            "    NOTE: Program disregards the directory paths in the selection list (%s)."
+                            % (selected_mic_directory)
                         )
                     )
 
@@ -3121,8 +3124,8 @@ def cter_pap(
                     mic_basename_tokens[1]
                 )
                 mic_id_substr = selected_mic_basename[
-                                mic_id_substr_head_idx:mic_id_substr_tail_idx
-                                ]
+                    mic_id_substr_head_idx:mic_id_substr_tail_idx
+                ]
                 if not mic_id_substr in global_entry_dict:
                     # sxprint("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from selected_mic_path_list " % (mic_id_substr))
                     global_entry_dict[mic_id_substr] = {}
@@ -3163,8 +3166,8 @@ def cter_pap(
                     if len(warinnig_messages) > 0:
                         sp_global_def.sxprint(
                             (
-                                    "WARNING!!! Micrograph ID %s does not have:"
-                                    % (mic_id_substr)
+                                "WARNING!!! Micrograph ID %s does not have:"
+                                % (mic_id_substr)
                             )
                         )
                         for warinnig_message in warinnig_messages:
@@ -3187,8 +3190,8 @@ def cter_pap(
                 sp_global_def.sxprint(" ")
                 sp_global_def.sxprint(
                     (
-                            "Generating the input datasets consistency report in %s..."
-                            % (inconsist_mic_list_path)
+                        "Generating the input datasets consistency report in %s..."
+                        % (inconsist_mic_list_path)
                     )
                 )
                 inconsist_mic_list_file = open(inconsist_mic_list_path, "w")
@@ -3262,14 +3265,14 @@ def cter_pap(
             )
             sp_global_def.sxprint(
                 (
-                        "  Rejected by no input        : %6d"
-                        % (len(no_input_mic_id_substr_list))
+                    "  Rejected by no input        : %6d"
+                    % (len(no_input_mic_id_substr_list))
                 )
             )
             sp_global_def.sxprint(
                 (
-                        "  Valid Entries               : %6d"
-                        % (len(valid_mic_id_substr_list))
+                    "  Valid Entries               : %6d"
+                    % (len(valid_mic_id_substr_list))
                 )
             )
 
@@ -3398,9 +3401,9 @@ def cter_pap(
             sp_global_def.sxprint(
                 "  Micrographs processed by main process (including percent of progress):"
             )
-            progress_percent_step = old_div((
-                    set_end - set_start
-            ), 100.0)  # the number of micrograms for main mpi processer divided by 100
+            progress_percent_step = old_div(
+                (set_end - set_start), 100.0
+            )  # the number of micrograms for main mpi processer divided by 100
 
     totresi = []
     missing_img_names = []
@@ -3417,8 +3420,8 @@ def cter_pap(
             if my_mpi_proc_id == main_mpi_proc:
                 sp_global_def.sxprint(
                     (
-                            "    Processing %s ---> %6.2f%%"
-                            % (img_name, old_div((ifi - set_start), progress_percent_step))
+                        "    Processing %s ---> %6.2f%%"
+                        % (img_name, old_div((ifi - set_start), progress_percent_step))
                     )
                 )
 
@@ -3584,8 +3587,8 @@ def cter_pap(
             # qa.write_image("rs1.hdf")
 
             mask = sp_utilities.model_circle(istop - 1, wn, wn) * (
-                    sp_utilities.model_blank(wn, wn, 1, 1.0)
-                    - sp_utilities.model_circle(istart, wn, wn)
+                sp_utilities.model_blank(wn, wn, 1, 1.0)
+                - sp_utilities.model_circle(istart, wn, wn)
             )
             qse = threshold((qa - bckg))  # *envl
             # (qse*mask).write_image("rs2.hdf")
@@ -3724,8 +3727,8 @@ def cter_pap(
         if ad2 <= 0.0:
             sp_global_def.sxprint(
                 (
-                        "    %s %s: Detected the variance less than zero (defocus statics: avg = %f, var = %f, min = %f, max = %f)."
-                        % (img_type, img_name, ad1, ad2, ad3, ad4)
+                    "    %s %s: Detected the variance less than zero (defocus statics: avg = %f, var = %f, min = %f, max = %f)."
+                    % (img_type, img_name, ad1, ad2, ad3, ad4)
                 )
             )
             sp_global_def.sxprint(("           The program ignores this estimate..."))
@@ -3737,8 +3740,8 @@ def cter_pap(
             if abs(adefocus[i] - ad1) > thr:
                 sp_global_def.sxprint(
                     (
-                            "    %s %s: Rejected an outlier defocus estimate (defocus = %f, average defocus = %f, threshold = %f)."
-                            % (img_type, img_name, adefocus[i], ad1, thr)
+                        "    %s %s: Rejected an outlier defocus estimate (defocus = %f, average defocus = %f, threshold = %f)."
+                        % (img_type, img_name, adefocus[i], ad1, thr)
                     )
                 )
                 reject.append(i)
@@ -3746,8 +3749,8 @@ def cter_pap(
         if len(reject) > 0:
             sp_global_def.sxprint(
                 (
-                        "    %s %s: Total number of rejects %s"
-                        % (img_type, img_name, len(reject))
+                    "    %s %s: Total number of rejects %s"
+                    % (img_type, img_name, len(reject))
                 )
             )
             for i in range(len(reject) - 1, -1, -1):
@@ -3758,8 +3761,8 @@ def cter_pap(
         if len(adefocus) < 2:
             sp_global_def.sxprint(
                 (
-                        "    %s %s: After rejection of outliers, there is too few estimated defocus values. Skipping the estimation and CTF parameters are not stored..."
-                        % (img_type, img_name)
+                    "    %s %s: After rejection of outliers, there is too few estimated defocus values. Skipping the estimation and CTF parameters are not stored..."
+                    % (img_type, img_name)
                 )
             )
         else:
@@ -3989,7 +3992,10 @@ def cter_pap(
                 sp_utilities.write_text_file(
                     [
                         list(range(lnsb)),
-                        [old_div(old_div(float(i), wn), pixel_size) for i in range(lnsb)],
+                        [
+                            old_div(old_div(float(i), wn), pixel_size)
+                            for i in range(lnsb)
+                        ],
                         pwrot1[:lnsb],
                         crot1[:lnsb],
                         pwrot2[:lnsb],
@@ -4018,7 +4024,7 @@ def cter_pap(
                         extremum_i = i - 1
                         extremum_counts += 1
                         extremum_diff_sum += (
-                                pwrot2[extremum_i] - pwrot1[extremum_i]
+                            pwrot2[extremum_i] - pwrot1[extremum_i]
                         )  # This should be positive if astigmatism estimation is good
                         # print "MRK_DEBUG: Peak Search  : extremum_i = %03d, freq[extremum_i] = %12.5g, extremum_counts = %03d, (pwrot2[extremum_i] - pwrot1[extremum_i]) = %12.5g, extremum_diff_sum = %12.5g " % (extremum_i, freq[extremum_i] , extremum_counts, (pwrot2[extremum_i] - pwrot1[extremum_i]), extremum_diff_sum)
                         is_peak_target = False
@@ -4027,7 +4033,7 @@ def cter_pap(
                         extremum_i = i - 1
                         extremum_counts += 1
                         extremum_diff_sum += (
-                                pwrot1[extremum_i] - pwrot2[extremum_i]
+                            pwrot1[extremum_i] - pwrot2[extremum_i]
                         )  # This should be positive if astigmatism estimation is good
                         # print "MRK_DEBUG: Trough Search: extremum_i = %03d, freq[extremum_i] = %12.5g, extremum_counts = %03d, (pwrot1[extremum_i] - pwrot2[extremum_i]) = %12.5g, extremum_diff_sum = %12.5g " % (extremum_i, freq[extremum_i] , extremum_counts, (pwrot1[extremum_i] - pwrot2[extremum_i]), extremum_diff_sum)
                         is_peak_target = True
@@ -4047,8 +4053,8 @@ def cter_pap(
                 stdaved1 = (
                     0.0
                 )  # dummy value for error of total amplitude contrast estimation
-                max_freq = (
-                    old_div(0.5, pixel_size)
+                max_freq = old_div(
+                    0.5, pixel_size
                 )  # dummy value for maximum frequency. set to Nyquist frequency for now. let's add the implementation in near future (Toshio 2017/12/06)
                 reserved = (
                     0.0
@@ -4061,13 +4067,13 @@ def cter_pap(
                 if debug_mode:
                     sp_global_def.sxprint(
                         (
-                                "    %s %s: Process %04d finished the processing. Estimated CTF parmaters are stored in %s."
-                                % (
-                                    img_type,
-                                    img_name,
-                                    ifi,
-                                    os.path.join(output_directory, "partres.txt"),
-                                )
+                            "    %s %s: Process %04d finished the processing. Estimated CTF parmaters are stored in %s."
+                            % (
+                                img_type,
+                                img_name,
+                                ifi,
+                                os.path.join(output_directory, "partres.txt"),
+                            )
                         )
                     )
                 # 				if debug_mode: sxprint((ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim))
@@ -4227,10 +4233,11 @@ def ampcont2angle(A):
 def angle2ampcont(phi):
     #  convert phase shift to amplitude contrast
     return (
-            old_div(
-                numpy.tan(numpy.radians(phi))
-                , numpy.sqrt(1.0 + numpy.tan(numpy.radians(phi)) ** 2))
-            * 100.0
+        old_div(
+            numpy.tan(numpy.radians(phi)),
+            numpy.sqrt(1.0 + numpy.tan(numpy.radians(phi)) ** 2),
+        )
+        * 100.0
     )
 
 
@@ -4287,7 +4294,9 @@ def bracket(f, dat, h):
 
 
 def goldsearch_astigmatism(f, dat, a, b, tol=1.0e-3):
-    nIter = int(numpy.ceil(-2.078087 * numpy.log(old_div(tol, abs(b - a)))))  # Eq. (10.4)
+    nIter = int(
+        numpy.ceil(-2.078087 * numpy.log(old_div(tol, abs(b - a))))
+    )  # Eq. (10.4)
     R = 0.618033989
     C = 1.0 - R
     # First telescoping
@@ -4355,7 +4364,7 @@ def simpw1d(defocus, data):
             sp_utilities.generate_ctf(
                 [defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]
             ),
-        )[data[8]: data[9]],
+        )[data[8] : data[9]],
         numpy.float32,
     )
     # print  " 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2)
@@ -4374,7 +4383,7 @@ def simpw1d_pap(defocus, data):
                 [defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]
             ),
             doabs=True,
-        )[data[8]: data[9]],
+        )[data[8] : data[9]],
         numpy.float32,
     )
     # print  " 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2)
@@ -4393,20 +4402,25 @@ def simpw1d_print(defocus, data):
                 [defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]
             ),
             doabs=True,
-        )[data[8]: data[9]],
+        )[data[8] : data[9]],
         numpy.float32,
     )
     # print  " 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2)
     for i in range(len(data[0])):
         sp_global_def.sxprint(
-            i, i + data[8], data[0][i], ct[i], data[1][i], old_div(data[0][i], data[1][i])
+            i,
+            i + data[8],
+            data[0][i],
+            ct[i],
+            data[1][i],
+            old_div(data[0][i], data[1][i]),
         )
     return -old_div(sum(old_div(data[0] * ct, data[1])), numpy.linalg.norm(ct, 2))
 
 
 def movingaverage(data, window_size, skip=3):
     ld = len(data)
-    qt = old_div(sum(data[skip: skip + 4]), 3.0)
+    qt = old_div(sum(data[skip : skip + 4]), 3.0)
     tt = type(data[0])
     qt = numpy.concatenate(
         (
@@ -4419,13 +4433,13 @@ def movingaverage(data, window_size, skip=3):
     nc1 = window_size - old_div(window_size, 2)
     nc2 = window_size + old_div(window_size, 2) + 1
     for i in range(ld):
-        out[i] = sum(qt[i + nc1: i + nc2])
+        out[i] = sum(qt[i + nc1 : i + nc2])
     return out * numpy.float32(old_div(1.0, window_size))
 
 
 def localvariance(data, window_size, skip=3):
     ld = len(data)
-    qt = old_div(sum(data[skip: skip + 4]), 3.0)
+    qt = old_div(sum(data[skip : skip + 4]), 3.0)
     tt = type(data[0])
     qt = numpy.concatenate(
         (
@@ -4439,27 +4453,27 @@ def localvariance(data, window_size, skip=3):
     nc2 = window_size + old_div(window_size, 2) + 1
     qnorm = numpy.float32(old_div(1.0, window_size))
     for i in range(ld):
-        sav = sum(qt[i + nc1: i + nc2]) * qnorm
-        sdv = sum(qt[i + nc1: i + nc2] ** 2)
+        sav = sum(qt[i + nc1 : i + nc2]) * qnorm
+        sdv = sum(qt[i + nc1 : i + nc2] ** 2)
         out[i] = old_div((qt[i] - sav), numpy.sqrt(sdv * qnorm - sav * sav))
     out += min(out)
     return out
 
 
 def defocusgett(
-        roo,
-        nx,
-        voltage=300.0,
-        Pixel_size=1.0,
-        Cs=2.0,
-        ampcont=0.1,
-        f_start=-1.0,
-        f_stop=-1.0,
-        round_off=1.0,
-        nr1=3,
-        nr2=6,
-        parent=None,
-        DEBug=False,
+    roo,
+    nx,
+    voltage=300.0,
+    Pixel_size=1.0,
+    Cs=2.0,
+    ampcont=0.1,
+    f_start=-1.0,
+    f_stop=-1.0,
+    round_off=1.0,
+    nr1=3,
+    nr2=6,
+    parent=None,
+    DEBug=False,
 ):
     """
 
@@ -4614,19 +4628,19 @@ def defocusgett(
 
 
 def defocusgett_pap(
-        roo,
-        nx,
-        voltage=300.0,
-        Pixel_size=1.0,
-        Cs=2.0,
-        ampcont=0.1,
-        f_start=-1.0,
-        f_stop=-1.0,
-        round_off=1.0,
-        nr1=3,
-        nr2=6,
-        parent=None,
-        DEBug=False,
+    roo,
+    nx,
+    voltage=300.0,
+    Pixel_size=1.0,
+    Cs=2.0,
+    ampcont=0.1,
+    f_start=-1.0,
+    f_stop=-1.0,
+    round_off=1.0,
+    nr1=3,
+    nr2=6,
+    parent=None,
+    DEBug=False,
 ):
     """
 
@@ -4837,16 +4851,16 @@ def defocus_guessn(roo, volt, Cs, Pixel_size, ampcont, istart, i_stop):
 
 
 def defocusget_from_crf(
-        roo,
-        voltage=300.0,
-        Pixel_size=1.0,
-        Cs=2.0,
-        ampcont=10.0,
-        f_start=0.0,
-        f_stop=-1.0,
-        round_off=1.0,
-        nr1=3,
-        nr2=6,
+    roo,
+    voltage=300.0,
+    Pixel_size=1.0,
+    Cs=2.0,
+    ampcont=10.0,
+    f_start=0.0,
+    f_stop=-1.0,
+    round_off=1.0,
+    nr1=3,
+    nr2=6,
 ):
     """
 
@@ -5083,7 +5097,12 @@ def simctf2out(dz, data):
 
     (normpw * data[1]).write_image("ocou1.hdf")
     mm = sp_utilities.pad(
-        sp_utilities.model_blank(old_div(nx, 2), nx, 1, 1.0), nx, nx, 1, 0.0, -old_div(nx, 4)
+        sp_utilities.model_blank(old_div(nx, 2), nx, 1, 1.0),
+        nx,
+        nx,
+        1,
+        0.0,
+        -old_div(nx, 4),
     )
     s = EMAN2_cppwrap.Util.infomask(pc, None, True)
     pc -= s[0]
@@ -5092,9 +5111,9 @@ def simctf2out(dz, data):
     dout += pc * mm
     s = EMAN2_cppwrap.Util.infomask(normpw, data[1], True)
     dout += (
-            (old_div((normpw - s[0]), s[1]))
-            * (sp_utilities.model_blank(nx, nx, 1, 1) - mm)
-            * data[1]
+        (old_div((normpw - s[0]), s[1]))
+        * (sp_utilities.model_blank(nx, nx, 1, 1) - mm)
+        * data[1]
     )
     dout.write_image("ocou3.hdf")
     bcc = pc.cmp("dot", data[0], {"mask": data[1], "negative": 0, "normalize": 1})
@@ -5148,30 +5167,30 @@ def fupw_pap(args, data):
 
 
 def cter_vpp(
-        input_image_path,
-        output_directory,
-        selection_list=None,
-        wn=512,
-        pixel_size=-1.0,
-        Cs=2.0,
-        voltage=300.0,
-        wgh=10.0,
-        f_start=-1.0,
-        f_stop=-1.0,
-        kboot=16,
-        overlap_x=50,
-        overlap_y=50,
-        edge_x=0,
-        edge_y=0,
-        check_consistency=False,
-        stack_mode=False,
-        debug_mode=False,
-        program_name="cter_vpp() in sp_morphology.py",
-        vpp_options=[],
-        RUNNING_UNDER_MPI=False,
-        main_mpi_proc=0,
-        my_mpi_proc_id=0,
-        n_mpi_procs=1,
+    input_image_path,
+    output_directory,
+    selection_list=None,
+    wn=512,
+    pixel_size=-1.0,
+    Cs=2.0,
+    voltage=300.0,
+    wgh=10.0,
+    f_start=-1.0,
+    f_stop=-1.0,
+    kboot=16,
+    overlap_x=50,
+    overlap_y=50,
+    edge_x=0,
+    edge_y=0,
+    check_consistency=False,
+    stack_mode=False,
+    debug_mode=False,
+    program_name="cter_vpp() in sp_morphology.py",
+    vpp_options=[],
+    RUNNING_UNDER_MPI=False,
+    main_mpi_proc=0,
+    my_mpi_proc_id=0,
+    n_mpi_procs=1,
 ):
     """Multiline Comment33"""
 
@@ -5262,9 +5281,9 @@ def cter_vpp(
 
         if cter_mode_idx == idx_cter_mode_single_mic:
             if not os.path.exists(
-                    os.path.join(
-                        os.path.dirname(input_image_path), os.path.basename(selection_list)
-                    )
+                os.path.join(
+                    os.path.dirname(input_image_path), os.path.basename(selection_list)
+                )
             ):
                 error_message_list.append(
                     "Micrograph specified by selection_list option (%s) for %s does not exist. Please check selection_list option."
@@ -5359,8 +5378,8 @@ def cter_vpp(
                 sp_global_def.sxprint(" ")
                 sp_global_def.sxprint(
                     (
-                            "WARNING!!! --selection_list option will be ignored in %s."
-                            % (cter_mode_name)
+                        "WARNING!!! --selection_list option will be ignored in %s."
+                        % (cter_mode_name)
                     )
                 )
             if wn != 512:
@@ -5372,40 +5391,40 @@ def cter_vpp(
                 sp_global_def.sxprint(" ")
                 sp_global_def.sxprint(
                     (
-                            "WARNING!!! --overlap_x option will be ignored in %s."
-                            % (cter_mode_name)
+                        "WARNING!!! --overlap_x option will be ignored in %s."
+                        % (cter_mode_name)
                     )
                 )
             if overlap_y != 50:
                 sp_global_def.sxprint(" ")
                 sp_global_def.sxprint(
                     (
-                            "WARNING!!! --overlap_y option will be ignored in %s."
-                            % (cter_mode_name)
+                        "WARNING!!! --overlap_y option will be ignored in %s."
+                        % (cter_mode_name)
                     )
                 )
             if edge_x != 0:
                 sp_global_def.sxprint(" ")
                 sp_global_def.sxprint(
                     (
-                            "WARNING!!! --edge_x option will be ignored in %s."
-                            % (cter_mode_name)
+                        "WARNING!!! --edge_x option will be ignored in %s."
+                        % (cter_mode_name)
                     )
                 )
             if edge_y != 0:
                 sp_global_def.sxprint(" ")
                 sp_global_def.sxprint(
                     (
-                            "WARNING!!! --edge_y option will be ignored in %s."
-                            % (cter_mode_name)
+                        "WARNING!!! --edge_y option will be ignored in %s."
+                        % (cter_mode_name)
                     )
                 )
             if check_consistency:
                 sp_global_def.sxprint(" ")
                 sp_global_def.sxprint(
                     (
-                            "WARNING!!! --check_consistency option will be ignored in %s."
-                            % (cter_mode_name)
+                        "WARNING!!! --check_consistency option will be ignored in %s."
+                        % (cter_mode_name)
                     )
                 )
 
@@ -5459,8 +5478,8 @@ def cter_vpp(
             # Check error condition of input  file path list
             sp_global_def.sxprint(
                 (
-                        "Found %d micrographs in %s."
-                        % (len(input_mic_path_list), os.path.dirname(mic_pattern))
+                    "Found %d micrographs in %s."
+                    % (len(input_mic_path_list), os.path.dirname(mic_pattern))
                 )
             )
             if len(input_mic_path_list) == 0:
@@ -5480,8 +5499,8 @@ def cter_vpp(
                     mic_basename_tokens[1]
                 )
                 mic_id_substr = input_mic_basename[
-                                mic_id_substr_head_idx:mic_id_substr_tail_idx
-                                ]
+                    mic_id_substr_head_idx:mic_id_substr_tail_idx
+                ]
                 if not mic_id_substr in global_entry_dict:
                     # sxprint("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from input_mic_path_list " % (mic_id_substr))
                     global_entry_dict[mic_id_substr] = {}
@@ -5506,8 +5525,8 @@ def cter_vpp(
                     # Check error condition of  entry lists
                     sp_global_def.sxprint(
                         (
-                                "Found %d microgarph entries in %s."
-                                % (len(selected_mic_path_list), selection_list)
+                            "Found %d microgarph entries in %s."
+                            % (len(selected_mic_path_list), selection_list)
                         )
                     )
                     if len(selected_mic_path_list) == 0:
@@ -5528,8 +5547,8 @@ def cter_vpp(
                 if selected_mic_directory != "":
                     sp_global_def.sxprint(
                         (
-                                "    NOTE: Program disregards the directory paths in the selection list (%s)."
-                                % (selected_mic_directory)
+                            "    NOTE: Program disregards the directory paths in the selection list (%s)."
+                            % (selected_mic_directory)
                         )
                     )
 
@@ -5541,8 +5560,8 @@ def cter_vpp(
                     mic_basename_tokens[1]
                 )
                 mic_id_substr = selected_mic_basename[
-                                mic_id_substr_head_idx:mic_id_substr_tail_idx
-                                ]
+                    mic_id_substr_head_idx:mic_id_substr_tail_idx
+                ]
                 if not mic_id_substr in global_entry_dict:
                     # sxprint("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from selected_mic_path_list " % (mic_id_substr))
                     global_entry_dict[mic_id_substr] = {}
@@ -5583,8 +5602,8 @@ def cter_vpp(
                     if len(warinnig_messages) > 0:
                         sp_global_def.sxprint(
                             (
-                                    "WARNING!!! Micrograph ID %s does not have:"
-                                    % (mic_id_substr)
+                                "WARNING!!! Micrograph ID %s does not have:"
+                                % (mic_id_substr)
                             )
                         )
                         for warinnig_message in warinnig_messages:
@@ -5607,8 +5626,8 @@ def cter_vpp(
                 sp_global_def.sxprint(" ")
                 sp_global_def.sxprint(
                     (
-                            "Generating the input datasets consistency report in %s..."
-                            % (inconsist_mic_list_path)
+                        "Generating the input datasets consistency report in %s..."
+                        % (inconsist_mic_list_path)
                     )
                 )
                 inconsist_mic_list_file = open(inconsist_mic_list_path, "w")
@@ -5682,14 +5701,14 @@ def cter_vpp(
             )
             sp_global_def.sxprint(
                 (
-                        "  Rejected by no input        : %6d"
-                        % (len(no_input_mic_id_substr_list))
+                    "  Rejected by no input        : %6d"
+                    % (len(no_input_mic_id_substr_list))
                 )
             )
             sp_global_def.sxprint(
                 (
-                        "  Valid Entries               : %6d"
-                        % (len(valid_mic_id_substr_list))
+                    "  Valid Entries               : %6d"
+                    % (len(valid_mic_id_substr_list))
                 )
             )
 
@@ -5819,9 +5838,9 @@ def cter_vpp(
             sp_global_def.sxprint(
                 "  Micrographs processed by main process (including percent of progress):"
             )
-            progress_percent_step = old_div((
-                    set_end - set_start
-            ), 100.0)  # the number of micrograms for main mpi processer divided by 100
+            progress_percent_step = old_div(
+                (set_end - set_start), 100.0
+            )  # the number of micrograms for main mpi processer divided by 100
 
     totresi = []
     missing_img_names = []
@@ -5835,8 +5854,8 @@ def cter_vpp(
             if my_mpi_proc_id == main_mpi_proc:
                 sp_global_def.sxprint(
                     (
-                            "    Processing %s ---> %6.2f%%"
-                            % (img_name, old_div((ifi - set_start), progress_percent_step))
+                        "    Processing %s ---> %6.2f%%"
+                        % (img_name, old_div((ifi - set_start), progress_percent_step))
                     )
                 )
 
@@ -6053,8 +6072,8 @@ def cter_vpp(
         if ad2 <= 0.0:
             sp_global_def.sxprint(
                 (
-                        "    %s %s: Detected the variance less than zero (defocus statics: avg = %f, var = %f, min = %f, max = %f)."
-                        % (img_type, img_name, ad1, ad2, ad3, ad4)
+                    "    %s %s: Detected the variance less than zero (defocus statics: avg = %f, var = %f, min = %f, max = %f)."
+                    % (img_type, img_name, ad1, ad2, ad3, ad4)
                 )
             )
             sp_global_def.sxprint(("           The program ignores this estimate..."))
@@ -6066,8 +6085,8 @@ def cter_vpp(
             if abs(adefocus[i] - ad1) > thr:
                 sp_global_def.sxprint(
                     (
-                            "    %s %s: Rejected an outlier defocus estimate (defocus = %f, average defocus = %f, threshold = %f)."
-                            % (img_type, img_name, adefocus[i], ad1, thr)
+                        "    %s %s: Rejected an outlier defocus estimate (defocus = %f, average defocus = %f, threshold = %f)."
+                        % (img_type, img_name, adefocus[i], ad1, thr)
                     )
                 )
                 reject.append(i)
@@ -6075,8 +6094,8 @@ def cter_vpp(
         if len(reject) > 0:
             sp_global_def.sxprint(
                 (
-                        "    %s %s: Total number of rejects %s"
-                        % (img_type, img_name, len(reject))
+                    "    %s %s: Total number of rejects %s"
+                    % (img_type, img_name, len(reject))
                 )
             )
             for i in range(len(reject) - 1, -1, -1):
@@ -6089,8 +6108,8 @@ def cter_vpp(
         if len(adefocus) < 2:
             sp_global_def.sxprint(
                 (
-                        "    %s %s: After rejection of outliers, there is too few estimated defocus values. Skipping the estimation and CTF parameters are not stored..."
-                        % (img_type, img_name)
+                    "    %s %s: After rejection of outliers, there is too few estimated defocus values. Skipping the estimation and CTF parameters are not stored..."
+                    % (img_type, img_name)
                 )
             )
         else:
@@ -6243,8 +6262,8 @@ def cter_vpp(
                 # write_text_file([range(ni), supe[:ni],pwrot2[:ni]],"fifi.txt")
 
                 mask = sp_utilities.model_circle(istop - 1, wn, wn) * (
-                        sp_utilities.model_blank(wn, wn, 1, 1.0)
-                        - sp_utilities.model_circle(istart, wn, wn)
+                    sp_utilities.model_blank(wn, wn, 1, 1.0)
+                    - sp_utilities.model_circle(istart, wn, wn)
                 )
                 draw_power2d(
                     img_basename_root,
@@ -6341,7 +6360,10 @@ def cter_vpp(
                 sp_utilities.write_text_file(
                     [
                         list(range(lnsb)),
-                        [old_div(old_div(float(i), wn), pixel_size) for i in range(lnsb)],
+                        [
+                            old_div(old_div(float(i), wn), pixel_size)
+                            for i in range(lnsb)
+                        ],
                         pwrot1[:lnsb],
                         crot1[:lnsb],
                         pwrot2[:lnsb],
@@ -6373,8 +6395,8 @@ def cter_vpp(
                 # 				os.system(cmd)
                 cvavbd1 = old_div(stdavbd1, bd1) * 100  # use percentage
 
-                max_freq = (
-                    old_div(0.5, pixel_size)
+                max_freq = old_div(
+                    0.5, pixel_size
                 )  # dummy value for maximum frequency. set to Nyquist frequency for now. let's add the implementation in near future (Toshio 2017/12/06)
                 reserved = (
                     0.0
@@ -6387,13 +6409,13 @@ def cter_vpp(
                 if debug_mode:
                     sp_global_def.sxprint(
                         (
-                                "    %s %s: Process %04d finished the processing. Estimated CTF parmaters are stored in %s."
-                                % (
-                                    img_type,
-                                    img_name,
-                                    ifi,
-                                    os.path.join(output_directory, "partres.txt"),
-                                )
+                            "    %s %s: Process %04d finished the processing. Estimated CTF parmaters are stored in %s."
+                            % (
+                                img_type,
+                                img_name,
+                                ifi,
+                                os.path.join(output_directory, "partres.txt"),
+                            )
                         )
                     )
                 # 				if debug_mode: sxprint((ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1, stdavad1, ed2, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim))
@@ -6533,7 +6555,7 @@ def cter_vpp(
 
 
 def draw_power2d(
-        file_root, input_pws, ctf_params, mask=None, outdir=".", radius_1a=None
+    file_root, input_pws, ctf_params, mask=None, outdir=".", radius_1a=None
 ):
     """
 	Writes 2D power spectra
@@ -6594,18 +6616,18 @@ def draw_power2d(
 
 
 def defocusgett_vpp(
-        roo,
-        nx,
-        voltage=300.0,
-        Pixel_size=1.0,
-        Cs=2.0,
-        f_start=-1.0,
-        f_stop=-1.0,
-        vpp_options=[],
-        nr1=3,
-        nr2=6,
-        parent=None,
-        DEBug=False,
+    roo,
+    nx,
+    voltage=300.0,
+    Pixel_size=1.0,
+    Cs=2.0,
+    f_start=-1.0,
+    f_stop=-1.0,
+    vpp_options=[],
+    nr1=3,
+    nr2=6,
+    parent=None,
+    DEBug=False,
 ):
     """
 		1. Estimate envelope function and baseline noise using constrained simplex method
@@ -6649,10 +6671,10 @@ def defocusgett_vpp(
 
     # envelope = defocus_baseline_fit(roo, i_start, nroo, int(nr2), 2) - baseline
     envelope = (
-            defocus_baseline_fit(
-                roo, i_start, min(int(i_stop * 1.45), old_div(nx, 2) - 2), int(nr2), 2
-            )
-            - baseline
+        defocus_baseline_fit(
+            roo, i_start, min(int(i_stop * 1.45), old_div(nx, 2) - 2), int(nr2), 2
+        )
+        - baseline
     )
     #  Process envelope
     qm = numpy.max(envelope[5:])
@@ -6723,17 +6745,17 @@ def defocusgett_vpp(
 
 
 def defocusgett_vpp2(
-        qse,
-        wn,
-        xdefc,
-        xampcont,
-        voltage=300.0,
-        Pixel_size=1.0,
-        Cs=2.0,
-        i_start=0,
-        i_stop=0,
-        parent=None,
-        DEBug=False,
+    qse,
+    wn,
+    xdefc,
+    xampcont,
+    voltage=300.0,
+    Pixel_size=1.0,
+    Cs=2.0,
+    i_start=0,
+    i_stop=0,
+    parent=None,
+    DEBug=False,
 ):
     """
 		1. Estimate envelope function and baseline noise using constrained simplex method

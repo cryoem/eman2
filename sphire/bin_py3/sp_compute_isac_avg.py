@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from past.utils import old_div
+from __future__ import division
 #
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
@@ -164,7 +165,9 @@ def apply_enhancement(avg, B_start, pixel_size, user_defined_Bfactor):
         # print(ifreqmin, ifreqmax)
         global_b = b * 4.0  #
     return (
-        sp_filter.filt_gaussinv(sp_fundamentals.fft(avg), numpy.sqrt(old_div(2.0, global_b))),
+        sp_filter.filt_gaussinv(
+            sp_fundamentals.fft(avg), numpy.sqrt(old_div(2.0, global_b))
+        ),
         global_b,
     )
 
@@ -487,7 +490,8 @@ def main():
 
     # print(Tracker["constants"]["pixel_size"], "pixel_size")
     x_range = max(
-        Tracker["constants"]["xrange"], int(old_div(1.0, Tracker["ini_shrink"]) + 0.99999)
+        Tracker["constants"]["xrange"],
+        int(old_div(1.0, Tracker["ini_shrink"]) + 0.99999),
     )
     a_range = y_range = x_range
 

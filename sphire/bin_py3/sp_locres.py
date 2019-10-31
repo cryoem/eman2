@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from past.utils import old_div
+from __future__ import division
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
 # Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
@@ -100,9 +101,9 @@ def output_volume(
         iqr = percentile_75 - percentile_25
         mask_low_pass = data_freqvol < percentile_75 + 1.5 * iqr
         mask_high_pass = data_freqvol > percentile_25 - 1.5 * iqr
-        mean_real = old_div(1, float(
-            numpy.mean(data_freqvol[mask & mask_low_pass & mask_high_pass])
-        ))
+        mean_real = old_div(
+            1, float(numpy.mean(data_freqvol[mask & mask_low_pass & mask_high_pass]))
+        )
         overall_res_real = old_div(1, float(res_overall))
         # mean_ang = options.apix / float(EMAN2_cppwrap.Util.infomask(freqvol, m, True)[0])
 
@@ -239,7 +240,9 @@ def main():
             ui = sp_utilities.model_blank(nx, ny, nz)
 
         if len(args) == 3:
-            m = sp_utilities.model_circle(old_div((min(nx, ny, nz) - nk), 2), nx, ny, nz)
+            m = sp_utilities.model_circle(
+                old_div((min(nx, ny, nz) - nk), 2), nx, ny, nz
+            )
             outdir = args[2]
 
         elif len(args) == 4:

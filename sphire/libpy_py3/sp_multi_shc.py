@@ -1,7 +1,7 @@
 # For some reason these programs get stuck on MPI if I change the order of programs in the file.  Strange, PAP.
 from past.utils import old_div
 from __future__ import print_function
-
+from __future__ import division
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
 # Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
@@ -194,7 +194,9 @@ def find_common_subset(
 
             # for k in range(n):
             for k in subset:
-                avg_diff_per_image[k] = old_div(avg_diff_per_image[k], old_div(sc * (sc - 1), 2.0))
+                avg_diff_per_image[k] = old_div(
+                    avg_diff_per_image[k], old_div(sc * (sc - 1), 2.0)
+                )
         elif symmetry_class.sym[0] == "d":
             outp = copy.deepcopy(projs)
             mirror_and_reduce_dsym(outp, subset, symmetry_class)
@@ -620,9 +622,9 @@ def ali3d_multishc(
                 for i in all_pixer:
                     if i < 1.0:
                         temp += 1
-                percent_of_pixerr_below_one = old_div((temp * 1.0), (
-                    total_nima * number_of_runs
-                ))
+                percent_of_pixerr_below_one = old_div(
+                    (temp * 1.0), (total_nima * number_of_runs)
+                )
                 orient_and_shuffle = (percent_of_pixerr_below_one > doga) and (
                     afterGAcounter < 0
                 )  #  TODO - parameter ?
@@ -844,7 +846,9 @@ def ali3d_multishc(
                         # select random pairs of solutions
                         ipl = list(range(number_of_runs))
                         random.shuffle(ipl)
-                        for ip in range(0, 2 * (old_div(len(ipl), 2)) + len(ipl) % 2, 2):
+                        for ip in range(
+                            0, 2 * (old_div(len(ipl), 2)) + len(ipl) % 2, 2
+                        ):
                             #  random reference projection:
                             itmp = random.randint(0, total_nima - 1)
                             # print  "  nearest_many_full_k_projangles  ",total_nima,itmp,ipl,ip,len(GA[ipl[ip]][1]),GA[ipl[ip]][1][itmp],GA[ipl[ip]][1]
@@ -1273,7 +1277,9 @@ def ali3d_multishc_2(
                 for lhx in range(lhist):
                     msg = " %10.3f     %7d" % (region[lhx], histo[lhx])
                     log.add(msg)
-                if (max(all_pixer) < 0.5) and (old_div(sum(all_pixer), total_nima) < 0.05):
+                if (max(all_pixer) < 0.5) and (
+                    old_div(sum(all_pixer), total_nima) < 0.05
+                ):
                     terminate = 1
             terminate = sp_utilities.wrap_mpi_bcast(terminate, main_node, mpi_comm)
             # =========================================================================
@@ -1747,7 +1753,9 @@ def do_volume(data, options, iter, mpi_comm):
             nxm = mask3D.get_xsize()
             if nx != nxm:
                 mask3D = EMAN2_cppwrap.Util.window(
-                    sp_fundamentals.rot_shift3D(mask3D, scale=old_div(float(nx), float(nxm))),
+                    sp_fundamentals.rot_shift3D(
+                        mask3D, scale=old_div(float(nx), float(nxm))
+                    ),
                     nx,
                     nx,
                     nx,

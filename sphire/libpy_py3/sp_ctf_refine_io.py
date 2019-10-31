@@ -1,4 +1,5 @@
 from past.utils import old_div
+from __future__ import division
 """
 IO stuff for CTF Refinement with error assessment in SPHIRE
 

@@ -1,6 +1,6 @@
 from __future__ import print_function
 from past.utils import old_div
-
+from __future__ import division
 """
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
@@ -116,7 +116,7 @@ def write_command(output_folder=None):
         command = " ".join(sys.argv) + "\n"
         if output_folder:
             with open(
-                    inspect.os.path.join(output_folder, "command.txt"), "a+"
+                inspect.os.path.join(output_folder, "command.txt"), "a+"
             ) as the_command:
                 the_command.write(command)
 

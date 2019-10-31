@@ -1,6 +1,6 @@
 from past.utils import old_div
 from __future__ import print_function
-
+from __future__ import division
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
 # Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
@@ -1036,10 +1036,11 @@ def do_volume_mrk02(ref_data):
         nx = vol.get_xsize()
         if Tracker["constants"]["mask3D"] == None:
             mask3D = sp_utilities.model_circle(
-                int( old_div(
-                    Tracker["constants"]["radius"]
-                    * float(nx),
-                      float(Tracker["constants"]["nnxo"]))
+                int(
+                    old_div(
+                        Tracker["constants"]["radius"] * float(nx),
+                        float(Tracker["constants"]["nnxo"]),
+                    )
                     + 0.5
                 ),
                 nx,
@@ -1056,7 +1057,9 @@ def do_volume_mrk02(ref_data):
             nxm = mask3D.get_xsize()
             if nx != nxm:
                 mask3D = EMAN2_cppwrap.Util.window(
-                    sp_fundamentals.rot_shift3D(mask3D, scale=old_div(float(nx), float(nxm))),
+                    sp_fundamentals.rot_shift3D(
+                        mask3D, scale=old_div(float(nx), float(nxm))
+                    ),
                     nx,
                     nx,
                     nx,
@@ -1085,17 +1088,37 @@ def do_volume_mrk02(ref_data):
                         1.0
                         + 1.0
                         * math.exp(
-                            -( old_div(
-                                ((old_div(old_div(i, y), Tracker["constants"]["pixel_size"])) - 0.10)
-                                , 0.025)
+                            -(
+                                old_div(
+                                    (
+                                        (
+                                            old_div(
+                                                old_div(i, y),
+                                                Tracker["constants"]["pixel_size"],
+                                            )
+                                        )
+                                        - 0.10
+                                    ),
+                                    0.025,
+                                )
                             )
                             ** 2
                         )
                         + 1.0
                         * math.exp(
-                            -( old_div(
-                                ((old_div(old_div(i, y), Tracker["constants"]["pixel_size"])) - 0.215)
-                                , 0.025)
+                            -(
+                                old_div(
+                                    (
+                                        (
+                                            old_div(
+                                                old_div(i, y),
+                                                Tracker["constants"]["pixel_size"],
+                                            )
+                                        )
+                                        - 0.215
+                                    ),
+                                    0.025,
+                                )
                             )
                             ** 2
                         )
@@ -1131,17 +1154,37 @@ def do_volume_mrk02(ref_data):
                         1.0
                         + 1.0
                         * math.exp(
-                            -( old_div(
-                                ((old_div(old_div(i, y), Tracker["constants"]["pixel_size"])) - 0.10)
-                                , 0.025)
+                            -(
+                                old_div(
+                                    (
+                                        (
+                                            old_div(
+                                                old_div(i, y),
+                                                Tracker["constants"]["pixel_size"],
+                                            )
+                                        )
+                                        - 0.10
+                                    ),
+                                    0.025,
+                                )
                             )
                             ** 2
                         )
                         + 1.0
                         * math.exp(
-                            -( old_div(
-                                ((old_div(old_div(i, y), Tracker["constants"]["pixel_size"])) - 0.215)
-                                , 0.025)
+                            -(
+                                old_div(
+                                    (
+                                        (
+                                            old_div(
+                                                old_div(i, y),
+                                                Tracker["constants"]["pixel_size"],
+                                            )
+                                        )
+                                        - 0.215
+                                    ),
+                                    0.025,
+                                )
                             )
                             ** 2
                         )
@@ -1173,7 +1216,9 @@ def do_volume_mrk02(ref_data):
             if lx != nx:
                 if lx < nx:
                     mask = EMAN2_cppwrap.Util.window(
-                        sp_fundamentals.rot_shift3D(mask, scale=old_div(float(lx), float(nx))),
+                        sp_fundamentals.rot_shift3D(
+                            mask, scale=old_div(float(lx), float(nx))
+                        ),
                         lx,
                         lx,
                         lx,
@@ -1282,10 +1327,11 @@ def do_volume_mrk03(ref_data):
         nx = vol.get_xsize()
         if Tracker["constants"]["mask3D"] == None:
             mask3D = sp_utilities.model_circle(
-                int(old_div(
-                    Tracker["constants"]["radius"]
-                    * float(nx)
-                    , float(Tracker["constants"]["nnxo"]))
+                int(
+                    old_div(
+                        Tracker["constants"]["radius"] * float(nx),
+                        float(Tracker["constants"]["nnxo"]),
+                    )
                     + 0.5
                 ),
                 nx,
@@ -1302,7 +1348,9 @@ def do_volume_mrk03(ref_data):
             nxm = mask3D.get_xsize()
             if nx != nxm:
                 mask3D = EMAN2_cppwrap.Util.window(
-                    sp_fundamentals.rot_shift3D(mask3D, scale=old_div(float(nx), float(nxm))),
+                    sp_fundamentals.rot_shift3D(
+                        mask3D, scale=old_div(float(nx), float(nxm))
+                    ),
                     nx,
                     nx,
                     nx,
@@ -1331,7 +1379,9 @@ def do_volume_mrk03(ref_data):
             if lx != nx:
                 if lx < nx:
                     mask = EMAN2_cppwrap.Util.window(
-                        sp_fundamentals.rot_shift3D(mask, scale=old_div(float(lx), float(nx))),
+                        sp_fundamentals.rot_shift3D(
+                            mask, scale=old_div(float(lx), float(nx))
+                        ),
                         lx,
                         lx,
                         lx,
@@ -1436,10 +1486,11 @@ def do_volume_mrk04(ref_data):
         nx = vol.get_xsize()
         if Tracker["constants"]["mask3D"] == None:
             mask3D = sp_utilities.model_circle(
-                int( old_div(
-                    Tracker["constants"]["radius"]
-                    * float(nx)
-                    , float(Tracker["constants"]["nnxo"]))
+                int(
+                    old_div(
+                        Tracker["constants"]["radius"] * float(nx),
+                        float(Tracker["constants"]["nnxo"]),
+                    )
                     + 0.5
                 ),
                 nx,
@@ -1456,7 +1507,9 @@ def do_volume_mrk04(ref_data):
             nxm = mask3D.get_xsize()
             if nx != nxm:
                 mask3D = EMAN2_cppwrap.Util.window(
-                    sp_fundamentals.rot_shift3D(mask3D, scale=old_div(float(nx), float(nxm))),
+                    sp_fundamentals.rot_shift3D(
+                        mask3D, scale=old_div(float(nx), float(nxm))
+                    ),
                     nx,
                     nx,
                     nx,
@@ -1485,7 +1538,9 @@ def do_volume_mrk04(ref_data):
             if lx != nx:
                 if lx < nx:
                     mask = EMAN2_cppwrap.Util.window(
-                        sp_fundamentals.rot_shift3D(mask, scale=old_div(float(lx), float(nx))),
+                        sp_fundamentals.rot_shift3D(
+                            mask, scale=old_div(float(lx), float(nx))
+                        ),
                         lx,
                         lx,
                         lx,
@@ -1548,10 +1603,11 @@ def do_volume_mrk05(ref_data):
     nx = vol.get_xsize()
     if Tracker["constants"]["mask3D"] == None:
         mask3D = sp_utilities.model_circle(
-            int(old_div(
-                Tracker["constants"]["radius"]
-                * float(nx)
-                , float(Tracker["constants"]["nnxo"]))
+            int(
+                old_div(
+                    Tracker["constants"]["radius"] * float(nx),
+                    float(Tracker["constants"]["nnxo"]),
+                )
                 + 0.5
             ),
             nx,
@@ -1568,7 +1624,9 @@ def do_volume_mrk05(ref_data):
         nxm = mask3D.get_xsize()
         if nx != nxm:
             mask3D = EMAN2_cppwrap.Util.window(
-                sp_fundamentals.rot_shift3D(mask3D, scale=old_div(float(nx), float(nxm))),
+                sp_fundamentals.rot_shift3D(
+                    mask3D, scale=old_div(float(nx), float(nxm))
+                ),
                 nx,
                 nx,
                 nx,

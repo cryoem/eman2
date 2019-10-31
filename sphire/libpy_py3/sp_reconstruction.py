@@ -1,6 +1,6 @@
 from past.utils import old_div
 from __future__ import print_function
-
+from __future__ import division
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
 # Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
@@ -65,15 +65,15 @@ def insert_slices(reconstructor, proj):
 
 
 def recons3d_4nn(
-        stack_name,
-        list_proj=[],
-        symmetry="c1",
-        npad=4,
-        snr=None,
-        weighting=1,
-        varsnr=False,
-        xysize=-1,
-        zsize=-1,
+    stack_name,
+    list_proj=[],
+    symmetry="c1",
+    npad=4,
+    snr=None,
+    weighting=1,
+    varsnr=False,
+    xysize=-1,
+    zsize=-1,
 ):
     """
 	Perform a 3-D reconstruction using Pawel's FFT Back Projection algorithm.
@@ -180,15 +180,15 @@ def recons3d_4nn(
 
 
 def recons3d_4nn_MPI(
-        myid,
-        prjlist,
-        symmetry="c1",
-        finfo=None,
-        snr=1.0,
-        npad=2,
-        xysize=-1,
-        zsize=-1,
-        mpi_comm=None,
+    myid,
+    prjlist,
+    symmetry="c1",
+    finfo=None,
+    snr=1.0,
+    npad=2,
+    xysize=-1,
+    zsize=-1,
+    mpi_comm=None,
 ):
     if mpi_comm == None:
         mpi_comm = mpi.MPI_COMM_WORLD
@@ -289,19 +289,19 @@ def recons3d_4nn_MPI(
 
 
 def recons3d_4nnw_MPI(
-        myid,
-        prjlist,
-        bckgdata,
-        snr=1.0,
-        sign=1,
-        symmetry="c1",
-        finfo=None,
-        npad=2,
-        xysize=-1,
-        zsize=-1,
-        mpi_comm=None,
-        smearstep=0.0,
-        fsc=None,
+    myid,
+    prjlist,
+    bckgdata,
+    snr=1.0,
+    sign=1,
+    symmetry="c1",
+    finfo=None,
+    npad=2,
+    xysize=-1,
+    zsize=-1,
+    mpi_comm=None,
+    smearstep=0.0,
+    fsc=None,
 ):
     """
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
@@ -489,19 +489,19 @@ def recons3d_4nnw_MPI(
 
 
 def recons3d_trl_struct_MPI(
-        myid,
-        main_node,
-        prjlist,
-        paramstructure,
-        refang,
-        rshifts_shrank,
-        delta,
-        upweighted=True,
-        mpi_comm=None,
-        CTF=True,
-        target_size=-1,
-        avgnorm=1.0,
-        norm_per_particle=None,
+    myid,
+    main_node,
+    prjlist,
+    paramstructure,
+    refang,
+    rshifts_shrank,
+    delta,
+    upweighted=True,
+    mpi_comm=None,
+    CTF=True,
+    target_size=-1,
+    avgnorm=1.0,
+    norm_per_particle=None,
 ):
     """
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
@@ -549,7 +549,9 @@ def recons3d_trl_struct_MPI(
             #  [ipsi+iang], [ishift], [probability]
             #  Number of orientations for a given image
             numbor = len(paramstructure[im][2])
-            ipsiandiang = [old_div(paramstructure[im][2][i][0], 1000) for i in range(numbor)]
+            ipsiandiang = [
+                old_div(paramstructure[im][2][i][0], 1000) for i in range(numbor)
+            ]
             allshifts = [paramstructure[im][2][i][0] % 1000 for i in range(numbor)]
             probs = [paramstructure[im][2][i][1] for i in range(numbor)]
             #  Find unique projection directions
@@ -622,15 +624,15 @@ def recons3d_trl_struct_MPI(
 
 
 def recons3d_4nn_ctf(
-        stack_name,
-        list_proj=[],
-        snr=1.0,
-        sign=1,
-        symmetry="c1",
-        verbose=0,
-        npad=2,
-        xysize=-1,
-        zsize=-1,
+    stack_name,
+    list_proj=[],
+    snr=1.0,
+    sign=1,
+    symmetry="c1",
+    verbose=0,
+    npad=2,
+    xysize=-1,
+    zsize=-1,
 ):
     """Perform a 3-D reconstruction using Pawel's FFT Back Projection algoritm.
 
@@ -722,17 +724,17 @@ def recons3d_4nn_ctf(
 
 
 def recons3d_4nn_ctf_MPI(
-        myid,
-        prjlist,
-        snr=1.0,
-        sign=1,
-        symmetry="c1",
-        finfo=None,
-        npad=2,
-        xysize=-1,
-        zsize=-1,
-        mpi_comm=None,
-        smearstep=0.0,
+    myid,
+    prjlist,
+    snr=1.0,
+    sign=1,
+    symmetry="c1",
+    finfo=None,
+    npad=2,
+    xysize=-1,
+    zsize=-1,
+    mpi_comm=None,
+    smearstep=0.0,
 ):
     """
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image

@@ -1,5 +1,6 @@
 from past.utils import old_div
 from __future__ import print_function
+from __future__ import division
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
 # Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
@@ -81,9 +82,14 @@ def pixel_error_2D(ali_params1, ali_params2, r=1.0):
 	Compute average squared 2D pixel error
 	"""
     return (
-        old_div((numpy.sin(old_div(numpy.radians(ali_params1[0] - ali_params2[0]), 2)) * (2 * r + 1))
-        ** 2
-        , 2)
+        old_div(
+            (
+                numpy.sin(old_div(numpy.radians(ali_params1[0] - ali_params2[0]), 2))
+                * (2 * r + 1)
+            )
+            ** 2,
+            2,
+        )
         + (ali_params1[1] - ali_params2[1]) ** 2
         + (ali_params1[2] - ali_params2[2]) ** 2
     )
@@ -197,7 +203,9 @@ def angle_diff_sym(angle1, angle2, simi=1):
     if agree == 0:
         return 0.0
     else:
-        return numpy.degrees(old_div(math.atan2(sini, cosi), simi)) % (old_div(360.0, simi))
+        return numpy.degrees(old_div(math.atan2(sini, cosi), simi)) % (
+            old_div(360.0, simi)
+        )
 
 
 def align_diff_params(ali_params1, ali_params2):
@@ -349,7 +357,8 @@ def multi_align_stability(
                     )
             sqrtP = numpy.sqrt(sum_cosa ** 2 + sum_sina ** 2)
             sqr_pixel_error[i] = max(
-                0.0, d * old_div(d, 4.0 * (1 - old_div(sqrtP, L))) + sqerr(sx) + sqerr(sy)
+                0.0,
+                d * old_div(d, 4.0 * (1 - old_div(sqrtP, L))) + sqerr(sx) + sqerr(sy),
             )
             # Get ave transform params
             H = EMAN2_cppwrap.Transform({"type": "2D"})

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from past.utils import old_div
-
+from __future__ import division
 """
 Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
@@ -209,13 +209,13 @@ def checkitem(item, mpi_comm=-1):
 
 
 def normalize_particle_images(
-        aligned_images,
-        shrink_ratio,
-        target_radius,
-        target_dim,
-        align_params,
-        filament_width=-1,
-        ignore_helical_mask=False,
+    aligned_images,
+    shrink_ratio,
+    target_radius,
+    target_dim,
+    align_params,
+    filament_width=-1,
+    ignore_helical_mask=False,
 ):
     """
 	Function to normalize the images given in <aligned_images>. Note that the
@@ -287,10 +287,12 @@ def normalize_particle_images(
         # create custom masks for filament particle images
         if filament_width != -1:
             mask = ctypes.util.model_rotated_rectangle2D(
-                radius_long=old_div(int(numpy.sqrt(2 * current_dim ** 2))
-                                    , 2),  # long  edge of the rectangular mask
-                radius_short=old_div(int(filament_width * shrink_ratio + 0.5)
-                                     , 2),  # short edge of the rectangular mask
+                radius_long=old_div(
+                    int(numpy.sqrt(2 * current_dim ** 2)), 2
+                ),  # long  edge of the rectangular mask
+                radius_short=old_div(
+                    int(filament_width * shrink_ratio + 0.5), 2
+                ),  # short edge of the rectangular mask
                 nx=current_dim,
                 ny=current_dim,
                 angle=aligned_images[im].get_attr("segment_angle"),
@@ -317,35 +319,35 @@ def normalize_particle_images(
 
 
 def iter_isac_pap(
-        alldata,
-        ir,
-        ou,
-        rs,
-        xr,
-        yr,
-        ts,
-        maxit,
-        CTF,
-        snr,
-        dst,
-        FL,
-        FH,
-        FF,
-        init_iter,
-        main_iter,
-        iter_reali,
-        match_first,
-        max_round,
-        match_second,
-        stab_ali,
-        thld_err,
-        indep_run,
-        thld_grp,
-        img_per_grp,
-        generation,
-        candidatesexist=False,
-        random_seed=None,
-        new=False,
+    alldata,
+    ir,
+    ou,
+    rs,
+    xr,
+    yr,
+    ts,
+    maxit,
+    CTF,
+    snr,
+    dst,
+    FL,
+    FH,
+    FF,
+    init_iter,
+    main_iter,
+    iter_reali,
+    match_first,
+    max_round,
+    match_second,
+    stab_ali,
+    thld_err,
+    indep_run,
+    thld_grp,
+    img_per_grp,
+    generation,
+    candidatesexist=False,
+    random_seed=None,
+    new=False,
 ):
     """
 	Core function to set up the next iteration of ISAC.
@@ -614,32 +616,32 @@ def iter_isac_pap(
 
 
 def isac_MPI_pap(
-        stack,
-        refim,
-        d,
-        maskfile=None,
-        ir=1,
-        ou=-1,
-        rs=1,
-        xrng=0,
-        yrng=0,
-        step=1,
-        maxit=30,
-        isac_iter=10,
-        CTF=False,
-        snr=1.0,
-        rand_seed=-1,
-        color=0,
-        comm=-1,
-        stability=False,
-        stab_ali=5,
-        iter_reali=1,
-        thld_err=1.732,
-        FL=0.1,
-        FH=0.3,
-        FF=0.2,
-        dst=90.0,
-        method="",
+    stack,
+    refim,
+    d,
+    maskfile=None,
+    ir=1,
+    ou=-1,
+    rs=1,
+    xrng=0,
+    yrng=0,
+    step=1,
+    maxit=30,
+    isac_iter=10,
+    CTF=False,
+    snr=1.0,
+    rand_seed=-1,
+    color=0,
+    comm=-1,
+    stability=False,
+    stab_ali=5,
+    iter_reali=1,
+    thld_err=1.732,
+    FL=0.1,
+    FH=0.3,
+    FF=0.2,
+    dst=90.0,
+    method="",
 ):
     """
 	ISAC core function.
@@ -920,7 +922,7 @@ def isac_MPI_pap(
                 peak_list[iref][(im - image_start) * 4 + 3] = mn
                 d[iref * nima + im] = temp[
                     iref * 5
-                    ]  # grab a chunk of the peak list for parallel processing in the next step
+                ]  # grab a chunk of the peak list for parallel processing in the next step
             del temp
 
         del refi
@@ -934,7 +936,7 @@ def isac_MPI_pap(
                 at = time.time()
                 for j in range(numref):
                     dbuf = numpy.zeros(nima, dtype=numpy.float32)
-                    numpy.copyto(dbuf, d[j * nima: (j + 1) * nima])
+                    numpy.copyto(dbuf, d[j * nima : (j + 1) * nima])
 
                     # reduce entries in section <dbuf> of the overall peak_list
                     dbuf = mpi.mpi_reduce(
@@ -946,7 +948,7 @@ def isac_MPI_pap(
                         Blockdata["subgroup_comm"],
                     )  # RETURNS numpy array
                     if Blockdata["subgroup_myid"] == 0:
-                        numpy.copyto(d[j * nima: (j + 1) * nima], dbuf)
+                        numpy.copyto(d[j * nima : (j + 1) * nima], dbuf)
 
                 del dbuf
 
@@ -1175,8 +1177,12 @@ def isac_MPI_pap(
             # There are two approaches to scatter calculations among MPI processes during stability checking.
             # The first one is the original one. I added the second method.
             # Here we try to estimate the calculation time for both approaches.
-            stab_calc_time_method_1 = stab_ali * (old_div((numref - 1), number_of_proc) + 1)
-            stab_calc_time_method_2 = old_div((numref * stab_ali - 1), number_of_proc) + 1
+            stab_calc_time_method_1 = stab_ali * (
+                old_div((numref - 1), number_of_proc) + 1
+            )
+            stab_calc_time_method_2 = (
+                old_div((numref * stab_ali - 1), number_of_proc) + 1
+            )
             ##if my_abs_id == main_node: print "Times estimation: ", stab_calc_time_method_1, stab_calc_time_method_2
 
             # When there is no stability checking or estimated calculation time of new method is greater than 80% of estimated calculation time of original method
@@ -1363,7 +1369,9 @@ def isac_MPI_pap(
                         common += len(previous_members[j].intersection(members))
                         previous_members[j] = members
                         # print "  memebers  ",j,len(members)
-                    agreement = old_div(common, float(totprevious + totcurrent - common))
+                    agreement = old_div(
+                        common, float(totprevious + totcurrent - common)
+                    )
                     j = agreement - previous_agreement
                     if (agreement > 0.5) and (j > 0.0) and (j < 0.05):
                         terminate = 1
@@ -1418,7 +1426,7 @@ def isac_MPI_pap(
 
 
 def do_generation(
-        main_iter, generation_iter, target_nx, target_xr, target_yr, target_radius, options
+    main_iter, generation_iter, target_nx, target_xr, target_yr, target_radius, options
 ):
     """
 	Perform one iteration of ISAC processing within current generation.
@@ -1502,7 +1510,7 @@ def do_generation(
     disp_unit = numpy.dtype("f4").itemsize
     size_of_one_image = target_nx * target_nx
     orgsize = (
-            nimastack * size_of_one_image
+        nimastack * size_of_one_image
     )  # This is number of projections to be computed simultaneously times their size
 
     if Blockdata["myid_on_node"] == 0:
@@ -1699,7 +1707,7 @@ def do_generation(
             good.sort()
             #  Add currently assigned images to the overall list
             if os.path.exists(
-                    os.path.join(Blockdata["masterdir"], "processed_images.txt")
+                os.path.join(Blockdata["masterdir"], "processed_images.txt")
             ):
                 lprocessed = good + sp_utilities.read_text_file(
                     os.path.join(Blockdata["masterdir"], "processed_images.txt")
@@ -1727,7 +1735,7 @@ def do_generation(
             )
 
             if (int(len(bad) * 1.2) < 2 * options.img_per_grp) or (
-                    (len(good) == 0) and (generation_iter == 1)
+                (len(good) == 0) and (generation_iter == 1)
             ):
                 #  Insufficient number of images to keep processing bad set
                 #    or
@@ -1748,7 +1756,7 @@ def do_generation(
                 )
                 # Check whether what remains can be still processed in a new main interation
                 if (len(leftout) < 2 * options.img_per_grp) or (
-                        (len(good) == 0) and (generation_iter == 1)
+                    (len(good) == 0) and (generation_iter == 1)
                 ):
                     #    if the the number of remaining all bad too low full stop
                     keepdoing_main = False
@@ -2010,13 +2018,13 @@ def main(args):
     # ------------------------------------------------------[ command line parameters ]
 
     usage = (
-            sys.argv[0]
-            + " stack_file  [output_directory] --radius=particle_radius"
-            + " --img_per_grp=img_per_grp --CTF <The remaining parameters are"
-            + " optional --ir=ir --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit"
-            + " --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter"
-            + " --iter_reali=iter_reali --stab_ali=stab_ali --thld_err=thld_err"
-            + " --rand_seed=rand_seed>"
+        sys.argv[0]
+        + " stack_file  [output_directory] --radius=particle_radius"
+        + " --img_per_grp=img_per_grp --CTF <The remaining parameters are"
+        + " optional --ir=ir --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit"
+        + " --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter"
+        + " --iter_reali=iter_reali --stab_ali=stab_ali --thld_err=thld_err"
+        + " --rand_seed=rand_seed>"
     )
 
     options, args = parse_parameters(
@@ -2219,7 +2227,7 @@ def main(args):
 
         # fresh start
         if not os.path.exists(
-                os.path.join(Blockdata["masterdir"], "main001", "generation000")
+            os.path.join(Blockdata["masterdir"], "main001", "generation000")
         ):
             #  NOTE: we do not create processed_images.txt selection file as it has to be initially empty
             #  we do, however, initialize all parameters with empty values
@@ -2241,14 +2249,14 @@ def main(args):
                 while keepdoing_main:
                     main_iter += 1
                     if os.path.exists(
-                            os.path.join(Blockdata["masterdir"], "main%03d" % main_iter)
+                        os.path.join(Blockdata["masterdir"], "main%03d" % main_iter)
                     ):
                         if not os.path.exists(
-                                os.path.join(
-                                    Blockdata["masterdir"],
-                                    "main%03d" % main_iter,
-                                    "finished",
-                                )
+                            os.path.join(
+                                Blockdata["masterdir"],
+                                "main%03d" % main_iter,
+                                "finished",
+                            )
                         ):
                             sp_utilities.cmdexecute(
                                 "{} {}".format(
@@ -2266,9 +2274,9 @@ def main(args):
             else:
                 main_iter = options.restart
                 if not os.path.exists(
-                        os.path.join(
-                            Blockdata["masterdir"], "main%03d" % main_iter, "finished"
-                        )
+                    os.path.join(
+                        Blockdata["masterdir"], "main%03d" % main_iter, "finished"
+                    )
                 ):
                     error = 2
                 else:
@@ -2277,7 +2285,7 @@ def main(args):
                     # when continuing from iteration <n> remove all existing directories for iterations <n+i>
                     while keepdoing_main:
                         if os.path.exists(
-                                os.path.join(Blockdata["masterdir"], "main%03d" % main_iter)
+                            os.path.join(Blockdata["masterdir"], "main%03d" % main_iter)
                         ):
                             sp_utilities.cmdexecute(
                                 "{} {}".format(
@@ -2526,11 +2534,10 @@ def main(args):
             # create custom mask per particle in case we're processing filament images
             if options.filament_width != -1:
                 mask = ctypes.util.model_rotated_rectangle2D(
-                    radius_long=old_div(int(numpy.sqrt(2 * nx ** 2))
-                                        , 2),  # use a length that will be guaranteed to cross the whole image
-                    radius_short=int(
-                        options.filament_width * 0.5
-                    ),
+                    radius_long=old_div(
+                        int(numpy.sqrt(2 * nx ** 2)), 2
+                    ),  # use a length that will be guaranteed to cross the whole image
+                    radius_short=int(options.filament_width * 0.5),
                     # use a conservative, slightly larger mask since filaments might not be aligned as well as they could be
                     nx=nx,
                     ny=nx,
@@ -2644,7 +2651,7 @@ def main(args):
 
         else:
             if not checkitem(
-                    os.path.join(Blockdata["masterdir"], "main%03d" % main_iter)
+                os.path.join(Blockdata["masterdir"], "main%03d" % main_iter)
             ):
                 #  CREATE masterdir
                 #  Create generation000 and put files in it
@@ -2693,7 +2700,7 @@ def main(args):
                             junk = sp_utilities.cmdexecute(cmd)
 
                     if os.path.exists(
-                            os.path.join(Blockdata["masterdir"], "not_processed_images.txt")
+                        os.path.join(Blockdata["masterdir"], "not_processed_images.txt")
                     ):
                         cmd = "{} {} {}".format(
                             "cp -Rp",
@@ -2723,7 +2730,7 @@ def main(args):
                 mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
             if not checkitem(
-                    os.path.join(Blockdata["masterdir"], "main%03d" % main_iter, "finished")
+                os.path.join(Blockdata["masterdir"], "main%03d" % main_iter, "finished")
             ):
                 keepdoing_generation = True
                 generation_iter = 0
@@ -2731,19 +2738,19 @@ def main(args):
                 while keepdoing_generation:
                     generation_iter += 1
                     if checkitem(
+                        os.path.join(
+                            Blockdata["masterdir"],
+                            "main%03d" % main_iter,
+                            "generation%03d" % generation_iter,
+                        )
+                    ):
+                        if checkitem(
                             os.path.join(
                                 Blockdata["masterdir"],
                                 "main%03d" % main_iter,
                                 "generation%03d" % generation_iter,
+                                "finished",
                             )
-                    ):
-                        if checkitem(
-                                os.path.join(
-                                    Blockdata["masterdir"],
-                                    "main%03d" % main_iter,
-                                    "generation%03d" % generation_iter,
-                                    "finished",
-                                )
                         ):
                             okdo = False
                         else:

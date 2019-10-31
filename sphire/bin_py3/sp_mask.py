@@ -370,7 +370,9 @@ def sanity_checks(command_args, input_vol):
         nx = input_vol.get_xsize()
         ny = input_vol.get_ysize()
         nz = input_vol.get_zsize()
-        if command_args.s_radius > old_div(nx, 2) or command_args.s_radius > old_div(ny, 2):
+        if command_args.s_radius > old_div(nx, 2) or command_args.s_radius > old_div(
+            ny, 2
+        ):
             sp_global_def.ERROR(
                 "Provided radius is larger than input image dimensions!"
             )

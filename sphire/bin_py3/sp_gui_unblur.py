@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from past.utils import old_div
+from __future__ import division
 # sxgui_unblur for analyzing drift parameters made by Unblur and MotionCor2
 # Author: Markus Stabrin 2016-2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
@@ -2310,7 +2311,7 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
                         angleCos = -1
                     angleRad = matplotlib.numpy.arccos(angleCos)
 
-                    angleDeg =  old_div(angleRad * 180, matplotlib.numpy.pi)
+                    angleDeg = old_div(angleRad * 180, matplotlib.numpy.pi)
 
                     # Save calculations of angles
                     entry["angle{:d}".format(index)] = round(angleDeg, 6)
@@ -2349,8 +2350,7 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             entry[self.dOverall] = round(varOverallDrift, 6)
             entry[self.dMax] = round(varMaximum, 6)
             entry[self.dFrame] = round(
-                old_div(
-                    varOverallDrift, (self.idxLastFrame - self.idxFirstFrame)), 6
+                old_div(varOverallDrift, (self.idxLastFrame - self.idxFirstFrame)), 6
             )
 
         return True
@@ -2664,7 +2664,7 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
                 if self.varAnalyzeOne:
                     intBins = 3
                 else:
-                    intBins = int( old_div(self.lsFiles.count(), 3))
+                    intBins = int(old_div(self.lsFiles.count(), 3))
                 arrBins = matplotlib.numpy.linspace(
                     matplotlib.numpy.min(self.arrData[strName]),
                     matplotlib.numpy.max(self.arrData[strName]) + 0.0001,
@@ -2722,7 +2722,7 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         if self.varAnalyzeOne:
             intBins = 3
         else:
-            intBins = int( old_div(self.lsFiles.count(), 3))
+            intBins = int(old_div(self.lsFiles.count(), 3))
 
         # Special case, if there is no angle available
         if (
@@ -3397,9 +3397,10 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             arrX = matplotlib.numpy.linspace(1, self.intFrames - 1, self.intFrames - 1)
             arrY = matplotlib.numpy.zeros(self.intFrames - 1)
             for number in arrX:
-                arrY[int(number - 1)] =  old_div(matplotlib.numpy.sum(
-                    self.arrData["frame{:d}".format(int(number))]
-                ), int(self.lsFiles.count()))
+                arrY[int(number - 1)] = old_div(
+                    matplotlib.numpy.sum(self.arrData["frame{:d}".format(int(number))]),
+                    int(self.lsFiles.count()),
+                )
             strTitle = r"Average drift per Frame"
             strXLabel = r"Frame"
             strYLabel = r"Average Drift / Angstrom"
@@ -3526,21 +3527,23 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
             # Else calculate the entrys
             else:
-                fltOverallDrift =  old_div(matplotlib.numpy.sum(arrChecked[self.dOverall]), len(
-                    self.listChecked
-                ))
-                fltFrameDrift =  old_div(matplotlib.numpy.sum(arrChecked[self.dFrame]), len(
-                    self.listChecked
-                ))
-                fltEndToEndDrift =  old_div(matplotlib.numpy.sum(arrChecked[self.dEnd]), len(
-                    self.listChecked
-                ))
-                fltMaxDistance =  old_div(matplotlib.numpy.sum(arrChecked[self.dMax]), len(
-                    self.listChecked
-                ))
-                fltMaxDistanceZero =  old_div(matplotlib.numpy.sum(
-                    arrChecked[self.dMaxFirst]
-                ), len(self.listChecked))
+                fltOverallDrift = old_div(
+                    matplotlib.numpy.sum(arrChecked[self.dOverall]),
+                    len(self.listChecked),
+                )
+                fltFrameDrift = old_div(
+                    matplotlib.numpy.sum(arrChecked[self.dFrame]), len(self.listChecked)
+                )
+                fltEndToEndDrift = old_div(
+                    matplotlib.numpy.sum(arrChecked[self.dEnd]), len(self.listChecked)
+                )
+                fltMaxDistance = old_div(
+                    matplotlib.numpy.sum(arrChecked[self.dMax]), len(self.listChecked)
+                )
+                fltMaxDistanceZero = old_div(
+                    matplotlib.numpy.sum(arrChecked[self.dMaxFirst]),
+                    len(self.listChecked),
+                )
 
             # Fill the widgets
             self.leAllMicNumber.setText("{:d}".format(self.lsFiles.count()))
@@ -3701,14 +3704,18 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
             + "You selected {0} of {1} micrographs ({2}%).\n".format(
                 len(self.listChecked),
                 len(self.listChecked) + len(self.listUnchecked),
-                old_div( 100 * len(self.listChecked)
-                , (len(self.listChecked) + len(self.listUnchecked))),
+                old_div(
+                    100 * len(self.listChecked),
+                    (len(self.listChecked) + len(self.listUnchecked)),
+                ),
             )
             + "You discarded {0} of {1} micrographs ({2}%).".format(
                 len(self.listUnchecked),
                 len(self.listChecked) + len(self.listUnchecked),
-                old_div( 100 * len(self.listUnchecked) ,
-                 (len(self.listChecked) + len(self.listUnchecked))),
+                old_div(
+                    100 * len(self.listUnchecked),
+                    (len(self.listChecked) + len(self.listUnchecked)),
+                ),
             )
         )
         warningBox.exec_()

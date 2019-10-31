@@ -1,5 +1,6 @@
 from past.utils import old_div
 from __future__ import print_function
+from __future__ import division
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
 # Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
@@ -265,10 +266,20 @@ def fit_tanh(dres, low=0.1):
             else:
                 qt = fsc - 0.5 * (
                     math.tanh(
-                        old_div(old_div(old_div(math.pi * (data[0][i] + args[0]), 2.0), args[1]), args[0])
+                        old_div(
+                            old_div(
+                                old_div(math.pi * (data[0][i] + args[0]), 2.0), args[1]
+                            ),
+                            args[0],
+                        )
                     )
                     - math.tanh(
-                        old_div(old_div(old_div(math.pi * (data[0][i] - args[0]), 2.0), args[1]), args[0])
+                        old_div(
+                            old_div(
+                                old_div(math.pi * (data[0][i] - args[0]), 2.0), args[1]
+                            ),
+                            args[0],
+                        )
                     )
                 )
             v -= qt * qt
