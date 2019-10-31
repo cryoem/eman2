@@ -33,21 +33,10 @@ Some compatibility tests for the following functions fail!!!
 1) 
 
 In these tests there is a bug --> syntax error:
-1) 
+1) Test_prgq.test_default_values_with_P_ref_a_leads_to_deadlock because a bug in sparx_utilities.even_angles
 
 In these tests there is a strange behavior:
-1) 
-"""
-
-
-
-
-"""
-There are some opened issues in:
-1) Test_prgq.test_default_values_with_P_ref_a_leads_to_deadlock because a bug in sparx_utilities.even_angles
-2) Test_prg.test_2Dimg_as_volume_FAILED --> the values of 'return_old.get_3dview()' are all Nan but the values of 'return_new.get_3dview()' not. ????could be an approxiamtion error???
-3) Test_prep_vol.test_3Dimg_as_volume_interpolation_gridding_method how test if the keiser bessel filter are the same???? 
-4) Test_gen_rings_ctf.test_null_nx_size_SOMETIMES_FAILED and test_default_case sometimes they pass sometimes no. It seems to be due to the approximation of some values in the dicts 
+1) Test_gen_rings_ctf.test_null_nx_size_SOMETIMES_FAILED and test_default_case sometimes they pass sometimes no. It seems to be due to the approximation of some values in the dicts
 """
 
 
