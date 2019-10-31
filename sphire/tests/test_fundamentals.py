@@ -26,7 +26,7 @@ Some compatibility tests for the following functions fail!!!
 
 In these tests there could be a bug:
 1) Test_smallprime --> sometimes we have a "UnboundLocalError" error because we try to access to a not declared variable
-
+2) symmetry_neighbors --> local variable 'neighbors' referenced before assignment. See Test_angular_histogram:test_with_sym_oct_method_S in test_utilities for a real case scenario
 
 In these tests there is a strange behavior:
 """
