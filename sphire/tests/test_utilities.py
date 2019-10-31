@@ -65,7 +65,7 @@ from cPickle import load as pickle_load
 from cPickle import dumps as pickle_dumps
 from os import path, mkdir
 from mpi import *
-import global_def
+import sp_global_def
 from numpy import allclose, array_equal, array
 from numpy import full as numpy_full
 from numpy import float32 as numpy_float32
@@ -76,8 +76,8 @@ from sphire.libpy import sp_utilities as oldfu
 from sphire.utils.SPHIRE.libpy import sp_utilities as fu
 
 mpi_init(0, [])
-global_def.BATCH = True
-global_def.MPI = True
+sp_global_def.BATCH = True
+sp_global_def.MPI = True
 
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 

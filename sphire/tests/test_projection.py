@@ -14,10 +14,10 @@ from test_module import get_arg_from_pickle_file, get_real_data, create_kb, get_
 from test_module import IMAGE_2D,IMAGE_BLANK_2D,IMAGE_3D,IMAGE_BLANK_3D,MASK,MASK_2DIMAGE,MASK_3DIMAGE,KB_IMAGE3D_SIZE_CUBIC
 
 from mpi import *
-import global_def
+import sp_global_def
 mpi_init(0, [])
-global_def.BATCH = True
-global_def.MPI = True
+sp_global_def.BATCH = True
+sp_global_def.MPI = True
 
 
 from sphire.libpy import sp_projection as oldfu

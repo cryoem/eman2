@@ -5,12 +5,12 @@ import unittest
 
 from os import path
 from mpi import *
-import global_def
+import sp_global_def
 
 
 mpi_init(0, [])
-global_def.BATCH = True
-global_def.MPI = True
+sp_global_def.BATCH = True
+sp_global_def.MPI = True
 
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 
