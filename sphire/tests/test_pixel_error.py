@@ -1,17 +1,21 @@
 """
-
 #!/usr/bin/env python
 from __future__ import print_function
 
-#
-# Author: Piotr Pawliczek, 09/06/2012 
+# Author: Adnan Ali 2019 (adnan.ali@mpi-dortmund.mpg.de)
+# Author: Luca Lusnig 2019 (luca.lusnig@mpi-dortmund.mpg.de)
+# Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
+# Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
+# Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
+# Author: Tapu Shaikh 2019 (tapu.shaikh@mpi-dortmund.mpg.de)
+# Copyright (c) 2019 Max Planck Institute of Molecular Physiology
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
 # complete EMAN2 and SPARX software packages have some GPL dependencies,
 # so you are responsible for compliance with the licenses of these packages
-# if you opt to use BSD licensing. The warranty disclaimer below holds
+# if you opt to use BSD licensing. The warranty disclaimer below holfds
 # in either instance.
 #
 # This complete copyright notice must be included in any revised version of the
@@ -30,8 +34,7 @@ from __future__ import print_function
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
-#
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
 from builtins import range
@@ -257,11 +260,12 @@ from __future__ import division
 import unittest
 from os import path
 from mpi import *
-import global_def
+
+from ..libpy import sp_global_def
 
 mpi_init(0, [])
-global_def.BATCH = True
-global_def.MPI = True
+sp_global_def.BATCH = True
+sp_global_def.MPI = True
 
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 
@@ -270,7 +274,7 @@ from numpy import array_equal as numpy_array_equal
 from test_module import   IMAGE_2D,IMAGE_3D,IMAGE_2D_REFERENCE
 
 from sphire.libpy import sp_pixel_error as oldfu
-from sphire.utils.SPHIRE.libpy import sp_pixel_error as fu
+from ..utils.SPHIRE.libpy import sp_pixel_error as fu
 
 """
 pickle files stored under smb://billy.storage.mpi-dortmund.mpg.de/abt3/group/agraunser/transfer/Adnan/pickle files
