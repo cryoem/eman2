@@ -2,7 +2,7 @@ import unittest
 from copy import deepcopy
 from EMAN2_cppwrap import EMData, Reconstructors, EMUtil
 
-from numpy import array_equal, allclose
+from numpy import array_equal, allclose,zeros as numpy_zeros
 from test_module import get_arg_from_pickle_file
 from os import path
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
@@ -10,26 +10,46 @@ ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 from mpi import *
 mpi_init(0, [])
 
+from sphire.libpy import sp_reconstruction as oldfu
+from sphire.utils.SPHIRE.libpy  import sp_reconstruction as fu
 
-from sphire.libpy.sp_utilities import model_circle, model_blank,
 
-from test_module import returns_values_in_file,remove_list_of_file,get_real_data,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER
+
+from test_module import get_real_data,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER
 XFORM_PROJECTION_IMG =get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/alignment.shc"))[0][0]
 PRJLIST = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/multi_shc/multi_shc.do_volume"))[0][0]
 STACK_NAME = 'bdb:' + path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, 'Substack/sort3d_substack_003')
-IMAGE_2D, IMAGE_2D_REFERENCE = get_real_data(dim=2)
+
+
 
 """
+WHAT IS MISSING:
+0) in all the cases where the input file is an image. I did not test the case with a complex image. I was not able to generate it 
+1) recons3d_trl_struct_MPI no idea how test it 
+2) recons3d_4nn after hours is still running ... is it ok? did i use bad input??
+3) recons3d_4nnw_MPI  no idea how test it
+
+
+RESULT AND KNOWN ISSUES
+Some compatibility tests for the following functions fail!!!
+1) 
+
+In these tests there is a bug --> syntax error:
+1) Test_recons3d_4nn_ctf_MPI
+  a) there is a KNOWN BUG --> with sizeprojection  PAP 10/22/2014 
+  b) if you call this function twice, or in the tests case twice in the same class test, the second time that it runs crashed beacuse del sparx_utilities.pad
+     This happen because 'sparx_utilities.pad' obj was destroyed in the first call
+
+In these tests there is a strange behavior:
+1) 
+"""
+
+""" old comment about function that we cleaned
 There are some opened issues in:
 1) insert_slices and insert_slices_pdf seems to have the same behaviour. See Test_insert_slices_VS_insert_slices_pdf
 2) Test_recons3d_4nn_MPI.test_default_case_z_size_both_not_negative_FAILEd failed even if I set the Tollerance to a high value (e.g.: 5)
     but Test_recons3d_4nn_MPI.test_default_case_xy_size_not_negative_myid_not_null does not failed. WHY????
-3) recons3d_trl_struct_MPI not tested
 4) recons3d_4nn_ctf it seems to be not used. I did not tested it
-5) Test_recons3d_4nn_ctf_MPI
-  a) there is a KNOWN BUG --> with sizeprojection  PAP 10/22/2014 
-  b) if you call this function twice, or in the tests case twice in the same class test, the second time that it runs crashed beacuse del sparx_utilities.pad
-     This happen because 'sparx_utilities.pad' obj was destroyed in the first call
 6) Test_recons3d_nn_SSNR_MPI.test_withMask2D, I cannot test the 2Dmask case because:
     I cannot provide it a valid mask. I tried with 'mask2D = sparx_utilities.model_circle(0.1, nx, ny) - sparx_utilities.model_circle(1, nx, ny)'
 7) Test_prepare_recons.test_main_node_half_NOTequal_myid_crashes_because_MPI_ERRORS_ARE_FATAL
@@ -49,10 +69,9 @@ There are some opened issues in:
 pickle files stored under smb://billy.storage.mpi-dortmund.mpg.de/abt3/group/agraunser/transfer/Adnan/pickle files
 """
 
+#   THESE FUNCTIONS ARE COMMENTED BECAUSE NOT INVOLVED IN THE PYTHON3 CONVERSION. THEY HAVE TO BE TESTED ANYWAY
+""" start: new in sphire 1.3
 
-""" start: new in sphire 1.3"""
-from sphire.libpy import sp_reconstruction as oldfu
-from sphire.libpy_py3 import sp_reconstruction as fu
 
 class Test_rec2D(unittest.TestCase):
     def test_rec2D(self):
@@ -61,19 +80,6 @@ class Test_rec2D(unittest.TestCase):
         pass
 
 
-class Test_recons3d_4nn(unittest.TestCase):
-    def test_recons3d_4nn(self):
-        oldv = oldfu.recons3d_4nn(stack_name=0, list_proj=[], symmetry="c1", npad=4, snr=None, weighting=1, varsnr=False, xysize=-1, zsize = -1)
-        v = fu.recons3d_4nn(stack_name=0, list_proj=[], symmetry="c1", npad=4, snr=None, weighting=1, varsnr=False, xysize=-1, zsize = -1)
-        pass
-
-
-
-class Test_recons3d_4nnw_MPI(unittest.TestCase):
-    def test_recons3d_4nnw_MPI(self):
-        oldv = oldfu.recons3d_4nnw_MPI(myid=0, prjlist=0, bckgdata=0, snr = 1.0, sign=1, symmetry="c1", finfo=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.0, fsc = None)
-        v = fu.recons3d_4nnw_MPI(myid=0, prjlist=0, bckgdata=0, snr = 1.0, sign=1, symmetry="c1", finfo=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.0, fsc = None)
-        pass
 
 
 
@@ -204,9 +210,33 @@ class Test_rec3D_MPI_with_getting_odd_even_volumes_from_files(unittest.TestCase)
         oldv = oldfu.rec3D_MPI_with_getting_odd_even_volumes_from_files(fftvol_files, weight_files, reconstructed_vol_files,nx, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, finfo=None, npad = 2, mpi_comm=None)
         v = fu.rec3D_MPI_with_getting_odd_even_volumes_from_files(fftvol_files, weight_files, reconstructed_vol_files,nx, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, finfo=None, npad = 2, mpi_comm=None)
         pass
+"""
 
+""" after an hour is still running .... 
+class Test_recons3d_4nn(unittest.TestCase):
+    def test_default_case(self):
+        nima = EMUtil.get_image_count(STACK_NAME)
+        list_proj = list(range(nima))
+        proj = EMData()
+        proj.read_image(STACK_NAME, list_proj[0])
+        return_new = fu.recons3d_4nn(stack_name=STACK_NAME, list_proj=list_proj[:3], symmetry="c1", npad=4, snr=None, weighting=1, varsnr=False, xysize=-1, zsize = -1)
+        return_old = oldfu.recons3d_4nn(stack_name=STACK_NAME, list_proj=list_proj[:3], symmetry="c1", npad=4, snr=None, weighting=1, varsnr=False, xysize=-1, zsize = -1)
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), 0.5  ))
+"""
+""" not able to test it
+class Test_recons3d_4nnw_MPI(unittest.TestCase):
+    def test_recons3d_4nnw_MPI(self):
+        nima = EMUtil.get_image_count(STACK_NAME)
+        list_proj = list(range(nima))
+        proj = EMData()
+        proj.read_image(STACK_NAME, list_proj[0])
+        return_old = oldfu.recons3d_4nnw_MPI(myid=0, prjlist=[proj,proj], bckgdata=proj, snr = 1.0, sign=1, symmetry="c1", finfo=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.0, fsc = None)
+        return_new = fu.recons3d_4nnw_MPI(myid=0, prjlist=[proj,proj], bckgdata=proj, snr = 1.0, sign=1, symmetry="c1", finfo=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.0, fsc = None)
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), 0.5))
+"""
 """ end: new in sphire 1.3"""
 
+#I have to use the pickle file, nosetests is able to read it but pytest not, to have a 'xform.projection' IMAGE
 class Test_insert_slices(unittest.TestCase):
     size = 76
     img = EMData(size,size)
@@ -231,9 +261,9 @@ class Test_insert_slices(unittest.TestCase):
         weight_new=r_new.get_params()['weight']
         weight_old = r_old.get_params()['weight']
         self.assertTrue(array_equal(fftvol_new.get_3dview(), fftvol_old.get_3dview()))
-        self.assertFalse(array_equal(fftvol_new.get_3dview(), get_real_data(2)[0].get_3dview()))
+        self.assertTrue(array_equal(fftvol_new.get_3dview().flatten().tolist()[20000:20200], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -44.357994079589844, -51.45708465576172, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(weight_new.get_3dview().flatten().tolist()[20000:20200], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] ))
         self.assertTrue(array_equal(weight_new.get_3dview(), weight_old.get_3dview()))
-        self.assertFalse(array_equal(weight_new.get_3dview(), get_real_data(2)[0].get_3dview()))
         self.assertEqual(return_new, return_old)
         self.assertTrue(return_new is None)
         #self.assertTrue(array_equal(r_new.get_params()['fftvol'].get_3dview(), r_old.get_params()['fftvol'].get_3dview())) leads to segmentation fault
@@ -281,6 +311,9 @@ class Test_insert_slices(unittest.TestCase):
 
 
 
+""" These functions have been cleaned
+from sphire.libpy.sp_utilities import model_circle, model_blank
+from test_module import returns_values_in_file,remove_list_of_file
 class Test_insert_slices_pdf(unittest.TestCase):
     size = 76
     img = EMData(size,size)
@@ -395,7 +428,7 @@ class Test_insert_slices_VS_insert_slices_pdf(unittest.TestCase):
         self.assertFalse(array_equal(weight_new.get_3dview(), get_real_data(2)[0].get_3dview()))
         self.assertEqual(return_new, return_old)
         self.assertTrue(return_new is None)
-
+"""
 
 
 class Test_recons3d_4nn_MPI(unittest.TestCase):
@@ -408,25 +441,47 @@ class Test_recons3d_4nn_MPI(unittest.TestCase):
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_default_case(self):
-        return_new = fu.recons3d_4nn_MPI(myid = 0, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr = 1.0, npad=2, xysize=-1, zsize=-1, mpi_comm=MPI_COMM_WORLD)
+        return_new = fu.recons3d_4nn_MPI(myid=0, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
+                                         npad=2, xysize=-1, zsize=-1, mpi_comm=MPI_COMM_WORLD)
         mpi_barrier(MPI_COMM_WORLD)
-        return_old = oldfu.recons3d_4nn_MPI(myid= 0, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr = 1.0, npad=2, xysize=-1, zsize=-1, mpi_comm=MPI_COMM_WORLD)
+        return_old = oldfu.recons3d_4nn_MPI(myid=0, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
+                                            npad=2, xysize=-1, zsize=-1, mpi_comm=MPI_COMM_WORLD)
         mpi_barrier(MPI_COMM_WORLD)
-        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(),0.5))
+        self.assertTrue(allclose(return_new.get_3dview().flatten().tolist()[2925:3000],[0.0, 5.451178731163964e-05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],0.001))
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), 0.5))
 
     def test_default_case_xy_z_size_both_not_negative(self):
-        return_new = fu.recons3d_4nn_MPI(myid= 0, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr = 1.0, npad=2, xysize=1, zsize=1, mpi_comm=MPI_COMM_WORLD)
+        return_new = fu.recons3d_4nn_MPI(myid=0, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
+                                         npad=2, xysize=1, zsize=1, mpi_comm=MPI_COMM_WORLD)
         mpi_barrier(MPI_COMM_WORLD)
-        return_old = oldfu.recons3d_4nn_MPI(myid= 0, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr = 1.0, npad=2, xysize=1, zsize=1, mpi_comm=MPI_COMM_WORLD)
+        return_old = oldfu.recons3d_4nn_MPI(myid=0, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
+                                            npad=2, xysize=1, zsize=1, mpi_comm=MPI_COMM_WORLD)
         mpi_barrier(MPI_COMM_WORLD)
-        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(),0.5, equal_nan=True))
+        self.assertTrue(allclose(return_new.get_3dview().flatten(), [float('NaN')], equal_nan=True))
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), equal_nan=True))
 
     def test_default_case_xy_size_not_negative(self):
-        return_new = fu.recons3d_4nn_MPI(myid= 0, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr = 1.0, npad=2, xysize=1, zsize=-1, mpi_comm=MPI_COMM_WORLD)
+        return_new = fu.recons3d_4nn_MPI(myid=0, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
+                                         npad=2, xysize=1, zsize=-1, mpi_comm=MPI_COMM_WORLD)
         mpi_barrier(MPI_COMM_WORLD)
-        return_old = oldfu.recons3d_4nn_MPI(myid= 0, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr = 1.0, npad=2, xysize=1, zsize=-1, mpi_comm=MPI_COMM_WORLD)
+        return_old = oldfu.recons3d_4nn_MPI(myid=0, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
+                                            npad=2, xysize=1, zsize=-1, mpi_comm=MPI_COMM_WORLD)
         mpi_barrier(MPI_COMM_WORLD)
-        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(),0.5, equal_nan=True))
+        self.assertTrue(allclose(return_new.get_3dview().flatten(),
+                                 [float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
+                                  float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
+                                  float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
+                                  float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
+                                  float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
+                                  float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
+                                  float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
+                                  float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
+                                  float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
+                                  float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
+                                  float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
+                                  float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'),
+                                  float('NaN'), float('NaN'), float('NaN'), float('NaN')], equal_nan=True))
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), 0.5, equal_nan=True))
 
     def test_default_case_z_size_both_not_negative_FAILEd(self):
         self.assertTrue(True)
@@ -439,32 +494,48 @@ class Test_recons3d_4nn_MPI(unittest.TestCase):
         """
 
     def test_default_case_xy_z_size_both_not_negative_myid_not_null(self):
-        return_new = fu.recons3d_4nn_MPI(myid= 1, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr = 1.0, npad=2, xysize=1, zsize=1, mpi_comm=MPI_COMM_WORLD)
+        return_new = fu.recons3d_4nn_MPI(myid=1, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
+                                         npad=2, xysize=1, zsize=1, mpi_comm=MPI_COMM_WORLD)
         mpi_barrier(MPI_COMM_WORLD)
-        return_old = oldfu.recons3d_4nn_MPI(myid= 1, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr = 1.0, npad=2, xysize=1, zsize=1, mpi_comm=MPI_COMM_WORLD)
+        return_old = oldfu.recons3d_4nn_MPI(myid=1, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
+                                            npad=2, xysize=1, zsize=1, mpi_comm=MPI_COMM_WORLD)
         mpi_barrier(MPI_COMM_WORLD)
-        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(),0.5, equal_nan=True))
+        self.assertTrue(array_equal(return_new.get_3dview().flatten(), [0.0]))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_default_case_xy_size_not_negative_myid_not_null(self):
-        return_new = fu.recons3d_4nn_MPI(myid= 1, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr = 1.0, npad=2, xysize=1, zsize=-1, mpi_comm=MPI_COMM_WORLD)
+        return_new = fu.recons3d_4nn_MPI(myid=1, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
+                                         npad=2, xysize=1, zsize=-1, mpi_comm=MPI_COMM_WORLD)
         mpi_barrier(MPI_COMM_WORLD)
-        return_old = oldfu.recons3d_4nn_MPI(myid= 1, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr = 1.0, npad=2, xysize=1, zsize=-1, mpi_comm=MPI_COMM_WORLD)
+        return_old = oldfu.recons3d_4nn_MPI(myid=1, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
+                                            npad=2, xysize=1, zsize=-1, mpi_comm=MPI_COMM_WORLD)
         mpi_barrier(MPI_COMM_WORLD)
-        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(),0.5, equal_nan=True))
+        self.assertTrue(array_equal(return_new.get_3dview().flatten(),
+                                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 
     def test_default_case_z_size_both_not_negative__myid_not_null(self):
-        return_new = fu.recons3d_4nn_MPI(myid = 1, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr = 1.0, npad=2, xysize=-1, zsize=1, mpi_comm=MPI_COMM_WORLD)
+        return_new = fu.recons3d_4nn_MPI(myid=1, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
+                                         npad=2, xysize=-1, zsize=1, mpi_comm=MPI_COMM_WORLD)
         mpi_barrier(MPI_COMM_WORLD)
-        return_old = oldfu.recons3d_4nn_MPI(myid =1, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr = 1.0, npad=2, xysize=-1, zsize=1, mpi_comm=MPI_COMM_WORLD)
+        return_old = oldfu.recons3d_4nn_MPI(myid=1, prjlist=[XFORM_PROJECTION_IMG], symmetry="c1", finfo=None, snr=1.0,
+                                            npad=2, xysize=-1, zsize=1, mpi_comm=MPI_COMM_WORLD)
         mpi_barrier(MPI_COMM_WORLD)
-        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(),0.5, equal_nan=True))
+        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+        self.assertTrue(array_equal(return_new.get_3dview().flatten()[:100], numpy_zeros(100)))
 
     def test_prjlist_is_emptylist_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
-            fu.recons3d_4nn_MPI(myid= 0, prjlist=[], symmetry="c1", finfo=None, snr = 1.0, npad=2, xysize=-1, zsize=-1, mpi_comm=MPI_COMM_WORLD)
+            fu.recons3d_4nn_MPI(myid=0, prjlist=[], symmetry="c1", finfo=None, snr=1.0, npad=2, xysize=-1, zsize=-1,
+                                mpi_comm=MPI_COMM_WORLD)
         mpi_barrier(MPI_COMM_WORLD)
         with self.assertRaises(IndexError) as cm_old:
-            oldfu.recons3d_4nn_MPI(myid= 0, prjlist=[], symmetry="c1", finfo=None, snr = 1.0, npad=2, xysize=-1, zsize=-1, mpi_comm=MPI_COMM_WORLD)
+            oldfu.recons3d_4nn_MPI(myid=0, prjlist=[], symmetry="c1", finfo=None, snr=1.0, npad=2, xysize=-1, zsize=-1,
+                                   mpi_comm=MPI_COMM_WORLD)
         mpi_barrier(MPI_COMM_WORLD)
         self.assertEqual(str(cm_new.exception), "list index out of range")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
@@ -490,8 +561,6 @@ class Test_recons3d_4nn_ctf_MPI(unittest.TestCase):
         self.assertEqual(str(cm_new.exception), "recons3d_4nn_ctf_MPI() takes at least 2 arguments (0 given)")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
-
-
     def test_default_case(self):
         nima = EMUtil.get_image_count(STACK_NAME)
         list_proj = list(range(nima))
@@ -501,6 +570,7 @@ class Test_recons3d_4nn_ctf_MPI(unittest.TestCase):
         mpi_barrier(MPI_COMM_WORLD)
         return_old = oldfu.recons3d_4nn_ctf_MPI(0, [proj], snr = 1.0, sign=1, symmetry="c1", finfo=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.5)
         mpi_barrier(MPI_COMM_WORLD)
+        self.assertTrue(allclose(return_new.get_3dview().flatten().tolist()[179691:179800],[0.004414418246597052, 0.0027832286432385445, 0.0031159124337136745, 0.0014303999487310648, -0.0010390577372163534, -0.0009075439302250743, -0.0013101220829412341, -0.0010013339342549443, 0.0023415705654770136, 0.001426796312443912, -0.0010065339738503098, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 0.01 ))
         self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), 0.5  ))
 
     @unittest.skip("crash if run togheter with the other tests of this class because a bad implementation of the code")
@@ -566,7 +636,7 @@ class Test_recons3d_4nn_ctf_MPI(unittest.TestCase):
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
-
+""" these functions have been cleaned
 class Test_recons3d_nn_SSNR_MPI(unittest.TestCase):
 
     def test_wrong_number_params_too_few_parameters_TypeError(self):
@@ -593,7 +663,7 @@ class Test_recons3d_nn_SSNR_MPI(unittest.TestCase):
 
     def test_withoutMask2D_and_withCTF_randomangles0_ring_width0_crashes_because_signal11SIGSEV(self):
         self.assertTrue(True)
-        """
+        '''
         nima = EMUtil.get_image_count(STACK_NAME)
         list_proj = list(range(nima))
         proj = EMData()
@@ -606,7 +676,7 @@ class Test_recons3d_nn_SSNR_MPI(unittest.TestCase):
 
         self.assertTrue(array_equal(return_new[0], return_old[0]))
         self.assertTrue(array_equal(return_new[1].get_3dview(), return_old[1].get_3dview()))
-        """
+        '''
 
     def test_withoutMask2D_and_withCTF_randomangles0(self):
         nima = EMUtil.get_image_count(STACK_NAME)
@@ -820,7 +890,7 @@ class Test_recons3d_nn_SSNR_MPI(unittest.TestCase):
 
     def test_withMask2D_FAILED_I_cannot_provide_a_valid_mask(self):
         self.assertTrue(True)
-        """
+        '''
         nima = EMUtil.get_image_count(STACK_NAME)
         list_proj = list(range(nima))
         proj = EMData()
@@ -835,7 +905,7 @@ class Test_recons3d_nn_SSNR_MPI(unittest.TestCase):
 
         self.assertTrue(array_equal(return_new[0], return_old[0]))
         self.assertTrue(array_equal(return_new[1].get_3dview(), return_old[1].get_3dview()))
-        """
+        '''
 
 
     def test_with_emptyMask2D_returns_ImageDimensionException(self):
@@ -893,9 +963,9 @@ class Test_prepare_recons(unittest.TestCase):
 
     def test_main_node_half_NOTequal_myid_crashes_because_MPI_ERRORS_ARE_FATAL(self):
         self.assertTrue(True)
-        """
+        '''
         I get the following error because 'mpi.mpi_reduce(...)' in 'reduce_EMData_to_root' in sparx_utilities.py
-        
+
         Launching unittests with arguments python -m unittest test_reconstruction.Test_prepare_recons.test_symC15 in /home/lusnig/EMAN2/eman2/sphire/tests
         [rtxr2:27348] *** An error occurred in MPI_Reduce
         [rtxr2:27348] *** reported by process [1512308737,140346646331392]
@@ -903,11 +973,11 @@ class Test_prepare_recons(unittest.TestCase):
         [rtxr2:27348] *** MPI_ERR_ROOT: invalid root
         [rtxr2:27348] *** MPI_ERRORS_ARE_FATAL (processes in this communicator will now abort,
         [rtxr2:27348] ***    and potentially your MPI job)
-        
+
         Process finished with exit code 8
 
-        """
-        """
+        '''
+        '''
         return_new = fu.prepare_recons(data=self.data, symmetry='c5', myid=0 , main_node_half=1, half_start=4, step=1, index=5, npad=2, mpi_comm = MPI_COMM_WORLD)
         mpi_barrier(MPI_COMM_WORLD)
         return_old = oldfu.prepare_recons(data=self.data, symmetry='c5', myid=0 , main_node_half=1, half_start=4, step=1, index=5, npad=2, mpi_comm = MPI_COMM_WORLD)
@@ -915,7 +985,7 @@ class Test_prepare_recons(unittest.TestCase):
         self.assertEqual(returns_values_in_file(return_old[0]),returns_values_in_file(return_new[0]))
         self.assertEqual(returns_values_in_file(return_old[1]), returns_values_in_file(return_new[1]))
         remove_list_of_file([return_old[0],return_old[1],return_new[0],return_new[1]])
-        """
+        '''
 
     def test_symC5(self):
         return_new = fu.prepare_recons(data=deepcopy(self.data), symmetry='c5', myid=0 , main_node_half=0, half_start=4, step=1, index=5, npad=2, mpi_comm = MPI_COMM_WORLD)
@@ -951,7 +1021,7 @@ class Test_prepare_recons_ctf(unittest.TestCase):
 
     def test_index_equal_group_crashes_because_signal11SIGSEV(self):
         self.assertTrue(True)
-        """        
+        '''        
         return_new = fu.prepare_recons_ctf(nx=self.nx, data=self.data, snr =1, symmetry='c5', myid=0 , main_node_half=0, half_start=0, step=1, finfo=None, npad=2, mpi_comm = MPI_COMM_WORLD,smearstep = 0.0)
         mpi_barrier(MPI_COMM_WORLD)
         return_old = oldfu.prepare_recons_ctf(nx=self.nx, data=self.data,  snr =1, symmetry='c5', myid=0 , main_node_half=0, half_start=0, step=1, finfo=None, npad=2, mpi_comm = MPI_COMM_WORLD,smearstep = 0.0)
@@ -960,7 +1030,7 @@ class Test_prepare_recons_ctf(unittest.TestCase):
         self.assertEqual(returns_values_in_file(return_old[0]),returns_values_in_file(return_new[0]))
         self.assertEqual(returns_values_in_file(return_old[1]), returns_values_in_file(return_new[1]))
         remove_list_of_file([path.join(ABSOLUTE_PATH, return_old[0]),path.join(ABSOLUTE_PATH, return_old[1]),path.join(ABSOLUTE_PATH, return_new[0]),path.join(ABSOLUTE_PATH, return_new[1])])
-        """
+        '''
 
     def test_prepare_recons_ctf_pickle_file_case(self):
         return_new = fu.prepare_recons_ctf(nx=self.nx,data=PRJLIST, snr =1 , symmetry=self.sym, myid=0 , main_node_half=0, half_start=4, step=2, npad=self.npad, mpi_comm = MPI_COMM_WORLD)
@@ -996,21 +1066,21 @@ class Test_recons_from_fftvol(unittest.TestCase):
 
     def test_fftvol_None_crashes_because_signal11SIGSEV(self):
         self.assertTrue(True)
-        """
+        '''
         size = 76
         return_new = fu.recons_from_fftvol(size=size,fftvol= None, weight=EMData(size,size), symmetry="c1", npad = 2)
         return_old = oldfu.recons_from_fftvol(size=size, fftvol=None, weight=EMData(size,size), symmetry="c1", npad = 2)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-        """
+        '''
 
     def test_weight_None_crashes_because_signal11SIGSEV(self):
         self.assertTrue(True)
-        """
+        '''
         size = 76
         return_new = fu.recons_from_fftvol(size=size, fftvol=EMData(size,size), weight=None, symmetry="c1", npad = 2)
         return_old = oldfu.recons_from_fftvol(size=size, fftvol=EMData(size,size),weight=None, symmetry="c1", npad = 2)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-        """
+        '''
 
 
 
@@ -1037,21 +1107,21 @@ class Test_recons_ctf_from_fftvol(unittest.TestCase):
 
     def test_fftvol_None_crashes_because_signal11SIGSEV(self):
         self.assertTrue(True)
-        """
+        '''
         size = 76
         return_new = fu.recons_ctf_from_fftvol(size=size,fftvol= None, weight=EMData(size,size), snr=2,symmetry="c1", weighting=1, npad = 2)
         return_old = oldfu.recons_ctf_from_fftvol(size=size, fftvol=None, weight=EMData(size,size), snr=2,symmetry="c1", weighting=1, npad = 2)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-        """
+        '''
 
     def test_weight_None_crashes_because_signal11SIGSEV(self):
         self.assertTrue(True)
-        """
+        '''
         size = 76
         return_new = fu.recons_ctf_from_fftvol(size=size, fftvol=EMData(size,size), weight=None, snr=2,symmetry="c1", weighting=1, npad = 2)
         return_old = oldfu.recons_ctf_from_fftvol(size=size, fftvol=EMData(size,size),weight=None, snr=2,symmetry="c1", weighting=1, npad = 2)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-        """
+        '''
 
 
 
@@ -1072,7 +1142,7 @@ class Test_get_image_size(unittest.TestCase):
         self.assertEqual(return_new, size)
 
     def test_get_image_myID_not_null_MPI_ERRORS_ARE_FATAL(self):
-        """
+        '''
         I get the following error because 'mpi.mpi_reduce(...)' in 'reduce_EMData_to_root' in sparx_utilities.py
 
         Launching unittests with arguments python -m unittest test_reconstruction.Test_get_image_size.test_get_image_de2fault_case in /home/lusnig/EMAN2/eman2/sphire/tests
@@ -1082,15 +1152,15 @@ class Test_get_image_size(unittest.TestCase):
         [rtxr2:32644] *** MPI_ERR_ROOT: invalid root
         [rtxr2:32644] *** MPI_ERRORS_ARE_FATAL (processes in this communicator will now abort,
         [rtxr2:32644] ***    and potentially your MPI job)
-        """
+        '''
         self.assertTrue(True)
-        """
+        '''
         size=76
         return_new = fu.get_image_size([ EMData(size,size),EMData(size,size),EMData(size,size) ], 1 )
         return_old = oldfu.get_image_size([ EMData(size,size),EMData(size,size),EMData(size,size) ], 1 )
         self.assertEqual(return_new, return_old)
         self.assertEqual(return_new, size)
-        """
+        '''
 
     def test_get_image_NONE_returns_AttributeError_NoneType_obj_hasnot_attribute_get_xsize(self):
         with self.assertRaises(AttributeError) as cm_new:
@@ -1115,7 +1185,7 @@ class Test_rec3D_MPI(unittest.TestCase):
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_rec3D_MPI_should_return_True(self):
-        """ it is the Adnan starting test and not a default value case because 'odd_start' is not 0 """
+        ''' it is the Adnan starting test and not a default value case because 'odd_start' is not 0 '''
         return_new = fu.rec3D_MPI( PRJLIST, 1.0, self.sym, mask3D = None, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, odd_start=4, eve_start=1, finfo=None, index=-1, npad = 2, mpi_comm=None, smearstep = 0.0)
         mpi_barrier(MPI_COMM_WORLD)
         return_old = oldfu.rec3D_MPI( PRJLIST, 1.0, self.sym, mask3D = None, fsc_curve = None, myid = 0, main_node = 0, rstep = 1.0, odd_start=4, eve_start=1, finfo=None, index=-1, npad = 2, mpi_comm=None, smearstep = 0.0)
@@ -1289,7 +1359,7 @@ class Test_prepare_recons_ctf_two_chunks(unittest.TestCase):
         self.assertEqual(msg[3], msg_old[3])
 
     def test_zero_chunk_ID_crashes_because_signal11SIGSEV(self):
-        """
+        '''
         d = deepcopy(self.data)
         sym = self.option.sym
         sym = sym[0].lower() + sym[1:]
@@ -1303,7 +1373,7 @@ class Test_prepare_recons_ctf_two_chunks(unittest.TestCase):
         self.assertEqual(returns_values_in_file(return_old[0]), returns_values_in_file(return_new[0]))
         self.assertEqual(returns_values_in_file(return_old[1]), returns_values_in_file(return_new[1]))
         remove_list_of_file(list(return_new) + list(return_old) + [name.replace("fftvol","weight") for name in return_new+return_old])
-        """
+        '''
         self.assertTrue(True)
 
     def test_prepare_recons_ctf_two_chunks_pickle_case(self):
@@ -1481,7 +1551,7 @@ class Test_rec3D_two_chunks_MPI(unittest.TestCase):
         self.assertTrue(array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
         self.assertTrue(array_equal(return_new[1], return_old[1]))
 
-
+"""
 
 """
 @unittest.skip("skip addnan tests")
