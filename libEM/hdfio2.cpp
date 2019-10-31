@@ -1615,7 +1615,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 					usdata[i] = (unsigned short)UINT16_max;
 				}
 				else {
-					usdata[i]=(unsigned short)((data[i]-rendermin)/(rendermax-rendermin)*UINT16_max);
+					usdata[i]=(unsigned short)roundf((data[i]-rendermin)/(rendermax-rendermin)*UINT16_max);
 				}
 			}
 
@@ -1663,7 +1663,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 					ucdata[i] = (unsigned char)UINT8_max;
 				}
 				else {
-					ucdata[i]=(unsigned char)((data[i]-rendermin)/(rendermax-rendermin)*UINT8_max);
+					ucdata[i]=(unsigned char)roundf((data[i]-rendermin)/(rendermax-rendermin)*UINT8_max);
 				}
 			}
 
@@ -1722,7 +1722,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 					usdata[i] = (unsigned short)UINT16_max;
 				}
 				else {
-					usdata[i]=(unsigned short)((data[i]-rendermin)/(rendermax-rendermin)*UINT16_max);
+					usdata[i]=(unsigned short)roundf((data[i]-rendermin)/(rendermax-rendermin)*UINT16_max);
 				}
 			}
 
@@ -1762,7 +1762,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 					ucdata[i] = (unsigned char)UINT8_max;
 				}
 				else {
-					ucdata[i]=(unsigned char)((data[i]-rendermin)/(rendermax-rendermin)*UINT8_max);
+					ucdata[i]=(unsigned char)roundf((data[i]-rendermin)/(rendermax-rendermin)*UINT8_max);
 				}
 			}
 
