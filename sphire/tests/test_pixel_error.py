@@ -261,7 +261,7 @@ import unittest
 from os import path
 from mpi import *
 
-from ..libpy import sp_global_def
+import sp_global_def
 
 mpi_init(0, [])
 sp_global_def.BATCH = True
