@@ -68,7 +68,7 @@ def print_timestamp( tag="" ):
 			provide more information [default: ""]
 
 	Example:
-		>>>  print_timestamp( "Start" )
+		  print_timestamp( "Start" )
 		[Start] : 2019-02-07 11:29:37
 	"""
 	
@@ -143,7 +143,7 @@ def sxprint( *args, **kwargs ):
 			name exists it is created.
 
 	Example:
-		>>> sxprint( "This is " + "a %s" % "test" + ".", filename="out.log" )
+		 sxprint( "This is " + "a %s" % "test" + ".", filename="out.log" )
 		2019-02-07 13:36:50 <module> => This is a test.
 	"""
 	end = kwargs.get('end', '\n')
