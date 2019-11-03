@@ -246,6 +246,7 @@ pipeline {
   
   options {
     timestamps()
+    lock resource: "${AGENT_NAME}"
   }
   
   environment {
