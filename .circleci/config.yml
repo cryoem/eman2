@@ -9,9 +9,9 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - mini-eman-deps-17.0-boost=1.68-1
+            - mini-eman-deps-17.0-boost=1.69-1
       - save_cache:
-          key: mini-eman-deps-17.0-boost=1.68-1
+          key: mini-eman-deps-17.0-boost=1.69-1
           paths:
             - ~/miniconda2
       - run: bash ci_support/build_no_recipe.sh
@@ -24,9 +24,9 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - mini-eman-deps-17.0-boost=1.68-1
+            - mini-eman-deps-17.0-boost=1.69-1
       - save_cache:
-          key: mini-eman-deps-17.0-boost=1.68-1
+          key: mini-eman-deps-17.0-boost=1.69-1
           paths:
             - ~/miniconda2
       - run: bash ci_support/build_recipe.sh
