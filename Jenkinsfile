@@ -76,7 +76,7 @@ def notifyEmail() {
         subject = '[cron] - ' + subject
     }
     
-    if(STAGE_NAME == 'test-continuous') {
+    if(STAGE_NAME == 'test-continuous' && isMasterBranch()) {
         to      = '$DEFAULT_RECIPIENTS'
         subject = '[test-continuous] - ' + subject
         body    = 'Continuous binary test: $BUILD_STATUS'
