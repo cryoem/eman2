@@ -1839,6 +1839,8 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 	if (debug) {
 		printf ("into RenderMinMax, rmin = %g, rmax = %g\n", rendermin, rendermax);
 	}
+	
+	if (renderbits<1 || renderbits>16) renderbits=16;
 
 	if (rendermax <= rendermin ||
 		Util::is_nan(rendermin) || Util::is_nan(rendermax) ||
@@ -1850,7 +1852,8 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 		size_t size = (size_t)nx*ny*nz;
 		float min = data[0], max = data[0];
 		
-
+		// we compute image statistics. If this were designed right, we'd have the actual image instead of just
+		// the data pointer and wouldn't need to do this (other than maybe the integer counting)
 		for (size_t i = 0; i < size; ++i) {
 			m += data[i];
 			s += data[i] * data[i];

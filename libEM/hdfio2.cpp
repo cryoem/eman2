@@ -1515,7 +1515,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	char  *cdata = NULL;
 	short *sdata = NULL;
 
-	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, nz);
+	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits, nz);
 //	printf("RMM  %f  %f\n",rendermin,rendermax);
 
 	if (area) {

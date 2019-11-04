@@ -68,6 +68,7 @@ namespace EMAN
 		bool is_new_file;
 		float rendermin;
 		float rendermax;
+		int renderbits;
 	};
 }
 
