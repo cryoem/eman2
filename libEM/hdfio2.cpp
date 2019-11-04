@@ -81,7 +81,7 @@ static const int ATTR_NAME_LEN = 128;
 HdfIO2::HdfIO2(const string & hdf_filename, IOMode rw)
 :	nx(1), ny(1), nz(1), is_exist(false),
 	file(-1), group(-1), filename(hdf_filename),
-	rw_mode(rw), initialized(false), rendermin(0.0), rendermax(0.0)
+	rw_mode(rw), initialized(false), rendermin(0.0), rendermax(0.0), renderbits(16)
 {
 	H5dont_atexit();
 	accprop=H5Pcreate(H5P_FILE_ACCESS);
@@ -1408,7 +1408,7 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 
    // Set render_min and render_max from EMData attr's if possible.
 
-	EMUtil::getRenderLimits(dict, rendermin, rendermax);
+	EMUtil::getRenderLimits(dict, rendermin, rendermax, renderbits);
 
 	EXITFUNC;
 	return 0;
