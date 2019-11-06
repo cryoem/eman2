@@ -65,8 +65,16 @@ And set the variable 'ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER' to its path o
 
 # ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER = "/home/adnan/Downloads/sphire_1_0_precalculated_results/SphireDemoResults"
 ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER = "/home/lusnig/Downloads/SphireDemoResults"
-
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
+
+#Absolute path to the bin folders for compatibility tests purpose.  since in the bin folder we have to set the parameter via cmd I have to run them.
+ABSOLUTE_SPHIRE_PATH= ABSOLUTE_PATH.split("/tests")[0]
+ABSOLUTE_OLDBIN_PATH = path.join(ABSOLUTE_SPHIRE_PATH, "bin")
+ABSOLUTE_BIN_PATH = path.join(ABSOLUTE_SPHIRE_PATH, "utils","SPHIRE","bin")
+
+#absolute of python
+ABSOLUTE_PATH_PYTHON = "/home/lusnig/SPHIRE_1_1/envs/sphire1_3/bin/python"
+
 
 
 def get_real_data(dim=2):
