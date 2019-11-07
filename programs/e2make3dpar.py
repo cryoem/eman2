@@ -312,6 +312,7 @@ def main():
 
 			while 1:
 				st_vals = etc.check_task(tids)
+				E2progress(logid, np.mean(st_vals)/100.)
 				#print("{:.1f}/{} finished".format(np.mean(st_vals), 100))
 				#print(tids)
 				if np.min(st_vals) == 100: break
@@ -535,7 +536,7 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,preprocess):
 				getlst=True
 
 		for i in range(n_input):
-			tmp.read_image(inputfile,i,True)
+			
 			#else : tmp=get_processed_image(inputfile,i,-1,preprocess,pad)
 			# these rely only on the header
 			
@@ -547,39 +548,38 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,preprocess):
 				else:
 					score=2
 				elem={"xform":Transform(dc)}
-			else:
-			
-				try: elem={"xform":tmp["xform.projection"]}
-				except : continue
-					#raise Exception,"Image %d doesn't have orientation information in its header"%i
-
-			# skip any particles targeted at a different model
-			if inputmodel != None and tmp["model_id"]!=inputmodel : continue
-
-			if no_weights==1: elem["weight"]=1.0
-			else :
-				try:
-					elem["weight"]=float(tmp["ptcl_repr"])
-					if no_weights==2 : elem["weight"]=sqrt(elem["weight"])
-				except: elem["weight"]=1.0
-				# This is bad if you have actual empty classes...
-				#if elem["weight"]<=0 :
-					#print "Warning, weight %1.2f on particle %d. Setting to 1.0"%(elem["weight"],i)
-					#elem["weight"]=1.0
-
-			try: elem["quality"]=float(tmp["class_qual"])
-			except:
-				try: elem["quality"]=old_div(1.0,(elem["weight"]+.00001))
-				except: elem["quality"]=1.0
 				
-			if getlst:
 				if score<2:
 					elem["quality"]=-abs(score)
 					elem["weight"]=abs(score)
 				else:
 					elem["quality"]=1.0
 					elem["weight"]=1.0
+			else:
+				tmp.read_image(inputfile,i,True)			
+				try: elem={"xform":tmp["xform.projection"]}
+				except : continue
+					#raise Exception,"Image %d doesn't have orientation information in its header"%i
 
+				# skip any particles targeted at a different model
+				if inputmodel != None and tmp["model_id"]!=inputmodel : continue
+
+				if no_weights==1: elem["weight"]=1.0
+				else :
+					try:
+						elem["weight"]=float(tmp["ptcl_repr"])
+						if no_weights==2 : elem["weight"]=sqrt(elem["weight"])
+					except: elem["weight"]=1.0
+					# This is bad if you have actual empty classes...
+					#if elem["weight"]<=0 :
+						#print "Warning, weight %1.2f on particle %d. Setting to 1.0"%(elem["weight"],i)
+						#elem["weight"]=1.0
+
+				try: elem["quality"]=float(tmp["class_qual"])
+				except:
+					try: elem["quality"]=old_div(1.0,(elem["weight"]+.00001))
+					except: elem["quality"]=1.0
+							
 				
 			elem["filename"]=inputfile
 			elem["filenum"]=i
