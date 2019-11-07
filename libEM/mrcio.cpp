@@ -51,7 +51,7 @@ MrcIO::MrcIO(const string & mrc_filename, IOMode rw)
 		isFEI(false), is_ri(0), is_new_file(false), initialized(false),
 		is_transpose(false), is_stack(false), stack_size(1),
 		is_8_bit_packed(false), use_given_dimensions(true),
-		rendermin(0.0), rendermax(0.0)
+		rendermin(0.0), rendermax(0.0), renderbits(16)
 {
 	memset(&mrch, 0, sizeof(MrcHeader));
 	is_big_endian = ByteOrder::is_host_big_endian();
@@ -967,7 +967,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		mrch.nz = 1;
 	}
 
-	EMUtil::getRenderLimits(dict, rendermin, rendermax);
+	EMUtil::getRenderLimits(dict, rendermin, rendermax, renderbits);
 
 	// Do not write ctf to mrc header in EMAN2
 
@@ -1198,8 +1198,9 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 
 	float rmin = rendermin;
 	float rmax = rendermax;
+	int rbits = renderbits;
 
-	EMUtil::getRenderMinMax(data, nx, ny, rmin, rmax, nz);
+	EMUtil::getRenderMinMax(data, nx, ny, rmin, rmax, rbits, nz);
 
 	signed char    *  scdata = NULL;
 	unsigned char  *  cdata  = NULL;

@@ -1752,7 +1752,7 @@ vector<EMObject> EMUtil::get_all_attributes(const string & file_name, const stri
 	return v;
 }
 
-void EMUtil::getRenderLimits(const Dict & dict, float & rendermin, float & rendermax)
+void EMUtil::getRenderLimits(const Dict & dict, float & rendermin, float & rendermax, int & renderbits)
 {
 	const char    min_or_max_flag     = 'm';
 	const char    std_devs_flag       = 's';
@@ -1774,6 +1774,12 @@ void EMUtil::getRenderLimits(const Dict & dict, float & rendermin, float & rende
 		printf ("into RenderLimits, rmin = %g, rmax = %g\n", rendermin, rendermax);
 	}
 
+	if (dict.has_key("render_bits")) renderbits = (int)dict["render_bits"];
+	else renderbits=16;
+	
+	// TODO: the convention implemented below where render_min/max can be s<number> or m or just a number
+	// I don't believe has ever been used, and is probably better implemented elsewhere, but would need to
+	// verify this before changing the code.
 	if (dict.has_key("render_min")) {
 		svalue = static_cast<string>(dict["render_min"]);
 		str    = svalue.c_str();
@@ -1820,7 +1826,7 @@ void EMUtil::getRenderLimits(const Dict & dict, float & rendermin, float & rende
 }
 
 void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
-				float & rendermin, float & rendermax, const int nz)
+				float & rendermin, float & rendermax, int &renderbits, const int nz)
 {
 	const float   flag_base           =  1.0e30;
 	const float   use_data_min_or_max = -flag_base;
@@ -1833,25 +1839,33 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 	if (debug) {
 		printf ("into RenderMinMax, rmin = %g, rmax = %g\n", rendermin, rendermax);
 	}
+	
+	if (renderbits<1 || renderbits>16) renderbits=16;
 
 	if (rendermax <= rendermin ||
 		Util::is_nan(rendermin) || Util::is_nan(rendermax) ||
 		fabs(rendermin) > use_num_std_devs ||
 		fabs(rendermax) > use_num_std_devs) {
-
+		
 		double m = 0.0f, s = 0.0f;
-
+		size_t nint=0,nzer=0,none=0;	// count the number of integers, zeroes and ones
 		size_t size = (size_t)nx*ny*nz;
 		float min = data[0], max = data[0];
-
+		
+		// we compute image statistics. If this were designed right, we'd have the actual image instead of just
+		// the data pointer and wouldn't need to do this (other than maybe the integer counting)
 		for (size_t i = 0; i < size; ++i) {
 			m += data[i];
 			s += data[i] * data[i];
-
+			if (data[i]==0.0f) nzer++;
+			else if (data[i]==1.0f) none++;
+			if (data[i]==floor(data[i])) nint++;
+			
 			min = data[i] < min ? data[i] : min;
 			max = data[i] > max ? data[i] : max;
 //			if (!Util::goodf(&data[i])) printf("NAN in image at pixel %ld\n",i);
 		}
+		
 
 		m /= (float)(size);
 		s = sqrt(s/(float)(size)-m*m);

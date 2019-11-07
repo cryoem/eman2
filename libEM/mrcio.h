@@ -289,6 +289,7 @@ namespace EMAN
 		bool is_transpose;
 		float rendermin;
 		float rendermax;
+		int renderbits;
 		
 		/** generate the machine stamp used in MRC image format. */
 		static int generate_machine_stamp();

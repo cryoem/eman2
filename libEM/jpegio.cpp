@@ -45,7 +45,7 @@
 using namespace EMAN;
 
 JpegIO::JpegIO(const string & file, IOMode rw):	filename(file), rw_mode(rw),
-				jpeg_file(0), initialized(false), rendermin(0.0), rendermax(0.0)
+				jpeg_file(0), initialized(false), rendermin(0.0), rendermax(0.0), renderbits(16)
 {}
 
 JpegIO::~JpegIO()
@@ -135,7 +135,7 @@ int JpegIO::write_header(const Dict & dict, int image_index,
 //	rendermin = (float)dict["render_min"];	// float value representing black in the output
 //	rendermax = (float)dict["render_max"];	// float value representign white in the output
 
-	EMUtil::getRenderLimits(dict, rendermin, rendermax);
+	EMUtil::getRenderLimits(dict, rendermin, rendermax, renderbits);
 
 	jpegqual = (int)dict["jpeg_quality"];
 	if (jpegqual == 0) jpegqual = 75;
@@ -185,7 +185,7 @@ int JpegIO::write_data(float *data, int image_index, const Region* area,
 	// If we didn't get any parameters in 'render_min' or 'render_max',
 	// we need to find some good ones.
 
-	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax);
+	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits);
 
 	unsigned char *cdata = (unsigned char *)malloc(nx+1);
 

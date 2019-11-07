@@ -42,7 +42,7 @@ PngIO::PngIO(const string & file, IOMode rw)
 :	filename(file), rw_mode(rw), png_file(0), initialized(false),
 	png_ptr(0), info_ptr(0), end_info(0), nx(0), ny(0),
 	depth_type(PNG_INVALID_DEPTH), number_passes(0),
-	rendermin(0.0), rendermax(0.0)
+	rendermin(0.0), rendermax(0.0), renderbits(16)
 {}
 
 PngIO::~PngIO()
@@ -252,7 +252,7 @@ int PngIO::write_header(const Dict & dict, int image_index, const Region*,
 		png_set_swap(png_ptr);
 	}
 
-	EMUtil::getRenderLimits(dict, rendermin, rendermax);
+	EMUtil::getRenderLimits(dict, rendermin, rendermax, renderbits);
 
 	EXITFUNC;
 	return 0;
@@ -365,7 +365,7 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 	// If we didn't get any parameters in 'render_min' or 'render_max',
 	// we need to find some good ones
 
-	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax);
+	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits);
 
 //	printf("render %f %f \n",rendermin,rendermax);
 

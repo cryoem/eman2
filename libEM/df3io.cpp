@@ -39,7 +39,7 @@ using namespace EMAN;
 
 Df3IO::Df3IO(const string & df3_filename, IOMode rw)
 :	filename(df3_filename), rw_mode(rw), df3file(0),
- 	initialized(false), is_new_file(false), rendermin(0.0), rendermax(0.0)
+ 	initialized(false), is_new_file(false), rendermin(0.0), rendermax(0.0), renderbits(16)
 {
 }
 
@@ -111,7 +111,7 @@ int Df3IO::write_header(const Dict & dict, int, const Region*, EMUtil::EMDataTyp
 	df3header[2] = nz;
 	ByteOrder::become_big_endian(df3header, 3);
 
-	EMUtil::getRenderLimits(dict, rendermin, rendermax);
+	EMUtil::getRenderLimits(dict, rendermin, rendermax, renderbits);
 
 	if(fwrite(df3header, sizeof(unsigned short), 3, df3file) != 3) {
 		throw ImageWriteException(filename, "DF3 header");
@@ -177,7 +177,7 @@ int Df3IO::write_data(float *data, int, const Region*,
 	unsigned short * usdata = 0;
 	unsigned char * ucdata = 0;
 
-	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, nz);
+	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits,  nz);
 
 	switch(dt) {
 	case EMUtil::EM_UINT:

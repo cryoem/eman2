@@ -76,7 +76,7 @@ def notifyEmail() {
         subject = '[cron] - ' + subject
     }
     
-    if(STAGE_NAME == 'test-continuous') {
+    if(STAGE_NAME == 'test-continuous' && isMasterBranch()) {
         to      = '$DEFAULT_RECIPIENTS'
         subject = '[test-continuous] - ' + subject
         body    = 'Continuous binary test: $BUILD_STATUS'
@@ -246,6 +246,7 @@ pipeline {
   
   options {
     timestamps()
+    lock resource: "${AGENT_NAME}"
   }
   
   environment {
@@ -286,7 +287,7 @@ pipeline {
       
       steps {
         notifyGitHub('PENDING')
-        sh 'source $(conda info --root)/bin/activate eman-deps-14.0 && bash ci_support/build_no_recipe.sh'
+        sh 'source $(conda info --root)/bin/activate eman-deps-15.0 && env | sort && bash ci_support/build_no_recipe.sh'
       }
     }
     

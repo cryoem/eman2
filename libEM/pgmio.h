@@ -80,6 +80,7 @@ namespace EMAN
 		
 		float rendermin;
 		float rendermax;
+		int renderbits;
 	};
 }
 

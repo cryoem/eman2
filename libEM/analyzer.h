@@ -268,7 +268,7 @@ namespace EMAN
 			d.put("verbose", EMObject::INT, "Display progress if set, more detail with larger numbers (9 max)");
 			d.put("seedmode",EMObject::INT, "How to generate initial seeds. 0 - random element (default), 1 - max sum, min sum, linear");
 			d.put("ncls", EMObject::INT, "number of desired classes");
-			d.put("maxiter", EMObject::INT, "maximum number of iterations");
+			d.put("maxiter", EMObject::INT, "maximum number of iterations (default=100)");
 			d.put("minchange", EMObject::INT, "Terminate if fewer than minchange members move in an iteration");
 			d.put("mininclass", EMObject::INT, "Minumum number of particles to keep a class as good (not enforced at termination");
 			d.put("slowseed",EMObject::INT, "Instead of seeding all classes at once, it will gradually increase the number of classes by adding new seeds in groups with large standard deviations");

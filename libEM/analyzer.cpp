@@ -235,9 +235,9 @@ for (int i=0; i<maxiter; i++) {
 	nchanged=0;
 	resort();
 	reclassify();
+	update_centers();
 	if (verbose) printf("iter %d>  %d (%d)\n",i,nchanged,ncls);
 	if (nchanged<minchange && ncls==nclstot) break;
-	update_centers();
 
 	if (slowseed && i%3==2 && ncls<nclstot) {
 		for (int j=0; j<slowseed && ncls<nclstot; j++) {
@@ -287,7 +287,11 @@ for (int i=0; i<ncls; i++) {
 		// when it reaches zero the particle will no longer participate in determining the location of a center
 		if (outlierclass) {	// outliers are relegated to the outlier class permanently
 			for (int j=0; j<nptcl; j++) {
-				if ((int)images[j]->get_attr("class_id")==i) images[i]->set_attr("class_id",nclstot-1);
+				if ((int)images[j]->get_attr("class_id")==i) {
+					if (verbose) printf("outlier: %d\n",j);
+					images[j]->set_attr("class_id",nclstot-1);
+					//nchanged++;	// should happen automatically below
+				}
 			}
 		}
 		// if not using outlier class, we use "is_ok_center" concept to reduce influence of outliers
@@ -337,14 +341,20 @@ if (i==ncls) return;
 // make a list of all particles which could be centers
 vector<int> goodcen;
 if (outlierclass) {
-	for (int i=0; i<nptcl; i++) if ((int)images[i]->get_attr("class_id")!=nclstot-1) goodcen.push_back(i);
+	for (int i=0; i<nptcl; i++) { if ((int)images[i]->get_attr("class_id")!=nclstot-1) goodcen.push_back(i); }
 }
 else {
 //	printf("c%d\n",outlierclass);
-	for (int i=0; i<nptcl; i++) if ((int)images[i]->get_attr("is_ok_center")>0) goodcen.push_back(i);
+	for (int i=0; i<nptcl; i++) { if ((int)images[i]->get_attr("is_ok_center")>0) goodcen.push_back(i); }
 }
 
-if (goodcen.size()==0) throw UnexpectedBehaviorException("Kmeans ran out of valid center particles with the provided parameters");
+if (goodcen.size()==0) {
+	printf("Kmeans ran out of valid center particles, disabling outlier mode and finishing. Results not valid.\n");
+	for (int i=0; i<nptcl; i++) goodcen.push_back(i);
+	outlierclass=0;
+	return;
+}
+//	throw UnexpectedBehaviorException("Kmeans ran out of valid center particles with the provided parameters");
 
 // pick a random particle for the new seed
 // for (i=0; i<ncls; i++) {
@@ -358,8 +368,10 @@ if (goodcen.size()==0) throw UnexpectedBehaviorException("Kmeans ran out of vali
 // use a valid center with a large distance for the new seed
 for (i=0; i<ncls; i++) {
 	if (centers[i]) continue;		// center doesn't need reseeding
-	j=Util::get_irand(0,ncls-1);	// pick a random class
-	if (centers[j] && centers[j]->has_attr("worst_ptcl")) {		// try to use the worst particle from that class
+	if (outlierclass) j=Util::get_irand(0,ncls-2);  // don't reuse particles identified as outliers
+	else j=Util::get_irand(0,ncls-1);	// pick a random class
+	// The worst particle method with outliers often 'eats' all of the particles
+	if (!outlierclass && centers[j] && centers[j]->has_attr("worst_ptcl")) {		// try to use the worst particle from that class
 		centers[i]=images[(int)centers[j]->get_attr("worst_ptcl")]->copy();
 		printf("reseed %d -> worst (cls %d)\n",i,j);
 	}
@@ -424,7 +436,9 @@ for (int i=0; i<nptcl; i++) {
 	if (outlierclass && (int)images[i]->get_attr_default("class_id",0)==nclstot-1) continue;	// outliers are forever
 	float best=1.0e38f;
 	int bestn=0;
-	for (int j=0; j<ncls; j++) {
+	int lim=ncls;
+	if (outlierclass) lim=ncls-1;	// particles don't join the outliers based on distance
+	for (int j=0; j<lim; j++) {
 //		float d=c->cmp(images[i],centers[j]);
 		float d=qsqcmp(images[i],centers[j]);
 		if (d<best) { best=d; bestn=j; }

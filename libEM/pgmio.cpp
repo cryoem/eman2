@@ -48,7 +48,7 @@ const char *PgmIO::MAGIC_ASCII = "P2";
 PgmIO::PgmIO(const string & file, IOMode rw)
 :	filename(file), rw_mode(rw), pgm_file(0), is_big_endian(true),
 	initialized(false), nx(0), ny(0), maxval(0), minval(0),
-	file_offset(0), rendermin(0), rendermax(0)
+	file_offset(0), rendermin(0), rendermax(0), renderbits(16)
 {}
 
 PgmIO::~PgmIO()
@@ -199,7 +199,7 @@ int PgmIO::write_header(const Dict & dict, int image_index, const Region*,
 			maxval = 255;
 		}
 
-		EMUtil::getRenderLimits(dict, rendermin, rendermax);
+		EMUtil::getRenderLimits(dict, rendermin, rendermax, renderbits);
 
 		fprintf(pgm_file, "%s\n%d %d\n%d\n", MAGIC_BINARY, nx, ny, maxval);
 	}
@@ -252,7 +252,7 @@ int PgmIO::write_data(float *data, int image_index, const Region* area,
 	check_region(area, IntSize(nx, ny));
 
 	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
-	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax);
+	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits);
 
 	unsigned char *cdata=(unsigned char *)malloc(nx*ny);	//cdata is the normalized data
 

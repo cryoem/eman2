@@ -143,6 +143,7 @@ namespace EMAN
         // render_min and render_max
 	    float rendermin;
 	    float rendermax;
+		int renderbits;
 	};
 }
 
