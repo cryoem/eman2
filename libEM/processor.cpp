@@ -1278,6 +1278,8 @@ void GaussZFourierProcessor::process_inplace(EMData * image)
 	}
 
 	float omega = params["cutoff_abs"];
+	float zcenter=params.set_default("centerfreq",0.0);
+	
 	omega = (omega<0?-1.0:1.0)*0.5f/omega/omega;
 
 	EMData *fft;
@@ -1300,12 +1302,13 @@ void GaussZFourierProcessor::process_inplace(EMData * image)
 	int ny=fft->get_ysize();
 	int nz=fft->get_ysize();
 	omega /=(nz*nz)/4;
+	zcenter=zcenter*(float)dict["apix_x"]*nz;
 
 	for (int z=-nz/2; z<nz/2; z++) {
 		for (int y=-ny/2; y<ny/2; y++) {
 			for (int x=0; x<nx/2; x++) {
 				std::complex <float> v=fft->get_complex_at(x,y,z);
-				fft->set_complex_at(x,y,z,v*exp(-omega*z*z));
+				fft->set_complex_at(x,y,z,v*exp(-omega*(abs(z)-zcenter)*(abs(z)-zcenter)));
 			}
 		}
 	}
