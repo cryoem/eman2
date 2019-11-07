@@ -405,6 +405,7 @@ class SptAlignTask(JSTask):
 				aligndic["rand180"]=options.rand180
 			
 			else:
+				xfs=[Transform()]
 				if options.maxshift>0:
 					aligndic["maxshift"]=options.maxshift
 
@@ -426,18 +427,19 @@ class SptAlignTask(JSTask):
 			
 			if options.breaksym:
 				xf=c[0]["xform.align3d"]
-				
 				b.process_inplace("xform", {"transform":xf})
-				#b.translate(0,0,5)
 				cs=[]
 				transxf=[]
 				for si in range(nsym):
 					ref=refasym[data[3]][si]
-					
-					bb=b.align("translational",ref,{"intonly":1, "maxshift":options.maxshift})
-					ts=bb["xform.align3d"]
-					bb=b.process("xform",{"transform":ts})
-					
+					if options.maxshift>0:
+						bb=b.align("translational",ref,{"intonly":1, "maxshift":options.maxshift})
+						ts=bb["xform.align3d"]
+						bb=b.process("xform",{"transform":ts})
+					else:
+						bb=b
+						ts=Transform()
+						
 					#print(bb["xform.align3d"].get_trans())
 					ccc=bb.cmp("fsc.tomo.auto", ref, {"sigmaimgval":3.0, "sigmawithval":0.})
 					cs.append(ccc)
