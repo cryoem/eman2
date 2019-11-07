@@ -93,7 +93,7 @@ OPTION(ENABLE_MEMDEBUG "enable memory debug support of objects" OFF)
 OPTION(ENABLE_MEMDEBUG2 "enable memory debug support of EMData" OFF)
 OPTION(ENABLE_BOUNDS_CHECKING "enable bounds checking support" OFF)
 OPTION(ENABLE_RT "enable RT support" ON)
-OPTION(ENABLE_WARNINGS "display warnings during compilation" ON)
+OPTION(ENABLE_WARNINGS "display warnings during compilation" OFF)
 OPTION(ENABLE_IOCACHE "enable ImageIO caching" OFF)
 
 #flags for optimization level. You can only turn one of following option to ON, or leave all of them to OFF.
