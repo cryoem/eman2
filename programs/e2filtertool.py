@@ -771,6 +771,11 @@ class EMFilterTool(QtWidgets.QMainWindow):
 			self.viewer[0].insertNewNode("Slice", volslice, parentnode=self.sgdata)
 
 		E2loadappwin("e2filtertool","image",self.viewer[0].qt_parent)
+		if self.origdata[0].has_attr("source_path"):
+			winname=str(self.origdata[0]["source_path"])
+		else:
+			winname="FilterTool"
+		self.viewer[0].setWindowTitle(winname)
 
 		self.procChange(-1)
 
