@@ -370,7 +370,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.setspanel.update_sets()
 		self.wboxsize.setValue(self.get_boxsize())
 
-		print(self.sets)
+		#print(self.sets)
 		for i in range(len(self.boxes)):
 			self.update_box(i)
 		
@@ -610,6 +610,9 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		     'y':[1, self.xzview, self.y_loc],
 		     'x':[0, self.zyview, self.x_loc]} 
 		
+		if self.boxshape=="circle": lwi=7
+		else: lwi=8
+		
 		for ax in axis:
 			ia, view, loc=pms[ax]
 			
@@ -631,8 +634,14 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 					## boxes are 1 slice thick in 2d mode
 					inplane=dst<1
 				
+				
 				if inplane and (b[5] in self.sets_visible):
 					shp[i][0]=self.boxshape
+					## selected box is slightly thicker
+					if self.curbox==i:
+						shp[i][lwi]=3
+					else:
+						shp[i][lwi]=2
 					if self.options.mode=="3D":
 						shp[i][6]=rad
 				else:
@@ -702,11 +711,15 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 	
 	def update_box_shape(self,n, box):
 		bs2=self.get_boxsize(box[5])//2
+		if n==self.curbox:
+			lw=3
+		else:
+			lw=2
 		color=self.setcolors[box[5]%len(self.setcolors)].color().getRgbF()
 		if self.options.mode=="3D":
-			self.xyview.add_shape(n,EMShape(["circle",color[0],color[1],color[2],box[0],box[1],bs2,2]))
-			self.xzview.add_shape(n,EMShape(["circle",color[0],color[1],color[2],box[0],box[2],bs2,2]))
-			self.zyview.add_shape(n,EMShape(("circle",color[0],color[1],color[2],box[2],box[1],bs2,2)))
+			self.xyview.add_shape(n,EMShape(["circle",color[0],color[1],color[2],box[0],box[1],bs2,lw]))
+			self.xzview.add_shape(n,EMShape(["circle",color[0],color[1],color[2],box[0],box[2],bs2,lw]))
+			self.zyview.add_shape(n,EMShape(("circle",color[0],color[1],color[2],box[2],box[1],bs2,lw)))
 		else:
 			self.xyview.add_shape(n,EMShape(["rect",color[0],color[1],color[2],
 				    box[0]-bs2,box[1]-bs2,box[0]+bs2,box[1]+bs2,2]))
@@ -836,6 +849,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 
 				else:  ## start dragging
 					self.dragging=i
+					self.curbox=i
 					self.scroll_to(x,y,z,axis)
 					
 				break
@@ -844,9 +858,10 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 
 				self.x_loc, self.y_loc, self.z_loc=x,y,z
 				self.scroll_to(x,y,z,axis)
-				
+				self.curbox=len(self.boxes)
 				self.boxes.append(([xr,yr,zr, 'manual', 0.0, self.currentset]))
 				self.update_box(len(self.boxes)-1)
+				self.dragging=len(self.boxes)-1
 				
 				
 
@@ -880,6 +895,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		if min(x,y,z)<0:
 			return
 		
+		self.x_loc, self.y_loc, self.z_loc=x,y,z
 		x,y,z=self.rotate_coord((x,y,z))
 		self.boxes[self.dragging][:3]= x,y,z
 		self.update_box(self.dragging,True)
@@ -985,7 +1001,6 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		if name in self.sets: self.sets.pop(name)
 		if name in self.boxsize: self.boxsize.pop(name)
 		
-		self.curbox=-1
 		self.update_all()
 		
 		return
@@ -1029,7 +1044,11 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 	def flatten_tomo(self):
 		print("Flatten tomogram by particles coordinates")
 		vis=list(self.sets_visible.keys())
-		pts=np.array([b[:3] for b in self.boxes if b[5] in vis])
+		pts=[b[:3] for b in self.boxes if b[5] in vis]
+		if len(pts)<3:
+			print("Too few visible particles. Cannot flatten tomogram.")
+			return
+		pts=np.array(pts)
 		pca=PCA(3)
 		pca.fit(pts);
 		c=pca.components_
