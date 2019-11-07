@@ -23,9 +23,9 @@ endif()
 cmake_print_variables(OPENGL_INCLUDE_DIR)
 cmake_print_variables(OPENGL_LIBRARIES)
 
-if(OpenGL_FOUND AND NOT TARGET OpenGL)
+if(OpenGL_FOUND AND NOT TARGET OpenGL AND NOT TARGET EMAN::OpenGL)
 	add_library(OpenGL INTERFACE)
-	add_library(OpenGL::OpenGL ALIAS OpenGL)
+	add_library(EMAN::OpenGL ALIAS OpenGL)
 	set_target_properties(OpenGL PROPERTIES
 						  INTERFACE_COMPILE_DEFINITIONS USE_OPENGL
 						  )
