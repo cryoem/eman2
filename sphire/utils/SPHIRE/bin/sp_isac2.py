@@ -135,7 +135,7 @@ masters_from_groups_vs_everything_else_comm = mpi.mpi_comm_split(
 )
 Blockdata["color"], Blockdata[
     "no_of_groups"
-], balanced_processor_load_on_nodes = ctypes.util.get_colors_and_subsets(
+], balanced_processor_load_on_nodes = sp_utilities.get_colors_and_subsets(
     Blockdata["main_node"],
     mpi.MPI_COMM_WORLD,
     Blockdata["myid"],
@@ -162,10 +162,10 @@ def create_zero_group():
     else:
         submyids = []
 
-    submyids = ctypes.util.wrap_mpi_gatherv(
+    submyids = sp_utilities.wrap_mpi_gatherv(
         submyids, Blockdata["main_node"], mpi.MPI_COMM_WORLD
     )
-    submyids = ctypes.util.wrap_mpi_bcast(
+    submyids = sp_utilities.wrap_mpi_bcast(
         submyids, Blockdata["main_node"], mpi.MPI_COMM_WORLD
     )
 
@@ -258,9 +258,9 @@ def normalize_particle_images(
     # create re-usable mask for non-helical particle images
     if filament_width == -1:
         if new_dim >= target_dim:
-            mask = ctypes.util.model_circle(target_radius, target_dim, target_dim)
+            mask = sp_utilities.model_circle(target_radius, target_dim, target_dim)
         else:
-            mask = ctypes.util.model_circle(new_dim // 2 - 2, new_dim, new_dim)
+            mask = sp_utilities.model_circle(new_dim // 2 - 2, new_dim, new_dim)
 
     # pre-process all images
     for im in range(len(aligned_images)):
@@ -285,7 +285,7 @@ def normalize_particle_images(
         current_dim = aligned_images[im].get_xsize()
         # create custom masks for filament particle images
         if filament_width != -1:
-            mask = ctypes.util.model_rotated_rectangle2D(
+            mask = sp_utilities.model_rotated_rectangle2D(
                 radius_long=int(numpy.sqrt(2 * current_dim ** 2))
                 // 2,  # long  edge of the rectangular mask
                 radius_short=int(filament_width * shrink_ratio + 0.5)
@@ -307,7 +307,7 @@ def normalize_particle_images(
 
         # pad images in case they have been shrunken below the target_dim
         if new_dim < target_dim:
-            aligned_images[im] = ctypes.util.pad(
+            aligned_images[im] = sp_utilities.pad(
                 aligned_images[im], target_dim, target_dim, 1, 0.0
             )
 
@@ -524,10 +524,10 @@ def iter_isac_pap(
     if key == group_main_node:
         refi = sp_isac.generate_random_averages(data, K, 9023)
     else:
-        refi = [ctypes.util.model_blank(nx, nx) for i in range(K)]
+        refi = [sp_utilities.model_blank(nx, nx) for i in range(K)]
 
     for i in range(K):
-        ctypes.util.bcast_EMData_to_all(refi[i], key, group_main_node, group_comm)
+        sp_utilities.bcast_EMData_to_all(refi[i], key, group_main_node, group_comm)
 
     # create d[K*ndata] matrix
     orgsize = K * ndata
@@ -592,7 +592,7 @@ def iter_isac_pap(
     if myid == main_node:
         all_ali_params = [None] * len(data)
         for i, im in enumerate(data):
-            alpha, sx, sy, mirror, scale = ctypes.util.get_params2D(im)
+            alpha, sx, sy, mirror, scale = sp_utilities.get_params2D(im)
             all_ali_params[i] = [alpha, sx, sy, mirror]
 
         sp_global_def.sxprint(
@@ -767,13 +767,13 @@ def isac_MPI_pap(
 
     # set all parameters to be zero on input
     for im in range(nima):
-        ctypes.util.set_params2D(alldata[im], [0.0, 0.0, 0.0, 0, 1.0])
+        sp_utilities.set_params2D(alldata[im], [0.0, 0.0, 0.0, 0, 1.0])
 
     image_start, image_end = sp_applications.MPI_start_end(nima, number_of_proc, myid)
 
     if maskfile:
         if type(maskfile) is bytes:
-            mask = ctypes.util.get_image(maskfile)
+            mask = sp_utilities.get_image(maskfile)
         else:
             mask = maskfile
 
@@ -869,18 +869,18 @@ def isac_MPI_pap(
 
         # loop through all images and compute alignment parameters for all references
         for im in range(image_start, image_end):
-            alpha, sx, sy, mirror, scale = ctypes.util.get_params2D(
+            alpha, sx, sy, mirror, scale = sp_utilities.get_params2D(
                 alldata[im]
             )  # retrieves 2D alignment parameters
             ##  TEST WHETHER PARAMETERS ARE WITHIN RANGE
-            alphai, sxi, syi, scalei = ctypes.util.inverse_transform2(
+            alphai, sxi, syi, scalei = sp_utilities.inverse_transform2(
                 alpha, sx, sy
             )  # returns the inverse  geometric transformof the 2d rot and trans matrix
             # If shifts are outside of the permissible range, reset them
             if abs(sxi) > mashi or abs(syi) > mashi:
                 sxi = 0.0
                 syi = 0.0
-                ctypes.util.set_params2D(
+                sp_utilities.set_params2D(
                     alldata[im], [0.0, 0.0, 0.0, 0, 1.0]
                 )  # set 2D alignment parameters (img, alpha, tx, ty, mirror, scale)
             # normalize
@@ -903,7 +903,7 @@ def isac_MPI_pap(
                 alldata[im], refi, txrng, tyrng, step, mode, numr, cnx + sxi, cny + syi
             )
             for iref in range(numref):
-                [alphan, sxn, syn, mn] = ctypes.util.combine_params2(
+                [alphan, sxn, syn, mn] = sp_utilities.combine_params2(
                     0.0,
                     -sxi,
                     -syi,
@@ -990,7 +990,7 @@ def isac_MPI_pap(
         members = [0] * numref  # stores number of images assigned to each reference
         sx_sum = [0.0] * numref
         sy_sum = [0.0] * numref
-        refi = [ctypes.util.model_blank(nx, ny) for j in range(numref)]
+        refi = [sp_utilities.model_blank(nx, ny) for j in range(numref)]
 
         for im in range(image_start, image_end):
 
@@ -1051,12 +1051,12 @@ def isac_MPI_pap(
             mn = int(peak_list[matchref][(im - image_start) * 4 + 3])
 
             if mn == 0:
-                ctypes.util.set_params2D(
+                sp_utilities.set_params2D(
                     alldata[im],
                     [alphan, sxn - sx_sum[matchref], syn - sy_sum[matchref], mn, scale],
                 )  # set 2D alignment parameters (img, alpha, tx, ty, mirror, scale)
             else:
-                ctypes.util.set_params2D(
+                sp_utilities.set_params2D(
                     alldata[im],
                     [alphan, sxn + sx_sum[matchref], syn - sy_sum[matchref], mn, scale],
                 )
@@ -1066,14 +1066,14 @@ def isac_MPI_pap(
         # --------------------------------------------------[ ... we work till here (fabian & adnan)]
 
         for j in range(numref):
-            ctypes.util.reduce_EMData_to_root(refi[j], myid, main_node, comm)
+            sp_utilities.reduce_EMData_to_root(refi[j], myid, main_node, comm)
 
             if myid == main_node:
                 # Golden rule when to do within group refinement
                 EMAN2_cppwrap.Util.mul_scalar(refi[j], 1.0 / float(members[j]))
                 refi[j] = sp_filter.filt_tanl(refi[j], fl, FF)
                 refi[j] = sp_fundamentals.fshift(refi[j], -sx_sum[j], -sy_sum[j])
-                ctypes.util.set_params2D(refi[j], [0.0, 0.0, 0.0, 0, 1.0])
+                sp_utilities.set_params2D(refi[j], [0.0, 0.0, 0.0, 0, 1.0])
 
         if myid == main_node:
             # this is most likely meant to center them, if so, it works poorly,
@@ -1096,7 +1096,7 @@ def isac_MPI_pap(
             ref_ali_params = []
 
             for j in range(numref):
-                alpha, sx, sy, mirror, scale = ctypes.util.get_params2D(refi[j])
+                alpha, sx, sy, mirror, scale = sp_utilities.get_params2D(refi[j])
                 refi[j] = sp_fundamentals.rot_shift2D(refi[j], alpha, sx, sy, mirror)
                 ref_ali_params.extend([alpha, sx, sy, mirror])
         else:
@@ -1108,13 +1108,13 @@ def isac_MPI_pap(
         ref_ali_params = list(map(float, ref_ali_params))
 
         for j in range(numref):
-            ctypes.util.bcast_EMData_to_all(refi[j], myid, main_node, comm)
+            sp_utilities.bcast_EMData_to_all(refi[j], myid, main_node, comm)
 
         # --------------------------------------------------[ Compensate the centering to averages ]
         for im in range(image_start, image_end):
             matchref = belongsto[im]
-            alpha, sx, sy, mirror, scale = ctypes.util.get_params2D(alldata[im])
-            alphan, sxn, syn, mirrorn = ctypes.util.combine_params2(
+            alpha, sx, sy, mirror, scale = sp_utilities.get_params2D(alldata[im])
+            alphan, sxn, syn, mirrorn = sp_utilities.combine_params2(
                 alpha,
                 sx,
                 sy,
@@ -1124,7 +1124,7 @@ def isac_MPI_pap(
                 ref_ali_params[matchref * 4 + 2],
                 int(ref_ali_params[matchref * 4 + 3]),
             )
-            ctypes.util.set_params2D(alldata[im], [alphan, sxn, syn, int(mirrorn), 1.0])
+            sp_utilities.set_params2D(alldata[im], [alphan, sxn, syn, int(mirrorn), 1.0])
 
         fl += 0.05
 
@@ -1152,7 +1152,7 @@ def isac_MPI_pap(
                 if myid == i:
                     ali_params = []
                     for im in range(image_start, image_end):
-                        alpha, sx, sy, mirror, scale = ctypes.util.get_params2D(
+                        alpha, sx, sy, mirror, scale = sp_utilities.get_params2D(
                             alldata[im]
                         )
                         ali_params.extend([alpha, sx, sy, mirror])
@@ -1167,7 +1167,7 @@ def isac_MPI_pap(
                     sx = ali_params[(im - im_start) * 4 + 1]
                     sy = ali_params[(im - im_start) * 4 + 2]
                     mirror = int(ali_params[(im - im_start) * 4 + 3])
-                    ctypes.util.set_params2D(alldata[im], [alpha, sx, sy, mirror, 1.0])
+                    sp_utilities.set_params2D(alldata[im], [alpha, sx, sy, mirror, 1.0])
 
             main_iter += 1
 
@@ -1233,7 +1233,7 @@ def isac_MPI_pap(
                                 method=method,
                             )
                         for im in range(len(class_data)):
-                            alpha, sx, sy, mirror, scale = ctypes.util.get_params2D(
+                            alpha, sx, sy, mirror, scale = sp_utilities.get_params2D(
                                 class_data[im]
                             )
                             ali_params[ii].extend([alpha, sx, sy, mirror])
@@ -1262,7 +1262,7 @@ def isac_MPI_pap(
                         im = err[1]
                         stable_members.append(assign[im])
                         stable_data.append(class_data[im])
-                        ctypes.util.set_params2D(
+                        sp_utilities.set_params2D(
                             class_data[im],
                             [err[2][0], err[2][1], err[2][2], int(err[2][3]), 1.0],
                         )
@@ -1282,7 +1282,7 @@ def isac_MPI_pap(
             for im in range(nima):
                 done_on_node = belongsto[im] % number_of_proc
                 if myid == done_on_node:
-                    alpha, sx, sy, mirror, scale = ctypes.util.get_params2D(alldata[im])
+                    alpha, sx, sy, mirror, scale = sp_utilities.get_params2D(alldata[im])
                     ali_params = [alpha, sx, sy, mirror]
                 else:
                     ali_params = [0.0] * 4
@@ -1290,7 +1290,7 @@ def isac_MPI_pap(
                     ali_params, 4, mpi.MPI_FLOAT, done_on_node, comm
                 )
                 ali_params = list(map(float, ali_params))
-                ctypes.util.set_params2D(
+                sp_utilities.set_params2D(
                     alldata[im],
                     [
                         ali_params[0],
@@ -1302,7 +1302,7 @@ def isac_MPI_pap(
                 )
 
             for j in range(numref):
-                ctypes.util.bcast_EMData_to_all(refi[j], myid, j % number_of_proc, comm)
+                sp_utilities.bcast_EMData_to_all(refi[j], myid, j % number_of_proc, comm)
 
             terminate = 0
             if check_stability:
@@ -1379,7 +1379,7 @@ def isac_MPI_pap(
 
             if check_stability and ((main_iter == max_iter) or (terminate == 1)):
                 #  gather all pixers and print a histogram
-                gpixer = ctypes.util.wrap_mpi_gatherv(gpixer, main_node, comm)
+                gpixer = sp_utilities.wrap_mpi_gatherv(gpixer, main_node, comm)
                 if my_abs_id == main_node and color == 0:
                     lhist = 12
                     region, histo = sp_statistics.hist_list(gpixer, lhist)
@@ -1462,7 +1462,7 @@ def do_generation(
     mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
     if Blockdata["myid"] == Blockdata["main_node"]:
-        plist = ctypes.util.read_text_file(
+        plist = sp_utilities.read_text_file(
             os.path.join(
                 Blockdata["masterdir"],
                 "main%03d" % main_iter,
@@ -1478,7 +1478,7 @@ def do_generation(
 
     mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
-    nimastack = ctypes.util.bcast_number_to_all(
+    nimastack = sp_utilities.bcast_number_to_all(
         nimastack, source_node=Blockdata["main_node"], mpi_comm=mpi.MPI_COMM_WORLD
     )
 
@@ -1538,7 +1538,7 @@ def do_generation(
     alldata = [None] * nimastack
     emnumpy3 = [None] * nimastack
 
-    msk = ctypes.util.model_blank(target_nx, target_nx, 1, 1)
+    msk = sp_utilities.model_blank(target_nx, target_nx, 1, 1)
     for i in range(nimastack):
         pointer_location = base_ptr + i * size_of_one_image * disp_unit
         img_buffer = numpy.frombuffer(
@@ -1704,18 +1704,18 @@ def do_generation(
                     os.path.join(Blockdata["masterdir"], "processed_images.txt")
                 )
                 lprocessed.sort()
-                ctypes.util.write_text_file(
+                sp_utilities.write_text_file(
                     lprocessed,
                     os.path.join(Blockdata["masterdir"], "processed_images.txt"),
                 )
             else:
-                ctypes.util.write_text_file(
+                sp_utilities.write_text_file(
                     good, os.path.join(Blockdata["masterdir"], "processed_images.txt")
                 )
 
         if len(bad) > 0:
             bad.sort()
-            ctypes.util.write_text_file(
+            sp_utilities.write_text_file(
                 bad,
                 os.path.join(
                     Blockdata["masterdir"],
@@ -1741,7 +1741,7 @@ def do_generation(
                 leftout = sorted(
                     list(set(range(Blockdata["total_nima"])) - set(lprocessed))
                 )
-                ctypes.util.write_text_file(
+                sp_utilities.write_text_file(
                     leftout,
                     os.path.join(Blockdata["masterdir"], "not_processed_images.txt"),
                 )
@@ -2061,7 +2061,7 @@ def main(args):
 
     # TODO: what does this do?
     if sp_global_def.CACHE_DISABLE:
-        ctypes.util.disable_bdb_cache()
+        sp_utilities.disable_bdb_cache()
     sp_global_def.BATCH = True
 
     # ------------------------------------------------------[ master directory setup ]
@@ -2224,7 +2224,7 @@ def main(args):
         ):
             #  NOTE: we do not create processed_images.txt selection file as it has to be initially empty
             #  we do, however, initialize all parameters with empty values
-            ctypes.util.write_text_row(
+            sp_utilities.write_text_row(
                 [[0.0, 0.0, 0.0, -1] for i in range(Blockdata["total_nima"])],
                 os.path.join(Blockdata["masterdir"], "all_parameters.txt"),
             )
@@ -2364,7 +2364,7 @@ def main(args):
             if myid == 0:
                 rpw = [float(Blockdata["total_nima"] / q) for q in rpw]
                 rpw[0] = 1.0
-                ctypes.util.write_text_file(
+                sp_utilities.write_text_file(
                     rpw, os.path.join(Blockdata["masterdir"], "rpw.txt")
                 )
             else:
@@ -2379,7 +2379,7 @@ def main(args):
         else:
             if myid == 0:
                 ntp = len(sp_fundamentals.rops_table(original_images[0]))
-                ctypes.util.write_text_file(
+                sp_utilities.write_text_file(
                     [0.0] * ntp, os.path.join(Blockdata["masterdir"], "rpw.txt")
                 )
 
@@ -2454,7 +2454,7 @@ def main(args):
             del original_images
 
             for i in range(len(params2d)):
-                alpha, sx, sy, mirror = ctypes.util.combine_params2(
+                alpha, sx, sy, mirror = sp_utilities.combine_params2(
                     0, params2d[i][1], params2d[i][2], 0, -params2d[i][0], 0, 0, 0
                 )
                 sx /= shrink_ratio
@@ -2467,7 +2467,7 @@ def main(args):
 
         mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
         tmp = params2d[:]
-        tmp = ctypes.util.wrap_mpi_gatherv(tmp, main_node, mpi.MPI_COMM_WORLD)
+        tmp = sp_utilities.wrap_mpi_gatherv(tmp, main_node, mpi.MPI_COMM_WORLD)
         if myid == main_node:
             if options.skip_prealignment:
                 sp_global_def.sxprint("=========================================")
@@ -2518,7 +2518,7 @@ def main(args):
 
         # if we're not looking at filament images we create a circular mask that we can use for all particles
         if options.filament_width == -1:
-            mask = ctypes.util.model_circle(radi, nx, nx)
+            mask = sp_utilities.model_circle(radi, nx, nx)
 
         # defocus value correction for all images
         if Blockdata["myid"] == main_node:
@@ -2526,7 +2526,7 @@ def main(args):
         for im in range(nima):
             # create custom mask per particle in case we're processing filament images
             if options.filament_width != -1:
-                mask = ctypes.util.model_rotated_rectangle2D(
+                mask = sp_utilities.model_rotated_rectangle2D(
                     radius_long=int(numpy.sqrt(2 * nx ** 2))
                     // 2,  # use a length that will be guaranteed to cross the whole image
                     radius_short=int(
@@ -2583,7 +2583,7 @@ def main(args):
             sp_global_def.sxprint("Gather EMData")
 
         # gather normalized particles at the root node
-        ctypes.util.gather_compacted_EMData_to_root(
+        sp_utilities.gather_compacted_EMData_to_root(
             Blockdata["total_nima"], aligned_images, myid
         )
 
@@ -2710,7 +2710,7 @@ def main(args):
                         )
                         junk = sp_utilities.cmdexecute(cmd)
                     else:
-                        ctypes.util.write_text_file(
+                        sp_utilities.write_text_file(
                             list(range(Blockdata["total_nima"])),
                             os.path.join(
                                 Blockdata["masterdir"],
