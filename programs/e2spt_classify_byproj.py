@@ -92,12 +92,12 @@ produce new sets/ for each class, which could be further-refined.
 """
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_argument("--ncls",type=int,help="Number of classes to generate",default=3)
-	parser.add_argument("--path",type=str,default=None,help="Path to an existing spt_XX folder with the alignment results to use, defualt = highest spt_XX")
-	parser.add_argument("--iter",type=int,help="Iteration number within path, default = last iteration",default=-1)
-	parser.add_argument("--layers",type=int,help="number of slices about the center to use for the projection in each direction, ie 0->1, 1->3, 2->5. Default=2",default=2)	
-	parser.add_argument("--shrink", default=1,type=int,help="shrink the particles before processing")
-	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--path",type=str,default=None,help="Path to an existing spt_XX folder with the alignment results to use, defualt = highest spt_XX",guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=0, col=0, rowspan=1, colspan=2,mode="gui")
+	parser.add_argument("--iter",type=int,help="Iteration number within path, default = last iteration",default=-1,guitype="intbox", row=1, col=0, rowspan=1, colspan=1,mode="gui")
+	parser.add_argument("--ncls",type=int,help="Number of classes to generate",default=3,guitype="intbox", row=1, col=1, rowspan=1, colspan=1,mode="gui")
+	parser.add_argument("--layers",type=int,help="number of slices about the center to use for the projection in each direction, ie 0->1, 1->3, 2->5. Default=2",default=2,guitype="intbox", row=2, col=1, rowspan=1, colspan=1,mode="gui")	
+	parser.add_argument("--shrink", default=1,type=int,help="shrink the particles before processing",guitype="intbox", row=2, col=0, rowspan=1, colspan=1,mode="gui")
+	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.", guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--saveali",action="store_true",help="In addition to the unaligned sets/ for each class, generate aligned particle stacks per class",default=False)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -116,6 +116,7 @@ produce new sets/ for each class, which could be further-refined.
 		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]
 		if len(fls)==0 : options.iter=1
 		else: options.iter=max(fls)+1
+		if options.verbose : print("Using iteration ",otions.iter)
 
 	db=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
 
