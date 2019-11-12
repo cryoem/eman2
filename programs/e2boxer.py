@@ -768,8 +768,11 @@ class boxerConvNet(QtCore.QObject):
 		global tf, StackedConvNet_tf
 		import os
 		
-			
-		import tensorflow as tf
+		import tensorflow
+		if tensorflow.__version__[0]=="2" : 
+			import tensorflow.compat.v1 as tf
+			tf.disable_eager_execution()
+		else: import tensorflow as tf
 		os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' #### reduce log output
 		from e2tomoseg_convnet import StackedConvNet_tf, import_tensorflow
 		

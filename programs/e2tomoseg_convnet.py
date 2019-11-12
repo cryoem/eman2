@@ -32,7 +32,11 @@ def import_tensorflow(gpuid=None):
 	global tf
 	if gpuid!=None: #### decide which gpu to use
 		os.environ["CUDA_VISIBLE_DEVICES"]=str(gpuid)
-	import tensorflow as tf
+	import tensorflow
+	if tensorflow.__version__[0]=="2" : 
+		import tensorflow.compat.v1 as tf
+		tf.disable_eager_execution()
+	else: import tensorflow as tf
 	os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' #### reduce log output
 
 
