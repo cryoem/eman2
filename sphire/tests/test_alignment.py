@@ -27,8 +27,12 @@ from test_module import (
 from sphire.libpy.sp_fundamentals import fft  # ccf,rot_shift2D
 from sphire.libpy.sp_utilities import model_circle, model_blank, even_angles
 from sphire.libpy.sp_projection import prep_vol
+from sphire.libpy import sp_projection
+
 from sphire.libpy import sp_alignment as oldfu
 from sphire.utils.SPHIRE.libpy import sp_alignment as fu
+
+import test_module
 
 from mpi import *
 
@@ -43,8 +47,8 @@ WHAT IS MISSING:
 0) in all the cases where the input file is an image. I did not test the case with a complex image. I was not able to generate it 
 1) Test_kbt returns a kaiser filter. I'm not sure to test it in a good way. It is declared in the C++ code. See in "libpyEM/libpyUtils2.cpp" how you can access to it from python
 2) ali_nvol. I do not know how create/find an img with 'xform.align2d'. It crashes calling 'sp_utilities.get_params2D(..)'. I tried to use the pickle file used to test it but i get ZeroDivisionError
-3) alivol_mask. I  do not know how create/find a volume with 'xform.align2d'.
-4) ali_vol_func_rotate. I cannot figure out how fill its input params. See the code for more details
+3) alivol_mask. I  do not know how create/find a volume with 'xform.align2d'.  (solved by adnan)
+4) ali_vol_func_rotate. I cannot figure out how fill its input params. See the code for more details (solved by adnan)
 5) ali_vol_func_shift same problem of (4)
 
 
@@ -65,7 +69,6 @@ In these tests there is a strange behavior:
 2) Test_ornq::test_with_negative_center  --> same input different output in both of the version. At least the version are always returning the same value ... compatibility test OK, but NOT unittestable
 3) Test_multialign2d_scf --> 3 tests run from pycharm but not from console (nosetests too), of course using the same python interpreter
 """
-
 
 """
 pickle files stored under smb://billy.storage.mpi-dortmund.mpg.de/abt3/group/agraunser/transfer/Adnan/pickle files
@@ -2351,7 +2354,25 @@ class Test_reduce_indices_so_that_angles_map_only_to_asymmetrix_unit_and_keep_mi
 """
 
 
+"""
+Comments from Adnan on reply of LUCA's comments
+0) To create a complex image just take fft of Eman image and it will become a complex image. In case if it numpy image , you can set the dtype to complex .
+2)  Its tricky and has bugs. Lets leave it for the time being.
+3) alivol_mask.   I have created a test example of how you can use the 3D_IMAGE as a volume. You just need to add the 
+                  xform parameters using sp_utilities and it will solve the issue.
+4) ali_vol_func_rotate.   You need to pass proper 3D images , a list with projection parameters and the method you want
+                           to use to comapare the results. I have created an example .   
+5) Follow the same procedure and it will solve the problem :).              
+ 
+"""
+
+
+
+
 """ start: new in sphire 1.3"""
+
+
+
 
 
 class Test_crit2d(unittest.TestCase):
@@ -8507,8 +8528,13 @@ class Test_ali_vol_func_rotate(unittest.TestCase):
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ali_vol_func_rotate(self):
-        # v = oldfu.ali_vol_func_rotate(params="", data="")
-        pass
+        params = [250.0, 25.0 , 2.0]
+        print(IMAGE_3D.get_3dview().shape)
+        print(MASK_3DIMAGE.get_3dview().shape)
+
+        data = [ IMAGE_3D, IMAGE_3D, MASK_3DIMAGE, [25.0, 45.0, 22.0, 0.5, 0.8, 1.2, 0 , 1.0], "ccc" ]
+        v = fu.ali_vol_func_rotate(params, data)
+        # pass
 
 
 class Test_ali_vol_func_shift(unittest.TestCase):
@@ -9043,6 +9069,17 @@ class Test_ali_nvol(unittest.TestCase):
         self.assertEqual(
             str(cm_new.exception), "'NoneType' object has no attribute 'set_attr'"
         )
+
+
+    # def test_luca_ali_nvol(self):
+    #     from sphire.libpy import sp_utilities
+    #     p = [180.0,1.0, 30.0, 0.5, 0.5, 1.2, 0,1]
+    #
+    #     new_mask = sp_utilities.model_circle(2, 10, 10, 10)
+    #
+    #     sp_utilities.set_params3D(IMAGE_3D, p)
+    #
+    #     rr = fu.ali_nvol([IMAGE_3D, IMAGE_3D], new_mask)
 
 
 class Test_alivol_mask_getref(unittest.TestCase):
@@ -10315,6 +10352,16 @@ class Test_alivol_mask(unittest.TestCase):
         self.assertEqual(msg[1], "can not multiply images that are not the same size")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[1], msg_old[1])
+
+    def test_luca_ali_vol_mask(self):
+        from sphire.libpy import sp_utilities
+        p = [180.0,0.0, 30.0, 0.5, 0.5, 1.2, 0,1]
+
+        new_mask = sp_utilities.model_circle(2, 10, 10, 10)
+
+        sp_utilities.set_params3D(IMAGE_3D, p)
+
+        rr = fu.alivol_mask(IMAGE_3D, IMAGE_3D, new_mask)
 
 
 """ end: new in sphire 1.3"""
