@@ -42,6 +42,7 @@
 
 // Using =======================================================================
 using namespace boost::python;
+namespace np = boost::python::numpy;
 
 #if PY_MAJOR_VERSION >= 3
 int
@@ -60,17 +61,14 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
         .def(init< const EMAN::EMNumPy& >())
         .def("em2numpy", &EMAN::EMNumPy::em2numpy)
         .def("numpy2em", &EMAN::EMNumPy::numpy2em, return_value_policy< manage_new_object >())
-        .def("assign_numpy_to_emdata", &EMAN::EMNumPy::assign_numpy_to_emdata, return_value_policy< reference_existing_object >())
-        .def("register_numpy_to_emdata", &EMAN::EMNumPy::register_numpy_to_emdata, return_value_policy< reference_existing_object >())
-        .def("unregister_numpy_from_emdata", &EMAN::EMNumPy::unregister_numpy_from_emdata)
         .staticmethod("em2numpy")
         .staticmethod("numpy2em")
-        .staticmethod("assign_numpy_to_emdata")
     ;
 
 
     init_numpy();
 	python::numeric::array::set_module_and_type("numpy", "ndarray");
+	np::initialize();
 
 
 	EMAN::vector_to_python<int>();
@@ -168,10 +166,10 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 	implicitly_convertible<EMAN::EMAN1Ctf*, EMAN::Ctf*>();
 	implicitly_convertible<EMAN::EMAN2Ctf*, EMAN::Ctf*>();
 
-	EMAN::MArrayND_to_python<2>();
-	EMAN::MArrayND_to_python<3>();
-	EMAN::MCArrayND_to_python<2>();
-	EMAN::MCArrayND_to_python<3>();
+	EMAN::MArrayND_to_python<float, 2>();
+	EMAN::MArrayND_to_python<float, 3>();
+	EMAN::MArrayND_to_python<std::complex<float>, 2>();
+	EMAN::MArrayND_to_python<std::complex<float>, 3>();
 
 }
 

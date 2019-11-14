@@ -1,6 +1,6 @@
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_NO_BOOST_CMAKE ON)
-find_package(Boost COMPONENTS python REQUIRED)
+find_package(Boost COMPONENTS python numpy REQUIRED)
 
 message("Boost_LIBRARIES:   ${Boost_LIBRARIES}")
 message("Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")

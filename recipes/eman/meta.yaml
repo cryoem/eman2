@@ -9,7 +9,7 @@ requirements:
     {% set reqs_host = [
             "msinttypes",  # [win]
             "python 2.7.14",
-            "boost 1.63.*",
+            "boost 1.64.*",
             "fftw-mpi",
             "numpy 1.13.*",
             "ftgl",
@@ -36,7 +36,8 @@ requirements:
 test:
   requires:
     - openmpi              # [not win]
-    - eman-deps=15.0
+    - eman-deps=16.0
+    - boost 1.64.*
   
   source_files:
     - examples/mpi_test.py
