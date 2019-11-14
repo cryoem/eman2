@@ -44,15 +44,6 @@
 using namespace boost::python;
 namespace np = boost::python::numpy;
 
-#if PY_MAJOR_VERSION >= 3
-int
-#else
-void
-#endif
-init_numpy()
-{
-    import_array();
-}
 
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyTypeConverter2)
@@ -66,8 +57,7 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
     ;
 
 
-    init_numpy();
-	python::numeric::array::set_module_and_type("numpy", "ndarray");
+	Py_Initialize();
 	np::initialize();
 
 
