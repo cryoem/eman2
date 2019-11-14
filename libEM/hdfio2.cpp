@@ -50,6 +50,16 @@
 	#define  MAXPATHLEN (MAX_PATH * 4)
 #endif	//WIN32
 
+#ifdef _WIN32
+	#if (_MSC_VER < 1800) // _MSC_VER = 1800 (Visual Studio 2013)
+        static float roundf(float num) {
+            float integer = ceilf(num);
+            if (num > 0)
+                return integer - num > 0.5f ? integer - 1.0f : integer;
+            return integer - num >= 0.5f ? integer - 1.0f : integer;
+        }
+	#endif	//_MSC_VER
+#endif	//_WIN32
 
 // Some bugs with using stdint.h, so defining our own limits. Handling as float to avoid some math mishandling 
 const float INT8_min = -128.0f;
@@ -71,7 +81,7 @@ static const int ATTR_NAME_LEN = 128;
 HdfIO2::HdfIO2(const string & hdf_filename, IOMode rw)
 :	nx(1), ny(1), nz(1), is_exist(false),
 	file(-1), group(-1), filename(hdf_filename),
-	rw_mode(rw), initialized(false), rendermin(0.0), rendermax(0.0)
+	rw_mode(rw), initialized(false), rendermin(0.0), rendermax(0.0), renderbits(16)
 {
 	H5dont_atexit();
 	accprop=H5Pcreate(H5P_FILE_ACCESS);
@@ -1398,7 +1408,7 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 
    // Set render_min and render_max from EMData attr's if possible.
 
-	EMUtil::getRenderLimits(dict, rendermin, rendermax);
+	EMUtil::getRenderLimits(dict, rendermin, rendermax, renderbits);
 
 	EXITFUNC;
 	return 0;
@@ -1505,7 +1515,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	char  *cdata = NULL;
 	short *sdata = NULL;
 
-	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, nz);
+	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits, nz);
 //	printf("RMM  %f  %f\n",rendermin,rendermax);
 
 	if (area) {

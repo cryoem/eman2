@@ -2147,6 +2147,7 @@ class EMInspector3D(QtWidgets.QWidget):
 	def closeEvent(self, event):
 		""" Clean up and close """
 		self.scenegraph().main_3d_inspector = None
+		self.backgroundcolor.close()
 		# There is a BUG in QStackedWidget @^#^&#, so it thinks that widgets have been deleted when they haven't!!! (It thinks that when you delete the stacked widget all widgets in the stack have been removed when in fact that is not always the case)
 		for node in self.scenegraph().getAllNodes():
 			node.item_inspector = None

@@ -561,6 +561,7 @@ The basic design of EMAN Processors: <br>\
 			d.put("cutoff_pixels", EMObject::FLOAT, " Width in Fourier pixels (0 - size()/2)");
 			d.put("cutoff_freq", EMObject::FLOAT, "1/Resolution in 1/A (0 - 1 / 2*apix). eg - a 20 A filter is cutoff_freq=0.05");
 			d.put("apix", EMObject::FLOAT, " Override A/pix in the image header (changes x,y and z)");
+			d.put("centerfreq", EMObject::FLOAT, "center of filter frequency at z");
 			return d;
 		}
 
@@ -3950,7 +3951,7 @@ outer radius specifies width of Gaussian starting at inner_radius rather than to
 	class MaskGaussNonuniformProcessor:public CoordinateProcessor
 	{
 	  public:
-		MaskGaussNonuniformProcessor():radius_x(0), radius_y(0), radius_z(0), gauss_width(0)
+		MaskGaussNonuniformProcessor():radius_x(0), radius_y(0), radius_z(0), gauss_width(0),dx(0),dy(0),dz(0)
 		{
 		}
 
@@ -3966,6 +3967,11 @@ outer radius specifies width of Gaussian starting at inner_radius rather than to
 
 			if (params.has_key("radius_z")) radius_z=params["radius_z"];
 			else radius_z=5.0;
+			
+			dx=dy=dz=0.0;
+			if (params.has_key("dx")) dx=params["dx"];
+			if (params.has_key("dy")) dy=params["dy"];
+			if (params.has_key("dz")) dz=params["dz"];
 
 			if (params.has_key("gauss_width")) gauss_width=params["gauss_width"];
 			else gauss_width=0.05f;
@@ -3979,6 +3985,14 @@ outer radius specifies width of Gaussian starting at inner_radius rather than to
 			d.put("radius_y", EMObject::INT, "y-axis radius");
 			d.put("radius_z", EMObject::INT, "z-axis radius");
 			d.put("gauss_width", EMObject::FLOAT, "Gaussian falloff width, relative to each radius, default 0.05");
+			
+			d.put("dx", EMObject::FLOAT,
+				  "Modify mask center by dx relative to the default center nx/2");
+			d.put("dy", EMObject::FLOAT,
+				  "Modify mask center by dy relative to the default center ny/2");
+			d.put("dz", EMObject::FLOAT,
+				  "Modify mask center by dz relative to the default center nz/2");
+
 
 			return d;
 		}
@@ -4003,11 +4017,11 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 	  protected:
 		void process_pixel(float *pixel, int xi, int yi, int zi) const
 		{
-			float dist = pow((xi - nx/2)/radius_x,2.0f) + pow((yi - ny/2)/radius_y,2.0f) + pow((zi - nz/2)/radius_z,2.0f);
+			float dist = pow((xi - (nx/2+dx))/radius_x,2.0f) + pow((yi - (ny/2+dy))/radius_y,2.0f) + pow((zi - (nz/2+dz))/radius_z,2.0f);
 			if (dist>1.0) (*pixel)*=exp(-pow((sqrt(dist)-1.0f)/gauss_width,2.0f));
 		}
 
-		float radius_x,radius_y,radius_z,gauss_width;
+		float radius_x,radius_y,radius_z,gauss_width,dx,dy,dz;
 	};
 
 	/**f(x) = f(x) / exp(-radius*radius * gauss_width / (ny*ny))

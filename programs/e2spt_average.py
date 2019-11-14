@@ -130,7 +130,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.")
-	parser.add_argument("--iter",type=int,help="Iteration number within path. Default = start a new iteration",default=0)
+	parser.add_argument("--iter",type=int,help="Iteration number within path. Default = start a new iteration",default=-1)
 	parser.add_argument("--simthr", default=-0.1,type=float,help="Similarity is smaller for better 'quality' particles. Specify the highest value to include from e2spt_hist.py. Default -0.1")
 	parser.add_argument("--keep", default=-1,type=float,help="fraction of particles to keep. will overwrite simthr if set.")
 	parser.add_argument("--replace",type=str,default=None,help="Replace the input subtomograms used for alignment with the specified file (used when the aligned particles were masked or filtered)")
@@ -158,7 +158,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 		options.path = "spt_{:02d}".format(max(fls))
 		if options.verbose : print("Working in : ",options.path)
 
-	if options.iter<=0 :
+	if options.iter<0 :
 		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]
 		if len(fls)==0 : 
 			print("Cannot find a {}/particle_parms* file".format(options.path))

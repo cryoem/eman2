@@ -1,4 +1,4 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.9)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.14)
 PROJECT(EMAN
 		VERSION 2.31
 		LANGUAGES CXX
@@ -11,6 +11,11 @@ if(DEBUG_CMAKE_TARGETS)
 	set(CMAKE_DEBUG_TARGET_PROPERTIES
 		INCLUDE_DIRECTORIES
 		COMPILE_DEFINITIONS
+		COMPILE_OPTIONS
+		COMPILE_FEATURES
+		LINK_DIRECTORIES
+		LINK_OPTIONS
+		SOURCES
 		POSITION_INDEPENDENT_CODE
 		CONTAINER_SIZE_REQUIRED
 		LIB_VERSION
@@ -88,7 +93,7 @@ OPTION(ENABLE_MEMDEBUG "enable memory debug support of objects" OFF)
 OPTION(ENABLE_MEMDEBUG2 "enable memory debug support of EMData" OFF)
 OPTION(ENABLE_BOUNDS_CHECKING "enable bounds checking support" OFF)
 OPTION(ENABLE_RT "enable RT support" ON)
-OPTION(ENABLE_WARNINGS "display warnings during compilation" ON)
+OPTION(ENABLE_WARNINGS "display warnings during compilation" OFF)
 OPTION(ENABLE_IOCACHE "enable ImageIO caching" OFF)
 
 #flags for optimization level. You can only turn one of following option to ON, or leave all of them to OFF.
@@ -98,6 +103,17 @@ OPTION(ENABLE_OPTIMIZE_X86_64 "GCC optimizations for generic X86_64" OFF)
 OPTION(ENABLE_OPTIMIZE_MACHINE "Optimize code for this specific computer (typ 5-10% speedup). Binaries may incompatible with some other computers." OFF)
 OPTION(ENABLE_OPTIMIZE_PHI "Optimize code for the Intel compiler on the PHI" OFF)
 OPTION(ENABLE_OPTIMIZE_WINDOWS_VC "Windows visual c++ specific optimization" OFF)
+
+set(optimization_options
+		ENABLE_DEBUG
+		ENABLE_PROFILE
+		ENABLE_OPTIMIZE_X86_64
+		ENABLE_OPTIMIZE_MACHINE
+		ENABLE_OPTIMIZE_PHI
+		ENABLE_OPTIMIZE_WINDOWS_VC
+	)
+
+check_if_options_on_greater_than("${optimization_options}" 1)
 
 IF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
 	OPTION(ENABLE_OPTIMIZE_OSX "enable OSX support" ON)
@@ -206,13 +222,12 @@ IF(ENABLE_FFT_CACHING)
 	ADD_DEFINITIONS(-DFFT_CACHING)
 ENDIF()
 
-if(NOT(    (    ENABLE_FFTW3 AND NOT ENABLE_NATIVE_FFT AND NOT ENABLE_ACML_FFT)
-   		OR (NOT ENABLE_FFTW3 AND     ENABLE_NATIVE_FFT AND NOT ENABLE_ACML_FFT)
-   		OR (NOT ENABLE_FFTW3 AND NOT ENABLE_NATIVE_FFT AND     ENABLE_ACML_FFT)
-   		)
-   )
-	message(FATAL_ERROR "Exactly one of the below has to be ON:\nENABLE_FFTW3= ${ENABLE_FFTW3}\nENABLE_NATIVE_FFT= ${ENABLE_NATIVE_FFT}\nENABLE_ACML_FFT= ${ENABLE_ACML_FFT}\n")
-endif()
+set(fft_options
+	ENABLE_FFTW3
+	ENABLE_NATIVE_FFT
+	ENABLE_ACML_FFT
+	)
+check_if_options_not_equal_to("${fft_options}" 1)
 
 IF(ENABLE_NATIVE_FFT)
 	ADD_DEFINITIONS(-DNATIVE_FFT)

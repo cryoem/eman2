@@ -21,9 +21,37 @@ def alifn(jsd,fsp,i,a,options):
 		b.process_inplace("math.fft.resample",{"n":options.shrink})
 	b=b.do_fft()
 	b.process_inplace("xform.phaseorigin.tocorner")
+	
+	aligndic={"maxshift":10,"verbose":options.verbose,"sym":"c1","sigmathis":0.1,"sigmato":1.0}
+	if options.refine and b.has_attr("xform.align3d"):
+		ntry=8
+		initxf=b["xform.align3d"]
+		xfs=[]
+		
+		for ii in range(len(xfs), ntry):
+			ixf=initxf.get_params("eman")
+			ixf["phi"]=np.random.rand()*360.
+			ixf["alt"]=ixf["alt"]+180
+			ixf=Transform(ixf)
+			
+			v=np.random.rand(3)-0.5
+			nrm=np.linalg.norm(v)
+			if nrm>0:
+				v=v/nrm
+			else:
+				v=(0,0,1)
+			xf=Transform({"type":"spin", "n1":v[0], "n2":v[1], "n3":v[2],
+					"omega":30.0*np.random.randn()/3.0})
+			xfs.append(xf*ixf)
+		
+			
+		aligndic["initxform"]=xfs
+		aligndic["maxang"]=30.0
+		aligndic["randphi"]=True
+		aligndic["rand180"]=True
 
 	# we align backwards due to symmetry
-	c=a.xform_align_nbest("rotate_translate_3d_tree",b,{"maxshift":10,"verbose":0,"sym":"c1","sigmathis":.1,"sigmato":1},1)
+	c=a.xform_align_nbest("rotate_translate_3d_tree",b,aligndic,1)
 	for cc in c : cc["xform.align3d"]=cc["xform.align3d"].inverse()
 
 	jsd.put((fsp,i,c[0]))
@@ -68,6 +96,9 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
+	
+	parser.add_argument("--refine", action="store_true", default=False ,help="start from xform.align3d in header")
+
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)

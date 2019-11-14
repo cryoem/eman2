@@ -886,7 +886,9 @@ class EMQTColorWidget(QtWidgets.QWidget):
 			self.colrodialog = EMQtColorDialog(self.color)
 			self.colrodialog.currentColorChanged[QtGui.QColor].connect(self._on_colorchange)
 			self.colrodialog.colorSelected[QtGui.QColor].connect(self._on_colorselect)
-			self.colrodialog.canceled.connect(self._on_cancel)
+			#self.colrodialog.canceled.connect(self._on_cancel)
+			self.colrodialog.accepted.connect(self._on_ok)
+			self.colrodialog.rejected.connect(self._on_cancel)
 			
 	def _on_colorchange(self, color):
 		if color.isValid():
@@ -900,6 +902,9 @@ class EMQTColorWidget(QtWidgets.QWidget):
 			self.update()
 			self.newcolor.emit(self.color)
 			
+	def _on_ok(self):
+		self.newcolor.emit(self.color)
+		
 	def _on_cancel(self):
 		self.color = self.inicolor
 		self.update()
@@ -917,7 +922,7 @@ def singleton(cls):
 		return instances[cls]
 	return getinstance
     
-@singleton
+#@singleton
 class EMQtColorDialog(QtWidgets.QColorDialog):
 	"""
 	This is to create a non-modal color dialog. Only one color dialog is allowed at once, so I use the singleton pattern

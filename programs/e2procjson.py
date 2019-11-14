@@ -48,6 +48,7 @@ def main():
 	####################
 	
 	parser.add_argument("--allinfo", action="store_true", default=False, help="Uses all of the .json files in info/ rather than specifying a list on the command line")
+	parser.add_argument("--listkeys",action="store_true", default=False, help="Lists all of the keys in all of the specified info files")
 	parser.add_argument("--extractkey", type=str, default=None, help="This will extract a single named value from each specified file. Output will be multicolumn if the referenced label is an object, such as CTF.")
 	parser.add_argument("--removekey", type=str, default=None, help="DANGER! This will remove all data associated with the named key from all listed .json files.")
 	parser.add_argument("--output", type=str, default="jsoninfo.txt", help="Output filename. default = jsoninfo.txt")
@@ -92,6 +93,16 @@ def main():
 		sys.exit(1)
 
 	logid=E2init(sys.argv,options.ppid)
+
+	if options.listkeys:
+		allkeys=set()
+		for fsp in args:
+			js=js_open_dict(fsp)
+			allkeys.update(js.keys())
+			js.close()
+		
+		for k in sorted(list(allkeys)): print(k)
+		
 
 	if options.extractkey :
 		out=open(options.output,"w")

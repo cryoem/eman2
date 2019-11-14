@@ -300,8 +300,9 @@ namespace EMAN
 		 * @param[in] dict image attribute dictionary
 		 * @param[out] rendermin the minimum value for normalization
 		 * @param[out] rendermax the maximum value for normalization
+		 * @param[out] renderbits the number of significant bits to retain when performing int conversion (helps with compression)
 		 * */
-		static void getRenderLimits(const Dict & dict, float & rendermin, float & rendermax);
+		static void getRenderLimits(const Dict & dict, float & rendermin, float & rendermax, int & renderbits);
 
 		/** Calculate the min and max pixel value accepted for image nomalization,
 		 * if we did not get them from image attribute dictionary, or they are not
@@ -316,7 +317,7 @@ namespace EMAN
 		 * @param[out] rendermax the maximum value for normalization
 		 * @param[in] nz z dimension size
 		 * */
-		static void getRenderMinMax(float * data, const int nx, const int ny, float & rendermin, float & rendermax, const int nz = 1);
+		static void getRenderMinMax(float * data, const int nx, const int ny, float & rendermin, float & rendermax, int &renderbits, const int nz = 1);
 		
 #ifdef USE_HDF5
 		/** Retrive a single attribute value from a HDF5 image file.

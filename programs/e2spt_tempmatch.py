@@ -50,7 +50,7 @@ def main():
 	sym=parsesym(options.sym)
 	dt=options.delta
 	oris=sym.gen_orientations("eman",{"delta":dt, "phitoo":dt})
-	print("Try {} orientations.".format(len(oris)))
+	print("Try {} orientations.".format(len(oris)*2))
 	
 	
 

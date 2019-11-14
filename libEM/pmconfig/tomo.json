@@ -173,6 +173,11 @@
         "NAME": "Classification",
         "CHILDREN": [
           {
+            "PROGRAM": "e2spt_classify_byproj.py",
+            "NAME": "Ortho-proj classification",
+            "CHILDREN": []
+          },
+          {
             "PROGRAM": "e2spt_pcasplit.py",
             "NAME": "PCA-based classification",
             "CHILDREN": []
