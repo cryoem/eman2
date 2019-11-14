@@ -206,8 +206,10 @@ produce new sets/ for each class, which could be further-refined.
 		ptcl.transform(xf)
 		avgs[cls].add(ptcl)		# add to the correct class average
 		
-		# If requested, we save the aligned volume to the stack for this class
-		if options.saveali: ptcl.write_image("{}/aliptcl_{:02d}_{:02d}.hdf".format(options.path,options.iter,cls),-1)
+		# If requested, we save the aligned (shrunken) volume to the stack for this class
+		if options.saveali: 
+			if shrink>1 : ptcl.process_inplace("math.meanshrink",{"n":shrink})
+			ptcl.write_image("{}/aliptcl_{:02d}_{:02d}.hdf".format(options.path,options.iter,cls),-1)
 		
 		sets[cls].write(-1,im["orig_n"],im["orig_file"])
 	
