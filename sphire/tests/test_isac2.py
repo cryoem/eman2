@@ -23,6 +23,22 @@ except ImportError:
     from io import StringIO
 import sys
 
+"""
+WHAT IS MISSING:
+1) we have to run it using mpirun
+
+
+RESULT AND KNOWN ISSUES
+Some compatibility tests for the following functions fail!!!
+
+
+In these tests there is a bug --> syntax error:
+
+
+In these tests there is a strange behavior:
+1) Test_Error_cases::test_negative_radius_error 
+"""
+
 
 """ see https://wrongsideofmemphis.com/2010/03/01/store-standard-output-on-a-variable-in-python/"""
 class Test_Error_cases(unittest.TestCase):
