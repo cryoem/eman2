@@ -71,7 +71,7 @@ def main():
 	
 	parser.add_argument("--npeakstorefine", type=int, help="""Default=1. The number of best coarse alignments to refine in search of the best final alignment. Default=1.""", default=4, guitype='intbox', row=9, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym[1]')
 
-	parser.add_argument("--parallel",default="thread:1",help="""default=thread:1. Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--parallel",default=None,help="""Parallelism. See http://eman2.org/Parallel""", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
 	parser.add_argument("--ppid", type=int, help="""Default=-1. Set the PID of the parent process, used for cross platform PPID""",default=-1)
 	
@@ -301,7 +301,10 @@ def main():
 	'''
 	Initialize parallelism if being used; it will be turned on automatically by detectThreads unless --parallel-=None
 	'''
-	options = detectThreads( options )
+	if options.parallel in (None,"","none","None") :
+		print("WARNING: parallelism not specified. Strongly suggest specifying --parallel. See http://eman2.org/Parallel")
+		options.parallel="thread:2"
+
 	if options.parallel:
 		print("\n\n(e2spt_classaverage.py) INITIALIZING PARALLELISM!")
 		print("\n\n")

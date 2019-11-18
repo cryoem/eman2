@@ -661,54 +661,14 @@ def makepath(options, stem='e2dir'):
 	
 	return options
 
-
-def detectThreads(options):
-	"""
-	c:If parallelism isn't set, parallelize automatically unless disabled
-	Author: Jesus Montoya, jgalaz@gmail.com
-	"""
-	import multiprocessing
-	nparallel = multiprocessing.cpu_count()
-
-	print("\n(EMAN2_utils)(detectThreads) incoming options.parallel={}".format(otpions.parallel)) 
-	print("\n(EMAN2_utils)(detectThreads) incoming options.threads={}".format(otpions.threads))
-
-	try:	
-		if options.parallel and options.parallel != 'None' and options.parallel != 'none' and options.parallel != 'NONE':
-			if 'mpi' not in options.parallel:
-
-				options.parallel = 'thread:' + str(nparallel)
-				print("\n(EMAN2_utils)(detectThreads) found cores n={}".format(nparallel))
-				print("(EMAN2_utils)(detectThreads) setting --parallel={}".format(options.parallel))
-			else:
-				print("\n(EMAN2_utils)(detectThreads) nothing to do; mpi paralellism specified; options.parallel={}".format(otpions.parallel)) 
-	
-		elif not options.parallel or options.parallel == 'None' or options.parallel == 'none':
-			options.parallel = None
-			print("\n(EMAN2_utils)(detectThreads) WARNING: parallelism disabled, options.parallel={}".format(options.parallel) )
-	except:
-		print("\n--parallel not set")
-	try:
-		if options.threads and options.threads != 'None' and options.threads != 'none' and options.threads != 'NONE':
-			
-			options.threads = str(nparallel)
-			print("\n(EMAN2_utils)(detectThreads) found cores n={}".format(nparallel))
-			print("(EMAN2_utils)(detectThreads) setting --threads={}".format(options.threads))
-		elif not options.threads or options.threads == 'None' or options.threads == 'none':
-			options.threads = None
-			print("\n(EMAN2_utils)(detectThreads) WARNING: parallelism disabled, options.threads={}".format(options.threads) ) 
-	except:
-		print("\n(EMAN2_utils)(detectThreads) --threads not set")
-		#print("\n(EMAN2_utils)(detectThreads) WARNING: No parallelism option detected, neither --parallel nor --threads.")
-
-	return options
-
-
 def checkinput(options):
 	"""
 	Checks for sanity of input whether directly as an argument or through --input. Both should be functional.
 	Author: Jesus Montoya, jgalaz@gmail.com
 	"""
+	
+	# Programs should really use one or the other, not be flexible in this way. It can lead to a bunch of problems, but as long as you
+	# limit it to your code, I won't complain too much about this one  --steve
 	if not options.input:
 		try:
 			options.input = sys.argv[1]
