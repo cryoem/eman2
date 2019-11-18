@@ -114,7 +114,7 @@ def main():
 	
 	parser.add_argument("--preavgproc2",type=str,default='',help="""Default=None. A processor (see 'e2help.py processors -v 10' at the command line) to be applied to the raw particle after alignment but before averaging (for example, a threshold to exclude extreme values, or a highphass filter if you have phaseplate data.)""")
 
-	parser.add_argument("--parallel",default="thread:1",help="""default=thread:1. Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--parallel",default=None,help="""default=thread:1. Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
 	parser.add_argument("--ppid", type=int, help="""Default=-1. Set the PID of the parent process, used for cross platform PPID""",default=-1)
 			
@@ -282,11 +282,9 @@ def main():
 	
 	options = checkinput( options )
 	
-	if int(options.parallel.split(':')[-1]) == 1:
-		options = detectThreads( options )
-	else:
-		print('\nNOT detecting threads automatically since a specific number was requested: {}'.format(options.parallel.split(':')[-1]))
-	
+	if options.parallel in (None,"","none","None") :
+		print("WARNING: no --parallel specified. Please see http://eman2.org/Parallel")
+		options.parallel="thread:2"
 	
 	if not options.ref:
 		print("\nERROR: --ref required. Use e2spt_refprep.py, or e2spt_binarytree.py, e2spt_hac.py, e2symsearch3d.py, to generate initial references.")

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #====================
-#Author: Jesus Galaz-Montoya sep/2019 , Last update: sep/2019
+#Author: Jesus Galaz-Montoya sep/2019 , Last update: oct/2019
 #====================
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -36,6 +36,7 @@ from EMAN2 import *
 import sys
 import math
 import re
+import numpy
 
 
 def main():
@@ -70,7 +71,7 @@ def main():
 
 	parser.add_argument("--stackregardless",action="store_true",default=False,help=""""Stack images found with the common string provided through --stem2stack, even if the number of images does not match the predicted number of tilt angles.""")
 
-	parser.add_argument("--tltfile",type=str,default='',help="""".tlt file IF unstacking an aligned tilt series with --unstack=<stackfile> or restacking a tiltseries with --restack=<stackfile>""")
+	parser.add_argument("--tag",type=str,default=None,help=""""String to append to the beginning of the tiltseries output filename. The default is filename is 'stack.st'; if tag=xxx, the output will be 'xxx_stack.st' """)	
 	parser.add_argument("--tiltrange",type=float,default=0.0,help="""If provided, this will make --lowesttilt=-1*tiltrange and --highesttilt=tiltrange. If the range is asymmetric, supply --lowesttilt and --highesttilt directly.""")
 	parser.add_argument("--tiltstep",type=float,default=0.0,help="""Step between tilts. Required if using --stem2stack.""")
 	
@@ -137,16 +138,56 @@ def main():
 	
 	options = makepath( options, 'tomostacker' )
 
+	means=[]
+	sigmas=[]
+	minima=[]
+	maxima=[]
+
+	for f in files2process:
+		#intiltimgfile =	intiltsdict[index][0]
+		intiltimg = EMData( f, 0 )
+		means.append(intiltimg['mean'])
+		sigmas.append(intiltimg['sigma'])
+		minima.append(intiltimg['minimum'])
+		maxima.append(intiltimg['maximum'])
+		#stats_dict.update( { index:{'mean':mean,'sigma':sigma,'maximum':maximum,'minimum':minimum} } )
+
+	mean_avg = numpy.mean(means)
+	sigma_avg = numpy.mean(sigmas)
+	minimum_avg = numpy.mean(minima)
+	maximum_avg = numpy.mean(maxima)
+	
+	mean_std = numpy.std(means)
+	sigma_std = numpy.std(sigmas)
+	minimum_std = numpy.std(minima)
+	maximum_std = numpy.std(maxima)
+
+	files2process_good = []
+	for f in files2process:
+		img = EMData( f, 0 )
+		mean = img['mean']
+		sigma = img['sigma']
+		minimum = img['minimum']
+		maximum = img['maximum']
+
+		if mean > mean_avg - 2.0*mean_std and mean < mean_avg + 2.0*mean_std:
+			files2process_good.append(f)
+		else:
+			print("\nWARNING: bad image={} excluded; mean={}, sigma={}, max={}, min={}".format(f,mean,sigma,minimum,maximum))
 
 	kk=0
 	
 	print("\n(e2spt_tomostacker.py)(stacker) organizing tilt imgs")
-	intiltsdict = organizetilts( options, files2process )		#Get a dictionary in the form { indexintiltseries:[ tiltfile, tiltangle, damageRank ]},
+	intiltsdict = organizetilts( options, files2process_good )		#Get a dictionary in the form { indexintiltseries:[ tiltfile, tiltangle, damageRank ]},
 	print("\n(e2spt_tomostacker.py)(stacker) done organizing tilt imgs")					#where damageRank tells you the order in which the images 
 																							#were acquired regardless of wether the tilt series goes from 
 													#-tiltrange to +tiltrange, or 0 to -tiltrange then +tiltstep to +tiltrange, or the opposite of these 
-	outstackhdf = options.path + '/stack.hdf' 
-	
+	outstackhdf = options.path + '/stack.hdf'
+	if options.tag:
+		outstackhdf = options.path + '/' + options.tag + 'stack.hdf'
+		if "_" not in options.tag[-1:]:
+			outstackhdf = options.path + '/' + options.tag + '_stack.hdf'
+
 	if not intiltsdict:
 		print("\n(e2spt_tomostacker.py)(stacker) ERROR: intiltsdict is empty: {}".format(intiltsdict))
 		sys.exit(1)
@@ -162,7 +203,7 @@ def main():
 	nx = hdr['nx']
 	ny = hdr['ny']
 	print(nx,ny)
-	
+
 	if options.verbose > 5:
 		print("\n(e2spt_tomostacker.py)(stacker) outstack is", outstackhdf)
 		print("\n(e2spt_tomostacker.py)(stacker) intiltsdict.keys() are={}, because intiltsdict is={}".format(intiltsdict.keys(),intiltsdict))
@@ -171,7 +212,8 @@ def main():
 	finalindexesordered.sort()
 
 	damagelist=[]
-	#for index in intiltsdict:
+
+
 	for index in finalindexesordered:	
 		intiltimgfile =	intiltsdict[index][0]
 			
@@ -179,18 +221,25 @@ def main():
 			print("\n(e2spt_tomostacker.py)(stacker) at index {} we have image {}, collected in turn {}".format( index, intiltsdict[index][0], intiltsdict[index][-1] ))
 		
 		intiltimg = EMData( intiltimgfile, 0 )
+		#mean = intiltimg['mean']
+		#sigma = intiltimg['sigma']
+		#minimum = intiltimg['minimum']
+		#maximum = intiltimg['maximum']
 		
+		#if mean > mean_avg - 2.0*mean_std and mean < mean_avg + 2.0*mean_std:
+
 		tiltangle = intiltsdict[index][1]
 		intiltimg['spt_tiltangle'] = tiltangle
 		
 		damageRank = intiltsdict[index][2]
-		damagelist.append(damageRank)
-
 		intiltimg['damageRank'] = damageRank
-		
+
+		damagelist.append(damageRank)
 
 		intiltimg.write_image( outstackhdf, -1 )
 		#print "\nWrote image index", index
+		#else:
+		#	print("\nWARNING: bad image={} excluded; mean={}, sigma={}, max={}, min={}".format(intiltimgfile,mean,sigma,minimum,maximum))
 	
 	orderfilepath = options.path + '/collection_order.txt'
 	textwriter(damagelist,options,orderfilepath,invert=0,xvals=None,onlydata=True)
@@ -225,37 +274,20 @@ def main():
 
 
 def getangles( options, ntilts, raworder=False ):
-	
-	angles = []
-	if options.tltfile:
-		f = open( options.tltfile, 'r' )
-		lines = f.readlines()
-		f.close()
-		#print "lines in tlt file are", lines
-		for line in lines:
-			line = line.replace('\t','').replace('\n','')
-		
-			if line:
-				angle = float(line)
-				angles.append( angle )
-				print("appending angle", angle)
+			
+	print("There was no .tlt file so I'll generate the angles using lowesttilt=%f, highesttilt=%f, tiltstep=%f" % (options.lowesttilt, options.highesttilt, options.tiltstep))
+	generate = floatrange( options.lowesttilt, options.highesttilt, options.tiltstep )
+	angles=[ round(float(x),2) for x in generate ]
 
-		#angles = [a for a in xrange( options.lowesttilt, options.highesttilt, options.tiltstep )]
-	else:	
-		
-		print("There was no .tlt file so I'll generate the angles using lowesttilt=%f, highesttilt=%f, tiltstep=%f" % (options.lowesttilt, options.highesttilt, options.tiltstep))
-		generate = floatrange( options.lowesttilt, options.highesttilt, options.tiltstep )
-		angles=[ round(float(x),2) for x in generate ]
-	
-		if ntilts:
-			nangles=len(angles)
-			dif=int(math.fabs( ntilts - nangles))
-			if nangles < ntilts:
-				supplementstart = angles[-1]+options.tiltstep
-				supplementend = angles[-1] + dif*options.tiltstep
-				angles += [ round(float(x),2) for x in floatrange( supplementstart, supplementend,  options.tiltstep ) ]
-			elif nangles > ntilts:
-				angles = angles[:-1*dif] #cut the angles list by however many exceeding elements there are, as indicated by dif
+	if ntilts:
+		nangles=len(angles)
+		dif=int(math.fabs( ntilts - nangles))
+		if nangles < ntilts:
+			supplementstart = angles[-1]+options.tiltstep
+			supplementend = angles[-1] + dif*options.tiltstep
+			angles += [ round(float(x),2) for x in floatrange( supplementstart, supplementend,  options.tiltstep ) ]
+		elif nangles > ntilts:
+			angles = angles[:-1*dif] #cut the angles list by however many exceeding elements there are, as indicated by dif
 				
 	
 	print("BEFORE sorting, angles are", angles)
@@ -293,6 +325,10 @@ def writetlt( angles, options, raworder=False ):
 		k+=1
 	
 	tltfilepath = options.path + '/stack.rawtlt'
+	if options.tag:
+		tltfilepath = options.path + '/' + options.tag + 'stack.rawtlt'
+		if "_" not in options.tag[-1:]:
+			outstackhdf = options.path + '/' + options.tag + '_stack.rawtlt'
 	textwriter(lines,options,tltfilepath,invert=0,xvals=None,onlydata=True)
 
 	return
@@ -348,7 +384,8 @@ def organizetilts( options, intilts, raworder=False ):
 			
 			if angle not in angles:
 				angles.append( angle )
-				collectionindex+=1
+			collectionindex+=1			#since there could be parasitic images (two or more images per tilt angle due to failed attempts)
+										#collectionindex needs to continue to increase even if the repeat images are excluded to properly dose weight later
 		
 		angles.sort()
 		angles.reverse()

@@ -36,53 +36,22 @@
 #pragma warning(disable:4819)
 #endif	//_WIN32
 
-#include <Python.h>
 #include "typeconverter.h"
 #include "emdata.h"
 
 namespace python = boost::python;
+namespace np = boost::python::numpy;
 
 using namespace EMAN;
 
-python::numeric::array EMAN::make_numeric_array(const float *const data, vector<npy_intp> dims)
-{
-	size_t total = 1;
-	vector<npy_intp>::iterator iter = dims.begin();
-	while(iter != dims.end()){
-		total *= *iter;
-		++iter;
-	}
-
-	python::object obj(python::handle<>(PyArray_SimpleNewFromData(dims.size(),&dims[0],
-	                                                              NPY_FLOAT32, (char*)data)));
-
-	return python::extract<python::numeric::array>(obj);
-}
-
-python::numeric::array EMAN::make_numeric_complex_array(const std::complex<float> *const data,
-                                                        vector<npy_intp> dims)
-{
-	size_t total = 1;
-	vector<npy_intp>::iterator iter = dims.begin();
-	while(iter != dims.end()){
-		total *= *iter;
-		++iter;
-	}
-
-	python::object obj(python::handle<>(PyArray_SimpleNewFromData(dims.size(),&dims[0],
-	                                                              NPY_CFLOAT, (char*)data)));
-
-	return python::extract<python::numeric::array>(obj);
-}
-
-python::numeric::array EMNumPy::em2numpy(const EMData *const image)
+np::ndarray EMNumPy::em2numpy(const EMData *const image)
 {
 	float * data = image->get_data();
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
-	vector<npy_intp> dims;
+	vector<int> dims;
 
 	if (nz > 1) {
 		dims.push_back(nz);
@@ -97,25 +66,13 @@ python::numeric::array EMNumPy::em2numpy(const EMData *const image)
 	return make_numeric_array(data, dims);
 }
 
-EMData* EMNumPy::numpy2em(const python::numeric::array& array)
+EMData* EMNumPy::numpy2em(const np::ndarray& array)
 {
-	if (!PyArray_Check(array.ptr())) {
-		PyErr_SetString(PyExc_ValueError, "expected a PyArrayObject");
-		return 0;
-	}
-
-	PyArrayObject * array_ptr = (PyArrayObject*) array.ptr();
-//	Py_INCREF(array_ptr);	//this is for letting EMData take the ownership of the data array
-	int ndim = PyArray_NDIM(array_ptr); //array_ptr->descr->nd;
-	char data_type = PyArray_DESCR(array_ptr)->type; //array_ptr->descr->type;
-
-	npy_intp * dims_ptr = (npy_intp*)PyArray_DIMS(array_ptr);
+	int ndim = array.get_nd();
 
 #if defined (__LP64__) //is it a 64-bit platform?
-	//long * dims_ptr = (long*) PyArray_DIMS(array_ptr); //array_ptr->dimensions;
 	long nx=1, ny=1, nz=1;
 #else	//for 32 bit platform
-	//int * dims_ptr = (int*) PyArray_DIMS(array_ptr); //->dimensions;
 	int nx=1, ny=1, nz=1;
 #endif // defined (__LP64__)
 
@@ -124,146 +81,36 @@ EMData* EMNumPy::numpy2em(const python::numeric::array& array)
 		return 0;
 	}
 
-	if (ndim == 1) {
-		nx = dims_ptr[0];
-	}
-	else if (ndim == 2) {
-		ny = dims_ptr[0];
-		nx = dims_ptr[1];
-	}
-	else if (ndim == 3) {
-		nz = dims_ptr[0];
-		ny = dims_ptr[1];
-		nx = dims_ptr[2];
+	switch(ndim) {
+		case 1:
+			nx = array.shape(0);
+			break;
+		case 2:
+			ny = array.shape(0);
+			nx = array.shape(1);
+			break;
+		case 3:
+			nz = array.shape(0);
+			ny = array.shape(1);
+			nx = array.shape(2);
 	}
 
-	EMData* image = 0;
+	np::dtype data_type = array.get_dtype();
 	float * temparray = new float[(size_t)nx*ny*nz];
-	if(data_type == 'f') {
-		void* array_data = PyArray_DATA(array_ptr);
-		memcpy(temparray, array_data, (size_t)nx*ny*nz*sizeof(float));
-		image = new EMData((float*)temparray, nx, ny, nz);
+	
+	if(string(python::extract<char const *>(python::str(array.get_dtype()))) == "float32") {
+		float *array_data = reinterpret_cast<float *>(array.get_data());
+		std::copy(array_data, array_data + nx * ny * nz, reinterpret_cast<float *>(temparray));
 	}
 	else {
-		PyArrayObject * array_ptr2 = (PyArrayObject*) PyArray_Cast(array_ptr, NPY_FLOAT32); //
-		void* array_data2 = PyArray_DATA(array_ptr2);
-		memcpy(temparray, array_data2, (size_t)nx*ny*nz*sizeof(float));
-		image = new EMData((float*)temparray, nx, ny, nz);
+		double *array_data = reinterpret_cast<double *>(array.get_data());
+		std::copy(array_data, array_data + nx * ny * nz, reinterpret_cast<float *>(temparray));
 	}
+	EMData* image = new EMData((float*)temparray, nx, ny, nz);
 
 	image->update();
 	return image;
 }
-
-
-
-
-EMData* EMNumPy::assign_numpy_to_emdata(const python::numeric::array& array)
-{
-	if (!PyArray_Check(array.ptr())) {
-		PyErr_SetString(PyExc_ValueError, "expected a PyArrayObject");
-		return 0;
-	}
-
-	PyArrayObject * array_ptr = (PyArrayObject*) array.ptr();
-//	Py_INCREF(array_ptr);	//this is for letting EMData take the ownership of the data array
-	int ndim = PyArray_NDIM(array_ptr); //array_ptr->nd;
-	//char data_type = PyArray_DESCR(array_ptr)->type; //array_ptr->descr->type;
-
-	npy_intp * dims_ptr = (npy_intp*)PyArray_DIMS(array_ptr);
-
-#if defined (__LP64__) //is it a 64-bit platform?
-	//long * dims_ptr = (long*)array_ptr->dimensions;
-	long nx=1, ny=1, nz=1;
-#else	//for 32 bit platform
-	//int * dims_ptr = (int*)array_ptr->dimensions;
-	int nx=1, ny=1, nz=1;
-#endif // defined (__LP64__)
-
-	if (ndim <= 0 || ndim > 3) {
-		LOGERR("%dD numpy array to EMData is not supported.", ndim);
-		return 0;
-	}
-
-	if (ndim == 1) {
-		nx = dims_ptr[0];
-	}
-	else if (ndim == 2) {
-		ny = dims_ptr[0];
-		nx = dims_ptr[1];
-	}
-	else if (ndim == 3) {
-		nz = dims_ptr[0];
-		ny = dims_ptr[1];
-		nx = dims_ptr[2];
-	}
-
-	EMData* image = new EMData((float*)PyArray_DATA(array_ptr), nx, ny, nz);
-	image->update();
-	return image;
-}
-
-
-
-EMNumPy::~EMNumPy()
-{
-	// Setting rdata data member of EMData to 0 (Null)
-	// avoids that the destructor of EMData Buffer deletes the valid memory,
-	// which allocated and owned by the other object (e.g. NumPy)
-	emdata_buffer.unregister_buffer_data();
-}
-
-EMData* EMNumPy::register_numpy_to_emdata(const python::numeric::array& array)
-{
-	if (!PyArray_Check(array.ptr())) {
-		PyErr_SetString(PyExc_ValueError, "expected a PyArrayObject");
-		return 0;
-	}
-
-	PyArrayObject * array_ptr = (PyArrayObject*) array.ptr();
-//	Py_INCREF(array_ptr);	//this is for letting EMData take the ownership of the data array
-	int ndim = PyArray_NDIM(array_ptr); //->nd;
-	//char data_type = PyArray_DESCR(array_ptr)->type; //array_ptr->descr->type;
-
-	npy_intp *dims_ptr = (npy_intp*)PyArray_DIMS(array_ptr);
-
-#if defined (__LP64__) //is it a 64-bit platform?
-	//long * dims_ptr = (long*)array_ptr->dimensions;
-	long nx=1, ny=1, nz=1;
-#else	//for 32 bit platform
-	//int * dims_ptr = (int*)array_ptr->dimensions;
-	int nx=1, ny=1, nz=1;
-#endif // defined (__LP64__)
-
-	if (ndim <= 0 || ndim > 3) {
-		LOGERR("%dD numpy array to EMData is not supported.", ndim);
-		return 0;
-	}
-
-	if (ndim == 1) {
-		nx = dims_ptr[0];
-	}
-	else if (ndim == 2) {
-		ny = dims_ptr[0];
-		nx = dims_ptr[1];
-	}
-	else if (ndim == 3) {
-		nz = dims_ptr[0];
-		ny = dims_ptr[1];
-		nx = dims_ptr[2];
-	}
-
-	emdata_buffer.register_buffer_data((float*)PyArray_DATA(array_ptr), nx, ny, nz);
-
-	return &emdata_buffer;
-}
-
-void EMNumPy::unregister_numpy_from_emdata()
-{
-	emdata_buffer.unregister_buffer_data();
-}
-
-
 
 PyObject* EMObject_to_python::convert(EMObject const& emobj)
 {
@@ -387,20 +234,3 @@ PyObject* EMObject_to_python::convert(EMObject const& emobj)
 
 	return result;
 }
-#if 0
-
-PyObject* MArray2D_to_python::convert(MArray2D const & marray2d)
-{
-    vector<npy_intp> dims;
-    const size_t * shape = marray2d.shape();
-    int ndim = marray2d.num_dimensions();
-    for (int i = ndim-1; i >= 0; i--) {
-        dims.push_back(shape[i]);
-    }
-
-    float * data = (float*)marray2d.data();
-    np::ndarray numarray = make_numeric_array(data, dims);
-
-    return python::incref(numarray.ptr());
-}
-#endif

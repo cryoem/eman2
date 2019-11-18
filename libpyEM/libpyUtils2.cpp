@@ -32,11 +32,11 @@
 	#pragma warning(disable:4819)
 #endif	//_WIN32
 
-#include <Python.h>
 #include <numpy/arrayobject.h>
 
 // Boost Includes ==============================================================
 #include <boost/python.hpp>
+#include <boost/python/numpy.hpp>
 
 // Includes ====================================================================
 #include <emdata.h>
@@ -53,6 +53,7 @@
 
 // Using =======================================================================
 using namespace boost::python;
+namespace np = boost::python::numpy;
 
 #if PY_MAJOR_VERSION >= 3
 	#define IS_PY3K
@@ -277,9 +278,9 @@ struct EMAN_Util_Wrapper: EMAN::Util
 	PyObject* py_self;
 };*/
 
-using boost::python::numeric::array;
+namespace np = boost::python::numpy;
 
-float* get_fptr( array& a )
+float* get_fptr( np::ndarray& a )
 {
 /*
 	if (!PyArray_Check(a.ptr())) {
@@ -304,7 +305,7 @@ float* get_fptr( array& a )
 }
 
 
-int* get_iptr( array& a )
+int* get_iptr( np::ndarray& a )
 {
 /*
 	if (!PyArray_Check(a.ptr())) {
@@ -326,7 +327,7 @@ int* get_iptr( array& a )
 
 
 
-int pysstevd(const string& jobz, int n, array& diag, array& subdiag, array& qmat, int kstep, array& fwork, int lfwrk, array& iwork, int liwrk )
+int pysstevd(const string& jobz, int n, np::ndarray& diag, np::ndarray& subdiag, np::ndarray& qmat, int kstep, np::ndarray& fwork, int lfwrk, np::ndarray& iwork, int liwrk )
 {
     int info;
 
@@ -340,13 +341,13 @@ int pysstevd(const string& jobz, int n, array& diag, array& subdiag, array& qmat
     return info;
 }
 
-float pysnrm2( int n, array& a, int incx )
+float pysnrm2( int n, np::ndarray& a, int incx )
 {
     float* f = get_fptr( a );
     return snrm2_(&n, f, &incx);
 }
 
-int pysgemv( const string& trans, int m, int n, float alpha, array& a, int lda, array& x, int incx, float beta, array& y, int incy )
+int pysgemv( const string& trans, int m, int n, float alpha, np::ndarray& a, int lda, np::ndarray& x, int incx, float beta, np::ndarray& y, int incy )
 {
     float* fa = get_fptr( a );
     float* fx = get_fptr( x );
@@ -354,14 +355,14 @@ int pysgemv( const string& trans, int m, int n, float alpha, array& a, int lda, 
     return sgemv_( trans.c_str(), &m, &n, &alpha, fa, &lda, fx, &incx, &beta, fy, &incy );
 }
 
-int pysaxpy( int n, float alpha, array& x, int incx, array& y, int incy )
+int pysaxpy( int n, float alpha, np::ndarray& x, int incx, np::ndarray& y, int incy )
 {
     float* fx = get_fptr( x );
     float* fy = get_fptr( y );
     return saxpy_( &n, &alpha, fx, &incx, fy, &incy );
 }
 
-float pysdot( int n, array& x, int incx, array& y, int incy )
+float pysdot( int n, np::ndarray& x, int incx, np::ndarray& y, int incy )
 {
     float* fx = get_fptr( x );
     float* fy = get_fptr( y );
@@ -369,7 +370,7 @@ float pysdot( int n, array& x, int incx, array& y, int incy )
     return sdot_( &n, fx, &incx, fy, &incy );
 }
 
-void readarray( object& f, array& x, int size)
+void readarray( object& f, np::ndarray& x, int size)
 {
 #ifdef IS_PY3K
 	extern PyTypeObject PyIOBase_Type;
@@ -395,7 +396,7 @@ void readarray( object& f, array& x, int size)
 
 
 // k_means_cont_table_ is locate to util_sparx.cpp
-int pyk_means_cont_table(array& group1, array& group2, array& stb, long int s1, long int s2, int flag) {
+int pyk_means_cont_table(np::ndarray& group1, np::ndarray& group2, np::ndarray& stb, long int s1, long int s2, int flag) {
     int* pt_group1 = get_iptr(group1);
     int* pt_group2 = get_iptr(group2);
     int* pt_stb  = get_iptr(stb);
@@ -403,7 +404,7 @@ int pyk_means_cont_table(array& group1, array& group2, array& stb, long int s1, 
 }
 
 // bb_enumerateMPI is locate in util_sparx.cpp
-vector<int> pybb_enumerateMPI(array& parts, array& classDims, int nParts, int nClasses, int T, int nguesses,int LARGEST_CLASS,int J, int max_branching, float stmult, int
+vector<int> pybb_enumerateMPI(np::ndarray& parts, np::ndarray& classDims, int nParts, int nClasses, int T, int nguesses,int LARGEST_CLASS,int J, int max_branching, float stmult, int
 branchfunc, int LIM) {
     int* pt_parts = get_iptr(parts);
     int* pt_classDims = get_iptr(classDims);

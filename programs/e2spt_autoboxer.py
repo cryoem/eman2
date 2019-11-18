@@ -70,7 +70,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	
-	parser.add_argument("--parallel",type=str,default='',help="""Default=Auto. This program will detect the number of CPU cores on your machine and parallelize some of the tasks using all of them. To disable, provide --parallel=None""")
+	parser.add_argument("--parallel",type=str,default='',help="""Standard EMAN2 parallelism option. See http://eman2.org/Parallel""")
 	parser.add_argument("--pad", action='store_true', help="""Provide this if the particles in the --particlestack used to create a template, or the template supplied 
 															through --template are in a tight box. The size""",default=False)
 	parser.add_argument("--rotsearch", action='store_true', help="""At each translation position, vary euler angles as well when searching for particles.""",default=False)
@@ -258,8 +258,8 @@ def main():
 	'''
 	if options.shrinktomo or options.inverttomo or options.preprocess or options.lowpass or options.highpass or options.normproc or options.threshold or options.mask:
 		options = tomogrampreprocess(options)
-	
-	options = detectThreads( options )
+
+	if options.parallel=='' : print("WARNING: automatic parallelism is not supported, please specify --parallel,  see: http://eman2.org/Parallel
 
 	'''
 	c:get the template for template matching (read it in and "prepare it", or just generate it from scratch or from the data itself)

@@ -779,8 +779,10 @@ class boxerConvNet(QtCore.QObject):
 		try: 
 			gpuid=os.environ["CUDA_VISIBLE_DEVICES"]
 			import_tensorflow(gpuid)
+			print("Init tensorflow with ",gpuid)
 		except: 
 			import_tensorflow()
+			print("Init tensorflow with default device")
 		
 		
 		boxerConvNet.import_done=True

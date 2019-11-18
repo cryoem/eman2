@@ -50,6 +50,8 @@ def simfn(jsd,projs,fsp,i,options,verbose):
 	best=None
 	ptcl=EMData(fsp,i)
 	ptcl.process_inplace("normalize.edgemean")
+	if ptcl["nx"] != projs[0]["nx"]:
+		ptcl.process_inplace("xform.scale",{"scale":ptcl["apix_x"]/projs[0]["apix_x"],"clip":projs[0]["nx"]})
 	vals={}
 	for j,proj in enumerate(projs):
 		projf=proj.process("filter.matchto",{"to":ptcl})
@@ -153,6 +155,10 @@ def main():
 		while not jsd.empty():
 			# returns ptcl#, best sim val, aligned ptcl, projection, {per proj sim}
 			i,sim,ali,proj,pps=jsd.get()
+			try: 
+				ali["class_qual"]=sim
+				ali["xform.projection"]=proj["xform.projection"]
+			except: pass
 			ali.write_image(args[2],i*2)
 			proj.write_image(args[2],i*2+1)
 			if options.savesim:

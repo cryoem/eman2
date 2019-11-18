@@ -66,7 +66,7 @@ def main():
 	
 	parser.add_argument("--npeakstorefine", type=int, help="""Default=1. The number of best coarse alignments to refine in search of the best final alignment. Default=1.""", default=4, guitype='intbox', row=9, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym[1]')
 
-	parser.add_argument("--parallel",default="thread:1",help="""default=thread:1. Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--parallel",default=None,help="""default=thread:2. Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
 	parser.add_argument("--ppid", type=int, help="""Default=-1. Set the PID of the parent process, used for cross platform PPID""",default=-1)
 	
@@ -237,8 +237,6 @@ def main():
 	Make the directory where to create the database where the results will be stored
 	'''
 	options = checkinput( options )
-
-	options = detectThreads( options )
 
 	options = makepath(options,'spt_hac')
 	originalpath = options.path
@@ -647,13 +645,14 @@ def allvsall(options,preproc):
 		
 		allptclsRound = {}							
 		
-		
-		print("\n(e2spt_hac.py) (allvsall) Initializing parallelism")
-		if options.parallel:							# Initialize parallelism if being used
-			from EMAN2PAR import EMTaskCustomer
-			etc=EMTaskCustomer(options.parallel,"e2spt_hac.Align3DTaskAVSA")
-			pclist=[options.input]
-			etc.precache(pclist)
+		if options.parallel in (None,"","none","None") :
+			print("WARNING: no --parallel specified. Please see http://eman2.org/Parallel")
+			options.parallel="thread:2"
+			
+		from EMAN2PAR import EMTaskCustomer
+		etc=EMTaskCustomer(options.parallel,"e2spt_hac.Align3DTaskAVSA")
+		pclist=[options.input]
+		etc.precache(pclist)
 		tasks = []
 		
 		'''
