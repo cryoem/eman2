@@ -63,7 +63,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 
 		# Micrograph list
 		self.imglst=QtWidgets.QTableWidget(1, 3, self)
-		self.imglst.verticalHeader().hide()
+		#self.imglst.verticalHeader().hide()
 		
 		self.gbl.addWidget(self.imglst,0,0,11,1)
 		self.imglst.setColumnWidth(0,50)
@@ -249,6 +249,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		self.imglst.setRowCount(len(self.imginfo))
 		self.imglst.setColumnCount(5)
 		self.imglst.setHorizontalHeaderLabels(["ID", "file name", "#box", "loss", "defocus"])
+		self.imglst.setColumnHidden(0, True)
 		for i,info in enumerate(self.imginfo):
 			#### use Qt.EditRole so we can sort them as numbers instead of strings
 			it=QtWidgets.QTableWidgetItem()
@@ -282,6 +283,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 			self.imglst.setItem(i,4, it)
 			#print(str(info["basename"]), nbox, loss, df)
 			
+		self.imglst.setVerticalHeaderLabels([str(i) for i in range(len(self.imginfo))])
 		
 	def get_id_info(self):
 		#### utility function to get the info of current selected row.
