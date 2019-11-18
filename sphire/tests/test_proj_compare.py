@@ -4,7 +4,7 @@ from __future__ import division
 from sphire.bin import sp_proj_compare as oldfu
 from sphire.utils.SPHIRE.bin import sp_proj_compare as fu
 from os import path
-from test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,ABSOLUTE_BIN_PATH
+from test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,ABSOLUTE_BIN_PATH,remove_dir
 import unittest
 
 try:
@@ -19,7 +19,7 @@ except ImportError:
     # python3 case. You will get an error because 'sys.stdout.write(msg)' presents in the library not in the test!!
     from io import StringIO
 import sys
-
+from numpy import allclose
 
 """
 WHAT IS MISSING:
@@ -37,6 +37,95 @@ In these tests there is a strange behavior:
 
 """
 
+'''Since it call the e2proc2d.py via comandline if you run it via pycharm it will be not able to find the file and it 
+will crash.
+Call it via console:
+-) pytest test_proj_compare.py::Test_run
+-) nostests test_proj_compare.py:Test_run
+'''
+
+class Test_run(unittest.TestCase):
+    old_output_folder="compar2Dold"
+    new_output_folder = "compar2Dnew"
+
+
+    @classmethod
+    def tearDownClass(cls):
+        remove_dir(cls.new_output_folder)
+        remove_dir(cls.old_output_folder)
+
+
+    def test_(self):
+        testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_proj_compare.py"),
+                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Class2D","best.hdf"),
+                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "run001","rotated_volume.hdf"),
+                         self.new_output_folder,
+                         "--classangles="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "run001","rotated_reduced_params.txt"),
+                         "--classselect="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "this_iteration_index_keep_images.txt")
+                         ]
+        testargs_old =  [path.join(ABSOLUTE_OLDBIN_PATH, "sp_proj_compare.py"),
+                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Class2D","best.hdf"),
+                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "run001","rotated_volume.hdf"),
+                         self.old_output_folder,
+                         "--classangles="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "run001","rotated_reduced_params.txt"),
+                         "--classselect="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "this_iteration_index_keep_images.txt")
+                         ]
+        with patch.object(sys, 'argv', testargs_new):
+            options = fu.parse_command_line()
+            outdir = path.dirname(path.realpath(options.classavgs)) if not options.outdir else options.outdir
+            if options.mode == "viper":
+                selectdoc = options.classselect
+            elif options.mode == "projmatch":
+                selectdoc = None
+            elif options.mode == "meridien":
+                selectdoc = options.partselect
+
+            old_stdout = sys.stdout
+            print_new = StringIO()
+            sys.stdout = print_new
+            fu.main_proj_compare(
+                options.classavgs,
+                options.vol3d,
+                outdir,
+                options,
+                mode=options.mode,
+                prjmethod=options.prjmethod,
+                classangles=options.classangles,
+                partangles=options.partangles,
+                selectdoc=selectdoc,
+                verbose=options.verbose,
+                displayYN=options.display,
+            )
+        with patch.object(sys, 'argv', testargs_old):
+            options = fu.parse_command_line()
+            outdir = path.dirname(path.realpath(options.classavgs)) if not options.outdir else options.outdir
+            if options.mode == "viper":
+                selectdoc = options.classselect
+            elif options.mode == "projmatch":
+                selectdoc = None
+            elif options.mode == "meridien":
+                selectdoc = options.partselect
+            print_old = StringIO()
+            sys.stdout = print_old
+            oldfu.main_proj_compare(
+                options.classavgs,
+                options.vol3d,
+                outdir,
+                options,
+                mode=options.mode,
+                prjmethod=options.prjmethod,
+                classangles=options.classangles,
+                partangles=options.partangles,
+                selectdoc=selectdoc,
+                verbose=options.verbose,
+                displayYN=options.display,
+            )
+        sys.stdout = old_stdout
+        averageCCC_old=float(print_old.getvalue().split('\n')[18].split(" ")[-1])
+        averageCCC_new = float(print_new.getvalue().split('\n')[18].split(" ")[-1])
+        self.assertTrue(allclose([averageCCC_new],[averageCCC_old],atol=0.000001))
+        self.assertTrue(allclose([averageCCC_new],[0.822266155674],atol=0.000001))
+
 
 class Test_helperFunctions(unittest.TestCase):
     def test_check(self):
@@ -52,6 +141,8 @@ class Test_helperFunctions(unittest.TestCase):
         sys.stdout = old_stdout
         self.assertEqual(print_new.getvalue().split('\n')[0].split("ERROR")[1],"!! file_not_found.txt doesn't exist!")
         self.assertEqual(print_new.getvalue().split('\n')[0].split("ERROR")[1],print_old.getvalue().split('\n')[0].split("ERROR")[1])
+
+
 
 class Test_Error_cases(unittest.TestCase):
     def test_error_no_input_alignment_params(self):
@@ -181,55 +272,8 @@ class Test_Error_cases(unittest.TestCase):
                     displayYN=options.display,
                 )
         sys.stdout = old_stdout
-        a=print_new.getvalue().split('\n')
         self.assertEqual(print_new.getvalue().split('\n')[2], "ERROR!! Dimension of input volume doesn't match that of image stack: 76 vs. 352")
         self.assertEqual(print_new.getvalue().split('\n')[2], print_old.getvalue().split('\n')[2])
 
 
-    #to do cahnge the path in the file and test it ... than run it from the console
-    def test_errorBecauseRelativePath(self):
-        testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_proj_compare.py"),
-                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Class2D","best.hdf"),
-                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "run001","rotated_volume.hdf"),
-                         "compar2Dluca",
-                         "--classangles="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "run001","rotated_reduced_params.txt"),
-                         "--classselect="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "this_iteration_index_keep_images.txt")
-                         ]
-        testargs_old =  [path.join(ABSOLUTE_OLDBIN_PATH, "sp_proj_compare.py"),
-                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Class2D","best.hdf"),
-                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "run001","rotated_volume.hdf"),
-                         "compar2Dlucaold",
-                         "--classangles="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "run001","rotated_reduced_params.txt"),
-                         "--classselect="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "this_iteration_index_keep_images.txt")
-                         ]
-        with patch.object(sys, 'argv', testargs_new):
-            options = fu.parse_command_line()
-            outdir = path.dirname(path.realpath(options.classavgs)) if not options.outdir else options.outdir
-            if options.mode == "viper":
-                selectdoc = options.classselect
-            elif options.mode == "projmatch":
-                selectdoc = None
-            elif options.mode == "meridien":
-                selectdoc = options.partselect
 
-            old_stdout = sys.stdout
-            print_new = StringIO()
-            sys.stdout = print_new
-            fu.main_proj_compare(
-                options.classavgs,
-                options.vol3d,
-                outdir,
-                options,
-                mode=options.mode,
-                prjmethod=options.prjmethod,
-                classangles=options.classangles,
-                partangles=options.partangles,
-                selectdoc=selectdoc,
-                verbose=options.verbose,
-                displayYN=options.display,
-            )
-        with patch.object(sys, 'argv', testargs_old):
-            print_old = StringIO()
-            sys.stdout = print_old
-            oldfu.main_proj_compare()
-        sys.stdout = old_stdout
