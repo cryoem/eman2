@@ -312,7 +312,7 @@ def main():
 
 			while 1:
 				st_vals = etc.check_task(tids)
-				E2progress(logid, np.mean(st_vals)/100.)
+				E2progress(logger, np.mean(st_vals)/100.)
 				#print("{:.1f}/{} finished".format(np.mean(st_vals), 100))
 				#print(tids)
 				if np.min(st_vals) == 100: break
