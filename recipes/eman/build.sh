@@ -13,7 +13,11 @@ LDFLAGS=${LDFLAGS/-Wl,-pie/}
 CXXFLAGS=${CXXFLAGS/-std=c++17/-std=c++14}
 
 cmake --version
-cmake $SRC_DIR -DENABLE_WARNINGS=OFF
+if [[ ${HOST} =~ .*linux.* ]]; then
+    cmake $SRC_DIR -DCMAKE_TOOLCHAIN_FILE="${RECIPE_DIR}/cross-linux.cmake"
+else
+    cmake $SRC_DIR
+fi
 
 make -j${CPU_COUNT}
 make install
