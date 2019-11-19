@@ -73,6 +73,7 @@ def main():
 	parser.add_argument("--dfmax", type=float, help="Include only images with defocus <= the specified value",default=None)
 	parser.add_argument("--nameonly",action="store_true",help="Only display the matching filenames. No other info.",default=False)
 	parser.add_argument("-s", "--stat", action="store_true",help="Show statistical information about the image(s).",default=False)
+	parser.add_argument("-O", "--outliers", action="store_true",help="Statistics on number of outlier values, must be used with --stat",default=False)
 	parser.add_argument("-E", "--euler", action="store_true",help="Show Euler angles from header",default=False)
 	parser.add_argument("-a", "--all", action="store_true",help="Show info for all images in file",default=False)
 	parser.add_argument("-C", "--check", action="store_true",help="Checks to make sure all image numbers are populated with images, and that all images have valid CTF parameters",default=False)
@@ -172,6 +173,8 @@ def main():
 			
 			if options.stat :
 				print("apix=%-5.2f min=%-10.4g max=%-10.4g mean=%-10.4g sigma=%-9.4g skewness=%-9.4g kurtosis=%-9.4g moment_inertia=%9.4g radius_gyration=%9.4g"%(d["apix_x"],d["minimum"],d["maximum"],d["mean"],d["sigma"],d["skewness"],d["kurtosis"],d["moment_inertia"],d["radius_gyration"]), end=' ')
+				if options.outliers:
+					print("\nOutliers: {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f}".format(*d.calc_hist(11,d["mean"]-5.5*d["sigma"],d["mean"]+5.5*d["sigma"])))
 				try:
 					c=d["ctf"]
 					print("   defocus=%-6.2f B=%-1.0f"%(c.defocus,c.bfactor))
@@ -196,6 +199,7 @@ def main():
 	if nimgs>1 : print("%d total images"%nimgs)
 	try : print("representing %d particles"%nptcl)
 	except: pass
+	if options.outliers : print("Outlier centers are mean+n*sigma: -5 -4 -3 -2 -1 0 1 2 3 4 5") 
 	
 if __name__ == "__main__":
 	main()

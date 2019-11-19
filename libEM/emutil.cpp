@@ -1754,75 +1754,22 @@ vector<EMObject> EMUtil::get_all_attributes(const string & file_name, const stri
 
 void EMUtil::getRenderLimits(const Dict & dict, float & rendermin, float & rendermax, int & renderbits)
 {
-	const char    min_or_max_flag     = 'm';
-	const char    std_devs_flag       = 's';
-
-	const float   flag_base           =  1.0e30;
-	const float   use_data_min_or_max = -flag_base;
-
-	string        svalue;
-	const char *  str;
-	char          flag;
-	float         num_std_devs;
-
-	bool          debug = (getenv("DEBUG_RENDER_LIMITS") != NULL);
-
+	// This routine used to have some complicated logic for specifying the limits in various ways
+	// that is now gone (as far as I can tell, nobody had ever used it), and replaced by the later
+	// logic in getRenderMinMax, which is triggered when render_max<=render_min
+	// at present this routine just reads header values. It is still here in case we need to implement 
+	// more complicated logic in future.
+	
 	rendermin = 0.0;
 	rendermax = 0.0;
 
-	if (debug) {
-		printf ("into RenderLimits, rmin = %g, rmax = %g\n", rendermin, rendermax);
-	}
-
 	if (dict.has_key("render_bits")) renderbits = (int)dict["render_bits"];
 	else renderbits=16;
+
+	if (dict.has_key("render_min")) rendermin = (float) dict["render_min"];
+	if (dict.has_key("render_max")) rendermax = (float) dict["render_max"];
 	
-	// TODO: the convention implemented below where render_min/max can be s<number> or m or just a number
-	// I don't believe has ever been used, and is probably better implemented elsewhere, but would need to
-	// verify this before changing the code.
-	if (dict.has_key("render_min")) {
-		svalue = static_cast<string>(dict["render_min"]);
-		str    = svalue.c_str();
-		flag   = str[0];
-
-		if (debug) printf ("render_min = %s\n", str);
-
-		if (flag == min_or_max_flag) {
-			rendermin = use_data_min_or_max;
-		}
-		else if (flag == std_devs_flag) {
-			num_std_devs = 4.0;
-			sscanf (str+1, "%g", & num_std_devs);
-			rendermin = flag_base * num_std_devs;
-		}
-		else {
-			rendermin = (float) dict["render_min"];
-		}
-	}
-
-	if (dict.has_key("render_max")) {
-		svalue = static_cast<string>(dict["render_max"]);
-		str    = svalue.c_str();
-		flag   = str[0];
-
-		if (debug) printf ("render_max = %s\n", str);
-
-		if (flag == min_or_max_flag) {
-			rendermax = use_data_min_or_max;
-		}
-		else if (flag == std_devs_flag) {
-			num_std_devs = 4.0;
-			sscanf (str+1, "%g", & num_std_devs);
-			rendermax = flag_base * num_std_devs;
-		}
-		else {
-			rendermax = (float) dict["render_max"];
-		}
-	}
-
-	if (debug) {
-		printf ("out of RenderLimits, rmin = %g, rmax = %g\n", rendermin, rendermax);
-	}
+	
 }
 
 void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
@@ -1834,11 +1781,9 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 
 	float         num_std_devs;
 
-	bool          debug = (getenv("DEBUG_RENDER_LIMITS") != NULL);
+	bool          debug = 0;
 
-	if (debug) {
-		printf ("into RenderMinMax, rmin = %g, rmax = %g\n", rendermin, rendermax);
-	}
+	if (debug) printf ("into RenderMinMax, rmin = %g, rmax = %g, rbits = %d\n", rendermin, rendermax, renderbits);
 	
 	if (renderbits<1 || renderbits>16) renderbits=16;
 
@@ -1848,17 +1793,18 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 		fabs(rendermax) > use_num_std_devs) {
 		
 		double m = 0.0f, s = 0.0f;
-		size_t nint=0,nzer=0,none=0;	// count the number of integers, zeroes and ones
+		size_t nint=0,n0=0,n1=0;	// count the number of integers, zeroes and ones
 		size_t size = (size_t)nx*ny*nz;
 		float min = data[0], max = data[0];
+		int bitval = 1<<(renderbits-1);
 		
 		// we compute image statistics. If this were designed right, we'd have the actual image instead of just
 		// the data pointer and wouldn't need to do this (other than maybe the integer counting)
 		for (size_t i = 0; i < size; ++i) {
 			m += data[i];
 			s += data[i] * data[i];
-			if (data[i]==0.0f) nzer++;
-			else if (data[i]==1.0f) none++;
+			if (data[i]==0.0f) n0++;
+			else if (data[i]==1.0f) n1++;
 			if (data[i]==floor(data[i])) nint++;
 			
 			min = data[i] < min ? data[i] : min;
@@ -1870,41 +1816,52 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 		m /= (float)(size);
 		s = sqrt(s/(float)(size)-m*m);
 
-		if (debug) printf ("min, mean, max, s.d. = %g %g %g %g\n", min, m, max, s);
+		if (debug) printf ("min, mean, max, s.d., nint, nzer, none = %g %g %g %g %d %d %d\n", min, m, max, s, nint, n0, n1);
 
 		if (s <= 0 || Util::is_nan(s)) s = 1.0; // this means all data values are the same
 
-		if (rendermin == use_data_min_or_max) {
-			rendermin = min;
+		// probably a mask, binary or smoothed, treat it the same
+		if (min==0 && max==1) {
+			rendermin=0;
+			rendermax=1.0f;
 		}
-		else if (rendermin > use_num_std_devs) {
-			num_std_devs = rendermin / flag_base;
-			rendermin = m - s * num_std_devs;
+		// all integer values, make sure we get integers back when we read, even if reduced bits
+		else if (nint==size) {
+			// if true, then we can safely store all of the values in the requested bits without change
+			if (max-min<bitval) {
+				rendermin=min;
+				rendermax=min+bitval-1.0f;
+			}
+			// otherwise, we will need to keep the most significant bits, but still try to get integers out (except in very odd cases)
+			else {
+				rendermin=min;
+				rendermax=min+pow(2.0f,ceil(log(max-min+1)/log(2.0f)))-1.0;
+			}
 		}
+		// Now into the more general case, but we still wish to preserve zero if present in significant numbers
+		else if (n0>10) {			// 10 is arbitrary
+			if (min==0) {
+				rendermin=0;
+				rendermax=(m+s*4.0)>max?max:m+s*4.0;  //TODO <-  how large a sigma multiplier?
+			}
+			else if (max==0) {
+				rendermax=0;
+				rendermin=(m-s*4.0)<min?min:m-s*4.0;
+			else {
+				rendermin=(m-s*4.0)<min?min:m-s*4.0;	// 4 standard deviations from the mean seems good empirically, e2iminfo.py -asO
+				rendermax=(m+s*4.0)>max?max:m+s*4.0;
+				float step=(rendermax-rendermin)/(bitval-1);
+				rendermin=ceil(rendermin/step)*step;	// adjust rendermin so integral number of steps to exactly zero, may be roundoff issues
+			}
+		}
+		// Most general case, no "special values" to preserve
 		else {
-			rendermin = m - s * 5.0f;
+			rendermin=(m-s*4.0)<min?min:m-s*4.0;	// 4 standard deviations from the mean seems good empirically, e2iminfo.py -asO
+			rendermax=(m+s*4.0)>max?max:m+s*4.0;
 		}
-
-		if (rendermax == use_data_min_or_max) {
-			rendermax = max;
-		}
-		else if (rendermax > use_num_std_devs) {
-			num_std_devs = rendermax / flag_base;
-			rendermax = m + s * num_std_devs;
-		}
-		else {
-			rendermax = m + s * 5.0f;
-		}
-
-		if (rendermin <= min) rendermin = min;
-		if (rendermax >= max) rendermax = max;
-
-//	printf("rendermm %f %f %f %f\n",rendermin,rendermax,m,s);
 	}
 
-	if (debug) {
-		printf ("out of RenderMinMax, rmin = %g, rmax = %g\n", rendermin, rendermax);
-	}
+	if (debug) printf ("out of RenderMinMax, rmin = %g, rmax = %g, rbits = %d\n", rendermin, rendermax, renderbits);
 }
 
 #ifdef USE_HDF5

@@ -1483,9 +1483,11 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 				H5Pset_shuffle(plist);	// rearrange bytes
 				H5Pset_deflate(plist, 1);	// zlib level 1
 //				int r=H5Pset_szip (plist, H5_SZIP_NN_OPTION_MASK, 16);	// szip with 16 pixels per block (NN (2 stage) vs EC), NN definitely seems to perform better
-//				if (r) printf("R: %d\n",r); 
-				ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, spc, plist );
-//				ds=H5Dcreate(file,ipath, H5T_NATIVE_UCHAR, spc, plist );
+//				if (r) printf("R: %d\n",r);
+				if (renderbits<=0) ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, spc, plist );
+				else if (renderbits<=8) ds=H5Dcreate(file,ipath, H5T_NATIVE_UCHAR, spc, plist );
+				else if (renderbits<=16) ds=H5Dcreate(file,ipath, H5T_NATIVE_USHORT, spc, plist );
+				else throw ImageWriteException(filename,"Compressed HDF5 files may not use more than 16 bits. For native float, set 0 bits.");
 				H5Pclose(plist);	// safe to do this here?
 			}
 			break;
@@ -1493,6 +1495,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			throw ImageWriteException(filename,"HDF5 does not support this data format");
 		}
 	}
+	// TODO - it is possible that not deleting and recreating the dataspace here will prevent rewriting the same file with a different mode or compression
 	else {	//existing file
 		hid_t spc_file = H5Dget_space(ds);
 		rank = H5Sget_simple_extent_ndims(spc_file);
@@ -1582,7 +1585,6 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 		switch(dt) {
 		case EMUtil::EM_FLOAT:
-		case EMUtil::EM_CMPR:
 			err_no = H5Dwrite(ds, H5T_NATIVE_FLOAT, memoryspace, filespace, H5P_DEFAULT, data);
 
 			if (err_no < 0) {
@@ -1686,6 +1688,8 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			if (ucdata) {delete [] ucdata; ucdata = NULL;}
 
 			break;
+		case EMUtil::EM_CMPR:
+			
 		default:
 			throw ImageWriteException(filename,"HDF5 does not support region writing for this data format");
 		}
