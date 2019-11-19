@@ -59,9 +59,11 @@ WHAT IS MISSING:
 0) in all the cases where the input file is an image. I did not test the case with a complex image. I was not able to generate it
 1) draw_power2d --> it writes an image on a db. How test it?
 
-
 RESULT AND KNOWN ISSUES
 Some compatibility tests for the following functions fail!!!
+0) The "cter_*" functions, generate a lot of data, that i cannot test properly:
+    the txt and the hdf have always differences (sometimes small and sometimes big) even when I run the same
+    script version ... How I can perform compability and unittest properly?
 1) rotavg_ctf
 2) goldsearch_astigmatism
 3) defocusgett_vpp2
@@ -99,7 +101,7 @@ IN THESE TESTS THERE ARE A STRANGE BEHAVIOUR:
 
 CTER function situations:
 0)
-    -) they need a lot of time to perform the test (hours)
+    -) they could need a lot of time to perform the test
     -) Since the process finishes with an not-specified exit code, we cannot test it uniquely
     -) the nosetests are not able to run the SystemExit raise. It seems to be a known bug https://code.google.com/archive/p/python-nose/issues?page=5We moved all these tests in 'test_systemExit.py'
 1) cter_mrk, cter_pap becuase a similar bug see https://gitlab.gwdg.de/sphire/sphire_issues/issues/114 and https://gitlab.gwdg.de/sphire/sphire_issues/issues/115 are not able to run
@@ -107932,7 +107934,7 @@ class Test_cter_mrk(unittest.TestCase):
     i_stop = -1
     selection_list = "TcdA1-0011_frames_sum.mrc"
     input_image_path = path.join(
-        ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "TcdA1-*_frames_sum.mrc"
+        ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "TcdA1-001*_frames_sum.mrc"
     )
     output_directory = path.join(ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "cter_mrk_results")
 
@@ -108281,7 +108283,7 @@ class Test_cter_pap(unittest.TestCase):
     i_stop = -1
     selection_list = "TcdA1-0011_frames_sum.mrc"
     input_image_path = path.join(
-        ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "TcdA1-*_frames_sum.mrc"
+        ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "TcdA1-001*_frames_sum.mrc"
     )
     output_directory = path.join(ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "cter_mrk_results")
 
@@ -108637,7 +108639,7 @@ class Test_cter_vpp(unittest.TestCase):
     vpp_options = [0.3, 9.0, 0.1, 5.0, 175.0, 5.0]
     selection_list = "TcdA1-0011_frames_sum.mrc"
     input_image_path = path.join(
-        ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "TcdA1-*_frames_sum.mrc"
+        ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "TcdA1-001*_frames_sum.mrc"
     )
     output_directory = path.join(ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "cter_mrk_results")
 
