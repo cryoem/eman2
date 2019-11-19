@@ -1431,9 +1431,9 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		H5Aclose(attr);
 	}
 
+	char ipath[50];
 	hid_t spc;	//dataspace
 	hid_t ds;	//dataset
-	char ipath[50];
 
 	sprintf(ipath, "/MDF/images/%d/image", image_index);
 
@@ -1521,6 +1521,14 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits, nz);
 //	printf("RMM  %f  %f\n",rendermin,rendermax);
 
+	// Limiting values for signed and unsigned with specified bits
+	float RUMIN = 0;
+	float RUMAX = (1<<renderbits)-1.0f;
+	float RSMIN = -(1<<(renderbits-1));
+	float RSMAX = (1<<(renderbits-1))-1;
+	
+	bool scaled=0;		// set if the data will need rescaling upon read
+	herr_t err_no;
 	if (area) {
 		hid_t filespace = H5Dget_space(ds);
 		hid_t memoryspace = 0;
@@ -1581,7 +1589,6 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			std::cerr << "rank is wrong: " << rank << std::endl;
 		}
 
-		herr_t err_no;
 
 		switch(dt) {
 		case EMUtil::EM_FLOAT:
@@ -1597,13 +1604,13 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 			for (size_t i = 0; i < size; ++i) {
 				if (data[i] <= rendermin) {
-					sdata[i] = (short)INT16_min;
+					sdata[i] = (short)RSMIN;
 				}
 				else if (data[i] >= rendermax) {
-					sdata[i] = (short)INT16_max;
+					sdata[i] = (short)RSMAX;
 				}
 				else {
-					sdata[i]=(short)roundf((data[i]-rendermin)/(rendermax-rendermin)*(INT16_max-INT16_min)+INT16_min);
+					sdata[i]=(short)roundf((data[i]-rendermin)/(rendermax-rendermin)*(RSMAX-RSMIN)+RSMIN);
 				}
 			}
 
@@ -1614,7 +1621,8 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			}
 
 			if (sdata) {delete [] sdata; sdata = NULL;}
-
+			scaled=1;
+			
 			break;
 		case EMUtil::EM_USHORT:
 			usdata = new unsigned short[size];
@@ -1624,10 +1632,10 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 					usdata[i] = 0;
 				}
 				else if (data[i] >= rendermax) {
-					usdata[i] = (unsigned short)UINT16_max;
+					usdata[i] = (unsigned short)RUMAX;
 				}
 				else {
-					usdata[i]=(unsigned short)roundf((data[i]-rendermin)/(rendermax-rendermin)*UINT16_max);
+					usdata[i]=(unsigned short)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
 				}
 			}
 
@@ -1638,6 +1646,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			}
 
 			if (usdata) {delete [] usdata; usdata = NULL;}
+			scaled=1;
 
 			break;
 		case EMUtil::EM_CHAR:
@@ -1645,13 +1654,13 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 			for (size_t i = 0; i < size; ++i) {
 				if (data[i] <= rendermin) {
-					cdata[i] = (char) INT8_min;
+					cdata[i] = (char) RSMIN;
 				}
 				else if (data[i] >= rendermax){
-					cdata[i] = (char)INT8_max;
+					cdata[i] = (char) RSMAX;
 				}
 				else {
-					cdata[i]=(char)roundf((data[i]-rendermin)/(rendermax-rendermin)*(INT8_max-INT8_min)+INT8_min);
+					cdata[i]=(char)roundf((data[i]-rendermin)/(rendermax-rendermin)*(RSMAX-RSMIN)+RSMIN);
 				}
 			}
 
@@ -1662,6 +1671,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			}
 
 			if (cdata) {delete [] cdata; cdata = NULL;}
+			scaled=1;
 
 			break;
 		case EMUtil::EM_UCHAR:
@@ -1672,10 +1682,10 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 					ucdata[i] = 0;
 				}
 				else if (data[i] >= rendermax){
-					ucdata[i] = (unsigned char)UINT8_max;
+					ucdata[i] = (unsigned char)RUMAX;
 				}
 				else {
-					ucdata[i]=(unsigned char)roundf((data[i]-rendermin)/(rendermax-rendermin)*UINT8_max);
+					ucdata[i]=(unsigned char)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
 				}
 			}
 
@@ -1686,10 +1696,52 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			}
 
 			if (ucdata) {delete [] ucdata; ucdata = NULL;}
+			scaled=1;
 
 			break;
 		case EMUtil::EM_CMPR:
-			
+			if (renderbits<=0) err_no = H5Dwrite(ds, H5T_NATIVE_FLOAT, memoryspace, filespace, H5P_DEFAULT, data);
+			else if (renderbits<=8) {
+				ucdata = new unsigned char[size];
+
+				for (size_t i = 0; i < size; ++i) {
+					if (data[i] <= rendermin) {
+						ucdata[i] = 0;
+					}
+					else if (data[i] >= rendermax){
+						ucdata[i] = (unsigned char)RUMAX;
+					}
+					else {
+						ucdata[i]=(unsigned char)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
+					}
+				}
+
+				err_no = H5Dwrite(ds, H5T_NATIVE_UCHAR, memoryspace, filespace, H5P_DEFAULT, ucdata);
+				scaled=1;
+			}
+			else {
+				usdata = new unsigned short[size];
+
+				for (size_t i = 0; i < size; ++i) {
+					if (data[i] <= rendermin) {
+						usdata[i] = 0;
+					}
+					else if (data[i] >= rendermax) {
+						usdata[i] = (unsigned short)RUMAX;
+					}
+					else {
+						usdata[i]=(unsigned short)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
+					}
+				}
+
+				err_no = H5Dwrite(ds, H5T_NATIVE_USHORT, memoryspace, filespace, H5P_DEFAULT, usdata);
+				scaled=1;
+			}
+				
+			if (err_no < 0) {
+				std::cerr << "H5Dwrite error: " << err_no << std::endl;
+			}
+			break;
 		default:
 			throw ImageWriteException(filename,"HDF5 does not support region writing for this data format");
 		}
@@ -1700,29 +1752,27 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	else {
 		switch(dt) {
 		case EMUtil::EM_FLOAT:
-		case EMUtil::EM_CMPR:
 			H5Dwrite(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
-
 			break;
 		case EMUtil::EM_SHORT:
 			sdata = new short[size];
 
 			for (size_t i = 0; i < size; ++i) {
 				if (data[i] <= rendermin) {
-					sdata[i] = (short)INT16_min;
+					sdata[i] = (short)RSMIN;
 				}
 				else if (data[i] >= rendermax) {
-					sdata[i] = (short)INT16_max;
+					sdata[i] = (short)RSMAX;
 				}
 				else {
-					sdata[i]=(short)roundf((data[i]-rendermin)/(rendermax-rendermin)*(INT16_max-INT16_min)+INT16_min);
-//					printf("%f %f %f %f %f %f\n",data[i],rendermin,rendermax-rendermin,INT16_max-INT16_min,INT16_min,(data[i]-rendermin)/(rendermax-rendermin)*(INT16_max-INT16_min)+INT16_min);
+					sdata[i]=(short)roundf((data[i]-rendermin)/(rendermax-rendermin)*(RSMAX-RSMIN)+RSMIN);
 				}
 			}
 
 			H5Dwrite(ds,H5T_NATIVE_SHORT,spc,spc,H5P_DEFAULT,sdata);
 
 			if (sdata) {delete [] sdata; sdata = NULL;}
+			scaled=1;
 
 			break;
 		case EMUtil::EM_USHORT:
@@ -1733,16 +1783,17 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 					usdata[i] = 0;
 				}
 				else if (data[i] >= rendermax) {
-					usdata[i] = (unsigned short)UINT16_max;
+					usdata[i] = (unsigned short)RUMAX;
 				}
 				else {
-					usdata[i]=(unsigned short)roundf((data[i]-rendermin)/(rendermax-rendermin)*UINT16_max);
+					usdata[i]=(unsigned short)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
 				}
 			}
 
 			H5Dwrite(ds,H5T_NATIVE_USHORT,spc,spc,H5P_DEFAULT,usdata);
 
 			if (usdata) {delete [] usdata; usdata = NULL;}
+			scaled=1;
 
 			break;
 		case EMUtil::EM_CHAR:
@@ -1750,19 +1801,20 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 			for (size_t i = 0; i < size; ++i) {
 				if (data[i] <= rendermin) {
-					cdata[i] = (char) INT8_min;
+					cdata[i] = (char) RSMIN;
 				}
 				else if (data[i] >= rendermax){
-					cdata[i] = (char) INT8_max;
+					cdata[i] = (char) RSMAX;
 				}
 				else {
-					cdata[i]=(char)roundf((data[i]-rendermin)/(rendermax-rendermin)*(INT8_max-INT8_min)+INT8_min);
+					cdata[i]=(char)roundf((data[i]-rendermin)/(rendermax-rendermin)*(RSMAX-RSMIN)+RSMIN);
 				}
 			}
 
 			H5Dwrite(ds,H5T_NATIVE_CHAR,spc,spc,H5P_DEFAULT,cdata);
 
 			if (cdata) {delete [] cdata; cdata = NULL;}
+			scaled=1;
 
 			break;
 		case EMUtil::EM_UCHAR:
@@ -1773,16 +1825,61 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 					ucdata[i] = 0;
 				}
 				else if (data[i] >= rendermax){
-					ucdata[i] = (unsigned char)UINT8_max;
+					ucdata[i] = (unsigned char)RUMAX;
 				}
 				else {
-					ucdata[i]=(unsigned char)roundf((data[i]-rendermin)/(rendermax-rendermin)*UINT8_max);
+					ucdata[i]=(unsigned char)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
 				}
 			}
 
 			H5Dwrite(ds,H5T_NATIVE_UCHAR,spc,spc,H5P_DEFAULT,ucdata);
 
 			if (ucdata) {delete [] ucdata; ucdata = NULL;}
+			scaled=1;
+
+			break;
+		case EMUtil::EM_CMPR:
+			if (renderbits<=0) err_no = H5Dwrite(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
+			else if (renderbits<=8) {
+				ucdata = new unsigned char[size];
+
+				for (size_t i = 0; i < size; ++i) {
+					if (data[i] <= rendermin) {
+						ucdata[i] = 0;
+					}
+					else if (data[i] >= rendermax) {
+						ucdata[i] = (unsigned char)RUMAX;
+					}
+					else {
+						ucdata[i]=(unsigned char)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
+					}
+				}
+
+				err_no = H5Dwrite(ds,H5T_NATIVE_UCHAR,spc,spc,H5P_DEFAULT,ucdata);
+				scaled=1;
+			}
+			else {
+				usdata = new unsigned short[size];
+
+				for (size_t i = 0; i < size; ++i) {
+					if (data[i] <= rendermin) {
+						usdata[i] = 0;
+					}
+					else if (data[i] >= rendermax) {
+						usdata[i] = (unsigned short)RUMAX;
+					}
+					else {
+						usdata[i]=(unsigned short)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
+					}
+				}
+
+				err_no = H5Dwrite(ds,H5T_NATIVE_USHORT,spc,spc,H5P_DEFAULT,usdata);
+				scaled=1;
+			}
+				
+			if (err_no < 0) {
+				std::cerr << "H5Dwrite error: " << err_no << std::endl;
+			}
 
 			break;
 		default:
@@ -1792,6 +1889,17 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 	H5Sclose(spc);
 	H5Dclose(ds);
+
+	if (scaled) {
+		sprintf(ipath,"/MDF/images/%d",image_index);
+		hid_t igrp=H5Gopen(file,ipath);
+		write_attr(igrp,"EMAN.stored_rendermin",EMObject(rendermin));
+		write_attr(igrp,"EMAN.stored_rendermax",EMObject(rendermax));
+		write_attr(igrp,"EMAN.stored_renderbits",EMObject(renderbits));
+		H5Gclose(igrp);
+	}
+
+
 	EXITFUNC;
 	return 0;
 }

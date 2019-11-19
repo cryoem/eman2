@@ -1760,7 +1760,7 @@ void EMUtil::getRenderLimits(const Dict & dict, float & rendermin, float & rende
 	// at present this routine just reads header values. It is still here in case we need to implement 
 	// more complicated logic in future.
 	
-	rendermin = 0.0;
+	rendermin = 0.0;	// when rendermax<=rendermin, automatic mode is invoked
 	rendermax = 0.0;
 
 	if (dict.has_key("render_bits")) renderbits = (int)dict["render_bits"];
@@ -1785,7 +1785,8 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 
 	if (debug) printf ("into RenderMinMax, rmin = %g, rmax = %g, rbits = %d\n", rendermin, rendermax, renderbits);
 	
-	if (renderbits<1 || renderbits>16) renderbits=16;
+	if (renderbits<=0) return;			// this is for float mode where rendermin/max isn't used
+	if (renderbits>16) renderbits=16;
 
 	if (rendermax <= rendermin ||
 		Util::is_nan(rendermin) || Util::is_nan(rendermax) ||
@@ -1796,7 +1797,7 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 		size_t nint=0,n0=0,n1=0;	// count the number of integers, zeroes and ones
 		size_t size = (size_t)nx*ny*nz;
 		float min = data[0], max = data[0];
-		int bitval = 1<<(renderbits-1);
+		int bitval = 1<<renderbits;
 		
 		// we compute image statistics. If this were designed right, we'd have the actual image instead of just
 		// the data pointer and wouldn't need to do this (other than maybe the integer counting)
@@ -1830,7 +1831,7 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 			// if true, then we can safely store all of the values in the requested bits without change
 			if (max-min<bitval) {
 				rendermin=min;
-				rendermax=min+bitval-1.0f;
+				rendermax=min+bitval-1;
 			}
 			// otherwise, we will need to keep the most significant bits, but still try to get integers out (except in very odd cases)
 			else {
@@ -1847,6 +1848,7 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 			else if (max==0) {
 				rendermax=0;
 				rendermin=(m-s*4.0)<min?min:m-s*4.0;
+			}
 			else {
 				rendermin=(m-s*4.0)<min?min:m-s*4.0;	// 4 standard deviations from the mean seems good empirically, e2iminfo.py -asO
 				rendermax=(m+s*4.0)>max?max:m+s*4.0;
