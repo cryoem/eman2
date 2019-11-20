@@ -49,7 +49,6 @@ import zlib
 import socket
 import subprocess
 from EMAN2_cppwrap import *
-from pyemtbx.imagetypes import *
 from EMAN2_meta import *
 import EMAN2db, EMAN2jsondb
 import argparse, copy
