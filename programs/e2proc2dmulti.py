@@ -43,7 +43,7 @@ import sys
 import os.path
 import math
 import random
-import pyemtbx.options
+#import pyemtbx.options
 import time
 
 def main():
@@ -89,7 +89,7 @@ def main():
 	
 	append_options = ["clip", "process", "meanshrink", "medianshrink", "scale", "randomize", "rotate", "translate", "multfile"]
 
-	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
+	optionlist = get_optionlist(sys.argv[1:])
 	
 	(options, args) = parser.parse_args()
 	

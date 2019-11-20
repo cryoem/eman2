@@ -41,7 +41,7 @@ import sys
 import os.path
 import math
 import random
-import pyemtbx.options
+#import pyemtbx.options
 import os
 import datetime
 import time
@@ -149,7 +149,7 @@ def main():
 	
 	
 def procfn(jsd,args,options,thrn,n0,n1):
-	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
+	optionlist = get_optionlist(sys.argv[1:])
 
 	ret=[thrn,{}]
 	for n in range(n0, n1):
