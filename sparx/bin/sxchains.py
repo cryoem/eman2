@@ -203,7 +203,6 @@ def main():
 	import os
 	import math
 	import random
-	import pyemtbx.options
 	import time
 	from   random   import random, seed, randint
 	from   optparse import OptionParser

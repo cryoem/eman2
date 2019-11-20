@@ -43,7 +43,6 @@ import sys
 import os.path
 import math
 import random
-#import pyemtbx.options
 import time
 
 def main():

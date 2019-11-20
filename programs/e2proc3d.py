@@ -41,9 +41,6 @@ from optparse import OptionParser
 import sys
 from math import *
 import os.path
-#import pyemtbx.options
-#from pyemtbx.options import intvararg_callback
-#from pyemtbx.options import floatvararg_callback
 from time import time
 from numpy import arange
 import traceback
