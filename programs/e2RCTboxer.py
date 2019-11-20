@@ -42,7 +42,7 @@ from PyQt5 import QtCore
 from eman2_gui.emapplication import EMApp
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.emimage2d import EMImage2DWidget
-from pyemtbx.boxertools import BigImageCache
+from eman2_gui.boxertools import BigImageCache
 from eman2_gui.emrctstrategy import Strategy2IMGMan, Strategy2IMGPair
 from eman2_gui.emrctboxergui import ControlPannel
 from eman2_gui.emshape import EMShape

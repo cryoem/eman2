@@ -52,7 +52,7 @@ points in terms of figuring out how to adapt this code to application specific n
 '''
 from optparse import OptionParser
 from .emapplication import EMApp,get_application
-from pyemtbx.boxertools import BigImageCache,BinaryCircleImageCache,Cache
+from eman2_gui.boxertools import BigImageCache, Cache
 from EMAN2 import file_exists,EMANVERSION,gimme_image_dimensions2D,EMData,get_image_directory,Region,file_exists,gimme_image_dimensions3D,abs_path,get_platform,base_name
 from EMAN2db import db_open_dict,db_check_dict,db_close_dict
 from EMAN2jsondb import *
