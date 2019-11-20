@@ -36,8 +36,7 @@ from __future__ import division
 from past.utils import old_div
 from builtins import range
 from builtins import object
-from EMAN2 import BoxingTools,gm_time_string,Transform, E2init, E2end, E2progress,db_open_dict,EMArgumentParser
-from EMAN2db import db_check_dict
+from EMAN2 import BoxingTools,gm_time_string,Transform, E2init, E2progress,db_open_dict,EMArgumentParser
 from EMAN2jsondb import *
 from eman2_gui.boxertools import CoarsenedFlattenedImageCache,FLCFImageCache
 from copy import deepcopy
@@ -120,7 +119,6 @@ e2boxer.py ????.mrc --boxsize=256
 	(options, args) = parser.parse_args()
 
 	if options.cter:
-		from global_def import SPARXVERSION
 		import global_def
 		if len(args) <2 or len(args) > 3:
 			print("see usage")
@@ -2881,7 +2879,7 @@ class GaussBoxer(object):
 
 	def get_small_image(self,imgname,modecmd=False,boxsize=128,ret_dummy=False):
 
-		from sparx import get_im, filt_gaussl, filt_gaussh
+		from sparx import get_im, filt_gaussh
 		subsample_rate = self.get_subsample_rate()
 		frequency_cutoff = self.get_frequency_cutoff()
 		template_min = self.get_window_size_min()
@@ -2914,7 +2912,6 @@ class GaussBoxer(object):
 		small_img.set_attr("subsample_rate",subsample_rate)
 		small_img.set_attr("frequency_cutoff",frequency_cutoff)
 		small_img.set_attr("template_min",template_min)
-		from utilities import generate_ctf
 		try:
 			ctf_dict = img.get_attr("ctf")
 			ctf_dict.apix = self.pixel_output
@@ -3078,7 +3075,7 @@ class GaussBoxer(object):
 		defocus = defocus_gett(avg_sp,voltage=ctf_volt,Pixel_size=self.pixel_input,Cs=ctf_Cs,wgh=ctf_ampcont, f_start=ctf_fstart,f_stop=ctf_fstop)
 
 		# set image properties, in order to save ctf values
-		from utilities import set_ctf, generate_ctf
+		from utilities import set_ctf
 		ctf_tuple = [defocus,ctf_Cs,ctf_volt,self.pixel_output,0,ctf_ampcont]
 		set_ctf(img, ctf_tuple)
 		img.write_image(image_name, 0)
@@ -3306,7 +3303,6 @@ class CTFInspectorWidget(QtWidgets.QWidget):
 			sizeh = float(sizeh)
 			steph = old_div(float(h-2*hborder), float(sizeh))
 
-			import math
 			from utilities import read_text_file
 			ctfdata2 = read_text_file("procpw.txt",3)
 
