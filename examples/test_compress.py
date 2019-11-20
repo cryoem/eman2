@@ -2,6 +2,10 @@
 
 # 11/20/19  Steven Ludtke
 # Script designed to test data compression code timing and amount of compression
+from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
+from builtins import range
 from EMAN2 import *
 import os
 import sys
@@ -22,10 +26,13 @@ tests=[
 fls=[(i,i.rsplit(".",1)[0]+".hdf") for i in os.listdir(".") if i.rsplit(".",1)[-1] in ("mrc","mrcs","tif","tiff","hdf")]
 
 
-print "%35s%16s%16s%16s%16s%16s%16s%16s"%("","float   ","ushort   ","float cmp  ","12 bit   ","8 bit   ","4 bit   ","3 bit   ")
+print(" "*35,end="")
+for i in tests: print("{:16s}".format(i[2]),end="")
+print("")
+
 for fi,fo in fls:
 	n=EMUtil.get_image_count(fi)
-	print "%35s"%fi,
+	print("%35s"%fi,end="")
 	for ti,t in enumerate(tests):
 		fot="test_{}/".format(ti)+fo
 		try: os.unlink(fot)
@@ -42,9 +49,8 @@ for fi,fo in fls:
 		tm1=time.time()
 		if ti==0 :
 			base=os.stat(fot).st_size
-			print "%7d(%5.2f)  "%(int(base/1024),tm1-tm0),
+			print("%7d(%5.2f)  "%(int(base/1024),tm1-tm0),end="")
 		else:
-			print "%7.1f(%5.2f)  "%(float(base)/os.stat(fot).st_size,tm1-tm0),
-	print ""
+			print("%7.1f(%5.2f)  "%(float(base)/os.stat(fot).st_size,tm1-tm0),end="")
+	print("")
 
-print "%35s%16s%16s%16s%16s%16s%16s%16s"%("","float   ","ushort   ","float cmp  ","12 bit   ","8 bit   ","4 bit   ","3 bit   ")
