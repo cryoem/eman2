@@ -5,7 +5,7 @@ from numpy import array_equal,allclose
 from sphire.bin import sp_compute_isac_avg as oldfu
 from sphire.utils.SPHIRE.bin import sp_compute_isac_avg as fu
 from os import path
-from test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,ABSOLUTE_BIN_PATH,remove_dir,IMAGE_2D,IMAGE_BLANK_2D,IMAGE_3D
+from test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_BIN_PATH,remove_dir,IMAGE_2D,IMAGE_BLANK_2D,IMAGE_3D,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW
 import unittest
 from sp_utilities import get_im
 
@@ -131,8 +131,8 @@ class Test_Error_cases(unittest.TestCase):
         remove_dir(cls.old_output_folder)
 
     def test_negative_pixelSize(self):
-        testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_compute_isac_avg.py"), "--stack=bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Particles#stack"), "--isac_dir="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Class2D"),"--output_dir="+self.new_output_folder,"--pixel_size=-1"]
-        testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_compute_isac_avg.py"),"--stack=bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Particles#stack"),"--isac_dir="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Class2D"),"--output_dir="+self.old_output_folder,"--pixel_size=-1"]
+        testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_compute_isac_avg.py"), "--stack=bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack"), "--isac_dir="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"04_ISAC"),"--output_dir="+self.new_output_folder,"--pixel_size=-1"]
+        testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_compute_isac_avg.py"),"--stack=bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack"),"--isac_dir="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"04_ISAC"),"--output_dir="+self.old_output_folder,"--pixel_size=-1"]
         with patch.object(sys, 'argv', testargs_new):
             fu.main()
         with patch.object(sys, 'argv', testargs_old):
@@ -159,8 +159,8 @@ class Test_run(unittest.TestCase):
 
 
     def test_(self):
-        testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_compute_isac_avg.py"), "--stack=bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Particles#stack"), "--isac_dir="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Class2D"),"--output_dir="+self.new_output_folder,"--pixel_size=1.14", "--radius=145", "--local_alignment"]
-        testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_compute_isac_avg.py"),"--stack=bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Particles#stack"),"--isac_dir="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Class2D"),"--output_dir="+self.old_output_folder,"--pixel_size=1.14", "--radius=145", "--local_alignment"]
+        testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_compute_isac_avg.py"), "--stack=bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack"), "--isac_dir="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"04_ISAC"),"--output_dir="+self.new_output_folder,"--pixel_size=1.14", "--radius=145", "--local_alignment"]
+        testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_compute_isac_avg.py"),"--stack=bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack"), "--isac_dir="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"04_ISAC"),"--output_dir="+self.old_output_folder,"--pixel_size=1.14", "--radius=145", "--local_alignment"]
         with patch.object(sys, 'argv', testargs_new):
             fu.main()
         with patch.object(sys, 'argv', testargs_old):
