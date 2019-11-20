@@ -99,7 +99,7 @@ namespace EMAN
 			EM_SHORT_COMPLEX,
 			EM_USHORT_COMPLEX,
 			EM_FLOAT_COMPLEX,
-			EM_CMPR				// compressed
+			EM_COMPRESSED				// compressed
 		};
 
 		/** Image format types.

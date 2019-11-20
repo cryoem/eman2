@@ -1223,7 +1223,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
         .value("EM_UINT", EMAN::EMUtil::EM_UINT)
         .value("EM_DOUBLE", EMAN::EMUtil::EM_DOUBLE)
         .value("EM_FLOAT", EMAN::EMUtil::EM_FLOAT)
-        .value("EM_CMPR", EMAN::EMUtil::EM_CMPR)
+        .value("EM_COMPRESSED", EMAN::EMUtil::EM_COMPRESSED)
     ;
 
 

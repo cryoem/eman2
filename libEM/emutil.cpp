@@ -1764,7 +1764,7 @@ void EMUtil::getRenderLimits(const Dict & dict, float & rendermin, float & rende
 	rendermax = 0.0;
 
 	if (dict.has_key("render_bits")) renderbits = (int)dict["render_bits"];
-	else renderbits=16;
+	else renderbits=0;	// 0 bits means float mode, any compression will be truly lossless
 
 	if (dict.has_key("render_min")) rendermin = (float) dict["render_min"];
 	if (dict.has_key("render_max")) rendermax = (float) dict["render_max"];

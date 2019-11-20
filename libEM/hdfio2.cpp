@@ -1447,7 +1447,12 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		hsize_t dims[3]= { nz, ny, nx };
 		spc=H5Screate_simple(3,dims,NULL);
 	}
-
+	
+	if (nx==1 && dt==EMUtil::EM_COMPRESSED) {
+		printf("Warning: HDF compressed mode not supported when nx=1\n");
+		dt=EMUtil::EM_FLOAT;
+	}
+		
 	ds = H5Dopen(file,ipath);
 	hsize_t rank = 0;
 
@@ -1468,7 +1473,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		case EMUtil::EM_CHAR:
 			ds=H5Dcreate(file,ipath, H5T_NATIVE_CHAR, spc, H5P_DEFAULT );
 			break;
-		case EMUtil::EM_CMPR:
+		case EMUtil::EM_COMPRESSED:
 			{
 //				printf("COMPRESSING!\n");
 				hid_t plist = H5Pcreate(H5P_DATASET_CREATE);
@@ -1595,7 +1600,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			err_no = H5Dwrite(ds, H5T_NATIVE_FLOAT, memoryspace, filespace, H5P_DEFAULT, data);
 
 			if (err_no < 0) {
-				std::cerr << "H5Dwrite error: " << err_no << std::endl;
+				std::cerr << "H5Dwrite error float: " << err_no << std::endl;
 			}
 
 			break;
@@ -1617,7 +1622,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			err_no = H5Dwrite(ds, H5T_NATIVE_SHORT, memoryspace, filespace, H5P_DEFAULT, sdata);
 
 			if (err_no < 0) {
-				std::cerr << "H5Dwrite error: " << err_no << std::endl;
+				std::cerr << "H5Dwrite error short: " << err_no << std::endl;
 			}
 
 			if (sdata) {delete [] sdata; sdata = NULL;}
@@ -1642,7 +1647,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			err_no = H5Dwrite(ds, H5T_NATIVE_USHORT, memoryspace, filespace, H5P_DEFAULT, usdata);
 
 			if (err_no < 0) {
-				std::cerr << "H5Dwrite error: " << err_no << std::endl;
+				std::cerr << "H5Dwrite error ushort: " << err_no << std::endl;
 			}
 
 			if (usdata) {delete [] usdata; usdata = NULL;}
@@ -1667,7 +1672,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			err_no = H5Dwrite(ds, H5T_NATIVE_CHAR, memoryspace, filespace, H5P_DEFAULT, cdata);
 
 			if (err_no < 0) {
-				std::cerr << "H5Dwrite error: " << err_no << std::endl;
+				std::cerr << "H5Dwrite error char: " << err_no << std::endl;
 			}
 
 			if (cdata) {delete [] cdata; cdata = NULL;}
@@ -1692,14 +1697,14 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			err_no = H5Dwrite(ds, H5T_NATIVE_UCHAR, memoryspace, filespace, H5P_DEFAULT, ucdata);
 
 			if (err_no < 0) {
-				std::cerr << "H5Dwrite error: " << err_no << std::endl;
+				std::cerr << "H5Dwrite error uchar: " << err_no << std::endl;
 			}
 
 			if (ucdata) {delete [] ucdata; ucdata = NULL;}
 			scaled=1;
 
 			break;
-		case EMUtil::EM_CMPR:
+		case EMUtil::EM_COMPRESSED:
 			if (renderbits<=0) err_no = H5Dwrite(ds, H5T_NATIVE_FLOAT, memoryspace, filespace, H5P_DEFAULT, data);
 			else if (renderbits<=8) {
 				ucdata = new unsigned char[size];
@@ -1739,7 +1744,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			}
 				
 			if (err_no < 0) {
-				std::cerr << "H5Dwrite error: " << err_no << std::endl;
+				std::cerr << "H5Dwrite error compressed: " << err_no << std::endl;
 			}
 			break;
 		default:
@@ -1838,7 +1843,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			scaled=1;
 
 			break;
-		case EMUtil::EM_CMPR:
+		case EMUtil::EM_COMPRESSED:
 			if (renderbits<=0) err_no = H5Dwrite(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
 			else if (renderbits<=8) {
 				ucdata = new unsigned char[size];
@@ -1878,7 +1883,8 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			}
 				
 			if (err_no < 0) {
-				std::cerr << "H5Dwrite error: " << err_no << std::endl;
+				printf("%d %f %f\n",renderbits,rendermin,rendermax);
+				std::cerr << "H5Dwrite error compressed full: " << err_no << std::endl;
 			}
 
 			break;

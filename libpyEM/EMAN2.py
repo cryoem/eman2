@@ -144,6 +144,46 @@ def stopautoflush():
 	""" Return to buffered stdout """
 	sys.stdout = originalstdout
 
+# These are very widely used and hard to find, so some shortcuts
+# Image file types
+IMAGE_MRC = EMUtil.ImageType.IMAGE_MRC
+IMAGE_SPIDER = EMUtil.ImageType.IMAGE_SPIDER
+IMAGE_SINGLE_SPIDER = EMUtil.ImageType.IMAGE_SINGLE_SPIDER
+IMAGE_IMAGIC = EMUtil.ImageType.IMAGE_IMAGIC
+IMAGE_HDF = EMUtil.ImageType.IMAGE_HDF
+IMAGE_DM3 = EMUtil.ImageType.IMAGE_DM3
+IMAGE_DM4 = EMUtil.ImageType.IMAGE_DM4
+IMAGE_TIFF = EMUtil.ImageType.IMAGE_TIFF
+IMAGE_PGM = EMUtil.ImageType.IMAGE_PGM
+IMAGE_LST = EMUtil.ImageType.IMAGE_LST
+IMAGE_PIF = EMUtil.ImageType.IMAGE_PIF
+IMAGE_VTK = EMUtil.ImageType.IMAGE_VTK
+IMAGE_PNG = EMUtil.ImageType.IMAGE_PNG
+IMAGE_SAL = EMUtil.ImageType.IMAGE_SAL
+IMAGE_ICOS = EMUtil.ImageType.IMAGE_ICOS
+IMAGE_EMIM = EMUtil.ImageType.IMAGE_EMIM
+IMAGE_GATAN2 = EMUtil.ImageType.IMAGE_GATAN2
+IMAGE_AMIRA = EMUtil.ImageType.IMAGE_AMIRA
+IMAGE_XPLOR = EMUtil.ImageType.IMAGE_XPLOR
+IMAGE_EM = EMUtil.ImageType.IMAGE_EM
+IMAGE_V4L = EMUtil.ImageType.IMAGE_V4L
+IMAGE_UNKNOWN = EMUtil.ImageType.IMAGE_UNKNOWN
+
+# image data storage modes
+EM_UNKNOWN = EMUtil.EMDataType.EM_UNKNOWN
+EM_CHAR = EMUtil.EMDataType.EM_CHAR
+EM_UCHAR = EMUtil.EMDataType.EM_UCHAR
+EM_SHORT = EMUtil.EMDataType.EM_SHORT
+EM_USHORT = EMUtil.EMDataType.EM_USHORT
+EM_INT = EMUtil.EMDataType.EM_INT
+EM_UINT = EMUtil.EMDataType.EM_UINT
+EM_FLOAT = EMUtil.EMDataType.EM_FLOAT
+EM_DOUBLE = EMUtil.EMDataType.EM_DOUBLE
+EM_SHORT_COMPLEX = EMUtil.EMDataType.EM_SHORT_COMPLEX
+EM_USHORT_COMPLEX = EMUtil.EMDataType.EM_USHORT_COMPLEX
+EM_FLOAT_COMPLEX = EMUtil.EMDataType.EM_FLOAT_COMPLEX
+EM_COMPRESSED = EMUtil.EMDataType.EM_COMPRESSED
+
 
 # These map standard names for data types to internal representation, and provide a minimum and maximum value for each type
 file_mode_map={
@@ -154,7 +194,7 @@ file_mode_map={
 	"int32" :EMUtil.EMDataType.EM_INT,
 	"uint32":EMUtil.EMDataType.EM_UINT,
 	"float" :EMUtil.EMDataType.EM_FLOAT,
-	"compressed": EMUtil.EMDataType.EM_CMPR }
+	"compressed": EMUtil.EMDataType.EM_COMPRESSED }
 
 # inverse dictionary for getting printable names
 file_mode_imap=dict([[int(v),k] for k,v in list(file_mode_map.items())])
@@ -167,7 +207,7 @@ file_mode_intmap={
 	5 :EMUtil.EMDataType.EM_INT,
 	6 :EMUtil.EMDataType.EM_UINT,
 	7 :EMUtil.EMDataType.EM_FLOAT,
-	8 :EMUtil.EMDataType.EM_CMPR }
+	8 :EMUtil.EMDataType.EM_COMPRESSED }
 
 
 #keyed both by type and by the integer version for flexibility
@@ -186,7 +226,7 @@ file_mode_range={
 	int(EMUtil.EMDataType.EM_INT):(-2147483648,2147483647 ),
 	int(EMUtil.EMDataType.EM_UINT):(0,4294967295),
 	int(EMUtil.EMDataType.EM_FLOAT):(-3.40282347e+38,3.40282347e+38 ),
-	int(EMUtil.EMDataType.EM_CMPR):(-3.40282347e+38,3.40282347e+38 )
+	int(EMUtil.EMDataType.EM_COMPRESSED):(-3.40282347e+38,3.40282347e+38 )
 	}
 
 def E2init(argv, ppid=-1) :
@@ -542,6 +582,36 @@ def re_filter_list(listtofilter, regex, invert=False):
 	for key in listtofilter:
 		if bool(r1.search(key)) ^ invert: returndict[key] = listtofilter[key]
 	return returndict
+
+def get_optionlist(argv):
+	optionlist = []
+	for arg1 in argv:
+		if arg1[0] == "-":
+			argname = arg1.split("=")
+			optionlist.append(argname[0].lstrip("-"))
+	return optionlist
+
+def intvararg_callback(option, opt_str, value, parser):
+#    print 'vararg_callback:'
+#    print '\toption:', repr(option)
+#    print '\topt_str:', opt_str
+#    print '\tvalue:', value
+#    print '\tparser:', parser
+    
+    v = [int(i) for i in value.split(',')]
+    setattr(parser.values, option.dest, v)
+    return
+
+def floatvararg_callback(option, opt_str, value, parser):
+#    print 'vararg_callback:'
+#    print '\toption:', repr(option)
+#    print '\topt_str:', opt_str
+#    print '\tvalue:', value
+#    print '\tparser:', parser
+    
+    v = [float(i) for i in value.split(',')]
+    setattr(parser.values, option.dest, v)
+    return
 
 class EMArgumentParser(argparse.ArgumentParser):
 	""" subclass of argparser to masquerade as optparser and run the GUI """

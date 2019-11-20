@@ -32,46 +32,5 @@ from __future__ import division
 #
 #
 
-def parse_filter_params(filterparams):
-    params = filterparams.split(":")
-    filtername = params[0]
-
-    if len(params) == 1:
-        return (filtername, None)
-    else:
-        d = Dict()
-        for param in params[1:]:
-            key_values = param.split("=")
-            d[key_values[0]] = EMObject(key_values[1])
-        return (filtername, d)
 
 
-def get_optionlist(argv):
-    optionlist = []
-    for arg1 in argv:
-        if arg1[0] == "-":
-            argname = arg1.split("=")
-            optionlist.append(argname[0].lstrip("-"))
-    return optionlist
-
-def intvararg_callback(option, opt_str, value, parser):
-#    print 'vararg_callback:'
-#    print '\toption:', repr(option)
-#    print '\topt_str:', opt_str
-#    print '\tvalue:', value
-#    print '\tparser:', parser
-    
-    v = [int(i) for i in value.split(',')]
-    setattr(parser.values, option.dest, v)
-    return
-
-def floatvararg_callback(option, opt_str, value, parser):
-#    print 'vararg_callback:'
-#    print '\toption:', repr(option)
-#    print '\topt_str:', opt_str
-#    print '\tvalue:', value
-#    print '\tparser:', parser
-    
-    v = [float(i) for i in value.split(',')]
-    setattr(parser.values, option.dest, v)
-    return
