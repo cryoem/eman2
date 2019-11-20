@@ -2,7 +2,7 @@ from __future__ import print_function
 from __future__ import division
 
 
-
+from time import sleep
 from sphire.utils.SPHIRE.bin import sp_cter as fu
 from sphire.bin import sp_cter as oldfu
 from os import path,listdir
@@ -110,6 +110,11 @@ class Test_Error_cases(unittest.TestCase):
 class Test_run(unittest.TestCase):
     old_output_folder="CterOld"
     new_output_folder = "CterNew"
+
+    @classmethod
+    def tearDownClass(cls):
+        sleep(0.1)      #to give the script the time to close the last logfile.
+        remove_list_of_file([f for f in listdir(".") if "sp_cter_logfile" in f])
 
     def remove_folders(self):
         remove_dir(self.new_output_folder)
