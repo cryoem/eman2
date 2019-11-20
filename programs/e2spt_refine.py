@@ -48,7 +48,7 @@ def main():
 	parser.add_argument("--localnorm",action="store_true",help="local normalization. do not use yet....",default=False)
 	parser.add_argument("--resume",action="store_true",help="resume from previous run",default=False)
 	
-	parser.add_argument("--masktight", type=str,help="Mask_tight file", default="")
+	#parser.add_argument("--masktight", type=str,help="Mask_tight file", default="")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -198,11 +198,11 @@ def main():
 			else:
 				msk=" --automask3d {}".format(msk)
 
-		if len(options.masktight)>0:
-			if os.path.isfile(options.masktight):
-				msk+=" --automask3dtight mask.fromfile:filename={}".format(msk)
-			else:
-				msk+=" --automask3dtight {}".format(options.masktight)
+		#if len(options.masktight)>0:
+			#if os.path.isfile(options.masktight):
+				#msk+=" --automask3dtight mask.fromfile:filename={}".format(options.masktight)
+			#else:
+				#msk+=" --automask3dtight {}".format(options.masktight)
 
 		s=""
 		if options.goldstandard>0:
