@@ -615,6 +615,14 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		
 		for ax in axis:
 			ia, view, loc=pms[ax]
+			shp=view.get_shapes()
+			if len(shp)!=len(boxes):
+				### something changes the box shapes...
+				for i,b in enumerate(boxes):
+					self.update_box_shape(i,b)
+			
+		for ax in axis:
+			ia, view, loc=pms[ax]
 			
 			## update the box shapes
 			shp=view.get_shapes()
