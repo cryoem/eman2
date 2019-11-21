@@ -37,7 +37,7 @@ def main():
 	#### reconstruction
 
 	sz=e["nx"]
-	pad=good_boxsize(int(sz*1.5))
+	pad=good_size(int(sz*1.5))
 	recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":"gauss_2"})
 	recon.setup()
 	epad=eali.get_clip(Region(old_div(sz,2)-old_div(pad,2), old_div(sz,2)-old_div(pad,2), pad, pad))

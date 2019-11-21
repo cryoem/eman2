@@ -652,7 +652,7 @@ def remove_beads(imgs_500, imgout, ttparams, options):
 		fname=os.path.join(options.tmppath, "ptcls_rmbead.hdf")
 		if os.path.isfile(fname):
 			os.remove(fname)
-	pad=good_boxsize(options.bxsz*2)
+	pad=good_size(options.bxsz*2)
 	for n, tpm in enumerate(tpms):
 		
 		plst=[]
@@ -987,8 +987,8 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 		bds=np.array(bds)
 		bds=np.median(abs(bds), axis=0)*2 ## so we clip a rectangle area that covers half of the tilt images
 		
-		outx=good_boxsize(bds[0])
-		outy=good_boxsize(bds[1])
+		outx=good_size(bds[0])
+		outy=good_size(bds[1])
 		print("Final tomogram shape: {} x {}".format(outx, outy))
 	else:
 		outx=outy=1024*b
@@ -997,9 +997,9 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	sz=max(int(clipz*0.8), 256*b) #### this is the output 3D size 
 	step=sz//2 #### distance between each tile
 	if options.extrapad:
-		pad=good_boxsize(sz*2) #### this is the padded size in fourier space
+		pad=good_size(sz*2) #### this is the padded size in fourier space
 	else:
-		pad=good_boxsize(sz*1.4) #### this is the padded size in fourier space
+		pad=good_size(sz*1.4) #### this is the padded size in fourier space
 	
 	if clipz>0:
 		outz=clipz
