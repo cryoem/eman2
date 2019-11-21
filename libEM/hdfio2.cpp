@@ -1044,6 +1044,7 @@ int HdfIO2::read_data_8bit(unsigned char *data, int image_index, const Region *a
 	EXITFUNC;
 	return 0;
 }
+
 int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 {
 	ENTERFUNC;
@@ -1290,6 +1291,31 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 	H5Tclose(dt);
 	H5Sclose(spc);
 	H5Dclose(ds);
+
+	// Rescale data on read if bit reduction took place
+	sprintf(ipath,"/MDF/images/%d",image_index);
+	hid_t igrp=H5Gopen(file,ipath);
+	hid_t iattr=H5Aopen_name(igrp,"EMAN.stored_renderbits");
+	if (iattr>=0) {
+		renderbits=(int)read_attr(iattr);
+		H5Aclose(iattr);
+		if (renderbits>0) {
+			iattr=H5Aopen_name(igrp,"EMAN.stored_rendermax");
+			if (iattr>=0) {
+				rendermax=(float)read_attr(iattr);
+				H5Aclose(iattr);
+				iattr=H5Aopen_name(igrp,"EMAN.stored_rendermin");
+				if (iattr>=0) {
+					rendermin=(float)read_attr(iattr);
+					H5Aclose(iattr);
+					float RUMAX = (1<<renderbits)-1.0f;
+					hsize_t size = (hsize_t)nx*ny*nz;
+					for (size_t i=0; i<size; i++) data[i]=(data[i]/RUMAX)*(rendermax-rendermin)+rendermin;
+				}
+			}
+		}
+	}
+	H5Gclose(igrp);
 
 	EXITFUNC;
 	return 0;

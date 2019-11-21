@@ -1843,15 +1843,17 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 		else if (n0>10) {			// 10 is arbitrary
 			if (min==0) {
 				rendermin=0;
-				rendermax=(m+s*4.0)>max?max:m+s*4.0;  //TODO <-  how large a sigma multiplier?
+				rendermax=(m+s*6.0)>max?max:m+s*6.0;  //TODO <-  how large a sigma multiplier?
 			}
 			else if (max==0) {
 				rendermax=0;
-				rendermin=(m-s*4.0)<min?min:m-s*4.0;
+				rendermin=(m-s*6.0)<min?min:m-s*6.0;
 			}
 			else {
 				rendermin=(m-s*4.0)<min?min:m-s*4.0;	// 4 standard deviations from the mean seems good empirically, e2iminfo.py -asO
 				rendermax=(m+s*4.0)>max?max:m+s*4.0;
+				if (rendermin==min && rendermax!=max) rendermax=(min+s*8.0)>max?max:min+s*8.0;
+				if (rendermin!=min && rendermax==max) rendermin=(max-s*8.0)<min?min:max-s*8.0;
 				float step=(rendermax-rendermin)/(bitval-1);
 				rendermin=ceil(rendermin/step)*step;	// adjust rendermin so integral number of steps to exactly zero, may be roundoff issues
 			}
@@ -1860,6 +1862,8 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 		else {
 			rendermin=(m-s*4.0)<min?min:m-s*4.0;	// 4 standard deviations from the mean seems good empirically, e2iminfo.py -asO
 			rendermax=(m+s*4.0)>max?max:m+s*4.0;
+			if (rendermin==min && rendermax!=max) rendermax=(min+s*8.0)>max?max:min+s*8.0;
+			if (rendermin!=min && rendermax==max) rendermin=(max-s*8.0)<min?min:max-s*8.0;
 		}
 	}
 

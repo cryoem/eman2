@@ -2345,73 +2345,100 @@ vector < float > EMData::calc_hist(int hist_size, float histmin, float histmax,c
 {
 	ENTERFUNC;
 
-	static size_t prime[] = { 1, 3, 7, 11, 17, 23, 37, 59, 127, 253, 511 };
+//	static size_t prime[] = { 1, 3, 7, 11, 17, 23, 37, 59, 127, 253, 511 };
 
+ 	size_t size = (size_t)nx * ny * nz;
 	if (histmin == histmax) {
 		histmin = get_attr("minimum");
 		histmax = get_attr("maximum");
 	}
+	int n=hist_size;
+ 	float w = (float)(n-1) / (histmax - histmin);
+ 	float * data = get_data();
 
 	vector <float> hist(hist_size, 0.0);
 
-	int p0 = 0;
-	int p1 = 0;
-	size_t size = (size_t)nx * ny * nz;
-	if (size < 300000) {
-		p0 = 0;
-		p1 = 0;
-	}
-	else if (size < 2000000) {
-		p0 = 2;
-		p1 = 3;
-	}
-	else if (size < 8000000) {
-		p0 = 4;
-		p1 = 6;
+	if (cont != 1.0f || brt != 0) {
+		for(size_t i=0; i<=size; i++) {
+			float val = cont*(data[i]+brt);
+			int j = Util::round((val - histmin) * w);
+			
+			// Outliers now go in the edge bins
+			if (j>=n) j=n-1;
+			if (j<0) j=0;
+			hist[j]+=1;
+		}
 	}
 	else {
-		p0 = 7;
-		p1 = 9;
-	}
-
-	if (is_complex() && p0 > 0) {
-		p0++;
-		p1++;
-	}
-
-	size_t di = 0;
-//	float norm = 0;
-	size_t n = hist.size();
-
-	float * data = get_data();
-	for (int k = p0; k <= p1; ++k) {
-		if (is_complex()) {
-			di = prime[k] * 2;
-		}
-		else {
-			di = prime[k];
-		}
-
-//		norm += (float)size / (float) di;
-		float w = (float)n / (histmax - histmin);
-
-		for(size_t i=0; i<=size-di; i += di) {
-			float val;
-			if (cont != 1.0f || brt != 0)val = cont*(data[i]+brt);
-			else val = data[i];
+		for(size_t i=0; i<=size; i++) {
+			float val = data[i];
 			int j = Util::round((val - histmin) * w);
-			if (j >= 0 && j < (int) n) {
-				hist[j] += 1;
-			}
+			if (j>=n) j=n-1;
+			if (j<0) j=0;
+			hist[j]+=1;
 		}
 	}
-/*
-	for (size_t i = 0; i < hist.size(); ++i) {
-		if (norm != 0) {
-			hist[i] = hist[i] / norm;
-		}
-	}
-*/
+		
+// 20 years ago, it was expensive to compute histograms of large images
+// so there was a complicated strategy to approximate them
+// 	int p0 = 0;
+// 	int p1 = 0;
+// 	size_t size = (size_t)nx * ny * nz;
+// 	if (size < 300000) {
+// 		p0 = 0;
+// 		p1 = 0;
+// 	}
+// 	else if (size < 2000000) {
+// 		p0 = 2;
+// 		p1 = 3;
+// 	}
+// 	else if (size < 8000000) {
+// 		p0 = 4;
+// 		p1 = 6;
+// 	}
+// 	else {
+// 		p0 = 7;
+// 		p1 = 9;
+// 	}
+// 
+// 	if (is_complex() && p0 > 0) {
+// 		p0++;
+// 		p1++;
+// 	}
+
+// 	size_t di = 0;
+// //	float norm = 0;
+// 	size_t n = hist.size();
+// 
+// 	float * data = get_data();
+// 	for (int k = p0; k <= p1; ++k) {
+// 		if (is_complex()) {
+// 			di = prime[k] * 2;
+// 		}
+// 		else {
+// 			di = prime[k];
+// 		}
+// 
+// //		norm += (float)size / (float) di;
+// 		float w = (float)n / (histmax - histmin);
+// 
+// 		for(size_t i=0; i<=size-di; i += di) {
+// 			float val;
+// 			if (cont != 1.0f || brt != 0)val = cont*(data[i]+brt);
+// 			else val = data[i];
+// 			int j = Util::round((val - histmin) * w);
+// 			if (j >= 0 && j < (int) n) {
+// 				hist[j] += 1;
+// 			}
+// 		}
+// 	}
+// /*
+// 	for (size_t i = 0; i < hist.size(); ++i) {
+// 		if (norm != 0) {
+// 			hist[i] = hist[i] / norm;
+// 		}
+// 	}
+// */
 	return hist;
 
 	EXITFUNC;
