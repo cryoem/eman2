@@ -52,9 +52,8 @@ points in terms of figuring out how to adapt this code to application specific n
 '''
 from optparse import OptionParser
 from .emapplication import EMApp,get_application
-from pyemtbx.boxertools import BigImageCache,BinaryCircleImageCache,Cache
-from EMAN2 import file_exists,EMANVERSION,gimme_image_dimensions2D,EMData,get_image_directory,Region,file_exists,gimme_image_dimensions3D,abs_path,get_platform,base_name
-from EMAN2db import db_open_dict,db_check_dict,db_close_dict
+from eman2_gui.boxertools import BigImageCache, Cache
+from EMAN2 import file_exists,EMANVERSION,gimme_image_dimensions2D,EMData,get_image_directory,Region,file_exists,gimme_image_dimensions3D,get_platform,base_name
 from EMAN2jsondb import *
 from EMAN2 import *
 
@@ -679,7 +678,6 @@ class EraseTool(EMBoxingTool):
 	def get_2d_window(self): return self.target().get_2d_window()
 
 	def mouse_move(self,event):
-		from .emshape import EMShape
 		m = self.get_2d_window().scr_to_img((event.x(),event.y()))
 		self.get_2d_window().add_eraser_shape("eraser",["circle",.1,.1,.1,m[0],m[1],self.erase_radius,3])
 		self.get_2d_window().updateGL()
@@ -696,21 +694,18 @@ class EraseTool(EMBoxingTool):
 	def mouse_wheel(self,event):
 		from PyQt5.QtCore import Qt
 		if event.modifiers()&Qt.ShiftModifier:
-			from .emshape import EMShape
 			self.adjust_erase_rad(event.angleDelta().y())
 			m= self.get_2d_window().scr_to_img((event.x(),event.y()))
 			self.get_2d_window().add_eraser_shape("eraser",["circle",.1,.1,.1,m[0],m[1],self.erase_radius,3])
 			self.get_2d_window().updateGL()
 
 	def mouse_down(self,event) :
-		from .emshape import EMShape
 		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
 		#self.boxable.add_exclusion_area("circle",m[0],m[1],self.erase_radius)
 		self.get_2d_window().add_eraser_shape("eraser",["circle",.9,.9,.9,m[0],m[1],self.erase_radius,3])
 		self.target().exclusion_area_added("circle",m[0],m[1],self.erase_radius,self.erase_value)
 
 	def mouse_drag(self,event) :
-		from .emshape import EMShape
 		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
 		self.get_2d_window().add_eraser_shape("eraser",["circle",.9,.9,.9,m[0],m[1],self.erase_radius,3])
 		self.target().exclusion_area_added("circle",m[0],m[1],self.erase_radius,self.erase_value)

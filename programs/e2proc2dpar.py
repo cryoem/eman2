@@ -41,7 +41,6 @@ import sys
 import os.path
 import math
 import random
-#import pyemtbx.options
 import os
 import datetime
 import time

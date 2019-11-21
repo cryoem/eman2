@@ -56,7 +56,6 @@ import  os
 import sys
 import math
 import random
-import pyemtbx.options
 import time
 from   random   import random, seed, randint
 from   optparse import OptionParser

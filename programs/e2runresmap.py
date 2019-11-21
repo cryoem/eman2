@@ -13,7 +13,6 @@ from __future__ import division
 
 from EMAN2 import *
 from EMAN2db import db_open_dict
-#import pyemtbx.options
 import os
 import sys
 import shutil

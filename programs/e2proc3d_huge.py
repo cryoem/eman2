@@ -39,9 +39,6 @@ from optparse import OptionParser
 import sys
 from math import *
 import os.path
-#import pyemtbx.options
-#from pyemtbx.options import intvararg_callback
-#from pyemtbx.options import floatvararg_callback
 
 def main():
 	progname = os.path.basename(sys.argv[0])
