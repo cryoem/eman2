@@ -1995,6 +1995,14 @@ def clear_dead_cudajobs():
 	#new_img.set_attr_dict(dct)
 	#return new_img
 
+def write_FSC_file(fsc,filename) :
+	"""Convenience function takes a standard FSC/FRC resulting from EMData.calc_fourier_shell_correlation and write it to
+	disk as a s,FSC text file."""
+	sz=len(fsc)//3
+	out=open(filename,"w")
+	for i in range(sz):
+		out.write("{}\t{}\n".format(fsc[i],fsc[i+sz]))
+
 def initializeCUDAdevice():
 	# Initialize CUDA upon EMAN2 import. If cuda is not compiled an error will be thrown an nothing will happen
 	try:

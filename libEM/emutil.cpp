@@ -1814,6 +1814,8 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 		}
 		
 
+		float mnz = m/(size-n0);	// mean, excluding zeroes
+		float snz = sqrt(s/(size-n0)-mnz*mnz);	// sigma, excluding zeroes
 		m /= (float)(size);
 		s = sqrt(s/(float)(size)-m*m);
 
@@ -1840,20 +1842,24 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 			}
 		}
 		// Now into the more general case, but we still wish to preserve zero if present in significant numbers
-		else if (n0>10) {			// 10 is arbitrary
+		// TODO: This raises the tricky point of what would happen if you had a masked volume then added 0.0001 to it?
+		// statistics might produce poor results. May need to consider using kurtosis instead of zero detection
+		else if (n0>10) {			// 10 is arbitrary, just looking for a profusion of exactly zero values implying a mask
 			if (min==0) {
 				rendermin=0;
-				rendermax=(m+s*6.0)>max?max:m+s*6.0;  //TODO <-  how large a sigma multiplier?
+				rendermax=(mnz+snz*6.0)>max?max:mnz+snz*6.0;  //TODO <-  how large a sigma multiplier?
 			}
 			else if (max==0) {
 				rendermax=0;
-				rendermin=(m-s*6.0)<min?min:m-s*6.0;
+				rendermin=(mnz-snz*6.0)<min?min:mnz-snz*6.0;
 			}
 			else {
-				rendermin=(m-s*4.0)<min?min:m-s*4.0;	// 4 standard deviations from the mean seems good empirically, e2iminfo.py -asO
-				rendermax=(m+s*4.0)>max?max:m+s*4.0;
-				if (rendermin==min && rendermax!=max) rendermax=(min+s*8.0)>max?max:min+s*8.0;
-				if (rendermin!=min && rendermax==max) rendermin=(max-s*8.0)<min?min:max-s*8.0;
+				rendermin=(mnz-snz*4.0)<min?min:mnz-snz*4.0;	// 4 standard deviations from the mean seems good empirically, e2iminfo.py -asO
+				rendermax=(mnz+snz*4.0)>max?max:mnz+snz*4.0;
+				if (min>0) min=0;
+				if (max<0) max=0;
+				if (rendermin==min && rendermax!=max) rendermax=(min+snz*8.0)>max?max:min+snz*8.0;
+				if (rendermin!=min && rendermax==max) rendermin=(max-snz*8.0)<min?min:max-snz*8.0;
 				float step=(rendermax-rendermin)/(bitval-1);
 				rendermin=ceil(rendermin/step)*step;	// adjust rendermin so integral number of steps to exactly zero, may be roundoff issues
 			}
