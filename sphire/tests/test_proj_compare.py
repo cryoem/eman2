@@ -4,7 +4,7 @@ from __future__ import division
 from sphire.bin import sp_proj_compare as oldfu
 from sphire.utils.SPHIRE.bin import sp_proj_compare as fu
 from os import path
-from test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,ABSOLUTE_BIN_PATH,remove_dir
+from test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,ABSOLUTE_BIN_PATH,remove_dir
 import unittest
 
 try:
@@ -23,6 +23,7 @@ from numpy import allclose
 
 """
 WHAT IS MISSING:
+0) run with 'meridien' and 'projmatch projs cases and all the helper functions called by these cases
 1) 'prepare_outdir_log' is just crating the output directory for log stuff. I 'm not going to test it
 2) cannot run from pyvharm because it cannot find 'e2proc2d.py'
 
@@ -44,6 +45,8 @@ Call it via console:
 -) nostests test_proj_compare.py:Test_run
 '''
 
+
+
 class Test_run(unittest.TestCase):
     old_output_folder="compar2Dold"
     new_output_folder = "compar2Dnew"
@@ -57,18 +60,18 @@ class Test_run(unittest.TestCase):
 
     def test_(self):
         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_proj_compare.py"),
-                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Class2D","best.hdf"),
-                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "run001","rotated_volume.hdf"),
+                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"04_ISAC","best.hdf"),
+                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "07_RVIPER","main001", "run001","rotated_volume.hdf"),
                          self.new_output_folder,
-                         "--classangles="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "run001","rotated_reduced_params.txt"),
-                         "--classselect="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "this_iteration_index_keep_images.txt")
+                         "--classangles="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "07_RVIPER","main001", "run001","rotated_reduced_params.txt"),
+                         "--classselect="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "07_RVIPER","main001", "this_iteration_index_keep_images.txt")
                          ]
         testargs_old =  [path.join(ABSOLUTE_OLDBIN_PATH, "sp_proj_compare.py"),
-                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Class2D","best.hdf"),
-                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "run001","rotated_volume.hdf"),
+                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"04_ISAC","best.hdf"),
+                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "07_RVIPER","main001", "run001","rotated_volume.hdf"),
                          self.old_output_folder,
-                         "--classangles="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "run001","rotated_reduced_params.txt"),
-                         "--classselect="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "this_iteration_index_keep_images.txt")
+                         "--classangles="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "07_RVIPER","main001", "run001","rotated_reduced_params.txt"),
+                         "--classselect="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "07_RVIPER","main001", "this_iteration_index_keep_images.txt")
                          ]
         with patch.object(sys, 'argv', testargs_new):
             options = fu.parse_command_line()
@@ -121,10 +124,10 @@ class Test_run(unittest.TestCase):
                 displayYN=options.display,
             )
         sys.stdout = old_stdout
-        averageCCC_old=float(print_old.getvalue().split('\n')[18].split(" ")[-1])
-        averageCCC_new = float(print_new.getvalue().split('\n')[18].split(" ")[-1])
+        averageCCC_old=float(print_old.getvalue().split('\n')[15].split(" ")[-1])
+        averageCCC_new = float(print_new.getvalue().split('\n')[15].split(" ")[-1])
         self.assertTrue(allclose([averageCCC_new],[averageCCC_old],atol=0.000001))
-        self.assertTrue(allclose([averageCCC_new],[0.822266155674],atol=0.000001))
+        self.assertTrue(allclose([averageCCC_new],[0.819339885874],atol=0.000001))
 
 
 class Test_helperFunctions(unittest.TestCase):
@@ -147,18 +150,18 @@ class Test_helperFunctions(unittest.TestCase):
 class Test_Error_cases(unittest.TestCase):
     def test_error_no_input_alignment_params(self):
         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_proj_compare.py"),
-                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Class2D","best.hdf"),
-                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "run001","rotated_volume.hdf"),
+                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"04_ISAC","best.hdf"),
+                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "07_RVIPER","main001", "run001","rotated_volume.hdf"),
                          "compar2Dluca",
-                         "--classangles="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "run001","rotated_reduced_params.txt"),
-                         "--classselect="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "this_iteration_index_keep_images.txt")
+                         "--classangles="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "07_RVIPER","main001", "run001","rotated_reduced_params.txt"),
+                         "--classselect="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "07_RVIPER","main001", "this_iteration_index_keep_images.txt")
                          ]
         testargs_old =  [path.join(ABSOLUTE_OLDBIN_PATH, "sp_proj_compare.py"),
-                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Class2D","best.hdf"),
-                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "run001","rotated_volume.hdf"),
+                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"04_ISAC","best.hdf"),
+                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "07_RVIPER","main001", "run001","rotated_volume.hdf"),
                          "compar2Dlucaold",
-                         "--classangles="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "run001","rotated_reduced_params.txt"),
-                         "--classselect="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "this_iteration_index_keep_images.txt")
+                         "--classangles="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "07_RVIPER","main001", "run001","rotated_reduced_params.txt"),
+                         "--classselect="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "07_RVIPER","main001", "this_iteration_index_keep_images.txt")
                          ]
         with patch.object(sys, 'argv', testargs_new):
             with self.assertRaises(SystemExit):
@@ -205,18 +208,18 @@ class Test_Error_cases(unittest.TestCase):
 
     def test_error_volume_and_stack_have_different_dimension(self):
         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_proj_compare.py"),
-                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Initial3D","mask.hdf"),
-                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "run001","rotated_volume.hdf"),
+                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"14_MASK_FOR_CTF","sp_mask_mask.hdf"),
+                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "07_RVIPER","main001", "run001","rotated_volume.hdf"),
                          "compar2Dluca",
-                         "--classangles="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "run001","rotated_reduced_params.txt"),
-                         "--classselect="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "this_iteration_index_keep_images.txt")
+                         "--classangles="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "07_RVIPER","main001", "run001","rotated_reduced_params.txt"),
+                         "--classselect="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "07_RVIPER","main001", "this_iteration_index_keep_images.txt")
                          ]
         testargs_old =  [path.join(ABSOLUTE_OLDBIN_PATH, "sp_proj_compare.py"),
-                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Initial3D","mask.hdf"),
-                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "run001","rotated_volume.hdf"),
+                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"14_MASK_FOR_CTF","sp_mask_mask.hdf"),
+                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "07_RVIPER","main001", "run001","rotated_volume.hdf"),
                          "compar2Dlucaold",
-                         "--classangles="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "run001","rotated_reduced_params.txt"),
-                         "--classselect="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D","main001", "this_iteration_index_keep_images.txt")
+                         "--classangles="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "07_RVIPER","main001", "run001","rotated_reduced_params.txt"),
+                         "--classselect="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "07_RVIPER","main001", "this_iteration_index_keep_images.txt")
                          ]
         with patch.object(sys, 'argv', testargs_new):
             with self.assertRaises(SystemExit):
@@ -274,6 +277,5 @@ class Test_Error_cases(unittest.TestCase):
         sys.stdout = old_stdout
         self.assertEqual(print_new.getvalue().split('\n')[2], "ERROR!! Dimension of input volume doesn't match that of image stack: 76 vs. 352")
         self.assertEqual(print_new.getvalue().split('\n')[2], print_old.getvalue().split('\n')[2])
-
 
 
