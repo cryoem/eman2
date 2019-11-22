@@ -27,7 +27,8 @@ import sys
 """
 WHAT IS MISSING:
 0) get_time_stamp_suffix --> returns a timestamp ... not testable
-1) Test_isac_substack cannot run it under pycharm
+1) Test_angular_distribution how test it? it's just plotting stuff using sp_utilities.angular_distribution.
+    I decide to let it run without checking stuff
 
 RESULT AND KNOWN ISSUES
 1) 
@@ -168,15 +169,9 @@ class Test_isac_substack(unittest.TestCase):
         testargs_new = [path.join(ABSOLUTE_BIN_PATH, "sp_pipe.py"), 'isac_substack',"bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "04_ISAC"),self.new_output_folder]#," --isac_class_avgs_path ='/home/lusnig/Downloads/LucaTest_beaut/best.hdf'"]
         testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_pipe.py"), 'isac_substack',"bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "04_ISAC"),self.old_output_folder]
         with patch.object(sys, 'argv', testargs_new):
-            old_stdout = sys.stdout
-            print_new = StringIO()
-            sys.stdout = print_new
             fu.main()
         with patch.object(sys, 'argv', testargs_old):
-            print_old = StringIO()
-            sys.stdout = print_old
             oldfu.main()
-        sys.stdout = old_stdout
         old_value =get_im(stackname="bdb:"+self.old_output_folder+"#isac_substack",im=0)
         new_value = get_im(stackname="bdb:" + self.new_output_folder + "#isac_substack", im=0)
         self.assertTrue(array_equal(old_value.get_2dview(),new_value.get_2dview()))
@@ -400,7 +395,6 @@ class Test_Error_cases_moon_eliminator(unittest.TestCase):
         self.assertEqual(print_new.getvalue().split('\n')[5].split("ERROR")[1],print_old.getvalue().split('\n')[5].split("ERROR")[1])
 
 
-
 class Test_moon_eliminator(unittest.TestCase):
     old_output_folder = "moonOld"
     new_output_folder = "moonNew"
@@ -482,3 +476,33 @@ class Test_moon_eliminator(unittest.TestCase):
 
 class Test_desymmetrize(unittest.TestCase):
     pass
+
+class Test_angular_distribution_batch(unittest.TestCase):
+    old_output_folder = "angular_distributionOld"
+    new_output_folder = "angular_distributionNew"
+
+    def test_run(self):
+        testargs_new = [path.join(ABSOLUTE_BIN_PATH, "sp_pipe.py"), 'angular_distribution',
+                        path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "11_MERIDIEN", "final_params_028.txt"),
+                        self.new_output_folder,
+                        '--symmetry=c5',
+                        '--pixel_size=1.14',
+                        '--box_size=352'
+                        ]
+        testargs_old = [path.join(ABSOLUTE_BIN_PATH, "sp_pipe.py"), 'angular_distribution',
+                        path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "11_MERIDIEN", "final_params_028.txt"),
+                        self.old_output_folder,
+                        '--symmetry=c5',
+                        '--pixel_size=1.14',
+                        '--box_size=352'
+
+                        ]
+        with patch.object(sys, 'argv', testargs_new):
+            fu.main()
+        with patch.object(sys, 'argv', testargs_old):
+            oldfu.main()
+
+        remove_dir(self.new_output_folder)
+
+        remove_dir(self.old_output_folder)
+
