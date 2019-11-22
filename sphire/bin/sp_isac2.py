@@ -186,6 +186,14 @@ def checkitem( item, mpi_comm = -1 ):
 
 #===================================================================[ utility ]
 
+def mpi_assert( condition, msg ):
+    if not condition:
+        if Blockdata["myid"] == 0:
+            print( msg, file=sys.stderr )
+            sys.stderr.flush()
+        mpi.mpi_finalize()
+        sys.exit()
+
 def normalize_particle_images( aligned_images, shrink_ratio, target_radius, target_dim, align_params, filament_width=-1, ignore_helical_mask=False ):
 	"""
 	Function to normalize the images given in <aligned_images>. Note that the
@@ -1335,6 +1343,8 @@ def parse_parameters( prog_name, usage, args ):
 	parser.add_option( "--restart",          type="int",          default='-1',  help="0: restart ISAC2 after last completed main iteration (meaning there is file >finished< in it.  k: restart ISAC2 after k'th main iteration (It has to be completed, meaning there is file >finished< in it. Higer iterations will be removed.)  Default: no restart" )
 	parser.add_option( "--rand_seed",        type="int",                         help="random seed set before calculations: useful for testing purposes. By default, total randomness (type int)" )
 	
+	parser.add_option( "--main_iter_limit",  type="int",          default=-1,    help="If set to a non-zero value N, ISAC execution is halted after N main iterations. [Default: -1]" )
+	
 	parser.add_option( "--skip_prealignment",    action="store_true", default=False, help="skip pre-alignment step: to be used if images are already centered. 2dalignment directory will still be generated but the parameters will be zero. (default False)")
 
 	parser.add_option( "--filament_width",       type="int",          default=-1,    help="When this is set to a non-default value helical data is assumed in which case particle images will be masked with a rectangular mask. (Default: -1)" )
@@ -1385,6 +1395,14 @@ def main(args):
 			print( "\nERROR! Minimum group size (" + str(options.minimum_grp_size) + ") is larger than the actual group size (" + str(options.img_per_grp) + "). Oh dear :(\n" )
 		return 1
 
+	# sanity check: make sure tangent filter options are within valid range
+	mpi_assert( options.FL >= 0.0 and options.FL <= 0.5, "ERROR! FL="+str(options.FL)+" outside valid range [0.0, 0.5]." )
+	mpi_assert( options.FH >= 0.0 and options.FH <= 0.5, "ERROR! FH="+str(options.FH)+" outside valid range [0.0, 0.5]." )
+	mpi_assert( options.FF >= 0.0 and options.FF <= 0.5, "ERROR! FF="+str(options.FF)+" outside valid range [0.0, 0.5]." )
+
+	# sanity check: make sure main iteration limit makes sense
+	mpi_assert( options.main_iter_limit==-1 or options.main_iter_limit>0, "ERROR! Value "+str(options.main_iter_limit)+" for main iteration limit (--main_iter_limit) parameter makes no sense, should be at least 1." )
+	
 	# TODO: what does this do?
 	if sp_global_def.CACHE_DISABLE:
 		util.disable_bdb_cache()
@@ -1785,33 +1803,35 @@ def main(args):
 				#  Create generation000 and put files in it
 				generation_iter = 0
 				if( Blockdata["myid"] == 0 ):
-					cmd = "{} {}".format( "mkdir", 
-										  os.path.join(Blockdata["masterdir"], "main%03d"%main_iter) )
+					cmd = "{} {}".format(
+						"mkdir", 
+						os.path.join(Blockdata["masterdir"], "main%03d"%main_iter) )
 					junk = cmdexecute(cmd)
-					cmd = "{} {}".format( "mkdir", 
-										  os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter) )
+					cmd = "{} {}".format(
+						"mkdir", 
+						os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter) )
 					junk = cmdexecute(cmd)
 					if( main_iter > 1 ):
 						#  It may be restart from unfinished main, so replace files in master
-						cmd = "{} {} {} {}".format( "cp -Rp",
-													os.path.join(Blockdata["masterdir"], "main%03d"%(main_iter-1), "processed_images.txt"),
-													os.path.join(Blockdata["masterdir"], "main%03d"%(main_iter-1), "class_averages.hdf"),
-													os.path.join(Blockdata["masterdir"]) )
+						cmd = "{} {} {} {}".format(
+							"cp -Rp",
+							os.path.join(Blockdata["masterdir"], "main%03d"%(main_iter-1), "processed_images.txt"),
+							os.path.join(Blockdata["masterdir"], "main%03d"%(main_iter-1), "class_averages.hdf"),
+							os.path.join(Blockdata["masterdir"]) )
 						junk = cmdexecute( cmd )
 						junk = os.path.join( Blockdata["masterdir"], "main%03d"%(main_iter-1), "not_processed_images.txt" )
 						if( os.path.exists(junk) ):
-							cmd = "{} {} {}".format( "cp -Rp", 
-													 junk, 
-													 os.path.join(Blockdata["masterdir"]) )
+							cmd = "{} {} {}".format(
+								"cp -Rp", 
+								junk, 
+								os.path.join(Blockdata["masterdir"]) )
 							junk = cmdexecute( cmd )
 
 					if( os.path.exists( os.path.join(Blockdata["masterdir"], "not_processed_images.txt")) ):
-						cmd = "{} {} {}".format( "cp -Rp", 
-												 os.path.join(Blockdata["masterdir"], "not_processed_images.txt"),
-												 os.path.join(Blockdata["masterdir"], 
-															  "main%03d"%main_iter, 
-															  "generation%03d"%generation_iter, 
-															  "to_process_next_%03d_%03d.txt"%(main_iter,generation_iter)) )
+						cmd = "{} {} {}".format(
+							"cp -Rp", 
+							os.path.join(Blockdata["masterdir"], "not_processed_images.txt"),
+							os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter, "to_process_next_%03d_%03d.txt"%(main_iter,generation_iter)) )
 						junk = cmdexecute( cmd )
 					else:
 						util.write_text_file( list(range(Blockdata["total_nima"])),
@@ -1833,8 +1853,9 @@ def main(args):
 						else:
 							#  rm -f THIS GENERATION
 							if( Blockdata["myid"] == 0 ):
-								cmd = "{} {}".format( "rm -rf", 
-													  os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter) )
+								cmd = "{} {}".format(
+									"rm -rf", 
+									os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter) )
 								junk = cmdexecute( cmd )
 							mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 							okdo = True
@@ -1843,8 +1864,9 @@ def main(args):
 
 					if okdo:
 						if( Blockdata["myid"] == 0 ):
-							cmd = "{} {}".format( "mkdir", 
-												  os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter) )
+							cmd = "{} {}".format(
+								"mkdir", 
+								os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter) )
 							junk = cmdexecute( cmd )
 						mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 
@@ -1853,36 +1875,42 @@ def main(args):
 						# Preserve results obtained so far
 						if( not keepdoing_generation ):
 							if( Blockdata["myid"] == 0 ):
-								cmd = "{} {} {} {}".format( "cp -Rp",
-															os.path.join(Blockdata["masterdir"], "processed_images.txt"),
-															os.path.join(Blockdata["masterdir"], "class_averages.hdf"),
-															os.path.join(Blockdata["masterdir"], "main%03d"%main_iter) )
+								cmd = "{} {} {} {}".format(
+									"cp -Rp",
+									os.path.join(Blockdata["masterdir"], "processed_images.txt"),
+									os.path.join(Blockdata["masterdir"], "class_averages.hdf"),
+									os.path.join(Blockdata["masterdir"], "main%03d"%main_iter) )
 								junk = cmdexecute( cmd )
 								junk = os.path.join( Blockdata["masterdir"], "not_processed_images.txt" )
 								if( os.path.exists(junk) ):
-									cmd = "{} {} {}".format( "cp -Rp",
-															 junk,
-															 os.path.join(Blockdata["masterdir"], "main%03d"%main_iter) )
+									cmd = "{} {} {}".format(
+										"cp -Rp",
+										junk,
+										os.path.join(Blockdata["masterdir"], "main%03d"%main_iter) )
 									junk = cmdexecute( cmd )
+									
+							if options.main_iter_limit == main_iter:
+								if myid==0: print( "\n--- Specified main iteration limit reached ---\n" )
+								keepdoing_main = False
 
 	mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 	if( Blockdata["myid"] == 0 ):
 		if options.skip_ordering:
 			pass
 		elif( os.path.exists(os.path.join(Blockdata["masterdir"],"class_averages.hdf")) ):
-			cmd = "{} {} {} {} {} {} {} {} {} {}".format( "sp_chains.py", 
-														  os.path.join(Blockdata["masterdir"],"class_averages.hdf"),
-														  os.path.join(Blockdata["masterdir"],"junk.hdf"),
-														  os.path.join(Blockdata["masterdir"],"ordered_class_averages.hdf"),
-														  "--circular",
-														  "--radius=%d"%target_radius ,
-														  "--xr=%d"%(target_xr+1),
-														  "--yr=%d"%(target_yr+1),
-														  "--align", 
-														  ">/dev/null" )
+			cmd = "{} {} {} {} {} {} {} {} {} {}".format(
+				"sp_chains.py", 
+				os.path.join(Blockdata["masterdir"],"class_averages.hdf"),
+				os.path.join(Blockdata["masterdir"],"junk.hdf"),
+				os.path.join(Blockdata["masterdir"],"ordered_class_averages.hdf"),
+				"--circular",
+				"--radius=%d"%target_radius ,
+				"--xr=%d"%(target_xr+1),
+				"--yr=%d"%(target_yr+1),
+				"--align", 
+				">/dev/null" )
 			junk = cmdexecute( cmd )
-			cmd = "{} {}".format( "rm -rf", 
-								  os.path.join(Blockdata["masterdir"], "junk.hdf") )
+			cmd = "{} {}".format("rm -rf", os.path.join(Blockdata["masterdir"], "junk.hdf") )
 			junk = cmdexecute( cmd )
 		else:
 			print( "ISAC could not find any stable class averaging, terminating..." )
