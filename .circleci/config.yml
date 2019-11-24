@@ -3,14 +3,14 @@ version: 2
 jobs:
   build_no_recipe:
     docker:
-      - image: cryoem/eman-deps:16-boost166-circleci16
+      - image: cryoem/eman-deps:16-boost166-circleci18
     steps:
       - checkout
       - run: bash ci_support/build_no_recipe.sh
 
   build_recipe:
     docker:
-      - image: cryoem/eman-deps:16-boost166-circleci16
+      - image: cryoem/eman-deps:16-boost166-circleci18
     steps:
       - checkout
       - run: bash ci_support/build_recipe.sh
