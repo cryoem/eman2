@@ -3,7 +3,7 @@ version: 2
 jobs:
   build_no_recipe:
     docker:
-      - image: circleci/buildpack-deps:16.04
+      - image: circleci/buildpack-deps:18.04
     steps:
       - run: sudo apt-get update && sudo apt-get install freeglut3-dev
       - checkout
@@ -18,7 +18,7 @@ jobs:
 
   build_recipe:
     docker:
-      - image: circleci/buildpack-deps:16.04
+      - image: circleci/buildpack-deps:18.04
     steps:
       - run: sudo apt-get update && sudo apt-get install freeglut3-dev
       - checkout
