@@ -3,32 +3,16 @@ version: 2
 jobs:
   build_no_recipe:
     docker:
-      - image: circleci/buildpack-deps:18.04
+      - image: cryoem/eman-deps:16-boost166-circleci16
     steps:
-      - run: sudo apt-get update && sudo apt-get install freeglut3-dev
       - checkout
-      - restore_cache:
-          keys:
-            - mini-eman-deps-16.0-boost=1.66-1
-      - save_cache:
-          key: mini-eman-deps-16.0-boost=1.66-1
-          paths:
-            - ~/miniconda2
       - run: bash ci_support/build_no_recipe.sh
 
   build_recipe:
     docker:
-      - image: circleci/buildpack-deps:18.04
+      - image: cryoem/eman-deps:16-boost166-circleci16
     steps:
-      - run: sudo apt-get update && sudo apt-get install freeglut3-dev
       - checkout
-      - restore_cache:
-          keys:
-            - mini-eman-deps-16.0-boost=1.66-1
-      - save_cache:
-          key: mini-eman-deps-16.0-boost=1.66-1
-          paths:
-            - ~/miniconda2
       - run: bash ci_support/build_recipe.sh
 
 workflows:
