@@ -91,8 +91,8 @@ class Test_run(unittest.TestCase):
 class Test_Error_cases(unittest.TestCase):
 
     def test_no_radius_error(self):
-        testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_isac2.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"Particles#stack"), "outnewfolder", ]
-        testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_isac2.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"Particles#stack"), "outoldfolder",]
+        testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_isac2.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack"), "outnewfolder", ]
+        testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_isac2.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack"), "outoldfolder",]
         with patch.object(sys, 'argv', testargs_new):
             old_stdout = sys.stdout
             print_new = StringIO()
@@ -111,8 +111,8 @@ class Test_Error_cases(unittest.TestCase):
     # todo: there is an error in li = mpi.mpi_bcast(li,1,mpi.MPI_INT,Blockdata["main_node"],mpi.MPI_COMM_WORLD)[0] when I go throught it in the second 'main' call. it does not depend on the lib version. it seems to be an mpi syncronization situation ... ask markus
     @unittest.skip("exitcode 1")
     def test_negative_radius_error(self):
-        testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_isac2.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"Particles#stack"), "outnewfolder", "--radius=-145"]
-        testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_isac2.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"Particles#stack"), "outoldfolder","--radius=-145"]
+        testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_isac2.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack"), "outnewfolder", "--radius=-145"]
+        testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_isac2.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack"), "outoldfolder","--radius=-145"]
         with patch.object(sys, 'argv', testargs_new):
             with self.assertRaises(SystemExit):
                 old_stdout = sys.stdout
@@ -129,8 +129,8 @@ class Test_Error_cases(unittest.TestCase):
         self.assertEqual(print_new.getvalue().split('\n')[20].split("ERROR")[1],print_old.getvalue().split('\n')[20].split("ERROR")[1])
 
     def test_minimum_group_size_higher_group_size_errowr(self):
-        testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_isac2.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"Particles#stack"), "outnewfolder", "--radius=145", "--minimum_grp_size=3", "--img_per_grp=2"]
-        testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_isac2.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"Particles#stack"), "outoldfolder","--radius=145", "--minimum_grp_size=3", "--img_per_grp=2"]
+        testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_isac2.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack"), "outnewfolder", "--radius=145", "--minimum_grp_size=3", "--img_per_grp=2"]
+        testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_isac2.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack"), "outoldfolder","--radius=145", "--minimum_grp_size=3", "--img_per_grp=2"]
         with patch.object(sys, 'argv', testargs_new):
             old_stdout = sys.stdout
             print_new = StringIO()
@@ -149,8 +149,8 @@ class Test_Error_cases(unittest.TestCase):
     #todo: there is an error in li = mpi.mpi_bcast(li,1,mpi.MPI_INT,Blockdata["main_node"],mpi.MPI_COMM_WORLD)[0] when I go throught it in the second 'main' call. it does not depend on the lib version. it seems to be an mpi syncronization situation ... ask markus
     @unittest.skip("exitcode 1")
     def test_CTF_and_VPP_error(self):
-        testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_isac2.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"Particles#stack"), "outnewfolder", "--radius=145", "--CTF", "--VPP"]
-        testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_isac2.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"Particles#stack"), "outoldfolder","--radius=145", "--CTF", "--VPP"]
+        testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_isac2.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack"), "outnewfolder", "--radius=145", "--CTF", "--VPP"]
+        testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_isac2.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack"), "outoldfolder","--radius=145", "--CTF", "--VPP"]
         with patch.object(sys, 'argv', testargs_new):
             with self.assertRaises(SystemExit):
                 old_stdout = sys.stdout
