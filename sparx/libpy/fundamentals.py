@@ -1927,6 +1927,7 @@ class symclass(object):
 		else:
 			toprocess = [angles]
 			lis = False
+		
 		redang = []
 		for q in toprocess:
 			phi = q[0]; theta = q[1]; psi = q[2]
@@ -2006,7 +2007,7 @@ class symclass(object):
 									#print("  FOUND ")
 									break
 
-			redang.append([phi, theta, psi])
+			redang.append([phi, theta, psi]+q[3:])
 
 		if lis: return redang
 		else: return redang[0]
