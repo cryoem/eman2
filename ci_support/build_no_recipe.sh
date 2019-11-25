@@ -13,7 +13,8 @@ if [ ! -z ${TRAVIS} ];then
 fi
 
 if [ ! -z ${CIRCLECI} ];then
-    source ${HOME}/miniconda2/bin/activate root
+    . $HOME/miniconda/etc/profile.d/conda.sh
+    conda activate eman-deps-16.0
 fi
 
 python -m compileall -q .
