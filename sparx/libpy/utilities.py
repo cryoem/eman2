@@ -3382,8 +3382,8 @@ def set_params_proj(ima, p, xform = "xform.projection"):
 	  p = [phi, theta, psi, s2x, s2y]
 	"""
 	from EMAN2 import Vec2f
-	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2]})
-	t.set_trans(Vec2f(-p[3], -p[4]))
+	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2],"tx":-p[3],"ty":-p[4]})
+	#t.set_trans(Vec2f(-p[3], -p[4]))
 	ima.set_attr(xform, t)
 
 
