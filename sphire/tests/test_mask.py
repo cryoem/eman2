@@ -120,7 +120,7 @@ class Test_run(unittest.TestCase):
                          self.new_output_folder,
                          "--mol_mass=1400",
                          "--edge_width=10"]
-        testargs_old = [path.join(ABSOLUTE_BIN_PATH, "sp_mask.py"),
+        testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_mask.py"),
                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "09_ADJUSTMENT",
                                   "vol3d_ref_moon_eliminated.hdf"),
                         "--pixel_size=1.14",
