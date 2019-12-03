@@ -1,7 +1,7 @@
 from __future__ import print_function
 from __future__ import division
 
-from numpy import array_equal,allclose
+from numpy import array_equal
 from sphire.bin import sp_ctf_refine as oldfu
 from sphire.utils.SPHIRE.bin import sp_ctf_refine as fu
 from os import path
@@ -21,10 +21,7 @@ except ImportError:
     # python3 case. You will get an error because 'sys.stdout.write(msg)' presents in the library not in the test!!
     from io import StringIO
 import numpy
-from scipy import ndimage
 import sys
-
-from copy import deepcopy
 
 
 """
@@ -161,7 +158,7 @@ class Test_run(unittest.TestCase):
                         self.new_output_folder,
                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"12_POSTREFINER","vol_combined.hdf"),
                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "11_MERIDIEN","final_params_028.txt")]
-        testargs_old = [path.join(ABSOLUTE_BIN_PATH, "sp_ctf_refine.py"),
+        testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_ctf_refine.py"),
                         "manual",
                         "bdb:" + path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK#isac_substack"),
                         self.old_output_folder,
