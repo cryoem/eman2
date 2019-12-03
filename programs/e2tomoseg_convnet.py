@@ -122,8 +122,10 @@ def main():
 		options.nettag=tag[tag.rfind('__')+2:-4].replace("_trainset","")
 		
 	if "CUDA_VISIBLE_DEVICES" in os.environ:
-		print("CUDA_VISIBLE_DEVICES is already set as environment variable. This will overwrite the device option...")
+		print("CUDA_VISIBLE_DEVICES is already set as environment variable. This will override the --device option...")
 	else:
+		try: options.device=options.device.lower()
+		except: pass
 		if options.device=="gpu":
 			print("Using GPU...")
 		elif options.device.startswith("gpu"):

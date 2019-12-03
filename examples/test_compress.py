@@ -24,7 +24,7 @@ tests=[
  [EM_COMPRESSED,2,"2 bit"]
 ]
 
-fls=[(i,i.rsplit(".",1)[0]+".hdf") for i in os.listdir(".") if i.rsplit(".",1)[-1] in ("mrc","mrcs","tif","tiff","hdf")]
+fls=[(i,i.rsplit(".",1)[0]+".hdf") for i in sorted(os.listdir(".")) if i.rsplit(".",1)[-1] in ("mrc","mrcs","tif","tiff","hdf")]
 
 for i in range(len(tests)):
 	try: os.mkdir("test_{}".format(i))
