@@ -51,6 +51,7 @@ class Test_run(unittest.TestCase):
 
     # it is the run of the tutorial (pg.65)
     # At pg.93 there is another run. I did not test it because it performs the same operation done in this test
+    # At pg.98 there is another run. I did not test it because it performs the same operation done in this test
     def test_combinemaps_Halfset(self):
         testargs_new = [path.join(ABSOLUTE_BIN_PATH, "sp_process.py"),
                         "--combinemaps",
