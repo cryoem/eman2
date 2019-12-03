@@ -21,12 +21,12 @@ sp_auto.py output_directory --mpi_procs=MPI_PROCS --mpi_job_name=MPI_JOB_NAME --
   ; %%--%%apix : Pixel size [A]: The pixel size of input micrographs. (default 1.0)
   ; %%--%%mol_mass : Molecular mass [kDa]: The molecular mass of the protein in kilo Dalton. (default 250)
   ; %%--%%radius : Particle radius [Pixels]: Outer particle radius in pixels < int(boxsize/2)-1. (default 80)
-  ; %%--%%box_size : Particle box size [Pixels]: Particle box size. (default 80)
+  ; %%--%%box_size : Particle box size [Pixels]: Particle box size. (default 200)
   ; %%--%%symmetry : Symmetry: Symmetry of the protein. (default c1)
   ; %%--%%voltage : Microscope voltage [kV]: The acceleration voltage of microscope used for imaging. (default 300.0)
   ; %%--%%negative_stain : Is neg. stain data set: Check if the data set is collected via negative stain. (default False):%%--%%phase_plate==False
   ; %%--%%phase_plate : Is VPP data set: Check if the data set is collected with a phase plate. (default False):%%--%%negative_stain==False
-  ; %%--%%fill_rviper_mask : Fill the mask for 3D refinement: Check if you do not want to fill the mask for the first 3D refinement. (default True question reversed in GUI)
+  ; %%--%%fill_rviper_mask : Do not fill the mask for 3D refinement: Check if you do not want to fill the mask for the first 3D refinement. (default True question reversed in GUI)
   ; %%--%%mtf : MTF file: Path to the MTF file of the used detector. (default none)
   ; %%--%%memory_per_node : Memory per node [GB]: Available memory per node. (default -1)
 
@@ -87,7 +87,7 @@ sp_auto.py output_directory --mpi_procs=MPI_PROCS --mpi_job_name=MPI_JOB_NAME --
   ; %%--%%cinderella_output_dir: Cinderella output name : Name of the output directory. (default AUTO2D): %%--%%skip_cinderella==False
   ; %%--%%cinderella_input_stack: Cinderella input stack: Path to ISAC class stack (default none): %%--%%skip_cinderella==False
   ; %%--%%cinderella_conf_thresh: Cinderella confidence threshold:Classes with a confidence higher as that threshold are classified as good. (default 0.5): %%--%%skip_cinderella==False
-  ; %%--%%cinderella_gpu: Cinderella GPU ID:ID of the GPU to run on. -1 will choose a GPU automatically. (default -1): %%--%%skip_cinderella==False
+  ; %%--%%cinderella_gpu: Cinderella GPU ID:ID of the GPU to run on. -1 will choose a GPU automatically. (default 0): %%--%%skip_cinderella==False
   ; %%--%%cinderella_batch_size: Cinderella Batch size:Number of images in one batch during prediction. (default 32): %%--%%skip_cinderella==False
 
 
@@ -102,7 +102,7 @@ sp_auto.py output_directory --mpi_procs=MPI_PROCS --mpi_job_name=MPI_JOB_NAME --
   ; %%--%%adjust_rviper_addition: ADJUST_RVIPER addititions: Optional additional arguments. (default none): %%--%%skip_adjust_rviper==False
 
   ; %%--%%skip_mask_rviper: Skip MASK_RVIPER: Skip the movie alignment in case that you already have aligned movies. (default False): %%--%%skip_adjustment_rviper==False
-  ; %%--%%mask_rviper_ndilation: MASK_RVIPER ndilation: Number of dilations. (default 3): %%--%%skip_mask_rviper==False %%--%%skip_adjustment_rviper==False
+  ; %%--%%mask_rviper_ndilation: MASK_RVIPER ndilation: Number of dilations. (default 5): %%--%%skip_mask_rviper==False %%--%%skip_adjustment_rviper==False
   ; %%--%%mask_rviper_soft_edge: MASK_RVIPER soft edge: Number of pixels for the soft edge. (default 10): %%--%%skip_mask_rviper==False %%--%%skip_adjustment_rviper==False
   ; %%--%%mask_rviper_output_dir: MASK_RVIPER output name: Name of the output directory. (default RVIPER_MASK): %%--%%skip_mask_rviper==False %%--%%skip_adjustment_rviper==False
   ; %%--%%mask_rviper_addition: MASK_RVIPER addititions: Optional additional arguments. (default none): %%--%%skip_mask_rviper==False %%--%%skip_adjustment_rviper==False
@@ -116,7 +116,7 @@ sp_auto.py output_directory --mpi_procs=MPI_PROCS --mpi_job_name=MPI_JOB_NAME --
 
   ; %%--%%skip_sharpening_meridien: Skip SHARPENING_MERIDIEN: Skip the movie alignment in case that you already have aligned movies. (default False): %%--%%skip_meridien==False
   ; %%--%%sharpening_meridien_ndilation: SHARPENING_MERIDIEN ndilation: Number of dilations. (default 2): %%--%%skip_sharpening_meridien==False %%--%%skip_meridien==False
-  ; %%--%%sharpening_meridien_soft_edge: SHARPENING_MERIDIEN soft edge: Number of pixels for the soft edge. (default 1): %%--%%skip_sharpening_meridien==False %%--%%skip_meridien==False
+  ; %%--%%sharpening_meridien_soft_edge: SHARPENING_MERIDIEN soft edge: Number of pixels for the soft edge. (default 8): %%--%%skip_sharpening_meridien==False %%--%%skip_meridien==False
   ; %%--%%sharpening_meridien_output_dir: SHARPENING_MERIDIEN output name: Name of the output directory. (default SHARPENING): %%--%%skip_sharpening_meridien==False %%--%%skip_meridien==False
   ; %%--%%sharpening_meridien_addition: SHARPENING_MERIDIEN additions: Optional additional arguments. (default none): %%--%%skip_sharpening_meridien==False %%--%%skip_meridien==False
 
@@ -133,21 +133,21 @@ sp_auto.py output_directory --mpi_procs=MPI_PROCS --mpi_job_name=MPI_JOB_NAME --
   ; %%--%%restack_meridien_addition: RESTACKING_MERIDIEN additions: Additional parameters that are not part of the required ones.(default none): %%--%%skip_meridien==False %%--%%skip_restack==False
 
   ; %%--%%restack_sharpening_ndilation: RESTACKING_SHARPENING ndilation: Number of dilations of the mask. 1 Dilation adds about 2 pixel to the binary volume.(default 2): %%--%%skip_meridien==False %%--%%skip_restack==False
-  ; %%--%%restack_sharpening_soft_edge: RESTACKING_SHARPENING soft edge: Number of pixels for the soft edge.(default 1): %%--%%skip_meridien==False %%--%%skip_restack==False
+  ; %%--%%restack_sharpening_soft_edge: RESTACKING_SHARPENING soft edge: Number of pixels for the soft edge.(default 8): %%--%%skip_meridien==False %%--%%skip_restack==False
   ; %%--%%restack_sharpening_output_dir: RESTACKING_SHARPENING output dir: Restacking output directory.(default RESTACK_SHARPENING): %%--%%skip_meridien==False %%--%%skip_restack==False
   ; %%--%%restack_sharpening_addition: RESTACKING_SHARPENING additions: Additional parameters that are not part of the required ones.(default none): %%--%%skip_meridien==False %%--%%skip_restack==False
 
-  ; %%--%%skip_ctf_refine: Skip CTF_REFINE: Skip CTF refinement.(default False)
-  ; %%--%%ctf_refine_output_dir: CTF_REFINE output name: Restacking output directory.(default CTF_REFINE)
-  ; %%--%%ctf_refine_addition: CTF_REFINE additions: Additional parameters that are not part of the required ones.(default none)
+  ; %%--%%skip_ctf_refine: Skip CTF_REFINE: Skip CTF refinement.(default False): %%--%%skip_meridien==False %%--%%skip_restack==False 
+  ; %%--%%ctf_refine_output_dir: CTF_REFINE output name: Restacking output directory.(default CTF_REFINE) : %%--%%skip_meridien==False %%--%%skip_restack==False %%--%%skip_ctf_refine==False
+  ; %%--%%ctf_refine_addition: CTF_REFINE additions: Additional parameters that are not part of the required ones.(default none): %%--%%skip_meridien==False %%--%%skip_restack==False %%--%%skip_ctf_refine==False
 
-  ; %%--%%ctf_meridien_output_dir: CTF_MERIDIEN output name: Restacking output directory.(default CTF_MERIDIEN)
-  ; %%--%%ctf_meridien_addition: CTF_MERIDIEN additions: Additional parameters that are not part of the required ones.(default none)
+  ; %%--%%ctf_meridien_output_dir: CTF_MERIDIEN output name: Restacking output directory.(default CTF_MERIDIEN): %%--%%skip_meridien==False %%--%%skip_restack==False %%--%%skip_ctf_refine==False
+  ; %%--%%ctf_meridien_addition: CTF_MERIDIEN additions: Additional parameters that are not part of the required ones.(default none): %%--%%skip_meridien==False %%--%%skip_restack==False %%--%%skip_ctf_refine==False
 
-  ; %%--%%ctf_sharpening_ndilation: CTF_SHARPENING ndilation: Number of dilations of the mask. 1 Dilation adds about 2 pixel to the binary volume.(default 2)
-  ; %%--%%ctf_sharpening_soft_edge: CTF_SHARPENING soft edge: Number of pixels for the soft edge.(default 1)
-  ; %%--%%ctf_sharpening_output_dir: CTF_SHARPENING output name: Restacking output directory.(default CTF_SHARPENING)
-  ; %%--%%ctf_sharpening_addition: CTF_SHARPENING additions: Additional parameters that are not part of the required ones.(default none)
+  ; %%--%%ctf_sharpening_ndilation: CTF_SHARPENING ndilation: Number of dilations of the mask. 1 Dilation adds about 2 pixel to the binary volume.(default 2): %%--%%skip_meridien==False %%--%%skip_restack==False %%--%%skip_ctf_refine==False
+  ; %%--%%ctf_sharpening_soft_edge: CTF_SHARPENING soft edge: Number of pixels for the soft edge.(default 8): %%--%%skip_meridien==False %%--%%skip_restack==False %%--%%skip_ctf_refine==False
+  ; %%--%%ctf_sharpening_output_dir: CTF_SHARPENING output name: Restacking output directory.(default CTF_SHARPENING): %%--%%skip_meridien==False %%--%%skip_restack==False %%--%%skip_ctf_refine==False
+  ; %%--%%ctf_sharpening_addition: CTF_SHARPENING additions: Additional parameters that are not part of the required ones.(default none): %%--%%skip_meridien==False %%--%%skip_restack==False %%--%%skip_ctf_refine==False
 \\
 ===== Output =====
 
