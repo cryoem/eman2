@@ -9621,6 +9621,88 @@ def create_summovie_command(temp_name, micrograph_name, shift_name, frc_name, op
 			summovie_command.append("YES")
 
 	return summovie_command
+
+def montage_scale(inputstack, ncol=None, marginwidth=0, bkgd=0, outfile=None, scale=False):
+	"""
+	Generates montage of images into one image.
+	Adapted from sxmontage.py and SPIDER's MN S
+	
+	Arguments:
+		inputstack : Stack of input images to merge into montage
+		ncol : Number of images per row (default: all on one row)
+		marginwidth : Margin width, pixels
+		bkgd : Background value of montage
+		outfile : Optional output file with montage output
+		scale : Normalize images from 0..2
+	Returns:
+		montage : EMData object of image montage
+	"""
+	
+	from sp_utilities import model_blank
+	
+	if isinstance(inputstack, str): inputstack = EMData.read_images(inputstack)
+	
+	# Get single-image dimensions
+	nx = inputstack[0].get_xsize()
+	ny = inputstack[0].get_ysize()
+	
+	# Get number of images and calculate montage dimensions
+	numimgs = len(inputstack)
+	if ncol != None:
+		numrows = (numimgs-1)/ncol + 1
+	else:
+		ncol = numimgs
+		numrows = 1
+	
+	# Create blank image
+	montage_xdim = (nx + marginwidth)*ncol
+	montage_ydim = (ny + marginwidth)*numrows
+	montage = model_blank(montage_xdim, montage_ydim, 1, bkgd)
+	mask = model_blank(nx, ny, bckg=1.0)
+	
+	# Loop through images
+	for imgnum in range(numimgs):
+		# Horizontal grid position is image# modulo NCOL
+		colnum = imgnum % ncol
+		
+		# Montage is numbered from the top down
+		rownum = numrows - 1 - imgnum/ncol
+		
+		xoffset = colnum*(nx+marginwidth)
+		yoffset = rownum*(ny+marginwidth)
+		
+		if scale == True:
+			[avg,var,fmin,fmax] = Util.infomask(inputstack[imgnum], mask, True)
+			img_norm = (inputstack[imgnum] - fmin) *2./(fmax - fmin)
+		else:
+			img_norm = inputstack[imgnum]
+		insert_image(img_norm, montage, xoffset, yoffset)
+	
+	if outfile: montage.write_image(outfile)
+	
+	return montage
+	
+def insert_image(smallimg, largeimage, xoffset, yoffset):
+	"""
+	Inserts small image into large image.
+	Adapted from sxmontage.py
+	
+	Arguments:
+		smallimg : Small image to insert into large image
+		largeimage : Large image (OVERWRITTEN!) into which small image will be inserted
+		xoffset : Top-left x-coordinate of large image where small image will be inserted
+		yoffset : Top-left y-coordinate of large image where small image will be inserted
+	"""
+	
+	# Get small-image dimensions
+	nx = smallimg.get_xsize()
+	ny = smallimg.get_ysize()
+	
+	for xcoord in range(nx):
+		for ycoord in range(ny):
+			getpixel = smallimg.get_value_at(xcoord, ycoord)
+			largeimage.set_value_at(xoffset+xcoord, yoffset+ycoord, getpixel)
+
 #------------------------------------------------[ import ]
 
 # compatibility
