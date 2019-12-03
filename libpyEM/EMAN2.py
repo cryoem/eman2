@@ -1145,9 +1145,12 @@ def num_cpus():
 	platform_string = get_platform()
 	if platform_string == "Linux":
 		try:
-			f = open("/proc/cpuinfo","r")
-			a = [int(i.split(":")[1]) for i in f if "processor" in i]
-			return max(a)+1
+			maxphys=0
+			cores=1
+			for l in open("/proc/cpuinfo","r"):
+				if "physical id" in l: maxphys=max(maxphys,int(l.split(":")[-1]))
+				if "cpu cores" in l: cores=int(l.split(":")[-1])
+			return cores*(maxphys+1)
 		except:
 			return 2
 	elif platform_string == "Windows":

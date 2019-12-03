@@ -901,11 +901,13 @@ class EMMotion(QtWidgets.QMainWindow):
 		self.w2droimask.set_data(self.roimasked)
 	
 	def showParticles(self):
-		pass
+		cls=self.w2dclasses.get_data()
+		print(cls["ptcl_repr"],cls["class_ptcl_idxs"],cls["class_ptcl_src"])
+		ptcls=[EMData(cls["class_ptcl_src"],i).align("rotate_translate_flip",cls) for i in cls["class_ptcl_idxs"]]
+		for p in ptcls: p["qual"]=p.cmp("ccc",cls)
+		ptcls.sort(cmp=lambda x,y:cmp(x["qual"],y["qual"]))
+		self.w2dptcl.set_data(ptcls)
 				
-
-
-	
 	def doCompute(self,x=False):
 		mode=self.wcbprocmode.currentIndex()
 		
@@ -972,7 +974,10 @@ class EMMotion(QtWidgets.QMainWindow):
 			try: classes[projs[n]["class_id"]].add(i)
 			except: classes[projs[n]["class_id"]]=i.copy()
 			classlst[projs[n]["class_id"]].append(n)
-		
+
+		# Sometimes kmeans runs out of iterations and there is an empty class
+		classes=[i for i in classes if i!=None]
+		classlst=[i for i in classlst if len(i)>0]
 		
 		# Make class-averages
 		fsp="{}/classes_{:02d}_{:02d}.hdf".format(self.path,self.iter,clnum)

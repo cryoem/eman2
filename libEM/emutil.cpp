@@ -1819,6 +1819,35 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 		m /= (float)(size);
 		s = sqrt(s/(float)(size)-m*m);
 
+// 		// experimental code for looking at various limit testing schemes
+// 		double s0=0,s1=1,sk0=0,sk1=0,ku0=0,ku1=0;
+// 		size_t nn0=0,nn1=0;
+// 		for (size_t i = 0; i < size; ++i) {
+// 			if (data[i]<m) {
+// 				s0+=pow(data[i]-m,2.0);
+// 				sk0+=pow(m-data[i],3.0);
+// 				ku0+=pow(data[i]-m,4.0);
+// 				nn0++;
+// 			}
+// 			else if (data[i]>m) {
+// 				s1+=pow(data[i]-m,2.0);
+// 				sk1+=pow(data[i]-m,3.0);
+// 				ku1+=pow(data[i]-m,4.0);
+// 				nn1++;
+// 			}
+// 		}
+// 		s0=pow(s0/nn0,0.5);
+// 		s1=pow(s1/nn1,0.5);
+// 		sk0=pow(sk0/nn0,1.0/3.0);
+// 		sk1=pow(sk1/nn1,1.0/3.0);
+// 		ku0=pow(ku0/nn0,0.25);
+// 		ku1=pow(ku1/nn1,0.25);
+// 		printf("\n%f %f %f %f %f %f",s0,s1,sk0,sk1,ku0,ku1);
+// 		printf("\n%f - %f   %f - %f   %f - %f",m-s0*4.0,m+s1*4.0,m-sk0*4.0,m+sk1*4.0,m-ku0*4.0,m+ku1*4.0);
+// 		printf ("\nmin, mean, max, s.d., nint, nzer, none = %g %g %g %g %d %d %d\n", min, m, max, s, nint, n0, n1);
+// 		// end of experimental code
+
+		
 		if (debug) printf ("min, mean, max, s.d., nint, nzer, none = %g %g %g %g %d %d %d\n", min, m, max, s, nint, n0, n1);
 
 		if (s <= 0 || Util::is_nan(s)) s = 1.0; // this means all data values are the same
@@ -1845,31 +1874,42 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 		// TODO: This raises the tricky point of what would happen if you had a masked volume then added 0.0001 to it?
 		// statistics might produce poor results. May need to consider using kurtosis instead of zero detection
 		else if (n0>10) {			// 10 is arbitrary, just looking for a profusion of exactly zero values implying a mask
+			// The first two seem stupid since they result in rendermin=min, rendermax=max, but we retain the option
+			// of a more involved calculation to avoid outliers compressing the histogram to an unreasonable level
 			if (min==0) {
 				rendermin=0;
-				rendermax=(mnz+snz*6.0)>max?max:mnz+snz*6.0;  //TODO <-  how large a sigma multiplier?
+				rendermax=max;		// keep everything, will only have issues with very large outliers
+//				rendermax=(mnz+snz*6.0)>max?max:mnz+snz*6.0;  //TODO <-  how large a sigma multiplier?
 			}
 			else if (max==0) {
 				rendermax=0;
-				rendermin=(mnz-snz*6.0)<min?min:mnz-snz*6.0;
+				rendermin=min;
+//				rendermin=(mnz-snz*6.0)<min?min:mnz-snz*6.0;
 			}
 			else {
-				rendermin=(mnz-snz*4.0)<min?min:mnz-snz*4.0;	// 4 standard deviations from the mean seems good empirically, e2iminfo.py -asO
-				rendermax=(mnz+snz*4.0)>max?max:mnz+snz*4.0;
-				if (min>0) min=0;
-				if (max<0) max=0;
-				if (rendermin==min && rendermax!=max) rendermax=(min+snz*8.0)>max?max:min+snz*8.0;
-				if (rendermin!=min && rendermax==max) rendermin=(max-snz*8.0)<min?min:max-snz*8.0;
-				float step=(rendermax-rendermin)/(bitval-1);
-				rendermin=ceil(rendermin/step)*step;	// adjust rendermin so integral number of steps to exactly zero, may be roundoff issues
+// 				rendermin=(mnz-snz*4.0)<min?min:mnz-snz*4.0;	// 4 standard deviations from the mean seems good empirically, e2iminfo.py -asO
+// 				rendermax=(mnz+snz*4.0)>max?max:mnz+snz*4.0;
+				// logically impossible
+//				if (min>0) min=0;
+//				if (max<0) max=0;
+// 				if (rendermin==min && rendermax!=max) rendermax=(min+snz*8.0)>max?max:min+snz*8.0;
+// 				if (rendermin!=min && rendermax==max) rendermin=(max-snz*8.0)<min?min:max-snz*8.0;
+// 				float step=(rendermax-rendermin)/(bitval-1);
+// 				rendermin=ceil(rendermin/step)*step;	// adjust rendermin so integral number of steps to exactly zero, may be roundoff issues
+				float step=(max-min)/(bitval-2);		// -2 instead of -1 to give enough range to accommodate exactly 0
+				rendermin=(floor(min/step)*step);		// rendermin will be an integral number of steps from zero
+				rendermax=rendermin+step*(bitval-1);
 			}
 		}
 		// Most general case, no "special values" to preserve
 		else {
-			rendermin=(m-s*4.0)<min?min:m-s*4.0;	// 4 standard deviations from the mean seems good empirically, e2iminfo.py -asO
-			rendermax=(m+s*4.0)>max?max:m+s*4.0;
-			if (rendermin==min && rendermax!=max) rendermax=(min+s*8.0)>max?max:min+s*8.0;
-			if (rendermin!=min && rendermax==max) rendermin=(max-s*8.0)<min?min:max-s*8.0;
+// 			rendermin=(m-s*4.0)<min?min:m-s*4.0;	// 4 standard deviations from the mean seems good empirically, e2iminfo.py -asO
+// 			rendermax=(m+s*4.0)>max?max:m+s*4.0;
+// 			if (rendermin==min && rendermax!=max) rendermax=(min+s*8.0)>max?max:min+s*8.0;
+// 			if (rendermin!=min && rendermax==max) rendermin=(max-s*8.0)<min?min:max-s*8.0;
+			// Intelligent outlier removal is just too risky. large outliers are still a risk, but we'll stay conservative for now
+			rendermin=min;
+			rendermax=max;
 		}
 	}
 
