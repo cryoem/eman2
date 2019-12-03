@@ -1287,7 +1287,8 @@ class SXCmdWidget(QWidget):
 					# Get corresponding cmd_token
 					if key_base not in list(self.sxcmd.token_dict.keys()):
 						QMessageBox.warning(self, "Invalid Parameter File Format", "Invalid base name of command token \"%s\" is found in line (%s) of file (%s). This parameter file might be incompatible with the current version. Please save the parameter file again." % (key_base, line_in, file_path_in))
-					cmd_token = self.sxcmd.token_dict[key_base]
+					else:
+						cmd_token = self.sxcmd.token_dict[key_base]
 					if not cmd_token.is_locked: 
 						# First, handle very special cases
 						if cmd_token.type == "user_func":
