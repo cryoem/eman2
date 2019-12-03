@@ -89,6 +89,8 @@ level 7         149     95.4    19.1
 	if options.range!=None and options.sigrange!=None:
 		print("ERROR: only one of --range and --sigrange may be specified")
 
+	logid=E2init(sys.argv,options.ppid)
+
 	for f in args:
 		if options.outpath!=None : outpath=os.path.join(options.outpath,os.path.split(f)[-1])
 		else : outpath=f
@@ -109,8 +111,8 @@ level 7         149     95.4    19.1
 				im["render_max"]=float(rendermax)
 			elif options.sigrange!=None:
 				renderminsig,rendermaxsig=options.sigrange.split(",")
-				im["render_min"]=im["mean"]-im["sigma"]*renderminsig
-				im["render_max"]=im["mean"]+im["sigma"]*rendermaxsig
+				im["render_min"]=im["mean"]-im["sigma"]*float(renderminsig)
+				im["render_max"]=im["mean"]+im["sigma"]*float(rendermaxsig)
 			im.write_image("tmp_compress.hdf",i,IMAGE_UNKNOWN,0,None,EM_COMPRESSED)
 			
 		if options.verbose>1 : print("{:0.1f} s".format(time()-t0))
@@ -118,6 +120,8 @@ level 7         149     95.4    19.1
 		except:pass
 		os.rename("tmp_compress.hdf",outpath)
 		
+	E2end(logid)
+
 		
 if __name__ == "__main__":
 	main()
