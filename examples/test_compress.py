@@ -59,7 +59,11 @@ for fi,fo in fls:
 			print("%7d(%5.2f)  "%(int(base/1024),tm1-tm0),end="")
 		else:
 			print("%7.1f(%5.2f)  "%(float(base)/os.stat(fot).st_size,tm1-tm0),end="")
+	print("")
 			
+	print("%35s"%"mean,sigma",end="")
+	for ti,t in enumerate(tests):
+		fot="test_{}/".format(ti)+fo
 		fsca=None
 		for i in range(n):
 			imo=EMData(fi,i)
@@ -67,6 +71,7 @@ for fi,fo in fls:
 			fsc=imo.calc_fourier_shell_correlation(imc)
 			try: fsca+=np.array(fsc)
 			except: fsca=np.array(fsc)
+			if i==0: print("%7.2f,%5.2f"%(imc["mean"],imc["sigma"]),end="")
 		fsca/=n
 		write_FSC_file(fsca,"testfsc_{}/".format(ti)+fo.replace(".hdf",".txt"))
 			
