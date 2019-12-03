@@ -140,6 +140,7 @@ def parse_args():
 
 	group = parser.add_argument_group('RVIPER settings (optional)')
 	group.add_argument('--skip_rviper', action='store_true', default=False, help='Do not run 3d ab-initio reconstruction.')
+	group.add_argument('--rviper_use_final', action='store_true', default=False, help='Use the final result of the last main iteration. Otherwhise take the first result.')
 	group.add_argument('--rviper_input_stack', dest='XXX_SP_RVIPER_INPUT_STACK_XXX', type=str, default=None, help='Path to the input stack for RVIPER')
 	group.add_argument('--rviper_output_dir', dest='XXX_SP_RVIPER_OUTPUT_DIR_XXX', type=str, default='RVIPER', help='RVIPER output directory.')
 	group.add_argument('--rviper_addition', dest='XXX_SP_RVIPER_ADDITION_XXX', type=str, default='', help='Additional parameters that are not part of the required ones.')
@@ -367,12 +368,16 @@ def get_rviper(status_dict, **kwargs):
 	return cmd
 
 
-def get_adjustment(status_dict, **kwargs):
+def get_adjustment(status_dict, use_final, **kwargs):
 	cmd = []
 	if status_dict['do_rviper'] and status_dict['do_adjust_rviper']:
+		cmd.append('LATEST_VIPER_DIR=$(ls -rd XXX_SP_RVIPER_OUTPUT_DIR_XXX/main*/run* | head -n1);')
 		cmd.append('sp_pipe.py')
 		cmd.append('moon_eliminator')
-		cmd.append('XXX_SP_RVIPER_OUTPUT_DIR_XXX/main001/run000/refvol2.hdf')
+		if use_final:
+			cmd.append('${LATEST_VIPER_DIR}/volf.hdf')
+		else:
+			cmd.append('XXX_SP_RVIPER_OUTPUT_DIR_XXX/main001/run000/refvol2.hdf')
 		cmd.append('XXX_SP_ADJUSTMENT_OUTPUT_DIR_XXX')
 		cmd.append('--pixel_size=XXX_SP_PIXEL_SIZE_XXX')
 		if status_dict['do_isac2']:
@@ -733,6 +738,7 @@ def main(args_as_dict):
 	negative_stain = args_as_dict['negative_stain']
 	fill_rviper_mask = args_as_dict['fill_rviper_mask']
 	do_gain = bool(args_as_dict['XXX_SP_UNBLUR_GAIN_FILE_XXX'] is not None)
+	use_final = args_as_dict['rviper_use_final']
 
 	mpi_procs = args_as_dict['mpi_procs']
 	mpi_submission = args_as_dict['mpi_submission_template']
@@ -750,7 +756,7 @@ def main(args_as_dict):
 			cmds.append(prev_line.format(key))
 			dict_idx_dict[running_idx] = current_idx
 			running_idx+=1
-			return_value = [entry for entry in function_dict[key][0](phase_plate=phase_plate, negative_stain=negative_stain, fill_rviper_mask=fill_rviper_mask, status_dict=do_dict, do_gain=do_gain) if entry.strip()]
+			return_value = [entry for entry in function_dict[key][0](phase_plate=phase_plate, negative_stain=negative_stain, fill_rviper_mask=fill_rviper_mask, status_dict=do_dict, do_gain=do_gain, use_final=use_final) if entry.strip()]
 			return_value.insert(0, [function_dict[key][1], key])
 			cmds.append(return_value)
 			dict_idx_dict[running_idx] = current_idx
@@ -785,7 +791,9 @@ def main(args_as_dict):
 		'--import=$(ls XXX_SP_MERIDIEN_OUTPUT_DIR_XXX/final_params_*.txt)',
 		'--import=$(ls XXX_SP_RESTACK_MERIDIEN_OUTPUT_DIR_XXX/final_params_*.txt)',
 		'XXX_SP_RESTACK_MERIDIEN_OUTPUT_DIR_XXX/vol_*_unfil_*.hdf',
-		'XXX_SP_CTF_MERIDIEN_OUTPUT_DIR_XXX/vol_*_unfil_*.hdf'
+		'XXX_SP_CTF_MERIDIEN_OUTPUT_DIR_XXX/vol_*_unfil_*.hdf',
+		'LATEST_VIPER_DIR=$(ls -rd XXX_SP_RVIPER_OUTPUT_DIR_XXX/main*/run* | head -n1);',
+		'${LATEST_VIPER_DIR}/volf.hdf',
 		)
 
 	final_lines = []
@@ -818,13 +826,10 @@ def main(args_as_dict):
 			for line in final_lines:
 				new_line = []
 				for entry in line.split():
-					if key in entry:
-						if value is not None:
-							new_line.append(entry)
-						else:
-							print(entry)
-					else:
-						new_line.append(entry)
+					if key in entry and value is None:
+						continue
+					new_line.append(entry.replace(key, str(value)))
+				new_line.append('\n')
 				final_lines_new.append(' '.join(new_line))
 			final_lines = final_lines_new
 
