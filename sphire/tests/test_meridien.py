@@ -48,7 +48,9 @@ class Test_run(unittest.TestCase):
         remove_dir(cls.out_dir_old)
         remove_dir(cls.out_dir_new)
 
-    #it is not the same run of the tutorial because I minimized the iteration to speed up the test. It takes anyway an hour
+    #it is not the same run of the tutorial (pg.55) because I minimized the iteration to speed up the test.
+    # At pg.92 there is another run. I did not test it because it performs the same operation done in this test
+    # It takes anyway an hour
     def test_(self):
 
         os_system(MPI_PATH
