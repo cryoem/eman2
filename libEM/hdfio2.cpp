@@ -81,7 +81,7 @@ static const int ATTR_NAME_LEN = 128;
 HdfIO2::HdfIO2(const string & hdf_filename, IOMode rw)
 :	nx(1), ny(1), nz(1), is_exist(false),
 	file(-1), group(-1), filename(hdf_filename),
-	rw_mode(rw), initialized(false), rendermin(0.0), rendermax(0.0), renderbits(16)
+	rw_mode(rw), initialized(false), rendermin(0.0), rendermax(0.0), renderbits(16), renderlevel(1)
 {
 	H5dont_atexit();
 	accprop=H5Pcreate(H5P_FILE_ACCESS);
@@ -1434,6 +1434,7 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 
    // Set render_min and render_max from EMData attr's if possible.
 
+	if (dict.has_key("render_compress_level")) renderlevel=(float)dict["render_compress_level"];
 	EMUtil::getRenderLimits(dict, rendermin, rendermax, renderbits);
 
 	EXITFUNC;
@@ -1512,7 +1513,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 				}
 //				H5Pset_scaleoffset(plist,H5Z_SO_FLOAT_DSCALE,2);  // doesn't seem to work right?, anyway some conceptual problems
 				H5Pset_shuffle(plist);	// rearrange bytes
-				H5Pset_deflate(plist, 1);	// zlib level 1
+				H5Pset_deflate(plist, renderlevel);	// zlib level default is 1
 //				int r=H5Pset_szip (plist, H5_SZIP_NN_OPTION_MASK, 16);	// szip with 16 pixels per block (NN (2 stage) vs EC), NN definitely seems to perform better
 //				if (r) printf("R: %d\n",r);
 				if (renderbits<=0) ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, spc, plist );

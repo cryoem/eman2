@@ -37,6 +37,7 @@ from numpy import *
 from sys import argv,exit
 import os
 import os.path
+from time import time
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -48,7 +49,7 @@ values stored in the file. If read using other software it is likely that the ma
 Default behavior is to perform 12 bit integer compression, which is sufficient for pretty much any CryoEM image file
 or reconstruction. Raw movie frames may need only 2-4 bits and aligned averaged micrographs are likely to be fine with 4-6 bits, so it
 is wise to specify the number of bits to use. Specifying 0 bits is a special case which will cause compression of the native floating point
-format. In most cases this will result in only 10-30% compression, whereas most files can be compressed by a factor of 5-10 with no impairment
+format. In most cases this will result in only 10-30%% compression, whereas most files can be compressed by a factor of 5-10 with no impairment
 of results.
 
 Additionally, default behavior is to try and preserve the entire image range in the compressed file, and further, if the input file contains
@@ -59,14 +60,27 @@ outliers will dramatically improve the information retention and/or compression 
 The smaller the number of bits, the faster the compression, and the better the compression ratio. Noise compresses poorly, so eliminating bits
 containing pure noise is benificial in multiple ways.
 
+--compresslevel will not impact the quality of the stored images, but will impact compression size and time required. For example, when storing
+a typical movie stack of 50 K2 frames using a single thread:
+uncompressed   2848 MB   7.1 s
+level 0         738      9.3     3.8x
+level 1         193     15.7    14.7
+level 2         184     16.9    15.5
+level 3         175     24.7    16.3
+level 4         165     21.2    17.3
+level 5         158     32.8    18.0  (typical int-compressed tiff)
+level 6         152     62.5    18.7
+level 7         149     95.4    19.1
 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--bits",type=int,help="Bits to retain in the output file, 0 or 2-16. 0 is a flag indicating the native floating point format.",default=12)
+	parser.add_argument("--compresslevel",type=int,help="Compression level to use when writing. No impact on image quality, but large impact on speed. Default = 1",default=None)
 	parser.add_argument("--range",type=str,help="Specify <minval>,<maxval> representing the largest and smallest values to be saved in the output file. Automatic if unspecified.",default=None)
 	parser.add_argument("--sigrange",type=str,help="Specify <minsig>,<maxsig>, eg- 4,4 Number of standard deviations below and above the mean to retain in the output. Default is not to truncate. 4-5 is usually safe.",default=None)
 	parser.add_argument("--outpath",type=str,help="Specify a destination folder for the compressed files. This will avoid overwriting existing files.", default=None);
+#	parser.add_argument("--threads",type=int,help="Compression requires significant CPU, this can significantly improve speed",default=1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -80,12 +94,15 @@ containing pure noise is benificial in multiple ways.
 		else : outpath=f
 		try: os.unlink("tmp_compress.hdf")
 		except: pass
+		if outpath[-4:]!=".hdf" : outpath=outpath.rsplit(".",1)[0]+".hdf"
 		
 		N=EMUtil.get_image_count(f)
-		if options.verbose : print("Processing {} with {} images",f,N)
+		if options.verbose : print("Processing {} with {} images".format(f,N))
+		t0=time()
 		for i in range(N):
 			im=EMData(f,i)
 			im["render_bits"]=options.bits
+			if options.compresslevel!=None : im["render_compress_level"]=options.compresslevel
 			if options.range!=None:
 				rendermin,rendermax=options.range.split(",")
 				im["render_min"]=float(rendermin)
@@ -96,7 +113,11 @@ containing pure noise is benificial in multiple ways.
 				im["render_max"]=im["mean"]+im["sigma"]*rendermaxsig
 			im.write_image("tmp_compress.hdf",i,IMAGE_UNKNOWN,0,None,EM_COMPRESSED)
 			
+		if options.verbose>1 : print("{:0.1f} s".format(time()-t0))
 		try: os.unlink(outpath)
 		except:pass
 		os.rename("tmp_compress.hdf",outpath)
 		
+		
+if __name__ == "__main__":
+	main()
