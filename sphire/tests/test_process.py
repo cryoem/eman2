@@ -49,8 +49,9 @@ class Test_run(unittest.TestCase):
         remove_dir(cls.new_output_folder)
         remove_dir(cls.old_output_folder)
 
-
-    def test_(self):
+    # it is the run of the tutorial (pg.65)
+    # At pg.93 there is another run. I did not test it because it performs the same operation done in this test
+    def test_combinemaps_Halfset(self):
         testargs_new = [path.join(ABSOLUTE_BIN_PATH, "sp_process.py"),
                         "--combinemaps",
                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "11_MERIDIEN","vol_0_unfil_028.hdf"),
