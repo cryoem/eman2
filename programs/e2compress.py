@@ -37,7 +37,17 @@ from numpy import *
 from sys import argv,exit
 import os
 import os.path
-from time import time
+import time
+
+def compress_files(jsd,i,fsps,options) :
+	"""calls a subprocess to do actual compression"""
+	cmd="e2compress.py {}".format(" ".join(fsps))
+	for k,v in vars(options).items():
+		if not k in ("threads","ppid","positionalargs") and v!=None: cmd+=" --{}={}".format(k,v)
+#	print(cmd)
+	launch_childprocess(cmd,True)
+	jsd.put(i)
+	return
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -63,7 +73,7 @@ containing pure noise is benificial in multiple ways.
 --compresslevel will not impact the quality of the stored images, but will impact compression size and time required. For example, when storing
 a typical movie stack of 50 K2 frames using a single thread:
 uncompressed   2848 MB   7.1 s
-level 0         738      9.3     3.8x
+level 0         738      9.3     3.8x compression
 level 1         193     15.7    14.7
 level 2         184     16.9    15.5
 level 3         175     24.7    16.3
@@ -80,7 +90,8 @@ level 7         149     95.4    19.1
 	parser.add_argument("--range",type=str,help="Specify <minval>,<maxval> representing the largest and smallest values to be saved in the output file. Automatic if unspecified.",default=None)
 	parser.add_argument("--sigrange",type=str,help="Specify <minsig>,<maxsig>, eg- 4,4 Number of standard deviations below and above the mean to retain in the output. Default is not to truncate. 4-5 is usually safe.",default=None)
 	parser.add_argument("--outpath",type=str,help="Specify a destination folder for the compressed files. This will avoid overwriting existing files.", default=None);
-#	parser.add_argument("--threads",type=int,help="Compression requires significant CPU, this can significantly improve speed",default=1)
+# HDF5 not threadsafe so --threads implemented in an unusual way
+	parser.add_argument("--threads",type=int,help="Compression requires significant CPU, this can significantly improve speed",default=1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -91,34 +102,69 @@ level 7         149     95.4    19.1
 
 	logid=E2init(sys.argv,options.ppid)
 
-	for f in args:
-		if options.outpath!=None : outpath=os.path.join(options.outpath,os.path.split(f)[-1])
-		else : outpath=f
-		try: os.unlink("tmp_compress.hdf")
-		except: pass
-		if outpath[-4:]!=".hdf" : outpath=outpath.rsplit(".",1)[0]+".hdf"
-		
-		N=EMUtil.get_image_count(f)
-		if options.verbose : print("Processing {} with {} images".format(f,N))
-		t0=time()
-		for i in range(N):
-			im=EMData(f,i)
-			im["render_bits"]=options.bits
-			if options.compresslevel!=None : im["render_compress_level"]=options.compresslevel
-			if options.range!=None:
-				rendermin,rendermax=options.range.split(",")
-				im["render_min"]=float(rendermin)
-				im["render_max"]=float(rendermax)
-			elif options.sigrange!=None:
-				renderminsig,rendermaxsig=options.sigrange.split(",")
-				im["render_min"]=im["mean"]-im["sigma"]*float(renderminsig)
-				im["render_max"]=im["mean"]+im["sigma"]*float(rendermaxsig)
-			im.write_image("tmp_compress.hdf",i,IMAGE_UNKNOWN,0,None,EM_COMPRESSED)
+	# if threading requested we just call ourselves multiple times with independent processes. Since HDF5 is not threadsafe
+	# we cannot do proper internal threading, and must parallelize at the file level. Obnoxious,
+	# but the only reasonable approach.
+	if options.threads>1:
+		import threading
+		import queue
+		jsd=queue.Queue(0)
+
+		n=-1
+		thrds=[(jsd,i,list(args)[i::options.threads],options) for i in range(options.threads)]
+
+		# here we run the threads and save the results, no actual alignment done here
+		print(len(thrds)," threads")
+		thrtolaunch=0
+		while thrtolaunch<len(thrds) or threading.active_count()>1:
+			# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
+			# note that it's ok that we wait here forever, since there can't be new results if an existing
+			# thread hasn't finished.
+			if thrtolaunch<len(thrds) :
+				while (threading.active_count()==options.threads+1) : time.sleep(.1)
+				if options.verbose : print("Starting thread {}/{}".format(thrtolaunch,len(thrds)))
+				thrds[thrtolaunch]=threading.Thread(target=compress_files,args=thrds[thrtolaunch])
+				thrds[thrtolaunch].start()
+				thrtolaunch+=1
+			else: time.sleep(1)
+
+			# no return other than the thread that finished
+			while not jsd.empty():
+				n=jsd.get()
+				thrds[n].join()
+				thrds[n]=None
+	# this is the actual compression code, which only happens when we have a single thread
+	else:
+		for f in args:
+			fname=os.path.split(f)[-1].rsplit(".",1)[0]
+			tmpname="tmp_{}.hdf".format(fname)
+			if options.outpath!=None : outpath=os.path.join(options.outpath,fname+".hdf")
+			else : outpath=f
+			try: os.unlink(tmpname)
+			except: pass
+			if outpath[-4:]!=".hdf" : outpath=outpath.rsplit(".",1)[0]+".hdf"
 			
-		if options.verbose>1 : print("{:0.1f} s".format(time()-t0))
-		try: os.unlink(outpath)
-		except:pass
-		os.rename("tmp_compress.hdf",outpath)
+			N=EMUtil.get_image_count(f)
+			if options.verbose : print("Processing {} with {} images".format(f,N))
+			t0=time.time()
+			for i in range(N):
+				im=EMData(f,i)
+				im["render_bits"]=options.bits
+				if options.compresslevel!=None : im["render_compress_level"]=options.compresslevel
+				if options.range!=None:
+					rendermin,rendermax=options.range.split(",")
+					im["render_min"]=float(rendermin)
+					im["render_max"]=float(rendermax)
+				elif options.sigrange!=None:
+					renderminsig,rendermaxsig=options.sigrange.split(",")
+					im["render_min"]=im["mean"]-im["sigma"]*float(renderminsig)
+					im["render_max"]=im["mean"]+im["sigma"]*float(rendermaxsig)
+				im.write_image(tmpname,i,IMAGE_UNKNOWN,0,None,EM_COMPRESSED)
+				
+			if options.verbose>1 : print("{:0.1f} s".format(time.time()-t0))
+			try: os.unlink(outpath)
+			except:pass
+			os.rename(tmpname,outpath)
 		
 	E2end(logid)
 
