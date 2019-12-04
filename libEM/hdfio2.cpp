@@ -1750,6 +1750,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 				err_no = H5Dwrite(ds, H5T_NATIVE_UCHAR, memoryspace, filespace, H5P_DEFAULT, ucdata);
 				scaled=1;
+				if (ucdata) {delete [] ucdata; ucdata = NULL;}
 			}
 			else {
 				usdata = new unsigned short[size];
@@ -1768,6 +1769,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 				err_no = H5Dwrite(ds, H5T_NATIVE_USHORT, memoryspace, filespace, H5P_DEFAULT, usdata);
 				scaled=1;
+				if (usdata) {delete [] usdata; usdata = NULL;}
 			}
 				
 			if (err_no < 0) {
@@ -1889,6 +1891,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 				err_no = H5Dwrite(ds,H5T_NATIVE_UCHAR,spc,spc,H5P_DEFAULT,ucdata);
 				scaled=1;
+				if (ucdata) {delete [] ucdata; ucdata = NULL;}
 			}
 			else {
 				usdata = new unsigned short[size];
@@ -1907,6 +1910,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 				err_no = H5Dwrite(ds,H5T_NATIVE_USHORT,spc,spc,H5P_DEFAULT,usdata);
 				scaled=1;
+				if (usdata) {delete [] usdata; usdata = NULL;}
 			}
 				
 			if (err_no < 0) {
