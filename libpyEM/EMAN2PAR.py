@@ -766,6 +766,7 @@ class EMLocalTaskHandler(object):
 
 	def run(self):
 
+		logfile=open("thread.out","a")
 		while(1):
 			time.sleep(1)		# only go active at most 1/second
 			if self.doexit==1:
@@ -806,7 +807,7 @@ class EMLocalTaskHandler(object):
 				if get_platform() == 'Windows':
 					cmd="python {}\\bin\\".format(e2getinstalldir())+cmd
 					
-				proc=subprocess.Popen(cmd, shell=True)
+				proc=subprocess.Popen(cmd, shell=True, stderr=logfile)
 				self.running.append((proc,self.nextid))
 				EMLocalTaskHandler.allrunning[self.nextid] = proc
 				self.nextid+=1

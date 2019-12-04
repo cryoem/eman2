@@ -445,6 +445,7 @@ class ClassSplitTask(JSTask):
 			mask=options["mask"]
 
 #		print "basis start"
+		if options["verbose"]>1: print("PCA {}, {}".format(options["classnum"],len(ptcls)))
 		pca=Analyzers.get("pca_large",{"nvec":options["nbasis"],"mask":mask,"tmpfile":"tmp{}".format(options["classnum"])})
 		for p in ptcls: 
 			pca.insert_image(p[5])		# filter to focus on lower resolution differences
@@ -452,6 +453,7 @@ class ClassSplitTask(JSTask):
 
 		# Varimax rotation... good idea?
 		if not options["novarimax"]:
+			if options["verbose"]>1: print("Varimax {}".format(options["classnum"]))
 			pca2=Analyzers.get("varimax",{"mask":mask})
 			for im in basis:
 				pca2.insert_image(im)
@@ -475,6 +477,8 @@ class ClassSplitTask(JSTask):
 		dota=old_div(sum(dots),len(dots))
 		
 #		print "average"
+		if options["verbose"]>1: print("Split by dot {}".format(options["classnum"]))
+
 		# we will just use the sign of the dot product to split
 		avgr=[Averagers.get("mean"),Averagers.get("mean")]
 		incl=[[],[]]
@@ -490,6 +494,10 @@ class ClassSplitTask(JSTask):
 		
 		#for p in ptcls: 
 			#avgr.add_image(p[3].process("xform",{"transform":p[2]}))
+		
+		if len(incl[0])==0 or len(incl[1])==0:
+			if options["verbose"]>0 : print("No separation on class {}".format(options["classnum"]))
+			return {"failed":True}
 		
 		if options["verbose"]>0: print("Finish averaging class {}".format(options["classnum"]))
 #		if callback!=None : callback(100)

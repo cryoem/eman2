@@ -3382,8 +3382,8 @@ def set_params_proj(ima, p, xform = "xform.projection"):
 	  p = [phi, theta, psi, s2x, s2y]
 	"""
 	from EMAN2 import Vec2f
-	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2]})
-	t.set_trans(Vec2f(-p[3], -p[4]))
+	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2],"tx":-p[3],"ty":-p[4]})
+	#t.set_trans(Vec2f(-p[3], -p[4]))
 	ima.set_attr(xform, t)
 
 
@@ -3600,7 +3600,11 @@ def nearest_many_full_k_projangles(reference_normals, angles, howmany = 1, sym_c
 	from utilities import getfvec, angles_to_normals
 	#refnormal = normals[:]
 	assignments = [-1]*len(angles)
-	if( sym_class.sym[:2] == "c1"):
+	if(sym_class == None): dos = True
+	elif(sym_class.sym[:2] == "c1"): dos = True
+	else:  dosFalse
+	
+	if dos:
 		for i,q in enumerate(angles):
 			ref = getfvec(q[0],q[1])
 			assignments[i] = Util.nearest_fang_select(reference_normals, ref[0],ref[1],ref[2], howmany)

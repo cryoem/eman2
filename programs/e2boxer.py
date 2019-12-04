@@ -132,6 +132,8 @@ def main():
 	if "CUDA_VISIBLE_DEVICES" in os.environ:
 		print("CUDA_VISIBLE_DEVICES is already set as environment variable. This will overwrite the device option...")
 	else:
+		try: options.device=options.device.lower()
+		except: pass
 		if options.device=="gpu":
 			print("Using GPU...")
 		elif options.device.startswith("gpu"):

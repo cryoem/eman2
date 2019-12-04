@@ -66,7 +66,7 @@ def main():
 	h=EMData(args[0],0,True)
 	nx=h["nx"]
 	ny=h["ny"]
-	fullbox=good_boxsize(min(nx-10,ny-10),False)	# this is the size we will do the phase inversion on
+	fullbox=good_size_small(min(nx-10,ny-10))	# this is the size we will do the phase inversion on
 	
 	N=0
 	clpav=[]

@@ -144,6 +144,7 @@ namespace EMAN
 	    float rendermin;
 	    float rendermax;
 		int renderbits;
+		int renderlevel; // compression level
 	};
 }
 

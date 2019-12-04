@@ -41,6 +41,7 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import range
 from builtins import object
+import traceback
 
 import sys
 from EMAN2 import *
@@ -84,8 +85,10 @@ def main():
 			
 
 		task=load(open(options.taskin,"rb"))
-		dump(task.execute(empty_func),open(options.taskout,"wb"),-1)
-		
+		try: dump(task.execute(empty_func),open(options.taskout,"wb"),-1)
+		except:
+			traceback.print_exc()
+			sys.exit(1)
 		
 	else:
 		print("Cannot recognize mode. select from thread and mpi")

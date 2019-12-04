@@ -99,7 +99,7 @@ namespace EMAN
 			EM_SHORT_COMPLEX,
 			EM_USHORT_COMPLEX,
 			EM_FLOAT_COMPLEX,
-			EM_CMPR				// compressed
+			EM_COMPRESSED				// compressed
 		};
 
 		/** Image format types.
@@ -315,6 +315,7 @@ namespace EMAN
 		 * @param[in] ny y dimension size
 		 * @param[out] rendermin the minimum value for normalization
 		 * @param[out] rendermax the maximum value for normalization
+		 * @param[out] renderbits the number of significant bits to retain when performing int conversion (helps with compression)
 		 * @param[in] nz z dimension size
 		 * */
 		static void getRenderMinMax(float * data, const int nx, const int ny, float & rendermin, float & rendermax, int &renderbits, const int nz = 1);
