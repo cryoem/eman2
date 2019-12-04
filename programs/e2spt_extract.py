@@ -691,7 +691,7 @@ def get_xf_pos(tpm, pk):
 #### parse a text file for particles
 def parse_text(options):
 	js=js_open_dict(options.textin)
-	keys=sorted(js.keys())
+	keys=natural_sort(js.keys())
 	allinfo={}
 	allxf={}
 	for ky in keys:
@@ -721,7 +721,7 @@ def parse_json(options):
 	
 	
 	#### sort by score 
-	keys=sorted(js.keys())
+	keys=natural_sort(js.keys())
 	score=[js[k]["score"] for k in keys]
 	srt=np.argsort(score)
 	
