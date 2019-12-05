@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 #
 # Author: Toshio Moriya 08/07/2018 (toshio.moriya@mpi-dortmund.mpg.de)
 #
@@ -34,7 +33,6 @@ from __future__ import print_function
 #
 #
 
-from __future__ import print_function
 from builtins import range
 import os, sys
 from optparse import OptionParser, SUPPRESS_HELP

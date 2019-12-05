@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
 # Author: Pawel A. Penczek (pawel.a.penczek@uth.tmc.edu)
 # Please do not copy or modify this file without written consent of the author.

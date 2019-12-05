@@ -1,5 +1,4 @@
 # For some reason these programs get stuck on MPI if I change the order of programs in the file.  Strange, PAP.
-from __future__ import print_function
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
 # Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)

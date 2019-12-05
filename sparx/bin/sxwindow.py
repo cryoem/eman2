@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 #
 # Author: Pawel A.Penczek 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
 # Please do not copy or modify this file without written consent of the author.
@@ -34,7 +33,6 @@ from __future__ import print_function
 #
 #
 
-from __future__ import print_function
 from builtins import range
 import os, sys
 from optparse import OptionParser, SUPPRESS_HELP

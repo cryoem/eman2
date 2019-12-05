@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 from __future__ import division
 #
 # Author: Jesus Galaz, 11/01/2012; last update 31/oct/2015

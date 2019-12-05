@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 from __future__ import division
 # This program will compute the 'local correlation' between two maps
 # maps are hardcoded as a,b below, as is the local region

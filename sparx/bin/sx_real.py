@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-from __future__ import print_function
 #
 # Do not run this script directly. You could run this as 
 # ipython --gui=qt -i e2_real.py

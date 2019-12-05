@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 from __future__ import division
 # this simple program will find the approximate resolution of the first zero as a function of defocus
 # computationally. While you could compute a functional form as well, this demonstrates some useful

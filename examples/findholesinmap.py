@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 from __future__ import division
 # Muyuan Chen 2016-03
 # Look for holes in a 3d density map

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 from __future__ import division
 
 # extracthelp.py -  Steven Ludtke  09/14/2010

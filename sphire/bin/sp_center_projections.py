@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 #
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
@@ -40,7 +39,6 @@ from __future__ import print_function
 #
 
 
-from __future__ import print_function
 from builtins import range
 from builtins import object
 from EMAN2 import *

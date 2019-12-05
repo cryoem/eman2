@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 from __future__ import division
 
 ### This program computes the maximum radial distribution plot and characterizes it

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 from __future__ import division
 
 # This is a simple example showing how to generate a histogram from a text file

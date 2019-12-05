@@ -2,7 +2,6 @@
 
 # 11/20/19  Steven Ludtke
 # Script designed to test HDF5 data compression code timing, amount of compression and information preservation
-from __future__ import print_function
 from __future__ import division
 from past.utils import old_div
 from builtins import range

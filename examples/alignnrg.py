@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 from __future__ import division
 
 # This computes the local energy surface for 2-D alignment of a particle vs a class-average

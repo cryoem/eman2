@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 from __future__ import division
 
 ### This program will average a list of images or volumes passed in on the command-line
