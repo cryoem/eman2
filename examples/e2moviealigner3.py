@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
-
 # Author: James Michael Bell, jmbell@bcm.edu, 10/18/2015
 
 from past.utils import old_div

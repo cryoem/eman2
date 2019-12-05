@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
-
 #
 # Author: John Flanagan May 13th 2011  
 # ported and refactored using EMAN2 by David Woolford October 6th 2008

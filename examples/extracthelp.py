@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
-
 # extracthelp.py -  Steven Ludtke  09/14/2010
 # redone for EMAN2.1 5/15/14
 

@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
-
 #====================
 #Author: Michael Bell July, 2016 (edits, Jesus Galaz-Montoya). Last update: September, 2016
 #====================

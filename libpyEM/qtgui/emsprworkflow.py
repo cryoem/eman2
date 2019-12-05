@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 from __future__ import absolute_import
-from __future__ import division
 #
 # Author: David Woolford 11/10/08 (woolford@bcm.edu)
 # Copyright (c) 2000-2008 Baylor College of Medicine

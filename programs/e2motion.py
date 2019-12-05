@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
-
 #
 # Author: Steven Ludtke  9/14/2012 
 # Copyright (c) 2012- Baylor College of Medicine

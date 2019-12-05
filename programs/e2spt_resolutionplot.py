@@ -29,7 +29,6 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
-from __future__ import division
 from past.utils import old_div
 from builtins import range
 from EMAN2_utils import *

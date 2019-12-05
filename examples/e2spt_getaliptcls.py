@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
-
 # Muyuan Chen 2019-05
 from EMAN2 import *
 import numpy as np

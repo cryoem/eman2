@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
 # Muyuan Chen 2016-08
 from past.utils import old_div
 from builtins import range

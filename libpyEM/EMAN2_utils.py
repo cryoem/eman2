@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
-
 #### python utilities. 
 #### 2017-03
 

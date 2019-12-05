@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 from __future__ import absolute_import
-from __future__ import division
-
 #
 # Author: Steven Ludtke (sludtke@bcm.edu)
 # Copyright (c) 2011- Baylor College of Medicine

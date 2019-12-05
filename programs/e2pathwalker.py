@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
 # -*- coding: utf-8 -*-
 
 # Author: Ian Rees (ian.rees@bcm.edu), 03/20/2012

@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-from __future__ import division
 #
 # Copyright (C) 2019 Max planck institute for molecular physiology, Dortmund
 # Authors:

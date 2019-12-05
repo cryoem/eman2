@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
 # Author: Zhao Wang
 # Edited by Stephen Murray (scmurray@bcm.edu), 12/12/11
 # Copyright (c) 2000-2011 Baylor College of Medicine

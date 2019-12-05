@@ -1,5 +1,4 @@
 # This is a simple example showing how to generate a histogram from a text file
-from __future__ import division
 # specify the filename and column number with an optional number of bins, column number 0 indexed
 # Note that outliers are filtered out (>sigma*4 twice)
 from past.utils import old_div

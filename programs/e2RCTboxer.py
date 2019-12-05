@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
 #
 # Author: John Flanagan (jfflanag@bcm.edu)
 # Edited by: Stephen Murray (scmurray@bcm.edu) May 2014

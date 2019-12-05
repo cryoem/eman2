@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
 # 01/13/2014		Steven Ludtke
 # This program tries to fit a closed loop of blobs to DNA-minicircle density pattern using
 # a simple distance, angle, dihedral potential with a closed linear chain of balls

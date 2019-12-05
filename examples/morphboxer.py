@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
-
 #
 # Authors: James Michael Bell, 06/03/2015
 # Copyright (c) 2015 Baylor College of Medicine

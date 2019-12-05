@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
-
 # Read's FEI's 'RAW' format and writes to hdf
 # feiraw2hdf.py <input> <input> ... <output> 
 # also writes the sum of all inputs/1024 to output position 0

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
 # average selected subset of particles
 
 from past.utils import old_div

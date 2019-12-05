@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
 # This program performs simple processing of XML files
 
 # Author: Stephen Murray, 10/17/14 (scmurray@bcm.edu)

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
 # Muyuan Chen 2017-02
 
 from builtins import range

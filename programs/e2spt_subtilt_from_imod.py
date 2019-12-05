@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
 # Muyuan Chen 2016-10
 # Muyuan Chen mostly rewrite 2017-03
 from past.utils import old_div

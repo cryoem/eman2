@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
-
 # This example script will extract CTF parameters from bdb:e2ctf.parms into a CSV file readable by a spreadsheet
 
 from EMAN2 import *

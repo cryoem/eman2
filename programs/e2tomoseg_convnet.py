@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
 # Muyuan July 2015
 from past.utils import old_div
 from future import standard_library

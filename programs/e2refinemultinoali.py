@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
-
 # Muyuan Chen 2016-01
 #
 # This software is issued under a joint BSD/GNU license. You may use the

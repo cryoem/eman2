@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
-
 # clstoclsmx.py - Steve Ludtke, 7/28/08
 # This program will convert a set of cls*lst files from EMAN1 into an EMAN2
 # style classification matrix (for use with programs like e2classaverage.py

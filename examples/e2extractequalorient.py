@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
-
 # This program will extract an ~equal number of particles over all orientations. 
 
 from builtins import range

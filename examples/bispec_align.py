@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
 from EMAN2 import *
 from sys import argv
 

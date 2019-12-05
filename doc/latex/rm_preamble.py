@@ -1,5 +1,4 @@
 #-----------------------------------------------
-from __future__ import division
 def process(x):
     try:
         istream=open(x,"r");

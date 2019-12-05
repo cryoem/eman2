@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
 from __future__ import absolute_import
 #
 # Author: David Woolford 11/10/08 (woolford@bcm.edu)

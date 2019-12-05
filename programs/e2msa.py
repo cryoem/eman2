@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
-
 #
 # Author: Steve Ludtke, 06/26/18 (sludtke@bcm.edu) rewrote using sklearn
 # Author: Wen Jiang, 04/10/2003 (jiang12@purdue.edu)

@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
-
 # This program is designed to take an aligned movie stack and extract the best quality frames and average them together. This is
 # similar to capabilities in e2ddd_movie, but without the alignment step.  This program was designed in the context of a specific project
 # and filenaming,etc would have to be tweaked for use in other projects

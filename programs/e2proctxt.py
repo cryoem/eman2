@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
 # This program performs simple processing of .LST files
 
 # Author: Steven Ludtke, 5/19/2016 (sludtke@bcm.edu)

@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
-
 from builtins import range
 from sys import argv,stdout
 from EMAN2 import *

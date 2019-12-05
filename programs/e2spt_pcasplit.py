@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
 # align all particles to reference and store alignment results
 # Author: Steven Ludtke (sludtke@bcm.edu)
 # Copyright (c) 2000- Baylor College of Medicine

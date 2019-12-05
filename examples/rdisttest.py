@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
-
 ### This program computes the maximum radial distribution plot and characterizes it
 
 from past.utils import old_div

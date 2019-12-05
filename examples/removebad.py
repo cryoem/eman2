@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
 # This program will find the user-assigned quality for all of the images in "micrographs"
 # and delete any with a quality less than the specified (command-line) number
 

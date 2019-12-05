@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
-
 #
 # Author: Grant Tang
 # Copyright (c) 2000-2006 Baylor College of Medicine

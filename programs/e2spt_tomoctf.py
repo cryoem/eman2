@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-03
-from __future__ import division
 from past.utils import old_div
 from builtins import range
 import numpy as np
