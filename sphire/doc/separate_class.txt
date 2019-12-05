@@ -8,7 +8,7 @@ Separate Into Classes : Separates stacks of particle images into stacks for each
 
 Usage in command line:
 
-  sp_separate_class.py input_class_avgs input_image_stack output_directory --filt=filter_radius --pxsz=pixel_size --shrink=shrink_factor --verbose
+  sp_separate_class.py input_class_avgs input_image_stack output_directory --isac_dir=isac_dir --filt=filter_radius --pxsz=pixel_size --shrink=shrink_factor --nvec=number_of_eigenimages --verbose
   
   
 \\
@@ -24,13 +24,19 @@ The purpose of sp_separate_class.py is to:
 
   sp_separate_class.py input_class_avgs input_image_stack output_directory 
 
-\\ __2. Apply a low-pass filter to the image stacks__:
+\\ __2. To apply alignments from ISAC to output image stacks__:
+
+  sp_separate_class.py input_class_avgs input_image_stack output_directory --isac_dir isac_directory
+
+Filter radius is in units of Angstroms. If pxsz parameter is not specified, program will assume units of pixels^-1.
+
+\\ __3. Apply a low-pass filter to the image stacks__:
 
   sp_separate_class.py input_class_avgs input_image_stack output_directory --filt=filter_radius --pxsz=pixel_size
 
 Filter radius is in units of Angstroms. If pxsz parameter is not specified, program will assume units of pixels^-1.
 
-\\ __3. Downsample output image stack__:
+\\ __4. Downsample output image stack__:
 
   sp_separate_class.py input_class_avgs input_image_stack output_directory --shrink=shrink_factor
   
@@ -40,9 +46,11 @@ Filter radius is in units of Angstroms. If pxsz parameter is not specified, prog
   ; input_class_avgs : Input class averages : Set of 2D class averages, with particle-membership information in header. (default required string)
   ; input_image_stack : Input particles : Particle image stack. (default required string)
   ; output_directory : Output directory : Directory where outputs will be written. (default required string)
+  ; %%--%%isac_dir : ISAC directory : Input ISAC directory, if applying alignments to particles. (default None)
   ; %%--%%filt : Filter radius : Gaussian low-pass filter radius, Angstroms if pxsz specified below, else pixels^-1. (default None)
   ; %%--%%pxsz : Pixel size : Angstroms per pixel, might be downsampled already by ISAC2. (default None)
   ; %%--%%shrink : Downsampling factor : Downsampling factor, e.g., 6 -> 1/6 original size. (default None)
+  ; %%--%%nvec : Number of eigenimages : Number of eigenimages to compute. (default None)
   ; %%--%%verbose : Verbose : Writes additional messages to the terminal during execution. (default False)
   
 \\
