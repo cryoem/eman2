@@ -49,7 +49,6 @@ from .emhist import *
 from .emplot3d import *
 from libpyUtils2 import EMUtil
 from .matching import matches_pats
-from string import lower
 from .valslider import StringBox
 import os
 import re
@@ -3224,12 +3223,12 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		self.wtoolhbl = QtWidgets.QHBoxLayout()
 		self.wtoolhbl.setContentsMargins(0, 0, 0, 0)
 
-		self.wbutback = QtWidgets.QPushButton(unichr(0x2190))
+		self.wbutback = QtWidgets.QPushButton(chr(0x2190))
 		self.wbutback.setMaximumWidth(36)
 		self.wbutback.setEnabled(False)
 		self.wtoolhbl.addWidget(self.wbutback, 0)
 
-		self.wbutfwd = QtWidgets.QPushButton(unichr(0x2192))
+		self.wbutfwd = QtWidgets.QPushButton(chr(0x2192))
 		self.wbutfwd.setMaximumWidth(36)
 		self.wbutfwd.setEnabled(False)
 		self.wtoolhbl.addWidget(self.wbutfwd, 0)
@@ -3256,11 +3255,11 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		self.wtoolhbl2 = QtWidgets.QHBoxLayout()
 		self.wtoolhbl2.setContentsMargins(0, 0, 0, 0)
 
-		self.wbutup = QtWidgets.QPushButton(unichr(0x2191))
+		self.wbutup = QtWidgets.QPushButton(chr(0x2191))
 		self.wbutup.setMaximumWidth(36)
 		self.wtoolhbl2.addWidget(self.wbutup, 0)
 
-		self.wbutrefresh = QtWidgets.QPushButton(unichr(0x21ba))
+		self.wbutrefresh = QtWidgets.QPushButton(chr(0x21ba))
 		self.wbutrefresh.setMaximumWidth(36)
 		self.wtoolhbl2.addWidget(self.wbutrefresh, 0)
 
