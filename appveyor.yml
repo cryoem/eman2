@@ -21,9 +21,6 @@ install:
 
     - conda.exe config --set show_channel_urls true
 
-    - conda.exe install -n root vs2008_express_vc_python_patch -c conda-forge --yes --quiet
-    - call setup_x64
-
     - conda.exe install conda=4.6.14 conda-build=3.17.8 --yes --quiet
 
     - conda.exe info -a

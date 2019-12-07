@@ -12,7 +12,6 @@ requirements:
         - {{ cdt('mesa-libgl-devel') }}   # [linux]
 
     host:
-        - msinttypes                      # [win]
         - python    3.6.*
         - boost     1.66.*
         - fftw-mpi
