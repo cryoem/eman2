@@ -223,9 +223,9 @@ def getHomeDir() {
 
 // For debugging purposes
 def isSkipStage() {
-    return 0
+//     return 0
 //     return NODE_NAME != "linux-1"
-//     return AGENT_OS_NAME != "mac"
+    return AGENT_OS_NAME == "win"
 //     return STAGE_NAME != "package"
 // 
 //     stages = [
@@ -287,7 +287,7 @@ pipeline {
       
       steps {
         notifyGitHub('PENDING')
-        sh 'source $(conda info --root)/bin/activate eman-deps-16.0-boost-1.66 && env | sort && bash ci_support/build_no_recipe.sh'
+        sh 'source $(conda info --root)/bin/activate eman-deps-18.0-boost-1.66 && env | sort && bash ci_support/build_no_recipe.sh'
       }
     }
     

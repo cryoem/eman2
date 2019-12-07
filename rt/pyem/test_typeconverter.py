@@ -122,7 +122,7 @@ class TestTypeConverter(unittest.TestCase):
         self.assertEqual(ctf1.to_string(), ctf2.to_string())
 
         testfile = "test_emobject_to_py_xydata.txt"
-        out = open(testfile, "wb")
+        out = open(testfile, "w")
         for f in farray2:
             out.write(str(f) + " " + str(f) + "\n")
         out.close()
@@ -161,7 +161,7 @@ class TestTypeConverter(unittest.TestCase):
 
         xyd = XYData()
         testfile = "xydata.txt"
-        out = open(testfile, "wb")
+        out = open(testfile, "w")
         for f in fl:
                 out.write(str(f) + " " + str(f) + "\n")
         out.close()

@@ -9,12 +9,12 @@ bash "${MYDIR}/../tests/future_import_tests.sh"
 if [ ! -z ${TRAVIS} ];then
     source ci_support/setup_conda.sh
 
-    conda install eman-deps=16.0 boost=1.66 -c cryoem -c defaults -c conda-forge --yes --quiet
+    conda install eman-deps=18.0 boost=1.66 -c cryoem -c defaults -c conda-forge --yes --quiet
 fi
 
 if [ ! -z ${CIRCLECI} ];then
     . $HOME/miniconda/etc/profile.d/conda.sh
-    conda activate eman-deps-16.0
+    conda activate eman-deps-18.0
 fi
 
 python -m compileall -q .
