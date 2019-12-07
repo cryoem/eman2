@@ -30,7 +30,7 @@ requirements:
 test:
   requires:
     - openmpi              # [not win]
-    - eman-deps=16.0
+    - eman-deps 18.0
     - boost 1.66.*
   
   source_files:
