@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import absolute_import
-
 # Author: Muthu Alagappan, m.alagappan901@gmail.com,  07/22/09
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #

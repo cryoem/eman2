@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import absolute_import
 #
 # Author: David Woolford 11/7/2008 (woolford@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import absolute_import
 #
 # Author: John Flanagan, 04/08/2011 (jfflanag@bcm.edu)
 # Edited by: Stephen Murray (scmurray@bcm.edu) May 2014

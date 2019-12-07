@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import absolute_import
 #
 # Author: James Michael Bell, 2016 (jmbell@bcm.edu)
 # Bond Drawing Code By: Muthu Alagappan, m.alagappan901@gmail.com, 07/22/09

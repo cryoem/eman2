@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import absolute_import
 #
 # Author: Grant Tang (gtang@bcm.edu)
 # Author: John Flanagan (jfflanag@bcm.edu)
