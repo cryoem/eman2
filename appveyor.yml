@@ -2,20 +2,20 @@ environment:
 
   matrix:
     - TARGET_ARCH: x64
-      CONDA_PY: 27
-      CONDA_INSTALL_LOCN: C:\\Miniconda-x64
+      CONDA_PY: 36
+      CONDA_INSTALL_LOCN: C:\\Miniconda36-x64
 
 
 platform:
     - x64
 
 install:
+    - call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
     - python -m compileall -q .
     - set
     # Cywing's git breaks conda-build. (See https://github.com/conda-forge/conda-smithy-feedstock/pull/2.)
     - rmdir C:\cygwin /s /q
 
-    - call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
     - set PYTHONUNBUFFERED=1
     - set CPU_COUNT=2
 
