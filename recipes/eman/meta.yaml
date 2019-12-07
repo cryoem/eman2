@@ -7,12 +7,12 @@ source:
 
 requirements:
     build:
-        - cmake 3.14.*
+        - cmake     3.14.*
         - {{ compiler('cxx') }}
-        - {{ cdt('mesa-libgl-devel') }}      # [linux]
+        - {{ cdt('mesa-libgl-devel') }}   # [linux]
 
     host:
-        - msinttypes       # [win]
+        - msinttypes                      # [win]
         - python    3.6.*
         - boost     1.66.*
         - fftw-mpi
@@ -25,13 +25,13 @@ requirements:
         - libtiff   4.0.9
         - libpng    1.6.36
         - zlib
-        - libglu           # [linux]
+        - libglu                          # [linux]
     
 test:
   requires:
-    - openmpi              # [not win]
-    - eman-deps 18.0
-    - boost 1.66.*
+    - openmpi                             # [not win]
+    - eman-deps     18.0
+    - boost         1.66.*
   
   source_files:
     - examples/mpi_test.py
@@ -40,5 +40,5 @@ test:
     - rt/pyem/
 
   commands:
-    - bash tests/run_tests.sh                                # [not win]
-    - call tests\run_tests.bat                               # [win]
+    - bash tests/run_tests.sh             # [not win]
+    - call tests\run_tests.bat            # [win]
