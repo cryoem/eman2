@@ -78,17 +78,18 @@ namespace EMAN {
                 shape = python::make_tuple(dims[0], dims[1]);
                 stride = python::make_tuple(sizeof(T) * dims[1],
                                             sizeof(T));
-
-                return np::from_data(data, dt, shape, stride, python::object());
+                break;
 
             case 3:
                 shape = python::make_tuple(dims[0], dims[1], dims[2]);
                 stride = python::make_tuple(sizeof(T) * dims[2] * dims[1],
                                             sizeof(T) * dims[2],
                                             sizeof(T));
+                break;
 
-                return np::from_data(data, dt, shape, stride, python::object());
         }
+        
+        return np::from_data(data, dt, shape, stride, python::object());
     }
 
 	class EMNumPy {
