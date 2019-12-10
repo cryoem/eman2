@@ -12,7 +12,7 @@ fi
 
 if [ ! -z ${CIRCLECI} ];then
     . $HOME/miniconda/etc/profile.d/conda.sh
-    conda activate eman-deps-16.0
+    conda activate eman-deps-18.0
 fi
 
 python -m compileall -q .

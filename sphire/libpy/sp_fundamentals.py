@@ -862,10 +862,10 @@ def ro_textfile(e, filename, helpful_string=""):
 		out.write("%d\t%12.5g\n" % (ir, f.get_value_at(ir)))
 	out.close()
 
-def rops(e):
+def rops(img, lng = False):
 	"""Rotational average of the power spectrum.
 	   Returns a 1-D image containing a rotational average
-	   of the periodogram of image e.
+	   of the periodogram of img.
 		Input image can be real or Fourier, can be rectangular
 		output length mapped onto x-dimension length
 	"""

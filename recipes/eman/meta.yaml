@@ -6,40 +6,32 @@ source:
     path: {{ RECIPE_DIR }}/../..
 
 requirements:
-    {% set reqs_host = [
-            "msinttypes",  # [win]
-            "python 2.7.14",
-            "boost 1.66.*",
-            "fftw-mpi",
-            "numpy 1.13.*",
-            "ftgl",
-            "freetype 2.8.*",  # [osx]
-            "freetype 2.7.*",  # [not osx]
-            "gsl 2.4.*",
-            "hdf5 1.8.18",
-            "jpeg 9b",
-            "libtiff 4.0.9",             # [not win]
-            "libtiff 4.0.9 hafacce9_0",  # [win]
-            "libpng 1.6.34",
-            "zlib",
-    ] %}
-    
     build:
-        - cmake 3.14.*
+        - cmake     3.14.*
         - {{ compiler('cxx') }}
-        - {{ cdt('mesa-libgl-devel') }}      # [linux]
+        - {{ cdt('mesa-libgl-devel') }}   # [linux]
 
     host:
-        {% for req in reqs_host %}
-        - {{ req }}
-        {% endfor %}
-        - libglu      # [linux]
+        - msinttypes                      # [win]
+        - python    3.6.*
+        - boost     1.66.*
+        - fftw-mpi
+        - numpy     1.13.*
+        - ftgl
+        - freetype
+        - gsl
+        - hdf5      1.8.18
+        - jpeg
+        - libtiff   4.0.9
+        - libpng    1.6.36
+        - zlib
+        - libglu                          # [linux]
     
 test:
   requires:
-    - openmpi              # [not win]
-    - eman-deps=16.0
-    - boost 1.66.*
+    - openmpi                             # [not win]
+    - eman-deps     18.0
+    - boost         1.66.*
   
   source_files:
     - examples/mpi_test.py
@@ -48,5 +40,5 @@ test:
     - rt/pyem/
 
   commands:
-    - bash tests/run_tests.sh                                # [not win]
-    - call tests\run_tests.bat                               # [win]
+    - bash tests/run_tests.sh             # [not win]
+    - call tests\run_tests.bat            # [win]

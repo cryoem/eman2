@@ -5,8 +5,8 @@ osx_image: xcode7.3
 
 env:
   global:
-    - CONDA_PY=27
-    - MINICONDA_FILE="Miniconda2-4.6.14-MacOSX-x86_64.sh"
+    - CONDA_PY=37
+    - MINICONDA_FILE="Miniconda3-4.6.14-MacOSX-x86_64.sh"
   matrix:
     - build_scrt="build_recipe.sh"
     - build_scrt="build_no_recipe.sh"

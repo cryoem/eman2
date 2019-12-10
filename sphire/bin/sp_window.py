@@ -57,9 +57,6 @@ from sp_global_def import *
 
 import mpi
 
-mpi.mpi_init( 0, [] )
-
-
 # ========================================================================================
 # Define functions for reading coordinates files of different formats.
 # One of these will be used in main() through a first-class data type variable of Python
@@ -2009,10 +2006,15 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 # ========================================================================================
 
 if __name__ == "__main__":
+	RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
+	if RUNNING_UNDER_MPI:
+		mpi.mpi_init( 0, [] )  # On OS X, there is an error if MPI is initialized and not finalized, hence the conditional
 	sp_global_def.print_timestamp("Start")
 	main()
 	sp_global_def.print_timestamp("Finish")
-	mpi.mpi_finalize()
+
+	if RUNNING_UNDER_MPI:
+		mpi.mpi_finalize()
 
 # ========================================================================================
 #  END OF FILE
