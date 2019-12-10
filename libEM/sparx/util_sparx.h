@@ -627,6 +627,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	static void  fftc_q(float  *br, float  *bi, int ln, int ks);
 	static void  fftc_d(double *br, double *bi, int ln, int ks);
 
+#ifdef False
 	/** Single Precision Fourier Transform for a set of complex rings */
 	static EMData* FCrngs(EMData* rings);
 	
@@ -636,7 +637,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	static EMData* FCrossm(EMData* frobj, EMData* frings);
 
 	static vector<float> FCross_multiref(EMData* frobj, EMData* frings, int psi_start, int psi_step);
-
+#endif
 	static void multiply_rows( EMData* rings, const vector<float>& bckgnoise, int nb );
 
 	/** Single Precision Fourier Transform for a set of rings */
@@ -954,6 +955,7 @@ class FakeKaiserBessel : public KaiserBessel {
  		};
 	static bool cmp1(tmpstruct tmp1,tmpstruct tmp2);
 	static bool cmp2(tmpstruct tmp1,tmpstruct tmp2);
+#ifdef False
 	/**********************************************************/
 	/* ######### STRIDPACK USED COMMANDS FOR VORONOI #########################*/
 	static int trmsh3_(int *n0, double *tol, double *x, double *y, double *z__, int *n, int *list, int *lptr,
@@ -961,6 +963,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	static double areav_(int *k, int *n, double *x, double *y, double *z__, int *list, int *lptr, int *lend, int *ier);
 	/**********************************************************/
 	/* ######### STRIDPACK USED COMMANDS FOR VORONOI #########################*/
+#endif
 
 	static EMData* shrinkfvol(EMData* img, int npad);
 	static void divclreal(EMData* img1, EMData* img2, float cutoff);

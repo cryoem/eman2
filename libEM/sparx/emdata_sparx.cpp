@@ -53,7 +53,7 @@ using namespace std;
 #define deg_rad  QUADPI/180.0
 #define rad_deg  180.0/QUADPI
 
-
+#ifdef False
 EMData *EMData::real2FH(float OverSamplekB) // PRB
 {
 	int nx        = get_xsize();
@@ -220,28 +220,6 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 		LOGERR("2D real square odd image expected.");
 		throw ImageFormatException("2D real square odd image expected.");
 	}
-}
-
-EMData *EMData::copy_empty_head() const
-{
-	ENTERFUNC;
-	EMData *ret = new EMData();
-	ret->attr_dict = attr_dict;
-	ret->flags = flags;
-	ret->all_translation = all_translation;
-	ret->path = path;
-	ret->pathnum = pathnum;
-
-// should these be here? d.woolford I did not comment them out, merely place them here (commented out) to draw attention
-// 	ret->xoff = xoff;
-// 	ret->yoff = yoff;
-// 	ret->zoff = zoff;
-// 	ret->changecount = changecount;
-
-	ret->update();
-
-	EXITFUNC;
-	return ret;
 }
 
 
@@ -532,6 +510,32 @@ float EMData::cm_euc(EMData* sinoj, int n1, int n2)
 	float* line_2 = sinoj->get_data() + n2 * lnlen;
 	return dist(lnlen, line_1, line_2);
 }
+
+#endif
+
+
+EMData *EMData::copy_empty_head() const
+{
+	ENTERFUNC;
+	EMData *ret = new EMData();
+	ret->attr_dict = attr_dict;
+	ret->flags = flags;
+	ret->all_translation = all_translation;
+	ret->path = path;
+	ret->pathnum = pathnum;
+
+// should these be here? d.woolford I did not comment them out, merely place them here (commented out) to draw attention
+// 	ret->xoff = xoff;
+// 	ret->yoff = yoff;
+// 	ret->zoff = zoff;
+// 	ret->changecount = changecount;
+
+	ret->update();
+
+	EXITFUNC;
+	return ret;
+}
+
 
 EMData* EMData::rotavg() {
 
