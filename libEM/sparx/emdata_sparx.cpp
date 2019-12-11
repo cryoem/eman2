@@ -3077,8 +3077,8 @@ EMData::rot_scale_trans(const Transform &RA, EMData* ret) {
 
 // new function added for background option
 #define in(i,j,k)          in[i+(j+(k*ny))*(size_t)nx]
-EMData*
-EMData::rot_scale_trans_background(const Transform &RA, EMData* ret) {
+EMData* EMData::rot_scale_trans_background(const Transform &RA, EMData* ret)
+{
 
     int ret_is_initially_null = ret == NULL; 
 
@@ -3228,6 +3228,101 @@ EMData::rot_scale_trans_background(const Transform &RA, EMData* ret) {
 		return ret;
 
 	}
+}
+
+EMData* EMData::pull_section(const Transform &RA, EMData* ret)
+{
+
+    int ret_is_initially_null;
+	float *in = this->get_data();
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
+	Vec3f translations = RA.get_trans();
+	Transform RAinv = RA.inverse();
+	int nxn, nyn;
+	if (nz < 2)  throw ImageDimensionException("Section can be extracted only from 3D image.");
+
+	if (ret == NULL) {
+		ret_is_initially_null = true;
+		nxn = nx;
+		nyn = ny;
+		EMData *ret = new EMData(nxn, nyn);
+	} else {
+		ret_is_initially_null = false;
+		nxn->ret.get_xsize();
+		nyn->ret.get_ysize();
+	}
+//		 This begins the 3D version tri-linear interpolation.
+
+	float delx = translations.at(0);
+	float dely = translations.at(1);
+	float delz = translations.at(2);
+	delx = restrict2(delx, nx);
+	dely = restrict2(dely, ny);
+	delz = restrict2(delz, nz);
+	int xc = nx/2;
+	int yc = ny/2;
+	int zc = nz/2;
+//         shifted center for rotation
+	float shiftxc = xc + delx;
+	float shiftyc = yc + dely;
+	float shiftzc = zc + delz;
+
+	iz = 0;
+	float z = float(iz) - shiftzc;
+	float xoldz = z*RAinv[0][2]+xc;
+	float yoldz = z*RAinv[1][2]+yc;
+	float zoldz = z*RAinv[2][2]+zc;
+	for (int iy = 0; iy < ny; iy++) {
+		float y = float(iy) - shiftyc;
+		float xoldzy = xoldz + y*RAinv[0][1] ;
+		float yoldzy = yoldz + y*RAinv[1][1] ;
+		float zoldzy = zoldz + y*RAinv[2][1] ;
+		for (int ix = 0; ix < nx; ix++) {
+			float x = float(ix) - shiftxc;
+			float xold = xoldzy + x*RAinv[0][0] ;
+			float yold = yoldzy + x*RAinv[1][0] ;
+			float zold = zoldzy + x*RAinv[2][0] ;
+
+			// if (xold,yold,zold) is outside the image, then let xold = ix, yold = iy and zold=iz
+
+			if ( (xold < 0.0f) || (xold >= (float)(nx)) || (yold < 0.0f) || (yold >= (float)(ny))  || (zold < 0.0f) || (zold >= (float)(nz)) ){
+				 xold = (float)ix;
+				 yold = (float)iy;
+				 zold = (float)iz;
+			}
+
+			int IOX = int(xold);
+			int IOY = int(yold);
+			int IOZ = int(zold);
+
+			int IOXp1 = std::min( nx-1 ,IOX+1);
+
+			int IOYp1 = std::min( ny-1 ,IOY+1);
+
+			int IOZp1 = std::min( nz-1 ,IOZ+1);
+
+			float dx = xold-IOX;
+			float dy = yold-IOY;
+			float dz = zold-IOZ;
+
+			float a1 = in(IOX,IOY,IOZ);
+			float a2 = in(IOXp1,IOY,IOZ) - in(IOX,IOY,IOZ);
+			float a3 = in(IOX,IOYp1,IOZ) - in(IOX,IOY,IOZ);
+			float a4 = in(IOX,IOY,IOZp1) - in(IOX,IOY,IOZ);
+			float a5 = in(IOX,IOY,IOZ) - in(IOXp1,IOY,IOZ) - in(IOX,IOYp1,IOZ) + in(IOXp1,IOYp1,IOZ);
+			float a6 = in(IOX,IOY,IOZ) - in(IOXp1,IOY,IOZ) - in(IOX,IOY,IOZp1) + in(IOXp1,IOY,IOZp1);
+			float a7 = in(IOX,IOY,IOZ) - in(IOX,IOYp1,IOZ) - in(IOX,IOY,IOZp1) + in(IOX,IOYp1,IOZp1);
+			float a8 = in(IOXp1,IOY,IOZ) + in(IOX,IOYp1,IOZ)+ in(IOX,IOY,IOZp1)
+					- in(IOX,IOY,IOZ)- in(IOXp1,IOYp1,IOZ) - in(IOXp1,IOY,IOZp1)
+					- in(IOX,IOYp1,IOZp1) + in(IOXp1,IOYp1,IOZp1);
+			if (ret_is_initially_null) (*ret)(ix,iy) = a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);
+			else (*ret)(ix,iy) += a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);
+		} //ends x loop
+	} // ends y loop
+
+	set_array_offsets(saved_offsets);
+	return ret;
 }
 #undef  in
 

@@ -423,6 +423,10 @@ EMData* rot_scale_trans(const Transform &RA, EMData* ret = NULL);
  */
 EMData* rot_scale_trans_background(const Transform &RA, EMData* ret = NULL);
 
+
+
+EMData* pull_section(const Transform &RA, EMData* ret = NULL);
+
 /*
 		To restrict the value to [0, nx)
 */
