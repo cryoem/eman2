@@ -29,4 +29,10 @@ conda list --explicit
 conda render recipes/eman
 conda build purge-all
 
-conda build recipes/eman -c cryoem -c defaults -c conda-forge
+if [ $AGENT_OS_NAME == "win" ];then
+    CONDA_BUILD_TEST="--no-test"
+else
+    CONDA_BUILD_TEST=""
+fi
+
+conda build recipes/eman -c cryoem -c defaults -c conda-forge ${CONDA_BUILD_TEST}

@@ -35,4 +35,4 @@ test_script:
     - mkdir GL KHR
     - appveyor DownloadFile https://www.khronos.org/registry/OpenGL/api/GL/glext.h     -FileName GL\glext.h
     - appveyor DownloadFile https://www.khronos.org/registry/EGL/api/KHR/khrplatform.h -FileName KHR\khrplatform.h
-    - conda.exe build %APPVEYOR_BUILD_FOLDER%\recipes\eman -c cryoem -c defaults -c conda-forge
+    - conda.exe build %APPVEYOR_BUILD_FOLDER%\recipes\eman -c cryoem -c defaults -c conda-forge --no-test
