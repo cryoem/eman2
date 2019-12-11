@@ -510,62 +510,62 @@ class TestEMData(unittest.TestCase):
         #        for x in range(31):
         #            self.assertEqual( math.ceil((d[z][y][x]-d3[z][y][x])*1000), 0 )
 
-    def test_real2FH(self):
-        """test real2FH() function .........................."""
-        e = EMData()
-        e.set_size(31,31,1)
-        e.process_inplace("testimage.noise.uniform.rand")
-        #import sys
-        #outfile = "out.txt" 
-        #sys.stdout = open(outfile,"w")
-        e3 = e.real2FH(1.0)
-
-        if(IS_TEST_EXCEPTION):
-            #real2FH apply to 2D/Square/Real/odd image
-            e2 = EMData()
-            e2.set_size(31,31,31)
-            self.assertRaises( RuntimeError, e2.real2FH, 1.0)
-            try:
-                e3 = e2.real2FH(1.0)
-            except RuntimeError as runtime_err:
-                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+    # def test_real2FH(self):
+    #     """test real2FH() function .........................."""
+    #     e = EMData()
+    #     e.set_size(31,31,1)
+    #     e.process_inplace("testimage.noise.uniform.rand")
+    #     #import sys
+    #     #outfile = "out.txt" 
+    #     #sys.stdout = open(outfile,"w")
+    #     e3 = e.real2FH(1.0)
+    # 
+    #     if(IS_TEST_EXCEPTION):
+    #         #real2FH apply to 2D/Square/Real/odd image
+    #         e2 = EMData()
+    #         e2.set_size(31,31,31)
+    #         self.assertRaises( RuntimeError, e2.real2FH, 1.0)
+    #         try:
+    #             e3 = e2.real2FH(1.0)
+    #         except RuntimeError as runtime_err:
+    #             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+    # 
+    #         e2.set_size(31,21,1)
+    #         self.assertRaises( RuntimeError, e2.real2FH, 1.0)
+    #         try:
+    #             e3 = e2.real2FH(1.0)
+    #         except RuntimeError as runtime_err:
+    #             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+    #             
+    #         e2.set_size(32,32,1)
+    #         self.assertRaises( RuntimeError, e2.real2FH, 1.0)
+    #         try:
+    #             e3 = e2.real2FH(1.0)
+    #         except RuntimeError as runtime_err:
+    #             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+    #         e2.set_size(31,31,1)
+    #         e2.set_complex(True)
+    #         self.assertRaises( RuntimeError, e2.real2FH, 1.0)
+    #         try:
+    #             e2.real2FH(1.0)
+    #         except RuntimeError as runtime_err:
+    #             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
     
-            e2.set_size(31,21,1)
-            self.assertRaises( RuntimeError, e2.real2FH, 1.0)
-            try:
-                e3 = e2.real2FH(1.0)
-            except RuntimeError as runtime_err:
-                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-                
-            e2.set_size(32,32,1)
-            self.assertRaises( RuntimeError, e2.real2FH, 1.0)
-            try:
-                e3 = e2.real2FH(1.0)
-            except RuntimeError as runtime_err:
-                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-            e2.set_size(31,31,1)
-            e2.set_complex(True)
-            self.assertRaises( RuntimeError, e2.real2FH, 1.0)
-            try:
-                e2.real2FH(1.0)
-            except RuntimeError as runtime_err:
-                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-        
-    def test_FH2F(self):
-        """test FH2F() function ............................."""
-        e = EMData()
-        e.set_size(31,31,1)
-        e.process_inplace("testimage.noise.uniform.rand")
-        e2 = e.real2FH(1.0)
-        e3 = e2.FH2F(31, 1.0)
-        
-        if(IS_TEST_EXCEPTION):
-            #for image not FH, should raise exception
-            self.assertRaises( RuntimeError, e.FH2F, 31, 1.0)
-            try:
-                e.FH2F(31, 1.0)
-            except RuntimeError as runtime_err:
-                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+    # def test_FH2F(self):
+    #     """test FH2F() function ............................."""
+    #     e = EMData()
+    #     e.set_size(31,31,1)
+    #     e.process_inplace("testimage.noise.uniform.rand")
+    #     e2 = e.real2FH(1.0)
+    #     e3 = e2.FH2F(31, 1.0)
+    #     
+    #     if(IS_TEST_EXCEPTION):
+    #         #for image not FH, should raise exception
+    #         self.assertRaises( RuntimeError, e.FH2F, 31, 1.0)
+    #         try:
+    #             e.FH2F(31, 1.0)
+    #         except RuntimeError as runtime_err:
+    #             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
 
     def test_do_fft(self):
         """test do_fft()/do_ift() function .................."""
