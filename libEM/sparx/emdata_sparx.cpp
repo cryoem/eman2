@@ -3249,8 +3249,8 @@ EMData* EMData::pull_section(const Transform &RA, EMData* ret)
 		EMData *ret = new EMData(nxn, nyn);
 	} else {
 		ret_is_initially_null = false;
-		nxn->ret.get_xsize();
-		nyn->ret.get_ysize();
+		nxn = ret->get_xsize();
+		nyn = ret->get_ysize();
 	}
 //		 This begins the 3D version tri-linear interpolation.
 
@@ -3268,7 +3268,7 @@ EMData* EMData::pull_section(const Transform &RA, EMData* ret)
 	float shiftyc = yc + dely;
 	float shiftzc = zc + delz;
 
-	iz = 0;
+	int iz = 0;
 	float z = float(iz) - shiftzc;
 	float xoldz = z*RAinv[0][2]+xc;
 	float yoldz = z*RAinv[1][2]+yc;
