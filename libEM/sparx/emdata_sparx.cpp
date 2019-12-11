@@ -3230,29 +3230,18 @@ EMData* EMData::rot_scale_trans_background(const Transform &RA, EMData* ret)
 	}
 }
 
-EMData* EMData::pull_section(const Transform &RA, EMData* ret)
+EMData* EMData::pull_section(const Transform &RA)
 {
 
-    int ret_is_initially_null;
 	float *in = this->get_data();
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
 	Vec3f translations = RA.get_trans();
 	Transform RAinv = RA.inverse();
-	int nxn, nyn;
 	if (nz < 2)  throw ImageDimensionException("Section can be extracted only from 3D image.");
 
-	if (ret == NULL) {
-		ret_is_initially_null = true;
-		nxn = nx;
-		nyn = ny;
-		EMData *ret = new EMData(nxn, nyn);
-	} else {
-		ret_is_initially_null = false;
-		nxn = ret->get_xsize();
-		nyn = ret->get_ysize();
-	}
-//		 This begins the 3D version tri-linear interpolation.
+	EMData *ret = new EMData(nx, ny);
+	ret->to_zero();
 
 	float delx = translations.at(0);
 	float dely = translations.at(1);
@@ -3268,7 +3257,7 @@ EMData* EMData::pull_section(const Transform &RA, EMData* ret)
 	float shiftyc = yc + dely;
 	float shiftzc = zc + delz;
 
-	int iz = 0;
+	int iz = zc;
 	float z = float(iz) - shiftzc;
 	float xoldz = z*RAinv[0][2]+xc;
 	float yoldz = z*RAinv[1][2]+yc;
@@ -3316,8 +3305,8 @@ EMData* EMData::pull_section(const Transform &RA, EMData* ret)
 			float a8 = in(IOXp1,IOY,IOZ) + in(IOX,IOYp1,IOZ)+ in(IOX,IOY,IOZp1)
 					- in(IOX,IOY,IOZ)- in(IOXp1,IOYp1,IOZ) - in(IOXp1,IOY,IOZp1)
 					- in(IOX,IOYp1,IOZp1) + in(IOXp1,IOYp1,IOZp1);
-			if (ret_is_initially_null) (*ret)(ix,iy) = a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);
-			else (*ret)(ix,iy) += a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);
+
+			(*ret)(ix,iy) = a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);
 		} //ends x loop
 	} // ends y loop
 
