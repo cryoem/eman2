@@ -58,13 +58,21 @@ from os import path, remove
 
 
 """ 
-In order to run automatically all the tests download the precalculated results from the tutorial page http://sphire.mpg.de/wiki/doku.php?id=downloads:sphire_1_0.
+In order to run automatically all the tests download the precalculated results from the tutorial page 
+http://sphire.mpg.de/wiki/doku.php?id=downloads:sphire_1_0.
 or directly from http://sphire.mpg.de/wiki/doku.php?id=downloads:sphire_1_0
 And set the variable 'ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER' to its path on your HD
 """
 
 # ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER = "/home/adnan/Downloads/sphire_1_0_precalculated_results/SphireDemoResults"
 ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER = "/home/lusnig/Downloads/SphireDemoResults"
+
+'''
+the sphire1.3 tutorial do not use the values downloadable from the SPHIRE website. You have to download them from billy: 
+sphire-devel/SPHIRE_DEMO_RESULTS/SphireDemoResults2 
+'''
+ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW = "/home/lusnig/SphireDemoResults2"
+
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 
 #Absolute path to the bin folders for compatibility tests purpose.  since in the bin folder we have to set the parameter via cmd I have to run them.
