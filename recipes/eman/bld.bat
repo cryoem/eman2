@@ -1,3 +1,5 @@
+@echo on
+
 SET builddir=%SRC_DIR%\..\build_eman
 if errorlevel 1 exit 1
 
