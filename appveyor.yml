@@ -1,3 +1,5 @@
+image: Visual Studio 2017
+
 environment:
   TARGET_ARCH: x64
   CONDA_PY: 36
