@@ -3362,7 +3362,7 @@ void EMData::push_section(const Transform &RA, EMData* bi, EMData* w)
 			float zold = zoldzy + x*RAinv[2][0] ;
 
 			// if (xold,yold,zold) is outside the 3D, then skip
-			if (not( (xold < 0.0f) || (xold >= (float)(nx)) || (yold < 0.0f) || (yold >= (float)(ny))  || (zold < 0.0f) || (zold >= (float)(nz)) ) ){
+			if (!( (xold < 0.0f) || (xold >= (float)(nx)) || (yold < 0.0f) || (yold >= (float)(ny))  || (zold < 0.0f) || (zold >= (float)(nz)) ) ){
 
 
 				int ixn = int(xold);
