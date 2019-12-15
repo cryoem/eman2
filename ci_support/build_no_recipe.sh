@@ -40,7 +40,7 @@ mkdir -p $build_dir
 cd $build_dir
 
 cmake --version
-cmake ${src_dir} -DENABLE_WARNINGS=OFF
+cmake ${src_dir} -DENABLE_WARNINGS=OFF -DENABLE_OPTIMIZE_MACHINE=ON
 make -j${CPU_COUNT}
 make install
 
