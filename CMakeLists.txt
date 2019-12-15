@@ -125,7 +125,7 @@ if(NOT WIN32)
 	set(WARNING_FLAGS_ON  "-W -Wall")
 	set(WARNING_FLAGS_OFF "-w")
 else()
-	set(WARNING_FLAGS_ON  "")    # Default for VS2008 is /W3, highest is /W4
+	set(WARNING_FLAGS_ON  "")
 	set(WARNING_FLAGS_OFF "/W0")
 endif()
 
