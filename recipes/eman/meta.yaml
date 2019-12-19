@@ -8,11 +8,10 @@ source:
 requirements:
     build:
         - cmake     3.14.*
-        - {{ compiler('cxx') }}
+        - {{ compiler('cxx') }}           # [not win]
         - {{ cdt('mesa-libgl-devel') }}   # [linux]
 
     host:
-        - msinttypes                      # [win]
         - python    3.6.*
         - boost     1.66.*
         - fftw-mpi
@@ -30,7 +29,7 @@ requirements:
 test:
   requires:
     - openmpi                             # [not win]
-    - eman-deps     18.0
+    - eman-deps     18.0.*
     - boost         1.66.*
   
   source_files:

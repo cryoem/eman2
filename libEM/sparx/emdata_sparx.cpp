@@ -53,7 +53,7 @@ using namespace std;
 #define deg_rad  QUADPI/180.0
 #define rad_deg  180.0/QUADPI
 
-
+#ifdef False
 EMData *EMData::real2FH(float OverSamplekB) // PRB
 {
 	int nx        = get_xsize();
@@ -220,28 +220,6 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 		LOGERR("2D real square odd image expected.");
 		throw ImageFormatException("2D real square odd image expected.");
 	}
-}
-
-EMData *EMData::copy_empty_head() const
-{
-	ENTERFUNC;
-	EMData *ret = new EMData();
-	ret->attr_dict = attr_dict;
-	ret->flags = flags;
-	ret->all_translation = all_translation;
-	ret->path = path;
-	ret->pathnum = pathnum;
-
-// should these be here? d.woolford I did not comment them out, merely place them here (commented out) to draw attention
-// 	ret->xoff = xoff;
-// 	ret->yoff = yoff;
-// 	ret->zoff = zoff;
-// 	ret->changecount = changecount;
-
-	ret->update();
-
-	EXITFUNC;
-	return ret;
 }
 
 
@@ -532,6 +510,32 @@ float EMData::cm_euc(EMData* sinoj, int n1, int n2)
 	float* line_2 = sinoj->get_data() + n2 * lnlen;
 	return dist(lnlen, line_1, line_2);
 }
+
+#endif
+
+
+EMData *EMData::copy_empty_head() const
+{
+	ENTERFUNC;
+	EMData *ret = new EMData();
+	ret->attr_dict = attr_dict;
+	ret->flags = flags;
+	ret->all_translation = all_translation;
+	ret->path = path;
+	ret->pathnum = pathnum;
+
+// should these be here? d.woolford I did not comment them out, merely place them here (commented out) to draw attention
+// 	ret->xoff = xoff;
+// 	ret->yoff = yoff;
+// 	ret->zoff = zoff;
+// 	ret->changecount = changecount;
+
+	ret->update();
+
+	EXITFUNC;
+	return ret;
+}
+
 
 EMData* EMData::rotavg() {
 
@@ -3073,8 +3077,8 @@ EMData::rot_scale_trans(const Transform &RA, EMData* ret) {
 
 // new function added for background option
 #define in(i,j,k)          in[i+(j+(k*ny))*(size_t)nx]
-EMData*
-EMData::rot_scale_trans_background(const Transform &RA, EMData* ret) {
+EMData* EMData::rot_scale_trans_background(const Transform &RA, EMData* ret)
+{
 
     int ret_is_initially_null = ret == NULL; 
 
@@ -3225,7 +3229,239 @@ EMData::rot_scale_trans_background(const Transform &RA, EMData* ret) {
 
 	}
 }
+
+EMData* EMData::pull_section(const Transform &RA)
+{
+
+	float *in = this->get_data();
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
+	Vec3f translations = RA.get_trans();
+	Transform RAinv = RA.inverse();
+	if (nz < 2)  throw ImageDimensionException("Section can be extracted only from 3D image.");
+
+	EMData *ret = new EMData(nx, ny);
+	ret->to_zero();
+
+	float delx = translations.at(0);
+	float dely = translations.at(1);
+	float delz = translations.at(2);
+	delx = restrict2(delx, nx);
+	dely = restrict2(dely, ny);
+	delz = restrict2(delz, nz);
+	int xc = nx/2;
+	int yc = ny/2;
+	int zc = nz/2;
+//         shifted center for rotation
+	float shiftxc = xc + delx;
+	float shiftyc = yc + dely;
+	float shiftzc = zc + delz;
+
+	int iz = zc;
+	float z = float(iz) - shiftzc;
+	float xoldz = z*RAinv[0][2]+xc;
+	float yoldz = z*RAinv[1][2]+yc;
+	float zoldz = z*RAinv[2][2]+zc;
+	for (int iy = 0; iy < ny; iy++) {
+		float y = float(iy) - shiftyc;
+		float xoldzy = xoldz + y*RAinv[0][1] ;
+		float yoldzy = yoldz + y*RAinv[1][1] ;
+		float zoldzy = zoldz + y*RAinv[2][1] ;
+		for (int ix = 0; ix < nx; ix++) {
+			float x = float(ix) - shiftxc;
+			float xold = xoldzy + x*RAinv[0][0] ;
+			float yold = yoldzy + x*RAinv[1][0] ;
+			float zold = zoldzy + x*RAinv[2][0] ;
+
+			// if (xold,yold,zold) is outside the image, then let xold = ix, yold = iy and zold=iz
+
+			if ( (xold < 0.0f) || (xold >= (float)(nx)) || (yold < 0.0f) || (yold >= (float)(ny))  || (zold < 0.0f) || (zold >= (float)(nz)) ){
+				 xold = (float)ix;
+				 yold = (float)iy;
+				 zold = (float)iz;
+			}
+
+			int IOX = int(xold);
+			int IOY = int(yold);
+			int IOZ = int(zold);
+
+			int IOXp1 = std::min( nx-1 ,IOX+1);
+
+			int IOYp1 = std::min( ny-1 ,IOY+1);
+
+			int IOZp1 = std::min( nz-1 ,IOZ+1);
+
+			float dx = xold-IOX;
+			float dy = yold-IOY;
+			float dz = zold-IOZ;
+
+			float a1 = in(IOX,IOY,IOZ);
+			float a2 = in(IOXp1,IOY,IOZ) - in(IOX,IOY,IOZ);
+			float a3 = in(IOX,IOYp1,IOZ) - in(IOX,IOY,IOZ);
+			float a4 = in(IOX,IOY,IOZp1) - in(IOX,IOY,IOZ);
+			float a5 = in(IOX,IOY,IOZ) - in(IOXp1,IOY,IOZ) - in(IOX,IOYp1,IOZ) + in(IOXp1,IOYp1,IOZ);
+			float a6 = in(IOX,IOY,IOZ) - in(IOXp1,IOY,IOZ) - in(IOX,IOY,IOZp1) + in(IOXp1,IOY,IOZp1);
+			float a7 = in(IOX,IOY,IOZ) - in(IOX,IOYp1,IOZ) - in(IOX,IOY,IOZp1) + in(IOX,IOYp1,IOZp1);
+			float a8 = in(IOXp1,IOY,IOZ) + in(IOX,IOYp1,IOZ)+ in(IOX,IOY,IOZp1)
+					- in(IOX,IOY,IOZ)- in(IOXp1,IOYp1,IOZ) - in(IOXp1,IOY,IOZp1)
+					- in(IOX,IOYp1,IOZp1) + in(IOXp1,IOYp1,IOZp1);
+
+			(*ret)(ix,iy) = a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);
+		} //ends x loop
+	} // ends y loop
+
+	set_array_offsets(saved_offsets);
+	return ret;
+}
 #undef  in
+
+void EMData::push_section(const Transform &RA, EMData* bi, EMData* w)
+{
+//  volume.push_setion(const Transform& tf, EMData* bi)
+//  all images have to exist, nothing is created in this function
+//std::cout<<"   push_setion  "<<j<<"  "<<n<<"   "<<bign<<"  "<<n<<"  "<<n2<<"  "<<npad<<std::endl;
+
+	//float *vol = this->get_data();
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
+	vector<int> w_offsets = w->get_array_offsets();
+	w->set_array_offsets(0,0,0);
+	Vec3f translations = RA.get_trans();
+	Transform RAinv = RA.inverse();
+	if (nz < 2)  throw ImageDimensionException("Section can be inserted only into 3D image.");
+
+	float delx = translations.at(0);
+	float dely = translations.at(1);
+	float delz = translations.at(2);
+	delx = restrict2(delx, nx);
+	dely = restrict2(dely, ny);
+	delz = restrict2(delz, nz);
+	int xc = nx/2;
+	int yc = ny/2;
+	int zc = nz/2;
+//         shifted center for rotation
+	float shiftxc = xc + delx;
+	float shiftyc = yc + dely;
+	float shiftzc = zc + delz;
+
+
+	int iz = zc;
+	float z = float(iz) - shiftzc;
+	float xoldz = z*RAinv[0][2]+xc;
+	float yoldz = z*RAinv[1][2]+yc;
+	float zoldz = z*RAinv[2][2]+zc;
+	for (int iy = 0; iy < ny; iy++) {
+		float y = float(iy) - shiftyc;
+		float xoldzy = xoldz + y*RAinv[0][1] ;
+		float yoldzy = yoldz + y*RAinv[1][1] ;
+		float zoldzy = zoldz + y*RAinv[2][1] ;
+		for (int ix = 0; ix < nx; ix++) {
+			float x = float(ix) - shiftxc;
+			float xold = xoldzy + x*RAinv[0][0] ;
+			float yold = yoldzy + x*RAinv[1][0] ;
+			float zold = zoldzy + x*RAinv[2][0] ;
+
+			// if (xold,yold,zold) is outside the 3D, then skip
+			if (!( (xold < 0.0f) || (xold >= (float)(nx)) || (yold < 0.0f) || (yold >= (float)(ny))  || (zold < 0.0f) || (zold >= (float)(nz)) ) ){
+
+
+				int ixn = int(xold);
+				int iyn = int(yold);
+				int izn = int(zold);
+
+				int ix1 = std::min( nx-1 ,ixn+1);
+				int iy1 = std::min( ny-1 ,iyn+1);
+				int iz1 = std::min( nz-1 ,izn+1);
+
+				float dx = xold-ixn;
+				float dy = yold-iyn;
+				float dz = zold-izn;
+
+				float qdx = 1.0f - dx;
+				float qdy = 1.0f - dy;
+				float qdz = 1.0f - dz;
+
+				float qq000 = qdx * qdy * qdz;
+				float qq010 = qdx *  dy * qdz;
+				float qq100 =  dx * qdy * qdz;
+				float qq110 =  dx *  dy * qdz;
+				float qq001 = qdx * qdy *  dz;
+				float qq011 = qdx *  dy *  dz;
+				float qq101 =  dx * qdy *  dz;
+				float qq111 =  dx *  dy *  dz;
+
+/*
+		int iza, iya;
+		if (izn >= 0)  iza = izn + 1;
+		else           iza = n + izn + 1;
+
+		if (iyn >= 0) iya = iyn + 1;
+		else          iya = n + iyn + 1;
+
+		cout <<"  "<<jp<<"  "<<i<<"  "<<j<<"  "<<rr<<"  "<<ir<<"  "<<c2val<<"  "<<mult<<"  "<<1.0f/mult<<"  "<<btq<<"  "<<weight<<endl;
+		// cmplx(ixn, iya, iza) += btq*ctf*mult*weight;
+		// (*w)(ixn, iya, iza)  += ctf*ctf*mult*weight;
+		cmplx(ixn, iya, iza) +=  btq * mult * weight;
+		(*w)(ixn, iya, iza)  += c2val * mult * weight;
+*/
+//cout <<"  "<<jp<<"  "<<i<<"  "<<j<<"  "<<ixn<<"  "<<iyn<<"  "<<izn<<"  "<<n<<endl;
+
+
+/*
+		int iy1 = iyn +1;
+		if (iy1 >= 0) iy1 = iy1 + 1;
+		else          iy1 = bign + iy1 + 1;
+
+		int iz1 = izn +1;
+		if (iz1 >= 0) iz1 = iz1 + 1;
+		else          iz1 = bign + iz1 + 1;
+*/
+		//cout <<" onetrl "<<jp<<"  "<<i<<"  "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<endl;
+		// cmplx(ixn, iya, iza) += btq*ctf*mult*weight;
+		// (*w)(ixn, iya, iza)  += ctf*ctf*mult*weight;
+/*
+if(ixn<0 or ixn >=n2*npad)  cout<<"  error   ixn  "<<ixn<<endl;
+if(iya<1 or iya >bign)  cout<<"  error   iya  "<<iya<<endl;
+if(iza<1 or iza >bign)  cout<<"  error   iza  "<<iza<<endl;
+if(iy1<1 or iy1 >bign)  cout<<"  error   iy1  "<<iy1<<endl;
+if(iz1<1 or iz1 >bign)  cout<<"  error   iz1  "<<iz1<<endl;
+*/
+				(*this)(ixn, iyn, izn) += qq000 * (*bi)(ix,iy);
+				(*this)(ixn, iy1, izn) += qq010 * (*bi)(ix,iy);
+				(*this)(ix1, iyn, izn) += qq100 * (*bi)(ix,iy);
+				(*this)(ix1, iy1, izn) += qq110 * (*bi)(ix,iy);
+				(*this)(ixn, iyn, iz1) += qq001 * (*bi)(ix,iy);
+				(*this)(ixn, iy1, iz1) += qq011 * (*bi)(ix,iy);
+				(*this)(ix1, iyn, iz1) += qq101 * (*bi)(ix,iy);
+				(*this)(ix1, iy1, iz1) += qq111 * (*bi)(ix,iy);
+				// denominator
+				(*w)(ixn, iyn, izn) += qq000;
+				(*w)(ixn, iy1, izn) += qq010;
+				(*w)(ix1, iy1, izn) += qq110;
+				(*w)(ix1, iyn, izn) += qq100;
+				(*w)(ixn, iyn, iz1) += qq001;
+				(*w)(ixn, iy1, iz1) += qq011;
+				(*w)(ix1, iyn, iz1) += qq101;
+				(*w)(ix1, iy1, iz1) += qq111;
+
+			}
+		}
+	}
+
+
+
+	(*this)(4,5,6) = 1.0;
+	(*w)(9,8,7) = 1.0;
+
+
+	update();
+	set_array_offsets(saved_offsets);
+	w->update();
+	w->set_array_offsets(w_offsets);
+	//return xxx;
+
+}
+
 
 
 /*

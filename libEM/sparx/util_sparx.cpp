@@ -78,6 +78,7 @@ using std::complex;
 #define rad_deg  180.0/QUADPI
 
 
+
 /* 
  * This file is based largely on the following software distribution:
  * 
@@ -171,6 +172,7 @@ using std::sin;
 
 #endif
 
+#ifdef False
 static void cfftb1( integer_t *n, real_t *c__, real_t *ch, real_t *wa, integer_t *ifac );
 static void cfftf1( integer_t *n, real_t *c__, real_t *ch, real_t *wa, integer_t *ifac );
 static void cffti1( integer_t *n, real_t *wa, integer_t *ifac );
@@ -4561,7 +4563,7 @@ L106:
     return;
 } /* sinti_ */
 
-
+#endif
 
 
 /* Subroutine */ 
@@ -4648,6 +4650,98 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask, bool flip = false)
 }
 
 
+//----------------------------------------------------------------------------------------------------------
+
+Dict Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
+{
+	ENTERFUNC;
+
+	if (!EMUtil::is_same_size(V1, V2)) {
+		LOGERR("images not same size");
+		throw ImageFormatException( "images not same size");
+	}
+
+	size_t nx = V1->get_xsize();
+	size_t ny = V1->get_ysize();
+	size_t nz = V1->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+
+	EMData *BD = new EMData();
+ 	BD->set_size(nx, ny, nz);
+
+	float *params = new float[2];
+
+	float *V1ptr, *V2ptr, *MASKptr, *BDptr, A, B;
+	long double S1=0.L,S2=0.L,S3=0.L,S4=0.L;
+	int nvox = 0L;
+
+   	V1ptr = V1->get_data();
+	V2ptr = V2->get_data();
+	BDptr = BD->get_data();
+
+
+	if(!mask){
+		EMData * Mask = new EMData();
+		Mask->set_size(nx,ny,nz);
+		Mask->to_one();
+		MASKptr = Mask->get_data();
+	} else {
+		if (!EMUtil::is_same_size(V1, mask)) {
+			LOGERR("mask not same size");
+			throw ImageFormatException( "mask not same size");
+		}
+
+		MASKptr = mask->get_data();
+	}
+
+
+
+//	 calculation of S1,S2,S3,S3,nvox
+
+	for (size_t i = 0L;i < size; i++) {
+	      if (MASKptr[i]>0.5f) {
+	       S1 += V1ptr[i]*V2ptr[i];
+	       S2 += V1ptr[i]*V1ptr[i];
+	       S3 += V2ptr[i];
+	       S4 += V1ptr[i];
+	       nvox ++;
+	      }
+	}
+
+	if ((nvox*S1 - S3*S4) == 0. || (nvox*S2 - S4*S4) == 0) {
+		A =1.0f ;
+	} else {
+		A = static_cast<float>( (nvox*S1 - S3*S4)/(nvox*S2 - S4*S4) );
+	}
+	B = static_cast<float> (A*S4  -  S3)/nvox;
+
+	// calculation of the difference image
+
+	for (size_t i = 0L;i < size; i++) {
+	     if (MASKptr[i]>0.5f) {
+	       BDptr[i] = A*V1ptr[i] -  B  - V2ptr[i];
+	     }  else  {
+               BDptr[i] = 0.f;
+	     }
+	}
+
+	BD->update();
+
+	params[0] = A;
+	params[1] = B;
+
+	Dict BDnParams;
+	BDnParams["imdiff"] = BD;
+	BDnParams["A"] = params[0];
+	BDnParams["B"] = params[1];
+
+	EXITFUNC;
+	return BDnParams;
+ }
+
+//----------------------------------------------------------------------------------------------------------
+
+
 vector<double> Util::helixshiftali(vector<EMData*> ctx, vector<vector<float> > pcoords, int nsegms, float maxincline, int kang, int search_rng, int nxc)
 {
 	int cents, six, incline, kim, ixl, sib;
@@ -4707,6 +4801,7 @@ vector<double> Util::helixshiftali(vector<EMData*> ctx, vector<vector<float> > p
     return result;    
 }
 
+#ifdef False
 vector<double> Util::snakeshiftali(vector<EMData*> sccf, vector<vector<float> > pcoords, int nsegms, float resamp_dang, int kang, int search_rng, int nxc, int maxrin)
 {
 	int cents, six, inplane, kim, ixl, ial, sib, nx, ny;
@@ -4911,99 +5006,6 @@ vector<float> Util::curhelixshiftali(vector<EMData*> ctx, vector<vector<float> >
     result.push_back(qm);
     return result;    
 }
-
-
-
-//----------------------------------------------------------------------------------------------------------
-
-Dict Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
-{
-	ENTERFUNC;
-
-	if (!EMUtil::is_same_size(V1, V2)) {
-		LOGERR("images not same size");
-		throw ImageFormatException( "images not same size");
-	}
-
-	size_t nx = V1->get_xsize();
-	size_t ny = V1->get_ysize();
-	size_t nz = V1->get_zsize();
-	size_t size = (size_t)nx*ny*nz;
-
-	EMData *BD = new EMData();
- 	BD->set_size(nx, ny, nz);
-
-	float *params = new float[2];
-
-	float *V1ptr, *V2ptr, *MASKptr, *BDptr, A, B;
-	long double S1=0.L,S2=0.L,S3=0.L,S4=0.L;
-	int nvox = 0L;
-
-   	V1ptr = V1->get_data();
-	V2ptr = V2->get_data();
-	BDptr = BD->get_data();
-
-
-	if(!mask){
-		EMData * Mask = new EMData();
-		Mask->set_size(nx,ny,nz);
-		Mask->to_one();
-		MASKptr = Mask->get_data();
-	} else {
-		if (!EMUtil::is_same_size(V1, mask)) {
-			LOGERR("mask not same size");
-			throw ImageFormatException( "mask not same size");
-		}
-
-		MASKptr = mask->get_data();
-	}
-
-
-
-//	 calculation of S1,S2,S3,S3,nvox
-
-	for (size_t i = 0L;i < size; i++) {
-	      if (MASKptr[i]>0.5f) {
-	       S1 += V1ptr[i]*V2ptr[i];
-	       S2 += V1ptr[i]*V1ptr[i];
-	       S3 += V2ptr[i];
-	       S4 += V1ptr[i];
-	       nvox ++;
-	      }
-	}
-
-	if ((nvox*S1 - S3*S4) == 0. || (nvox*S2 - S4*S4) == 0) {
-		A =1.0f ;
-	} else {
-		A = static_cast<float>( (nvox*S1 - S3*S4)/(nvox*S2 - S4*S4) );
-	}
-	B = static_cast<float> (A*S4  -  S3)/nvox;
-
-	// calculation of the difference image
-
-	for (size_t i = 0L;i < size; i++) {
-	     if (MASKptr[i]>0.5f) {
-	       BDptr[i] = A*V1ptr[i] -  B  - V2ptr[i];
-	     }  else  {
-               BDptr[i] = 0.f;
-	     }
-	}
-
-	BD->update();
-
-	params[0] = A;
-	params[1] = B;
-
-	Dict BDnParams;
-	BDnParams["imdiff"] = BD;
-	BDnParams["A"] = params[0];
-	BDnParams["B"] = params[1];
-
-	EXITFUNC;
-	return BDnParams;
- }
-
-//----------------------------------------------------------------------------------------------------------
 
 
 
@@ -5417,7 +5419,7 @@ void Util::Radialize(int *PermMatTr, float *kValsSorted,   // PRB
         }
 
 }
-
+#endif
 
 vector<float>
 Util::even_angles(float delta, float t1, float t2, float p1, float p2)
@@ -8225,6 +8227,9 @@ void  Util::fftr_d(double *xcmplx, int nv)
 #undef  br
 #undef  bi
 
+
+#ifdef False
+
 EMData* Util::FCrngs(EMData* rings) {
 	// We implicitly assume ring length are even.
 	int ring_length = rings->get_xsize();
@@ -8488,6 +8493,8 @@ vector<float> Util::FCross_multiref(EMData* frobj, EMData* frings, int psi_start
 
 	return ccf;
 }
+
+#endif
 
 void Util::multiply_rows( EMData* rings, const vector<float>& bckgnoise, int nb )
 {
@@ -10017,7 +10024,9 @@ void Util::Crosrng_msg_vec(EMData* circ1, EMData* circ2, vector<int> numr, float
 	fftr_q(t,ip);
 }
 
-void Util::Crosrng_msg_vec_snake(EMData* circ1, EMData* circ2, vector<int> numr, float *q) {
+#ifdef False
+void Util::Crosrng_msg_vec_snake(EMData* circ1, EMData* circ2, vector<int> numr, float *q) 
+{
 
    // dimension         circ1(lcirc),circ2(lcirc)
 
@@ -10081,7 +10090,7 @@ void Util::Crosrng_msg_vec_snake(EMData* circ1, EMData* circ2, vector<int> numr,
 
 
 }
-
+#endif
 
 
 
@@ -11553,7 +11562,7 @@ struct cmpang
     }
 };
 
-
+#ifdef False
 vector<double> Util::cml_weights(const vector<float>& cml){
 	static const int NBIN = 100;
 	int nline=cml.size()/2;
@@ -11908,7 +11917,8 @@ double Util::cml_disc(const vector<EMData*>& data, vector<int> com, vector<int> 
 }
 
 vector<double> Util::cml_spin_psi(const vector<EMData*>& data, vector<int> com, vector<float> weights, \
-				 int iprj, vector<int> iw, int n_psi, int d_psi, int n_prj){
+				 int iprj, vector<int> iw, int n_psi, int d_psi, int n_prj)
+{
 	// res: [best_disc, best_ipsi]
 	// seq: pairwise indexes ij, 0, 1, 0, 2, 0, 3, 1, 2, 1, 3, 2, 3
 	// iw : index to know where is the weight for the common-lines on the current projection in the all weights, [12, 4, 2, 7]
@@ -11958,7 +11968,8 @@ vector<double> Util::cml_spin_psi(const vector<EMData*>& data, vector<int> com, 
 }
 
 vector<double> Util::cml_spin_psi_now(const vector<EMData*>& data, vector<int> com, \
-				 int iprj, vector<int> iw, int n_psi, int d_psi, int n_prj){
+				 int iprj, vector<int> iw, int n_psi, int d_psi, int n_prj)
+{
 	// res: [best_disc, best_ipsi]
 	// seq: pairwise indexes ij, 0, 1, 0, 2, 0, 3, 1, 2, 1, 3, 2, 3
 	// iw : index to know where is the weight for the common-lines on the current projection in the all weights, [12, 4, 2, 7]
@@ -12010,7 +12021,7 @@ vector<double> Util::cml_spin_psi_now(const vector<EMData*>& data, vector<int> c
 /****************************************************
  * END OF NEW CODE FOR COMMON-LINES
  ****************************************************/
-
+#endif
 // helper function for k-means
 Dict Util::min_dist_real(EMData* image, const vector<EMData*>& data) {
 	ENTERFUNC;
@@ -13348,6 +13359,7 @@ Dict Util::coveig_for_py(int ncov, const vector<float>& covmatpy)
 	EXITFUNC;
 	return res;
 }
+#ifdef False
 
 vector<float> Util::pw_extract(vector<float>pw, int n, int iswi, float ps)
 {
@@ -13404,6 +13416,9 @@ vector<float> Util::pw_extract(vector<float>pw, int n, int iswi, float ps)
 	free(pw_);
 	return cl1_res;
 }
+
+
+
 vector<float> Util::call_cl1(long int *k, long int *n, float *ps, long int *iswi, float *pw, float *q2,double *q, double *x, double *res, double *cu, double *s, long int *iu)
 {
     long int q2_dim1, q2_offset, q_dim1, q_offset, i__1, i__2;
@@ -14252,7 +14267,7 @@ bool Util::cmp2(tmpstruct tmp1,tmpstruct tmp2)
 {
 	return(tmp1.key1 < tmp2.key1);
 }
-
+#endif
 /******************  VORONOI DIAGRAM **********************************/
 /*
 void Util::voronoidiag(double *theta,double *phi,double* weight,int n)
@@ -14571,6 +14586,7 @@ void Util::voronoi(double *phi, double *theta, double *weight, int lenw, int low
 	EXITFUNC;
 }
 */
+#ifdef False
 void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 {
 
@@ -14758,7 +14774,7 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 
 	EXITFUNC;
 }
-
+#endif
 void Util::disorder2(double *x,double *y, int *key, int len)
 {
 	ENTERFUNC;
@@ -14827,6 +14843,8 @@ void Util::flip23(double *x,double *y,double *z,int *key, int k, int len)
 #undef  thetast
 #undef 	key
 
+
+#ifdef False
 
 /*################################################################################################
 ##########  strid.f -- translated by f2c (version 20030320). ###################################
@@ -24321,6 +24339,7 @@ L12:
 ####################	-lf2c -lm   (in that order)   ############################################
 ################################################################################################*/
 
+#endif
 
 #define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*nx]
 #define out_ptr(i,j,k)  out_ptr[i+(j+(k*yn))*xn]
@@ -28806,9 +28825,11 @@ vector<float>  Util::ali2d_ccf_list(EMData* image, EMData* crefim,
 	return a;
 }
 
+#ifdef False
 vector<float>  Util::ali2d_ccf_list_snake(EMData* image, EMData* crefim, vector<float> wr, 
 			float xrng, float yrng, float step, string mode,
-			vector< int >numr, float cnx, float cny, double T) {
+			vector< int >numr, float cnx, float cny, double T) 
+{
 
 	int   maxrin = numr[numr.size()-1];
 	
@@ -28874,8 +28895,7 @@ vector<float>  Util::ali2d_ccf_list_snake(EMData* image, EMData* crefim, vector<
 // 	a[5] = (float)select;
 //	return a;
 }
-
-
+#endif
 
 
 /*

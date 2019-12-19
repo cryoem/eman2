@@ -1,0 +1,37 @@
+image: Visual Studio 2017
+
+environment:
+  TARGET_ARCH: x64
+  CONDA_PY: 36
+  CONDA_INSTALL_LOCN: C:\\Miniconda36-x64
+
+platform:
+    - x64
+
+install:
+    - call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
+    - python -m compileall -q .
+    - set
+    # Cywing's git breaks conda-build. (See https://github.com/conda-forge/conda-smithy-feedstock/pull/2.)
+    - rmdir C:\cygwin /s /q
+
+    - set PYTHONUNBUFFERED=1
+    - set CPU_COUNT=2
+
+    - conda.exe config --set show_channel_urls true
+
+    - conda.exe install conda=4.6.14 conda-build=3.17.8 --yes --quiet
+
+    - conda.exe info -a
+    - conda.exe config --get
+    - conda.exe render %APPVEYOR_BUILD_FOLDER%\recipes\eman
+
+
+# Skip .NET project specific build phase.
+build: off
+
+test_script:
+    - mkdir GL KHR
+    - appveyor DownloadFile https://www.khronos.org/registry/OpenGL/api/GL/glext.h     -FileName GL\glext.h
+    - appveyor DownloadFile https://www.khronos.org/registry/EGL/api/KHR/khrplatform.h -FileName KHR\khrplatform.h
+    - conda.exe build %APPVEYOR_BUILD_FOLDER%\recipes\eman -c cryoem -c defaults -c conda-forge --no-test
