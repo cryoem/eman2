@@ -734,7 +734,7 @@ of the path is stored as self.normpath"""
 				try: del self.data[k]
 				except: pass
 			self.delkeys=set()
-			jss=json.dumps(self.data,indent=0,sort_keys=True,default=obj_to_json,encoding="ascii")			# write the whole dictionary back to disk
+			jss=json.dumps(self.data,indent=0,sort_keys=True,default=obj_to_json)			# write the whole dictionary back to disk
 			jss=re.sub(listrex,denl,jss)
 
 			### We do the actual write as a rapid sequence to avoid conflicts
