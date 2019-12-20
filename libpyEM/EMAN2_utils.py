@@ -14,6 +14,7 @@ from EMAN2 import *
 import importlib
 import sys
 from scipy.interpolate import interp1d
+import re
 
 amino_dict= {0: 'ALA', 1: 'ARG', 2: 'ASN', 3: 'ASP', 4: 'CYS', 5: 'GLU', 6: 'GLN', 7: 'GLY', 8: 'HIS', 9: 'ILE', 10: 'LEU', 11: 'LYS', 12: 'MET', 13: 'PHE', 14: 'PRO', 15: 'SER', 16: 'THR', 17: 'TRP', 18: 'TYR', 19: 'VAL', 20: 'ASX', 21:'GLX', 22: 'SEC'}
 amino_dict.update(dict((v, k) for k, v in list(amino_dict.items())))
@@ -178,7 +179,19 @@ def make_missing_wedge(img, wedge=60):
 	
 	return img2
 
+def natural_keys(text):
+	k=[]
+	for c in re.split(r'(\d+)', text):
+		if c.isdigit():
+			k.append(int(c))
+		else:
+			k.append(c)
+	return k
 
+def natural_sort(lst):
+	return sorted(lst, key=natural_keys)
+        
+    
 def idfft2(v,u,amp,phase,nx=256,ny=256,dtype=np.float32,usedegrees=False):
 	"""
 	Perform a vectorized, 2D discrete fourier transform. 

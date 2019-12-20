@@ -74,18 +74,12 @@ def main():
 	
 	if len(options.jsonali)>0:
 		print("re-extracting particles based on previous alignment. Ignoring particle/tomogram input...")
-		#try:
-			#offset=list(float(i) for i in options.alioffset.split(','))
-		#except:
-			#offset=(0,0,0)
-		
-		#print("extracting {} sub-particles per particle, with offset".format(len(offset)//3))
-		#print(np.array(offset).reshape((-1,3)))
-		allxfs=parse_json(options)
+
+		allxfs,allinfo=parse_json(options)
 		for fname in allxfs.keys():
 			#### it seems options is changed inplace somewhere...
 			(options, args) = parser.parse_args()
-			do_extraction(fname, options, allxfs[fname])
+			do_extraction(fname, options, allxfs[fname],allinfo[fname])
 		
 		return
 	
@@ -349,7 +343,7 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 		
 		
 		
-		towrite=[(ptclpos,outname, boxsz)]
+		towrite=[(ptclpos,outname, boxsz,[])]
 	
 	
 	
@@ -362,7 +356,7 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 			if not os.path.isfile(output):
 				skip=False
 		if skip:
-			print("all particles in {} exit. skip tilt series...".format(tfile))
+			print("all particles in {} exist. skip tilt series...".format(tfile))
 			
 	print("Reading tilt series file: {}".format(tfile))
 	#### make sure this works on image stack or mrc volume
@@ -691,7 +685,7 @@ def get_xf_pos(tpm, pk):
 #### parse a text file for particles
 def parse_text(options):
 	js=js_open_dict(options.textin)
-	keys=sorted(js.keys())
+	keys=natural_sort(js.keys())
 	allinfo={}
 	allxf={}
 	for ky in keys:
@@ -718,10 +712,10 @@ def parse_json(options):
 	js=js_open_dict(options.jsonali)
 	coord=[]
 	allxfs={}
-	
+	allinfo={}
 	
 	#### sort by score 
-	keys=sorted(js.keys())
+	keys=natural_sort(js.keys())
 	score=[js[k]["score"] for k in keys]
 	srt=np.argsort(score)
 	
@@ -755,6 +749,7 @@ def parse_json(options):
 		c=e["ptcl_source_coord"]
 		
 		ptcls=[]
+		info=[]
 		for xf in postxfs:
 			ali=Transform(dxf)
 			ali=xf.inverse()*ali
@@ -773,6 +768,7 @@ def parse_json(options):
 					continue
 			
 			ptcls.append(a)
+			info.append({"orig_ptcl":e["data_source"],"orig_idx":e["data_n"],"orig_xf":dxf})
 			nptcl+=1
 
 		
@@ -780,15 +776,18 @@ def parse_json(options):
 			
 			if allxfs.has_key(tomo):	
 				allxfs[tomo].extend(ptcls)
+				allinfo[tomo].extend(info)
 			else:
 				allxfs[tomo]=ptcls
+				allinfo[tomo]=info
+				
 				
 				
 			
 			
 	js.close()
 	print("Writing {} particles, excluding {} particles too close to each other.".format(nptcl, nexclude))
-	return allxfs
+	return allxfs,allinfo
 	
 
 def run(cmd):

@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import division
 from past.utils import old_div
 from EMAN2 import *
+from EMAN2_utils import natural_sort
 import os
 import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -151,7 +152,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		self.imginfo=[]
 		
 		#### getting information from json files
-		files=sorted([os.path.join(self.path,f) for f in os.listdir(self.path)])
+		files=natural_sort([os.path.join(self.path,f) for f in os.listdir(self.path)])
 		ptclcls={}
 		infonames=[]
 		for i,name in enumerate(files):
