@@ -55,7 +55,7 @@ import numpy as np
 from libpyEMData2 import EMData
 from libpyUtils2 import EMUtil
 
-
+import numpy as np
 # If set, fairly verbose debugging information will be written to the console
 # larger numbers will increase the amount of output
 DBDEBUG=0
@@ -864,6 +864,13 @@ performance than many individual changes."""
 #		if not isinstance(key,str) : raise Exception,"JSONDB keys must be strings"
 		key=str(key)
 		if key in self.delkeys : self.delkeys.remove(key)
+		
+		if isinstance(val, np.generic):
+			val=val.item()
+		elif isinstance(val, np.ndarray):
+			val=val.tolist()
+			
+		
 		# for EMData objects we need to figure out what file they will get stored in
 		if isinstance(val,EMData) :
 			# Changing an image triggers an actual read of the old image

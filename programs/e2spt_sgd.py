@@ -15,7 +15,7 @@ import queue
 
 def alifn(jsd,fsp,i,a,options):
 	t=time.time()
-	b=EMData(fsp,i)#.do_fft()
+	b=EMData(fsp,int(i))#.do_fft()
 	b.process_inplace("filter.lowpass.gauss", {"cutoff_freq":options.filterto})
 	if options.shrink>1:
 		b.process_inplace("math.fft.resample",{"n":options.shrink})
@@ -295,7 +295,7 @@ def make_ref(fname, options):
 		np.random.shuffle(idx)
 		avgr=Averagers.get("mean.tomo")
 		for i in range(options.batchsize):
-			p=EMData(fname, idx[i])
+			p=EMData(fname, int(idx[i]))
 			p.process_inplace('normalize.edgemean')
 			p.process_inplace('xform.centerofmass')
 			p.transform(xfs[i])
