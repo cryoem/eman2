@@ -2032,8 +2032,9 @@ if the lst file does not exist."""
 
 		self.path=path
 
-		try: self.ptr=open(path,"rb+")		# file exists
-		except:
+		if os.path.isfile(path):
+			self.ptr=open(path,"r+")		# file exists
+		else:
 			if ifexists: raise Exception("Error: lst file {} does not exist".format(path))
 
 			try: os.makedirs(os.path.dirname(path))

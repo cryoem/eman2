@@ -690,9 +690,7 @@ class EMPlotFileType(EMFileType) :
 		for l in hdr :
 			if l[0] == "#" : continue		# comment lines ok
 
-			try : numc = len([float(i) for i in renumfind.findall(l)])		# number of numeric columns
-			except :
-				return False		# shouldn't really happen...
+			numc = len([float(i) for i in renumfind.findall(l)])		# number of numeric columns
 
 			if numc > 0 : break			# just finding the number of columns
 
@@ -700,8 +698,7 @@ class EMPlotFileType(EMFileType) :
 
 		if numc == 0 : return False
 
-		try : size = os.stat(path)[6]
-		except : return False
+		size = os.stat(path)[6]
 
 		# Make sure all of the lines have the same number of columns
 
@@ -1610,11 +1607,11 @@ class EMDirEntry(object) :
 
 	def fileTypeClass(self) :
 		"""Returns the FileType class corresponding to the named filetype if it exists. None otherwise"""
-		try:
+		if self.filetype in EMFileType.typesbyft:
 			filetype = EMFileType.typesbyft[self.filetype]
-			return filetype
-		except:
-			return None
+		else:
+			filetype=None
+		return filetype
 
 	def sort(self, column, order) :
 		"""Recursive sorting"""
@@ -1871,30 +1868,23 @@ class EMDirEntry(object) :
 		# Ok, we need to try to figure out what kind of file this is
 
 		else :
-			try :
-				head = open(self.path(), "rb").read(4096)		# Most FileTypes should be able to identify themselves using the first 4K block of a file
+			head = open(self.path(), "rb").read(4096)		# Most FileTypes should be able to identify themselves using the first 4K block of a file
 
-				try : guesses = EMFileType.extbyft[os.path.splitext(self.path())[1]]		# This will get us a list of possible FileTypes for this extension
-				except : guesses = EMFileType.alltocheck
+			guesses = EMFileType.extbyft[os.path.splitext(self.path())[1]]		# This will get us a list of possible FileTypes for this extension
 
 	#			print "-------\n", guesses
 
-				for guess in guesses :
-					try : size, n, dim = guess.isValid(self.path(), head)		# This will raise an exception if isValid returns False
-					except : continue
+			for guess in guesses :
+				size, n, dim = guess.isValid(self.path(), head)		# This will raise an exception if isValid returns False
 
-					# If we got here, we found a match
-					self.filetype = guess.name()
-					self.dim = dim
-					self.nimg = n
-					self.size = size
+				# If we got here, we found a match
+				self.filetype = guess.name()
+				self.dim = dim
+				self.nimg = n
+				self.size = size
 
-					break
-				else :		# this only happens if no match was found
-					self.filetype = "-"
-					self.dim = "-"
-					self.nimg = "-"
-			except :
+				break
+			else :		# this only happens if no match was found
 				self.filetype = "-"
 				self.dim = "-"
 				self.nimg = "-"

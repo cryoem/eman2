@@ -937,9 +937,9 @@ def obj_to_json(obj):
 			fnm=["BAD_JSON.hdf",0]
 		obj.write_image(fnm[0],fnm[1])
 		return {"__image__":fnm}
-	try:
+	if hasattr(obj, "to_jsondict"):
 		return obj.to_jsondict()
-	except:
+	else:
 		return {"__pickle__":pickle.dumps(obj,0)}
 
 __doc__ = \
