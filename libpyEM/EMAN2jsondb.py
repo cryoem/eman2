@@ -780,7 +780,8 @@ of the path is stored as self.normpath"""
 		"""Equivalent to dictionary update(). Performs JSON file update all at once, so substantially better
 performance than many individual changes."""
 
-		for k in list(newdict.keys()): self.setval(k,newdict[k],deferupdate=True)
+		for k in list(newdict.keys()): 
+			self.setval(k,newdict[k],deferupdate=True)
 		self.sync()
 
 	def setdefault(self,key,dfl,noupdate=False):
