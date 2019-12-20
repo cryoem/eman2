@@ -42,6 +42,7 @@
 #include "xydata.h"
 #include "exception.h"
 #include "ctf.h"
+#include "glutil.h"
 
 #include <boost/python.hpp>
 #include <boost/python/numpy.hpp>
@@ -184,6 +185,15 @@ namespace EMAN {
 			}
 
 			return python::incref(python::dict(result).ptr());
+		}
+	};
+	
+	struct String_to_python : python::to_python_converter<EMBytes, String_to_python>
+	{
+		static PyObject* convert(EMBytes const& str)
+		{	
+			std::string s=std::string(str);
+			return PyBytes_FromStringAndSize(s.c_str(), s.size());
 		}
 	};
 

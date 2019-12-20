@@ -810,7 +810,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		try:
 			return self.tree_stacked_widget.currentWidget().currentItem().getExpertMode()
 		except:
-			return None
+			return 0
 
 	def setProgramExpertMode(self, state):
 		"""

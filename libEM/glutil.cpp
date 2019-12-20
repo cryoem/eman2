@@ -258,7 +258,7 @@ void GLUtil::mx_bbox(const vector<float>& data,
 	}
 }
 
-std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
+EMBytes GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 		 int iysize, int bpl, float scale, int min_gray, int max_gray,
 		 float render_min, float render_max, float gamma, int flags)
 {
@@ -268,7 +268,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 //	printf("%d %d %d %d %d %f %d %d %f %f %f %d\n",x0,y0,ixsize,iysize,bpl,
 // scale,min_gray,max_gray,render_min,render_max,gamma,flags);
 
-	if (emdata==NULL) return std::string();
+	if (emdata==NULL) return EMBytes();
 	bool invert = (min_gray > max_gray);
 	int mingray, maxgray;
 
@@ -334,7 +334,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 	else if (flags & 1) asrgb = 3;
 	else asrgb = 1;
 
-	std::string ret=std::string();
+	EMBytes ret=EMBytes();
 //	ret.resize(iysize*bpl);
 
 	ret.assign(iysize*bpl + hist*1024, char(invert ? maxgray : mingray));
