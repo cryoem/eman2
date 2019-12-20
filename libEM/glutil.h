@@ -47,6 +47,7 @@ namespace EMAN
 {
 	class EMData;
 	class MarchingCubes;
+	class EMBytes: public std::string {};
 
 	class GLUtil {
 	public:
@@ -92,7 +93,7 @@ namespace EMAN
 		 * @param flags	1-RGB (24 bit) rendering,2-add a 256 int greyscale histogram to the end of the image array,4-invert y axis,8-render 32 bit 0xffRRGGBB,16-Color display of complex images
 		 * @exception ImageDimensionException If the image is not 2D.
 		 */
-		static std::string render_amp8(EMData * emdata, int x, int y, int xsize, int ysize,
+		static EMBytes render_amp8(EMData * emdata, int x, int y, int xsize, int ysize,
 						 int bpl, float scale, int min_gray, int max_gray,
 						 float min_render, float max_render,float gamma,int flags);
 
