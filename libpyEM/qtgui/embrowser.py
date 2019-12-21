@@ -93,7 +93,7 @@ def isprint(s) :
 	"""returns True if the string contains only printable ascii characters"""
 
 	# Seems like no isprint() in python, this does basically the same thing
-
+	s=s.decode("utf-8")
 	mpd = s.translate("AAAAAAAAABBAABAAAAAAAAAAAAAAAAAA"+"B"*95+"A"*129)
 
 	if "A" in mpd :
@@ -683,7 +683,7 @@ class EMPlotFileType(EMFileType) :
 		if not isprint(header) : return False
 
 		# We need to try to count the columns in the file
-
+		header=header.decode("utf-8")
 		hdr = header.splitlines()
 		numc = 0
 
@@ -961,6 +961,7 @@ class EMJSONFileType(EMFileType) :
 	def isValid(path, header) :
 		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
 
+		header=header.decode("utf-8")
 		if path[-5:] == ".json" and header.strip()[0] == "{" : return (humansize(os.stat(path).st_size), "-", "-")
 		else : return None
 			# sz = len(js_open_dict(path).keys())
