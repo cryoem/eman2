@@ -679,7 +679,6 @@ class EMPlotFileType(EMFileType) :
 	@staticmethod
 	def isValid(path, header) :
 		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
-
 		if not isprint(header) : return False
 
 		# We need to try to count the columns in the file
@@ -695,7 +694,6 @@ class EMPlotFileType(EMFileType) :
 			if numc > 0 : break			# just finding the number of columns
 
 		# If we couldn't find at least one valid line with some numbers, give up
-
 		if numc == 0 : return False
 
 		size = os.stat(path)[6]
@@ -3508,7 +3506,6 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 			self.wtree.resizeColumnToContents(3)
 
 			# This makes an instance of a FileType for the selected object
-
 			ftc = obj.fileTypeClass()
 
 			if ftc != None :
