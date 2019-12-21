@@ -93,7 +93,7 @@ def isprint(s) :
 	"""returns True if the string contains only printable ascii characters"""
 
 	# Seems like no isprint() in python, this does basically the same thing
-
+	s=s.decode("utf-8")
 	mpd = s.translate("AAAAAAAAABBAABAAAAAAAAAAAAAAAAAA"+"B"*95+"A"*129)
 
 	if "A" in mpd :
@@ -679,29 +679,27 @@ class EMPlotFileType(EMFileType) :
 	@staticmethod
 	def isValid(path, header) :
 		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
-
 		if not isprint(header) : return False
 
 		# We need to try to count the columns in the file
-
+		header=header.decode("utf-8")
 		hdr = header.splitlines()
 		numc = 0
 
 		for l in hdr :
 			if l[0] == "#" : continue		# comment lines ok
 
-			try : numc = len([float(i) for i in renumfind.findall(l)])		# number of numeric columns
-			except :
-				return False		# shouldn't really happen...
+			numc = len([float(i) for i in renumfind.findall(l)])		# number of numeric columns
+			#except :
+				#return False		# shouldn't really happen...
 
 			if numc > 0 : break			# just finding the number of columns
 
 		# If we couldn't find at least one valid line with some numbers, give up
-
 		if numc == 0 : return False
 
-		try : size = os.stat(path)[6]
-		except : return False
+		size = os.stat(path)[6]
+		#except : return False
 
 		# Make sure all of the lines have the same number of columns
 
@@ -961,6 +959,7 @@ class EMJSONFileType(EMFileType) :
 	def isValid(path, header) :
 		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
 
+		header=header.decode("utf-8")
 		if path[-5:] == ".json" and header.strip()[0] == "{" : return (humansize(os.stat(path).st_size), "-", "-")
 		else : return None
 			# sz = len(js_open_dict(path).keys())
@@ -993,7 +992,7 @@ class EMJSONFileType(EMFileType) :
 			return []
 		v=self.js.values()[0]
 		if type(v)==dict:
-			if v.has_key("xform.align3d"):
+			if "xform.align3d" in v:
 				return [
 					("Plot 2D", "plot xform", self.plot2dApp),
 					("Plot 2D+", "plot xform", self.plot2dNew),
@@ -1029,7 +1028,7 @@ class EMJSONFileType(EMFileType) :
 			t = tf.get_trans()
 			r = tf.get_rotation()
 			row = [r["az"],r["alt"],r["phi"],t[0],t[1],t[2]]
-			if dct.has_key("score"):
+			if "score" in dct:
 				row.append(dct["score"])
 
 			rows.append([float(x) for x in row])
@@ -1078,7 +1077,7 @@ class EMJSONFileType(EMFileType) :
 			t = tf.get_trans()
 			r = tf.get_rotation()
 			row = [r["az"],r["alt"],r["phi"],t[0],t[1],t[2]]
-			if dct.has_key("score"):
+			if "score" in dct:
 				row.append(dct["score"])
 
 			rows.append([float(x) for x in row])
@@ -1609,11 +1608,15 @@ class EMDirEntry(object) :
 
 	def fileTypeClass(self) :
 		"""Returns the FileType class corresponding to the named filetype if it exists. None otherwise"""
-		try:
+		#try:
+		#print(self.name, self.filetype)
+		if self.filetype in EMFileType.typesbyft:
 			filetype = EMFileType.typesbyft[self.filetype]
-			return filetype
-		except:
-			return None
+		else:
+			filetype=None
+		return filetype
+		#except:
+			#return None
 
 	def sort(self, column, order) :
 		"""Recursive sorting"""
@@ -1870,33 +1873,35 @@ class EMDirEntry(object) :
 		# Ok, we need to try to figure out what kind of file this is
 
 		else :
-			try :
-				head = open(self.path(), "rb").read(4096)		# Most FileTypes should be able to identify themselves using the first 4K block of a file
+			#try :
+			head = open(self.path(), "rb").read(4096)		# Most FileTypes should be able to identify themselves using the first 4K block of a file
 
-				try : guesses = EMFileType.extbyft[os.path.splitext(self.path())[1]]		# This will get us a list of possible FileTypes for this extension
-				except : guesses = EMFileType.alltocheck
+			#try : 
+			guesses = EMFileType.extbyft[os.path.splitext(self.path())[1]]		# This will get us a list of possible FileTypes for this extension
+			#except : guesses = EMFileType.alltocheck
 
-	#			print "-------\n", guesses
+			#print("-------\n", guesses)
 
-				for guess in guesses :
-					try : size, n, dim = guess.isValid(self.path(), head)		# This will raise an exception if isValid returns False
-					except : continue
+			for guess in guesses :
+				#print(self.path())
+				size, n, dim = guess.isValid(self.path(), head)		# This will raise an exception if isValid returns False
+				#except : continue
 
-					# If we got here, we found a match
-					self.filetype = guess.name()
-					self.dim = dim
-					self.nimg = n
-					self.size = size
+				# If we got here, we found a match
+				self.filetype = guess.name()
+				self.dim = dim
+				self.nimg = n
+				self.size = size
 
-					break
-				else :		# this only happens if no match was found
-					self.filetype = "-"
-					self.dim = "-"
-					self.nimg = "-"
-			except :
+				break
+			else :		# this only happens if no match was found
 				self.filetype = "-"
 				self.dim = "-"
 				self.nimg = "-"
+			#except :
+				#self.filetype = "-"
+				#self.dim = "-"
+				#self.nimg = "-"
 
 		if cache != None :
 			try : cache.setval(cachename, (time.time(), self.dim, self.filetype, self.nimg, self.size), True)
@@ -3519,7 +3524,6 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 			# This makes an instance of a FileType for the selected object
 
 			ftc = obj.fileTypeClass()
-
 			if ftc != None :
 				if os.path.exists(obj.truepath()):
 					self.curft = ftc(obj.path())

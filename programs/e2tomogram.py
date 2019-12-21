@@ -1460,7 +1460,7 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
 				e["score"]=[tx[0], tx[1]]#trans[nid].tolist()
 				e["pid"]=int(pid)
 				e["nid"]=int(nid)
-				e.write_image(outname, nid+pid*num)
+				e.write_image(outname, int(nid+pid*num))
 			#ppos[nid]=np.array(pxf-trans[nid]-[nx/2, ny/2])
 			ppos[nid]=np.array(get_xf_pos(ttparams[nid], pks[pid]))-tlast-[tx[0], tx[1]]
 
