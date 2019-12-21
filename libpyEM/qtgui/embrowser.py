@@ -994,7 +994,7 @@ class EMJSONFileType(EMFileType) :
 			return []
 		v=self.js.values()[0]
 		if type(v)==dict:
-			if v.has_key("xform.align3d"):
+			if "xform.align3d" in v:
 				return [
 					("Plot 2D", "plot xform", self.plot2dApp),
 					("Plot 2D+", "plot xform", self.plot2dNew),
@@ -1030,7 +1030,7 @@ class EMJSONFileType(EMFileType) :
 			t = tf.get_trans()
 			r = tf.get_rotation()
 			row = [r["az"],r["alt"],r["phi"],t[0],t[1],t[2]]
-			if dct.has_key("score"):
+			if "score" in dct:
 				row.append(dct["score"])
 
 			rows.append([float(x) for x in row])
@@ -1079,7 +1079,7 @@ class EMJSONFileType(EMFileType) :
 			t = tf.get_trans()
 			r = tf.get_rotation()
 			row = [r["az"],r["alt"],r["phi"],t[0],t[1],t[2]]
-			if dct.has_key("score"):
+			if "score" in dct:
 				row.append(dct["score"])
 
 			rows.append([float(x) for x in row])
