@@ -137,7 +137,7 @@ def main():
 		
 		cbin.process_inplace("threshold.belowtozero")
 		cbin.process_inplace("normalize.edgemean")
-		cbin.write_image("ccc.hdf")
+		#cbin.write_image("ccc.hdf")
 		cbin.process_inplace("mask.onlypeaks",{"npeaks":0})
 		
 		cc=cbin.numpy().copy()

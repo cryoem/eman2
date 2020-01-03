@@ -4,6 +4,10 @@ PROJECT(EMAN
 		LANGUAGES CXX
 		)
 
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 include(cmake/functions.cmake)
 
 OPTION(DEBUG_CMAKE_TARGETS "enable debug output for cmake target properties" OFF)
@@ -125,7 +129,7 @@ if(NOT WIN32)
 	set(WARNING_FLAGS_ON  "-W -Wall")
 	set(WARNING_FLAGS_OFF "-w")
 else()
-	set(WARNING_FLAGS_ON  "")    # Default for VS2008 is /W3, highest is /W4
+	set(WARNING_FLAGS_ON  "")
 	set(WARNING_FLAGS_OFF "/W0")
 endif()
 
@@ -152,21 +156,21 @@ IF(ENABLE_BOUNDS_CHECKING)
 ENDIF()
 
 IF(ENABLE_DEBUG)
-	SET (OPT_FLAGS "-DDEBUG -O2 -g -ansi -fno-inline")
+	SET (OPT_FLAGS "-DDEBUG -O2 -g -fno-inline")
 ELSEIF(ENABLE_PROFILE)
-	SET (OPT_FLAGS "-O2 -ansi -march=native -m64 -ffast-math -pipe")
+	SET (OPT_FLAGS "-O2 -march=native -m64 -ffast-math -pipe")
 	OPTION(ENABLE_DEBUG "enable debug support" OFF)
 ELSEIF(ENABLE_OPTIMIZE_OSX)
 #	SET (OPT_FLAGS "-O3 -ffast-math")
 	SET (OPT_FLAGS "-O3")
 #	SET (OPT_FLAGS "-Os -ffast-math")
 ELSEIF(ENABLE_OPTIMIZE_MACHINE)
-	SET (OPT_FLAGS "-O5 -ansi -march=native -m64 -ffast-math -pipe")
+	SET (OPT_FLAGS "-O5 -march=native -m64 -ffast-math -pipe")
 ELSEIF(ENABLE_OPTIMIZE_X86_64)
-	SET (OPT_FLAGS "-O5 -ansi -march=k8 -mfpmath=sse -m64 -ffast-math -pipe")
-#	SET (OPT_FLAGS "-O5 -ansi -mfpmath=both -march=core-avx-i -m64 -ffast-math -pipe")
+	SET (OPT_FLAGS "-O5 -march=k8 -mfpmath=sse -m64 -ffast-math -pipe")
+#	SET (OPT_FLAGS "-O5 -mfpmath=both -march=core-avx-i -m64 -ffast-math -pipe")
 ELSEIF(ENABLE_OPTIMIZE_WINDOWS_VC)
-	SET (OPT_FLAGS "/Ox /DHAVE_INLINE")
+	SET (OPT_FLAGS "/Ox /DHAVE_INLINE /MP /Gm-")
 ELSEIF(ENABLE_OPTIMIZE_PHI)
 	SET (OPT_FLAGS "-fast")
 #	SET (OPT_FLAGS "-O3 -xHost")
@@ -174,7 +178,7 @@ ELSE()
 	IF(WIN32)
 		SET(OPT_FLAGS "")
 	ELSE()
-		SET (OPT_FLAGS "-O3 -ansi -ffast-math")     # This is the default
+		SET (OPT_FLAGS "-O3 -ffast-math")     # This is the default
 	ENDIF()
 ENDIF()
 

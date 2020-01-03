@@ -370,11 +370,27 @@ float pysdot( int n, np::ndarray& x, int incx, np::ndarray& y, int incy )
     return sdot_( &n, fx, &incx, fy, &incy );
 }
 
+#ifdef IS_PY3K
+static PyObject *PyIOBase_TypeObj;
+
+static int init_file_emulator(void)
+{
+    PyObject *io = PyImport_ImportModule("_io");
+    if(io == NULL) return -1;
+    PyIOBase_TypeObj = PyObject_GetAttrString(io, "_IOBase");
+    if(PyIOBase_TypeObj == NULL) return -1;
+    
+    return 0;
+}
+
+#endif	//IS_PY3K
+
 void readarray( object& f, np::ndarray& x, int size)
 {
 #ifdef IS_PY3K
-	extern PyTypeObject PyIOBase_Type;
-	if(!PyObject_IsInstance(f.ptr(), (PyObject *)&PyIOBase_Type) )
+	if (init_file_emulator() < 0) return;
+	
+	if(!PyObject_IsInstance(f.ptr(), PyIOBase_TypeObj))
 #else
 	if( !PyFile_Check(f.ptr()) )
 #endif	//IS_PY3K

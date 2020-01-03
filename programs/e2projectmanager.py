@@ -1100,27 +1100,50 @@ class TheHelp(QtWidgets.QWidget):
 
 
 		self.helpcb.activated[int].connect(self._helpchange)
+		self.dosearch = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+F"), self)
+		self.dosearch.activated.connect(self.search)
+		self.cur_search=""
 
+
+		self.donext = QtWidgets.QShortcut(QtGui.QKeySequence("N"), self)
+		self.donext.activated.connect(self.search_next)
+		
+		
 		tbwidget.setLayout(grid)
 		return tbwidget
 
-	def _helpchange(self, idx):
+	def _helpchange(self, idx, search=None):
 		""" Read in documenation info from the dump_.*_list() functions. Should reflect what is in the C dicts """
 		self.helpcb.setCurrentIndex(idx)
 		helpdict =  self.helptopics[idx][1]
-		helpdoc = "<B><H3>Listed below is a list of EMAN2 <I>%s</I></H3></B><BR>"%self.helptopics[idx][0]
+		helpdoc = "<B><H3>Listed below is a list of EMAN2 <I>%s</I></H3></B>"%self.helptopics[idx][0]
 
 		keys = list(helpdict.keys())
 		keys.sort()
 		for key in keys:
-			helpdoc += "<B>%s</B>"%(key)
+			helpdoc += "<h4>%s</h4>"%(key)
 			eman2item = helpdict[key]
 			helpdoc += "<UL><LI><I>Description:</I> %s</LI>"%eman2item[0]
 			for param in range(old_div((len(eman2item)-1),3)):
 				helpdoc += "<LI><I>Parameter:</I> &nbsp;<B>%s(</B><SPAN style='color:red;'>%s</SPAN><B>)</B>, %s</LI>"%(eman2item[param*3 +1],eman2item[param*3 +2],eman2item[param*3 +3])
 			helpdoc += "</UL>"
+			
+		if search:
+			helpdoc=re.sub("(>[^>]*)({})([^>]*<)".format(search),"\g<1><SEARCH style='background-color:Yellow;'>\g<2></SEARCH>\g<3>", helpdoc, flags=re.IGNORECASE)
+			#helpdoc=helpdoc.replace(search, "<SEARCH style='background-color:Yellow;'>{}</SEARCH>".format(search))
 
 		self.textbox.setHtml(helpdoc)
+		
+	def search(self):
+		text, okPressed = QtWidgets.QInputDialog.getText(self, "Search", "Keyword (case insensitive)")
+		if len(text)>0:
+			self.cur_search=text
+			self._helpchange(self.helpcb.currentIndex(), text)
+		
+	def search_next(self):
+		if len(self.cur_search)>0:
+			if self.textbox.find(self.cur_search)==False:
+				self.textbox.moveCursor(1)
 
 	def hideEvent(self, event):
 		""" This remembers the geometry when we hide the widget """
