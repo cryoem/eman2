@@ -2032,13 +2032,14 @@ if the lst file does not exist."""
 
 		self.path=path
 
-		try: self.ptr=open(path,"rb+")		# file exists
-		except:
+		if os.path.isfile(path):
+			self.ptr=open(path,"r+")		# file exists
+		else:
 			if ifexists: raise Exception("Error: lst file {} does not exist".format(path))
 
 			try: os.makedirs(os.path.dirname(path))
 			except: pass
-			self.ptr=open(path,"wb+")	# file doesn't exist
+			self.ptr=open(path,"w+")	# file doesn't exist
 			self.ptr.write("#LSX\n# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing.\n# 20\n")
 
 		self.ptr.seek(0)
@@ -2047,7 +2048,7 @@ if the lst file does not exist."""
 			if l=="#LST\n" :
 				#### This is very similar to rewrite(), but is used to convert LST files to LSX files
 				self.seekbase=self.ptr.tell()
-				tmpfile=open(self.path+".tmp","wb")
+				tmpfile=open(self.path+".tmp","w")
 				tmpfile.write("#LSX\n# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing.\n")
 
 				# we read the entire file, checking the length of each line
@@ -2077,7 +2078,7 @@ if the lst file does not exist."""
 				# rename the temporary file over the original
 				os.unlink(self.path)
 				os.rename(self.path+".tmp",self.path)
-				self.ptr=open(self.path,"rb+")
+				self.ptr=open(self.path,"r+")
 				self.ptr.readline()
 
 			else: raise Exception("ERROR: The file {} is not in #LSX format".format(self.path))
@@ -2173,7 +2174,7 @@ line length. Used when a line must be added in the middle of the file."""
 
 		self.ptr.seek(0)
 
-		tmpfile=open(self.path+".tmp","wb")
+		tmpfile=open(self.path+".tmp","w")
 		# copy the header lines
 		tmpfile.write(self.ptr.readline())
 		tmpfile.write(self.ptr.readline())
@@ -2206,7 +2207,7 @@ line length. Used when a line must be added in the middle of the file."""
 		# rename the temporary file over the original
 		os.unlink(self.path)
 		os.rename(self.path+".tmp",self.path)
-		self.ptr=open(self.path,"rb+")
+		self.ptr=open(self.path,"r+")
 
 #		print "rewrite ",self.linelen
 

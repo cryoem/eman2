@@ -734,7 +734,7 @@ of the path is stored as self.normpath"""
 				try: del self.data[k]
 				except: pass
 			self.delkeys=set()
-			jss=json.dumps(self.data,indent=0,sort_keys=True,default=obj_to_json,encoding="ascii")			# write the whole dictionary back to disk
+			jss=json.dumps(self.data,indent=0,sort_keys=True,default=obj_to_json)			# write the whole dictionary back to disk
 			jss=re.sub(listrex,denl,jss)
 
 			### We do the actual write as a rapid sequence to avoid conflicts
@@ -780,7 +780,8 @@ of the path is stored as self.normpath"""
 		"""Equivalent to dictionary update(). Performs JSON file update all at once, so substantially better
 performance than many individual changes."""
 
-		for k in list(newdict.keys()): self.setval(k,newdict[k],deferupdate=True)
+		for k in list(newdict.keys()): 
+			self.setval(k,newdict[k],deferupdate=True)
 		self.sync()
 
 	def setdefault(self,key,dfl,noupdate=False):
@@ -937,9 +938,9 @@ def obj_to_json(obj):
 			fnm=["BAD_JSON.hdf",0]
 		obj.write_image(fnm[0],fnm[1])
 		return {"__image__":fnm}
-	try:
+	if hasattr(obj, "to_jsondict"):
 		return obj.to_jsondict()
-	except:
+	else:
 		return {"__pickle__":pickle.dumps(obj,0)}
 
 __doc__ = \

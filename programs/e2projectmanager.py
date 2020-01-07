@@ -807,10 +807,12 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		"""
 		Return expert mode 0 = not available, 1 = available but not used, 2 = available and used
 		"""
-		try:
-			return self.tree_stacked_widget.currentWidget().currentItem().getExpertMode()
-		except:
-			return None
+		item = self.tree_stacked_widget.currentWidget().currentItem()
+		
+		if hasattr(item, 'getExpertMode'):
+			return item.getExpertMode()
+		else:
+			return 0
 
 	def setProgramExpertMode(self, state):
 		"""
