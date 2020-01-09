@@ -9998,11 +9998,11 @@ EMData* EnhanceProcessor::process(const EMData * const image)
 {
 	int nx=image->get_xsize();
 	EMData * result = image->process("filter.highpass.gauss",Dict("cutoff_freq",0.01f));
-	result->process_inplace("mask.decayedge2d",Dict("width",nx/8));
+	result->process_inplace("mask.decayedge2d",Dict("width",nx/50));
 	result->add(-float(result->get_attr("minimum")));
 	result->process_inplace("filter.lowpass.tophat",Dict("cutoff_freq",0.05));
 	result->process_inplace("math.squared");
-	result->process_inplace("filter.lowpass.gauss",Dict("cutoff_freq",10.0f/(nx*(float)image->get_attr("apix_x"))));
+	result->process_inplace("filter.lowpass.gauss",Dict("cutoff_freq",10.0f/(nx/40*(float)image->get_attr("apix_x"))));
 	result->process_inplace("normalize.edgemean");
 	
 	return result;
