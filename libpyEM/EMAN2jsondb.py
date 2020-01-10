@@ -50,6 +50,7 @@ import random
 import threading
 import traceback
 import re
+import numpy as np
 
 from libpyEMData2 import EMData
 from libpyUtils2 import EMUtil
@@ -938,10 +939,11 @@ def obj_to_json(obj):
 			fnm=["BAD_JSON.hdf",0]
 		obj.write_image(fnm[0],fnm[1])
 		return {"__image__":fnm}
+	if np.isscalar(obj) : return obj.item()
 	if hasattr(obj, "to_jsondict"):
 		return obj.to_jsondict()
 	else:
-		return {"__pickle__":pickle.dumps(obj,0)}
+		return {"__pickle__":pickle.dumps(obj,0).decode("utf-8") }
 
 __doc__ = \
 """This module provides a dict-like wrapper for JSON files on disk, with full support for file locking and other
