@@ -111,6 +111,7 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 
     EMAN::EMObject_to_python();
 	EMAN::Dict_to_python();
+	EMAN::String_to_python();
 	EMAN::Dict_from_python();
 
 	EMAN::tuple3_to_python<EMAN::IntPoint>();
