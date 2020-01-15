@@ -40,7 +40,7 @@ standard_library.install_aliases()
 from builtins import range
 from builtins import object
 
-import os, getpass, socket, subprocess, threading, time,select,shutil, traceback, random,_thread, queue
+import sys, os, getpass, socket, subprocess, threading, time,select,shutil, traceback, random,_thread, queue
 from pickle import dumps,loads,dump,load
 
 from EMAN2jsondb import JSTask,JSTaskQueue,js_open_dict
