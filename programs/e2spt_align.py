@@ -122,11 +122,13 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 		options.parallel="thread:{}".format(options.threads)
 		
 	if options.breaksym:
-		if options.sym=="c1":
-			print("cannot break a c1 symmetry. breaksym disabled.")
-			options.breaksym=False
-		elif options.breaksymsym==None:
-			options.breaksymsym=options.sym
+		if options.breaksymsym==None:
+			if options.sym=="c1":
+				print("cannot break a c1 symmetry. breaksym disabled.")
+				options.breaksym=False
+			else:
+				options.breaksymsym=options.sym
+		
 
 	# file may be "name" or "name,#"
 	reffile=args[1].split(",")[0]
@@ -346,10 +348,10 @@ class SptAlignTask(JSTask):
 			
 			b=EMData(fsp,i)
 			if b["sigma"]==0:
-				###empty particle. really should not happen but will break a few things below...
+				###skip empty particles.
 				c=[{"xform.align3d":Transform(), "score":1}]
 				rets.append((fsp,i,c))
-				print("empty particle : {} {}".format(fsp, i))
+				#print("empty particle : {} {}".format(fsp, i))
 				continue
 				
 			b.process_inplace("normalize.edgemean")

@@ -12,6 +12,8 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
 					)
 endif()
 
+set(OpenGL_GL_PREFERENCE GLVND)
+
 find_package(OpenGL REQUIRED)
 
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")

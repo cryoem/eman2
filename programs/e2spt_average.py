@@ -85,15 +85,28 @@ class SptavgTask(JSTask):
 			fsp, i, xf=dt
 			### it seems that there are some problems with non integer shift in fourier space...
 			xf.set_trans(np.round(xf.get_trans()).tolist())
-			b=EMData(fsp,i).process("normalize.edgemean")
+			b=EMData(fsp,i)
+			
+			if b["sigma"]==0:
+				continue
+			
+			b.process_inplace("normalize.edgemean")
 			
 			b=b.do_fft()
 			if options.maxtilt<90.0 :
 				b.process_inplace("mask.wedgefill",{"thresh_sigma":0.0,"maxtilt":options.maxtilt})
 			
 			b.process_inplace("xform.phaseorigin.tocorner")
-			b.process_inplace("xform",{"transform":xf})
-			avg.add_image(b)
+			#b.process_inplace("xform",{"transform":xf})
+			#avg.add_image(b)
+			x0=Transform()
+			nsym=x0.get_nsym(options.sym)
+			for k in range(nsym):
+				x=x0.get_sym(options.sym, k)
+				c=b.process("xform",{"transform":x*xf})
+				avg.add_image(c)
+			
+			
 			callback(ii*100//len(data))
 			#print(fsp, i, xf)
 			
@@ -319,10 +332,12 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 		ave=avg[0].finish()		#.process("xform.phaseorigin.tocenter").do_ift()
 		avo=avg[1].finish()		#.process("xform.phaseorigin.tocenter").do_ift()
 		
-	# impose symmetry on even and odd halves if appropriate
-	if options.sym!=None and options.sym.lower()!="c1" and options.symalimasked==None:
-		ave.process_inplace("xform.applysym",{"averager":"mean.tomo","sym":options.sym})
-		avo.process_inplace("xform.applysym",{"averager":"mean.tomo","sym":options.sym})
+		# impose symmetry on even and odd halves if appropriate
+		if options.sym!=None and options.sym.lower()!="c1" and options.symalimasked==None:
+			ave.process_inplace("xform.applysym",{"averager":"mean.tomo","sym":options.sym})
+			avo.process_inplace("xform.applysym",{"averager":"mean.tomo","sym":options.sym})
+			
+			
 	av=ave+avo
 	av.mult(0.5)
 

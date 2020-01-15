@@ -1376,6 +1376,10 @@ public:
 	 * 1 for x-dimension, 2 for y-dimension and 3 for z-dimension
 	*/
 	static void put_slice(EMData *vol, EMData *slice, int dim, int index);
+	/**
+	 * extract/insert plane through volume using parameters in Transform.
+	*/
+	static void plane_through_volume(EMData *vol, EMData *weight, EMData *plane, float phi, float theta, float psi, int fact);
 
 	static void image_mutation(EMData *img, float mutation_rate);
 
