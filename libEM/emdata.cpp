@@ -2359,7 +2359,7 @@ vector < float > EMData::calc_hist(int hist_size, float histmin, float histmax,c
 	vector <float> hist(hist_size, 0.0);
 
 	if (cont != 1.0f || brt != 0) {
-		for(size_t i=0; i<=size; i++) {
+		for(size_t i=0; i<size; i++) {
 			float val = cont*(data[i]+brt);
 			int j = Util::round((val - histmin) * w);
 			
@@ -2370,7 +2370,7 @@ vector < float > EMData::calc_hist(int hist_size, float histmin, float histmax,c
 		}
 	}
 	else {
-		for(size_t i=0; i<=size; i++) {
+		for(size_t i=0; i<size; i++) {
 			float val = data[i];
 			int j = Util::round((val - histmin) * w);
 			if (j>=n) j=n-1;

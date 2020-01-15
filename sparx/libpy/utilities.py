@@ -3602,7 +3602,7 @@ def nearest_many_full_k_projangles(reference_normals, angles, howmany = 1, sym_c
 	assignments = [-1]*len(angles)
 	if(sym_class == None): dos = True
 	elif(sym_class.sym[:2] == "c1"): dos = True
-	else:  dosFalse
+	else:  dos = False
 	
 	if dos:
 		for i,q in enumerate(angles):

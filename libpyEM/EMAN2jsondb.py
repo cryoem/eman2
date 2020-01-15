@@ -50,10 +50,10 @@ import random
 import threading
 import traceback
 import re
+import numpy as np
 
 from libpyEMData2 import EMData
 from libpyUtils2 import EMUtil
-
 
 # If set, fairly verbose debugging information will be written to the console
 # larger numbers will increase the amount of output
@@ -734,7 +734,7 @@ of the path is stored as self.normpath"""
 				try: del self.data[k]
 				except: pass
 			self.delkeys=set()
-			jss=json.dumps(self.data,indent=0,sort_keys=True,default=obj_to_json,encoding="ascii")			# write the whole dictionary back to disk
+			jss=json.dumps(self.data,indent=0,sort_keys=True,default=obj_to_json)			# write the whole dictionary back to disk
 			jss=re.sub(listrex,denl,jss)
 
 			### We do the actual write as a rapid sequence to avoid conflicts
@@ -780,7 +780,8 @@ of the path is stored as self.normpath"""
 		"""Equivalent to dictionary update(). Performs JSON file update all at once, so substantially better
 performance than many individual changes."""
 
-		for k in list(newdict.keys()): self.setval(k,newdict[k],deferupdate=True)
+		for k in list(newdict.keys()): 
+			self.setval(k,newdict[k],deferupdate=True)
 		self.sync()
 
 	def setdefault(self,key,dfl,noupdate=False):
@@ -862,6 +863,13 @@ performance than many individual changes."""
 #		if not isinstance(key,str) : raise Exception,"JSONDB keys must be strings"
 		key=str(key)
 		if key in self.delkeys : self.delkeys.remove(key)
+		
+		if isinstance(val, np.generic):
+			val=val.item()
+		elif isinstance(val, np.ndarray):
+			val=val.tolist()
+			
+		
 		# for EMData objects we need to figure out what file they will get stored in
 		if isinstance(val,EMData) :
 			# Changing an image triggers an actual read of the old image
@@ -937,10 +945,11 @@ def obj_to_json(obj):
 			fnm=["BAD_JSON.hdf",0]
 		obj.write_image(fnm[0],fnm[1])
 		return {"__image__":fnm}
-	try:
+	if np.isscalar(obj) : return obj.item()
+	if hasattr(obj, "to_jsondict"):
 		return obj.to_jsondict()
-	except:
-		return {"__pickle__":pickle.dumps(obj,0)}
+	else:
+		return {"__pickle__":pickle.dumps(obj,0).decode("utf-8") }
 
 __doc__ = \
 """This module provides a dict-like wrapper for JSON files on disk, with full support for file locking and other

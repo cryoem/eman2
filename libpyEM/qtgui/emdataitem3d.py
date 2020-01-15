@@ -1417,7 +1417,7 @@ class EMIsosurface(EMItem3D,EM3DModel):
 		self.isorender.set_surface_value(self.isothr)
 		self.isorender.set_sampling(self.smpval)
 
-		if (float(glGetString(GL_VERSION).split(".")[0])>2):
+		if (float(glGetString(GL_VERSION).decode("utf-8").split(".")[0])>2):
 			GLUtil.contour_isosurface(self.isorender)
 		else:
 			if ( self.texture ):
@@ -1436,7 +1436,7 @@ class EMIsosurface(EMItem3D,EM3DModel):
 	def renderNode(self):
 		if (not isinstance(self.parent.data,EMData)): return
 		#a = time()
-		if (float(glGetString(GL_VERSION).split(".")[0])>2):
+		if (float(glGetString(GL_VERSION).decode("utf-8").split(".")[0])>2):
 
 			scenegraph = self.getRootNode()
 			cull = glIsEnabled(GL_CULL_FACE)

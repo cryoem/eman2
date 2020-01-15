@@ -1065,7 +1065,7 @@ class EMOpenGLFlagsAndTools(object):
 			
 			if self.power_of_two_init_check == True:
 				try:
-					if str("GL_ARB_texture_non_power_of_two") not in glGetString(GL_EXTENSIONS) :
+					if str("GL_ARB_texture_non_power_of_two") not in str(glGetString(GL_EXTENSIONS)) :
 						self.use_mipmaps = True
 						#print "EMAN(ALPHA) message: No support for non power of two textures detected. Using mipmaps."
 					else:
