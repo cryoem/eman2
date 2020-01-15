@@ -27,7 +27,7 @@ import sys
 """
 WHAT IS MISSING:
 1)  I just test the error case because the script collects the input values from the gui and then call
-        "sp_morphology.adaptive_mask_scipy", sparx_filter.filt_tanland some basic functions from "sp_utilities"
+        "sp_morphology.adaptive_mask_scipy", sparx_filter.filt_tanl and some basic functions from "sp_utilities"
 2) cannot catch the error message in "test_too_few_input_values". no clue why it is happening
 
 NB:

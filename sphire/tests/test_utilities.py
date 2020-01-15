@@ -12070,10 +12070,11 @@ class Test_read_text_row(unittest.TestCase):
         self.assertEqual(cm_new.exception.strerror, "No such file or directory")
         self.assertEqual(cm_new.exception.strerror, cm_old.exception.strerror)
 
+
     def test_default_case(self):
         partids = path.join(
             ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,
-            "Initial3D/main001/this_iteration_index_keep_images.txt",
+            "07_RVIPER/main001/this_iteration_index_keep_images.txt",
         )
         return_new = fu.read_text_row(fnam=partids, format="", skip=";")
         return_old = oldfu.read_text_row(fnam=partids, format="", skip=";")
@@ -12175,6 +12176,16 @@ class Test_read_text_row(unittest.TestCase):
                     [90],
                     [91],
                     [92],
+                    [93],
+                    [94],
+                    [95],
+                    [96],
+                    [97],
+                    [98],
+                    [99],
+                    [100],
+                    [101],
+                    [102],
                 ],
             )
         )
@@ -12229,7 +12240,7 @@ class Test_read_text_file(unittest.TestCase):
     def test_default_case(self):
         partids = path.join(
             ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,
-            "Initial3D/main001/this_iteration_index_keep_images.txt",
+            "07_RVIPER/main001/this_iteration_index_keep_images.txt",
         )
         return_new = fu.read_text_file(file_name=partids, ncol=0)
         return_old = oldfu.read_text_file(file_name=partids, ncol=0)
@@ -12331,6 +12342,16 @@ class Test_read_text_file(unittest.TestCase):
                     90,
                     91,
                     92,
+                    93,
+                    94,
+                    95,
+                    96,
+                    97,
+                    98,
+                    99,
+                    100,
+                    101,
+                    102,
                 ],
             )
         )
@@ -19972,15 +19993,15 @@ class Test_getindexdata(unittest.TestCase):
     nproc = 95
     myid = 22
     stack = "bdb:" + path.join(
-        ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Initial3D/best_000"
+        ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "07_RVIPER/best_000"
     )
     partids = path.join(
         ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,
-        "Initial3D/main001/this_iteration_index_keep_images.txt",
+        "07_RVIPER/main001/this_iteration_index_keep_images.txt",
     )
     partstack = path.join(
         ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,
-        "Initial3D//main001/run000/rotated_reduced_params.txt",
+        "07_RVIPER//main001/run000/rotated_reduced_params.txt",
     )
 
     def test_wrong_number_params_too_few_parameters_TypeError(self):
@@ -19993,6 +20014,7 @@ class Test_getindexdata(unittest.TestCase):
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
+    """
     def test_nproc_greater_than_ndata(self):
         return_new = fu.getindexdata(
             self.stack, self.partids, self.partstack, self.myid, self.nproc
@@ -20005,6 +20027,7 @@ class Test_getindexdata(unittest.TestCase):
             array_equal(return_new[0].get_3dview(), return_old[0].get_3dview())
         )
 
+    
     def test_nproc_and_myid_greater_than_ndata_(self):
         return_new = fu.getindexdata(
             self.stack, self.partids, self.partstack, 100, self.nproc
@@ -20015,7 +20038,7 @@ class Test_getindexdata(unittest.TestCase):
         self.assertTrue(
             array_equal(return_new[0].get_3dview(), return_old[0].get_3dview())
         )
-
+    
     def test_nproc_lower_than_ndata(self):
         return_new = fu.getindexdata(
             self.stack, self.partids, self.partstack, self.myid, nproc=10
@@ -20026,7 +20049,7 @@ class Test_getindexdata(unittest.TestCase):
         self.assertTrue(
             array_equal(return_new[0].get_3dview(), return_old[0].get_3dview())
         )
-
+    """
 
 class Test_store_value_of_simple_vars_in_json_file(unittest.TestCase):
     f = path.join(ABSOLUTE_PATH, "fu.json")

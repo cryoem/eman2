@@ -44,7 +44,7 @@ In these tests there is a strange behavior:
 """
 
 
-MPI_PATH = "/home/lusnig/SPHIRE_1_1/envs/sphire1_3/bin/mpirun" #"/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
+MPI_PATH = "/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/mpirun" #"/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
 NUM_PROC = 8
 class Test_run(unittest.TestCase):
 

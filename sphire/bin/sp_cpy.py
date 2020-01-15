@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
-
-
+from past.utils import old_div
+from __future__ import division
 #
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
@@ -43,56 +43,49 @@ from __future__ import print_function
 #
 
 
-
-import os
-from sp_applications  import  cpy
-
-
+import optparse
+import sp_applications
 import sp_global_def
-from sp_global_def import sxprint
-
-from sp_global_def import *
-
-from optparse import OptionParser
+import sp_utilities
 import sys
 
 
 def main():
-	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack_in  stack_out"
-	parser = OptionParser(usage,version=SPARXVERSION)
-	(options, args) = parser.parse_args()
+    progname = optparse.os.path.basename(sys.argv[0])
+    usage = progname + " stack_in  stack_out"
+    parser = optparse.OptionParser(usage, version=sp_global_def.SPARXVERSION)
+    (options, args) = parser.parse_args()
 
-	if sp_global_def.CACHE_DISABLE:
-		from sp_utilities import disable_bdb_cache
-		disable_bdb_cache()
-	
-	# check length of arguments list. less than 2 is illegal
-	if (len(args) < 2):
-    		sxprint("usage: " + usage)
-    		sxprint("Please run '" + progname + " -h' for detailed options")
-	# 2 is file to file copying
-	elif (2 == len(args)):
-		#print "file to file"
-		cpy(args[0], args[1])
-	# more than 2, this means a wildcard is transformed to a list of filenams
-	else:
-		#print "list to file"
-		#
-		# XXX: note that wildcards only work for filenames! wildcards in files
-		#    are processed by the shell and read in as a space-delimited list
-		#    of filenames. however, this does NOT work for bdb:image1 type names,
-		#    since these will not be found and processed by the shell, not being
-		#    normal files. globbing of db objects will have to be done here!
-		#
-		# make sure we only pass the last entry of args as output file name,
-		#    since [-1:] pass a list containing only the last entry....
-		#
-		# application.cpy
-		cpy(args[:-1], args[-1:][0])
-		
+    if sp_global_def.CACHE_DISABLE:
+        sp_utilities.disable_bdb_cache()
+
+    # check length of arguments list. less than 2 is illegal
+    if len(args) < 2:
+        sp_global_def.sxprint("usage: " + usage)
+        sp_global_def.sxprint("Please run '" + progname + " -h' for detailed options")
+    # 2 is file to file copying
+    elif 2 == len(args):
+        # print "file to file"
+        sp_applications.cpy(args[0], args[1])
+    # more than 2, this means a wildcard is transformed to a list of filenams
+    else:
+        # print "list to file"
+        #
+        # XXX: note that wildcards only work for filenames! wildcards in files
+        #    are processed by the shell and read in as a space-delimited list
+        #    of filenames. however, this does NOT work for bdb:image1 type names,
+        #    since these will not be found and processed by the shell, not being
+        #    normal files. globbing of db objects will have to be done here!
+        #
+        # make sure we only pass the last entry of args as output file name,
+        #    since [-1:] pass a list containing only the last entry....
+        #
+        # application.cpy
+        sp_applications.cpy(args[:-1], args[-1:][0])
+
+
 if __name__ == "__main__":
-	sp_global_def.print_timestamp( "Start" )
-	sp_global_def.write_command()
-	main()
-	sp_global_def.print_timestamp( "Finish" )
+    sp_global_def.print_timestamp("Start")
+    sp_global_def.write_command()
+    main()
+    sp_global_def.print_timestamp("Finish")

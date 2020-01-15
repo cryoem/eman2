@@ -65,13 +65,13 @@ And set the variable 'ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER' to its path o
 """
 
 # ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER = "/home/adnan/Downloads/sphire_1_0_precalculated_results/SphireDemoResults"
-ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER = "/home/lusnig/Downloads/SphireDemoResults"
+ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER = "/home/adnan/DemoResults/"
 
 '''
 the sphire1.3 tutorial do not use the values downloadable from the SPHIRE website. You have to download them from billy: 
 sphire-devel/SPHIRE_DEMO_RESULTS/SphireDemoResults2 
 '''
-ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW = "/home/lusnig/SphireDemoResults2"
+ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW = "/home/adnan/DemoResults/"
 
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 
@@ -81,7 +81,7 @@ ABSOLUTE_OLDBIN_PATH = path.join(ABSOLUTE_SPHIRE_PATH, "bin")
 ABSOLUTE_BIN_PATH = path.join(ABSOLUTE_SPHIRE_PATH, "utils","SPHIRE","bin")
 
 #absolute of python
-ABSOLUTE_PATH_PYTHON = "/home/lusnig/SPHIRE_1_1/envs/sphire1_3/bin/python"
+ABSOLUTE_PATH_PYTHON = "/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/python"
 
 
 

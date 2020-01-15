@@ -7,20 +7,20 @@ import cPickle as pickle
 import os
 import sys
 from mpi import *
-import global_def
+import sp_global_def
 import numpy
 from copy import deepcopy
 
 mpi_init(0, [])
-global_def.BATCH = True
-global_def.MPI = True
+sp_global_def.BATCH = True
+sp_global_def.MPI = True
 
 ABSOLUTE_PATH = os.path.dirname(os.path.realpath(__file__))
 
 
-from ..libpy import sparx_user_functions as fu
+from ..libpy import sp_user_functions as fu
 
-from .sparx_lib import sparx_user_functions as oldfu
+from ..libpy_py3 import sp_user_functions as oldfu
 
 
 """

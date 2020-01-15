@@ -44,10 +44,10 @@ class Test_run(unittest.TestCase):
     fname = "vol_combined.hdf"
 
 
-    @classmethod
-    def tearDownClass(cls):
-        remove_dir(cls.new_output_folder)
-        remove_dir(cls.old_output_folder)
+    # @classmethod
+    # def tearDownClass(cls):
+    #     remove_dir(cls.new_output_folder)
+    #     remove_dir(cls.old_output_folder)
 
     # it is the run of the tutorial (pg.65)
     # At pg.93 there is another run. I did not test it because it performs the same operation done in this test
@@ -72,12 +72,14 @@ class Test_run(unittest.TestCase):
                         "--threshold=0.02",
                         "--mtf="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"FalconIImtf.txt")]
 
+        with patch.object(sys, 'argv', testargs_new):
+            fu.main()
+        with patch.object(sys, 'argv', testargs_old):
+            oldfu.main()
+
         return_new = get_im(path.join(self.new_output_folder, self.fname))
         return_old = get_im(path.join(self.old_output_folder, self.fname))
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
         self.assertTrue(allclose(return_new.get_3dview().flatten().tolist()[3641969:3642050],[8.926989539759234e-05, -9.56452640821226e-05, -0.00022921698109712452, -2.0858768039033748e-05, -0.0, -0.0, 0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 0.0, 0.0, 0.0, -0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, -0.0, 0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0]))
 
-        with patch.object(sys, 'argv', testargs_new):
-            fu.main()
-        with patch.object(sys, 'argv', testargs_old):
-            oldfu.main()
+

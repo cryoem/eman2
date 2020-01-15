@@ -55,6 +55,15 @@ ABSOLUTE_PATH_TO_STACK = "bdb:" + path.join(
 TOLERANCE = 0.0075
 
 """
+Comments from Adnan on Luca's comments.
+0) Please test_alignment to get more info about complex image.
+1) You need to read the db file back. And check whether you get the same output in all cases.
+2)
+"""
+
+
+
+"""
 WHAT IS MISSING:
 0) in all the cases where the input file is an image. I did not test the case with a complex image. I was not able to generate it
 1) draw_power2d --> it writes an image on a db. How test it?
@@ -92,12 +101,12 @@ IN THESE TESTS THERE ARE BUGS--> syntax error:
 
 IN THESE TESTS THERE COULD BE BUGS--> could be just a libs problem
 1)  imf_params_get --> try to use the undeclared 'get_1dpw_list' function
-2) imf_fit_put --> ry to use the undeclared 'residuals_pu' functio
+2) imf_fit_put --> try to use the undeclared 'residuals_pu' function
 
 
 IN THESE TESTS THERE ARE A STRANGE BEHAVIOUR:
 1) localvariance --> same input different output in both of the version. At least the version are always returning the same value ... compatibility test OK, but NOT unittestable
-2) defocusgett_vpp2 --> same input different output in both of the version. Some times are different output between the version ... compatibilitu test NOT OK
+2) defocusgett_vpp2 --> same input different output in both of the version. Some times are different output between the version ... compatibility test NOT OK
 
 CTER function situations:
 0)

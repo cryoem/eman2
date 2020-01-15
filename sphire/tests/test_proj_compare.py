@@ -24,8 +24,8 @@ from numpy import allclose
 """
 WHAT IS MISSING:
 0) run with 'meridien' and 'projmatch projs cases and all the helper functions called by these cases
-1) 'prepare_outdir_log' is just crating the output directory for log stuff. I 'm not going to test it
-2) cannot run from pyvharm because it cannot find 'e2proc2d.py'
+1) 'prepare_outdir_log' is just creating the output directory for log stuff. I 'm not going to test it
+2) cannot run from pycharm because it cannot find 'e2proc2d.py'
 
 RESULT AND KNOWN ISSUES
 Some compatibility tests for the following functions fail!!!

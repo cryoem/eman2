@@ -1,7 +1,7 @@
 import copy
-import sparx_utilities
+import sp_utilities
 import numpy
-from ..bin import sxlocres
+from ..bin import sp_locres
 
 
 class TestMakeAngRes:
@@ -15,10 +15,10 @@ class TestMakeAngRes:
         ) / (2 * nx * ny * nz)
         mask = test_data > 0
 
-        blank_data = sparx_utilities.model_blank(nx, ny, nz)
+        blank_data = sp_utilities.model_blank(nx, ny, nz)
         data_in = blank_data.get_3dview()
         data_in[...] = copy.deepcopy(test_data)
-        returned_data = sxlocres.makeAngRes(blank_data, nx, ny, nz, apix)
+        returned_data = sp_locres.makeAngRes(blank_data, nx, ny, nz, apix)
 
         expected_data = copy.deepcopy(test_data)
         expected_data[mask] = apix / test_data[mask]
@@ -32,10 +32,10 @@ class TestMakeAngRes:
         test_data = numpy.arange(nx * ny * nz, dtype=numpy.float32).reshape(nx, ny, nz)
         mask = test_data >= 2 * apix
 
-        blank_data = sparx_utilities.model_blank(nx, ny, nz)
+        blank_data = sp_utilities.model_blank(nx, ny, nz)
         data_in = blank_data.get_3dview()
         data_in[...] = copy.deepcopy(test_data)
-        returned_data = sxlocres.makeAngRes(blank_data, nx, ny, nz, apix, False)
+        returned_data = sp_locres.makeAngRes(blank_data, nx, ny, nz, apix, False)
 
         expected_data = copy.deepcopy(test_data)
         expected_data[mask] = apix / expected_data[mask]

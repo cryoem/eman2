@@ -26,16 +26,12 @@ except ImportError:
     from io import StringIO
 
 
-MPI_PATH = "/home/lusnig/SPHIRE_1_1/envs/sphire1_3/bin/mpirun" #"/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
+MPI_PATH = "/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/mpirun" #"/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
 NUM_PROC = 8
 
 """
 WHAT IS MISSING:
-
-
 RESULT AND KNOWN ISSUES
-
-
 """
 
 
@@ -43,10 +39,10 @@ class Test_run(unittest.TestCase):
     out_dir_old = "oldmeridien"
     out_dir_new = "newmeridien"
 
-    @classmethod
-    def tearDownClass(cls):
-        remove_dir(cls.out_dir_old)
-        remove_dir(cls.out_dir_new)
+    # @classmethod
+    # def tearDownClass(cls):
+    #     remove_dir(cls.out_dir_old)
+    #     remove_dir(cls.out_dir_new)
 
     #it is not the same run of the tutorial (pg.55) because I minimized the iteration to speed up the test.
     # At pg.92 there is another run. I did not test it because it performs the same operation done in this test

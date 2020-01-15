@@ -1,5 +1,5 @@
-
 from __future__ import print_function
+from __future__ import division
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
 # Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
@@ -37,99 +37,99 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
-class BaseLogger_Print(object):
+import sp_global_def
+import sys
 
-	def logLine(self, prefix, line, *args, **kwargs):
-		sp_global_def.sxprint(line)
+
+class BaseLogger_Print(object):
+    def logLine(self, prefix, line, *args, **kwargs):
+        sp_global_def.sxprint(line)
 
 
 class BaseLogger_Files(object):
-
-	def logLine(self, prefix, line, file_name, do_print):
-		if do_print:
-			line = sp_global_def.sxprint(line)
-		else:
-			t = sp_global_def.get_timestamp()
-			f = sys._getframe(1).f_code.co_name
-			m = t + " " + f + " => " + line
-		fstr = open(prefix + file_name, 'a+')
-		fstr.write(line + "\n")
-		fstr.close()
+    def logLine(self, prefix, line, file_name, do_print):
+        if do_print:
+            line = sp_global_def.sxprint(line)
+        else:
+            t = sp_global_def.get_timestamp()
+            f = sys._getframe(1).f_code.co_name
+            m = t + " " + f + " => " + line
+        fstr = open(prefix + file_name, "a+")
+        fstr.write(line + "\n")
+        fstr.close()
 
 
 class Logger(object):
-	
-	base_logger = None
-	prefix = ""
 
-	def __init__(self, base_logger=BaseLogger_Print(), base_logger2=None, prefix="", file_name="log.txt", do_print=True):
-		self.prefix = prefix
-		self.base_logger = base_logger
-		self.base_logger2 = base_logger2
-		self.file_name = file_name
-		self.do_print = do_print
+    base_logger = None
+    prefix = ""
 
-	def add(self, param1=None, param2=None, param3=None, param4=None, param5=None, param6=None, param7=None, param8=None, param9=None, param10=None):
-				
-		if self.base_logger == None:
-			return
-		
-		params = [param1, param2, param3, param4, param5, param6, param7, param8, param9, param10]
-		line = ""
-		for p in params:
-			if p != None:
-				line += " " + str(p)
+    def __init__(
+        self,
+        base_logger=BaseLogger_Print(),
+        base_logger2=None,
+        prefix="",
+        file_name="log.txt",
+        do_print=True,
+    ):
+        self.prefix = prefix
+        self.base_logger = base_logger
+        self.base_logger2 = base_logger2
+        self.file_name = file_name
+        self.do_print = do_print
 
-		#print(self.prefix)
-		self.base_logger.logLine(self.prefix, line, self.file_name, self.do_print)
-		if self.base_logger2:
-			self.base_logger2.logLine(self.prefix, line, self.file_name, self.do_print)
+    def add(
+        self,
+        param1=None,
+        param2=None,
+        param3=None,
+        param4=None,
+        param5=None,
+        param6=None,
+        param7=None,
+        param8=None,
+        param9=None,
+        param10=None,
+    ):
 
-	def sublog(self, add_prefix):
-		logger = Logger()
-		logger.base_logger = self.base_logger
-		logger.prefix = self.prefix + add_prefix
-		return logger
+        if self.base_logger == None:
+            return
 
-#--------------------------------------------------------[ Simple Logger ][NEW]
+        params = [
+            param1,
+            param2,
+            param3,
+            param4,
+            param5,
+            param6,
+            param7,
+            param8,
+            param9,
+            param10,
+        ]
+        line = ""
+        for p in params:
+            if p != None:
+                line += " " + str(p)
 
-"""
-The simple logger does the same as the default logger above. It is simpler
-though, easier to use, and more flexible. It is not clear whether replacing the
-original logger is safe to do though so, for now, we keep both.
-"""
-class SimpleLogger( object ):
-	"""
-	Simple class to log lines during execution. Makes use of sxprint to add
-	timestamps and caller information to each line.
+        # print(self.prefix)
+        self.base_logger.logLine(self.prefix, line, self.file_name, self.do_print)
+        if self.base_logger2:
+            self.base_logger2.logLine(self.prefix, line, self.file_name, self.do_print)
 
-	Constructor args:
+    def sublog(self, add_prefix):
+        logger = Logger()
+        logger.base_logger = self.base_logger
+        logger.prefix = self.prefix + add_prefix
+        return logger
 
-		filename (string): If provided the log is also printed to a file of the
-			given name. Otherwise the log is only printed to the screen.
-			[Default: ""]
-	
-		print_log (bool): Set to False to not print the log lines to the screen.
-			NOTE: This only makes sense when a file name is given, otherwise the
-			log is not printed at all.
-	"""
-	def __init__( self, filename="", print_log=True ):
-		self.filename  = filename
-		self.print_log = print_log
-		self.log( "Starting log" )
 
-	def log( self, *args, **kwargs ):
+# --------------------------------------------------------[ Simple Logger ][NEW]
 
-		if self.filename != "":
-			sxprint( *args, filename=self.filename, **kwargs )
-		else:
-			sxprint( *args, **kwargs )
+"""Multiline Comment0"""
+
+
 from builtins import object
 
-import time
 
-import sys
-import sp_global_def
-
-#-----------------------------------------------------------[ original Logger ]
-
+# -----------------------------------------------------------[ original Logger ]

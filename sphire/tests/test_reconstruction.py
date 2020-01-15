@@ -21,9 +21,9 @@ from test_module import get_real_data, ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLD
 XFORM_PROJECTION_IMG = get_arg_from_pickle_file(
     path.join(ABSOLUTE_PATH, "pickle files/alignment.shc")
 )[0][0]
-PRJLIST = get_arg_from_pickle_file(
-    path.join(ABSOLUTE_PATH, "pickle files/multi_shc/multi_shc.do_volume")
-)[0][0]
+# PRJLIST = get_arg_from_pickle_file(
+#     path.join(ABSOLUTE_PATH, "pickle files/multi_shc/multi_shc.do_volume")
+# )[0][0]
 STACK_NAME = "bdb:" + path.join(
     ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Substack/sort3d_substack_003"
 )
@@ -903,6 +903,7 @@ class Test_recons3d_4nn_MPI(unittest.TestCase):
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
+    """
     def test_default_case(self):
         return_new = fu.recons3d_4nn_MPI(
             myid=0,
@@ -1012,6 +1013,7 @@ class Test_recons3d_4nn_MPI(unittest.TestCase):
             )
         )
         self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), 0.5))
+    """
 
     def test_default_case_xy_z_size_both_not_negative(self):
         return_new = fu.recons3d_4nn_MPI(
@@ -1394,6 +1396,7 @@ class Test_recons3d_4nn_ctf_MPI(unittest.TestCase):
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
+    """
     def test_default_case(self):
         nima = EMUtil.get_image_count(STACK_NAME)
         list_proj = list(range(nima))
@@ -1545,6 +1548,7 @@ class Test_recons3d_4nn_ctf_MPI(unittest.TestCase):
             )
         )
         self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), 0.5))
+    """
 
     @unittest.skip(
         "crash if run togheter with the other tests of this class because a bad implementation of the code"
@@ -1584,6 +1588,7 @@ class Test_recons3d_4nn_ctf_MPI(unittest.TestCase):
         mpi_barrier(MPI_COMM_WORLD)
         self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), 0.5))
 
+    """
     def test_default_case_xy_z_size_both_not_negative_NameError_sizeprojection_BEACUASE_A_BUG(
         self
     ):
@@ -1625,7 +1630,7 @@ class Test_recons3d_4nn_ctf_MPI(unittest.TestCase):
             str(cm_new.exception), "global name 'sizeprojection' is not defined"
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-
+    
     def test_default_case_xy_size_NameError_sizeprojection_BEACUASE_A_BUG(self):
         nima = EMUtil.get_image_count(STACK_NAME)
         list_proj = list(range(nima))
@@ -1665,7 +1670,7 @@ class Test_recons3d_4nn_ctf_MPI(unittest.TestCase):
             str(cm_new.exception), "global name 'sizeprojection' is not defined"
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-
+    """
     @unittest.skip(
         "crash if run togheter with the other tests of this class because a bad implementation of the code"
     )

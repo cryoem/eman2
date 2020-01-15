@@ -21,9 +21,14 @@ except ImportError:
     from io import StringIO
 import sys
 
-MPI_PATH = "/home/lusnig/SPHIRE_1_1/envs/sphire1_3/bin/mpirun" #"/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
-NUM_PROC = 6    # has to be a multiple of 3
 
+
+MPI_PATH = "/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/mpirun" #"/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
+NUM_PROC = 6  # has to be a multiple of 3
+
+
+from sp_utilities import get_im
+from numpy import allclose
 """
 WHAT IS MISSING:
 I just test the error case because the script collects the input values from the gui and then call "multi_shc" from sp_multi_shc.
@@ -76,6 +81,9 @@ class Test_run(unittest.TestCase):
         out_dir_old = "oldviper"
         out_dir_new = "newviper"
 
+        filename_vol = "volf.hdf"
+        filename_refvol = "refvol2.hdf"
+
         os_system(
             MPI_PATH
             + " -np "
@@ -94,11 +102,25 @@ class Test_run(unittest.TestCase):
             +" "+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"04_ISAC","best.hdf")
             +" "+out_dir_new
             + " --sym=c5")
+
+
+        return_new_avg = get_im( path.join(out_dir_new,filename_vol) )
+        return_new_var = get_im( path.join(out_dir_new,filename_refvol))
+
+        return_old_avg = get_im( path.join(out_dir_old,filename_vol) )
+        return_old_var = get_im( path.join(out_dir_old,filename_refvol))
+
+        self.assertTrue(allclose(return_new_avg.get_3dview(), return_old_avg.get_3dview(), atol=0.1))
+        self.assertTrue(allclose(return_old_var.get_3dview(), return_new_var.get_3dview(), atol=0.1))
+
+
+
         #remove_dir(out_dir_new)
         #remove_dir(out_dir_old)
 
-        """
-        platform linux2 -- Python 2.7.14, pytest-4.6.6, py-1.8.0, pluggy-0.13.0
+
+"""
+platform linux2 -- Python 2.7.14, pytest-4.6.6, py-1.8.0, pluggy-0.13.0
 rootdir: /home/lusnig/src_sphire_1_3/eman2/sphire/tests
 plugins: cov-2.8.1
 collected 1 item                                                                                                                                                                                                                                                           
@@ -306,6 +328,6 @@ the job to be terminated. The first process to do so was:
 --------------------------------------------------------------------------
 .
 
-        """
+"""
 
 

@@ -10,7 +10,7 @@ class Test_Util_diff_between_matrix_of_3D_parameters_angles(unittest.TestCase):
     """this is unit test of diff_between_matrix_of_3D_parameters_angles function from Util"""
 
     def internal_calculate_avg_diff(self, projs, matrix_rot):
-        from utilities import angle_between_projections_directions
+        from sp_utilities import angle_between_projections_directions
 
         n = len(projs[0])
         sc = len(projs)
@@ -40,7 +40,7 @@ class Test_Util_diff_between_matrix_of_3D_parameters_angles(unittest.TestCase):
         return avg_diff_per_image
 
     def internal_calculate_avg_diff_Util(self, projs, matrix_rot):
-        from global_def import Util
+        from sp_global_def import Util
 
         sc = len(projs)
         trans_matrix = []
@@ -60,7 +60,7 @@ class Test_Util_diff_between_matrix_of_3D_parameters_angles(unittest.TestCase):
         return avg_diff_per_image
 
     def wrap_rotation_between_anglesets(self, ang1, ang2):
-        from utilities import rotation_between_anglesets
+        from sp_utilities import rotation_between_anglesets
 
         phi, theta, psi = rotation_between_anglesets(ang1, ang2)
         return [phi, theta, psi]

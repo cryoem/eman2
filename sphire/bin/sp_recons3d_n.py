@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
@@ -40,100 +41,194 @@ from __future__ import print_function
 #
 #
 
-from builtins import range
-import sp_global_def
-from sp_global_def import sxprint, ERROR
-from   sp_global_def import *
-from   optparse import OptionParser
-from   string import atoi,replace
-from   EMAN2 import EMUtil
-
-import os
-import sys
+import EMAN2_cppwrap
 import mpi
+import optparse
+import sp_applications
+import sp_global_def
+import sp_utilities
+import string
+import sys
+from builtins import range
+
 
 def main():
-	arglist = []
-	for arg in sys.argv:
-		arglist.append( arg )
+    arglist = []
+    for arg in sys.argv:
+        arglist.append(arg)
 
-	progname = os.path.basename( arglist[0] )
-	usage = progname + " prj_stack volume [begin end step] --CTF --npad=ntimes_padding --list=file --group=ID --snr=SNR --sym=symmetry --verbose=(0|1) --xysize --MPI"
-	parser = OptionParser(usage, version=SPARXVERSION)
+    progname = optparse.os.path.basename(arglist[0])
+    usage = (
+        progname
+        + " prj_stack volume [begin end step] --CTF --npad=ntimes_padding --list=file --group=ID --snr=SNR --sym=symmetry --verbose=(0|1) --xysize --MPI"
+    )
+    parser = optparse.OptionParser(usage, version=sp_global_def.SPARXVERSION)
 
-	parser.add_option("--CTF",                    action="store_true",   default=False, help="apply CTF correction")
-	parser.add_option("--snr",                    type="float",	         default=1.0,   help="Signal-to-Noise Ratio" )
-	parser.add_option("--sym",                    type="string",	     default="c1",  help="symmetry" )
-	parser.add_option("--list",                   type="string",                        help="file with list of images to be used in the first column" )
-	parser.add_option("--group",                  type="int",           default=-1,     help="perform reconstruction using images for a given group number (group is attribute in the header)" )
-	parser.add_option("--MPI",                    action="store_true",  default=False,  help="use MPI version ")
-	parser.add_option("--npad",                   type="int",	        default=2,      help="number of times padding (default 2)" )
-	parser.add_option("--verbose",                type="int",           default=0,      help="verbose level: 0 no verbose, 1 verbose" )
-	parser.add_option("--xysize",                 type="int",	        default=-1,     help="user expected size at xy direction" )
-	parser.add_option("--zsize",                  type="int",	        default=-1,     help="user expected size at z direction" )
-	parser.add_option("--smearstep",              type="float",	        default=0.0,    help="Rotational smear step (default 0.0, no smear)" )
-	parser.add_option("--interpolation_method",   type ="string",	    default="4nn",  help="4nn, or tril: nearest neighbor, or trilinear interpolation" )
-	parser.add_option("--niter",                  type="int",	        default=10,     help="number of iterations for iterative reconstruction" )
-	parser.add_option("--upweighted",             action="store_true",  default=False,  help="apply background noise")
-	parser.add_option("--compensate",             action="store_true",  default=False,  help="compensate in reconstruction")
-	parser.add_option("--chunk_id",               type="int",           default=-1,     help="reconstruct both odd and even groups of particles")
-	parser.add_option("--target_window_size",     type="int",           default=-1,     help=" size of the targeted reconstruction ")
+    parser.add_option(
+        "--CTF", action="store_true", default=False, help="apply CTF correction"
+    )
+    parser.add_option("--snr", type="float", default=1.0, help="Signal-to-Noise Ratio")
+    parser.add_option("--sym", type="string", default="c1", help="symmetry")
+    parser.add_option(
+        "--list",
+        type="string",
+        help="file with list of images to be used in the first column",
+    )
+    parser.add_option(
+        "--group",
+        type="int",
+        default=-1,
+        help="perform reconstruction using images for a given group number (group is attribute in the header)",
+    )
+    parser.add_option(
+        "--MPI", action="store_true", default=False, help="use MPI version "
+    )
+    parser.add_option(
+        "--npad", type="int", default=2, help="number of times padding (default 2)"
+    )
+    parser.add_option(
+        "--verbose",
+        type="int",
+        default=0,
+        help="verbose level: 0 no verbose, 1 verbose",
+    )
+    parser.add_option(
+        "--xysize", type="int", default=-1, help="user expected size at xy direction"
+    )
+    parser.add_option(
+        "--zsize", type="int", default=-1, help="user expected size at z direction"
+    )
+    parser.add_option(
+        "--smearstep",
+        type="float",
+        default=0.0,
+        help="Rotational smear step (default 0.0, no smear)",
+    )
+    parser.add_option(
+        "--interpolation_method",
+        type="string",
+        default="4nn",
+        help="4nn, or tril: nearest neighbor, or trilinear interpolation",
+    )
+    parser.add_option(
+        "--niter",
+        type="int",
+        default=10,
+        help="number of iterations for iterative reconstruction",
+    )
+    parser.add_option(
+        "--upweighted",
+        action="store_true",
+        default=False,
+        help="apply background noise",
+    )
+    parser.add_option(
+        "--compensate",
+        action="store_true",
+        default=False,
+        help="compensate in reconstruction",
+    )
+    parser.add_option(
+        "--chunk_id",
+        type="int",
+        default=-1,
+        help="reconstruct both odd and even groups of particles",
+    )
+    parser.add_option(
+        "--target_window_size",
+        type="int",
+        default=-1,
+        help=" size of the targeted reconstruction ",
+    )
 
-	(options,args) = parser.parse_args(arglist[1:])
+    (options, args) = parser.parse_args(arglist[1:])
 
-	if sp_global_def.CACHE_DISABLE:
-		from sp_utilities import disable_bdb_cache
-		disable_bdb_cache()
+    if sp_global_def.CACHE_DISABLE:
+        sp_utilities.disable_bdb_cache()
 
-	if len(args) == 2:
-		prj_stack = args[0]
-		vol_stack = args[1]
-		nimage = EMUtil.get_image_count( prj_stack )
-		pid_list = list(range(0, nimage))
-	elif len(args) == 5:
-		prj_stack = args[0]
-		vol_stack = args[1]
-		begin = atoi( args[2] )
-		end   = atoi( args[3] )
-		step  = atoi( args[4] )
-		pid_list = list(range(begin, end, step))
-	else:
-		ERROR( "Incomplete list of arguments" )
-		return
+    if len(args) == 2:
+        prj_stack = args[0]
+        vol_stack = args[1]
+        nimage = EMAN2_cppwrap.EMUtil.get_image_count(prj_stack)
+        pid_list = list(range(0, nimage))
+    elif len(args) == 5:
+        prj_stack = args[0]
+        vol_stack = args[1]
+        begin = string.atoi(args[2])
+        end = string.atoi(args[3])
+        step = string.atoi(args[4])
+        pid_list = list(range(begin, end, step))
+    else:
+        sp_global_def.ERROR("Incomplete list of arguments")
+        return
 
-	if(options.list and options.group > -1):
-		ERROR( "options group and list cannot be used together" )
-		return
+    if options.list and options.group > -1:
+        sp_global_def.ERROR("options group and list cannot be used together")
+        return
 
-	from sp_applications import recons3d_n, recons3d_trl_MPI
+    sp_global_def.BATCH = True
+    if options.interpolation_method == "4nn":
+        sp_applications.recons3d_n(
+            prj_stack,
+            pid_list,
+            vol_stack,
+            options.CTF,
+            options.snr,
+            1,
+            options.npad,
+            options.sym,
+            options.list,
+            options.group,
+            options.verbose,
+            options.MPI,
+            options.xysize,
+            options.zsize,
+            options.smearstep,
+            options.upweighted,
+            options.compensate,
+            options.chunk_id,
+        )
+    elif options.interpolation_method == "tril":
+        if options.MPI is False:
+            sp_global_def.ERROR(
+                "Trilinear interpolation reconstruction has MPI version only!"
+            )
+            return
+        sp_applications.recons3d_trl_MPI(
+            prj_stack,
+            pid_list,
+            vol_stack,
+            options.CTF,
+            options.snr,
+            1,
+            options.npad,
+            options.sym,
+            options.verbose,
+            options.niter,
+            options.compensate,
+            options.target_window_size,
+        )
 
-	sp_global_def.BATCH = True
-	if options.interpolation_method == "4nn":
-		recons3d_n(prj_stack, pid_list, vol_stack, options.CTF, options.snr, 1, options.npad,\
-		 options.sym, options.list, options.group, options.verbose, options.MPI,options.xysize, options.zsize, options.smearstep, options.upweighted, options.compensate,options.chunk_id)
-	elif options.interpolation_method == "tril":
-		if options.MPI is False:
-			ERROR( "Trilinear interpolation reconstruction has MPI version only!" )
-			return
-		recons3d_trl_MPI(prj_stack, pid_list, vol_stack, options.CTF, options.snr, 1, options.npad,\
-		 options.sym, options.verbose, options.niter, options.compensate, options.target_window_size)
-		
-	else:
-		ERROR( "Wrong interpolation method. The current options are 4nn, and tril. 4nn is the default one." )
-		return
-		
-	sp_global_def.write_command(os.path.dirname(vol_stack))
-	sp_global_def.BATCH = False
+    else:
+        sp_global_def.ERROR(
+            "Wrong interpolation method. The current options are 4nn, and tril. 4nn is the default one."
+        )
+        return
+
+    sp_global_def.write_command(optparse.os.path.dirname(vol_stack))
+    sp_global_def.BATCH = False
 
 
-if __name__=="__main__":
-	RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
-	if RUNNING_UNDER_MPI:
-		mpi.mpi_init( 0, [] )  # On OS X, there is an error if MPI is initialized and not finalized, hence the conditional
-	sp_global_def.print_timestamp( "Start" )
-	sp_global_def.write_command()
-	main()
-	sp_global_def.print_timestamp( "Finish" )
-	mpi.mpi_finalize()
-	if RUNNING_UNDER_MPI:
-		mpi.mpi_finalize()
+if __name__ == "__main__":
+    RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in optparse.os.environ
+    if RUNNING_UNDER_MPI:
+        mpi.mpi_init(
+            0, []
+        )  # On OS X, there is an error if MPI is initialized and not finalized, hence the conditional
+    sp_global_def.print_timestamp("Start")
+    sp_global_def.write_command()
+    main()
+    sp_global_def.print_timestamp("Finish")
+    mpi.mpi_finalize()
+    if RUNNING_UNDER_MPI:
+        mpi.mpi_finalize()

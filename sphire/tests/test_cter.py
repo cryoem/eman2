@@ -137,6 +137,7 @@ class Test_run(unittest.TestCase):
 
 
     def test_cter_mrk(self):
+        self.remove_folders()
         testargs_new = [path.join(ABSOLUTE_BIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "CorrectedSums", "corrsum_dw","TcdA1-001*_frames.mrc"),self.new_output_folder,"--selection_list="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "01_CTER","Tutorial_micrographs_select.txt"), "--apix=1.14", "--Cs=0", "--f_start=40", "--f_stop=34"]
         testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "CorrectedSums", "corrsum_dw","TcdA1-001*_frames.mrc"),self.old_output_folder,"--selection_list="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "01_CTER","Tutorial_micrographs_select.txt"), "--apix=1.14", "--Cs=0", "--f_start=40", "--f_stop=34"]
         with patch.object(sys, 'argv', testargs_new):
@@ -151,7 +152,7 @@ class Test_run(unittest.TestCase):
 
 
     def test_cter_vpp(self):
-
+        self.remove_folders()
         testargs_new = [path.join(ABSOLUTE_BIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "CorrectedSums", "corrsum_dw","TcdA1-001*_frames.mrc"),self.new_output_folder+"vpp","--selection_list="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "01_CTER","Tutorial_micrographs_select.txt"), "--apix=1.14", "--Cs=0", "--vpp", "--f_start=40", "--f_stop=34"]
         testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "CorrectedSums", "corrsum_dw","TcdA1-001*_frames.mrc"),self.old_output_folder+"vpp","--selection_list="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "01_CTER","Tutorial_micrographs_select.txt"), "--apix=1.14", "--Cs=0", "--vpp", "--f_start=40", "--f_stop=34"]
         with patch.object(sys, 'argv', testargs_new):
@@ -166,6 +167,7 @@ class Test_run(unittest.TestCase):
         self.remove_folders()
 
     def test_cter_pap(self):
+        self.remove_folders()
         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "CorrectedSums", "corrsum_dw","TcdA1-001*_frames.mrc"),self.new_output_folder+"pap","--selection_list="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "01_CTER","Tutorial_micrographs_select.txt"), "--apix=1.14", "--Cs=0", "--pap", "--f_start=40", "--f_stop=34"]
         testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "CorrectedSums", "corrsum_dw","TcdA1-001*_frames.mrc"),self.old_output_folder+"pap","--selection_list="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "01_CTER","Tutorial_micrographs_select.txt"), "--apix=1.14", "--Cs=0", "--pap", "--f_start=40", "--f_stop=34"]
         with patch.object(sys, 'argv', testargs_new):

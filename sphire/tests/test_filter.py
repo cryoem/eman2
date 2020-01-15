@@ -36,6 +36,11 @@ In these tests there is a strange behavior:
 """
 
 
+"""
+Comments from Adnan on reply of LUCA's comments
+1) Please have a look in test_alignment ,  I have mentioned how to create a complex image
+"""
+
 #   THESE FUNCTIONS ARE COMMENTED BECAUSE NOT INVOLVED IN THE PYTHON3 CONVERSION. THEY HAVE TO BE TESTED ANYWAY
 """ start: new in sphire 1.3
 

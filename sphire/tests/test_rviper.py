@@ -22,7 +22,7 @@ except ImportError:
     from io import StringIO
 import sys
 
-MPI_PATH = "/home/lusnig/SPHIRE_1_1/envs/sphire1_3/bin/mpirun" #"/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
+MPI_PATH = "/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/mpirun" #"/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
 NUM_PROC = 8
 
 """
@@ -177,7 +177,6 @@ class Test_helperFunctions(unittest.TestCase):
 #        out_dir_old="oldrvipe"
         #out_dir_new = "newrvipe"
 class Test_Error_cases(unittest.TestCase):
-
     def test_invalid_number_params(self):
         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_rviper.py")]
         testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_rviper.py")]
@@ -218,6 +217,7 @@ class Test_Error_cases(unittest.TestCase):
 
 
 # it fails!!!
+
 class Test_run(unittest.TestCase):
     #it is not the same run of the tutorial because I minimized the iteration to speed up the test. It takes anyway an hour
     def test_(self):
@@ -255,3 +255,4 @@ class Test_run(unittest.TestCase):
 
         #remove_dir(out_dir_new)
         #remove_dir(out_dir_old)
+        

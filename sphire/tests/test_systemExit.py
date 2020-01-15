@@ -24,7 +24,7 @@ ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 change it when you run the tests with your path.In this folder I copied 'TcdA1-0010_frames.mrc' got from the sphire tutorial i.e.: 'SphireDemoResults/CorrectedSums/corrsum':
 """
 ABSOLUTE_PATH_TO_MRC_FILES = (
-    "/home/adnan/Downloads/sphire_1_0_precalculated_results/SphireDemoResults/"
+    "/home/adnan/DemoResults/"
 )
 TOLERANCE = 0.0075
 
@@ -682,7 +682,7 @@ class Test_UTILITIES(unittest.TestCase):
             proj_angles_list[i][3] = proj_angles[i][4]
 
         with self.assertRaises(SystemExit) as cm_new:
-            sparx_utilities.nearest_proj(proj_angles_list)
+            sp_utilities.nearest_proj(proj_angles_list)
         with self.assertRaises(SystemExit) as cm_old:
             oldsparx_utilities.nearest_proj(proj_angles_list)
         self.assertEqual(cm_new.exception.code, None)
