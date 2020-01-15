@@ -1867,8 +1867,10 @@ class EMDirEntry(object) :
 
 		else :
 			head = open(self.path(), "rb").read(4096)		# Most FileTypes should be able to identify themselves using the first 4K block of a file
-
-			guesses = EMFileType.extbyft[os.path.splitext(self.path())[1]]		# This will get us a list of possible FileTypes for this extension
+			ext=os.path.splitext(self.path())[1]
+			if ext not in EMFileType.extbyft:
+				return 0
+			guesses = EMFileType.extbyft[ext]		# This will get us a list of possible FileTypes for this extension
 
 	#			print "-------\n", guesses
 
