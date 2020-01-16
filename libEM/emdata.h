@@ -67,6 +67,7 @@ namespace EMAN
 	class XYData;
 	class Transform;
 	class GLUtil;
+	class EMBytes: public std::string {};
 
 	typedef boost::multi_array_ref<float, 2> MArray2D;
 	typedef boost::multi_array_ref<float, 3> MArray3D;

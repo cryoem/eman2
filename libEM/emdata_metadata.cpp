@@ -1290,13 +1290,14 @@ void EMData::scale_pixel(float scale) const
 }
 
 //vector<float> EMData::get_data_pickle() const
-std::string EMData::get_data_pickle() const
+EMBytes EMData::get_data_pickle() const
 {
 //	vector<float> vf;
 //	vf.resize(nx*ny*nz);
 //	std::copy(rdata, rdata+nx*ny*nz, vf.begin());
 
-	std::string vf((const char *)get_data(),nx*ny*nz*sizeof(float));
+	EMBytes vf;
+	vf.assign((const char *)get_data(),nx*ny*nz*sizeof(float));
 
 	return vf;
 }

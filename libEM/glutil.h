@@ -34,6 +34,7 @@
 #include <vector>
 #include "vec3.h"
 #include "transform.h"
+#include "emdata.h"
 
 #ifdef __APPLE__
 	#include "OpenGL/gl.h"
@@ -47,7 +48,6 @@ namespace EMAN
 {
 	class EMData;
 	class MarchingCubes;
-	class EMBytes: public std::string {};
 
 	class GLUtil {
 	public:

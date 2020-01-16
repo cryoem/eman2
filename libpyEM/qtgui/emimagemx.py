@@ -282,6 +282,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.valstodisp=["Img #"]
 
 		self.inspector=None
+		self.usetexture=True
 
 		self.font_size = 11
 		self.font_renderer.set_face_size(self.font_size)
@@ -1174,7 +1175,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 						except: pass
 						if not excluded:
 							#print rx,ry,tw,th,self.width(),self.height(),self.origin
-							if not self.glflags.npt_textures_unsupported():
+							if self.usetexture and (not self.glflags.npt_textures_unsupported()):
 								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)//4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 								self.texture(a,tx,ty,tw,th)
 							else:
@@ -2369,17 +2370,19 @@ class EMImageInspectorMX(QtWidgets.QWidget):
 		self.banim.clicked[bool].connect(self.animation_clicked)
 	
 	def update_vals(self):
-		try:
-			self.vals.clear()
-			vn=self.target().data.get_image_header_keys()
-			vn.sort()
-			for i in vn:
-				action=self.vals.addAction(i)
-				action.setCheckable(1)
-				action.setChecked(0)
-		except Exception as inst:
-			print(type(inst))	 # the exception instance
-			print(inst.args)	  # arguments stored in .args
+		#try:
+		self.vals.clear()
+		vn=self.target().data.get_image_header_keys()
+		if vn==None:
+			return
+		vn.sort()
+		for i in vn:
+			action=self.vals.addAction(i)
+			action.setCheckable(1)
+			action.setChecked(0)
+		#except Exception as inst:
+			#print(type(inst))	 # the exception instance
+			#print(inst.args)	  # arguments stored in .args
 	
 	def add_panel(self,widget,name):
 		self.tabwidget.addTab(widget,name)
