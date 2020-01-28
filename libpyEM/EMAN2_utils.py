@@ -190,6 +190,14 @@ def natural_keys(text):
 
 def natural_sort(lst):
 	return sorted(lst, key=natural_keys)
+
+def import_tensorflow(gpuid=None):
+	global tf
+	if gpuid!=None: #### decide which gpu to use
+		os.environ["CUDA_VISIBLE_DEVICES"]=str(gpuid)
+	import tensorflow as tf
+	os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' #### reduce log output
+	return tf
         
     
 def idfft2(v,u,amp,phase,nx=256,ny=256,dtype=np.float32,usedegrees=False):
