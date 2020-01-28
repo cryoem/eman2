@@ -2043,6 +2043,8 @@ class EMGLScrollBar(object):
 
 		self.up_arrow_color = self.scroll_bar_idle_color
 		self.down_arrow_color = self.scroll_bar_idle_color
+		
+		self.isdrawn=False
 
 
 	def update_stuff(self):
@@ -2147,6 +2149,8 @@ class EMGLScrollBar(object):
 		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.scroll_bit_color)
 		glVertex(x1,y2,1)
 		glEnd()
+		
+		self.isdrawn=True
 
 	def down_button_pressed(self,color_change=True):
 		if color_change: self.down_arrow_color = self.scroll_bar_press_color
@@ -2197,6 +2201,8 @@ class EMGLScrollBar(object):
 		elif y < 2*self.arrow_button_height:
 			self.up_button_pressed()
 		else:
+			if not self.isdrawn: ### sometimes click happens before draw...
+				return
 			scroll_bit_ymin = self.starty +self.scroll_bit_position
 			scroll_bit_ymax = scroll_bit_ymin + self.scroll_bit_height
 			if y >= scroll_bit_ymin and y < scroll_bit_ymax:

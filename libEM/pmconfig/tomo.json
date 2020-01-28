@@ -46,6 +46,11 @@
         "CHILDREN": []
       },
       {
+        "PROGRAM": "e2spt_tomoctf.py",
+        "NAME": "CTF estimation",
+        "CHILDREN": []
+      },
+      {
         "PROGRAM": "e2tomo_showali.py",
         "MODE": "fiderr",
         "NAME": "Examine fiducial error",
@@ -122,11 +127,6 @@
     "NAME":"Subtomogram Averaging",
     "ICON": "tomo_spt",
     "CHILDREN":[
-      {
-        "PROGRAM": "e2spt_tomoctf.py",
-        "NAME": "CTF estimation",
-        "CHILDREN": []
-      },
       {
         "MODE": "box3d",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_boxer",

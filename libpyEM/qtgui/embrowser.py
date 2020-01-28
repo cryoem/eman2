@@ -687,6 +687,8 @@ class EMPlotFileType(EMFileType) :
 		numc = 0
 
 		for l in hdr :
+			
+			if len(l)==0: continue
 			if l[0] == "#" : continue		# comment lines ok
 
 			numc = len([float(i) for i in renumfind.findall(l)])		# number of numeric columns
@@ -705,8 +707,8 @@ class EMPlotFileType(EMFileType) :
 
 		for l in fin :
 			if l[0] == "#" or len(l) < 2 or "nan" in l : continue
-
-			lnumc = len([float(i) for i in renumfind.findall(l)])
+			try: lnumc = len([float(i) for i in renumfind.findall(l)])
+			except: continue
 			if lnumc != 0 and lnumc != numc : return False				# 0 means the line contains no numbers, we'll live with that, but if there are numbers, it needs to match
 			if lnumc != 0 : numr += 1
 
@@ -1875,7 +1877,9 @@ class EMDirEntry(object) :
 	#			print "-------\n", guesses
 
 			for guess in guesses :
-				size, n, dim = guess.isValid(self.path(), head)		# This will raise an exception if isValid returns False
+				ret=guess.isValid(self.path(), head)
+				if ret==False: continue
+				size, n, dim = ret
 
 				# If we got here, we found a match
 				self.filetype = guess.name()
@@ -3754,7 +3758,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 
 		if filt == "" :
 			filt = None
-		elif filt == "?"  or  lower(filt) == "help" :
+		elif filt == "?"  or  filt.lower() == "help" :
 			filt = None
 			hlp  = \
 			"Enter a regular expression to filter files to see, or\n" + \
