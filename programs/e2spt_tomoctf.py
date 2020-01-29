@@ -178,11 +178,12 @@ def main():
 	parser.add_argument("--stepy", type=int,help="Number of tiles to generate on y-axis (same defocus)", default=40, guitype='intbox',row=8, col=1,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--refine", action="store_true", help="Include a refinement step in the end for more precise estimation.", default=False, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="model")
 	parser.add_argument("--checkhand", action="store_true", help="Check the handedness of tomogram.", default=False,guitype='boolbox',row=10, col=0, rowspan=1, colspan=1,mode="model")
-	
+	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on the local computer",guitype='intbox', row=30, col=0, rowspan=1, colspan=1, mode='auto[4]')
+	parser.add_argument("--nolog",action="store_true",default=False,help="Default=False. Turn off recording of the command ran for this program onto the .eman2log.txt file")	
+
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	
 	(options, args) = parser.parse_args()
-	logid=E2init(sys.argv)
 	
 	#### deal with multiple inputs
 	if options.alltiltseries:
@@ -194,14 +195,17 @@ def main():
 		print("Reading tilt series {}...".format(args[0]))
 	else:
 		print("Processing {} tilt series in sequence..".format(len(args)))
+		if not options.nolog: logid=E2init(sys.argv)
 		cmd=sys.argv
 		opt=' '.join([s for s in cmd if s.startswith("-")])
 		opt=opt.replace("--alltiltseries","")
 		for a in args:
-			run("{} {} {}".format(cmd[0], a, opt))
-		E2end(logid)
+			run("{} --nolog {} {}".format(cmd[0], a, opt))
+		if not options.nolog: E2end(logid)
 		return
 	
+	if not options.nolog: logid=E2init(sys.argv)
+
 	tfile=args[0]
 	try:
 		js=js_open_dict(info_name(tfile))
@@ -359,7 +363,7 @@ def main():
 		else:
 			print("The handedness seems to be flipped. Consider rerun the tomogram reconstruction with --tltax={:.1f} then rerun the CTF estimation.".format(-((180+rot)%360)))
 		      
-		E2end(logid)
+		if not options.nolog: E2end(logid)
 		return
 		
 			
@@ -447,7 +451,7 @@ def main():
 	
 	print("Done")
 	
-	E2end(logid)
+	if not options.nolog: E2end(logid)
 	
 def run(cmd):
 	print(cmd)
