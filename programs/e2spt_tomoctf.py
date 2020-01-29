@@ -207,7 +207,8 @@ def main():
 			# note that it's ok that we wait here forever, since there can't be new results if an existing
 			# thread hasn't finished.
 			if thrtolaunch<len(thrds) :
-				while (threading.active_count()==NTHREADS ) : time.sleep(.1)
+				# 1 second sleep staggers launching a bit since each job has a disk intensive task at the beginning
+				while (threading.active_count()==NTHREADS ) : time.sleep(1)
 				if options.verbose>1 : print("Starting thread {}/{}".format(thrtolaunch,len(thrds)))
 				print("running: ",thrds[thrtolaunch])
 				thrds[thrtolaunch]=threading.Thread(target=run,args=(thrds[thrtolaunch],))
