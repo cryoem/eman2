@@ -611,6 +611,17 @@ def floatvararg_callback(option, opt_str, value, parser):
     setattr(parser.values, option.dest, v)
     return
 
+def commandoptions(options,exclude=[]):
+	"""This will reconstruct command-line options, excluding any options in exclude"""
+	opts=[]
+	for opt,val in vars(options).items():
+		if opt in exclude or opt=="positionalargs" or val==False: continue
+		if val==True : opts.append("--"+opt)
+		else: opts.append("--{}={}".format(opt,val))
+
+	return(" ".join(opts))
+	
+
 class EMArgumentParser(argparse.ArgumentParser):
 	""" subclass of argparser to masquerade as optparser and run the GUI """
 	def __init__(self, prog=None,usage=None,description=None,epilog=None,version=None,parents=[],formatter_class=argparse.HelpFormatter,prefix_chars='-',fromfile_prefix_chars=None,argument_default=None,conflict_handler='error',add_help=True):

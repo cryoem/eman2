@@ -9,6 +9,7 @@ from EMAN2 import *
 import json
 from scipy.signal import argrelextrema
 from scipy.optimize import minimize
+import threading
 
 def calc_ctf(defocus, bxsz=256, voltage=300, cs=4.7, apix=1. ,phase=0.):
 	ds=1.0/(apix*bxsz)
@@ -180,6 +181,7 @@ def main():
 	parser.add_argument("--checkhand", action="store_true", help="Check the handedness of tomogram.", default=False,guitype='boolbox',row=10, col=0, rowspan=1, colspan=1,mode="model")
 	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on the local computer",guitype='intbox', row=30, col=0, rowspan=1, colspan=1, mode='auto[4]')
 	parser.add_argument("--nolog",action="store_true",default=False,help="Default=False. Turn off recording of the command ran for this program onto the .eman2log.txt file")	
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	
@@ -196,11 +198,30 @@ def main():
 	else:
 		print("Processing {} tilt series in sequence..".format(len(args)))
 		if not options.nolog: logid=E2init(sys.argv)
-		cmd=sys.argv
-		opt=' '.join([s for s in cmd if s.startswith("-")])
-		opt=opt.replace("--alltiltseries","")
-		for a in args:
-			run("{} --nolog {} {}".format(cmd[0], a, opt))
+		thrds=["{} {} --nolog {}".format(parser.prog,a,commandoptions(options,("threads","alltiltseries"))) for a in sorted(args)]
+
+		NTHREADS=max(options.threads+1,2)	# the controlling thread isn't really doing anything
+		thrtolaunch=0
+		while thrtolaunch<len(thrds) or threading.active_count()>1:
+			# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
+			# note that it's ok that we wait here forever, since there can't be new results if an existing
+			# thread hasn't finished.
+			if thrtolaunch<len(thrds) :
+				while (threading.active_count()==NTHREADS ) : time.sleep(.1)
+				if options.verbose>1 : print("Starting thread {}/{}".format(thrtolaunch,len(thrds)))
+				print("running: ",thrds[thrtolaunch])
+				thrds[thrtolaunch]=threading.Thread(target=run,args=(thrds[thrtolaunch],))
+				thrds[thrtolaunch].start()
+				thrtolaunch+=1
+			else: time.sleep(1)
+			if options.verbose>1 and thrtolaunch>0:
+				frac=thrtolaunch/float(len(thrds))
+				print("{}% complete".format(100.0*frac))
+
+		for t in thrds:
+			t.join()
+
+		if options.verbose : print("All threads complete")
 		if not options.nolog: E2end(logid)
 		return
 	
