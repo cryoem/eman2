@@ -91,16 +91,16 @@ class NNet:
 
 		ki=tf.keras.initializers.TruncatedNormal(stddev=0.01)
 		layers=[
-		tf.keras.layers.Conv2D(48, 5, activation="relu", padding=pad,
-					input_shape=(boxsize, boxsize, thick//3),kernel_initializer=ki),
-		tf.keras.layers.MaxPooling2D(),
-		tf.keras.layers.Dropout(0.2),
-		tf.keras.layers.Conv2D(32, 7, activation="relu", padding=pad,kernel_initializer=ki),
-		tf.keras.layers.MaxPooling2D(),
-		tf.keras.layers.Dropout(0.2),
-		tf.keras.layers.Conv2D(32, 7, activation="relu", padding=pad,kernel_initializer=ki),
-		tf.keras.layers.Dropout(0.2),
-		tf.keras.layers.Conv2D(1, 7, padding=pad, activation="relu",kernel_initializer=ki),
+			tf.keras.layers.Conv2D(48, 5, activation="relu", padding=pad,
+						input_shape=(boxsize, boxsize, thick//3), kernel_initializer=ki),
+			tf.keras.layers.MaxPooling2D(),
+			tf.keras.layers.Dropout(0.2),
+			tf.keras.layers.Conv2D(32, 7, activation="relu", padding=pad, kernel_initializer=ki),
+			tf.keras.layers.MaxPooling2D(),
+			tf.keras.layers.Dropout(0.2),
+			tf.keras.layers.Conv2D(32, 7, activation="relu", padding=pad, kernel_initializer=ki),
+			tf.keras.layers.Dropout(0.2),
+			tf.keras.layers.Conv2D(1, 7, padding=pad, activation="relu", kernel_initializer=ki),
 		]
 		self.model=model=tf.keras.Sequential(layers)
 		self.outsz=self.model.layers[-1].output_shape[1]
@@ -109,7 +109,7 @@ class NNet:
 		self.boxsize=boxsize
 		self.layers=layers
 		
-	def predict_class(self, inp, fromdata=True, usemax=True):
+	def predict_class(self, inp, fromdata=True, usemax=False):
 		if fromdata:
 			inp=self.model(inp)
 		inp=tf.math.minimum(inp,1.0)
@@ -121,9 +121,8 @@ class NNet:
 			out1=tf.math.reduce_sum(abs(inp-self.mask)*self.mask2, axis=(1,2))
 		return out0, out1
 	
-	def do_training(self, dataset, learnrate=1e-5, niter=10, tarsz=2, usemax=False, posmult=1.):
+	def do_training(self, dataset, learnrate=1e-5, niter=10, tarsz=2, usemax=False, posmult=0.5):
 		#niter=1; learnrate=0
-		usemax=True
 		#### prepare the output mask
 		ksize=(1./tarsz)**2
 		sz=self.outsz
@@ -136,14 +135,13 @@ class NNet:
 		else:
 			m2/=np.sum(m2)
 		self.mask2=m2[None,:,:,None]
-		pmult=posmult/(1.+posmult)
 		
-		bce=tf.keras.losses.BinaryCrossentropy()
+		#bce=tf.keras.losses.BinaryCrossentropy()
 		def calc_loss(yt, inp):
 			out0,out1=self.predict_class(inp, fromdata=False, usemax=usemax)
 			#loss=(1-yt)*tf.math.log(1-out0)+yt*tf.math.log(out1)
 			#loss=1+tf.reduce_mean(loss)
-			loss=tf.reduce_mean((1-yt)*out0*(1-pmult)+ yt*out1*pmult)
+			loss=tf.reduce_mean((1-yt)*out0*(1-posmult)+ yt*out1*posmult)
 			return loss
 		
 		self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learnrate), loss=calc_loss)
@@ -413,13 +411,17 @@ class EMTomobox(QtWidgets.QMainWindow):
 		self.val_niter=TextBox("Niter", 10)
 		self.gbl.addWidget(self.val_niter, 5,2,1,1)
 		
+		self.val_lossfun = QtWidgets.QComboBox()
+		self.val_lossfun.addItem("Sum")
+		self.val_lossfun.addItem("Max")
+		self.gbl.addWidget(self.val_lossfun, 6,2,1,1)
 		
 		self.options=options
 		self.app=weakref.ref(application)
 		
 		self.nnet=None
 		global tf
-		tf=import_tensorflow('0')
+		tf=import_tensorflow('1')
 		
 		
 		self.nnetsize=96
@@ -648,13 +650,17 @@ class EMTomobox(QtWidgets.QMainWindow):
 			
 		dataset = tf.data.Dataset.from_tensor_slices(self.trainset)
 		dataset=dataset.shuffle(500).batch(32)
-		
+		usemax=(self.val_lossfun.currentText()=="Max")
+		if usemax:
+			print('max')
 		
 		self.nnet.do_training(
 			dataset, 
 			learnrate=self.val_learnrate.getval(), 
 			niter=int(self.val_niter.getval()),
-			tarsz=self.val_targetsize.getval())
+			tarsz=self.val_targetsize.getval(),
+			usemax=usemax
+			)
 		
 		self.segout=None
 		print("Generating output...")
@@ -665,7 +671,7 @@ class EMTomobox(QtWidgets.QMainWindow):
 		idx=idx[:100]
 		out=self.nnet.apply_network(imgs[idx])[:,:,:,0]
 		
-		outval=self.nnet.predict_class(np.array(imgs[idx], dtype=np.float32))
+		outval=self.nnet.predict_class(np.array(imgs[idx], dtype=np.float32), usemax=usemax)
 		outval=np.array(outval)[:,:,0]
 		
 		fname="neuralnets/trainouts.hdf"
