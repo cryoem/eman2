@@ -9,6 +9,7 @@ from EMAN2 import *
 import json
 from scipy.signal import argrelextrema
 from scipy.optimize import minimize
+import threading
 
 def calc_ctf(defocus, bxsz=256, voltage=300, cs=4.7, apix=1. ,phase=0.):
 	ds=1.0/(apix*bxsz)
@@ -178,11 +179,13 @@ def main():
 	parser.add_argument("--stepy", type=int,help="Number of tiles to generate on y-axis (same defocus)", default=40, guitype='intbox',row=8, col=1,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--refine", action="store_true", help="Include a refinement step in the end for more precise estimation.", default=False, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="model")
 	parser.add_argument("--checkhand", action="store_true", help="Check the handedness of tomogram.", default=False,guitype='boolbox',row=10, col=0, rowspan=1, colspan=1,mode="model")
-	
+	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on the local computer",guitype='intbox', row=8, col=2, rowspan=1, colspan=1, mode='model')
+	parser.add_argument("--nolog",action="store_true",default=False,help="Default=False. Turn off recording of the command ran for this program onto the .eman2log.txt file")	
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
+
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	
 	(options, args) = parser.parse_args()
-	logid=E2init(sys.argv)
 	
 	#### deal with multiple inputs
 	if options.alltiltseries:
@@ -194,14 +197,37 @@ def main():
 		print("Reading tilt series {}...".format(args[0]))
 	else:
 		print("Processing {} tilt series in sequence..".format(len(args)))
-		cmd=sys.argv
-		opt=' '.join([s for s in cmd if s.startswith("-")])
-		opt=opt.replace("--alltiltseries","")
-		for a in args:
-			run("{} {} {}".format(cmd[0], a, opt))
-		E2end(logid)
+		if not options.nolog: logid=E2init(sys.argv)
+		thrds=["{} {} --nolog {}".format(parser.prog,a,commandoptions(options,("threads","alltiltseries"))) for a in sorted(args)]
+
+		NTHREADS=max(options.threads+1,2)	# the controlling thread isn't really doing anything
+		thrtolaunch=0
+		while thrtolaunch<len(thrds) or threading.active_count()>1:
+			# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
+			# note that it's ok that we wait here forever, since there can't be new results if an existing
+			# thread hasn't finished.
+			if thrtolaunch<len(thrds) :
+				while (threading.active_count()==NTHREADS ) : time.sleep(.1)
+				if options.verbose>1 : print("Starting thread {}/{}".format(thrtolaunch,len(thrds)))
+				print("running: ",thrds[thrtolaunch])
+				thrds[thrtolaunch]=threading.Thread(target=run,args=(thrds[thrtolaunch],))
+				thrds[thrtolaunch].start()
+				time.sleep(1)				# this helps stagger launches due to the large read at the beginning of each job
+				thrtolaunch+=1
+			else: time.sleep(1)
+			if options.verbose>1 and thrtolaunch>0:
+				frac=thrtolaunch/float(len(thrds))
+				print("{}% complete".format(100.0*frac))
+
+		for t in thrds:
+			t.join()
+
+		if options.verbose : print("All threads complete")
+		if not options.nolog: E2end(logid)
 		return
 	
+	if not options.nolog: logid=E2init(sys.argv)
+
 	tfile=args[0]
 	try:
 		js=js_open_dict(info_name(tfile))
@@ -359,7 +385,7 @@ def main():
 		else:
 			print("The handedness seems to be flipped. Consider rerun the tomogram reconstruction with --tltax={:.1f} then rerun the CTF estimation.".format(-((180+rot)%360)))
 		      
-		E2end(logid)
+		if not options.nolog: E2end(logid)
 		return
 		
 			
@@ -447,7 +473,7 @@ def main():
 	
 	print("Done")
 	
-	E2end(logid)
+	if not options.nolog: E2end(logid)
 	
 def run(cmd):
 	print(cmd)
