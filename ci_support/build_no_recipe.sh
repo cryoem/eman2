@@ -6,13 +6,14 @@ MYDIR="$(cd "$(dirname "$0")"; pwd -P)"
 
 bash "${MYDIR}/../tests/future_import_tests.sh"
 
-if [ ! -z ${TRAVIS} ];then
+if [ -n "${TRAVIS}" ];then
     source ci_support/setup_conda.sh
 
-    conda install eman-deps=18.0 boost=1.66 -c cryoem -c defaults -c conda-forge --yes --quiet
+    conda create -n eman-deps-18.0 eman-deps-dev=18.0 -c cryoem -c defaults -c conda-forge --yes --quiet
+    conda activate eman-deps-18.0
 fi
 
-if [ ! -z ${CIRCLECI} ];then
+if [ -n "${CIRCLECI}" ];then
     . $HOME/miniconda/etc/profile.d/conda.sh
     conda activate eman-deps-18.0
 fi
@@ -26,7 +27,7 @@ conda info -a
 conda list
 conda list --explicit
 
-if [ ! -z "$JENKINS_HOME" ];then
+if [ -n "$JENKINS_HOME" ];then
     CPU_COUNT=4
 else
     CPU_COUNT=2
