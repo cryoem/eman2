@@ -2447,9 +2447,9 @@ class EMBDBInfoPane(EMInfoPane) :
 			self.hbl2.setColumnStretch(i, 2)
 	
 			for j in range(2) :
-				self.wbutmisc.append(QtWidgets.QPushButton(""))
+				self.wbutmisc.append(QtWidgets.QPushButton("-"))
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
-				self.wbutmisc[-1].hide()
+				self.wbutmisc[-1].setEnabled(False)
 				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
 		# These just clean up the layout a bit
@@ -2531,9 +2531,11 @@ class EMBDBInfoPane(EMInfoPane) :
 				try :
 					b.setText(self.curactions[i][0])
 					b.setToolTip(self.curactions[i][1])
-					b.show()
+					b.setEnabled(True)
 				except :
-					b.hide()
+					b.setText("-")
+					b.setToolTip("")
+					b.setEnabled(False)
 		except :
 			# Not a readable image or volume
 
@@ -2637,9 +2639,9 @@ class EMJSONInfoPane(EMInfoPane) :
 			self.hbl2.setColumnStretch(i, 2)
 
 			for j in range(2) :
-				self.wbutmisc.append(QtWidgets.QPushButton(""))
+				self.wbutmisc.append(QtWidgets.QPushButton("-"))
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
-				self.wbutmisc[-1].hide()
+				self.wbutmisc[-1].setEnabled(False)
 				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
 		# These just clean up the layout a bit
@@ -2910,9 +2912,9 @@ class EMStackInfoPane(EMInfoPane) :
 			self.hbl2.setColumnStretch(i, 2)
 	
 			for j in range(2) :
-				self.wbutmisc.append(QtWidgets.QPushButton(""))
+				self.wbutmisc.append(QtWidgets.QPushButton("-"))
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
-				self.wbutmisc[-1].hide()
+				self.wbutmisc[-1].setEnabled(False)
 				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
 		# These just clean up the layout a bit
@@ -2995,9 +2997,11 @@ class EMStackInfoPane(EMInfoPane) :
 			try :
 				b.setText(self.curactions[i][0])
 				b.setToolTip(self.curactions[i][1])
-				b.show()
+				b.setEnabled(True)
 			except :
-				b.hide()
+				b.setText("-")
+				b.setToolTip("")
+				b.setEnabled(False)
 
 	def imNumChange(self, num) :
 		"""New image number"""
@@ -3337,9 +3341,9 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 			self.hbl2.setColumnStretch(i, 2)
 	
 			for j in range(2) :
-				self.wbutmisc.append(QtWidgets.QPushButton(""))
+				self.wbutmisc.append(QtWidgets.QPushButton("-"))
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
-				self.wbutmisc[-1].hide()
+				self.wbutmisc[-1].setEnabled(False)
 #				self.wbutmisc[-1].setEnabled(False)
 				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
@@ -3531,21 +3535,20 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 					try :
 						b.setText(self.curactions[i][0])
 						b.setToolTip(self.curactions[i][1])
-						b.show()
-#						b.setEnabled(True)
+#						b.show()
+						b.setEnabled(True)
 					except :
-						b.hide()
-#						b.setEnabled(False)
-			# Bug fix by JFF (What if filetype is None????)
+						b.setText("-")
+						b.setToolTip("")
+						b.setEnabled(False)
 			else :
 				self.curft = None
 				self.curactions = []
 
 				for i, b in enumerate(self.wbutmisc) :
-					try :
-						b.hide()
-					except :
-						pass
+					b.setText("-")
+					b.setToolTip("")
+					b.setEnabled(False)
 
 			if self.infowin != None and not self.infowin.isHidden() :
 				self.infowin.set_target(obj, ftc)
@@ -3606,7 +3609,8 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 
 #		print "press ", self.curactions[num][0]
 
-		self.curactions[num][2](self)				# This calls the action method
+		try: self.curactions[num][2](self)				# This calls the action method
+		except: pass		# sometimes we are missing an action
 
 	def buttonOk(self, tog) :
 		"""When the OK button is pressed, this will emit a signal. The receiver should call the getResult method (once) to get the list of paths"""
