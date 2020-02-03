@@ -70,15 +70,16 @@ def main():
 	parser.add_argument("--normslice", action="store_true",help="normalize each 2D slice.", default=False)
 	parser.add_argument("--filterto", type=float,help="filter to abs.", default=0.45,guitype='floatbox',row=13, col=1, rowspan=1, colspan=1,mode="easy")
 
-	parser.add_argument("--extrapad", action="store_true",help="pad extra for tilted reconstruction. slower and cost more memory, but reduce boundary artifacts when the sample is thick", default=False,guitype='boolbox',row=14, col=0, rowspan=1, colspan=1,mode="easy")
-	
+	parser.add_argument("--extrapad", action="store_true",help="Use extra padding for tilted reconstruction. slower and cost more memory, but reduce boundary artifacts when the sample is thick", default=False,guitype='boolbox',row=15, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--moretile", action="store_true",help="Sample more tiles during reconstruction. Slower, but reduce boundary artifacts when the sample is thick", default=False,guitype='boolbox',row=15, col=1, rowspan=1, colspan=1,mode="easy")
+
 	parser.add_argument("--rmbeadthr", type=float, help="Density value threshold (of sigma) for removing beads. high contrast objects beyond this value will be removed. default is -1 for not removing. try 10 for removing fiducials", default=-1,guitype='floatbox',row=14, col=1, rowspan=1, colspan=1,mode="easy")
 	
 	parser.add_argument("--threads", type=int,help="Number of threads", default=12,guitype='intbox',row=12, col=1, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--tmppath", type=str,help="Temporary path", default=None)
 	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0)
 	parser.add_argument("--noali", action="store_true",help="skip initial alignment", default=False)
-	parser.add_argument("--posz", action="store_true",help="auto positioning along z axis", default=False,guitype='boolbox',row=15, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--posz", action="store_true",help="auto positioning along z axis", default=False,guitype='boolbox',row=14, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--xdrift", action="store_true",help="apply extra correction for drifting along x axis", default=False,guitype='boolbox',row=13, col=0, rowspan=1, colspan=1,mode="easy")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
@@ -949,7 +950,7 @@ def make_tile(args):
 #### make tomogram by tiles
 #### this is faster and has less artifacts. but takes a lot of memory (~4x the tomogram)
 def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
-	
+	time0=time.time()
 	num=len(imgs)
 	scale=imgs[0]["apix_x"]/options.apix_init
 	imgsz=min(imgs[0]["nx"],imgs[0]["ny"])
@@ -1007,19 +1008,34 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 		outz=sz#good_boxsize(sz*1.2)
 
 	#### we make 2 tomograms with half a box shift and average them together to compensate for boundary artifacts.
-	mem=(outx*outy*outz*4+pad*pad*pad*options.threads*4)
-	print("This will take {}x{}x{}x4 + {}x{}x{}x{}x4 = {:.1f} GB of memory...".format(outx, outy, outz, pad, pad, pad,options.threads, mem/1024**3))
 	
 	
-	full3d=EMData(outx, outy, outz)
+	#options.moretile=True
+	if options.moretile:
+		full3d=EMData(outx, outy, outz)
+		mem=(outx*outy*outz*4+pad*pad*pad*options.threads*4)
+		print("This will take {}x{}x{}x4 + {}x{}x{}x{}x4 = {:.1f} GB of memory...".format(outx, outy, outz, pad, pad, pad,options.threads, mem/1024**3))
+		wtcon=1
+	else:
+		full3d=[EMData(outx, outy, outz), EMData(outx, outy, outz)]
+		mem=(outx*outy*outz*2*4+pad*pad*pad*options.threads*4)
+		print("This will take {}x{}x{}x2x4 + {}x{}x{}x{}x4 = {:.1f} GB of memory...".format(outx, outy, outz, pad, pad, pad,options.threads, mem/1024**3))
+		wtcon=2.5
+	
 	
 	jsd=queue.Queue(0)
 	jobs=[]
 	nstepx=int(outx/step/2)
 	nstepy=int(outy/step/2)
+	
+		
 	for stepx in range(-nstepx,nstepx+1):
 		#### shift y by half a tile
-		for stepy in range(-nstepy+stepx%2,nstepy+1,2):
+		if options.moretile:
+			yrange=range(-nstepy,nstepy+1)
+		else: 
+			yrange=range(-nstepy+stepx%2,nstepy+1,2)
+		for stepy in yrange:
 			tiles=[]
 			for i in range(num):
 				if i in nrange:
@@ -1042,8 +1058,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	#f=np.zeros((sz,sz))
 	x,y=np.indices((sz,sz),dtype=float)/sz-.5
 	#f=.25-(x**2+y**2)/2 + ((abs(x)-0.5)**2+(abs(y)-0.5)**2)/2
-	f=1+np.exp(-(x**2+y**2)/0.1) - np.exp(-((abs(x)-0.5)**2+(abs(y)-0.5)**2)/0.1)
-	f+=1.5
+	f=wtcon+np.exp(-(x**2+y**2)/0.1) - np.exp(-((abs(x)-0.5)**2+(abs(y)-0.5)**2)/0.1)
 	f3=np.repeat(f[None, :,:], outz, axis=0)
 	msk=from_numpy(f3).copy()
 	#####
@@ -1058,23 +1073,25 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 		
 		if not jsd.empty():
 			stepx, stepy, threed=jsd.get()
+			#threed["pos"]=[stepx, stepy]
+			#threed.write_image("alltiles.hdf", -1)
 			threed.mult(msk)
 			#### insert the cubes to corresponding tomograms
-			#full3d[stepx%2].insert_clip(
-				#threed,
-				#(int(stepx*step+outxy//2-sz//2),
-				#int(stepy*step+outxy//2-sz//2), 
-				#outz//2-threed["nz"]//2))
-				
-			full3d.insert_scaled_sum(
-				threed,(int(stepx*step+outx//2),int(stepy*step+outy//2), outz//2))
-				
-			
-			#wt.insert_scaled_sum(msk,(int(stepx*step+outxy//2),int(stepy*step+outxy//2), outz//2))
+			if options.moretile:
+				full3d.insert_scaled_sum(
+					threed,(int(stepx*step+outx//2),int(stepy*step+outy//2), outz//2))
+			else:
+				full3d[stepx%2].insert_clip(
+				threed,
+				(int(stepx*step+outx//2-sz//2),
+				int(stepy*step+outy//2-sz//2), 
+				outz//2-threed["nz"]//2))
 				
 				
 	for t in thrds: t.join()
 	
+	if not options.moretile:
+		full3d=full3d[0]+full3d[1]
 	full3d.process_inplace("normalize")
 	
 	#### skip the tomogram positioning step because there is some contrast difference at the boundary that sometimes breaks the algorithm...
@@ -1082,9 +1099,10 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	
 	apix=imgs[0]["apix_x"]
 	full3d["apix_x"]=full3d["apix_y"]=full3d["apix_z"]=apix
-	print("Done. Now writting tomogram to disk...")
 	if options.normslice:
 		full3d.process_inplace("normalize.rows")
+		
+	print("Reconstruction done ({:.1f} s). Now writting tomogram to disk...".format(time.time()-time0))
 	return full3d
 
 #### reconstruct tomogram...
