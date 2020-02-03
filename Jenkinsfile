@@ -287,7 +287,7 @@ pipeline {
       
       steps {
         notifyGitHub('PENDING')
-        sh 'source $(conda info --root)/bin/activate eman-deps-18.0 && env | sort && bash ci_support/build_no_recipe.sh'
+        sh 'source $(conda info --root)/bin/activate eman-deps-19.0 && env | sort && bash ci_support/build_no_recipe.sh'
       }
     }
     
