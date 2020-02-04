@@ -420,7 +420,8 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 	print("Phase-flipped output files:\n__ctf_flip_invar - invartra footprints computed from high pass filtered normalized particles")
 
 	print("Building default set with all particles for convenience")
-	com="e2buildsets.py --setname=all --excludebad --allparticles"
+	# withflipped insures that if there were failed CTF fits, that they get excluded rather than causing an issue
+	com="e2buildsets.py --setname=all --excludebad --allparticles --withflipped"
 	if options.verbose: print(com)
 	launch_childprocess(com)
 
