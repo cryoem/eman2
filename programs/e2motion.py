@@ -82,7 +82,7 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	if options.path==None:
-		options.path=numbered_path("m2d",True)
+		options.path=numbered_path("m2d",False)
 #		os.makedirs(options.path)
 
 	if options.threads<1 : options.threads=num_cpus()
@@ -471,9 +471,10 @@ class EMMotion(QtWidgets.QMainWindow):
 		try: 
 			dct=js_open_dict("{}/particle_parms_{:02d}.json".format(self.path,itr))
 			self.particles=[(j["score"],j["xform.align2d"],eval(i)[0],int(eval(i)[1])) for i,j in list(dct.items())]
-			self.particles.sort()
+			self.particles.sort(key=lambda x:x[0])
 			if len(self.particles)==0 : raise Exception
 		except:
+			traceback.print_exc()
 			self.particles=None
 			self.wlnptcl.setText("No Data")
 			print("Warning: no particle alignment data found for iter=",itr)
@@ -905,7 +906,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		print(cls["ptcl_repr"],cls["class_ptcl_idxs"],cls["class_ptcl_src"])
 		ptcls=[EMData(cls["class_ptcl_src"],i).align("rotate_translate_flip",cls) for i in cls["class_ptcl_idxs"]]
 		for p in ptcls: p["qual"]=p.cmp("ccc",cls)
-		ptcls.sort(cmp=lambda x,y:cmp(x["qual"],y["qual"]))
+		ptcls.sort(key=lambda x:x["qual"])
 		self.w2dptcl.set_data(ptcls)
 				
 	def doCompute(self,x=False):
