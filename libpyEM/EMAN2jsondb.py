@@ -659,7 +659,6 @@ of the path is stored as self.normpath"""
 
 	def sync(self):
 		"""This is where all of the JSON file access occurs. This one routine handles both reading and writing, with file locking"""
-
 		while self.busy: time.sleep(.1)		# this is for some degree of threadsafety beyond file locking
 		self.busy=True
 
@@ -765,11 +764,11 @@ of the path is stored as self.normpath"""
 
 	def values(self):
 		self.sync()
-		return [self.get(key) for key in list(self.data.keys())]		# to make sure images are read
+		return [self.get(key,noupdate=True) for key in list(self.data.keys())]		# to make sure images are read
 
 	def items(self):
 		self.sync()
-		return [(key,self.get(key)) for key in list(self.data.keys())]
+		return [(key,self.get(key,noupdate=True)) for key in list(self.data.keys())]
 
 	def has_key(self,key):
 		self.sync()

@@ -44,7 +44,7 @@ def main():
 			print("Error: No particle_parms* files found in ",options.path)
 			sys.exit(2)
 		else: options.iter=max(fls)
-		if options.verbose: print("Iteration: ",options.iter)
+		if options.verbose: print("Using Iteration: ",options.iter)
 
 #	NTHREADS=max(options.threads,2)		# we have one thread just writing results
 
@@ -54,6 +54,7 @@ def main():
 
 	sortangs=[(v["score"],v["xform.align2d"],eval(k),k) for k,v in list(angs.items())]		# the eval() here is poor programming practice, but is the easiest way :^(
 	N=len(sortangs)
+	if options.verbose: print(f"{N} particles sorted")
 		
 	#if options.scorebestset>0:
 		#out=LSXFile("sets/{}_{}_{}.lst".format(options.path.split("/")[-1],options.iter,options.scorebestset))
@@ -81,32 +82,32 @@ def main():
 	t0=time.time()
 	t1=t0
 	for i,t in enumerate(sorted(sortangs,key=lambda x:x[0])):
-		if options.verbose==1 and time.time()-t1>1:
+		if options.verbose>=1 and time.time()-t1>1:
 			t1=time.time()
-			frac=old_div(i,float(N))
+			frac=i/float(N)
 			try:
-				remain=int(old_div((time.time()-t0),frac)-(time.time()-t0))	# est remaining time in sec
-				print("{:6d}/{:-6d}   time remaining: {}:{:02d}     \r".format(i,N,remain//60,remain%60))
+				remain=int((time.time()-t0)/frac-(time.time()-t0))	# est remaining time in sec
+				print("{:6d}/{:-6d}   time remaining: {}:{:02d}     \r".format(i,N,remain//60,remain%60),end="")
 			except:
-				print("{:6d}/{:-6d}     \r".format(i,N))
+				print("{:6d}/{:-6d}     \r".format(i,N),end="")
 				
 			sys.stdout.flush()
 			
 		# read and transform the particle
 		im=EMData(t[2][0],t[2][1])			# this is from the key of angs{}
 		im.process_inplace("xform",{"transform":t[1]})
-		adic=angs[t[3]]
+		adic=angs.get(t[3],noupdate=True)
 		
 		if options.extract : line=[t[0]]
 		
 		# i is particle #, j is mask number
-		for j in len(masks):
+		for j in range(len(masks)):
 			tmp=im*masks[j]
 			adic[names[j]+"_mean"]=tmp["mean"]
 			adic[names[j]+"_sigma"]=tmp["sigma_nonzero"]	# we want to ignore regions which are missing due to the transform
 			if options.extract : 
 				line.append(tmp["mean"])
-				line.append(tmp["sigma_nonzeo"])
+				line.append(tmp["sigma_nonzero"])
 				
 		angs.setval(t[3],adic,deferupdate=True)
 
@@ -115,7 +116,7 @@ def main():
 			outtxt.write(f"# {t[2][1]};{t[2][0]}\n")
 		
 
-	angs.update()	# since we deferred above
+	angs.sync()	# since we deferred above
 	
 	if options.verbose : print("\nDone!")
 
