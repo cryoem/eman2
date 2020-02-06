@@ -246,7 +246,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		
 		self.vbl1.addSpacing(16)
 		
-		self.wbaligo=QtWidgets.QPushButton(unichr(0x2192))
+		self.wbaligo=QtWidgets.QPushButton(chr(0x2192))
 		self.vbl1.addWidget(self.wbaligo)
 
 		self.vbl1.addStretch(5)
@@ -311,7 +311,7 @@ class EMMotion(QtWidgets.QMainWindow):
 
 		self.vbl2.addSpacing(16)
 		
-		self.wbroigo=QtWidgets.QPushButton(unichr(0x2192))
+		self.wbroigo=QtWidgets.QPushButton(chr(0x2192))
 		self.vbl2.addWidget(self.wbroigo)
 
 
@@ -321,7 +321,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		
 		self.vbl2.addStretch(5)
 
-		self.wlarrow1=QtWidgets.QLabel(unichr(0x2192))
+		self.wlarrow1=QtWidgets.QLabel(chr(0x2192))
 		self.gbl.addWidget(self.wlarrow1,4,4)
 
 		###### Results
@@ -384,7 +384,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		self.wbcompute=QtWidgets.QPushButton("Compute")
 		self.vbl3a.addWidget(self.wbcompute)
 
-		self.wlarrow2=QtWidgets.QLabel(unichr(0x2192))
+		self.wlarrow2=QtWidgets.QLabel(chr(0x2192))
 		self.gbl.addWidget(self.wlarrow2,4,7)
 
 
@@ -397,7 +397,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		self.w2dclasses=EMImage2DWidget()
 		self.gbl.addWidget(self.w2dclasses,3,9)
 
-		self.wbshowptcl=QtWidgets.QPushButton(unichr(0x2193))
+		self.wbshowptcl=QtWidgets.QPushButton(chr(0x2193))
 		self.gbl.addWidget(self.wbshowptcl,4,9)
 
 		self.w2dptcl=EMImage2DWidget()
