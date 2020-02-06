@@ -96,7 +96,7 @@ It is strongly suggested that you run 'e2bdb.py -c' prior to running this progra
 """)
 
 	if not options.yes :
-		a=eval(input("Are you sure you want to proceed (enter YES) ? "))
+		a=input("Are you sure you want to proceed (enter YES) ? ")
 		if a!="YES" : sys.exit(2)
 
 
