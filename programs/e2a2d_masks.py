@@ -75,7 +75,7 @@ def main():
 	if options.extract:
 		outtxt=open(f"{options.path}/maskstats_{options.iter}.txt","w")
 		outtxt.write("# score")
-		for n in names: outtxt.write(f"; {n}_mean; {n}_sig")
+		for n in names: outtxt.write(f"; {n}_mean; {n}_sig; {n}_sigvsig")
 		outtxt.write("\n")
 	
 	# the main per particle loop
@@ -96,6 +96,7 @@ def main():
 		# read and transform the particle
 		im=EMData(t[2][0],t[2][1])			# this is from the key of angs{}
 		im.process_inplace("xform",{"transform":t[1]})
+		imsig=im["sigma_nonzero"]
 		adic=angs.get(t[3],noupdate=True)
 		
 		if options.extract : line=[t[0]]
@@ -105,9 +106,11 @@ def main():
 			tmp=im*masks[j]
 			adic[names[j]+"_mean"]=tmp["mean"]
 			adic[names[j]+"_sigma"]=tmp["sigma_nonzero"]	# we want to ignore regions which are missing due to the transform
+			adic[names[j]+"_sigvsig"]=tmp["sigma_nonzero"]/imsig	# we want to ignore regions which are missing due to the transform
 			if options.extract : 
 				line.append(tmp["mean"])
 				line.append(tmp["sigma_nonzero"])
+				line.append(tmp["sigma_nonzero"]/imsig)
 				
 		angs.setval(t[3],adic,deferupdate=True)
 
