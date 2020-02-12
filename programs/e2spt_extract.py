@@ -11,8 +11,34 @@ import numpy as np
 import queue
 import threading
 from EMAN2_utils import *
+from EMAN2jsondb import JSTask
 
 
+
+class SptExtractTask(JSTask):
+	
+	
+	def __init__(self, data, options):
+		
+		JSTask.__init__(self,"SptExtract",data,{},"")
+		self.options=options
+	
+	
+	def execute(self, callback):
+		
+		cmd="e2spt_extract.py {}".format(" ".join(self.data))
+		kignore=("parallel","ppid","positionalargs", "nowtime","alltomograms")
+		vignore=(None, False, "")
+		for k,v in vars(self.options).items():
+			if k in kignore or v in vignore:
+				continue
+			if v==True:
+				cmd+=" --{}".format(k)
+			else:
+				cmd+=" --{}={}".format(k,v)
+		print(cmd)
+		launch_childprocess(cmd,True)
+		return 1
 
 def main():
 	
@@ -51,14 +77,51 @@ def main():
 	parser.add_argument("--textin", type=str,help="text file for particle coordinates. do not use..", default=None)
 	parser.add_argument("--saveint", action="store_true", default=False ,help="save particles in uint8 format to save space. still under testing.")
 	parser.add_argument("--norewrite", action="store_true", default=False ,help="skip existing files. do not rewrite.")
-
+	parser.add_argument("--parallel", type=str,help="parallel", default="")
 	#parser.add_argument("--alioffset", type=str,help="coordinate offset when re-extract particles. (x,y,z)", default="0,0,0", guitype='strbox', row=12, col=0,rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--postxf", type=str,help="a file listing post transforms", default="")
-
-
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	(options, args) = parser.parse_args()
 	
+
+	if options.alltomograms:
+		fld="tomograms/"
+		args=[fld+f for f in os.listdir(fld) if f.endswith(".hdf")]
+		### do not count a tomogram twice when multiple versions exist
+		uq, uid=np.unique([base_name(a) for a in args], return_index=True)
+		args=[args[i] for i in uid]
+		#print(args)
+		
+		
+		
+	if options.parallel!="":
+		from EMAN2PAR import EMTaskCustomer
+		etc=EMTaskCustomer(options.parallel, module="e2spt_extract.SptExtractTask")
+		num_cpus = etc.cpu_est()
+		options.nowtime=time.time()
+		print("{} cpus".format(num_cpus))
+		njob=num_cpus
+		print(args)
+		tids=[]
+		for i in range(njob):
+			task=SptExtractTask(args[i::njob], options)
+			tid=etc.send_task(task)
+			tids.append(tid)
+		
+		while 1:
+			st_vals = etc.check_task(tids)
+			if np.min(st_vals) == 100: break
+			#print(st_vals)
+			time.sleep(1)
+
+	
+	else:
+		print(len(args), args)
+		for a in args:
+			do_extraction(a, options)
+	
+	
+	return
 	logid=E2init(sys.argv)
 	
 	if options.textin:
@@ -84,14 +147,6 @@ def main():
 		return
 	
 	
-
-	if options.alltomograms:
-		fld="tomograms/"
-		args=[fld+f for f in os.listdir(fld) if f.endswith(".hdf")]
-		### do not count a tomogram twice when multiple versions exist
-		uq, uid=np.unique([base_name(a) for a in args], return_index=True)
-		args=[args[i] for i in uid]
-		#print(args)
 	
 		
 	if len(args)==0:
@@ -309,7 +364,7 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 				outname=str(base_name(pfile)+"__"+lab+".hdf")
 				
 				towrite.append((bxs, outname, sz, info))
-				print("{} : {} boxes, unbinned box size {}".format(val["name"], len(bxs), int(sz*2))) 
+				print("{} : {} boxes, output box size {}".format(val["name"], len(bxs), int(sz*2))) 
 		
 		if len(towrite)==0:
 			print("No particles. exit..")
@@ -388,8 +443,10 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 			print("Warning: Extra header info exist but does not match particle count...")
 		if options.dotest:
 			nptcl=options.threads
+			batchsz=1
 		else:
 			nptcl=len(ptclpos)
+			batchsz=6
 	
 		options.output=os.path.join("particles3d", outname)
 		options.output2d=os.path.join("particles", outname)
@@ -412,14 +469,14 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 		jsd=queue.Queue(0)
 		jobs=[]
 		
-		batchsz=4
+		
 		if len(defocus)>0:
 			ctf=[defocus, phase, voltage, cs]
 		else:
 			ctf=[]
 			
-		for tid in range(0,nptcl,batchsz):
-			ids=list(range(tid, min(tid+batchsz, nptcl)))
+		for tid in range(options.threads):
+			ids=list(range(tid, nptcl, options.threads))
 			jobs.append([jsd, ids, imgs, ttparams, pinfo, options, ctf, tltkeep, pmask])
 		
 		
@@ -432,43 +489,47 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 		
 		thrds=[threading.Thread(target=make3d,args=(i)) for i in jobs]
 
-		thrtolaunch=0
+		#thrtolaunch=0
 		tsleep=threading.active_count()
 		ndone=0
-		while thrtolaunch<len(thrds) or threading.active_count()>tsleep:
-			if thrtolaunch<len(thrds):
-				while (threading.active_count()==options.threads+tsleep ) : 
-					#print threading.active_count(), options.threads, tsleep, thrtolaunch, len(thrds)
-					time.sleep(.1)
-				thrds[thrtolaunch].start()
-				thrtolaunch+=1
-			else: time.sleep(.2)
+		time0=time.time()
+		for t in thrds:
+			t.start()
 			
-			
+		while threading.active_count()>tsleep:
 			while not jsd.empty():
 				pid, threed, projs=jsd.get()
-				#pjids=[pid*ntlt+i for i in range(ntlt)]
+				
+				sig=5.0
+				for im in projs+[threed]:
+					im["render_bits"]=8
+					im["render_compress_level"]=1
+					im["render_min"]=im["mean"]-im["sigma"]*sig
+					im["render_max"]=im["mean"]+im["sigma"]*sig
+				#im.write_image(tmpname,i,IMAGE_UNKNOWN,0,None,EM_COMPRESSED)
+
 				try: pji=EMUtil.get_image_count(options.output2d)
 				except: pji=0
 				pjids=[]
 				for i,pj in enumerate(projs):
-					pj.write_image(options.output2d, pji, hdftype,  False, None, outmode)
+					#pj.write_image(options.output2d, pji, hdftype,  False, None, outmode)
+					pj.write_image(options.output2d, pji,IMAGE_UNKNOWN,0,None,EM_COMPRESSED)
 					pjids.append(pji)
 					pji+=1
+					
 				threed["class_ptcl_src"]=options.output2d
 				threed["class_ptcl_idxs"]=pjids
-				#if options.rmbeadthr>0:
-				#### give up maintaining the order since there are empty particles...
-				#pid=-1
-				threed.write_image(options.output, pid, hdftype,  False, None, outmode)
+
+				threed.write_image(options.output, pid,IMAGE_UNKNOWN,0,None,EM_COMPRESSED)
+				
 				ndone+=1
-				#if ndone%10==0:
 				sys.stdout.write("\r{}/{} finished.".format(ndone, nptcl))
 				sys.stdout.flush()
+			time.sleep(.2)
 
 		for t in thrds: t.join()
 			
-		print("Particles written to {}".format(options.output))
+		print("Particles written to {} ({:.1f} s)".format(options.output, time.time()-time0))
 	
 	
 
@@ -479,8 +540,12 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 	
 	bx=boxsz*2
 	pad=options.pad
-	p3d=good_size(int(pad*1.5))
+	p3d=pad
 	apix=imgs[0]["apix_x"]
+	
+	recon=Reconstructors.get("fourier", {"sym":'c1', "size":[p3d, p3d, p3d], "mode":"gauss_2"})
+	recon.setup()
+	
 	if len(ctfinfo)>0:
 		defocus, phase, voltage, cs=ctfinfo
 		ctf=EMAN2Ctf()
@@ -488,7 +553,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			"defocus":1.0, "voltage":voltage, "bfactor":0., "cs":cs,"ampcont":0, "apix":apix})
 	
 	for pid in ids:
-		
+		recon.setup()
 		pos=ppos[pid]
 		if len(info)>0:
 			hdr=info[pid]
@@ -512,8 +577,6 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 		else:
 			tf_dir=None
 
-		recon=Reconstructors.get("fourier", {"sym":'c1', "size":[p3d, p3d, p3d], "mode":"gauss_2"})
-		recon.setup()
 		projs=[]
 		for nid, m in enumerate(imgs):
 			if len(tltkeep)>0:
@@ -544,7 +607,8 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 
 			e.mult(-1)
 			e.process_inplace("normalize.edgemean")
-			e.process_inplace("mask.soft",{"outer_radius":-1})
+			wd=(pad-bx)/4.
+			e.process_inplace("mask.soft",{"outer_radius":-wd, "width":wd/2})
 			if e["sigma"]==0:
 				continue
 			
@@ -620,6 +684,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			#continue
 		else:
 			threed=recon.finish(True)
+			#threed=EMData(p3d, p3d, p3d)
 			threed.process_inplace("math.gausskernelfix",{"gauss_width":4.0})
 			threed=threed.get_clip(Region((p3d-bx)//2,(p3d-bx)//2,(p3d-bx)//2,bx,bx,bx))
 		
@@ -662,6 +727,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 				data["render_max"]=file_mode_range[outmode][1]
 		
 		jsd.put((pid, threed, projs))
+		#recon.clear()
 
 	return
 	

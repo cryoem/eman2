@@ -97,16 +97,14 @@ class EMTaskCustomer(object):
 			self.handler=EMSharedMemoryLocalTaskHandler(self.maxthreads)
 		
 		elif self.servtype=="mpi":
-			self.maxthreads=int(target.split(":")[1])
-			try: self.scratchdir=origtarget.split(":")[2]
-			except: self.scratchdir="/tmp"
-			try:
-				# Caching no longer used at all with MPI
-				if target.split(":")[3].lower()=="nocache" :
-					self.cache=False
-				else: self.cache=False
-			except: self.cache=False
-			self.handler=EMMpiTaskHandler(self.maxthreads,self.scratchdir, module)
+			tsplit=origtarget.split(":")
+			self.maxthreads=int(tsplit[1])
+			try: self.scratchdir=tsplit[2]
+			except:  self.scratchdir="/tmp"
+			
+			try: self.usethreads=int(tsplit[3])+1
+			except: self.usethreads=self.maxthreads
+			self.handler=EMMpiTaskHandler(self.maxthreads,self.scratchdir, module, self.usethreads)
 		else : raise Exception("Only 'thread' and 'mpi' servertypes currently supported")
 
 	def __del__(self):
@@ -143,7 +141,10 @@ class EMTaskCustomer(object):
 		separate entities yet. If wait is set, it will not return until ncpu > 1"""
 		
 		if self.servtype =="mpi" : 
-			return self.maxthreads-1
+			if self.usethreads>1 and self.usethreads<self.maxthreads:
+				return self.usethreads-1
+			else:
+				return self.maxthreads-1
 		else:
 			return self.maxthreads
 
@@ -202,7 +203,7 @@ class EMMpiTaskHandler(object):
 	file caching naming scheme here, since the MPI task is not persistent across jobs. If this handler dies,
 	all knowledge of running processes dies with it."""
 	lock=threading.Lock()
-	def __init__(self,ncpus=2,scratchdir="/tmp",module=""):
+	def __init__(self,ncpus=2,scratchdir="/tmp",module="", usethreads=-1):
 		try: user=getpass.getuser()
 		except: user="anyone"
 
@@ -229,17 +230,21 @@ class EMMpiTaskHandler(object):
 
 		# Launch the MPI subprocess
 		mpiopts=os.getenv("EMANMPIOPTS","-n %d"%ncpus)
+		load=""; thrd=""
 		if module!="":
 			load=" --loadmodule={}".format(module)
-		cmd="mpirun {opt} e2parallel.py --mode=mpi --scratchdir={sdir} {load} -v 2".format(
-			opt=mpiopts,sdir=self.scratchdir, load=load)
+		if usethreads>0:
+			thrd=" --usethreads={:d}".format(usethreads)
+		cmd="mpirun {opt} e2parallel.py --mode=mpi --scratchdir={sdir} {load} {thrd} -v 2".format(
+			opt=mpiopts,sdir=self.scratchdir, load=load, thrd=thrd)
 		print(cmd)
-
+		
 		self.mpitask=subprocess.Popen(cmd, stdin=None, stdout=self.mpiout, stderr=self.mpierr, shell=True)
 
 		self.mpisock.listen(1)
 		self.mpiconn, self.mpiaddr = self.mpisock.accept()
-		self.mpifile=self.mpiconn.makefile()
+		self.mpifiler=self.mpiconn.makefile(mode='rb')
+		self.mpifilew=self.mpiconn.makefile(mode='wb')
 
 		# order is important here, since opening for reading will block until the other end opens for writing
 		#self.tompi=file("%s/tompi"%self.scratchdir,"wb",0)
@@ -247,10 +252,10 @@ class EMMpiTaskHandler(object):
 
 		# Send a HELO and wait for a reply. We then know that the MPI system is setup and available
 		print("Say HELO to MPI rank 0")
-		self.mpifile.write("HELO")
-		self.mpifile.flush()
-		rd=self.mpifile.read(4)
-		if (rd!="HELO") :
+		self.mpifilew.write(b"HELO")
+		self.mpifilew.flush()
+		rd=self.mpifiler.read(4)
+		if (rd!=b"HELO") :
 			print("Fatal error establishing MPI communications (%s)",rd)
 			sys.stderr.flush()
 			sys.stdout.flush()
@@ -263,7 +268,8 @@ class EMMpiTaskHandler(object):
 		"""Called externally (by the Customer) to nicely shut down the task handler"""
 		self.sendcom("EXIT")
 
-		self.mpifile.close()
+		self.mpifiler.close()
+		self.mpifilew.close()
 		self.mpiconn.close()
 		shutil.rmtree(self.queuedir,True)
 
@@ -275,11 +281,11 @@ class EMMpiTaskHandler(object):
 		"""Transmits a command to MPI rank 0 and waits for a single object in reply"""
 		global DBUG
 		if DBUG : self.mpiout.write("{} customer sending {}\n".format(local_datetime(),com))
-		dump((com,data),self.mpifile,-1)
-		self.mpifile.flush()
+		dump((com,data),self.mpifilew,-1)
+		self.mpifilew.flush()
 
 		if DBUG : self.mpiout.write("{} customer sent\n".format(local_datetime(),com))
-		return load(self.mpifile)
+		return load(self.mpifiler)
 
 	def add_task(self,task):
 		if not isinstance(task,JSTask) : raise Exception("Non-task object passed to EMLocalTaskHandler for execution")
@@ -355,7 +361,7 @@ class EMMpiClient(object):
 ##		elif self.rank==12 : self.logfile=file(self.scratchdir+"/rank12.log","a")
 		else: self.logfile=None
 		#self.logfile=open(os.path.join(self.scratchdir,"rank_{:03d}.log".format(self.rank)),"w")
-
+		self.ranklst=[]
 		self.rankmap={}			# key=rank, value=hostname
 		self.noderanks={}		# key=hostname, value=rank. Provides one rank/node to be used when precaching
 		if DBUG : print("Run EMMpiClient in: ",os.getcwd())
@@ -393,10 +399,21 @@ class EMMpiClient(object):
 					sys.stdout.flush()
 					os._exit(1)
 
-				self.rankmap[src]=str(b)[3:]
-				self.noderanks[str(b)[3:]]=src		# we just need 1 random rank on each node
+				self.rankmap[src]=str(b)
+				self.noderanks[str(b)]=src		# we just need 1 random rank on each node
 				allsrc.remove(src)
-
+			
+			### sort the rank list by node
+			d=self.rankmap
+			rmap={k:[] for k in d.values()}
+			for k in sorted(d): rmap[d[k]].append(k)
+			rlst=[0]
+			for j in range(len(d)):
+				for k in rmap:
+					if j<len(rmap[k]):
+						rlst.append(rmap[k][j])
+			self.ranklst=rlst
+			print(rlst)
 			if verbose>1 : print("Successful HELO to all MPI nodes !")
 		else:
 			a=mpi_bcast_recv(0)
@@ -411,7 +428,7 @@ class EMMpiClient(object):
 		mpi_barrier(MPI_COMM_WORLD)		# make sure all ranks are done before we move on
 
 
-	def run(self,verbose):
+	def run(self,verbose, usethreads=-1):
 
 		# rank 0 is responsible for communications and i/o, and otherwise does no real work
 		if self.rank==0:
@@ -426,21 +443,25 @@ class EMMpiClient(object):
 			self.mpisock=socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 			time.sleep(2)
 			self.mpisock.connect("%s/mpisock"%self.scratchdir)
-			self.mpifile=self.mpisock.makefile()
+			self.mpifiler=self.mpisock.makefile(mode='rb')
+			self.mpifilew=self.mpisock.makefile(mode='wb')
 			self.log("Connected to Controller")
 
 			# Initial handshake to make sure we're both here
-			if (self.mpifile.read(4)!="HELO") :
+			if (self.mpifiler.read(4)!=b"HELO") :
 				print("Fatal error establishing MPI controller communications")
 				sys.stderr.flush()
 				sys.stdout.flush()
 				os._exit(1)
 			self.log( "Controller said HELO")
-			self.mpifile.write("HELO")
-			self.mpifile.flush()
+			self.mpifilew.write(b"HELO")
+			self.mpifilew.flush()
 			self.log("Said HELO back")
 
 			self.rankjobs=[-1 for i in range(self.nrank)]		# Each element is a rank, and indicates which job that rank is currently running (-1 if idle)
+			if usethreads>1 and usethreads<self.nrank:
+				self.rankjobs=self.rankjobs[:usethreads]
+			
 			self.rankjobs[0]=-2					# this makes sure we don't try to send a job to ourselves
 			self.maxjob=-1						# current highest job number waiting for execution
 			self.nextjob=1						# next job waiting to run
@@ -448,22 +469,23 @@ class EMMpiClient(object):
 
 			while 1:
 				# Look for a command from our controlling process
-				if select.select([self.mpifile],[],[],0)[0]:
-					com,data=load(self.mpifile)
+				if select.select([self.mpifiler],[],[],0)[0]:
+					com,data=load(self.mpifiler)
 					if com=="EXIT" :
-						dump("OK",self.mpifile,-1)
-						self.mpifile.flush()
+						dump(b"OK",self.mpifilew,-1)
+						self.mpifilew.flush()
 						self.log("Normal EXIT")
 						for i in range(1,self.nrank):
 							r=mpi_eman2_send("EXIT","",i)
 
-						self.mpifile.close()
+						self.mpifiler.close()
+						self.mpifilew.close()
 						self.mpisock.close()
 
 						break
 					elif com=="NEWJ" :
-						dump("OK",self.mpifile,-1)
-						self.mpifile.flush()
+						dump(b"OK",self.mpifilew,-1)
+						self.mpifilew.flush()
 						if verbose>1 : print("New job %d from customer"%data)
 						self.log("New job %d from customer"%data)
 						self.maxjob=data	# this is the highest number job currently assigned
@@ -473,12 +495,12 @@ class EMMpiClient(object):
 							if data[i] not in self.status : data[i]=-1
 							else: data[i]=self.status[data[i]]
 
-						dump(data,self.mpifile,-1)
-						self.mpifile.flush()
+						dump(data,self.mpifilew,-1)
+						self.mpifilew.flush()
 					elif com=="CACH" :
 						if verbose>1 : print("(ignored) Cache request from customer: ")
-						dump("OK",self.mpifile,-1)
-						self.mpifile.flush()
+						dump(b"OK",self.mpifilew,-1)
+						self.mpifilew.flush()
 
 					else : print("Unknown command from client '%s'"%com)
 					continue
@@ -488,15 +510,16 @@ class EMMpiClient(object):
 				if self.nextjob<=self.maxjob :
 
 					if -1 in self.rankjobs :
-						rank=self.rankjobs.index(-1)
-						if verbose>1 : print("Sending job %d to rank %d (%d idle)"%(self.nextjob,rank,self.rankjobs.count(-1)))
+						ranki=self.rankjobs.index(-1)
+						rank=self.ranklst[ranki]
+						if verbose>1 : print("Sending job {} to rank {} on {} ({} idle)".format(self.nextjob,rank,self.rankmap[rank],self.rankjobs.count(-1)))
 
 						task = open("%s/%07d"%(self.queuedir,self.nextjob),"rb").read()		# we don't unpickle
 						self.log("Sending task %d to rank %d (%s)"%(self.nextjob,rank,str(type(task))))
 						r=mpi_eman2_send("EXEC",task,rank)
 
 						# if we got here, the task should be running
-						self.rankjobs[rank]=self.nextjob
+						self.rankjobs[ranki]=self.nextjob
 						self.nextjob+=1
 						self.log("Sending task rank %d done"%(rank))
 						continue
@@ -506,10 +529,11 @@ class EMMpiClient(object):
 				if info:
 					com,data,src=mpi_eman2_recv(MPI_ANY_SOURCE)
 					if com=="DONE" :
-						taskid=self.rankjobs[src]
+						ranki=self.ranklst.index(src)
+						taskid=self.rankjobs[ranki]
 						open("%s/%07d.out"%(self.queuedir,taskid),"wb").write(data)	# assume what we got back is already pickled
 						self.status[taskid]=100
-						self.rankjobs[src]=-1
+						self.rankjobs[ranki]=-1
 						self.log('Task %s complete on rank %d'%(taskid,src))
 					elif com=="PROG" :
 						if data[1]<0 or data[1]>99 :
