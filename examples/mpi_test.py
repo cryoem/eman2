@@ -64,7 +64,8 @@ else:
 mpi_barrier(MPI_COMM_WORLD)
 
 mpi_finalize()
-
+from pickle import dump,load
+import select
 
 fname='mpisock'
 if proc==0:
