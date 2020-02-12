@@ -293,7 +293,7 @@ def E2saveappwin(app,key,win):
 
 		E2setappval(app,key,geom)
 	except:
-		print("Error saving window location")
+		print("Error saving window location ",key)
 
 def E2loadappwin(app,key,win):
 	"""restores a geometry saved with E2saveappwin"""

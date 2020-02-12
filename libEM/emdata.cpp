@@ -2463,6 +2463,7 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 
 	vector<float>	vd(n);
 	for (int i = 0; i < n; i++) {
+		vd[i]=0;
 		yc[i] = 0.00001f;
 	}
 
@@ -2487,27 +2488,24 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 					int i = (int)(floor(a));
 					a -= i;
 
+					float h=0;
+					if (isri) {
+#ifdef	_WIN32
+						h = (float)_hypot(data[c], data[c + 1]);
+#else
+						h = (float)hypot(data[c], data[c + 1]);
+#endif	//_WIN32
+					}
+					else h = data[c];
 					if (i == 0) {
-						vd[0] += data[c] * (1.0f - a);
+						vd[0] += h * (1.0f - a);
 						yc[0] += (1.0f - a);
 					}
 					else if (i == n - 1) {
-						vd[n - 1] += data[c] * a;
+						vd[n - 1] += h * a;
 						yc[n - 1] += a;
 					}
 					else if (i > 0 && i < (n - 1)) {
-						float h = 0;
-						if (isri) {
-#ifdef	_WIN32
-							h = (float)_hypot(data[c], data[c + 1]);
-#else
-							h = (float)hypot(data[c], data[c + 1]);
-#endif	//_WIN32
-						}
-						else {
-							h = data[c];
-						}
-
 						vd[i] += h * (1.0f - a);
 						yc[i] += (1.0f - a);
 						vd[i + 1] += h * a;
@@ -2566,6 +2564,7 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 
 
 	for (int i = 0; i < n; i++) {
+		if (vd[i]<0||yc[i]<0) printf("%d vd %f yc %f\n",i,vd[i],yc[i]);
 		vd[i] /= yc[i];
 	}
 

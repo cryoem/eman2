@@ -895,10 +895,15 @@ lc is the cursor selection point in plot coords"""
 			xmax=-1.0e38
 			for k in list(self.axes.keys()):
 				if not self.visibility[k]: continue
-				xmin=min(xmin,min(self.data[k][self.axes[k][0]]))
-				xmax=max(xmax,max(self.data[k][self.axes[k][0]]))
+				ax=self.axes[k][0]
+				if ax==-1 : 
+					xmin=min(xmin,0)
+					xmax=max(xmax,len(self.data[k][0]))
+				else :
+					xmin=min(xmin,min(self.data[k][ax]))
+					xmax=max(xmax,max(self.data[k][ax]))
 
-			if self.axisparms[2]!="linear" : self.xlimits=(old_div(xmin,1.1),xmax*1.1)
+			if self.axisparms[2]!="linear" : self.xlimits=(xmin/1.1,xmax*1.1)
 			else:
 				margin=(xmax-xmin)*0.025
 				self.xlimits=(xmin-margin,xmax+margin)
@@ -908,8 +913,13 @@ lc is the cursor selection point in plot coords"""
 			ymax=-1.0e38
 			for k in list(self.axes.keys()):
 				if not self.visibility[k]: continue
-				ymin=min(ymin,min(self.data[k][self.axes[k][1]]))
-				ymax=max(ymax,max(self.data[k][self.axes[k][1]]))
+				ax=self.axes[k][1]
+				if ax==-1:
+					ymin=min(ymin,0)
+					ymax=max(ymax,len(self.data[k][0]))
+				else :
+					ymin=min(ymin,min(self.data[k][ax]))
+					ymax=max(ymax,max(self.data[k][ax]))
 
 			if self.axisparms[3]!="linear" : self.ylimits=(old_div(ymin,1.1),ymax*1.1)
 			else:

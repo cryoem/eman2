@@ -1424,6 +1424,10 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 		vector <string> keys=dict.keys();
 
 		for (i=0; i<keys.size(); i++) {
+			// These keys are written later if used. They MUST not be copied from a previous read operation or non-compressed
+			// images will wind up being incorrectly scaled!
+			if (keys[i]==string("stored_rendermin") || keys[i]==string("stored_rendermax") || keys[i]==string("stored_renderbits") ||
+				keys[i]==string("render_min") || keys[i]==string("render_max") || keys[i]==string("render_bits")) continue;
 			string s("EMAN.");
 			s+=keys[i];
 			write_attr(igrp,s.c_str(),dict[keys[i]]);
