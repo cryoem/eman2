@@ -66,7 +66,7 @@ def numpy2pdb(data,fname,occ=[],bfac=[],chainid=[], model=0, residue=[]):
 	atomid=1
 	curchain=chainid[0]
 	for i,d in enumerate(data):
-		if chainid[i]!=curchain: atomid=0
+		if chainid[i]!=curchain: atomid=1
 		f.write("ATOM {atomid:6d}  CA  {res} {chainid}{atomid:4d}    {px:8.3f}{py:8.3f}{pz:8.3f}{occ:6.2f}{bfac:6.2f}     S_00  0\n".format(atomid=atomid, chainid=chr(int(chainid[i])+65), px=d[0], py=d[1], pz=d[2], occ=occ[i], bfac=bfac[i], res=amino_dict[residue[i]]))
 		atomid+=1
 		curchain=chainid[i]
