@@ -26,6 +26,7 @@ def main():
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--label", type=str,help="Load previous contour segmentation.", default="tomobox")
+	parser.add_argument("--gpuid", type=str,help="Specify the gpu to use", default="")
 	#parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -382,6 +383,10 @@ class EMTomobox(QtWidgets.QMainWindow):
 		self.bt_chgbx.setToolTip("Change box size")
 		self.gbl.addWidget(self.bt_chgbx, 5,0,1,2)
 		
+		self.bt_applyall=QtWidgets.QPushButton("ApplyAll")
+		self.bt_applyall.setToolTip("Apply to all tomograms")
+		self.gbl.addWidget(self.bt_applyall, 6,0,1,2)
+		
 		self.box_display = QtWidgets.QComboBox()
 		self.box_display.addItem("References")
 		self.box_display.addItem("Particles")
@@ -394,6 +399,7 @@ class EMTomobox(QtWidgets.QMainWindow):
 		self.bt_save.clicked[bool].connect(self.save_nnet)
 		self.bt_apply.clicked[bool].connect(self.apply_nnet)
 		self.bt_chgbx.clicked[bool].connect(self.change_boxsize)
+		self.bt_applyall.clicked[bool].connect(self.apply_nnet_all)
 		self.box_display.currentIndexChanged.connect(self.do_update)
 
 		self.val_targetsize=TextBox("TargetSize", 1)
@@ -421,7 +427,7 @@ class EMTomobox(QtWidgets.QMainWindow):
 		
 		self.nnet=None
 		global tf
-		tf=import_tensorflow('1')
+		tf=import_tensorflow(options.gpuid)
 		
 		
 		self.nnetsize=96
@@ -555,6 +561,8 @@ class EMTomobox(QtWidgets.QMainWindow):
 	def set_data(self, datafile):
 		if self.datafile==datafile:
 			return
+		if self.data!=None:
+			self.save_points()
 		print("Reading {}...".format(datafile))
 		self.datafile=datafile
 		self.data=EMData(datafile)
@@ -651,8 +659,6 @@ class EMTomobox(QtWidgets.QMainWindow):
 		dataset = tf.data.Dataset.from_tensor_slices(self.trainset)
 		dataset=dataset.shuffle(500).batch(32)
 		usemax=(self.val_lossfun.currentText()=="Max")
-		if usemax:
-			print('max')
 		
 		self.nnet.do_training(
 			dataset, 
@@ -694,6 +700,12 @@ class EMTomobox(QtWidgets.QMainWindow):
 			m.write_image(fname, -1)
 		print("Output written to {}...".format(fname))
 		
+	
+	def apply_nnet_all(self):
+		for i,info in enumerate(self.imginfo):
+			self.curinfo=info
+			self.set_data(info["name"])
+			self.apply_nnet()
 		
 	def apply_nnet(self):
 		bx=self.nnetsize//8
@@ -713,7 +725,7 @@ class EMTomobox(QtWidgets.QMainWindow):
 			scale=self.nnetsize/self.boxsize
 			data.scale(scale)
 			ts2=[int(t*scale) for t in ts]
-			print(ts, ts2)
+			#print(ts, ts2)
 			data=data.get_clip(Region(ts[0]//2-ts2[0]//2, ts[1]//2-ts2[1]//2, ts[2]//2-ts2[2]//2,  ts2[0], ts2[1], ts2[2]))
 			ts=ts2
 			
@@ -775,13 +787,14 @@ class EMTomobox(QtWidgets.QMainWindow):
 		print("Found {} particles...".format(len(pts)))
 		self.do_update()
 		self.save_points()
+		self.update_list()
 		#print(self.boxshapes.points)
 		
 	def load_nnet(self):
-		self.nnet=NNet.load_network("neuralnets/test.hdf", boxsize=self.nnetsize, thick=self.thick)
+		self.nnet=NNet.load_network("neuralnets/nnet_save.hdf", boxsize=self.nnetsize, thick=self.thick)
 		
 	def save_nnet(self):
-		self.nnet.save_network("neuralnets/test.hdf")
+		self.nnet.save_network("neuralnets/nnet_save.hdf")
 		
 	def key_press(self, event):
 		#print(event.key())
@@ -801,21 +814,27 @@ class EMTomobox(QtWidgets.QMainWindow):
 			return
 		
 		if  event.modifiers()&Qt.ShiftModifier:
-			if self.box_display.currentText()=="Particles":
-				return
 			### delete point
 			z=self.imgview.list_idx
 			pos=np.array([x,y,z])
-			pts=np.array([img["pos"] for img in self.references])
+			mode=self.box_display.currentText()
+			if mode=="Particles":
+				pts=np.array([b["pos"] for b in self.ptclimages])
+			else:
+				pts=np.array([img["pos"] for img in self.references])
 			if len(pts)==0:
 				return
 			dst=np.linalg.norm(pts[:,:3]-pos, axis=1)
+			
 			if np.sum(dst<self.val_circlesize.getval())>0:
 				idx=np.argsort(dst)[0]
-				self.boxshapes.points.pop(idx)
-				self.references=[b for ib,b in enumerate(self.references) if ib!=idx]
-				self.boximages=[b for ib,b in enumerate(self.boximages) if ib!=idx]
-				
+				if mode=="Particles":
+					self.ptclimages=[p for i,p in enumerate(self.ptclimages) if i!=idx]
+				else:
+					self.boxshapes.points.pop(idx)
+					self.references=[b for ib,b in enumerate(self.references) if ib!=idx]
+					self.boximages=[b for ib,b in enumerate(self.boximages) if ib!=idx]
+					
 			self.do_update()
 			
 		else:
@@ -847,17 +866,29 @@ class EMTomobox(QtWidgets.QMainWindow):
 			self.do_update()
 			
 	def on_ptcl_selected(self,event,lc):
-		ic=-1
-		if event.modifiers()&Qt.ControlModifier or  event.modifiers()&Qt.ShiftModifier:
-			ic=0
-		else:# event.modifiers()&Qt.ShiftModifier:
-			ic=1
+		
+		
+		if  event.modifiers()&Qt.ShiftModifier:
+			## delete ptcl
+			if event.modifiers()&Qt.ControlModifier:
+				self.ptclimages=[p for i,p in enumerate(self.ptclimages) if i<lc[0]]
+			else:
+				self.ptclimages=[p for i,p in enumerate(self.ptclimages) if i!=lc[0]]
+			self.do_update()
 			
-		if ic>=0:
+			
+		else:
+			## add to good/bad refs
+			if event.modifiers()&Qt.ControlModifier:
+				ic=0
+			else:# event.modifiers()&Qt.ShiftModifier:
+				ic=1
+			
 			img=self.ptclimages[lc[0]]
 			pos=img["pos"]
 			self.add_reference(ic, pos[0], pos[1], pos[2])
 			self.do_update()
+			
 			
 	def rm_reference(self, pos):
 		pts=np.array([b["pos"] for b in self.references])
@@ -931,7 +962,7 @@ class EMTomobox(QtWidgets.QMainWindow):
 		boxes=boxes+[[p[0], p[1], p[2], "tomobox", 0.0, clsid] for p in pts.tolist()]
 		js["boxes_3d"]=boxes
 		js.close()
-		self.update_list()
+		#self.update_list()
 		
 	def clear_points(self):
 		#choice = QtWidgets.QMessageBox.question(self, 'Clear points', 
@@ -980,6 +1011,7 @@ class EMTomobox(QtWidgets.QMainWindow):
 	def closeEvent(self, event):
 		self.save_references()
 		self.imgview.close()
+		self.save_points()
 		#self.imagelist.close()
 		for b in  (self.boxesviewer+[self.ptclviewer]):
 			b.close()
