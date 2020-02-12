@@ -72,14 +72,12 @@ if proc==0:
 	print("\nStage 3, test socket channel...")
 	mpisock=socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 	
-	try:
-		os.remove(fname)
-	except:
-		pass
+	try:  os.remove(fname)
+	except:  pass
 	mpisock.bind(fname)
 	mpisock.listen(1)
 	mpiconn, mpiaddr = mpisock.accept()
-	print('r0:', mpiaddr)
+	print('r0: testtest')
 	mpifile=mpiconn.makefile(mode='wb')
 	mpifile.write(b"HELO")
 	mpifile.flush()
@@ -101,18 +99,22 @@ elif proc==1:
 	
 	#mpifile.write(b"HELO")
 	#mpifile.flush()
-	print(type(mpifile))
-	print(mpifile.fileno())
+	#print(type(mpifile))
+	#print(mpifile.fileno())
 	if select.select([mpifile],[],[],0)[0]:
 		com,data=load(mpifile)
 		print('r1:',com,data)
-	print('done')
+	#print('done')
 
 
+try:  os.remove(fname)
+except:  pass
 if proc==0:
+	time.sleep(5)
 	print("done")
 
 	print("\nIf you didn't see any errors above, then the test was a success.")
+	
 
 #print "running on CPU ",proc
 #if proc==0 : mpi_bcast("testing")
