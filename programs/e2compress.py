@@ -101,7 +101,7 @@ level 7         149     95.4    19.1
 	if options.range!=None and options.sigrange!=None:
 		print("ERROR: only one of --range and --sigrange may be specified")
 
-	if not os.path.isdir(options.outpath):
+	if options.outpath!=None and not os.path.isdir(options.outpath):
 		print("ERROR: --outpath must specify an existing, writable directory")
 		sys.exit(1)
 
