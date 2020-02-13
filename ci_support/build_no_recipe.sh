@@ -7,13 +7,13 @@ MYDIR="$(cd "$(dirname "$0")"; pwd -P)"
 if [ -n "${TRAVIS}" ];then
     source ci_support/setup_conda.sh
 
-    conda create -n eman-deps-18.0 eman-deps-dev=18.0 -c cryoem -c defaults -c conda-forge --yes --quiet
-    conda activate eman-deps-18.0
+    conda create -n eman eman-deps-dev=19.0 -c cryoem -c defaults -c conda-forge --yes --quiet
+    conda activate eman
 fi
 
 if [ -n "${CIRCLECI}" ];then
     . $HOME/miniconda/etc/profile.d/conda.sh
-    conda activate eman-deps-18.0
+    conda activate eman
 fi
 
 python -m compileall -q .
