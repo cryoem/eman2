@@ -85,6 +85,9 @@ If not set, it will read the first block encountered. Value should be of the for
 		
 		if os.path.isfile(filename) :
 			self.readfile()
+		else :
+			raise Exception(f"Cannot open STAR file: {filename}")
+			
 	def _nextline(self):
 		"""Used internally when parsing a star file to emulate readline"""
 		self.lineptr+=1
