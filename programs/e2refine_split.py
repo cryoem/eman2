@@ -198,7 +198,7 @@ def main():
 
 	if options.verbose : print("Completed all tasks\nGrouping consistent averages")
 
-	classes.sort(reverse=True)		# we want to start with the largest number of particles
+	classes.sort(reverse=True,key=lambda x:x[0])		# we want to start with the largest number of particles
 	apix=classes[0][2]["apix_x"]
 
 	boxsize=classes[0][2]["ny"]
