@@ -43,6 +43,9 @@ import sys
 import random
 from random import choice
 import traceback
+import numpy as np
+import sklearn.decomposition as skdc
+
 
 from EMAN2jsondb import JSTask,jsonclasses
 
@@ -440,25 +443,40 @@ class ClassSplitTask(JSTask):
 			mask=ptcls[0][-1].copy()
 			mask.to_one()
 #			mask.process("mask.soft",{"outer_radius":-8,"width":4})
-			mask.process("mask.sharp",{"outer_radius":-10})
+			mask.process("mask.sharp",{"outer_radius":max(-10,-mask["ny"]//25)})
 		else:
 			mask=options["mask"]
-
-#		print "basis start"
-		if options["verbose"]>1: print("PCA {}, {}".format(options["classnum"],len(ptcls)))
-		pca=Analyzers.get("pca_large",{"nvec":options["nbasis"],"mask":mask,"tmpfile":"tmp{}".format(options["classnum"])})
-		for p in ptcls: 
-			pca.insert_image(p[5])		# filter to focus on lower resolution differences
-		basis=pca.analyze()
-
-		# Varimax rotation... good idea?
-		if not options["novarimax"]:
-			if options["verbose"]>1: print("Varimax {}".format(options["classnum"]))
-			pca2=Analyzers.get("varimax",{"mask":mask})
-			for im in basis:
-				pca2.insert_image(im)
+		nmask=mask["square_sum"]	# ok, square part is silly, but gives a count of "1" pixels
 		
-			basis=pca2.analyze()
+#		print "basis start"
+		#if options["verbose"]>1: print("PCA {}, {}".format(options["classnum"],len(ptcls)))
+		#pca=Analyzers.get("pca_large",{"nvec":options["nbasis"],"mask":mask,"tmpfile":"tmp{}".format(options["classnum"])})
+		#for p in ptcls: 
+			#pca.insert_image(p[5])		# filter to focus on lower resolution differences
+		#basis=pca.analyze()
+		
+		# use numpy/sklearn instead of the old EMAN2 PCA code (more flexible)
+		datamx=EMData(nmask,len(ptcls))
+		for i,p in enumerate(ptcls):
+			p.process("misc.mask.pack",{"mask":mask})
+			datamx.insert_clip(p,(0,i,0))
+		npdata=to_numpy(datamx)		# need to be careful about deleting datamx
+
+		# actual PCA calculation
+		msa=skdc.PCA(n_components=options["nbasis"])
+
+		# we just need one basis vector
+		basis=msa.components_[self.options["usebasis"]]
+		basis=from_numpy(basis).process("misc.mask.pack",{"mask":mask,"unpack":1})
+
+		## Varimax rotation... good idea?
+		#if not options["novarimax"]:
+			#if options["verbose"]>1: print("Varimax {}".format(options["classnum"]))
+			#pca2=Analyzers.get("varimax",{"mask":mask})
+			#for im in basis:
+				#pca2.insert_image(im)
+		
+			#basis=pca2.analyze()
 
 		
 		# if you turn this on multithreaded it will crash sometimes
@@ -471,7 +489,7 @@ class ClassSplitTask(JSTask):
 #		print "basis"
 		
 		# at the moment we are just splitting into 2 classes, so we'll use the first eigenvector. A bit worried about defocus coming through, but hopefully ok...
-		dots=[p[5].cmp("ccc",basis[self.options["usebasis"]]) for p in ptcls]	# NOTE: basis number is passed in as an option, may not be #1 or #3 (default)
+		dots=[p[5].cmp("ccc",basis) for p in ptcls]	# NOTE: basis number is passed in as an option, may not be #1 or #3 (default)
 		if len(dots)==0:
 			return {"failed":True}
 		dota=old_div(sum(dots),len(dots))
@@ -515,7 +533,9 @@ class ClassSplitTask(JSTask):
 			return {"failed":True}
 
 #		print basis
-		return {"avg1":avg1,"avg2":avg2,"basis":basis[:3]}
+
+		return {"avg1":avg1,"avg2":avg2,"basis":basis}	# basis was originally the first 3 vectors, now we are only returning the selected one. Will see if it's a problem
+#		return {"avg1":avg1,"avg2":avg2,"basis":basis[:3]}
 
 jsonclasses["ClassSplitTask"]=ClassSplitTask.from_jsondict
 

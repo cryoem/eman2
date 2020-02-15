@@ -113,56 +113,56 @@ improved with time."""
 		print('Low level tests starting. Please note that compiling with optimization may \
 invalidate certain tests. Also note that overhead is difficult to compensate for, \
 so in most cases it is not dealt with.')
-		t1 = time.clock()
+		t1 = time.perf_counter()
 		for fj in range(500):
 			for i in range(old_div(NTT,2)):
 				data[i].dot(data[i + old_div(NTT, 2)])
-		t2 = time.clock()
+		t2 = time.perf_counter()
 		ti = t2-t1
 		print('Baseline 1: %d, %d x %d dot()s in %1.1f sec	%1.1f/sec-> ~%1.2f mflops' % \
 			( 500 * NTT / 2, SIZE, SIZE, ti, 500 * NTT / (2.0 * ti), SIZE * SIZE * 4 * 500.0 * NTT / (1000000.0 * ti)))
 
-		t1 = time.clock()
+		t1 = time.perf_counter()
 		for fj in range(500):
 			for i in range(old_div(NTT,2)):
 				data[1].dot(data[12])
-		t2 = time.clock()
+		t2 = time.perf_counter()
 		ti = t2-t1
 		print('Baseline 1a: %d, %d x %d optimized cached dot()s in %1.1f s %1.1f/s-> ~%1.2f mflops' % \
 			(500 * NTT / 2, SIZE, SIZE, ti, 500 * NTT / (2.0 * ti), SIZE * SIZE * 4 * 500.0 * NTT / (1000000.0 * ti)))
 
-		t1 = time.clock()
+		t1 = time.perf_counter()
 		for fj in range(100):
 			for i in range(old_div(NTT,2)):
 				tmp=data[i].do_fft()
-		t2 = time.clock()
+		t2 = time.perf_counter()
 		ti = t2-t1
 		print('Baseline 2: %d, %d x %d FFTs in %1.1f s %1.1f/s' % \
 			(100 * NTT / 2, SIZE, SIZE, ti, 100 * NTT / (2.0 * ti)))
 		
-		t1 = time.clock()
+		t1 = time.perf_counter()
 		for fj in range(100):
 			for i in range(old_div(NTT,2)):
 				tmp=data[i].process("math.squared")
-		t2 = time.clock()
+		t2 = time.perf_counter()
 		ti = t2-t1
 		print('Baseline 3: %d, %d x %d math.squared in %1.1f s %1.1f/s' % \
 			(100 * NTT / 2, SIZE, SIZE, ti, 100 * NTT / (2.0 * ti)))
 
-		t1 = time.clock()
+		t1 = time.perf_counter()
 		for fj in range(100):
 			for i in range(old_div(NTT,2)):
 				tmp=data[i].process("math.sqrt")
-		t2 = time.clock()
+		t2 = time.perf_counter()
 		ti = t2-t1
 		print('Baseline 4: %d, %d x %d math.sqrt in %1.1f s %1.1f/s' % \
 			(100 * NTT / 2, SIZE, SIZE, ti, 100 * NTT / (2.0 * ti)))
 	
-		t1 = time.clock()
+		t1 = time.perf_counter()
 		for fj in range(100):
 			for i in range(old_div(NTT,2)):
 				tmp=data[i].translate(-32,-32,0)
-		t2 = time.clock()
+		t2 = time.perf_counter()
 		ti = t2-t1
 		print('Baseline 5: %d, %d x %d 32 pix translate in %1.1f s %1.1f/s' % \
 			(100 * NTT / 2, SIZE, SIZE, ti, 100 * NTT / (2.0 * ti)))
@@ -170,13 +170,13 @@ so in most cases it is not dealt with.')
 		return
 
 	tms=[]
-	t1 = time.clock()
+	t1 = time.perf_counter()
 	if options.short:
 		NTT=old_div(NTT,2)
 		rng=1
 	else: rng=8
 	for i in range(rng):
-		t11 = time.clock()
+		t11 = time.perf_counter()
 		for j in range(5, NTT):
 			if options.best:
 				tmp = data[i].align('rtf_best', data[j], {"flip":None, "maxshift":old_div(SIZE,8)})
@@ -198,9 +198,9 @@ so in most cases it is not dealt with.')
 			if j%5 == 0:
 				sys.stdout.write('.')
 				sys.stdout.flush()
-		tms.append(time.clock()-t11)
+		tms.append(time.perf_counter()-t11)
 		print()
-	t2 = time.clock()
+	t2 = time.perf_counter()
 	tms=array(tms)
 
 	ti = t2 - t1
