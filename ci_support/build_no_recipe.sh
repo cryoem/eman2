@@ -4,10 +4,12 @@ set -xe
 
 MYDIR="$(cd "$(dirname "$0")"; pwd -P)"
 
+source ${MYDIR}/set_env_vars.sh
+
 if [ -n "${TRAVIS}" ];then
     source ci_support/setup_conda.sh
 
-    conda create -n eman eman-deps-dev=19.0 -c cryoem -c defaults -c conda-forge --yes --quiet
+    conda create -n eman eman-deps-dev=${EMAN_DEPS_VERSION} -c cryoem -c defaults -c conda-forge --yes --quiet
     conda activate eman
 fi
 

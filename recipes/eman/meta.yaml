@@ -16,12 +16,12 @@ requirements:
         - {{ cdt('mesa-libgl-devel') }}   # [linux]
 
     host:
-        - eman-deps-cxx     19.0
+        - eman-deps-cxx     {{ environ.get('EMAN_DEPS_VERSION', '') }}
         - libglu                          # [linux]
     
 test:
   requires:
-    - eman-deps     19.0
+    - eman-deps     {{ environ.get('EMAN_DEPS_VERSION', '') }}
   
   source_files:
     - examples/mpi_test.py
