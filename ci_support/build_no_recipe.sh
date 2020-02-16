@@ -9,13 +9,14 @@ source ${MYDIR}/set_env_vars.sh
 if [ -n "${TRAVIS}" ];then
     source ci_support/setup_conda.sh
 
-    conda create -n eman eman-deps-dev=${EMAN_DEPS_VERSION} -c cryoem -c defaults -c conda-forge --yes --quiet
+    conda create -n eman eman-deps-dev=${EMAN_DEPS_VERSION} ftgl=${FTGL_VERSION_CMD} -c cryoem -c defaults -c conda-forge --yes --quiet
     conda activate eman
 fi
 
 if [ -n "${CIRCLECI}" ];then
     . $HOME/miniconda/etc/profile.d/conda.sh
     conda activate eman
+    conda install eman-deps-dev=${EMAN_DEPS_VERSION} ftgl=${FTGL_VERSION_CMD} -c cryoem -c defaults -c conda-forge --yes --quiet
 fi
 
 python -m compileall -q .
@@ -29,6 +30,7 @@ conda list --explicit
 
 if [ -n "$JENKINS_HOME" ];then
     CPU_COUNT=4
+    conda install eman-deps-dev=${EMAN_DEPS_VERSION} ftgl=${FTGL_VERSION_CMD} -c cryoem -c defaults -c conda-forge --yes --quiet
 else
     CPU_COUNT=2
 fi

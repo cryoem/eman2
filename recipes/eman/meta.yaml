@@ -17,11 +17,13 @@ requirements:
 
     host:
         - eman-deps-cxx     {{ environ.get('EMAN_DEPS_VERSION', '') }}
+        - ftgl              {{ environ.get('FTGL_VERSION_SPEC', '') }}
         - libglu                          # [linux]
     
 test:
   requires:
     - eman-deps     {{ environ.get('EMAN_DEPS_VERSION', '') }}
+    - ftgl          {{ environ.get('FTGL_VERSION_SPEC', '') }}
   
   source_files:
     - examples/mpi_test.py
