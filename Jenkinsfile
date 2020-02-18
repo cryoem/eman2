@@ -261,6 +261,7 @@ pipeline {
     INSTALLERS_DIR = convertToNativePath("${HOME_DIR}/workspace/jenkins-eman-installers")
 
     CI_BUILD       = sh(script: "! git log -1 | grep '.*\\[ci build\\].*'",       returnStatus: true)
+    EMAN_DEPS_VERSION = "19.0"
   }
   
   stages {
@@ -287,7 +288,7 @@ pipeline {
       
       steps {
         notifyGitHub('PENDING')
-        sh 'source $(conda info --root)/bin/activate eman-deps-19.0 && env | sort && bash ci_support/build_no_recipe.sh'
+        sh 'source $(conda info --root)/bin/activate eman-deps-${EMAN_DEPS_VERSION} && env | sort && bash ci_support/build_no_recipe.sh'
       }
     }
     
