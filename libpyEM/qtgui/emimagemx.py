@@ -2929,7 +2929,8 @@ class EMLightWeightParticleCache(EMMXDataCache):
 		image = self.cache[adj_idx]
 		if image == None:
 			data = self.data[idx]
-			h = get_header(data[0],data[1])
+			try: h = get_header(data[0],data[1])
+			except: h = get_header(data[0][0],data[1])	# not an ideal solution, sometimes(?) data[0] includes 2 filenames...
 			return h
 			#e.read_image(data[0],data[1],True)
 			#return e.get_attr_dict()

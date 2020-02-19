@@ -486,7 +486,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 #			self.proj_class_viewer = EMImage2DWidget(image=None,application=get_application())
 			self.proj_class_viewer.module_closed.connect(self.on_mx_view_closed)
 #			self.proj_class_viewer.set_mouse_mode("App" )
-			self.proj_class_viewer.mx_image_selected.connect(self.on_mx_image_selected)
+			#self.proj_class_viewer.mx_image_selected.connect(self.on_mx_image_selected)	# broken due to even/odd split
 			get_application().show_specific(self.proj_class_viewer)
 
 			self.proj_class_single = EMImage2DWidget(image=None,application=get_application())

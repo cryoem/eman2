@@ -2001,14 +2001,23 @@ class EMPlot2DClassInsp(QtWidgets.QWidget):
 				return
 
 		try:
-			vals=[float(i) for i in vals.split(",")]
+			v1=vals.split(",")
+			vals=[]
+			inv=[]
+			for v in v1:
+				if v[0]=="<" : 
+					inv.append(True)
+					vals.append(float(v[1:]))
+				else:
+					inv.append(False)
+					vals.append(float(v))
 			if len(vals) != len(axes): raise Exception
 		except:
-			QtWidgets.QMessageBox.warning(self, "You must specify one (comma separated) value for each axis.")
+			QtWidgets.QMessageBox.warning(self, "ERROR","You must specify one (comma separated) value for each axis.\nFor 'value' if prepended with '<' the direction of the \nthreshold will be inverted for that axis.")
 			return
 
 		if thresh_type == "value":
-			axvals = {a:v for a,v in zip(axes,vals)}
+			axvals = {a:(v,iv) for a,v,iv in zip(axes,vals,inv)}
 
 		elif thresh_type == "sigma":
 			tmp = np.asarray(data)[:,axes]
@@ -2046,6 +2055,11 @@ class EMPlot2DClassInsp(QtWidgets.QWidget):
 					if data[ax][r]>axvals[ax][0] and data[ax][r]<axvals[ax][1]:
 						imdata[r]["class_id"] *= 1
 					else: imdata[r]["class_id"] *= 0
+				elif thresh_type == "value":
+					if (axvals[ax][1] and data[ax][r] < axvals[ax][0]) or (not axvals[ax][1] and data[ax][r] > axvals[ax][0]):
+						imdata[r]["class_id"] *= 0
+					else:
+						imdata[r]["class_id"] *= 1
 				else:
 					if data[ax][r] < axvals[ax]:
 						imdata[r]["class_id"] *= 0

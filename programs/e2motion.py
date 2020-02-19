@@ -992,7 +992,7 @@ class EMMotion(QtWidgets.QMainWindow):
 			c["class_ptcl_src"]=toclass[0][2]
 
 		# put the class with the most particles first
-		m=max([(i["ptcl_repr"],i) for i in classes])
+		m=max([(i["ptcl_repr"],i) for i in classes],key=lambda x:x[0])
 		classes.remove(m[1])
 		classes.insert(0,m[1])
 

@@ -146,7 +146,7 @@ def main():
 	# Prepare mask if specified
 	if options.mask!=None:
 		mask=EMData(options.mask)
-		nx=EMData(projin,i,True)["nx"]
+		nx=EMData(projin,0,True)["nx"]
 		if mask["nx"]!=nx :
 			print("ERROR: mask dimensions do not match refinement volume")
 			sys.exit(1)
@@ -162,7 +162,7 @@ def main():
 #			zero.write_image(classout[1],c)
 			continue
 		if mask!=None :
-			maskp=mask.project("standard",eulers[c])
+			maskp=mask.project("standard",eulers[c]).process("threshold.binary",{"value":mask["sigma"]})
 		else: maskp=None
 		tasks.append(ClassSplitTask(ptcls,ns,cl,c,eulers[c],maskp,options.usebasis,options.nbasis,True,options.verbose-1))
 		gc+=1
@@ -446,7 +446,7 @@ class ClassSplitTask(JSTask):
 			mask.process("mask.sharp",{"outer_radius":max(-10,-mask["ny"]//25)})
 		else:
 			mask=options["mask"]
-		nmask=mask["square_sum"]	# ok, square part is silly, but gives a count of "1" pixels
+		nmask=int(mask["square_sum"])	# ok, square part is silly, but gives a count of "1" pixels
 		
 #		print "basis start"
 		#if options["verbose"]>1: print("PCA {}, {}".format(options["classnum"],len(ptcls)))
@@ -458,12 +458,13 @@ class ClassSplitTask(JSTask):
 		# use numpy/sklearn instead of the old EMAN2 PCA code (more flexible)
 		datamx=EMData(nmask,len(ptcls))
 		for i,p in enumerate(ptcls):
-			p.process("misc.mask.pack",{"mask":mask})
-			datamx.insert_clip(p,(0,i,0))
+			p5=p[5].process("misc.mask.pack",{"mask":mask})
+			datamx.insert_clip(p5,(0,i,0))
 		npdata=to_numpy(datamx)		# need to be careful about deleting datamx
 
 		# actual PCA calculation
 		msa=skdc.PCA(n_components=options["nbasis"])
+		msa.fit(npdata)
 
 		# we just need one basis vector
 		basis=msa.components_[self.options["usebasis"]]
