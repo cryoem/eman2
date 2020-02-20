@@ -208,7 +208,7 @@ produce new sets/ for each class, which could be further-refined.
 		
 		# If requested, we save the aligned (shrunken) volume to the stack for this class
 		if options.saveali: 
-			if shrink>1 : ptcl.process_inplace("math.meanshrink",{"n":shrink})
+			if options.shrink>1 : ptcl.process_inplace("math.meanshrink",{"n":options.shrink})
 			ptcl.write_image("{}/aliptcl_{:02d}_{:02d}.hdf".format(options.path,options.iter,cls),-1)
 		
 		sets[cls].write(-1,im["orig_n"],im["orig_file"])
