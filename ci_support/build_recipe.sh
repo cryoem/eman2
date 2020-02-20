@@ -29,7 +29,7 @@ conda list --explicit
 conda render recipes/eman
 conda build purge-all
 
-if [ $AGENT_OS_NAME == "win" ];then
+if [ "$AGENT_OS_NAME" == "win" ];then
     CONDA_BUILD_TEST="--no-test"
 else
     CONDA_BUILD_TEST=""
