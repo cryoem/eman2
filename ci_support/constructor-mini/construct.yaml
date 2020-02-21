@@ -27,13 +27,6 @@ specs:
   - console_shortcut  # [win]
   - menuinst          # [win]
 
-exclude:
-  - hdf5      # [not win]
-  - jpeg      # [not win]
-  - libpng    # [not win]
-  - libtiff   # [not win]
-  - freetype  # [osx]
-
 welcome_image: ../../images/EMAN2Icon.png      # [win]
 icon_image:    ../../images/eman.ico           # [win]
 post_install:  ../post-install-actions.sh      # [unix]
