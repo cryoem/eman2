@@ -1,4 +1,3 @@
 #!/usr/bin/env bash
 
-export EMAN_DEPS_VERSION="19.0"
-export FTGL_VERSION="2.4.0"
+export EMAN_DEPS_VERSION="20.0"
