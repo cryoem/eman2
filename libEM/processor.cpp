@@ -14689,10 +14689,8 @@ void BinaryOpeningProcessor::process_inplace(EMData *image)
 	float thresh = params.set_default("thresh",0.5);
 	image->process_inplace("threshold.binary",Dict("value",thresh));
 
-	for (int i = 0; i < iters; i++){
-		image->process_inplace("morph.dilate.binary",params);
-		image->process_inplace("morph.erode.binary",params);
-	}
+	for (int i = 0; i < iters; i++) image->process_inplace("morph.erode.binary",params);
+	for (int i = 0; i < iters; i++) image->process_inplace("morph.dilate.binary",params);
 }
 
 EMData* BinaryClosingProcessor::process(const EMData* const image)
@@ -14708,10 +14706,8 @@ void BinaryClosingProcessor::process_inplace(EMData *image)
 	float thresh = params.set_default("thresh",0.5);
 	image->process_inplace("threshold.binary",Dict("value",thresh));
 
-	for (int i = 0; i < iters; i++){
-		image->process_inplace("morph.erode.binary",params);
-		image->process_inplace("morph.dilate.binary",params);
-	}
+	for (int i = 0; i < iters; i++) image->process_inplace("morph.dilate.binary",params);
+	for (int i = 0; i < iters; i++) image->process_inplace("morph.erode.binary",params);
 }
 
 EMData* BinaryInternalGradientProcessor::process(const EMData* const image)
