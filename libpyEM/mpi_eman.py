@@ -70,10 +70,15 @@ def mpi_eman2_send(com,data,dest):
 	from mpi import mpi_send, MPI_CHAR, MPI_COMM_WORLD,mpi_comm_rank
 	rank = mpi_comm_rank(MPI_COMM_WORLD)	
 
-	if isinstance(data,str) :
+	if isinstance(com,str) : com=bytes(com,"UTF-8")
+	
+	if isinstance(data,bytes) :
+
 		# tag 1 used for message "header" containing length of subsequent message with different tag
 		l=pack("4sIII",com,len(data),rank,3)
+		ld=len(data)
 		mpi_send(l,16,MPI_CHAR,dest,1,MPI_COMM_WORLD)		# Blocking issues with probe/get_count, so sending length packet, stupid, but apparently necessary
+		print(f"snd3 {com} {ld} {dest} {l}")
 
 		# tag 3 used for unpickled strings
 		mpi_send(data, len(data), MPI_CHAR, dest, 3, MPI_COMM_WORLD)		# removed use of mpi_dout/din for speed
@@ -82,6 +87,10 @@ def mpi_eman2_send(com,data,dest):
 		# tag 1 used for message "header" containing length of subsequent message with different tag
 		data = dumps(data,-1)
 		l=pack("4sIII",com,len(data),rank,2)
+
+		ld=len(data)
+		print(f"snd2 {com} {ld} {dest} {l}")
+
 		mpi_send(l,16,MPI_CHAR,dest,1,MPI_COMM_WORLD)		# Blocking issues with probe/get_count, so sending length packet, stupid, but apparently necessary
 
 		# tag 2 used for a single pickled data block
@@ -93,11 +102,12 @@ def mpi_eman2_recv(src):
 	
 	lmsg=mpi_recv(16,MPI_CHAR, src,1,MPI_COMM_WORLD)		# first get the message length
 	com,l,srank,tag=unpack("4sIII",lmsg)
+	print(f"rcv {lmsg} {com} {l} {srank} {tag}")
 	
 	msg=mpi_recv(l,MPI_CHAR, srank,tag,MPI_COMM_WORLD)	# then the message
 	
-	if tag==2 : return (com,loads(str(msg.data)),srank)
-	elif tag==3 : return (com,str(msg.data),srank)
+	if tag==2 : return (com,loads(msg.data),srank)
+	elif tag==3 : return (com,msg.data,srank)
 	
 def mpi_bcast_send(data):
 	"""Unlike the C routine, in this python module, mpi_bcast is split into a send and a receive method. Send must be 
@@ -120,4 +130,4 @@ def mpi_bcast_recv(src):
 	l = mpi_bcast(None, 4, MPI_CHAR, src, MPI_COMM_WORLD)
 	l=unpack("I",l)[0]
 	data = mpi_bcast(None, l, MPI_CHAR, src, MPI_COMM_WORLD)
-	return loads(str(data.data))
+	return loads(data.data)
