@@ -1331,7 +1331,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Performs a morphological k-pixel opening of a (binary) image.";
+			return "Performs a morphological k-pixel closing of a (binary) image/volume. Note the box must be large enough to accommodate the dilation to work properly. iter(dilate) -> iter(erode)";
 		}
 
 		TypeDict get_param_types() const
@@ -1373,7 +1373,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Performs a morphological k-pixel closing of a (binary) image.";
+			return "Performs a morphological k-pixel opening of a (binary) image/volume. iter(erode) -> iter(dilate)";
 		}
 
 		TypeDict get_param_types() const
