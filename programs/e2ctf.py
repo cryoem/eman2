@@ -123,10 +123,11 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--nosmooth",action="store_true",help="Disable smoothing of the background (running-average of the log with adjustment at the zeroes of the CTF)",default=False, guitype='boolbox', row=7, col=1, rowspan=1, colspan=1, mode='autofit')
 	parser.add_argument("--refinebysnr",action="store_true",help="Refines the defocus value by looking at the high resolution smoothed SNR. Requires good starting defocus. Important: also replaces the SNR with a smoothed version.",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='genoutp')
 	parser.add_argument("--phaseflip",action="store_true",help="Perform phase flipping after CTF determination and writes to specified file.",default=False, guitype='boolbox', row=5, col=0, rowspan=1, colspan=1, mode='genoutp[True]')
-	parser.add_argument("--phasefliphp",action="store_true",help="Perform phase flipping with auto-high pass filter",default=False, guitype='boolbox', row=5, col=1, rowspan=1, colspan=1, mode='genoutp')
+	parser.add_argument("--phasefliphp",action="store_true",help="Perform phase flipping with auto-high pass filter (deprecated)",default=False, guitype='boolbox', row=5, col=1, rowspan=1, colspan=1, mode='genoutp')
 	parser.add_argument("--extrapad",action="store_true",help="If particles were boxed more tightly than EMAN requires, this will add some extra padding, but only to processed output particles",default=False, guitype='boolbox', row=5, col=2, rowspan=1, colspan=1, mode='genoutp[False]')
-	parser.add_argument("--phaseflipsmall",action="store_true",help="Produce an output set with 1/2 size particles for faster initial model work",default=False, guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode='genoutp[True]')
+	parser.add_argument("--phaseflipsmall",action="store_true",help="Produce an output set with 1/2 size particles for faster initial model work (deprecated)",default=False, guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode='genoutp[True]')
 	parser.add_argument("--wiener",action="store_true",help="Wiener filter (optionally phaseflipped) particles.",default=False, guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='genoutp[True]')
+	parser.add_argument("--snrfilt",action="store_true",help="Apply SNR filter as part of phase flipping.",default=False, guitype='boolbox', row=6, col=2, rowspan=1, colspan=1, mode='genoutp[True]')
 	parser.add_argument("--proctag",help="Tag added to the name of each particle when using the phaseflipproc options",default="proc", guitype='strbox', row=8, col=0, rowspan=1, colspan=1, mode='genoutp["proc"]')
 	parser.add_argument("--phaseflipproc",help="If specified _proc particles will be generated. Typical = filter.lowpass.gauss:cutoff_freq=.07",default=None, guitype='strbox', row=9, col=0, rowspan=1, colspan=3, mode='genoutp["filter.lowpass.gauss:cutoff_freq=.07"]')
 	parser.add_argument("--phaseflipproc2",help="If specified _proc particles will be generated. Typical = filter.highpass.gauss:cutoff_freq=.005",default=None, guitype='strbox', row=10, col=0, rowspan=1, colspan=3, mode='genoutp["filter.highpass.gauss:cutoff_freq=.005"]')
@@ -456,7 +457,7 @@ def write_e2ctf_output(options):
 			if wienerout : print("Wiener image out: ",wienerout, end=' ')
 			print("  defocus=",ctf.defocus)
 
-			process_stack(filename,phaseout,phasehpout,phasesmout,wienerout,phaseprocout,options.extrapad,not options.nonorm,options.oversamp,ctf,invert=options.invert,storeparm=options.storeparm,source_image=options.source_image,zero_ok=options.zerook,verbose=options.verbose)
+			process_stack(filename,phaseout,phasehpout,phasesmout,wienerout,phaseprocout,options.extrapad,not options.nonorm,options.oversamp,ctf,snrfilt=options.snrfilt,invert=options.invert,storeparm=options.storeparm,source_image=options.source_image,zero_ok=options.zerook,verbose=options.verbose)
 
 			if logid : E2progress(logid,old_div(float(i+1),len(options.filenames)))
 
@@ -759,7 +760,7 @@ def env_cmp(sca,envelopes):
 
 	return ret
 
-def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=None,phaseproc=None,extrapad=False,edgenorm=True,oversamp=1,default_ctf=None,invert=False,storeparm=False,source_image=None,zero_ok=False,verbose=0):
+def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=None,phaseproc=None,extrapad=False,edgenorm=True,oversamp=1,default_ctf=None,snrfilt=False,invert=False,storeparm=False,source_image=None,zero_ok=False,verbose=0):
 	"""Will phase-flip and/or Wiener filter particles in a file based on their stored CTF parameters.
 	phaseflip should be the path for writing the phase-flipped particles
 	wiener should be the path for writing the Wiener filtered (and possibly phase-flipped) particles
@@ -861,6 +862,10 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 			if not lctf or not lctf.equal(ctf):
 				flipim=fft1.copy()
 				ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
+				if snrfilt:
+					snrim=fft1.copy()
+					ctf.compute_2d_complex(snrim,Ctf.CtfType.CTF_SNR)
+					flipim.mult(snrim)
 #				if i==0: flipim.write_image("flip.mrc")
 			fft1.mult(flipim)
 			out=fft1.do_ift()
