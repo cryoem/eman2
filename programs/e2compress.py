@@ -42,8 +42,7 @@ import time
 def compress_files(jsd,i,fsps,options) :
 	"""calls a subprocess to do actual compression"""
 	cmd="e2compress.py {}".format(" ".join(fsps))
-	for k,v in vars(options).items():
-		if not k in ("threads","ppid","positionalargs") and v!=None: cmd+=" --{}={}".format(k,v)
+	cmd+=" "+commandoptions(options,("threads","ppid","positionalargs"))
 #	print(cmd)
 	launch_childprocess(cmd,True)
 	jsd.put(i)
@@ -87,7 +86,7 @@ level 7         149     95.4    19.1
 
 	parser.add_argument("--bits",type=int,help="Bits to retain in the output file, 0 or 2-16. 0 is a flag indicating the native floating point format.",default=12)
 	parser.add_argument("--compresslevel",type=int,help="Compression level to use when writing. No impact on image quality, but large impact on speed. Default = 1",default=None)
-	parser.add_argument("--nooutliers",action="store_true",help="Removes outliers (>5*sigma from mean) before compression/ranging. ie - sigma will be recomputed for compression")
+	parser.add_argument("--nooutliers",action="store_true",default=False,help="Removes outliers (>5*sigma from mean) before compression/ranging. ie - sigma will be recomputed for compression")
 	parser.add_argument("--range",type=str,help="Specify <minval>,<maxval> representing the largest and smallest values to be saved in the output file. Automatic if unspecified.",default=None)
 	parser.add_argument("--sigrange",type=str,help="Specify <minsig>,<maxsig>, eg- 4,4 Number of standard deviations below and above the mean to retain in the output. Default is not to truncate. 4-5 is usually safe.",default=None)
 	parser.add_argument("--outpath",type=str,help="Specify a destination folder for the compressed files. This will avoid overwriting existing files.", default=None);
