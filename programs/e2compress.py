@@ -52,19 +52,22 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """Usage: e2compress.py [options] <file1> <file2> <file3> 
 converts a list of image files to compressed hdf files. If the input file is also HDF, it will overwrite the file, otherwise it will change
-the file extension. When read by EMAN2, compressed HDF files will be rescaled to their original (rounded) values, not the mapped integer
-values stored in the file. If read using other software it is likely that the mapped integer values will be seen.
+the file extension. When read by EMAN2, compressed HDF files will be rescaled to their original (rounded) values, not the integer
+values stored in the file. If read using other software it is likely that the integer values will be seen.
 
-Default behavior is to perform 12 bit integer compression, which is sufficient for pretty much any CryoEM image file
+The --nooutliers option will truncate any image values more than 5 standard deviations from the mean. This option is very strongly recommended,
+otherwise outliers may force the real data to occupy only 1 or 2 bits. While this will produce extremely good compression, the information
+loss may be severe. It is also possible to further limit the range of current image values with the --range and/or --sigrange options, but in
+most cases this additional truncation is not desirable. If used, --sigrange 3,3 is a reasonable choice.
+
+Default behavior is to perform 10 bit integer compression, which is sufficient for pretty much any CryoEM image file
 or reconstruction. Raw movie frames may need only 2-4 bits and aligned averaged micrographs are likely to be fine with 4-6 bits, so it
 is wise to specify the number of bits to use. Specifying 0 bits is a special case which will cause compression of the native floating point
 format. In most cases this will result in only 10-30%% compression, whereas most files can be compressed by a factor of 5-10 with no impairment
 of results.
 
-Additionally, default behavior is to try and preserve the entire image range in the compressed file, and further, if the input file contains
-integer values, to try and produce integer values on output. If there are a number of values which are exactly 0.0, this value will also be
-preserved. However, in some cases, the bulk of the data will have very small values with a few large outliers. In such cases, truncating the
-outliers will dramatically improve the information retention and/or compression of the output file.
+Additionally, if the input file contains integer values, it will try to mak a mapping which will produce integer values in the file when read 
+back in. If there are a significant number of values which are exactly 0.0, this value will also be preserved. 
 
 The smaller the number of bits, the faster the compression, and the better the compression ratio. Noise compresses poorly, so eliminating bits
 containing pure noise is benificial in multiple ways.
@@ -80,11 +83,14 @@ level 4         165     21.2    17.3
 level 5         158     32.8    18.0  (typical int-compressed tiff)
 level 6         152     62.5    18.7
 level 7         149     95.4    19.1
+
+Typical usage:
+e2compress.py --nooutliers --outpath ../micrographs_5bit --threads 32 -v 2 --bits 5 *.mrc
 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_argument("--bits",type=int,help="Bits to retain in the output file, 0 or 2-16. 0 is a flag indicating the native floating point format.",default=12)
+	parser.add_argument("--bits",type=int,help="Bits to retain in the output file, 0 or 2-16. 0 is a flag indicating the native floating point format.",default=10)
 	parser.add_argument("--compresslevel",type=int,help="Compression level to use when writing. No impact on image quality, but large impact on speed. Default = 1",default=None)
 	parser.add_argument("--nooutliers",action="store_true",default=False,help="Removes outliers (>5*sigma from mean) before compression/ranging. ie - sigma will be recomputed for compression")
 	parser.add_argument("--range",type=str,help="Specify <minval>,<maxval> representing the largest and smallest values to be saved in the output file. Automatic if unspecified.",default=None)
