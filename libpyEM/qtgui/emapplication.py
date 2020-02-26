@@ -43,8 +43,8 @@ import EMAN2db
 import weakref
 from libpyGLUtils2 import *
 
-try: from PyQt5 import QtWebEngineWidgets
-except: pass
+#try: from PyQt5 import QtWebEngineWidgets
+#except: pass
 
 class ModuleEventsManager(object): 
 	'''

@@ -163,7 +163,8 @@ def main():
 			s+=" --maxtilt {:.1f}".format(options.maxtilt)
 			
 		
-		run("e2spt_average.py --threads {} --path {} --sym {} --skippostp {}".format(options.threads, options.path, options.sym, s))
+		#run("e2spt_average.py --threads {} --path {} --sym {} --skippostp {}".format(options.threads, options.path, options.sym, s))
+		run("e2spt_average.py --parallel {} --path {} --sym {} --skippostp {}".format(options.parallel, options.path, options.sym, s))
 		
 		even=os.path.join(options.path, "threed_{:02d}_even.hdf".format(itr))
 		odd=os.path.join(options.path, "threed_{:02d}_odd.hdf".format(itr))

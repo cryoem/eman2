@@ -43,7 +43,7 @@ def main():
 
 	parser.add_argument("--padby", type=float,default=2.0, help="pad by factor. default is 2")
 	parser.add_argument("--maxres", type=float,default=-1, help="max resolution for cmp")
-	parser.add_argument("--sym", type=str,help="symmetry. will use symmetry from spt refinement by default", default="")
+	parser.add_argument("--sym", type=str,help="symmetry. will use symmetry from spt refinement by default", default="c1")
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
 
 	(options, args) = parser.parse_args()

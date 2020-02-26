@@ -27,6 +27,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--label", type=str,help="Load previous contour segmentation.", default="tomobox")
 	parser.add_argument("--gpuid", type=str,help="Specify the gpu to use", default="")
+	parser.add_argument("--mult", type=float,help="multiply data by factor. useful for vpp data...", default=1.0)
 	#parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -294,6 +295,7 @@ def get_image(img, pos=[], boxsz=-1, thick=9, ncopy=1, outsize=-1):
 	
 		m=np.array(ms)/3.
 		m=m.transpose((2,1,0))
+		#print(np.max(m), np.min(m), np.std(m))
 		m=np.clip(m, -4,4)
 		imgs.append(m)
 		
@@ -333,7 +335,6 @@ class EMImageList(QtWidgets.QWidget):
 		self.options=options
 		self.update_list()
 	
-
 
 class EMTomobox(QtWidgets.QMainWindow):
 
@@ -439,6 +440,8 @@ class EMTomobox(QtWidgets.QMainWindow):
 		self.datafile=""
 		self.data=None
 		
+		if not os.path.isdir("neuralnets"):
+			os.mkdir("neuralnets")
 		
 		self.imgview = EMImage2DWidget()
 		self.boxesviewer=[EMImageMXWidget(), EMImageMXWidget()]
@@ -566,6 +569,7 @@ class EMTomobox(QtWidgets.QMainWindow):
 		print("Reading {}...".format(datafile))
 		self.datafile=datafile
 		self.data=EMData(datafile)
+		self.data.mult(self.options.mult)
 		self.imgview.setWindowTitle(base_name(datafile))
 		self.imgview.list_idx=self.data["nz"]//2
 		self.imgview.set_data(self.data)
@@ -681,8 +685,6 @@ class EMTomobox(QtWidgets.QMainWindow):
 		outval=np.array(outval)[:,:,0]
 		
 		fname="neuralnets/trainouts.hdf"
-		if not os.path.isdir("neuralnets"):
-			os.mkdir("neuralnets")
 		if os.path.isfile(fname):
 			os.remove(fname)
 			
@@ -702,6 +704,9 @@ class EMTomobox(QtWidgets.QMainWindow):
 		
 	
 	def apply_nnet_all(self):
+		if self.nnet==None:
+			print("Neural network not initialized...")
+			return
 		for i,info in enumerate(self.imginfo):
 			self.curinfo=info
 			self.set_data(info["name"])
@@ -936,6 +941,8 @@ class EMTomobox(QtWidgets.QMainWindow):
 		self.ptclimages.append(img)
 
 	def save_points(self):
+		if self.data==None:
+			return
 		print("Saving particles...")
 		js=js_open_dict(self.infofile)
 		label=self.options.label

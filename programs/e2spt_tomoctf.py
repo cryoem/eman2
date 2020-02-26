@@ -181,7 +181,7 @@ def main():
 	parser.add_argument("--checkhand", action="store_true", help="Check the handedness of tomogram.", default=False,guitype='boolbox',row=10, col=0, rowspan=1, colspan=1,mode="model")
 	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on the local computer",guitype='intbox', row=8, col=2, rowspan=1, colspan=1, mode='model')
 	parser.add_argument("--nolog",action="store_true",default=False,help="Default=False. Turn off recording of the command ran for this program onto the .eman2log.txt file")	
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=1, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	
@@ -198,7 +198,7 @@ def main():
 	else:
 		print("Processing {} tilt series in sequence..".format(len(args)))
 		if not options.nolog: logid=E2init(sys.argv)
-		thrds=["{} {} --nolog {}".format(parser.prog,a,commandoptions(options,("threads","alltiltseries"))) for a in sorted(args)]
+		thrds=["{} {} --nolog --verbose 0 {}".format(parser.prog,a,commandoptions(options,("threads","alltiltseries"))) for a in sorted(args)]
 
 		NTHREADS=max(options.threads+1,2)	# the controlling thread isn't really doing anything
 		thrtolaunch=0
@@ -253,7 +253,7 @@ def main():
 	
 	box=options.tilesize
 	sz=min(nx, ny)-box
-	print("Reading {}, size {} x {} x {}, apix {:.2f}".format(tfile, nx, ny, nz, apix))
+	if options.verbose>0:print("Reading {}, size {} x {} x {}, apix {:.2f}".format(tfile, nx, ny, nz, apix))
 
 
 	drg=[float(i) for i in options.dfrange.split(',')]
@@ -263,8 +263,8 @@ def main():
 	prg=[float(i) for i in options.psrange.split(',')]
 	pshift=np.arange(prg[0], prg[1], prg[2])
 	
-	print("Search defocus from {:.1f} to {:.1f}, step {:.2f}".format(drg[0], drg[1], drg[2]))
-	print("Search phase shift from {:.1f} to {:.1f}, step {:.1f}".format(prg[0], prg[1], prg[2]))
+	if options.verbose>0: print("Search defocus from {:.1f} to {:.1f}, step {:.2f}".format(drg[0], drg[1], drg[2]))
+	if options.verbose>0: print("Search phase shift from {:.1f} to {:.1f}, step {:.1f}".format(prg[0], prg[1], prg[2]))
 	
 	allctf=[]
 	zlist=[]
@@ -279,7 +279,7 @@ def main():
 	npt=options.stepy
 	nstep=options.stepx
 	powerspecs=[]
-	print("Generating power spectrum of tiles from tilt series...")
+	if options.verbose>0:print("Generating power spectrum of tiles from tilt series...")
 	for imgi in range(nz):
 		rawimg=imgs[imgi]
 		tpm=tltparams[imgi].copy()
@@ -324,7 +324,7 @@ def main():
 		allrd=np.array(allrd)
 		powerspecs.append([allrd, pzus])
 		
-		print("{}, {:.2f}".format(imgi, tpm[3]))
+		if options.verbose>1: print("{}, {:.2f}".format(imgi, tpm[3]))
 	
 	dfs=[]
 	exclude=[]
@@ -393,9 +393,9 @@ def main():
 	
 	nref=options.nref
 	if nref>0:
-		print("Using first {} images near center tilt to estimate defocus range...".format(nref))
+		if options.verbose>0: print("Using first {} images near center tilt to estimate defocus range...".format(nref))
 	else:
-		print("Estimating defocus...")
+		if options.verbose>0: print("Estimating defocus...")
 
 	ctfparams=np.zeros((len(tltparams), 2))
 	for it in tltsrt:
@@ -443,23 +443,23 @@ def main():
 			res=minimize(compute_score, pm, (powerspecs[it], options),method='Nelder-Mead',options={'xtol': 1e-3, 'disp': False, "maxiter":10})
 			pm=res.x
 		
-		print("ID {}, angle {:.1f}, defocus {:.3f}, phase shift {:.1f}, score {:.1f}".format(it, tltparams[it,3], pm[0], pm[1], np.min(allscr)*1000))
+		if options.verbose>0: print("ID {}, angle {:.1f}, defocus {:.3f}, phase shift {:.1f}, score {:.1f}".format(it, tltparams[it,3], pm[0], pm[1], np.min(allscr)*1000))
 		dfs.append(pm[0])
 		ctfparams[it]=[pm[1], pm[0]]
 
 		#### get enough references
 		if len(dfs)==nref: 
-			print("In the first {} image, defocus mean {:.2f}, std {:.2f}".format(nref, np.mean(dfs), np.std(dfs)))
+			if options.verbose>0: print("In the first {} image, defocus mean {:.2f}, std {:.2f}".format(nref, np.mean(dfs), np.std(dfs)))
 			#if (np.mean(dfs)+np.std(dfs)*3>defrg[int(len(defrg)*.9)]):
 			if (np.std(dfs)>1):
-				print ("Warning: variance of defocus estimation is larger than normal. Something may be wrong...")
+				if options.verbose>0: print ("Warning: variance of defocus estimation is larger than normal. Something may be wrong...")
 				#return
 			
 			searchrg=min(max(np.std(dfs)*3, 3), 1.0)
 			dfsel=abs(defrg-np.mean(dfs))<searchrg
 			
 			
-			print("We will search defocus range {:.2f} to {:.2f} for the rest images.".format(np.min(defrg[dfsel]), np.max(defrg[dfsel])))
+			if options.verbose>0: print("We will search defocus range {:.2f} to {:.2f} for the rest images.".format(np.min(defrg[dfsel]), np.max(defrg[dfsel])))
 			
 			exclude=np.where(dfsel==False)[0]
 			
@@ -471,12 +471,12 @@ def main():
 	js["voltage"]=float(options.voltage)
 	js=None
 	
-	print("Done")
+	print("{} done. Average defocus {:.2f}".format(tfile, np.mean(ctfparams[:,1])))
 	
 	if not options.nolog: E2end(logid)
 	
 def run(cmd):
-	print(cmd)
+	#print(cmd)
 	launch_childprocess(cmd)
 	
 	

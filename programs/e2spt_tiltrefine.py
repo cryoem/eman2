@@ -186,7 +186,7 @@ def main():
 		jd["mask"]=""
 			
 		if fromspt:
-			options.ptclkeep=0.8
+			options.ptclkeep=0.9
 		
 	
 	if options.mask.lower()!="none":
@@ -215,7 +215,16 @@ def main():
 		src=eval(k)[0]
 		
 		print("loading 3D particles from {}".format(base_name(src)))
-		print("box size {}, apix {:.2f}".format(bxsz, apix))
+		print("   box size {}, apix {:.2f}".format(bxsz, apix))
+		
+		e=EMData(src, 0, True)
+		pjname=e["class_ptcl_src"]
+		pj=EMData(pjname, 0, True)
+		transmult=1.0
+		if e["apix_x"]!=pj["apix_x"]:
+			print("Apix mismatch between 2D and 3D particles: {:.2f} vs {:.2f}".format(pj["apix_x"], e["apix_x"]))
+			transmult=e["apix_x"]/pj["apix_x"]
+			print("  Will scale translation by {:.1f} ...".format(transmult))
 
 		lname=[os.path.join(path, "ali_ptcls_00_{}.lst".format(eo)) for eo in ["even", "odd"]]
 		for l in lname:
@@ -230,11 +239,12 @@ def main():
 				score.append(float(js[k]["score"]))
 		
 			simthr=np.sort(score)[int(len(score)*options.ptclkeep)]
-			print("removing bad particles...")
+			print("  Removing {:.0f} bad particles...".format(options.ptclkeep*100))
 			
 		else:
 			simthr=10000
 			
+		print("Building aligned 2D particle set from spt alignment...")
 		for ky in js.keys():
 			
 			src,ii=eval(ky)
@@ -244,6 +254,7 @@ def main():
 			#ky="('{}', {})".format(src, ii)
 			dic=js[ky]
 			xali=dic["xform.align3d"]
+			xali.set_trans(xali.get_trans()*transmult)
 			scr=float(dic["score"])
 			if scr>simthr:
 				continue
@@ -255,7 +266,6 @@ def main():
 			else:
 				eo=ii%2
 			
-			#print(src, eo)
 			
 			for i in ids:
 				try:

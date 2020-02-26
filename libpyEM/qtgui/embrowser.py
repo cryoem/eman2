@@ -3477,7 +3477,10 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 			rdr.append((i.row(), i.internalPointer()))		# due to threads, we do it this way to make sure we don't miss any
 
 		# We emit only a single event here for efficiency
-		self.curmodel.dataChanged.emit(self.curmodel.createIndex(min(rdr)[0], 0, min(rdr)[1]), self.curmodel.createIndex(max(rdr)[0], 5, max(rdr)[1]))
+		rid=[(r[0],i) for i,r in enumerate(rdr)]
+		rmin=rdr[min(rid)[1]]; rmax=rdr[max(rid)[1]]
+		self.curmodel.dataChanged.emit(self.curmodel.createIndex(rmin[0], 0, rmin[1]),
+				 self.curmodel.createIndex(rmax[0], 5, rmax[1]))
 
 		self.needresize = 2
 

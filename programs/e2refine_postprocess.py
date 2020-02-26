@@ -58,7 +58,7 @@ def main():
 	parser.add_argument("--mass", default=0, type=float,help="The rough mass of the particle in kilodaltons, used to run normalize.bymass. Due to resolution effects, not always the true mass.")
 	parser.add_argument("--restarget", default=5, type=float,help="The specified target resolution to avoid underfiltering artifacts.")
 	parser.add_argument("--setsf",type=str,help="Force the structure factor to match a 'known' curve prior to postprocessing (<filename>, none). default=none",default="none")
-	parser.add_argument("--iter", dest = "iter", type = int, default=6, help = "Iteration number to generate FSC filenames")
+	parser.add_argument("--iter", dest = "iter", type = int, default=-1, help = "Iteration number to generate FSC filenames")
 	parser.add_argument("--align",action="store_true",default=False,help="Will do o to e alignment and test for handedness flips. Should not be repeated as it overwrites the odd file with the aligned result.")
 	parser.add_argument("--tophat",type=str,default=None,help="'global' or 'local'. Final Wiener filter disabled, and replaced by a tophat filter either across the map at 0.143 as Relion appears to do, or locally based on e2fsc.py results")
 	parser.add_argument("--ampcorrect",choices=['strucfac', 'flatten','none'],default="strucfac",help="Will perform amplitude correction via the specified method. The default choice is strucfac.")
@@ -67,7 +67,8 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--automaskexpand", default=-1, type=int,help="Default=boxsize/20. Specify number of voxels to expand mask before soft edge. Only used if automask3d not specified." )
 	parser.add_argument("--automask3d", default=None, type=str,help="Default=auto. Specify as a processor, eg - mask.auto3d:threshold=1.1:radius=30:nshells=5:nshellsgauss=5." )
-	parser.add_argument("--automask3dtight", default=None, type=str,help="replace the mask_tight. only used when automask3d is specified" )
+	parser.add_argument("--mask", default=None, type=str,help="specify a density map file to use as mask. overwrites automask3d" )
+	#parser.add_argument("--automask3dtight", default=None, type=str,help="replace the mask_tight. only used when automask3d is specified" )
 
 	parser.add_argument("--automask3d2", default=None, type=str,help="Default=None. Specify as a processor. This will be applied to the mask produced by the first automask." )
 	parser.add_argument("--underfilter",action="store_true",default=False,help="This will shift the computed Wiener filter to be about 10%% more resolution than has been achieved.")
@@ -87,12 +88,30 @@ def main():
 	else : m3dpostproc="--process "+options.m3dpostprocess
 
 	lpfilt=old_div(1.15,max(10.0,options.restarget))	# low-pass for alignment
-
+	
+	
+	
 	### Post-processing ###
 	### Even/Odd Alignment
+	if options.mask:
+		options.automask3d="mask.fromfile:filename={}".format(options.mask)
+		
 	evenfile=options.even
+	if options.odd==None:
+		options.odd=evenfile.replace("_even", "_odd")
+		
+	if options.iter<0:
+		### find last number
+		c=[i for i in evenfile if i.isdigit()]
+		options.iter=int(''.join(c[-2:]))
+		print("Use iteration number {}.".format(options.iter))
+		
+	if options.output==None:
+		options.output=evenfile.replace("_even","")
+	
 	oddfile=options.odd
 	combfile=options.output
+		
 	path=os.path.dirname(combfile)+"/"
 	if (path=="/") : path="./"
 	if options.align :
@@ -178,7 +197,7 @@ def main():
 		massnorm = "--process normalize.bymass:thr=1:mass={mass}".format(mass=options.mass)
 	else:
 		#### skip mass normalize when not specified...
-		massnorm="--process normalize"
+		massnorm="--process normalize.edgemean"
 
 	run("e2proc3d.py {combfile} {path}tmp.hdf {ampcorrect} {wiener} {massnorm}".format(ampcorrect=ampcorrect, path=path,combfile=combfile,wiener=wiener,massnorm=massnorm))
 
@@ -295,9 +314,9 @@ def main():
 			if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
 			mask.write_image("{path}mask.hdf".format(path=path),0)
 			
-			if options.automask3dtight!=None:
-				amask3dtight=parsemodopt(options.automask3dtight)
-				mask.process_inplace(amask3dtight[0],amask3dtight[1])
+			#if options.automask3dtight!=None:
+				#amask3dtight=parsemodopt(options.automask3dtight)
+				#mask.process_inplace(amask3dtight[0],amask3dtight[1])
 
 #			mask.process_inplace("morph.erode.binary",{"k":2})
 			mask.write_image("{path}mask_tight.hdf".format(path=path),0)

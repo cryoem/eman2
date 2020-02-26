@@ -757,7 +757,7 @@ class Make3dTask(JSTask):
 		
 		output = recon.finish(False)
 		
-		callback(100)
+		#callback(100)
 		
 		return (output, normvol)
 
