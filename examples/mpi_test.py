@@ -54,6 +54,7 @@ if proc==0:
 		stdout.flush()
 
 		allsrc.remove(src)
+	print("\nStage 2, broadcast test complete")
 
 else:
 	a=mpi_bcast_recv(0)
@@ -63,12 +64,54 @@ else:
 mpi_barrier(MPI_COMM_WORLD)
 
 mpi_finalize()
+from pickle import dump,load
+import select
+
+fname='mpisock'
+if proc==0:
+	print("\nStage 3, test socket channel...")
+	mpisock=socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+	
+	try:  os.remove(fname)
+	except:  pass
+	mpisock.bind(fname)
+	mpisock.listen(1)
+	mpiconn, mpiaddr = mpisock.accept()
+	print('r0: testtest')
+	mpifile=mpiconn.makefile(mode='wb')
+	mpifile.write(b"HELO")
+	mpifile.flush()
+	#s=mpifile.read(4)
+	#print('r0:',s)
+	dump(('DATA','testtest'),mpifile,-1)
+	mpifile.flush()
+
+elif proc==1:
+	mpisock=socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+	time.sleep(2)
+	mpisock.connect(fname)
+	mpifile=mpisock.makefile(mode='rb')
+	print("r1: Connected to Controller")
+
+	# Initial handshake to make sure we're both here
+	s=mpifile.read(4)
+	print('r1:',s)
+
+	if select.select([mpifile],[],[],0)[0]:
+		com,data=load(mpifile)
+		print('r1:',com,data)
+	#print('done')
+
 
 if proc==0:
-	print("\nStage 2, broadcast test complete")
+	time.sleep(5)
+	
+	try:  os.remove(fname)
+	except:  pass
 	print("done")
 
 	print("\nIf you didn't see any errors above, then the test was a success.")
+	
 
 #print "running on CPU ",proc
 #if proc==0 : mpi_bcast("testing")

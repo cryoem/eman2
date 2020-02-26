@@ -78,7 +78,7 @@ def mpi_eman2_send(com,data,dest):
 		l=pack("4sIII",com,len(data),rank,3)
 		ld=len(data)
 		mpi_send(l,16,MPI_CHAR,dest,1,MPI_COMM_WORLD)		# Blocking issues with probe/get_count, so sending length packet, stupid, but apparently necessary
-		print(f"snd3 {com} {ld} {dest} {l}")
+		#print(f"snd3 {com} {ld} {dest} {l}")
 
 		# tag 3 used for unpickled strings
 		mpi_send(data, len(data), MPI_CHAR, dest, 3, MPI_COMM_WORLD)		# removed use of mpi_dout/din for speed
@@ -89,7 +89,7 @@ def mpi_eman2_send(com,data,dest):
 		l=pack("4sIII",com,len(data),rank,2)
 
 		ld=len(data)
-		print(f"snd2 {com} {ld} {dest} {l}")
+		#print(f"snd2 {com} {ld} {dest} {l}")
 
 		mpi_send(l,16,MPI_CHAR,dest,1,MPI_COMM_WORLD)		# Blocking issues with probe/get_count, so sending length packet, stupid, but apparently necessary
 
@@ -102,10 +102,10 @@ def mpi_eman2_recv(src):
 	
 	lmsg=mpi_recv(16,MPI_CHAR, src,1,MPI_COMM_WORLD)		# first get the message length
 	com,l,srank,tag=unpack("4sIII",lmsg)
-	print(f"rcv {lmsg} {com} {l} {srank} {tag}")
+	#print(f"rcv {lmsg} {com} {l} {srank} {tag}")
 	
 	msg=mpi_recv(l,MPI_CHAR, srank,tag,MPI_COMM_WORLD)	# then the message
-	
+	if isinstance(com, bytes): com=com.decode("UTF-8")
 	if tag==2 : return (com,loads(msg.data),srank)
 	elif tag==3 : return (com,msg.data,srank)
 	
