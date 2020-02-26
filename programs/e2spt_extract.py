@@ -11,8 +11,31 @@ import numpy as np
 import queue
 import threading
 from EMAN2_utils import *
+from EMAN2jsondb import JSTask
 
 
+
+class SptExtractTask(JSTask):
+	
+	
+	def __init__(self, data, options, allxfs, allinfo):
+		
+		JSTask.__init__(self,"SptExtract",data,{},"")
+		self.options=options
+		self.allxfs=allxfs
+		self.allinfo=allinfo	
+	
+	def execute(self, callback):
+		
+		
+		for a in self.data:
+			if a in self.allxfs:
+				print("Extract from {} (with xform)".format(a))
+				do_extraction(a, self.options, self.allxfs[a], self.allinfo[a])
+			else:
+				print("Extract from {}".format(a))
+				do_extraction(a, self.options)
+		return 1
 
 def main():
 	
@@ -49,69 +72,78 @@ def main():
 	parser.add_argument("--postproc", type=str,help="processor after 3d particle reconstruction", default="")
 	parser.add_argument("--postmask", type=str,help="masking after 3d particle reconstruction. The mask is transformed if json ", default="")
 	parser.add_argument("--textin", type=str,help="text file for particle coordinates. do not use..", default=None)
+	parser.add_argument("--compress", type=int,help="Bits to keep for compression. Not compatible with saveint. default is -1 meaning no compression. 8 bit seems fine...", default=-1)
 	parser.add_argument("--saveint", action="store_true", default=False ,help="save particles in uint8 format to save space. still under testing.")
 	parser.add_argument("--norewrite", action="store_true", default=False ,help="skip existing files. do not rewrite.")
-
+	parser.add_argument("--parallel", type=str,help="parallel", default="")
 	#parser.add_argument("--alioffset", type=str,help="coordinate offset when re-extract particles. (x,y,z)", default="0,0,0", guitype='strbox', row=12, col=0,rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--postxf", type=str,help="a file listing post transforms", default="")
-
-
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
+	parser.add_argument("--shrink3d", type=int, help="Only shrink 3d particles by x factor",default=-1)
+	parser.add_argument("--verbose", type=int,help="verbose", default=1)
+
 	(options, args) = parser.parse_args()
-	
 	logid=E2init(sys.argv)
 	
+	allxfs={}; allinfo={}
 	if options.textin:
 		allxfs,allinfo=parse_text(options)
-		
-		for fname in allxfs.keys():
-			#### it seems options is changed inplace somewhere...
-			(options, args) = parser.parse_args()
-			do_extraction(fname, options, allxfs[fname],allinfo[fname])
-		
-		return
-			
 	
 	if len(options.jsonali)>0:
-		print("re-extracting particles based on previous alignment. Ignoring particle/tomogram input...")
-
 		allxfs,allinfo=parse_json(options)
-		for fname in allxfs.keys():
-			#### it seems options is changed inplace somewhere...
-			(options, args) = parser.parse_args()
-			do_extraction(fname, options, allxfs[fname],allinfo[fname])
-		
-		return
 	
-	
-
 	if options.alltomograms:
 		fld="tomograms/"
 		args=[fld+f for f in os.listdir(fld) if f.endswith(".hdf")]
 		### do not count a tomogram twice when multiple versions exist
 		uq, uid=np.unique([base_name(a) for a in args], return_index=True)
 		args=[args[i] for i in uid]
-		#print(args)
-	
 		
-	if len(args)==0:
+	if len(args)==0 and len(allxfs)==0:
 		print("No input. Exit.")
 		return
+		
+		
+	if options.parallel!="":
+		from EMAN2PAR import EMTaskCustomer
+		etc=EMTaskCustomer(options.parallel, module="e2spt_extract.SptExtractTask")
+		num_cpus = etc.cpu_est()
+		options.nowtime=time.time()
+		print("Running in parallel mode with {} workers, each running {} threads".format(num_cpus, options.threads))
+		njob=num_cpus
+		options.verbose=0
+		if len(allxfs)>0:
+			fnames=list(allxfs.keys())
+		elif len(args)>0:
+			fnames=args
+
+		tids=[]
+		for i in range(njob):
+			task=SptExtractTask(fnames[i::njob], options, allxfs, allinfo)
+			tid=etc.send_task(task)
+			tids.append(tid)
+		
+		while 1:
+			st_vals = etc.check_task(tids)
+			if np.min(st_vals) == 100: break
+			#print(st_vals)
+			time.sleep(1)
 
 	
-	if len(args)==1:
-		
-		do_extraction(args[0], options)
 	else:
-		print("Processing {} files in sequence..".format(len(args)))
-		
-		#cmd=sys.argv
-		#opt=' '.join([s for s in cmd[1:] if s not in args])
-		#opt=opt.replace("--alltomograms","")
-		for a in args:
-			do_extraction(a, options)
-			
-	print("Finished.")
+		if len(allxfs)>0:
+			for fname in allxfs.keys():
+				#### it seems options is changed inplace somewhere...
+				(options, args) = parser.parse_args()
+				do_extraction(fname, options, allxfs[fname],allinfo[fname])
+				
+		elif len(args)>0:
+			for a in args:
+				do_extraction(a, options)
+	
+		return	
+	
+	print("Particle extraction finished.")
 	
 	
 	E2end(logid)
@@ -121,7 +153,7 @@ def main():
 ### info: extra header information par particle in a dictionary
 def do_extraction(pfile, options, xfs=[], info=[]):
 	#pfile=args[0]
-	print("Reading from {}...".format(pfile))
+	if options.verbose>0:print("Reading from {}...".format(pfile))
 	options.boxsz= good_size(options.boxsz_unbin // options.shrink)
 	
 	#### reading alignment info...
@@ -135,7 +167,7 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 		phase=np.array(js["phase"])
 		voltage=float(js["voltage"])
 		cs=float(js["cs"])
-		print("CTF information exists. Will do phase flipping..")
+		if options.verbose>0:print("CTF information exists. Will do phase flipping..")
 	else:
 		defocus=[]
 		phase=[]
@@ -167,7 +199,7 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 	options.ytilt=0
 	scale=apix_ptcl/apix_tlt
 
-	print("Scaling factor: {:.1f}, y-tilt: {:.1f}, z-shift: {:d}.".format(scale, options.ytilt, int(zshift)))
+	#print("Scaling factor: {:.1f}, y-tilt: {:.1f}, z-shift: {:d}.".format(scale, options.ytilt, int(zshift)))
 	
 	if options.shrink==1.5:
 		shrinklab="_bin1_5"
@@ -196,15 +228,15 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 		
 		
 	elif nptcl==1:
-		print("Reading particle location from a tomogram...")
+		if options.verbose>0:print("Reading particle location from a tomogram...")
 		js=js_open_dict(info_name(pfile))
 		towrite=[]
 		if options.curves>=0:
-			print("Generating particles along curves...")
+			if options.verbose>0:print("Generating particles along curves...")
 			info=[]
 			overlap=options.curves_overlap
 			if overlap>=1 or overlap<0:
-				print("Overlap has to be in [0,1)")
+				print("Error: Overlap has to be in [0,1)")
 				return
 			
 			if js.has_key("curves") and len(js["curves"])>0:
@@ -267,7 +299,7 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 					bxs=np.vstack(bxs)
 					drs=np.vstack(drs)
 					bxs=np.hstack([bxs,drs])
-					print(" {:d} curves, {:d} points with {:.1f}A spacing".format(len(curves), len(bxs), spacing))
+					if options.verbose>0:print(" {:d} curves, {:d} points with {:.1f}A spacing".format(len(curves), len(bxs), spacing))
 					
 					towrite.append((bxs, outname, sz, info))
 		
@@ -309,14 +341,14 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 				outname=str(base_name(pfile)+"__"+lab+".hdf")
 				
 				towrite.append((bxs, outname, sz, info))
-				print("{} : {} boxes, unbinned box size {}".format(val["name"], len(bxs), int(sz*2))) 
+				if options.verbose>0:print("{} : {} boxes, output box size {}".format(val["name"], len(bxs), int(sz*2))) 
 		
 		if len(towrite)==0:
 			print("No particles. exit..")
 			return
 	
 	else:
-		print("Reading particle location from image stack..")
+		if options.verbose>0:print("Reading particle location from image stack..")
 		for i in range(nptcl):
 			ptcl=EMData(pfile, i, True)
 			ptclpos.append(ptcl["ptcl_source_coord"])
@@ -334,7 +366,7 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 		ptclpos*=scale
 		ptclpos[:,2]-=zshift#-2
 		
-		print("Reading {} particles".format(len(ptclpos)))
+		#print("Reading {} particles".format(len(ptclpos)))
 		
 		if options.boxsz<0:
 			boxsz=int(ptcl["nx"]//2*scale)
@@ -358,7 +390,7 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 		if skip:
 			print("all particles in {} exist. skip tilt series...".format(tfile))
 			
-	print("Reading tilt series file: {}".format(tfile))
+	#print("Reading tilt series file: {}".format(tfile))
 	#### make sure this works on image stack or mrc volume
 	img=EMData(tfile,0)
 	if img["nz"]>1:
@@ -388,8 +420,10 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 			print("Warning: Extra header info exist but does not match particle count...")
 		if options.dotest:
 			nptcl=options.threads
+			batchsz=1
 		else:
 			nptcl=len(ptclpos)
+			batchsz=6
 	
 		options.output=os.path.join("particles3d", outname)
 		options.output2d=os.path.join("particles", outname)
@@ -402,7 +436,7 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 				
 		
 		print("Writing {} particles to {}".format(nptcl, outname))
-		print("Box size {}, padded to {}".format(int(boxsz*2), pad))
+		if options.verbose>0:print("Box size {}, padded to {}".format(int(boxsz*2), pad))
 		
 		try: os.remove(options.output)
 		except: pass
@@ -412,19 +446,21 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 		jsd=queue.Queue(0)
 		jobs=[]
 		
-		batchsz=4
+		
 		if len(defocus)>0:
 			ctf=[defocus, phase, voltage, cs]
 		else:
 			ctf=[]
 			
-		for tid in range(0,nptcl,batchsz):
-			ids=list(range(tid, min(tid+batchsz, nptcl)))
+		for tid in range(options.threads):
+			ids=list(range(tid, nptcl, options.threads))
 			jobs.append([jsd, ids, imgs, ttparams, pinfo, options, ctf, tltkeep, pmask])
 		
 		
 		hdftype=EMUtil.get_image_ext_type("hdf")
-		if options.saveint:
+		if options.compress>0:
+			outmode=EM_COMPRESSED
+		elif options.saveint:
 			outmode=file_mode_map["uint8"]
 		else:
 			outmode=file_mode_map["float"]
@@ -432,43 +468,50 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 		
 		thrds=[threading.Thread(target=make3d,args=(i)) for i in jobs]
 
-		thrtolaunch=0
+		#thrtolaunch=0
 		tsleep=threading.active_count()
 		ndone=0
-		while thrtolaunch<len(thrds) or threading.active_count()>tsleep:
-			if thrtolaunch<len(thrds):
-				while (threading.active_count()==options.threads+tsleep ) : 
-					#print threading.active_count(), options.threads, tsleep, thrtolaunch, len(thrds)
-					time.sleep(.1)
-				thrds[thrtolaunch].start()
-				thrtolaunch+=1
-			else: time.sleep(.2)
+		time0=time.time()
+		for t in thrds:
+			t.start()
 			
-			
+		while threading.active_count()>tsleep:
 			while not jsd.empty():
 				pid, threed, projs=jsd.get()
-				#pjids=[pid*ntlt+i for i in range(ntlt)]
+				
+				
+				
+				if options.compress>0:
+					sig=5.0
+					for im in projs+[threed]:
+						im["render_bits"]=options.compress
+						im["render_compress_level"]=1
+						im["render_min"]=im["mean"]-im["sigma"]*sig
+						im["render_max"]=im["mean"]+im["sigma"]*sig
+
 				try: pji=EMUtil.get_image_count(options.output2d)
 				except: pji=0
 				pjids=[]
 				for i,pj in enumerate(projs):
-					pj.write_image(options.output2d, pji, hdftype,  False, None, outmode)
+					#pj.write_image(options.output2d, pji, hdftype,  False, None, outmode)
+					pj.write_image(options.output2d, pji,IMAGE_UNKNOWN,0,None,EM_COMPRESSED)
 					pjids.append(pji)
 					pji+=1
+					
 				threed["class_ptcl_src"]=options.output2d
 				threed["class_ptcl_idxs"]=pjids
-				#if options.rmbeadthr>0:
-				#### give up maintaining the order since there are empty particles...
-				#pid=-1
-				threed.write_image(options.output, pid, hdftype,  False, None, outmode)
+
+				threed.write_image(options.output, pid,IMAGE_UNKNOWN,0,None,EM_COMPRESSED)
+				
 				ndone+=1
-				#if ndone%10==0:
-				sys.stdout.write("\r{}/{} finished.".format(ndone, nptcl))
-				sys.stdout.flush()
+				if options.verbose>0:
+					sys.stdout.write("\r{}/{} finished.".format(ndone, nptcl))
+					sys.stdout.flush()
+			time.sleep(.2)
 
 		for t in thrds: t.join()
 			
-		print("Particles written to {}".format(options.output))
+		print("Done. Particles written to {} ({:.1f} s)".format(options.output, time.time()-time0))
 	
 	
 
@@ -477,10 +520,22 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 	if len(info)!=len(ppos):
 		info=[]
 	
-	bx=boxsz*2
 	pad=options.pad
-	p3d=good_size(int(pad*1.5))
 	apix=imgs[0]["apix_x"]
+
+	if options.shrink3d<=1:
+		p3d=pad
+		bx=boxsz*2
+		apixout=apix
+	else:
+		bx=good_size(boxsz*2/options.shrink3d)
+		p3d=good_size(boxsz*2/options.shrink3d*options.padtwod)
+		apixout=apix*float(options.shrink3d)
+		#print('shrink3d!', bx, options.padtwod, options.shrink3d, p3d)
+	
+	recon=Reconstructors.get("fourier", {"sym":'c1', "size":[p3d, p3d, p3d], "mode":"gauss_2"})
+	recon.setup()
+	
 	if len(ctfinfo)>0:
 		defocus, phase, voltage, cs=ctfinfo
 		ctf=EMAN2Ctf()
@@ -488,7 +543,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			"defocus":1.0, "voltage":voltage, "bfactor":0., "cs":cs,"ampcont":0, "apix":apix})
 	
 	for pid in ids:
-		
+		recon.setup()
 		pos=ppos[pid]
 		if len(info)>0:
 			hdr=info[pid]
@@ -498,7 +553,6 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 		if type(pos)==type(Transform()):
 			tf_dir=Transform(pos.get_rotation()).inverse()
 			pos=np.array(pos.get_trans())
-			
 			
 		elif len(pos)>3:
 			drs=pos[3:].copy()
@@ -512,8 +566,6 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 		else:
 			tf_dir=None
 
-		recon=Reconstructors.get("fourier", {"sym":'c1', "size":[p3d, p3d, p3d], "mode":"gauss_2"})
-		recon.setup()
 		projs=[]
 		for nid, m in enumerate(imgs):
 			if len(tltkeep)>0:
@@ -544,7 +596,8 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 
 			e.mult(-1)
 			e.process_inplace("normalize.edgemean")
-			e.process_inplace("mask.soft",{"outer_radius":-1})
+			wd=(pad-boxsz*2)/4.
+			e.process_inplace("mask.soft",{"outer_radius":-wd, "width":wd/2})
 			if e["sigma"]==0:
 				continue
 			
@@ -606,9 +659,18 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			e["ptcl_source_coord_3d"]=pos.tolist()
 			#e.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.45})
 			projs.append(e)
+			#print(xform)
 			
-			sz=e["nx"]
-			e0=e.get_clip(Region((sz-p3d)//2,(sz-p3d)//2,p3d,p3d))
+			if options.shrink3d<=1:
+				e0=e
+			else:
+				e0=e.process("math.meanshrink",{"n":options.shrink3d})
+				txdf/=float(options.shrink3d)
+				tydf/=float(options.shrink3d)
+			
+			sz=e0["nx"]
+			e0=e0.get_clip(Region((sz-p3d)//2,(sz-p3d)//2,p3d,p3d))
+			#e0.write_image("test.hdf",-1)
 			trans=Transform({"type":"2d", "tx":-txdf, "ty":-tydf})
 			e1=recon.preprocess_slice(e0, trans)
 			recon.insert_slice(e1,xform,1)
@@ -620,6 +682,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			#continue
 		else:
 			threed=recon.finish(True)
+			#threed=EMData(p3d, p3d, p3d)
 			threed.process_inplace("math.gausskernelfix",{"gauss_width":4.0})
 			threed=threed.get_clip(Region((p3d-bx)//2,(p3d-bx)//2,(p3d-bx)//2,bx,bx,bx))
 		
@@ -627,7 +690,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			####empty particle for some reason...
 			#continue
 		
-		threed["apix_x"]=threed["apix_y"]=threed["apix_z"]=apix
+		threed["apix_x"]=threed["apix_y"]=threed["apix_z"]=apixout
 		threed["ptcl_source_coord"]=pos.tolist()
 		threed["file_twod"]=options.output2d
 		threed["model_id"]=pid
@@ -652,7 +715,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 				threed.mult(mask)
 			
 		
-		if options.saveint:
+		if options.saveint and options.compress<0:
 			#### save as integers
 			lst=[threed]+projs
 			outmode=file_mode_map["uint8"]
@@ -662,6 +725,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 				data["render_max"]=file_mode_range[outmode][1]
 		
 		jsd.put((pid, threed, projs))
+		#recon.clear()
 
 	return
 	
@@ -708,6 +772,7 @@ def parse_text(options):
 
 #### parse a json file from spt_align to re-extract particles
 def parse_json(options):
+	print("re-extracting particles based on previous alignment. Ignoring particle/tomogram input...")
 	xffile=options.postxf
 	js=js_open_dict(options.jsonali)
 	coord=[]
@@ -757,7 +822,7 @@ def parse_json(options):
 			a.translate(c[0], c[1], c[2])
 			
 			
-			if options.mindist>0 and allxfs.has_key(tomo):
+			if options.mindist>0 and (tomo in allxfs):
 				pos=np.array([x.get_trans() for x in allxfs[tomo]])
 				p0=np.array(a.get_trans())
 				mindst=np.min(np.linalg.norm(pos-p0, axis=1))
@@ -774,7 +839,7 @@ def parse_json(options):
 		
 		if len(ptcls)>0:
 			
-			if allxfs.has_key(tomo):	
+			if (tomo in allxfs):	
 				allxfs[tomo].extend(ptcls)
 				allinfo[tomo].extend(info)
 			else:
