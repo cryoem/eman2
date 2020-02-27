@@ -198,7 +198,7 @@ def main():
 	else:
 		print("Processing {} tilt series in sequence..".format(len(args)))
 		if not options.nolog: logid=E2init(sys.argv)
-		thrds=["{} {} --nolog --verbose 0 {}".format(parser.prog,a,commandoptions(options,("threads","alltiltseries"))) for a in sorted(args)]
+		thrds=["{} {} --nolog --verbose 0 {}".format(parser.prog,a,commandoptions(options,("threads","alltiltseries","verbose"))) for a in sorted(args)]
 
 		NTHREADS=max(options.threads+1,2)	# the controlling thread isn't really doing anything
 		thrtolaunch=0

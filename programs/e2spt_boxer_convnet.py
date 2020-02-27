@@ -34,6 +34,7 @@ def main():
 	
 	app = EMApp()
 
+	test = EMImage2DWidget()
 	drawer=EMTomobox(app,options)
 
 
@@ -137,7 +138,7 @@ class NNet:
 		else:
 			m2/=np.sum(m2)
 		self.mask2=m2[None,:,:,None]
-		
+		posmult=posmult/(1+posmult)
 		#bce=tf.keras.losses.BinaryCrossentropy()
 		def calc_loss(yt, inp):
 			out0,out1=self.predict_class(inp, fromdata=False, usemax=usemax)
@@ -418,10 +419,13 @@ class EMTomobox(QtWidgets.QMainWindow):
 		self.val_niter=TextBox("Niter", 10)
 		self.gbl.addWidget(self.val_niter, 5,2,1,1)
 		
+		self.val_posmult=TextBox("PosMult", 2)
+		self.gbl.addWidget(self.val_posmult, 6,2,1,1)
+		
 		self.val_lossfun = QtWidgets.QComboBox()
 		self.val_lossfun.addItem("Sum")
 		self.val_lossfun.addItem("Max")
-		self.gbl.addWidget(self.val_lossfun, 6,2,1,1)
+		self.gbl.addWidget(self.val_lossfun, 7,2,1,1)
 		
 		self.options=options
 		self.app=weakref.ref(application)
@@ -564,8 +568,6 @@ class EMTomobox(QtWidgets.QMainWindow):
 	def set_data(self, datafile):
 		if self.datafile==datafile:
 			return
-		if self.data!=None:
-			self.save_points()
 		print("Reading {}...".format(datafile))
 		self.datafile=datafile
 		self.data=EMData(datafile)
@@ -663,13 +665,13 @@ class EMTomobox(QtWidgets.QMainWindow):
 		dataset = tf.data.Dataset.from_tensor_slices(self.trainset)
 		dataset=dataset.shuffle(500).batch(32)
 		usemax=(self.val_lossfun.currentText()=="Max")
-		
 		self.nnet.do_training(
 			dataset, 
 			learnrate=self.val_learnrate.getval(), 
 			niter=int(self.val_niter.getval()),
 			tarsz=self.val_targetsize.getval(),
-			usemax=usemax
+			usemax=usemax, 
+			posmult=self.val_posmult.getval()
 			)
 		
 		self.segout=None
@@ -835,6 +837,7 @@ class EMTomobox(QtWidgets.QMainWindow):
 				idx=np.argsort(dst)[0]
 				if mode=="Particles":
 					self.ptclimages=[p for i,p in enumerate(self.ptclimages) if i!=idx]
+					self.save_points()
 				else:
 					self.boxshapes.points.pop(idx)
 					self.references=[b for ib,b in enumerate(self.references) if ib!=idx]
@@ -943,13 +946,15 @@ class EMTomobox(QtWidgets.QMainWindow):
 	def save_points(self):
 		if self.data==None:
 			return
-		print("Saving particles...")
+		#print("Saving particles...")
 		js=js_open_dict(self.infofile)
 		label=self.options.label
 		pts=np.array([b["pos"] for b in self.ptclimages])
 		if len(pts)>0:
 			pts=(pts - self.tomocenter) * self.apix_scale
+		pts=np.round(pts).astype(int)
 		clsid=self.curinfo["clsid"]
+		print('save particles to {} : {}'.format(clsid, label))
 		if not "class_list" in js:
 			js["class_list"]={}
 		if not "boxes_3d" in js:

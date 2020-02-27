@@ -87,8 +87,11 @@ def main():
 	
 	while 1:
 		st_vals = etc.check_task(tids)
-		#print("{:.1f}/{} finished".format(np.mean(st_vals), 100))
-		#print(tids)
+		if -100 in st_vals:
+			print("Error occurs in parallelism. Exit")
+			return
+		E2progress(logid, np.mean(st_vals)/100.)
+		
 		if np.min(st_vals) == 100: break
 		time.sleep(5)
 	
@@ -188,7 +191,7 @@ class SptTltRefineTask(JSTask):
 				xf.translate(-trans)
 				scr=c.cmp("frc",pj)
 				r={"idx":ii,"xform.align3d":xf, "score":scr}
-				print(ii, (initxf["tx"], initxf["ty"]), trans)
+				#print(ii, (initxf["tx"], initxf["ty"]), trans)
 				
 				
 			else:
@@ -204,7 +207,7 @@ class SptTltRefineTask(JSTask):
 					xfs.append(Transform(d))
 						
 				alignpm={"verbose":0,"sym":options.sym,"maxshift":options.maxshift,"initxform":xfs, "maxang":astep*2.}
-				print("lenxfs:", len(xfs))
+				#print("lenxfs:", len(xfs))
 			
 				b=b.do_fft()
 				b.process_inplace("xform.phaseorigin.tocorner")
@@ -216,7 +219,7 @@ class SptTltRefineTask(JSTask):
 			#print(ii,info, r)
 			callback(float(i/len(self.data["info"])))
 			rets.append(r)
-		callback(100)
+		#callback(100)
 			
 		return rets
 
