@@ -29,7 +29,7 @@ nosetests -vv --exe -m "^test_*" \
                     rt/pyem/
 
 # 5. Test openmpi
-if [ $(whoami) != "root" ] && [ "$(uname -s)" != "Darwin" ];then
+if [ $(whoami) != "root" ];then
     mpirun -n 4 $(which python) ${MYDIR}/../examples/mpi_test.py
 fi
 
