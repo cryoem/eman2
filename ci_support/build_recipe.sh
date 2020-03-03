@@ -3,7 +3,7 @@
 set -xe
 
 MYDIR="$(cd "$(dirname "$0")"; pwd -P)"
-recipe_dir="recipes/eman"
+recipe_dir="recipe"
 
 source ${MYDIR}/set_env_vars.sh
 
