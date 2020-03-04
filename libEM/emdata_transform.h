@@ -145,7 +145,7 @@ std::string render_amp8(int x, int y, int xsize, int ysize,
  * @param flags	1-duplicate each output pixel 3x for RGB rendering,2-add a 256 int greyscale histogram to the end of the image array,4-invert y axis,8-render 32 bit 0xffRRGGBB
  * @exception ImageDimensionException If the image is not 2D.
  */
-std::string render_ap24(int x, int y, int xsize, int ysize,
+EMBytes render_ap24(int x, int y, int xsize, int ysize,
 				 int bpl, float scale, int min_gray, int max_gray,
 				 float min_render, float max_render,float gamma,int flags);
 

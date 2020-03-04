@@ -134,8 +134,11 @@ def main():
 	usage = """e2fsc.py [options] input1 input2
 
 Simple 2 volume FSCs can be computed with e2proc3d.py. In addition to the overall fsc (saved to fsc.txt), 
-it also computes a "local resolution" through the volume. This method is of HIGHLY questionable usefulness,
-and this program should be regarded as experimental.
+it also computes a "local resolution" through the volume. These local resolutions are based on poor statistics.
+The smaller the box size, the worse they are, and this is not taken into account when computing actual
+resolution values. Regardless, it will give a reasonable comparison of how much variation exists in different
+regions of the map, and will produce locally filtered maps with a reasonable level of detail, given the two
+input volumes.
 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
