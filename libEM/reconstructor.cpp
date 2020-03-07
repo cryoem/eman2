@@ -853,6 +853,8 @@ void FourierReconstructor::setup_seed(EMData* seed,float seed_weight) {
 
 	// Odd dimension support is here atm, but not above.
 	image = seed->copy();
+	image->mult(seed_weight);		// The lack of this line was what was causing all of the strange normalization issues
+	
 	if (params.has_key("subvolume")) {
 		image->set_attr("subvolume_x0",subx0);
 		image->set_attr("subvolume_y0",suby0);
@@ -923,7 +925,8 @@ void FourierReconstructor::setup_seedandweights(EMData* seed,EMData* seed_weight
 		throw ImageDimensionException("The dimensions of the seed volume do not match the reconstruction size");
 
 	// Odd dimension support is here atm, but not above.
-	image = seed->copy();
+	image = seed->copy();  	// note that if the provided seed has not been 'premultiplied' by the weights, bad things may result!
+	
 	if (params.has_key("subvolume")) {
 		image->set_attr("subvolume_x0",subx0);
 		image->set_attr("subvolume_y0",suby0);

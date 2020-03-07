@@ -128,6 +128,7 @@ const string IntTranslateProcessor::NAME = "xform.translate.int";
 const string ScaleTransformProcessor::NAME = "xform.scale";
 const string ApplySymProcessor::NAME = "xform.applysym";
 const string ClampingProcessor::NAME = "threshold.clampminmax";
+const string RangeZeroProcessor::NAME = "threshold.rangetozero";
 const string NSigmaClampingProcessor::NAME = "threshold.clampminmax.nsigma";
 const string ToMinvalProcessor::NAME = "threshold.belowtominval";
 const string CutToZeroProcessor::NAME = "threshold.belowtozero_cut";
@@ -374,6 +375,7 @@ template <> Factory < Processor >::Factory()
 	force_add<NSigmaClampingProcessor>();
 
 	force_add<ToZeroProcessor>();
+	force_add<RangeZeroProcessor>();
 	force_add<AboveToZeroProcessor>();
 	force_add<OutlierProcessor>();
 	force_add<ToMinvalProcessor>();
@@ -1995,6 +1997,24 @@ void DoGFourierProcessor::create_radial_func(vector < float >&radial_mask) const
 		radial_mask[i] = norm*((1.0f/sigma1*exp(-x*x/(2.0f*sigma1*sigma1))) - (1.0f/sigma2*exp(-x*x/(2.0f*sigma2*sigma2))));
 		x += nqstep;
 	}
+}
+
+void RangeZeroProcessor::process_inplace(EMData * image)
+{
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+
+	size_t size = (size_t)image->get_xsize() *
+				  (size_t)image->get_ysize() *
+				  (size_t)image->get_zsize();
+	float *data = image->get_data();
+
+	for (size_t i = 0; i < size; ++i) {
+		if (data[i]>=minval && data[i]<=maxval) data[i]=0.0f;
+	}
+	image->update();
 }
 
 void RealPixelProcessor::process_inplace(EMData * image)

@@ -2576,6 +2576,56 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/** Set any values in a range to zero. Opposite of threshold.clampminmax
+	 *@param minval	minimum value of the range
+	 *@param maxval maximum value of the range
+	 */
+	class RangeZeroProcessor:public Processor
+	{
+	public:
+		RangeZeroProcessor():minval(0),maxval(0)
+		{
+		}
+		
+		string get_name() const
+		{
+			return NAME;
+		}
+		
+		static Processor *NEW()
+		{
+			return new RangeZeroProcessor();
+		}
+		
+		virtual void process_inplace(EMData * image);
+		
+		
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("minval", EMObject::FLOAT, "Lower threshold");
+			d.put("maxval", EMObject::FLOAT, "Upper threshold");
+			return d;
+		}
+
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			minval = params["minval"];	// using existing variable as a convenience
+			maxval = params["maxval"];
+		}
+
+		string get_desc() const
+		{
+			return "Sets values in a range to zero. Opposite of threshold.clampminmax. \nf(x) = x if x > maxval or x < minval; f(x) = 0 for min <= x <= max";
+		}
+
+		static const string NAME;
+
+	protected:
+		float minval,maxval;
+	};
+
 	/**Rotate by 180 using pixel swapping, works for 2D only
 	 * @author David Woolford
 	 * @date March 21, 2014
