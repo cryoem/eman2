@@ -84,7 +84,7 @@ def main():
 				from  development import  k_means_stab_MPICUDA_stream_YANG
 				k_means_stab_MPICUDA_stream_YANG(args[0], args[1], mask, options.K, options.nb_part, options.F, options.T0, options.th_nobj, options.rand_seed, options.maxit)
 			else:'''
-			from  statistics import  k_means_stab_MPI_stream
+			from  pap_statistics import  k_means_stab_MPI_stream
 			k_means_stab_MPI_stream(args[0], args[1], mask, options.K, options.nb_part, 0.0, 0.0, options.th_nobj, options.rand_seed, "SSE", options.CTF, options.maxit)
 		else:
 			'''if options.CUDA:
@@ -92,7 +92,7 @@ def main():
 				k_means_stab_CUDA_stream(args[0], args[1], mask, options.K, options.nb_part, options.F, options.T0, options.th_nobj, options.rand_seed, options.maxit)
 			else:'''
 			
-			from  statistics  import  k_means_stab_stream
+			from  pap_statistics  import  k_means_stab_stream
 			k_means_stab_stream(args[0], args[1], mask, options.K, options.nb_part, 0.0, 0.0, options.th_nobj, options.rand_seed, "SSE", options.CTF, options.maxit)
 		global_def.BATCH = False
 

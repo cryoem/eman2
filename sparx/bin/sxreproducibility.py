@@ -56,7 +56,7 @@ def main():
 	global_def.BATCH = True
 
 	from numpy import array
-	from statistics import k_means_stab_bbenum
+	from pap_statistics import k_means_stab_bbenum
 
 	R = len(args)
 	Parts = []

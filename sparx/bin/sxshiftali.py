@@ -93,7 +93,7 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 	from applications import MPI_start_end
 	from utilities    import model_circle, model_blank, get_image, peak_search, get_im
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
-	from statistics   import varf2d_MPI
+	from pap_statistics   import varf2d_MPI
 	from fundamentals import fft, ccf, rot_shift3D, rot_shift2D
 	from utilities    import get_params2D, set_params2D
 	from utilities    import print_msg, print_begin_msg, print_end_msg
@@ -363,7 +363,7 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 	from applications import MPI_start_end
 	from utilities    import model_circle, model_blank, get_image, peak_search, get_im, pad
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
-	from statistics   import varf2d_MPI
+	from pap_statistics   import varf2d_MPI
 	from fundamentals import fft, ccf, rot_shift3D, rot_shift2D, fshift
 	from utilities    import get_params2D, set_params2D, chunks_distribution
 	from utilities    import print_msg, print_begin_msg, print_end_msg
