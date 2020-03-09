@@ -235,7 +235,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 	from mpi          import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD
 	from mpi          import mpi_barrier, mpi_comm_split, mpi_comm_free, mpi_finalize
 	from projection   import prep_vol
-	from statistics   import hist_list
+	from pap_statistics   import hist_list
 	from applications import MPI_start_end
 	from filter       import filt_ctf
 	from global_def   import Util, ERROR
@@ -658,7 +658,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 								mirror_and_reduce_dsym([GA[0][1],GA[i][1]], list(range(len(GA[0][1]))), symmetry_class)
 
 						#  ---  Stopping criterion
-						from statistics import table_stat
+						from pap_statistics import table_stat
 						from math import sqrt
 						q1,q2,q3,q4 = table_stat([GA[i][0] for i in range(number_of_runs)])
 						# Terminate if variation of L2 norms less than (L2threshold*100)% of their average
@@ -880,7 +880,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 	from utilities       import model_circle, get_input_from_string, get_params_proj, wrap_mpi_gatherv, wrap_mpi_bcast, wrap_mpi_split
 	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
 	from projection      import prep_vol
-	from statistics      import hist_list
+	from pap_statistics      import hist_list
 	from applications    import MPI_start_end
 	from filter          import filt_ctf
 	from fundamentals    import symclass
@@ -1929,7 +1929,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 	from utilities       import get_im, file_type, model_circle, get_input_from_string, get_params_proj, wrap_mpi_gatherv, wrap_mpi_bcast
 	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, mpi_reduce, MPI_INT, MPI_SUM
 	from projection      import prep_vol
-	from statistics      import hist_list
+	from pap_statistics      import hist_list
 	from applications    import MPI_start_end
 	from filter          import filt_ctf
 	from global_def      import Util
@@ -2425,7 +2425,7 @@ def Xali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, 
 	from utilities    import model_circle, get_input_from_string, get_params_proj, set_params_proj, wrap_mpi_gatherv, wrap_mpi_bcast, wrap_mpi_send, wrap_mpi_recv
 	from mpi          import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, mpi_comm_split, mpi_comm_free
 	from projection   import prep_vol
-	from statistics   import hist_list
+	from pap_statistics   import hist_list
 	from applications import MPI_start_end
 	from filter       import filt_ctf
 	from global_def   import Util, ERROR
@@ -2820,7 +2820,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 	from utilities       import get_im, file_type, model_circle, get_input_from_string, get_params_proj, set_params_proj
 	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, mpi_reduce, MPI_INT, MPI_SUM
 	from projection      import prep_vol
-	from statistics      import hist_list
+	from pap_statistics      import hist_list
 	from applications    import MPI_start_end
 	from filter          import filt_ctf
 	from global_def      import Util

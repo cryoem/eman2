@@ -688,14 +688,14 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 			symmetry: point-group symmetry to be enforced, each projection will enter the reconstruction in all symmetry-related directions.
 	"""
 	from utilities  import reduce_EMData_to_root, get_im, send_string_to_all
-	from statistics import fsc
+	from pap_statistics import fsc
 	from utilities  import get_image, send_EMData, recv_EMData
 
 	from EMAN2      import Reconstructors
 	from utilities  import model_blank, cmdexecute
 	from mpi        import MPI_COMM_WORLD, mpi_barrier, mpi_comm_size 
 	import types
-	from statistics import fsc
+	from pap_statistics import fsc
 	import datetime
 	
 	if mpi_comm == None:
@@ -936,7 +936,7 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 	from utilities  import model_blank
 	from mpi        import MPI_COMM_WORLD, mpi_barrier
 	import types
-	from statistics import fsc
+	from pap_statistics import fsc
 	import datetime
 	
 	if mpi_comm == None:
@@ -1094,7 +1094,7 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 	from utilities  import model_blank
 	from mpi        import MPI_COMM_WORLD, mpi_barrier
 	import types
-	from statistics import fsc
+	from pap_statistics import fsc
 	import datetime
 	
 	if mpi_comm == None:
@@ -1249,7 +1249,7 @@ def recons3d_4nnfs_MPI(myid, main_node, prjlist, upweighted = True, finfo=None, 
 	from filter		import filt_table
 	from mpi        import MPI_COMM_WORLD, mpi_barrier
 	import types
-	from statistics import fsc
+	from pap_statistics import fsc
 	import datetime
 	from reconstruction import insert_slices_pdf
 	
@@ -1517,7 +1517,7 @@ def recons3d_4nnstruct_MPI_test(myid, main_node, prjlist, paramstructure, refang
 	from filter		import filt_table
 	from mpi        import MPI_COMM_WORLD, mpi_barrier
 	import types
-	from statistics import fsc
+	from pap_statistics import fsc
 	import datetime
 	from reconstruction import insert_slices_pdf
 	
@@ -2902,7 +2902,7 @@ def rec3D_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None,
 	  in the memory, computes reconstruction and through odd-even, in order to get the resolution
 	'''
 	import os
-	from statistics import fsc_mask
+	from pap_statistics import fsc_mask
 	from utilities  import model_blank, model_circle, get_image, send_EMData, recv_EMData
 	from mpi        import mpi_comm_size, MPI_COMM_WORLD
 	
@@ -3117,7 +3117,7 @@ def rec3D_MPI_with_getting_odd_even_volumes_from_files(fftvol_files, weight_file
 	reconstructed_odd_vol_files, reconstructed_eve_vol_files = reconstructed_vol_files
 		
 	import os
-	from statistics import fsc_mask
+	from pap_statistics import fsc_mask
 	from utilities  import model_blank, model_circle, get_image, send_EMData, recv_EMData
 	from mpi        import mpi_comm_size, MPI_COMM_WORLD
 	
@@ -3316,7 +3316,7 @@ def rec3D_MPI_noCTF(data, symmetry = "c1", mask3D = None, fsc_curve = None, myid
 	    this is for multireference alignment
 	'''
 	import os
-	from statistics import fsc_mask
+	from pap_statistics import fsc_mask
 	from utilities  import model_blank, get_image,send_EMData, recv_EMData
 	from mpi        import mpi_comm_size, MPI_COMM_WORLD
 	
@@ -3551,7 +3551,7 @@ def rec3D_two_chunks_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_cu
 	  in the memory, computes reconstruction and through odd-even, in order to get the resolution
 	'''
 	import os
-	from statistics import fsc_mask
+	from pap_statistics import fsc_mask
 	from utilities  import model_blank, model_circle, get_image, send_EMData, recv_EMData
 	from mpi        import mpi_comm_size, MPI_COMM_WORLD
 	

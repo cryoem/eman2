@@ -136,7 +136,7 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	# this alignment program supports list of EMData not a stack.
 
 	from utilities    import drop_image, get_image, get_input_from_string, get_params2D, set_params2D
-	from statistics   import fsc_mask, sum_oe, hist_list
+	from pap_statistics   import fsc_mask, sum_oe, hist_list
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from pixel_error  import pixel_error_2D
 	from fundamentals import fshift, fft, rot_avg_table
@@ -239,9 +239,9 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 
 	if Fourvar:
 		if CTF:
-			from statistics   import varf2d
+			from pap_statistics   import varf2d
 		else:
-			from statistics   import varf
+			from pap_statistics   import varf
 
 	if CUDA:
 		all_ali_params = []
@@ -431,7 +431,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	from utilities    import model_circle, model_blank, drop_image, get_image, get_input_from_string
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type
 	from utilities    import bcast_number_to_all, bcast_list_to_all
-	from statistics   import fsc_mask, sum_oe, hist_list, varf2d_MPI
+	from pap_statistics   import fsc_mask, sum_oe, hist_list, varf2d_MPI
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from pixel_error  import pixel_error_2D
 	from numpy        import reshape, shape
@@ -857,7 +857,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 	from utilities    import model_circle, model_blank, drop_image, get_image, get_input_from_string
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type
 	from utilities    import bcast_number_to_all, bcast_list_to_all
-	from statistics   import fsc_mask, sum_oe, hist_list, varf2d_MPI
+	from pap_statistics   import fsc_mask, sum_oe, hist_list, varf2d_MPI
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from pixel_error  import pixel_error_2D
 	from numpy        import reshape, shape
@@ -1215,7 +1215,7 @@ def ORGali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 		return
 
 	from utilities    import model_circle, drop_image, get_image, get_input_from_string, get_params2D
-	from statistics   import fsc_mask, sum_oe, hist_list
+	from pap_statistics   import fsc_mask, sum_oe, hist_list
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from pixel_error  import pixel_error_2D
 	from filter       import filt_ctf, filt_table, filt_tophatb
@@ -1304,7 +1304,7 @@ def ORGali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 	else:
 		ctf_2_sum = None
 	if  Fourvar:
-		from statistics   import add_ave_varf
+		from pap_statistics   import add_ave_varf
 
 	del ima
 	data = EMData.read_images(stack, list_of_particles)
@@ -1432,7 +1432,7 @@ def ORGali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1"
 
 	from utilities    import model_circle, model_blank, drop_image, get_image, get_input_from_string
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
-	from statistics   import fsc_mask, sum_oe, add_ave_varf_MPI, hist_list
+	from pap_statistics   import fsc_mask, sum_oe, add_ave_varf_MPI, hist_list
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from pixel_error  import pixel_error_2D
 	from filter       import filt_table, filt_ctf, filt_tophatb
@@ -1557,7 +1557,7 @@ def ORGali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1"
 	else:
 		ctf_2_sum = None
 	if  Fourvar:
-		from statistics   import add_ave_varf
+		from pap_statistics   import add_ave_varf
 
 	del ima
 
@@ -1812,7 +1812,7 @@ def local_ali2d(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, 
 	from alignment    	import kbt
 	from utilities    	import model_circle, amoeba, compose_transform2, drop_image, get_arb_params, get_image, get_params2D, set_params2D
 	from alignment    	import fine_2D_refinement, crit2d
-	from statistics   	import add_oe_series, fsc_mask
+	from pap_statistics   	import add_oe_series, fsc_mask
 	from filter 		import filt_from_fsc_bwt,filt_table
 	from morphology         import ctf_2, ctf_1d
 	import os
@@ -1986,7 +1986,7 @@ def mref_ali2d(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, y
 
 	from utilities      import   model_circle, combine_params2, inverse_transform2, drop_image, get_image
 	from utilities	    import   center_2D, get_im, get_params2D, set_params2D
-	from statistics     import   fsc
+	from pap_statistics     import   fsc
 	from alignment      import   Numrinit, ringwe, fine_2D_refinement, search_range
 	from fundamentals   import   rot_shift2D, fshift
 	from morphology     import   ctf_2
@@ -2243,7 +2243,7 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 	from utilities      import   reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all
 	from utilities      import   send_attr_dict
 	from utilities	    import   center_2D
-	from statistics     import   fsc_mask
+	from pap_statistics     import   fsc_mask
 	from alignment      import   Numrinit, ringwe, search_range
 	from fundamentals   import   rot_shift2D, fshift
 	from utilities      import   get_params2D, set_params2D
@@ -2461,7 +2461,7 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 						av1 = filt_table( refi[j][0], ctm)
 						for i in range(lctf):  ctm[i] = 1.0 / (ctf2[j][1][i] + 1.0/snr)
 						av2 = filt_table( refi[j][1], ctm)
-						from statistics import fsc
+						from pap_statistics import fsc
 						#frsc = fsc_mask(av1, av2, mask, 1.0, os.path.join(outdir,"drm%03d%04d"%(Iter, j)))
 						frsc = fsc(av1, av2, 1.0, os.path.join(outdir,"drm%03d%04d.txt"%(Iter, j)))
 						#Now the total average
@@ -2469,7 +2469,7 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 						refi[j][0] = filt_table( Util.addn_img( refi[j][0], refi[j][1] ), ctm)
 					else:
 						#frsc = fsc_mask(refi[j][0], refi[j][1], mask, 1.0, os.path.join(outdir,"drm%03d%04d"%(Iter, j)))
-						from statistics import fsc
+						from pap_statistics import fsc
 						frsc = fsc(refi[j][0], refi[j][1], 1.0, os.path.join(outdir,"drm%03d%04d.txt"%(Iter,j)))
 						Util.add_img( refi[j][0], refi[j][1] )
 						Util.mul_scalar( refi[j][0], 1.0/float(refi[j][2]) )
@@ -2551,9 +2551,9 @@ def ali2d_ra(stack, maskfile = None, ir = 1, ou = -1, rs = 1, maxit = 10, check_
 
 	from utilities    import model_circle, compose_transform2, combine_params2, drop_image, get_im, get_arb_params, get_params2D, set_params2D
 	from alignment    import Numrinit, ringwe, ang_n
-	from statistics   import kmn, kmn_ctf
+	from pap_statistics   import kmn, kmn_ctf
 	from morphology   import ctf_2
-	from statistics   import add_series
+	from pap_statistics   import add_series
 	from applications import transform2d
 	from random       import random
 	from utilities    import print_begin_msg, print_end_msg, print_msg
@@ -2717,9 +2717,9 @@ def ali2d_rag(stack, maskfile = None, ir = 1, ou = -1, rs = 1, maxit = 10, check
 
 	from utilities    import model_circle, compose_transform2, combine_params2, drop_image, get_im, get_arb_params
 	from alignment    import Numrinit, ringwe, ang_n
-	from statistics   import kmn_g, kmn_ctf
+	from pap_statistics   import kmn_g, kmn_ctf
 	from morphology   import ctf_2
-	from statistics   import add_series
+	from pap_statistics   import add_series
 	from applications import transform2d
 	from random       import random
 	from utilities    import print_begin_msg, print_end_msg, print_msg
@@ -2890,7 +2890,7 @@ def ali2d_rac(stack, maskfile = None, ir = 1, ou = -1, rs = 1, nclass = 2, maxit
 
 	from utilities    import model_circle, combine_params2, drop_image
 	from alignment    import Numrinit, ringwe, ang_n
-	from statistics   import kmnr, kmn, add_series_class
+	from pap_statistics   import kmnr, kmn, add_series_class
 	from random       import seed, randint
 
 	from utilities    import info, ttime, print_list_format
@@ -3169,7 +3169,7 @@ def ali2d_ras(data2d, randomize = False, ir = 1, ou = -1, rs = 1, step = 1.0, ds
 
 	from utilities    import compose_transform2, combine_params2, get_arb_params, get_params2D, set_params2D, inverse_transform2
 	from alignment    import Numrinit, ringwe, ang_n
-	from statistics   import ave_series
+	from pap_statistics   import ave_series
 	from filter       import filt_tanl
 	from random       import random, randint
 
@@ -3286,7 +3286,7 @@ def ali2d_rotational(data2d, randomize = False, orient=True, ir = 1, ou = -1, rs
 	from utilities    import get_params2D, set_params2D, model_blank, model_circle
 	from alignment    import Numrinit, ringwe, ang_n
 	from fundamentals import rot_shift2D, mirror
-	from statistics   import ave_series
+	from pap_statistics   import ave_series
 	from random       import randint
 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit); 
@@ -3363,7 +3363,7 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 	from utilities 		import model_circle, combine_params2, drop_image
 	from utilities          import get_input_from_string, get_image, get_arb_params, set_arb_params
 	from fundamentals 	import rot_shift2D
-	from statistics 	      import add_oe_series, ave_series_ctf, ave_series, fsc_mask
+	from pap_statistics 	      import add_oe_series, ave_series_ctf, ave_series, fsc_mask
 	from alignment 		import Numrinit, ringwe, ali2d_single_iter, align2d
 	from filter 		import filt_table, filt_ctf
 	from morphology     import ctf_2
@@ -3628,7 +3628,7 @@ def ali3d_abandoned(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs
 	from utilities      import get_params_proj
 	from utilities      import estimate_3D_center, rotate_3D_shift
 	from filter         import filt_params, fit_tanh, filt_tanl, filt_ctf
-	from statistics     import fsc_mask
+	from pap_statistics     import fsc_mask
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from alignment      import Numrinit, prepare_refrings
 	from projection     import prep_vol
@@ -3823,7 +3823,7 @@ def Xali3d_MPI_chunks(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, 
 	from mpi             import mpi_reduce, MPI_INT, MPI_SUM
 	from filter          import filt_ctf
 	from projection      import prep_vol, prgs
-	from statistics      import hist_list, varf3d_MPI
+	from pap_statistics      import hist_list, varf3d_MPI
 	from applications    import MPI_start_end
 
 
@@ -4033,7 +4033,7 @@ def Xali3d_MPI_chunks(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, 
 			terminate = 0
 			if myid == main_node:
 				recvbuf = map(float, recvbuf)
-				from statistics import hist_list
+				from pap_statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
 				if region[0] < 0.0:  region[0] = 0.0
@@ -4162,7 +4162,7 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	from utilities      import get_params_proj
 	from utilities      import estimate_3D_center, rotate_3D_shift
 	from filter         import filt_params, fit_tanh, filt_tanl, filt_ctf
-	from statistics     import fsc_mask
+	from pap_statistics     import fsc_mask
 	import os
 	import types
 	from utilities      import print_begin_msg, print_end_msg, print_msg
@@ -4342,7 +4342,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	from mpi             import mpi_reduce, MPI_INT, MPI_SUM
 	from filter          import filt_ctf
 	from projection      import prep_vol, prgs
-	from statistics      import hist_list, varf3d_MPI
+	from pap_statistics      import hist_list, varf3d_MPI
 	from applications    import MPI_start_end
 
 
@@ -4566,7 +4566,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			terminate = 0
 			if myid == main_node:
 				recvbuf = list(map(float, recvbuf))
-				from statistics import hist_list
+				from pap_statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
 				if region[0] < 0.0:  region[0] = 0.0
@@ -4673,7 +4673,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, rangle = 0.0, rshift = 0.
 	from utilities       import even_angles
 	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, mpi_reduce, MPI_INT, MPI_SUM
 	from projection      import prep_vol
-	from statistics      import hist_list
+	from pap_statistics      import hist_list
 	from applications    import MPI_start_end
 	from filter          import filt_ctf, filt_table
 	from global_def      import Util
@@ -5140,7 +5140,7 @@ def sali3d_base_horatio_01(stack, ref_vol = None, Tracker = None, rangle = 0.0, 
 	from utilities       import even_angles
 	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, mpi_reduce, MPI_INT, MPI_SUM
 	from projection      import prep_vol
-	from statistics      import hist_list
+	from pap_statistics      import hist_list
 	from applications    import MPI_start_end
 	from filter          import filt_ctf, filt_table
 	from global_def      import Util
@@ -5618,7 +5618,7 @@ def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, c
 	from utilities        import print_begin_msg, print_end_msg, print_msg
 	#from development      import do_volume_mrk01
 	import user_functions
-	from statistics       import varf3d_MPI
+	from pap_statistics       import varf3d_MPI
 	from math             import pi
 	from mpi              import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
 	from mpi              import mpi_reduce, MPI_INT, MPI_SUM
@@ -6006,7 +6006,7 @@ def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, c
 		terminate = 0
 		if(myid == main_node):
 			pixer = list(map(float, pixer))
-			from statistics import hist_list
+			from pap_statistics import hist_list
 			lhist = 20
 			region, histo = hist_list(pixer, lhist)
 			log.add(" ")
@@ -6087,7 +6087,7 @@ def ali3dlocal_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs 
 	from mpi             import mpi_reduce, MPI_INT, MPI_SUM
 	from filter          import filt_ctf
 	from projection      import prep_vol, prgs
-	from statistics      import hist_list, varf3d_MPI
+	from pap_statistics      import hist_list, varf3d_MPI
 	from applications    import MPI_start_end
 	import os
 	import types
@@ -6338,7 +6338,7 @@ def ali3dlocal_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs 
 			terminate = 0
 			if myid == main_node:
 				recvbuf = map(float, recvbuf)
-				from statistics import hist_list
+				from pap_statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
 				if region[0] < 0.0:  region[0] = 0.0
@@ -6448,7 +6448,7 @@ def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 	from mpi             import mpi_reduce, MPI_INT, MPI_SUM
 	from filter          import filt_ctf
 	from projection      import prep_vol, prgs
-	from statistics      import hist_list, varf3d_MPI
+	from pap_statistics      import hist_list, varf3d_MPI
 	from applications    import MPI_start_end
 
 
@@ -6702,7 +6702,7 @@ def Xali3d_shc0MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs 
 	from utilities       import print_begin_msg, print_end_msg, print_msg
 	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, MPI_INT
 	from projection      import prep_vol, prgs
-	from statistics      import hist_list, varf3d_MPI
+	from pap_statistics      import hist_list, varf3d_MPI
 	from applications    import MPI_start_end
 	from math            import sqrt, acos, radians
 	from random          import shuffle
@@ -6994,7 +6994,7 @@ def Xali3d_shc0MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs 
 			terminate = 0
 			if myid == main_node:
 				recvbuf = map(float, recvbuf)
-				from statistics import hist_list
+				from pap_statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
 				if region[0] < 0.0:  region[0] = 0.0
@@ -7123,7 +7123,7 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 	from utilities       import print_begin_msg, print_end_msg, print_msg
 	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, MPI_INT
 	from projection      import prep_vol, prgs
-	from statistics      import hist_list, varf3d_MPI
+	from pap_statistics      import hist_list, varf3d_MPI
 	from applications    import MPI_start_end
 	from math            import sqrt, acos, radians
 	from random          import shuffle
@@ -7399,7 +7399,7 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 			terminate = 0
 			if myid == main_node:
 				recvbuf = list(map(float, recvbuf))
-				from statistics import hist_list
+				from pap_statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
 				if region[0] < 0.0:  region[0] = 0.0
@@ -7527,7 +7527,7 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=
 	from alignment      import proj_ali_incore, proj_ali_incore_local, Numrinit, prepare_refrings
 	from filter	    import filt_params, filt_tanl
 	from fundamentals   import fshift
-	from statistics     import fsc_mask
+	from pap_statistics     import fsc_mask
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 
 	import os
@@ -7953,7 +7953,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 
 	if fourvar:
 		from reconstruction import rec3D_MPI
-		from statistics     import varf3d_MPI
+		from pap_statistics     import varf3d_MPI
 		#  Compute Fourier variance
 		vol, fscc = rec3D_MPI(data, snr, sym, model_circle(last_ring, nx, nx, nx), os.path.join(outdir, "resolution0000"), myid, main_node, finfo=frec, npad=npad)
 		varf = varf3d_MPI(data, os.path.join(outdir, "ssnr0000"), None, vol, last_ring, 1.0, 1, CTF, 1, sym, myid)
@@ -8404,7 +8404,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			mpi_barrier(MPI_COMM_WORLD)
 			if(myid == main_node):
 				recvbuf = list(map(float, recvbuf))
-				from statistics import hist_list
+				from pap_statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
 				if(region[0] < 0.0):  region[0] = 0.0
@@ -8631,7 +8631,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 
 	if fourvar:
 		from reconstruction import rec3D_MPI
-		from statistics     import varf3d_MPI
+		from pap_statistics     import varf3d_MPI
 		#  Compute Fourier variance
 		vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node, finfo=frec, npad=npad)
 		varf = varf3d_MPI(data, os.path.join(outdir, "ssnr0000"), None, vol, last_ring, 1.0, 1, CTF, 1, sym, myid)
@@ -8829,7 +8829,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 			mpi_barrier(MPI_COMM_WORLD)
 			if myid == main_node:
 				recvbuf = list(map(float, recvbuf))
-				from statistics import hist_list
+				from pap_statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
 				if region[0] < 0.0:  region[0] = 0.0
@@ -9115,7 +9115,7 @@ def Kmref2_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=
 
 	if fourvar:
 		from reconstruction import rec3D_MPI
-		from statistics     import varf3d_MPI
+		from pap_statistics     import varf3d_MPI
 		#  Compute Fourier variance
 		vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node, finfo=frec, npad=npad)
 		varf = varf3d_MPI(data, os.path.join(outdir, "ssnr0000"), None, vol, last_ring, 1.0, 1, CTF, 1, sym, myid)
@@ -9337,7 +9337,7 @@ def Kmref2_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=
 			mpi_barrier(MPI_COMM_WORLD)
 			if myid == main_node:
 				recvbuf = list(map(float, recvbuf))
-				from statistics import hist_list
+				from pap_statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
 				if region[0] < 0.0:  region[0] = 0.0
@@ -9481,7 +9481,7 @@ def local_ali3dm_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25,
 	from utilities      import get_params_proj, set_params_proj, get_im
 	from utilities      import model_blank, print_begin_msg, print_msg, print_end_msg, file_type
 	from reconstruction import rec3D_MPI
-	from statistics     import ccc
+	from pap_statistics     import ccc
 	from pixel_error    import max_3D_pixel_error
 	from math           import pi, sqrt
 	from string         import replace
@@ -9607,7 +9607,7 @@ def local_ali3dm_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25,
 	if fourvar:
 		#  I am not sure why it is here!  PAP 09/26/09
 		from reconstruction import rec3D_MPI
-		from statistics     import varf3d_MPI
+		from pap_statistics     import varf3d_MPI
 		#  Compute Fourier variance
 		vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node, finfo=finfo)
 		varf = varf3d_MPI(data, os.path.join(outdir, "ssnr0000"), None, vol, int(ou), 1.0, 1, CTF, 1, sym, myid)
@@ -9782,7 +9782,7 @@ def local_ali3dm_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25,
 			mpi_barrier(MPI_COMM_WORLD)
 			if(myid == main_node):
 				recvbuf = list(map(float, recvbuf))
-				from statistics import hist_list
+				from pap_statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
 				if(region[0] < 0.0):  region[0] = 0.0
@@ -9886,7 +9886,7 @@ def local_ali3dm_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, 
 	from utilities      import get_params_proj, set_params_proj, get_im
 	from utilities      import model_blank, print_begin_msg, print_msg, print_end_msg, file_type
 	from reconstruction import rec3D_MPI
-	from statistics     import ccc
+	from pap_statistics     import ccc
 	from pixel_error    import max_3D_pixel_error
 	from math           import pi, sqrt
 	from string         import replace
@@ -10014,7 +10014,7 @@ def local_ali3dm_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, 
 	if fourvar:
 		#  I am not sure why it is here!  PAP 09/26/09
 		from reconstruction import rec3D_MPI
-		from statistics     import varf3d_MPI
+		from pap_statistics     import varf3d_MPI
 		#  Compute Fourier variance
 		vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node, finfo=finfo, npad = npad)
 		varf = varf3d_MPI(data, os.path.join(outdir, "ssnr0000"), None, vol, int(ou), 1.0, 1, CTF, 1, sym, myid)
@@ -10177,7 +10177,7 @@ def local_ali3dm_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, 
 			mpi_barrier(MPI_COMM_WORLD)
 			if(myid == main_node):
 				recvbuf = list(map(float, recvbuf))
-				from statistics import hist_list
+				from pap_statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
 				if(region[0] < 0.0):  region[0] = 0.0
@@ -10286,7 +10286,7 @@ def local_ali3d(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, ce
 	from utilities      import get_image, drop_image
 	from utilities      import amoeba_multi_level, rotate_3D_shift, estimate_3D_center
 	from math           import pi
-	from statistics     import fsc_mask
+	from pap_statistics     import fsc_mask
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from EMAN2 import Processor
 	import os 
@@ -10508,7 +10508,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 	from utilities        import amoeba_multi_level, rotate_3D_shift, estimate_3D_center_MPI
 	from utilities        import print_begin_msg, print_end_msg, print_msg
 	from reconstruction   import rec3D_MPI, rec3D_MPI_noCTF
-	from statistics       import varf3d_MPI
+	from pap_statistics       import varf3d_MPI
 	from math             import pi
 	from mpi              import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
 	from mpi              import mpi_reduce, MPI_INT, MPI_SUM
@@ -10832,7 +10832,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 		terminate = 0
 		if(myid == main_node):
 			recvbuf = list(map(float, recvbuf))
-			from statistics import hist_list
+			from pap_statistics import hist_list
 			lhist = 20
 			region, histo = hist_list(recvbuf, lhist)
 			if(region[0] < 0.0):  region[0] = 0.0
@@ -10870,7 +10870,7 @@ def local_ali3d_MPI_scipy_minimization(stack, outdir, maskfile, ou = -1,  delta 
 	from utilities        import amoeba_multi_level, rotate_3D_shift, estimate_3D_center_MPI
 	from utilities        import print_begin_msg, print_end_msg, print_msg
 	from reconstruction   import rec3D_MPI, rec3D_MPI_noCTF
-	from statistics       import varf3d_MPI
+	from pap_statistics       import varf3d_MPI
 	from math             import pi
 	from mpi              import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
 	from mpi              import mpi_reduce, MPI_INT, MPI_SUM
@@ -11210,7 +11210,7 @@ def local_ali3d_MPI_scipy_minimization(stack, outdir, maskfile, ou = -1,  delta 
 		terminate = 0
 		if(myid == main_node):
 			recvbuf = list(map(float, recvbuf))
-			from statistics import hist_list
+			from pap_statistics import hist_list
 			lhist = 20
 			region, histo = hist_list(recvbuf, lhist)
 			if(region[0] < 0.0):  region[0] = 0.0
@@ -11246,7 +11246,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 	from utilities        import amoeba_multi_level, rotate_3D_shift, estimate_3D_center_MPI
 	from utilities        import print_begin_msg, print_end_msg, print_msg
 	from multi_shc        import do_volume
-	from statistics       import varf3d_MPI
+	from pap_statistics       import varf3d_MPI
 	from math             import pi
 	from mpi              import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
 	from mpi              import mpi_reduce, MPI_INT, MPI_SUM
@@ -11649,7 +11649,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 		terminate = 0
 		if(myid == main_node):
 			pixer = list(map(float, pixer))
-			from statistics import hist_list
+			from pap_statistics import hist_list
 			lhist = 20
 			region, histo = hist_list(pixer, lhist)
 			log.add(" ")
@@ -12003,7 +12003,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
 	from filter         import filt_ctf
 	from projection     import prep_vol, prgs
-	from statistics     import hist_list, varf3d_MPI
+	from pap_statistics     import hist_list, varf3d_MPI
 	from applications   import MPI_start_end
 	from EMAN2 import Vec2f
 	from string    import lower,split
@@ -12528,7 +12528,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 				recvbuf = list(map(float, recvbuf))
 				from utilities import write_text_file
 				write_text_file([list(range(len(recvbuf))), recvbuf], os.path.join(outdir, "pixer_%04d_%04d.txt"%(N_step+1,Iter)) )
-				from statistics import hist_list
+				from pap_statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
 				if(region[0] < 0.0):  region[0] = 0.0
@@ -12767,7 +12767,7 @@ def gchelix_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
 	from filter         import filt_ctf
 	from projection     import prep_vol, prgs
-	from statistics     import hist_list, varf3d_MPI
+	from pap_statistics     import hist_list, varf3d_MPI
 	from applications   import MPI_start_end
 	from EMAN2 import Vec2f
 	from string    import lower,split
@@ -13274,7 +13274,7 @@ def gchelix_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 				recvbuf = map(float, recvbuf)
 				from utilities import write_text_file
 				write_text_file([range(len(recvbuf)), recvbuf], os.path.join(outdir, "pixer_%04d_%04d.txt"%(N_step+1,Iter)) )
-				from statistics import hist_list
+				from pap_statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
 				if(region[0] < 0.0):  region[0] = 0.0
@@ -13746,7 +13746,7 @@ def defocus_calc(roodir, method, writetodoc="w", Pixel_size=1, voltage=120, Cs=1
 '''
 '''
 def iso_kmeans(images, out_dir, parameter, K=None, mask=None, init_method="Random"):
-	from statistics import init_Kmeans,Kmeans_step,kmeans_ave_var,iso_kmeans_rm_cluster,iso_kmeans_split,iso_kmeans_merge
+	from pap_statistics import init_Kmeans,Kmeans_step,kmeans_ave_var,iso_kmeans_rm_cluster,iso_kmeans_split,iso_kmeans_merge
 	import os
 	
 	e=EMData()
@@ -15237,7 +15237,7 @@ def recons3d_f(prj_stack, vol_stack, fsc_file, mask=None, CTF=True, snr=1.0, sym
 	nima = EMUtil.get_image_count( prj_stack )
 
 	from reconstruction import recons3d_4nn_ctf, recons3d_4nn
-	from statistics     import fsc_mask
+	from pap_statistics     import fsc_mask
 	from utilities      import drop_image
 	if(listfile):
 		from utilities import read_text_file
@@ -15548,7 +15548,7 @@ def pca(input_stacks, subavg="", mask_radius=-1, nvec=3, incore=False, shuffle=F
 		maskfile     - name of the mask file 
 	"""
 	from utilities import get_image, get_im, model_circle, model_blank
-	from statistics import pcanalyzer
+	from pap_statistics import pcanalyzer
 	import types
 
 	if type(input_stacks[0]) is bytes: data_on_disk = True	 # input_stacks is a file name
@@ -16602,7 +16602,7 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 def imgstat_ccc( stacks, rad ):
 	from EMAN2 import EMUtil
 	from utilities import get_im, model_circle
-	from statistics import ccc
+	from pap_statistics import ccc
 	from projection import prep_vol,prgs
 	from utilities	import get_params_proj
 
@@ -16655,7 +16655,7 @@ def imgstat_ccc( stacks, rad ):
 
 def imgstat_fsc( stacks, fscfile, rad ):
 	from utilities import get_im, model_circle
-	from statistics import fsc_mask
+	from pap_statistics import fsc_mask
 
 	if len(stacks)>3: ERROR("Error: fsc should be run on two images","imgstat_fsc",1)
 
@@ -16751,7 +16751,7 @@ def normal_prj( prj_stack, outdir, refvol, weights, r, niter, snr, sym, verbose 
 	from projection    import prep_vol, prgs
 	from filter        import filt_ctf, filt_btwo, filt_tophatb
 	from fundamentals  import fft
-	from statistics    import ccc
+	from pap_statistics    import ccc
 	import os
 
 	if(MPI and not (weights is None)):
@@ -16941,7 +16941,7 @@ def normal_prj( prj_stack, outdir, refvol, weights, r, niter, snr, sym, verbose 
 
 """
 def incvar(prefix, nfile, nprj, output, fl, fh, radccc, writelp, writestack):
-	from statistics import variancer, ccc
+	from pap_statistics import variancer, ccc
 	from string     import atoi, replace, split, atof
 	from utilities  import get_im, circumference, model_circle, drop_image
 	from filter     import filt_btwl
@@ -17076,7 +17076,7 @@ def defvar(files, outdir, fl, aa, radccc, frepa = "default", pca=False, pcamask=
 	radcir = min(nx,ny,nz)//2 - 2
 
 	if pca :
-		from statistics import pcanalyzer
+		from pap_statistics import pcanalyzer
 		pcamask = get_im( pcamask)
 		pcaer = pcanalyzer(pcamask, pcanvec, False)
 
@@ -17222,7 +17222,7 @@ def var_mpi(files, outdir, fl, aa, radccc, frepa = "default", pca=False, pcamask
 		else:   rota = get_im(frepa)
 
 	if pca:
-		from statistics import pcanalyzer
+		from pap_statistics import pcanalyzer
 		if(myid == 0):  pcamask = get_im( pcamask)
 		else:           pcamask = model_blank(nx,ny,nz)
 		bcast_EMData_to_all(pcamask, myid)
@@ -17417,7 +17417,7 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 	from utilities    import get_im, get_image, model_circle, model_blank, get_params_proj
 	from projection   import prgs, prep_vol
 	from filter       import filt_ctf, filt_tanl
-	from statistics   import im_diff
+	from pap_statistics   import im_diff
 
 	if MPI:
 		from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
@@ -17545,7 +17545,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		 init_method = 'rnd'):
 	# Common
 	from utilities   import print_begin_msg, print_end_msg, print_msg, file_type, running_time
-	from statistics  import k_means_locasg2glbasg
+	from pap_statistics  import k_means_locasg2glbasg
 	from time        import time
 	import sys, os
 	#import time
@@ -17556,15 +17556,15 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		from utilities  import bcast_number_to_all, recv_EMData, send_EMData
 		
 	if CUDA:
-		from statistics import k_means_cuda_init_open_im, k_means_cuda_headlog
-		from statistics import k_means_cuda_export
-		if MPI: from statistics import k_means_CUDA_MPI
-		else:   from statistics import k_means_CUDA, k_means_SSE_CUDA
+		from pap_statistics import k_means_cuda_init_open_im, k_means_cuda_headlog
+		from pap_statistics import k_means_cuda_export
+		if MPI: from pap_statistics import k_means_CUDA_MPI
+		else:   from pap_statistics import k_means_CUDA, k_means_SSE_CUDA
 	else:
-		from statistics import k_means_init_open_im, k_means_open_im, k_means_headlog
-		from statistics import k_means_criterion, k_means_export
-		if MPI: from statistics import k_means_cla, k_means_SSE_MPI
-		else:   from statistics import k_means_cla, k_means_SSE
+		from pap_statistics import k_means_init_open_im, k_means_open_im, k_means_headlog
+		from pap_statistics import k_means_criterion, k_means_export
+		if MPI: from pap_statistics import k_means_cla, k_means_SSE_MPI
+		else:   from pap_statistics import k_means_cla, k_means_SSE
 
 	ext = file_type(stack)
 	if ext == 'txt': TXT = True
@@ -17611,7 +17611,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 					
 				
 		
-		from statistics import k_means_SSE_combine
+		from pap_statistics import k_means_SSE_combine
 		[ assign_return, r_Cls, je_return, n_best] = k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node)
 		mpi_barrier(MPI_COMM_WORLD)
 		if myid == main_node:
@@ -17694,19 +17694,19 @@ def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, max
 	if MPI:
 		#print "MPI version of kmeans group is under development"
 		#sys.exit()
-		from statistics import k_means_groups_MPI
+		from pap_statistics import k_means_groups_MPI
 		k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, flagnorm)
 	elif CUDA:
 		import os
 		if os.path.exists(out_file):
 			ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_CUDA", 1)
-		from statistics import k_means_groups_CUDA
+		from pap_statistics import k_means_groups_CUDA
 		k_means_groups_CUDA(stack, out_file, maskname, K1, K2, rand_seed, maxit, F, T0)
 	else:
 		import os
 		if os.path.exists(out_file):
 			ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_serial", 1)
-		from statistics import k_means_groups_serial
+		from pap_statistics import k_means_groups_serial
 		k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, DEBUG, flagnorm)
 
 
@@ -17743,7 +17743,7 @@ def plot_projs_distrib(stack, outplot, wnx = 256):
 # 2008-12-08 12:46:46 JB
 # Wrap for the HAC part of py_cluster in the statistics.py file
 def HAC_clustering(stack, dendoname, maskname, kind_link, kind_dist, flag_diss):
-	from statistics   import ccc, py_cluster_HierarchicalClustering
+	from pap_statistics   import ccc, py_cluster_HierarchicalClustering
 	from copy         import deepcopy
 	from utilities    import get_im, get_params2D, get_params3D
 	from fundamentals import rot_shift2D, rot_shift3D
@@ -17873,7 +17873,7 @@ def tomo(box):
 
 # Calculate averages of a given stack (wrap for ave_var in statistics)
 def ave_ali(name_stack, name_out = None, ali = False, param_to_save_size = None, set_as_member_id = None):
-	from statistics import ave_var, add_ave_varf, k_means_list_active
+	from pap_statistics import ave_var, add_ave_varf, k_means_list_active
 	from utilities  import file_type
 	"""
 	   This function is called by sxave_ali.py
@@ -17926,7 +17926,7 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 	from filter	  import filt_tanl
 	from fundamentals import fshift
 	from random	  import randint, random
-	from statistics   import ave_series
+	from pap_statistics   import ave_series
 	from utilities    import get_input_from_string, model_circle, set_params2D, get_params2D, combine_params2, inverse_transform2
 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
@@ -17979,7 +17979,7 @@ def Xwithin_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, 
 	from filter	      import filt_tanl
 	from fundamentals import fshift, fft
 	from random	      import randint, random
-	from statistics   import ave_series
+	from pap_statistics   import ave_series
 	from utilities    import get_input_from_string, model_circle, center_2D
 	from utilities    import set_params2D, get_params2D, combine_params2, inverse_transform2
 
@@ -18202,7 +18202,7 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 	from filter	      import filt_tanl
 	from fundamentals import fshift, fft
 	from random	      import randint, random
-	from statistics   import ave_series
+	from pap_statistics   import ave_series
 	from utilities    import get_input_from_string, model_circle, set_params2D, get_params2D, combine_params2, inverse_transform2
 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
@@ -18399,7 +18399,7 @@ def within_group_refinement_fast(data, dimage, maskfile, randomize, ir, ou, rs, 
 	from fundamentals import fshift, rot_shift2D, cyclic_shift
 	from random	      import randint, random
 	from math         import cos, sin, radians
-	from statistics   import ave_series
+	from pap_statistics   import ave_series
 	from utilities    import get_input_from_string, model_circle, model_blank, set_params2D, get_params2D, combine_params2, inverse_transform2
 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
@@ -18511,7 +18511,7 @@ def refinement_2d_local(data, ou, arange, xrng, yrng, CTF = True, SNR=1.0e10):
 	from utilities import get_params2D, model_blank, combine_params2, generate_ctf
 	from filter import filt_tanl, filt_table
 	from fundamentals import rot_shift2D, ccf, window2d, fshift, rops_table, prepf, fft
-	from statistics import fsc
+	from pap_statistics import fsc
 	from EMAN2 import EMAN2Ctf
 	from math import sqrt, degrees, tan
 	from random import shuffle, randint
@@ -18752,7 +18752,7 @@ def volalixshift_MPI(stack, ref_vol, outdir, search_rng, pixel_size, dp, dphi, f
 	from mpi             import mpi_reduce, MPI_INT, MPI_SUM
 	from filter          import filt_ctf
 	from projection      import prep_vol, prgs
-	from statistics      import hist_list, varf3d_MPI, fsc_mask
+	from pap_statistics      import hist_list, varf3d_MPI, fsc_mask
 	from applications	 import MPI_start_end, ordersegments
 	from time            import time	
 	
@@ -19008,7 +19008,7 @@ def diskali_MPI(stack, ref_vol, outdir, maskfile, dp, dphi, pixel_size, user_fun
 	from utilities        import model_blank
 	from filter           import filt_tanl, filt_ctf
 	import os
-	from statistics       import fsc_mask
+	from pap_statistics       import fsc_mask
 	from copy             import copy
 	from os               import sys
 	from time             import time	
@@ -19333,7 +19333,7 @@ def alihelical3(slices, refslices, zstep, dphi, rise, rmin, rmax, sym="c1"):
 def alihelical4(slices, refslices, zstep, dphi, rise, rmin, rmax, theta=0.0):
 
 	from fundamentals import rot_shift3D, cyclic_shift
-	from statistics import ccc
+	from pap_statistics import ccc
 	from math import ceil, fmod
 	from utilities import pad, model_cylinder
 	from random import randrange, randint
@@ -19425,7 +19425,7 @@ def sali3d_base_old(stack, ref_vol = None, Tracker = None, mpi_comm = None, log 
 	from utilities       import get_im, file_type, model_circle, get_input_from_string, get_params_proj, set_params_proj
 	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, mpi_reduce, MPI_INT, MPI_SUM
 	from projection      import prep_vol
-	from statistics      import hist_list
+	from pap_statistics      import hist_list
 	from applications    import MPI_start_end
 	from filter          import filt_ctf
 	from global_def      import Util
@@ -19856,7 +19856,7 @@ def slocal_ali3d_base_old(stack, templatevol, Tracker, mpi_comm = None, log= Non
 	from utilities        import print_begin_msg, print_end_msg, print_msg
 	#from development      import do_volume_mrk01
 	import user_functions
-	from statistics       import varf3d_MPI
+	from pap_statistics       import varf3d_MPI
 	from math             import pi
 	from mpi              import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
 	from mpi              import mpi_reduce, MPI_INT, MPI_SUM
@@ -20243,7 +20243,7 @@ def slocal_ali3d_base_old(stack, templatevol, Tracker, mpi_comm = None, log= Non
 		terminate = 0
 		if(myid == main_node):
 			pixer = list(map(float, pixer))
-			from statistics import hist_list
+			from pap_statistics import hist_list
 			lhist = 20
 			region, histo = hist_list(pixer, lhist)
 			log.add(" ")
@@ -20497,7 +20497,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 	'''
 	if fourvar:
 		from reconstruction import rec3D_MPI
-		from statistics     import varf3d_MPI
+		from pap_statistics     import varf3d_MPI
 		#  Compute Fourier variance
 		vol, fscc = rec3D_MPI(data,snr,sym,fscmask,os.path.join(outdir, "resolution0000"), myid, main_node, finfo=frec, npad=npad)
 		varf = varf3d_MPI(data, os.path.join(outdir, "ssnr0000"), None, vol, last_ring, 1.0, 1, CTF, 1, sym, myid)
@@ -20693,7 +20693,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 						ref = filt_ctf( prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False), ctf )
 					else:
 						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False)
-					from statistics import fsc
+					from pap_statistics import fsc
 					if(focus):
 						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
 						tempx = fsc(ref, fft(data[im]*mask2D))[1]
@@ -20795,7 +20795,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 			mpi_barrier(MPI_COMM_WORLD)
 			if myid == main_node:
 				recvbuf = list(map(float, recvbuf))
-				from statistics import hist_list
+				from pap_statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
 				if region[0] < 0.0:  region[0] = 0.0
@@ -20824,7 +20824,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 		highres = []
 		lowpass_tmp =[]
 		tmpref =[]
-		from statistics import fsc
+		from pap_statistics import fsc
 		for iref in range(numref):
 			#  3D stuff
 			from time import localtime, strftime
@@ -20998,7 +20998,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 	from utilities      import print_begin_msg, print_end_msg, print_msg, read_text_file
 	from projection     import prep_vol, prgs, prgl, project, prgq, gen_rings_ctf
 	from morphology     import binarize, get_shrink_3dmask
-	from statistics		import fsc
+	from pap_statistics		import fsc
 
 	import os
 	import types
@@ -21686,7 +21686,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 			mpi_barrier(MPI_COMM_WORLD)
 			if(myid == main_node):
 				recvbuf = list(map(float, recvbuf))
-				from statistics import hist_list
+				from pap_statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
 				if(region[0] < 0.0):  region[0] = 0.0
@@ -21869,7 +21869,7 @@ def mref_ali3d_EQ_Kmeans_circular(ref_list, outdir, particle_list_file, Tracker)
 	from utilities      import print_begin_msg, print_end_msg, print_msg, read_text_file
 	from projection     import prep_vol, prgs, prgl, project, prgq, gen_rings_ctf
 	from morphology     import binarize, get_shrink_3dmask
-	from statistics		import fsc
+	from pap_statistics		import fsc
 
 	import os
 	import types
@@ -22565,7 +22565,7 @@ def mref_ali3d_EQ_Kmeans_circular(ref_list, outdir, particle_list_file, Tracker)
 			mpi_barrier(MPI_COMM_WORLD)
 			if(myid == main_node):
 				recvbuf = list(map(float, recvbuf))
-				from statistics import hist_list
+				from pap_statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
 				if(region[0] < 0.0):  region[0] = 0.0

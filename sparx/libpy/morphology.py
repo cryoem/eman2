@@ -1899,7 +1899,7 @@ def compute_bfactor(pws, freq_min, freq_max, pixel_size = 1.0):
 		pixel_size   :  in A
 	"""
 	from math import log, sqrt
-	from statistics import linreg
+	from pap_statistics import linreg
 	nr = len(pws)
 	"""
 	if (idx_freq_min < 0):
@@ -1990,7 +1990,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 	from   morphology   import defocus_guessn, defocusget_from_crf, make_real
 	from   morphology   import fastigmatism, fastigmatism1, fastigmatism2, fastigmatism3, simctf, simctf2, simctf2out, fupw,ctf2_rimg
 	from   alignment    import Numrinit, ringwe
-	from   statistics   import table_stat
+	from pap_statistics   import table_stat
 	from   pixel_error  import angle_ave
 	from   inspect      import currentframe, getframeinfo
 	from   global_def   import ERROR
@@ -3045,7 +3045,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 	from   morphology   import defocus_guessn, defocusget_from_crf, make_real
 	from   morphology   import fastigmatism, fastigmatism1, fastigmatism2, fastigmatism3, simctf, simctf2, simctf2out, fupw,ctf2_rimg
 	from   alignment    import Numrinit, ringwe
-	from   statistics   import table_stat
+	from pap_statistics   import table_stat
 	from   pixel_error  import angle_ave
 	from   inspect      import currentframe, getframeinfo
 	from   global_def   import ERROR
@@ -5064,7 +5064,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 	from fundamentals import tilemic, rot_avg_table
 	from morphology import threshold, bracket_def, bracket, goldsearch_astigmatism, defocus_baseline_fit, simpw1d, movingaverage, localvariance, defocusgett, defocus_guessn, defocusget_from_crf, make_real, fastigmatism, fastigmatism1, fastigmatism2, fastigmatism3, simctf, simctf2, simctf2out, fupw,ctf2_rimg
 	from alignment import Numrinit, ringwe
-	from statistics import table_stat
+	from pap_statistics import table_stat
 	from pixel_error import angle_ave
 
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
@@ -5428,7 +5428,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 	from   morphology   import defocus_guessn, defocusget_from_crf, make_real
 	from   morphology   import fastigmatism, fastigmatism1, fastigmatism2, fastigmatism3, simctf, simctf2, simctf2out, fupw,ctf2_rimg
 	from   alignment    import Numrinit, ringwe
-	from   statistics   import table_stat
+	from pap_statistics   import table_stat
 	from   pixel_error  import angle_ave
 	from   global_def   import ERROR
 	import global_def

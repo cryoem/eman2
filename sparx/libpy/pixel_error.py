@@ -655,7 +655,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	        return g
 	'''
 
-	from statistics import k_means_stab_bbenum
+	from pap_statistics import k_means_stab_bbenum
 	from utilities import combine_params2
 	from numpy import array
 	from math import sqrt
@@ -856,7 +856,7 @@ def ordersegments(infilaments, ptclcoords):
 
 	def orderbymodule(xxp,yyp):
 		from math import atan,sin,cos,pi, atan2
-		from statistics import linreg
+		from pap_statistics import linreg
 		nq = len(xxp)
 		xs = sum(xxp)/nq
 		ys = sum(yyp)/nq
@@ -1604,7 +1604,7 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
 
 	        return err, err2, err3
 
-	from statistics import k_means_stab_bbenum
+	from pap_statistics import k_means_stab_bbenum
 	from utilities import combine_params2
 	from numpy import array
 
@@ -1673,7 +1673,7 @@ def estimate_stability(data1, data2, CTF=False, snr=1.0, last_ring=-1):
 	The third is the cross_correltion coefficient of two averages
 	"""
 
-	from statistics import sum_oe, ccc
+	from pap_statistics import sum_oe, ccc
 	from fundamentals import fft, rot_shift2D
 	from alignment import align2d
 	from utilities import get_params2D, combine_params2

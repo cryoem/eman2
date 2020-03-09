@@ -6192,7 +6192,7 @@ def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 	# this function is single processor
 	#  Get updated FSC curves, user can also provide a mask using radi variable
 	import types
-	from statistics import fsc
+	from pap_statistics import fsc
 	from utilities import model_circle, get_im
 	from filter import fit_tanh1
 	import os
@@ -6278,7 +6278,7 @@ def get_margin_of_error(this_group_of_data,Tracker):
 def do_two_way_comparison(Tracker):
 	from mpi import mpi_barrier, MPI_COMM_WORLD
 	from utilities import read_text_file,write_text_file
-	from statistics import k_means_match_clusters_asg_new
+	from pap_statistics import k_means_match_clusters_asg_new
 	import os
 	######
 	myid              = Tracker["constants"]["myid"]
@@ -6732,7 +6732,7 @@ def get_stable_members_from_two_runs(SORT3D_rootdirs, ad_hoc_number, log_main):
 	# ad_hoc_number would be a number larger than the id simply for handling two_way comparison of non-equal number of groups from two partitions.
 	########
 	from string import split
-	from statistics import k_means_match_clusters_asg_new
+	from pap_statistics import k_means_match_clusters_asg_new
 	from numpy import array
 
 	sort3d_rootdir_list = split(SORT3D_rootdirs)
@@ -6802,7 +6802,7 @@ def get_stable_members_from_two_runs(SORT3D_rootdirs, ad_hoc_number, log_main):
 
 def two_way_comparison_single(partition_A, partition_B,Tracker):
 	###############
-	from statistics import k_means_match_clusters_asg_new
+	from pap_statistics import k_means_match_clusters_asg_new
 	from utilities import count_chunk_members, margin_of_error
 	from numpy import array
 	#two_way_comparison_single

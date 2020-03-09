@@ -732,7 +732,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 	from filter	      import filt_tanl
 	from fundamentals import rot_shift2D, fshift, fft
 	from pixel_error  import multi_align_stability
-	from statistics   import ave_series
+	from pap_statistics   import ave_series
 	from utilities	  import model_circle, model_blank, combine_params2, inverse_transform2, get_image
 	from utilities	  import reduce_EMData_to_root, bcast_EMData_to_all
 	from utilities	  import get_params2D, set_params2D
@@ -1162,7 +1162,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 					from utilities import wrap_mpi_gatherv
 					gpixer = wrap_mpi_gatherv(gpixer, main_node, comm)
 					if my_abs_id == main_node and color == 0:
-						from statistics   import hist_list
+						from pap_statistics   import hist_list
 						lhist = 12
 						region, histo = hist_list(gpixer, lhist)
 						print("\n=== Histogram of average within-class pixel errors prior to class pruning ===")
@@ -1252,7 +1252,7 @@ def isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mas
 	from utilities	import get_params2D, set_params2D, model_blank
 	from filter	   import filt_tanl
 	from random	   import randint
-	from statistics   import ave_series
+	from pap_statistics   import ave_series
 	from time         import localtime, strftime
 	
 	myid = mpi_comm_rank(comm)
@@ -1364,7 +1364,7 @@ def isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mas
 def match_independent_runs(data, refi, n_group, T):
 
 	from numpy	     import array
-	from statistics  import k_means_stab_bbenum
+	from pap_statistics  import k_means_stab_bbenum
 
 	K = len(refi)/n_group
 	Parts = []
@@ -1412,7 +1412,7 @@ def match_independent_runs(data, refi, n_group, T):
 def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayness=2, suffix=""):
 
 	from utilities  import read_text_row, set_params2D
-	from statistics import ave_series, k_means_stab_bbenum
+	from pap_statistics import ave_series, k_means_stab_bbenum
 	from random	    import randint, shuffle
 	from filter	    import filt_tanl
 	from numpy	    import array

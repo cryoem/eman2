@@ -255,7 +255,7 @@ def eqproj_cascaded_ccc_fitness_function(args, data):
 	from utilities     import peak_search, amoeba
 	from fundamentals  import fft, ccf, fpol
 	from alignment     import twoD_fine_search
-	from statistics    import ccc
+	from pap_statistics    import ccc
 	from EMAN2 import Processor
 
 	volft   = data[0]
@@ -324,7 +324,7 @@ def objective_function_just_ccc_has_maximum(args, data):
 	from utilities     import peak_search, amoeba
 	from fundamentals  import fft, ccf, fpol
 	from alignment     import twoD_fine_search
-	from statistics    import ccc
+	from pap_statistics    import ccc
 	from EMAN2 import Processor
 	from projection import prgl
 	from math import sqrt
@@ -384,7 +384,7 @@ def objective_function_just_ccc_has_minimum(args, data):
 	from utilities     import peak_search, amoeba
 	from fundamentals  import fft, ccf, fpol
 	from alignment     import twoD_fine_search
-	from statistics    import ccc
+	from pap_statistics    import ccc
 	from EMAN2 import Processor
 	from projection import prgl
 	from math import sqrt
@@ -437,7 +437,7 @@ def objective_function_just_ccc_has_minimum_reduced_only_shifts(args, data):
 	from utilities     import peak_search, amoeba
 	from fundamentals  import fft, ccf, fpol
 	from alignment     import twoD_fine_search
-	from statistics    import ccc
+	from pap_statistics    import ccc
 	from EMAN2 import Processor
 	from projection import prgl
 	from math import sqrt
@@ -501,7 +501,7 @@ def objective_function_just_ccc_has_minimum2(args, data):
 	from utilities     import peak_search, amoeba
 	from fundamentals  import fft, ccf, fpol
 	from alignment     import twoD_fine_search
-	from statistics    import ccc
+	from pap_statistics    import ccc
 	from EMAN2 import Processor
 	from projection import prgl
 	from math import sqrt
@@ -570,7 +570,7 @@ def objective_function_just_ccc_has_maximum___old(args, data):
 	from utilities     import peak_search, amoeba
 	from fundamentals  import fft, ccf, fpol
 	from alignment     import twoD_fine_search
-	from statistics    import ccc
+	from pap_statistics    import ccc
 	from EMAN2 import Processor
 
 	# return 1
@@ -611,7 +611,7 @@ def objective_function_just_ccc_rewrite(params, volft, kb, data_im, mask2D):
 	from utilities     import peak_search, amoeba
 	from fundamentals  import fft, ccf, fpol
 	from alignment     import twoD_fine_search
-	from statistics    import ccc
+	from pap_statistics    import ccc
 	from EMAN2 import Processor
 	# import numpy as np
 	
@@ -640,7 +640,7 @@ def eqproj_cascaded_ccc(args, data):
 	from utilities     import peak_search, amoeba
 	from fundamentals  import fft, ccf, fpol
 	from alignment     import twoD_fine_search
-	from statistics    import ccc
+	from pap_statistics    import ccc
 	from EMAN2 import Processor
 
 	volft   = data[0]
@@ -4883,7 +4883,7 @@ def flexhelicalali(params,data):
 	
 def ali_nvol(v, mask):
 	from alignment    import alivol_mask_getref, alivol_mask
-	from statistics   import ave_var
+	from pap_statistics   import ave_var
 	from utilities    import set_params3D, get_params3D ,compose_transform3
 
 	from fundamentals import rot_shift3D
@@ -4940,7 +4940,7 @@ def alivol_mask( v, vref, mask ):
 
 def ali_mvol(v, mask):
 	from alignment    import alivol_m
-	from statistics   import ave_var
+	from pap_statistics   import ave_var
 	from utilities    import set_params3D, get_params3D ,compose_transform3
 
 	from fundamentals import rot_shift3D
@@ -5179,7 +5179,7 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, onx = -1, 
 	from utilities       import get_im, file_type, model_circle, get_input_from_string, get_params_proj, set_params_proj
 	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, mpi_reduce, MPI_INT, MPI_SUM
 	from projection      import prep_vol
-	from statistics      import hist_list
+	from pap_statistics      import hist_list
 	from utilities		 import params_2D_3D
 	from applications    import MPI_start_end
 	from filter          import filt_ctf
@@ -5740,7 +5740,7 @@ def generate_indices_and_refrings(nima, projangles, volft, kb, nx, delta, an, ra
 def frame_alignment(movie_stack, particle_radius, templates, x_half_size, psi_half_size, y_half_size = None, apply_alignment_in_place = False):
 	
 	from utilities import model_circle, list_prod, calculate_space_size
-	from statistics import ccc
+	from pap_statistics import ccc
 	import numpy as np
 	from fundamentals import rot_shift2D
 	
