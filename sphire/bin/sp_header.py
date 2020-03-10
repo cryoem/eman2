@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
-#
+from __future__ import division
+from past.utils import old_div
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
 # Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
@@ -40,61 +41,142 @@ from __future__ import print_function
 #
 #
 
-import os
-import sys
-from optparse import OptionParser
-from sp_global_def import sxprint, ERROR, SPARXVERSION
+import optparse
+import sp_applications
 import sp_global_def
+import sp_utilities
+import sys
+
 
 def main():
-	arglist = []
-	for arg in sys.argv:
-		arglist.append( arg )
+    arglist = []
+    for arg in sys.argv:
+        arglist.append(arg)
 
-	progname = os.path.basename( arglist[0] )
-	usage = progname + " stack --params='parm1 parm2 parm3 ...' --zero --one --set=number --randomize --rand_alpha --import=file --export=file --print --backup --suffix --restore --delete"
-	parser = OptionParser(usage, version=SPARXVERSION)
+    progname = optparse.os.path.basename(arglist[0])
+    usage = (
+        progname
+        + " stack --params='parm1 parm2 parm3 ...' --zero --one --set=number --randomize --rand_alpha --import=file --export=file --print --backup --suffix --restore --delete"
+    )
+    parser = optparse.OptionParser(usage, version=sp_global_def.SPARXVERSION)
 
-	parser.add_option("--params",	   type="string",       default=None,    help="parameter list")
-	parser.add_option("--zero",	       action="store_true", default=False,   help="set parameter to zero")
-	parser.add_option("--one",	       action="store_true", default=False,   help="set parameter to one")
-	parser.add_option("--set",	       type="float",        default=0.0,     help="set parameter to a value (different from 0.0)")
-	parser.add_option("--randomize",   action="store_true", default=False,   help="set parameter to randomized value")
-	parser.add_option("--rand_alpha",  action="store_true", default=False,   help="set all angles to randomized value")
-	parser.add_option("--import",	   type="string",       dest="fimport",  default=None, help="import parameters from file")
-	parser.add_option("--export",	   type="string",       dest="fexport",  default=None, help="export parameters to file")
-	parser.add_option("--print",	   action="store_true", dest="fprint",   default=False, help="print parameters")
-	parser.add_option("--backup",	   action="store_true", default=False,   help="backup parameters")
-	parser.add_option("--suffix",	   type="string",       default="_backup",    help="suffix for xform name in backup")
-	parser.add_option("--restore",     action="store_true", default=False,   help="restore parameters")
-	parser.add_option("--delete",      action="store_true", default=False,   help="delete parameters")
-	parser.add_option("--consecutive", action="store_true", default=False,   help="set selected parameter to consecutive integers starting from 0")
-	parser.add_option("--list", type="string", default=None,   help="Indices list containing the same amount of rows as the import file")
+    parser.add_option("--params", type="string", default=None, help="parameter list")
+    parser.add_option(
+        "--zero", action="store_true", default=False, help="set parameter to zero"
+    )
+    parser.add_option(
+        "--one", action="store_true", default=False, help="set parameter to one"
+    )
+    parser.add_option(
+        "--set",
+        type="float",
+        default=0.0,
+        help="set parameter to a value (different from 0.0)",
+    )
+    parser.add_option(
+        "--randomize",
+        action="store_true",
+        default=False,
+        help="set parameter to randomized value",
+    )
+    parser.add_option(
+        "--rand_alpha",
+        action="store_true",
+        default=False,
+        help="set all angles to randomized value",
+    )
+    parser.add_option(
+        "--import",
+        type="string",
+        dest="fimport",
+        default=None,
+        help="import parameters from file",
+    )
+    parser.add_option(
+        "--export",
+        type="string",
+        dest="fexport",
+        default=None,
+        help="export parameters to file",
+    )
+    parser.add_option(
+        "--print",
+        action="store_true",
+        dest="fprint",
+        default=False,
+        help="print parameters",
+    )
+    parser.add_option(
+        "--backup", action="store_true", default=False, help="backup parameters"
+    )
+    parser.add_option(
+        "--suffix",
+        type="string",
+        default="_backup",
+        help="suffix for xform name in backup",
+    )
+    parser.add_option(
+        "--restore", action="store_true", default=False, help="restore parameters"
+    )
+    parser.add_option(
+        "--delete", action="store_true", default=False, help="delete parameters"
+    )
+    parser.add_option(
+        "--consecutive",
+        action="store_true",
+        default=False,
+        help="set selected parameter to consecutive integers starting from 0",
+    )
+    parser.add_option(
+        "--list",
+        type="string",
+        default=None,
+        help="Indices list containing the same amount of rows as the import file",
+    )
 
-	(options,args) = parser.parse_args( arglist[1:] )
+    (options, args) = parser.parse_args(arglist[1:])
 
-	if not options.fprint:
-		sp_global_def.print_timestamp( "Start" )
-		sp_global_def.write_command()
+    if not options.fprint:
+        sp_global_def.print_timestamp("Start")
+        sp_global_def.write_command()
 
-	if len(args) != 1 :
-		sxprint( "Usage: " + usage )
-		ERROR( "Invalid number of parameters provided. Please see usage information above." )
-		return
+    if len(args) != 1:
+        sp_global_def.sxprint("Usage: " + usage)
+        sp_global_def.ERROR(
+            "Invalid number of parameters provided. Please see usage information above."
+        )
+        return
 
-	if options.params == None:
-		sxprint( "Usage: " + usage )
-		ERROR( "No parameters provided. Please see usage information above." )
-		return
+    if options.params == None:
+        sp_global_def.sxprint("Usage: " + usage)
+        sp_global_def.ERROR(
+            "No parameters provided. Please see usage information above."
+        )
+        return
 
-	if sp_global_def.CACHE_DISABLE:
-		from sp_utilities import disable_bdb_cache
-		disable_bdb_cache()
-	from sp_applications import header
-	header(args[0], options.params, options.zero, options.one, options.set, options.randomize, options.rand_alpha, options.fimport, options.fexport, \
-		options.fprint, options.backup, options.suffix, options.restore, options.delete, options.consecutive, options.list)
-	if not options.fprint:
-		sp_global_def.print_timestamp( "Finish" )
+    if sp_global_def.CACHE_DISABLE:
+        sp_utilities.disable_bdb_cache()
+    sp_applications.header(
+        args[0],
+        options.params,
+        options.zero,
+        options.one,
+        options.set,
+        options.randomize,
+        options.rand_alpha,
+        options.fimport,
+        options.fexport,
+        options.fprint,
+        options.backup,
+        options.suffix,
+        options.restore,
+        options.delete,
+        options.consecutive,
+        options.list,
+    )
+    if not options.fprint:
+        sp_global_def.print_timestamp("Finish")
+
 
 if __name__ == "__main__":
-	main()
+    main()

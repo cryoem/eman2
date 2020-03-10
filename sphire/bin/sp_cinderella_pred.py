@@ -34,36 +34,29 @@
 
 
 from __future__ import print_function
+from __future__ import division
 import argparse
-from json import dump
-import subprocess
-
 import sp_global_def
+import subprocess
 
 
 argparser = argparse.ArgumentParser(
-	description='Run automatic 2d class selelection (Cinderella)',
-	formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-
-argparser.add_argument(
-	"cinderella_path",
-	default=None,
-	type=str,
-    help="Path to your "
+    description="Run automatic 2d class selelection (Cinderella)",
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
+
+
+argparser.add_argument("cinderella_path", default=None, type=str, help="Path to your ")
 
 argparser.add_argument("inputstack", help="Path to your class stack (.mrcs/.hdf)")
 
 argparser.add_argument(
-	'output_dir',
-	type=str,
-	help='Path to where the boxfiles are written.')
+    "output_dir", type=str, help="Path to where the boxfiles are written."
+)
 
 argparser.add_argument(
-	'model_path',
-	type=str,
-	help='Specifiy the path to your model file.')
+    "model_path", type=str, help="Specifiy the path to your model file."
+)
 
 
 argparser.add_argument(
@@ -76,7 +69,13 @@ argparser.add_argument(
 
 argparser.add_argument("--gpu", default=-1, type=int, help="GPU to run on.")
 
-argparser.add_argument("-b","--batch_size", default=32, type=int, help="Number of mini-batches during prediction.")
+argparser.add_argument(
+    "-b",
+    "--batch_size",
+    default=32,
+    type=int,
+    help="Number of mini-batches during prediction.",
+)
 
 
 def main():
@@ -91,25 +90,23 @@ def main():
 
     complete_command = [cindy_path]
 
-    arg_input_stack = "-i="+str(input_stack)
+    arg_input_stack = "-i=" + str(input_stack)
     complete_command.append(arg_input_stack)
 
     arg_out_dir = "-o=" + str(out_dir)
     complete_command.append(arg_out_dir)
 
-    arg_model_path = "-w="+str(model_path)
+    arg_model_path = "-w=" + str(model_path)
     complete_command.append(arg_model_path)
 
-    arg_conf_thresh = "-t="+str(conf_thresh)
+    arg_conf_thresh = "-t=" + str(conf_thresh)
     complete_command.append(arg_conf_thresh)
 
-    arg_batch_size = "-b="+str(batch_size)
+    arg_batch_size = "-b=" + str(batch_size)
     complete_command.append(arg_batch_size)
 
-
-
     if gpu != -1:
-        arg_gpu = "--gpu="+str(gpu)
+        arg_gpu = "--gpu=" + str(gpu)
         complete_command.append(arg_gpu)
 
     sp_global_def.write_command()
@@ -118,6 +115,6 @@ def main():
 
 
 if __name__ == "__main__":
-	sp_global_def.print_timestamp( "Start" )
-	main()
-	sp_global_def.print_timestamp( "Finish" )
+    sp_global_def.print_timestamp("Start")
+    main()
+    sp_global_def.print_timestamp("Finish")

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
-
+from __future__ import division
+from past.utils import old_div
 #
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
@@ -82,7 +83,7 @@ def TotalDistance(city, lccc):
     
 def reverse(city, n):
     nct = len(city)
-    nn = (1+ ((n[1]-n[0]) % nct))/2 # half the lenght of the segment to be reversed
+    nn = old_div((1+ ((n[1]-n[0]) % nct)),2) # half the lenght of the segment to be reversed
     # the segment is reversed in the following way n[0]<->n[1], n[0]+1<->n[1]-1, n[0]+2<->n[1]-2,...
     # Start at the ends of the segment and swap pairs of cities, moving towards the center.
     for j in range(nn):
@@ -120,9 +121,9 @@ def tsp(lccc):
 
 	#     ncity = 100        # Number of cities to visit
 	from math import sqrt
-	ncity = int( (1+sqrt(1+8*len(lccc)))/2 )        # Number of cities to visit
+	ncity = int(old_div( (1+sqrt(1+8*len(lccc))),2 ))        # Number of cities to visit
     #  sanity check
-	if( ncity*(ncity-1)/2 != len(lccc) ): return [-1]
+	if( old_div(ncity*(ncity-1), 2) != len(lccc) ): return [-1]
 
 	maxTsteps = 100    # Temperature is lowered not more than maxTsteps
 	Tstart = 0.2       # Starting temperature - has to be high enough
@@ -172,7 +173,7 @@ def tsp(lccc):
 				de = Distance(city[n[2]], city[n[1]], lccc) + Distance(city[n[3]], city[n[0]], lccc)\
 					 - Distance(city[n[2]], city[n[0]], lccc) - Distance(city[n[3]] ,city[n[1]], lccc)
                 
-				if de<0 or exp(-de/T)>random.rand(): # Metropolis
+				if de<0 or exp(old_div(-de,T))>random.rand(): # Metropolis
 					accepted += 1
 					dist += de
 					reverse(city, n)
@@ -188,7 +189,7 @@ def tsp(lccc):
 				de += Distance( city[n[0]], city[n[4]], lccc) + Distance( city[n[1]], city[n[5]], lccc) \
 						+ Distance( city[n[2]], city[n[3]], lccc)
 
-				if de<0 or exp(-de/T)>random.rand(): # Metropolis
+				if de<0 or exp(old_div(-de,T))>random.rand(): # Metropolis
 					accepted += 1
 					dist += de
 					city = transpt(city, n)
@@ -279,7 +280,7 @@ def main():
 		from sp_statistics import ccc
 		from sp_statistics import mono
 		lend = EMUtil.get_image_count(stack)
-		lccc = [None]*(lend*(lend-1)/2)
+		lccc = [None]*(old_div(lend*(lend-1), 2))
 
 		for i in range(lend-1):
 			v1 = get_im( stack, i )
@@ -287,7 +288,7 @@ def main():
 				nx = v1.get_xsize()
 				ny = v1.get_ysize()
 				nz = v1.get_ysize()
-				if options.ou < 1 : radius = nx//2-2
+				if options.ou < 1 : radius = old_div(nx,2)-2
 				else:  radius = options.ou
 				mask = model_circle(radius, nx, ny, nz)
 			else:
@@ -340,7 +341,7 @@ def main():
 
 		nx = d[0].get_xsize()
 		ny = d[0].get_ysize()
-		if options.ou < 1 : radius = nx//2-2
+		if options.ou < 1 : radius = old_div(nx,2)-2
 		else:  radius = options.ou
 		mask = model_circle(radius, nx, ny)
 
@@ -353,7 +354,7 @@ def main():
 
 		from sp_statistics import mono
 		lend = len(d)
-		lccc = [None]*(lend*(lend-1)/2)
+		lccc = [None]*( old_div(lend*(lend-1),2) )
 		from sp_utilities import read_text_row
 
 		if  options.pairwiseccc == " " or not os.path.exists(options.pairwiseccc) :
@@ -614,7 +615,7 @@ def main():
 
 		nx = d[0].get_xsize()
 		ny = d[0].get_ysize()
-		if options.radius < 1 : radius = nx//2-2
+		if options.radius < 1 : radius = old_div(nx,2)-2
 		else:  radius = options.radius
 		mask = model_circle(radius, nx, ny)
 
