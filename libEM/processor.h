@@ -2603,8 +2603,9 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("minval", EMObject::FLOAT, "Lower threshold");
-			d.put("maxval", EMObject::FLOAT, "Upper threshold");
+			d.put("minval", EMObject::FLOAT, "Lower threshold (required)");
+			d.put("maxval", EMObject::FLOAT, "Upper threshold (required)");
+			d.put("gauss_width", EMObject::FLOAT, "Range will be narrowed around zero based on a radial Gaussian falloff modeled on math.gausskernelfix. Disabled if set to 0.");
 			return d;
 		}
 
@@ -2617,7 +2618,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Sets values in a range to zero. Opposite of threshold.clampminmax. \nf(x) = x if x > maxval or x < minval; f(x) = 0 for min <= x <= max";
+			return "Sets values in a range to zero. Opposite of threshold.clampminmax. \nf(x) = x if x > maxval or x < minval; f(x) = 0 for min <= x <= max. If gauss_width set nozero, applies a radial correction factor to both min and max.";
 		}
 
 		static const string NAME;

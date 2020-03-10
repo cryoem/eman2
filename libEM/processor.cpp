@@ -2005,17 +2005,40 @@ void RangeZeroProcessor::process_inplace(EMData * image)
 		LOGWARN("NULL Image");
 		return;
 	}
+	
+	float gauss_width = params.set_default("gauss_width",0.0f);
 
-	size_t size = (size_t)image->get_xsize() *
-				  (size_t)image->get_ysize() *
-				  (size_t)image->get_zsize();
-	float *data = image->get_data();
+	if (gauss_width<=0) {
+		size_t size = (size_t)image->get_xsize() *
+					(size_t)image->get_ysize() *
+					(size_t)image->get_zsize();
+		float *data = image->get_data();
 
-	for (size_t i = 0; i < size; ++i) {
-		if (data[i]>=minval && data[i]<=maxval) data[i]=0.0f;
+		for (size_t i = 0; i < size; ++i) {
+			if (data[i]>=minval && data[i]<=maxval) data[i]=0.0f;
+		}
+		image->update();
 	}
-	image->update();
+	else {
+		int nx = image->get_xsize();
+		int ny = image->get_ysize();
+		int nz = image->get_zsize();
+		float wid=gauss_width/(ny*ny);
+		
+		for (int z=0; z<nz; z++) {
+			for (int y=0; y<ny; y++) {
+				for (int x=0; x<nx; x++) {
+					float cor=exp(-Util::hypot3sq(x-nx/2,y-ny/2,z-nz/2)*wid);
+					if (image->get_value_at(x,y,z)>=minval*cor && image->get_value_at(x,y,z)<=maxval*cor) image->set_value_at(x,y,z,0.0f);
+				}
+			}
+		}
+		image->update();
+	}
+		
 }
+
+
 
 void RealPixelProcessor::process_inplace(EMData * image)
 {
@@ -2040,6 +2063,7 @@ void RealPixelProcessor::process_inplace(EMData * image)
 	}
 	image->update();
 }
+
 
 void CoordinateProcessor::process_inplace(EMData * image)
 {
