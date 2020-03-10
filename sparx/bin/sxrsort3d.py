@@ -124,7 +124,7 @@ def main():
 		# import some utilities
 		from utilities import get_im,bcast_number_to_all,cmdexecute,write_text_file,read_text_file,wrap_mpi_bcast
 		from applications import recons3d_n_MPI, mref_ali3d_MPI, Kmref_ali3d_MPI
-		from statistics import k_means_match_clusters_asg_new,k_means_stab_bbenum
+		from pap_statistics import k_means_match_clusters_asg_new,k_means_stab_bbenum
 		from reconstruction import rec3D_MPI_noCTF,rec3D_two_chunks_MPI
 		from applications import mref_ali3d_EQ_Kmeans, ali3d_mref_Kmeans_MPI  
 		# Create the main log file

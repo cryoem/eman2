@@ -2874,7 +2874,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
 	mpi_barrier(MPI_COMM_WORLD)
 
-	#  Compute statistics of smear -----------------
+	#  Compute pap_statistics of smear -----------------
 	smax = -1000000
 	smin = 1000000
 	sava = 0.0
@@ -3595,7 +3595,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
 	mpi_barrier(MPI_COMM_WORLD)
 
-	#  Compute statistics of smear -----------------
+	#  Compute pap_statistics of smear -----------------
 	smax = -1000000
 	smin = 1000000
 	sava = 0.0
@@ -4293,7 +4293,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
 	mpi_barrier(MPI_COMM_WORLD)
 
-	#  Compute statistics of smear -----------------
+	#  Compute pap_statistics of smear -----------------
 	smax = -1000000
 	smin = 1000000
 	sava = 0.0
@@ -5344,7 +5344,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
 	mpi_barrier(MPI_COMM_WORLD)
 
-	#  Compute statistics of smear -----------------
+	#  Compute pap_statistics of smear -----------------
 	smax = -1000000
 	smin = 1000000
 	sava = 0.0
@@ -6377,7 +6377,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
 	mpi_barrier(MPI_COMM_WORLD)
 
-	#  Compute statistics of smear -----------------
+	#  Compute pap_statistics of smear -----------------
 	smax = -1000000
 	smin = 1000000
 	sava = 0.0
@@ -8769,7 +8769,7 @@ def recons3d_trl_struct_MPI_nosmearing(myid, main_node, prjlist, parameters, CTF
 	from EMAN2          import Reconstructors
 	from filter		    import filt_table
 	from mpi            import MPI_COMM_WORLD, mpi_barrier
-	from statistics     import fsc 
+	from pap_statistics     import fsc 
 	from reconstruction import insert_slices_pdf
 	from fundamentals   import fft
 	import datetime, types

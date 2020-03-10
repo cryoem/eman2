@@ -1219,7 +1219,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			
 			n_bins = 10
 			if len(abs_ctf_limit_histogram) >= n_bins:
-				from statistics import hist_list
+				from pap_statistics import hist_list
 				cutoff_region, cutoff_counts = hist_list(abs_ctf_limit_histogram, n_bins)
 				print("Histogram of CTF limit absolute frequency used for the filtering:")
 				print("      CTF limit       counts")

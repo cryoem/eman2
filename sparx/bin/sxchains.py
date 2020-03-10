@@ -40,7 +40,7 @@ from	EMAN2 		import EMUtil, parsemodopt, EMAN2Ctf
 from    EMAN2jsondb import js_open_dict
 
 from	utilities 	import *
-from    statistics import mono
+from    pap_statistics import mono
 import  os
 
 """
@@ -266,8 +266,8 @@ def main():
 
 
 		from utilities import model_circle
-		from statistics import ccc
-		from statistics import mono
+		from pap_statistics import ccc
+		from pap_statistics import mono
 		lend = EMUtil.get_image_count(stack)
 		lccc = [None]*(lend*(lend-1)/2)
 
@@ -304,7 +304,7 @@ def main():
 
 		from utilities import get_params2D, model_circle
 		from fundamentals import rot_shift2D
-		from statistics import ccc
+		from pap_statistics import ccc
 		from time import time
 		from alignment import align2d, align2d_scf
 		
@@ -339,7 +339,7 @@ def main():
 			
 		initial = max(options.initial, 0)
 
-		from statistics import mono
+		from pap_statistics import mono
 		lend = len(d)
 		lccc = [None]*(lend*(lend-1)/2)
 		from utilities import read_text_row
@@ -577,7 +577,7 @@ def main():
 		
 		from utilities import get_params2D, model_circle
 		from fundamentals import rot_shift2D
-		from statistics import ccc
+		from pap_statistics import ccc
 		from time import time
 		from alignment import align2d
 		

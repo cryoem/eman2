@@ -346,7 +346,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 	from filter	      import filt_tanl
 	from fundamentals import rot_shift2D, fshift, fft
 	from pixel_error  import multi_align_stability
-	from statistics   import ave_series
+	from pap_statistics   import ave_series
 	from utilities	  import model_circle, model_blank, combine_params2, inverse_transform2, get_image
 	from utilities	  import reduce_EMData_to_root, bcast_EMData_to_all
 	from utilities	  import get_params2D, set_params2D
@@ -783,7 +783,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 				from utilities import wrap_mpi_gatherv
 				gpixer = wrap_mpi_gatherv(gpixer, main_node, comm)
 				if my_abs_id == main_node and color == 0:
-					from statistics   import hist_list
+					from pap_statistics   import hist_list
 					lhist = 12
 					region, histo = hist_list(gpixer, lhist)
 					print("\n=== Histogram of average within-class pixel errors prior to class pruning ===")

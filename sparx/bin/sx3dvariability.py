@@ -418,7 +418,7 @@ def main():
 		"""
 		if options.SND:
 			from projection		import prep_vol, prgs
-			from statistics		import im_diff
+			from pap_statistics		import im_diff
 			from utilities		import get_im, model_circle, get_params_proj, set_params_proj
 			from utilities		import get_ctf, generate_ctf
 			from filter			import filt_ctf
@@ -460,7 +460,7 @@ def main():
 			from utilities		import set_params_proj, get_params_proj, params_3D_2D, get_params2D, set_params2D, compose_transform2
 			from utilities		import model_blank, nearest_proj, model_circle, write_text_row, wrap_mpi_gatherv
 			from applications	import pca
-			from statistics		import avgvar, avgvar_ctf, ccc
+			from pap_statistics		import avgvar, avgvar_ctf, ccc
 			from filter		    import filt_tanl
 			from morphology		import threshold, square_root
 			from projection 	import project, prep_vol, prgs

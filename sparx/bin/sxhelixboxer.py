@@ -2051,7 +2051,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minse
 	if len(cutoffhistogram) > 0:		#@ming
 		lhist = 3
 		if len(cutoffhistogram) >= lhist:
-			from statistics import hist_list
+			from pap_statistics import hist_list
 			region,hist = hist_list(cutoffhistogram,lhist)	
 			msg = "      Histogram of cut off frequencies\n      ERROR       number of frequencies\n"
 			print_msg(msg)

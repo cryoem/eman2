@@ -5,7 +5,7 @@ import EMAN2_cppwrap
 #from EMAN2 import EMUtil, EMArgumentParser, EMANVERSION
 from applications import header, project3d
 from utilities import get_im, write_header, model_circle, read_text_row
-from statistics import ccc
+from pap_statistics import ccc
 from fundamentals import rops_table, fft
 from projection import prep_vol, prgl
 from math import sqrt

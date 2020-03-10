@@ -35,7 +35,7 @@ global Tracker, Blockdata
 def compute_average(mlist, radius, CTF):
 	from morphology   import cosinemask
 	from fundamentals import fft
-	from statistics   import fsc, sum_oe
+	from pap_statistics   import fsc, sum_oe
 	if CTF:
 		avge, avgo, ctf_2_sume, ctf_2_sumo, params_list = \
 		     sum_oe(mlist, "a", CTF, None, True, True)

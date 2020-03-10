@@ -515,7 +515,7 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 	if( mpi_rank == 0):
 		# Align all rotated volumes, calculate their average and save as an overall result
 		from utilities import get_params3D, set_params3D, get_im, model_circle
-		from statistics import ave_var
+		from pap_statistics import ave_var
 		from applications import ali_vol
 		# vls = [None]*no_of_viper_runs_analyzed_together
 		vls = [None]*len(list_of_independent_viper_run_indices_used_for_outlier_elimination)

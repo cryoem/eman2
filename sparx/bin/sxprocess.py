@@ -40,7 +40,7 @@ from	EMAN2 		import EMUtil, parsemodopt, EMAN2Ctf
 from    EMAN2jsondb import js_open_dict
 
 from	utilities 	import *
-from    statistics import mono
+from    pap_statistics import mono
 import  os
 
 
@@ -985,7 +985,7 @@ def main():
 		from utilities    	import get_im, write_text_file, read_text_file
 		from fundamentals 	import rot_avg_table, fft
 		from morphology   	import compute_bfactor,power
-		from statistics   	import fsc, pearson
+		from pap_statistics   	import fsc, pearson
 		from filter       	import filt_table, filt_gaussinv, filt_tanl
 		from EMAN2 			import periodogram
 		
@@ -1690,7 +1690,7 @@ def main():
 	elif options.subtract_stack:
 		from utilities  import get_im, set_params_proj, get_params_proj, write_text_row, model_circle
 		from filter     import filt_tanl
-		from statistics import im_diff
+		from pap_statistics import im_diff
 		nargs = len(args)
 
 		if nargs<2 or nargs>4:
