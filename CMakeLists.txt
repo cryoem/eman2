@@ -267,7 +267,6 @@ ADD_SUBDIRECTORY(examples)
 ADD_SUBDIRECTORY(programs)
 ADD_SUBDIRECTORY(doc)
 ADD_SUBDIRECTORY(images)
-ADD_SUBDIRECTORY(recipes)
 
 add_custom_target(PythonFiles
 				  COMMAND ${CMAKE_COMMAND} -DCOMPONENT=PythonFiles -P cmake_install.cmake

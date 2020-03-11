@@ -24,11 +24,11 @@ install:
 
     - conda.exe info -a
     - conda.exe config --get
-    - conda.exe render %APPVEYOR_BUILD_FOLDER%\recipes\eman
+    - conda.exe render %APPVEYOR_BUILD_FOLDER%\recipe
 
 
 # Skip .NET project specific build phase.
 build: off
 
 test_script:
-    - conda.exe build %APPVEYOR_BUILD_FOLDER%\recipes\eman -c cryoem -c defaults -c conda-forge --no-test
+    - conda.exe build %APPVEYOR_BUILD_FOLDER%\recipe -c cryoem -c defaults -c conda-forge --no-test
