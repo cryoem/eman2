@@ -3454,8 +3454,6 @@ class TestEMData(unittest.TestCase):
         if platform.system() != "Windows":
             testlib.safe_unlink('mydb')
         
-    test_pickling.broken = True
-        
     def test_eman1ctf_pickling(self):
         """test EMAN1Ctf pickle as image attribute .........."""
         import pickle
@@ -3473,8 +3471,6 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(c.to_dict(), c2.to_dict())
         if platform.system() != "Windows":
             testlib.safe_unlink('mydb1')
-        
-    test_eman1ctf_pickling.broken = True
         
     def test_eman2ctf_pickling(self):
         """test EMAN2Ctf pickle as image attribute .........."""
@@ -3494,8 +3490,6 @@ class TestEMData(unittest.TestCase):
         if platform.system() != "Windows":
             testlib.safe_unlink('mydb2')
         
-    test_eman2ctf_pickling.broken = True
-        
     def test_transform_pickling(self):
         """test Transform pickle as attribute ..............."""
         import pickle
@@ -3514,8 +3508,6 @@ class TestEMData(unittest.TestCase):
     if platform.system() == "Windows":
         test_transform_pickling.broken = True
         
-    test_transform_pickling.broken = True   
-    
     def test_set_xyz_origin(self):
         """test set_xyz_origin function ....................."""
         img = test_image()
