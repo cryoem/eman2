@@ -3435,11 +3435,11 @@ class TestEMData(unittest.TestCase):
         
         
         e.set_attr('author', 'Grant Tang')
-        mydb = open('mydb', 'w')
+        mydb = open('mydb', 'wb')
         pickle.dump(e, mydb)
         mydb.close()
         
-        mydb2 = open('mydb', 'r')
+        mydb2 = open('mydb', 'rb')
         e2 = pickle.load(mydb2)
         data2 = e2.get_3dview()
         attr_dict = e2.get_attr_dict()
@@ -3454,18 +3454,16 @@ class TestEMData(unittest.TestCase):
         if platform.system() != "Windows":
             testlib.safe_unlink('mydb')
         
-    test_pickling.broken = True
-        
     def test_eman1ctf_pickling(self):
         """test EMAN1Ctf pickle as image attribute .........."""
         import pickle
         c = EMAN1Ctf((1,2,3,4,5,6,7,8,9,10,11))
         img = test_image()
         img.set_attr('ctf', c)
-        mydb = open('mydb1', 'w')
+        mydb = open('mydb1', 'wb')
         pickle.dump(img, mydb)
         mydb.close()
-        mydb2 = open('mydb1', 'r')
+        mydb2 = open('mydb1', 'rb')
         img2 = pickle.load(mydb2)
         c2 = img2.get_attr('ctf')
         self.assertEqual(c.to_vector(), c2.to_vector())
@@ -3474,18 +3472,16 @@ class TestEMData(unittest.TestCase):
         if platform.system() != "Windows":
             testlib.safe_unlink('mydb1')
         
-    test_eman1ctf_pickling.broken = True
-        
     def test_eman2ctf_pickling(self):
         """test EMAN2Ctf pickle as image attribute .........."""
         import pickle
         q = EMAN2Ctf((1,2,3,4,5,6,7,8,9,0,0))
         img = test_image()
         img.set_attr('ctf', q)
-        mydb = open('mydb2', 'w')
+        mydb = open('mydb2', 'wb')
         pickle.dump(img, mydb)
         mydb.close()
-        mydb2 = open('mydb2', 'r')
+        mydb2 = open('mydb2', 'rb')
         img2 = pickle.load(mydb2)
         q2 = img2.get_attr('ctf')
         self.assertEqual(q.to_vector(), q2.to_vector())
@@ -3494,18 +3490,16 @@ class TestEMData(unittest.TestCase):
         if platform.system() != "Windows":
             testlib.safe_unlink('mydb2')
         
-    test_eman2ctf_pickling.broken = True
-        
     def test_transform_pickling(self):
         """test Transform pickle as attribute ..............."""
         import pickle
         t = Transform()
         img = test_image()
         img.set_attr('xform', t)
-        mydb = open('mydb3', 'w')
+        mydb = open('mydb3', 'wb')
         pickle.dump(img, mydb)
         mydb.close()
-        mydb2 = open('mydb3', 'r')
+        mydb2 = open('mydb3', 'rb')
         img2 = pickle.load(mydb2)
         t2 = img2.get_attr('xform')
         self.assertEqual(t.get_matrix(), t2.get_matrix())
@@ -3514,8 +3508,6 @@ class TestEMData(unittest.TestCase):
     if platform.system() == "Windows":
         test_transform_pickling.broken = True
         
-    test_transform_pickling.broken = True   
-    
     def test_set_xyz_origin(self):
         """test set_xyz_origin function ....................."""
         img = test_image()
