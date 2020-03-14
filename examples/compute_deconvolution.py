@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 # Uses EMAN2/NumPy to compute a real-space deconvolution matrix for use in non-Cartesian coordinates
 
 from builtins import range

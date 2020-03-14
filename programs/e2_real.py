@@ -1,6 +1,4 @@
 #! /usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 #
 # Do not run this script directly. You could run this as 
 # ipython --gui=qt -i e2_real.py

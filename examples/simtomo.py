@@ -1,6 +1,4 @@
 # simtomo.py		Steven Ludtke	2/2011
-from __future__ import print_function
-from __future__ import division
 # This program will generate a set of 'tomographic single particles' in random orientation
 # with tomographic sampling. Generates a set of projections for each orientation, adds flatband noise, then reconstructs
 # from the projections.

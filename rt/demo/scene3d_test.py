@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
 from eman2_gui.emscene3d import EMScene3D, EMInspector3D, EMInspectorControlShape
 from eman2_gui.emshapeitem3d import *

@@ -33,7 +33,6 @@
 # GNU General Public License for more details.
 
 
-from __future__ import print_function
 import argparse
 from json import dump
 import subprocess

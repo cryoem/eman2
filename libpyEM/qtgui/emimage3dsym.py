@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # and David Woolford 10/26/2007 (woolford@bcm.edu)

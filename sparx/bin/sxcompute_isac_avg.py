@@ -4,7 +4,6 @@
 #  08/26/2016
 #  New version of sort3D.
 #  
-from __future__ import print_function
 from builtins import range
 import  os
 import  sys

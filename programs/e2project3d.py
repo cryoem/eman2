@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Additional Author: David Woolford 2007-2008 (woolford@bcm.edu)

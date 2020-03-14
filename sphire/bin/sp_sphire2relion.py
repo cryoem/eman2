@@ -40,8 +40,6 @@ Convert particle stack and partres file to star file.
 # ========================================================================================
 # pylint: disable=W0312
 # pylint: disable=C0330
-from __future__ import print_function, division
-
 import os
 import argparse
 

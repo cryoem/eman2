@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 # it is likely that the above line would have to be changed depending on python location
 
 from builtins import range

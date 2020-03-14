@@ -1,6 +1,4 @@
 
-from __future__ import print_function
-from __future__ import division
 ######################################
 #  The even case, 2D:  Part 1
 ######################################

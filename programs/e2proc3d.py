@@ -32,8 +32,6 @@
 #	   and proc2d have the same implementation
 #
 # todo: lp, hp, tlp vs apix
-from __future__ import print_function
-from __future__ import division
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *

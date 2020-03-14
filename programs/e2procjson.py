@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 # This program performs simple processing of .json files
 
 # Author: Steven Ludtke, 07/26/2017 (sludtke@bcm.edu), modified: May 15, 2017 (Jesus GalazMontoya)

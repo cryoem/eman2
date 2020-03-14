@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 #
 # Author: 
 # Copyright (c) 2012 The University of Texas - Houston Medical School
@@ -32,7 +31,6 @@ from __future__ import print_function
 #
 
 
-from __future__ import print_function
 from builtins import range
 from builtins import object
 from EMAN2 import *
