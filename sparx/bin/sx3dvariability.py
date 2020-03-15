@@ -32,6 +32,8 @@
 #
 #
 #
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from sparx import *
@@ -347,9 +349,9 @@ def main():
 					ERROR("Input stack is not prepared for symmetry, please follow instructions", "sx3dvariability", 1, myid)
 				from utilities import get_symt
 				i = len(get_symt(options.sym))
-				if((nima/i)*i != nima):
+				if((old_div(nima,i))*i != nima):
 					ERROR("The length of the input stack is incorrect for symmetry processing", "sx3dvariability", 1, myid)
-				symbaselen = nima/i
+				symbaselen = old_div(nima,i)
 			else:  symbaselen = nima
 		else:
 			nima = 0
@@ -403,14 +405,14 @@ def main():
 				else:
 					nx = smallprime(int(current_window*current_decimate+0.5))
 					ny = nx
-					current_window = int(nx/current_decimate+0.5)
+					current_window = int(old_div(nx,current_decimate)+0.5)
 					if (myid == main_node):
 						log_main.add("The window size is updated to %d."%current_window)
 						
 		if myid == main_node:
 			log_main.add("The target image size is %d"%nx)
 						
-		if radiuspca == -1: radiuspca = nx/2-2
+		if radiuspca == -1: radiuspca = old_div(nx,2)-2
 		if myid == main_node: log_main.add("%-70s:  %d\n"%("Number of projection", nima))
 		img_begin, img_end = MPI_start_end(nima, number_of_proc, myid)
 		
@@ -526,11 +528,11 @@ def main():
 			dnumber   = len(all_proj)# all neighborhood set for assigned to myid
 			pnumber   = len(proj_list)*2. + img_per_grp # aveList and varList 
 			tnumber   = dnumber+pnumber
-			vol_size2 = nx**3*4.*8/1.e9
-			vol_size1 = 2.*nnxo**3*4.*8/1.e9
+			vol_size2 = old_div(nx**3*4.*8,1.e9)
+			vol_size1 = old_div(2.*nnxo**3*4.*8,1.e9)
 			proj_size         = nnxo*nnyo*len(proj_list)*4.*2./1.e9 # both aveList and varList
-			orig_data_size    = nnxo*nnyo*4.*tnumber/1.e9
-			reduced_data_size = nx*nx*4.*tnumber/1.e9
+			orig_data_size    = old_div(nnxo*nnyo*4.*tnumber,1.e9)
+			reduced_data_size = old_div(nx*nx*4.*tnumber,1.e9)
 			full_data         = np.full((number_of_proc, 2), -1., dtype=np.float16)
 			full_data[myid]   = orig_data_size, reduced_data_size
 			if myid != main_node: wrap_mpi_send(full_data, main_node, MPI_COMM_WORLD)
@@ -572,7 +574,7 @@ def main():
 				
 				if (current_decimate> 0.0 and options.CTF):
 					ctf = imgdata[index_of_proj].get_attr("ctf")
-					ctf.apix = ctf.apix/current_decimate
+					ctf.apix = old_div(ctf.apix,current_decimate)
 					imgdata[index_of_proj].set_attr("ctf", ctf)
 					
 				if myid == heavy_load_myid and index_of_proj%100 == 0:
@@ -599,7 +601,7 @@ def main():
 			from utilities    import model_blank
 			from EMAN2        import Transform
 			if not options.no_norm: 
-				mask = model_circle(nx/2-2, nx, nx)
+				mask = model_circle(old_div(nx,2)-2, nx, nx)
 			if options.CTF: 
 				from utilities import pad
 				from filter import filt_ctf

@@ -33,6 +33,8 @@
 
 # clean up the code, make documentation
 
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 import os
 import global_def
@@ -711,7 +713,7 @@ def get_multiplicity(U, u, i):
 
 def gaussian(sigma, a, mu, x):
 	from math import sqrt, pi
-	return a*exp(-(x-mu)**2/(2.0*sigma**2))*1.0/(sigma*sqrt(2*pi))
+	return a*exp(old_div(-(x-mu)**2,(2.0*sigma**2)))*1.0/(sigma*sqrt(2*pi))
 			
 if __name__ == "__main__":
 	main()

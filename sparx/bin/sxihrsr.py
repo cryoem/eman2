@@ -32,6 +32,8 @@
 #
 
 
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 def main():
 	import os
@@ -105,7 +107,7 @@ def main():
 
 		irp = 1
 		if options.ou < 0:  oup = -1
-		else:               oup = int( (options.ou/options.apix) + 0.5)
+		else:               oup = int( (old_div(options.ou,options.apix)) + 0.5)
 		xrp = ''
 		txsp = ''
 		y_restrict2 = ''

@@ -32,6 +32,8 @@
 #
 
 
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 def main():
 	import os
@@ -225,7 +227,7 @@ def main():
 
 		irp = 1
 		if options.ou < 0:  oup = -1
-		else:               oup = int( (options.ou/options.apix) + 0.5)
+		else:               oup = int( (old_div(options.ou,options.apix)) + 0.5)
 		xrp = ''
 		txsp = ''
 		
@@ -234,9 +236,9 @@ def main():
 		for i in range(len(txs)):
 			txsp += " "+str(float(txs[i])/options.apix)
 
-		searchxshiftp = int( (options.searchxshift/options.apix) + 0.5)
-		nearbyp = int( (options.nearby/options.apix) + 0.5)
-		zstepp = int( (options.zstep/options.apix) + 0.5)
+		searchxshiftp = int( (old_div(options.searchxshift,options.apix)) + 0.5)
+		nearbyp = int( (old_div(options.nearby,options.apix)) + 0.5)
+		zstepp = int( (old_div(options.zstep,options.apix)) + 0.5)
 
 		if options.MPI:
 			from mpi import mpi_init, mpi_finalize

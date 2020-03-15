@@ -25,6 +25,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 
+from __future__ import division
+from past.utils import old_div
 import argparse
 import os
 
@@ -390,7 +392,7 @@ def main():
 		print('Filter volume to {0}A.'.format(command_args.low_pass_filter_resolution))
 		input_vol = sparx_filter.filt_tanl(
 			input_vol,
-			command_args.pixel_size / command_args.low_pass_filter_resolution,
+			old_div(command_args.pixel_size, command_args.low_pass_filter_resolution),
 			command_args.low_pass_filter_falloff
 			)
 		input_vol.write_image(output_prefix + '_filtered_volume.hdf')

@@ -31,6 +31,8 @@
 # Imports
 # ========================================================================================
 # Python Standard Libraries
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from builtins import object
 import sys
@@ -942,7 +944,7 @@ def resample_micrographs(args):
 		# --------------------------------------------------------------------------------
 		mic_basename = global_entry_dict[mic_id_substr][subkey_selected_mic_basename]
 		if SXmpi_run.is_main_proc():
-			print("%s ---> % 2.2f%%" % (mic_basename, mic_id_substr_idx / progress_percent_step))
+			print("%s ---> % 2.2f%%" % (mic_basename, old_div(mic_id_substr_idx, progress_percent_step)))
 		
 		# --------------------------------------------------------------------------------
 		# Read micrograph
@@ -2468,7 +2470,7 @@ def moon_eliminator(args):
 	if args.fl != -1.0:
 		print(" ")
 		print_progress("Low-pass filtration of the input volume using cutoff resolution {}[A] and fall-off {}[1/Pixels]...".format(args.fl, args.aa))
-		vol3d = filt_tanl(vol3d, args.pixel_size/args.fl, args.aa)
+		vol3d = filt_tanl(vol3d, old_div(args.pixel_size,args.fl), args.aa)
 	else:
 		print(" ")
 		print_progress("The program does not low-pass filter input volume...".format(args.fl))

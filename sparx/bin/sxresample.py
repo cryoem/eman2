@@ -31,6 +31,8 @@
 #
 #
 
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 import global_def
 from   global_def import *
@@ -47,7 +49,7 @@ def resample_insert( bufprefix, fftvols, wgtvols, mults, CTF, npad, info=None):
 	blocksize = 250
 	nvol = len(fftvols)
 	nprj = len(mults[0])
-	nblock = (nprj-1)/blocksize + 1
+	nblock = old_div((nprj-1),blocksize) + 1
 
 	overall_start = time()
 
@@ -209,7 +211,7 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 
 	dp = 1.0 - d  # keep that many in each direction
 	keep = int(am*dp +0.5)
-	mufur = keep*nrefa/(1.0 - mufur*keep/float(nrefa))
+	mufur = old_div(keep*nrefa,(1.0 - mufur*keep/float(nrefa)))
 	if myid == 0:
 		print(" Number of projections ",nprj,".  Number of reference directions ",nrefa,",  multiplicative factor for the variance ",mufur)
 		print(" Minimum number of assignments ",am,"  Number of projections used per stratum ", keep," Number of projections in resampled structure ",int(am*dp +0.5)*nrefa)
@@ -226,7 +228,7 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 
 	volfile = os.path.join(outdir, "bsvol%04d.hdf" % myid)
 	from random import randint
-	niter = nvol/ncpu/nbufvol
+	niter = old_div(old_div(nvol,ncpu),nbufvol)
 	for kiter in range(niter):
 		if(verbose == 1):
 			finfo.write( "Iteration %d: \n" % kiter )

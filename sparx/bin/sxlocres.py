@@ -30,6 +30,8 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 #
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 import EMAN2_cppwrap
 import filter
@@ -55,10 +57,10 @@ def makeAngRes(freqvol, nx, ny, nz, pxSize, freq_to_real=True):
 
 	if freq_to_real:
 		mask = data_in > 0.0
-		data_out[mask] = pxSize / data_in[mask]
+		data_out[mask] = old_div(pxSize, data_in[mask])
 	else:
 		mask = data_in >= 2 * pxSize
-		data_out[mask] = pxSize / data_in[mask]
+		data_out[mask] = old_div(pxSize, data_in[mask])
 
 	return outAngResVol
 
@@ -210,7 +212,7 @@ def main():
 		vf = fundamentals.fft(vi)
 		uf = fundamentals.fft(ui)
 		"""Multiline Comment1"""
-		lp = int(nn/2/options.step+0.5)
+		lp = int(old_div(old_div(nn,2),options.step)+0.5)
 		step = 0.5/lp
 
 		freqvol = utilities.model_blank(nn,nn,nn)
@@ -229,7 +231,7 @@ def main():
 
 			tmp3 = EMAN2_cppwrap.Util.muln_img(u,v)
 			dp = EMAN2_cppwrap.Util.infomask(tmp3,m,True)[0]
-			resolut.append([i,(fl+fh)/2.0, dp/do])
+			resolut.append([i,(fl+fh)/2.0, old_div(dp,do)])
 
 			tmp1 = EMAN2_cppwrap.Util.box_convolution(tmp1, nk)
 			tmp2 = EMAN2_cppwrap.Util.box_convolution(tmp2, nk)

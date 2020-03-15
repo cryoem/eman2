@@ -152,9 +152,9 @@ map to the center of the volume."""
 	infile.close()
 
 	if(options.center == "a"):
-		rad_gyr = sqrt((asig[0]+asig[1]+asig[2])/mass-(aavg[0]/mass)**2-(aavg[1]/mass)**2-(aavg[2]/mass)**2)
+		rad_gyr = sqrt(old_div((asig[0]+asig[1]+asig[2]),mass)-(old_div(aavg[0],mass))**2-(old_div(aavg[1],mass))**2-(old_div(aavg[2],mass))**2)
 	else:
-		rad_gyr = sqrt((asig[0]+asig[1]+asig[2])/natm-(aavg[0]/natm)**2-(aavg[1]/natm)**2-(aavg[2]/natm)**2)
+		rad_gyr = sqrt(old_div((asig[0]+asig[1]+asig[2]),natm)-(old_div(aavg[0],natm))**2-(old_div(aavg[1],natm))**2-(old_div(aavg[2],natm))**2)
 
 	if not options.quiet:
 		print("%d atoms; total charge = %d e-; mol mass = %.2f kDa; radius of gyration = %.2f A"%(natm,nelec,mass/1000.0,rad_gyr))
@@ -162,18 +162,18 @@ map to the center of the volume."""
 	# center PDB according to option:
 	if(options.center == "a"):
 		if not options.quiet:
-			print("center of gravity at %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(aavg[0]/mass,aavg[1]/mass,aavg[2]/mass))
+			print("center of gravity at %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(old_div(aavg[0],mass),old_div(aavg[1],mass),old_div(aavg[2],mass)))
 		for i in range( len(atoms) ) :
-			atoms[i][1] -= aavg[0]/mass
-			atoms[i][2] -= aavg[1]/mass
-			atoms[i][3] -= aavg[2]/mass
+			atoms[i][1] -= old_div(aavg[0],mass)
+			atoms[i][2] -= old_div(aavg[1],mass)
+			atoms[i][3] -= old_div(aavg[2],mass)
 	if(options.center == "c"):
 		if not options.quiet:
-			print("atomic center at %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(aavg[0]/natm,aavg[1]/natm,aavg[2]/natm))
+			print("atomic center at %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(old_div(aavg[0],natm),old_div(aavg[1],natm),old_div(aavg[2],natm)))
 		for i in range( len(atoms) ) :
-			atoms[i][1] -= aavg[0]/natm
-			atoms[i][2] -= aavg[1]/natm
-			atoms[i][3] -= aavg[2]/natm
+			atoms[i][1] -= old_div(aavg[0],natm)
+			atoms[i][2] -= old_div(aavg[1],natm)
+			atoms[i][3] -= old_div(aavg[2],natm)
 	spl = options.center.split(',')
 	if len(spl)==3:   # substract the given vector from all coordinates
 		if not options.quiet:
@@ -221,7 +221,7 @@ map to the center of the volume."""
 			box[2]=int(spl[2])
 	except:
 		for i in range(3):
-			box[i]=int(2*max(fabs(amax[i]), fabs(amin[i]))/options.apix)
+			box[i]=int(old_div(2*max(fabs(amax[i]), fabs(amin[i])),options.apix))
 			#  Increase the box size by 1/4.
 			box[i]+=box[i]//4
 
@@ -244,7 +244,7 @@ map to the center of the volume."""
 	if not options.quiet: print("Box size: %d x %d x %d"%(box[0],box[1],box[2]),",  oversampling ",fcbig)
 
 	# Calculate working dimensions
-	pixelbig = options.apix/fcbig
+	pixelbig = old_div(options.apix,fcbig)
 	bigbox = []
 	for i in range(3): bigbox.append(box[i]*fcbig)
 
@@ -262,15 +262,15 @@ map to the center of the volume."""
 			elec = atomdefs[atoms[i][0].upper()][0]
 			#outmap[int(atoms[i][1]/pixelbig+bigbox[0]//2),int(atoms[i][2]/pixelbig+bigbox[1]//2),int(atoms[i][3]/pixelbig+bigbox[2]//2)] += elec
 			for k in range(2):
-			        pz = atoms[i][3]/pixelbig+nc[2]
+			        pz = old_div(atoms[i][3],pixelbig)+nc[2]
 			        dz = pz - int(pz)
 			        uz = ((1-k) + (2*k-1)*dz)*elec
 			        for l in range(2):
-			        	py = atoms[i][2]/pixelbig+nc[1]
+			        	py = old_div(atoms[i][2],pixelbig)+nc[1]
 			        	dy = py - int(py)
 			        	uy = ((1-l) + (2*l-1)*dy)*uz
 			        	for m in range(2):
-			        		px = atoms[i][1]/pixelbig+nc[0]
+			        		px = old_div(atoms[i][1],pixelbig)+nc[0]
 			        		dx = px - int(px)
 			        		outmap[int(px)+m,int(py)+l,int(pz)+k] += ((1-m) + (2*m-1)*dx)*uy
 		except: print("Skipping %d '%s'"%(i,atoms[i][0]))
