@@ -67,7 +67,7 @@ def pixel_error_2D(ali_params1, ali_params2, r = 1.0):
 	Compute average squared 2D pixel error
 	"""
 	from math import radians, sin, pi, sqrt
-	return (sin(radians(ali_params1[0]-ali_params2[0])/2)*(2*r+1))**2 / 2 + (ali_params1[1]-ali_params2[1])**2 + (ali_params1[2]-ali_params2[2])**2
+	return old_div((sin(old_div(radians(ali_params1[0]-ali_params2[0]),2))*(2*r+1))**2, 2) + (ali_params1[1]-ali_params2[1])**2 + (ali_params1[2]-ali_params2[2])**2
 
 
 def max_3D_pixel_error(t1, t2, r=1.0):
@@ -117,7 +117,7 @@ def angle_ave(angle1):
 		if   qt >  180.0:   qt -= 360.
 		elif qt < -180.0:   qt += 360.
 		stdv += qt*qt
-	stdv = sqrt(stdv/nima)
+	stdv = sqrt(old_div(stdv,nima))
 
 	return alphai, stdv
 
@@ -170,7 +170,7 @@ def angle_diff_sym(angle1, angle2, simi=1):
 			sini += sin( qt )
 			agree += 1
 	if(agree == 0):  return 0.0
-	else:            return degrees(atan2(sini, cosi)/simi)%(360.0/simi)
+	else:            return degrees(old_div(atan2(sini, cosi),simi))%(360.0/simi)
 
 def angle_error(ang1, ang2, delta_ang=0.0):
 	'''
@@ -217,7 +217,7 @@ def align_diff_params(ali_params1, ali_params2):
 	mirror_same = 0
 	for i in range(nima):
 		if ali_params1[i*4+3] == ali_params2[i*4+3]: mirror_same += 1
-	if mirror_same > nima/2:
+	if mirror_same > old_div(nima,2):
 		mirror = 0
 	else:
 		mirror_same = nima-mirror_same
@@ -355,7 +355,7 @@ def ave_ali_err(data1, data2=None, r=25, suffix="_ideal"):
 			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
 			err += pixel_error_2D([alpha12, sx12, sy12], [alpha2, sx2, sy2], r)
 	
-	return alphai, sxi, syi, mirror, float(mirror_same)/nima, err/mirror_same
+	return alphai, sxi, syi, mirror, float(mirror_same)/nima, old_div(err,mirror_same)
 
 
 def ave_ali_err_params(ali_params1, ali_params2, r=25):
@@ -371,7 +371,7 @@ def ave_ali_err_params(ali_params1, ali_params2, r=25):
 	alphai, sxi, syi, mirror = align_diff_params(ali_params1, ali_params2)
 
 	# Determine the average pixel error
-	nima = len(ali_params1)/4
+	nima = old_div(len(ali_params1),4)
 	mirror_same = 0
 	err = 0.0
 	for i in range(nima):
@@ -383,7 +383,7 @@ def ave_ali_err_params(ali_params1, ali_params2, r=25):
 			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
 			err += pixel_error_2D([alpha12, sx12, sy12], [alpha2, sx2, sy2], r)
 
-	return alphai, sxi, syi, mirror, float(mirror_same)/nima, err/mirror_same
+	return alphai, sxi, syi, mirror, float(mirror_same)/nima, old_div(err,mirror_same)
 
 
 def ave_ali_err_textfile(textfile1, textfile2, r=25):
@@ -418,7 +418,7 @@ def ave_ali_err_textfile(textfile1, textfile2, r=25):
 	alphai, sxi, syi, mirror = align_diff_params(ali_params1, ali_params2)
 
 	# Determine the average pixel error
-	nima = len(ali_params1)/4
+	nima = old_div(len(ali_params1),4)
 	mirror_same = 0
 	err = 0.0
 	for i in range(nima):
@@ -430,7 +430,7 @@ def ave_ali_err_textfile(textfile1, textfile2, r=25):
 			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
 			err += pixel_error_2D([alpha12, sx12, sy12], [alpha2, sx2, sy2], r)
 	
-	return alphai, sxi, syi, mirror, float(mirror_same)/nima, err/mirror_same
+	return alphai, sxi, syi, mirror, float(mirror_same)/nima, old_div(err,mirror_same)
 
 
 def multi_align_diff_params(ali_params, verbose=0):
@@ -509,7 +509,7 @@ def ali_stable_list(ali_params1, ali_params2, pixel_error_threshold, r=25):
 	alphai, sxi, syi, mirror = align_diff_params(ali_params1, ali_params2)
 
 	# Determine the average pixel error
-	nima = len(ali_params1)/4
+	nima = old_div(len(ali_params1),4)
 	ali_list = []
 	for i in range(nima):
 		alpha1, sx1, sy1, mirror1 = ali_params1[i*4:i*4+4]
@@ -531,7 +531,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 		avg = sum(a)
 		sq = 0.0
 		for i in range(n): sq += a[i]**2
-		return (sq-avg*avg/n)/n
+		return old_div((sq-old_div(avg*avg,n)),n)
 
 	# args - G, data - [T, d]
 	def func(args, data, return_avg_pixel_error=True):
@@ -541,7 +541,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 		ali_params = data[0]
 		d = data[1]
 		L = len(ali_params)
-		N = len(ali_params[0])/4
+		N = old_div(len(ali_params[0]),4)
 
 		args_list= [0.0]*(L*3)
 		for i in range(L*3-3):  args_list[i] = args[i]
@@ -570,10 +570,10 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 					sx[j] = -args_list[j*3+1] + ali_params[j][i*4+1]*cosa[j] - ali_params[j][i*4+2]*sina[j]
 					sy[j] =  args_list[j*3+2] + ali_params[j][i*4+1]*sina[j] + ali_params[j][i*4+2]*cosa[j]
 			sqrtP = sqrt(sum_cosa**2+sum_sina**2)
-			sqr_pixel_error[i] = max( 0.0, d*d/4.*(1-sqrtP/L) + sqerr(sx) + sqerr(sy) )
+			sqr_pixel_error[i] = max( 0.0, d*d/4.*(1-old_div(sqrtP,L)) + sqerr(sx) + sqerr(sy) )
 			# Get ave transform params
 			H = Transform({"type":"2D"})
-			H.set_matrix([sum_cosa/sqrtP, sum_sina/sqrtP, 0.0, sum(sx)/L, -sum_sina/sqrtP, sum_cosa/sqrtP, 0.0, sum(sy)/L, 0.0, 0.0, 1.0, 0.0])
+			H.set_matrix([old_div(sum_cosa,sqrtP), old_div(sum_sina,sqrtP), 0.0, old_div(sum(sx),L), old_div(-sum_sina,sqrtP), old_div(sum_cosa,sqrtP), 0.0, old_div(sum(sy),L), 0.0, 0.0, 1.0, 0.0])
 			dd = H.get_params("2D")
 			#  We are using here mirror of the LAST SET.
 			H = Transform({"type":"2D","alpha":dd[ "alpha" ],"tx":dd[ "tx" ],"ty": dd[ "ty" ],"mirror":int(ali_params[L-1][i*4+3]),"scale":1.0})
@@ -582,7 +582,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 		# Warning: Whatever I return here is squared pixel error, this is for the easy expression of derivative
 		# Don't forget to square root it after getting the value
 		if return_avg_pixel_error:
-			return sum(sqr_pixel_error)/N
+			return old_div(sum(sqr_pixel_error),N)
 		else:
 			return sqr_pixel_error, ave_params
 
@@ -666,7 +666,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	# Find out the subset which is mirror stable over all runs
 	all_part = []
 	num_ali = len(ali_params)
-	nima = len(ali_params[0])/4
+	nima = old_div(len(ali_params[0]),4)
 	for i in range(num_ali):
 		mirror0 = []
 		mirror1 = []
@@ -722,7 +722,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 			for i in range(num_ali):
 				ali_params_cleaned[i].extend(ali_params_mir_stab[i][j*4:j*4+4])
 	nima3 = len(cleaned_part)
-	prever = sqrt(sum(pixel_error_before)/nima2)
+	prever = sqrt(old_div(sum(pixel_error_before),nima2))
 	if nima3 <= 1:  return [], mir_stab_rate, prever
 
 	#print "  cleaned part  ",nima3
@@ -778,7 +778,7 @@ def ave2dtransform(args, data, return_avg_pixel_error=False):
 	ali_params = data[0]
 	d = data[1]
 	L = len(ali_params)
-	N = len(ali_params[0])/4
+	N = old_div(len(ali_params[0]),4)
 
 	args_list= [0.0]*(L*3)
 	for i in range(L*3-3):  args_list[i] = args[i]
@@ -807,10 +807,10 @@ def ave2dtransform(args, data, return_avg_pixel_error=False):
 				sx[j] = -args_list[j*3+1] + ali_params[j][i*4+1]*cosa[j] - ali_params[j][i*4+2]*sina[j]
 				sy[j] =  args_list[j*3+2] + ali_params[j][i*4+1]*sina[j] + ali_params[j][i*4+2]*cosa[j]
 		sqrtP = sqrt(sum_cosa**2+sum_sina**2)
-		sqr_pixel_error[i] = max( 0.0, d*d/4.*(1-sqrtP/L) + sqerr(sx) + sqerr(sy) )
+		sqr_pixel_error[i] = max( 0.0, d*d/4.*(1-old_div(sqrtP,L)) + sqerr(sx) + sqerr(sy) )
 		# Get ave transform params
 		H = Transform({"type":"2D"})
-		H.set_matrix([sum_cosa/sqrtP, sum_sina/sqrtP, 0.0, sum(sx)/L, -sum_sina/sqrtP, sum_cosa/sqrtP, 0.0, sum(sy)/L, 0.0, 0.0, 1.0, 0.0])
+		H.set_matrix([old_div(sum_cosa,sqrtP), old_div(sum_sina,sqrtP), 0.0, old_div(sum(sx),L), old_div(-sum_sina,sqrtP), old_div(sum_cosa,sqrtP), 0.0, old_div(sum(sy),L), 0.0, 0.0, 1.0, 0.0])
 		dd = H.get_params("2D")
 		#  We are using here mirror of the LAST SET.
 		H = Transform({"type":"2D","alpha":dd[ "alpha" ],"tx":dd[ "tx" ],"ty": dd[ "ty" ],"mirror":int(ali_params[L-1][i*4+3]),"scale":1.0})
@@ -819,7 +819,7 @@ def ave2dtransform(args, data, return_avg_pixel_error=False):
 	# Warning: Whatever I return here is squared pixel error, this is for the easy expression of derivative
 	# Don't forget to square root it after getting the value
 	if return_avg_pixel_error:
-		return sum(sqr_pixel_error)/N
+		return old_div(sum(sqr_pixel_error),N)
 	else:
 		return sqr_pixel_error, ave_params
 
@@ -857,8 +857,8 @@ def ordersegments(infilaments, ptclcoords):
 		from math import atan,sin,cos,pi, atan2
 		from pap_statistics import linreg
 		nq = len(xxp)
-		xs = sum(xxp)/nq
-		ys = sum(yyp)/nq
+		xs = old_div(sum(xxp),nq)
+		ys = old_div(sum(yyp),nq)
 		xp = [0.0]*nq
 		yp = [0.0]*nq
 		for i in range(nq):
@@ -866,7 +866,7 @@ def ordersegments(infilaments, ptclcoords):
 			yp[i] = yyp[i] - ys
 		try:
 			a,b = linreg(xp,yp)
-			alpha = pi/4-atan(a)
+			alpha = old_div(pi,4)-atan(a)
 		except:
 			a,b = linreg([(xp[i]-yp[i]) for i in range(nq)], [(xp[i]+yp[i]) for i in range(nq)])
 			alpha = atan(a)
@@ -965,7 +965,7 @@ def mapcoords(x, y, r, nx, ny):
 		lxnew = int(floor(r*(xold - 0.5)))
 		uxnew = int(ceil(r*(xold + 0.5))) 
 		for xn in range(lxnew, uxnew + 1):
-			if xold == Util.round(xn/r):
+			if xold == Util.round(old_div(xn,r)):
 				allxnew.append(xn)
 				
 	for j in range(-nbrhd, nbrhd+1):
@@ -975,7 +975,7 @@ def mapcoords(x, y, r, nx, ny):
 		lynew = int(floor(r*(yold - 0.5)))
 		uynew = int(ceil(r*(yold + 0.5)))
 		for yn in range(lynew, uynew + 1):
-			if yold == Util.round(yn/r):
+			if yold == Util.round(old_div(yn,r)):
 				allynew.append(yn)
 				
 	if len(allxnew) == 0 or len(allynew) == 0:
@@ -987,8 +987,8 @@ def mapcoords(x, y, r, nx, ny):
 	
 	for xnew in allxnew:
 		for ynew in allynew:
-			xold = Util.round(xnew/r)
-			yold = Util.round(ynew/r)
+			xold = Util.round(old_div(xnew,r))
+			yold = Util.round(old_div(ynew,r))
 			dst = get_dist([x,y],[xold,yold])
 			if dst > mindist:
 				mindist = dst
@@ -1064,7 +1064,7 @@ def consistency_params(stack, dphi, dp, pixel_size, phithr=2.5, ythr=1.5, THR=3)
 			for idir in range(-1,2,2):
 				phierr = []
 				#  get phi's
-				ddphi = pixel_size/dp*idir*dphi
+				ddphi = old_div(pixel_size,dp)*idir*dphi
 				phis = [0.0]*ns
 				#print "  MIC  ",mic
 				for i in range(ns):
@@ -1085,7 +1085,7 @@ def consistency_params(stack, dphi, dp, pixel_size, phithr=2.5, ythr=1.5, THR=3)
 				if(lerr < terr):
 					terr = lerr
 					for j in range(ns):  ganger[j] = phierr[j]
-			allphier.append([[mic[0], mic[-1], flip, terr/ns], ganger])
+			allphier.append([[mic[0], mic[-1], flip, old_div(terr,ns)], ganger])
 
 	print("number of segments belonging to filaments from which at least %i segments were windowed: "%THR, totsegs)
 	print("number of segments oriented 50/50 wrt psi (and therefore could not be predicted):       ", tot_nopred)
@@ -1124,10 +1124,10 @@ def getnewhelixcoords(hcoordsname, outdir, ratio,nx,ny, newpref="resampled_", bo
 	if new_w < 0:
 		new_w = w*ratio
 	for i in range(ncoords):
-		xold = coords[i][0] + w/2
-		yold = coords[i][1] + w/2
+		xold = coords[i][0] + old_div(w,2)
+		yold = coords[i][1] + old_div(w,2)
 		xnew, ynew = mapcoords(xold,yold,ratio,nx,ny)
-		s = '%d\t%d\t%d\t%d\t%d\n'%(xnew-new_w/2,ynew-new_w/2, new_w, new_w, coords[i][4])
+		s = '%d\t%d\t%d\t%d\t%d\n'%(xnew-old_div(new_w,2),ynew-old_div(new_w,2), new_w, new_w, coords[i][4])
 		f.write(s)
 	return newhcoordsname	
 
@@ -1237,7 +1237,7 @@ def helical_params_err(params1, params2, fil_list):
 			phidf = min(phidf, abs(360.0-phidf))
 			sum_phierr += phidf
 			prot[k][0] =  (phi1[k] + angdif)%360.
-		avg_phierr = sum_phierr/(iend-ibeg+1)
+		avg_phierr = old_div(sum_phierr,(iend-ibeg+1))
 		phierr_byfil.append([avg_phierr, cur_fil,ibeg,iend,pos[ibeg],pos[iend]])
 		i = iend+1
 

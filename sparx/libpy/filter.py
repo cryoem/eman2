@@ -364,7 +364,7 @@ def filt_kaisersinh(e, alpha):
 	M = e.get_xsize()
 	K = 6
 	N = M*2  # npad*image size
-	r=M/2
+	r=old_div(M,2)
 	v=K/2.0/N
 	from EMAN2 import Processor
 	params = {"filter_type":Processor.fourier_filter_types.KAISER_SINH,
@@ -376,7 +376,7 @@ def filt_kaisersinhp(e, alpha):
 	M = e.get_xsize()
 	K = 6
 	N = M*2  # npad*image size
-	r=M/2
+	r=old_div(M,2)
 	v=K/2.0/N
 	from EMAN2 import Processor
 	params = {"filter_type":Processor.fourier_filter_types.KAISER_SINH,
@@ -388,7 +388,7 @@ def filt_kaisersinhinv(e, alpha):
 	M = e.get_xsize()
 	K = 6
 	N = M*2  # npad*image size
-	r=M/2
+	r=old_div(M,2)
 	v=K/2.0/N
 	from EMAN2 import Processor
 	params = {"filter_type":Processor.fourier_filter_types.KAISER_SINH_INVERSE,
@@ -400,7 +400,7 @@ def filt_kaisersinhinvp(e, alpha):
 	M = e.get_xsize()
 	K = 6
 	N = M*2  # npad*image size
-	r=M/2
+	r=old_div(M,2)
 	v=K/2.0/N
 	from EMAN2 import Processor
 	params = {"filter_type":Processor.fourier_filter_types.KAISER_SINH_INVERSE,
@@ -509,12 +509,12 @@ def filt_params(dres, high = 0.95, low = 0.1):
 			freqh: pass-band frequency
 	"""
 	n = len(dres[1])
-	if ( (2*dres[1][n-1]/(1.0+dres[1][n-1])) > low):
+	if ( (old_div(2*dres[1][n-1],(1.0+dres[1][n-1]))) > low):
 		# the curve never falls below preset level, most likely something's wrong; however, return reasonable values
 		#  First, find out whether it actually does fall
 		nend = 0
 		for i in range(n-1,1,-1):
-			if ( (2*dres[1][i]/(1.0+dres[1][i]) ) < low):
+			if ( (old_div(2*dres[1][i],(1.0+dres[1][i])) ) < low):
 				nend = i
 				break
 		if( nend == 0 ):
@@ -527,12 +527,12 @@ def filt_params(dres, high = 0.95, low = 0.1):
 	#  normal case
 	freql = 0.001 # this is in case the next loop does not work and the curve never drops below high
 	for i in range(1,n-1):
-		if ( (2*dres[1][i]/(1.0+dres[1][i]) ) < high):
+		if ( (old_div(2*dres[1][i],(1.0+dres[1][i])) ) < high):
 			freql = dres[0][i]
 			break
 	freqh = 0.1 # this is in case the next loop does not work and the curve never rises above low
 	for i in range(n-2,0,-1):
-		if ( (2*dres[1][i]/(1.0+dres[1][i]) ) > low):
+		if ( (old_div(2*dres[1][i],(1.0+dres[1][i])) ) > low):
 			freqh =min( max(dres[0][i], freql+0.1), 0.45)
 			break
 	return freql,freqh
@@ -561,7 +561,7 @@ def filt_from_fsc(dres, low = 0.1):
 		if dres[1][i] < 0.0:
 			qt = 0.0
 		else:
-			qt = 2*(dres[1][i-1]/(1.0+dres[1][i-1]) + dres[1][i]/(1.0+dres[1][i]) + dres[1][i+1]/(1.0+dres[1][i+1]))/3.0
+			qt = 2*(old_div(dres[1][i-1],(1.0+dres[1][i-1])) + old_div(dres[1][i],(1.0+dres[1][i])) + old_div(dres[1][i+1],(1.0+dres[1][i+1])))/3.0
 		if qt < low:
 			filtc[i] = low
 			last = i
@@ -591,7 +591,7 @@ def filt_from_fsc2(dres, low = 0.1):
 		if(dres[1][i]<0.0):
 			qt = 0.0
 		else:
-			qt = (dres[1][i-1]/(1.0+dres[1][i-1]) + dres[1][i]/(1.0+dres[1][i]) + dres[1][i+1]/(1.0+dres[1][i+1]))/3.0
+			qt = (old_div(dres[1][i-1],(1.0+dres[1][i-1])) + old_div(dres[1][i],(1.0+dres[1][i])) + old_div(dres[1][i+1],(1.0+dres[1][i+1])))/3.0
 		if ( qt < low ):
 			filtc[i] = low
 			last = i
@@ -631,13 +631,13 @@ def filt_from_fsc_bwt(dres, low = 0.1):
 			lowf=dres[0][i]
 			break
 	highf=lowf+.05
-	order=2.*log(eps/sqrt(a**2-1))/log(lowf/highf)
-	rad=lowf/eps**(2./order)
+	order=old_div(2.*log(old_div(eps,sqrt(a**2-1))),log(old_div(lowf,highf)))
+	rad=old_div(lowf,eps**(2./order))
 	for i in range(n):		
 		if(dres[1][i]<low): 
-			qt = 1./sqrt(1.+(dres[0][i]/rad)**order)
+			qt = 1./sqrt(1.+(old_div(dres[0][i],rad))**order)
 		else:
-			qt = 2*dres[1][i]/(1.0+dres[1][i])
+			qt = old_div(2*dres[1][i],(1.0+dres[1][i]))
 		filtc[i] = qt
 	return  filtc
 
@@ -659,9 +659,9 @@ def fit_tanh(dres, low = 0.1):
 			data[1][0] *= -1.0
 
 		for i in range(len(data[0])):
-			fsc =  2*data[1][i]/(1.0+data[1][i])
+			fsc =  old_div(2*data[1][i],(1.0+data[1][i]))
 			if args[0]==0 or args[1]==0: qt=0
-			else: qt  = fsc - 0.5*( tanh(pi*(data[0][i]+args[0])/2.0/args[1]/args[0]) - tanh(pi*(data[0][i]-args[0])/2.0/args[1]/args[0]) )
+			else: qt  = fsc - 0.5*( tanh(old_div(pi*(data[0][i]+args[0])/2.0/args[1],args[0])) - tanh(old_div(pi*(data[0][i]-args[0])/2.0/args[1],args[0])) )
 			v  -= qt*qt
 		#print args,v
 		return v
@@ -669,12 +669,12 @@ def fit_tanh(dres, low = 0.1):
 	setzero = False
 	for i in range(1,len(dres[0])):
 		if not setzero:
-			if(2*dres[1][i]/(1.0+dres[1][i]) <low):  setzero = True
+			if(old_div(2*dres[1][i],(1.0+dres[1][i])) <low):  setzero = True
 		if setzero:  dres[1][i] = 0.0
 
 	freq = -1.0
 	for i in range(1,len(dres[0])-1):
-		if ( (2*dres[1][i]/(1.0+dres[1][i]) ) < 0.5):
+		if ( (old_div(2*dres[1][i],(1.0+dres[1][i])) ) < 0.5):
 			freq = dres[0][i-1]
 			break
 	if freq < 0.0:
@@ -716,7 +716,7 @@ def fit_tanh1(dres, low = 0.1):
 		for i in range(len(data[0])):
 			fsc =  data[1][i]
 			if args[0]==0 or args[1]==0: qt=0
-			else: qt  = fsc - 0.5*( tanh(pi*(data[0][i]+args[0])/2.0/args[1]/args[0]) - tanh(pi*(data[0][i]-args[0])/2.0/args[1]/args[0]) )
+			else: qt  = fsc - 0.5*( tanh(old_div(pi*(data[0][i]+args[0])/2.0/args[1],args[0])) - tanh(old_div(pi*(data[0][i]-args[0])/2.0/args[1],args[0])) )
 			v  -= qt*qt
 		#print args,v
 		return v
@@ -761,7 +761,7 @@ def tanhfilter(nx, fl, aa):
 	f = [0.0]*n
 	for i in range(n):
 		x = float(i)/nx
-		f[i] = 0.5*( tanh(pi*(x+fl)/2.0/aa/fl) - tanh(pi*(x-fl)/2.0/aa/fl) )
+		f[i] = 0.5*( tanh(old_div(pi*(x+fl)/2.0/aa,fl)) - tanh(old_div(pi*(x-fl)/2.0/aa,fl)) )
 	return  [[float(i)/nx for i in range(n)],f]
 
 def filt_matched(ima, SNR, Pref):
@@ -786,11 +786,11 @@ def filt_matched(ima, SNR, Pref):
 	TMP2=[]
 	for j in range(len(Pref)-1):
 		if(SNR[j]>.05): 
-			thm=SNR[j]*(SNR[j]+1.)*PU[j]/Pref[j]
+			thm=old_div(SNR[j]*(SNR[j]+1.)*PU[j],Pref[j])
 			print(thm)
 			hm=sqrt(thm)
 			deno=(SNR[j]+1)*(ctf_2[j]*Pn2[j]*TE[j]**2+Pn1[j])+ctf_2[j]*PU[j]*TE[j]**2
-			xval=hm/deno 
+			xval=old_div(hm,deno) 
 		else: 
 			hm=0.0
 			xval=0.0
@@ -831,7 +831,7 @@ def filt_vols( vols, fscs, mask3D ):
 	for i in range(nvol):
 		ptab = rops_table( vols[i] )
 		for j in range( len(ptab) ):
-			ptab[j] = sqrt( pmax[j]/ptab[j] )
+			ptab[j] = sqrt( old_div(pmax[j],ptab[j]) )
 
 		vols[i] = filt_table( vols[i], ptab )
 		#stat = Util.infomask( vols[i], mask3D, False )

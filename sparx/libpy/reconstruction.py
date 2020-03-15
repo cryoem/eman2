@@ -624,7 +624,7 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 	while prjlist.goToNext():
 		prj = prjlist.image()
 		try:
-			stmp = nnx/0
+			stmp = old_div(nnx,0)
 			stmp = prj.get_attr("ptcl_source_image")
 		except:
 			try:
@@ -1384,7 +1384,7 @@ def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, del
 		#  [ipsi+iang], [ishift], [probability]
 		#  Number of orientations for a given image
 		numbor = len(paramstructure[im][2])
-		ipsiandiang = [ paramstructure[im][2][i][0]/1000  for i in range(numbor) ]
+		ipsiandiang = [ old_div(paramstructure[im][2][i][0],1000)  for i in range(numbor) ]
 		allshifts   = [ paramstructure[im][2][i][0]%1000  for i in range(numbor) ]
 		probs       = [ paramstructure[im][2][i][1] for i in range(numbor) ]
 		#  Find unique projection directions
@@ -1396,16 +1396,16 @@ def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, del
 			lshifts = findall(tdir[ii], ipsiandiang)
 			toprab  = 0.0
 			for ki in range(len(lshifts)):  toprab += probs[lshifts[ki]]
-			recdata = Util.mult_scalar(prjlist[im][allshifts[lshifts[0]]], probs[lshifts[0]]/toprab)
+			recdata = Util.mult_scalar(prjlist[im][allshifts[lshifts[0]]], old_div(probs[lshifts[0]],toprab))
 			recdata.set_attr_dict({"padffted":1, "is_complex":0})
 			for ki in range(1,len(lshifts)):
-				Util.add_img(recdata, Util.mult_scalar(prjlist[im][allshifts[lshifts[ki]]], probs[lshifts[ki]]/toprab))
+				Util.add_img(recdata, Util.mult_scalar(prjlist[im][allshifts[lshifts[ki]]], old_div(probs[lshifts[ki]],toprab)))
 			recdata.set_attr_dict({"padffted":1, "is_complex":1})
 			if not upweighted:  recdata = filt_table(recdata, bckgn )
 			recdata.set_attr("bckgnoise", bckgn )
 			ipsi = tdir[ii]%100000
-			iang = tdir[ii]/100000
-			r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":refang[iang][2]+ipsi*delta}), toprab*avgnorm/norm_per_particle[im])
+			iang = old_div(tdir[ii],100000)
+			r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":refang[iang][2]+ipsi*delta}), old_div(toprab*avgnorm,norm_per_particle[im]))
 	#  clean stuff
 	del bckgn, recdata, tdir, ipsiandiang, allshifts, probs
 
@@ -1461,7 +1461,7 @@ def recons3d_trl_struct_MPI(myid, main_node, prjlist, paramstructure, refang, rs
 		#  [ipsi+iang], [ishift], [probability]
 		#  Number of orientations for a given image
 		numbor = len(paramstructure[im][2])
-		ipsiandiang = [ paramstructure[im][2][i][0]/1000  for i in range(numbor) ]
+		ipsiandiang = [ old_div(paramstructure[im][2][i][0],1000)  for i in range(numbor) ]
 		allshifts   = [ paramstructure[im][2][i][0]%1000  for i in range(numbor) ]
 		probs       = [ paramstructure[im][2][i][1] for i in range(numbor) ]
 		#  Find unique projection directions
@@ -1482,13 +1482,13 @@ def recons3d_trl_struct_MPI(myid, main_node, prjlist, paramstructure, refang, rs
 				if( data[lpt] == None ):
 					data[lpt] = fshift(prjlist[im], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
 					data[lpt].set_attr("is_complex",0)
-				Util.add_img(recdata, Util.mult_scalar(data[lpt], probs[lshifts[ki]]/toprab))
+				Util.add_img(recdata, Util.mult_scalar(data[lpt], old_div(probs[lshifts[ki]],toprab)))
 			recdata.set_attr_dict({"padffted":1, "is_fftpad":1,"is_fftodd":0, "is_complex_ri":1, "is_complex":1})
 			if not upweighted:  recdata = filt_table(recdata, bckgn )
 			recdata.set_attr_dict( {"bckgnoise":bckgn, "ctf":ct} )
 			ipsi = tdir[ii]%100000
-			iang = tdir[ii]/100000
-			r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":refang[iang][2]+ipsi*delta}), toprab*avgnorm/norm_per_particle[im])
+			iang = old_div(tdir[ii],100000)
+			r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":refang[iang][2]+ipsi*delta}), old_div(toprab*avgnorm,norm_per_particle[im]))
 	#  clean stuff
 	del bckgn, recdata, tdir, ipsiandiang, allshifts, probs
 
@@ -1883,13 +1883,13 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 	dummy = r.finish(True)
 	outlist = [[] for i in range(6)]
 	nn = SSNR.get_xsize()
-	for i in range(1,nn): outlist[0].append((float(i)-0.5)/(float(nn-1)*2))
+	for i in range(1,nn): outlist[0].append(old_div((float(i)-0.5),(float(nn-1)*2)))
 	for i in range(1,nn):
 		if(SSNR(i,1,0) > 0.0):
-			outlist[1].append(max(0.0,(SSNR(i,0,0)/SSNR(i,1,0)-1.)))      # SSNR
+			outlist[1].append(max(0.0,(old_div(SSNR(i,0,0),SSNR(i,1,0))-1.)))      # SSNR
 		else:
 			outlist[1].append(0.0)
-	for i in range(1,nn): outlist[2].append(SSNR(i,1,0)/SSNR(i,2,0))	          # variance
+	for i in range(1,nn): outlist[2].append(old_div(SSNR(i,1,0),SSNR(i,2,0)))	          # variance
 	for i in range(1,nn): outlist[3].append(SSNR(i,2,0))				  # number of points in the shell
 	for i in range(1,nn): outlist[4].append(SSNR(i,3,0))				  # number of added Fourier points
 	for i in range(1,nn): outlist[5].append(SSNR(i,0,0))				  # square of signal
@@ -1965,15 +1965,15 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 		dummy = r.finish(True)		
 		outlist = [[] for i in range(6)]
 		nn = SSNR.get_xsize()
-		for i in range(1,nn): outlist[0].append((float(i)-0.5)/(float(nn-1)*2))
+		for i in range(1,nn): outlist[0].append(old_div((float(i)-0.5),(float(nn-1)*2)))
 		for i in range(1,nn):
 			if SSNR(i,1,0) > 0.0:
-				outlist[1].append(max(0.0,(SSNR(i,0,0)/SSNR(i,1,0)-1.)))     # SSNR
+				outlist[1].append(max(0.0,(old_div(SSNR(i,0,0),SSNR(i,1,0))-1.)))     # SSNR
 			else:
 				outlist[1].append(0.0)
 		for i in range(1,nn): 
 			if SSNR(i,2,0) > 0.0:
-				outlist[2].append(SSNR(i,1,0)/SSNR(i,2,0))	          # variance
+				outlist[2].append(old_div(SSNR(i,1,0),SSNR(i,2,0)))	          # variance
 			else:
 				outlist[2].append(0.0)
 		for i in range(1,nn): outlist[3].append(SSNR(i,2,0))				  # number of points in the shell
@@ -2173,13 +2173,13 @@ def recons3d_em(projections_stack, max_iterations_count = 100, radius = -1, min_
 				time_start = clock()
 				w = solution.project("chao", chao_params)
 				time_projection += clock() - time_start
-				p = projections_data[i][j] / threshold_to_minval(w, min_allowed_divisor)
+				p = old_div(projections_data[i][j], threshold_to_minval(w, min_allowed_divisor))
 				time_start = clock()
 				q += p.backproject("chao", chao_params)
 				time_backprojection += clock() - time_start
 		Util.div_img( q, a )
 		Util.mul_img( q, solution ) # q <- new solution  
-		avg_absolute_voxel_change = q.cmp("lod",solution,{"mask":sphere3D,"negative":0,"normalize":0}) / sphere3D_volume
+		avg_absolute_voxel_change = old_div(q.cmp("lod",solution,{"mask":sphere3D,"negative":0,"normalize":0}), sphere3D_volume)
 		if avg_absolute_voxel_change > prev_avg_absolute_voxel_change:
 			#print "Finish and return last good solution"
 			break
@@ -2296,7 +2296,7 @@ def recons3d_em_MPI(projections_stack, output_file, max_iterations_count = 100, 
 				time_start = clock()
 				w = solution.project("chao", chao_params)
 				time_projection += clock() - time_start
-				p = projections_data[i][j] / threshold_to_minval(w, min_allowed_divisor)
+				p = old_div(projections_data[i][j], threshold_to_minval(w, min_allowed_divisor))
 				time_start = clock()
 				q += p.backproject("chao", chao_params)
 				time_backprojection += clock() - time_start
@@ -2306,8 +2306,8 @@ def recons3d_em_MPI(projections_stack, output_file, max_iterations_count = 100, 
 		# ----------------------
 		Util.div_img( q, a )
 		Util.mul_img( q, solution ) # q <- new solution  
-		norm_absolute_voxel_change = q.cmp("lod",solution,{"mask":sphere3D,"negative":0,"normalize":0}) / q.cmp("lod",model_blank(nx,nx,nx),{"mask":sphere3D,"negative":0,"normalize":0})
-		norm_squared_voxel_change  = q.cmp("sqEuclidean",solution,{"mask":sphere3D}) / q.cmp("sqEuclidean",model_blank(nx,nx,nx),{"mask":sphere3D})
+		norm_absolute_voxel_change = old_div(q.cmp("lod",solution,{"mask":sphere3D,"negative":0,"normalize":0}), q.cmp("lod",model_blank(nx,nx,nx),{"mask":sphere3D,"negative":0,"normalize":0}))
+		norm_squared_voxel_change  = old_div(q.cmp("sqEuclidean",solution,{"mask":sphere3D}), q.cmp("sqEuclidean",model_blank(nx,nx,nx),{"mask":sphere3D}))
 		if norm_absolute_voxel_change > prev_avg_absolute_voxel_change:
 			if mpi_r == 0: print("Finish and return last good solution")
 			break
@@ -2421,7 +2421,7 @@ def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry
 			grad  = bvol - pxvol
 
 		rnorm = sqrt(grad.cmp("dot",grad,{"mask":mask3d,"negative":0}))
-		print('iter = %3d,  rnorm = %6.3f,  rnorm/bnorm = %6.3f' % (iter,rnorm,rnorm/bnorm))
+		print('iter = %3d,  rnorm = %6.3f,  rnorm/bnorm = %6.3f' % (iter,rnorm,old_div(rnorm,bnorm)))
 		if (rnorm < tol or rnorm > old_rnorm): break
 		old_rnorm = rnorm
 		xvol = xvol + lam*grad

@@ -100,7 +100,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print("****************************************************************************************************")
 
 	color = myid%indep_run
-	key = myid/indep_run
+	key = old_div(myid,indep_run)
 	group_comm = mpi_comm_split(MPI_COMM_WORLD, color, key)
 	group_main_node = 0
 
@@ -188,7 +188,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		#	(a)  three times in a row it could not find new stable groups
 		couldnt_find_stable = 0
 		#	(b)  if number of groups to process is less than three
-		K = ndata/img_per_grp
+		K = old_div(ndata,img_per_grp)
 
 		while Iter <= max_round and couldnt_find_stable < 3 and K > 3:
 			if myid == main_node: 
@@ -343,7 +343,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				ndata = nndata
 
 				couldnt_find_stable = 0
-				K = ndata/img_per_grp
+				K = old_div(ndata,img_per_grp)
 			else:
 				couldnt_find_stable += 1
 			Iter += 1
@@ -402,9 +402,9 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	if len(nn) > 0: img_per_grp = nn[-1]
 	refim_all = refim
 
-	two_way_loop = match_second/2
+	two_way_loop = old_div(match_second,2)
 	ndata = len(alldata)
-	K = ndata/img_per_grp
+	K = old_div(ndata,img_per_grp)
 	for mloop in range(1, match_second+1):
 		if mloop <= two_way_loop:
 			wayness = 2
@@ -449,7 +449,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				data_left[c] = alldata[i]
 				c += 1
 
-		K_left = nleft/img_per_grp
+		K_left = old_div(nleft,img_per_grp)
 		if K_left > 0:
 			if myid == main_node: 
 				print("**********************************************************************")
@@ -674,7 +674,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				for im in range(l_STB_PART):
 					alpha, sx, sy, mirror, scale = get_params2D(class_data[im])
 					ali_params[ii].extend([alpha, sx, sy, mirror])
-			if ou == -1:  ou = nx/2-2
+			if ou == -1:  ou = old_div(nx,2)-2
 			stable_set, mirror_consistent_rate, pix_err = multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, ou*2)
 
 			l_stable_set = len(stable_set)
@@ -792,7 +792,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 #		lctf = len(ctm)
 
 	# IMAGES ARE SQUARES! center is in SPIDER convention
-	cnx = nx/2+1
+	cnx = old_div(nx,2)+1
 	cny = cnx
 
 	mode = "F"
@@ -945,9 +945,9 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			id_list_long = Util.assign_groups(str(d.__array_interface__['data'][0]), numref, nima) # string with memory address is passed as parameters
 			del d
 			id_list = [[] for i in range(numref)]
-			maxasi = nima/numref
+			maxasi = old_div(nima,numref)
 			for i in range(maxasi*numref):
-				id_list[i/maxasi].append(id_list_long[i])
+				id_list[old_div(i,maxasi)].append(id_list_long[i])
 			for i in range(nima%maxasi):
 				id_list[id_list_long[-1]].append(id_list_long[maxasi*numref+i])
 			for iref in range(numref):
@@ -1365,7 +1365,7 @@ def match_independent_runs(data, refi, n_group, T):
 	from numpy	     import array
 	from pap_statistics  import k_means_stab_bbenum
 
-	K = len(refi)/n_group
+	K = old_div(len(refi),n_group)
 	Parts = []
 	for i in range(n_group):
 		part = []
@@ -1416,7 +1416,7 @@ def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayne
 	from filter	    import filt_tanl
 	from numpy	    import array
 
-	K = len(refi)/indep_run
+	K = old_div(len(refi),indep_run)
 	run = list(range(indep_run))
 	shuffle(run)
 
@@ -1540,7 +1540,7 @@ def generate_random_averages(data, K, rand_seed = -1):
 def get_unique_averages(data, indep_run, m_th=0.45):
 	
 	size_all = len(data)
-	size = size_all/indep_run
+	size = old_div(size_all,indep_run)
 	assert size_all%indep_run == 0	
 
 	# Meaning of flag
@@ -1553,11 +1553,11 @@ def get_unique_averages(data, indep_run, m_th=0.45):
 	for i in range(size_all-size):
 		m1 = list(map(int, data[i].get_attr('members')))
 		if len(m1) < 5: continue
-		for j in range((i/size+1)*size, size_all):
+		for j in range((old_div(i,size)+1)*size, size_all):
 			m2 = list(map(int, data[j].get_attr('members')))
 			if len(m2) < 5: continue
 			m = set(m1).intersection(set(m2))
-			if float(len(m)) > m_th*(len(m1)+len(m2))/2:
+			if float(len(m)) > old_div(m_th*(len(m1)+len(m2)),2):
 				if flag[i] == 0 and flag[j] == 0:
 					flag[i] = 1
 					flag[j] = 2
