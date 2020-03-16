@@ -1921,7 +1921,7 @@ def fsc(img1, img2, w = 1.0, filename=None):
 		frsc.append(result[i*sl:(i+1)*sl])
 	if filename:
 		outf = open(filename, "w")
-		for i in range(size):
+		for i in range(sl):
 			datstrings = []
 			datstrings.append("  %12f" % (frsc[0][i]))
 			datstrings.append("  %12f" % (frsc[1][i]))

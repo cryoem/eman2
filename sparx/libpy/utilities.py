@@ -1751,12 +1751,11 @@ def read_spider_doc(fnam):
 	return data
 
 def chooseformat(t, form_float = "  %12.5f"):
-	from string import  replace, strip, split, atoi
-	e_form = replace(form_float,"f","e")
-	ee = strip(form_float)%t
-	if(len(ee)>atoi(split( strip(form_float),"." )[0][1:] )):  return e_form
+	e_form = form_float.replace("f","e")
+	ee = form_float.strip()%t
+	if(len(ee)>int( (( form_float.strip() ).split("."))[0][1:] )):  return e_form
 	df1 = float(ee)
-	df2 = float(strip(e_form)%t)
+	df2 = float(e_form.strip()%t)
 	if(abs(t-df1) <= abs(t-df2)):  return form_float
 	else: return e_form
 
@@ -1769,7 +1768,6 @@ def read_text_row(fnam, format="", skip=";"):
 	    	len(data)/nc : number of lines (rows)
 	    	data: List of numbers from the doc file
  	"""
-	from string import split
 
 	inf  = open(fnam, "r")
 	strg = inf.readline()
@@ -1780,7 +1778,7 @@ def read_text_row(fnam, format="", skip=";"):
 		for j in range(len(strg)):
 			if(strg[j] == skip):	com_line = True
 		if com_line == False:
-			word=split(strg)
+			word=strg.split()
 			if format == "s" :
 				key = int(word[1])
 				if key != len(word) - 2:
@@ -1814,7 +1812,6 @@ def write_text_row(data, file_name, form_float = "  %14.6f", form_int = "  %12d"
 		 If only one list is given, the file will contain one line
 	"""
 	import types
-	from string import find
 
 	outf = open(file_name, "w")
 	if (type(data[0]) == list):
@@ -1826,7 +1823,7 @@ def write_text_row(data, file_name, form_float = "  %14.6f", form_int = "  %12d"
 				if qtp == int:		outf.write(form_int%tpt)
 				elif qtp == float:
 					frmt = chooseformat(tpt, form_float)
-					if( find(frmt,"e") < 0 ):	outf.write(frmt%tpt)
+					if( frmt.find("e") < 0 ):	outf.write(frmt%tpt)
 					else:						outf.write(frmt%tpt)
 				else:                   		outf.write("  %s"%tpt)
 			outf.write("\n")
@@ -1838,7 +1835,7 @@ def write_text_row(data, file_name, form_float = "  %14.6f", form_int = "  %12d"
 			if qtp == int :			outf.write(form_int%tpt+"\n")
 			elif qtp == float:
 				frmt = chooseformat(tpt, form_float)
-				if( find(frmt,"e") < 0 ):		outf.write(frmt%tpt+"\n")
+				if( frmt.find("e") < 0 ):		outf.write(frmt%tpt+"\n")
 				else:							outf.write(frmt%tpt+"\n")
 			else:								outf.write("  %s\n"%tpt)
 	outf.flush()
@@ -1851,13 +1848,12 @@ def read_text_file(file_name, ncol = 0):
 		if ncol >= 0, just read the (ncol)-th column.
 	"""
 
-	from string import split
 	inf = open(file_name, "r")
 	line = inf.readline()
 	data = []
 	while len(line) > 0:
 		if ncol == -1:
-			vdata = split(line)
+			vdata = line.split()
 			if data == []:
 				for i in range(len(vdata)):
 					try:     data.append([int(vdata[i])])
@@ -1871,7 +1867,7 @@ def read_text_file(file_name, ncol = 0):
 						try:  data[i].append(float(vdata[i]))
 						except:  data[i].append(vdata[i])
 		else:
-			vdata = split(line)[ncol]
+			vdata = line.split()[ncol]
 			try:     data.append(int(vdata))
 			except:
 				try:  	data.append(float(vdata))
@@ -1888,7 +1884,6 @@ def write_text_file(data, file_name, form_float = "  %14.6f", form_int = "  %12d
 	         First list will be written as a first column, second as a second, and so on...
 		 If only one list is given, the file will contain one column
 	"""
-	from string import find
 
 	if data == []:
 		outf = open(file_name, "w")
@@ -1906,7 +1901,7 @@ def write_text_file(data, file_name, form_float = "  %14.6f", form_int = "  %12d
 				if qtp == int:			outf.write(form_int%tpt)
 				elif qtp == float:
 					frmt = chooseformat(tpt, form_float)
-					if( find(frmt,"e") < 0 ):	outf.write(frmt%tpt)
+					if( frmt.find("e") < 0 ):	outf.write(frmt%tpt)
 					else:						outf.write(frmt%tpt)
 				else:                   		outf.write("  %s"%tpt)
 			outf.write("\n")
@@ -1918,7 +1913,7 @@ def write_text_file(data, file_name, form_float = "  %14.6f", form_int = "  %12d
 			if qtp == int :			outf.write(form_int%tpt+"\n")
 			elif qtp == float:
 				frmt = chooseformat(tpt, form_float)
-				if( find(frmt,"e") < 0 ):		outf.write(frmt%tpt+"\n")
+				if( frmt.find("e") < 0 ):		outf.write(frmt%tpt+"\n")
 				else:							outf.write(frmt%tpt+"\n")
 			else:                   			outf.write("  %s\n"%tpt)
 	outf.close()
