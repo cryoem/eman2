@@ -49,7 +49,7 @@ def initCircle():
 	EMShape.dlists=GL.glGenLists(1)
 	GL.glNewList(EMShape.dlists,GL.GL_COMPILE)
 	GL.glBegin(GL.GL_LINE_LOOP)
-	d2r=old_div(pi,180.0)
+	d2r=pi/180.0
 	for i in range(90):
 		GL.glVertex(sin(i*d2r*4.0),cos(i*d2r*4.0))
 	GL.glEnd()
@@ -260,8 +260,8 @@ class EMShape(object):
 			GL.glColor(*col)
 			
 			#circle inscribed in the rectangle
-			GL.glTranslate(old_div((v[0]+v2[0]),2.0),old_div((v[1]+v2[1]),2.0),0)
-			GL.glScalef(old_div((v2[0]-v[0]),2.0),old_div((v2[1]-v[1]),2.0),1.0)
+			GL.glTranslate((v[0]+v2[0])/2.0,(v[1]+v2[1])/2.0,0)
+			GL.glScalef((v2[0]-v[0])/2.0,(v2[1]-v[1])/2.0,1.0)
 			GL.glCallList(EMShape.dlists)
 			GL.glPopMatrix()
 			
@@ -273,8 +273,8 @@ class EMShape(object):
 			GL.glPushMatrix()
 			GL.glColor(*col)
 			
-			GL.glTranslate(old_div((v[0]+v2[0]),2.0),old_div((v[1]+v2[1]),2.0),0)
-			GL.glScalef(old_div((v2[0]-v[0]),2.0),old_div((v2[1]-v[1]),2.0),1.0)
+			GL.glTranslate((v[0]+v2[0])/2.0,(v[1]+v2[1])/2.0,0)
+			GL.glScalef((v2[0]-v[0])/2.0,(v2[1]-v[1])/2.0,1.0)
 			GL.glCallList(EMShape.dlists)
 			GL.glPopMatrix()
 		
@@ -542,7 +542,7 @@ class EMShape(object):
 		elif s[0] == "rectline":
 			#      0     1  2  3  4   5   6   7   8
 			# s = [type, r, g, b, x1, y1, x2, y2, width]
-			centroid = ( old_div((s[4]+s[6]),2.0), old_div((s[5]+s[7]),2.0) )
+			centroid = ( (s[4]+s[6])/2.0, (s[5]+s[7])/2.0 )
 			l_vect = (s[6]-s[4], s[7]-s[5])
 			length = sqrt(l_vect[0]**2+l_vect[1]**2)
 			l_uvect = (old_div(l_vect[0],length), old_div(l_vect[1],length))
@@ -552,10 +552,10 @@ class EMShape(object):
 			translated = (x-centroid[0], y-centroid[1]) #translate the origin to the centroid
 			w = translated[0]*w_uvect[0] + translated[1]*w_uvect[1] #projection onto w_vect
 			l = translated[0]*l_uvect[0] + translated[1]*l_uvect[1] #projection onto l_vect
-			if abs(w) <= old_div(width,2.0):
+			if abs(w) <= width/2.0:
 				if fuzzy and abs(l) <= 5*length/8.0: #fuzzy = True includes area L/8 units beyond the ends
 					return True
-				elif abs(l) <= old_div(length,2.0):
+				elif abs(l) <= length/2.0:
 					return True
 				else:
 					return False
@@ -593,7 +593,7 @@ class EMShape(object):
 		elif s[0] == "rectline":
 			#      0     1  2  3  4   5   6   7   8
 			# s = [type, r, g, b, x1, y1, x2, y2, width]
-			return ( (s[4],s[5]), (s[6],s[7]), (old_div((s[4]+s[6]),2.0), old_div((s[5]+s[7]),2.0)) )			
+			return ( (s[4],s[5]), (s[6],s[7]), ((s[4]+s[6])/2.0, (s[5]+s[7])/2.0) )			
 		elif s[0] == "rcircle":
 			warnings.warn("Not yet implemented.")
 		elif s[0] == "rcirclepoint":

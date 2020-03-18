@@ -129,7 +129,7 @@ class EMImage2DWidget(EMGLWidget):
 		self.mouse_mode = 0         # current mouse mode as selected by the inspector
 		self.curfft=0				# current FFT mode (when starting with real images only)
 		self.mag = 1.1				# magnification factor
-		self.invmag = old_div(1.0,self.mag)	# inverse magnification factor
+		self.invmag = 1.0/self.mag	# inverse magnification factor
 
 		self.shapes={}				# dictionary of shapes to draw, see add_shapes
 		self.shapechange=1			# Set to 1 when shapes need to be redrawn
@@ -534,7 +534,7 @@ class EMImage2DWidget(EMGLWidget):
 			if self.data == None: return
 			# histogram is impacted by downsampling, so we need to compensate
 			if self.scale<=0.5 :
-				down=self.data.process("math.meanshrink",{"n":int(floor(old_div(1.0,self.scale)))})
+				down=self.data.process("math.meanshrink",{"n":int(floor(1.0/self.scale))})
 				mean=down["mean"]
 				sigma=down["sigma"]
 				m0=down["minimum"]
@@ -696,7 +696,7 @@ class EMImage2DWidget(EMGLWidget):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
 		if self.scale==newscale: return
 		try:
-			self.origin=(old_div(newscale,self.scale)*(old_div(self.width(),2.0)+self.origin[0])-old_div(self.width(),2.0),old_div(newscale,self.scale)*(old_div(self.height(),2.0)+self.origin[1])-old_div(self.height(),2.0))
+			self.origin=(old_div(newscale,self.scale)*(self.width()/2.0+self.origin[0])-self.width()/2.0,old_div(newscale,self.scale)*(self.height()/2.0+self.origin[1])-self.height()/2.0)
 			self.scale=newscale
 			if not quiet : self.signal_set_scale.emit(newscale)
 			self.updateGL()
@@ -1008,8 +1008,8 @@ class EMImage2DWidget(EMGLWidget):
 			self.setup_shapes()
 			self.shapechange=0
 
-		width = old_div(self.width(),2.0)
-		height = old_div(self.height(),2.0)
+		width = self.width()/2.0
+		height = self.height()/2.0
 
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
@@ -1259,13 +1259,13 @@ class EMImage2DWidget(EMGLWidget):
 		oy = self.origin[1]
 
 		# if the image is off the screen automatically center it
-		if pixel_x + ox < 0: ox = old_div(- (display_width-pixel_x),2.0)
-		if pixel_y + oy < 0: oy = old_div(- (display_height-pixel_y),2.0)
+		if pixel_x + ox < 0: ox = - (display_width-pixel_x)/2.0
+		if pixel_y + oy < 0: oy = - (display_height-pixel_y)/2.0
 
 
 		# this operation keeps the image iff it is completely visible
-		if pixel_x < display_width:	ox = old_div(- (display_width-pixel_x),2.0)
-		if pixel_y < display_width: oy =  old_div(- (display_height-pixel_y),2.0)
+		if pixel_x < display_width:	ox = - (display_width-pixel_x)/2.0
+		if pixel_y < display_width: oy =  - (display_height-pixel_y)/2.0
 
 		self.origin = (ox,oy)
 
@@ -1274,7 +1274,7 @@ class EMImage2DWidget(EMGLWidget):
 			self.circle_dl = glGenLists(1)
 			glNewList(self.circle_dl,GL_COMPILE)
 			glBegin(GL_LINE_LOOP)
-			d2r=old_div(pi,180.0)
+			d2r=pi/180.0
 			for i in range(90): glVertex(sin(i*d2r*4.0),cos(i*d2r*4.0))
 			glEnd()
 			glEndList()
@@ -1347,8 +1347,8 @@ class EMImage2DWidget(EMGLWidget):
 					x2 = s.shape[6]
 					y1 = s.shape[5]
 					y2 = s.shape[7]
-					glTranslate(old_div((x1+x2),2.0), old_div((y1+y2),2.0),0)
-					glScalef(old_div((x1-x2),2.0), old_div((y1-y2),2.0),1.0)
+					glTranslate((x1+x2)/2.0, (y1+y2)/2.0,0)
+					glScalef((x1-x2)/2.0, (y1-y2)/2.0,1.0)
 					glCallList(self.circle_dl)
 					glPopMatrix()
 				elif  s.shape[0] == "rcirclepoint":
@@ -1358,12 +1358,12 @@ class EMImage2DWidget(EMGLWidget):
 					x2 = s.shape[6]
 					y1 = s.shape[5]
 					y2 = s.shape[7]
-					glTranslate(old_div((x1+x2),2.0), old_div((y1+y2),2.0),0)
-					glScalef(old_div((x1-x2),2.0), old_div((y1-y2),2.0),1.0)
+					glTranslate((x1+x2)/2.0, (y1+y2)/2.0,0)
+					glScalef((x1-x2)/2.0, (y1-y2)/2.0,1.0)
 					glCallList(self.circle_dl)
 					glPopMatrix()
 					glBegin(GL_POINTS)
-					glVertex( old_div((x1+x2),2.0), old_div((y1+y2),2.0),0);
+					glVertex( (x1+x2)/2.0, (y1+y2)/2.0,0);
 					glEnd()
 				elif s.shape[0] == "circle":
 					GL.glPushMatrix()
@@ -2256,7 +2256,7 @@ class EMImageInspector2D(QtWidgets.QWidget):
 #		print data
 		fft=data.do_fft()
 		pspec=fft.calc_radial_dist(old_div(fft["ny"],2),0.0,1.0,1)
-		ds=old_div(1.0,(fft["ny"]*data["apix_x"]))
+		ds=1.0/(fft["ny"]*data["apix_x"])
 		s=[ds*i for i in range(old_div(fft["ny"],2))]
 
 		from .emplot2d import EMDataFnPlotter
@@ -2276,9 +2276,9 @@ class EMImageInspector2D(QtWidgets.QWidget):
 			try: fftsum.add(fft)
 			except: fftsum=fft
 
-		fftsum.mult(old_div(1.0,len(self.target().list_data)))
+		fftsum.mult(1.0/len(self.target().list_data))
 		pspec=fftsum.calc_radial_dist(old_div(fft["ny"],2),0.0,1.0,1)	# note that this method knows about is_inten() image flag
-		ds=old_div(1.0,(fft["ny"]*self.target().get_data()["apix_x"]))
+		ds=1.0/(fft["ny"]*self.target().get_data()["apix_x"])
 		s=[ds*i for i in range(old_div(fft["ny"],2))]
 
 		from .emplot2d import EMDataFnPlotter
@@ -2509,15 +2509,15 @@ class EMImageInspector2D(QtWidgets.QWidget):
 
 	def update_brightness_contrast(self):
 		b=0.5*(self.mins.value+self.maxs.value-(self.lowlim+self.highlim))/((self.highlim-self.lowlim))
-		c=old_div((self.mins.value-self.maxs.value),(2.0*(self.lowlim-self.highlim)))
+		c=(self.mins.value-self.maxs.value)/(2.0*(self.lowlim-self.highlim))
 		brts = -b
 		conts = 1.0-c
 		self.brts.setValue(brts,1)
 		self.conts.setValue(conts,1)
 
 	def update_min_max(self):
-		x0=(old_div((self.lowlim+self.highlim),2.0)-(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
-		x1=(old_div((self.lowlim+self.highlim),2.0)+(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
+		x0=((self.lowlim+self.highlim)/2.0-(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
+		x1=((self.lowlim+self.highlim)/2.0+(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
 		self.mins.setValue(x0,1)
 		self.maxs.setValue(x1,1)
 		self.target().set_density_range(x0,x1)

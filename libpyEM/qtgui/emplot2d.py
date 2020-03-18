@@ -512,7 +512,7 @@ class EMPlot2DWidget(EMGLWidget):
 		GL.glPopMatrix()
 
 		if render:
-			fig=Figure((old_div(self.width(),72.0),old_div(self.height(),72.0)),dpi=72.0)
+			fig=Figure((self.width()/72.0,self.height()/72.0),dpi=72.0)
 			ax=fig.add_axes((.1,.1,.88,.88),autoscale_on=False,xlim=self.xlimits,ylim=self.ylimits,xscale=self.axisparms[2],yscale=self.axisparms[3])
 			#else : ax=fig.add_axes((.18,.18,.9,.9),autoscale_on=True,xscale=self.axisparms[2],yscale=self.axisparms[3])
 			if self.axisparms[0] and len(self.axisparms[0])>0 : ax.set_xlabel(self.axisparms[0],size="xx-large")
@@ -811,7 +811,7 @@ lc is the cursor selection point in plot coords"""
 		elif event.button()==Qt.LeftButton:
 			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
 			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
-			try: recip="%1.2f"%(old_div(1.0,lc[0]))
+			try: recip="%1.2f"%(1.0/lc[0])
 			except: recip="-"
 			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-10,"%1.5g (%s), %1.5g"%(lc[0],recip,lc[1]),120.0,-1)))
 			self.update_selected((event.x(),event.y()),lc)
@@ -835,7 +835,7 @@ lc is the cursor selection point in plot coords"""
 			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
 			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
 
-			try: recip="%1.2f"%(old_div(1.0,lc[0]))
+			try: recip="%1.2f"%(1.0/lc[0])
 			except: recip="-"
 			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-10,"%1.5g (%s), %1.5g"%(lc[0],recip,lc[1]),120.0,-1)))
 			self.update_selected((event.x(),event.y()),lc)
@@ -917,7 +917,7 @@ lc is the cursor selection point in plot coords"""
 					ymin=min(ymin,min(self.data[k][ax]))
 					ymax=max(ymax,max(self.data[k][ax]))
 
-			if self.axisparms[3]!="linear" : self.ylimits=(old_div(ymin,1.1),ymax*1.1)
+			if self.axisparms[3]!="linear" : self.ylimits=(ymin/1.1,ymax*1.1)
 			else:
 				margin=(ymax-ymin)*0.025
 				self.ylimits=(ymin-margin,ymax+margin)
@@ -1068,8 +1068,8 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		lc=self.scr2plot(event.x(),event.y())
 		self.lastcx = self.firstcx = event.x()
 		self.lastcy = self.firstcy = event.y()
-		x = self.firstcx - old_div(self.width(),2.0)
-		y = self.firstcy - old_div(self.height(),2.0)
+		x = self.firstcx - self.width()/2.0
+		y = self.firstcy - self.height()/2.0
 		if event.buttons()&Qt.MidButton:
 			filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Publish or Perish! Save Plot', os.getcwd(), "(*.tiff *.jpeg, *.png)")[0]
 			if filename: # if we cancel
@@ -1114,7 +1114,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 	def _computeXY(self, theta, rad):
 		"""return x and y given theta and rad"""
 		scaling = self.width()*(self.plotdims.x1 - self.plotdims.x0)
-		rescaledrad = old_div(rad,(2.0*self.plotlim[3]/scaling))
+		rescaledrad = rad/(2.0*self.plotlim[3]/scaling)
 		x = math.cos(theta) * rescaledrad
 		y = math.sin(theta) * rescaledrad
 		return x, y
@@ -1151,8 +1151,8 @@ class EMPolarPlot2DWidget(EMGLWidget):
 			self.lastcy = event.y()
 			#If we are drawing a cluster circle, then compute its radius for use in find circumscribed particles
 			if self.clusterorigin_rad:
-				x = event.x() - old_div(self.width(),2.0)
-				y = event.y() - old_div(self.height(),2.0)
+				x = event.x() - self.width()/2.0
+				y = event.y() - self.height()/2.0
 				rad = self._computeRadius(x,y)
 				self.clusterradius = self.clusterorigin_rad**2 + rad**2 - 2*self.clusterorigin_rad*rad*math.cos(self._computeTheta(x,y) - self.clusterorigin_theta)
 
@@ -1329,7 +1329,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 
 		if render:
 
-			fig=Figure((old_div(self.width(),72.0),old_div(self.height(),72.0)),dpi=72.0)
+			fig=Figure((self.width()/72.0,self.height()/72.0),dpi=72.0)
 			if self.limits :ax=fig.add_axes((.1,.1,.8,.8),autoscale_on=False,Polar=True,xlim=self.limits[0],ylim=self.limits[1],xscale=self.axisparms[2],yscale=self.axisparms[3])
 			else : ax=fig.add_axes((.1,.1,.8,.8),autoscale_on=True,polar=True,xscale=self.axisparms[2],yscale=self.axisparms[3])
 			if self.axisparms[0] and len(self.axisparms[0])>0 : ax.set_xlabel(self.axisparms[0],size="xx-large")

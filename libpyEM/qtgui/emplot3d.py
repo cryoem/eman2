@@ -532,7 +532,7 @@ class EMPlot3DWidget(EMGLWidget):
 		GL.glPopMatrix()
 
 		if render:
-			fig=Figure((old_div(self.width(),72.0),old_div(self.height(),72.0)),dpi=72.0)
+			fig=Figure((self.width()/72.0,self.height()/72.0),dpi=72.0)
 			ax=fig.add_axes((0.0,0.0,1.0,1.0),autoscale_on=False,xlim=self.xlimits,ylim=self.ylimits,zlim=self.zlimits,xscale=self.axisparms[3],yscale=self.axisparms[4],zscale=self.axisparms[5],projection="3d")
 #			print self.viewang
 			ax.view_init(*self.viewang)
@@ -883,7 +883,7 @@ lc is the cursor selection point in plot coords"""
 			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
 			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
 
-			try: recip="%1.2f"%(old_div(1.0,lc[0]))
+			try: recip="%1.2f"%(1.0/lc[0])
 			except: recip="-"
 			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-10,"%1.5g (%s), %1.5g"%(lc[0],recip,lc[1]),120.0,-1)))
 			self.update_selected((event.x(),event.y()),lc)
@@ -949,7 +949,7 @@ lc is the cursor selection point in plot coords"""
 					xmin=min(xmin,0)
 					xmax=max(xmax,len(self.data[k][0]))
 
-			if self.axisparms[3]!="linear" : self.xlimits=(old_div(xmin,1.1),xmax*1.1)
+			if self.axisparms[3]!="linear" : self.xlimits=(xmin/1.1,xmax*1.1)
 			else:
 				margin=(xmax-xmin)*0.025
 				self.xlimits=(xmin-margin,xmax+margin)
@@ -962,7 +962,7 @@ lc is the cursor selection point in plot coords"""
 				ymin=min(ymin,min(self.data[k][self.axes[k][1]]))
 				ymax=max(ymax,max(self.data[k][self.axes[k][1]]))
 
-			if self.axisparms[4]!="linear" : self.ylimits=(old_div(ymin,1.1),ymax*1.1)
+			if self.axisparms[4]!="linear" : self.ylimits=(ymin/1.1,ymax*1.1)
 			else:
 				margin=(ymax-ymin)*0.025
 				self.ylimits=(ymin-margin,ymax+margin)
@@ -976,7 +976,7 @@ lc is the cursor selection point in plot coords"""
 				zmin=min(zmin,min(self.data[k][self.axes[k][2]]))
 				zmax=max(zmax,max(self.data[k][self.axes[k][2]]))
 
-			if self.axisparms[4]!="linear" : self.zlimits=(old_div(zmin,1.1),zmax*1.1)
+			if self.axisparms[4]!="linear" : self.zlimits=(zmin/1.1,zmax*1.1)
 			else:
 				margin=(zmax-zmin)*0.025
 				self.zlimits=(zmin-margin,zmax+margin)
@@ -1003,18 +1003,18 @@ lc is the cursor selection point in plot coords"""
 
 	def wheelEvent(self, event):
 		if event.angleDelta().y()<0: scale=1.05
-		else: scale=old_div(1.0,1.05)
+		else: scale=1.0/1.05
 		
 		xrng=self.xlimits[1]-self.xlimits[0]
-		xcen=old_div(sum(self.xlimits),2.0)
+		xcen=sum(self.xlimits)/2.0
 		self.xlimits=(xcen-xrng*scale/2.0,xcen+xrng*scale/2.0)
 		
 		yrng=self.ylimits[1]-self.ylimits[0]
-		ycen=old_div(sum(self.ylimits),2.0)
+		ycen=sum(self.ylimits)/2.0
 		self.ylimits=(ycen-yrng*scale/2.0,ycen+yrng*scale/2.0)
 		
 		zrng=self.zlimits[1]-self.zlimits[0]
-		zcen=old_div(sum(self.zlimits),2.0)
+		zcen=sum(self.zlimits)/2.0
 		self.zlimits=(zcen-zrng*scale/2.0,zcen+zrng*scale/2.0)
 		
 		self.needupd=1

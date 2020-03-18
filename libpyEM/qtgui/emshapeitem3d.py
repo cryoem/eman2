@@ -244,8 +244,8 @@ class EMRuler(EMShapeBase):
 		glVertex3f(self.xf+self.rsinO, self.yf+self.rcosO, self.zf)
 		glVertex3f(self.xf-self.rsinO, self.yf-self.rcosO, self.zf)
 		for i in self.smallbars:
-			glVertex3f(self.xi+i[0]+old_div(self.rsinO,2.0), self.yi+i[1]+old_div(self.rcosO,2.0), self.zf)
-			glVertex3f(self.xi+i[0]-old_div(self.rsinO,2.0), self.yi+i[1]-old_div(self.rcosO,2.0), self.zf)
+			glVertex3f(self.xi+i[0]+self.rsinO/2.0, self.yi+i[1]+self.rcosO/2.0, self.zf)
+			glVertex3f(self.xi+i[0]-self.rsinO/2.0, self.yi+i[1]-self.rcosO/2.0, self.zf)
 		glEnd()	# Done Drawing The Cube
 		
 class EMCube(EMShapeBase):
@@ -628,9 +628,9 @@ class EMLine(EMShapeBase):
 		self.length = math.sqrt(dx*dx + dy*dy + dz*dz)	#cylinder length
 		if comparrows: 
 			self.leftArrowSize = self.width
-			self.leftArrowLength = old_div(self.length,10.0)
+			self.leftArrowLength = self.length/10.0
 			self.rightArrowSize = self.width
-			self.rightArrowLength = old_div(self.length,10.0)
+			self.rightArrowLength = self.length/10.0
 		self.boundingboxsize = 'length='+str(round(self.length, 2))+', width='+str(round(self.width, 2))
 		
 		if self.item_inspector: self.item_inspector.updateMetaData()	
@@ -707,7 +707,7 @@ class EMLine(EMShapeBase):
 		self.setWidth(dictionary["LINEPARS"][8])	
 			
 	def renderShape(self):
-		r2d = old_div(180.0,math.pi)
+		r2d = 180.0/math.pi
 				
 		glPushMatrix()
 		glTranslatef(self.x1, self.y1, self.z1)
@@ -1045,19 +1045,19 @@ class EMInspectorControlShape(EMItem3DInspector):
 	def _on_ambient_color(self, color):
 		rgb = color.getRgb()
 		if self.item3d():
-			self.item3d().setAmbientColor((old_div(float(rgb[0]),255.0)),(old_div(float(rgb[1]),255.0)),(old_div(float(rgb[2]),255.0)))
+			self.item3d().setAmbientColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
 			self.inspector().updateSceneGraph()
 		
 	def _on_diffuse_color(self, color):
 		rgb = color.getRgb()
 		if self.item3d():
-			self.item3d().setDiffuseColor((old_div(float(rgb[0]),255.0)),(old_div(float(rgb[1]),255.0)),(old_div(float(rgb[2]),255.0)))
+			self.item3d().setDiffuseColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
 			self.inspector().updateSceneGraph()
 		
 	def _on_specular_color(self, color):
 		rgb = color.getRgb()
 		if self.item3d():	
-			self.item3d().setSpecularColor((old_div(float(rgb[0]),255.0)),(old_div(float(rgb[1]),255.0)),(old_div(float(rgb[2]),255.0)))
+			self.item3d().setSpecularColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
 			self.inspector().updateSceneGraph()
 		
 	def _on_shininess(self, shininess):
