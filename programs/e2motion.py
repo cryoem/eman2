@@ -774,8 +774,8 @@ class EMMotion(QtWidgets.QMainWindow):
 		rot=self.wsbalimaskrot.value()
 		
 		mask=self.alimask.process("threshold.binary",{"value":0.001})			# binarize the drawn mask
-		mask.process_inplace("math.linear",{"scale":-1.0,"shift":1.0+old_div(base,100.0)})		# invert the mask (user selects the region to include, not exclude)
-		mask.process_inplace("filter.lowpass.gauss",{"cutoff_abs":old_div(0.5,(blur+.01))})
+		mask.process_inplace("math.linear",{"scale":-1.0,"shift":1.0+base/100.0})		# invert the mask (user selects the region to include, not exclude)
+		mask.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.5/(blur+.01)})
 		
 		self.alimasked.mult(mask)
 		if rot!=0 :
@@ -891,7 +891,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		
 		mask=self.roidrawmask.process("threshold.binary",{"value":0.001})			# binarize the drawn mask
 		mask.process_inplace("math.linear",{"scale":-1.0,"shift":1.0})		# invert the mask (user selects the region to include, not exclude)
-		mask.process_inplace("filter.lowpass.gauss",{"cutoff_abs":old_div(0.5,(blur+.01))})
+		mask.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.5/(blur+.01)})
 #		mask.process_inplace("threshold.belowtozero",{"minvalue":0.05})				# this limits the range of the mask to improve PCA performance
 	
 		self.roimask=mask

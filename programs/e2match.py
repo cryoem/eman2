@@ -516,7 +516,7 @@ def refpostprocessing( options, img2processEd ):
 			img2processBox = img2processHdr['nx']
 			img2processApix = round(img2processHdr['apix_x'],4)
 	
-			resfac = old_div(1.0,float(options.sharpfiltres))
+			resfac = 1.0/float(options.sharpfiltres)
 			npixels = int(round(float( ref_box * ref_apix * res_fac )))
 
 			actual_res = old_div(float(ref_box * ref_apix), npixels)

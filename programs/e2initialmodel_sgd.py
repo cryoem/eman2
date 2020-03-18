@@ -29,7 +29,7 @@ def make3d(aptcls, sym="c1"):
 	threed.process_inplace("xform.centerofmass")
 	threed=threed.get_clip(Region(old_div((pad-boxsize),2),old_div((pad-boxsize),2),old_div((pad-boxsize),2),boxsize,boxsize,boxsize))
 	threed.process_inplace("normalize")
-	threed.process_inplace("mask.gaussian",{"inner_radius":old_div(boxsize,3.0),"outer_radius":old_div(boxsize,12.0)})
+	threed.process_inplace("mask.gaussian",{"inner_radius":boxsize/3.0,"outer_radius":boxsize/12.0})
 
 	
 	
@@ -169,7 +169,7 @@ def make_model(jsd,myid, options):
 			p.process_inplace("normalize")
 			if options.addnoise>0:
 				p.process_inplace("math.addsignoise",{"noise":options.addnoise})
-			p.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.,options.targetres)})
+			p.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./options.targetres})
 			#p.process_inplace("normalize.edgemean")
 			p.process_inplace("normalize")
 			
@@ -204,7 +204,7 @@ def make_model(jsd,myid, options):
 		learnrate*=lrmult
 		
 		
-		mapnew.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.,options.targetres)})
+		mapnew.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./options.targetres})
 		#mapnew.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.3})
 		#mapnew.process_inplace("mask.auto3d",{"radius":boxsize/6,"threshold":map0["sigma_nonzero"]*.85,"nmaxseed":30,"nshells":boxsize/20,"nshellsgauss":boxsize/20})
 		ddmap=mapnew-map0

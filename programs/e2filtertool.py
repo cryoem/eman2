@@ -740,7 +740,7 @@ class EMFilterTool(QtWidgets.QMainWindow):
 
 		origfft=self.origdata[0].do_fft()
 		self.pspecorig=origfft.calc_radial_dist(old_div(self.ny,2),0.0,1.0,1)
-		ds=old_div(1.0,(self.apix*self.ny))
+		ds=1.0/(self.apix*self.ny)
 		self.pspecs=[ds*i for i in range(len(self.pspecorig))]
 
 

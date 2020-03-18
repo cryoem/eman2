@@ -46,7 +46,7 @@ pdim=None
 tdim2=None
 pdim2=None
 sfac=None
-degrad=old_div(pi,180.0)
+degrad=pi/180.0
 ncmp=0
 
 def compare(vec,empty):	 # I add an empty argument just because the Simplex.py wants two input... -Muyuan
@@ -187,7 +187,7 @@ both box sizes should be multiples of 8."""
 	# we'll have to reread the files if we want to recover the unscaled images
 #	sfac=int(floor(min(pdim)/10.0))
 	if options.shrink>0 : sfac=options.shrink
-	else : sfac=int(floor(old_div(min(pdim),12.0)))
+	else : sfac=int(floor(min(pdim)/12.0))
 	print("Shrink by %d"%sfac)
 	target.process_inplace("math.meanshrink",{"n":sfac})
 	probe.process_inplace("math.meanshrink",{"n":sfac})

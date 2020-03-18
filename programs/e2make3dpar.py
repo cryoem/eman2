@@ -574,7 +574,7 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,preprocess):
 
 				try: elem["quality"]=float(tmp["class_qual"])
 				except:
-					try: elem["quality"]=old_div(1.0,(elem["weight"]+.00001))
+					try: elem["quality"]=1.0/(elem["weight"]+.00001)
 					except: elem["quality"]=1.0
 							
 				
@@ -626,7 +626,7 @@ def reconstruct(data,recon,preprocess,pad,fillangle,altmask,verbose=0, lstinput=
 
 	if verbose>0:print("Inserting Slices (%d)"%len(data))
 
-	astep=atan2(1.0,old_div(max(pad),2.0))*180./pi
+	astep=atan2(1.0,max(pad)/2.0)*180./pi
 #	astep=atan2(1.0,max(pad)/2.0)/1.5*180./pi		# experimental smaller step size
 	den=floor(old_div(fillangle,astep))
 	if den>9 :
@@ -682,9 +682,9 @@ def reconstruct(data,recon,preprocess,pad,fillangle,altmask,verbose=0, lstinput=
 		else:
 			xf=elem["xform"].get_rotation("eman")
 			alt,az=xf["alt"],xf["az"]
-			for dalt in np.arange(old_div(-fillangle,2.0),old_div(fillangle,2.0),astep):
-				for daz in np.arange(old_div(-fillangle,2.0),old_div(fillangle,2.0),astep):
-					weightmod=exp(old_div(-(dalt**2+daz**2),(old_div(fillangle,4.0))**2))
+			for dalt in np.arange(-fillangle/2.0,fillangle/2.0,astep):
+				for daz in np.arange(-fillangle/2.0,fillangle/2.0,astep):
+					weightmod=exp(-(dalt**2+daz**2)/(fillangle/4.0)**2)
 					newxf=Transform({"type":"eman","alt":alt+dalt,"az":az+daz})
 #					print i,elem["filenum"],newxf
 					recon.insert_slice(img,newxf,elem["weight"]*weightmod)

@@ -270,7 +270,7 @@ def main():
 
 		if options.omit > 0.0 and options.omit < 100.0:
 			natm = pa.get_number_points()
-			nrm = int(round(natm*(old_div(options.omit,100.)),0))
+			nrm = int(round(natm*(options.omit/100.),0))
 			print(("Randomly omitting {}% ({}/{}) of atoms from output map.".format(options.omit,nrm,natm)))
 			for i in range(nrm):
 				n = np.random.randint(0,natm,dtype=int)
@@ -458,8 +458,8 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 			elec=atomdefs[a[0].translate(None,"0123456789").upper()][0]
 # This was producing different results than the "quick" mode, and did not match the statement printed above!!!
 #			outmap.insert_scaled_sum(gaus,(a[1]/apix+xt-amin[0]/apix,a[2]/apix+yt-amin[1]/apix,a[3]/apix+zt-amin[2]/apix),res/(pi*12.0*apix),elec)
-			if center: outmap.insert_scaled_sum(gaus,(old_div((a[1]-aavg[0]),apix)+old_div(outbox[0],2),old_div((a[2]-aavg[1]),apix)+old_div(outbox[1],2),old_div((a[3]-aavg[2]),apix)+old_div(outbox[2],2)),old_div(res,(pi*12.0*apix)),elec)
-			else: outmap.insert_scaled_sum(gaus,(old_div(a[1],apix)+old_div(outbox[0],2),old_div(a[2],apix)+old_div(outbox[1],2),old_div(a[3],apix)+old_div(outbox[2],2)),old_div(res,(pi*12.0*apix)),elec)
+			if center: outmap.insert_scaled_sum(gaus,(old_div((a[1]-aavg[0]),apix)+old_div(outbox[0],2),old_div((a[2]-aavg[1]),apix)+old_div(outbox[1],2),old_div((a[3]-aavg[2]),apix)+old_div(outbox[2],2)),res/(pi*12.0*apix),elec)
+			else: outmap.insert_scaled_sum(gaus,(old_div(a[1],apix)+old_div(outbox[0],2),old_div(a[2],apix)+old_div(outbox[1],2),old_div(a[3],apix)+old_div(outbox[2],2)),res/(pi*12.0*apix),elec)
 		except: print("Skipping %d '%s'"%(i,a[0]))
 	if not quiet: print('\r   %d\nConversion complete'%len(atoms))
 	outmap.set_attr("apix_x",apix)
