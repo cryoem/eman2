@@ -365,7 +365,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	apix=vol["apix_x"]
 	md=vol.calc_radial_dist(old_div(nx,2),0,1,3)	# radial max value per shell in real space
 
-	rmax=int(old_div(nx,2.2))	# we demand at least 10% padding
+	rmax=int(nx/2.2)	# we demand at least 10% padding
 	vmax=max(md[:rmax])	# max value within permitted radius
 
 	# this finds the first radius where the max value @ r falls below overall max/4
@@ -389,7 +389,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	# automask
 	mask=vol.process("mask.auto3d",{"threshold":vmax*.15,"radius":0,"nshells":int(nx*0.05+0.5+old_div(20,apix))+options.automaskexpand,"nmaxseed":24,"return_mask":1})
 
-	mask.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,(40.0))})
+	mask.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/(40.0)})
 	mask.write_image("{path}/mask.hdf".format(path=options.path),0)
 
 	# compute masked fsc and refilter

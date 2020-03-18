@@ -27,7 +27,7 @@ def rotfncompete(jsd,avgs,fsp,fspn,a,refs, shrinkrefs, options):
 	shrink=options.shrinkcompare
 	if shrink<2: shrink=0
 	b=EMData(fsp,fspn).process("normalize.edgemean")
-	if options.maxres>0: b.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,options.maxres)})
+	if options.maxres>0: b.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.maxres})
 	if options.maxtilt<90.0 :
 		bf=b.do_fft()
 		bf.process_inplace("mask.wedgefill",{"thresh_sigma":0.0,"maxtilt":options.maxtilt})
@@ -131,7 +131,7 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	n=len(args)
 	refs=[EMData(i) for i in args]
 	if options.maxres>0:
-		for r in refs: r.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,options.maxres)})
+		for r in refs: r.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.maxres})
 	
 	if options.listfile!=None :
 		plist=set([int(i) for i in open(options.listfile,"r")])

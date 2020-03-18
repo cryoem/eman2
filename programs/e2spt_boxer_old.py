@@ -813,7 +813,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		av.process_inplace("xform.transpose")
 
 		if self.wfilt.getValue()!=0.0:
-			av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,self.wfilt.getValue()),"apix":self.apix})
+			av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.apix})
 
 		self.zyview.set_data(av)
 
@@ -826,7 +826,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 
 		av=avgr.finish()
 		if self.wfilt.getValue()!=0.0:
-			av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,self.wfilt.getValue()),"apix":self.apix})
+			av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.apix})
 
 		self.xzview.set_data(av)
 
@@ -880,7 +880,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 
 		if self.wfilt.getValue()!=0.0:
 
-			av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,self.wfilt.getValue()),"apix":self.apix})
+			av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.apix})
 		self.xyview.set_data(av)
 
 	def update_all(self):
@@ -1572,7 +1572,7 @@ class EMBoxViewer(QtWidgets.QWidget):
 			return
 
 		if self.wfilt.getValue()>4 :
-			self.fdata=self.data.process("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,self.wfilt.getValue()),"apix":self.data['apix_x']}) #JESUS
+			self.fdata=self.data.process("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.data['apix_x']}) #JESUS
 
 		xyd=self.fdata.process("misc.directional_sum",{"axis":"z"})
 		xzd=self.fdata.process("misc.directional_sum",{"axis":"y"})
@@ -1919,7 +1919,7 @@ def commandline_tomoboxer(tomogram,options):
 
 	if failed < ncoords:
 
-		radius = old_div(options.boxsize,4.0)	#the particle's diameter is boxsize/2
+		radius = options.boxsize/4.0	#the particle's diameter is boxsize/2
 
 		cmd = 'e2spt_icethicknessplot.py --plotparticleradii --fit --apix ' + str( apix ) + ' --radius ' + str( int(radius) ) + ' --files ' + newcoordsfile
 		

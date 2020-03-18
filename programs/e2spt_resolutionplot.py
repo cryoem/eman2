@@ -390,7 +390,7 @@ def symmetrize(vol,options):
 		t=xf.get_sym(sym,i)
 		dc.transform(t)
 		volsym.add(dc)
-	volsym.mult(old_div(1.0,nsym))
+	volsym.mult(1.0/nsym)
 	return(volsym)
 
 
@@ -468,12 +468,12 @@ def maxima(xaxis,yaxis,smooththresh):
 		#print 'currrent value is', val
 		#print 'and next is', yaxis[i+1]
 		#print "options.smooththresh is", smooththresh
-		if val < max(yaxis[i+1:]) and old_div(1.0,xaxis[i+1]) > smooththresh:
-			val = old_div(( val+ max(yaxis[i+1:]) ), 2.0)
+		if val < max(yaxis[i+1:]) and 1.0/xaxis[i+1] > smooththresh:
+			val = ( val+ max(yaxis[i+1:]) ) / 2.0
 			print('\nNew max smoothing value is', val)
 
-		if val > min(yaxis[i+1:]) and old_div(1.0,xaxis[i+1]) < smooththresh:
-			val = old_div(val, 2.0)
+		if val > min(yaxis[i+1:]) and 1.0/xaxis[i+1] < smooththresh:
+			val = val / 2.0
 			print('\nNew min smoothing value is', val)
 
 		#print "Therfore final val is", val
@@ -570,7 +570,7 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 
 				if inverse:
 					if options.maxres:
-						if old_div(1.0,inverse) > options.maxres:
+						if 1.0/inverse > options.maxres:
 							newlines.append(line)
 						else:
 							pass
@@ -597,7 +597,7 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 
 			element = ''
 			if inverse:
-				element = '1/' + str(int( old_div(1.0,inverse)  ))
+				element = '1/' + str(int( 1.0/inverse  ))
 			else:
 				element='0'
 			#print "Therefore, turned into a number it is", element
@@ -612,7 +612,7 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 		nele=len(values)
 		print("\n\nnele is", nele)
 		import math
-		factorOfTicks = int(math.ceil(old_div(nele,10.0)) + 1.0)
+		factorOfTicks = int(math.ceil(nele/10.0) + 1.0)
 
 
 		kk=0
@@ -731,9 +731,9 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 			fsc0p143freq1 = inversefreqs[fsc0p143minpixel1]
 			fsc0p143freq2 = inversefreqs[fsc0p143minpixel2]
 
-			fsc0p5freqavg = old_div((fsc0p5freq1 + fsc0p5freq2),2.0)
+			fsc0p5freqavg = (fsc0p5freq1 + fsc0p5freq2)/2.0
 
-			fsc0p143freqavg = old_div((fsc0p143freq1 + fsc0p143freq2),2.0)
+			fsc0p143freqavg = (fsc0p143freq1 + fsc0p143freq2)/2.0
 
 			fsc0p5resolution1 = ''
 			fsc0p5resolution1label=''
