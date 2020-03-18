@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # average particles together based on existing alignments
 
-from past.utils import old_div
 from EMAN2 import *
 import time
 import os
