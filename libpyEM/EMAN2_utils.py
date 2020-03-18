@@ -148,15 +148,15 @@ def calc_ctf(defocus, bxsz=256, voltage=300, cs=4.7, apix=1. ,ampcnt=0.):
     
     
 	b2=old_div(bxsz,2)
-	ds=old_div(1.0,(apix*bxsz))
-	ns=min(int(np.floor(old_div(.25,ds))),old_div(bxsz,2))
+	ds=1.0/(apix*bxsz)
+	ns=min(int(np.floor(.25/ds)),old_div(bxsz,2))
 
 	ctfout=np.zeros(b2)
-	lbda = old_div(12.2639, np.sqrt(voltage * 1000.0 + 0.97845 * voltage * voltage))
+	lbda = 12.2639 / np.sqrt(voltage * 1000.0 + 0.97845 * voltage * voltage)
 
 	g1=np.pi/2.0*cs*1.0e7*pow(lbda,3.0);  
 	g2=np.pi*lbda*defocus*10000.0;         
-	acac=np.arccos(old_div(ampcnt,100.0));                 
+	acac=np.arccos(ampcnt/100.0);                 
 
 	s=np.arange(b2, dtype=float)*ds
 	gam=-g1*(s**4)+np.asarray(np.dot(np.asmatrix(g2).T, np.matrix(s**2)))
@@ -208,12 +208,12 @@ def idfft2(v,u,amp,phase,nx=256,ny=256,dtype=np.float32,usedegrees=False):
 	v = np.asarray(v).astype(dtype)
 	amp = np.asarray(amp).astype(dtype)
 	phase = np.asarray(phase).astype(dtype)
-	if usedegrees: phase *= old_div(np.pi,180.)
-	uu = old_div(nx*(u-u.min()),(u.max()-u.min()))-old_div(nx,2.)
-	vv = old_div(ny*(v-v.min()),(v.max()-v.min()))-old_div(ny,2.)
+	if usedegrees: phase *= np.pi/180.
+	uu = old_div(nx*(u-u.min()),(u.max()-u.min()))-nx/2.
+	vv = old_div(ny*(v-v.min()),(v.max()-v.min()))-ny/2.
 	x,y=np.indices((nx,ny))
-	xx = x-old_div(nx,2.)
-	yy = y-old_div(ny,2.)
+	xx = x-nx/2.
+	yy = y-ny/2.
 	o = np.ones((nx*ny))
 	AA = np.multiply(amp.ravel()[:,np.newaxis],o[np.newaxis,:])
 	pp = np.multiply(phase.ravel()[:,np.newaxis],o[np.newaxis,:])
@@ -442,8 +442,8 @@ def incoherent_sum_from_imglist(imglist,checkcorners=False,verbose=False):
 
 def post_proc_fft_avg(fftimg,n,nx,verbose=False):
 
-	fftimg.mult(old_div(1.0,float(n)))
-	fftimg.mult(old_div(	1.0, nx**2 ))
+	fftimg.mult(1.0/float(n))
+	fftimg.mult(	1.0 / nx**2 )
 	fftimg.process_inplace("math.sqrt")
 	fftimg.process_inplace('xform.phaseorigin.tocenter')
 	if verbose:

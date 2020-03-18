@@ -423,7 +423,7 @@ class EMViewportDepthTools2(object):
 		glTranslated(From[0],From[1],0)
 		glRotated(90.0+angle,0.,0.,1.0)
 		glRotated(90.,1.,0.,0.)
-		glTranslated(0.0,0.0,old_div(length,2.0))
+		glTranslated(0.0,0.0,length/2.0)
 		glScaled(self.borderwidth,self.borderwidth,length)
 		glTranslated(0.0,0.0,-0.5)
 		glCallList(self.glbasicobjects.getCylinderDL())
@@ -612,8 +612,8 @@ class EMViewportDepthTools2(object):
 			zNDC2 = zNDC1
 	
 		# We need zprime, which is really 'eye_z' in OpenGL lingo
-		zprime1 = old_div(1.0,(xNDC1*self.P_inv[0,3]+yNDC1*self.P_inv[1,3]+zNDC1*self.P_inv[2,3]+self.P_inv[3,3]))
-		zprime2 = old_div(1.0,(xNDC2*self.P_inv[0,3]+yNDC2*self.P_inv[1,3]+zNDC2*self.P_inv[2,3]+self.P_inv[3,3]))
+		zprime1 = 1.0/(xNDC1*self.P_inv[0,3]+yNDC1*self.P_inv[1,3]+zNDC1*self.P_inv[2,3]+self.P_inv[3,3])
+		zprime2 = 1.0/(xNDC2*self.P_inv[0,3]+yNDC2*self.P_inv[1,3]+zNDC2*self.P_inv[2,3]+self.P_inv[3,3])
 
 		ex1 = (self.P_inv[0,0]*xNDC1 + self.P_inv[1,0]*yNDC1 + self.P_inv[2,0]*zNDC1+self.P_inv[3,0])*zprime1;
 		ey1 = (self.P_inv[0,1]*xNDC1 + self.P_inv[1,1]*yNDC1 + self.P_inv[2,1]*zNDC1+self.P_inv[3,1])*zprime1;
@@ -654,7 +654,7 @@ class EMViewportDepthTools2(object):
 		zNDC = old_div((PM_inv[0,2]*xNDC + PM_inv[1,2]*yNDC + PM_inv[3,2]),(-PM_inv[2,2]))
 	
 		# We need zprime, which is really 'eye_z' in OpenGL lingo
-		zprime = old_div(1.0,(xNDC*self.P_inv[0,3]+yNDC*self.P_inv[1,3]+zNDC*self.P_inv[2,3]+self.P_inv[3,3]))
+		zprime = 1.0/(xNDC*self.P_inv[0,3]+yNDC*self.P_inv[1,3]+zNDC*self.P_inv[2,3]+self.P_inv[3,3])
 		
 		# Now we compute the x and y coordinates - these are precisely what we're after
 		xcoord = zprime*(xNDC*PM_inv[0,0]+yNDC*PM_inv[1,0]+zNDC*PM_inv[2,0]+PM_inv[3,0])
@@ -792,7 +792,7 @@ class EMViewportDepthTools(object):
 		glTranslated(From[0],From[1],0)
 		glRotated(90.0+angle,0.,0.,1.0)
 		glRotated(90.,1.,0.,0.)
-		glTranslated(0.0,0.0,old_div(length,2.0))
+		glTranslated(0.0,0.0,length/2.0)
 		glScaled(self.borderwidth,self.borderwidth,length)
 		glTranslated(0.0,0.0,-0.5)
 		glCallList(self.glbasicobjects.getCylinderDL())
@@ -975,8 +975,8 @@ class EMViewportDepthTools(object):
 			zNDC2 = zNDC1
 	
 		# We need zprime, which is really 'eye_z' in OpenGL lingo
-		zprime1 = old_div(1.0,(xNDC1*self.P_inv[0,3]+yNDC1*self.P_inv[1,3]+zNDC1*self.P_inv[2,3]+self.P_inv[3,3]))
-		zprime2 = old_div(1.0,(xNDC2*self.P_inv[0,3]+yNDC2*self.P_inv[1,3]+zNDC2*self.P_inv[2,3]+self.P_inv[3,3]))
+		zprime1 = 1.0/(xNDC1*self.P_inv[0,3]+yNDC1*self.P_inv[1,3]+zNDC1*self.P_inv[2,3]+self.P_inv[3,3])
+		zprime2 = 1.0/(xNDC2*self.P_inv[0,3]+yNDC2*self.P_inv[1,3]+zNDC2*self.P_inv[2,3]+self.P_inv[3,3])
 
 		ex1 = (self.P_inv[0,0]*xNDC1 + self.P_inv[1,0]*yNDC1 + self.P_inv[2,0]*zNDC1+self.P_inv[3,0])*zprime1;
 		ey1 = (self.P_inv[0,1]*xNDC1 + self.P_inv[1,1]*yNDC1 + self.P_inv[2,1]*zNDC1+self.P_inv[3,1])*zprime1;
@@ -1017,7 +1017,7 @@ class EMViewportDepthTools(object):
 		zNDC = old_div((PM_inv[0,2]*xNDC + PM_inv[1,2]*yNDC + PM_inv[3,2]),(-PM_inv[2,2]))
 	
 		# We need zprime, which is really 'eye_z' in OpenGL lingo
-		zprime = old_div(1.0,(xNDC*self.P_inv[0,3]+yNDC*self.P_inv[1,3]+zNDC*self.P_inv[2,3]+self.P_inv[3,3]))
+		zprime = 1.0/(xNDC*self.P_inv[0,3]+yNDC*self.P_inv[1,3]+zNDC*self.P_inv[2,3]+self.P_inv[3,3])
 		
 		# Now we compute the x and y coordinates - these are precisely what we're after
 		xcoord = zprime*(xNDC*PM_inv[0,0]+yNDC*PM_inv[1,0]+zNDC*PM_inv[2,0]+PM_inv[3,0])
@@ -1222,7 +1222,7 @@ class Camera2(object):
 		self.t3d_stack.append(t3d)
 	
 	def undoScale(self):
-		glScalef(old_div(1.0,self.scale),old_div(1.0,self.scale),old_div(1.0,self.scale))
+		glScalef(1.0/self.scale,1.0/self.scale,1.0/self.scale)
 			
 	
 	def undoRot(self):
@@ -1259,7 +1259,7 @@ class Camera2(object):
 		if delta > 0:
 			self.scale *= self.mag_factor
 		elif delta < 0:
-			self.scale *= old_div(1.0,self.mag_factor)
+			self.scale *= 1.0/self.mag_factor
 	
 	def setCamTrans(self,axis,value):
 		if ( axis == 'x'):
@@ -1397,7 +1397,7 @@ class Camera2(object):
 				#if event.modifiers() == Qt.ControlModifier:
 					#self.motion_translate(event.x()-self.mpressx, self.mpressy - event.y())
 				#else:
-				self.motion_rotate(self.mpressx - event.x(), self.mpressy - event.y(),sqrt(old_div(1.0,self.scale)))
+				self.motion_rotate(self.mpressx - event.x(), self.mpressy - event.y(),sqrt(1.0/self.scale))
 				
 				self.mpressx = event.x()
 				self.mpressy = event.y()
@@ -1563,7 +1563,7 @@ class Camera(object):
 		if delta > 0:
 			self.scale *= self.mag_factor
 		elif delta < 0:
-			self.scale *= old_div(1.0,self.mag_factor)
+			self.scale *= 1.0/self.mag_factor
 	
 	def setCamTrans(self,axis,value):
 		if ( axis == 'x'):
@@ -2058,7 +2058,7 @@ class EM3DModel(QtCore.QObject):
 		width = self.data.get_xsize()
 		height = self.data.get_ysize()
 		depth = self.data.get_zsize()
-		glTranslate(old_div(-width,2.0),old_div(-height,2.0),old_div(-depth,2.0))
+		glTranslate(-width/2.0,-height/2.0,-depth/2.0)
 		draw_volume_bounds(width,height,depth)
 	def enable_inspector(self,val=True): self.disable_inspector = not val
 	def get_current_camera(self): 
