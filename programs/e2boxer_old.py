@@ -2467,7 +2467,7 @@ class GaussPanel(object):
 		# this is wrong from sxboxer. wgh should be amplitude contrast
 		#defocus = defocus_gett(avg_sp, voltage=ctf_volt, Pixel_size=input_pixel_size, Cs=ctf_cs, wgh=ctf_cs,f_start=ctf_f_start, f_stop=ctf_f_stop, parent=self)
 		defocus = defocus_gett(avg_sp, voltage=ctf_volt, Pixel_size=input_pixel_size, Cs=ctf_cs, wgh=ctf_ampcont,f_start=ctf_f_start, f_stop=ctf_f_stop, parent=self)
-		self.estdef.setText(str(old_div(defocus,10000.0)))
+		self.estdef.setText(str(defocus/10000.0))
 		self.estdef.setEnabled(False)
 
 
@@ -3248,8 +3248,8 @@ class CTFInspectorWidget(QtWidgets.QWidget):
 		h=self.height()
 		w=self.width()
 
-		hborder = ( min((old_div(h, 15.0)),20.0))
-		wborder = ( min((old_div(w, 15.0)),20.0))
+		hborder = ( min((h / 15.0),20.0))
+		wborder = ( min((w / 15.0),20.0))
 
 		# accessible height and width....
 		ah = int(h-2*hborder)
