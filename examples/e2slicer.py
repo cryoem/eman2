@@ -167,7 +167,7 @@ def main():
 			if options.shrink:
 				nyquist = ap['apix_x'] * 2.0
 				shnyquist = nyquist * options.shrink
-				ap.process_inplace('filter.lowpass.tanh',{'cutoff_freq':old_div(1.0,shnyquist)})
+				ap.process_inplace('filter.lowpass.tanh',{'cutoff_freq':1.0/shnyquist})
 				ap.process_inplace('math.fft.resample',{'n':options.shrink})
 				
 			nx=ap['nx']
@@ -241,7 +241,7 @@ def main():
 				if options.shrink:
 					nyquist = app['apix_x'] * 2.0
 					shnyquist = nyquist * options.shrink
-					app.process_inplace('filter.lowpass.tanh',{'cutoff_freq':old_div(1.0,shnyquist)})
+					app.process_inplace('filter.lowpass.tanh',{'cutoff_freq':1.0/shnyquist})
 					app.process_inplace('math.meanshrink',{'n':options.shrink})
 				
 				#regions={}

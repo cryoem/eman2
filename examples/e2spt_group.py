@@ -99,7 +99,7 @@ def main():
 			hdr = EMData( options.alistack, 0, True )
 			apix=hdr['apix_x']
 			nyquist = 2.0*apix
-			nyquistfreq = old_div(1.0,nyquist)
+			nyquistfreq = 1.0/nyquist
 			options.lowpass = 'filter.lowpass.tanh:cutoff_freq='+str(nyquistfreq)+':apix='+str(apix)
 			if apix =='1.0':
 				print("\nWARNING: apix is 1.0, most likely wrong (default empty value). You can fix/change it with e2fixheaderparam.py")
@@ -217,8 +217,8 @@ def main():
 		print("\nERROR: std=0, which means all intensity values are the same.")
 		sys.exit()
 	
-	cuberoot = np.power(len( scores ),old_div(1.0,3.0))
-	width = old_div((3.5*std),cuberoot)
+	cuberoot = np.power(len( scores ),1.0/3.0)
+	width = (3.5*std)/cuberoot
 	print("\naccording to Scott's normal reference rule, width = (3.5*std)/cuberoot(n), the width of the histogram bins will be", width)
 	
 	calcbins = old_div(( max(scores) - min( scores )), width)
@@ -384,7 +384,7 @@ def main():
 			print("\nERROR: --groups requires --alistack")
 			sys.exit()
 	
-		halfptclnum= int(round(old_div(n,2.0)))
+		halfptclnum= int(round(n/2.0))
 		halfptcl = dataset[halfptclnum][0]
 		print("half ptclnum is", halfptclnum)
 		print("which happens to be ptcl indx", halfptcl)

@@ -229,7 +229,7 @@ def refine_align(job,ret):
 	imgs=[]
 	for i in curidx:
 		e=EMData(ptclfile,i)
-		e.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,30.)})
+		e.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/30.})
 		e.process_inplace("normalize")
 		imgs.append(e)
 	# score=0

@@ -59,8 +59,8 @@ def fixup(i,d,l):
 def transalign(i1,i2,m1,m2):
 	c1=i1.calc_ccf(i2)
 	c2=m1.calc_ccf(m2)
-	c2.process_inplace("threshold.belowtozero",{"value":old_div(c2.get_attr("sigma"),5.0)})
-	c2+=old_div(c2.get_attr("sigma"),5.0)
+	c2.process_inplace("threshold.belowtozero",{"value":c2.get_attr("sigma")/5.0})
+	c2+=c2.get_attr("sigma")/5.0
 #	display(c2)
 	c1/=c2
 	l=list(c1.calc_max_location())

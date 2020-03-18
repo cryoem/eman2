@@ -115,9 +115,9 @@ def main():
 
 	x=list(range(1,len(datapow)+1))
 	if options.apix>0:
-		x=[old_div(i,(len(datapow)*options.apix*2.0)) for i in x]
+		x=[i/(len(datapow)*options.apix*2.0) for i in x]
 	else:
-		x=[old_div(i,(len(datapow)*data["apix_x"]*2.0)) for i in x]
+		x=[i/(len(datapow)*data["apix_x"]*2.0) for i in x]
 
 	# normalize noise near Nyquist
 	s=0
@@ -144,7 +144,7 @@ def main():
 		except: snr.append(0)
 	
 	# convert to FSC
-	fsc=[old_div(i,(2.0+i)) for i in snr]
+	fsc=[i/(2.0+i) for i in snr]
 
 	out=open(args[2],"w")
 	for i in range(len(fsc)): out.write("%f\t%f\n"%(x[i],fsc[i]))

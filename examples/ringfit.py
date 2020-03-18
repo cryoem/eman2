@@ -91,7 +91,7 @@ def process_image(imgname,imgprefix):
 		drn-=1
 		sys.exit(1)
 
-	eig=[(old_div(1.0,eigvv[0][i]),eigvv[1][:,i]) for i in range(3)]  # extract for sorting
+	eig=[(1.0/eigvv[0][i],eigvv[1][:,i]) for i in range(3)]  # extract for sorting
 	eig=sorted(eig)		# now eig is sorted in order from major to minor axes
 	#T=array([eig[0][1],eig[1][1],eig[2][1]])            # reassemble sorted matrix
 
@@ -286,7 +286,7 @@ def process_image(imgname,imgprefix):
 
 	# Compute the eigenvalues/vectors
 	eigvv=LA.eig(mx)		# a 3-vector with eigenvalues and a 3x3 with the vectors
-	eig=[(old_div(1.0,eigvv[0][i]),eigvv[1][:,i]) for i in range(3)]  # extract for sorting
+	eig=[(1.0/eigvv[0][i],eigvv[1][:,i]) for i in range(3)]  # extract for sorting
 	eig=sorted(eig)		# now eig is sorted in order from major to minor axes
 	#T=array([eig[0][1],eig[1][1],eig[2][1]])            # reassemble sorted matrix
 

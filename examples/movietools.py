@@ -19,11 +19,11 @@ def readstack(n):
 
 def seqavg(stack):
 	"return progressive averages of frames in stack"
-	return [sum(stack[:i+1])*(old_div(1.0,(sqrt(i+1.0)))) for i in range(len(stack))]
+	return [sum(stack[:i+1])*(1.0/(sqrt(i+1.0))) for i in range(len(stack))]
 
 def runavg(stack,n):
 	"return running averages by n "
-	return [sum(stack[i:i+n])*(old_div(1.0,sqrt(n))) for i in range(len(stack)-n+1)]
+	return [sum(stack[i:i+n])*(1.0/sqrt(n)) for i in range(len(stack)-n+1)]
 
 def ccfs(ref,stack):
 	"compute and center CCFs between ref and each member of stack"

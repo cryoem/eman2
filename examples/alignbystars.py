@@ -147,7 +147,7 @@ Finds isolated spots in the image and uses them as a basis for alignment"""
 	ny=avg.get_ysize()
 	if scale!=1.0 : 
 		avg=avg.get_clip(Region(old_div(-nx*(scale-1),2),old_div(-ny*(scale-1),2),nx*scale,ny*scale))
-		avg.scale(old_div(1.0,scale))
+		avg.scale(1.0/scale)
 	ref=avg.copy()
 	if options.saveali : ref.write_image("ali.hed")
 	avgn=avg.copy()
@@ -161,7 +161,7 @@ Finds isolated spots in the image and uses them as a basis for alignment"""
 		img.process_inplace("normalize.edgemean",{})
 		if scale!=1.0 : 
 			img=img.get_clip(Region(old_div(-nx*(scale-1),2),old_div(-ny*(scale-1),2),nx*scale,ny*scale))
-			img.scale(old_div(1.0,scale))
+			img.scale(1.0/scale)
 		imgn=img.copy()
 		imgn.to_one()
 		img.rotate_translate(xf)

@@ -185,8 +185,8 @@ def autocorrcenter(e,options):
 	maxccfpmxC=ccfpmxC.calc_max_location()
 	maxccfpmyC=ccfpmyC.calc_max_location()
 
-	xt=old_div((old_div(eb,2.0) - maxccfpmxC[0]),2.0)
-	yt=old_div((old_div(eb,2.0) - maxccfpmyC[1]),2.0)
+	xt=(eb/2.0 - maxccfpmxC[0])/2.0
+	yt=(eb/2.0 - maxccfpmyC[1])/2.0
 
 	pfix=pprj.copy()
 	
@@ -219,8 +219,8 @@ def autocorrcenter(e,options):
 	maxccfpmxCside=ccfpmxCside.calc_max_location()
 	maxccfpmzCside=ccfpmzCside.calc_max_location()
 
-	xtside = old_div((old_div(eb,2.0) - maxccfpmxCside[0]),2.0)
-	ztside = -1 * (old_div(eb,2.0) - maxccfpmzCside[1])/2.0
+	xtside = (eb/2.0 - maxccfpmxCside[0])/2.0
+	ztside = -1 * (eb/2.0 - maxccfpmzCside[1])/2.0
 	#print "zt side is", ztside
 	
 	#pfixside=pprjside.copy()
@@ -398,8 +398,8 @@ def spherical(options):
 			
 			maxccfpC = ccfpC.calc_max_location()
 			
-			xt=(old_div(pb,2.0) - maxccfpC[0])
-			yt=(old_div(pb,2.0) - maxccfpC[1])
+			xt=(pb/2.0 - maxccfpC[0])
+			yt=(pb/2.0 - maxccfpC[1])
 			
 			
 			'''
@@ -422,8 +422,8 @@ def spherical(options):
 			ccfpsideC = ccfpside.process('xform.phaseorigin.tocorner')
 			maxccfpsideC = ccfpsideC.calc_max_location()
 			
-			xtside = old_div((old_div(pb,2.0) - maxccfpsideC[0]),2.0)
-			ztside = -1 * (old_div(pb,2.0) - maxccfpsideC[1])/2.0 
+			xtside = (pb/2.0 - maxccfpsideC[0])/2.0
+			ztside = -1 * (pb/2.0 - maxccfpsideC[1])/2.0 
 			#Y-shifts in a side view correspond to -z shifts in a 3-D model rotated by -90 in altitude
 		
 			

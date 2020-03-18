@@ -98,7 +98,7 @@ def filter1d(pts, fun):
 
 		
 def gaussianpdf(x,sig):
-	return (old_div(1.0,(sig*sqrt(2.0*pi))))*exp(old_div(-(x*x),(2.0*sig*sig)))
+	return (1.0/(sig*sqrt(2.0*pi)))*exp(-(x*x)/(2.0*sig*sig))
 
 
 def main():

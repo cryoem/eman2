@@ -126,7 +126,7 @@ def main():
             if new_volume.get(i,j,k)!=0.0: # the voxel should not be 0.0
               sublst=[] # sublst is the list containning the 9 voxel value of the neighboring subunits
               r=sqrt((i-old_div(nx,2)-0.5)*(i-old_div(nx,2)-0.5)+(j-old_div(nx,2)-0.5)*(j-old_div(nx,2)-0.5))  # find r, the distance to the center (nx/2-0.5,nx/2-0.5)
-              theta=180.0*atan(old_div((j-old_div(nx,2)-0.5),(i-old_div(nx,2)-0.5)))/pi # find the angle theta ranging from 0 to 360
+              theta=180.0*atan((j-old_div(nx,2)-0.5)/(i-old_div(nx,2)-0.5))/pi # find the angle theta ranging from 0 to 360
               if i<old_div(nx,2):
                 theta+=180.0 # this is very important, since atan(theta) range from -pi/2 to pi/2
               #print "r=%f\t theta=%f" %(r,theta) 
@@ -170,7 +170,7 @@ def main():
       temp_av.transform(xf.get_sym(sym_str,i)) # dc is the h-symmetrized subunit
       dcopy.add(temp_av)
     dcopy.sub(avg_vol)  
-    dcopy.mult(old_div(1.0,4.0)) # cyclic 4 symmetry, density multiplied 4, should change back
+    dcopy.mult(1.0/4.0) # cyclic 4 symmetry, density multiplied 4, should change back
     dcopy.translate(0,0,-2) #shift downward 2 pixels
 ##################### mask the model ###################
     '''

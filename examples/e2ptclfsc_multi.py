@@ -122,9 +122,9 @@ def main():
 		# New version of automasking based on a more intelligent interrogation of the volume
 		vol=threed.copy()
 		
-		vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":min(0.1,old_div(1.0,restarget))})		# Mask at no higher than 10 A resolution
+		vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":min(0.1,1.0/restarget)})		# Mask at no higher than 10 A resolution
 		md=vol.calc_radial_dist(old_div(nx,2),0,1,3)	# radial max value per shell in real space
-		rmax=int(old_div(nx,2.2))		# we demand at least 10% padding
+		rmax=int(nx/2.2)		# we demand at least 10% padding
 		vmax=max(md[:rmax])			# max value within permitted radius
 		# this finds the first radius where the max value @ r falls below overall max/4
 		# this becomes the new maximum mask radius

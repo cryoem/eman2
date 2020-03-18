@@ -102,9 +102,9 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 			if self.options.fromedge:
 				dx=x-self.origin[0]
 				dy=y-self.origin[1]
-				r=old_div(np.sqrt((dx)**2+(dy)**2),2.)
-				x0=x-old_div(dx,2.)
-				y0=y-old_div(dy,2.)
+				r=np.sqrt((dx)**2+(dy)**2)/2.
+				x0=x-dx/2.
+				y0=y-dy/2.
 			else:
 				x0=self.shape[1]
 				y0=self.shape[2]

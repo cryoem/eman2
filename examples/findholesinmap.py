@@ -34,7 +34,7 @@ def main():
 	a["apix_x"]=apix
 	a["apix_y"]=apix
 	a["apix_z"]=apix
-	a.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.,options.filter_res)})
+	a.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./options.filter_res})
 
 	a.write_image(options.output)
 	

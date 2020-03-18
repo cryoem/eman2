@@ -47,7 +47,7 @@ def main():
 	
 	for eo in ["even","odd"]:
 		ptclname=options.ptcl[:-4]+"_{}.lst".format(eo)
-		run("e2proc3d.py {model} {path}/threed_00_{eo}.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}".format(model=options.model,path=options.path,freq=old_div(1.0,(tarres)),apix=apix, eo=eo))
+		run("e2proc3d.py {model} {path}/threed_00_{eo}.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}".format(model=options.model,path=options.path,freq=1.0/(tarres),apix=apix, eo=eo))
 		
 		run("e2project3d.py {path}/threed_00_{eo}.hdf --outfile {path}/projections_01_{eo}.hdf -f --projector standard --orientgen eman:delta=8:inc_mirror=0:perturb=0 --sym {sym} --parallel thread:12 ".format(path=options.path, eo=eo, sym=options.sym))
 		

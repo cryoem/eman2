@@ -88,7 +88,7 @@ def main():
 			#if options.constbfactor>0 : ctf.bfactor=options.constbfactor
 			noctfflag = True
 
-		ds=old_div(1.0,(apix*box*oversamp))
+		ds=1.0/(apix*box*oversamp)
 		nx=old_div(data["nx"],box)-1
 		cumulfft=EMData(box,box)
 		cumulfft.do_fft_inplace()
@@ -104,7 +104,7 @@ def main():
 				cumulfft+=fft
 				nbx+=1
 
-		cumulfft.mult(old_div(1.0,(nbx*box**2)))
+		cumulfft.mult(1.0/(nbx*box**2))
 		cumulfft.process_inplace("math.sqrt")
 		cumulfft["is_intensity"]=0				# These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
 
@@ -179,7 +179,7 @@ def main():
 
 			# auto-amplitude for b-factor adjustment
 			rto,nrto=0,0
-			for i in range(int(old_div(.04,ds))+1,min(int(old_div(0.15,ds)),len(s)-1)):
+			for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)):
 				if bgsub[i]>0 :
 					rto+=fit[i]
 					nrto+=fabs(bgsub[i])

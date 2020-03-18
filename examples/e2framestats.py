@@ -77,10 +77,10 @@ n SNR(20-200) SNR(4-10) quality defocus SNR1*SNR2
 		db=js_open_dict(inf)
 		try: ctf=db["ctf"][0]
 		except: continue
-		r1=int(floor(old_div(1.0,(200.0*ctf.dsbg))))
-		r2=int(ceil(old_div(1.0,(20.0*ctf.dsbg))))
-		r3=int(floor(old_div(1.0,(10.0*ctf.dsbg))))
-		r4=int(ceil(old_div(1.0,(4.0*ctf.dsbg))))
+		r1=int(floor(1.0/(200.0*ctf.dsbg)))
+		r2=int(ceil(1.0/(20.0*ctf.dsbg)))
+		r3=int(floor(1.0/(10.0*ctf.dsbg)))
+		r4=int(ceil(1.0/(4.0*ctf.dsbg)))
 		losnr=old_div(sum(ctf.snr[r1:r2]),(r2-r1))
 		medsnr=old_div(sum(ctf.snr[r2:r3]),(r3-r2))
 		hisnr=old_div(sum(ctf.snr[r3:r4]),(r4-r3))

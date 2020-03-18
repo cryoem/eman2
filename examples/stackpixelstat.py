@@ -15,7 +15,7 @@ y=int(sys.argv[3])
 outl=open("ccp.txt","w")
 
 rsum=sum(a)
-rsum.mult(old_div(1.0,len(a)))
+rsum.mult(1.0/len(a))
 
 #	i.process_inplace("filter.highpass.gauss",{"cutoff_freq":0.1})
 #	out.write("{}\n".format(i[x,y]))

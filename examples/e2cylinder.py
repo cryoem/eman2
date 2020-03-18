@@ -92,12 +92,12 @@ def main():
 	if options.radius:
 		radius = options.radius
 	else:
-		radius = int(old_div(box,2.0))
+		radius = int(box/2.0)
 		
 	if options.height:
 		height = options.height
 	else:
-		height = int(old_div(box,2.0))
+		height = int(box/2.0)
 
 	from EMAN2_utils import makepath
 	options = makepath( options, 'cylmask_R' +str(radius)+'_H'+str(height))

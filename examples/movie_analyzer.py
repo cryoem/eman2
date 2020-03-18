@@ -985,8 +985,8 @@ def run(cmd,shell=False,cwd=None,exe="/bin/sh",clear=False):
 	return times
 
 def fit_defocus(img):
-	ds=old_div(1.0,(img["apix_x"]*img["nx"]))
-	ns=min(int(floor(old_div(.25,ds))),old_div(img["ny"],2))
+	ds=1.0/(img["apix_x"]*img["nx"])
+	ns=min(int(floor(.25/ds)),old_div(img["ny"],2))
 	oned=np.array(img.calc_radial_dist(ns,0,1.0,1)[1:])
 	oned=np.log10(oned)
 	oned-=min(oned)

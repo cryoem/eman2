@@ -309,9 +309,9 @@ def getbasicmask(options):
 			'''
 			Center of maskfile
 			'''
-			maskcx = old_div(mask['nx'],2.0)
-			maskcy = old_div(mask['ny'],2.0)
-			maskcz = old_div(mask['nz'],2.0)
+			maskcx = mask['nx']/2.0
+			maskcy = mask['ny']/2.0
+			maskcz = mask['nz']/2.0
 			
 			'''
 			Clip to data's boxsize
@@ -455,7 +455,7 @@ def getcenters(options,symorientations):
 	origboxsize=hdr['nx']
 	print("\norigboxsize={}".format(origboxsize))
 
-	boxcenterv = Vec3f(old_div(origboxsize,2.0),old_div(origboxsize,2.0),old_div(origboxsize,2.0))
+	boxcenterv = Vec3f(origboxsize/2.0,origboxsize/2.0,origboxsize/2.0)
 	print("\nboxcenterv={}".format(boxcenterv))
 	
 	centersmap = EMData(origboxsize,origboxsize,origboxsize)

@@ -202,10 +202,10 @@ for scale in [0.02,0.04,0.07,0.1,0.5]:
 	incr[-1]=incr[-2]=4	# if step is zero for last 2, it gets stuck as an outlier, so we just make the starting step smaller
 	simp=Simplex(qual,locs,incr,data=csum3)
 	locs=simp.minimize(maxiters=int(old_div(100,scale)),epsilon=.01)[0]
-	locs=[old_div(int(floor(i*10+.5)),10.0) for i in locs]
+	locs=[int(floor(i*10+.5))/10.0 for i in locs]
 	print(locs)
 	if VERBOSE:
-		out=open("path_{:02d}.txt".format(int(old_div(1.0,scale))),"w")
+		out=open("path_{:02d}.txt".format(int(1.0/scale)),"w")
 		for i in range(0,len(locs),2): out.write("%f\t%f\n"%(locs[i],locs[i+1]))
 	
 

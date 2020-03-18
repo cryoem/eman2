@@ -190,9 +190,9 @@ class GUIFourierSynth(QtWidgets.QWidget):
 			
 			if index==1 : 	# triangle
 				for i in range(old_div(nx,2)):
-					self.targfn[i]=-1.0+old_div(4.0*i,nx)
+					self.targfn[i]=-1.0+4.0*i/nx
 				for i in range(old_div(nx,2),nx):
-					self.targfn[i]=3.0-old_div(4.0*i,nx)
+					self.targfn[i]=3.0-4.0*i/nx
 			
 			elif index==2 : # square
 				for i in range(old_div(nx,4)): self.targfn[i]=-1.0
@@ -212,8 +212,8 @@ class GUIFourierSynth(QtWidgets.QWidget):
 			
 			elif index==6 : # saw
 				self.targfn.to_zero()
-				for i in range(old_div(nx,4),old_div(nx,2)): self.targfn[i]=4.0*(i-old_div(nx,4.0))/nx
-				for i in range(old_div(nx,2),old_div(nx*3,4)): self.targfn[i]=-1+4.0*(i-old_div(nx,2.0))/nx
+				for i in range(old_div(nx,4),old_div(nx,2)): self.targfn[i]=4.0*(i-nx/4.0)/nx
+				for i in range(old_div(nx,2),old_div(nx*3,4)): self.targfn[i]=-1+4.0*(i-nx/2.0)/nx
 				
 			elif index==7 : # sin
 				for i in range(nx): self.targfn[i]=sin(i*pi/4.0)
@@ -260,8 +260,8 @@ class GUIFourierSynth(QtWidgets.QWidget):
 #		cp=self.targfn.process("xform.phaseorigin.tocenter")
 		cp=self.targfn.copy()
 		fft=cp.do_fft()
-		fft[0]=old_div(fft[0],2.0)
-		fft[old_div(fft["nx"],2)-1]=old_div(fft[old_div(fft["nx"],2)-1],2.0)
+		fft[0]=fft[0]/2.0
+		fft[old_div(fft["nx"],2)-1]=fft[old_div(fft["nx"],2)-1]/2.0
 		fft.ri2ap()
 		
 		for i in range(min(old_div(fft["nx"],2),nsin+1)):

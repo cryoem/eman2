@@ -2641,12 +2641,12 @@ class TestEMData(unittest.TestCase):
                     self.assertAlmostEqual(2.0 * d[z][y][x], d88[z][y][x], 3)
             
         #test division
-        e9 = old_div(e, 5.0)
+        e9 = e / 5.0
         d9 = e9.get_3dview()
         for x in range(32):
             for y in range(32):
                 for z in range(32):
-                    self.assertAlmostEqual(old_div(d[z][y][x],5.0), d9[z][y][x], 3)
+                    self.assertAlmostEqual(d[z][y][x]/5.0, d9[z][y][x], 3)
         
         if(IS_TEST_EXCEPTION):
             #image must be the same size
@@ -2679,12 +2679,12 @@ class TestEMData(unittest.TestCase):
                     self.assertEqual(exception_type(runtime_err), "InvalidValueException")
             
         #test division
-        e99 = old_div(0.005, e)
+        e99 = 0.005 / e
         d99 = e99.get_3dview()
         for x in range(32):
             for y in range(32):
                 for z in range(32):
-                    self.assertAlmostEqual(old_div(0.005,d[z][y][x]), d99[z][y][x], 2)
+                    self.assertAlmostEqual(0.005/d[z][y][x], d99[z][y][x], 2)
 
     def test_stat_locations(self):
         """test locational stats ............................"""

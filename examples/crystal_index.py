@@ -131,7 +131,7 @@ def main():
 		tmp = peak_local_max(nimg, min_distance=np.max([a,b,c]).astype(int)) # measured minimum distance from origin to first point (rough) # 50
 		coords = []
 		for coord in tmp:
-			if np.abs(np.linalg.norm(c-old_div(nimg.shape[0],2.))) <= (old_div(nx,2.)):
+			if np.abs(np.linalg.norm(c-nimg.shape[0]/2.)) <= (nx/2.):
 				coords.append(coord)
 		coords = np.asarray(coords)
 		refined_coords = refine_peaks(coords,img,options.maxshift,options.maxshift*2.)
@@ -143,7 +143,7 @@ def main():
 		print("DETERMINING ORIENTATION")
 		
 		resolutions = np.asarray([1000.,100.,50.,25.,20.,18.,16.,10.,8.,5.,4.,3.,2.9,2.8,2.7,2.6,2.5,2.4,2.3,2.2,2.1,2.0,1.9,1.8])
-		radii = [float(r) for r in old_div(1,(resolutions*ds)) if r <= old_div(nx,2.)]
+		radii = [float(r) for r in old_div(1,(resolutions*ds)) if r <= nx/2.]
 
 		# initial search range
 		a_mindeg = options.mindeg
@@ -213,7 +213,7 @@ def main():
 				if options.verbose and i % 100 == 0:
 					sys.stdout.write("\rCreating {}/{} threads".format(i+1,len(rngs)))
 
-				thd = threading.Thread(target=cost_async,args=(rngs[i],hkl_exper,hkl_ref,close,old_div(min_distance,10.),options.exper_weight,options.data_weight,i,resq))
+				thd = threading.Thread(target=cost_async,args=(rngs[i],hkl_exper,hkl_ref,close,min_distance/10.,options.exper_weight,options.data_weight,i,resq))
 				thds.append(thd)
 			t0=time.time()
 
@@ -263,7 +263,7 @@ def main():
 		for ii,soln in enumerate(solns):
 			hkl_ref = generate_lattice(nx,apix,exper_max_radius,a,b,c,alpha,beta,gamma)
 
-			refine1 = optimize.fmin(cost,soln,args=(hkl_exper,hkl_ref,close,old_div(min_distance,10.0),options.data_weight,options.exper_weight,),disp=False)
+			refine1 = optimize.fmin(cost,soln,args=(hkl_exper,hkl_ref,close,min_distance/10.0,options.data_weight,options.exper_weight,),disp=False)
 			az,alt,phi = refine1[0],refine1[1],refine1[2]
 
 			refine_apix = optimize.fmin(apix_cost,[apix],args=(az,alt,phi,hkl_exper,hkl_ref,close,16.,nx,exper_max_radius,options.data_weight,options.exper_weight,a,b,c,alpha,beta,gamma,),disp=False)
@@ -275,7 +275,7 @@ def main():
 			refine_close = refine_close[0]
 			if refine_close <= 1.0: refine_close = close
 			
-			refine2 = optimize.fmin(cost,refine1,args=(hkl_exper,hkl_ref,refine_close,old_div(min_distance,10.0),options.data_weight,options.exper_weight,),disp=False) # re-refine orientation
+			refine2 = optimize.fmin(cost,refine1,args=(hkl_exper,hkl_ref,refine_close,min_distance/10.0,options.data_weight,options.exper_weight,),disp=False) # re-refine orientation
 
 			scost =  cost(refine2,hkl_exper,hkl_ref,refine_close,min_distance,options.data_weight,options.exper_weight) 
 			if scost < best_cost:
@@ -345,7 +345,7 @@ def refine_peaks(coords,img,ms,bs):
 		ereg = img.get_clip(r)
 		nreg = ereg.numpy().copy()
 		bds = [(old_div(bs,2)-ms,old_div(bs,2)+ms),(old_div(bs,2)-ms,old_div(bs,2)+ms),(0,np.max(nreg)*2),(0.1,8.0),(0.1,8.0),(0.,90.)] # lower, upper bounds
-		initial_guess = [old_div(bs,2.),old_div(bs,2.),np.max(nreg),1.,1.,0.]
+		initial_guess = [bs/2.,bs/2.,np.max(nreg),1.,1.,0.]
 		try:
 			popt,pcov=optimize.curve_fit(twoD_Gaussian,(x,y),nreg.ravel(),p0=initial_guess,bounds=bds)
 			popt = [p for p in popt]
@@ -439,7 +439,7 @@ def cost_async(params,exper,ref,close,min_distance,w1,w2,i,out):
 
 def get_plane(params,ref,close=10.0): # rotate reference and return "slab" associated with orientation
 	rot = rotate(ref,params) #[az,alt,phi]
-	return rot[np.where(np.logical_and(rot[:,2] >= -1*close/2., rot[:,2] <= old_div(close,2.)))]
+	return rot[np.where(np.logical_and(rot[:,2] >= -1*close/2., rot[:,2] <= close/2.))]
 
 def rotate(cloud,params):
 	az,alt,phi=params

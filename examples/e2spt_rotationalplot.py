@@ -413,7 +413,7 @@ def symmetrize(vol,options):
 		t=xf.get_sym(sym,i)
 		dc.transform(t)
 		volsym.add(dc)
-	volsym.mult(old_div(1.0,nsym))	
+	volsym.mult(1.0/nsym)	
 	return(volsym)
 	
 	

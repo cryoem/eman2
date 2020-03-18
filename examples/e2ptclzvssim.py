@@ -286,8 +286,8 @@ as not all elements are computed.
 	# we convert the output we just generated to an image file for other potential analysis techniques
 	import numpy
 	ary=numpy.loadtxt(options.output).transpose()[1:]		# load the entire text file, rotate so we can manipulate columns, and throw away the row number column
-	for i in angcols: ary[i-1]*=old_div(pi,180.0)					# convert angles to radians to better match scale of other parameters
-	ary[colbfac-1]=old_div(numpy.sqrt(ary[colbfac-1]),100.0)				# B-factor -> sqrt(B)/100.0
+	for i in angcols: ary[i-1]*=pi/180.0					# convert angles to radians to better match scale of other parameters
+	ary[colbfac-1]=numpy.sqrt(ary[colbfac-1])/100.0				# B-factor -> sqrt(B)/100.0
 	print(ncols)
 	print(max(ary[ncols[0]-1]))
 	for i in ncols: ary[i-1]/=max(ary[i-1])					# class numbers -> 0-1 range
