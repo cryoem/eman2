@@ -43,7 +43,7 @@ cmp_target=None
 tdim=None
 pdim=None
 c2alt=0
-degrad=old_div(pi,180.0)
+degrad=pi/180.0
 
 def display(img):
 	img.write_image("tmploc.mrc")

@@ -89,7 +89,7 @@ improved with time."""
 
 	pat=test_image(size=(SIZE,SIZE))
 	pat.process_inplace('normalize.circlemean')
-	pat.process_inplace("mask.sharp", {"outer_radius":old_div(pat.get_xsize(),2.0)})
+	pat.process_inplace("mask.sharp", {"outer_radius":pat.get_xsize()/2.0})
 
 	data = [None for i in range(NTT)]
 
@@ -211,7 +211,7 @@ so in most cases it is not dealt with.')
 		print('An Intel Xeon X5675 3.07Ghz SF ----------------------------------')
 		print('An Intel Core i7-3960X 3.3Ghz SF --------------------------------')
 
-	if not options.short: print('\nYour machines speed factor = %1.4f +- %1.4f (%1.4f +- %1.5f sec)\n' % (old_div(2.3,tms.mean()),old_div(2.3,tms.mean())-old_div(2.3,(tms.mean()+tms.std())),old_div(tms.mean(),(NTT-5.0)),old_div(tms.std(),(NTT-5.0))))
+	if not options.short: print('\nYour machines speed factor = %1.4f +- %1.4f (%1.4f +- %1.5f sec)\n' % (2.3/tms.mean(),2.3/tms.mean()-2.3/(tms.mean()+tms.std()),tms.mean()/(NTT-5.0),tms.std()/(NTT-5.0)))
 	
 	try:
 		for l in open("/proc/cpuinfo","r"):
@@ -221,9 +221,9 @@ so in most cases it is not dealt with.')
 		
 	out=open("speedtest_result.txt","a")
 	if options.simpleout :
-		out.write("{}\t{}\n".format(SIZE,old_div(2.3,tms.mean())))
+		out.write("{}\t{}\n".format(SIZE,2.3/tms.mean()))
 	else:
-		out.write("speed: {}\tsize: {}\tOS: {}\tCPU: {}\n".format(old_div(2.3,tms.mean()),SIZE,get_platform(),cpu))
+		out.write("speed: {}\tsize: {}\tOS: {}\tCPU: {}\n".format(2.3/tms.mean(),SIZE,get_platform(),cpu))
 #	print '\nThis represents %1.2f (RTFAlign+Refine)/sec\n' % (5.0 * (NTT - 5.0) / ti)
 
 if __name__ == "__main__":

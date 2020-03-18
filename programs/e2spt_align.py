@@ -153,10 +153,10 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 		ref.append(EMData(reffile,refn))
 
 		if options.goldstandard>0 :
-			ref[0].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":old_div(1.0,options.goldstandard)})
-			ref[0].process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,options.goldstandard)})
-			ref[1].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":old_div(1.0,options.goldstandard)})
-			ref[1].process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,options.goldstandard)})
+			ref[0].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
+			ref[0].process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.goldstandard})
+			ref[1].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
+			ref[1].process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.goldstandard})
 			refnames=["{}/align_ref_even.hdf".format(options.path), "{}/align_ref_odd.hdf".format(options.path)]
 			ref[0].write_image(refnames[0],0)
 			ref[1].write_image(refnames[1],0)

@@ -186,7 +186,7 @@ def main():
 			if ( launch_childprocess(get_classaverage_cmd(options)) != 0 ):
 				print("Failed to execute %s" %get_classaverage_cmd(options))
 				sys.exit(1)
-			E2progress(logid,old_div((mod*2.0+1),nprogress))
+			E2progress(logid,(mod*2.0+1)/nprogress)
 			
 			# deal with shrink3d
 			if options.shrink3d : 
@@ -204,7 +204,7 @@ def main():
 			if ( launch_childprocess(get_make3d_cmd(options)) != 0 ):
 				print("Failed to execute %s" %get_make3d_cmd(options))
 				sys.exit(1)
-			E2progress(logid,old_div((mod*2.0+2.0),nprogress))
+			E2progress(logid,(mod*2.0+2.0)/nprogress)
 
 			# enforce symmetry
 			if options.sym.lower()!="c1" :
@@ -241,7 +241,7 @@ def main():
 
 
 		if options.reslimit>0 :
-			cur_map.process_inplace("filter.lowpass.tophat",{"cutoff_freq":old_div(1.0,options.reslimit)})
+			cur_map.process_inplace("filter.lowpass.tophat",{"cutoff_freq":1.0/options.reslimit})
 		cur_map.process_inplace("normalize.edgemean")
 		cur_map.mult(mask)
 	
@@ -257,11 +257,11 @@ def main():
 		
 	# Ok, all done, now compute the mean and standard deviation. The mean map should look nearly identical to
 	# the original results from the same iteration
-	mean_map.mult(old_div(1.0,options.nmodels))
+	mean_map.mult(1.0/options.nmodels)
 	mean_map.write_image("%s/threed_mean.hdf"%(options.output),0)
 	
 	# Now compute the variance from the two maps
-	sqr_map.mult(old_div(1.0,options.nmodels))			# pixels are mean of x^2
+	sqr_map.mult(1.0/options.nmodels)			# pixels are mean of x^2
 	mean_map.process_inplace("math.squared")	
 	sqr_map.sub(mean_map)						
 	
@@ -294,7 +294,7 @@ def main():
 	
 		# Now this is a bit tricky to argue. Along the axis we have n-fold redundancy, so that will define our normalization
 		# so, we  a point 1/2 way up the Z axis to its value before filtration. 1/2 way up Z is to deal with things like icosahedral symmetry reasonably
-		if weight[old_div(nx,2),old_div(ny,2),old_div(nz,4)]>1.0 : rescale=old_div((tv-1.0),(weight[old_div(nx,2),old_div(ny,2),old_div(nz,4)]-1.0))
+		if weight[old_div(nx,2),old_div(ny,2),old_div(nz,4)]>1.0 : rescale=(tv-1.0)/(weight[old_div(nx,2),old_div(ny,2),old_div(nz,4)]-1.0)
 		else : rescale=1.0
 #		print rescale
 		

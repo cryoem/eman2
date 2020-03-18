@@ -162,7 +162,7 @@ class EMSimmxExplorer(EM3DSymModel):
 
 		if min(allcmp)>0 :
 			for i in range(len(self.projections)):
-				self.projections[i].set_attr("cmp",old_div(1.0,allcmp[i]))		# We plot reciprocalk values so taller peaks are better...
+				self.projections[i].set_attr("cmp",1.0/allcmp[i])		# We plot reciprocalk values so taller peaks are better...
 		else :
 			for i in range(len(self.projections)):
 				self.projections[i].set_attr("cmp",-allcmp[i])		# We plot -1* values so taller peaks are better...
@@ -274,7 +274,7 @@ class EMSimmxExplorer(EM3DSymModel):
 
 				try :
 					ctf=particle["ctf"]
-					ds=old_div(1.0,(ctf.apix*particle["ny"]))
+					ds=1.0/(ctf.apix*particle["ny"])
 					snr=ctf.compute_1d(particle["ny"],ds,Ctf.CtfType.CTF_SNR)
 					ses=[i*ds for i in range(old_div(particle["ny"],2))]
 					self.frc_display.set_data((ses,snr),"SNR",color=1)

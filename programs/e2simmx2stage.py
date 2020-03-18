@@ -163,7 +163,7 @@ def main():
 	#			tmp.write_image("testing/rcls.%03d.hdf"%ii,-1)
 				avg.add(tmp)
 
-			avg.mult(old_div(1.0,len(i)))
+			avg.mult(1.0/len(i))
 			avg["class_ptcl_idxs"]=i
 			avg["class_ptcl_src"]=args[0]
 			avg.write_image(args[4],ii)
