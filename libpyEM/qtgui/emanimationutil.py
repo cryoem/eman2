@@ -98,7 +98,7 @@ class Animatable(object):
 	def __init__(self):
 		self.time = 0		# time indicates the current time used for the basis of animation.
 		self.time_interval = 0.3 # 0.3 seconds for the animation to complete
-		self.inverse_time_inverval = old_div(1.0,self.time_interval)
+		self.inverse_time_inverval = 1.0/self.time_interval
 		self.time_begin = 0 # records the time at which the animation was begun
 		self.animated = True
 		self.n = 100
@@ -112,7 +112,7 @@ class Animatable(object):
 		linear_approach = True
 		for i in range(self.n):
 			if tanh_approach:
-				val = old_div((1+ (tanh(-4+float(i)/(self.n-1)*8))),2.0)
+				val = (1+ (tanh(-4+float(i)/(self.n-1)*8)))/2.0
 				Animatable.cache_dts.append(val)
 			elif linear_approach:
 				#  Linear

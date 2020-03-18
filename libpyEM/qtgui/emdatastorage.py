@@ -229,7 +229,7 @@ valid_properties = {
 	),
 	
 "angle":("degree",
-	{"degree":1.0,"radian":old_div(180.0,pi), "mrad":old_div(0.18,pi)},
+	{"degree":1.0,"radian":180.0/pi, "mrad":0.18/pi},
 	{"deg":"degree", "degrees":"degree"}
 	),
 	

@@ -161,7 +161,7 @@ class EMLightsDrawer(object):
 			self.ball_dl = glGenLists(1)
 			glNewList(self.ball_dl,GL_COMPILE)
 			glPushMatrix()
-			glScale(old_div(self.radius,10.0),old_div(self.radius,10.0),old_div(self.radius,10.0))
+			glScale(self.radius/10.0,self.radius/10.0,self.radius/10.0)
 			self.draw_light_cocoon()
 			self.draw_inside_light()
 			glPopMatrix()
@@ -189,7 +189,7 @@ class EMLightsDrawer(object):
 				glTranslate(0,0,-.5)
 				glRotate(rot,0,0,1)
 				glRotate(90,0,1,0)
-				glScale(old_div(self.radius,10.0),old_div(self.radius,10.0),old_div(self.radius,10.0))
+				glScale(self.radius/10.0,self.radius/10.0,self.radius/10.0)
 				glutSolidTorus(.1,0.71,32,32)
 				glPopMatrix()
 			
@@ -349,7 +349,7 @@ class EMLightsDrawer(object):
 		top = 1.0 # square width at top
 		
 		dz = old_div((top-bot),(n-1))
-		yellow = [1,1,0,old_div(1.0,n)]
+		yellow = [1,1,0,1.0/n]
 		glMaterial(GL_FRONT, GL_AMBIENT, yellow)
 		glMaterial(GL_FRONT, GL_DIFFUSE, yellow)
 		glMaterial(GL_FRONT, GL_SPECULAR, yellow)

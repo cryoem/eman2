@@ -426,7 +426,7 @@ class BaseAnnealer(with_metaclass(abc.ABCMeta, object)):
 
         step += steps
         while acceptance > 0.98:
-            T = self.round_figures(old_div(T, 1.5), 2)
+            T = self.round_figures(T / 1.5, 2)
             E, acceptance, improvement = run(T, steps)
             step += steps
             self.update(step, T, E, acceptance, improvement)
@@ -439,7 +439,7 @@ class BaseAnnealer(with_metaclass(abc.ABCMeta, object)):
 
         # Search for Tmin - a temperature that gives 0% improvement
         while improvement > 0.0:
-            T = self.round_figures(old_div(T, 1.5), 2)
+            T = self.round_figures(T / 1.5, 2)
             E, acceptance, improvement = run(T, steps)
             step += steps
             self.update(step, T, E, acceptance, improvement)

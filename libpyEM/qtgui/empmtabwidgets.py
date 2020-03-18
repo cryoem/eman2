@@ -515,10 +515,10 @@ class EMCTFParticlesEntry(EMDirEntry):
 				else : self.defocus = "%.3f (%.3f, %.1f)" % (ctf.defocus,ctf.dfdiff,ctf.dfang)
 				self.bfactor = "%.3f" % ctf.bfactor
 				self.sampling = str(len(ctf.snr))
-				s0=max(2,int(old_div(1.0,(200.0*ctf.dsbg))))
-				s1=max(2,int(old_div(1.0,(20.0*ctf.dsbg))))
-				s2=int(old_div(1.0,(10.0*ctf.dsbg)))
-				s3=int(old_div(1.0,(4.0*ctf.dsbg)))
+				s0=max(2,int(1.0/(200.0*ctf.dsbg)))
+				s1=max(2,int(1.0/(20.0*ctf.dsbg)))
+				s2=int(1.0/(10.0*ctf.dsbg))
+				s3=int(1.0/(4.0*ctf.dsbg))
 				self.snr = "%.3f" %  (old_div(sum(ctf.snr[s0:s1]),(s1-s0)))
 				self.snrhi = "%.3f" %  (old_div(sum(ctf.snr[s2:s3]),(s3-s2)))
 			except:

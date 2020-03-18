@@ -442,7 +442,7 @@ class EMHistogramWidget(EMGLWidget):
 			s.draw(self.scr2plot)
 		GL.glPopMatrix()
 		if render:
-			fig=Figure((old_div(self.width(),72.0),old_div(self.height(),72.0)),dpi=72.0)
+			fig=Figure((self.width()/72.0,self.height()/72.0),dpi=72.0)
 			ax=fig.add_axes((.1,.1,.88,.88),autoscale_on=False,xlim=self.xlimits,ylim=self.ylimits,xscale=self.axisparms[2],yscale=self.axisparms[3])
 			#if self.axisparms[0] and len(self.axisparms[0])>0 : ax.set_xlabel(self.axisparms[0],size="xx-large")
 			#if self.axisparms[1] and len(self.axisparms[1])>0 : ax.set_ylabel(self.axisparms[1],size="xx-large")
@@ -800,7 +800,7 @@ lc is the cursor selection point in plot coords"""
 				if not self.visibility[k]: continue
 				xmin=min(xmin,min(self.data[k][self.axes[k][0]]))
 				xmax=max(xmax,max(self.data[k][self.axes[k][0]]))
-			if self.axisparms[2]!="linear" : self.xlimits=(old_div(xmin,1.1),xmax*1.1)
+			if self.axisparms[2]!="linear" : self.xlimits=(xmin/1.1,xmax*1.1)
 			else:
 				margin=(xmax-xmin)*0.025
 				self.xlimits=(xmin-margin,xmax+margin)
@@ -816,7 +816,7 @@ lc is the cursor selection point in plot coords"""
 					ymax = max(ymax,max(self.bins[k]))
 					ymin = min(ymin,min(self.bins[k]))
 			if self.axisparms[3]!="linear" :
-				self.ylimits=(old_div(ymin,1.1),ymax*1.1)
+				self.ylimits=(ymin/1.1,ymax*1.1)
 			else:
 				margin = ymax*0.025
 				self.ylimits = (ymin-margin, ymax+margin)

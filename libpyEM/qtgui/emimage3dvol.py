@@ -238,7 +238,7 @@ class EMVolumeModel(EM3DModel):
 		glStencilFunc(GL_EQUAL,self.rank,0)
 		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
 		glPushMatrix()
-		glTranslate(old_div(-self.data.get_xsize(),2.0),old_div(-self.data.get_ysize(),2.0),old_div(-self.data.get_zsize(),2.0))
+		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-self.data.get_zsize()/2.0)
 		glScalef(self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize())
 		glEnable(GL_BLEND)
 		#glBlendEquation(GL_MAX)
@@ -414,7 +414,7 @@ class EMVolumeModel(EM3DModel):
 			alt = acos(p[2])*180.0/pi
 		
 		phi = atan2(p[0],p[1])
-		phi *= old_div(180.0,pi)
+		phi *= 180.0/pi
 		
 		t = Transform({"type":"eman","alt":alt,"phi":phi})
 		
