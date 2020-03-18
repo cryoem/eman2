@@ -192,10 +192,10 @@ for option1 in optionList:
 						temp_dict['cs']=cs
 					elif item2.tag == "defocusU":
 						defocus1 = item2.text # in nm
-						temp_dict['defocusU']=old_div(float (defocus1),1000.0)
+						temp_dict['defocusU']=float (defocus1)/1000.0
 					elif item2.tag == "defocusV":
 						defocus2 = item2.text # in nm
-						temp_dict['defocusV']=old_div(float(defocus2),1000.0)
+						temp_dict['defocusV']=float(defocus2)/1000.0
 					elif item2.tag == "defocusUAngle":
 						defocus_angle = item2.text # in degrees (0->180)
 						temp_dict['dfang']=defocus_angle

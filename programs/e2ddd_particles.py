@@ -312,8 +312,8 @@ def main():
 			natx=[atx[0]]
 			naty=[aty[0]]
 			for i in range(1,len(atx)-1):
-				natx.append(int(old_div((atx[i-1]+2.0*atx[i]+atx[i+1]),4.0)))
-				naty.append(int(old_div((aty[i-1]+2.0*aty[i]+aty[i+1]),4.0)))
+				natx.append(int((atx[i-1]+2.0*atx[i]+atx[i+1])/4.0))
+				naty.append(int((aty[i-1]+2.0*aty[i]+aty[i+1])/4.0))
 			natx.append(atx[-1])
 			naty.append(aty[-1])
 #			print len(atx),len(natx),len(aty),len(naty),len(stack)

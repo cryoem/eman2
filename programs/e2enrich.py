@@ -61,7 +61,7 @@ def enrich(thr,jsd,imfile,lsx,proj,nenrich,redoinvar,i0,i1,verbose):
 			ali=img.align("refine",aliref,{"xform.align2d":ali["xform.align2d"]},"frc",{"minres":80,"maxres":20})				
 			sim.append(ali.cmp("frc",aliref,{"minres":80,"maxres":20}))
 			avg.add(ali)
-		avg.mult(old_div(1.0,(nenrich+1)))
+		avg.mult(1.0/(nenrich+1))
 		avg["class_ptcl_src"]=imfile
 		avg["enrich_quals"]=sim
 		avg["class_ptcl_idxs"]=[i]+best
