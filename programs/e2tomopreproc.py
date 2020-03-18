@@ -213,7 +213,7 @@ def main():
 		print()
 		lowpassres = old_div(nyquist,options.lowpassfrac)
 		
-		options.lowpassfrac = old_div(1.0,(lowpassres))
+		options.lowpassfrac = 1.0/(lowpassres)
 		if float(options.shrink) > 1.0:
 			options.lowpassfrac /= float(options.shrink)
 			

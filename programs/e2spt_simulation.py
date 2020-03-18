@@ -385,7 +385,7 @@ def randomizer(options, model, tag):
 
 		if options.preferredtop and not options.preferredside:
 			#paltstop = preferredalt( options, mu=180,sigma=45, nptcls=options.nptcls )
-			ntop = int(round(old_div(options.nptcls,2.0)))
+			ntop = int(round(options.nptcls/2.0))
 			nbottom = options.nptcls -ntop 
 			#palts = paltstop
 			palts = numpy.append( preferredalt( options, mu=180,sigma=options.preferredtop, nptcls=ntop ), preferredalt( options, mu=0,sigma=preferredside, nptcls=nbottom ) )
@@ -396,7 +396,7 @@ def randomizer(options, model, tag):
 			palts = paltsside
 
 		if options.preferredside and options.preferredtop:
-			ntop = int(round(old_div(options.nptcls,4.0)))
+			ntop = int(round(options.nptcls/4.0))
 			nbottom = ntop
 			nside = options.nptcls -ntop -nbottom  	
 			palts = numpy.append( preferredalt( options, mu=180,sigma=options.preferredtop, nptcls=ntop ), preferredalt( options, mu=0,sigma=options.preferredtop, nptcls=nbottom ), preferredalt( options, mu=90,sigma=options.preferredside, nptcls=nside ) )
@@ -615,8 +615,8 @@ def plotvals( options, vals, tag ):
 	sigmavals= numpy.std(vals)
 	meanvals = numpy.mean(vals)
 
-	cuberoot = numpy.power(len(vals),old_div(1.0,3.0))
-	width = old_div((3.5*sigmavals),cuberoot)
+	cuberoot = numpy.power(len(vals),1.0/3.0)
+	width = (3.5*sigmavals)/cuberoot
 	
 	#print "Therefore, according to Scott's normal reference rule, width = (3.5*std)/cuberoot(n), the width of the histogram bins will be", width
 	
@@ -892,11 +892,11 @@ class SubtomoSimTask(JSTask):
 			at least ptcl_size/2 away from it.
 			'''
 			if options.verbose > 1: print("\ncalculating px")
-			px = random.uniform( -1* old_div(options.gridholesize,2.0) + old_div( apix*old_div(image['nx'],2.0), 10000 ), old_div( options.gridholesize,2.0 ) - old_div( apix*old_div(image['nx'],2.0),10000) )
+			px = random.uniform( -1* options.gridholesize/2.0 +  apix*image['nx']/2.0 / 10000 ,  options.gridholesize/2.0  -  apix*image['nx']/2.0/10000 )
 			if options.verbose > 1: print("\ndone calculating px")
 
 		pz=0
-		if round(old_div(options.icethickness*10000,apix)) > round(old_div(image['nx'],2.0)):
+		if round(old_div(options.icethickness*10000,apix)) > round(image['nx']/2.0):
 			'''
 			Beware, --icethickness supplied in microns
 			'''
@@ -911,7 +911,7 @@ class SubtomoSimTask(JSTask):
 		
 			#pz = old_div(coordz*apix,10000) - old_div(options.icethickness,2)
 			if options.verbose > 1: print("\ncalculating pz")
-			pz = random.uniform( -1* old_div(options.icethickness,2.0) + old_div( apix*old_div(image['nx'],2.0), 10000 ), old_div(options.icethickness,2.0) - old_div( apix*old_div(image['nx'],2.0), 10000) )			
+			pz = random.uniform( -1* options.icethickness/2.0 +  apix*image['nx']/2.0 / 10000 , options.icethickness/2.0 -  apix*image['nx']/2.0 / 10000 )			
 			if options.verbose > 1: print("\ndone calculating px")
 
 		
@@ -922,10 +922,10 @@ class SubtomoSimTask(JSTask):
 		Convert coordz from pz into pixels; beware: its shifted by half the icethickness (the position of the midzplane)
 		'''
 		if options.verbose > 1: print("\nconverting coords to pixels")
-		coordx = int( round(  old_div(10000*(px + old_div(options.gridholesize,2.0)), apix)))
-		coordy = random.randint(0 + old_div(image['nx'],2), int(round(old_div(options.gridholesize*10000,apix) - old_div(image['nx'],2.0) )) )									#random distance in Y of the particle's center from the bottom edge in the XY plane, at tilt=0
+		coordx = int( round(  10000*(px + options.gridholesize/2.0) / apix))
+		coordy = random.randint(0 + old_div(image['nx'],2), int(round(old_div(options.gridholesize*10000,apix) - image['nx']/2.0 )) )									#random distance in Y of the particle's center from the bottom edge in the XY plane, at tilt=0
 		#coordz = int( round( old_div(image['nx'],2.0) ) )
-		coordz = int( round(  old_div(10000*(pz + old_div(options.icethickness,2.0)), apix)))
+		coordz = int( round(  10000*(pz + options.icethickness/2.0) / apix))
 		if options.verbose > 1: print("\ndone converting coords to pixels")
 
 		if options.set2tiltaxis:
@@ -1197,7 +1197,7 @@ def noiseit( prj_r, options, nslices, outname, i, dontsave=False ):
 	#prj_r.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
 	#prj_r.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
 	
-	fractionationfactor = old_div(61.0,nslices)		#If 61 slices go into each subtomo, then the fractionation factor
+	fractionationfactor = 61.0/nslices		#If 61 slices go into each subtomo, then the fractionation factor
 											#Will be 1. This assumes a +-60 deg data collection range with 2 deg increments.
 											#Otherwise, if nslices is > 61 the signal in each slice will be diluted, accordingly.
 											#If nslices < 1, the signal in each slice will be enhanced. In the end, regardless of the nslices value, 

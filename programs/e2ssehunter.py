@@ -219,7 +219,7 @@ def get_distance_matrix(patoms, apix):
 def find_aspect_ratio(targetMRC, patoms, apix, thr):
 	### set search area
 	print("Grouping neighboring pixels")
-	kernelwidth=int(round(old_div(5.0,apix)))
+	kernelwidth=int(round(5.0/apix))
 	pixels=[]
 	for atom in patoms:
 		tempPixel=[]
@@ -269,7 +269,7 @@ def model_pdb_helix(length):
 	q=0
 	r=0
 	outfile=open("helix.pdb","w")
-	while j<= round(old_div(length,1.54)):
+	while j<= round(length/1.54):
 		Nxcoord=cos(old_div((100*j*pi),180))*1.6
 		Nycoord=sin(old_div((100*j*pi),180))*1.6
 		Nzcoord=j*1.52
@@ -372,7 +372,7 @@ def helix_correlation_scores(targetMRC, patoms, apix, res, coeff, helixlength, d
 		pdbHelix=model_pdb_helix(helixlength)	
 		mrcHelix=model_mrc_helix(targetMRC.get_xsize(), apix, res, length=helixlength, points=pdbHelix, helixtype="helix_pdb")
 		if da==0.0:
-			da=2*asin(old_div(res,targetMRC.get_xsize()))*(old_div(180.0,pi))
+			da=2*asin(old_div(res,targetMRC.get_xsize()))*(180.0/pi)
 			print("da not set; setting da to %f degrees"%da)
 		hhMrc=helixhunter_ccf(targetMRC, mrcHelix, da)
 	
@@ -546,7 +546,7 @@ def geometry_scores(patoms, atomNumber, targetMRC, apix, thr, coeffArray, avghhv
 			pascore=pascore+1
 		if len(cloud) > 3:
 			pascore=pascore-1
-		pseudoatomArray.append(float(old_div(pascore,4.0)))	
+		pseudoatomArray.append(float(pascore/4.0))	
 
 
 	return pseudoatomArray

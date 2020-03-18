@@ -176,7 +176,7 @@ class Contour(EMShape):
 						q1=p1
 					else:
 						dz=abs(old_div(float(zpos-p0[2]),(p1[2]-p0[2])))
-						dp=old_div(1.,abs((p1[2]-p0[2])))
+						dp=1./abs((p1[2]-p0[2]))
 						#print dp, dz
 						d0=max(0, (dz-dp))
 						d1=min(1, (dz+dp))

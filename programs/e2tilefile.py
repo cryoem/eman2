@@ -182,7 +182,7 @@ def build_tiles(img,tilefile,tilesize,options=[]):
 			import pylab
 			manager = pylab.get_current_fig_manager()
 			apix=options["pspec"]
-			dx=old_div(1.0,(2.0*apix*256.0))
+			dx=1.0/(2.0*apix*256.0)
 			x=pylab.arange(dx,dx*255.9,dx)
 			y=a.calc_radial_dist(255,1,1,0)	# radial power spectrum (log)
 			pylab.figure(figsize=(8,6),dpi=96)

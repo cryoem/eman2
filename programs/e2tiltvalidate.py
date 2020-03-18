@@ -356,7 +356,7 @@ class ComputeTilts(object):
 					if tiltxform.get_rotation("eman")["alt"] < self.options.maxtiltangle:
 						bestinplane = math.fabs(tiltxform.get_rotation("eman")['az'] - (-tiltxform.get_rotation("eman")['phi'] % 360))
 						besttiltangle = tiltxform.get_rotation("eman")["alt"]
-						besttiltaxis = old_div((tiltxform.get_rotation("eman")['az'] + (-tiltxform.get_rotation("eman")['phi'] % 360)),2.0)
+						besttiltaxis = (tiltxform.get_rotation("eman")['az'] + (-tiltxform.get_rotation("eman")['phi'] % 360))/2.0
 						anglefound = True
 				#self.test.write("\t%f %f %f %f\n"%(tiltxform.get_rotation("spin")["omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]))
 				#self.test.write("\t%f %f %f Ip %f\n"%(tiltxform.get_rotation("eman")["az"],tiltxform.get_rotation("eman")["alt"],tiltxform.get_rotation("eman")["phi"], bestinplane))
