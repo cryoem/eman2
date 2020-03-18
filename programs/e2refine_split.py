@@ -382,10 +382,10 @@ def main():
 		pass
 
 	if os.path.exists("strucfac.txt"):
-		launch_childprocess("e2proc3d.py {} {} --setsf strucfac.txt --process filter.wiener.byfsc:fscfile={}/fsc_masked_{:02d}.txt:snrmult=2:sscale=1.1:maxfreq={} --process mask.soft:outer_radius=-9:width=4".format(threedout,threedout2,options.path,last_iter,old_div(1.0,targetres)))
+		launch_childprocess("e2proc3d.py {} {} --setsf strucfac.txt --process filter.wiener.byfsc:fscfile={}/fsc_masked_{:02d}.txt:snrmult=2:sscale=1.1:maxfreq={} --process mask.soft:outer_radius=-9:width=4".format(threedout,threedout2,options.path,last_iter,1.0/targetres))
 	else:
 		print("Missing structure factor, cannot filter properly")
-		launch_childprocess("e2proc3d.py {} {} --process filter.wiener.byfsc:fscfile={}/fsc_masked_{:02d}.txt:snrmult=2:sscale=1.1:maxfreq={} --process mask.soft:outer_radius=-9:width=4".format(threedout,threedout2,options.path,last_iter,old_div(1.0,targetres)))
+		launch_childprocess("e2proc3d.py {} {} --process filter.wiener.byfsc:fscfile={}/fsc_masked_{:02d}.txt:snrmult=2:sscale=1.1:maxfreq={} --process mask.soft:outer_radius=-9:width=4".format(threedout,threedout2,options.path,last_iter,1.0/targetres))
 
 	E2end(logger)
 

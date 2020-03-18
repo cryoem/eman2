@@ -337,10 +337,10 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 				js=js_open_dict(info_name(pfile))
 				ctf=js["ctf"][0]
 				js.close()
-				r1=int(floor(old_div(1.0,(200.0*ctf.dsbg))))		# lowsnr is 200-20 A
-				r2=int(ceil(old_div(1.0,(20.0*ctf.dsbg))))
-				r3=int(floor(old_div(1.0,(10.0*ctf.dsbg))))		# hisnr is 10 to 4 A
-				r4=int(ceil(old_div(1.0,(4.0*ctf.dsbg))))
+				r1=int(floor(1.0/(200.0*ctf.dsbg)))		# lowsnr is 200-20 A
+				r2=int(ceil(1.0/(20.0*ctf.dsbg)))
+				r3=int(floor(1.0/(10.0*ctf.dsbg)))		# hisnr is 10 to 4 A
+				r4=int(ceil(1.0/(4.0*ctf.dsbg)))
 				losnr=old_div(sum(ctf.snr[r1:r2]),(r2-r1))
 				hisnr=old_div(sum(ctf.snr[r3:r4]),(r4-r3))
 				if losnr<options.minlosnr or hisnr<options.minhisnr or (options.mindf>0 and ctf.defocus<options.mindf) or (options.maxdf>0 and ctf.defocus>options.maxdf) :

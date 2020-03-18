@@ -41,8 +41,8 @@ from builtins import object
 import sys, math, os, random
 from EMAN2 import *
 from EMAN2jsondb import JSTask,jsonclasses
-deg2rad = old_div(math.pi, 180.0)
-rad2deg = old_div(180.0, math.pi)
+deg2rad = math.pi / 180.0
+rad2deg = 180.0 / math.pi
 DEBUG = False
 WEN_JIANG = False
 EMAN1_OCT = False
@@ -182,7 +182,7 @@ def prethreshold(img):
 	snz=img["sigma_nonzero"]
 	img.process_inplace("threshold.belowtozero",{"minval":snz*1.5})
 	img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.5})
-	img.process_inplace("threshold.belowtozero",{"minval":old_div(snz,100.0)})
+	img.process_inplace("threshold.belowtozero",{"minval":snz/100.0})
 
 class EMProject3DTaskDC(JSTask):
 	def __init__(self,command="e2project3d.py",data=None,options=None):
@@ -216,7 +216,7 @@ class EMProject3DTaskDC(JSTask):
 			projector_opts["transform"] = euler
 			projection = threed_image.project(projector,projector_opts)
 			# The 5.0 is arbitrary. The goal is to get sigma in the ~1-3 range, and with typical density patterns, this should get in the right neighborhood
-			projection.mult(old_div(5.0,projection["nx"]))		
+			projection.mult(5.0/projection["nx"])		
 			projection.set_attr("xform.projection",euler)
 			projection.set_attr("ptcl_repr",0)
 			projections[indices[i]] = projection

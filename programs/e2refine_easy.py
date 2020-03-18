@@ -380,14 +380,14 @@ used, browse to the 0_refine_parms.json file in the refinement directory. You ca
 			else : randomres=options.targetres*2.0
 
 			if options.norandomphase :
-				run("e2proc3d.py {model} {path}/threed_00_even.hdf  --apix={apix}".format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix))
-				run("e2proc3d.py {model} {path}/threed_00_odd.hdf  --apix={apix}" .format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix))
+				run("e2proc3d.py {model} {path}/threed_00_even.hdf  --apix={apix}".format(model=options.model,path=options.path,freq=1.0/(randomres),apix=apix))
+				run("e2proc3d.py {model} {path}/threed_00_odd.hdf  --apix={apix}" .format(model=options.model,path=options.path,freq=1.0/(randomres),apix=apix))
 				append_html("""<p>No phase randomization or other prefilter applied to <i>{model}</i> at user request. If input model was not already preprocessed in some appropriate way,
 then this map have initial model bias, and resolution evaluation may be unrealiable.</p>
 <p>Input particles are from <i>{infile}</i></p>""".format(model=options.model,infile=options.input,res=randomres,resb=randomres*0.9))
 			else:
-				run("e2proc3d.py {model} {path}/threed_00_even.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}".format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix))
-				run("e2proc3d.py {model} {path}/threed_00_odd.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}" .format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix))
+				run("e2proc3d.py {model} {path}/threed_00_even.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}".format(model=options.model,path=options.path,freq=1.0/(randomres),apix=apix))
+				run("e2proc3d.py {model} {path}/threed_00_odd.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}" .format(model=options.model,path=options.path,freq=1.0/(randomres),apix=apix))
 				run("e2proc3d.py {path}/threed_00_even.hdf {path}/fsc_unmasked_00.txt --calcfsc {path}/threed_00_odd.hdf".format(path=options.path))
 				append_html("""<p>Randomizing the Fourier phases of <i>{model}</i> at resolutions higher than {res:1.1f} &Aring;. If the final achieved resolution is not at least ~{resb:1.1f} &Aring;, then the
 gold standard resolution assessment is not valid, and you need to re-refine, starting with a lower resolution target.</p>
@@ -520,7 +520,7 @@ are really required to achieve the targeted resolution, you may consider manuall
 		if options.targetres>apix*4 :
 			effbox=old_div(nx*apix*2,options.targetres)
 #			astep=89.999/ceil(90.0/sqrt(4300/effbox))		# This rounds to the best angular step divisible by 90 degrees. Old way without speed
-			astep=old_div(89.99,ceil(90.0*9.0/((options.speed+3.0)*sqrt(old_div(4300,effbox)))))		# This rounds to the best angular step divisible by 90 degrees
+			astep=89.99/ceil(90.0*9.0/((options.speed+3.0)*sqrt(old_div(4300,effbox))))		# This rounds to the best angular step divisible by 90 degrees
 			options.orientgen="eman:delta={:1.5f}:inc_mirror={}:perturb=0".format(astep,incmir)
 			if options.classiter<0 :
 				if options.targetres>12.0 :
@@ -544,7 +544,7 @@ even lead to worse structures. Based on your requested resolution and box-size, 
 
 		# target resolution between 1/2 and 3/4 Nyquist
 		elif options.targetres>apix*8.0/3.0 :
-			astep=old_div(89.99,ceil(90.0*9.0/((options.speed+3.0)*sqrt(old_div(4300,nx)))))		# This rounds to the best angular step divisible by 90 degrees
+			astep=89.99/ceil(90.0*9.0/((options.speed+3.0)*sqrt(old_div(4300,nx))))		# This rounds to the best angular step divisible by 90 degrees
 			options.orientgen="eman:delta={:1.5f}:inc_mirror={}:perturb=0".format(astep,incmir)
 			append_html("<p>Based on your requested resolution and box-size, modified by --speed,  I will use an angular sampling of {:1.2f} deg. For details, please see \
 <a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p>".format(astep))
@@ -559,7 +559,7 @@ will help avoid noise bias in early rounds, but it may be reduced to zero if con
 				classiter=1
 				append_html("<p>Your desired resolution is beyond 3/4 Nyquist. Regardless, we will set --classiter to 1 initially. Leaving this above 0 \
 will help avoid noise bias, but it may be reduced to zero if convergence seems to have been achieved.</p>")
-			astep=old_div(89.99,ceil(90.0*9.0/((options.speed+3.0)*sqrt(old_div(4300,nx)))))		# This rounds to the best angular step divisible by 90 degrees
+			astep=89.99/ceil(90.0*9.0/((options.speed+3.0)*sqrt(old_div(4300,nx))))		# This rounds to the best angular step divisible by 90 degrees
 			options.orientgen="eman:delta={:1.5f}:inc_mirror={}:perturb=0".format(astep,incmir)
 			append_html("<p>The resolution you are requesting is beyond 2/3 Nyquist. This is normally not recommended, as it represents insufficient sampling to give a good representation of your \
 reconstructed map, and resolution can be difficult to accurately assess. The reconstruction will proceed, but generally speaking your A/pix should be less than 1/3 the targeted resolution. \
@@ -569,7 +569,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 		append_html("<p>Using your specified orientation generator with angular step. You may consider reading this page: <a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p></p>")
 		try:
 			astep=float(parsemodopt(options.orientgen)[1]["delta"])
-			if astep*floor(old_div(90.0,astep))<89.9:
+			if astep*floor(90.0/astep)<89.9:
 				append_html("<p>WARNING: your specified angular step would not quite reach the equator when generating angles. For higher symmetries (icos or oct) this may not be a problem, but for lower symmetries, it is \
 important to use an angular step which is 90/integer.</p>")
 		except:
@@ -767,7 +767,7 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 
 <br><a href=resolution_masks.pdf><img src=resolution_masks.png></a><br>
 	""")
-	xticklocs=[i for i in (.01,.05,.0833,.125,.1667,.2,.25,.3333,.4,.5) if i<old_div(1.0,(2.0*apix))]
+	xticklocs=[i for i in (.01,.05,.0833,.125,.1667,.2,.25,.3333,.4,.5) if i<1.0/(2.0*apix)]
 	xticklbl=["1/100","1/20","1/12","1/8","1/6","1/5","1/4","1/3","1/2.5","1/2"][:len(xticklocs)]
 	yticklocs=(0.0,.125,.143,.25,.375,.5,.625,.75,.875,1.0)
 	yticklbl=("0"," ","0.143","0.25"," ","0.5"," ","0.75"," ","1.0")
@@ -1111,11 +1111,11 @@ ampcorrect=ampcorrect,tophat=tophat,threads=options.threads))
 				# find the 0.143 crossing
 				for si in range(2,len(d[0])-2):
 					if d[1][si-1]>0.143 and d[1][si]<=0.143 :
-						frac=old_div((0.143-d[1][si]),(d[1][si-1]-d[1][si]))		# 1.0 if 0.143 at si-1, 0.0 if .143 at si
+						frac=(0.143-d[1][si])/(d[1][si-1]-d[1][si])		# 1.0 if 0.143 at si-1, 0.0 if .143 at si
 						lastres=d[0][si]*(1.0-frac)+d[0][si-1]*frac
 						try:
-							plt.annotate(r"{:1.1f} $\AA$".format(old_div(1.0,lastres)),xy=(lastres,0.143),
-								xytext=(old_div((lastres*4+d[0][-1]),5.0),0.2+0.05*fi),arrowprops={"width":1,"headlength":7,"headwidth":7,"shrink":.05})
+							plt.annotate(r"{:1.1f} $\AA$".format(1.0/lastres),xy=(lastres,0.143),
+								xytext=((lastres*4+d[0][-1])/5.0,0.2+0.05*fi),arrowprops={"width":1,"headlength":7,"headwidth":7,"shrink":.05})
 						except: pass
 						break
 				else : lastres=0
@@ -1140,7 +1140,7 @@ ampcorrect=ampcorrect,tophat=tophat,threads=options.threads))
 		if lastres==0 :
 			append_html("<p>No valid resolution found for iteration {}.".format(it))
 		else:
-			append_html("<p>Iteration {}: Resolution = {:1.1f} &Aring; (gold standard refinement with tight mask, FSC @0.143)</p>".format(it,old_div(1.0,lastres)))
+			append_html("<p>Iteration {}: Resolution = {:1.1f} &Aring; (gold standard refinement with tight mask, FSC @0.143)</p>".format(it,1.0/lastres))
 
 		######################
 		### Resolution plot 2
@@ -1173,11 +1173,11 @@ ampcorrect=ampcorrect,tophat=tophat,threads=options.threads))
 			# find the 0.143 crossing
 			for si in range(2,len(d[0])-2):
 				if d[1][si-1]>0.143 and d[1][si]<=0.143 :
-					frac=old_div((0.143-d[1][si]),(d[1][si-1]-d[1][si]))		# 1.0 if 0.143 at si-1, 0.0 if .143 at si
+					frac=(0.143-d[1][si])/(d[1][si-1]-d[1][si])		# 1.0 if 0.143 at si-1, 0.0 if .143 at si
 					lastres.append(d[0][si]*(1.0-frac)+d[0][si-1]*frac)
 					try:
-						plt.annotate(r"{:1.1f} $\AA$".format(old_div(1.0,lastres[-1])),xy=(lastres[-1],0.143),
-							xytext=(old_div((lastres[-1]*4+d[0][-1]),5.0),0.2+0.05*i),arrowprops={"width":1,"headlength":7,"headwidth":7,"shrink":.05})
+						plt.annotate(r"{:1.1f} $\AA$".format(1.0/lastres[-1]),xy=(lastres[-1],0.143),
+							xytext=((lastres[-1]*4+d[0][-1])/5.0,0.2+0.05*i),arrowprops={"width":1,"headlength":7,"headwidth":7,"shrink":.05})
 					except: pass
 					break
 
@@ -1201,7 +1201,7 @@ ampcorrect=ampcorrect,tophat=tophat,threads=options.threads))
 		if len(lastres)==0 :
 			append_html("<p>No valid resolution found for iteration {}".format(it))
 		else:
-			try :append_html("<p>Iteration {}: Resolution with different masks = {:1.1f}, {:1.1f}, {:1.1f} &Aring;</p>".format(it,old_div(1.0,lastres[0]),old_div(1.0,lastres[1]),old_div(1.0,lastres[2])))
+			try :append_html("<p>Iteration {}: Resolution with different masks = {:1.1f}, {:1.1f}, {:1.1f} &Aring;</p>".format(it,1.0/lastres[0],1.0/lastres[1],1.0/lastres[2]))
 			except: append_html("<p>Iteration {}: Didn't find resolutions for all 3 curves".format(it))
 
 		E2progress(logid,old_div(progress,total_procs))
@@ -1213,14 +1213,14 @@ falls smoothly to the edge of the plot, this may be what is happening, and you s
 Consider consulting the EMAN2 mailing list if you cannot figure out what's going wrong</p>""")
 	else:
 		try:
-			if old_div(1.0,lastres[1])>randomres*.9 :
+			if 1.0/lastres[1]>randomres*.9 :
 				append_html("""<p>Unfortunately your final determined resolution of {:1.1f} &Aring; is not sufficiently better than the
 phase randomization resolution of {:1.1f} &Aring; for the 'gold standard' resolution method to be valid. Please do not trust this result.
-You must rerun the refinement with a more conservative initial target resolution (suggest ~{:1.1f}).</p>""".format(old_div(1.0,lastres[1]),randomres,1.0/lastres[1]*0.9))
-			elif old_div(1.0,lastres[1])<options.targetres*.9:
+You must rerun the refinement with a more conservative initial target resolution (suggest ~{:1.1f}).</p>""".format(1.0/lastres[1],randomres,1.0/lastres[1]*0.9))
+			elif 1.0/lastres[1]<options.targetres*.9:
 				append_html("""<p>Your final determined resolution of {:1.1f} &Aring; is higher resolution than your specified target resolution by more than 10%.
 This may cause the FSC curves to have an unusual shape, giving invalid numbers. It also means your reconstruction may be rotationally undersampled. Suggest running
-another refinement with a target resolution slightly higher than {:1.1f} &Aring; to ensure your results are valid</p>""".format(old_div(1.0,lastres[1]),old_div(1.0,lastres[1])))
+another refinement with a target resolution slightly higher than {:1.1f} &Aring; to ensure your results are valid</p>""".format(1.0/lastres[1],1.0/lastres[1]))
 			else:
 				append_html("""<p>Congratulations, your refinement is complete, and you have a gold standard resolution of {:1.1f} &Aring;.
 Note that there is always some variability in these determined values based on masking of the map. If the map is masked too tightly,
@@ -1231,12 +1231,12 @@ artifact territory. </p>
 
 <p>If you wish to continue this refinement to further improve resolution, the most efficient approach is to use the --startfrom refine_XX option
 rather than specifying --input and --model. When you use --startfrom, it will not re-randomize the phases. Since you have already achieved
-sufficient resolution to validate the gold-standard approach, continuing to extend this resolution is valid, and more efficient.""".format(old_div(1.0,lastres[1])))
+sufficient resolution to validate the gold-standard approach, continuing to extend this resolution is valid, and more efficient.""".format(1.0/lastres[1]))
 		except:
 			try:
 				append_html("""<p>Congratulations, your refinement is complete, and you have a gold standard resolution of {:1.1f} &Aring (or {:1.1f} &Aring with a more conservative mask);.
 Since this refinement continued from an existing refinement (or something funny happened), it is impossible to tell if the gold-standard criteria have been met, but
-if they were met in the refinement this run continued, then your resolution should still be valid.""".format(old_div(1.0,lastres[0]),old_div(1.0,lastres[1]),options.path))
+if they were met in the refinement this run continued, then your resolution should still be valid.""".format(1.0/lastres[0],1.0/lastres[1],options.path))
 				traceback.print_exc()
 				print("Note: the above traceback is just a warning for debugging purposes, and can be ignored")
 			except:
