@@ -5,10 +5,10 @@ import unittest
 
 from numpy import array_equal
 
-from sphire.libpy_py2 import sp_isac as oldfu
+from sphire.libpy_py3 import sp_isac as oldfu
 from sphire.libpy import sp_isac as fu
 
-from test_module import IMAGE_2D
+from .test_module import IMAGE_2D
 """
 These functions have been cleaned
 class Test_iter_isac(unittest.TestCase):

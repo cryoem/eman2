@@ -5,11 +5,11 @@ from __future__ import division
 
 from numpy import array_equal, allclose
 
-from sphire.bin_py2 import sp_mask as oldfu
+from sphire.bin_py3 import sp_mask as oldfu
 from sphire.bin import sp_mask as fu
 
 from os import path
-from test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,ABSOLUTE_BIN_PATH,remove_dir
+from .test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,ABSOLUTE_BIN_PATH,remove_dir
 import unittest
 from sp_utilities import get_im
 
@@ -56,7 +56,7 @@ class Test_Error_cases(unittest.TestCase):
                 sys.stderr = print_old
                 oldfu.main()
         sys.stderr = old_stdout
-        self.assertEqual(print_new.getvalue().split('\n')[17],'sp_mask.py: error: too few arguments')
+        self.assertEqual(print_new.getvalue().split('\n')[17],'sp_mask.py: error: the following arguments are required: input_volume, output_dir')
         self.assertEqual(print_new.getvalue().split('\n')[17],print_old.getvalue().split('\n')[17])
 
     def test_mol_mass_invalid(self):

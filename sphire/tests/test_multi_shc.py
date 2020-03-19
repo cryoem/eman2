@@ -15,14 +15,14 @@ sp_global_def.MPI = True
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 
 
-from test_module import get_arg_from_pickle_file
+from .test_module import get_arg_from_pickle_file
 from os import path
 from numpy import array_equal as numpy_array_equal, allclose
 from copy import deepcopy
 from EMAN2_cppwrap import EMData
 
 TOLERANCE = 0.00005
-from sphire.libpy_py2 import sp_multi_shc as oldfu
+from sphire.libpy_py3 import sp_multi_shc as oldfu
 from sphire.libpy import sp_multi_shc as fu
 
 from sphire.libpy import sp_fundamentals
@@ -521,7 +521,7 @@ class Test_orient_params(unittest.TestCase):
             oldfu.orient_params()
         self.assertEqual(
             str(cm_new.exception),
-            "orient_params() takes at least 2 arguments (0 given)",
+            "orient_params() missing 2 required positional arguments: 'params' and 'refparams'",
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
@@ -3042,7 +3042,7 @@ class Test_find_common_subset(unittest.TestCase):
             oldfu.find_common_subset()
         self.assertEqual(
             str(cm_new.exception),
-            "find_common_subset() takes at least 1 argument (0 given)",
+            "find_common_subset() missing 1 required positional argument: 'projs'",
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
@@ -4851,7 +4851,7 @@ class Test_mirror_and_reduce_dsym(unittest.TestCase):
             oldfu.mirror_and_reduce_dsym()
         self.assertEqual(
             str(cm_new.exception),
-            "mirror_and_reduce_dsym() takes exactly 3 arguments (0 given)",
+            "mirror_and_reduce_dsym() missing 3 required positional arguments: 'params', 'indexes', and 'symmetry_class'",
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 

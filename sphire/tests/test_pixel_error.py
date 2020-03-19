@@ -271,9 +271,9 @@ ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 
 from EMAN2 import Transform
 from numpy import array_equal as numpy_array_equal
-from test_module import IMAGE_2D, IMAGE_3D, IMAGE_2D_REFERENCE
+from .test_module import IMAGE_2D, IMAGE_3D, IMAGE_2D_REFERENCE
 
-from sphire.libpy_py2 import sp_pixel_error as oldfu
+from sphire.libpy_py3 import sp_pixel_error as oldfu
 from sphire.libpy import sp_pixel_error as fu
 
 """
@@ -778,7 +778,7 @@ class Test_pixel_error_2D(unittest.TestCase):
             oldfu.pixel_error_2D()
         self.assertEqual(
             str(cm_new.exception),
-            "pixel_error_2D() takes at least 2 arguments (0 given)",
+            "pixel_error_2D() missing 2 required positional arguments: 'ali_params1' and 'ali_params2'",
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
@@ -863,7 +863,7 @@ class Test_max_3D_pixel_error(unittest.TestCase):
             oldfu.max_3D_pixel_error()
         self.assertEqual(
             str(cm_new.exception),
-            "max_3D_pixel_error() takes at least 2 arguments (0 given)",
+            "max_3D_pixel_error() missing 2 required positional arguments: 't1' and 't2'",
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
@@ -929,7 +929,7 @@ class Test_angle_ave(unittest.TestCase):
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_ave()
         self.assertEqual(
-            str(cm_new.exception), "angle_ave() takes exactly 1 argument (0 given)"
+            str(cm_new.exception), "angle_ave() missing 1 required positional argument: 'angle1'"
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
@@ -984,7 +984,7 @@ class Test_angle_diff(unittest.TestCase):
         with self.assertRaises(TypeError) as cm_old:
             oldfu.angle_diff()
         self.assertEqual(
-            str(cm_new.exception), "angle_diff() takes exactly 2 arguments (0 given)"
+            str(cm_new.exception), "angle_diff() missing 2 required positional arguments: 'angle1' and 'angle2'"
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
@@ -995,11 +995,14 @@ class Test_angle_diff(unittest.TestCase):
         self.assertEqual(return_new, return_old)
 
     def test_angle1_bigger_than_angle2(self):
-        with self.assertRaises(IndexError) as cm_new:
+        sp_global_def.BATCH = True
+        with self.assertRaises(SystemExit) as cm_new:
             fu.angle_diff(angle1=self.angle1 + [2, 2], angle2=self.angle2)
-        with self.assertRaises(IndexError) as cm_old:
+
+        sp_global_def.BATCH =True
+        with self.assertRaises(SystemExit) as cm_old:
             oldfu.angle_diff(angle1=self.angle1 + [2, 2], angle2=self.angle2)
-        self.assertEqual(str(cm_new.exception), "list index out of range")
+        self.assertEqual(str(cm_new.exception), "1")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_angle2_bigger_than_angle1_printout_errorMsg(self):
@@ -1232,7 +1235,7 @@ class Test_angle_diff_sym(unittest.TestCase):
             oldfu.angle_diff_sym()
         self.assertEqual(
             str(cm_new.exception),
-            "angle_diff_sym() takes at least 2 arguments (0 given)",
+            "angle_diff_sym() missing 2 required positional arguments: 'angle1' and 'angle2'",
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
@@ -1390,7 +1393,7 @@ class Test_align_diff_params(unittest.TestCase):
             oldfu.align_diff_params()
         self.assertEqual(
             str(cm_new.exception),
-            "align_diff_params() takes exactly 2 arguments (0 given)",
+            "align_diff_params() missing 2 required positional arguments: 'ali_params1' and 'ali_params2'",
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
@@ -3456,7 +3459,7 @@ class Test_multi_align_stability(unittest.TestCase):
             oldfu.multi_align_stability()
         self.assertEqual(
             str(cm_new.exception),
-            "multi_align_stability() takes at least 1 argument (0 given)",
+            "multi_align_stability() missing 1 required positional argument: 'ali_params'",
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 

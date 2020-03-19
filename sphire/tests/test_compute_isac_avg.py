@@ -3,11 +3,13 @@ from __future__ import division
 
 from numpy import array_equal,allclose
 
-from sphire.bin_py2 import sp_compute_isac_avg as oldfu
+
 from sphire.bin import sp_compute_isac_avg as fu
+from sphire.bin_py3 import sp_compute_isac_avg as oldfu
+
 
 from os import path
-from test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_BIN_PATH,remove_dir,IMAGE_2D,IMAGE_BLANK_2D,IMAGE_3D,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW
+from .test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_BIN_PATH,remove_dir,IMAGE_2D,IMAGE_BLANK_2D,IMAGE_3D,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW
 import unittest
 from sp_utilities import get_im
 

@@ -3460,7 +3460,7 @@ def wrap_mpi_bcast(data, root, communicator=None):
         n = None
 
     n = mpi.mpi_bcast(
-        n, 4, mpi.MPI_BYTE, root, communicator
+        n.decode('utf-8'), 4, mpi.MPI_CHAR, root, communicator
     )  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm )
     n = struct.unpack("I", n)[0]
     msg = mpi.mpi_bcast(

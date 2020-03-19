@@ -4,11 +4,11 @@ from __future__ import division
 
 
 
-from sphire.bin_py2 import sp_recons3d_n as oldfu
+from sphire.bin_py3 import sp_recons3d_n as oldfu
 from sphire.bin import sp_recons3d_n as fu
 
 from os import path,listdir
-from test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,ABSOLUTE_BIN_PATH,remove_list_of_file
+from .test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,ABSOLUTE_BIN_PATH,remove_list_of_file
 import unittest
 
 try:

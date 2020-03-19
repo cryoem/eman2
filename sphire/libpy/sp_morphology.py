@@ -917,6 +917,7 @@ def imf_params_cl1(pw, n=2, iswi=3, Pixel_size=1):
     feq = []
     cur = []
     parm = []
+
     t = EMAN2_cppwrap.Util.pw_extract(pw, n, iswi, Pixel_size)
     for i in range(len(pw)):
         cur.append(t[i * 2])

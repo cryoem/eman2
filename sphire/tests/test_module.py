@@ -84,7 +84,7 @@ ABSOLUTE_OLDBIN_PATH = path.join(ABSOLUTE_SPHIRE_PATH, "bin_py2")
 ABSOLUTE_BIN_PATH = path.join(ABSOLUTE_SPHIRE_PATH,"bin")
 
 #absolute of python
-ABSOLUTE_PATH_PYTHON = "/home/adnan/applications/sphire/miniconda3/envs/py3_mini_new/bin/python"
+ABSOLUTE_PATH_PYTHON = "/home/adnan/applications/sphire/miniconda3/envs/py3_v5/bin/python"
 
 
 def get_real_data(dim=2):
@@ -107,11 +107,11 @@ def get_real_data(dim=2):
 
         arrimage,dictimage, arrrefim, dictrefim, xrng, yrng = argum
 
+
         image = EMNumPy.numpy2em(arrimage)
         image.set_attr_dict(dictimage)
 
         refim = EMNumPy.numpy2em(arrrefim)
-
         refim.set_attr_dict(dictrefim)
         return image, refim
 
@@ -119,6 +119,7 @@ def get_real_data(dim=2):
         argum = get_arg_from_pickle_file(
             path.join(ABSOLUTE_PATH, "pickle files/alignment.ali_vol_func_new")
         )
+
         imagearr = EMNumPy.numpy2em(argum[0])
         imagearr.set_attr_dict(argum[1])
         return imagearr, None
@@ -182,7 +183,7 @@ def get_arg_from_pickle_file(filepath):
         # except:
         #     u.encoding = 'utf-8'
         # return u.load()
-        return pickle.load(rb, encoding = 'latin1')
+        return pickle.load(rb, encoding='latin1')
 
 
 def remove_dir(d):
@@ -285,3 +286,286 @@ MASK_IMAGE_BLANK_3D = model_circle(
 
 KB_IMAGE2D_SIZE = create_kb(dim=1, sizex=IMAGE_2D.get_xsize())
 KB_IMAGE3D_SIZE_CUBIC = create_kb(dim=1, sizex=IMAGE_3D.get_xsize())
+
+
+
+
+import io
+import pickle
+import sp_utilities
+import os
+import dill
+
+
+def give_ali2d_single_iter_data():
+    numr = [1, 1, 8, 2, 9, 16, 3, 25, 32, 4, 57, 32, 5, 89, 32, 6, 121, 64, 7, 185, 64, 8, 249, 64, 9, 313, 64, 10, 377,
+            64, 11, 441, 128, 12, 569, 128, 13, 697, 128, 14, 825, 128, 15, 953, 128, 16, 1081, 128, 17, 1209, 128, 18,
+            1337, 128, 19, 1465, 128, 20, 1593, 128, 21, 1721, 256, 22, 1977, 256, 23, 2233, 256, 24, 2489, 256, 25,
+            2745,
+            256, 26, 3001, 256, 27, 3257, 256, 28, 3513, 256, 29, 3769, 256]
+    wr = [25.132741228718345, 12.566370614359172, 4.71238898038469, 6.283185307179586, 7.853981633974483,
+          2.356194490192345, 2.748893571891069, 3.141592653589793, 3.5342917352885173, 3.9269908169872414,
+          1.0799224746714913, 1.1780972450961724, 1.2762720155208536, 1.3744467859455345, 1.4726215563702154,
+          1.5707963267948966, 1.6689710972195777, 1.7671458676442586, 1.8653206380689396, 1.9634954084936207,
+          0.5154175447295755, 0.5399612373357456, 0.5645049299419159, 0.5890486225480862, 0.6135923151542565,
+          0.6381360077604268, 0.662679700366597, 0.6872233929727672, 0.7117670855789375]
+    cs = [0.0, 0.0]
+    cnx = 36
+    cny = 36
+    xrng = 4
+    yrng = 4
+    step = 1
+
+    old_pkl = "/home/adnan/PycharmProjects/python3conversion/sphire/tests/pickle files/alignment.ali2d_single_iter"
+
+    data_values_name = os.path.splitext(os.path.basename(old_pkl))[0] + "_data_values.pkl"
+    data_head_name = os.path.splitext(os.path.basename(old_pkl))[0] + "_data_head.pkl"
+    tavg_value_name = os.path.splitext(os.path.basename(old_pkl))[0] + "_tavg_values.pkl"
+    tavg_head_name = os.path.splitext(os.path.basename(old_pkl))[0] + "_tavg_head.pkl"
+
+    dill._dill._reverse_typemap["ObjectType"] = object
+
+    # print(data_values_name)
+    # print(os.path.join(ABSOLUTE_PATH, "pickle files/" + data_values_name))
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + data_values_name), "rb") as f1:
+        data_arras = pickle.load(f1, encoding='latin1')
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + data_head_name), "rb") as f2:
+        data_heads = pickle.load(f2, encoding='latin1')
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + tavg_value_name), "rb") as f3:
+        tavg_data = pickle.load(f3, encoding='latin1')
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" +tavg_head_name), "rb") as f4:
+        tavg_head = pickle.load(f4, encoding='latin1')
+
+    data = []
+    for i in range(len(data_arras)):
+        data.append(sp_utilities.numpy2em_python(data_arras[i]))
+        for key in data_heads[i]:
+            data[i][key] = data_heads[i][key]
+
+    tavg = sp_utilities.numpy2em_python(tavg_data)
+    for keys in tavg_head:
+        tavg[keys] = tavg_head[keys]
+
+    return data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step
+
+
+def give_ornq_data():
+    old_pkl = "/home/adnan/PycharmProjects/python3conversion/sphire/tests/pickle files/alignment.ornq"
+
+    image_values_name = os.path.splitext(os.path.basename(old_pkl))[0] + "_image_values.pkl"
+    image_head_name = os.path.splitext(os.path.basename(old_pkl))[0] + "_image_head.pkl"
+
+    crefim_values_name = os.path.splitext(os.path.basename(old_pkl))[0] + "_crefim_values.pkl"
+    crefim_head_name = os.path.splitext(os.path.basename(old_pkl))[0] + "_crefim_head.pkl"
+
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + image_values_name), "rb") as f3:
+        image_data = pickle.load(f3, encoding='latin1')
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + image_head_name), "rb") as f4:
+        image_head = pickle.load(f4, encoding='latin1')
+
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + crefim_values_name), "rb") as f1:
+        crefim_data = pickle.load(f1, encoding='latin1')
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + crefim_head_name), "rb") as f2:
+        crefim_head = pickle.load(f2, encoding='latin1')
+
+
+
+    image = sp_utilities.numpy2em_python(image_data)
+    for keys in image_head:
+        image[keys] = image_head[keys]
+
+    crefim = sp_utilities.numpy2em_python(crefim_data)
+    for keys in crefim_head:
+        crefim[keys] = crefim_head[keys]
+
+    return image , crefim
+
+
+def give_ormq_data():
+    old_pkl = "/home/adnan/PycharmProjects/python3conversion/sphire/tests/pickle files/alignment.ormq"
+
+    image_values_name = os.path.splitext(os.path.basename(old_pkl))[0] + "ormq_image_values.pkl"
+    image_head_name = os.path.splitext(os.path.basename(old_pkl))[0] + "ormq_image_head.pkl"
+
+    crefim_values_name = os.path.splitext(os.path.basename(old_pkl))[0] + "ormq_crefim_values.pkl"
+    crefim_head_name = os.path.splitext(os.path.basename(old_pkl))[0] + "ormq_crefim_head.pkl"
+
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + image_values_name), "rb") as f3:
+        image_data = pickle.load(f3, encoding='latin1')
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + image_head_name), "rb") as f4:
+        image_head = pickle.load(f4, encoding='latin1')
+
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + crefim_values_name), "rb") as f1:
+        crefim_data = pickle.load(f1, encoding='latin1')
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + crefim_head_name), "rb") as f2:
+        crefim_head = pickle.load(f2, encoding='latin1')
+
+
+
+    image = sp_utilities.numpy2em_python(image_data)
+    for keys in image_head:
+        image[keys] = image_head[keys]
+
+    crefim = sp_utilities.numpy2em_python(crefim_data)
+    for keys in crefim_head:
+        crefim[keys] = crefim_head[keys]
+
+    return image , crefim
+
+
+
+def give_ali_vol_data():
+    old_pkl = "/home/adnan/PycharmProjects/python3conversion/sphire/tests/pickle files/applications.ali_vol"
+
+    vol_values_name = os.path.splitext(os.path.basename(old_pkl))[0] + "vol_values.pkl"
+    vol_head_name = os.path.splitext(os.path.basename(old_pkl))[0] + "vol_head.pkl"
+
+    refv_values_name = os.path.splitext(os.path.basename(old_pkl))[0] + "refv_values.pkl"
+    refv_head_name = os.path.splitext(os.path.basename(old_pkl))[0] + "refv_head.pkl"
+
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + vol_values_name), "rb") as f3:
+        vol_data = pickle.load(f3, encoding='latin1')
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + vol_head_name), "rb") as f4:
+        vol_head = pickle.load(f4, encoding='latin1')
+
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + refv_values_name), "rb") as f1:
+        refv_data = pickle.load(f1, encoding='latin1')
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + refv_head_name), "rb") as f2:
+        refv_head = pickle.load(f2, encoding='latin1')
+
+
+
+    vol = sp_utilities.numpy2em_python(vol_data)
+    for keys in vol_head:
+        vol[keys] = vol_head[keys]
+
+    refv = sp_utilities.numpy2em_python(refv_data)
+    for keys in refv_head:
+        refv[keys] = refv_head[keys]
+
+    return vol , refv
+
+
+def give_ali2d_base_data():
+    old_pkl = "/home/adnan/PycharmProjects/python3conversion/sphire/tests/pickle files/applications.ali2d_base"
+    stack_values_name = os.path.splitext(os.path.basename(old_pkl))[0] + "stack_values.pkl"
+    stack_head_name = os.path.splitext(os.path.basename(old_pkl))[0] + "stack_head.pkl"
+    dill._dill._reverse_typemap["ObjectType"] = object
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + stack_values_name), "rb") as f1:
+        data_arras = pickle.load(f1, encoding='latin1')
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + stack_head_name), "rb") as f2:
+        data_heads = pickle.load(f2, encoding='latin1')
+
+    stack = []
+    for i in range(len(data_arras)):
+        stack.append(sp_utilities.numpy2em_python(data_arras[i]))
+        for key in data_heads[i]:
+            stack[i][key] = data_heads[i][key]
+
+    return stack
+
+
+def give_rotate_3D_shift_data():
+    old_pkl = "/home/adnan/PycharmProjects/python3conversion/sphire/tests/pickle files/utilities/utilities.rotate_3D_shift"
+
+    data_values_name = os.path.splitext(os.path.basename(old_pkl))[0] + "data_values.pkl"
+    data_head_name = os.path.splitext(os.path.basename(old_pkl))[0] + "data_head.pkl"
+    dill._dill._reverse_typemap["ObjectType"] = object
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + data_values_name), "rb") as f1:
+        data_arras = pickle.load(f1, encoding='latin1')
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + data_head_name), "rb") as f2:
+        data_heads = pickle.load(f2, encoding='latin1')
+
+    data = []
+    for i in range(len(data_arras)):
+        data.append(sp_utilities.numpy2em_python(data_arras[i]))
+        for key in data_heads[i]:
+            data[i][key] = data_heads[i][key]
+
+    return data
+
+
+def give_projection_prgl_data():
+    old_pkl = "/home/adnan/PycharmProjects/python3conversion/sphire/tests/pickle files/projection.prgl"
+
+    volft_values_name = os.path.splitext(os.path.basename(old_pkl))[0] + "volft_values.pkl"
+    volft_head_name = os.path.splitext(os.path.basename(old_pkl))[0] + "volft_head.pkl"
+
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + volft_values_name), "rb") as f3:
+        volft_data = pickle.load(f3, encoding='latin1')
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + volft_head_name), "rb") as f4:
+        volft_head = pickle.load(f4, encoding='latin1')
+
+
+    volft = sp_utilities.numpy2em_python(volft_data)
+    for keys in volft_head:
+        volft[keys] = volft_head[keys]
+
+
+    return volft
+
+
+def give_alignment_shc_data():
+    old_pkl = "/home/adnan/PycharmProjects/python3conversion/sphire/tests/pickle files/alignment.shc"
+
+    xfomimg_values_name = os.path.splitext(os.path.basename(old_pkl))[0] + "xfomimg_values.pkl"
+    xfomimg_head_name = os.path.splitext(os.path.basename(old_pkl))[0] + "xfomimg_head.pkl"
+
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + xfomimg_values_name), "rb") as f3:
+        xfomimg_data = pickle.load(f3, encoding='latin1')
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + xfomimg_head_name), "rb") as f4:
+        xfomimg_head = pickle.load(f4, encoding='latin1')
+
+
+    xformimg = sp_utilities.numpy2em_python(xfomimg_data)
+    for keys in xfomimg_head:
+        xformimg[keys] = xfomimg_head[keys]
+
+
+    return xformimg
+
+
+
+def give_ave_series_data():
+    old_pkl = "/home/adnan/PycharmProjects/python3conversion/sphire/tests/pickle files/statistics/statistics.ave_series"
+    data_ave_values_name = os.path.splitext(os.path.basename(old_pkl))[0] + "data_ave_values.pkl"
+    data_ave_head_name = os.path.splitext(os.path.basename(old_pkl))[0] + "data_ave_head.pkl"
+    dill._dill._reverse_typemap["ObjectType"] = object
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + data_ave_values_name), "rb") as f1:
+        data_arras = pickle.load(f1, encoding='latin1')
+
+    with io.open(os.path.join(ABSOLUTE_PATH, "pickle files/" + data_ave_head_name), "rb") as f2:
+        data_heads = pickle.load(f2, encoding='latin1')
+
+    stack = []
+    for i in range(len(data_arras)):
+        stack.append(sp_utilities.numpy2em_python(data_arras[i]))
+        for key in data_heads[i]:
+            stack[i][key] = data_heads[i][key]
+
+    return stack

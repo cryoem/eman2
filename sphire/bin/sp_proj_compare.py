@@ -79,7 +79,8 @@ from sp_logger import Logger, BaseLogger_Files, BaseLogger_Print
 import shutil
 import numpy as np
 from sp_alignment import Numrinit, ringwe, search_range, align2d, align2d_scf, align2d_direct3
-from sp_global_def import Util, sxprint
+from EMAN2_cppwrap import Util
+from sp_global_def import sxprint
 
 # from EMAN2 import EMUtil, EMArgumentParser, EMANVERSION
 

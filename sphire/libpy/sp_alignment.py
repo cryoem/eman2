@@ -78,7 +78,6 @@ def ali2d_single_iter(
 		if CTF = True, apply CTF to data (not to reference!)
 	"""
 
-
     maxrin = numr[-1]  #  length
     ou = numr[-3]  #  maximum radius
     if random_method == "SCF":
@@ -88,6 +87,7 @@ def ali2d_single_iter(
         cimage = EMAN2_cppwrap.Util.Polar2Dm(
             sp_fundamentals.scf(tavg), cnx, cny, numr, mode
         )
+
         EMAN2_cppwrap.Util.Frngs(cimage, numr)
         EMAN2_cppwrap.Util.Applyws(cimage, numr, wr)
     else:
@@ -484,9 +484,8 @@ def prepare_refrings(
 		Generate quasi-evenly distributed reference projections converted to rings
 		ref_a can be a list of angles, in which case it is used instead of being generated
 	"""
-
     # mpi communicator can be sent by the MPI parameter
-    if type(MPI) is types.BooleanType:
+    if type(MPI) is bool:
         if MPI:
             mpi_comm = mpi.MPI_COMM_WORLD
     else:
@@ -495,7 +494,7 @@ def prepare_refrings(
 
     mode = "F"
 
-    if type(ref_a) is types.ListType:
+    if type(ref_a) is list:
         # if ref_a is  list, it has to be a list of projection directions, use it
         ref_angles = ref_a
     else:
@@ -932,8 +931,8 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou=-1):
     )
     EMAN2_cppwrap.Util.Frngs(mimage, numr)
 
-    nrx = min(2 * (xrng + 1) + 1, ((old_div((nx - 2), 2)) * 2 + 1))
-    nry = min(2 * (yrng + 1) + 1, ((old_div((ny - 2), 2)) * 2 + 1))
+    nrx = min(2 * (xrng + 1) + 1, (old_div(nx - 2, 2) * 2 + 1))
+    nry = min(2 * (yrng + 1) + 1, (old_div(ny - 2, 2) * 2 + 1))
 
     totpeak = -1.0e23
 
@@ -974,8 +973,8 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou=-1):
             nry,
         )
         p2 = sp_utilities.peak_search(ccf2)
-        # print p1
-        # print p2
+
+
 
         peak_val1 = p1[0][0]
         peak_val2 = p2[0][0]
@@ -999,7 +998,6 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou=-1):
         for i in range(3):
             for j in range(3):
                 z[i, j] = ccf1[i + cx - 1, j + cy - 1]
-        # print  ccf1[cx,cy],z[1,1]
         XSH, YSH, PEAKV = parabl(z)
         # print  PEAKV
         if PEAKV > totpeak:

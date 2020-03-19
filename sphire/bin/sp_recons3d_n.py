@@ -154,9 +154,9 @@ def main():
     elif len(args) == 5:
         prj_stack = args[0]
         vol_stack = args[1]
-        begin = string.atoi(args[2])
-        end = string.atoi(args[3])
-        step = string.atoi(args[4])
+        begin = int(args[2])
+        end = int(args[3])
+        step = int(args[4])
         pid_list = list(range(begin, end, step))
     else:
         sp_global_def.ERROR("Incomplete list of arguments")

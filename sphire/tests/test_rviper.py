@@ -4,10 +4,10 @@ from __future__ import division
 from numpy import allclose
 from sp_utilities import get_im
 
-from sphire.bin_py2 import sp_rviper as oldfu
+from sphire.bin_py3 import sp_rviper as oldfu
 from sphire.bin import sp_rviper as fu
 
-from test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,ABSOLUTE_BIN_PATH,remove_dir
+from .test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,ABSOLUTE_BIN_PATH,remove_dir
 import unittest
 from os import path,system as os_system
 
@@ -24,8 +24,9 @@ except ImportError:
     from io import StringIO
 import sys
 
-MPI_PATH = "/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/mpirun" #"/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
+MPI_PATH = "/home/adnan/applications/sphire/miniconda3/envs/py3_v5/bin/mpirun" #"/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
 NUM_PROC = 8
+
 
 """
 WHAT IS MISSING:

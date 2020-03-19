@@ -11,22 +11,14 @@ from random import sample as random_sample
 
 import unittest
 
-from sphire.libpy_py2 import sp_morphology as oldfu
+from sphire.libpy_py3 import sp_morphology as oldfu
 from sphire.libpy import sp_morphology as fu
 
-from test_module import (
+from .test_module import (
     get_data,
     remove_dir,
     get_arg_from_pickle_file,
     ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,
-)
-from sphire.libpy.sp_utilities import model_blank, model_gauss_noise
-from EMAN2_cppwrap import EMData, EMAN2Ctf
-from copy import deepcopy
-from os import path, mkdir
-from shutil import copyfile
-
-from test_module import (
     IMAGE_2D,
     IMAGE_BLANK_2D,
     IMAGE_3D,
@@ -35,6 +27,13 @@ from test_module import (
     MASK_2DIMAGE,
     MASK_3DIMAGE,
 )
+from sphire.libpy.sp_utilities import model_blank, model_gauss_noise
+from EMAN2_cppwrap import EMData, EMAN2Ctf
+from copy import deepcopy
+from os import path, mkdir
+from shutil import copyfile
+
+
 
 from mpi import *
 
@@ -45459,7 +45458,7 @@ class Test_fill_cavities(unittest.TestCase):
 
 # todo: the 2 versions are returnong always the same value ... this values sometimes change ... why ?
 class Test_localvariance(unittest.TestCase):
-    data = random_sample((xrange(100), 3000), 1)
+    data = random_sample((range(100), 3000), 1)
 
     def test_wrong_number_params_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:

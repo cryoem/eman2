@@ -59,7 +59,7 @@ import time
 import tqdm
 import traceback
 from scipy import ndimage
-
+import os
 
 def create_ctf_list(current_ctf, def_search_range, def_step_size):
     """
@@ -81,7 +81,9 @@ def create_ctf_list(current_ctf, def_search_range, def_step_size):
 
     for defocus in numpy.arange(lower_defocus, upper_defocus, def_step_size):
         ctf_parameter = EMAN2.EMAN2Ctf()
-        ctf_parameter.from_dict(current_ctf.to_dict())
+        removed_dict = dict([(key, value) for key , value in current_ctf.to_dict().items() if key not in ('background', 'snr')])
+        ctf_parameter.from_dict(removed_dict)
+        # ctf_parameter.from_dict(current_ctf.to_dict())
         ctf_parameter.defocus = defocus
         ctfs.append(ctf_parameter)
 
@@ -461,7 +463,7 @@ def calc_statistics(micrograph_indices):
         mean_error = numpy.mean(micrograph_indices[mic_name]["error"])
 
         mic_stats[k] = (
-            multiprocessing.os.path.basename(mic_name),
+            os.path.basename(mic_name),
             diff_mean,
             diff_abs_mean,
             diff_std,
@@ -732,17 +734,17 @@ def _main_():
 
     output_folder = args.outputdir
 
-    if multiprocessing.os.path.exists(output_folder):
+    if os.path.exists(output_folder):
         sp_global_def.ERROR("Output folder already exists. Stop execution.")
     else:
-        multiprocessing.os.makedirs(output_folder)
+        os.makedirs(output_folder)
         sp_global_def.write_command(output_folder)
 
-    output_virtual_stack_path = "bdb:" + multiprocessing.os.path.join(
+    output_virtual_stack_path = "bdb:" + os.path.join(
         output_folder, "ctf_refined"
     )
 
-    output_stats_path = multiprocessing.os.path.join(output_folder, "statistics")
+    output_stats_path = os.path.join(output_folder, "statistics")
 
     number_of_particles_to_read = args.number_particles
 
@@ -821,8 +823,8 @@ def _main_():
 
     sp_global_def.sxprint("Write statistics...")
     # WRITE STATISTICS
-    if not multiprocessing.os.path.exists(output_stats_path):
-        multiprocessing.os.makedirs(output_stats_path)
+    if not os.path.exists(output_stats_path):
+        os.makedirs(output_stats_path)
 
     refinement_stats_per_micrograh = calc_statistics(refinement_results_per_micrograph)
     sp_ctf_refine_io.write_statistics(output_stats_path, refinement_stats_per_micrograh)
@@ -833,9 +835,9 @@ def _main_():
     )
     # Save particle plots
     sp_global_def.sxprint("Write images...")
-    path_output_img = multiprocessing.os.path.join(output_stats_path, "img/")
-    if not multiprocessing.os.path.exists(path_output_img):
-        multiprocessing.os.makedirs(path_output_img)
+    path_output_img = os.path.join(output_stats_path, "img/")
+    if not os.path.exists(path_output_img):
+        os.makedirs(path_output_img)
     sp_ctf_refine_plotting.create_and_save_particle_plots(
         path_output_img=path_output_img,
         stack_file_path=STACK_FILE_PATH,
@@ -849,7 +851,7 @@ def _main_():
         refinement_results_per_micrograph
     )
 
-    particle_error_path = multiprocessing.os.path.join(
+    particle_error_path = os.path.join(
         output_stats_path, "particle_results.txt"
     )
     refinement_results_matrix = refinement_results_matrix[
