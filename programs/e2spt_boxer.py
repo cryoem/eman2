@@ -426,7 +426,8 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		else:
 			data=self.dataxf
 			
-		t=thk-1
+		t=int(thk-1)
+		idx=int(idx)
 		r=data.process("misc.directional_sum",{"axis":axis,"first":idx-t,"last":idx+t})
 		r.div(t*2+1)
 		
@@ -948,18 +949,18 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 
 	##### go up/down with shift+wheel
 	def xy_wheel(self, event):
-		z=self.z_loc+ np.sign(event.angleDelta().y())
+		z=int(self.z_loc+ np.sign(event.angleDelta().y()))
 		if z>0 and z<self.data["nz"]:
 			self.wdepth.setValue(z)
 	
 	def xz_wheel(self, event):
-		y=self.y_loc+np.sign(event.angleDelta().y())
+		y=int(self.y_loc+np.sign(event.angleDelta().y()))
 		if y>0 and y<self.data["ny"]:
 			self.y_loc=y
 			self.update_sliceview(['y'])
 		
 	def zy_wheel(self, event):
-		x=self.x_loc+np.sign(event.angleDelta().y())
+		x=int(self.x_loc+np.sign(event.angleDelta().y()))
 		if x>0 and x<self.data["nx"]:
 			self.x_loc=x
 			self.update_sliceview(['x'])

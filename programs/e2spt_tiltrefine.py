@@ -214,7 +214,7 @@ def main():
 		k=list(js.keys())[0]
 		src=eval(k)[0]
 		
-		print("loading 3D particles from {}".format(base_name(src)))
+		print("loading {} 3D particles from {}".format(len(js.keys()), base_name(src)))
 		print("   box size {}, apix {:.2f}".format(bxsz, apix))
 		
 		e=EMData(src, 0, True)
