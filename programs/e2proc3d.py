@@ -593,7 +593,12 @@ def main():
 							param_dict[key] = EMData(param_dict[key])
 						except:
 							pass
-
+				
+				# note we cannot really pass xform as string input...
+				if "xform.align3d" in param_dict:
+					if param_dict["xform.align3d"]=='none':
+						param_dict["xform.align3d"]=Transform()
+					
 				# For 'refine' aligners, we normally want to provide a starting alignment, presumably from the previous aligner. If we can't find one with start with identity matrix
 				if "refine" in alignername and "xform.align3d" not in param_dict:
 					try:
