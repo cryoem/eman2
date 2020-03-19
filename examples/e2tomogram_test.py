@@ -914,8 +914,11 @@ def make_tile_with_thr(args):
 	jsd, imgs, tpm, sz, pad, stepx, stepy, outz,options=args
 	recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode})
 
-	try: os.unlink("test_tilt.hdf")
-	except: pass
+	if stepx in (0,1) and stepy==0: 
+		try: os.unlink("test_tilt.hdf")
+		except: pass
+		try: os.unlink("test_tile.hdf")
+		except: pass
 
 	# preprocess slices, means we double the slice memory requirement, but will generally be small
 	# compared to volume anyway. May be unnecessary, but not sure if it's safe to change imgs
@@ -940,23 +943,48 @@ def make_tile_with_thr(args):
 		mp=recon.preprocess_slice(m, xf)
 		ppimgs.append((mp,xf))
 
+	norm=[1.0 for i in imgs]
 	# iterative reconstruction process with real-space modification
-	#for j,frac in enumerate((0.6,0.3,0.15,0.05,0)):
-	for j,frac in enumerate((0.6,0.3,0.15,0.08,0.04,0.02,0.01,0)):
+	for j,frac in enumerate((0.6,0.36,0.22,0.13,0.078,0)):
+	#for j,frac in enumerate((0.6,0.36,0.22,0.13,0.078,0.047,0.028,0.0168,0.01,0)):
+	#for j,frac in enumerate((0.6,0.3,0.15,0.08,0.04,0.02,0.01,0)):
 		if j==0: recon.setup()
 		else: recon.setup_seed(threed.do_fft().process("xform.phaseorigin.tocorner"),0.01)
 		for i in range(len(ppimgs)):
+			if j!=0 :
+				prj=threedn.project("standard",ppimgs[i][1])
+				normim=imgs[i].process("normalize.toimage",{"to":prj,"ignore_lowsig":1.0})
+				try: norm_rel=normim["norm_mult"]/norm[i]		# remove already applied normalization
+				except:
+					print(f"norm error: {j} {i}")
+					continue
+				norm[i]*=norm_rel
+				ppimgs[i][0].mult(norm_rel)
+				if stepx in (0,1) and stepy==0: print(f"Normalize: it{j} slice {i} norm *{norm_rel} ({normim['norm_mult']}) -> {norm[i]}")
 			recon.insert_slice(ppimgs[i][0],ppimgs[i][1],1)
-		
+			if j!=0 :
+				if stepx in (0,1) and stepy==0: 
+					normim.write_image("test_norm.hdf",-1)
+					prj.write_image("test_norm.hdf",-1)
+					ppimgs[i][0].write_image("test_tilt.hdf",-1)
+			
 		threed=recon.finish(True)
+		threedn=threed.copy()
 		#threed.write_image("tmp3d00.hdf", -1)
-		if stepx in (-1,0) and stepy==0 : threed.write_image("test_tile.hdf",j*2)
+		if stepx in (0,1) and stepy==0 : threed.write_image("test_tile.hdf",j*2)
 		if frac>0: 
-			mm=max(-threed["minimum"],threed["maximum"])	# symmetric about zero
+			#mm=max(-threed["minimum"],threed["maximum"])	# symmetric about zero
 			#threed.process_inplace("threshold.rangetozero",{"minval":-mm*frac,"maxval":mm*frac})
-			threed.process_inplace("threshold.rangetozero",{"minval":threed["minimum"]*frac,"maxval":threed["maximum"]*frac,"gauss_width":4})  # postive negative balance
+			mask=threed.process("math.absvalue")
+			mask.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
+			mask.process_inplace("threshold.rangetozero",{"minval":0,"maxval":mask["maximum"]*frac,"gauss_width":3.5})
+			mask.process_inplace("threshold.notzero")
+			#mask.process_inplace("threshold.rangetozero",{"minval":mask["minimum"]*frac,"maxval":mask["maximum"]*frac,"gauss_width":4})
+			#mask.process_inplace("mask.addshells",{"nshells":2})
+			threed.mult(mask)
+			#threed.process_inplace("threshold.rangetozero",{"minval":threed["minimum"]*frac,"maxval":threed["maximum"]*frac,"gauss_width":4})  # postive negative balance
 #			threed.mult(2.0);		# to compensate a bit for masked out mass?  Just trying it.
-			if stepx in (-1,0) and stepy==0 : threed.write_image("test_tile.hdf",j*2+1)
+			if stepx in (0,1) and stepy==0 : threed.write_image("test_tile.hdf",j*2+1)
 		print(stepx,stepy,threed["ny"])
 		
 	threed.process_inplace("math.gausskernelfix",{"gauss_width":4.0})

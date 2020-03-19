@@ -6142,7 +6142,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 
 		string get_desc() const
 		{
-			return "use least square method to normalize";
+			return "This will use a pixel vs pixel least squares fit to normalize one image to optimally match a second image, with various options for excluding some pixels. norm_mult and norm_add will be set in the header of the result.";
 		}
 
 		static const string NAME;
