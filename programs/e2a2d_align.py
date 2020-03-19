@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 # align all particles to reference and store alignment results
 
 from past.utils import old_div

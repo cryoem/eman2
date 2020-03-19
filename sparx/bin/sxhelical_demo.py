@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Please do not copy or modify this file without written consent of the author.
@@ -35,6 +33,8 @@ from __future__ import print_function
 
 # clean up the code, make documentation
 
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 import os
 import global_def
@@ -164,7 +164,7 @@ def main():
 				prj = cyclic_shift(prj, int(sx))
 				set_params2D(prj, [0.0,0.,0.0,0,1])
 				stat = Util.infomask(prj , mask, False )
-				prj= (prj-stat[0])/stat[1]
+				prj= old_div((prj-stat[0]),stat[1])
 				ctf_params = prj.get_attr("ctf")
 				prj.set_attr('ctf_applied', 0)
 				prj.write_image(newstack, im)

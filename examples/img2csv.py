@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 ### This program will read the first image from an image file
 ### and write the image data in a csv file
 

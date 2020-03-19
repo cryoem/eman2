@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 #
 # Author: Pawel A.Penczek 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
 # Please do not copy or modify this file without written consent of the author.
@@ -34,7 +33,6 @@ from __future__ import print_function
 #
 #
 
-from __future__ import print_function
 from builtins import range
 import os, sys
 from optparse import OptionParser, SUPPRESS_HELP
@@ -935,7 +933,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		mic_basename = global_entry_dict[mic_id_substr][subkey_selected_mic_basename]
 		assert (mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
 		if my_mpi_proc_id == main_mpi_proc:
-			print("%s ---> % 2.2f%%" % (mic_basename, mic_id_substr_idx / progress_percent_step))
+			print("%s ---> % 2.2f%%" % (mic_basename, old_div(mic_id_substr_idx, progress_percent_step)))
 		
 		# --------------------------------------------------------------------------------
 		# Read the associated coordinates according to the specified format and 
@@ -961,7 +959,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		if resample_ratio < 1.0:
 			assert (resample_ratio > 0.0)
 			# store the resampled pixel size to the cter_entry to generate CTF object of this micrograph
-			cter_entry[idx_cter_apix] = src_pixel_size / resample_ratio
+			cter_entry[idx_cter_apix] = old_div(src_pixel_size, resample_ratio)
 			if my_mpi_proc_id == main_mpi_proc:
 				print("Resample micrograph to pixel size %6.4f [A/Pixels] from %6.4f [A/Pixels] and window segments from resampled micrograph." % (cter_entry[idx_cter_apix], src_pixel_size))
 		# else:
@@ -1030,7 +1028,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		# Cut off frequency components lower than one that the (resampled) box size can express.
 		# Then, move back to the real space processing
 		# --------------------------------------------------------------------------------
-		mic_img = fft(filt_gaussh(mic_img, resample_ratio / box_size))
+		mic_img = fft(filt_gaussh(mic_img, old_div(resample_ratio, box_size)))
 		
 		# --------------------------------------------------------------------------------
 		# Resample micrograph, map coordinates, and window segments from resampled micrograph using new coordinates
@@ -1219,7 +1217,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			
 			n_bins = 10
 			if len(abs_ctf_limit_histogram) >= n_bins:
-				from statistics import hist_list
+				from pap_statistics import hist_list
 				cutoff_region, cutoff_counts = hist_list(abs_ctf_limit_histogram, n_bins)
 				print("Histogram of CTF limit absolute frequency used for the filtering:")
 				print("      CTF limit       counts")

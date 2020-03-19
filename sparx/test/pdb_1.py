@@ -1,5 +1,4 @@
 # 
-from __future__ import print_function
 # (c) Michael Hohn 2006
 # 
 #* Interactive experiments

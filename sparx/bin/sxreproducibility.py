@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Please do not copy or modify this file without written consent of the author.
@@ -56,7 +54,7 @@ def main():
 	global_def.BATCH = True
 
 	from numpy import array
-	from statistics import k_means_stab_bbenum
+	from pap_statistics import k_means_stab_bbenum
 
 	R = len(args)
 	Parts = []

@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steve Ludtke 06/10/2013 (sludtke@bcm.edu)
 # Copyright (c) 2013- Baylor College of Medicine
@@ -1118,7 +1115,7 @@ ampcorrect=ampcorrect,tophat=tophat,threads=options.threads))
 						lastres=d[0][si]*(1.0-frac)+d[0][si-1]*frac
 						try:
 							plt.annotate(r"{:1.1f} $\AA$".format(old_div(1.0,lastres)),xy=(lastres,0.143),
-								xytext=(old_div((lastres*4+d[0][-1]),5.0),0.2+0.05*fi),arrowprops={"width":1,"frac":.1,"headwidth":7,"shrink":.05})
+								xytext=(old_div((lastres*4+d[0][-1]),5.0),0.2+0.05*fi),arrowprops={"width":1,"headlength":7,"headwidth":7,"shrink":.05})
 						except: pass
 						break
 				else : lastres=0
@@ -1180,7 +1177,7 @@ ampcorrect=ampcorrect,tophat=tophat,threads=options.threads))
 					lastres.append(d[0][si]*(1.0-frac)+d[0][si-1]*frac)
 					try:
 						plt.annotate(r"{:1.1f} $\AA$".format(old_div(1.0,lastres[-1])),xy=(lastres[-1],0.143),
-							xytext=(old_div((lastres[-1]*4+d[0][-1]),5.0),0.2+0.05*i),arrowprops={"width":1,"frac":.1,"headwidth":7,"shrink":.05})
+							xytext=(old_div((lastres[-1]*4+d[0][-1]),5.0),0.2+0.05*i),arrowprops={"width":1,"headlength":7,"headwidth":7,"shrink":.05})
 					except: pass
 					break
 

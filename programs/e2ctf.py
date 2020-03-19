@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 10/29/2008 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -865,6 +862,8 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 				if snrfilt:
 					snrim=fft1.copy()
 					ctf.compute_2d_complex(snrim,Ctf.CtfType.CTF_SNR)
+					snrim.process_inplace("math.sqrt")
+#					ctf.compute_2d_complex(snrim,Ctf.CtfType.CTF_WIENER_FILTER)
 					flipim.mult(snrim)
 #				if i==0: flipim.write_image("flip.mrc")
 			fft1.mult(flipim)

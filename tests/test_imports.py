@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import division
 from libpyAligner2 import Aligners
 from libpyAligner2 import Ctf
 from libpyAligner2 import EMAN1Ctf

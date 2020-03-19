@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 # This simple script will upscale .box files
 # assumes names contain "shrink" which is stripped on output
 

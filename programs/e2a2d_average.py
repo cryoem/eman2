@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 # average particles together based on existing alignments
 
 from past.utils import old_div
