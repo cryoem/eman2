@@ -3,7 +3,6 @@
 from EMAN2 import *
 from EMAN2_utils import *
 import numpy as np
-import tensorflow as tf
 
 def main():
 	
