@@ -134,7 +134,7 @@ def make3d(ptcl_file, options, allconf):
 	except: pass
 	lstin=LSXFile(ptcl_file, True)
 	mvlen=np.std(allconf)
-	stepsz=old_div(mvlen,((options.nframe-1)/2.))
+	stepsz=mvlen/((options.nframe-1)/2.)
 	framepos=np.arange(-mvlen,mvlen+.1, stepsz)+np.mean(allconf)
 	print("Motion steps : Number of particles")
 	winsz=stepsz*.6
@@ -243,7 +243,7 @@ def calc_motion(ballrec, options, grad, glst=None):
 	get_map=theano.function([], ballrec.map3d)
 	ballrec.movvec.set_value(vec)
 	mvlen=3.
-	pp=np.arange(-mvlen,mvlen+.1, old_div(mvlen,((options.nframe-1)/2.)))
+	pp=np.arange(-mvlen,mvlen+.1, mvlen/((options.nframe-1)/2.))
 	pp=pp.astype(theano.config.floatX)
 	print("Motion steps are ",pp)
 	mpsave=os.path.join(options.path,"motion_model1.hdf")

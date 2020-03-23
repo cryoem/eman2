@@ -232,7 +232,7 @@ def plotvals( options, vals, tag, binwidth=0 ):
 	meanvals = numpy.mean(vals)
 
 	cuberoot = numpy.power(len(vals),1.0/3.0)
-	width = old_div((3.5*sigmavals),cuberoot)
+	width = (3.5*sigmavals)/cuberoot
 
 	if binwidth:
 		width=binwidth

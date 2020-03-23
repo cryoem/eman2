@@ -190,9 +190,9 @@ class GUIFourierSynth(QtWidgets.QWidget):
 			
 			if index==1 : 	# triangle
 				for i in range(old_div(nx,2)):
-					self.targfn[i]=-1.0+old_div(4.0*i,nx)
+					self.targfn[i]=-1.0+4.0*i/nx
 				for i in range(old_div(nx,2),nx):
-					self.targfn[i]=3.0-old_div(4.0*i,nx)
+					self.targfn[i]=3.0-4.0*i/nx
 			
 			elif index==2 : # square
 				for i in range(old_div(nx,4)): self.targfn[i]=-1.0

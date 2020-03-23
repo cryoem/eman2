@@ -504,7 +504,7 @@ def reconstruct(data,recon,preprocess,pad,fillangle,verbose=0):
 			alt,az=xf["alt"],xf["az"]
 			for dalt in np.arange(-fillangle/2.0,fillangle/2.0,astep):
 				for daz in np.arange(-fillangle/2.0,fillangle/2.0,astep):
-					weightmod=exp(old_div(-(dalt**2+daz**2),(fillangle/4.0)**2))
+					weightmod=exp(-(dalt**2+daz**2)/(fillangle/4.0)**2)
 					newxf=Transform({"type":"eman","alt":alt+dalt,"az":az+daz})
 #					print i,elem["filenum"],newxf
 					recon.insert_slice(img,newxf,elem["weight"]*weightmod)

@@ -68,7 +68,7 @@ def main():
 		nball=len(cents)
 		cents=cents[:,1:]-old_div(sz,2)
 		## set width so model fills box
-		initw=1.5*(old_div(np.cbrt(old_div(((sz*.6)**3),nball)),(4./3.*np.pi)))**2 
+		initw=1.5*(np.cbrt(((sz*.6)**3)/nball)/(4./3.*np.pi))**2 
 
 		wts=np.zeros(len(cents))+initw
 		amp=np.ones(len(cents))
@@ -166,7 +166,7 @@ def make3d(ptcl_file, options, allconf):
 	except: pass
 	lstin=LSXFile(ptcl_file, True)
 	mvlen=np.std(allconf)
-	stepsz=old_div(mvlen,((options.nframe-1)/2.))
+	stepsz=mvlen/((options.nframe-1)/2.)
 	framepos=np.arange(-mvlen,mvlen+1e-14, stepsz)+np.mean(allconf)
 	print("Motion steps : Number of particles")
 	winsz=stepsz*.6
@@ -370,8 +370,8 @@ class GaussianModel(object):
 		bposft=(bpos-sz/2.)*np.pi
 		bpxft=bposft[:,:,0][:,:, None, None]
 		bpyft=bposft[:,:,1][:,:, None, None]
-		gridxft=(old_div((grid_x-sz/2.),sz)*2.).astype(np.float32)
-		gridyft=(old_div((grid_x-sz/2.),sz)*2.).astype(np.float32)
+		gridxft=((grid_x-sz/2.)/sz*2.).astype(np.float32)
+		gridyft=((grid_x-sz/2.)/sz*2.).astype(np.float32)
 
 		gridxft=np.fft.ifftshift(gridxft)
 		gridyft=np.fft.ifftshift(gridyft)

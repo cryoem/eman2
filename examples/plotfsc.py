@@ -55,7 +55,7 @@ for i,f in enumerate(fscs):
 		# find the 0.143 crossing
 		for si in range(2,len(d[0])-2):
 			if d[1][si-1]>0.143 and d[1][si]<=0.143 :
-				frac=old_div((0.143-d[1][si]),(d[1][si-1]-d[1][si]))		# 1.0 if 0.143 at si-1, 0.0 if .143 at si
+				frac=(0.143-d[1][si])/(d[1][si-1]-d[1][si])		# 1.0 if 0.143 at si-1, 0.0 if .143 at si
 				lastres=d[0][si]*(1.0-frac)+d[0][si-1]*frac
 				try:
 					plt.annotate(r"{:1.1f} $\AA$".format(1.0/lastres),xy=(lastres,0.143),

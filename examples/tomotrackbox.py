@@ -550,7 +550,7 @@ class TrackerControl(QtWidgets.QWidget):
 		if initmodel!=None : recon.setup(initmodel,.01)
 		else : recon.setup()
 
-		thr=old_div(0.7*(scores[old_div(len(scores),2)][0]+scores[old_div(len(scores),2)-1][0]+scores[old_div(len(scores),2)+1][0]),3);		# this is rather arbitrary
+		thr=0.7*(scores[old_div(len(scores),2)][0]+scores[old_div(len(scores),2)-1][0]+scores[old_div(len(scores),2)+1][0])/3;		# this is rather arbitrary
 		# First pass to assess qualities and normalizations
 		for i,p in enumerate(stack):
 			if scores[i][0]<thr : 

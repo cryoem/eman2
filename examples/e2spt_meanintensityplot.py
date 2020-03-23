@@ -543,7 +543,7 @@ def plotintensities( intensities, options, datafile, tag='', onefile='yes' ):
 	
 	cuberoot = np.power(len(intensities),1.0/3.0)
 	#print "The cuberoot of n is", cuberoot
-	width = old_div((3.5*std),cuberoot)
+	width = (3.5*std)/cuberoot
 	print("Therefore, according to Scott's normal reference rule, width = (3.5*std)/cuberoot(n), the width of the histogram bins will be", width)
 	
 	calcbins = int(round( old_div((max(intensities) - min(intensities)), width) ))
