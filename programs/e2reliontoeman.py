@@ -127,7 +127,7 @@ CTF autoprocessing after importing is complete.
 			dfv=star["rlnDefocusV"][i]
 			dfang=star["rlnDefocusAngle"][i]
 			ctf=EMAN2Ctf()
-			ctf.from_dict({"defocus":old_div((dfu+dfv),20000.0),"dfang":dfang,"dfdiff":old_div((dfu-dfv),10000.0),"voltage":star["rlnVoltage"][i],"cs":max(star["rlnSphericalAberration"][i],0.0001),"ampcont":star["rlnAmplitudeContrast"][i]*100.0,"apix":options.apix})
+			ctf.from_dict({"defocus":(dfu+dfv)/20000.0,"dfang":dfang,"dfdiff":(dfu-dfv)/10000.0,"voltage":star["rlnVoltage"][i],"cs":max(star["rlnSphericalAberration"][i],0.0001),"ampcont":star["rlnAmplitudeContrast"][i]*100.0,"apix":options.apix})
 			jdb["ctf_frame"]=[512,ctf,(256,256),tuple(),5,1]
 		
 		# copy the image

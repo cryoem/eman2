@@ -241,7 +241,7 @@ def main():
 
 
 		if options.reslimit>0 :
-			cur_map.process_inplace("filter.lowpass.tophat",{"cutoff_freq":old_div(1.0,options.reslimit)})
+			cur_map.process_inplace("filter.lowpass.tophat",{"cutoff_freq":1.0/options.reslimit})
 		cur_map.process_inplace("normalize.edgemean")
 		cur_map.mult(mask)
 	
@@ -257,11 +257,11 @@ def main():
 		
 	# Ok, all done, now compute the mean and standard deviation. The mean map should look nearly identical to
 	# the original results from the same iteration
-	mean_map.mult(old_div(1.0,options.nmodels))
+	mean_map.mult(1.0/options.nmodels)
 	mean_map.write_image("%s/threed_mean.hdf"%(options.output),0)
 	
 	# Now compute the variance from the two maps
-	sqr_map.mult(old_div(1.0,options.nmodels))			# pixels are mean of x^2
+	sqr_map.mult(1.0/options.nmodels)			# pixels are mean of x^2
 	mean_map.process_inplace("math.squared")	
 	sqr_map.sub(mean_map)						
 	

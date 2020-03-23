@@ -1254,9 +1254,9 @@ def scanchunks( options, centers, templateindx ):
 	if options.ptclradius:
 		radius = options.ptclradius
 	elif options.boxsize:
-		radius = old_div(options.boxsize,4.0)
+		radius = options.boxsize/4.0
 	
-	ptclvol = (old_div(4.0,3.0))* math.pi *math.pow(options.ptclradius,3)
+	ptclvol = (4.0/3.0)* math.pi *math.pow(options.ptclradius,3)
 	
 	tomohdr = EMData( options.tomogram, 0 )
 	tomoz = tomohdr['nz']
@@ -1630,7 +1630,7 @@ def plothistogram(  options, scores ):
 		print("ERROR: std=0, which means all intensity values are the same.")
 		sys.exit()
 	
-	cuberoot = numpy.power(len(scores),old_div(1.0,3.0))
+	cuberoot = numpy.power(len(scores),1.0/3.0)
 	#print "The cuberoot of n is", cuberoot
 	width = old_div((3.5*std),cuberoot)
 	print("\naccording to Scott's normal reference rule, width = (3.5*std)/cuberoot(n), the width of the histogram bins will be", width)
@@ -2283,8 +2283,8 @@ def prjpruner( options, data ):
 		maxccfpmxC=ccfpmxC.calc_max_location()
 		maxccfpmyC=ccfpmyC.calc_max_location()
 	
-		xt=old_div((old_div(eb,2.0) - maxccfpmxC[0]),2.0)
-		yt=old_div((old_div(eb,2.0) - maxccfpmyC[1]),2.0)
+		xt=(eb/2.0 - maxccfpmxC[0])/2.0
+		yt=(eb/2.0 - maxccfpmyC[1])/2.0
 
 		pfix=pprj.copy()
 		pfix.translate( xt, yt, 0)
@@ -2313,7 +2313,7 @@ def prjpruner( options, data ):
 		maxccfpmzCside=ccfpmzCside.calc_max_location()
 	
 		#xtside=(eb/2.0 - maxccfpmxCside[0])/2.0
-		ztside=old_div((old_div(eb,2.0) - maxccfpmzCside[1]),2.0)
+		ztside=(eb/2.0 - maxccfpmzCside[1])/2.0
 		#print "zt side is", ztside
 		pfixside=pprjside.copy()
 		pfixside.translate( 0, 0, ztside)
@@ -2321,7 +2321,7 @@ def prjpruner( options, data ):
 		#newx=x+xt
 		newz=z-ztside
 	
-		if math.fabs(xt) <= old_div(eb,8.0) and math.fabs(yt) <= old_div(eb,8.0) :
+		if math.fabs(xt) <= eb/8.0 and math.fabs(yt) <= eb/8.0 :
 			#newestcoords=(newx,newy,newz)
 		
 			newestccf = ccfpmy['maximum']

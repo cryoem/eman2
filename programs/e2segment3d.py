@@ -154,14 +154,14 @@ def main():
 		apix=volume["apix_x"]
 		for i in centers:
 			for j in i:
-				c.append((j-old_div(sz,2.0)))
+				c.append((j-sz/2.0))
 			c.append(0)
 		p.set_from(c)
 		#embed()
 		p2=PointArray()
 		p2.set_from(p,sym)
 		n=p2.get_number_points()
-		centers=[p2.get_vector_at(i)+old_div(sz,2.0) for i in range(n)]
+		centers=[p2.get_vector_at(i)+sz/2.0 for i in range(n)]
 
 		
 	# write output
