@@ -1114,7 +1114,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 	def _computeXY(self, theta, rad):
 		"""return x and y given theta and rad"""
 		scaling = self.width()*(self.plotdims.x1 - self.plotdims.x0)
-		rescaledrad = old_div(rad,(2.0*self.plotlim[3]/scaling))
+		rescaledrad = rad/(2.0*self.plotlim[3]/scaling)
 		x = math.cos(theta) * rescaledrad
 		y = math.sin(theta) * rescaledrad
 		return x, y

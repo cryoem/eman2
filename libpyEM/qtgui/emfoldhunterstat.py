@@ -239,7 +239,7 @@ class E2FoldHunterStat(object):
 
 			###### score 2 - atom inclusion percentage
 			includeValue = 0.0
-			cutOff = (old_div(1,(s2iso*10.)))
+			cutOff = (1/(s2iso*10.))
 			isoValue = s2iso
 			for x in t_pixelValues:
 				if (x>=isoValue): includeValue = includeValue + 1.0

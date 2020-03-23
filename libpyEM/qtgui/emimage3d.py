@@ -440,7 +440,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		self.cam.set_cam_z( z )
 		self.updateGL()
 	def set_cam_z_from_fov_image(self,fov,image):
-		self.d = old_div((image.get_ysize()/2.0),tan(fov/2.0*pi/180.0))
+		self.d = (image.get_ysize()/2.0)/tan(fov/2.0*pi/180.0)
 		self.zwidth = image.get_zsize()
 		self.yheight = image.get_ysize()
 		self.xwidth = image.get_xsize()

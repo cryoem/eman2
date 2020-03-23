@@ -2509,7 +2509,7 @@ class EMImageInspector2D(QtWidgets.QWidget):
 
 	def update_brightness_contrast(self):
 		b=0.5*(self.mins.value+self.maxs.value-(self.lowlim+self.highlim))/((self.highlim-self.lowlim))
-		c=old_div((self.mins.value-self.maxs.value),(2.0*(self.lowlim-self.highlim)))
+		c=(self.mins.value-self.maxs.value)/(2.0*(self.lowlim-self.highlim))
 		brts = -b
 		conts = 1.0-c
 		self.brts.setValue(brts,1)
