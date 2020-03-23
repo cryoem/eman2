@@ -261,7 +261,7 @@ def main():
 			dark=a.finish()
 			#if options.debug: sigd.write_image(options.dark.rsplit(".",1)[0]+"_sig.hdf")
 			if options.fixbadpixels:
-				sigd.process_inplace("threshold.binary",{"value":old_div(sigd["sigma"],10.0)}) # Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
+				sigd.process_inplace("threshold.binary",{"value":sigd["sigma"]/10.0}) # Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
 				dark.mult(sigd) # mask non-varying pixels in dark reference (set to zero)
 		#if options.debug: dark.write_image(options.dark.rsplit(".",1)[0]+"_sum.hdf")
 		#else: dark.mult(1.0/99.0)
@@ -330,7 +330,7 @@ def main():
 				gain=a.finish()
 				#if options.debug: sigg.write_image(options.gain.rsplit(".",1)[0]+"_sig.hdf")
 				if options.fixbadpixels:
-					sigg.process_inplace("threshold.binary",{"value":old_div(sigg["sigma"],10.0)}) # Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
+					sigg.process_inplace("threshold.binary",{"value":sigg["sigma"]/10.0}) # Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
 					if dark!="":
 						try: sigg.mult(sigd) # set bad pixels identified in dark reference to 0 in gain reference
 						except: pass # exception: dark has only 1 frame
@@ -350,7 +350,7 @@ def main():
 			if mean_val <= 0.: mean_val=1.
 			gain.process_inplace("threshold.belowtominval",{"minval":0.01,"newval":mean_val})
 
-		gain.mult(old_div(1.0,gain["mean"]))
+		gain.mult(1.0/gain["mean"])
 
 		if options.invert_gain: gain.process_inplace("math.reciprocal",{"zero_to":0.0})
 
@@ -1023,7 +1023,7 @@ def twod_bimodal(x_y,x1,y1,sig1,amp1,sig2,amp2,offset):
 	#correlation_peak = correlation_peak_model((x,y),x1,y1,sig1,amp1)
 	cp = amp1*np.exp(old_div(-(((x-x1)**2+(y-y1)**2)),(2.*sig1**2)))
 	#fixedbg_peak = fixedbg_peak_model((x,y),sig2,amp2)
-	fp = amp2*np.exp(old_div(-(((x-old_div(len(x),2.))**2+(y-old_div(len(y),2.))**2)),(2.*sig2**2)))
+	fp = amp2*np.exp(old_div(-(((x-len(x)/2.)**2+(y-len(y)/2.)**2)),(2.*sig2**2)))
 	return offset + cp.ravel() + fp.ravel() # + noise
 
 # def edgemean(a,xc,yc):

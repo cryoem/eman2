@@ -83,7 +83,7 @@ def load_micrograph(filename):
 		for i in range(1,n):
 			im=EMData(filename,i)
 			img.add(im)
-		img.mult(old_div(1.0,n))
+		img.mult(1.0/n)
 		
 	if invert_on_read : img.mult(-1.0)
 	global apix
@@ -408,7 +408,7 @@ class boxerByRef(QtCore.QObject):
 			
 		print("threshold = ",threshold)
 		
-		downsample=old_div(10.0,apix)			# we downsample to 10 A/pix
+		downsample=10.0/apix			# we downsample to 10 A/pix
 		microdown=micrograph.process("normalize.edgemean").process("math.fft.resample",{"n":downsample})
 		gs=good_size(max(microdown["nx"],microdown["ny"]))
 		microf=microdown.get_clip(Region(0,0,gs,gs)).do_fft()
@@ -595,7 +595,7 @@ class boxerLocal(QtCore.QObject):
 				return
 		
 		nx=goodrefs[0]["nx"]
-		downsample=old_div(8.0,apix)			# we downsample to 10 A/pix
+		downsample=8.0/apix			# we downsample to 10 A/pix
 		nxdown=good_size(int(old_div(nx,downsample)))
 		downsample=old_div(float(nx),float(nxdown))
 		microdown=micrograph.process("normalize.edgemean").process("math.fft.resample",{"n":downsample})
@@ -656,7 +656,7 @@ class boxerLocal(QtCore.QObject):
 		#final.mult(norm)
 		final.process_inplace("mask.zeroedge2d",{"x0":edge,"y0":edge})
 		final.process_inplace("mask.onlypeaks",{"npeaks":0,"usemean":0})
-		final.mult(old_div(1.0,final["sigma_nonzero"]))
+		final.mult(1.0/final["sigma_nonzero"])
 #		final.process_inplace("normalize.edgemean")
 #		final.process_inplace("threshold.belowtozero",{"minval":threshold})
 

@@ -289,7 +289,7 @@ def main():
 				ssnr=avg.calc_fourier_shell_correlation(refs[i])
 				third=old_div(len(ssnr),3)
 				ssnr=[ssnr[third]]*4+ssnr[third:third*2]+[ssnr[third*2-1]]*4	# we extend the list by replication to make the running average more natural
-				ssnr=[old_div(sum(ssnr[j-4:j+5]),9.0) for j in range(4,third+4)]		# smoothing by running average
+				ssnr=[sum(ssnr[j-4:j+5])/9.0 for j in range(4,third+4)]		# smoothing by running average
 				ssnr=[old_div(v,(1.0-min(v,.999999))) for v in ssnr]						# convert FSC to pseudo SSNR
 				avg["class_ssnr"]=ssnr
 				

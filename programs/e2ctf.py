@@ -336,7 +336,7 @@ def init_sfcurve(opt):
 
 	sfcurve=XYData()
 	for i,j in enumerate(cv):
-		sfcurve.set_x(i,old_div(i,200.0)+.002)
+		sfcurve.set_x(i,i/200.0+.002)
 		sfcurve.set_y(i,pow(10.0,cv[i]))
 
 	if sfcurve2==None:
@@ -538,7 +538,7 @@ def fixnegbg(bg_1d,im_1d,ds):
 	subtracted curve near the CTF zeros. This would likely be due to the exluded volume
 	of the particle from the solvent"""
 
-	start=int(old_div(1.0,(25.0*ds)))	# We don't worry about slight negatives below 1/40 A/pix
+	start=int(1.0/(25.0*ds))	# We don't worry about slight negatives below 1/40 A/pix
 	start=max(1,start)
 
 	# Find the worst negative peak
@@ -707,12 +707,12 @@ def refine_and_smoothsnr(options,strfact,debug=False):
 		# Tune the defocus to maximize high res snr
 		if debug : print("Fit Defocus")
 		best=(0,olddf[-1])
-		for df in [olddf[-1]+old_div(ddf,1000.0) for ddf in range(-100,101)]:
+		for df in [olddf[-1]+ddf/1000.0 for ddf in range(-100,101)]:
 			ctf.defocus=df
 			ssnr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR_SMOOTH,strfact)		# The smoothed curve
 #			print len( ssnr),len(s)
 #			ssnr=[a*b for a,b in enumerate(ssnr)]	# this would impose a r weighting to make high res agreement more important
-			qual=sum(ssnr[int(old_div(.08,ds)):len(s)-2])
+			qual=sum(ssnr[int(.08/ds):len(s)-2])
 			best=max(best,(qual,df))
 
 		newdf.append(best[1])
@@ -932,7 +932,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 				out2.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
 				out2.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.06})
 #				out2.process_inplace("math.meanshrink",{"n":2})
-				dsfac=old_div(5.0,ctf.apix)
+				dsfac=5.0/ctf.apix
 				out2.process_inplace("math.fft.resample",{"n":dsfac})	# Pawel's method much more flexible and better
 #				out2.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
 
@@ -1040,10 +1040,10 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 	im=EMData(stackfile,0)
 	ys=im.get_ysize()*oversamp
 	ys2=im.get_ysize()
-	if radius<=0 : radius=old_div(ys2,2.6)
+	if radius<=0 : radius=ys2/2.6
 	n=EMUtil.get_image_count(stackfile)
 	nn=0
-	ds=old_div(1.0,(apix*ys))	# oversampled ds
+	ds=1.0/(apix*ys)	# oversampled ds
 
 	# set up the inner and outer Gaussian masks
 	try:
@@ -1179,7 +1179,7 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 	av2["is_intensity"]=0
 
 	# This is a new addition (2/4/10) to prevent negative BG subtracted curves near the origin
-	maxpix=int(old_div(0.04,ds))               # we do this up to ~25 A
+	maxpix=int(0.04/ds)               # we do this up to ~25 A
 	avsnr=0
 	avc=0
 	for i in range(maxpix):
@@ -1211,10 +1211,10 @@ Rather than returning a single tuple, returns a list of nclasses tuples.
 	im=EMData(stackfile,0)
 	ys=im.get_ysize()*oversamp
 	ys2=im.get_ysize()
-	if radius<=0 : radius=old_div(ys2,2.6)
+	if radius<=0 : radius=ys2/2.6
 	n=EMUtil.get_image_count(stackfile)
 	nn=0
-	ds=old_div(1.0,(apix*ys))	# oversampled ds
+	ds=1.0/(apix*ys)	# oversampled ds
 
 	# set up the inner and outer Gaussian masks
 	try:
@@ -1294,7 +1294,7 @@ Rather than returning a single tuple, returns a list of nclasses tuples.
 	av1_1d=av1.calc_radial_dist(old_div(av1.get_ysize(),2),0.0,1.0,1)
 	av2_1d=av2.calc_radial_dist(old_div(av2.get_ysize(),2),0.0,1.0,1)
 
-	n0=int(old_div(0.05,ds))		# N at 20 A. We ignore low resolution information due to interference of structure factor
+	n0=int(0.05/ds)		# N at 20 A. We ignore low resolution information due to interference of structure factor
 	bg=EMData(len(av2_1d)-n0,1,1)
 	for i in range(n0,len(av2_1d)): bg[i-n0]=av2_1d[i]
 
@@ -1439,7 +1439,7 @@ def bgedge2d(stackfile,width):
 def smooth_bg(curve,ds):
 	"""Smooths a background curve by doing a running average of the log of the curve, ignoring the first few points"""
 
-	first=int(old_div(.02,ds))	# start at 1/50 1/A
+	first=int(.02/ds)	# start at 1/50 1/A
 	if first<2 : first=2
 
 	return curve[:first]+[pow(curve[i-1]*curve[i]*curve[i+1],.33333) for i in range(first,len(curve)-2)]+[curve[-2],curve[-1]]
@@ -1495,16 +1495,16 @@ def ctf_fit_bfactor(curve,ds,ctf):
 	#for i in xrange(len(curve)):
 		#print i*ds,a[i],curve[i],ccurv[i]
 
-	risethr=0.75*max(sim[int(old_div(0.04,ds)):])
+	risethr=0.75*max(sim[int(0.04/ds):])
 	# find the last point where the curve rises above 0.75 its max value
-	for i in range(len(curve)-wdw,int(old_div(0.04,ds)),-1):
+	for i in range(len(curve)-wdw,int(0.04/ds),-1):
 		if sim[i]>risethr : break
 
 	# now find the first place where it falls below 0.1
 	for i in range(i,len(curve)-wdw):
 		if sim[i]<0.1 : break
 
-	maxres=old_div(1.0,(i*ds))
+	maxres=1.0/(i*ds)
 	print("maxres ",maxres," B -> ",maxres*maxres*6.0)
 
 	return maxres*maxres*6.0
@@ -1582,7 +1582,7 @@ def low_bg_curve(bg_1d,ds):
 
 def elambda(V):
 	"""returns relativistic electron wavelength. V in KV. Wavelength in A"""
-	return old_div(12.3,sqrt(1000*V+0.97845*V*V))
+	return 12.3/sqrt(1000*V+0.97845*V*V)
 
 # This isn't really right, a correct version is now implemented in the EMAN2Ctf object
 #def zero(N,V,Cs,Z,AC):
@@ -1660,14 +1660,14 @@ def ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1):
 	#print oparm
 
 	# Give a little arbitrary astigmatism for the angular search
-	if ctf.dfdiff==0 : ctf.dfdiff=old_div(ctf.defocus,20.0)
+	if ctf.dfdiff==0 : ctf.dfdiff=ctf.defocus/20.0
 
 	oldb=ctf.bfactor
 	# coarse angular alignment
 	besta=(1.0e15,0)
 	ctf.bfactor=500
 	for ang in range(0,180,15):
-		v=ctf_stig_cmp((ctf.defocus+old_div(ctf.dfdiff,2.0),ctf.defocus-old_div(ctf.dfdiff,2.0),ang),(bgsub,bgcp,ctf))
+		v=ctf_stig_cmp((ctf.defocus+ctf.dfdiff/2.0,ctf.defocus-ctf.dfdiff/2.0,ang),(bgsub,bgcp,ctf))
 		besta=min(besta,(v,ang))
 	ctf.dfang=besta[1]
 	print("best angle:", besta)
@@ -1675,20 +1675,20 @@ def ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1):
 	# Use a simplex minimizer to find the final fit
 	# we minimize using defocusU and defocusV rather than defocus & dfdfiff
 	ctf.bfactor=200
-	sim=Simplex(ctf_stig_cmp,[ctf.defocus+old_div(ctf.dfdiff,2.0),ctf.defocus-old_div(ctf.dfdiff,2.0),ctf.dfang],[0.01,0.01,5.0],data=(bgsub,bgcp,ctf))
+	sim=Simplex(ctf_stig_cmp,[ctf.defocus+ctf.dfdiff/2.0,ctf.defocus-ctf.dfdiff/2.0,ctf.dfang],[0.01,0.01,5.0],data=(bgsub,bgcp,ctf))
 	oparm=sim.minimize(epsilon=.00000001,monitor=0)
 	dfmaj,dfmin,ctf.dfang=oparm[0]		# final fit result
-	print("Coarse refine: defocus={:1.4f} dfdiff={:1.5f} dfang={:3.2f} defocusU={:1.4f} defocusV={:1.4f}".format(old_div((dfmaj+dfmin),2.0),(dfmaj-dfmin),ctf.dfang,dfmaj,dfmin))
+	print("Coarse refine: defocus={:1.4f} dfdiff={:1.5f} dfang={:3.2f} defocusU={:1.4f} defocusV={:1.4f}".format((dfmaj+dfmin)/2.0,(dfmaj-dfmin),ctf.dfang,dfmaj,dfmin))
 
 	# Use a simplex minimizer to refine the local neighborhood
 	ctf.bfactor=80
 	sim=Simplex(ctf_stig_cmp,oparm[0],[0.005,2.0,.005],data=(bgsub,bgcp,ctf))
 	oparm=sim.minimize(epsilon=.00000001,monitor=0)
 	dfmaj,dfmin,ctf.dfang=oparm[0]		# final fit result
-	print("  Fine refine: defocus={:1.4f} dfdiff={:1.5f} dfang={:3.2f} defocusU={:1.4f} defocusV={:1.4f}".format(old_div((dfmaj+dfmin),2.0),(dfmaj-dfmin),ctf.dfang,dfmaj,dfmin))
+	print("  Fine refine: defocus={:1.4f} dfdiff={:1.5f} dfang={:3.2f} defocusU={:1.4f} defocusV={:1.4f}".format((dfmaj+dfmin)/2.0,(dfmaj-dfmin),ctf.dfang,dfmaj,dfmin))
 
 	ctf.bfactor=oldb
-	ctf.defocus=old_div((dfmaj+dfmin),2.0)
+	ctf.defocus=(dfmaj+dfmin)/2.0
 	ctf.dfdiff=dfmaj-dfmin
 
 
@@ -1744,7 +1744,7 @@ def ctf_stig_cmp(parms,data):
 	bgsub,bgcp,ctf=data
 
 	dfmaj,dfmin,ctf.dfang=parms
-	ctf.defocus=old_div((dfmaj+dfmin),2.0)
+	ctf.defocus=(dfmaj+dfmin)/2.0
 	ctf.dfdiff=dfmaj-dfmin
 
 	ctf.compute_2d_complex(bgcp,Ctf.CtfType.CTF_FITREF,None)
@@ -1778,7 +1778,7 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,phaseplate,apix,bgad
 	else: dfhint=(dfhint[0],dfhint[1],min(0.02,old_div((dfhint[1]-dfhint[0]),5)))
 
 	ys=im_2d.get_ysize()
-	ds=old_div(1.0,(apix*ys))
+	ds=1.0/(apix*ys)
 	if ac<-200 or ac>200 :
 		print("Invalid %%AC, defaulting to 10")
 		ac=10.0
@@ -1808,7 +1808,7 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,phaseplate,apix,bgad
 
 	for rng in (0,1):
 		# second pass is +-0.1 unless the original hint range was narrower
-		if rng==1: dfhint=(max(dfhint[0],ctf.defocus-0.1),min(dfhint[1],ctf.defocus+0.1),min(old_div(dfhint[2],2.0),0.005))
+		if rng==1: dfhint=(max(dfhint[0],ctf.defocus-0.1),min(dfhint[1],ctf.defocus+0.1),min(dfhint[2]/2.0,0.005))
 
 		curve=[im[i]-bg[i] for i in range(len(im_1d))]
 		for phase in range(phaserange[0],phaserange[1],5):
@@ -2130,7 +2130,7 @@ def ctf_cmp(parms,data):
 #	print er
 
 #	er*=(1.0+300.0*(parms[0]-dforig)**4)		# This is a weight which biases the defocus towards the initial value
-	er*=1.0+old_div((parms[1]-200),20000.0)+exp(old_div(-(parms[1]-50.0),30.0))		# This is a bias towards small B-factors and to prevent negative B-factors
+	er*=1.0+(parms[1]-200)/20000.0+exp(-(parms[1]-50.0)/30.0)		# This is a bias towards small B-factors and to prevent negative B-factors
 	er*=max(1.0,1.0+parms[0]*20.0-rng[1])**2		# penalty for being outside range (high)
 	er*=max(1.0,1.0+rng[0]-parms[0]*20.0)**2		# penalty for being outside range (low)
 
@@ -2221,7 +2221,7 @@ def ctf_cmp_2(parms,data):
 	er*=(1.0+300.0*(parms[0]-dforig)**4)		# This is a weight which biases the defocus towards the initial value
 	er*=max(1.0,1.0+parms[0]*20.0-rng[-1])**2		# penalty for being outside range (high)
 	er*=max(1.0,1.0+rng[0]-parms[0]*20.0)**2		# penalty for being outside range (low)
-	er*=1.0+old_div((parms[1]-200),20000.0)+exp(old_div(-(parms[1]-50.0),30.0))		# This is a bias towards small B-factors and to prevent negative B-factors
+	er*=1.0+(parms[1]-200)/20000.0+exp(-(parms[1]-50.0)/30.0)		# This is a bias towards small B-factors and to prevent negative B-factors
 #	er*=(1.0+fabs(parms[1]-200.0)/100000.0)		# This is a bias towards small B-factors
 #	print "%1.3g\t%1.3g\t%1.3g\t%1.3g\t"%(er,er1,er/er1,parms[0]),(1.0+300.0*(parms[0]-dforig)**4),max(1.0,1.0+parms[0]*20.0-rng[-1])**2,max(1.0,1.0+rng[0]-parms[0]*20.0)**2,1.0+(parms[1]-200)/20000.0+exp(-(parms[1]-50.0)/30.0)
 
@@ -2716,7 +2716,7 @@ class GUIctf(QtWidgets.QWidget):
 
 			# auto-amplitude for b-factor adjustment
 			rto,nrto=0,0
-			for i in range(int(old_div(.04,ds))+1,min(int(old_div(0.15,ds)),len(s)-1)):
+			for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)):
 				if bgsub[i]>0 :
 					#rto+=fit[i]**2/fabs(bgsub[i])
 					#nrto+=fit[i]
@@ -2846,7 +2846,7 @@ class GUIctf(QtWidgets.QWidget):
 
 			# auto-amplitude for b-factor adjustment
 			rto,nrto=0,0
-			for i in range(int(old_div(.04,ds))+1,min(int(old_div(0.15,ds)),len(s)-1)):
+			for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)):
 				if bgsub[i]>0 :
 					rto+=fit[i]
 					nrto+=fabs(bgsub[i])
@@ -2862,7 +2862,7 @@ class GUIctf(QtWidgets.QWidget):
 			sim=Util.windowdot(bgsub,fit,wdw,1)
 			self.guiplot.set_data((s,sim),"Local Sim",color=2)
 
-			print(sum(sim),sum(sim[int(old_div(.04,ds)):int(old_div(.12,ds))]))
+			print(sum(sim),sum(sim[int(.04/ds):int(.12/ds)]))
 
 #			print ctf_cmp((self.sdefocus.value,self.sbfactor.value,rto),(ctf,bgsub,int(.04/ds)+1,min(int(0.15/ds),len(s)-1),ds,self.sdefocus.value))
 

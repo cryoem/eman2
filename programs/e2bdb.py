@@ -455,7 +455,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 
 		elif not options.makevstack and not options.appendvstack :
 			# Nicely formatted 'ls' style display
-			cols=int(floor(old_div(80.0,(maxname+3))))
+			cols=int(floor(80.0/(maxname+3)))
 			width=old_div(80,cols)
 			rows=int(ceil(old_div(float(len(dbs)),cols)))
 			

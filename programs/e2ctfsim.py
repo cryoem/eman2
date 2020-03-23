@@ -326,7 +326,7 @@ class GUIctfsim(QtWidgets.QWidget):
 
 		for d in range(len(self.data)):
 			ctf=self.data[d][1]
-			ds=old_div(1.0,(ctf.apix*2.0*ctf.samples))
+			ds=1.0/(ctf.apix*2.0*ctf.samples)
 			s=arange(0,ds*ctf.samples,ds)
 			
 			curve=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))

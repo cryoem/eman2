@@ -131,9 +131,9 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 			for c in mcmps:
 				sim=img.cmp(c[0],refimg,c[1])
 				out.write("\t{}".format(sim))
-			imgf=img.process("filter.highpass.gauss",{"cutoff_freq":old_div(1.0,80)}).process("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,20)})
+			imgf=img.process("filter.highpass.gauss",{"cutoff_freq":1.0/80}).process("filter.lowpass.gauss",{"cutoff_freq":1.0/20})
 			out.write("\t{}".format(imgf.cmp("ccc",refimg)))
-			imgf=img.process("filter.highpass.gauss",{"cutoff_freq":old_div(1.0,20)}).process("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,12)})
+			imgf=img.process("filter.highpass.gauss",{"cutoff_freq":1.0/20}).process("filter.lowpass.gauss",{"cutoff_freq":1.0/12})
 			out.write("\t{}".format(imgf.cmp("ccc",refimg)))
 			
 			out.write("\n")

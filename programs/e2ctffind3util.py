@@ -95,7 +95,7 @@ For more information on ctffind3 please see: Mindell, JA, Grigorieff N.  2003.  
 				dfv=star["rlnDefocusV"][i]
 				dfang=star["rlnDefocusAngle"][i]
 				ctf=EMAN2Ctf()
-				ctf.from_dict({"defocus":old_div((dfu+dfv),20000.0),"dfang":dfang,"dfdiff":old_div((dfu-dfv),10000.0),"voltage":star["rlnVoltage"][i],"cs":star["rlnSphericalAberration"][i],"ampcont":star["rlnAmplitudeContrast"][i]*100.0,"apix":options.apix})
+				ctf.from_dict({"defocus":(dfu+dfv)/20000.0,"dfang":dfang,"dfdiff":(dfu-dfv)/10000.0,"voltage":star["rlnVoltage"][i],"cs":star["rlnSphericalAberration"][i],"ampcont":star["rlnAmplitudeContrast"][i]*100.0,"apix":options.apix})
 				jdb["ctf_frame"]=[512,ctf,(256,256),tuple(),5,1]
 				js_close_dict(im)
 
@@ -161,8 +161,8 @@ def import_ctf(voltage, cs, ac, apix, verbose, version):
 							defocusv = float(line.split()[1])
 							dfang =  float(line.split()[2])
 							cc = float(line.split()[3])
-							e2defocus =  old_div((defocusu + defocusv), 20000.0)
-							e2dfdiff = old_div(abs(defocusu - defocusv), 10000.0)
+							e2defocus =  (defocusu + defocusv) / 20000.0
+							e2dfdiff = abs(defocusu - defocusv) / 10000.0
 							e2dfang = dfang
 							if not os.path.exists(os.getcwd() + "/info"):
 								os.mkdir(os.getcwd() + "/info")

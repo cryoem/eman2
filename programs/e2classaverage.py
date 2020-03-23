@@ -497,7 +497,7 @@ def class_average_withali(images,ptcl_info,xform,ref,focused,averager=("mean",{}
 		ssnr=avg.calc_fourier_shell_correlation(ref)
 		third=old_div(len(ssnr),3)
 		ssnr=[ssnr[third]]*4+ssnr[third:third*2]+[ssnr[third*2-1]]*4	# we extend the list by replication to make the running average more natural
-		ssnr=[old_div(sum(ssnr[i-4:i+5]),9.0) for i in range(4,third+4)]		# smoothing by running average
+		ssnr=[sum(ssnr[i-4:i+5])/9.0 for i in range(4,third+4)]		# smoothing by running average
 		ssnr=[old_div(v,(1.0-min(v,.999999))) for v in ssnr]						# convert FSC to pseudo SSNR
 		avg["class_ssnr"]=ssnr
 
@@ -581,7 +581,7 @@ def class_average(images,ref=None,focused=None,niter=1,normproc=("normalize.edge
 			#ref.translate(fxf.get_trans())
 			if center!=None : ref.process_inplace(center)
 			ref.process_inplace("normalize.circlemean",{"radius":old_div(ref["nx"],2)-gmw})
-			ref.process_inplace("mask.gaussian",{"inner_radius":old_div(ref["nx"],2)-gmw,"outer_radius":old_div(gmw,1.3)})
+			ref.process_inplace("mask.gaussian",{"inner_radius":old_div(ref["nx"],2)-gmw,"outer_radius":gmw/1.3})
 			ref_orient=None
 		except:
 			traceback.print_exc()
@@ -683,7 +683,7 @@ def class_average(images,ref=None,focused=None,niter=1,normproc=("normalize.edge
 		if automask :
 			ref.process_inplace("mask.auto2d",{"nmaxseed":10,"nshells":gmw-2,"nshellsgauss":gmw,"sigma":0.2})
 		else :
-			ref.process_inplace("mask.gaussian",{"inner_radius":old_div(ref["nx"],2)-gmw,"outer_radius":old_div(gmw,1.3)})
+			ref.process_inplace("mask.gaussian",{"inner_radius":old_div(ref["nx"],2)-gmw,"outer_radius":gmw/1.3})
 
 	if ref_orient!=None :
 		ref["xform.projection"]=ref_orient
