@@ -1892,7 +1892,7 @@ class EMCamera(object):
 		self.setCappingMode(False)
 		self.setCapColor(*(get_default_gl_colors()["bluewhite"]['ambient']))
 		self.setLinkingMode(False)
-		zclip = old_div((self.near-self.far),2.0)	# Puts things in the center of the viewing volume
+		zclip = (self.near-self.far)/2.0	# Puts things in the center of the viewing volume
 		if usingortho:
 			self.useOrtho(zclip)
 		else:
@@ -2615,7 +2615,7 @@ class EMInspector3D(QtWidgets.QWidget):
 	def _on_cap_color(self, color):
 		rgb = color.getRgb()
 		self.scenegraph().makeCurrent()
-		self.scenegraph().camera.setCapColor(old_div(float(rgb[0]),255.0), old_div(float(rgb[1]),255.0), old_div(float(rgb[2]),255.0))
+		self.scenegraph().camera.setCapColor(float(rgb[0])/255.0, float(rgb[1])/255.0, float(rgb[2])/255.0)
 		if self.scenegraph().camera.getCappingMode(): self.updateSceneGraph()
 		
 	def _on_near(self, value, link=True):
@@ -2783,7 +2783,7 @@ class EMInspector3D(QtWidgets.QWidget):
 	def _on_bg_color(self, color):
 		rgb = color.getRgb()
 		self.scenegraph().makeCurrent()
-		self.scenegraph().setClearColor(old_div(float(rgb[0]),255.0), old_div(float(rgb[1]),255.0), old_div(float(rgb[2]),255.0))
+		self.scenegraph().setClearColor(float(rgb[0])/255.0, float(rgb[1])/255.0, float(rgb[2])/255.0)
 		self.updateSceneGraph()
 		
 	def updateInspector(self):

@@ -506,7 +506,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 #				t.append([triangles[0][0],p1, triangles[0][2]])
 #				triangles = t
 			else:
-				p = old_div((triangles[0][2]+triangles[0][1]),2.0)
+				p = (triangles[0][2]+triangles[0][1])/2.0
 				a = p.normalize()
 				t = []
 				t.append([triangles[0][0],triangles[0][1],p])

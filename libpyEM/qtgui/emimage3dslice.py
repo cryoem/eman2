@@ -140,7 +140,7 @@ class EM3DSliceModel(EM3DModel):
 #		self.data.add(-min)
 #		self.data.mult(1/(max-min))
 		self.bright = -min
-		if max != min:	self.contrast = old_div(1.0,(max-min))
+		if max != min:	self.contrast = 1.0/(max-min)
 		else: self.contrast = 1
 		
 	def set_data(self,data,fact=1.0):
@@ -196,7 +196,7 @@ class EM3DSliceModel(EM3DModel):
 			alt = acos(p[2])*180.0/pi
 		
 		phi = atan2(p[0],p[1])
-		phi *= old_div(180.0,pi)
+		phi *= 180.0/pi
 		
 		return [Transform({"type":"eman","alt":alt,"phi":phi}),alt,phi]
 			
@@ -330,7 +330,7 @@ class EM3DSliceModel(EM3DModel):
 		glStencilFunc(GL_EQUAL,self.rank,0)
 		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
 		glPushMatrix()
-		glTranslate(old_div(-self.data.get_xsize(),2.0),old_div(-self.data.get_ysize(),2.0),old_div(-self.data.get_zsize(),2.0))
+		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-self.data.get_zsize()/2.0)
 		glScalef(self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize())
 		glCallList(self.tex_dl)
 		glPopMatrix()
@@ -421,7 +421,7 @@ class EM3DSliceModel(EM3DModel):
 		
 		point = Vec3f(0,0,1)
 		
-		point *= old_div(1.0,self.vdtools.getCurrentScale())
+		point *= 1.0/self.vdtools.getCurrentScale()
 		
 		point = point*t3d
 		

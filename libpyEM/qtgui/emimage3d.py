@@ -275,7 +275,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		self.xwidth = self.aspect*self.yheight
 		if self.xwidth == 0 or self.yheight == 0: return # probably startup
 		
-		glOrtho(old_div(-self.xwidth,2.0),old_div(self.xwidth,2.0),old_div(-self.yheight,2.0),old_div(self.yheight,2.0),self.startz,self.endz)
+		glOrtho(-self.xwidth/2.0,self.xwidth/2.0,-self.yheight/2.0,self.yheight/2.0,self.startz,self.endz)
 		glMatrixMode(GL_MODELVIEW)
 	def load_perspective(self):
 		self.aspect = old_div(float(self.width()),float(self.height()))
@@ -440,7 +440,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		self.cam.set_cam_z( z )
 		self.updateGL()
 	def set_cam_z_from_fov_image(self,fov,image):
-		self.d = old_div((old_div(image.get_ysize(),2.0)),tan(fov/2.0*pi/180.0))
+		self.d = old_div((image.get_ysize()/2.0),tan(fov/2.0*pi/180.0))
 		self.zwidth = image.get_zsize()
 		self.yheight = image.get_ysize()
 		self.xwidth = image.get_xsize()
@@ -565,7 +565,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		the calling function can figure out what to draw
 		'''
 		
-		return [old_div(-self.xwidth,2.0),old_div(-self.yheight,2.0),self.startz, old_div(self.xwidth,2.0),old_div(self.yheight,2.0),self.endz]
+		return [-self.xwidth/2.0,-self.yheight/2.0,self.startz, self.xwidth/2.0,self.yheight/2.0,self.endz]
 	def wheelEvent(self, event):
 		for model in self.viewables:
 			try:

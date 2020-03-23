@@ -258,7 +258,7 @@ class ValSlider(QtWidgets.QWidget):
 	def sliderChange(self,x):
 		if self.ignore : return
 		ov=self.value
-		self.value=(old_div(self.slider.value(),4095.0))*(self.rng[1]-self.rng[0])+self.rng[0]
+		self.value=(self.slider.value()/4095.0)*(self.rng[1]-self.rng[0])+self.rng[0]
 		if self.intonly : 
 			self.value=int(self.value+.5)
 			if self.value==ov : return
