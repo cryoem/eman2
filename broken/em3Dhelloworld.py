@@ -122,7 +122,7 @@ class EM3DHelloWorld(EM3DModel):
 			glBegin(GL_QUADS)
 			
 			n = 15.0
-			d = old_div(2.0,(n+1))
+			d = 2.0/(n+1)
 			for i in range(0,int(n)):
 				for j in range(0,int(n)):
 					

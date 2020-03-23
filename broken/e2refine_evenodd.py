@@ -158,8 +158,8 @@ def main():
 	# Prepare the starting models for each run
 	# each model will have different random phases beyond the specified resolution
 	print("### Preparing initial models for refinement, phase-randomized at %1.1f A resolution"%options.randomres)
-	launch_childprocess("e2proc3d.py %s %s_even/initial_model.hdf --process=filter.lowpass.randomphase:cutoff_freq=%1.4f"%(options.model,options.path,old_div(1.0,options.randomres)))
-	launch_childprocess("e2proc3d.py %s %s_odd/initial_model.hdf --process=filter.lowpass.randomphase:cutoff_freq=%1.4f"%(options.model,options.path,old_div(1.0,options.randomres)))
+	launch_childprocess("e2proc3d.py %s %s_even/initial_model.hdf --process=filter.lowpass.randomphase:cutoff_freq=%1.4f"%(options.model,options.path,1.0/options.randomres))
+	launch_childprocess("e2proc3d.py %s %s_odd/initial_model.hdf --process=filter.lowpass.randomphase:cutoff_freq=%1.4f"%(options.model,options.path,1.0/options.randomres))
 	
 	# Ok, now we're ready to run the actual refinements !
 	argv=sys.argv[1:]

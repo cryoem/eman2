@@ -170,7 +170,7 @@ def main():
       temp_av.transform(xf.get_sym(sym_str,i)) # dc is the h-symmetrized subunit
       dcopy.add(temp_av)
     dcopy.sub(avg_vol)  
-    dcopy.mult(old_div(1.0,4.0)) # cyclic 4 symmetry, density multiplied 4, should change back
+    dcopy.mult(1.0/4.0) # cyclic 4 symmetry, density multiplied 4, should change back
     dcopy.translate(0,0,-2) #shift downward 2 pixels
 ##################### mask the model ###################
     '''
