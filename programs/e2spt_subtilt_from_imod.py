@@ -150,7 +150,7 @@ def main():
 		if options.weight:
 			wt=ctfsave[:,options.defcol]
 			print("Weight particles by the variance of esitimated defocus, from {:.2f} to {:.2f}".format(np.max(wt), np.min(wt)))
-			wt=old_div(1.,(wt+.1))
+			wt=1./(wt+.1)
 			wt/=np.max(wt)
 		
 		f=open(options.ctffile,'r')

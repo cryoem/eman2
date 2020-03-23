@@ -90,7 +90,7 @@ def main():
 		news=(int(olds[0]*options.scale),int(olds[1]*options.scale))
 		for i in range(ntk+1):
 			if options.scale<1.0: a[i].scale(options.scale)
-			a[i]=a[i].get_clip(Region(old_div((olds[0]-news[0]),2.0),old_div((olds[1]-news[1]),2.0),news[0],news[1]))
+			a[i]=a[i].get_clip(Region((olds[0]-news[0])/2.0,(olds[1]-news[1])/2.0,news[0],news[1]))
 			if options.scale>1.0: a[i].scale(options.scale)
 
 	if options.pingpong :

@@ -371,7 +371,7 @@ def fit_defocus(options,img_file,fft_avg,voltage,cs,ampcont,phaseplate,apix,targ
 	#print("\n(e2tomo_ctfraw)(fit_defocus) tilesize={}".format(tilesize))
 
 	# Compute 1-D curve and background
-	ds = old_div(1.0,( apix * tilesize ))
+	ds = 1.0/( apix * tilesize )
 	#print("\n(e2tomo_ctfraw)(fit_defocus) ds={}".format(ds))
 	
 	bg_1d = e2ctf.low_bg_curve(fft_avg_1d,ds)
@@ -396,7 +396,7 @@ def fit_defocus(options,img_file,fft_avg,voltage,cs,ampcont,phaseplate,apix,targ
 
 
 	ctf2 = EMAN2Ctf()
-	dfhint2=(max(dfhint[0],ctf.defocus-0.1),min(dfhint[1],ctf.defocus+0.1),min(old_div(dfhint[2],2.0),0.01))
+	dfhint2=(max(dfhint[0],ctf.defocus-0.1),min(dfhint[1],ctf.defocus+0.1),min(dfhint[2]/2.0,0.01))
 	ctf2 = e2ctf.ctf_fit( fft_avg_1d, bg_1d, bg_1d, fft_avg, fft_bg, float(voltage), float(cs), float(ampcont), phaseplate, float(apix), bgadj=1, autohp=True, dfhint=dfhint2 )		
 	bg_sub2,bg_1d2 = e2ctf.calc_1dfrom2d(ctf2, fft_avg, fft_bg)
 	
@@ -467,7 +467,7 @@ def ctf_get_fit_curve(ctf, ds, fft_avg_1d, bg_1d, bg_sub):
 
 	# auto-amplitude for b-factor adjustment
 	rto,nrto=0,0
-	for i in range(int(old_div(.04,ds))+1,min(int(old_div(0.15,ds)),len(s)-1)):
+	for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)):
 		if bg_sub[i]>0 :
 			rto+=fit[i]
 			nrto+=fabs(bg_sub[i])

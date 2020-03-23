@@ -357,8 +357,8 @@ def build_projection_operator( options, angles, l_x, n_dir=None, l_det=None, off
 	if l_det is None:
 		l_det = l_x
 	X, Y = _generate_center_coordinates( options.subpix * l_x)
-	X *= old_div(1.0,options.subpix)
-	Y *= old_div(1.0,options.subpix)
+	X *= 1.0/options.subpix
+	Y *= 1.0/options.subpix
 	Xbig, Ybig = _generate_center_coordinates(l_det)
 	Xbig *= old_div((l_x - 2*offset), float(l_det))
 	orig = Xbig.min()
@@ -405,7 +405,7 @@ def _generate_center_coordinates(l_x):
 	"""
 	l_x = float(l_x)
 	X, Y = np.mgrid[:l_x, :l_x]
-	center = old_div(l_x, 2.)
+	center = l_x / 2.
 	X += 0.5 - center
 	Y += 0.5 - center
 	return X, Y
@@ -517,7 +517,7 @@ def fista_tv( options, angles, y, H, mask=None):
 	Ht = sparse.csr_matrix(H.transpose())
 	x0 = np.zeros(n_pix)[:, np.newaxis]
 	res, energies = [], []
-	gamma = old_div(.9, (l * n_angles))
+	gamma = .9 / (l * n_angles)
 	x = x0
 	u_old = np.zeros((l, l))
 	t_old = 1
@@ -534,7 +534,7 @@ def fista_tv( options, angles, y, H, mask=None):
 		else:
 			tmp2d = tmp.reshape((l, l))
 		u_n = tv_denoise_fista(tmp2d, weight=options.beta*gamma, eps=eps)
-		t_new = old_div((1 + np.sqrt(1 + 4 * t_old**2)),2.)
+		t_new = (1 + np.sqrt(1 + 4 * t_old**2))/2.
 		t_old = t_new
 		x = u_n + (t_old - 1)/t_new * (u_n - u_old)
 		u_old = u_n
@@ -612,7 +612,7 @@ def tv_denoise_fista(im, weight=50, eps=5.e-5, n_iter_max=200, check_gap_frequen
 	while i < n_iter_max:
 		error = weight * div(grad_aux) - im
 		grad_tmp = gradient(error)
-		grad_tmp *= old_div(1., (8 * weight))
+		grad_tmp *= 1. / (8 * weight)
 		grad_aux += grad_tmp
 		grad_tmp = _projector_on_dual(grad_aux)
 		t_new = 1. / 2 * (1 + np.sqrt(1 + 4 * t**2))
@@ -769,7 +769,7 @@ def dual_gap(im, new, gap, weight):
 		ret = 0
 		divisor = float( im_norm ) * float( dual_gap )
 		if divisor:
-			ret = old_div(0.5, divisor)
+			ret = 0.5 / divisor
 			
 		return ret
 	except:

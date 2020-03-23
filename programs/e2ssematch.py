@@ -78,7 +78,7 @@ def ssematch2(ssehfsp,sspredfsp,options):
 	sseh=readsseh(ssehfsp)
 	sspred=readsspred(sspredfsp,options.minhelix)
 	
-	for i in sseh[0]: print("%d "%int(old_div(i,1.5)), end=' ')
+	for i in sseh[0]: print("%d "%int(i/1.5), end=' ')
 	print()
 	
 	skel=readconnect(options.skelpath,len(sseh[0]))
@@ -93,7 +93,7 @@ def ssematch2(ssehfsp,sspredfsp,options):
 # 		lengthmatrix(sspred,sseh,options.lengthmatchmatrix)
 	
 	print("%d predicted helices    %d helices in density"%(len(sspred),len(sseh[0])))
-	for i in sspred: print("%4d "%int(old_div(i[0],1.5)), end=' ')
+	for i in sspred: print("%4d "%int(i[0]/1.5), end=' ')
 	print("")
 
 	
@@ -104,7 +104,7 @@ def ssematch(ssehfsp,sspredfsp,options):
 	sseh=readsseh(ssehfsp)
 	sspred=readsspred(sspredfsp,options.minhelix)
 	
-	for i in sseh[0]: print("%d "%int(old_div(i,1.5)), end=' ')
+	for i in sseh[0]: print("%d "%int(i/1.5), end=' ')
 	print()
 	
 	skel=readconnect(options.skelpath,len(sseh[0]))
@@ -119,7 +119,7 @@ def ssematch(ssehfsp,sspredfsp,options):
 #		lengthmatrix(sspred,sseh,options.lengthmatchmatrix)
 	
 	print("%d predicted helices    %d helices in density"%(len(sspred),len(sseh[0])))
-	for i in sspred: print("%4d "%int(old_div(i[0],1.5)), end=' ')
+	for i in sspred: print("%4d "%int(i[0]/1.5), end=' ')
 	print("")
 	
 	# get lists of possible pairwise assignments and quality assessment for each

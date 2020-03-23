@@ -372,7 +372,7 @@ def main():
 		
 		if options.subtiltsdir or options.coords:
 			
-			radius = old_div(ptclnx,2.0)
+			radius = ptclnx/2.0
 			
 			if options.radius:
 				radius = options.radius
@@ -1044,7 +1044,7 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 			For negative tilt angles (clockwise) the defocuses increases (the particle is more defocused)for px right of the tilt axis while
 			defocus decreases (more overfocused, less defocused) for particles left of the tilt axis.
 			'''
-			px = ( coordx - old_div(framexsize,2.0) ) * apix/10000
+			px = ( coordx - framexsize/2.0 ) * apix/10000
 			if px < 0:
 				print("\npx (in microns) is left of the tilt axis", px)
 			elif px > 0:
@@ -1079,7 +1079,7 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 				pass
 
 			else:														#assume the defocus signal comes from the middle
-				middle = old_div(( maxz + minz ), 2.0)
+				middle = ( maxz + minz ) / 2.0
 				relativecoordz = coordz - middle 
 				pz = relativecoordz * apix/10000
 				#pz = ( coordz - icethickness/2.0 ) * apix/10000
@@ -1623,7 +1623,7 @@ def tilerfft(options, angle, imgt, currentstrip, nstrips, start, end, step, save
 	if nbx > options.mintiles:
 	
 		if fftcumulative:
-			fftcumulative.mult(old_div(1.0,(nbx*options.tilesize**2)))
+			fftcumulative.mult(1.0/(nbx*options.tilesize**2))
 			fftcumulative.process_inplace("math.sqrt")
 			fftcumulative["is_intensity"]=0				# These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
 	
@@ -1702,7 +1702,7 @@ def fitdefocus( ffta, angle, apix, options, nsubmicros, currentsubmicro, defocus
 	ctf = None
 	try:
 		# Compute 1-D curve and background
-		ds = old_div(1.0,( options.apix * options.tilesize ))
+		ds = 1.0/( options.apix * options.tilesize )
 		bg_1d = e2ctf.low_bg_curve(fft1d,ds)
 		
 		#initial fit, background adjustment, refine fit, final background adjustment
@@ -1858,13 +1858,13 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 			#ffta, angle, apix, options, nsubmicros, currentsubmicro, defocusmin, defocusmax, defocusstep, x=0 ):
 			globaldefocus = fitdefocus( fftg, angle, apix, options, 1, 0, defocusmin, defocusmax, defocusstep, 0)
 		
-			globalmiddle = ( old_div(nx,2.0) ) * apix / 10000	#convert to micrometers, so x and y axis are in the same units
+			globalmiddle = ( nx/2.0 ) * apix / 10000	#convert to micrometers, so x and y axis are in the same units
 			
 			
 			
 			
 			#get central region of 3 tile width
-			r = Region( old_div(img['nx'],2) - options.tilesize - int(ceil(old_div(options.tilesize,2.0))), 0, 3*options.tilesize, img['ny'])
+			r = Region( old_div(img['nx'],2) - options.tilesize - int(ceil(options.tilesize/2.0)), 0, 3*options.tilesize, img['ny'])
 			
 			r = Region( old_div(img['nx'],2) - options.tilesize, 0, 2*options.tilesize, img['ny'])
 
@@ -1896,7 +1896,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 				defocuserror = globaldefocus-centerdefocus
 			
 				if defocuserror:
-					averagedefocus = old_div((globaldefocus+centerdefocus),2.0)
+					averagedefocus = (globaldefocus+centerdefocus)/2.0
 					globaldefocus = averagedefocus
 					
 					#defocusmin = averagedefocus - defocuswiggle/2.0
@@ -1937,7 +1937,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 			'''#
 			#Position of the tilt axis in micrometers
 			#'''
-			pxta = ( old_div(nx,2.0) ) * apix/10000
+			pxta = ( nx/2.0 ) * apix/10000
 		
 			'''#
 			#Find the distance dx100dz away from the tilt axis, across which the vertical distance 
@@ -1945,7 +1945,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 			#'''
 		
 			#deltata = pxta
-			dx100dz = old_div(nx,2.0)						#at zero degrees dzx100 is half the micrograph size, since there should be no defocus variation due to tilt
+			dx100dz = nx/2.0						#at zero degrees dzx100 is half the micrograph size, since there should be no defocus variation due to tilt
 			if math.fabs( angle ) > 0.5:
 		
 				#defocusvariationlimit is in micrometers. it is the variation in defocus to tolerate across a strip due to tilt and still consider the defocus "constant"
@@ -1957,8 +1957,8 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 				
 					dx100dz += depthdefocus				
 						
-				if dx100dz > old_div(nx,2.0):
-					dx100dz = old_div(nx,2.0)
+				if dx100dz > nx/2.0:
+					dx100dz = nx/2.0
 		
 			'''#
 			#submicrograph width (the region at "equal/constant defocus" to tile) will be twice dx100dz  
@@ -2103,7 +2103,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 						if defocuserror:
 							defocuswiggley += defocuserror
 						
-						defocuswigglex = 2*math.fabs( -1*(micrographmiddle - old_div(img['nx'],2.0))*math.sin( math.radians(angle) ) * img['apix_x']/10000)
+						defocuswigglex = 2*math.fabs( -1*(micrographmiddle - img['nx']/2.0)*math.sin( math.radians(angle) ) * img['apix_x']/10000)
 						
 						defocuswiggle = defocuswigglex + defocuswiggley
 						
@@ -2203,7 +2203,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 					middef = imgdefocuses[0]
 					if len(imgdefocuses) > 2:
 						middef = imgdefocuses[old_div(len(imgdefocuses),2)]
-						defocuscalc = old_div((globaldefocus+middef),2.0)
+						defocuscalc = (globaldefocus+middef)/2.0
 					
 					
 										

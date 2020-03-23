@@ -675,8 +675,8 @@ def recentertilts( options, reprojections, originalseries, angles, it ):
 		score = ccf.get_value_at( maxloc[0], maxloc[1] )
 		scores2d.append( score )
 		
-		tx = -1 * ( old_div(nx,2.0) - maxloc[0])
-		ty = -1 * ( old_div(ny,2.0) - maxloc[1])
+		tx = -1 * ( nx/2.0 - maxloc[0])
+		ty = -1 * ( ny/2.0 - maxloc[1])
 		
 		dr = math.sqrt( tx*tx+ty*ty )
 		
@@ -694,7 +694,7 @@ def recentertilts( options, reprojections, originalseries, angles, it ):
 			xerror = float(tx) + float(oimg['spt_txerror'])
 			yerror = float(ty) + float(oimg['spt_tyerror'])
 			#error =  math.sqrt( xerror*xerror + yerror*yerror )/2.0
-			error = old_div(( math.fabs(xerror) + math.fabs(yerror) ),2.0)
+			error = ( math.fabs(xerror) + math.fabs(yerror) )/2.0
 			
 			if error:
 				errors.append(error)
