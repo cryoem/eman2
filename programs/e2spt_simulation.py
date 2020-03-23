@@ -616,7 +616,7 @@ def plotvals( options, vals, tag ):
 	meanvals = numpy.mean(vals)
 
 	cuberoot = numpy.power(len(vals),1.0/3.0)
-	width = old_div((3.5*sigmavals),cuberoot)
+	width = (3.5*sigmavals)/cuberoot
 	
 	#print "Therefore, according to Scott's normal reference rule, width = (3.5*std)/cuberoot(n), the width of the histogram bins will be", width
 	
@@ -892,7 +892,7 @@ class SubtomoSimTask(JSTask):
 			at least ptcl_size/2 away from it.
 			'''
 			if options.verbose > 1: print("\ncalculating px")
-			px = random.uniform( -1* options.gridholesize/2.0 + old_div( apix*image['nx']/2.0, 10000 ),  options.gridholesize/2.0  - old_div( apix*image['nx']/2.0,10000) )
+			px = random.uniform( -1* options.gridholesize/2.0 +  apix*image['nx']/2.0 / 10000 ,  options.gridholesize/2.0  -  apix*image['nx']/2.0/10000 )
 			if options.verbose > 1: print("\ndone calculating px")
 
 		pz=0
@@ -911,7 +911,7 @@ class SubtomoSimTask(JSTask):
 		
 			#pz = old_div(coordz*apix,10000) - old_div(options.icethickness,2)
 			if options.verbose > 1: print("\ncalculating pz")
-			pz = random.uniform( -1* options.icethickness/2.0 + old_div( apix*image['nx']/2.0, 10000 ), options.icethickness/2.0 - old_div( apix*image['nx']/2.0, 10000) )			
+			pz = random.uniform( -1* options.icethickness/2.0 +  apix*image['nx']/2.0 / 10000 , options.icethickness/2.0 -  apix*image['nx']/2.0 / 10000 )			
 			if options.verbose > 1: print("\ndone calculating px")
 
 		
@@ -922,10 +922,10 @@ class SubtomoSimTask(JSTask):
 		Convert coordz from pz into pixels; beware: its shifted by half the icethickness (the position of the midzplane)
 		'''
 		if options.verbose > 1: print("\nconverting coords to pixels")
-		coordx = int( round(  old_div(10000*(px + options.gridholesize/2.0), apix)))
+		coordx = int( round(  10000*(px + options.gridholesize/2.0) / apix))
 		coordy = random.randint(0 + old_div(image['nx'],2), int(round(old_div(options.gridholesize*10000,apix) - image['nx']/2.0 )) )									#random distance in Y of the particle's center from the bottom edge in the XY plane, at tilt=0
 		#coordz = int( round( old_div(image['nx'],2.0) ) )
-		coordz = int( round(  old_div(10000*(pz + options.icethickness/2.0), apix)))
+		coordz = int( round(  10000*(pz + options.icethickness/2.0) / apix))
 		if options.verbose > 1: print("\ndone converting coords to pixels")
 
 		if options.set2tiltaxis:

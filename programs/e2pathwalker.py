@@ -739,9 +739,9 @@ class PathWalker(object):
 			mpt=old_div(mpt,count)
 			#print mpt,
 			if mpt>self.mapthresh:
-				dst=old_div(self.mapthresh,(mpt+.0001))#mpt*10
+				dst=self.mapthresh/(mpt+.0001)#mpt*10
 			else:
-				dst=(old_div(self.mapthresh,(mpt+.0001)))*2
+				dst=(self.mapthresh/(mpt+.0001))*2
 			#w=w+dst*self.mrcweight
 			#dst=-mpt
 			w=w+dst*self.mrcweight

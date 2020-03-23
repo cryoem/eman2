@@ -211,7 +211,7 @@ so in most cases it is not dealt with.')
 		print('An Intel Xeon X5675 3.07Ghz SF ----------------------------------')
 		print('An Intel Core i7-3960X 3.3Ghz SF --------------------------------')
 
-	if not options.short: print('\nYour machines speed factor = %1.4f +- %1.4f (%1.4f +- %1.5f sec)\n' % (2.3/tms.mean(),2.3/tms.mean()-2.3/(tms.mean()+tms.std()),old_div(tms.mean(),(NTT-5.0)),old_div(tms.std(),(NTT-5.0))))
+	if not options.short: print('\nYour machines speed factor = %1.4f +- %1.4f (%1.4f +- %1.5f sec)\n' % (2.3/tms.mean(),2.3/tms.mean()-2.3/(tms.mean()+tms.std()),tms.mean()/(NTT-5.0),tms.std()/(NTT-5.0)))
 	
 	try:
 		for l in open("/proc/cpuinfo","r"):

@@ -1632,7 +1632,7 @@ def plothistogram(  options, scores ):
 	
 	cuberoot = numpy.power(len(scores),1.0/3.0)
 	#print "The cuberoot of n is", cuberoot
-	width = old_div((3.5*std),cuberoot)
+	width = (3.5*std)/cuberoot
 	print("\naccording to Scott's normal reference rule, width = (3.5*std)/cuberoot(n), the width of the histogram bins will be", width)
 	
 	calcbins = old_div((max(scores) - min(scores)), width)

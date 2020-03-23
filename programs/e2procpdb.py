@@ -278,7 +278,7 @@ def pdb_transform(t,lines,center=0,savetypes=["helix","sheet","other"],animorph=
 #			vecs[i]=[apix*(v[0]+v[3])/2,apix*(v[1]+v[4])/2,apix*(v[2]+v[5])/2,apix*(v[3]-v[0]),apix*(v[4]-v[1]),apix*(v[5]-v[2])]
 
 		for m in range(int(animorph[0])):
-			aw = old_div(m, (float(animorph[0]) - 1.0))
+			aw = m / (float(animorph[0]) - 1.0)
 			counter=0
 			for i in lines:
 				if (i[:6] == 'HEADER') : title = i[10:72].strip()
