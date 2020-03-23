@@ -306,7 +306,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 	# For "small" data, we target ~6 A/pix
 	resample1=6.0/options.apix
 	newbox=good_size(old_div(boxsize,resample1))
-	resample1=old_div(boxsize,(newbox+0.1))	# 0.1 is to prevent roundoff issues
+	resample1=boxsize/(newbox+0.1)	# 0.1 is to prevent roundoff issues
 	if resample1<1.0:
 		print("Warning: original particle A/pix is very large!")
 		resample1=1.0
@@ -316,7 +316,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 	# for "medium" data, we target ~2.6 A/pix
 	resample2=2.6/options.apix
 	newbox=good_size(old_div(boxsize,resample2))
-	resample2=old_div(boxsize,(newbox+0.1))
+	resample2=boxsize/(newbox+0.1)
 	if resample2<1.0:
 		if not options.lores : print("Warning: original sampling is too large for ideal midres resolution results. Suggest <=2.6 A/pix")
 		resample2=1.0
@@ -326,7 +326,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 	# for "low" second data, we target ~4 A/pix
 	resample3=4.0/options.apix
 	newbox=good_size(old_div(boxsize,resample3))
-	resample3=old_div(boxsize,(newbox+0.1))
+	resample3=boxsize/(newbox+0.1)
 	if resample3<1.0:
 		resample2=1.0
 	maskwid3=18.0/options.apix
@@ -339,7 +339,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 	# for "5" data, we target ~1.6 A/pix
 	resample5=1.6/options.apix
 	newbox=good_size(old_div(boxsize,resample2))
-	resample5=old_div(boxsize,(newbox+0.1))
+	resample5=boxsize/(newbox+0.1)
 	if resample5<1.0:
 		if not options.lores : print("Warning: original sampling is too large for ideal 5A resolution results. Suggest <=1.8 A/pix")
 		resample2=1.0

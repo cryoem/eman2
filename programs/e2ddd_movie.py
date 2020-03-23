@@ -1006,7 +1006,7 @@ def correlation_peak_model(x_y, xo, yo, sigma, amp):
 	if sigma <= 0: return np.ones_like(x)*np.inf
 	xo = float(xo)
 	yo = float(yo)
-	g = amp*np.exp(old_div(-(((x-xo)**2)+((y-yo)**2)),(2.*sigma**2)))
+	g = amp*np.exp(-(((x-xo)**2)+((y-yo)**2))/(2.*sigma**2))
 	return g.ravel()
 
 def fixedbg_peak_model(x_y, sigma, amp):
@@ -1014,16 +1014,16 @@ def fixedbg_peak_model(x_y, sigma, amp):
 	if sigma <= 0: return np.ones_like(x)*np.inf
 	xo = float(old_div(len(x),2))
 	yo = float(old_div(len(y),2))
-	g = amp*np.exp(old_div(-(((x-xo)**2)+((y-yo)**2)),(2.*sigma**2)))
+	g = amp*np.exp(-(((x-xo)**2)+((y-yo)**2))/(2.*sigma**2))
 	return g.ravel()
 
 def twod_bimodal(x_y,x1,y1,sig1,amp1,sig2,amp2,offset):
 	x, y = x_y
 	if sig1 <= 0 or sig2 <= 0: return np.ones_like(x)*np.inf #np.zeros_like(x)
 	#correlation_peak = correlation_peak_model((x,y),x1,y1,sig1,amp1)
-	cp = amp1*np.exp(old_div(-(((x-x1)**2+(y-y1)**2)),(2.*sig1**2)))
+	cp = amp1*np.exp(-(((x-x1)**2+(y-y1)**2))/(2.*sig1**2))
 	#fixedbg_peak = fixedbg_peak_model((x,y),sig2,amp2)
-	fp = amp2*np.exp(old_div(-(((x-len(x)/2.)**2+(y-len(y)/2.)**2)),(2.*sig2**2)))
+	fp = amp2*np.exp(-(((x-len(x)/2.)**2+(y-len(y)/2.)**2))/(2.*sig2**2))
 	return offset + cp.ravel() + fp.ravel() # + noise
 
 # def edgemean(a,xc,yc):

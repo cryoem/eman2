@@ -498,7 +498,7 @@ def class_average_withali(images,ptcl_info,xform,ref,focused,averager=("mean",{}
 		third=old_div(len(ssnr),3)
 		ssnr=[ssnr[third]]*4+ssnr[third:third*2]+[ssnr[third*2-1]]*4	# we extend the list by replication to make the running average more natural
 		ssnr=[sum(ssnr[i-4:i+5])/9.0 for i in range(4,third+4)]		# smoothing by running average
-		ssnr=[old_div(v,(1.0-min(v,.999999))) for v in ssnr]						# convert FSC to pseudo SSNR
+		ssnr=[v/(1.0-min(v,.999999)) for v in ssnr]						# convert FSC to pseudo SSNR
 		avg["class_ssnr"]=ssnr
 
 	# set some useful attributes

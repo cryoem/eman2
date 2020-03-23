@@ -647,7 +647,7 @@ def main():
 						ssnr=[old_div(sum([ssnr[k]*npnt[k] for k in range(j-4,j+5)]),sum([npnt[k] for k in range(j-4,j+5)])) for j in range(4,third+4)]			# smoothing by weighted running average
 					except:
 						ssnr=[0,0]
-					ssnr=[old_div(v,(1.0-min(v,.999999))) for v in ssnr]							# convert FSC to pseudo SSNR
+					ssnr=[v/(1.0-min(v,.999999)) for v in ssnr]							# convert FSC to pseudo SSNR
 					for x,v in enumerate(ssnr): out.write("{}\t{}\n".format(x,v))
 					out.close()
 				
@@ -716,7 +716,7 @@ def main():
 				# find the 0.143 crossing
 				for si in range(2,len(d[0])-2):
 					if d[1][si-1]>0.143 and d[1][si]<=0.143 :
-						frac=old_div((0.143-d[1][si]),(d[1][si-1]-d[1][si]))		# 1.0 if 0.143 at si-1, 0.0 if .143 at si
+						frac=(0.143-d[1][si])/(d[1][si-1]-d[1][si])		# 1.0 if 0.143 at si-1, 0.0 if .143 at si
 						lastres=d[0][si]*(1.0-frac)+d[0][si-1]*frac
 						try:
 							plt.annotate(r"{:1.1f} $\AA$".format(1.0/lastres),xy=(lastres,0.143),

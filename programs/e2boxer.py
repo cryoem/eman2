@@ -487,7 +487,7 @@ class boxerByRef(QtCore.QObject):
 		final.add(-final["mean"]) 
 		# Now pull out only local peaks
 		# Zero edges to eliminate boxes within 1/2 box size of edge
-		edge=int(old_div(goodrefs[0]["nx"],(2.0*downsample))+0.5)
+		edge=int(goodrefs[0]["nx"]/(2.0*downsample)+0.5)
 		final.mult(norm)
 		final.write_image("final.hdf",0)
 		final.process_inplace("mask.zeroedge2d",{"x0":edge,"y0":edge})
@@ -652,7 +652,7 @@ class boxerLocal(QtCore.QObject):
 #		final.add(-final["mean"]) 
 		# Now pull out only local peaks
 		# Zero edges to eliminate boxes within 1/2 box size of edge
-		edge=int(old_div(goodrefs[0]["nx"],(2.0*downsample))+0.5)
+		edge=int(goodrefs[0]["nx"]/(2.0*downsample)+0.5)
 		#final.mult(norm)
 		final.process_inplace("mask.zeroedge2d",{"x0":edge,"y0":edge})
 		final.process_inplace("mask.onlypeaks",{"npeaks":0,"usemean":0})

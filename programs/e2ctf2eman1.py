@@ -298,11 +298,11 @@ def getnoise( bg, ps, ds, parm_min, parm_max, s_min, s_max ) :
 	
 	# Set boundaries for computing noise curve
 	if s_min > 0. :
-		i0 = min( int( old_div(( 1. / s_min ), ds) ), len( ps ) - 2 )
+		i0 = min( int( ( 1. / s_min ) / ds ), len( ps ) - 2 )
 	else :
 		i0 = 1
 	if s_max > s_min :
-		i1 = min( int( old_div(( 1. / s_max ), ds) ), len( ps ) - 2 )
+		i1 = min( int( ( 1. / s_max ) / ds ), len( ps ) - 2 )
 	else :
 		i1 = min( int( 0.20 / ds ), len( ps ) - 2 )
 	
@@ -336,16 +336,16 @@ def getnoise( bg, ps, ds, parm_min, parm_max, s_min, s_max ) :
 		if len( sd ) > 0 :
 			sd.sort( )
 			parm = [ sd[0][1], sd[0][2], sd[0][3], sd[0][4] ]
-			dparm = old_div(( parm_max[0] - parm_min[0] ), ( 1.5 * float( c ) ))
+			dparm = ( parm_max[0] - parm_min[0] ) / ( 1.5 * float( c ) )
 			parm_min[0] = parm[0] - dparm
 			parm_max[0] = parm[0] + dparm
-			dparm = old_div(( parm_max[1] - parm_min[1] ), ( 1.5 * float( c ) ))
+			dparm = ( parm_max[1] - parm_min[1] ) / ( 1.5 * float( c ) )
 			parm_min[1] = parm[1] - dparm
 			parm_max[1] = parm[1] + dparm
-			dparm = old_div(( parm_max[2] - parm_min[2] ), ( 1.5 * float( c ) ))
+			dparm = ( parm_max[2] - parm_min[2] ) / ( 1.5 * float( c ) )
 			parm_min[2] = parm[2] - dparm
 			parm_max[2] = parm[2] + dparm
-			dparm = old_div(( parm_max[3] - parm_min[3] ), ( 1.5 * float( c ) ))
+			dparm = ( parm_max[3] - parm_min[3] ) / ( 1.5 * float( c ) )
 			parm_min[3] = parm[3] - dparm
 			parm_max[3] = parm[3] + dparm
 		else :
