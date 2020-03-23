@@ -627,7 +627,7 @@ class LeNetConvPoolLayer(object):
 		#   pooling size
 		fan_out = old_div(filter_shape[0] * np.prod(filter_shape[2:]), np.prod(poolsize))
 		# initialize weights with random weights
-		W_bound = np.sqrt(old_div(6., (fan_in + fan_out)))
+		W_bound = np.sqrt(6. / (fan_in + fan_out))
 		self.W = theano.shared(
 			np.asarray(
 				rng.uniform(low=-W_bound, high=W_bound, size=filter_shape),

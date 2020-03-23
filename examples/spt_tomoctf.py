@@ -24,15 +24,15 @@ def calc_ctf(defocus, bxsz=256, voltage=300, cs=4.7, apix=1. ,ampcnt=0.):
 
 
 	b2=old_div(bxsz,2)
-	ds=old_div(1.0,(apix*bxsz))
-	ns=min(int(floor(old_div(.25,ds))),old_div(bxsz,2))
+	ds=1.0/(apix*bxsz)
+	ns=min(int(floor(.25/ds)),old_div(bxsz,2))
 
 	ctfout=np.zeros(b2)
-	lbda = old_div(12.2639, np.sqrt(voltage * 1000.0 + 0.97845 * voltage * voltage))
+	lbda = 12.2639 / np.sqrt(voltage * 1000.0 + 0.97845 * voltage * voltage)
 
 	g1=np.pi/2.0*cs*1.0e7*pow(lbda,3.0);  
 	g2=np.pi*lbda*defocus*10000.0;		 
-	acac=np.arccos(old_div(ampcnt,100.0));				 
+	acac=np.arccos(ampcnt/100.0);				 
 
 	s=np.arange(b2, dtype=float)*ds
 	gam=-g1*(s**4)+np.asarray(np.dot(np.asmatrix(g2).T, np.matrix(s**2)))
@@ -86,7 +86,7 @@ def calc_defocus_onetlt(args):
 	ang=tlts[imgi]
 	rawimg=EMData(options.alifile, 0, False, Region(0,0,imgi,options.nx,options.ny,1))
 	apix=rawimg["apix_x"]
-	centerx=old_div(rawimg["nx"],2.)
+	centerx=rawimg["nx"]/2.
 	tilex=(old_div((np.arange(stepx+1,dtype=float)),(stepx))*(rawimg["nx"]-bxsz)).astype(int)+old_div(bxsz,2)
 	scrtlt=[]
 	

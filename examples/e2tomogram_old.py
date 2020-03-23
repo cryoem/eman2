@@ -271,7 +271,7 @@ def main():
 					a=dct[(x,y)]
 					b=dct[(-x,-y)]
 					if hypot(a[3]-b[3],a[4]-b[4])>7.0 : continue
-					pairs.append((x,y,old_div((a[3]+b[3]),2.0),old_div((a[4]+b[4]),2.0),hypot(a[3]-b[3],a[4]-b[4])))
+					pairs.append((x,y,(a[3]+b[3])/2.0,(a[4]+b[4])/2.0,hypot(a[3]-b[3],a[4]-b[4])))
 #					print "%d,%d\t%5.2f %5.2f\t%5.2f"%(pairs[-1][0],pairs[-1][1],pairs[-1][2],pairs[-1][3],pairs[-1][4])
 			
 			if len(pairs)==0 : 
@@ -285,9 +285,9 @@ def main():
 				sum=[0,0]
 				norm=0
 				for p in pairs:
-					sum[0]+=p[2]*(old_div(1.0,(1.0+p[4])))
-					sum[1]+=p[3]*(old_div(1.0,(1.0+p[4])))
-					norm+=(old_div(1.0,(1.0+p[4])))
+					sum[0]+=p[2]*(1.0/(1.0+p[4]))
+					sum[1]+=p[3]*(1.0/(1.0+p[4]))
+					norm+=(1.0/(1.0+p[4]))
 				best=(old_div(sum[0],norm),old_div(sum[1],norm))
 
 				# now do it again, but exclude any outliers from the average
@@ -295,9 +295,9 @@ def main():
 				norm=0
 				for p in pairs:
 					if hypot(p[2]-best[0],p[3]-best[1])>5.0 :continue
-					sum[0]+=p[2]*(old_div(1.0,(1.0+p[4])))
-					sum[1]+=p[3]*(old_div(1.0,(1.0+p[4])))
-					norm+=(old_div(1.0,(1.0+p[4])))
+					sum[0]+=p[2]*(1.0/(1.0+p[4]))
+					sum[1]+=p[3]*(1.0/(1.0+p[4]))
+					norm+=(1.0/(1.0+p[4]))
 					best=(old_div(sum[0],norm),old_div(sum[1],norm))
 					
 		print("%d.\t%5.2f\t%5.2f"%(i[1],best[0],best[1]))

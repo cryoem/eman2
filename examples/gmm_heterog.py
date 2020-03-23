@@ -134,7 +134,7 @@ def make3d(ptcl_file, options, allconf):
 	except: pass
 	lstin=LSXFile(ptcl_file, True)
 	mvlen=np.std(allconf)
-	stepsz=old_div(mvlen,(old_div((options.nframe-1),2.)))
+	stepsz=old_div(mvlen,((options.nframe-1)/2.))
 	framepos=np.arange(-mvlen,mvlen+.1, stepsz)+np.mean(allconf)
 	print("Motion steps : Number of particles")
 	winsz=stepsz*.6
@@ -243,7 +243,7 @@ def calc_motion(ballrec, options, grad, glst=None):
 	get_map=theano.function([], ballrec.map3d)
 	ballrec.movvec.set_value(vec)
 	mvlen=3.
-	pp=np.arange(-mvlen,mvlen+.1, old_div(mvlen,(old_div((options.nframe-1),2.))))
+	pp=np.arange(-mvlen,mvlen+.1, old_div(mvlen,((options.nframe-1)/2.)))
 	pp=pp.astype(theano.config.floatX)
 	print("Motion steps are ",pp)
 	mpsave=os.path.join(options.path,"motion_model1.hdf")
@@ -543,7 +543,7 @@ class BallsReconstruction(object):
 		self.map_update_p=[(ballzero,ballzero-map_grad_p*learnrate)]
 		
 		### make rotation matrix
-		azp=ang[2]+old_div(3.14,2)
+		azp=ang[2]+3.14/2
 		altp=3.14-ang[1]
 		phip=6.28-ang[0]
 

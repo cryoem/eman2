@@ -144,7 +144,7 @@ def main():
 					ptcl.process_inplace('threshold.belowtozero',{'minval':options.threshold})
 				if options.filter == 'bandpass':
 					apix = ptcl.get_attr('ctf').apix
-					sigma = old_div(ptcl.get_attr('sigma'), 20.0)
+					sigma = ptcl.get_attr('sigma') / 20.0
 					ptcl.process_inplace('filter.bandpass.gauss',{'apix':apix,'center':0.0,'cutoff_abs':0.005,'sigma':sigma})
 					ptcl.process_inplace('mask.soft',{'outer_radius': -0.20 * ptcl['nx']})
 
@@ -196,7 +196,7 @@ def main():
 			centered = orig.copy()
 
 			#mu = np.mean(parr.nonzero(),axis=1) # rough geometric center
-			mu = old_div((np.max(parr.nonzero(),axis=1) + np.min(parr.nonzero(),axis=1)),2.)
+			mu = (np.max(parr.nonzero(),axis=1) + np.min(parr.nonzero(),axis=1))/2.
 
 			tx = -(mu[1] - nx)
 			ty = -(mu[0] - nx)

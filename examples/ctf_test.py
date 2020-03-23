@@ -14,7 +14,7 @@ ctf.ampcont=10.0
 ctf.apix=2.0
 ctf.bfactor=100.0
 
-ds=old_div(1.0,(ctf.apix*2*256))
+ds=1.0/(ctf.apix*2*256)
 s=arange(0,ds*256,ds)
 ctf.dsbg=ds
 ctf.background=[.1]*364

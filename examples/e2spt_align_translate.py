@@ -151,7 +151,7 @@ def main():
 		if options.maxshift:
 			#print("\n!!!!")
 			#ccf = ccf.process('mask.sharp',{'outer_radius':options.maxshift})
-			masklength = old_div(boxsize,2.0) - options.maxshift
+			masklength = boxsize/2.0 - options.maxshift
 
 			#print('\nboxsize={}, options.maskshift={}, therefore masklength={}'.format(boxsize,options.maxshift,masklength))
 			ccf = ccf.process('mask.zeroedge3d',{'x0':masklength,'x1':masklength,'y0':masklength,'y1':masklength,'z0':masklength,'z1':masklength})
@@ -162,9 +162,9 @@ def main():
 		loc = ccf.calc_max_location()
 		score = ccf.get_value_at(loc[0],loc[1],loc[2])
 
-		tx = loc[0] - old_div(boxsize,2.0)
-		ty = loc[1] - old_div(boxsize,2.0)
-		tz = loc[2] - old_div(boxsize,2.0)
+		tx = loc[0] - boxsize/2.0
+		ty = loc[1] - boxsize/2.0
+		tz = loc[2] - boxsize/2.0
 		if options.verbose:
 			print('\ntx={},ty={},tz={}'.format(tx,ty,tz))
 		

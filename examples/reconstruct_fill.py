@@ -21,7 +21,7 @@ sym_object=parsesym("c1")
 #nslices=[16,32,64,128,256,512,1024,2048,4096]
 angs=[4,5,6,9,10,12,15,18,20,24,30,36,45]
 for da in angs:
-	eulers = sym_object.gen_orientations("eman",{"delta":old_div(90.0,da),"perturb":True})
+	eulers = sym_object.gen_orientations("eman",{"delta":90.0/da,"perturb":True})
 	sl=len(eulers)
 	
 	recon.setup()
@@ -33,7 +33,7 @@ for da in angs:
 	final=recon.finish(True)
 
 	img=EMData("test.hdf",0)
-	os.rename ("test.hdf","test.{:1.1f}.hdf".format(old_div(90.0,da)))
+	os.rename ("test.hdf","test.{:1.1f}.hdf".format(90.0/da))
 	
 	r1=[0]*(old_div(size,2))
 	r2=[0]*(old_div(size,2))

@@ -312,7 +312,7 @@ def func_refrandphase(options,klassidref,klassnum):
 		ref['apix_z'] = options.apix
 	
 	if int(options.refrandphase) > 0:
-		filterfreq =  old_div(1.0,float( options.refrandphase ))
+		filterfreq =  1.0/float( options.refrandphase )
 		ref.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":filterfreq,"apix":ref['apix_x']})
 				
 		refrandphfile = options.path + '/' + os.path.basename( options.ref ).replace('.hdf','_randPH' + klassidref +'.hdf')

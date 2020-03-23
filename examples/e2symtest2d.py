@@ -13,7 +13,7 @@ resulty=[]
 for i in range(2,30):
 	csum=0
 	n=0
-	for ang in arange(old_div(360.0,i),360.0,old_div(360.0,i)):
+	for ang in arange(360.0/i,360.0,360.0/i):
 		imc=img.copy()
 		imc.rotate(ang,0,0)
 #		display((imc,img))

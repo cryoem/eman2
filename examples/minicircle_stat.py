@@ -58,7 +58,7 @@ for pf in sorted(sys.argv[1:]):
 		continue
 	#print eigvv[0]
 	#print eigvv[1]
-	eig=[(old_div(1.0,eigvv[0][i]),eigvv[1][:,i]) for i in range(3)]  # extract for sorting
+	eig=[(1.0/eigvv[0][i],eigvv[1][:,i]) for i in range(3)]  # extract for sorting
 	#eig=sorted(eig,reverse=True)		# now eig is sorted in order from major to minor axes
 	eig=sorted(eig)		# now eig is sorted in order from major to minor axes
 	T=array([eig[0][1],eig[1][1],eig[2][1]])            # reassemble sorted matrix

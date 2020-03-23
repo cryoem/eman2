@@ -529,7 +529,7 @@ def calcbins(options,data):
 		print("ERROR: std={}, which means all data values are the same.".format(std))
 		sys.exit()
 		
-	cuberoot = np.power(len(data),old_div(1.0,3.0))
+	cuberoot = np.power(len(data),1.0/3.0)
 	#print "The cuberoot of n is", cuberoot
 	width = old_div((3.5*std),cuberoot)
 	print("Therefore, according to Scott's normal reference rule, width = (3.5*std)/cuberoot(n), the width of the histogram bins will be", width)

@@ -550,7 +550,7 @@ def main():
 		cmpdic={}
 		for i in range(20):
 			for j in range(20):
-				cmpdic[(lkup[i], lkup[j])]=(old_div((19.-abs(i-j)),20.))
+				cmpdic[(lkup[i], lkup[j])]=((19.-abs(i-j))/20.)
 
 
 

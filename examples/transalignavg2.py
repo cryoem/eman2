@@ -57,7 +57,7 @@ for i in range(2):
 			im=im.get_clip(Region(old_div(-(nx-im["nx"]),2),old_div(-(ny-im["ny"]),2),nx,ny))
 	
 		im.write_image("seq.hdf",-1)
-		ima=im.align("translational",ref0,{"nozero":1,"maxshift":old_div(ref0["nx"],4.0)},"ccc",{})
+		ima=im.align("translational",ref0,{"nozero":1,"maxshift":ref0["nx"]/4.0},"ccc",{})
 		ima.write_image("seq.hdf",-1)
 		print(fsp,ima["xform.align2d"],ima.cmp("ccc",ref0))
 		ima.process_inplace("normalize.toimage",{"to":ref0,"ignore_zero":1})

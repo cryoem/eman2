@@ -517,7 +517,7 @@ class MovieModeAligner(object):
 			dark=a.finish()
 			sigd.write_image(options.dark.rsplit(".",1)[0]+"_sig.hdf")
 			if options.fixbadpixels:
-				sigd.process_inplace("threshold.binary",{"value":old_div(sigd["sigma"],10.0)})  # Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
+				sigd.process_inplace("threshold.binary",{"value":sigd["sigma"]/10.0})  # Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
 				dark.mult(sigd)
 			dark.write_image(options.dark.rsplit(".",1)[0]+"_sum.hdf")
 		dark.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
@@ -548,14 +548,14 @@ class MovieModeAligner(object):
 				a.add_image(t)
 			gain=a.finish()
 			sigg.write_image(options.gain.rsplit(".",1)[0]+"_sig.hdf")
-			if options.fixbadpixels: sigg.process_inplace("threshold.binary",{"value":old_div(sigg["sigma"],10.0)})	# Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
+			if options.fixbadpixels: sigg.process_inplace("threshold.binary",{"value":sigg["sigma"]/10.0})	# Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
 			if dark!=None:
 				sigd=EMData(options.dark.rsplit(".",1)[0]+"_sig.hdf",0,False)
 				sigg.mult(sigd)
 			gain.mult(sigg)
 			gain.write_image(options.gain.rsplit(".",1)[0]+"_sum.hdf")
 		if dark!=None : gain.sub(dark)	# dark correct the gain-reference
-		gain.mult(old_div(1.0,gain["mean"]))	 # normalize so gain reference on average multiplies by 1.0
+		gain.mult(1.0/gain["mean"])	 # normalize so gain reference on average multiplies by 1.0
 		gain.process_inplace("math.reciprocal",{"zero_to":0.0})	 # setting zero values to zero helps identify bad pixels
 		return gain
 

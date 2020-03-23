@@ -13,6 +13,6 @@ for i in argv[2:]:
 	im=EMData(i,0)
 	av.add(im)
 
-av.mult(old_div(1.0,(len(argv)-1)))
+av.mult(1.0/(len(argv)-1))
 av.write_image("average.hdf",0)
 

@@ -364,7 +364,7 @@ class TrackerControl(QtWidgets.QWidget):
 		for i in range(self.imageparm["nz"]):
 			refshape=self.tiltshapes[i].getShape()
 			img=EMData(self.imagefile,0,False,Region(refshape[4],refshape[5],i,refshape[6]-refshape[4],refshape[7]-refshape[5],1))
-			img["ptcl_source_coord"]=(int(old_div((refshape[6]+refshape[4]),2.0)),int(old_div((refshape[7]+refshape[5]),2.0)),i)
+			img["ptcl_source_coord"]=(int((refshape[6]+refshape[4])/2.0),int((refshape[7]+refshape[5])/2.0),i)
 			img["ptcl_source_image"]=str(self.imagefile)
 			if self.invert : img.mult(-1.0)
 			img.process_inplace("normalize.edgemean")
@@ -413,16 +413,16 @@ class TrackerControl(QtWidgets.QWidget):
 		av=stack[0].copy()
 		for p in stack[1:]: av+=p
 		av.del_attr("xform.projection")
-		av.mult(old_div(1.0,(len(stack))))
+		av.mult(1.0/(len(stack)))
 		av=av.get_clip(Region(old_div(-(pad-boxsize),2),old_div(-(pad-boxsize),2),pad,pad))
 		
 		for i,p in enumerate(stack) : 
 			p["alt"]=(i-old_div(len(stack),2))*angstep
 		
 		# Determine a good angular step for filling Fourier space
-		fullsamp=old_div(360.0,(boxsize*pi))
+		fullsamp=360.0/(boxsize*pi)
 		if old_div(angstep,fullsamp)>2.0 :
-			samp=old_div(1.0,(floor(old_div(angstep,fullsamp))))
+			samp=1.0/(floor(old_div(angstep,fullsamp)))
 		else :
 			samp=angstep
 		
@@ -434,7 +434,7 @@ class TrackerControl(QtWidgets.QWidget):
 		
 		for ri in range(5):
 			print("Iteration ",ri)
-			for a in [i*samp for i in range(-int(old_div(90.0,samp)),int(old_div(90.0,samp))+1)]:
+			for a in [i*samp for i in range(-int(90.0/samp),int(90.0/samp)+1)]:
 				for ii in range(len(stack)-1):
 					if stack[ii]["alt"]<=a and stack[ii+1]["alt"]>a : break
 				else: ii=-1
@@ -485,7 +485,7 @@ class TrackerControl(QtWidgets.QWidget):
 		av=stack[0].copy()
 		for p in stack[1:]: av+=p
 		av.del_attr("xform.projection")
-		p.mult(old_div(1.0,len(stack)))
+		p.mult(1.0/len(stack))
 		av=av.get_clip(Region(old_div(-(pad-boxsize),2),old_div(-(pad-boxsize),2),pad,pad))
 
 		recon=Reconstructors.get("fourier", {"quiet":True,"sym":"c1","x_in":pad,"y_in":pad})
