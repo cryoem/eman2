@@ -947,7 +947,7 @@ def plot_image_similarity(im1,im2,skipzero=True,skipnearzero=False):
 	s2=im2["sigma"]
 	for i in range(n):
 		if skipzero and (im1[i]==0 or im2[i]==0) : continue
-		if skipnearzero and (fabs(im1[i])<old_div(s1,10.0) or fabs(im2[i])<old_div(s2,10.0)) : continue
+		if skipnearzero and (fabs(im1[i])<s1/10.0 or fabs(im2[i])<s2/10.0) : continue
 		x.append(im1[i])
 		y.append(im2[i])
 
@@ -972,7 +972,7 @@ def plot(data,data2=None,data3=None,show=1,size=(800,600),path="plot.png"):
 		import matplotlib
 		matplotlib.use('Agg')
 		import pylab
-		pylab.figure(figsize=(old_div(size[0],72.0),old_div(size[1],72.0)),dpi=72)
+		pylab.figure(figsize=(size[0]/72.0,size[1]/72.0),dpi=72)
 		if isinstance(data,EMData) :
 			a=[]
 			for i in range(data.get_xsize()):
@@ -1097,10 +1097,10 @@ def memory_stats():
 			a = f.readlines()
 			mt = a[0].split()
 			if mt[0] == "MemTotal:":
-				mem_total = old_div(float(mt[1]),1000000.0)
+				mem_total = float(mt[1])/1000000.0
 			ma = a[1].split()
 			if ma[0] == "MemFree:":
-				mem_avail = old_div(float(ma[1]),1000000.0)
+				mem_avail = float(ma[1])/1000000.0
 		except:
 			pass
 
@@ -1113,7 +1113,7 @@ def memory_stats():
 			total_len = len("hw.memsize")
 			if total_strings[0][:total_len] == "hw.memsize":
 				try:
-					mem_total = old_div(float(total_strings[1]),1000000000.0) # on Mac the output value is in bytes, not kilobytes (as in Linux)
+					mem_total = float(total_strings[1])/1000000000.0 # on Mac the output value is in bytes, not kilobytes (as in Linux)
 				except:pass # mem_total is just -1
 
 		used_strings = output_used.split()
@@ -1122,7 +1122,7 @@ def memory_stats():
 			used_len = len("hw.usermem")
 			if used_strings[0][:used_len] == "hw.usermem":
 				try:
-					mem_used = old_div(float(used_strings[1]),1000000000.0) # on Mac the output value is in bytes, not kilobytes (as in Linux)
+					mem_used = float(used_strings[1])/1000000000.0 # on Mac the output value is in bytes, not kilobytes (as in Linux)
 				except:pass # mem_used is just -1
 
 		if mem_used != -1 and mem_total != -1:
@@ -1693,7 +1693,7 @@ number of subimages"""
 
 	for x in range(n_array[0]):
 		for y in range(n_array[1]):
-			out.insert_clip(subim,(old_div(size[0],2)+int((x-old_div(n_array[0],2.0))*subim.get_xsize()),old_div(size[1],2)+int((y-old_div(n_array[1],2.0))*subim.get_ysize())))
+			out.insert_clip(subim,(old_div(size[0],2)+int((x-n_array[0]/2.0)*subim.get_xsize()),old_div(size[1],2)+int((y-n_array[1]/2.0)*subim.get_ysize())))
 
 	return out
 
@@ -1791,23 +1791,23 @@ def test_image_3d(type=0,size=(128,128,128)):
 	elif type==1:
 		tmp = EMData()
 		tmp.set_size(*size)
-		tmp.process_inplace("testimage.sphericalwave",{"wavelength":old_div(size[0],7.0),"phase":0})
+		tmp.process_inplace("testimage.sphericalwave",{"wavelength":size[0]/7.0,"phase":0})
 
 		a = tmp.copy()
-		a.translate(old_div(size[0],7.0),old_div(size[1],7.0),0)
-		ret.process_inplace("testimage.sphericalwave",{"wavelength":old_div(size[0],11.0),"phase":0})
+		a.translate(size[0]/7.0,size[1]/7.0,0)
+		ret.process_inplace("testimage.sphericalwave",{"wavelength":size[0]/11.0,"phase":0})
 		ret.add(a)
 
 		a = tmp.copy()
-		a.translate(old_div(-size[0],7.0),old_div(size[1],7.0),0)
+		a.translate(-size[0]/7.0,size[1]/7.0,0)
 		ret.add(a)
 
 		a = tmp.copy()
-		a.translate(old_div(-size[0],7.0),old_div(-size[1],7.0),0)
+		a.translate(-size[0]/7.0,-size[1]/7.0,0)
 		ret.add(a)
 
 		a = tmp.copy()
-		a.translate(old_div(size[0],7.0),old_div(-size[1],7.0),0)
+		a.translate(size[0]/7.0,-size[1]/7.0,0)
 		ret.add(a)
 
 		ret.process_inplace("normalize")
@@ -1838,7 +1838,7 @@ def test_image_3d(type=0,size=(128,128,128)):
 		ret.process_inplace("testimage.ellipsoid",{"a":old_div(size[0],16),"b":old_div(size[1],2),"c":old_div(size[2],16),"transform":t,"fill":0})
 
 		t = Transform({"type":"eman","alt":-45})
-		t.set_trans(old_div(size[0],8),old_div(-size[1],3.5))
+		t.set_trans(old_div(size[0],8),-size[1]/3.5)
 		ret.process_inplace("testimage.ellipsoid",{"a":old_div(size[0],16),"b":old_div(size[1],2),"c":old_div(size[2],16),"transform":t,"fill":0})
 
 	elif type==6 :

@@ -260,7 +260,7 @@ class Box(object):
 		else:
 			#print "incorrect"
 			if self.smallimage == None:
-				gaussh_param = old_div(1.0,(self.xsize))
+				gaussh_param = 1.0/(self.xsize)
 				template_min = 15
 				frequency_cutoff = 0.5*subsample_rate
 				
@@ -420,8 +420,8 @@ class Box(object):
 		ny = self.get_box_image().get_ysize()
 		smally = old_div(int(ny),shrink)
 			
-		difx = int(shrink*int(old_div(smallx,2.0)+0.5)-int(old_div(nx,2.0)+0.5))
-		dify = int(shrink*int(old_div(smally,2.0)+0.5)-int(old_div(ny,2.0)+0.5))
+		difx = int(shrink*int(smallx/2.0+0.5)-int(nx/2.0+0.5))
+		dify = int(shrink*int(smally/2.0+0.5)-int(ny/2.0+0.5))
 		self.xcorner += difx
 		self.ycorner += dify
 		
@@ -465,8 +465,8 @@ class Box(object):
 		
 
 		# the central coordinates of the box in terms of the shrunken correlation image
-		x = (self.xcorner+old_div(self.xsize,2.0))*invshrink
-		y = (self.ycorner+old_div(self.ysize,2.0))*invshrink
+		x = (self.xcorner+self.xsize/2.0)*invshrink
+		y = (self.ycorner+self.ysize/2.0)*invshrink
 		
 		#the search radius is used in correlation space - it limits the radial distance
 		# up to which 'profile' data can be accrued
@@ -495,8 +495,8 @@ class Box(object):
 		self.opt_profile = BoxingTools.get_min_delta_profile(correlation,self.corx,self.cory, searchradius )
 		# center on the correlation peak
 		if (center):
-			self.xcorner = self.corx*shrink-old_div(self.xsize,2.0)
-			self.ycorner = self.cory*shrink-old_div(self.ysize,2.0)
+			self.xcorner = self.corx*shrink-self.xsize/2.0
+			self.ycorner = self.cory*shrink-self.ysize/2.0
 			self.changed = True
 		
 		return 1
@@ -1765,13 +1765,13 @@ class Boxable(object):
 			if verbose: print("writing",self.num_boxes(),"box coordinates to file",boxname)
 			
 			
-			invshrink = old_div(1.0,self.get_subsample_rate())
+			invshrink = 1.0/self.get_subsample_rate()
 			exclusionimage = self.get_exclusion_image()
 			
 			
 			for box in self.boxes:
-				x = int((box.xcorner+old_div(box.xsize,2.0))*invshrink)
-				y = int((box.ycorner+old_div(box.ysize,2.0))*invshrink)
+				x = int((box.xcorner+box.xsize/2.0)*invshrink)
+				y = int((box.ycorner+box.ysize/2.0)*invshrink)
 				
 				if ( exclusionimage.get(x,y) != 0):
 #					print "excluded"
@@ -1857,12 +1857,12 @@ class Boxable(object):
 			if verbose:	print("writing",self.num_boxes(),"boxed images to", image_name)
 			
 
-			invshrink = old_div(1.0,self.get_subsample_rate())
+			invshrink = 1.0/self.get_subsample_rate()
 			exclusionimage = self.get_exclusion_image()
 						
 			for box in self.boxes:
-				x = int((box.xcorner+old_div(box.xsize,2.0))*invshrink)
-				y = int((box.ycorner+old_div(box.ysize,2.0))*invshrink)
+				x = int((box.xcorner+box.xsize/2.0)*invshrink)
+				y = int((box.ycorner+box.ysize/2.0)*invshrink)
 				
 				if ( exclusionimage.get(x,y) != 0):
 #					print "excluded",x,y,invshrink
@@ -2115,13 +2115,13 @@ class Boxable(object):
 	def update_included_boxes(self):
 		added_boxes = []
 		added_ref_boxes = []
-		invshrink = old_div(1.0,self.get_subsample_rate())
+		invshrink = 1.0/self.get_subsample_rate()
 		exclusionimage = self.get_exclusion_image()
 		n = len(self.deleted_auto_boxes)
 		for i in range(n-1,-1,-1):
 			box = self.deleted_auto_boxes[i]
-			x = int((box.xcorner+old_div(box.xsize,2.0))*invshrink)
-			y = int((box.ycorner+old_div(box.ysize,2.0))*invshrink)
+			x = int((box.xcorner+box.xsize/2.0)*invshrink)
+			y = int((box.ycorner+box.ysize/2.0)*invshrink)
 			
 			if ( exclusionimage.get(x,y) == 0):
 				box.changed = True
@@ -2159,13 +2159,13 @@ class Boxable(object):
 
 		lostboxes = []
 			
-		invshrink = old_div(1.0,self.get_subsample_rate())
+		invshrink = 1.0/self.get_subsample_rate()
 		n = len(self.boxes)
 		refs = []
 		for i in range(n-1,-1,-1):
 			box = self.boxes[i]
-			x = int((box.xcorner+old_div(box.xsize,2.0))*invshrink)
-			y = int((box.ycorner+old_div(box.ysize,2.0))*invshrink)
+			x = int((box.xcorner+box.xsize/2.0)*invshrink)
+			y = int((box.ycorner+box.ysize/2.0)*invshrink)
 			
 			if ( exclusionimage.get(x,y) != 0):
 				lostboxes.append(i)
@@ -2622,7 +2622,7 @@ class SwarmTemplate(Template):
 			ave.add(images_copy[i])
 		
 		#ave.write_image("prealigned.hdf")
-		ave.mult(old_div(1.0,len(images_copy)))
+		ave.mult(1.0/len(images_copy))
 		ave.process_inplace("xform.centeracf")
 		ave.process_inplace("math.rotationalaverage")
 		ave.process_inplace("normalize")
@@ -2668,7 +2668,7 @@ class SwarmTemplate(Template):
 			for i in range(1,len(images_copy)):
 				ave.add(t[i])
 				
-			ave.mult(old_div(1.0,len(t)))
+			ave.mult(1.0/len(t))
 			ave.process_inplace("xform.centeracf")
 			ave.process_inplace("math.rotationalaverage")
 			ave.process_inplace("normalize")
@@ -4001,7 +4001,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		oldy = template.get_ysize()
 		
 		scale = old_div(float(newx),float(oldx))
-		new_center = [old_div(newx,2.0),old_div(newy,2.0)]
+		new_center = [newx/2.0,newy/2.0]
 		scale_center = [scale*oldx/2.0,scale*oldy/2.0]
 
 		template.clip_inplace(Region(old_div((oldx-newx),2),old_div((oldy-newy),2),newx,newy))
