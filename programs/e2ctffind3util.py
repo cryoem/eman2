@@ -33,7 +33,6 @@
 # ... which Stephen apparently never finished
 # 3/28/16 - completing it ... steve
 
-from past.utils import old_div
 from EMAN2 import *
 from EMAN2star import StarFile
 from math import *

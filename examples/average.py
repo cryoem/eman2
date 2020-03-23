@@ -4,7 +4,6 @@
 ### will produce average.hdf
 ### All inputs must have the same dimensions
 
-from past.utils import old_div
 from EMAN2 import *
 from sys import argv
 

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # Muyuan Chen 2016-03
 # Look for holes in a 3d density map
-from past.utils import old_div
 from EMAN2 import *
 import numpy as np
 import scipy.ndimage as ndimage

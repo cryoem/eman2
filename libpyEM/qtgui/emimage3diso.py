@@ -31,7 +31,6 @@
 #
 #
 
-from past.utils import old_div
 from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
 from PyQt5.QtCore import Qt
 import OpenGL

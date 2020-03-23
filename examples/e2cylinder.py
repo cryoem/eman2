@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from past.utils import old_div
 '''
 ====================
 Author: Jesus Galaz - 02/March/2013, Last update: 2/August/2018

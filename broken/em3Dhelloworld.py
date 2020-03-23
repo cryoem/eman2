@@ -31,7 +31,6 @@
 #
 #
 
-from past.utils import old_div
 from builtins import range
 from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
 import OpenGL

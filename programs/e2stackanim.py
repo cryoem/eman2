@@ -34,7 +34,6 @@
 # This program will convert a 2D image stack into a GIF animation
 
 
-from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from math import *

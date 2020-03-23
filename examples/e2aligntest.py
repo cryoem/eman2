@@ -34,7 +34,6 @@
 # This program is used to generate various alignment test images
 
 
-from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from optparse import OptionParser
