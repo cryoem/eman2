@@ -869,7 +869,7 @@ class TestSymmetry(unittest.TestCase):
 		syms.append(Symmetries.get("c",{"nsym":12}))
 		for sym in syms:
 			n = sym.get_nsym()
-			azmax = old_div(360.0,n)
+			azmax = 360.0/n
 			eulers = sym.gen_orientations("eman",{"delta":12})
 			for euler in eulers:
 				rot = euler.get_rotation("eman")
@@ -896,7 +896,7 @@ class TestSymmetry(unittest.TestCase):
 		syms.append(Symmetries.get("d",{"nsym":12}))
 		for sym in syms:
 			n = sym.get_nsym()
-			azmax = old_div(720.0,n)
+			azmax = 720.0/n
 			
 			eulers = sym.gen_orientations("eman",{"delta":12})
 			for euler in eulers:
