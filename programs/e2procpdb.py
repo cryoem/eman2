@@ -249,7 +249,7 @@ def pdb_transform(t,lines,center=0,savetypes=["helix","sheet","other"],animorph=
 	zval[2] /= mass
 		
 	print(title)
-	print("%1.0f atoms   %1.0f electrons   mass= %1.3f kDa" % (atoms, electrons, old_div(mass, 1000.0)))
+	print("%1.0f atoms   %1.0f electrons   mass= %1.3f kDa" % (atoms, electrons, mass / 1000.0))
 	print("atom center = (%1.2f,%1.2f,%1.2f)" % (xval[0], yval[0], zval[0]))
 	print("electron density center = (%1.2f,%1.2f,%1.2f)" % (xval[1], yval[1], zval[1]))
 	print("center of mass = (%1.2f,%1.2f,%1.2f)" % (xval[2], yval[2], zval[2]))
@@ -298,7 +298,7 @@ def pdb_transform(t,lines,center=0,savetypes=["helix","sheet","other"],animorph=
 						dx, dy, dz, nm = 0, 0, 0, 0
 #						print "-------------------"
 						for v in vecs:
-							w = old_div(1.0, ((x - v[0]) ** 4 + (y - v[1]) ** 4 + (z - v[2]) ** 4))
+							w = 1.0 / ((x - v[0]) ** 4 + (y - v[1]) ** 4 + (z - v[2]) ** 4)
 #							print w
 							dx += w * v[3]
 							dy += w * v[4]

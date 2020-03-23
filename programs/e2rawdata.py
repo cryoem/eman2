@@ -152,7 +152,7 @@ def importfn(i,arg,options):
 
 		import e2ctf
 		
-		ds=old_div(1.0,(options.apix*box))
+		ds=1.0/(options.apix*box)
 		ffta=None
 		nbx=0
 		# avoid the very edge, and have a little overlap
@@ -166,7 +166,7 @@ def importfn(i,arg,options):
 				else: ffta+=fft
 				nbx+=1
 
-		ffta.mult(old_div(1.0,(nbx*box**2)))
+		ffta.mult(1.0/(nbx*box**2))
 		ffta.process_inplace("math.sqrt")
 		ffta["is_intensity"]=0				# These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
 

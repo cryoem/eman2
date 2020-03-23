@@ -455,7 +455,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 		parms=self.parms[self.curset]
 		apix=self.sapix.getValue()
-		ds=old_div(1.0,(apix*parms[0]*parms[5]))
+		ds=1.0/(apix*parms[0]*parms[5])
 		ctf=parms[1]
 		bg1d=array(ctf.background)
 		r=len(ctf.background)
@@ -495,7 +495,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 			self.wfft.del_shapes()
 			if self.ringrad==0: self.ringrad=1.0
 			self.wfft.add_shape("ring",EMShape(("circle",0.2,1.0,0.2,r,r,self.ringrad,1.0)))
-			self.wfft.add_shape("ringlbl",EMShape(("scrlabel",0.2,1.0,0.2,10,10,"r=%d pix -> 1/%1.2f 1/A (%1.4f)"%(self.ringrad,old_div(1.0,(self.ringrad*ds)),self.ringrad*ds),24.0,2.0)))
+			self.wfft.add_shape("ringlbl",EMShape(("scrlabel",0.2,1.0,0.2,10,10,"r=%d pix -> 1/%1.2f 1/A (%1.4f)"%(self.ringrad,1.0/(self.ringrad*ds),self.ringrad*ds),24.0,2.0)))
 			self.wfft.updateGL()
 		# 2-D Crystal mode
 		elif self.f2danmode==2 :
@@ -506,7 +506,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 			self.wfft.del_shapes()
 			self.wfft.add_shapes(shp)
-			self.wfft.add_shape("xtllbl",EMShape(("scrlabel",1.0,0.3,0.3,10,10,"Unit Cell: %1.2f,%1.2f"%(old_div(1.0,(hypot(*self.xpos1)*ds)),old_div(1.0,(hypot(*self.xpos2)*ds))),60.0,2.0)))
+			self.wfft.add_shape("xtllbl",EMShape(("scrlabel",1.0,0.3,0.3,10,10,"Unit Cell: %1.2f,%1.2f"%(1.0/(hypot(*self.xpos1)*ds),1.0/(hypot(*self.xpos2)*ds)),60.0,2.0)))
 #			except: pass
 			self.wfft.updateGL()
 		else:
@@ -527,7 +527,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 			# auto-amplitude for b-factor adjustment
 			rto,nrto=0,0
-			for i in range(int(old_div(.04,ds))+1,min(int(old_div(0.15,ds)),len(s)-1)):
+			for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)):
 				if bgsub[i]>0 :
 					rto+=fit[i]
 					nrto+=fabs(bgsub[i])
@@ -561,7 +561,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 			# auto-amplitude for b-factor adjustment
 			rto,nrto=0,0
-			for i in range(int(old_div(.04,ds))+1,min(int(old_div(0.15,ds)),len(s)-1)):
+			for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)):
 				if bgsub[i]>0 :
 					rto+=fit[i]
 					nrto+=fabs(bgsub[i])
@@ -602,7 +602,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 			#self.wplot.set_data((s,fit),"fit",color=1)
 			#self.wplot.setAxisParms("s (1/"+ "$\AA$" + ")","Intensity (a.u)")
 		if self.plotmode==4:
-			if min(bg1d)<=0.0 : bg1d+=min(bg1d)+old_div(max(bg1d),10000.0)
+			if min(bg1d)<=0.0 : bg1d+=min(bg1d)+max(bg1d)/10000.0
 			ssnr=old_div((self.fft1d-bg1d),bg1d)
 			self.wplot.set_data((s,ssnr),"SSNR",quiet=True,color=0,linetype=0)
 
@@ -645,7 +645,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 	def doRefit(self):
 		parms=self.parms[self.curset]
 		apix=self.sapix.getValue()
-		ds=old_div(1.0,(apix*parms[0]*parms[5]))
+		ds=1.0/(apix*parms[0]*parms[5])
 		astig=int(self.castig.getValue())
 		phasep=int(self.cphasep.getValue())
 
@@ -804,7 +804,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 		apix=self.sapix.getValue()
 		if len(parms)==5 : parms.append(1)		# for old projects where there was no oversampling specification
 		else: parms[5]=max(1,int(parms[5]))
-		ds=old_div(1.0,(apix*parms[0]*parms[5]))
+		ds=1.0/(apix*parms[0]*parms[5])
 
 		# Mode where user drags the box around the parent image
 		if self.calcmode==0:
@@ -817,7 +817,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 				clip=clip.get_clip(Region(0,0,parms[0]*parms[5],parms[0]*parms[5]))		# since we aren't using phases, doesn't matter if we center it or not
 			self.fft=clip.do_fft()
 #			self.fft.mult(1.0/parms[0]**2)
-			self.fft.mult(old_div(1.0,parms[0]))
+			self.fft.mult(1.0/parms[0])
 
 		# mode where user selects/deselcts tiled image set
 		elif self.calcmode==1:
@@ -842,7 +842,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 					else: self.fft+=fft
 					nbx+=1
 
-			self.fft.mult(old_div(1.0,(nbx*parms[0]**2)))
+			self.fft.mult(1.0/(nbx*parms[0]**2))
 			self.fft.process_inplace("math.sqrt")
 			self.fft["is_intensity"]=0				# These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
 #			self.fft.mult(1.0/(nbx*parms[0]**2))
@@ -885,7 +885,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 		self.busy=True
 		parms=self.parms[self.curset]
 		apix=self.sapix.getValue()
-		ds=old_div(1.0,(apix*parms[0]*parms[5]))
+		ds=1.0/(apix*parms[0]*parms[5])
 
 
 		# Fitting not done yet. Need to make 2D background somehow
@@ -1068,8 +1068,8 @@ class GUIEvalImage(QtWidgets.QWidget):
 			self.ringrad=hypot(m[0]-old_div(self.fft["nx"],2),m[1]-old_div(self.fft["ny"],2))
 			self.needredisp=True
 		elif self.f2danmode==2:
-			if (event.modifiers()&Qt.ControlModifier): self.xpos2=(old_div((m[0]-old_div(self.fft["nx"],2)),3.0),old_div((m[1]-old_div(self.fft["ny"],2)),3.0))
-			else: self.xpos1=(old_div((m[0]-old_div(self.fft["nx"],2)),3.0),old_div((m[1]-old_div(self.fft["ny"],2)),3.0))
+			if (event.modifiers()&Qt.ControlModifier): self.xpos2=((m[0]-old_div(self.fft["nx"],2))/3.0,(m[1]-old_div(self.fft["ny"],2))/3.0)
+			else: self.xpos1=((m[0]-old_div(self.fft["nx"],2))/3.0,(m[1]-old_div(self.fft["ny"],2))/3.0)
 			self.needredisp=True
 
 
@@ -1082,8 +1082,8 @@ class GUIEvalImage(QtWidgets.QWidget):
 			self.ringrad=hypot(m[0]-old_div(self.fft["nx"],2),m[1]-old_div(self.fft["ny"],2))
 			self.needredisp=True
 		elif self.f2danmode==2:
-			if (event.modifiers()&Qt.ControlModifier): self.xpos2=(old_div((m[0]-old_div(self.fft["nx"],2)),3.0),old_div((m[1]-old_div(self.fft["ny"],2)),3.0))
-			else: self.xpos1=(old_div((m[0]-old_div(self.fft["nx"],2)),3.0),old_div((m[1]-old_div(self.fft["ny"],2)),3.0))
+			if (event.modifiers()&Qt.ControlModifier): self.xpos2=((m[0]-old_div(self.fft["nx"],2))/3.0,(m[1]-old_div(self.fft["ny"],2))/3.0)
+			else: self.xpos1=((m[0]-old_div(self.fft["nx"],2))/3.0,(m[1]-old_div(self.fft["ny"],2))/3.0)
 			self.needredisp=True
 		# box deletion when shift held down
 		#if event.modifiers()&Qt.ShiftModifier:

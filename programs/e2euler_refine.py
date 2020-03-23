@@ -167,7 +167,7 @@ def initialize_data(inputfile,inputmodel,no_weights):
 
 		try: elem["quality"]=float(tmp["class_qual"])
 		except:
-			try: elem["quality"]=old_div(1.0,(elem["weight"]+.00001))
+			try: elem["quality"]=1.0/(elem["weight"]+.00001)
 			except: elem["quality"]=1.0
 		elem["filename"]=inputfile
 		elem["filenum"]=i

@@ -162,7 +162,7 @@ gold-standard refinement."""
 			# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
 			ptclxf=Transform({"type":"2d","alpha":cmxalpha[0,iptcl],"mirror":int(cmxmirror[0,iptcl]),"tx":cmxtx[0,iptcl],"ty":cmxty[0,iptcl]})
 			ptclx=ptcl.process("xform",{"transform":ptclxf})
-			ptclx.process_inplace("mask.sharp",{"outer_radius":old_div(ptcl["ny"],2.5)})
+			ptclx.process_inplace("mask.sharp",{"outer_radius":ptcl["ny"]/2.5})
 			c=ptclx.cmp("optsub",ref,{"maxres":18.0})
 			if options.filterout : ptclx=ref.process("math.sub.optimal",{"return_subim":1,"ref":ptclx})
 

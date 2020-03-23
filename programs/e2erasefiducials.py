@@ -219,7 +219,7 @@ def main():
 		dt = time.time() - t0
 		if options.verbose:
 			print("\n")
-			sys.stdout.write("Erased fiducials from {} ({} minutes)\n".format(arg,round(old_div(dt,60.),2)))
+			sys.stdout.write("Erased fiducials from {} ({} minutes)\n".format(arg,round(dt/60.,2)))
 	return
 
 
@@ -269,7 +269,7 @@ def generate_masks(options,img):
 		nx = img["nx"]
 		ny = img["ny"]
 		sharp_msk = np.zeros((nx,ny)).astype(bool)
-		r = old_div(options.goldsize,2.)
+		r = options.goldsize/2.
 		coords = np.loadtxt(options.coords)
 		for c in coords:
 			xc = c[0] + 2*r
@@ -289,7 +289,7 @@ def generate_masks(options,img):
 
 		apix = img['apix_x']
 		goldsizeinangstroms = apix*options.goldsize
-		freq = old_div(1.0,goldsizeinangstroms)
+		freq = 1.0/goldsizeinangstroms
 
 		msk.process_inplace("filter.lowpass.tanh",{"cutoff_freq":freq})	#c:lowpass shouldn't be arbitrary; rather, use gold size to derive it.
 		msk.process_inplace("threshold.clampminmax",{"maxval":msk["maximum"],"minval":msk["mean"]+options.nsigmas*msk["sigma"],"tozero":True}) # must be tozero
@@ -332,7 +332,7 @@ def local_noise(options,img):
 				localnoise['apix_y'] = apix
 				nyquistres=apix*2.0
 				filtres=nyquistres*options.lowpass
-				filtfreq=old_div(1.0,filtres)
+				filtfreq=1.0/filtres
 				#if options.verbose: print("Apix {}\tResolution {}\tFrequency {}".format(apix,filtres,filtfreq))
 				n.process_inplace('filter.lowpass.tanh', {'cutoff_freq':filtfreq,'apix':apix})
 			
@@ -376,7 +376,7 @@ def local_noise(options,img):
 		localnoise['apix_y'] = apix
 		nyquistres=apix*2.0
 		filtres=nyquistres*options.lowpass
-		filtfreq=old_div(1.0,filtres)
+		filtfreq=1.0/filtres
 		#if options.verbose: print("Apix {}\tResolution {}\tFrequency {}".format(apix,filtres,filtfreq))
 		localnoise.process_inplace('filter.lowpass.tanh', {'cutoff_freq':filtfreq,'apix':apix})
 			

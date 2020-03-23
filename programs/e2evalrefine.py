@@ -276,7 +276,7 @@ def main():
 		ptclmask.process_inplace("mask.addshells",{"nshells":nx//15})
 		ptclmask.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
 
-		ring=(int(old_div(2*nx*apix,100.0)),int(old_div(2*nx*apix,10)))
+		ring=(int(2*nx*apix/100.0),int(old_div(2*nx*apix,10)))
 #		fout=open("ptclsnr.txt".format(i),"w")
 		fout=open("aniso_{:02d}.txt".format(options.anisotropy),"w")
 		# generate a projection for each particle so we can compare
@@ -293,7 +293,7 @@ def main():
 
 			for angle in range(0,180,5):
 				rt=Transform({"type":"2d","alpha":angle})
-				xf=rt*Transform([1.02,0,0,0,0,old_div(1,1.02),0,0,0,0,1,0])*rt.inverse()
+				xf=rt*Transform([1.02,0,0,0,0,1/1.02,0,0,0,0,1,0])*rt.inverse()
 				esum=0
 
 				for eo in range(2):
@@ -343,7 +343,7 @@ def main():
 			print(best)
 
 			for aniso in range(0,30):
-				ai=old_div(aniso,1000.0)+1.0
+				ai=aniso/1000.0+1.0
 				rt=Transform({"type":"2d","alpha":angle})
 				xf=rt*Transform([ai,0,0,0,0,old_div(1,ai),0,0,0,0,1,0])*rt.inverse()
 				esum=0
@@ -719,8 +719,8 @@ def main():
 						frac=old_div((0.143-d[1][si]),(d[1][si-1]-d[1][si]))		# 1.0 if 0.143 at si-1, 0.0 if .143 at si
 						lastres=d[0][si]*(1.0-frac)+d[0][si-1]*frac
 						try:
-							plt.annotate(r"{:1.1f} $\AA$".format(old_div(1.0,lastres)),xy=(lastres,0.143),
-								xytext=(old_div((lastres*4+d[0][-1]),5.0),0.2),arrowprops={"width":1,"frac":.1,"headwidth":7,"shrink":.05})
+							plt.annotate(r"{:1.1f} $\AA$".format(1.0/lastres),xy=(lastres,0.143),
+								xytext=((lastres*4+d[0][-1])/5.0,0.2),arrowprops={"width":1,"frac":.1,"headwidth":7,"shrink":.05})
 						except: pass
 						break
 				else : lastres=0
@@ -804,7 +804,7 @@ def main():
 					print("{} and {} do not have the same sampling/box size. Adjusting".format(options.resolution_vsref,m))
 				sca=old_div(mi["apix_x"],ref["apix_x"])
 				if sca>1 : cmd="e2proc3d.py {} cmp_map.hdf --fouriershrink {} --clip {},{},{} --align translational --alignref {}".format(options.resolution_vsref,sca,mi["nx"],mi["ny"],mi["nz"],m)
-				else: cmd="e2proc3d.py {} cmp_map.hdf --clip {},{},{} --scale {}  --align translational --alignref {}".format(options.resolution_vsref,mi["nx"],mi["ny"],mi["nz"],old_div(1.0,sca),m)
+				else: cmd="e2proc3d.py {} cmp_map.hdf --clip {},{},{} --scale {}  --align translational --alignref {}".format(options.resolution_vsref,mi["nx"],mi["ny"],mi["nz"],1.0/sca,m)
 				launch_childprocess(cmd)
 				if options.verbose>1 : print(cmd)
 				refname="cmp_map.hdf"
@@ -899,12 +899,12 @@ def main():
 			if hist[n][0] in ("e2refine.py","e2refine_easy.py"):
 				pl=com.find("--path=")
 				parl=com.find("--parallel=")
-				print("%s\t%1.2f hours\te2refine %s"%(difftime(ttime),old_div(ttime,3600.0),com[pl+7:].split()[0]), end=' ')
+				print("%s\t%1.2f hours\te2refine %s"%(difftime(ttime),ttime/3600.0,com[pl+7:].split()[0]), end=' ')
 				if parl>0: print(com[parl+11:].split()[0])
 				else: print(" ")
 
 			else:
-				print("\t%s\t%1.2f hours\t%s"%(difftime(ttime),old_div(ttime,3600.0),hist[n][0]))
+				print("\t%s\t%1.2f hours\t%s"%(difftime(ttime),ttime/3600.0,hist[n][0]))
 
 			n+=1
 			

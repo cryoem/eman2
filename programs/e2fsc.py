@@ -201,7 +201,7 @@ input volumes.
 	else: lnx=options.localsize
 	if apix*lnx/2.0<10.0 :
 		print("WARNING: Local sampling box is <10 A. Adjusting to 16 A.")
-		lnx=int(floor(old_div(32.0,apix)))
+		lnx=int(floor(32.0/apix))
 	print("Local region is %d pixels"%lnx)
 	if overlap>lnx : overlap=lnx
 	

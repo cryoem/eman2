@@ -53,7 +53,7 @@ def calcsf(data):
 	dataf = data.do_fft()
 	curve = dataf.calc_radial_dist(old_div(ny,2), 0, 1.0,True)
 	curve=[old_div(i,(dataf["nx"]*dataf["ny"]*dataf["nz"])) for i in curve]
-	Util.save_data(0, old_div(1.0,(apix*ny)), curve, options.calcsf);
+	Util.save_data(0, 1.0/(apix*ny), curve, options.calcsf);
 	return()
 
 def main():
@@ -224,7 +224,7 @@ def main():
 		nnx=old_div(nx,shrink)
 		nny=old_div(ny,shrink)
 		nnz=old_div(nz,shrink)
-		print("%d x %d x %d --> %d x %d x %d    %1.1f GB of RAM required"%(nx,ny,nz,nnx,nny,nnz,old_div((nnx*nny*nnz*4+shrink*4*ny*shrink*4),1.0e9)))
+		print("%d x %d x %d --> %d x %d x %d    %1.1f GB of RAM required"%(nx,ny,nz,nnx,nny,nnz,(nnx*nny*nnz*4+shrink*4*ny*shrink*4)/1.0e9))
 
 		out=EMData(nnx,nny,nnz)
 		out.to_zero()
@@ -452,7 +452,7 @@ def main():
 				dataf = data.do_fft()
 				curve = dataf.calc_radial_dist(old_div(ny,2), 0, 1.0,True)
 				curve=[old_div(i,(dataf["nx"]*dataf["ny"]*dataf["nz"])) for i in curve]
-				Util.save_data(0, old_div(1.0,(apix*ny)), curve, options.calcsf);
+				Util.save_data(0, 1.0/(apix*ny), curve, options.calcsf);
 
 			elif option1 == "setsf":
 				if options.verbose>1 : print("setsf -> ",options.setsf)
@@ -509,7 +509,7 @@ def main():
 			elif option1 == "ralignzphi":
 #				print "ralignzphi ",options.ralignzphi[index_d[option1]]
 				zalignref=EMData(options.ralignzphi[index_d[option1]],0)
-				dang=old_div(80.0,data["ny"]);		# 1 pixel at ~3/4 radius
+				dang=80.0/data["ny"];		# 1 pixel at ~3/4 radius
 				dzmax=old_div(data["ny"],20)			# max +-z shift
 				best=(1000,0,0,data)
 
@@ -551,8 +551,8 @@ def main():
 					print("Error: please specify D symmetry as alignctod")
 					sys.exit(1)
 				nsym=int(options.alignctod[0][1:])
-				angrange=old_div(360.0,nsym)		# probably more than necessary, but we'll do it anyway...
-				astep=360.0/pi*atan(old_div(2.0,data["nx"]))
+				angrange=360.0/nsym		# probably more than necessary, but we'll do it anyway...
+				astep=360.0/pi*atan(2.0/data["nx"])
 				nstep=int(old_div(angrange,astep))
 
 				best=(1e23,0)
@@ -571,8 +571,8 @@ def main():
 					best=min(best,(c,az))
 					if options.verbose: print(azi,az,c,best)
 
-				print("alignctod, rotate:",old_div(best[1],2.0))
-				data.process_inplace("xform",{"transform":Transform({"type":"eman","az":old_div(best[1],2.0)})})	# 1/2 the angle to get it on the 2-fold
+				print("alignctod, rotate:",best[1]/2.0)
+				data.process_inplace("xform",{"transform":Transform({"type":"eman","az":best[1]/2.0})})	# 1/2 the angle to get it on the 2-fold
 
 			elif option1 == "align":
 				if alignref==None :

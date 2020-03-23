@@ -287,7 +287,7 @@ class InitMdlTask(JSTask):
 			threed[-1].process_inplace("xform.centerofmass")
 			threed[-1]=threed[-1].get_clip(Region(old_div((pad-boxsize),2),old_div((pad-boxsize),2),old_div((pad-boxsize),2),boxsize,boxsize,boxsize))
 			threed[-1].process_inplace("normalize.edgemean")
-			threed[-1].process_inplace("mask.gaussian",{"inner_radius":old_div(boxsize,3.0),"outer_radius":old_div(boxsize,12.0)})
+			threed[-1].process_inplace("mask.gaussian",{"inner_radius":boxsize/3.0,"outer_radius":boxsize/12.0})
 			threed[-1].process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
 			try:
 				if automaskexpand<0 : shells=boxsize//20

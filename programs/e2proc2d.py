@@ -99,9 +99,9 @@ def image_from_formula(n_x, n_y, n_z, formula) :
 	ny = int(n_y)
 	nz = int(n_z)
 
-	x1 = old_div(1.0, max(nx-1, 1))
-	y1 = old_div(1.0, max(ny-1, 1))
-	z1 = old_div(1.0, max(nz-1, 1))
+	x1 = 1.0 / max(nx-1, 1)
+	y1 = 1.0 / max(ny-1, 1)
+	z1 = 1.0 / max(nz-1, 1)
 
 	emd  = EMData(nx, ny, nz)
 	emdn = EMNumPy.em2numpy(emd)
@@ -911,7 +911,7 @@ def main():
 					curve=[old_div(i,(dataf["nx"]*dataf["ny"]*dataf["nz"])) for i in curve]
 					outfile2 = sfout
 
-					sf_dx = old_div(1.0, (d["apix_x"] * ny))
+					sf_dx = 1.0 / (d["apix_x"] * ny)
 					Util.save_data(0, sf_dx, curve, outfile2)
 
 				elif option1 == "interlv":
@@ -1139,13 +1139,13 @@ def main():
 			else : avg.write_image(outfile,-1)
 
 		if options.fftavg:
-			fftavg.mult(old_div(1.0, sqrt(n1 - n0 + 1)))
+			fftavg.mult(1.0 / sqrt(n1 - n0 + 1))
 			fftavg.write_image(options.fftavg, 0)
 
 			curve = fftavg.calc_radial_dist(ny, 0, 0.5,1)
 			outfile2 = options.fftavg+".txt"
 
-			sf_dx = old_div(1.0, (apix * 2.0 * ny))
+			sf_dx = 1.0 / (apix * 2.0 * ny)
 			Util.save_data(0, sf_dx, curve, outfile2)
 
 		try:

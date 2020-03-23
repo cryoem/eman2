@@ -270,7 +270,7 @@ def main():
 
 		if options.omit > 0.0 and options.omit < 100.0:
 			natm = pa.get_number_points()
-			nrm = int(round(natm*(old_div(options.omit,100.)),0))
+			nrm = int(round(natm*(options.omit/100.),0))
 			print(("Randomly omitting {}% ({}/{}) of atoms from output map.".format(options.omit,nrm,natm)))
 			for i in range(nrm):
 				n = np.random.randint(0,natm,dtype=int)
