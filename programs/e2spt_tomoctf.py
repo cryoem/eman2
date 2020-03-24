@@ -168,7 +168,7 @@ def main():
 
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=2, col=1, rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--dfrange", type=str,help="Search range of defocus (start, end, step). default is 2., 7, 0.02", default="2.0,7.0,0.02", guitype='strbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--psrange", type=str,help="phase shift range (start, end, step). default is 0, 5, 5", default="0,5,5", guitype='strbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--psrange", type=str,help="phase shift range (start, end, step). default is 10, 15, 5", default="10,15,5", guitype='strbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--tilesize", type=int,help="Size of tile to calculate FFT, default is 256", default=256, guitype='intbox',row=4, col=2,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--voltage", type=int,help="Voltage of microscope in kV", default=300, guitype='intbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--cs", type=float,help="Cs of microscope", default=2.7, guitype='floatbox',row=6, col=1,rowspan=1, colspan=1, mode="model")
@@ -262,7 +262,7 @@ def main():
 	pshift=np.arange(prg[0], prg[1], prg[2])
 	
 	if options.verbose>0: print("Search defocus from {:.1f} to {:.1f}, step {:.2f}".format(drg[0], drg[1], drg[2]))
-	if options.verbose>0: print("Search phase shift from {:.1f} to {:.1f}, step {:.1f}".format(prg[0], prg[1], prg[2]))
+	if options.verbose>0: print("Search phase shift from {:.1f} to {QA	:.1f}, step {:.1f}".format(prg[0], prg[1], prg[2]))
 	
 	allctf=[]
 	zlist=[]
