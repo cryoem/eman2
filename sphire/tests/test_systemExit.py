@@ -2,7 +2,7 @@ from __future__ import print_function
 from __future__ import division
 
 from ..libpy import sp_morphology as fu
-from ..libpy_py2 import sp_morphology as oldfu
+from ..libpy_py3 import sp_morphology as oldfu
 
 from ..libpy import sp_utilities
 from ..libpy import sp_utilities as oldsparx_utilities
@@ -10,7 +10,7 @@ from ..libpy import sp_utilities as oldsparx_utilities
 
 import unittest
 
-from test_module import get_data, remove_dir, get_real_data
+from .test_module import get_data, remove_dir, get_real_data
 import numpy
 from os import path, mkdir
 

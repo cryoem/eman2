@@ -80,7 +80,7 @@ ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 
 #Absolute path to the bin folders for compatibility tests purpose.  since in the bin folder we have to set the parameter via cmd I have to run them.
 ABSOLUTE_SPHIRE_PATH= ABSOLUTE_PATH.split("/tests")[0]
-ABSOLUTE_OLDBIN_PATH = path.join(ABSOLUTE_SPHIRE_PATH, "bin_py2")
+ABSOLUTE_OLDBIN_PATH = path.join(ABSOLUTE_SPHIRE_PATH, "bin_py3")
 ABSOLUTE_BIN_PATH = path.join(ABSOLUTE_SPHIRE_PATH,"bin")
 
 #absolute of python

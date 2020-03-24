@@ -14506,7 +14506,7 @@ TypeError: 'NoneType' object has no attribute '__getitem__'
         with self.assertRaises(TypeError) as cm_old:
             oldfu.bcast_compacted_EMData_all_to_all([None, None], myid=74, comm=-1)
         self.assertEqual(
-            str(cm_new.exception), "must be str, not bytes"
+            str(cm_new.exception), "'int' object is not subscriptable"
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
@@ -18798,12 +18798,13 @@ class Test_get_colors_and_subsets(unittest.TestCase):
             fu.get_colors_and_subsets(
                 main_node, MPI_COMM_WORLD, my_rank, shared_comm, sh_my_rank + 1, masters
             )
+        sp_global_def.BATCH = True
         with self.assertRaises(TypeError) as cm_old:
             oldfu.get_colors_and_subsets(
                 main_node, MPI_COMM_WORLD, my_rank, shared_comm, sh_my_rank + 1, masters
             )
         self.assertEqual(
-            str(cm_new.exception), "must be str, not bytes"
+            str(cm_new.exception), "'int' object is not subscriptable"
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 

@@ -6,9 +6,9 @@ from os import path, listdir
 from time import sleep
 
 from sphire.bin import sp_window as fu
-from sphire.bin_py2 import sp_window as oldfu
+from sphire.bin_py3 import sp_window as oldfu
 
-from test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,ABSOLUTE_BIN_PATH,remove_list_of_file,remove_dir
+from .test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,ABSOLUTE_BIN_PATH,remove_list_of_file,remove_dir
 from numpy import array_equal
 from mrcfile import open as mrcfile_open
 try:

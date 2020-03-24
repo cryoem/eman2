@@ -50,6 +50,7 @@ import sp_global_def
 import sp_morphology
 import sp_utilities
 import sys
+from itertools import zip_longest
 from future import standard_library
 
 standard_library.install_aliases()
@@ -1146,16 +1147,17 @@ def linreg(X, Y):
     """
 	  Linear regression y=ax+b
 	"""
+
     Sx = Sy = Sxx = Syy = Sxy = 0.0
     N = len(X)
-    for x, y in map(None, X, Y):
+    for x, y in zip_longest(X, Y):
         Sx += x
         Sy += y
         Sxx += x * x
         Syy += y * y
         Sxy += x * y
     det = Sxx * N - Sx * Sx
-    a, b = old_div((Sxy * N - Sy * Sx), det), old_div((Sxx * Sy - Sx * Sxy), det)
+    a, b = old_div(Sxy * N - Sy * Sx, det), old_div(Sxx * Sy - Sx * Sxy, det)
     """Multiline Comment15"""
     return a, b
 
@@ -1166,7 +1168,8 @@ def pearson(X, Y):
 	"""
     Sx = Sy = Sxx = Syy = Sxy = 0.0
     N = len(X)
-    for x, y in map(None, X, Y):
+    # for x, y in map(None, X, Y):
+    for x,y in zip_longest(X,Y):
         Sx += x
         Sy += y
         Sxx += x * x

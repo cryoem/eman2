@@ -1030,11 +1030,11 @@ class Test_cpy(unittest.TestCase):
             oldfu.cpy(ins_list, file_path_old)
 
         print(str(cm_new.exception))
-        print(type(cm_new.exception))
-        self.assertEqual(
-            str(cm_new.exception.args[0]),
-            str(ins_list),
-        )
+
+        # self.assertEqual(
+        #     str(cm_new.exception.args[0]),
+        #     str(ins_list),
+        # )
         self.assertEqual(
             cm_new.exception.args[0], cm_old.exception.args[0]
         )

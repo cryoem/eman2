@@ -27,7 +27,6 @@ import sys
 MPI_PATH = "/home/adnan/applications/sphire/miniconda3/envs/py3_v5/bin/mpirun" #"/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
 NUM_PROC = 8
 
-
 """
 WHAT IS MISSING:
 1) plot_errors_between_any_number_of_projections is plotting stuff. i'm not going to test it
