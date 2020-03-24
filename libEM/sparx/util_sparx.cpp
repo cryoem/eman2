@@ -31025,8 +31025,8 @@ EMData* Util::get_slice(EMData *vol, int dim, int index) {
 	if ((dim < 1) || (dim > 3))
 		throw ImageDimensionException("Error: dim must be 1 (x-dimension), 2 (y-dimension) or 3 (z-dimension)");
 	if (((dim == 1) && (index < 0 || index > nx-1)) ||
-	  ((dim == 1) && (index < 0 || index > nx-1)) ||
-	  ((dim == 1) && (index < 0 || index > nx-1)))
+	  ((dim == 2) && (index < 0 || index > ny-1)) ||
+	  ((dim == 3) && (index < 0 || index > nz-1)))
 		throw ImageDimensionException("Error: index exceeds the size of the 3-D object");
 
 	if (dim == 1) {

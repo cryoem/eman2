@@ -2,7 +2,6 @@
 
 # 11/20/19  Steven Ludtke
 # Script designed to test HDF5 data compression code timing, amount of compression and information preservation
-from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import os
