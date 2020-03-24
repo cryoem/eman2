@@ -162,6 +162,27 @@ def main():
 	
 	options.apix_init=float(imgs[0]["apix_x"])
 	
+	# We now look for CTF parameters and dump them into the header (before the images get transmogrified)
+	jsname=info_name(options.inputname)
+	js=js_open_dict(jsname)
+	try:
+		defocus=np.array(js["defocus"])
+		phase=np.array(js["phase"])
+		voltage=float(js["voltage"])
+		cs=float(js["cs"])
+		for i in range(len(imgs)):
+			ctf=EMAN2Ctf()
+			ctf.defocus=defocus[i]
+			ctf.set_phase(phase[i])
+			ctf.voltage=voltage
+			ctf.cs=cs
+			imgs[i]["ctf"]=ctf
+		print(f"CTF parameters loaded from {jsname}")
+	except:
+		defocus=None
+		print("No CTF parameters found")
+
+	
 	#### need to make sure this works for images of all sizes (2k, 4k 8k)
 	## the translation numbers used in this program are based on 2k tomograms. so binfac is the factor from the input to 2k images
 	#binfac=max(1, int(np.round(imgs[0]["nx"]/2048.)))
@@ -223,12 +244,11 @@ def main():
 		for i,m in enumerate(imgs_1k):
 			m.write_image(inppath, i)
 		
-	
 	if options.load:
 		#### loading parameters from json file
-		jsname=info_name(options.inputname)
+#		jsname=info_name(options.inputname)
 		print("Loading parameters from {}...".format(jsname))
-		js=js_open_dict(jsname)
+#		js=js_open_dict(jsname)
 		if "tlt_params" not in js:
 			print("Failed to load saved parameterss. Exit.")
 			return
@@ -943,7 +963,6 @@ def make_tile_with_thr(args):
 		mp=recon.preprocess_slice(m, xf)
 		ppimgs.append((mp,xf))
 
-	norm=[1.0 for i in imgs]
 	# iterative reconstruction process with real-space modification
 	for j,frac in enumerate((0.6,0.36,0.22,0.13,0.078,0)):
 	#for j,frac in enumerate((0.6,0.36,0.22,0.13,0.078,0.047,0.028,0.0168,0.01,0)):
@@ -951,23 +970,23 @@ def make_tile_with_thr(args):
 		if j==0: recon.setup()
 		else: recon.setup_seed(threed.do_fft().process("xform.phaseorigin.tocorner"),0.01)
 		for i in range(len(ppimgs)):
-			if j!=0 :
-				prj=threedn.project("standard",ppimgs[i][1])
-				normim=imgs[i].process("normalize.toimage",{"to":prj,"ignore_lowsig":1.0})
-				try: norm_rel=normim["norm_mult"]/norm[i]		# remove already applied normalization
-				except:
-					print(f"norm error: {j} {i}")
-					continue
-				norm[i]*=norm_rel
-				ppimgs[i][0].mult(norm_rel)
-				if stepx in (0,1) and stepy==0: print(f"Normalize: it{j} slice {i} norm *{norm_rel} ({normim['norm_mult']}) -> {norm[i]}")
 			recon.insert_slice(ppimgs[i][0],ppimgs[i][1],1)
 			if j!=0 :
 				if stepx in (0,1) and stepy==0: 
-					normim.write_image("test_norm.hdf",-1)
-					prj.write_image("test_norm.hdf",-1)
 					ppimgs[i][0].write_image("test_tilt.hdf",-1)
+
+		# we just do the normalization once
+		if j==0:
+			norm=np.zeros(len(ppimgs))
+			for i in range(len(ppimgs)):
+				recon.determine_slice_agreement(ppimgs[i][0],ppimgs[i][1],1,0)
+				norm[i]=ppimgs[i][0]["reconstruct_norm"]
 			
+			norm/=norm.mean()
+			for i in range(len(ppimgs)): 
+				ppimgs[i][0].mult(norm[i])
+				if stepx in (0,1) and stepy==0 : print(f'{j} ({frac})\t{i}\t{norm[i]}\t{ppimgs[i][0]["reconstruct_absqual"]}')
+
 		threed=recon.finish(True)
 		threedn=threed.copy()
 		#threed.write_image("tmp3d00.hdf", -1)
@@ -975,8 +994,8 @@ def make_tile_with_thr(args):
 		if frac>0: 
 			#mm=max(-threed["minimum"],threed["maximum"])	# symmetric about zero
 			#threed.process_inplace("threshold.rangetozero",{"minval":-mm*frac,"maxval":mm*frac})
-			mask=threed.process("math.absvalue")
-			mask.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
+			mask=threed.process("filter.lowpass.gauss",{"cutoff_abs":0.1})
+			mask.process_inplace("math.absvalue")
 			mask.process_inplace("threshold.rangetozero",{"minval":0,"maxval":mask["maximum"]*frac,"gauss_width":3.5})
 			mask.process_inplace("threshold.notzero")
 			#mask.process_inplace("threshold.rangetozero",{"minval":mask["minimum"]*frac,"maxval":mask["maximum"]*frac,"gauss_width":4})
@@ -1121,6 +1140,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	for stepx in range(-nstepx,nstepx+1):
 		#### shift y by half a tile
 		if options.moretile:
+
 			yrange=range(-nstepy,nstepy+1)
 		else: 
 			yrange=range(-nstepy+stepx%2,nstepy+1,2)

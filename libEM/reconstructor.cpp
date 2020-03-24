@@ -1221,6 +1221,7 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 	double vweight=0;		// sum of weights
 	double power=0;		// sum of inten*weight from volume
 	double power2=0;		// sum of inten*weight from image
+	double amp=0,amp2=0;	// used for normalization, weighted amplitude averages under specific conditions
 	bool use_cpu = true;
 	
 #ifdef EMAN2_USING_CUDA
@@ -1289,10 +1290,14 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 					
 					
 //					if (r<6) continue; 
-					dot+=(dt[0]*dt2[0]+dt[1]*dt2[1])*dt[2];
 					vweight+=dt[2];
+					dot+=(dt[0]*dt2[0]+dt[1]*dt2[1])*dt[2];
 					power+=(dt[0]*dt[0]+dt[1]*dt[1])*dt[2];
 					power2+=(dt2[0]*dt2[0]+dt2[1]*dt2[1])*dt[2];
+					if (r>2 && dt[2]>1.5) {
+						amp+=hypot(dt[0]*dt[0],dt[1]*dt[1])*dt[2];
+						amp2+=hypot(dt2[0]*dt2[0],dt2[1]*dt2[1])*dt[2];
+					}
 				}
 			}
 			//cout << dot << " " << vweight << " " << power << " " << power2 << endl;
@@ -1302,7 +1307,8 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 	dot/=sqrt(power*power2);		// normalize the dot product
 	if (dlpow*dlpow2>0) dotlow/=sqrt(dlpow*dlpow2);
 //	input_slice->set_attr("reconstruct_norm",(float)(power2<=0?1.0:sqrt(power/power2)/(inx*iny)));
-	input_slice->set_attr("reconstruct_norm",(float)(power2<=0?1.0:sqrt(power/power2)));
+//	input_slice->set_attr("reconstruct_norm",(float)(power2<=0?1.0:sqrt(power/power2)));
+	input_slice->set_attr("reconstruct_norm",(float)(amp2<=0?1.0:amp/amp2));
 	input_slice->set_attr("reconstruct_absqual",(float)dot);
 	input_slice->set_attr("reconstruct_absqual_lowres",(float)dotlow);
 	float rw=weight<=0?1.0f:1.0f/weight;
