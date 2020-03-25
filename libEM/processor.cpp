@@ -7530,9 +7530,11 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 
 	float defocus = params.set_default("defocus",3.0);
 	float ac = params.set_default("ac",10.0);
+	float cs = params.set_default("cs",2.7);
 	float voltage = params.set_default("voltage",300.0);
 	float apix = params.set_default("apix",image->get_attr("apix_x"));
-	int useheader = params.set_default("useheader",1);
+	int useheader = params.set_default("useheader",0);
+	int phaseflip = params.set_default("phaseflip",0);
 
 
 	int ny = image->get_ysize();
@@ -7544,7 +7546,7 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 	else {
 		ctf.defocus=defocus;
 		ctf.voltage=voltage;
-		ctf.cs=4.1;				// has negligible impact, so we just use a default
+		ctf.cs=cs;
 		
 		ctf.ampcont=ac;
 		ctf.dfdiff=0;
@@ -7568,7 +7570,8 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 	}
 	int gi=i;
 	while (i<np/2) {
-		filter[i]=filter[gi];
+		if (phaseflip) filter[i]=filter[gi]*(filter[i]<0?-1.0f:1.0f);
+		else filter[i]=filter[gi];
 		i++;
 	}
 

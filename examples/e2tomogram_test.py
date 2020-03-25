@@ -961,6 +961,8 @@ def make_tile_with_thr(args):
 	
 		m.mult(msk)
 		mp=recon.preprocess_slice(m, xf)
+		if mp.has_attr("ctf") : mp.process_inplace("filter.ctfcorr.simple",{"useheader":1,"phaseflip":1})
+		else : print("No CTF found for tilt-series, consider running CTF determination")
 		ppimgs.append((mp,xf))
 
 	# iterative reconstruction process with real-space modification
@@ -971,9 +973,8 @@ def make_tile_with_thr(args):
 		else: recon.setup_seed(threed.do_fft().process("xform.phaseorigin.tocorner"),0.01)
 		for i in range(len(ppimgs)):
 			recon.insert_slice(ppimgs[i][0],ppimgs[i][1],1)
-			if j!=0 :
-				if stepx in (0,1) and stepy==0: 
-					ppimgs[i][0].write_image("test_tilt.hdf",-1)
+			if frac==0 and stepx in (-2,2) and stepy==-1: 
+				ppimgs[i][0].write_image("test_tilt.hdf",-1)
 
 		# we just do the normalization once
 		if j==0:
@@ -1152,9 +1153,15 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 					pxf=get_xf_pos(t, [stepx*step,stepy*step,0])
 					img=imgs[i]
 					m=img.get_clip(Region(img["nx"]//2-pad//2+pxf[0],img["ny"]//2-pad//2+pxf[1], pad, pad), fill=0)
+					m["cen_x"]=pxf[0]
+					m["cen_y"]=pxf[1]
+					m["stepx"]=stepx
+					m["stepy"]=stepy
 					tiles.append(m)
+#					if i==2: m.write_image("test_t.hdf",-1)
 				else:
 					tiles.append(EMData(1,1))
+					#print("EXCLUDE ",i)
 
 			jobs.append((jsd, tiles, tpm, sz, pad, stepx, stepy, outz, options))
 	

@@ -7109,7 +7109,8 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 			return "One of the strongest visual impacts of CTF on a structure is the low resolution high-pass filter effect caused by \
 phase contrast. This Processor performs a simple linear filter to roughly correct for this. This is not a substitution or replacement \
 for the full CTF correction routine available for single particle work in EMAN, but if you are in a situation where accurate CTF \
-correction is not possible, this will allow you to approximate the correction to relieve some of the visual artifacts.";
+correction is not possible, this will allow you to approximate the correction to relieve some of the visual artifacts. Circularly \
+symmetric phase flipping can optionally be performed.";
 		}
 
 		virtual TypeDict get_param_types() const
@@ -7117,9 +7118,11 @@ correction is not possible, this will allow you to approximate the correction to
 			TypeDict d;
 			d.put("defocus", EMObject::FLOAT, "Mean defocus to correct for in microns");
 			d.put("ac", EMObject::FLOAT, "Amplitude contrast in % (default 10%)");
+			d.put("cs", EMObject::FLOAT, "Microscope Cs, default 2.7 mm");
 			d.put("voltage", EMObject::FLOAT, "Microscope Voltage in Kv (default 300)");
 			d.put("apix", EMObject::FLOAT, "A/pix (default value from image header)");
-			d.put("useheader", EMObject::INT,"Use CTF header values if present, default true");
+			d.put("phaseflip", EMObject::INT, "Also flip phases if set, default false");
+			d.put("useheader", EMObject::INT,"Use CTF header values if present, instead of individual values, default false");
 			return d;
 		}
 
