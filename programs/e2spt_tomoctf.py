@@ -261,7 +261,7 @@ def main():
 	pshift=np.arange(prg[0], prg[1], prg[2])
 	
 	if options.verbose>0: print("Search defocus from {:.1f} to {:.1f}, step {:.2f}".format(drg[0], drg[1], drg[2]))
-	if options.verbose>0: print("Search phase shift from {:.1f} to {QA	:.1f}, step {:.1f}".format(prg[0], prg[1], prg[2]))
+	if options.verbose>0: print("Search phase shift from {:.1f} to {:.1f}, step {:.1f}".format(prg[0], prg[1], prg[2]))
 	
 	allctf=[]
 	zlist=[]
