@@ -14506,7 +14506,7 @@ TypeError: 'NoneType' object has no attribute '__getitem__'
         with self.assertRaises(TypeError) as cm_old:
             oldfu.bcast_compacted_EMData_all_to_all([None, None], myid=74, comm=-1)
         self.assertEqual(
-            str(cm_new.exception), "'int' object is not subscriptable"
+            str(cm_new.exception), "'NoneType' object is not subscriptable"
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
@@ -14519,7 +14519,7 @@ TypeError: 'NoneType' object has no attribute '__getitem__'
 
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
         self.assertEqual(
-            str(cm_new.exception), "must be str, not bytes"
+            str(cm_new.exception), "'NoneType' object is not subscriptable"
         )
 
 
@@ -18491,16 +18491,16 @@ class Test_pack_message(unittest.TestCase):
         return_new = fu.pack_message(data=data)
         return_old = oldfu.pack_message(data=data)
         self.assertEqual(return_new, return_old)
-        self.assertEqual(return_new, "Scase S:I am a string!!!")
+        self.assertEqual(return_new, b"Scase S:I am a string!!!")
 
     def test_data_is_a_very_long_string(self):
         long_data = "I am a stringggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg!!!"
-        with self.assertRaises(TypeError) as cm_new:
-            return_new = fu.pack_message(data=long_data)
-        with self.assertRaises(TypeError) as cm_old:
-            return_old = oldfu.pack_message(data=long_data)
+        return_new = fu.pack_message(data=long_data)
+        return_old = oldfu.pack_message(data=long_data)
 
-        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+        test = fu.unpack_message(return_new)
+        self.assertEqual(test, long_data)
+        self.assertEqual(return_new, return_old)
 
     def test_data_is_a_notstring(self):
         data = 5555
@@ -18515,6 +18515,26 @@ class Test_pack_message(unittest.TestCase):
         self.assertEqual(return_new , return_old)
 
 
+    def test_list_of_data(self):
+        data = [[ 0 ,2 ,3, [0]]]
+        return_new = fu.pack_message(data=data)
+        return_old = oldfu.pack_message(data=data)
+
+        test  = fu.unpack_message(return_new)
+        self.assertEqual(return_new , return_old)
+        self.assertEqual(test, data)
+
+    def test_small_list_of_data(self):
+        data = 2
+        return_new = fu.pack_message(data=data)
+        return_old = oldfu.pack_message(data=data)
+
+        test = fu.unpack_message(return_new)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(test, data)
+
+
+
 class Test_unpack_message(unittest.TestCase):
     def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -18525,6 +18545,56 @@ class Test_unpack_message(unittest.TestCase):
             str(cm_new.exception), "unpack_message() missing 1 required positional argument: 'msg'"
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+
+    def test_O_list_of_data(self):
+        datas = b'O\x80\x02]q\x00(K\x00K\x02K\x03K/e.'
+        return_new = fu.unpack_message(datas)
+        return_old = oldfu.unpack_message(datas)
+
+        test = fu.pack_message(return_new)
+        self.assertEqual(test, datas)
+        self.assertEqual(return_new, return_old)
+
+
+    def test_Z_list_of_data(self):
+        datas = b'Zx\x01k`\xea\xde\xc5\xc4\xc0\xf0\xd8\xa2o\x98\xa1\x03\xdb\xbc\xff<\x8b\xb2Y\xfb\xe6E\xf4\x94\x13\'\xdb\xa6\xccb\\Z\x97{x\xc2yy\xe3\x8ek\x11\xbf\xcfEd\xbd\xf0\xb3\xcf\xfb\xc7\xf0\xc2\xd4\xf0\xa3\xf8%\xfe\x87\xd7s\xf6\xff]\xd9\xb4r\xe2\x17-\xb5k\xe9\x92\xabw\xf3I\x06\xefOS\xb9Y\xcc\xf5\xf6\xe7\x04\x1e[;\x8e\xd3F\xfbr\xf6\xb7\xc8y\xac\xfe\xf8\xfc\xe7\xcb\x8b\x8c\x93d\xb9\xdc\xa75\xd7\xc8\xa8\xdeJt\x9ac\xa5\xf7H\xf7\xc0\x13\x07#\xcbf\x1f\xe7/\x12\x8d\x9b\xcbD\x8cWO\x0f\xad\xf8juJ\xb1\xdb\xff\xc2\xf6\x8cw\x9d&:w\xb6\x16<\x0f\xd7\xddj\xb9>\xab\xf9\xb5\x01\xbfx\xc7\xa3E\xbb6G\x1eY:\xf9k\xb1v\x81Z"\xe3\xa4\xab3\xfe~\xb2\xbb\x96~\xe2\x7f\x9fd\t\xa7\xd0\xe4\xd0o\xeb\x93\x97\xa6kFo\xe3l\xf6_\xfc\xc1]K\xff\xd1\\\xb1\xaa\x98t\xdb\x1f\xfd\x0f\x04\xb6\xef{\xa3\xb4\xbb%\xe8_C\xa4\xcd\xb3\x83u\xac\xd3\xb4\x1e\xad\xd8]\x95\x96\xfe\xa5sY\xef\xce\x8f|i7\x98\n"\x14\xcc\x8a\x18\xca\xf5\x8e\xbf\xbcsh\xe6$Y\xc1\x1c\xd9\xb8\xaas\xb3\r\xeb\xc2\x9f\xd9\xb5\xf8|\xdfQ*mW\xa2\x7ft\xcd\xbd\xe3\x95\x0f?\xd9G\xcc-~\xa3\xd1 \x10\x9f\xf6\xa8\x82\xcd\xed\x04\xd7\x9a\x18K\x8f\xd3\xa5\xf7\x1d\x1c\xbcbw\t1F\xee\xda\xf9/z\xdb\x9fs\xf3\x97=\xd0\xd2\xfc\xef]|Q\x9e;\xfd\xd9\xcd\xdb"\xb2\xc5&\xa9\x0b\x9ew/\x17;\xa5Vh\xff\x91\xc7*i\x96z\x93\xebd\x8f\x98\xe9\xbe\xbb\xda\xdf54OoZ^\xe8m\xa5\xe4v\xe9x\xc0\x9b\x93\xe76jsg:\xbc:b\xbcl\xef\xbe\x84\xbf\xd5S\xad~U\xdf\x94|(\xb1\x9fo\x9byL\x80^\xd7\x81\xd6\tu\xa1\xb3\x05\xe3\xf6mP\x14\xcdo\n9<\xd1\xa6\xdf \xfa\xc6\xb3\x96\xc9\xb1\x06\x15\xfas\x12\x04\xedRv\x19}LM)17~wz\xce\xa4\x84\xd4E\xc7\xabmSNi\x17p\xfe\xef\x8fu\xf2\x90|\xce\xaf\x07\x00X\xf2g\xa0'
+        return_new = fu.unpack_message(datas)
+        return_old = oldfu.unpack_message(datas)
+
+        test = fu.pack_message(return_new)
+        self.assertEqual(test, datas)
+        self.assertEqual(return_new, return_old)
+
+    def test_S_string_of_data(self):
+        datas = b"Scase S:I am a string!!!"
+        return_new = fu.unpack_message(datas)
+        return_old = oldfu.unpack_message(datas)
+
+        test = fu.pack_message(return_new)
+        self.assertEqual(test, datas)
+        self.assertEqual(return_new, return_old)
+
+
+    def test_C_string_of_data(self):
+        datas = b'Cx\x01\xf3TH\xccUHT(.)\xca\xccK\x1f\x05D\x87\x80\xa2\xa2"\x00Ca} '
+        return_new = fu.unpack_message(datas)
+        return_old = oldfu.unpack_message(datas)
+
+        test = fu.pack_message(return_new)
+        self.assertEqual(test, datas)
+        self.assertEqual(return_new, return_old)
+
+    def test_wrongvalue_of_data(self):
+        sp_global_def.BATCH = True
+        datas = 'Cx\x01\xf3TH\xccUHT(.)\xca\xccK\x1f\x05D\x87\x80\xa2\xa2"\x00Ca'
+        with self.assertRaises(SystemExit) as cm_new:
+            fu.unpack_message(datas)
+        sp_global_def.BATCH =True
+        with self.assertRaises(SystemExit) as cm_old:
+            oldfu.unpack_message(datas)
+
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+
 
     def test_data_is_a_string_BUG(self):
         self.assertTrue(True)
@@ -18804,7 +18874,7 @@ class Test_get_colors_and_subsets(unittest.TestCase):
                 main_node, MPI_COMM_WORLD, my_rank, shared_comm, sh_my_rank + 1, masters
             )
         self.assertEqual(
-            str(cm_new.exception), "'int' object is not subscriptable"
+            str(cm_new.exception), "object of type 'NoneType' has no len()"
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
@@ -20317,10 +20387,11 @@ class Test_store_value_of_simple_vars_in_json_file(unittest.TestCase):
         self.assertEqual(
             returns_values_in_file(self.f), returns_values_in_file(self.f_old)
         )
-        self.assertTrue(fu.string_found_in_file("<type 'list'> with length: 3", self.f))
+        print(self.f)
+        self.assertTrue(fu.string_found_in_file("<class 'list'> with length: 3", self.f))
 
         self.assertTrue(
-            oldfu.string_found_in_file("<type 'list'> with length: 3", self.f_old)
+            oldfu.string_found_in_file("<class 'list'> with length: 3", self.f_old)
         )
         remove_list_of_file([self.f, self.f_old])
 

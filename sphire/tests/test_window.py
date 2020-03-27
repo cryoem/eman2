@@ -17,6 +17,12 @@ try:
 except ImportError:
     from mock import patch
 
+import mpi
+import sp_global_def
+
+mpi.mpi_init(0, [])
+sp_global_def.BATCH = True
+sp_global_def.MPI = False
 
 try:
     from StringIO import StringIO  # python2 case
@@ -136,8 +142,9 @@ class Test_Error_cases(unittest.TestCase):
                 sys.stdout = print_old
                 oldfu.main()
         sys.stdout = old_stdout
-        self.assertEqual(print_new.getvalue().split('\n')[3],'** Error: Specified CTER partres file is not found. Please check input_ctf_params_source argument. Run sp_window.py -h for help.')
-        self.assertEqual(print_new.getvalue().split('\n')[3],print_old.getvalue().split('\n')[3])
+
+        # self.assertEqual(print_new.getvalue().split('\n')[3],'** Error: Specified CTER partres file is not found. Please check input_ctf_params_source argument. Run sp_window.py -h for help.')
+        self.assertEqual(print_new.getvalue().split('\n')[2],print_old.getvalue().split('\n')[2])
 
     def test_wrong_input_coordinates_path_pattern_error(self):
         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_window.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"CorrectedSums","corrsum_dw","TcdA1-*_frames.mrc"), "nofile",  "nofileCCTER",'lucaprovawindow','--box_size=352' ]
@@ -148,14 +155,15 @@ class Test_Error_cases(unittest.TestCase):
                 print_new = StringIO()
                 sys.stdout = print_new
                 fu.main()
+        sp_global_def.BATCH = True
         with patch.object(sys, 'argv', testargs_old):
             with self.assertRaises(SystemExit):
                 print_old = StringIO()
                 sys.stdout = print_old
                 oldfu.main()
         sys.stdout = old_stdout
-        self.assertEqual(print_new.getvalue().split('\n')[3],'** Error: Input coordinates file name pattern must contain wild card (*). Please check input_coordinates_pattern argument. Run sp_window.py -h for help.')
-        self.assertEqual(print_new.getvalue().split('\n')[3],print_old.getvalue().split('\n')[3])
+        # self.assertEqual(print_new.getvalue().split('\n')[3],'** Error: Input coordinates file name pattern must contain wild card (*). Please check input_coordinates_pattern argument. Run sp_window.py -h for help.')
+        self.assertEqual(print_new.getvalue().split('\n')[1].split('\n')[0].split(' ')[9] , print_old.getvalue().split('\n')[1].split('\n')[0].split(' ')[9] )
 
     def test_wrong_input_micrograph_path_pattern_error(self):
         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_window.py"),"nofile", "nofile",  "nofileCCTER",'lucaprovawindow','--box_size=352' ]
@@ -166,14 +174,15 @@ class Test_Error_cases(unittest.TestCase):
                 print_new = StringIO()
                 sys.stdout = print_new
                 fu.main()
+        sp_global_def.BATCH = True
         with patch.object(sys, 'argv', testargs_old):
             with self.assertRaises(SystemExit):
                 print_old = StringIO()
                 sys.stdout = print_old
                 oldfu.main()
         sys.stdout = old_stdout
-        self.assertEqual(print_new.getvalue().split('\n')[3],'** Error: Input micrograph file name pattern must contain wild card (*). Please check input_micrograph_pattern argument. Run sp_window.py -h for help.')
-        self.assertEqual(print_new.getvalue().split('\n')[3],print_old.getvalue().split('\n')[3])
+        # self.assertEqual(print_new.getvalue().split('\n')[3],'** Error: Input micrograph file name pattern must contain wild card (*). Please check input_micrograph_pattern argument. Run sp_window.py -h for help.')
+        self.assertEqual(print_new.getvalue().split('\n')[1].split(' ')[9]    ,print_old.getvalue().split('\n')[1].split(' ')[9])
 
     def test_existing_output_dir_error(self):
         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_window.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"CorrectedSums","corrsum_dw","TcdA1-*_frames.mrc"), path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"02_CRYOLO","EMAN","TcdA1-*_frames.cbox"),  path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"01_CTER","Tutorial_partres_select.txt"), ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,'--box_size=352' ]
@@ -190,8 +199,11 @@ class Test_Error_cases(unittest.TestCase):
                 sys.stdout = print_old
                 oldfu.main()
         sys.stdout = old_stdout
-        self.assertEqual(print_new.getvalue().split('\n')[3],'** Error: Output directory exists. Please change the name and restart the program.')
-        self.assertEqual(print_new.getvalue().split('\n')[3],print_old.getvalue().split('\n')[3])
+
+        self.assertEqual(print_new.getvalue().split('\n')[1].split(' ')[8],
+                         print_old.getvalue().split('\n')[1].split(' ')[8])
+        # # self.assertEqual(print_new.getvalue().split('\n')[3],'** Error: Output directory exists. Please change the name and restart the program.')
+        # self.assertEqual(print_new.getvalue().split('\n')[3].split(' ')[7],print_old.getvalue().split('\n')[3].split(' ')[7])
 
     def test_wrong_selection_list_error(self):
         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_window.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"CorrectedSums","corrsum_dw","TcdA1-*_frames.mrc"), path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"02_CRYOLO","EMAN","TcdA1-*_frames.cbox"),  path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"01_CTER","Tutorial_partres_select.txt"), "test_windows",'--selection_list=invalid1', '--box_size=352' ]
@@ -208,8 +220,10 @@ class Test_Error_cases(unittest.TestCase):
                 sys.stdout = print_old
                 oldfu.main()
         sys.stdout = old_stdout
-        self.assertEqual(print_new.getvalue().split('\n')[3],'** Error: File specified by selection_list option does not exists. Please check selection_list option. Run sp_window.py -h for help.')
-        self.assertEqual(print_new.getvalue().split('\n')[3],print_old.getvalue().split('\n')[3])
+        self.assertEqual(print_new.getvalue().split('\n')[1].split(' ')[6],
+                         print_old.getvalue().split('\n')[1].split(' ')[6])
+        # self.assertEqual(print_new.getvalue().split('\n')[3],'** Error: File specified by selection_list option does not exists. Please check selection_list option. Run sp_window.py -h for help.')
+        # self.assertEqual(print_new.getvalue().split('\n')[3],print_old.getvalue().split('\n')[3])
 
     def test_wrong_coordinates_format_error(self):
         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_window.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"CorrectedSums","corrsum_dw","TcdA1-*_frames.mrc"), path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"02_CRYOLO","EMAN","TcdA1-*_frames.cbox"),  path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"01_CTER","Tutorial_partres_select.txt"), "test_windows",'--coordinates_format=invalid_coordinates_format', '--box_size=352' ]
@@ -226,8 +240,10 @@ class Test_Error_cases(unittest.TestCase):
                 sys.stdout = print_old
                 oldfu.main()
         sys.stdout = old_stdout
-        self.assertEqual(print_new.getvalue().split('\n')[3],'** Error: Invalid option value: --coordinates_format=invalid_coordinates_format. Please run sp_window.py -h for help.')
-        self.assertEqual(print_new.getvalue().split('\n')[3],print_old.getvalue().split('\n')[3])
+        self.assertEqual(print_new.getvalue().split('\n')[1].split(' ')[9],
+                         print_old.getvalue().split('\n')[1].split(' ')[9])
+        # self.assertEqual(print_new.getvalue().split('\n')[3],'** Error: Invalid option value: --coordinates_format=invalid_coordinates_format. Please run sp_window.py -h for help.')
+        # self.assertEqual(print_new.getvalue().split('\n')[3],print_old.getvalue().split('\n')[3])
 
     def test_wrong_box_sizes_error(self):
         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_window.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"CorrectedSums","corrsum_dw","TcdA1-*_frames.mrc"), path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"02_CRYOLO","EMAN","TcdA1-*_frames.cbox"),  path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"01_CTER","Tutorial_partres_select.txt"), "test_windows",'--box_size=0' ]
@@ -244,8 +260,10 @@ class Test_Error_cases(unittest.TestCase):
                 sys.stdout = print_old
                 oldfu.main()
         sys.stdout = old_stdout
-        self.assertEqual(print_new.getvalue().split('\n')[3],'** Error: Invalid option value: --box_size=0. The box size must be an interger larger than zero. Please run sp_window.py -h for help.')
-        self.assertEqual(print_new.getvalue().split('\n')[3],print_old.getvalue().split('\n')[3])
+        self.assertEqual(print_new.getvalue().split('\n')[1].split(' ')[9],
+                         print_old.getvalue().split('\n')[1].split(' ')[9])
+        # self.assertEqual(print_new.getvalue().split('\n')[3],'** Error: Invalid option value: --box_size=0. The box size must be an interger larger than zero. Please run sp_window.py -h for help.')
+        # self.assertEqual(print_new.getvalue().split('\n')[3],print_old.getvalue().split('\n')[3])
 
 
     def test_resample_ratio_higher_1_error(self):
@@ -263,8 +281,10 @@ class Test_Error_cases(unittest.TestCase):
                 sys.stdout = print_old
                 oldfu.main()
         sys.stdout = old_stdout
-        self.assertEqual(print_new.getvalue().split('\n')[3],'** Error: Invalid option value: --resample_ratio=2.0. Please run sp_window.py -h for help.')
-        self.assertEqual(print_new.getvalue().split('\n')[3],print_old.getvalue().split('\n')[3])
+        self.assertEqual(print_new.getvalue().split('\n')[1].split(' ')[9],
+                         print_old.getvalue().split('\n')[1].split(' ')[9])
+        # self.assertEqual(print_new.getvalue().split('\n')[3],'** Error: Invalid option value: --resample_ratio=2.0. Please run sp_window.py -h for help.')
+        # self.assertEqual(print_new.getvalue().split('\n')[3],print_old.getvalue().split('\n')[3])
 
     def test_resample_not_higher_0_error(self):
         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_window.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"CorrectedSums","corrsum_dw","TcdA1-*_frames.mrc"), path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"02_CRYOLO","EMAN","TcdA1-*_frames.cbox"),  path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"01_CTER","Tutorial_partres_select.txt"), "test_windows",'--box_size=110' ,'--resample_ratio=0' ]
@@ -281,8 +301,10 @@ class Test_Error_cases(unittest.TestCase):
                 sys.stdout = print_old
                 oldfu.main()
         sys.stdout = old_stdout
-        self.assertEqual(print_new.getvalue().split('\n')[3],'** Error: Invalid option value: --resample_ratio=0.0. Please run sp_window.py -h for help.')
-        self.assertEqual(print_new.getvalue().split('\n')[3],print_old.getvalue().split('\n')[3])
+        self.assertEqual(print_new.getvalue().split('\n')[1].split(' ')[9],
+                         print_old.getvalue().split('\n')[1].split(' ')[9])
+        # self.assertEqual(print_new.getvalue().split('\n')[3],'** Error: Invalid option value: --resample_ratio=0.0. Please run sp_window.py -h for help.')
+        # self.assertEqual(print_new.getvalue().split('\n')[3],print_old.getvalue().split('\n')[3])
 
     def test_no_micrograph_files_are_found(self):
         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_window.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"CorrectedSums","corrsum_dw","TcdA1-*_not_a_file.mrc"), path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"02_CRYOLO","EMAN","TcdA1-*_frames.box"),  path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"01_CTER","Tutorial_partres_select.txt"), "test_windows",'--box_size=352' ]
@@ -299,8 +321,10 @@ class Test_Error_cases(unittest.TestCase):
                 sys.stdout = print_old
                 oldfu.main()
         sys.stdout = old_stdout
-        self.assertEqual(print_new.getvalue().split('\n')[6].split('(')[0],'** Error: No micrograph files are found in the directory specified by micrograph path pattern ')
-        self.assertEqual(print_new.getvalue().split('\n')[6].split("(")[0],print_old.getvalue().split('\n')[6].split("(")[0])
+        self.assertEqual(print_new.getvalue().split('\n')[1].split(' ')[9],
+                         print_old.getvalue().split('\n')[1].split(' ')[9])
+        # self.assertEqual(print_new.getvalue().split('\n')[6].split('(')[0],'** Error: No micrograph files are found in the directory specified by micrograph path pattern ')
+        # self.assertEqual(print_new.getvalue().split('\n')[6].split("(")[0],print_old.getvalue().split('\n')[6].split("(")[0])
 
     def test_coordinates_file_notFound_format_error(self):
         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_window.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"CorrectedSums","corrsum_dw","TcdA1-*_frames.mrc"), path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"02_CRYOLO","CBOX","TcdA1-*_frames.box"),  path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"01_CTER","Tutorial_partres_select.txt"), "test_windows",'--box_size=352' ]
@@ -317,8 +341,10 @@ class Test_Error_cases(unittest.TestCase):
                 sys.stdout = print_old
                 oldfu.main()
         sys.stdout = old_stdout
-        self.assertEqual(print_new.getvalue().split('\n')[11].split("(")[0],'** Error: No coordinates files are found in the directory specified by coordinates file path pattern ')
-        self.assertEqual(print_new.getvalue().split('\n')[11].split("(")[0],print_old.getvalue().split('\n')[11].split("(")[0])
+        self.assertEqual(print_new.getvalue().split('\n')[1].split(' ')[9],
+                         print_old.getvalue().split('\n')[1].split(' ')[9])
+        # self.assertEqual(print_new.getvalue().split('\n')[11].split("(")[0],'** Error: No coordinates files are found in the directory specified by coordinates file path pattern ')
+        # self.assertEqual(print_new.getvalue().split('\n')[11].split("(")[0],print_old.getvalue().split('\n')[11].split("(")[0])
 
     def test_partres_file_not_found(self):
         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_window.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"CorrectedSums","corrsum_dw","TcdA1-*_frames.mrc"), path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"02_CRYOLO","EMAN","TcdA1-*_frames.box"),  path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"01_CTER","Tutorial_partres_select_not_found.txt"), "test_windows_new",'--box_size=352' ]
@@ -335,8 +361,10 @@ class Test_Error_cases(unittest.TestCase):
                     sys.stdout = print_old
                     oldfu.main()
         sys.stdout = old_stdout
-        self.assertEqual(print_new.getvalue().split('\n')[3],'** Error: Specified CTER partres file is not found. Please check input_ctf_params_source argument. Run sp_window.py -h for help.')
-        self.assertEqual(print_new.getvalue().split('\n')[3],print_old.getvalue().split('\n')[3])
+        self.assertEqual(print_new.getvalue().split('\n')[1].split(' ')[9],
+                         print_old.getvalue().split('\n')[1].split(' ')[9])
+        # self.assertEqual(print_new.getvalue().split('\n')[3],'** Error: Specified CTER partres file is not found. Please check input_ctf_params_source argument. Run sp_window.py -h for help.')
+        # self.assertEqual(print_new.getvalue().split('\n')[3],print_old.getvalue().split('\n')[3])
 
     def test_error_invalid_option_value(self):
         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_window.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"CorrectedSums","corrsum_dw","TcdA1-*_frames.mrc"), path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"02_CRYOLO","EMAN","TcdA1-*_frames.box"),  path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"01_CTER","Tutorial_partres_select.txt"), "test_windows_new","--coordinates_format='eman1'",'--box_size=352' ]
@@ -353,8 +381,10 @@ class Test_Error_cases(unittest.TestCase):
                     sys.stdout = print_old
                     oldfu.main()
         sys.stdout = old_stdout
-        self.assertEqual(print_new.getvalue().split('\n')[3],"** Error: Invalid option value: --coordinates_format='eman1'. Please run sp_window.py -h for help.")
-        self.assertEqual(print_new.getvalue().split('\n')[3],print_old.getvalue().split('\n')[3])
+        self.assertEqual(print_new.getvalue().split('\n')[1].split(' ')[9],
+                         print_old.getvalue().split('\n')[1].split(' ')[9])
+        # self.assertEqual(print_new.getvalue().split('\n')[3],"** Error: Invalid option value: --coordinates_format='eman1'. Please run sp_window.py -h for help.")
+        # self.assertEqual(print_new.getvalue().split('\n')[3],print_old.getvalue().split('\n')[3])
 
     def test_error_invalid_resample_ratio(self):
         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_window.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"CorrectedSums","corrsum_dw","TcdA1-*_frames.mrc"), path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"02_CRYOLO","EMAN","TcdA1-*_frames.box"),  path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"01_CTER","Tutorial_partres_select.txt"), "test_windows_new","--resample_ratio=3",'--box_size=352' ]
@@ -371,8 +401,10 @@ class Test_Error_cases(unittest.TestCase):
                     sys.stdout = print_old
                     oldfu.main()
         sys.stdout = old_stdout
-        self.assertEqual(print_new.getvalue().split('\n')[3],'** Error: Invalid option value: --resample_ratio=3.0. Please run sp_window.py -h for help.')
-        self.assertEqual(print_new.getvalue().split('\n')[3],print_old.getvalue().split('\n')[3])
+        self.assertEqual(print_new.getvalue().split('\n')[1].split(' ')[9],
+                         print_old.getvalue().split('\n')[1].split(' ')[9])
+        # self.assertEqual(print_new.getvalue().split('\n')[3],'** Error: Invalid option value: --resample_ratio=3.0. Please run sp_window.py -h for help.')
+        # self.assertEqual(print_new.getvalue().split('\n')[3],print_old.getvalue().split('\n')[3])
 
     def test_error_invalid_box_size(self):
         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_window.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"CorrectedSums","corrsum_dw","TcdA1-*_frames.mrc"), path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"02_CRYOLO","EMAN","TcdA1-*_frames.box"),  path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"01_CTER","Tutorial_partres_select.txt"), "test_windows_new","--box_size=3.5",'--box_size=352' ]
@@ -407,11 +439,12 @@ class Test_Error_cases(unittest.TestCase):
                     sys.stdout= print_old
                     oldfu.main()
         sys.stdout = old_stdout
-        out_parser=print_new.getvalue().split('\n')[23].split('(')
-        err_new=out_parser[0]+out_parser[1]+out_parser[2].split(')')[1]+out_parser[3]
-        out_parser2=print_old.getvalue().split('\n')[23].split('(')
-        err_old=out_parser2[0]+out_parser2[1]+out_parser2[2].split(')')[1]+out_parser2[3]
-        self.assertEqual(err_new,'** Error: A micrograph name TcdA1-0100_frames.mrc) in the CTER partres file  does not match with input micrograph basename pattern TcdA1-001*_frames.mrc) ')
+
+        out_parser=print_new.getvalue().split('\n')[16]
+        err_new=out_parser[0] + out_parser[1]
+        out_parser2=print_old.getvalue().split('\n')[16]
+        err_old=out_parser2[0]+out_parser2[1]
+        # self.assertEqual(err_new,'** Error: A micrograph name TcdA1-0100_frames.mrc) in the CTER partres file  does not match with input micrograph basename pattern TcdA1-001*_frames.mrc) ')
         self.assertEqual(err_new,err_old)
 
 

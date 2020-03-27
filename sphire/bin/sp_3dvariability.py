@@ -40,6 +40,7 @@ from past.utils import old_div
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 #
+import EMAN2
 import EMAN2_cppwrap
 import EMAN2db
 import mpi
@@ -58,7 +59,7 @@ import sys
 import time
 from builtins import range
 
-print("Hello")
+
 
 mpi.mpi_init(0, [])
 

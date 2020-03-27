@@ -25,7 +25,7 @@ except ImportError:
 import sys
 
 
-import sp_global_def
+import mpi
 
 
 """
@@ -100,7 +100,7 @@ class Test_helperFunctions(unittest.TestCase):
                 oldfu.main()
 
         sys.stdout = old_stdout
-        self.assertEqual(print_new.getvalue().split('\n')[14].split("ERROR")[1],' => Input stack is not prepared for symmetry, please follow instructions')
+        self.assertEqual(print_new.getvalue().split('\n')[15].split("ERROR")[1],' => Input stack is not prepared for symmetry, please follow instructions')
         self.assertEqual(print_new.getvalue().split('\n')[14].split("ERROR")[1],print_old.getvalue().split('\n')[14].split("ERROR")[1])
         remove_dir(self.new_output_folder)
         remove_dir(self.old_output_folder)
@@ -117,19 +117,19 @@ class Test_helperFunctions(unittest.TestCase):
                 print_new = StringIO()
                 sys.stdout = print_new
                 fu.main()
-        # with patch.object(sys, 'argv', testargs_old):
-        #     with self.assertRaises(SystemExit):
-        #         print_old = StringIO()
-        #         sys.stdout = print_old
-        #         oldfu.main()
+        with patch.object(sys, 'argv', testargs_old):
+            with self.assertRaises(SystemExit):
+                print_old = StringIO()
+                sys.stdout = print_old
+                oldfu.main()
 
         sys.stdout = old_stdout
         for i, j in enumerate(print_new.getvalue().split('\n')):
             print(i,j)
-        # self.assertEqual(print_new.getvalue().split('\n')[1].split("ERROR")[1],' => Fall off has to be given for the low-pass filter')
-        # self.assertEqual(print_new.getvalue().split('\n')[1].split("ERROR")[1],print_old.getvalue().split('\n')[1].split("ERROR")[1])
-        # remove_dir(self.new_output_folder)
-        # remove_dir(self.old_output_folder)
+        self.assertEqual(print_new.getvalue().split('\n')[2].split("ERROR")[1],' => Fall off has to be given for the low-pass filter')
+        self.assertEqual(print_new.getvalue().split('\n')[1].split("ERROR")[1],print_old.getvalue().split('\n')[1].split("ERROR")[1])
+        remove_dir(self.new_output_folder)
+        remove_dir(self.old_output_folder)
 
 
     def test_VAR_VAR2D_error(self):
@@ -151,7 +151,7 @@ class Test_helperFunctions(unittest.TestCase):
                 oldfu.main()
 
         sys.stdout = old_stdout
-        self.assertEqual(print_new.getvalue().split('\n')[1].split("ERROR")[1],' => When VAR is set, the program cannot output ave2D, ave3D or var2D')
+        self.assertEqual(print_new.getvalue().split('\n')[2].split("ERROR")[1],' => When VAR is set, the program cannot output ave2D, ave3D or var2D')
         self.assertEqual(print_new.getvalue().split('\n')[1].split("ERROR")[1],print_old.getvalue().split('\n')[1].split("ERROR")[1])
         remove_dir(self.new_output_folder)
         remove_dir(self.old_output_folder)
@@ -176,8 +176,7 @@ class Test_helperFunctions(unittest.TestCase):
                 oldfu.main()
 
         sys.stdout = old_stdout
-
-        self.assertEqual(print_new.getvalue().split('\n')[1].split("ERROR")[1],' => Decimate rate should be a value between 0.0 and 1.0')
+        self.assertEqual(print_new.getvalue().split('\n')[2].split("ERROR")[1],' => Decimate rate should be a value between 0.0 and 1.0')
         self.assertEqual(print_new.getvalue().split('\n')[1].split("ERROR")[1],print_old.getvalue().split('\n')[1].split("ERROR")[1])
         remove_dir(self.new_output_folder)
         remove_dir(self.old_output_folder)
@@ -203,7 +202,7 @@ class Test_helperFunctions(unittest.TestCase):
 
         sys.stdout = old_stdout
 
-        self.assertEqual(print_new.getvalue().split('\n')[1].split("ERROR")[1],' => Decimate rate should be a value between 0.0 and 1.0')
+        self.assertEqual(print_new.getvalue().split('\n')[2].split("ERROR")[1],' => Decimate rate should be a value between 0.0 and 1.0')
         self.assertEqual(print_new.getvalue().split('\n')[1].split("ERROR")[1],print_old.getvalue().split('\n')[1].split("ERROR")[1])
         remove_dir(self.new_output_folder)
         remove_dir(self.old_output_folder)
@@ -250,8 +249,8 @@ class Test_run(unittest.TestCase):
         testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_3dvariability.py"),"--symmetrize","bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK#isac_substack"), "--output_dir="+old_output_folder,"--sym=c5"]
         with patch.object(sys, 'argv', testargs_new):
             fu.main()
-        # with patch.object(sys, 'argv', testargs_old):
-        #     oldfu.main()
+        with patch.object(sys, 'argv', testargs_old):
+            oldfu.main()
         #
         # return_old = get_im('bdb:{0}#{1}'.format(old_output_folder, filename))
         # return_new = get_im('bdb:{0}#{1}'.format(new_output_folder, filename))

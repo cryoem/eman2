@@ -60,7 +60,7 @@ from builtins import range
 
 global Tracker, Blockdata
 
-mpi.mpi_init(0, [])
+# mpi.mpi_init(0, [])
 
 
 # ----------------------------------------------------------------------------
@@ -388,7 +388,7 @@ def main():
     masterdir = mpi.mpi_bcast(
         masterdir, li, mpi.MPI_CHAR, Blockdata["main_node"], mpi.MPI_COMM_WORLD
     )
-    masterdir = string.join(masterdir, "")
+    masterdir =  b"".join(masterdir).decode('latin1')
     Tracker["constants"]["masterdir"] = masterdir
     log_main = sp_logger.Logger(sp_logger.BaseLogger_Files())
     log_main.prefix = Tracker["constants"]["masterdir"] + "/"

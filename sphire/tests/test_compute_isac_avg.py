@@ -28,6 +28,11 @@ import sys
 
 from copy import deepcopy
 
+import mpi
+import sp_global_def
+mpi.mpi_init(0, [])
+sp_global_def.BATCH = True
+sp_global_def.MPI = False
 
 """
 WHAT IS MISSING:

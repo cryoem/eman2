@@ -3366,34 +3366,29 @@ def pack_message(data):
     print(sys.getdefaultencoding())
     if isinstance(data, str):
         if len(data) > 256:
-            return "C" + zlib.compress(data, 1)
+            return b"C" + zlib.compress(data.encode('latin-1'), 1)
         else:
-            return "S" + data
+            return b"S" + data.encode('latin-1')
     else:
         d2x = pickle.dumps(data, 2)
-        if type(d2x) == bytes:
-            if len(d2x) > 256:
-                return b"Z" + zlib.compress(d2x, 1)
-            else:
-                return b"O" + d2x
+        if len(d2x) > 256:
+            return b"Z" + zlib.compress(d2x, 1)
         else:
-            if len(d2x) > 256:
-                return "Z" + zlib.compress(d2x, 1)
-            else:
-                return "O" + d2x
+            return b"O" + d2x
+
 
 
 def unpack_message(msg):
     """Unpack a data payload prepared by pack_message"""
 
-    if msg[0] == b"C":
-        return zlib.decompress((msg[1:]).tostring())
-    elif msg[0] == b"S":
-        return (msg[1:]).tostring()
-    elif msg[0] == b"Z":
-        return pickle.loads(zlib.decompress((msg[1:]).tostring()))
-    elif msg[0] == b"O":
-        return pickle.loads((msg[1:]).tostring())
+    if msg[0:1] == b"C":
+        return zlib.decompress(msg[1:]).decode('latin1')
+    elif msg[0:1] == b"S":
+        return (msg[1:].decode('latin1'))
+    elif msg[0:1] == b"Z":
+        return pickle.loads(zlib.decompress((msg[1:])))
+    elif msg[0:1] == b"O":
+        return pickle.loads((msg[1:]))
     else:
         sp_global_def.ERROR(
             "ERROR: Invalid MPI message. Please contact developers. (%s)"
@@ -3445,6 +3440,12 @@ def wrap_mpi_recv(source, communicator=None):
     return unpack_message(msg)
 
 
+
+'''    print(msg[0:1], msg[1:2], msg[2:3], msg[3:-1])
+    print(msg[0:1].decode('latin1') , msg[1:2].decode('latin1')  , msg[2:3].decode('latin1') , msg[3:-1].decode('latin1') )
+    print([msg[i:i+1] for i in range(len(msg))])
+    print([msg[i:i+1].decode('latin1') for i in range(len(msg))])'''
+
 def wrap_mpi_bcast(data, root, communicator=None):
 
     if communicator == None:
@@ -3455,18 +3456,28 @@ def wrap_mpi_bcast(data, root, communicator=None):
     if rank == root:
         msg = pack_message(data)
         n = struct.pack("I", len(msg))
+
     else:
         msg = None
         n = None
 
-    n = mpi.mpi_bcast(
-        n.decode('utf-8'), 4, mpi.MPI_CHAR, root, communicator
+    sizeofdata = mpi.mpi_bcast(
+        n, 4, mpi.MPI_CHAR, root, communicator
+    )  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm ).
+    if mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD) == 0:
+        sizeofdata = n
+
+    n = struct.unpack("I", sizeofdata)[0]
+    msgtobcast = mpi.mpi_bcast(
+        msg, n, mpi.MPI_CHAR, root, communicator
     )  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm )
-    n = struct.unpack("I", n)[0]
-    msg = mpi.mpi_bcast(
-        msg, n, mpi.MPI_BYTE, root, communicator
-    )  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm )
-    return unpack_message(msg)
+
+    if mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD) == 0:
+        msgtobcast = msg
+    else:
+        msgtobcast = b''.join([entry if entry != b'' else b'\x00' for entry in msgtobcast])
+
+    return unpack_message(msgtobcast)
 
 
 # data must be a python list (numpy array also should be implemented)
