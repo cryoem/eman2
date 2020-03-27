@@ -627,6 +627,8 @@ class EMHTMLFileType(EMFileType) :
 		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
 
 		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
+		if isinstance(header, bytes):
+			header=header.decode("utf-8")
 		if not "<html>" in header.lower() : return False # For the moment, we demand an <html> tag somewhere in the first 4k
 
 		try :

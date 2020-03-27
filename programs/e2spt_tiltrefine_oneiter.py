@@ -243,12 +243,14 @@ class SptTltRefineTask(JSTask):
 						
 				alignpm={"verbose":0,"sym":options.sym,"maxshift":options.maxshift,"initxform":xfs, "maxang":astep*2.}
 				#print("lenxfs:", len(xfs))
-			
+				if initxf["mirror"]:
+					b=b.process("xform.flip", {"axis":'x'})
 				b=b.do_fft()
 				b.process_inplace("xform.phaseorigin.tocorner")
 				c=b.xform_align_nbest("rotate_translate_2d_to_3d_tree",a, alignpm, 1)
 
 				xf=c[0]["xform.align3d"]
+				xf.set_mirror(initxf["mirror"])
 				r={"idx":ii,"xform.align3d":xf, "score":c[0]["score"]}
 			
 			#print(ii,info, r)
