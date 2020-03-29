@@ -30,6 +30,8 @@
 #
 #
 
+from past.utils import old_div
+
 ''' variables governing system performance - can be changed by the user'''
 # 2-D interpolation method:
 #    "linear", "quadratic", "gridding"
