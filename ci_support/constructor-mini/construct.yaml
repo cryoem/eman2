@@ -19,7 +19,7 @@ keep_pkgs: False
 ignore_duplicate_files: True
 
 specs:
-  - eman2 2.31
+  - eman2        2.39
   - conda 4.6.14 py27*
   - conda-build 3.17.8
   - pip
