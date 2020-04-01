@@ -197,6 +197,7 @@ const string NormalizeByMassProcessor::NAME = "normalize.bymass";
 const string NormalizeEdgeMeanProcessor::NAME = "normalize.edgemean";
 const string NormalizeCircleMeanProcessor::NAME = "normalize.circlemean";
 const string NormalizeLREdgeMeanProcessor::NAME = "normalize.lredge";
+const string NormalizeHistPeakProcessor::NAME = "normalize.histpeak";
 const string NormalizeMaxMinProcessor::NAME = "normalize.maxmin";
 const string NormalizeRowProcessor::NAME = "normalize.rows";
 const string NormalizeToLeastSquareProcessor::NAME = "normalize.toimage";
@@ -458,6 +459,7 @@ template <> Factory < Processor >::Factory()
 	force_add<HarmonicProcessor>();
 
 	force_add<NormalizeStdProcessor>();
+	force_add<NormalizeHistPeakProcessor>();
 	force_add<NormalizeUnitProcessor>();
 	force_add<NormalizeUnitSumProcessor>();
 	force_add<NormalizeMaskProcessor>();
@@ -1266,6 +1268,8 @@ void GaussZFourierProcessor::process_inplace(EMData * image)
 		image->set_attr("apix_y", (float)params["apix"]);
 		image->set_attr("apix_z", (float)params["apix"]);
 	}
+	
+	int xynoz = params.set_default("xynoz",0);
 
 	const Dict dict = image->get_attr_dict();
 	if( params.has_key("cutoff_freq") ) {
@@ -1304,11 +1308,24 @@ void GaussZFourierProcessor::process_inplace(EMData * image)
 	omega /=(nz*nz)/4;
 	zcenter=zcenter*(float)dict["apix_x"]*nz;
 
-	for (int z=-nz/2; z<nz/2; z++) {
-		for (int y=-ny/2; y<ny/2; y++) {
-			for (int x=0; x<nx/2; x++) {
-				std::complex <float> v=fft->get_complex_at(x,y,z);
-				fft->set_complex_at(x,y,z,v*exp(-omega*(abs(z)-zcenter)*(abs(z)-zcenter)));
+	if (xynoz) {
+		for (int x=0; x<nx/2; x++) {
+			for (int z=(x==0?0:-nz/2); z<nz/2; z++) {
+				for (int y=(x==0&&z==0?0:-ny/2); y<ny/2; y++) {
+					std::complex <float> v=fft->get_complex_at(x,y,z);
+					float r=Util::hypot_fast(x,y);
+					fft->set_complex_at(x,y,z,v*exp(-omega*(r-zcenter)*(r-zcenter)));
+				}
+			}
+		}
+	}
+	else {
+		for (int z=-nz/2; z<nz/2; z++) {
+			for (int y=-ny/2; y<ny/2; y++) {
+				for (int x=0; x<nx/2; x++) {
+					std::complex <float> v=fft->get_complex_at(x,y,z);
+					fft->set_complex_at(x,y,z,v*exp(-omega*(abs(z)-zcenter)*(abs(z)-zcenter)));
+				}
 			}
 		}
 	}
@@ -4859,6 +4876,47 @@ float NormalizeStdProcessor::calc_mean(EMData * image) const
 	return image->get_attr("mean");
 }
 
+float NormalizeHistPeakProcessor::calc_mean(EMData * image) const
+{
+	if (!image) {
+		LOGWARN("NULL Image");
+		return 0;
+	}
+	float mean = image->get_attr("mean");
+	float sig = image->get_attr("sigma");
+	size_t n=image->get_size();
+	
+	// We want at least 100 values per bin on average
+	int hist_size = image->get_size()/100;
+	if (hist_size>1000) hist_size=1000;
+	if (hist_size<5) hist_size=5;
+	vector<float> hist(hist_size,0.0f);
+	
+	float histmin=mean-2.0f*sig;
+	float histmax=mean+2.0f*sig;
+	float step=(histmax-histmin)/(hist_size-1);
+	for (size_t i=0; i<n; i++) {
+		int bin = (image->get_value_at_index(i)-histmin)/step;
+		bin=bin<0?0:(bin>=hist_size?hist_size-1:bin);
+		hist[bin]++;
+	}
+	
+	// yes, probably could use fancy vector methods...
+	int maxv=hist[1],maxn=1;
+	for (int i=2; i<hist_size-1; i++) {
+		if (hist[i]>maxv) { maxv=hist[i]; maxn=i; }
+	}
+	
+	// weighted average position of the peak and nearest neighbors
+	float v1=hist[maxn-1],v2=hist[maxn],v3=hist[maxn+1];
+	float ret= (v1*(maxn-1)+v2*maxn+v3*(maxn+1))/(v1+v2+v3)*step+histmin;
+	printf("%f %f %f %f %f %f\n",v1,v2,v3,mean,sig,ret);
+	
+	return ret;
+}
+
+
+
 EMData *SubtractOptProcessor::process(const EMData * const image)
 {
 	if (!image) {
@@ -7533,15 +7591,16 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 	float cs = params.set_default("cs",2.7);
 	float voltage = params.set_default("voltage",300.0);
 	float apix = params.set_default("apix",image->get_attr("apix_x"));
+	float hppix = params.set_default("hppix",-1.0f);
 	int useheader = params.set_default("useheader",0);
 	int phaseflip = params.set_default("phaseflip",0);
-
 
 	int ny = image->get_ysize();
 	EMAN2Ctf ctf;
 	if (image->has_attr("ctf") && useheader){
 		
 		ctf.copy_from((Ctf *)(image->get_attr("ctf")));
+//		printf("CTF %f\t%f\t%f\t%f\n",ctf.defocus,ctf.ampcont,ctf.voltage,ctf.apix);
 	}
 	else {
 		ctf.defocus=defocus;
@@ -7551,7 +7610,6 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 		ctf.ampcont=ac;
 		ctf.dfdiff=0;
 		ctf.bfactor=200.0;
-		
 	}
 	ctf.apix=apix;
 	ctf.dsbg=1.0/(ctf.apix*ny);
@@ -7561,7 +7619,8 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 
 	// reciprocal until the first CTF maximum, then no filter after that
 	int i;
-	for (i=0; i<np/2-1; i++) {
+	filter[0]=1.0;
+	for (i=1; i<np/2-1; i++) {
 		if (filter[i+1]<filter[i]) {
 			filter[i]=1.0/filter[i];
 			break;
@@ -7573,6 +7632,10 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 		if (phaseflip) filter[i]=filter[gi]*(filter[i]<0?-1.0f:1.0f);
 		else filter[i]=filter[gi];
 		i++;
+	}
+	
+	if (hppix>0) {
+		for (int i=0; i<(int)hppix*3.0; i++) filter[i]*=tanh((float)i/hppix);
 	}
 
 //	for (i=0; i<np/2; i++) printf("%d\t%1.3g\n",i,filter[i]);

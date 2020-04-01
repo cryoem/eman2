@@ -173,7 +173,7 @@ def main():
 		for i in range(len(imgs)):
 			ctf=EMAN2Ctf()
 			ctf.defocus=defocus[i]
-			ctf.set_phase(phase[i])
+			ctf.set_phase(phase[i]*pi/180.0)
 			ctf.voltage=voltage
 			ctf.cs=cs
 			imgs[i]["ctf"]=ctf
@@ -961,23 +961,25 @@ def make_tile_with_thr(args):
 	
 		m.mult(msk)
 		mp=recon.preprocess_slice(m, xf)
-		if mp.has_attr("ctf") : mp.process_inplace("filter.ctfcorr.simple",{"useheader":1,"phaseflip":1})
+		if mp.has_attr("ctf") : mp.process_inplace("filter.ctfcorr.simple",{"useheader":1,"phaseflip":1,"hppix":2})
 		else : print("No CTF found for tilt-series, consider running CTF determination")
+		mp.set_complex_at(0,0,0)		# make sure the mean value is consistent (0) in all of the images
 		ppimgs.append((mp,xf))
 
 	# iterative reconstruction process with real-space modification
-	for j,frac in enumerate((0.6,0.36,0.22,0.13,0.078,0)):
-	#for j,frac in enumerate((0.6,0.36,0.22,0.13,0.078,0.047,0.028,0.0168,0.01,0)):
+	#for j,frac in enumerate((0.75,0.5625,0.422,0.316,0.237,0.178,0.133,0.1,0)):
+	for j,frac in enumerate((0.6,0.36,0.22,0.13,0.078,0.047,0.028,0.0168,0.01,0)):
+#	for j,frac in enumerate((0.6,0.36,0.22,0.13,0.078,0.047,0.028,0.0168,0.01,0)):
 	#for j,frac in enumerate((0.6,0.3,0.15,0.08,0.04,0.02,0.01,0)):
 		if j==0: recon.setup()
 		else: recon.setup_seed(threed.do_fft().process("xform.phaseorigin.tocorner"),0.01)
 		for i in range(len(ppimgs)):
 			recon.insert_slice(ppimgs[i][0],ppimgs[i][1],1)
-			if frac==0 and stepx in (-2,2) and stepy==-1: 
+			if frac==0 and stepx in (-0,1) and stepy==0: 
 				ppimgs[i][0].write_image("test_tilt.hdf",-1)
 
 		# we just do the normalization once
-		if j==0:
+		if j in (0,1):
 			norm=np.zeros(len(ppimgs))
 			for i in range(len(ppimgs)):
 				recon.determine_slice_agreement(ppimgs[i][0],ppimgs[i][1],1,0)
@@ -995,16 +997,24 @@ def make_tile_with_thr(args):
 		if frac>0: 
 			#mm=max(-threed["minimum"],threed["maximum"])	# symmetric about zero
 			#threed.process_inplace("threshold.rangetozero",{"minval":-mm*frac,"maxval":mm*frac})
-			mask=threed.process("filter.lowpass.gauss",{"cutoff_abs":0.1})
-			mask.process_inplace("math.absvalue")
+			#mask=threed.process("filter.lowpass.gaussz",{"cutoff_abs":0.075,"xynoz":1})
+#			mask=threed.process("normalize.histpeak")
+			mask=threed.process("math.absvalue")
+#			mask.process_inplace("math.absvalue")
 			mask.process_inplace("threshold.rangetozero",{"minval":0,"maxval":mask["maximum"]*frac,"gauss_width":3.5})
 			mask.process_inplace("threshold.notzero")
+
+#			mask=threed*-1.0
+#			mask.process_inplace("threshold.binary",{"value":mask["minimum"]+(mask["maximum"]-mask["minimum"])*frac})
+
+			mask.process_inplace("filter.lowpass.gaussz",{"cutoff_abs":0.075,"xynoz":1})
+			mask.process_inplace("threshold.binary",{"value":0.3})			
+			if stepx in (0,1) and stepy==0 : mask.write_image("test_tile.hdf",j*2+1)
 			#mask.process_inplace("threshold.rangetozero",{"minval":mask["minimum"]*frac,"maxval":mask["maximum"]*frac,"gauss_width":4})
 			#mask.process_inplace("mask.addshells",{"nshells":2})
 			threed.mult(mask)
 			#threed.process_inplace("threshold.rangetozero",{"minval":threed["minimum"]*frac,"maxval":threed["maximum"]*frac,"gauss_width":4})  # postive negative balance
 #			threed.mult(2.0);		# to compensate a bit for masked out mass?  Just trying it.
-			if stepx in (0,1) and stepy==0 : threed.write_image("test_tile.hdf",j*2+1)
 		print(stepx,stepy,threed["ny"])
 		
 	threed.process_inplace("math.gausskernelfix",{"gauss_width":4.0})
