@@ -9051,7 +9051,9 @@ def pearson(X, Y):
 	from math import sqrt
 	Sx = Sy = Sxx = Syy = Sxy = 0.0
 	N = len(X)
-	for x, y in map(None, X, Y):
+	for i in range(N):
+		x = X[i]
+		y = Y[i]
 		Sx  += x
 		Sy  += y
 		Sxx += x*x
