@@ -979,16 +979,16 @@ def make_tile_with_thr(args):
 				ppimgs[i][0].write_image("test_tilt.hdf",-1)
 
 		# we just do the normalization once
-		if j in (0,1):
-			norm=np.zeros(len(ppimgs))
-			for i in range(len(ppimgs)):
-				recon.determine_slice_agreement(ppimgs[i][0],ppimgs[i][1],1,0)
-				norm[i]=ppimgs[i][0]["reconstruct_norm"]
-			
-			norm/=norm.mean()
-			for i in range(len(ppimgs)): 
-				ppimgs[i][0].mult(norm[i])
-				if stepx in (0,1) and stepy==0 : print(f'{j} ({frac})\t{i}\t{norm[i]}\t{ppimgs[i][0]["reconstruct_absqual"]}')
+#		if j in (0,1):
+		norm=np.zeros(len(ppimgs))
+		for i in range(len(ppimgs)):
+			recon.determine_slice_agreement(ppimgs[i][0],ppimgs[i][1],1,0)
+			norm[i]=ppimgs[i][0]["reconstruct_norm"]
+		
+		norm/=norm.mean()
+		for i in range(len(ppimgs)): 
+			ppimgs[i][0].mult(norm[i])
+			if stepx in (0,1) and stepy==0 : print(f'{j} ({frac})\t{i}\t{norm[i]}\t{ppimgs[i][0]["reconstruct_absqual"]}')
 
 		threed=recon.finish(True)
 		threedn=threed.copy()
