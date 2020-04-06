@@ -168,7 +168,7 @@ def main():
 		jd["sym"] = oldjd["sym"]
 		jd["localfilter"]=oldjd["localfilter"]
 		jd["mask"]=oldjd["mask"]
-		if oldjd.has_key("radref"):
+		if "radref" in oldjd:
 			jd["radref"]=oldjd["radref"]
 			
 		if fromspt:
@@ -402,14 +402,14 @@ def main():
 
 		s = ""
 		
-		if jd.has_key("goldstandard"): 
+		if "goldstandard" in jd: 
 			if jd["goldstandard"] > 0: 
 				s += " --align"
-		if jd.has_key("setsf"):
+		if "setsf" in jd:
 			s += " --setsf {}".format(jd['setsf']) #options.setsf)
 		
 		
-		if options.tophat=="auto" and jd.has_key("localfilter") and jd["localfilter"]==True:
+		if options.tophat=="auto" and ("localfilter" in jd) and jd["localfilter"]==True:
 			s += " --tophat local"
 		elif options.tophat=="local":
 			s += " --tophat local"
