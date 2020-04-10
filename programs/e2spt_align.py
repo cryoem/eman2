@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 # align all particles to reference and store alignment results
 # Author: Steven Ludtke (sludtke@bcm.edu)
 # Copyright (c) 2000- Baylor College of Medicine
@@ -229,10 +227,11 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 
 	while 1:
 		st_vals = etc.check_task(tids)
+		if -100 in st_vals:
+			print("Error occurs in parallelism. Exit")
+			return
 		E2progress(logid, np.mean(st_vals)/100.)
-		#print("{:.1f}/{} finished".format(np.sum(st_vals)/100, len(tids)))
-		#print(st_vals)
-		#sys.stdout.flush()
+		
 		if np.min(st_vals) == 100: break
 		time.sleep(5)
 
@@ -448,7 +447,7 @@ class SptAlignTask(JSTask):
 				#print(xf, cs, np.argmin(cs))
 				
 				
-				ci=np.argmin(cs)
+				ci=np.argmin(cs).item()
 				txf=transxf[ci]
 				x=Transform()
 				x=x.get_sym(options.breaksymsym, ci).inverse()

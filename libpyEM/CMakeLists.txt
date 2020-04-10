@@ -11,7 +11,7 @@ function(ADD_PYSTE_LIB libname)
 			PROPERTIES
 			PREFIX lib
 			SUFFIX ${suffix}
-			LINK_LIBRARIES "EM2;Boost::python3"
+			LINK_LIBRARIES "EM2;Boost::python37"
 			)
 	
 	install(TARGETS ${libname} DESTINATION ${SP_DIR})
@@ -66,5 +66,5 @@ install(FILES ${empythonlibs}
 
 add_subdirectory(qtgui)
 
-target_link_libraries(pyUtils2         NumPy Boost::numpy3)
-target_link_libraries(pyTypeConverter2 NumPy Boost::numpy3)
+target_link_libraries(pyUtils2         NumPy Boost::numpy37)
+target_link_libraries(pyTypeConverter2 NumPy Boost::numpy37)

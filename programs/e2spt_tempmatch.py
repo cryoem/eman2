@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # Muyuan Chen 2018-04
 
-from __future__ import print_function
-from __future__ import division
-from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -166,7 +163,7 @@ def main():
 		
 		
 		pts=np.array(pts)
-		print(pts.shape)
+		#print(pts.shape)
 		dst=scidist.cdist(pts, pts)+(np.eye(len(pts))*dthr*100)
 		tokeep=np.ones(len(dst), dtype=bool)
 		for i in range(len(dst)):

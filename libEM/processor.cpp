@@ -128,6 +128,7 @@ const string IntTranslateProcessor::NAME = "xform.translate.int";
 const string ScaleTransformProcessor::NAME = "xform.scale";
 const string ApplySymProcessor::NAME = "xform.applysym";
 const string ClampingProcessor::NAME = "threshold.clampminmax";
+const string RangeZeroProcessor::NAME = "threshold.rangetozero";
 const string NSigmaClampingProcessor::NAME = "threshold.clampminmax.nsigma";
 const string ToMinvalProcessor::NAME = "threshold.belowtominval";
 const string CutToZeroProcessor::NAME = "threshold.belowtozero_cut";
@@ -196,6 +197,7 @@ const string NormalizeByMassProcessor::NAME = "normalize.bymass";
 const string NormalizeEdgeMeanProcessor::NAME = "normalize.edgemean";
 const string NormalizeCircleMeanProcessor::NAME = "normalize.circlemean";
 const string NormalizeLREdgeMeanProcessor::NAME = "normalize.lredge";
+const string NormalizeHistPeakProcessor::NAME = "normalize.histpeak";
 const string NormalizeMaxMinProcessor::NAME = "normalize.maxmin";
 const string NormalizeRowProcessor::NAME = "normalize.rows";
 const string NormalizeToLeastSquareProcessor::NAME = "normalize.toimage";
@@ -324,7 +326,6 @@ const string ZThicknessProcessor::NAME = "misc.zthick";
 const string ReplaceValuefromListProcessor::NAME = "misc.colorlabel";
 const string PolyMaskProcessor::NAME = "mask.poly";
 const string AmpMultProcessor::NAME = "math.multamplitude";
-const string TransformTomoProcessor::NAME = "xform.tomo";
 
 //#ifdef EMAN2_USING_CUDA
 //const string CudaMultProcessor::NAME = "cuda.math.mult";
@@ -375,6 +376,7 @@ template <> Factory < Processor >::Factory()
 	force_add<NSigmaClampingProcessor>();
 
 	force_add<ToZeroProcessor>();
+	force_add<RangeZeroProcessor>();
 	force_add<AboveToZeroProcessor>();
 	force_add<OutlierProcessor>();
 	force_add<ToMinvalProcessor>();
@@ -457,6 +459,7 @@ template <> Factory < Processor >::Factory()
 	force_add<HarmonicProcessor>();
 
 	force_add<NormalizeStdProcessor>();
+	force_add<NormalizeHistPeakProcessor>();
 	force_add<NormalizeUnitProcessor>();
 	force_add<NormalizeUnitSumProcessor>();
 	force_add<NormalizeMaskProcessor>();
@@ -616,7 +619,6 @@ template <> Factory < Processor >::Factory()
 	force_add<ReplaceValuefromListProcessor>();
 	force_add<PolyMaskProcessor>();
 	force_add<AmpMultProcessor>();
-	force_add<TransformTomoProcessor>();
 
 //#ifdef EMAN2_USING_CUDA
 //	force_add<CudaMultProcessor>();
@@ -1266,6 +1268,8 @@ void GaussZFourierProcessor::process_inplace(EMData * image)
 		image->set_attr("apix_y", (float)params["apix"]);
 		image->set_attr("apix_z", (float)params["apix"]);
 	}
+	
+	int xynoz = params.set_default("xynoz",0);
 
 	const Dict dict = image->get_attr_dict();
 	if( params.has_key("cutoff_freq") ) {
@@ -1304,11 +1308,24 @@ void GaussZFourierProcessor::process_inplace(EMData * image)
 	omega /=(nz*nz)/4;
 	zcenter=zcenter*(float)dict["apix_x"]*nz;
 
-	for (int z=-nz/2; z<nz/2; z++) {
-		for (int y=-ny/2; y<ny/2; y++) {
-			for (int x=0; x<nx/2; x++) {
-				std::complex <float> v=fft->get_complex_at(x,y,z);
-				fft->set_complex_at(x,y,z,v*exp(-omega*(abs(z)-zcenter)*(abs(z)-zcenter)));
+	if (xynoz) {
+		for (int x=0; x<nx/2; x++) {
+			for (int z=(x==0?0:-nz/2); z<nz/2; z++) {
+				for (int y=(x==0&&z==0?0:-ny/2); y<ny/2; y++) {
+					std::complex <float> v=fft->get_complex_at(x,y,z);
+					float r=Util::hypot_fast(x,y);
+					fft->set_complex_at(x,y,z,v*exp(-omega*(r-zcenter)*(r-zcenter)));
+				}
+			}
+		}
+	}
+	else {
+		for (int z=-nz/2; z<nz/2; z++) {
+			for (int y=-ny/2; y<ny/2; y++) {
+				for (int x=0; x<nx/2; x++) {
+					std::complex <float> v=fft->get_complex_at(x,y,z);
+					fft->set_complex_at(x,y,z,v*exp(-omega*(abs(z)-zcenter)*(abs(z)-zcenter)));
+				}
 			}
 		}
 	}
@@ -1999,6 +2016,47 @@ void DoGFourierProcessor::create_radial_func(vector < float >&radial_mask) const
 	}
 }
 
+void RangeZeroProcessor::process_inplace(EMData * image)
+{
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+	
+	float gauss_width = params.set_default("gauss_width",0.0f);
+
+	if (gauss_width<=0) {
+		size_t size = (size_t)image->get_xsize() *
+					(size_t)image->get_ysize() *
+					(size_t)image->get_zsize();
+		float *data = image->get_data();
+
+		for (size_t i = 0; i < size; ++i) {
+			if (data[i]>=minval && data[i]<=maxval) data[i]=0.0f;
+		}
+		image->update();
+	}
+	else {
+		int nx = image->get_xsize();
+		int ny = image->get_ysize();
+		int nz = image->get_zsize();
+		float wid=gauss_width/(ny*ny);
+		
+		for (int z=0; z<nz; z++) {
+			for (int y=0; y<ny; y++) {
+				for (int x=0; x<nx; x++) {
+					float cor=exp(-Util::hypot3sq(x-nx/2,y-ny/2,z-nz/2)*wid);
+					if (image->get_value_at(x,y,z)>=minval*cor && image->get_value_at(x,y,z)<=maxval*cor) image->set_value_at(x,y,z,0.0f);
+				}
+			}
+		}
+		image->update();
+	}
+		
+}
+
+
+
 void RealPixelProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
@@ -2022,6 +2080,7 @@ void RealPixelProcessor::process_inplace(EMData * image)
 	}
 	image->update();
 }
+
 
 void CoordinateProcessor::process_inplace(EMData * image)
 {
@@ -4817,6 +4876,47 @@ float NormalizeStdProcessor::calc_mean(EMData * image) const
 	return image->get_attr("mean");
 }
 
+float NormalizeHistPeakProcessor::calc_mean(EMData * image) const
+{
+	if (!image) {
+		LOGWARN("NULL Image");
+		return 0;
+	}
+	float mean = image->get_attr("mean");
+	float sig = image->get_attr("sigma");
+	size_t n=image->get_size();
+	
+	// We want at least 100 values per bin on average
+	int hist_size = image->get_size()/100;
+	if (hist_size>1000) hist_size=1000;
+	if (hist_size<5) hist_size=5;
+	vector<float> hist(hist_size,0.0f);
+	
+	float histmin=mean-2.0f*sig;
+	float histmax=mean+2.0f*sig;
+	float step=(histmax-histmin)/(hist_size-1);
+	for (size_t i=0; i<n; i++) {
+		int bin = (image->get_value_at_index(i)-histmin)/step;
+		bin=bin<0?0:(bin>=hist_size?hist_size-1:bin);
+		hist[bin]++;
+	}
+	
+	// yes, probably could use fancy vector methods...
+	int maxv=hist[1],maxn=1;
+	for (int i=2; i<hist_size-1; i++) {
+		if (hist[i]>maxv) { maxv=hist[i]; maxn=i; }
+	}
+	
+	// weighted average position of the peak and nearest neighbors
+	float v1=hist[maxn-1],v2=hist[maxn],v3=hist[maxn+1];
+	float ret= (v1*(maxn-1)+v2*maxn+v3*(maxn+1))/(v1+v2+v3)*step+histmin;
+	printf("%f %f %f %f %f %f\n",v1,v2,v3,mean,sig,ret);
+	
+	return ret;
+}
+
+
+
 EMData *SubtractOptProcessor::process(const EMData * const image)
 {
 	if (!image) {
@@ -7488,26 +7588,28 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 
 	float defocus = params.set_default("defocus",3.0);
 	float ac = params.set_default("ac",10.0);
+	float cs = params.set_default("cs",2.7);
 	float voltage = params.set_default("voltage",300.0);
 	float apix = params.set_default("apix",image->get_attr("apix_x"));
-	int useheader = params.set_default("useheader",1);
-
+	float hppix = params.set_default("hppix",-1.0f);
+	int useheader = params.set_default("useheader",0);
+	int phaseflip = params.set_default("phaseflip",0);
 
 	int ny = image->get_ysize();
 	EMAN2Ctf ctf;
 	if (image->has_attr("ctf") && useheader){
 		
 		ctf.copy_from((Ctf *)(image->get_attr("ctf")));
+//		printf("CTF %f\t%f\t%f\t%f\n",ctf.defocus,ctf.ampcont,ctf.voltage,ctf.apix);
 	}
 	else {
 		ctf.defocus=defocus;
 		ctf.voltage=voltage;
-		ctf.cs=4.1;				// has negligible impact, so we just use a default
+		ctf.cs=cs;
 		
 		ctf.ampcont=ac;
 		ctf.dfdiff=0;
 		ctf.bfactor=200.0;
-		
 	}
 	ctf.apix=apix;
 	ctf.dsbg=1.0/(ctf.apix*ny);
@@ -7517,7 +7619,8 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 
 	// reciprocal until the first CTF maximum, then no filter after that
 	int i;
-	for (i=0; i<np/2-1; i++) {
+	filter[0]=1.0;
+	for (i=1; i<np/2-1; i++) {
 		if (filter[i+1]<filter[i]) {
 			filter[i]=1.0/filter[i];
 			break;
@@ -7526,8 +7629,13 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 	}
 	int gi=i;
 	while (i<np/2) {
-		filter[i]=filter[gi];
+		if (phaseflip) filter[i]=filter[gi]*(filter[i]<0?-1.0f:1.0f);
+		else filter[i]=filter[gi];
 		i++;
+	}
+	
+	if (hppix>0) {
+		for (int i=0; i<(int)hppix*3.0; i++) filter[i]*=tanh((float)i/hppix);
 	}
 
 //	for (i=0; i<np/2; i++) printf("%d\t%1.3g\n",i,filter[i]);
@@ -10325,237 +10433,6 @@ int EMAN::multi_processors(EMData * image, vector < string > processornames)
 		image->process_inplace(processornames[i]);
 	}
 	return 0;
-}
-
-
-EMData* TransformTomoProcessor::process(const EMData* const image){
-	
-	
-		
-	Transform t=*(Transform *)params["transform"];
-	
-	int nx = image->get_xsize();
-	int ny = image->get_ysize();
-	int nz = image->get_zsize();
-	if ((nz == 1) || (image -> is_complex()==false))
-		throw ImageFormatException("3d complex images only");
-	
-	int N	= ny;
-	const float * const src_data = image->get_const_data();
-	float *des_data = (float *) EMUtil::em_calloc(sizeof(float)*nx,ny*nz);
-	
-	//printf("Hello 3-d complex	 TransformProcessor \n");
-	float phi =	 t.get_rotation("eman").get("phi"); phi=pi*phi/180;
-	float alt =	 t.get_rotation("eman").get("alt"); alt=pi*alt/180;
-	float az  =	 t.get_rotation("eman").get("az");	 az=pi*az /180;
-	Vec3f transNow= t.get_trans();
-	float xshift= transNow[0]; float yshift= transNow[1];float zshift= transNow[2];
-
-	float MatXX = (cos(az)*cos(phi) - sin(az)*cos(alt)*sin(phi) );
-	float MatXY = (- cos(az)*sin(phi) - sin(az)*cos(alt)*cos(phi) ) ;
-	float MatXZ = sin(az)*sin(alt) ;
-	float MatYX = (sin(az)*cos(phi) + cos(az)*cos(alt)*sin(phi) );
-	float MatYY = (- sin(az)*sin(phi) + cos(az)*cos(alt)*cos(phi) )	 ;
-	float MatYZ = - cos(az)*sin(alt) ;
-	float MatZX = sin(alt)*sin(phi);
-	float MatZY = sin(alt)*cos(phi);
-	float MatZZ = cos(alt)	;
-	float tempR=0; float tempI=0;
-	float Mid =(N+1.0)/2.0;	 // Check this
-	float phaseConstx  = -2*pi*xshift/ny ;
-	float k1= cos(phaseConstx); float k2= sin(phaseConstx);
-	float k3= 1.0/k1; float k4= k2/k1; // that is 1/cos and tan()
-//		float dataRLLL, dataRLLU, dataRLUL, dataRLUU;
-//		float dataRULL, dataRULU, dataRUUL, dataRUUU;
-//		float dataILLL, dataILLU, dataILUL, dataILUU;
-//		float dataIULL, dataIULU, dataIUUL, dataIUUU;
-	int nxny = nx*ny;
-
-	for (int kzN = 0; kzN < ny; kzN++) {
-		int kzNew=kzN;
-		if (kzN >= nx/2) kzNew=kzN-N; //			Step 0 Unalias new coords;
-		for (int kyN = 0; kyN < ny; kyN++) {//		 moves them to lesser mag
-		int kyNew=kyN;
-		if (kyN>=nx/2) kyNew=kyN-ny;  //		Step 0	 Unalias
-			//  Step 1: Do inverse Rotation to get former values, and alias	Step1
-			float kxOld =  MatXY * kyNew +	MatXZ *kzNew - MatXX;
-				float kyOld =  MatYY * kyNew +	MatYZ*kzNew	 - MatYX;
-		float kzOld =  MatZY * kyNew +	MatZZ*kzNew	 - MatZX;
-				float phase = -2*pi*kzNew*zshift/ny-2*pi*kyNew*yshift/ny - phaseConstx ;
-		float Cphase = cos(phase);
-		float Sphase = sin(phase);
-		int kx, ky,kz, II;
-
-		int IndexOut= -2+ nx* kyN +nxny*kzN;
-		float OutBounds2 = (Mid*Mid- (kyOld*kyOld+kzOld*kzOld)) ;
-
-		int kxNewMax= nx/2;
-		if (OutBounds2< 0) kxNewMax=0;
-		else if (OutBounds2<(nx*nx/4)) kxNewMax=sqrt(OutBounds2);
-		for (int kxN = kxNewMax; kxN < nx/2 ; kxN++ ) {
-					des_data[2*kxN	+ nx* kyN +nxny*kzN] = 0;
-					des_data[2*kxN	+ nx* kyN +nxny*kzN+1] = 0;
-		}
-
-
-		for (int kxNew = 0; kxNew < kxNewMax; kxNew++ ) {
-/*				  printf(" kxNew = %d, kyNew = %d, kzNew = %d,kxOld = %3.2f, kyOld = %3.2f, kzOld = %3.2f \n",
-					kxNew,kyNew,kzNew, kxOld, kyOld, kzOld);*/
-
-				IndexOut +=2;
-
-				kxOld +=  MatXX ;
-				kyOld +=  MatYX ;
-				kzOld +=  MatZX ;
-							phase += phaseConstx;
-				Cphase = Cphase*k1 -Sphase*k2; //update using trig addition; this is	cos = cos cos  -sin sin
-				Sphase = Sphase*k3+ Cphase*k4;	 //	  and	sin = sin  (1/ cos) + cos * tan;
-
-			//
-			if ((abs(kxOld)>=Mid) || (abs(kyOld)>=Mid) || (abs(kzOld)>=Mid) ) { // out of bounds
-						des_data[IndexOut] = 0;
-						des_data[IndexOut+1] = 0;
-				continue;}
-/*				if (kxOld*kxOld+OutBounds> 2*Mid*Mid){ // out of bounds
-						des_data[IndexOut] = 0;
-						des_data[IndexOut+1] = 0;
-				continue;}  */
-			//
-			int kxLower= floor(kxOld);
-			int kyLower= floor(kyOld);
-			int kzLower= floor(kzOld);
-			//
-			float dkxUpper= (kxOld-kxLower);
-			float dkyUpper= (kyOld-kyLower);
-			float dkzUpper= (kzOld-kzLower);
-
-			//		LLL	 1
-			kx= kxLower; ky =kyLower; kz=kzLower;
-//				dataRLLL=0;	  dataILLL=0;
-//				if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //	  Step 2 Make sure to be in First BZ
-				int flagLLL=1;
-				if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
-				if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagLLL=-1;} // Step 3: if nec, use Friedel paired
-				int kLLL =2*kx   + nx*ky+ nxny*kz ;
-//				  dataRLLL =		 src_data[	   kLLL ];
-//				  dataILLL = flagLLL*src_data[ 1 + kLLL ]; //
-//				}
-
-			//		LLU	 2
-			kx= kxLower; ky =kyLower; kz=kzLower+1;
-//				dataRLLU=0;		dataILLU=0;
-//				if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //	  Step 2 Make sure to be in First BZ
-				int flagLLU=1;
-				if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
-				if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagLLU=-1;} // Step 3: if nec, use Friedel paired
-				int kLLU =2*kx   + nx*ky+ nxny*kz ;
-//				  dataRLLU =		 src_data[	kLLU];
-//				  dataILLU = flagLLU*src_data[1+kLLU];
-//				   }
-
-			//		LUL	 3
-			kx= kxLower; ky =kyLower+1; kz=kzLower;
-//				dataRLUL=0;	   dataILUL=0;
-//				if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //	  Step 2 Make sure to be in First BZ
-				int flagLUL=1;
-				if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
-				if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagLUL=-1;} // Step 3: if nec, use Friedel paired
-				int kLUL =2*kx   + nx*ky+ nxny*kz ;
-//				  dataRLUL =		 src_data[	kLUL];
-//				  dataILUL = flagLUL*src_data[1+kLUL];
-//				  }
-
-			//		LUU	 4
-			kx= kxLower; ky =kyLower+1; kz=kzLower+1;
-//				dataRLUU=0;		dataILUU=0;
-//				if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //	  Step 2 Make sure to be in First BZ
-				int flagLUU=1;
-				if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
-				if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagLUU=-1;} // Step 3: if nec, use Friedel paired
-				int kLUU =2*kx   + nx*ky+ nxny*kz ;
-//				  dataRLUU =		 src_data[	kLUU];
-//				  dataILUU = flagLUU*src_data[1+kLUU];
-//				  }
-
-			//		ULL	 5
-			kx= kxLower+1; ky =kyLower; kz=kzLower;
-//				dataRULL=0;		dataIULL=0;
-//				if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //	  Step 2 Make sure to be in First BZ
-				int flagULL=1;
-				if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
-				if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagULL=-1;} // Step 3: if nec, use Friedel paired
-				int kULL =2*kx   + nx*ky+ nxny*kz ;
-//				  dataRULL =		 src_data[	kULL];
-//				  dataIULL = flagULL*src_data[1+kULL];
-//				  }
-
-			//		ULU	 6
-			kx= kxLower+1; ky =kyLower; kz=kzLower+1;
-//				dataRULU=0;		dataIULU=0;
-//				if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //	  Step 2 Make sure to be in First BZ
-				int flagULU=1;
-				if (kx<0) kx += N; if (ky<0) ky += N;if (kz<0) kz += N;
-				if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagULU=-1;} // Step 3: if nec, use Friedel paired
-				int kULU =2*kx   + nx*ky+ nxny*kz ;
-//				  dataRULU =		 src_data[	kULU];
-//				  dataIULU = flagULU*src_data[1+kULU];
-//				  }
-
-			//		UUL	 7
-			kx= kxLower+1; ky =kyLower+1; kz=kzLower;
-//				dataRUUL=0;	   dataIUUL=0;
-//				if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //	  Step 2 Make sure to be in First BZ
-				int flagUUL=1;
-				if (kx<0) kx += N; if (ky<0) ky += N;if (kz<0) kz += N;
-				if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagUUL=-1;} // Step 3: if nec, use Friedel paired
-				int kUUL =2*kx   + nx*ky+ nxny*kz ;
-//				  dataRUUL =		 src_data[	kUUL];
-//				  dataIUUL = flagUUL*src_data[1+kUUL];
-//				}
-
-			//		UUU	 8
-			kx= kxLower+1; ky =kyLower+1; kz=kzLower+1;
-//				dataRUUU=0;	   dataIUUU=0;
-//				if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //	  Step 2 Make sure to be in First BZ
-				int flagUUU=1;
-				if (kx<0) kx += N; if (ky<0) ky += N;if (kz<0) kz += N;
-				if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagUUU=-1;} // Step 3: if nec, use Friedel paired
-				int kUUU =2*kx   + nx*ky+ nxny*kz ;
-//				  dataRUUU =		 src_data[	kUUU];
-//				  dataIUUU = flagUUU*src_data[1+kUUU];
-//				}
-				tempR = Util::trilinear_interpolate(
-				src_data[kLLL] , src_data[kULL],
-				src_data[kLUL] , src_data[kUUL],
-				src_data[kLLU] , src_data[kULU],
-				src_data[kLUU] , src_data[kUUU],
-				dkxUpper,dkyUpper,dkzUpper);
-
-				tempI = Util::trilinear_interpolate(
-				flagLLL*src_data[kLLL+1], flagULL*src_data[kULL+1],
-				flagLUL*src_data[kLUL+1], flagUUL*src_data[kUUL+1],
-				flagLLU*src_data[kLLU+1], flagULU*src_data[kULU+1],
-				flagLUU*src_data[kLUU+1], flagUUU*src_data[kUUU+1],
-				dkxUpper,dkyUpper,dkzUpper);
-
-				//		   Step 5	 Apply translation
-				float tempRb=tempR*Cphase - tempI*Sphase;
-				float tempIb=tempR*Sphase + tempI*Cphase;
-				//
-				des_data[IndexOut]   = tempRb;
-				des_data[IndexOut+1] = tempIb;
-	}}}	 // end z, y, x loops through new coordinates
-	EMData* p  = 0;
-	p = new EMData(des_data,image->get_xsize(),image->get_ysize(),image->get_zsize(),image->get_attr_dict());
-	return p;
-}
-
-void TransformTomoProcessor::process_inplace(EMData* image){
-	EMData *p=process(image);
-	image->set_data(p->get_data());
-	image->update();
-	delete p;
-	
 }
 
 float* TransformProcessor::transform(const EMData* const image, const Transform& t) const {
@@ -14922,10 +14799,8 @@ void BinaryOpeningProcessor::process_inplace(EMData *image)
 	float thresh = params.set_default("thresh",0.5);
 	image->process_inplace("threshold.binary",Dict("value",thresh));
 
-	for (int i = 0; i < iters; i++){
-		image->process_inplace("morph.dilate.binary",params);
-		image->process_inplace("morph.erode.binary",params);
-	}
+	for (int i = 0; i < iters; i++) image->process_inplace("morph.erode.binary",params);
+	for (int i = 0; i < iters; i++) image->process_inplace("morph.dilate.binary",params);
 }
 
 EMData* BinaryClosingProcessor::process(const EMData* const image)
@@ -14941,10 +14816,8 @@ void BinaryClosingProcessor::process_inplace(EMData *image)
 	float thresh = params.set_default("thresh",0.5);
 	image->process_inplace("threshold.binary",Dict("value",thresh));
 
-	for (int i = 0; i < iters; i++){
-		image->process_inplace("morph.erode.binary",params);
-		image->process_inplace("morph.dilate.binary",params);
-	}
+	for (int i = 0; i < iters; i++) image->process_inplace("morph.dilate.binary",params);
+	for (int i = 0; i < iters; i++) image->process_inplace("morph.erode.binary",params);
 }
 
 EMData* BinaryInternalGradientProcessor::process(const EMData* const image)

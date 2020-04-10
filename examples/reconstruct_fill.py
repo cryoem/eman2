@@ -1,6 +1,4 @@
 # proj_complete_test.py		Steven Ludtke	6/2013
-from __future__ import print_function
-from __future__ import division
 # this program will generate various numbers of projections and then test completeness in Fourier space during reconstruction with a specified reconstructor
 
 from past.utils import old_div

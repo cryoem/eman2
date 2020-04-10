@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 # Muyuan Chen 2017-03
 from past.utils import old_div
 from future import standard_library
@@ -111,7 +109,7 @@ def do_ali(ptcls, projs):
 def random_sample(n,k):
 	a=np.arange(n)
 	np.random.shuffle(a)
-	return a[:int(k)]
+	return a[:int(k)].tolist()
 
 def make_model(jsd,myid, options):
 	ptclname=options.ptcls
@@ -143,7 +141,7 @@ def make_model(jsd,myid, options):
 	samples=np.tile(np.arange(num),(ncopy,1))
 	#print "ncopy:", ncopy
 	for i in range(len(samples)): np.random.shuffle(samples[i])
-	samples=samples.flatten()
+	samples=samples.flatten().tolist()
 	kk=0
 	scr=[]
 	for it in range(1,niter):

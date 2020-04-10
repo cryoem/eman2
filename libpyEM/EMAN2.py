@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -293,7 +291,7 @@ def E2saveappwin(app,key,win):
 
 		E2setappval(app,key,geom)
 	except:
-		print("Error saving window location")
+		print("Error saving window location ",key)
 
 def E2loadappwin(app,key,win):
 	"""restores a geometry saved with E2saveappwin"""
@@ -525,14 +523,7 @@ def numbered_bdb(bdb_url):
 
 
 def get_header(filename,i):
-	if filename[0:4] == "bdb:":
-		db = db_open_dict(filename)
-		return db.get_header(i)
-	else:
-		read_header_only = True
-		e = EMData()
-		e.read_image(filename,i,read_header_only)
-		return e.get_attr_dict()
+	return EMData(filename,i,True).get_attr_dict()
 
 def remove_image(fsp):
 	"""This will remove the image file pointed to by fsp. The reason for this function
@@ -610,6 +601,17 @@ def floatvararg_callback(option, opt_str, value, parser):
     v = [float(i) for i in value.split(',')]
     setattr(parser.values, option.dest, v)
     return
+
+def commandoptions(options,exclude=[]):
+	"""This will reconstruct command-line options, excluding any options in exclude"""
+	opts=[]
+	for opt,val in vars(options).items():
+		if opt in exclude or opt=="positionalargs" or val==False or val==None: continue
+		if val==True : opts.append("--"+opt)
+		else: opts.append("--{}={}".format(opt,val))
+
+	return(" ".join(opts))
+	
 
 class EMArgumentParser(argparse.ArgumentParser):
 	""" subclass of argparser to masquerade as optparser and run the GUI """

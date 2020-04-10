@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 # align all particles to reference and store alignment results
 # Author: Steven Ludtke (sludtke@bcm.edu)
 # Copyright (c) 2019- Baylor College of Medicine
@@ -33,7 +31,6 @@ from __future__ import division
 # 09/29/2019  Steve Ludtke
 
 
-from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -208,7 +205,7 @@ produce new sets/ for each class, which could be further-refined.
 		
 		# If requested, we save the aligned (shrunken) volume to the stack for this class
 		if options.saveali: 
-			if shrink>1 : ptcl.process_inplace("math.meanshrink",{"n":shrink})
+			if options.shrink>1 : ptcl.process_inplace("math.meanshrink",{"n":options.shrink})
 			ptcl.write_image("{}/aliptcl_{:02d}_{:02d}.hdf".format(options.path,options.iter,cls),-1)
 		
 		sets[cls].write(-1,im["orig_n"],im["orig_file"])

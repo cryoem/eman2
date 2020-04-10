@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 # Muyuan Chen 2018-04
-from __future__ import print_function
-from __future__ import division
-from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -36,6 +33,7 @@ def main():
 	
 
 	parser.add_argument("--transonly", action="store_true", default=False ,help="only refine translation")
+	parser.add_argument("--fromscratch", action="store_true", default=False ,help="align from scratch and ignore previous particle transforms. for spt mostly. will include mirror")
 	parser.add_argument("--refineastep", type=float,help="Mean angular variation for refine alignment", default=2.)
 	parser.add_argument("--refinentry", type=int,help="number of starting points for refine alignment", default=4)
 	parser.add_argument("--maxshift", type=int,help="maximum shift allowed", default=8)
@@ -43,7 +41,7 @@ def main():
 
 	parser.add_argument("--padby", type=float,default=2.0, help="pad by factor. default is 2")
 	parser.add_argument("--maxres", type=float,default=-1, help="max resolution for cmp")
-	parser.add_argument("--sym", type=str,help="symmetry. will use symmetry from spt refinement by default", default="")
+	parser.add_argument("--sym", type=str,help="symmetry. will use symmetry from spt refinement by default", default="c1")
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
 
 	(options, args) = parser.parse_args()
@@ -59,6 +57,12 @@ def main():
 	m=EMData(threedname)
 	bxsz=m["nx"]
 	apix=m["apix_x"]
+	if options.maxres>0:
+		options.shrink=max(1, int(options.maxres/apix*.3))
+		options.shrink=min(options.shrink, bxsz//48)
+		print("Will shrink by {} and filter to {:.0f} A. Box size {}".format(options.shrink, options.maxres, bxsz//options.shrink))
+	else:
+		options.shrink=1
 	#m.process_inplace('normalize.edgemean')
 	
 	pinfo=[]
@@ -87,8 +91,12 @@ def main():
 	
 	while 1:
 		st_vals = etc.check_task(tids)
-		#print("{:.1f}/{} finished".format(np.mean(st_vals), 100))
-		#print(tids)
+		#print(st_vals)
+		if -100 in st_vals:
+			print("Error occurs in parallelism. Exit")
+			return
+		E2progress(logid, np.mean(st_vals)/100.)
+		
 		if np.min(st_vals) == 100: break
 		time.sleep(5)
 	
@@ -130,7 +138,7 @@ def main():
 
 	pb=options.padby
 	
-	if options.parallel.startswith("mpi"):
+	if options.parallel.startswith("mpi") and len(dics)>10000:
 		m3dpar="--parallel {}".format(options.parallel)
 	else:
 		m3dpar=""
@@ -165,22 +173,31 @@ class SptTltRefineTask(JSTask):
 		data=self.data
 		callback(0)
 		rets=[]
-		for i, infos in enumerate(self.data["info"]):
+		a=EMData(data["ref"],0)
+		if options.maxres>0 and options.shrink>1:
+			a.process_inplace("math.meanshrink",{"n":options.shrink})
+		
+		for i, infos in enumerate(data["info"]):
 			ii=infos[0]
 			info=infos[1]
 			
-			a=EMData(data["ref"],0)
 			b=EMData(info[1],info[0])
-			
+				
+			if options.maxres>0:
+				if options.shrink>1:
+					b.process_inplace("math.meanshrink",{"n":options.shrink})
+				b.process_inplace("filter.lowpass.gauss", {"cutoff_freq":1./options.maxres})
 			
 			if b["ny"]!=a["ny"]: # box size mismatch. simply clip the box
 				b=b.get_clip(Region((b["nx"]-a["ny"])/2, (b["ny"]-a["ny"])/2, a["ny"],a["ny"]))
 				
-			if options.maxres>0:
-				b.process_inplace("filter.lowpass.gauss", {"cutoff_freq":1./options.maxres})
-			initxf=eval(info[-1])
-			
+			if type(info[-1])==str:
+				initxf=eval(info[-1])
+				if options.shrink>1:
+					initxf.set_trans(initxf.get_trans()/float(options.shrink))
+				
 			if options.transonly:
+				
 				xf=Transform({"type":"eman","tx":initxf["tx"], "ty":initxf["ty"], "alt":initxf["alt"],"az":initxf["az"],"phi":initxf["phi"]})
 				pj=a.project("standard", xf)
 				c=b.align("translational", pj, {"intonly":0, "maxshift":options.maxshift})
@@ -188,11 +205,32 @@ class SptTltRefineTask(JSTask):
 				xf.translate(-trans)
 				scr=c.cmp("frc",pj)
 				r={"idx":ii,"xform.align3d":xf, "score":scr}
-				print(ii, (initxf["tx"], initxf["ty"]), trans)
-				
-				
-			else:
+				#print(ii, (initxf["tx"], initxf["ty"]), trans)
 			
+			elif options.fromscratch:
+				alignpm={"verbose":0,"sym":options.sym}
+				mriter=[False, True]
+				dic=[]
+				
+				for mirror in mriter:
+					
+					if mirror:
+						b1=b.process("xform.flip", {"axis":'x'})
+					else:
+						b1=b.copy()
+						
+					b1=b1.do_fft()
+					b1.process_inplace("xform.phaseorigin.tocorner")
+					c=b1.xform_align_nbest("rotate_translate_2d_to_3d_tree",a, alignpm, 1)
+					dic.append(c[0])
+				
+				bestmr=int(np.argmin([d["score"] for d in dic]))
+				xf=dic[bestmr]["xform.align3d"]
+				xf.set_mirror(bestmr)
+				r={"idx":ii, "xform.align3d":xf, "score":dic[bestmr]["score"]}
+				#print(ii, xf)
+	
+			else:
 				nxf=options.refinentry
 				astep=options.refineastep
 				xfs=[]
@@ -204,19 +242,25 @@ class SptTltRefineTask(JSTask):
 					xfs.append(Transform(d))
 						
 				alignpm={"verbose":0,"sym":options.sym,"maxshift":options.maxshift,"initxform":xfs, "maxang":astep*2.}
-				print("lenxfs:", len(xfs))
-			
+				#print("lenxfs:", len(xfs))
+				if initxf["mirror"]:
+					b=b.process("xform.flip", {"axis":'x'})
 				b=b.do_fft()
 				b.process_inplace("xform.phaseorigin.tocorner")
 				c=b.xform_align_nbest("rotate_translate_2d_to_3d_tree",a, alignpm, 1)
 
 				xf=c[0]["xform.align3d"]
+				xf.set_mirror(initxf["mirror"])
 				r={"idx":ii,"xform.align3d":xf, "score":c[0]["score"]}
 			
 			#print(ii,info, r)
-			callback(float(i/len(self.data["info"])))
+			if options.shrink>1:
+				xf=r["xform.align3d"]
+				xf.set_trans(options.shrink*xf.get_trans())
+				r["xform.align3d"]=xf
+			callback(100*float(i/len(self.data["info"])))
 			rets.append(r)
-		callback(100)
+		#callback(100)
 			
 		return rets
 

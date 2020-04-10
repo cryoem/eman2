@@ -1,5 +1,4 @@
 #
-from __future__ import print_function
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Please do not copy or modify this file without written consent of the author.
 # Copyright (c) 2000-2019 The University of Texas - Houston Medical School
@@ -34,7 +33,7 @@ from utilities       import *
 from filter          import *
 from projection      import *
 from fundamentals    import *
-from statistics      import *
+from pap_statistics      import *
 from alignment       import *
 from morphology      import *
 from reconstruction  import *

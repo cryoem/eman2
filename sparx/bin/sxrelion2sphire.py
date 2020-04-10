@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 # 
 #
 # Author: Toshio Moriya 03/12/2015 (toshio.moriya@mpi-dortmund.mpg.de)
@@ -47,6 +46,8 @@ from __future__ import print_function
 # 
 # ========================================================================================
 
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from past.builtins import cmp
 from EMAN2 import *
@@ -415,8 +416,8 @@ def main():
 					relion_defocusV = float(tokens_line[relion_dict['_rlnDefocusV'][idx_col] - 1])
 					relion_defocus_angle = float(tokens_line[relion_dict['_rlnDefocusAngle'][idx_col] - 1])
 					
-					sphire_cter_entry[idx_cter_def]       = ( relion_defocusU + relion_defocusV) / 20000   # convert format from RELION to SPHIRE
-					sphire_cter_entry[idx_cter_astig_amp] = (-relion_defocusU + relion_defocusV) / 10000   # convert format from RELION to SPHIRE
+					sphire_cter_entry[idx_cter_def]       = old_div(( relion_defocusU + relion_defocusV), 20000)   # convert format from RELION to SPHIRE
+					sphire_cter_entry[idx_cter_astig_amp] = old_div((-relion_defocusU + relion_defocusV), 10000)   # convert format from RELION to SPHIRE
 					sphire_cter_entry[idx_cter_astig_ang] = 45.0 - relion_defocus_angle # convert format from RELION to SPHIRE
 					while sphire_cter_entry[idx_cter_astig_ang] >= 180:
 						sphire_cter_entry[idx_cter_astig_ang] -= 180
@@ -441,7 +442,7 @@ def main():
 					
 					relion_det_pix_size = float(tokens_line[relion_dict['_rlnDetectorPixelSize'][idx_col] - 1])
 					relion_mag = float(tokens_line[relion_dict['_rlnMagnification'][idx_col] - 1])
-					sphire_cter_entry[idx_cter_apix] = 10000 * relion_det_pix_size / relion_mag # convert um to A
+					sphire_cter_entry[idx_cter_apix] = old_div(10000 * relion_det_pix_size, relion_mag) # convert um to A
 
 					##### Store CTER specific parameters ##### 
 					sphire_cter_entry[idx_cter_bfactor]      = 0.0    # RELION does not output B-Factor, so set it zero always
@@ -491,7 +492,7 @@ def main():
 					sphire_cter_entry[idx_cter_def]          = 0.0
 					sphire_cter_entry[idx_cter_cs]           = 0.0
 					sphire_cter_entry[idx_cter_vol]          = 300.0
-					sphire_cter_entry[idx_cter_apix] = 10000 * relion_det_pix_size / relion_mag # convert um to A
+					sphire_cter_entry[idx_cter_apix] = old_div(10000 * relion_det_pix_size, relion_mag) # convert um to A
 					sphire_cter_entry[idx_cter_bfactor]      = 0.0
 					sphire_cter_entry[idx_cter_total_ac]     = 100.0
 					sphire_cter_entry[idx_cter_astig_amp]    = 0.0
@@ -803,7 +804,7 @@ def main():
 				sphire_cter_stats[idx_cter_def], sd, _,_ = table_stat(sphire_cter_table[idx_cter_def])
 				sphire_cter_stats[idx_cter_sd_def] = sqrt(max(0.0,sd))
 				if sphire_cter_stats[idx_cter_def] != 0.0:
-					sphire_cter_stats[idx_cter_cv_def] = sd / sphire_cter_stats[idx_cter_def] * 100 # use percentage
+					sphire_cter_stats[idx_cter_cv_def] = old_div(sd, sphire_cter_stats[idx_cter_def]) * 100 # use percentage
 				# I removed a very awkward code which as far as I can tell was meant to assure that
 				#   all values on this list are identical.  I replaced it by proper python				
 				assert(len(set(sphire_cter_table[idx_cter_cs])) == 1)
@@ -817,7 +818,7 @@ def main():
 				sphire_cter_stats[idx_cter_astig_amp] , sd, _,_ = table_stat(sphire_cter_table[idx_cter_astig_amp])
 				sphire_cter_stats[idx_cter_sd_astig_amp] = sqrt(max(0.0,sd))
 				if sphire_cter_stats[idx_cter_astig_amp] != 0.0:
-					sphire_cter_stats[idx_cter_cv_astig_amp] = sd / sphire_cter_stats[idx_cter_astig_amp] * 100 # use percentage
+					sphire_cter_stats[idx_cter_cv_astig_amp] = old_div(sd, sphire_cter_stats[idx_cter_astig_amp]) * 100 # use percentage
 
 				# What followed was wrong, one cannot compute average angles this way PAP   01/28/2019
 				sphire_cter_stats[idx_cter_astig_ang], sphire_cter_stats[idx_cter_sd_astig_ang] = angle_ave(sphire_cter_table[idx_cter_astig_ang])

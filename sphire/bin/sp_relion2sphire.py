@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 # 
 #
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)

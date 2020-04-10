@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 #
 # Author: John Flanagan (jfflanag@bcm.edu)
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -158,8 +156,8 @@ def importfn(i,arg,options):
 		ffta=None
 		nbx=0
 		# avoid the very edge, and have a little overlap
-		for x in range(50,d["nx"]-box-50,box*2/3):
-			for y in range(50,d["ny"]-box-50,box*2/3):
+		for x in range(50,d["nx"]-box-50,box*2//3):
+			for y in range(50,d["ny"]-box-50,box*2//3):
 				clip=d.get_clip(Region(x,y,box,box))
 				clip.process_inplace("normalize.edgemean")
 				fft=clip.do_fft()

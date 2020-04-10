@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 #
 # Author: John Flanagan Oct 20th 2011 (jfflanag@bcm.edu)
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -1105,8 +1103,6 @@ class TheHelp(QtWidgets.QWidget):
 		self.dosearch = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+F"), self)
 		self.dosearch.activated.connect(self.search)
 		self.cur_search=""
-
-
 		self.donext = QtWidgets.QShortcut(QtGui.QKeySequence("N"), self)
 		self.donext.activated.connect(self.search_next)
 		

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 # sxgui_meridien for analysing meridien outputs.
 # Author 2017  Thorsten Wagner (thorsten.wagner@mpi-dortmund.mpg.de)
 # Copyright (C) 2017 Max planck institute for molecular physiology, Dortmund

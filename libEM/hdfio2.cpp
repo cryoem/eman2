@@ -1424,6 +1424,10 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 		vector <string> keys=dict.keys();
 
 		for (i=0; i<keys.size(); i++) {
+			// These keys are written later if used. They MUST not be copied from a previous read operation or non-compressed
+			// images will wind up being incorrectly scaled!
+			if (keys[i]==string("stored_rendermin") || keys[i]==string("stored_rendermax") || keys[i]==string("stored_renderbits") ||
+				keys[i]==string("render_min") || keys[i]==string("render_max") || keys[i]==string("render_bits")) continue;
 			string s("EMAN.");
 			s+=keys[i];
 			write_attr(igrp,s.c_str(),dict[keys[i]]);
@@ -1512,9 +1516,12 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 					H5Pset_chunk(plist,3,cdims);
 				}
 //				H5Pset_scaleoffset(plist,H5Z_SO_FLOAT_DSCALE,2);  // doesn't seem to work right?, anyway some conceptual problems
-				H5Pset_shuffle(plist);	// rearrange bytes
+//				H5Pset_shuffle(plist);	// rearrange bytes, seems to have zero impact, maybe deflate is internally doing something?
 				H5Pset_deflate(plist, renderlevel);	// zlib level default is 1
-//				int r=H5Pset_szip (plist, H5_SZIP_NN_OPTION_MASK, 16);	// szip with 16 pixels per block (NN (2 stage) vs EC), NN definitely seems to perform better
+				//conclusion is that SZIP compresses roughly as well as GZIP3, but is twice as fast (for 4 bit cryoem data)
+				// While this is good, it isn't worth the IP hassles right now. We can revisit the issue later if a good
+				// open license library starts being widely used
+				//int r=H5Pset_szip (plist, H5_SZIP_NN_OPTION_MASK, 32);	// szip with 32 pixels per block (NN (2 stage) vs EC), NN definitely seems to perform better
 //				if (r) printf("R: %d\n",r);
 				if (renderbits<=0) ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, spc, plist );
 				else if (renderbits<=8) ds=H5Dcreate(file,ipath, H5T_NATIVE_UCHAR, spc, plist );

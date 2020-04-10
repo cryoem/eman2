@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #### python utilities. 
 #### 2017-03
 
@@ -66,7 +63,7 @@ def numpy2pdb(data,fname,occ=[],bfac=[],chainid=[], model=0, residue=[]):
 	atomid=1
 	curchain=chainid[0]
 	for i,d in enumerate(data):
-		if chainid[i]!=curchain: atomid=0
+		if chainid[i]!=curchain: atomid=1
 		f.write("ATOM {atomid:6d}  CA  {res} {chainid}{atomid:4d}    {px:8.3f}{py:8.3f}{pz:8.3f}{occ:6.2f}{bfac:6.2f}     S_00  0\n".format(atomid=atomid, chainid=chr(int(chainid[i])+65), px=d[0], py=d[1], pz=d[2], occ=occ[i], bfac=bfac[i], res=amino_dict[residue[i]]))
 		atomid+=1
 		curchain=chainid[i]
@@ -190,6 +187,14 @@ def natural_keys(text):
 
 def natural_sort(lst):
 	return sorted(lst, key=natural_keys)
+
+def import_tensorflow(gpuid=None):
+	global tf
+	if gpuid!=None: #### decide which gpu to use
+		os.environ["CUDA_VISIBLE_DEVICES"]=str(gpuid)
+	import tensorflow as tf
+	os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' #### reduce log output
+	return tf
         
     
 def idfft2(v,u,amp,phase,nx=256,ny=256,dtype=np.float32,usedegrees=False):

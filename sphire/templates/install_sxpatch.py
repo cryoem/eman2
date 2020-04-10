@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 #
 # Author: Toshio Moriya 09/06/2017 (toshio.moriya@mpi-dortmund.mpg.de)
 #
@@ -32,7 +31,6 @@ from __future__ import print_function
 # Imports
 # ========================================================================================
 # Python Standard Libraries
-from __future__ import print_function
 import sys
 import os
 import argparse

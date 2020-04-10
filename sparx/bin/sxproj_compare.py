@@ -1,11 +1,13 @@
 #!/usr/bin/env python
+from __future__ import division
+from past.utils import old_div
 import os
 import EMAN2
 import EMAN2_cppwrap
 #from EMAN2 import EMUtil, EMArgumentParser, EMANVERSION
 from applications import header, project3d
 from utilities import get_im, write_header, model_circle, read_text_row
-from statistics import ccc
+from pap_statistics import ccc
 from fundamentals import rops_table, fft
 from projection import prep_vol, prgl
 from math import sqrt
@@ -137,7 +139,7 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 		#  you can check sxprocess.py --adjpw to see how this is done properly  PAP
 		table = [0.0]*len(rops_dst)  # initialize table
 		for j in range( len(rops_dst) ):
-			table[j] = sqrt( rops_dst[j]/rops_src[j] )
+			table[j] = sqrt( old_div(rops_dst[j],rops_src[j]) )
 		prjimg = fft(filt_table(prjimg, table))  # match FFT amplitdes of re-projection and class average
 
 		cccoeff = ccc(prjimg, classimg, mask)
@@ -148,7 +150,7 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 		classimg.write_image(outstack, 2*imgnum+1)
 		result.append(cccoeff)
 	del outangles
-	meanccc = sum(result)/nimg1
+	meanccc = old_div(sum(result),nimg1)
 	print("Average CCC is %s" % meanccc)
 
 	nimg2 = EMAN2_cppwrap.EMUtil.get_image_count(outstack)

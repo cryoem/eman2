@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-03
-from __future__ import print_function
-from __future__ import division
-from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import numpy as np
@@ -45,7 +42,7 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="")
 	parser.add_argument("--refine",action="store_true",help="local refinement from xform.init in header.",default=False)
-	parser.add_argument("--localnorm",action="store_true",help="local normalization. do not use yet....",default=False)
+	parser.add_argument("--randphi",action="store_true",help="randomize phi for refine search",default=False)
 	parser.add_argument("--resume",action="store_true",help="resume from previous run",default=False)
 	
 	#parser.add_argument("--masktight", type=str,help="Mask_tight file", default="")
@@ -135,6 +132,8 @@ def main():
 		
 		if options.refine:
 			gd+=" --refine --maxang {:.1f}".format(options.maxang)
+			if options.randphi:
+				gd+=" --randphi"
 		#curres=0
 		
 		if options.maxshift>0:
@@ -163,7 +162,8 @@ def main():
 			s+=" --maxtilt {:.1f}".format(options.maxtilt)
 			
 		
-		run("e2spt_average.py --threads {} --path {} --sym {} --skippostp {}".format(options.threads, options.path, options.sym, s))
+		#run("e2spt_average.py --threads {} --path {} --sym {} --skippostp {}".format(options.threads, options.path, options.sym, s))
+		run("e2spt_average.py --parallel {} --path {} --sym {} --skippostp {}".format(options.parallel, options.path, options.sym, s))
 		
 		even=os.path.join(options.path, "threed_{:02d}_even.hdf".format(itr))
 		odd=os.path.join(options.path, "threed_{:02d}_odd.hdf".format(itr))
@@ -217,9 +217,9 @@ def main():
 		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --mass {} --restarget {} --threads {} --sym {} {} {} ".format(even, odd, os.path.join(options.path, "threed_{:02d}.hdf".format(itr)), itr, options.mass, curres, options.threads, options.sym, msk, s)
 		run(ppcmd)
 		
-		if options.localnorm:
-			for f in [even, odd]:
-				run("e2proc3d.py {} {} --process normalize --process normalize.local:threshold=1:radius=16".format(f,f))
+		#if options.localnorm:
+			#for f in [even, odd]:
+				#run("e2proc3d.py {} {} --process normalize --process normalize.local:threshold=1:radius=16".format(f,f))
 			
 		ref=os.path.join(options.path, "threed_{:02d}.hdf".format(itr))
 		fsc=np.loadtxt(os.path.join(options.path, "fsc_masked_{:02d}.txt".format(itr)))

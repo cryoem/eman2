@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 03/06/2009 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -67,6 +64,7 @@ def main():
 	parser.add_argument("--taskin", type=str,help="Internal use only. Used when executing local threaded tasks.")
 	parser.add_argument("--taskout", type=str,help="Internal use only. Used when executing local threaded tasks.")
 	parser.add_argument("--loadmodule", type=str,help="load module",default="")
+	parser.add_argument("--usethreads", type=int,help="max thread to use. only used for producing occupancy in mpi mode. default is the same as threads/mpi option given",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
@@ -76,7 +74,7 @@ def main():
 		if options.loadmodule!="":
 			load_module(options.loadmodule)
 		client.test(options.verbose)		# don't skip this. It's necessary to identify node names
-		client.run(options.verbose)
+		client.run(options.verbose, usethreads=options.usethreads)
 		
 	elif options.mode=="thread":
 		from pickle import load,dump

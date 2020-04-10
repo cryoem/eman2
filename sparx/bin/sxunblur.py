@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-from __future__ import print_function
 #
 # Author 2016  Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
 # Copyright (C) 2019 Max planck institute for molecular physiology, Dortmund

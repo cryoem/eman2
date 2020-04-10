@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 06/06/2011
 # Copyright (c) 2011- Baylor College of Medicine
@@ -180,6 +177,7 @@ class EMClassPtclTool(QtWidgets.QWidget):
 		self.vbadptcl=None
 
 		self.updateFiles()
+		QtCore.QTimer.singleShot(500,self.fixlocation)
 
 	def makeNewSet(self,x):
 		"Makes a new particle set based on the selected class-averages"
@@ -481,8 +479,17 @@ class EMClassPtclTool(QtWidgets.QWidget):
 		self.vclasses.show()
 		self.vgoodptcl.show()
 		self.vbadptcl.show()
-
+		QtCore.QTimer.singleShot(500,self.fixlocation)
+		
 		QtWidgets.qApp.setOverrideCursor(Qt.ArrowCursor)
+
+	def fixlocation(self):
+		E2loadappwin("e2evalparticles","main",self)
+		if self.vclasses: E2loadappwin("e2evalparticles","classes",self.vclasses)
+		if self.vgoodptcl: 
+			E2loadappwin("e2evalparticles","good",self.vgoodptcl)
+			E2loadappwin("e2evalparticles","bad",self.vbadptcl)
+
 
 	def classSelect(self,event,lc):
 		"Single clicked class particle. lc=(img#,x,y,image_dict)"
@@ -505,12 +512,18 @@ class EMClassPtclTool(QtWidgets.QWidget):
 
 		self.vgoodptcl.show()
 		self.vbadptcl.show()
+		QtCore.QTimer.singleShot(500,self.fixlocation)
+		
 		QtWidgets.qApp.setOverrideCursor(Qt.ArrowCursor)
 
 	def classDouble(self,event,lc):
 		self.vclasses.image_set_associate(lc[0],update_gl=True)
 
 	def closeEvent(self,event):
+		E2saveappwin("e2evalparticles","main",self)
+		E2saveappwin("e2evalparticles","classes",self.vclasses)
+		E2saveappwin("e2evalparticles","good",self.vgoodptcl)
+		E2saveappwin("e2evalparticles","bad",self.vbadptcl)
 		try :
 			self.vclasses.commit_sets()
 			self.vclasses.close()

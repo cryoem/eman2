@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #====================
 #Author: Jesus Galaz-Montoya 22/sep/2014 , Last update: sep/22/2014
 #====================

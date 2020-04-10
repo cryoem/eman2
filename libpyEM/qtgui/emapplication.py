@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-
 #
 # Author: David Woolford 10/01/2008 (woolford@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -43,8 +39,8 @@ import EMAN2db
 import weakref
 from libpyGLUtils2 import *
 
-try: from PyQt5 import QtWebEngineWidgets
-except: pass
+#try: from PyQt5 import QtWebEngineWidgets
+#except: pass
 
 class ModuleEventsManager(object): 
 	'''

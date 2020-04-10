@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
-
 #
 # Author: Steven Ludtke (sludtke@bcm.edu)
 # Copyright (c) 2011- Baylor College of Medicine
@@ -631,6 +627,8 @@ class EMHTMLFileType(EMFileType) :
 		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
 
 		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
+		if isinstance(header, bytes):
+			header=header.decode("utf-8")
 		if not "<html>" in header.lower() : return False # For the moment, we demand an <html> tag somewhere in the first 4k
 
 		try :
@@ -687,6 +685,8 @@ class EMPlotFileType(EMFileType) :
 		numc = 0
 
 		for l in hdr :
+			
+			if len(l)==0: continue
 			if l[0] == "#" : continue		# comment lines ok
 
 			numc = len([float(i) for i in renumfind.findall(l)])		# number of numeric columns
@@ -705,8 +705,8 @@ class EMPlotFileType(EMFileType) :
 
 		for l in fin :
 			if l[0] == "#" or len(l) < 2 or "nan" in l : continue
-
-			lnumc = len([float(i) for i in renumfind.findall(l)])
+			try: lnumc = len([float(i) for i in renumfind.findall(l)])
+			except: continue
 			if lnumc != 0 and lnumc != numc : return False				# 0 means the line contains no numbers, we'll live with that, but if there are numbers, it needs to match
 			if lnumc != 0 : numr += 1
 
@@ -1867,13 +1867,17 @@ class EMDirEntry(object) :
 
 		else :
 			head = open(self.path(), "rb").read(4096)		# Most FileTypes should be able to identify themselves using the first 4K block of a file
-
-			guesses = EMFileType.extbyft[os.path.splitext(self.path())[1]]		# This will get us a list of possible FileTypes for this extension
+			ext=os.path.splitext(self.path())[1]
+			if ext not in EMFileType.extbyft:
+				return 0
+			guesses = EMFileType.extbyft[ext]		# This will get us a list of possible FileTypes for this extension
 
 	#			print "-------\n", guesses
 
 			for guess in guesses :
-				size, n, dim = guess.isValid(self.path(), head)		# This will raise an exception if isValid returns False
+				ret=guess.isValid(self.path(), head)
+				if ret==False: continue
+				size, n, dim = ret
 
 				# If we got here, we found a match
 				self.filetype = guess.name()
@@ -2441,9 +2445,9 @@ class EMBDBInfoPane(EMInfoPane) :
 			self.hbl2.setColumnStretch(i, 2)
 	
 			for j in range(2) :
-				self.wbutmisc.append(QtWidgets.QPushButton(""))
+				self.wbutmisc.append(QtWidgets.QPushButton("-"))
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
-				self.wbutmisc[-1].hide()
+				self.wbutmisc[-1].setEnabled(False)
 				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
 		# These just clean up the layout a bit
@@ -2525,9 +2529,11 @@ class EMBDBInfoPane(EMInfoPane) :
 				try :
 					b.setText(self.curactions[i][0])
 					b.setToolTip(self.curactions[i][1])
-					b.show()
+					b.setEnabled(True)
 				except :
-					b.hide()
+					b.setText("-")
+					b.setToolTip("")
+					b.setEnabled(False)
 		except :
 			# Not a readable image or volume
 
@@ -2631,9 +2637,9 @@ class EMJSONInfoPane(EMInfoPane) :
 			self.hbl2.setColumnStretch(i, 2)
 
 			for j in range(2) :
-				self.wbutmisc.append(QtWidgets.QPushButton(""))
+				self.wbutmisc.append(QtWidgets.QPushButton("-"))
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
-				self.wbutmisc[-1].hide()
+				self.wbutmisc[-1].setEnabled(False)
 				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
 		# These just clean up the layout a bit
@@ -2904,9 +2910,9 @@ class EMStackInfoPane(EMInfoPane) :
 			self.hbl2.setColumnStretch(i, 2)
 	
 			for j in range(2) :
-				self.wbutmisc.append(QtWidgets.QPushButton(""))
+				self.wbutmisc.append(QtWidgets.QPushButton("-"))
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
-				self.wbutmisc[-1].hide()
+				self.wbutmisc[-1].setEnabled(False)
 				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
 		# These just clean up the layout a bit
@@ -2989,9 +2995,11 @@ class EMStackInfoPane(EMInfoPane) :
 			try :
 				b.setText(self.curactions[i][0])
 				b.setToolTip(self.curactions[i][1])
-				b.show()
+				b.setEnabled(True)
 			except :
-				b.hide()
+				b.setText("-")
+				b.setToolTip("")
+				b.setEnabled(False)
 
 	def imNumChange(self, num) :
 		"""New image number"""
@@ -3331,9 +3339,9 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 			self.hbl2.setColumnStretch(i, 2)
 	
 			for j in range(2) :
-				self.wbutmisc.append(QtWidgets.QPushButton(""))
+				self.wbutmisc.append(QtWidgets.QPushButton("-"))
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
-				self.wbutmisc[-1].hide()
+				self.wbutmisc[-1].setEnabled(False)
 #				self.wbutmisc[-1].setEnabled(False)
 				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
@@ -3467,7 +3475,10 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 			rdr.append((i.row(), i.internalPointer()))		# due to threads, we do it this way to make sure we don't miss any
 
 		# We emit only a single event here for efficiency
-		self.curmodel.dataChanged.emit(self.curmodel.createIndex(min(rdr)[0], 0, min(rdr)[1]), self.curmodel.createIndex(max(rdr)[0], 5, max(rdr)[1]))
+		rid=[(r[0],i) for i,r in enumerate(rdr)]
+		rmin=rdr[min(rid)[1]]; rmax=rdr[max(rid)[1]]
+		self.curmodel.dataChanged.emit(self.curmodel.createIndex(rmin[0], 0, rmin[1]),
+				 self.curmodel.createIndex(rmax[0], 5, rmax[1]))
 
 		self.needresize = 2
 
@@ -3525,21 +3536,20 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 					try :
 						b.setText(self.curactions[i][0])
 						b.setToolTip(self.curactions[i][1])
-						b.show()
-#						b.setEnabled(True)
+#						b.show()
+						b.setEnabled(True)
 					except :
-						b.hide()
-#						b.setEnabled(False)
-			# Bug fix by JFF (What if filetype is None????)
+						b.setText("-")
+						b.setToolTip("")
+						b.setEnabled(False)
 			else :
 				self.curft = None
 				self.curactions = []
 
 				for i, b in enumerate(self.wbutmisc) :
-					try :
-						b.hide()
-					except :
-						pass
+					b.setText("-")
+					b.setToolTip("")
+					b.setEnabled(False)
 
 			if self.infowin != None and not self.infowin.isHidden() :
 				self.infowin.set_target(obj, ftc)
@@ -3600,7 +3610,8 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 
 #		print "press ", self.curactions[num][0]
 
-		self.curactions[num][2](self)				# This calls the action method
+		try: self.curactions[num][2](self)				# This calls the action method
+		except: pass		# sometimes we are missing an action
 
 	def buttonOk(self, tog) :
 		"""When the OK button is pressed, this will emit a signal. The receiver should call the getResult method (once) to get the list of paths"""
@@ -3752,7 +3763,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 
 		if filt == "" :
 			filt = None
-		elif filt == "?"  or  lower(filt) == "help" :
+		elif filt == "?"  or  filt.lower() == "help" :
 			filt = None
 			hlp  = \
 			"Enter a regular expression to filter files to see, or\n" + \

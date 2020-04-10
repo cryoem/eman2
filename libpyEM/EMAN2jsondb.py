@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 #
 # Author: Steven Ludtke, 05/01/2013 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -55,7 +53,6 @@ import numpy as np
 from libpyEMData2 import EMData
 from libpyUtils2 import EMUtil
 
-import numpy as np
 # If set, fairly verbose debugging information will be written to the console
 # larger numbers will increase the amount of output
 DBDEBUG=0
@@ -660,7 +657,6 @@ of the path is stored as self.normpath"""
 
 	def sync(self):
 		"""This is where all of the JSON file access occurs. This one routine handles both reading and writing, with file locking"""
-
 		while self.busy: time.sleep(.1)		# this is for some degree of threadsafety beyond file locking
 		self.busy=True
 
@@ -766,11 +762,11 @@ of the path is stored as self.normpath"""
 
 	def values(self):
 		self.sync()
-		return [self.get(key) for key in list(self.data.keys())]		# to make sure images are read
+		return [self.get(key,noupdate=True) for key in list(self.data.keys())]		# to make sure images are read
 
 	def items(self):
 		self.sync()
-		return [(key,self.get(key)) for key in list(self.data.keys())]
+		return [(key,self.get(key,noupdate=True)) for key in list(self.data.keys())]
 
 	def has_key(self,key):
 		self.sync()

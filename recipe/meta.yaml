@@ -1,0 +1,34 @@
+package:
+    name: eman2
+    version: 2.31
+
+source:
+    - path: {{ RECIPE_DIR }}/..
+    - url: https://www.khronos.org/registry/OpenGL/api/GL/glext.h             # [win]
+      folder: GL                                                              # [win]
+    - url: https://www.khronos.org/registry/EGL/api/KHR/khrplatform.h         # [win]
+      folder: KHR                                                             # [win]
+
+requirements:
+    build:
+        - cmake     3.14.*
+        - {{ compiler('cxx') }}           # [not win]
+        - {{ cdt('mesa-libgl-devel') }}   # [linux]
+
+    host:
+        - eman-deps-cxx     {{ environ.get('EMAN_DEPS_VERSION', '') }}
+        - libglu                          # [linux]
+    
+test:
+  requires:
+    - eman-deps     {{ environ.get('EMAN_DEPS_VERSION', '') }}
+  
+  source_files:
+    - examples/mpi_test.py
+    - programs/
+    - tests/
+    - rt/pyem/
+
+  commands:
+    - bash tests/run_tests.sh             # [not win]
+    - call tests\run_tests.bat            # [win]

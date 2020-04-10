@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 #
 # Author: Markus Stabrin 2018/12/05 (markus.stabrin@mpi-dortmund.mpg.de)
 # Copyright (c) 2018 MPI-Dortmund

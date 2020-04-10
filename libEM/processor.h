@@ -562,6 +562,7 @@ The basic design of EMAN Processors: <br>\
 			d.put("cutoff_freq", EMObject::FLOAT, "1/Resolution in 1/A (0 - 1 / 2*apix). eg - a 20 A filter is cutoff_freq=0.05");
 			d.put("apix", EMObject::FLOAT, " Override A/pix in the image header (changes x,y and z)");
 			d.put("centerfreq", EMObject::FLOAT, "center of filter frequency at z");
+			d.put("xynoz", EMObject::INT, "If set, filters the X-Y plane instead of Z");
 			return d;
 		}
 
@@ -572,7 +573,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Applies a Gaussian lowpass filter (or its inverse), but only along the Z axis. May be useful in anisotropic filtering of tomograms.";
+			return "Applies a Gaussian lowpass filter (or its inverse), but only along the Z axis (or X-Y). May be useful in anisotropic filtering of tomograms.";
 		}
 
 		static const string NAME;
@@ -1331,7 +1332,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Performs a morphological k-pixel opening of a (binary) image.";
+			return "Performs a morphological k-pixel closing of a (binary) image/volume. Note the box must be large enough to accommodate the dilation to work properly. iter(dilate) -> iter(erode)";
 		}
 
 		TypeDict get_param_types() const
@@ -1373,7 +1374,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Performs a morphological k-pixel closing of a (binary) image.";
+			return "Performs a morphological k-pixel opening of a (binary) image/volume. iter(erode) -> iter(dilate)";
 		}
 
 		TypeDict get_param_types() const
@@ -2576,6 +2577,57 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/** Set any values in a range to zero. Opposite of threshold.clampminmax
+	 *@param minval	minimum value of the range
+	 *@param maxval maximum value of the range
+	 */
+	class RangeZeroProcessor:public Processor
+	{
+	public:
+		RangeZeroProcessor():minval(0),maxval(0)
+		{
+		}
+		
+		string get_name() const
+		{
+			return NAME;
+		}
+		
+		static Processor *NEW()
+		{
+			return new RangeZeroProcessor();
+		}
+		
+		virtual void process_inplace(EMData * image);
+		
+		
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("minval", EMObject::FLOAT, "Lower threshold (required)");
+			d.put("maxval", EMObject::FLOAT, "Upper threshold (required)");
+			d.put("gauss_width", EMObject::FLOAT, "Range will be narrowed around zero based on a radial Gaussian falloff modeled on math.gausskernelfix. Disabled if set to 0.");
+			return d;
+		}
+
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			minval = params["minval"];	// using existing variable as a convenience
+			maxval = params["maxval"];
+		}
+
+		string get_desc() const
+		{
+			return "Sets values in a range to zero. Opposite of threshold.clampminmax. \nf(x) = x if x > maxval or x < minval; f(x) = 0 for min <= x <= max. If gauss_width set nozero, applies a radial correction factor to both min and max.";
+		}
+
+		static const string NAME;
+
+	protected:
+		float minval,maxval;
+	};
+
 	/**Rotate by 180 using pixel swapping, works for 2D only
 	 * @author David Woolford
 	 * @date March 21, 2014
@@ -2653,40 +2705,6 @@ The data itself will remain stored in single precision floating point format, so
 	};
 	
 	
-	class TransformTomoProcessor:public Processor
-	{
-		public:
-			virtual string get_name() const
-			{
-				return NAME;
-			}
-			static Processor *NEW()
-			{
-				return new TransformTomoProcessor();
-			}
-
-			virtual void process_inplace(EMData* image);
-
-			virtual EMData* process(const EMData* const image);
-
-			virtual TypeDict get_param_types() const
-			{
-				TypeDict d;
-				d.put("transform", EMObject::TRANSFORM, "The Transform object that will be applied to the image" );
-				d.put("zerocorners", EMObject::INT, "To keep consistent with xform processor. not used" );
-				return d;
-			}
-
-			virtual string get_desc() const
-			{
-				return "Testing for complex image with missing value rotation. do not use...";
-			}
-
-			static const string NAME;
-
-	};
-
-
 	/**Rotate by 180 using pixel swapping, works for 2D only
 	 * @author David Woolford
 	 * @date July 29th 2008
@@ -5778,7 +5796,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 
 		string get_desc() const
 		{
-			return "do a standard normalization on an image.";
+			return "do a standard normalization on an image (mean=0, sigma=1).";
 		}
 
 		static const string NAME;
@@ -5787,6 +5805,33 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		float calc_mean(EMData * image) const;
 	};
 
+	/** Normalize such that the estimated histogram peak value is zero. Only works if the histogram peak is within +- 2*sigma of the mean.
+	 */
+	class NormalizeHistPeakProcessor:public NormalizeProcessor
+	{
+	  public:
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		static Processor *NEW()
+		{
+			return new NormalizeHistPeakProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Normalize an image so the estimated histogram peak is zero and sigma=1. Only works if the histogram peak is within +-2*sigma of the mean";
+		}
+
+		static const string NAME;
+
+	  protected:
+		float calc_mean(EMData * image) const;
+	};
+
+	
 	/**Uses a 1/0 mask defining a region to use for the zero-normalization.if no_sigma is 1, standard deviation not modified.
 	 *@param mask the 1/0 mask defining a region to use for the zero-normalization
 	 *@param no_sigma if this flag is zero, only average under the mask will be substracted. set this flag to 1, standard deviation not modified
@@ -6125,7 +6170,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 
 		string get_desc() const
 		{
-			return "use least square method to normalize";
+			return "This will use a pixel vs pixel least squares fit to normalize one image to optimally match a second image, with various options for excluding some pixels. norm_mult and norm_add will be set in the header of the result.";
 		}
 
 		static const string NAME;
@@ -7092,7 +7137,8 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 			return "One of the strongest visual impacts of CTF on a structure is the low resolution high-pass filter effect caused by \
 phase contrast. This Processor performs a simple linear filter to roughly correct for this. This is not a substitution or replacement \
 for the full CTF correction routine available for single particle work in EMAN, but if you are in a situation where accurate CTF \
-correction is not possible, this will allow you to approximate the correction to relieve some of the visual artifacts.";
+correction is not possible, this will allow you to approximate the correction to relieve some of the visual artifacts. Circularly \
+symmetric phase flipping can optionally be performed.";
 		}
 
 		virtual TypeDict get_param_types() const
@@ -7100,9 +7146,12 @@ correction is not possible, this will allow you to approximate the correction to
 			TypeDict d;
 			d.put("defocus", EMObject::FLOAT, "Mean defocus to correct for in microns");
 			d.put("ac", EMObject::FLOAT, "Amplitude contrast in % (default 10%)");
+			d.put("cs", EMObject::FLOAT, "Microscope Cs, default 2.7 mm");
 			d.put("voltage", EMObject::FLOAT, "Microscope Voltage in Kv (default 300)");
 			d.put("apix", EMObject::FLOAT, "A/pix (default value from image header)");
-			d.put("useheader", EMObject::INT,"Use CTF header values if present, default true");
+			d.put("hppix", EMObject::FLOAT, "Optional high pass filter radius in pixels to prevent gradient amplification, default disabled");
+			d.put("phaseflip", EMObject::INT, "Also flip phases if set, default false");
+			d.put("useheader", EMObject::INT,"Use CTF header values if present, instead of individual values, default false");
 			return d;
 		}
 

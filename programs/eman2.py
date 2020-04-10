@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 #
 # Author: Steve Ludtke 5/7/15 (sludtke@bcm.edu)
 # Copyright (c) 2000-2015 Baylor College of Medicine

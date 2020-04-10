@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
-from __future__ import division
-
 from EMAN2 import *
 import numpy as np
 import os

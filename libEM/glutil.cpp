@@ -40,7 +40,6 @@
 #endif	//GL_GLEXT_PROTOTYPES
 
 #include "glutil.h"
-#include "emdata.h"
 #include "marchingcubes.h"
 
 #ifdef __APPLE__

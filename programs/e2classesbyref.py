@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steve Ludtke, 7/5/14 
 # Copyright (c) 2000- Baylor College of Medicine
@@ -92,7 +89,7 @@ def main():
 			project=js_open_dict("info/project.json")
 			options.invartype=str(project["global.invariant_type"])
 		except: 
-			traceback.print_exc()
+#			traceback.print_exc()
 			print("Warning: no project invariant type spectified, using bispectrum")
 			options.invartype="bispec"
 

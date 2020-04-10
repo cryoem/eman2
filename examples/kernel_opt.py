@@ -4,8 +4,6 @@
 # which helps smooth antialiasing. That is, we oversample, then force the data outside the 256^3 volume
 # to be as nearly zero as possible, while retaining significant amplitudes within as much of the 256^3 volume as possible
 # The process iterates between real and Fourier spaces, forcing appropriate values to zero in each round
-from __future__ import print_function
-from __future__ import division
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *

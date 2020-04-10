@@ -426,7 +426,7 @@ void EMData::do_ift_inplace()
 #undef rdata
 
 
-std::string EMData::render_ap24(int x0, int y0, int ixsize, int iysize,
+EMBytes EMData::render_ap24(int x0, int y0, int ixsize, int iysize,
 						 int bpl, float scale, int mingray, int maxgray,
 						 float render_min, float render_max,float gamma,int flags)
 {
@@ -474,7 +474,7 @@ std::string EMData::render_ap24(int x0, int y0, int ixsize, int iysize,
 	else if (flags&1) asrgb=3;
 	else throw ImageDimensionException("must set flag 1 or 8");
 
-	std::string ret=std::string();
+	EMBytes ret=EMBytes();
 //	ret.resize(iysize*bpl);
 	ret.assign(iysize*bpl+hist*1024,char(mingray));
 	unsigned char *data=(unsigned char *)ret.data();

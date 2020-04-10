@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 #
 # Author: Steven Ludtke 2014/04/27
 # Copyright (c) 2014- Baylor College of Medicine
@@ -759,7 +757,7 @@ class boxerConvNet(QtCore.QObject):
 		boxerConvNet.threshold=ValSlider(None,(0,5.0),"Threshold1",0.2,90)
 		gridlay.addWidget(boxerConvNet.threshold)
 		
-		boxerConvNet.threshold2=ValSlider(None,(-20,10),"Threshold2",-5,90)
+		boxerConvNet.threshold2=ValSlider(None,(-20,10),"Threshold2",-1,90)
 		gridlay.addWidget(boxerConvNet.threshold2)
 		return
 	
@@ -769,12 +767,6 @@ class boxerConvNet(QtCore.QObject):
 	def do_import():
 		global tf, StackedConvNet_tf
 		import os
-		
-		import tensorflow
-		if tensorflow.__version__[0]=="2" : 
-			import tensorflow.compat.v1 as tf
-			tf.disable_eager_execution()
-		else: import tensorflow as tf
 		os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' #### reduce log output
 		from e2tomoseg_convnet import StackedConvNet_tf, import_tensorflow
 		
@@ -810,32 +802,31 @@ class boxerConvNet(QtCore.QObject):
 		sz=64
 		### number of kernel, kernel size, pooling size(2/1)
 		kernels=[(20,15,2), (20,15,1), (1,15,1)]
-		batchsize=10
-		session=tf.Session()
+		#kernels=[(1,5,1)]
+		batchsize=32
 		if len(goodrefs)<5 or len(bgrefs)<5:
 			print("Not enough references. Please box at least 5 good and 5 background reference...")
 			return []
 		else:
-			data, label=boxerConvNet.load_ptcls(bgrefs, goodrefs, sz, True)
 			nnet0=StackedConvNet_tf(kernels, sz, batchsize, meanout=False)
-			session.run(tf.global_variables_initializer())
-			nnet0.do_training(data, label, session, shuffle=True, learnrate=1e-4, niter=30)
-			nnet0.write_output_train('trainout_pickptcl.hdf', session)
-			nnet0.save_network("nnet_pickptcls.hdf", session)
+			lbsz=sz//nnet0.labelshrink
+			data, label=boxerConvNet.load_ptcls(bgrefs, goodrefs, sz, True, lbsz)
+			nnet0.do_training(data, label, niter=20)
+			nnet0.write_output_train('trainout_pickptcl.hdf')
+			nnet0.save_network("nnet_pickptcls.hdf")
 			
 		if len(badrefs)<5:
 			print("Not enough bad references. Skipping bad particle exclusion step...")
 		else:
 			data, label=boxerConvNet.load_ptcls(badrefs, goodrefs, sz, False)
 			nnet1=StackedConvNet_tf(kernels, sz, batchsize, meanout=True)
-			session.run(tf.global_variables_initializer())
-			nnet1.do_training(data, label, session, shuffle=True, learnrate=1e-4, niter=30)
-			nnet1.write_output_train('trainout_classify.hdf', session)
-			nnet1.save_network("nnet_classify.hdf", session)
+			nnet1.do_training(data, label, learnrate=2e-5,  niter=20)
+			nnet1.write_output_train('trainout_classify.hdf')
+			nnet1.save_network("nnet_classify.hdf")
 		print("Training finished.")
 		
 	@staticmethod
-	def load_ptcls(ref0, ref1, sz=64, makegaussian=True):
+	def load_ptcls(ref0, ref1, sz=64, makegaussian=True, lbsz=-1):
 		print("Pre-processing particles...")
 		#### load negative, positive particles
 		#### here we shrink the particles so they are 64x64
@@ -882,7 +873,7 @@ class boxerConvNet(QtCore.QObject):
 		
 		if makegaussian:
 			#### make target output
-			img=EMData(old_div(sz,2),old_div(sz,2))
+			img=EMData(lbsz, lbsz)
 			img.process_inplace("testimage.gaussian",{'sigma':5.})
 			img.div(img["maximum"])
 			gaus=img.numpy().copy().flatten()
@@ -891,7 +882,7 @@ class boxerConvNet(QtCore.QObject):
 			label_np=lbarrs[lbs]
 			return data, label_np
 		else:
-			lbs=np.asarray(lbs,dtype=np.float32)*2.-1
+			lbs=np.asarray(lbs,dtype=np.float32)-1
 			return data, lbs
 	
 	@staticmethod
@@ -1044,10 +1035,91 @@ class boxerConvNet(QtCore.QObject):
 		return (boxes, nbad)
 	
 	@staticmethod
+	def apply_network_tf(micrograph, tsz, nnet, nnet1=None, shrinkfac=1.,  params={}):
+		sz=64
+		#### file name or EMData input
+		if type(micrograph)==str:
+			fm=load_micrograph(micrograph)
+		else:
+			fm=micrograph.copy()
+			
+		#### preprocess..
+		fm.process_inplace("math.fft.resample",{"n":shrinkfac})
+		fm.clip_inplace(Region(0, 0, tsz, tsz))
+		fm.process_inplace("filter.highpass.gauss",{"cutoff_freq":0.005})
+		fm.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.05})
+		fm.process_inplace("normalize")
+		fm.process_inplace("threshold.clampminmax.nsigma", {"nsigma":4})
+			
+		
+		m=fm.numpy()
+		p=nnet.model.predict(m[None, :, :, None])
+		p[p<0]=0
+		cout=from_numpy(p[0,:,:,0])
+		#cout=cout.get_clip(Region(((cout["nx"]-nx)//2),((cout["ny"]-ny)//2) ,nx, ny))
+		#cout.scale(int(nnet.labelshrink))
+		#cout.write_image("tmpimg.hdf")
+		
+		
+		#### find boxes
+		#downsample=shrinkfac*nnet.labelshrink
+		final=cout.process("filter.lowpass.gauss",{"cutoff_abs":.4})
+		
+		boxes=[]
+		
+		thr1=0.2
+		thr2=-1.
+		if "threshold1" in params:
+			thr1=params["threshold1"]
+		else:
+			try: thr1=boxerConvNet.threshold.getValue()
+			except: pass
+		
+		if "threshold2" in params:
+			thr2=params["threshold2"]
+		else:
+			try: thr2=boxerConvNet.threshold2.getValue()
+			except: pass
+				
+		
+		threshold=final["mean"]+final["sigma"]*thr1
+		pks=np.array(final.peak_ccf(sz/nnet.labelshrink/2)).reshape((-1,3))
+		pks[:,1:]=pks[:,1:]*nnet.labelshrink
+		
+		if nnet1==None:
+			tstout=np.ones(len(pks)//3+1)
+		else:
+			coord=np.array(pks).reshape((-1,3))
+			imgs=[]
+			for i, p in enumerate(pks):
+				if p[0]<threshold:
+					break
+				e=fm.get_clip(Region(int(p[1]-sz//2),int(p[2]-sz//2),sz, sz))
+				imgs.append(e.numpy().copy())
+				
+			imgs=np.array(imgs)
+			mout=nnet1.model.predict(imgs[:,:,:,None])
+
+			tstout=np.min(mout, axis=(1,2)).flatten()
+		
+		pks[:,1:]=np.round(pks[:,1:]*shrinkfac)
+		pks=pks.tolist()
+		nbad=0
+		for i,pk in enumerate(pks):
+			if pk[0]<threshold:
+				break
+			if tstout[i]>thr2:
+				boxes.append([int(pk[1]),int(pk[2]),"auto_convnet", pk[0]])
+			else:
+				nbad+=1
+		return (boxes, nbad)
+	
+	@staticmethod
 	def do_autobox(micrograph,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
 
 		
 		nnet_savename="nnet_pickptcls.hdf"
+		nnet_savename_classify="nnet_classify.hdf"
 		bxsz=goodrefs[0]["nx"]
 		sz=64
 		shrinkfac=old_div(float(bxsz),float(sz))
@@ -1057,18 +1129,21 @@ class boxerConvNet(QtCore.QObject):
 			boxerConvNet.do_training((goodrefs, badrefs, bgrefs))
 			
 		#else:
-		nx=int(old_div(micrograph["nx"],shrinkfac))
-		ny=int(old_div(micrograph["ny"],shrinkfac))
+		nx=int(micrograph["nx"]//shrinkfac)
+		ny=int(micrograph["ny"]//shrinkfac)
+		tsz=max(nx, ny)
+		if not hasattr(boxerConvNet,'import_done'):
+			boxerConvNet.do_import()
+		net0=StackedConvNet_tf.load_network(nnet_savename, imgsz=tsz, bsz=1)
 		
-			
-		layers=boxerConvNet.load_network(nnet_savename, nx, ny)
-		nnet_savename_classify="nnet_classify.hdf"
+		##layers=boxerConvNet.load_network(nnet_savename, nx, ny)
 		if os.path.isfile(nnet_savename_classify):
-			nnet_classify=boxerConvNet.load_network(nnet_savename_classify, sz, sz)
+			net1=StackedConvNet_tf.load_network(nnet_savename_classify, imgsz=sz, bsz=1)
+			#nnet_classify=boxerConvNet.load_network(nnet_savename_classify, sz, sz)
 		else:
-			nnet_classify=None
+			net1=None
 			
-		boxes, nbad=boxerConvNet.apply_network(micrograph, layers, shrinkfac, nx, ny, nnet_classify, params)
+		boxes, nbad=boxerConvNet.apply_network_tf(micrograph, tsz, net0, net1, shrinkfac, params)
 		print("{} particles found, excluding {} bad particles..".format(len(boxes), nbad))
 		return boxes
 		
@@ -1095,7 +1170,41 @@ class boxerConvNet(QtCore.QObject):
 		hdr=EMData(fsp, 0, True)
 		nx=int(old_div(hdr["nx"],shrinkfac))
 		ny=int(old_div(hdr["ny"],shrinkfac))
-		
+		tsz=max(nx, ny)
+		if not hasattr(boxerConvNet,'import_done'):
+			boxerConvNet.do_import()
+			
+		net0=StackedConvNet_tf.load_network(nnet_savename, imgsz=tsz, bsz=1)
+		if os.path.isfile(nnet_savename_classify):
+			net1=StackedConvNet_tf.load_network(nnet_savename_classify, imgsz=sz, bsz=1)
+			#nnet_classify=boxerConvNet.load_network(nnet_savename_classify, sz, sz)
+		else:
+			net1=None
+			
+		for ii, fspl in enumerate(filenames):
+			fsp=fspl.split()[1]
+			newboxes, nbad=boxerConvNet.apply_network_tf(fsp, tsz, net0, net1, shrinkfac, params)
+			print("{}: {} particles found, excluding {} bad particles..".format(fsp, len(newboxes), nbad))
+			if len(newboxes)==0 : continue
+			db=js_open_dict(info_name(fsp))
+			if "boxes" in db:
+				boxes=db["boxes"]
+				# Filter out all existing boxes for this picking mode
+				bname=newboxes[0][2]
+				boxes=[b for b in boxes if b[2]!=bname]
+			else:
+				boxes=[]
+				
+			boxes.extend(newboxes)
+			
+			db["boxes"]=boxes
+			db.close()
+			if prog:
+				prog.setValue(ii+1)
+			
+		return
+	
+	
 		#### load network...
 		layers=boxerConvNet.load_network(nnet_savename, nx, ny)
 		

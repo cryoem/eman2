@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
-
 #
 # Author: Steven Ludtke (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -282,6 +278,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.valstodisp=["Img #"]
 
 		self.inspector=None
+		self.usetexture=True
 
 		self.font_size = 11
 		self.font_renderer.set_face_size(self.font_size)
@@ -1174,7 +1171,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 						except: pass
 						if not excluded:
 							#print rx,ry,tw,th,self.width(),self.height(),self.origin
-							if not self.glflags.npt_textures_unsupported():
+							if self.usetexture and (not self.glflags.npt_textures_unsupported()):
 								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)//4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 								self.texture(a,tx,ty,tw,th)
 							else:
@@ -2042,6 +2039,8 @@ class EMGLScrollBar(object):
 
 		self.up_arrow_color = self.scroll_bar_idle_color
 		self.down_arrow_color = self.scroll_bar_idle_color
+		
+		self.isdrawn=False
 
 
 	def update_stuff(self):
@@ -2146,6 +2145,8 @@ class EMGLScrollBar(object):
 		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.scroll_bit_color)
 		glVertex(x1,y2,1)
 		glEnd()
+		
+		self.isdrawn=True
 
 	def down_button_pressed(self,color_change=True):
 		if color_change: self.down_arrow_color = self.scroll_bar_press_color
@@ -2196,6 +2197,8 @@ class EMGLScrollBar(object):
 		elif y < 2*self.arrow_button_height:
 			self.up_button_pressed()
 		else:
+			if not self.isdrawn: ### sometimes click happens before draw...
+				return
 			scroll_bit_ymin = self.starty +self.scroll_bit_position
 			scroll_bit_ymax = scroll_bit_ymin + self.scroll_bit_height
 			if y >= scroll_bit_ymin and y < scroll_bit_ymax:
@@ -2369,17 +2372,19 @@ class EMImageInspectorMX(QtWidgets.QWidget):
 		self.banim.clicked[bool].connect(self.animation_clicked)
 	
 	def update_vals(self):
-		try:
-			self.vals.clear()
-			vn=self.target().data.get_image_header_keys()
-			vn.sort()
-			for i in vn:
-				action=self.vals.addAction(i)
-				action.setCheckable(1)
-				action.setChecked(0)
-		except Exception as inst:
-			print(type(inst))	 # the exception instance
-			print(inst.args)	  # arguments stored in .args
+		#try:
+		self.vals.clear()
+		vn=self.target().data.get_image_header_keys()
+		if vn==None:
+			return
+		vn.sort()
+		for i in vn:
+			action=self.vals.addAction(i)
+			action.setCheckable(1)
+			action.setChecked(0)
+		#except Exception as inst:
+			#print(type(inst))	 # the exception instance
+			#print(inst.args)	  # arguments stored in .args
 	
 	def add_panel(self,widget,name):
 		self.tabwidget.addTab(widget,name)
@@ -2920,7 +2925,8 @@ class EMLightWeightParticleCache(EMMXDataCache):
 		image = self.cache[adj_idx]
 		if image == None:
 			data = self.data[idx]
-			h = get_header(data[0],data[1])
+			try: h = get_header(data[0],data[1])
+			except: h = get_header(data[0][0],data[1])	# not an ideal solution, sometimes(?) data[0] includes 2 filenames...
 			return h
 			#e.read_image(data[0],data[1],True)
 			#return e.get_attr_dict()

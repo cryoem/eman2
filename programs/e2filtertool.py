@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke  3/4/2011
 # Copyright (c) 2011- Baylor College of Medicine
@@ -438,6 +435,7 @@ class EMFilterTool(QtWidgets.QMainWindow):
 
 		self.mview=self.menuBar().addMenu("View")
 		self.mview_new_2dwin=self.mview.addAction("Add 2D View")
+		self.mview_new_3dwin=self.mview.addAction("Add 3D View")
 		self.mview_new_plotwin=self.mview.addAction("Add Plot View")
 
 		self.setCentralWidget(QtWidgets.QWidget())
@@ -477,6 +475,7 @@ class EMFilterTool(QtWidgets.QMainWindow):
 		self.mfile_save_stack.triggered[bool].connect(self.menu_file_save_stack)
 		self.mfile_save_map.triggered[bool].connect(self.menu_file_save_map)
 		self.mfile_quit.triggered[bool].connect(self.menu_file_quit)
+		self.mview_new_3dwin.triggered[bool].connect(self.menu_add_3dwin)
 		self.mview_new_2dwin.triggered[bool].connect(self.menu_add_2dwin)
 		self.mview_new_plotwin.triggered[bool].connect(self.menu_add_plotwin)
 
@@ -516,6 +515,18 @@ class EMFilterTool(QtWidgets.QMainWindow):
 
 #		QtCore.QObject.connect(self.boxesviewer,QtCore.SIGNAL("mx_image_selected"),self.img_selected)
 
+	def menu_add_3dwin(self):
+		if self.viewer==None: return
+		self.viewer.append(EMScene3D())
+		self.sgdata = EMDataItem3D(test_image_3d(3), transform=Transform())
+		self.viewer[-1].insertNewNode('Data', self.sgdata, parentnode=self.viewer[0])
+		isosurface = EMIsosurface(self.sgdata, transform=Transform())
+		self.viewer[-1].insertNewNode("Iso", isosurface, parentnode=self.sgdata)
+		volslice = EMSliceItem3D(self.sgdata, transform=Transform())
+		self.viewer[-1].insertNewNode("Slice", volslice, parentnode=self.sgdata)
+		self.viewer[-1].show()
+		self.needupdate=1
+	
 	def menu_add_2dwin(self):
 		if self.viewer==None: return
 		self.viewer.append(EMImage2DWidget())
@@ -750,18 +761,15 @@ class EMFilterTool(QtWidgets.QMainWindow):
 		if self.viewer!=None : 
 			for v in self.viewer: v.close()
 			
-		if self.nz==1 or self.force2d:
+		if self.nz==1 or self.force2d or self.nx>320:
 			if len(self.origdata)>1 :
 				self.viewer=[EMImageMXWidget()]
 				self.mfile_save_stack.setEnabled(True)
-				self.mfile_save_map.setEnabled(False)
 			else :
 				self.viewer=[EMImage2DWidget()]
 				self.mfile_save_stack.setEnabled(False)
-				self.mfile_save_map.setEnabled(True)
 		else :
 			self.mfile_save_stack.setEnabled(False)
-			self.mfile_save_map.setEnabled(True)
 			self.viewer = [EMScene3D()]
 			self.sgdata = EMDataItem3D(test_image_3d(3), transform=Transform())
 			self.viewer[0].insertNewNode('Data', self.sgdata, parentnode=self.viewer[0])
@@ -769,6 +777,9 @@ class EMFilterTool(QtWidgets.QMainWindow):
 			self.viewer[0].insertNewNode("Iso", isosurface, parentnode=self.sgdata)
 			volslice = EMSliceItem3D(self.sgdata, transform=Transform())
 			self.viewer[0].insertNewNode("Slice", volslice, parentnode=self.sgdata)
+
+		if self.nz>1 : self.mfile_save_map.setEnabled(True)
+		else : self.mfile_save_map.setEnabled(False)
 
 		E2loadappwin("e2filtertool","image",self.viewer[0].qt_parent)
 		if self.origdata[0].has_attr("source_path"):

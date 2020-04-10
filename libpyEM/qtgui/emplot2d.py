@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -87,6 +83,7 @@ from . import emimage2d
 import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib.backends.backend_agg import FigureCanvasAgg
+from matplotlib.backends.backend_pdf import FigureCanvasPdf
 from matplotlib.figure import Figure
 #matplotlib.use('Agg')
 import numpy as np
@@ -135,6 +132,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.slimits=None
 		self.rmousedrag=None
 		self.axisparms=(None,None,"linear","linear")
+		self.plottitle=""
 		self.selected=[]
 		self.comments={}			# IF reading from a file which contains per-point comments, this dictionary contains a list of comments for each point
 
@@ -144,6 +142,8 @@ class EMPlot2DWidget(EMGLWidget):
 
 		self.tex_name = 0
 		self.main_display_list = 0
+		self.savepdf=None			# when set to a string, the next render will write a PDF file, this contains the filename
+		self.savepng=None			# when set to a string, the next render will write a PNG file, this contains the filename
 
 		self.resize(640,480)
 
@@ -517,13 +517,22 @@ class EMPlot2DWidget(EMGLWidget):
 
 		if render:
 			fig=Figure((old_div(self.width(),72.0),old_div(self.height(),72.0)),dpi=72.0)
-			ax=fig.add_axes((.1,.1,.88,.88),autoscale_on=False,xlim=self.xlimits,ylim=self.ylimits,xscale=self.axisparms[2],yscale=self.axisparms[3])
+			if self.axisparms[0] and len(self.axisparms[0])>0: ymin=.1
+			else: ymin= .05
+			if self.axisparms[1] and len(self.axisparms[1])>0 : xmin=.12
+			else: xmin= .08
+			if len(self.plottitle)>0 : ywid=0.94-ymin
+			else: ywid=0.98-ymin
+			xwid=0.98-xmin
+			ax=fig.add_axes((xmin,ymin,xwid,ywid),autoscale_on=False,xlim=self.xlimits,ylim=self.ylimits,xscale=self.axisparms[2],yscale=self.axisparms[3])
 			#else : ax=fig.add_axes((.18,.18,.9,.9),autoscale_on=True,xscale=self.axisparms[2],yscale=self.axisparms[3])
 			if self.axisparms[0] and len(self.axisparms[0])>0 : ax.set_xlabel(self.axisparms[0],size="xx-large")
 			if self.axisparms[1] and len(self.axisparms[1])>0 : ax.set_ylabel(self.axisparms[1],size="xx-large")
+			if len(self.plottitle)>0 : ax.set_title(self.plottitle,size="xx-large")
 			ax.tick_params(axis='x', labelsize="x-large")
 			ax.tick_params(axis='y', labelsize="x-large")
-			canvas=FigureCanvasAgg(fig)
+			if self.savepdf!=None : canvas=FigureCanvasPdf(fig)
+			else: canvas=FigureCanvasAgg(fig)
 
 			for i in list(self.axes.keys()):
 				if not self.visibility[i]: continue
@@ -560,6 +569,18 @@ class EMPlot2DWidget(EMGLWidget):
 
 
 			canvas.draw()
+			if self.savepdf!=None:
+				canvas.print_pdf(self.savepdf)
+				self.savepdf=None
+				self.needupd=True
+				self.updateGL()
+				return
+			if self.savepng!=None:
+				canvas.print_png(self.savepng)
+				self.savepng=None
+				self.needupd=True
+				self.updateGL()
+				return
 			self.plotimg = canvas.tostring_rgb()  # save this and convert to bitmap as needed
 
 			# this try except block is because the developers of matplotlib have been changing their API
@@ -664,6 +685,12 @@ class EMPlot2DWidget(EMGLWidget):
 		'''
 		self.needupd=1
 		self.del_shapes(("xcross","ycross","lcross","Circle"))
+
+	def setTitle(self,plottitle):
+		if plottitle!=self.plottitle:
+			self.plottitle=plottitle
+			self.needupd=1
+			self.updateGL()
 
 	def setAxisParms(self,xlabel,ylabel,xlog="linear",ylog="linear"):
 # skip this since we want a guaranteed redraw somewhere
@@ -895,10 +922,15 @@ lc is the cursor selection point in plot coords"""
 			xmax=-1.0e38
 			for k in list(self.axes.keys()):
 				if not self.visibility[k]: continue
-				xmin=min(xmin,min(self.data[k][self.axes[k][0]]))
-				xmax=max(xmax,max(self.data[k][self.axes[k][0]]))
+				ax=self.axes[k][0]
+				if ax==-1 : 
+					xmin=min(xmin,0)
+					xmax=max(xmax,len(self.data[k][0]))
+				else :
+					xmin=min(xmin,min(self.data[k][ax]))
+					xmax=max(xmax,max(self.data[k][ax]))
 
-			if self.axisparms[2]!="linear" : self.xlimits=(old_div(xmin,1.1),xmax*1.1)
+			if self.axisparms[2]!="linear" : self.xlimits=(xmin/1.1,xmax*1.1)
 			else:
 				margin=(xmax-xmin)*0.025
 				self.xlimits=(xmin-margin,xmax+margin)
@@ -908,8 +940,13 @@ lc is the cursor selection point in plot coords"""
 			ymax=-1.0e38
 			for k in list(self.axes.keys()):
 				if not self.visibility[k]: continue
-				ymin=min(ymin,min(self.data[k][self.axes[k][1]]))
-				ymax=max(ymax,max(self.data[k][self.axes[k][1]]))
+				ax=self.axes[k][1]
+				if ax==-1:
+					ymin=min(ymin,0)
+					ymax=max(ymax,len(self.data[k][0]))
+				else :
+					ymin=min(ymin,min(self.data[k][ax]))
+					ymax=max(ymax,max(self.data[k][ax]))
 
 			if self.axisparms[3]!="linear" : self.ylimits=(old_div(ymin,1.1),ymax*1.1)
 			else:
@@ -1328,6 +1365,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 			else : ax=fig.add_axes((.1,.1,.8,.8),autoscale_on=True,polar=True,xscale=self.axisparms[2],yscale=self.axisparms[3])
 			if self.axisparms[0] and len(self.axisparms[0])>0 : ax.set_xlabel(self.axisparms[0],size="xx-large")
 			if self.axisparms[1] and len(self.axisparms[1])>0 : ax.set_ylabel(self.axisparms[1],size="xx-large")
+			if len(self.plotttile)>0 : ax.set_title(self.plotttitle,size="xx-large")
 			if not self.yticklabels: ax.set_yticklabels([])
 			if not self.xticklabels: ax.set_xticklabels([])
 			canvas=FigureCanvasAgg(fig)
@@ -1991,14 +2029,23 @@ class EMPlot2DClassInsp(QtWidgets.QWidget):
 				return
 
 		try:
-			vals=[float(i) for i in vals.split(",")]
+			v1=vals.split(",")
+			vals=[]
+			inv=[]
+			for v in v1:
+				if v[0]=="<" : 
+					inv.append(True)
+					vals.append(float(v[1:]))
+				else:
+					inv.append(False)
+					vals.append(float(v))
 			if len(vals) != len(axes): raise Exception
 		except:
-			QtWidgets.QMessageBox.warning(self, "You must specify one (comma separated) value for each axis.")
+			QtWidgets.QMessageBox.warning(self, "ERROR","You must specify one (comma separated) value for each axis.\nFor 'value' if prepended with '<' the direction of the \nthreshold will be inverted for that axis.")
 			return
 
 		if thresh_type == "value":
-			axvals = {a:v for a,v in zip(axes,vals)}
+			axvals = {a:(v,iv) for a,v,iv in zip(axes,vals,inv)}
 
 		elif thresh_type == "sigma":
 			tmp = np.asarray(data)[:,axes]
@@ -2036,6 +2083,11 @@ class EMPlot2DClassInsp(QtWidgets.QWidget):
 					if data[ax][r]>axvals[ax][0] and data[ax][r]<axvals[ax][1]:
 						imdata[r]["class_id"] *= 1
 					else: imdata[r]["class_id"] *= 0
+				elif thresh_type == "value":
+					if (axvals[ax][1] and data[ax][r] < axvals[ax][0]) or (not axvals[ax][1] and data[ax][r] > axvals[ax][0]):
+						imdata[r]["class_id"] *= 0
+					else:
+						imdata[r]["class_id"] *= 1
 				else:
 					if data[ax][r] < axvals[ax]:
 						imdata[r]["class_id"] *= 0
@@ -2278,7 +2330,7 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 		hbl0.addWidget(self.concatb)
 
 		self.pdfb=QtWidgets.QPushButton(self)
-		self.pdfb.setText("PDF")
+		self.pdfb.setText("PDF/PNG")
 #		self.pdfb.setEnabled(False)
 		hbl0.addWidget(self.pdfb)
 
@@ -2494,6 +2546,12 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 		hbl5.addWidget(self.ylabel)
 		vbl0.addLayout(hbl5)
 
+		hbl7 = QtWidgets.QHBoxLayout()
+		hbl7.addWidget(QtWidgets.QLabel("Title:",self))
+		self.plottitle=QtWidgets.QLineEdit(self)
+		hbl7.addWidget(self.plottitle)
+		vbl0.addLayout(hbl7)
+
 		hbl6 = QtWidgets.QHBoxLayout()
 		#hbl6.addWidget(QtWidgets.QLabel("Transparency:",self))
 		self.alphaslider=ValSlider(self,(0,1),"Transparency:",0.5,50)
@@ -2535,6 +2593,7 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 		self.linwid.valueChanged[int].connect(self.updPlotLinwid)
 		self.xlabel.textChanged[str].connect(self.updPlot)
 		self.ylabel.textChanged[str].connect(self.updPlot)
+		self.plottitle.textChanged[str].connect(self.updPlot)
 		self.stats.clicked.connect(self.openStatsWin)
 		self.regress.clicked.connect(self.openRegrWin)
 		self.saveb.clicked.connect(self.savePlot)
@@ -2724,7 +2783,17 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 
 	def savePdf(self):
 		"""Saves the contents of the current plot to a pdf"""
-		plt.savefig("plot.pdf")
+		fsp=QtWidgets.QFileDialog.getSaveFileName(self, "Output file, png or pdf only")[0]
+		if fsp[-4:].lower()==".pdf":
+			self.target().savepdf=fsp
+			self.target().needupd=True
+			self.target().updateGL()
+		elif fsp[-4:].lower()==".png":
+			self.target().savepng=fsp
+			self.target().needupd=True
+			self.target().updateGL()
+		else:
+			QtWidgets.QMessageBox.error(self, "Only PDF and PNG files are supported")
 
 	def updPlot(self,s=None):
 		if self.quiet : return
@@ -2734,6 +2803,7 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 		else : yl="linear"
 		names = [str(item.text()) for item in self.setlist.selectedItems()]
 		self.target().setAxisParms(self.xlabel.text(),self.ylabel.text(),xl,yl)
+		self.target().setTitle(str(self.plottitle.text()))
 		self.target().autoscale(True)
 		if len(names)==1:
 			self.target().setPlotParms(names[0],self.color.currentIndex(),self.lintog.isChecked(),

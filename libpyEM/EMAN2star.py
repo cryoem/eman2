@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 #
 # Author: Steven Ludtke, 04/17/14 (sludtke@bcm.edu)
 # Copyright (c) 2014- Baylor College of Medicine
@@ -85,6 +83,9 @@ If not set, it will read the first block encountered. Value should be of the for
 		
 		if os.path.isfile(filename) :
 			self.readfile()
+		else :
+			raise Exception(f"Cannot open STAR file: {filename}")
+			
 	def _nextline(self):
 		"""Used internally when parsing a star file to emulate readline"""
 		self.lineptr+=1

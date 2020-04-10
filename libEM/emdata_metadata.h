@@ -955,7 +955,7 @@ inline int get_pathnum() const
 }
 
 //vector<float> get_data_pickle() const;
-std::string get_data_pickle() const;
+EMBytes get_data_pickle() const;
 
 //void set_data_pickle(const vector<float>& vf);
 void set_data_pickle(std::string vf);

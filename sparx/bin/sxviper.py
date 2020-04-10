@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 from builtins import range
 #
 # Author: Pawel A.Penczek 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)

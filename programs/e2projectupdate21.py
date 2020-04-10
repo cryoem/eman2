@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 05/23/2012 (sludtke@bcm.edu)
 # Copyright (c) 2000-2013 Baylor College of Medicine
@@ -96,7 +93,7 @@ It is strongly suggested that you run 'e2bdb.py -c' prior to running this progra
 """)
 
 	if not options.yes :
-		a=eval(input("Are you sure you want to proceed (enter YES) ? "))
+		a=input("Are you sure you want to proceed (enter YES) ? ")
 		if a!="YES" : sys.exit(2)
 
 

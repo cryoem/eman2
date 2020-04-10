@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu),
 # David Woolford 2007-2008 (woolford@bcm.edu)
@@ -757,7 +754,7 @@ class Make3dTask(JSTask):
 		
 		output = recon.finish(False)
 		
-		callback(100)
+		#callback(100)
 		
 		return (output, normvol)
 

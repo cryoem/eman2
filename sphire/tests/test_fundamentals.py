@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import division
 from past.utils import old_div
 
 import nose.tools as nt

@@ -4,7 +4,8 @@
 #  08/26/2016
 #  New version of sort3D.
 #  
-from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 import  os
 import  sys
@@ -35,7 +36,7 @@ global Tracker, Blockdata
 def compute_average(mlist, radius, CTF):
 	from morphology   import cosinemask
 	from fundamentals import fft
-	from statistics   import fsc, sum_oe
+	from pap_statistics   import fsc, sum_oe
 	if CTF:
 		avge, avgo, ctf_2_sume, ctf_2_sumo, params_list = \
 		     sum_oe(mlist, "a", CTF, None, True, True)
@@ -47,7 +48,7 @@ def compute_average(mlist, radius, CTF):
 		frc[1][0] = 1.0
 		for ifreq in range(1, len(frc[0])):
 			frc[1][ifreq] = max(0.0, frc[1][ifreq])
-			frc[1][ifreq] = 2.*frc[1][ifreq]/(1.+frc[1][ifreq])
+			frc[1][ifreq] = old_div(2.*frc[1][ifreq],(1.+frc[1][ifreq]))
 		sumavg  =  Util.addn_img(fft(avgo), fft(avge))
 		sumctf2 =  Util.addn_img(ctf_2_sume, ctf_2_sumo)	
 		Util.div_img(sumavg, sumctf2)
@@ -60,7 +61,7 @@ def compute_average(mlist, radius, CTF):
 		frc[1][0] = 1.0
 		for ifreq in range(1, len(frc[0])):
 			frc[1][ifreq] = max(0.0, frc[1][ifreq])
-			frc[1][ifreq] = 2.*frc[1][ifreq]/(1.+frc[1][ifreq])
+			frc[1][ifreq] = old_div(2.*frc[1][ifreq],(1.+frc[1][ifreq]))
 		return avge+avgo, frc, params_list
 
 def adjust_pw_to_model(image, pixel_size, roo):
@@ -79,14 +80,14 @@ def adjust_pw_to_model(image, pixel_size, roo):
 		pu = []
 		for ifreq in range(len(rot1)):
 			x = float(ifreq)/float(len(rot1))/pixel_size
-			v = exp(c1+c2/(x/c3+1)**2) + exp(c4-0.5*(((x-c5)/c6**2)**2))
+			v = exp(c1+old_div(c2,(old_div(x,c3)+1)**2)) + exp(c4-0.5*((old_div((x-c5),c6**2))**2))
 			pu.append(v)
 		s =sum(pu)
-		for ifreq in range(len(rot1)): fil[ifreq] = sqrt(pu[ifreq]/(rot1[ifreq]*s))
+		for ifreq in range(len(rot1)): fil[ifreq] = sqrt(old_div(pu[ifreq],(rot1[ifreq]*s)))
 	else: # adjusted to a given 1-d rotational averaged pw2
 		if roo[0]<0.1 or roo[0]>1.: s =sum(roo)
 		else:  s=1.0
-		for ifreq in range(len(rot1)):fil[ifreq] = sqrt(roo[ifreq]/(rot1[ifreq]*s))
+		for ifreq in range(len(rot1)):fil[ifreq] = sqrt(old_div(roo[ifreq],(rot1[ifreq]*s)))
 	return filt_table(image, fil)
 	
 def get_optimistic_res(frc):
@@ -346,7 +347,7 @@ def main():
 				abs_id =  members[im]
 				global_dict[abs_id] = [iavg, im]
 				P = combine_params2( init_dict[abs_id][0], init_dict[abs_id][1], init_dict[abs_id][2], init_dict[abs_id][3], \
-				parameters[abs_id][0], parameters[abs_id][1]/Tracker["ini_shrink"], parameters[abs_id][2]/Tracker["ini_shrink"], parameters[abs_id][3])
+				parameters[abs_id][0], old_div(parameters[abs_id][1],Tracker["ini_shrink"]), old_div(parameters[abs_id][2],Tracker["ini_shrink"]), parameters[abs_id][3])
 				if parameters[abs_id][3] ==-1: 
 					print("WARNING: Image #{0} is an unaccounted particle with invalid 2D alignment parameters and should not be the member of any classes. Please check the consitency of input dataset.".format(abs_id)) # How to check what is wrong about mirror = -1 (Toshio 2018/01/11)
 				params_of_this_average.append([P[0], P[1], P[2], P[3], 1.0])

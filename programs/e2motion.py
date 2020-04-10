@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke  9/14/2012 
 # Copyright (c) 2012- Baylor College of Medicine
@@ -82,7 +79,7 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	if options.path==None:
-		options.path=numbered_path("m2d",True)
+		options.path=numbered_path("m2d",False)
 #		os.makedirs(options.path)
 
 	if options.threads<1 : options.threads=num_cpus()
@@ -246,7 +243,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		
 		self.vbl1.addSpacing(16)
 		
-		self.wbaligo=QtWidgets.QPushButton(unichr(0x2192))
+		self.wbaligo=QtWidgets.QPushButton(chr(0x2192))
 		self.vbl1.addWidget(self.wbaligo)
 
 		self.vbl1.addStretch(5)
@@ -311,7 +308,7 @@ class EMMotion(QtWidgets.QMainWindow):
 
 		self.vbl2.addSpacing(16)
 		
-		self.wbroigo=QtWidgets.QPushButton(unichr(0x2192))
+		self.wbroigo=QtWidgets.QPushButton(chr(0x2192))
 		self.vbl2.addWidget(self.wbroigo)
 
 
@@ -321,7 +318,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		
 		self.vbl2.addStretch(5)
 
-		self.wlarrow1=QtWidgets.QLabel(unichr(0x2192))
+		self.wlarrow1=QtWidgets.QLabel(chr(0x2192))
 		self.gbl.addWidget(self.wlarrow1,4,4)
 
 		###### Results
@@ -384,7 +381,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		self.wbcompute=QtWidgets.QPushButton("Compute")
 		self.vbl3a.addWidget(self.wbcompute)
 
-		self.wlarrow2=QtWidgets.QLabel(unichr(0x2192))
+		self.wlarrow2=QtWidgets.QLabel(chr(0x2192))
 		self.gbl.addWidget(self.wlarrow2,4,7)
 
 
@@ -397,7 +394,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		self.w2dclasses=EMImage2DWidget()
 		self.gbl.addWidget(self.w2dclasses,3,9)
 
-		self.wbshowptcl=QtWidgets.QPushButton(unichr(0x2193))
+		self.wbshowptcl=QtWidgets.QPushButton(chr(0x2193))
 		self.gbl.addWidget(self.wbshowptcl,4,9)
 
 		self.w2dptcl=EMImage2DWidget()
@@ -471,9 +468,10 @@ class EMMotion(QtWidgets.QMainWindow):
 		try: 
 			dct=js_open_dict("{}/particle_parms_{:02d}.json".format(self.path,itr))
 			self.particles=[(j["score"],j["xform.align2d"],eval(i)[0],int(eval(i)[1])) for i,j in list(dct.items())]
-			self.particles.sort()
+			self.particles.sort(key=lambda x:x[0])
 			if len(self.particles)==0 : raise Exception
 		except:
+			traceback.print_exc()
 			self.particles=None
 			self.wlnptcl.setText("No Data")
 			print("Warning: no particle alignment data found for iter=",itr)
@@ -905,7 +903,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		print(cls["ptcl_repr"],cls["class_ptcl_idxs"],cls["class_ptcl_src"])
 		ptcls=[EMData(cls["class_ptcl_src"],i).align("rotate_translate_flip",cls) for i in cls["class_ptcl_idxs"]]
 		for p in ptcls: p["qual"]=p.cmp("ccc",cls)
-		ptcls.sort(cmp=lambda x,y:cmp(x["qual"],y["qual"]))
+		ptcls.sort(key=lambda x:x["qual"])
 		self.w2dptcl.set_data(ptcls)
 				
 	def doCompute(self,x=False):
@@ -991,7 +989,7 @@ class EMMotion(QtWidgets.QMainWindow):
 			c["class_ptcl_src"]=toclass[0][2]
 
 		# put the class with the most particles first
-		m=max([(i["ptcl_repr"],i) for i in classes])
+		m=max([(i["ptcl_repr"],i) for i in classes],key=lambda x:x[0])
 		classes.remove(m[1])
 		classes.insert(0,m[1])
 

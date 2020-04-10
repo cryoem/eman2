@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-03
-from __future__ import print_function
-from __future__ import division
-from past.utils import old_div
 from builtins import range
 import numpy as np
 from EMAN2 import *
 import json
 from scipy.signal import argrelextrema
 from scipy.optimize import minimize
+import threading
 
 def calc_ctf(defocus, bxsz=256, voltage=300, cs=4.7, apix=1. ,phase=0.):
 	ds=1.0/(apix*bxsz)
@@ -169,7 +167,7 @@ def main():
 
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=2, col=1, rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--dfrange", type=str,help="Search range of defocus (start, end, step). default is 2., 7, 0.02", default="2.0,7.0,0.02", guitype='strbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--psrange", type=str,help="phase shift range (start, end, step). default is 0, 5, 5", default="0,5,5", guitype='strbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--psrange", type=str,help="phase shift range (start, end, step). default is 10, 15, 5", default="10,15,5", guitype='strbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--tilesize", type=int,help="Size of tile to calculate FFT, default is 256", default=256, guitype='intbox',row=4, col=2,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--voltage", type=int,help="Voltage of microscope in kV", default=300, guitype='intbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--cs", type=float,help="Cs of microscope", default=2.7, guitype='floatbox',row=6, col=1,rowspan=1, colspan=1, mode="model")
@@ -178,11 +176,13 @@ def main():
 	parser.add_argument("--stepy", type=int,help="Number of tiles to generate on y-axis (same defocus)", default=40, guitype='intbox',row=8, col=1,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--refine", action="store_true", help="Include a refinement step in the end for more precise estimation.", default=False, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="model")
 	parser.add_argument("--checkhand", action="store_true", help="Check the handedness of tomogram.", default=False,guitype='boolbox',row=10, col=0, rowspan=1, colspan=1,mode="model")
-	
+	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on the local computer",guitype='intbox', row=8, col=2, rowspan=1, colspan=1, mode='model')
+	parser.add_argument("--nolog",action="store_true",default=False,help="Default=False. Turn off recording of the command ran for this program onto the .eman2log.txt file")	
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=1, help="verbose level [0-9], higher number means higher level of verboseness")
+
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	
 	(options, args) = parser.parse_args()
-	logid=E2init(sys.argv)
 	
 	#### deal with multiple inputs
 	if options.alltiltseries:
@@ -194,14 +194,37 @@ def main():
 		print("Reading tilt series {}...".format(args[0]))
 	else:
 		print("Processing {} tilt series in sequence..".format(len(args)))
-		cmd=sys.argv
-		opt=' '.join([s for s in cmd if s.startswith("-")])
-		opt=opt.replace("--alltiltseries","")
-		for a in args:
-			run("{} {} {}".format(cmd[0], a, opt))
-		E2end(logid)
+		if not options.nolog: logid=E2init(sys.argv)
+		thrds=["{} {} --nolog --verbose 0 {}".format(parser.prog,a,commandoptions(options,("threads","alltiltseries","verbose"))) for a in sorted(args)]
+
+		NTHREADS=max(options.threads+1,2)	# the controlling thread isn't really doing anything
+		thrtolaunch=0
+		while thrtolaunch<len(thrds) or threading.active_count()>1:
+			# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
+			# note that it's ok that we wait here forever, since there can't be new results if an existing
+			# thread hasn't finished.
+			if thrtolaunch<len(thrds) :
+				while (threading.active_count()==NTHREADS ) : time.sleep(.1)
+				if options.verbose>1 : print("Starting thread {}/{}".format(thrtolaunch,len(thrds)))
+				print("running: ",thrds[thrtolaunch])
+				thrds[thrtolaunch]=threading.Thread(target=run,args=(thrds[thrtolaunch],))
+				thrds[thrtolaunch].start()
+				time.sleep(1)				# this helps stagger launches due to the large read at the beginning of each job
+				thrtolaunch+=1
+			else: time.sleep(1)
+			if options.verbose>1 and thrtolaunch>0:
+				frac=thrtolaunch/float(len(thrds))
+				print("{}% complete".format(100.0*frac))
+
+		for t in thrds:
+			t.join()
+
+		if options.verbose : print("All threads complete")
+		if not options.nolog: E2end(logid)
 		return
 	
+	if not options.nolog: logid=E2init(sys.argv)
+
 	tfile=args[0]
 	try:
 		js=js_open_dict(info_name(tfile))
@@ -227,7 +250,7 @@ def main():
 	
 	box=options.tilesize
 	sz=min(nx, ny)-box
-	print("Reading {}, size {} x {} x {}, apix {:.2f}".format(tfile, nx, ny, nz, apix))
+	if options.verbose>0:print("Reading {}, size {} x {} x {}, apix {:.2f}".format(tfile, nx, ny, nz, apix))
 
 
 	drg=[float(i) for i in options.dfrange.split(',')]
@@ -237,8 +260,8 @@ def main():
 	prg=[float(i) for i in options.psrange.split(',')]
 	pshift=np.arange(prg[0], prg[1], prg[2])
 	
-	print("Search defocus from {:.1f} to {:.1f}, step {:.2f}".format(drg[0], drg[1], drg[2]))
-	print("Search phase shift from {:.1f} to {:.1f}, step {:.1f}".format(prg[0], prg[1], prg[2]))
+	if options.verbose>0: print("Search defocus from {:.1f} to {:.1f}, step {:.2f}".format(drg[0], drg[1], drg[2]))
+	if options.verbose>0: print("Search phase shift from {:.1f} to {:.1f}, step {:.1f}".format(prg[0], prg[1], prg[2]))
 	
 	allctf=[]
 	zlist=[]
@@ -253,7 +276,7 @@ def main():
 	npt=options.stepy
 	nstep=options.stepx
 	powerspecs=[]
-	print("Generating power spectrum of tiles from tilt series...")
+	if options.verbose>0:print("Generating power spectrum of tiles from tilt series...")
 	for imgi in range(nz):
 		rawimg=imgs[imgi]
 		tpm=tltparams[imgi].copy()
@@ -298,7 +321,7 @@ def main():
 		allrd=np.array(allrd)
 		powerspecs.append([allrd, pzus])
 		
-		print("{}, {:.2f}".format(imgi, tpm[3]))
+		if options.verbose>1: print("{}, {:.2f}".format(imgi, tpm[3]))
 	
 	dfs=[]
 	exclude=[]
@@ -359,7 +382,7 @@ def main():
 		else:
 			print("The handedness seems to be flipped. Consider rerun the tomogram reconstruction with --tltax={:.1f} then rerun the CTF estimation.".format(-((180+rot)%360)))
 		      
-		E2end(logid)
+		if not options.nolog: E2end(logid)
 		return
 		
 			
@@ -367,9 +390,9 @@ def main():
 	
 	nref=options.nref
 	if nref>0:
-		print("Using first {} images near center tilt to estimate defocus range...".format(nref))
+		if options.verbose>0: print("Using first {} images near center tilt to estimate defocus range...".format(nref))
 	else:
-		print("Estimating defocus...")
+		if options.verbose>0: print("Estimating defocus...")
 
 	ctfparams=np.zeros((len(tltparams), 2))
 	for it in tltsrt:
@@ -417,23 +440,23 @@ def main():
 			res=minimize(compute_score, pm, (powerspecs[it], options),method='Nelder-Mead',options={'xtol': 1e-3, 'disp': False, "maxiter":10})
 			pm=res.x
 		
-		print("ID {}, angle {:.1f}, defocus {:.3f}, phase shift {:.1f}, score {:.1f}".format(it, tltparams[it,3], pm[0], pm[1], np.min(allscr)*1000))
+		if options.verbose>0: print("ID {}, angle {:.1f}, defocus {:.3f}, phase shift {:.1f}, score {:.1f}".format(it, tltparams[it,3], pm[0], pm[1], np.min(allscr)*1000))
 		dfs.append(pm[0])
 		ctfparams[it]=[pm[1], pm[0]]
 
 		#### get enough references
 		if len(dfs)==nref: 
-			print("In the first {} image, defocus mean {:.2f}, std {:.2f}".format(nref, np.mean(dfs), np.std(dfs)))
+			if options.verbose>0: print("In the first {} image, defocus mean {:.2f}, std {:.2f}".format(nref, np.mean(dfs), np.std(dfs)))
 			#if (np.mean(dfs)+np.std(dfs)*3>defrg[int(len(defrg)*.9)]):
 			if (np.std(dfs)>1):
-				print ("Warning: variance of defocus estimation is larger than normal. Something may be wrong...")
+				if options.verbose>0: print ("Warning: variance of defocus estimation is larger than normal. Something may be wrong...")
 				#return
 			
 			searchrg=min(max(np.std(dfs)*3, 3), 1.0)
 			dfsel=abs(defrg-np.mean(dfs))<searchrg
 			
 			
-			print("We will search defocus range {:.2f} to {:.2f} for the rest images.".format(np.min(defrg[dfsel]), np.max(defrg[dfsel])))
+			if options.verbose>0: print("We will search defocus range {:.2f} to {:.2f} for the rest images.".format(np.min(defrg[dfsel]), np.max(defrg[dfsel])))
 			
 			exclude=np.where(dfsel==False)[0]
 			
@@ -445,12 +468,12 @@ def main():
 	js["voltage"]=float(options.voltage)
 	js=None
 	
-	print("Done")
+	print("{} done. Average defocus {:.2f}".format(tfile, np.mean(ctfparams[:,1])))
 	
-	E2end(logid)
+	if not options.nolog: E2end(logid)
 	
 def run(cmd):
-	print(cmd)
+	#print(cmd)
 	launch_childprocess(cmd)
 	
 	

@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 #
 # Author: John Flanagan (jfflanag@bcm.edu)
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -102,16 +100,23 @@ def main():
 					if c.isdigit() or (s0=="" and c=='-' and a[i+1].isdigit()):
 						s0+=c
 					elif len(s0)>0:
-						l.append(float(s0))
+						l.append(int(s0))
 						p.append(i)
 						s0=""
 				lst.append(l)
 				lstpos.append(p)
 			
+			l0=len(lst[0])
+			for i,l in enumerate(lst):
+				if len(l)!=l0:
+					print("File name mismatch detected")
+					print("{}\n\t-> {}".format(args[0], lst[0]))
+					print("{}\n\t-> {}".format(args[i], l))
+					break
 			try:
 				lst=np.array(lst, dtype=float)
 			except:
-				print("number in file names do not match.. something may be wrong..")
+				print("Something is wrong in filename formatting. exit.")
 				return
 				
 			print("File name of the first input:")

@@ -1,5 +1,4 @@
 #
-from __future__ import print_function
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Please do not copy or modify this file without written consent of the author.
 # Copyright (c) 2000-2019 The University of Texas - Houston Medical School
@@ -30,6 +29,8 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 #
+
+from past.utils import old_div
 
 ''' variables governing system performance - can be changed by the user'''
 # 2-D interpolation method:
@@ -81,7 +82,7 @@ global SPARXVERSION
 
 from EMAN2_meta import DATESTAMP
 
-SPARXVERSION = "SPARX v4.0" + ' (GITHUB: ' + DATESTAMP +')'
+SPARXVERSION = "SPARX v5.0" + ' (GITHUB: ' + DATESTAMP +')'
 
 global SPARX_MPI_TAG_UNIVERSAL
 SPARX_MPI_TAG_UNIVERSAL = 123456

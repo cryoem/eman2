@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 # average particles together based on existing alignments
 
 from past.utils import old_div
@@ -72,7 +70,7 @@ def main():
 	N=len(sortangs)
 
 	# make a quick alignment reference
-	for i,t in enumerate(sorted(sortangs)[:50]):
+	for i,t in enumerate(sorted(sortangs,key=lambda x:x[0])[:50]):
 		im=EMData(t[2][0],t[2][1])			# this is from the key of angs{}
 		im.process_inplace("xform",{"transform":t[1]})
 		try: aref.add(im)
@@ -81,7 +79,7 @@ def main():
 		
 	if options.scorebestset>0:
 		out=LSXFile("sets/{}_{}_{}.lst".format(options.path.split("/")[-1],options.iter,options.scorebestset))
-		for i,t in enumerate(sorted(sortangs)[:options.scorebestset]):
+		for i,t in enumerate(sorted(sortangs,key=lambda x:x[0])[:options.scorebestset]):
 			imh=EMData(t[2][0],t[2][1],True)
 			try:
 				fsp=imh["data_source"]	# if the data is from a LST file this dereferences it
@@ -94,7 +92,7 @@ def main():
 	# the main averaging/saving loop
 	t0=time.time()
 	t1=t0
-	for i,t in enumerate(sorted(sortangs)):
+	for i,t in enumerate(sorted(sortangs,key=lambda x:x[0])):
 		if options.verbose==1 and time.time()-t1>1:
 			t1=time.time()
 			frac=old_div(i,float(N))

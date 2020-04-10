@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steve Ludtke 06/10/2013 (sludtke@bcm.edu)
 # Copyright (c) 2013- Baylor College of Medicine
@@ -680,12 +677,12 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 			if ca<cb :
 				try: ali=a["xform.align3d"]
 				except: ali=Transform()
-				if verbose>0 : print("correct hand detected ",ali)
+				if options.verbose>0 : print("correct hand detected ",ali)
 			else :
 				try: ali=b["xform.align3d"]
 				except: ali=Transform()
 				o.process_inplace("xform.flip",{"axis":"z"})
-				if verbose>0 : print("handedness flip required",ali)
+				if options.verbose>0 : print("handedness flip required",ali)
 			o.transform(ali)
 
 			os.unlink(map2)
