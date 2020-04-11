@@ -1256,7 +1256,6 @@ The basic design of EMAN Processors: <br>\
 			d.put("radius", EMObject::INT, "The number of pixels (radius) to dilate the input image.");
 			d.put("iters",EMObject::INT, "The number of times to apply this process to the input image.");
 			d.put("thresh", EMObject::FLOAT,"Only considers densities above the threshold");
-			//d.put("selem",EMObject::EMDATA, "The structuring element with which you want to dilate.");
 			return d;
 		}
 
@@ -1298,7 +1297,6 @@ The basic design of EMAN Processors: <br>\
 			d.put("radius", EMObject::INT, "The number of pixels (radius) to dilate the input image.");
 			d.put("iters",EMObject::INT, "The number of times to apply this process to the input image.");
 			d.put("thresh", EMObject::FLOAT,"Only considers densities above the threshold");
-			//d.put("selem",EMObject::EMDATA, "The structuring element with which you want to dilate.");
 			return d;
 		}
 
@@ -9164,7 +9162,6 @@ symmetric phase flipping can optionally be performed.";
 		{
 			TypeDict d;
 			d.put("kernel", EMObject::FLOATARRAY, "the convolution kernel");
-			d.put("selem", EMObject::EMDATA, "the structuring element");
 			return d;
 		}
 		static const string NAME;
