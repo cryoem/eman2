@@ -1243,7 +1243,7 @@ class Test_ave_var(unittest.TestCase):
 
 #todo: I cannot performe the unit test
 class Test_ave_series(unittest.TestCase):
-    data, = get_arg_from_pickle_file(
+    data1, = get_arg_from_pickle_file(
         path.join(ABSOLUTE_PATH, "pickle files/statistics/statistics.ave_series")
     )[0]
 
@@ -1277,9 +1277,9 @@ class Test_ave_series(unittest.TestCase):
 
     def test_default_value_withMask(self):
         mpi_barrier(MPI_COMM_WORLD)
-        return_new = fu.ave_series(self.data, pave=True, mask=MASK)
+        return_new = fu.ave_series(self.data1, pave=True, mask=MASK)
         mpi_barrier(MPI_COMM_WORLD)
-        return_old = oldfu.ave_series(self.data, pave=True, mask=MASK)
+        return_old = oldfu.ave_series(self.data1, pave=True, mask=MASK)
         self.assertTrue(
             allclose(
                 return_new.get_2dview(),
@@ -1291,9 +1291,9 @@ class Test_ave_series(unittest.TestCase):
 
     def test_without_pave_withMask(self):
         mpi_barrier(MPI_COMM_WORLD)
-        return_new = fu.ave_series(self.data, pave=False, mask=MASK)
+        return_new = fu.ave_series(self.data1, pave=False, mask=MASK)
         mpi_barrier(MPI_COMM_WORLD)
-        return_old = oldfu.ave_series(self.data, pave=False, mask=MASK)
+        return_old = oldfu.ave_series(self.data1, pave=False, mask=MASK)
         self.assertTrue(
             allclose(
                 return_new.get_2dview(),

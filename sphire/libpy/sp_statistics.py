@@ -1562,7 +1562,16 @@ def k_means_match_bbenum(
     else:
         return outMATCH
 
+def mono(k1,k2):
+	"""
+	get index of a square nxn matrix stored in a triangular form
+	for i in xrange(1,n):
+	    for j in xrange(i):
+		print  i,j,mono(i,j)
 
+	"""
+	mk = max(k1,k2)
+	return  min(k1,k2) + old_div(mk*(mk-1),2)
 # match is a list, where every five tuple corresponds to a match
 
 

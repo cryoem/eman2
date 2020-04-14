@@ -1344,7 +1344,6 @@ def write_text_row(data, file_name, form_float="  %14.6f", form_int="  %12d"):
 			 First list will be written as a first line, second as a second, and so on...
 		 If only one list is given, the file will contain one line
 	"""
-
     outf = open(file_name, "w")
     if type(data[0]) == list:
         # It is a list of lists
@@ -1356,10 +1355,10 @@ def write_text_row(data, file_name, form_float="  %14.6f", form_int="  %12d"):
                     outf.write(form_int % tpt)
                 elif qtp == float:
                     frmt = chooseformat(tpt, form_float)
-                    if find(frmt, "e") < 0:
-                        outf.write(frmt % tpt)
-                    else:
-                        outf.write(frmt % tpt)
+                    # if find(frmt, "e") < 0:
+                    #     outf.write(frmt % tpt)
+                    # else:
+                    outf.write(frmt % tpt)
                 else:
                     outf.write("  %s" % tpt)
             outf.write("\n")
@@ -1372,10 +1371,10 @@ def write_text_row(data, file_name, form_float="  %14.6f", form_int="  %12d"):
                 outf.write(form_int % tpt + "\n")
             elif qtp == float:
                 frmt = chooseformat(tpt, form_float)
-                if find(frmt, "e") < 0:
-                    outf.write(frmt % tpt + "\n")
-                else:
-                    outf.write(frmt % tpt + "\n")
+                # if find(frmt, "e") < 0:
+                #     outf.write(frmt % tpt + "\n")
+                # else:
+                outf.write(frmt % tpt + "\n")
             else:
                 outf.write("  %s\n" % tpt)
     outf.flush()
@@ -1451,10 +1450,10 @@ def write_text_file(data, file_name, form_float="  %14.6f", form_int="  %12d"):
                     outf.write(form_int % tpt)
                 elif qtp == float:
                     frmt = chooseformat(tpt, form_float)
-                    if find(frmt, "e") < 0:
-                        outf.write(frmt % tpt)
-                    else:
-                        outf.write(frmt % tpt)
+                    # if find(frmt, "e") < 0:
+                    #     outf.write(frmt % tpt)
+                    # else:
+                    outf.write(frmt % tpt)
                 else:
                     outf.write("  %s" % tpt)
             outf.write("\n")
@@ -1467,10 +1466,10 @@ def write_text_file(data, file_name, form_float="  %14.6f", form_int="  %12d"):
                 outf.write(form_int % tpt + "\n")
             elif qtp == float:
                 frmt = chooseformat(tpt, form_float)
-                if find(frmt, "e") < 0:
-                    outf.write(frmt % tpt + "\n")
-                else:
-                    outf.write(frmt % tpt + "\n")
+                # if find(frmt, "e") < 0:
+                #     outf.write(frmt % tpt + "\n")
+                # else:
+                outf.write(frmt % tpt + "\n")
             else:
                 outf.write("  %s\n" % tpt)
     outf.close()
@@ -1961,7 +1960,7 @@ def send_string_to_all(str_to_send, source_node=0):
         str_to_send, str_to_send_len, mpi.MPI_CHAR, source_node, mpi.MPI_COMM_WORLD
     )
 
-    return "".join(str_to_send)
+    return b"".join(str_to_send).decode('latin1')
 
 
 def bcast_number_to_all(number_to_send, source_node=0, mpi_comm=-1):
@@ -3389,11 +3388,11 @@ def unpack_message(msg):
         return pickle.loads(zlib.decompress((msg[1:])))
     elif msg[0:1] == b"O":
         return pickle.loads((msg[1:]))
+
     else:
         sp_global_def.ERROR(
             "ERROR: Invalid MPI message. Please contact developers. (%s)"
-            % str(msg[:20])
-        )
+            % str(msg[:20])  )
         raise Exception("unpack_message")
 
 
@@ -3465,7 +3464,7 @@ def wrap_mpi_bcast(data, root, communicator=None):
         n, 4, mpi.MPI_CHAR, root, communicator
     )  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm ).
     if mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD) == 0:
-        sizeofdata = n
+         sizeofdata = n
 
     n = struct.unpack("I", sizeofdata)[0]
     msgtobcast = mpi.mpi_bcast(
@@ -3536,7 +3535,6 @@ def get_colors_and_subsets(
     mpi.mpi_barrier(mpi_comm)
 
     group_infos = wrap_mpi_bcast(group_infos, main_node, mpi_comm)
-
     number_of_groups = old_div(len(group_infos), 2)
 
     for i in range(number_of_groups):
@@ -4206,6 +4204,104 @@ def create_summovie_command(temp_name, micrograph_name, shift_name, frc_name, op
 
     return summovie_command
 
+
+def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_processes,
+                                    list_of_em_objects_for_myid_process, mpi_rank, comm=-1):
+    """
+    MPI_Gather that expects all data as a list of EMData objects. Data is transfered by
+    collecting all header information, transferring all data as numpy arrays, and re-
+    building the EMData objects in the root process.
+
+    Args:
+        number_of_all_em_objects_distributed_across_processes (integer): Total number of
+            EMData objects to gather across all processes.
+
+        list_of_em_objects_for_myid_process (EMData[]): List of EMData objects that this
+            process is tasked with transferring.
+
+        mpi_rank (integer): MPI rank of this process. Process with rank 0 will be used as
+            the root process.
+
+        comm: MPI communicator identifier; defaults to mpi.MPI_COMM_WORLD
+            [Default: -1]
+    """
+    # mpi setup
+    if comm == -1 or comm == None:
+        comm = mpi.MPI_COMM_WORLD
+
+    mpi_size = mpi.mpi_comm_size(comm)  # Total number of processes, passed by --np option. [Unclear what this option is]
+
+    tag_for_send_receive = 123456  # NOTE: we're using the same tag for all messages here, which seems a bit pointless?
+
+    # get data header information
+    reference_em_object = list_of_em_objects_for_myid_process[0]
+
+    nx = reference_em_object.get_xsize()
+    ny = reference_em_object.get_ysize()
+    nz = reference_em_object.get_zsize()
+    is_ri = reference_em_object.is_ri()
+    changecount = reference_em_object.get_attr("changecount")
+    is_complex_x = reference_em_object.is_complex_x()
+    is_complex_ri = reference_em_object.get_attr("is_complex_ri")
+    apix_x = reference_em_object.get_attr("apix_x")
+    apix_y = reference_em_object.get_attr("apix_y")
+    apix_z = reference_em_object.get_attr("apix_z")
+    is_complex = reference_em_object.get_attr_default("is_complex", 1)
+    is_fftpad = reference_em_object.get_attr_default("is_fftpad", 1)
+    is_fftodd = reference_em_object.get_attr_default("is_fftodd", nz % 2)
+
+    # process data before transfer
+    data = []
+    for i in range(len(list_of_em_objects_for_myid_process)):
+        data.append(EMAN2_cppwrap.EMNumPy.em2numpy(list_of_em_objects_for_myid_process[i]))
+    data = numpy.array(data)
+
+    # transfer: gather all data at the root process (myid==0)
+    for sender_id in range(1, mpi_size):
+
+        # transfer/send: sender process w/ rank <sender_id> blocks until data has been sent to root process
+        if sender_id == mpi_rank:
+            mpi.mpi_send(data,
+                     data.size,
+                     mpi.MPI_FLOAT,
+                     0,
+                     tag_for_send_receive,
+                     mpi.MPI_COMM_WORLD)
+
+        # transfer/receive: root process blocks until data from process w/ rank <sender_id> has been received
+        elif mpi_rank == 0:
+
+            # get transfer parameters of the sender
+            ref_start, ref_end = sp_applications.MPI_start_end(number_of_all_em_objects_distributed_across_processes, mpi_size,
+                                               sender_id)
+            transfer_size = (ref_end - ref_start) * data[0].size  # all data[i] have the same size
+
+            # receive data
+            data = mpi.mpi_recv(transfer_size,
+                            mpi.MPI_FLOAT,
+                            sender_id,
+                            tag_for_send_receive,
+                            mpi.MPI_COMM_WORLD)
+
+            if int(nz) != 1:
+                data = data.reshape([(ref_end - ref_start), nz, ny, nx])
+            elif ny != 1:
+                data = data.reshape([(ref_end - ref_start), ny, nx])
+
+            # collect received data in EMData objects
+            for img_data in data:
+                em_object = numpy2em_python(img_data)
+                em_object.set_ri(is_ri)
+                em_object.set_attr_dict({"changecount": changecount,
+                                         "is_complex_x": is_complex_x,
+                                         "is_complex_ri": is_complex_ri,
+                                         "apix_x": apix_x,
+                                         "apix_y": apix_y,
+                                         "apix_z": apix_z,
+                                         "is_complex": is_complex,
+                                         "is_fftodd": is_fftodd,
+                                         "is_fftpad": is_fftpad})
+                list_of_em_objects_for_myid_process.append(em_object)
 
 # ------------------------------------------------[ import ]
 

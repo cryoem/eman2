@@ -60,7 +60,7 @@ from builtins import range
 
 global Tracker, Blockdata
 
-# mpi.mpi_init(0, [])
+mpi.mpi_init(0, [])
 
 
 # ----------------------------------------------------------------------------

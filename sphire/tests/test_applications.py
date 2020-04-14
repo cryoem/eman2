@@ -37,8 +37,6 @@ from __future__ import division
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
-print("Start of the test file")
-
 
 import unittest
 from numpy import allclose, array_equal

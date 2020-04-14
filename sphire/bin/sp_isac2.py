@@ -1526,9 +1526,18 @@ def do_generation(
     if Blockdata["myid_on_node"] != 0:
         base_ptr, = mpi.mpi_win_shared_query(win_sm, mpi.MPI_PROC_NULL)
 
-    buffer = numpy.frombuffer(
-        numpy.core.multiarray.int_asbuffer(base_ptr, size * disp_unit), dtype="f4"
-    )
+
+    # buffer = numpy.frombuffer(
+    #     numpy.core.multiarray.int_asbuffer(base_ptr, size * disp_unit), dtype="f4"
+    # )
+
+    """
+    Comments from Adnan:
+    numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
+    """
+    ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+    buffer = numpy.frombuffer(ptr.contents, dtype="f4")
+
     buffer = buffer.reshape(nimastack, target_nx, target_nx)
 
     emnumpy2 = EMAN2_cppwrap.EMNumPy()

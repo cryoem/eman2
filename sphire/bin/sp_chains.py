@@ -47,9 +47,9 @@ import	sp_global_def
 from sp_global_def import sxprint, ERROR
 
 from	sp_global_def 	import *
-from	EMAN2 		import EMUtil, parsemodopt, EMAN2Ctf
+from	EMAN2 		import EMUtil, parsemodopt, EMAN2Ctf, EMData
 from    EMAN2jsondb import js_open_dict
-
+from EMAN2_cppwrap import Transform
 from	sp_utilities 	import *
 from	sp_utilities	import write_text_row
 from    sp_statistics import mono

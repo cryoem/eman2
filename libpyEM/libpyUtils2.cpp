@@ -505,7 +505,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.def("ener_tot", &EMAN::Util::ener_tot, args("data", "numr", "tot"), "")
 		.def("min_dist_real", &EMAN::Util::min_dist_real, args("image", "data"), "k-means helper")
 		.def("min_dist_four", &EMAN::Util::min_dist_four, args("image", "data"), "k-means helper")
-#ifdef False
+#ifdef True
 		.def("cml_weights", &EMAN::Util::cml_weights, args("cml"), "new code common-lines\nhelper function for the weights calculation by Voronoi to Cml")
 		.def("cml_init_rot", &EMAN::Util::cml_init_rot, args("Ori"), "new code common-lines\n2009-03-25 15:35:05 JB. This function prepare rotation matrix for common-lines")
 		.def("cml_update_rot", &EMAN::Util::cml_update_rot, args("Rot", "iprj", "nph", "th", "nps"), "new code common-lines")
@@ -608,7 +608,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		//.def("ali2d_ccf_list_snake", &EMAN::Util::ali2d_ccf_list_snake, args("image", "crefim", "xrng", "yrng", "step", "mode", "numr", "cnx", "cny", "T"), "Determine shift and rotation between image and one reference\nimage (crefim, weights have to be applied) using quadratic\ninterpolation")
 		.def("compress_image_mask", &EMAN::Util::compress_image_mask, return_value_policy< manage_new_object >())
 		.def("reconstitute_image_mask", &EMAN::Util::reconstitute_image_mask, return_value_policy< manage_new_object >())
-		//.def("pw_extract", &EMAN::Util::pw_extract)
+		.def("pw_extract", &EMAN::Util::pw_extract)
 		.def("polar_norm2", &EMAN::Util::polar_norm2)
 		.def("innerproduct", &EMAN::Util::innerproduct)
 		.def("innerproduct_np", &EMAN::Util::innerproduct_np)
@@ -932,7 +932,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.staticmethod("divabs")
 		.staticmethod("addn_img")
 		.staticmethod("muln_img")
-		//.staticmethod("pw_extract")
+		.staticmethod("pw_extract")
 		.staticmethod("divn_img")
 		.staticmethod("squaren_img")
 		.staticmethod("divn_filter")

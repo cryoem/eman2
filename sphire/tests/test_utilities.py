@@ -14620,10 +14620,11 @@ class Test_bcast_EMData_to_all(unittest.TestCase):
         tavg_old[0].set_attr_dict(self.data[0].get_attr_dict())
 
         return_new = fu.bcast_EMData_to_all(
-            tavg_new[0], myid=11, source_node=0, comm=MPI_COMM_WORLD
+            tavg_new[0], myid=0, source_node=0, comm=MPI_COMM_WORLD
         )
+
         return_old = oldfu.bcast_EMData_to_all(
-            tavg_old[0], myid=11, source_node=0, comm=MPI_COMM_WORLD
+            tavg_old[0], myid=0, source_node=0, comm=MPI_COMM_WORLD
         )
         # self.assertTrue(array_equal(IMAGE_2D_REFERENCE.get_3dview(), tavg.get_3dview()))
         self.assertEqual(return_new, return_old)
@@ -18728,8 +18729,11 @@ class Test_wrap_mpi_bcast(unittest.TestCase):
 
     def test_None_data(self):
         """ values got via pickle files/utilities/utilities.wrap_mpi_send"""
+        mpi_barrier(MPI_COMM_WORLD)
         return_new = fu.wrap_mpi_bcast(None, root=0, communicator=None)
+        mpi_barrier(MPI_COMM_WORLD)
         return_old = oldfu.wrap_mpi_bcast(None, root=0, communicator=None)
+        mpi_barrier(MPI_COMM_WORLD)
         self.assertEqual(return_new, return_old)
         self.assertTrue(return_new is None)
 
@@ -18739,12 +18743,16 @@ class Test_wrap_mpi_bcast(unittest.TestCase):
             [1, 54.496982231553545, 150.6989385443887, 95.77312314162165, 0.0, 0.0],
             [2, 67.0993779295224, 52.098986136572584, 248.45843717750148, 0.0, 0.0],
         ]
+        mpi_barrier(MPI_COMM_WORLD)
         return_new = fu.wrap_mpi_bcast(
             data=attr_value_list, root=0, communicator=MPI_COMM_WORLD
         )
+        mpi_barrier(MPI_COMM_WORLD)
         return_old = oldfu.wrap_mpi_bcast(
             data=attr_value_list, root=0, communicator=MPI_COMM_WORLD
         )
+        mpi_barrier(MPI_COMM_WORLD)
+        print(return_new)
         self.assertTrue(array_equal(return_new, return_old))
         self.assertTrue(
             array_equal(
@@ -18778,6 +18786,66 @@ class Test_wrap_mpi_bcast(unittest.TestCase):
             )
         )
 
+    def test_data_is_a_string(self):
+        mpi_barrier(MPI_COMM_WORLD)
+        data = "case S:I am a string!!!"
+        return_new = fu.wrap_mpi_bcast(data=data, root=0, communicator=MPI_COMM_WORLD)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_old = oldfu.wrap_mpi_bcast(data=data, root=0, communicator=MPI_COMM_WORLD)
+        mpi_barrier(MPI_COMM_WORLD)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, data)
+
+
+    def test_data_is_a_very_long_string(self):
+        long_data = "I am a stringggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg!!!"
+        mpi_barrier(MPI_COMM_WORLD)
+        return_new = fu.wrap_mpi_bcast(data=long_data, root=0, communicator=MPI_COMM_WORLD)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_old = oldfu.wrap_mpi_bcast(data=long_data, root=0, communicator=MPI_COMM_WORLD)
+        mpi_barrier(MPI_COMM_WORLD)
+        print(return_new)
+        self.assertEqual(return_new, return_old)
+        self.assertEqual(return_new, long_data)
+
+    def test_data_is_a_notstring(self):
+        data = 5555
+        return_new = fu.wrap_mpi_bcast(data=data, root=0, communicator=MPI_COMM_WORLD)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_old = oldfu.wrap_mpi_bcast(data=data, root=0, communicator=MPI_COMM_WORLD)
+        mpi_barrier(MPI_COMM_WORLD)
+        self.assertEqual(return_new , return_old)
+        self.assertEqual(return_new, data)
+
+
+    def test_data_is_a_notstring_long_version(self):
+        data = 555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555
+        return_new = fu.wrap_mpi_bcast(data=data, root=0, communicator=MPI_COMM_WORLD)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_old = oldfu.wrap_mpi_bcast(data=data, root=0, communicator=MPI_COMM_WORLD)
+        mpi_barrier(MPI_COMM_WORLD)
+        self.assertEqual(return_new , return_old)
+        self.assertEqual(return_new, data)
+
+    def test_list_of_data(self):
+        data = [[ 0 ,2 ,3, [0]]]
+        return_new = fu.wrap_mpi_bcast(data=data, root=0, communicator=MPI_COMM_WORLD)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_old = oldfu.wrap_mpi_bcast(data=data, root=0, communicator=MPI_COMM_WORLD)
+        mpi_barrier(MPI_COMM_WORLD)
+        self.assertEqual(return_new , return_old)
+        self.assertEqual(return_new, data)
+
+    def test_list_of_data(self):
+        data = 2
+        return_new = fu.wrap_mpi_bcast(data=data, root=0, communicator=MPI_COMM_WORLD)
+        mpi_barrier(MPI_COMM_WORLD)
+        return_old = oldfu.wrap_mpi_bcast(data=data, root=0, communicator=MPI_COMM_WORLD)
+        mpi_barrier(MPI_COMM_WORLD)
+        self.assertEqual(return_new , return_old)
+        self.assertEqual(return_new, data)
+
+
     def test_invalid_communicator_crashes_because_signal11SIGSEV(self):
         self.assertTrue(True)
         """
@@ -18785,6 +18853,7 @@ class Test_wrap_mpi_bcast(unittest.TestCase):
         return_old = oldfu.wrap_mpi_bcast(data =[9], root= 0, communicator = -1)
         self.assertEqual(return_new, return_old)
         """
+        
 
 
 class Test_wrap_mpi_gatherv(unittest.TestCase):
@@ -20179,18 +20248,18 @@ class Test_get_latest_directory_increment_value(unittest.TestCase):
         remove_dir(path.join(ABSOLUTE_PATH, self.folder_name + "001"))
         remove_dir(path.join(ABSOLUTE_PATH, self.folder_name + "002"))
 
-
-class Test_if_error_then_all_processes_exit_program(unittest.TestCase):
-    def test_wrong_number_params_too_few_parameters_TypeError(self):
-        with self.assertRaises(TypeError) as cm_new:
-            fu.if_error_then_all_processes_exit_program()
-        with self.assertRaises(TypeError) as cm_old:
-            oldfu.if_error_then_all_processes_exit_program()
-        self.assertEqual(
-            str(cm_new.exception),
-            "if_error_then_all_processes_exit_program() missing 1 required positional argument: 'error_status'",
-        )
-        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+# @unittest.skip
+# class Test_if_error_then_all_processes_exit_program(unittest.TestCase):
+#     def test_wrong_number_params_too_few_parameters_TypeError(self):
+#         with self.assertRaises(TypeError) as cm_new:
+#             fu.if_error_then_all_processes_exit_program()
+#         with self.assertRaises(TypeError) as cm_old:
+#             oldfu.if_error_then_all_processes_exit_program()
+#         self.assertEqual(
+#             str(cm_new.exception),
+#             "if_error_then_all_processes_exit_program() missing 1 required positional argument: 'error_status'",
+#         )
+#         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 """ this function has been cleaned

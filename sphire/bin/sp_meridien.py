@@ -786,6 +786,7 @@ def assign_particles_to_groups(minimum_group_size=10, asubset=None):
                 stmp = EMAN2_cppwrap.EMUtil.get_all_attributes(
                     Tracker["constants"]["stack"], "ctf"
                 )
+                print("stmp dic are ", stmp)
                 for i in range(len(stmp)):
                     stmp[i] = round(stmp[i].defocus, 4)
                 defstmp = stmp[:]
