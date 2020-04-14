@@ -664,6 +664,64 @@ class EMHTMLFileType(EMFileType) :
 		else : 
 			print("Sorry, I don't know how to run Firefox on this platform")
 
+class EMPDFFileType(EMFileType) :
+	"""FileType for PDF files"""
+
+	@staticmethod
+	def name() :
+		"""The unique name of this FileType. Stored in EMDirEntry.filetype for each file."""
+
+		return "PDF"
+
+	@staticmethod
+	def isValid(path, header) :
+		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
+
+		if header[:4]!=b"%PDF": return False
+
+		try :
+			size = os.stat(path)[6]
+		except : return False
+
+		return (f"{size}", "-", "-")
+
+	@staticmethod
+	def infoClass() :
+		"""Returns a reference to the QWidget subclass for displaying information about this file"""
+
+		return EMPDFInfoPane
+
+	def actions(self) :
+		"""Few actions"""
+
+		if get_platform() == "Linux" :
+			return [("gv", "Open using gv", self.showPlatform),("Firefox", "Open in Firefox", self.showFirefox)]
+		elif get_platform() == "Darwin" :
+			return [("Open", "Default Open", self.showPlatform)]
+		else : 
+			return []
+		
+
+	def showPlatform(self, brws) :
+		"""Try to open file in firefox"""
+
+		if get_platform() == "Linux" :
+			os.system("gv %s"%os.path.abspath(self.path))
+		elif get_platform() == "Darwin" :
+			os.system("open {}".format(os.path.abspath(self.path)))		# uses the default browser
+		else : 
+			print("Sorry, I don't know how to display PDF files on this platform")
+
+	def showFirefox(self, brws) :
+		"""Try to open file in firefox"""
+
+		if get_platform() == "Linux" :
+			os.system("firefox -new-tab file://%s"%os.path.abspath(self.path))
+		elif get_platform() == "Darwin" :
+			os.system("open {}".format(os.path.abspath(self.path)))		# uses the default browser
+		else : 
+			print("Sorry, I don't know how to run Firefox on this platform")
+
 
 class EMPlotFileType(EMFileType) :
 	"""FileType for files containing normal ASCII text"""
@@ -1506,7 +1564,8 @@ EMFileType.typesbyft = {
 	"Plot"        : EMPlotFileType,
 	"Image"       : EMImageFileType,
 	"Image Stack" : EMStackFileType,
-	"HTML"        : EMHTMLFileType
+	"HTML"        : EMHTMLFileType,
+	"PDF"         : EMPDFFileType
 }
 
 # Note that image types are not included here, and are handled via a separate mechanism
@@ -1518,6 +1577,7 @@ EMFileType.extbyft = {
 	".pdb"  : (EMPDBFileType,  EMTextFileType),
 	".ent"  : (EMPDBFileType,  EMTextFileType),
 	".txt"  : (EMPlotFileType, EMTextFileType),
+	".pdf"  : (EMPDFFileType,),
 	".htm"  : (EMHTMLFileType, EMTextFileType),
 	".html" : (EMHTMLFileType, EMTextFileType)
 }
