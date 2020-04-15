@@ -192,6 +192,7 @@ def main():
 		mpi.mpi_finalize()
 
 	else:
+		EMAN2_cppwrap.Util.init_threads(4)
 		cutoff = options.cutoff
 		vi = utilities.get_im(args[0])
 		ui = utilities.get_im(args[1])
@@ -222,6 +223,7 @@ def main():
 			fh = fl+step
 			#print(lp,i,step,fl,fh)
 			v = fundamentals.fft(filter.filt_tophatb( vf, fl, fh))
+			#v.write_image("ovol/vivi%03i.hdf"%i)
 			u = fundamentals.fft(filter.filt_tophatb( uf, fl, fh))
 			tmp1 = EMAN2_cppwrap.Util.muln_img(v,v)
 			tmp2 = EMAN2_cppwrap.Util.muln_img(u,u)
