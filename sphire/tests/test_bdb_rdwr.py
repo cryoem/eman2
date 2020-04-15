@@ -66,7 +66,7 @@ import sys
 import os
 absolute_import = (sys.version_info[0] >= 3)
 from bsddb3 import db
-
+import copy
 
 
 """
@@ -417,16 +417,56 @@ class Test_Stacks(unittest.TestCase):
         self.assertTrue(numpy.array_equal(e.get_2dview(), d.get_2dview()))
         self.assertTrue(numpy.array_equal(img[5].get_2dview(), d.get_2dview()))
 
+
     def test_stack_dict_reading(self):
-        a = EMAN2db.DBDict(name=case4stack, path="bdb:/home/adnan/DemoResults/04_ISAC", ro=True)
+        a = EMAN2db.DBDict(name='case4stack', path="/home/adnan/DemoResults/04_ISAC/EMAN2DB", ro=True)
+        # a.keys()
+        # print(a.items())
+        print(a.__getitem__(0))
+        img = EMAN2db.EMData()
+        img = EMAN2db.db_read_image(img,"bdb:/home/adnan/DemoResults/04_ISAC#case4stack",0)
+        EMAN2db.db_close_dict(a)
 
 
+    def test_stack_writing(self):
+        img = EMAN2db.EMData()
+        img.read_image(str('bdb:' + bdb_path.replace('/EMAN2DB','') + '#' + bdbname))
+        EMAN2db.db_close_dict(str('bdb:' + bdb_path.replace('/EMAN2DB','') + '#' + bdbname))
+
+        newimg = EMAN2db.EMData()
+        newimg = copy.deepcopy(img)
+        # EMAN2.display(newimg)
+        # print(newimg.get_2dview())
+        newimg.write_image(str('bdb:' + bdb_path.replace('/EMAN2DB','') + '#' + 'test_img'))
+
+    def test_read_new_file(self):
+        imgnew = EMAN2db.EMData()
+        imgnew.read_image(str('bdb:' + bdb_path.replace('/EMAN2DB', '') + '#' + 'test_img'))
+        EMAN2.display(imgnew)
 
 
+    def test_read_stack_with_write(self):
+        a = EMAN2db.EMData()
+        a.read_data('/home/adnan/PycharmProjects/DoseWeighting/Newfolder/EMAN2DB/test_img_360x360x1', 0)
 
+        print(a.get_3dview())
 
+        # img = EMAN2db.EMData()
+        # img.read_image(str('bdb:' + bdb_path.replace('/EMAN2DB','') + '#' + 'test_img'))
+        # display(img)
 
-
+        # img = EMAN2db.EMData()
+        # img.read_image(str('bdb:' + bdb_path.replace('/EMAN2DB','') + '#' + 'test_img'), 0)
+        # # display(img)
+        # a = EMAN2db.DBDict(name='test_img',
+        #                    path=str('bdb:' + bdb_path.replace('/EMAN2DB','') + '#' + 'test_img'), ro=True)
+        # # print(a.__dict__.keys())
+        #
+        # a.realopen()
+        # print(a.keys())
+        # print(a.__dict__.keys())
+        # print(a)
+        # EMAN2db.db_close_dict(a)
 
 
 
