@@ -201,10 +201,9 @@ void MrcIO::init()
 		bool double_nx   = (ny_twice_nx  &&  mrch.mode == MRC_UCHAR  &&
 			 (have_packed_label  ||  have_packed_filename));
 
-      use_given_dimensions = (! double_nx);
+		use_given_dimensions = (! double_nx);
 
-		is_8_bit_packed = (mrch.mode == MRC_UHEX       ||
-							   (mrch.imod_flags & 16) == 1  ||  double_nx);
+		is_8_bit_packed = (mrch.mode == MRC_UHEX || (mrch.imod_flags & 16)  ||  double_nx);
 
 		if (getenv("DISALLOW_PACKED_FORMAT") != NULL) {
 			use_given_dimensions = true;

@@ -13691,14 +13691,7 @@ EMData* ConvolutionKernelProcessor::process(const EMData* const image)
 
 	int ks;
 	vector<float> kernel;
-	if (params.has_key("selem")) {
-		EMData* selem = params["selem"];
-		float *sd = selem->get_data();
-		kernel = vector<float>(sd, sd + sizeof sd / sizeof sd[0]);
-	}
-	else {
-		kernel = params["kernel"];
-	}
+	kernel = params["kernel"];
 	ks = int(sqrt(float(kernel.size())));
 	if (ks*ks != kernel.size()) throw InvalidParameterException("Convolution kernel must be square!!");
 
