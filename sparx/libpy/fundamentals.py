@@ -818,24 +818,24 @@ def ramp(inputimage):
 	e.process_inplace("filter.ramp")
 	return e
 
-def rot_avg(e):
+def rot_avg(e, mask = None):
 	"""Rotational average.
 	   Returns a 1-D image containing a rotational average of image e.
 	"""
-	return e.rotavg()
+	return e.rotavg(mask)
 
-def rot_avg_table(e):
+def rot_avg_table(e, mask = None):
 	"""Rotational average.
 	   Returns a table containing a rotational average of image e.
 	"""
-	qt = e.rotavg()
+	qt = e.rotavg(mask)
 	tab = []
 	n = qt.get_xsize()
 	for i in range(n):
 		tab.append(qt.get_value_at(i))
 	return tab
 
-def rot_avg_image(image_to_be_averaged):
+def rot_avg_image(image_to_be_averaged, mask = None):
 	"""
 	Rotational average
 	Returns a 2-D or 3-D image containing a rotational average of image e
@@ -843,15 +843,15 @@ def rot_avg_image(image_to_be_averaged):
 	import types
 	from utilities import get_im
 	if type(image_to_be_averaged) is bytes: image_to_be_averaged = get_im(image_to_be_averaged)
-	return image_to_be_averaged.rotavg_i()
+	return image_to_be_averaged.rotavg_i(mask)
 
-def ro_textfile(e, filename, helpful_string=""):
+def ro_textfile(e, filename, helpful_string="", mask = None):
 	"""Rotational average stored as a text file.
 	   Saves a text file (suitable for gnuplot) of the rotational average of e.
 	"""
 	out = open(filename, "w")
 	out.write("#Rotational average: %s\n" % (helpful_string));
-	f = e.rotavg()
+	f = e.rotavg(mask)
 	nr = f.get_xsize()
 	for ir in range(nr):
 		out.write("%d\t%12.5g\n" % (ir, f.get_value_at(ir)))
