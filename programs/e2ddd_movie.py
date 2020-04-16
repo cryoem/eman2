@@ -596,7 +596,7 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx):
 		t0=time()
 
 		thrtolaunch=0
-		while thrtolaunch<len(thds) or threading.active_count()>1:
+		while thrtolaunch<len(thds) or threading.active_count()>1 or not ccfs.empty():
 			if thrtolaunch<len(thds) :
 				while (threading.active_count()==options.threads ) : sleep(.01)
 				#if options.verbose :
