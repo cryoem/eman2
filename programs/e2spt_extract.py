@@ -11,6 +11,7 @@ from EMAN2_utils import *
 from EMAN2jsondb import JSTask
 
 global thrdone
+thrdone=0
 
 class SptExtractTask(JSTask):
 	
