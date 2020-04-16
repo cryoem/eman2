@@ -20,6 +20,7 @@ ignore_duplicate_files: True
 
 specs:
   - eman2        2.39
+  - python       3.7.*
   - conda
   - conda-build
   - pip
