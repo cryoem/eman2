@@ -464,6 +464,7 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 		
 		
 		thrds=[threading.Thread(target=make3d,args=(i)) for i in jobs]
+		global thrdone
 		thrdone=0
 
 		#thrtolaunch=0
