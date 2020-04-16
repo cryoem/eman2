@@ -10,7 +10,7 @@ import threading
 from EMAN2_utils import *
 from EMAN2jsondb import JSTask
 
-
+global thrdone
 
 class SptExtractTask(JSTask):
 	
@@ -464,15 +464,15 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 		
 		
 		thrds=[threading.Thread(target=make3d,args=(i)) for i in jobs]
+		thrdone=0
 
 		#thrtolaunch=0
-		tsleep=threading.active_count()
 		ndone=0
 		time0=time.time()
 		for t in thrds:
 			t.start()
 			
-		while ndone<len(thrds):
+		while thrdone<len(thrds):
 			while not jsd.empty():
 				pid, threed, projs=jsd.get()
 				
@@ -723,6 +723,9 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 		
 		jsd.put((pid, threed, projs))
 		#recon.clear()
+
+	global thrdone
+	thrdone+=1
 
 	return
 	
