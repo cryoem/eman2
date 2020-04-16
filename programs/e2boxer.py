@@ -183,7 +183,7 @@ def main():
 	if not (options.gui or options.write_ptcls or options.write_dbbox or options.autopick):
 		print("Error: No actions specified. Try --gui for interactive/semi-automated particle picking.") 
 
-	# Some of this seems redundant, it is to insure self-consistency
+	# Some of this seems redundant, it is to ensure self-consistency
 	if options.boxsize<2:
 		try: 
 			options.boxsize = project_db["global.boxsize"]
@@ -240,7 +240,7 @@ def main():
 	if options.apix<=0 :
 		try:
 			options.apix=float(project_db["global.apix"])
-			print("Warning: No A/pix specified. Using ",options.apix," from project. Please insure this is correct for the images being boxed!")
+			print("Warning: No A/pix specified. Using ",options.apix," from project. Please ensure this is correct for the images being boxed!")
 		except:
 			print("Error: Value required for A/pixel. If this is a non TEM image, suggest --apix=1 and --no_ctf.")
 			sys.exit(1)
