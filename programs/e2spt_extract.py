@@ -474,7 +474,7 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 		for t in thrds:
 			t.start()
 			
-		while thrdone<len(thrds):
+		while thrdone<len(thrds) or not jsd.empty():
 			while not jsd.empty():
 				pid, threed, projs=jsd.get()
 				
