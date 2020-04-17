@@ -801,6 +801,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 		# To simplify expressions
 		parms=self.parms[self.curset]
+		print(parms)
 		apix=self.sapix.getValue()
 		if len(parms)==5 : parms.append(1)		# for old projects where there was no oversampling specification
 		else: parms[5]=max(1,int(parms[5]))
