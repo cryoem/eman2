@@ -801,7 +801,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 		# To simplify expressions
 		parms=self.parms[self.curset]
-		print(parms)
+#		print(parms)
 		apix=self.sapix.getValue()
 		if len(parms)==5 : parms.append(1)		# for old projects where there was no oversampling specification
 		else: parms[5]=max(1,int(parms[5]))
@@ -829,7 +829,11 @@ class GUIEvalImage(QtWidgets.QWidget):
 			for x in range(nx):
 				for y in range(old_div(self.data["ny"],parms[0])-1):
 					# User deselected this one
-					if int(x+y*nx) in parms[3] : continue
+					try:
+						if int(x+y*nx) in parms[3] : continue
+					except:
+						print("Warning: strange parameter in box list, resetting")
+						parms[3]=set()
 
 					# read the data and make the FFT
 					clip=self.data.get_clip(Region(x*parms[0]+old_div(parms[0],2),y*parms[0]+old_div(parms[0],2),parms[0],parms[0]))
