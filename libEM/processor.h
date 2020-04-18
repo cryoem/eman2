@@ -560,6 +560,7 @@ The basic design of EMAN Processors: <br>\
 			d.put("cutoff_abs", EMObject::FLOAT, "Processor radius in terms of Nyquist (0-.5)");
 			d.put("cutoff_pixels", EMObject::FLOAT, " Width in Fourier pixels (0 - size()/2)");
 			d.put("cutoff_freq", EMObject::FLOAT, "1/Resolution in 1/A (0 - 1 / 2*apix). eg - a 20 A filter is cutoff_freq=0.05");
+			d.put("hppix", EMObject::FLOAT, "If specified will also apply a high pass filter with the specified radius in pixels");
 			d.put("apix", EMObject::FLOAT, " Override A/pix in the image header (changes x,y and z)");
 			d.put("centerfreq", EMObject::FLOAT, "center of filter frequency at z");
 			d.put("xynoz", EMObject::INT, "If set, filters the X-Y plane instead of Z");

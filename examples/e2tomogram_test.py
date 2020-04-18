@@ -993,13 +993,13 @@ def make_tile_with_thr(args):
 		threed=recon.finish(True)
 		threedn=threed.copy()
 		#threed.write_image("tmp3d00.hdf", -1)
-		if stepx in (0,1) and stepy==0 : threed.write_image("test_tile.hdf",j*2)
+		if stepx in (0,1) and stepy==1 : threed.write_image("test_tile.hdf",j*2)
 		if frac>0: 
 			#mm=max(-threed["minimum"],threed["maximum"])	# symmetric about zero
 			#threed.process_inplace("threshold.rangetozero",{"minval":-mm*frac,"maxval":mm*frac})
 			#mask=threed.process("filter.lowpass.gaussz",{"cutoff_abs":0.075,"xynoz":1})
 #			mask=threed.process("normalize.histpeak")
-			mask=threed.process("math.absvalue")
+#			mask=threed.process("math.absvalue")
 #			mask.process_inplace("math.absvalue")
 			mask.process_inplace("threshold.rangetozero",{"minval":0,"maxval":mask["maximum"]*frac,"gauss_width":3.5})
 			mask.process_inplace("threshold.notzero")
@@ -1009,7 +1009,7 @@ def make_tile_with_thr(args):
 
 			mask.process_inplace("filter.lowpass.gaussz",{"cutoff_abs":0.075,"xynoz":1})
 			mask.process_inplace("threshold.binary",{"value":0.3})			
-			if stepx in (0,1) and stepy==0 : mask.write_image("test_tile.hdf",j*2+1)
+			if stepx in (0,1) and stepy==1 : mask.write_image("test_tile.hdf",j*2+1)
 			#mask.process_inplace("threshold.rangetozero",{"minval":mask["minimum"]*frac,"maxval":mask["maximum"]*frac,"gauss_width":4})
 			#mask.process_inplace("mask.addshells",{"nshells":2})
 			threed.mult(mask)
