@@ -4294,7 +4294,8 @@ def moving_average(x, window_size):
 		window_size - better be odd
 	"""
 	import numpy as np
-	return np.convolve(x, np.ones(window_size), 'valid') / window_size
+	kernel = np.ones(window_size) / window_size
+	return np.convolve(x, kernel, 'same')
 
 """
 def movingaverage(data, window_size, skip = 3):
