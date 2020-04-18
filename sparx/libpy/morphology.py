@@ -2538,7 +2538,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				Util.add_img(qa, pw2[boot[imi]])
 				temp1 = np.array(allroo[boot[imi]])
 				roo += temp1
-				temp2 = movingaverage(temp1, 10)
+				temp2 = movingaverage(temp1, 11)
 				aroo += temp2
 				sroo += temp2**2
 			sroo[0] = sroo[1]
@@ -3590,7 +3590,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				Util.add_img(qa, pw2[boot[imi]])
 				temp1 = np.array(allroo[boot[imi]])
 				roo += temp1
-				temp2 = movingaverage(temp1, 10)
+				temp2 = movingaverage(temp1, 11)
 				aroo += temp2
 				sroo += temp2**2
 			sroo[0] = sroo[1]
@@ -4287,6 +4287,16 @@ def simpw2dc(defocus, data2d):
 	print(" 2d  ",q1,q2)
 	return  2.0-old_div(q1,q2),ct
 
+def moving_average(x, window_size):
+	"""
+		Compute moving average by averaging window_size consequtive samples.
+		x - input numpy array
+		window_size - better be odd
+	"""
+	import numpy as np
+	return np.convolve(x, np.ones(w), 'valid') / w
+
+"""
 def movingaverage(data, window_size, skip = 3):
 	import numpy as np
 	ld = len(data)
@@ -4298,6 +4308,7 @@ def movingaverage(data, window_size, skip = 3):
 	nc2 = window_size + window_size//2 +1
 	for i in range(ld):   out[i] = sum(qt[i+nc1:i+nc2])
 	return out*np.float32(1.0/window_size)
+"""
 
 def localvariance(data, window_size, skip = 3):
 	import numpy as np
@@ -4352,7 +4363,7 @@ def defocusgett(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_s
 	#print "IN defocusgett  ",np.min(subpw),np.max(subpw)
 	for i in range(len(subpw)):  subpw[i] = max(subpw[i],0.0)
 	#print "IN defocusgett  ",np.min(subpw),np.max(subpw)
-	#envelope = movingaverage(  subpw   , nroo//4, 3)
+	#envelope = movingaverage(  subpw   , nroo//4+1)
 	envelope = np.array([1.0]*len(subpw), np.float32)
 	#write_text_file([roo,baseline,subpw],"dbgt.txt")
 
@@ -4468,7 +4479,7 @@ def defocusgett_pap(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1,
 	#print "IN defocusgett  ",np.min(subpw),np.max(subpw)
 	for i in range(len(subpw)):  subpw[i] = max(subpw[i],0.0)
 	#print "IN defocusgett  ",np.min(subpw),np.max(subpw)
-	#envelope = movingaverage(  subpw   , nroo//4, 3)
+	#envelope = movingaverage(  subpw   , nroo//4+1)
 	envelope = np.array([1.0]*len(subpw), np.float32)
 	#write_text_file([roo,baseline,subpw],"dbgt.txt")
 
@@ -4569,7 +4580,7 @@ def defocus_guessn(roo, volt, Cs, Pixel_size, ampcont, istart, i_stop):
 
 	data = np.array(roo,np.float32)
 
-	envelope = movingaverage(data, 60)
+	envelope = movingaverage(data, 61)
 	nx  = int(len(roo)*2)
 	nn = len(data)
 	goal = -1.e23
@@ -4924,7 +4935,7 @@ def defocusgett_crf(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1,
 	#  THERE IS NO NEED FOR BASELINE!!!
 	#write_text_file([roo,baseline,subpw],"dbg.txt")
 	#print "IN defocusgett  ",np.min(subpw),np.max(subpw)
-	envelope = np.array([1.0]*i_stop*2, np.float32) # movingaverage(  abs( np.array(roo, np.float32) )   , nroo//4, 3)
+	envelope = np.array([1.0]*i_stop*2, np.float32) # movingaverage(  abs( np.array(roo, np.float32) )   , nroo//4+1)
 	#write_text_file([roo,baseline,subpw],"dbgt.txt")
 
 	#print "IN defocusgett  ",np.min(subpw),np.max(subpw),np.min(envelope)
@@ -5026,7 +5037,7 @@ def envelopegett_crf(defold, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, amp
 	#  THERE IS NO NEED FOR BASELINE!!!
 	#write_text_file([roo,baseline,subpw],"dbg.txt")
 	#print "IN defocusgett  ",np.min(subpw),np.max(subpw)
-	envelope = []#movingaverage(  abs( np.array(roo, np.float32) )   , nroo//4, 3)
+	envelope = []#movingaverage(  abs( np.array(roo, np.float32) )   , nroo//4+1)
 
 	if adjust_fstop:
 		from morphology import ctflimit
@@ -5979,7 +5990,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				Util.add_img(qa, pw2[boot[imi]])
 				temp1 = np.array(allroo[boot[imi]])
 				roo += temp1
-				temp2 = movingaverage(temp1, 10)
+				temp2 = movingaverage(temp1, 11)
 				aroo += temp2
 				sroo += temp2**2
 			sroo[0] = sroo[1]
