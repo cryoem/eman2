@@ -1284,6 +1284,7 @@ void GaussZFourierProcessor::process_inplace(EMData * image)
 	float omega = params["cutoff_abs"];
 	float zcenter=params.set_default("centerfreq",0.0f);
 	float hppix = params.set_default("hppix",-1.0f);
+	printf("hppix %f\n",hppix);
 	
 	omega = (omega<0?-1.0:1.0)*0.5f/omega/omega;
 
@@ -1315,7 +1316,7 @@ void GaussZFourierProcessor::process_inplace(EMData * image)
 				for (int y=(x==0&&z==0?0:-ny/2); y<ny/2; y++) {
 					std::complex <float> v=fft->get_complex_at(x,y,z);
 					float r=Util::hypot_fast(x,y);
-					fft->set_complex_at(x,y,z,v*exp(-omega*(r-zcenter)*(r-zcenter))*(r>hppix?1.0f:Util::hypot3sq(x,y,z)/(hppix*hppix)));
+					fft->set_complex_at(x,y,z,v*exp(-omega*(r-zcenter)*(r-zcenter))*(r>hppix?1.0f:Util::hypot3(x,y,z)/hppix));
 				}
 			}
 		}
@@ -1325,7 +1326,7 @@ void GaussZFourierProcessor::process_inplace(EMData * image)
 			for (int y=-ny/2; y<ny/2; y++) {
 				for (int x=0; x<nx/2; x++) {
 					std::complex <float> v=fft->get_complex_at(x,y,z);
-					fft->set_complex_at(x,y,z,v*exp(-omega*(abs(z)-zcenter)*(abs(z)-zcenter))*(fabs(z)>hppix?1.0f:Util::hypot3sq(x,y,z)/(hppix*hppix)));
+					fft->set_complex_at(x,y,z,v*exp(-omega*(abs(z)-zcenter)*(abs(z)-zcenter))*(fabs(z)>hppix?1.0f:Util::hypot3(x,y,z)/hppix));
 				}
 			}
 		}
@@ -1337,6 +1338,7 @@ void GaussZFourierProcessor::process_inplace(EMData * image)
 		delete fft;
 		delete ift;
 	}
+	printf("done\n");
 
 }
 
