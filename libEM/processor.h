@@ -8982,7 +8982,7 @@ symmetric phase flipping can optionally be performed.";
 // 			vector<float> table = params["table"];
 			int tsize = table.size();
 			float d = sqrt(dist);
-			if (d>tsize-1) return;
+			if (d>tsize-1) { *pixel=0.0f; return; }
 			
 			int ir = int(d);
 			float df = d - float(ir);
