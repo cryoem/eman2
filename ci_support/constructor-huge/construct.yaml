@@ -9,7 +9,6 @@ channels:
     - file:///place_holder_conda_prefix/conda-bld
     - https://conda.anaconda.org/cryoem
     - https://repo.anaconda.com/pkgs/main
-    - https://repo.anaconda.com/pkgs/free
     - https://repo.anaconda.com/pkgs/msys2          # [win]
     - https://conda.anaconda.org/conda-forge
 
