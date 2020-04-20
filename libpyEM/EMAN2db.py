@@ -1720,7 +1720,7 @@ class DBDict(object):
                     try:
                         n = self.load_item(key, fkey)
                     except:
-                        print("key,pkey,fkey", key, pkey, fkey, pkey + fkey)
+                        # print("key,pkey,fkey", key, pkey, fkey, pkey+fkey)
                         raise KeyError("Undefined data location key %s for %s" % (key, pkey + fkey))
                     try:
                         ret.read_data(pkey + fkey, n * 4 * rnx * rny * rnz, region, rnx, rny,
@@ -1769,9 +1769,8 @@ class DBDict(object):
             #			print "w",fkey
             try:
                 n = self.load_item(key, fkey, txn=self.txn)
-                print(n)
             except Exception as e:
-                print(e)
+                # print(e)
                 if fkey not in self:
                     self[fkey] = 0
                 else:
@@ -1800,7 +1799,7 @@ class DBDict(object):
                     im = self[0]
                     sz = (im["nx"], im["ny"], im["nz"])
                 except Exception as e:
-                    print(e)
+                    # print(e)
                     sz = (0, 0, 0)
                 db2[self.name] = (time.time(), len(self), sz)
             else:
@@ -1867,7 +1866,7 @@ class DBDict(object):
     def load_item(self, key, fkey=b'', txn=None):
         if not isinstance(fkey, bytes):
             fkey = fkey.encode('utf-8')
-        print("print value is", self.bdb.get(fkey + self.get_key(key), txn=txn))
+        # print("print value is", self.bdb.get(fkey+ self.get_key(key), txn=txn))
         return loads(self.bdb.get(fkey + self.get_key(key), txn=txn))
 
 
