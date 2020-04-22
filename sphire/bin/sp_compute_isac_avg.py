@@ -60,7 +60,7 @@ from builtins import range
 
 global Tracker, Blockdata
 
-mpi.mpi_init(0, [])
+
 
 
 # ----------------------------------------------------------------------------
@@ -847,6 +847,7 @@ def main():
 
 
 if __name__ == "__main__":
+    mpi.mpi_init(0, [])
     sp_global_def.print_timestamp("Start")
     main()
     sp_global_def.print_timestamp("Finish")

@@ -54,7 +54,7 @@ import sys
 from builtins import range
 
 
-mpi.mpi_init(0, [])
+
 
 
 # Transforms the local resolution file from frequency units to angstroms.
@@ -383,6 +383,7 @@ def main():
 
 
 if __name__ == "__main__":
+    mpi.mpi_init(0, [])
     sp_global_def.print_timestamp("Start")
     main()
     sp_global_def.print_timestamp("Finish")

@@ -42,6 +42,7 @@ from past.utils import old_div
 
 import EMAN2_cppwrap
 import EMAN2db
+import EMAN2
 import mpi
 import numpy
 import os
@@ -4248,6 +4249,24 @@ def ali_vol_shift(vol, refv, shift_scale, radius=None, discrepancy="ccc"):
     else:
         return e
 
+
+def wrapper_params_2D_to_3D(stack):
+    pass  # IMPORTIMPORTIMPORT from sp_utilities import params_2D_3D, print_begin_msg, print_end_msg, print_msg, get_params2D, set_params_proj, write_header
+
+    # print_begin_msg("params_2D_to_3D")
+    # print_msg("Input stack                 : %s\n\n"%(stack))
+
+    nima = EMAN2.EMUtil.get_image_count(stack)
+    ima = EMAN2.EMData()
+    for im in range(nima):
+        ima.read_image(stack, im, True)
+        p = sp_utilities.get_params2D(ima)
+        p = sp_utilities.params_2D_3D(p[0], p[1], p[2], int(p[3]))
+        sp_utilities.set_params_proj(ima, p)
+        sp_utilities.write_header(stack, ima, im)
+
+
+# print_end_msg("params_2D_to_3D")
 
 """Multiline Comment61"""
 

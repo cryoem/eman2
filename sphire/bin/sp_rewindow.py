@@ -54,7 +54,7 @@ import sys
 import time
 from builtins import range
 
-mpi.mpi_init(0, [])
+
 
 
 # ========================================================================================
@@ -2006,6 +2006,7 @@ For negative staining data, use --skip_invert.
 # Define main function for command line execution
 # ========================================================================================
 if __name__ == "__main__":
+    mpi.mpi_init(0, [])
     sp_global_def.print_timestamp("Start")
     main()
     sp_global_def.print_timestamp("Finish")

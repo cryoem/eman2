@@ -10,7 +10,7 @@ from os import path
 from sphire.tests.test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_BIN_PATH,remove_dir,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW
 import unittest
 from sp_utilities import get_im
-
+import EMAN2db
 try:
     # python 3.4+ should use builtin unittest.mock not mock package
     from unittest.mock import patch
@@ -23,10 +23,12 @@ except ImportError:
     # python3 case. You will get an error because 'sys.stdout.write(msg)' presents in the library not in the test!!
     from io import StringIO
 import sys
-
+import os
 
 import mpi
 import subprocess
+import numpy
+from os import system
 """
 WHAT IS MISSING:
 1) I am not able to reproduce the windows negative size error (see ln279)
@@ -52,7 +54,7 @@ In these tests there is a strange behavior:
     the folder name's are renamed. Replacing "03_PARTICLES" in "03_Particles" it works
 """
 MPI_PATH = "/home/adnan/applications/sphire/miniconda3/envs/py3_v5/bin/mpirun" #"/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
-NUM_PROC = 4
+NUM_PROC = 8
 class Test_helperFunctions(unittest.TestCase):
     old_output_folder = "3DvariabilitySimmetryOld"
     new_output_folder = "3DvariabilitySimmetryNew"
@@ -173,12 +175,12 @@ class Test_helperFunctions(unittest.TestCase):
         remove_dir(self.new_output_folder)
         remove_dir(self.old_output_folder)
         testargs_new =  (path.join(ABSOLUTE_BIN_PATH, "sp_3dvariability.py")
-                         +" "+"'bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK#isac_substack'")
+                         +" "+"'bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK_ANO#isac_substack'")
                          +" "+"--output_dir="+self.new_output_folder
                          +" "+"--var2D='given_file'"
                          +" "+"--VAR")
         testargs_old = (path.join(ABSOLUTE_OLDBIN_PATH, "sp_3dvariability.py")
-                        +" "+"'bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK#isac_substack'")
+                        +" "+"'bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK_ANO#isac_substack'")
                         +" "+"--output_dir="+self.old_output_folder
                         +" "+"--var2D='given_file'"
                         +" "+"--VAR")
@@ -195,100 +197,151 @@ class Test_helperFunctions(unittest.TestCase):
         remove_dir(self.old_output_folder)
 
     def test_decimate_higher1_error(self):
-        testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_3dvariability.py"), "bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK#isac_substack"), "--output_dir="+self.new_output_folder,
-                         "--decimate=1.1"]
-        testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_3dvariability.py"),"bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK#isac_substack"), "--output_dir="+self.old_output_folder,
-                        "--decimate=1.1"]
-
-        with patch.object(sys, 'argv', testargs_new):
-            with self.assertRaises(SystemExit):
-                old_stdout = sys.stdout
-                print_new = StringIO()
-                sys.stdout = print_new
-                fu.main()
-        with patch.object(sys, 'argv', testargs_old):
-            with self.assertRaises(SystemExit):
-                print_old = StringIO()
-                sys.stdout = print_old
-                oldfu.main()
-
-        sys.stdout = old_stdout
-        self.assertEqual(print_new.getvalue().split('\n')[2].split("ERROR")[1],' => Decimate rate should be a value between 0.0 and 1.0')
-        self.assertEqual(print_new.getvalue().split('\n')[1].split("ERROR")[1],print_old.getvalue().split('\n')[1].split("ERROR")[1])
         remove_dir(self.new_output_folder)
         remove_dir(self.old_output_folder)
+        testargs_new =  (path.join(ABSOLUTE_BIN_PATH,"sp_3dvariability.py")
+                         +" "+"'bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK_ANO#isac_substack'")
+                         +" "+"--output_dir="+self.new_output_folder
+                         +" "+"--decimate=1.1")
+
+        testargs_old = (path.join(ABSOLUTE_OLDBIN_PATH, "sp_3dvariability.py")
+                        +" "+"'bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK_ANO#isac_substack'")
+                        +" "+"--output_dir="+self.old_output_folder
+                        +" "+"--decimate=1.1")
+
+        a = subprocess.run(args=[testargs_new], shell=True, capture_output=True)
+        b = subprocess.run(args=[testargs_old], shell=True,  capture_output=True)
+
+        print_new = a.stdout.decode('utf8').split('\n')
+        print_old = b.stdout.decode('utf8').split('\n')
+
+        remove_dir(self.new_output_folder)
+        remove_dir(self.old_output_folder)
+
+        self.assertEqual(print_new[3].split("ERROR")[1],' => Decimate rate should be a value between 0.0 and 1.0')
+        self.assertEqual(print_new[4].split("ERROR")[1],print_old[4].split("ERROR")[1])
+        # with patch.object(sys, 'argv', testargs_new):
+        #     with self.assertRaises(SystemExit):
+        #         old_stdout = sys.stdout
+        #         print_new = StringIO()
+        #         sys.stdout = print_new
+        #         fu.main()
+        # with patch.object(sys, 'argv', testargs_old):
+        #     with self.assertRaises(SystemExit):
+        #         print_old = StringIO()
+        #         sys.stdout = print_old
+        #         oldfu.main()
+        #
+        # sys.stdout = old_stdout
+        # self.assertEqual(print_new.getvalue().split('\n')[2].split("ERROR")[1],' => Decimate rate should be a value between 0.0 and 1.0')
+        # self.assertEqual(print_new.getvalue().split('\n')[1].split("ERROR")[1],print_old.getvalue().split('\n')[1].split("ERROR")[1])
+        # remove_dir(self.new_output_folder)
+        # remove_dir(self.old_output_folder)
 
 
     def test_decimate_lower0_error(self):
-        testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_3dvariability.py"), "bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK#isac_substack"), "--output_dir="+self.new_output_folder,
-                         "--decimate=-1.1"]
-        testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_3dvariability.py"),"bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK#isac_substack"), "--output_dir="+self.old_output_folder,
-                        "--decimate=-1.1"]
+        remove_dir(self.new_output_folder)
+        remove_dir(self.old_output_folder)
+        testargs_new =  (path.join(ABSOLUTE_BIN_PATH, "sp_3dvariability.py")
+                         +" "+"'bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK_ANO#isac_substack'")
+                         +" "+"--output_dir="+self.new_output_folder
+                         +" "+"--decimate=-1.1")
 
-        with patch.object(sys, 'argv', testargs_new):
-            with self.assertRaises(SystemExit):
-                old_stdout = sys.stdout
-                print_new = StringIO()
-                sys.stdout = print_new
-                fu.main()
-        with patch.object(sys, 'argv', testargs_old):
-            with self.assertRaises(SystemExit):
-                print_old = StringIO()
-                sys.stdout = print_old
-                oldfu.main()
+        testargs_old = (path.join(ABSOLUTE_OLDBIN_PATH, "sp_3dvariability.py")
+                        +" "+"'bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK_ANO#isac_substack'")
+                        +" "+"--output_dir="+self.old_output_folder
+                        +" "+"--decimate=-1.1")
 
-        sys.stdout = old_stdout
+        a = subprocess.run(args=[testargs_new], shell=True, capture_output=True)
+        b = subprocess.run(args=[testargs_old], shell=True,  capture_output=True)
 
-        self.assertEqual(print_new.getvalue().split('\n')[2].split("ERROR")[1],' => Decimate rate should be a value between 0.0 and 1.0')
-        self.assertEqual(print_new.getvalue().split('\n')[1].split("ERROR")[1],print_old.getvalue().split('\n')[1].split("ERROR")[1])
+        print_new = a.stdout.decode('utf8').split('\n')
+        print_old = b.stdout.decode('utf8').split('\n')
+
         remove_dir(self.new_output_folder)
         remove_dir(self.old_output_folder)
 
+        self.assertEqual(print_new[3].split("ERROR")[1],' => Decimate rate should be a value between 0.0 and 1.0')
+        self.assertEqual(print_new[4].split("ERROR")[1],print_old[4].split("ERROR")[1])
 
-    @unittest.skip("BUG --> var index_of_proj not declared")
+        # with patch.object(sys, 'argv', testargs_new):
+        #     with self.assertRaises(SystemExit):
+        #         old_stdout = sys.stdout
+        #         print_new = StringIO()
+        #         sys.stdout = print_new
+        #         fu.main()
+        # with patch.object(sys, 'argv', testargs_old):
+        #     with self.assertRaises(SystemExit):
+        #         print_old = StringIO()
+        #         sys.stdout = print_old
+        #         oldfu.main()
+        #
+        # sys.stdout = old_stdout
+        #
+        # self.assertEqual(print_new.getvalue().split('\n')[2].split("ERROR")[1],' => Decimate rate should be a value between 0.0 and 1.0')
+        # self.assertEqual(print_new.getvalue().split('\n')[1].split("ERROR")[1],print_old.getvalue().split('\n')[1].split("ERROR")[1])
+        # remove_dir(self.new_output_folder)
+        # remove_dir(self.old_output_folder)
+
+
+    # @unittest.skip("BUG --> var index_of_proj not declared")
     def test_VAR_VAR3D_error(self):
-        testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_3dvariability.py"), "bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK#isac_substack"), "--output_dir="+self.new_output_folder,
-                         "--var3D='given_file'", "--VAR"]
-        testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_3dvariability.py"),"bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK#isac_substack"), "--output_dir="+self.old_output_folder,
-                        "--var3D='given_file'", "--VAR"]
+        remove_dir(self.new_output_folder)
+        remove_dir(self.old_output_folder)
+        testargs_new =  (path.join(ABSOLUTE_BIN_PATH, "sp_3dvariability.py")
+                         +" "+"'bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK_ANO#isac_substack'")
+                         +" "+"--output_dir="+self.new_output_folder
+                         +" "+"--var3D='given_file.hdf'"
+                          +" "+"--VAR")
 
-        with patch.object(sys, 'argv', testargs_new):
-            with self.assertRaises(SystemExit):
-                old_stdout = sys.stdout
-                print_new = StringIO()
-                sys.stdout = print_new
-                fu.main()
-        with patch.object(sys, 'argv', testargs_old):
-            with self.assertRaises(SystemExit):
-                print_old = StringIO()
-                sys.stdout = print_old
-                oldfu.main()
+        testargs_old = (path.join(ABSOLUTE_OLDBIN_PATH, "sp_3dvariability.py")
+                        +" "+"'bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK_ANO#isac_substack'")
+                        +" "+"--output_dir="+self.old_output_folder
+                        +" "+"--var3D='given_file.hdf'"
+                        +" "+"--VAR")
 
-        sys.stdout = old_stdout
-        self.assertEqual(print_new.getvalue().split('\n')[1].split("ERROR")[1],' => When VAR is set, the program cannot output ave2D, ave3D or var2D')
-        self.assertEqual(print_new.getvalue().split('\n')[1].split("ERROR")[1],print_old.getvalue().split('\n')[1].split("ERROR")[1])
+        a = subprocess.run(args=[testargs_new], shell=True,stderr=subprocess.STDOUT)
+        b = subprocess.run(args=[testargs_old], shell=True,  stderr=subprocess.STDOUT)
 
+        newimg = EMAN2db.EMData()
+        oldimg = EMAN2db.EMData()
+        newimg.read_image(fsp = os.path.join(self.new_output_folder, 'given_file.hdf'))
+        oldimg.read_image(fsp = os.path.join(self.old_output_folder, 'given_file.hdf'))
 
-
-
-
-from os import system
-
-
+        # print(newimg.get_3dview())
+        # self.assertTrue(numpy.array_equal(newimg.get_3dview() , oldimg.get_3dview()))
+        remove_dir(self.new_output_folder)
+        remove_dir(self.old_output_folder)
 
 class Test_run(unittest.TestCase):
 
     def test_symmetrize(self):
         old_output_folder = "3DvariabilitySimmetryOld"
         new_output_folder = "3DvariabilitySimmetryNew"
+        remove_dir(new_output_folder)
+        remove_dir(old_output_folder)
         filename = "sdata"
-        testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_3dvariability.py"), "--symmetrize","bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK#isac_substack"), "--output_dir="+new_output_folder,"--sym=c5"]
-        testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_3dvariability.py"),"--symmetrize","bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK#isac_substack"), "--output_dir="+old_output_folder,"--sym=c5"]
-        with patch.object(sys, 'argv', testargs_new):
-            fu.main()
-        with patch.object(sys, 'argv', testargs_old):
-            oldfu.main()
-        #
+        testargs_new =  (path.join(ABSOLUTE_BIN_PATH, "sp_3dvariability.py")
+                         +" "+"--symmetrize"
+                         +" "+"'bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK_ANO#isac_substack'")
+                         +" "+"--output_dir="+new_output_folder
+                         +" "+"--sym=c5")
+        testargs_old = (path.join(ABSOLUTE_OLDBIN_PATH, "sp_3dvariability.py")
+                        +" "+"--symmetrize"
+                        +" "+"'bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK_ANO#isac_substack'")
+                        +" "+"--output_dir="+old_output_folder
+                        +" "+"--sym=c5")
+
+        a = subprocess.run(args=[testargs_new], shell=True,stderr=subprocess.STDOUT)
+        b = subprocess.run(args=[testargs_old], shell=True,  stderr=subprocess.STDOUT)
+
+        remove_dir(new_output_folder)
+        remove_dir(old_output_folder)
+        #        with patch.object(sys, 'argv', testargs_new):
+        #     fu.main()
+        # with patch.object(sys, 'argv', testargs_old):
+        #     oldfu.main()
+
         # return_old = get_im('bdb:{0}#{1}'.format(old_output_folder, filename))
         # return_new = get_im('bdb:{0}#{1}'.format(new_output_folder, filename))
         # self.assertTrue(allclose(return_new.get_2dview(), return_old.get_2dview(), atol=0.1))
@@ -299,8 +352,6 @@ class Test_run(unittest.TestCase):
     #pg73 tutorial
     @unittest.skip("need valid data")
     def test_(self):
-        MPI_PATH = "/home/adnan/applications/sphire/miniconda3/envs/py3_mini_new/bin/mpirun"  # "/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
-        NUM_PROC = 8
         old_output_folder = "3DvarOld"
         new_output_folder = "3DvarNew"
         filename3DvarNew = "3DvarNew.hdf"
@@ -308,12 +359,15 @@ class Test_run(unittest.TestCase):
         filename3DvarOld = "3DvarOld.hdf"
         filename3DavgOld = "3DAvgOld.hdf"
 
-        system(
+        remove_dir(new_output_folder)
+        remove_dir(old_output_folder)
+
+        testargs_new = (
             MPI_PATH
             + " -np "
             +str(NUM_PROC)
             +" "+path.join(ABSOLUTE_OLDBIN_PATH,"sp_3dvariability.py")
-            +" "+"bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"SymStack#sdata")
+            +" "+"bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK_ANO#isac_substack")
             +" "+ "--output_dir="+new_output_folder
             +" --var3D="+filename3DvarNew
             + " --ave3D="+filename3DavgNew
@@ -324,12 +378,12 @@ class Test_run(unittest.TestCase):
             + " --window=290"
         )
 
-        system(
+        testargs_old = (
             MPI_PATH
             + " -np "
             +str(NUM_PROC)
             +" "+path.join(ABSOLUTE_BIN_PATH,"sp_3dvariability.py")
-            +" "+"bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"SymStack#sdata")
+            +" "+"bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK_ANO#isac_substack")
             +" "+ "--output_dir="+old_output_folder
             +" --var3D="+filename3DvarOld
             + " --ave3D="+filename3DavgOld
@@ -339,3 +393,15 @@ class Test_run(unittest.TestCase):
             + " --ave2D=''"
             + " --window=290"
         )
+
+        a = subprocess.run(args=[testargs_new], shell=True, stderr=subprocess.STDOUT)
+        b = subprocess.run(args=[testargs_old], shell=True,  stderr=subprocess.STDOUT)
+
+        print_new = a.stdout.decode('utf8').split('\n')
+        print_oldv = b.stdout.decode('utf8').split('\n')
+
+
+        self.assertEqual(print_new[16].split("ERROR")[1],
+                         ' => Input stack is not prepared for symmetry, please follow instructions')
+        remove_dir(new_output_folder)
+        remove_dir(old_output_folder)

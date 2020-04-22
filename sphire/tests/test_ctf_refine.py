@@ -163,7 +163,7 @@ class Test_run(unittest.TestCase):
     def test_(self):
         testargs_new = [path.join(ABSOLUTE_BIN_PATH, "sp_ctf_refine.py"),
                         "manual",
-                        "bdb:" + path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK_NEW#isac_substack"),
+                        "bdb:" + path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK_ANO#isac_substack"),
                         self.new_output_folder,
                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"12_POSTREFINER","vol_combined.hdf"),
                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "11_MERIDIEN","final_params_028.txt")]
@@ -172,7 +172,7 @@ class Test_run(unittest.TestCase):
 
         testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_ctf_refine.py"),
                         "manual",
-                        "bdb:" + path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK_NEW#isac_substack"),
+                        "bdb:" + path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK_ANO#isac_substack"),
                         self.old_output_folder,
                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"12_POSTREFINER","vol_combined.hdf"),
                         path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "11_MERIDIEN","final_params_028.txt")]

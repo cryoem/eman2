@@ -53,7 +53,7 @@ import sys
 from builtins import range
 
 
-mpi.mpi_init(0, [])
+
 
 
 def main(args):
@@ -336,6 +336,7 @@ directory		output directory name: into which the results will be written (if it 
 
 
 if __name__ == "__main__":
+    mpi.mpi_init(0, [])
     sp_global_def.print_timestamp("Start")
     main(sys.argv[1:])
     sp_global_def.print_timestamp("Finish")

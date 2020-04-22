@@ -58,7 +58,7 @@ import sp_utilities
 import sys
 import time
 from builtins import range
-
+import os
 
 
 mpi.mpi_init(0, [])
@@ -569,9 +569,10 @@ def main():
         """Multiline Comment0"""
 
         if options.VAR:  # 2D variance images have no shifts
+            varList = []
             # varList   = EMData.read_images(stack, range(img_begin, img_end))
             for index_of_particle in range(img_begin, img_end):
-                image = sp_utilities.get_im(stack, index_of_proj)
+                image = sp_utilities.get_im(stack, index_of_particle)
                 if current_window > 0:
                     varList.append(
                         sp_fundamentals.fdecimate(
@@ -1072,7 +1073,7 @@ def main():
                 res = sp_fundamentals.fpol(res, nnxo, nnxo, nnxo)
                 sp_utilities.set_pixel_size(res, 1.0)
                 res.write_image(
-                    optparse.os.path.join(current_output_dir, options.var3D)
+                    os.path.join(current_output_dir, options.var3D)
                 )
                 log_main.add(
                     "%-70s:  %s\n"

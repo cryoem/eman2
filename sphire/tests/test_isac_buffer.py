@@ -46,8 +46,6 @@ ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
 buffer = numpy.frombuffer(ptr.contents, dtype="f4")
 buffer = buffer.reshape(nimastack, target_nx, target_nx)
 
-
-
 emnumpy2 = EMNumPy()
 bigbuffer = emnumpy2.register_numpy_to_emdata(buffer)
 

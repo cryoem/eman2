@@ -72,7 +72,7 @@ from builtins import range
 
 sp_utilities.disable_bdb_cache()
 
-mpi.mpi_init(0, [])
+
 
 
 MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER = 10
@@ -1923,6 +1923,7 @@ output_directory: directory name into which the output files will be written.  I
 
 
 if __name__ == "__main__":
+    mpi.mpi_init(0, [])
     sp_global_def.print_timestamp("Start")
     main()
     sp_global_def.print_timestamp("Finish")
