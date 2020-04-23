@@ -44,6 +44,10 @@
 using namespace boost::python;
 namespace np = boost::python::numpy;
 
+int init_numpy()
+{
+    import_array();
+}
 
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyTypeConverter2)
@@ -52,11 +56,13 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
         .def(init< const EMAN::EMNumPy& >())
         .def("em2numpy", &EMAN::EMNumPy::em2numpy)
         .def("numpy2em", &EMAN::EMNumPy::numpy2em, return_value_policy< manage_new_object >())
+        .def("register_numpy_to_emdata", &EMAN::EMNumPy::register_numpy_to_emdata, return_value_policy< reference_existing_object >())
+        .def("unregister_numpy_from_emdata", &EMAN::EMNumPy::unregister_numpy_from_emdata)
         .staticmethod("em2numpy")
         .staticmethod("numpy2em")
     ;
 
-
+    init_numpy();
 	Py_Initialize();
 	np::initialize();
 

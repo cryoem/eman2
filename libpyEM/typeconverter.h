@@ -46,6 +46,7 @@
 
 #include <boost/python.hpp>
 #include <boost/python/numpy.hpp>
+#include <numpy/ndarrayobject.h>
 
 #include <vector>
 #include <map>
@@ -110,6 +111,37 @@ namespace EMAN {
 		 * Note: the array size is (nz,ny,nx) corresponding to image (nx,ny,nz).
 		 */
 		static EMData* numpy2em(const np::ndarray& array);
+
+		/** Create an EMData image from a numeric numpy array.
+		 * The destructor is necessary to set rdata data member of EMData to 0 (Null)
+		 * This avoids that the destructor of EMData Buffer deletes the valid memory,
+		 * which allocated and owned by the other object (e.g. NumPy)
+		 * The other cleaning up of EMData Buffer will be done by EMData destructor.
+		 */
+		~EMNumPy();
+
+		/** Register memory allocated and owned by a numeric numpy array to the EMData buffer.
+		 * Note: Management of this memory is responsibility of programmer.
+		 * Make sure to unregister the memory as soon as you are done using this EMData buffer.
+		 * Note: Using the assignment operator with the returned EMData point at the python level
+		 * should be fine, because ...
+		 * (1) the returned value will be managed by Python as a smart pointer of EMData pointer.
+		 * (2) the emdata_buffer is owned by this EMNumPy object.
+		 * Therefore, the Python does not call delete on emdata_buffer upon the assignment.
+		 */
+		EMData* register_numpy_to_emdata(const np::ndarray& array);
+
+		/** Unregister memory allocated and owned by a numeric numpy array to the EMData buffer.
+		 * Make sure to pair this with register_numpy_to_emdata()
+		 * and call this as soon as you are done using this EMData buffer.
+		 */
+		void unregister_numpy_from_emdata();
+
+        /** the EMData buffer owned and managed by this EMNumPy class.
+		 * However, the memory buffer which emdata_buffer.rdata points should be managed by
+		 * the other object (NumPy)
+		 */
+		EMData emdata_buffer;
 	};
 
 	template <class T>
