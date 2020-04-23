@@ -11,8 +11,8 @@ from numpy import allclose
 # sp_global_def.BATCH = True
 # sp_global_def.MPI = True
 
-# from sphire.bin_py3 import sp_meridien as oldfu
-# from sphire.bin import sp_meridien as fu
+from sphire.bin_py3 import sp_meridien as oldfu
+from sphire.bin import sp_meridien as fu
 
 from sp_utilities import get_im
 from os import listdir,system as os_system,path

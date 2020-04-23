@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import numpy as np
 from EMAN2 import *
+import EMAN2
 import mpi
 import sp_utilities
 import ctypes

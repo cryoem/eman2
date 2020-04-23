@@ -549,9 +549,13 @@ def iter_isac_pap(
     if Blockdata["myid_on_node"] != 0:
         base_ptr, = mpi.mpi_win_shared_query(win_sm, mpi.MPI_PROC_NULL)
 
-    d = numpy.frombuffer(
-        numpy.core.multiarray.int_asbuffer(base_ptr, size * disp_unit), dtype="f4"
-    )
+    # d = numpy.frombuffer(
+    #     numpy.core.multiarray.int_asbuffer(base_ptr, size * disp_unit), dtype="f4"
+    # )
+
+    ptr_n = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+    d = numpy.frombuffer(ptr_n.contents, dtype="f4")
+
     d = d.reshape(orgsize)
     mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
@@ -814,8 +818,13 @@ def isac_MPI_pap(
         random.seed(rand_seed)
     else:
         random.seed(random.randint(1, 2000111222))
-    if myid != main_node:
-        random.jumpahead(17 * myid + 12345)
+
+    """
+    Comment from Adnan
+    random.jumpahead function is not available in python 3 . That is why i comment it
+    """
+    # if myid != main_node:
+    #     random.jumpahead(17 * myid + 12345)
 
     previous_agreement = 0.0
     previous_members = [None] * numref
@@ -1558,13 +1567,9 @@ def do_generation(
 
     msk = sp_utilities.model_blank(target_nx, target_nx, 1, 1)
     for i in range(nimastack):
-        pointer_location = base_ptr + i * size_of_one_image * disp_unit
-        img_buffer = numpy.frombuffer(
-            numpy.core.multiarray.int_asbuffer(
-                pointer_location, size_of_one_image * disp_unit
-            ),
-            dtype="f4",
-        )
+        newpoint = base_ptr + i * size_of_one_image * disp_unit
+        pointer_location = ctypes.cast(newpoint, ctypes.POINTER(ctypes.c_int * size_of_one_image))
+        img_buffer = numpy.frombuffer(pointer_location.contents, dtype="f4")
         img_buffer = img_buffer.reshape(target_nx, target_nx)
         emnumpy3[i] = EMAN2_cppwrap.EMNumPy()
         alldata[i] = emnumpy3[i].register_numpy_to_emdata(img_buffer)
@@ -2861,6 +2866,7 @@ def main(args):
 
 
 if __name__ == "__main__":
+
     sp_global_def.print_timestamp("Start")
     main(sys.argv[1:])
     sp_global_def.print_timestamp("Finish")

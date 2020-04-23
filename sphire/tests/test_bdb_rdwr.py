@@ -246,10 +246,10 @@ class Test_Dbdict(unittest.TestCase):
     #     print(retu)
 
 
-    def test_get_attrib_n_list_attr_empty_list(self):
-        a = EMAN2db.DBDict(name=bdbname, path=bdb_path, ro=True)
-        retu = a[0].get_attr(n = [0,1,2], attr='MRC.gamma')
-        print(retu)
+    # def test_get_attrib_n_list_attr_empty_list(self):
+    #     a = EMAN2db.DBDict(name=bdbname, path=bdb_path, ro=True)
+    #     retu = a[0].get_attr(n = [0,1,2], attr='MRC.gamma')
+    #     print(retu)
 
 
 
