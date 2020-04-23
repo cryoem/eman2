@@ -231,12 +231,27 @@ class Test_Dbdict(unittest.TestCase):
     #     print(a.items())
     #     print(a.get('maxrec'))
 
-    # def test_get_attrib(self):
+    def test_get_attrib(self):
+        a = EMAN2db.DBDict(name=bdbname, path=bdb_path, ro=True)
+        img =  a[0]
+        print(img.get_attr('MRC.gamma'))
+        fsp = str('bdb:' + bdb_path.replace('/EMAN2DB','') + '#' + bdbname)
+        atr = EMAN2db.db_get_all_attributes(fsp, 'MRC.gamma')
+        self.assertEqual(img.get_attr('MRC.gamma') , atr[0])
+
+    # def test_get_attrib_n_empty_list(self):
     #     a = EMAN2db.DBDict(name=bdbname, path=bdb_path, ro=True)
-    #     img =  a[0]
-    #     print(img.get_attr('MRC.gamma'))
-    #     print(a.get_header(0))
-    #     print(a.get_attr(b'0', 'MRC.gamma'))
+    #     img = a[0]
+    #     retu = a[0].get_attr(n = [], attr='MRC.gamma')
+    #     print(retu)
+
+
+    def test_get_attrib_n_list_attr_empty_list(self):
+        a = EMAN2db.DBDict(name=bdbname, path=bdb_path, ro=True)
+        retu = a[0].get_attr(n = [0,1,2], attr='MRC.gamma')
+        print(retu)
+
+
 
     def test_init(self):
         a = EMAN2db.DBDict(name=bdbname, path=bdb_path, ro=True)

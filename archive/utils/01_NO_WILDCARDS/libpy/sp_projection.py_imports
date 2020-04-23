@@ -1,0 +1,12 @@
+EMAN2_cppwrap
+copy
+mpi
+numpy
+random
+sp_alignment
+sp_applications
+sp_filter
+sp_fundamentals
+sp_global_def
+sp_utilities
+time
