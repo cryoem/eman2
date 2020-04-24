@@ -72,7 +72,7 @@ import sys
 import time
 import sp_user_functions
 from builtins import range
-
+import ctypes
 """
 There are four ways to run the program:
 
@@ -2361,9 +2361,17 @@ def ali3D_polar_ccc(
     if Blockdata["myid_on_node"] != 0:
         base_vol, = mpi.mpi_win_shared_query(win_vol, mpi.MPI_PROC_NULL)
 
-    volbuf = numpy.frombuffer(
-        numpy.core.multiarray.int_asbuffer(base_vol, sizevol * disp_unit), dtype="f4"
-    )
+    """
+    Comments from Adnan:
+    numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
+    """
+    # volbuf = numpy.frombuffer(
+    #     numpy.core.multiarray.int_asbuffer(base_vol, sizevol * disp_unit), dtype="f4"
+    # )
+
+    ptr_n = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
+    volbuf = numpy.frombuffer(ptr_n.contents, dtype="f4")
+
     volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
     if Blockdata["myid_on_node"] == 0:
         numpy.copyto(volbuf, ndo)
@@ -2409,9 +2417,16 @@ def ali3D_polar_ccc(
     if Blockdata["myid_on_node"] != 0:
         base_ptr, = mpi.mpi_win_shared_query(win_sm, mpi.MPI_PROC_NULL)
 
-    buffer = numpy.frombuffer(
-        numpy.core.multiarray.int_asbuffer(base_ptr, size * disp_unit), dtype="f4"
-    )
+    """
+    Comments from Adnan:
+    numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
+    """
+    # buffer = numpy.frombuffer(
+    #     numpy.core.multiarray.int_asbuffer(base_ptr, size * disp_unit), dtype="f4"
+    # )
+
+    ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+    buffer = numpy.frombuffer(ptr.contents, dtype="f4")
     buffer = buffer.reshape(lenbigbuf, size_of_one_image)
     # bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
 
@@ -2494,10 +2509,17 @@ def ali3D_polar_ccc(
         if Blockdata["myid_on_node"] != 0:
             base_volinit, = mpi.mpi_win_shared_query(win_volinit, mpi.MPI_PROC_NULL)
 
-        volbufinit = numpy.frombuffer(
-            numpy.core.multiarray.int_asbuffer(base_volinit, sizevol * disp_unit),
-            dtype="f4",
-        )
+        """
+        Comments from Adnan:
+        numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
+        """
+        # volbufinit = numpy.frombuffer(
+        #     numpy.core.multiarray.int_asbuffer(base_volinit, sizevol * disp_unit),
+        #     dtype="f4",
+        # )
+        ptr = ctypes.cast(base_volinit, ctypes.POINTER(ctypes.c_int * sizevol))
+        volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
+
         volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
         if Blockdata["myid_on_node"] == 0:
             numpy.copyto(volbufinit, ndoinit)
@@ -3219,9 +3241,16 @@ def ali3D_primary_polar(
     if Blockdata["myid_on_node"] != 0:
         base_vol, = mpi.mpi_win_shared_query(win_vol, mpi.MPI_PROC_NULL)
 
-    volbuf = numpy.frombuffer(
-        numpy.core.multiarray.int_asbuffer(base_vol, sizevol * disp_unit), dtype="f4"
-    )
+    """
+    Comments from Adnan:
+    numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
+    """
+    # volbuf = numpy.frombuffer(
+    #     numpy.core.multiarray.int_asbuffer(base_vol, sizevol * disp_unit), dtype="f4"
+    # )
+    ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
+    volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
+
     volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
     if Blockdata["myid_on_node"] == 0:
         numpy.copyto(volbuf, ndo)
@@ -3266,10 +3295,16 @@ def ali3D_primary_polar(
     size = orgsize
     if Blockdata["myid_on_node"] != 0:
         base_ptr, = mpi.mpi_win_shared_query(win_sm, mpi.MPI_PROC_NULL)
+    """
+    Comments from Adnan:
+    numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
+    """
+    # buffer = numpy.frombuffer(
+    #     numpy.core.multiarray.int_asbuffer(base_ptr, size * disp_unit), dtype="f4"
+    # )
 
-    buffer = numpy.frombuffer(
-        numpy.core.multiarray.int_asbuffer(base_ptr, size * disp_unit), dtype="f4"
-    )
+    ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+    buffer = numpy.frombuffer(ptr.contents, dtype="f4")
     buffer = buffer.reshape(lenbigbuf, size_of_one_image)
     # bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
 
@@ -3352,10 +3387,17 @@ def ali3D_primary_polar(
         if Blockdata["myid_on_node"] != 0:
             base_volinit, = mpi.mpi_win_shared_query(win_volinit, mpi.MPI_PROC_NULL)
 
-        volbufinit = numpy.frombuffer(
-            numpy.core.multiarray.int_asbuffer(base_volinit, sizevol * disp_unit),
-            dtype="f4",
-        )
+        """
+        Comments from Adnan:
+        numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
+        """
+        # volbufinit = numpy.frombuffer(
+        #     numpy.core.multiarray.int_asbuffer(base_volinit, sizevol * disp_unit),
+        #     dtype="f4",
+        # )
+        ptr = ctypes.cast(base_volinit, ctypes.POINTER(ctypes.c_int * sizevol))
+        volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
+
         volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
         if Blockdata["myid_on_node"] == 0:
             numpy.copyto(volbufinit, ndoinit)
@@ -4232,9 +4274,16 @@ def ali3D_polar(
     if Blockdata["myid_on_node"] != 0:
         base_vol, = mpi.mpi_win_shared_query(win_vol, mpi.MPI_PROC_NULL)
 
-    volbuf = numpy.frombuffer(
-        numpy.core.multiarray.int_asbuffer(base_vol, sizevol * disp_unit), dtype="f4"
-    )
+    """
+    Comments from Adnan:
+    numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
+    """
+    # volbuf = numpy.frombuffer(
+    #     numpy.core.multiarray.int_asbuffer(base_vol, sizevol * disp_unit), dtype="f4"
+    # )
+    ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
+    volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
+
     volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
     if Blockdata["myid_on_node"] == 0:
         numpy.copyto(volbuf, ndo)
@@ -4281,9 +4330,15 @@ def ali3D_polar(
     if Blockdata["myid_on_node"] != 0:
         base_ptr, = mpi.mpi_win_shared_query(win_sm, mpi.MPI_PROC_NULL)
 
-    buffer = numpy.frombuffer(
-        numpy.core.multiarray.int_asbuffer(base_ptr, size * disp_unit), dtype="f4"
-    )
+    """
+    Comments from Adnan:
+    numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
+    """
+    # buffer = numpy.frombuffer(
+    #     numpy.core.multiarray.int_asbuffer(base_ptr, size * disp_unit), dtype="f4"
+    # )
+    ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+    buffer = numpy.frombuffer(ptr.contents, dtype="f4")
     buffer = buffer.reshape(lenbigbuf, size_of_one_image)
     # bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
 
@@ -4366,10 +4421,17 @@ def ali3D_polar(
         if Blockdata["myid_on_node"] != 0:
             base_volinit, = mpi.mpi_win_shared_query(win_volinit, mpi.MPI_PROC_NULL)
 
-        volbufinit = numpy.frombuffer(
-            numpy.core.multiarray.int_asbuffer(base_volinit, sizevol * disp_unit),
-            dtype="f4",
-        )
+        """
+        Comments from Adnan:
+        numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
+        """
+        # volbufinit = numpy.frombuffer(
+        #     numpy.core.multiarray.int_asbuffer(base_volinit, sizevol * disp_unit),
+        #     dtype="f4",
+        # )
+        ptr = ctypes.cast(base_volinit, ctypes.POINTER(ctypes.c_int * sizevol))
+        volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
+
         volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
         if Blockdata["myid_on_node"] == 0:
             numpy.copyto(volbufinit, ndoinit)
@@ -5238,9 +5300,15 @@ def ali3D_primary_local_polar(
     if Blockdata["myid_on_node"] != 0:
         base_vol, = mpi.mpi_win_shared_query(win_vol, mpi.MPI_PROC_NULL)
 
-    volbuf = numpy.frombuffer(
-        numpy.core.multiarray.int_asbuffer(base_vol, sizevol * disp_unit), dtype="f4"
-    )
+    """
+    Comments from Adnan:
+    numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
+    """
+    # volbuf = numpy.frombuffer(
+    #     numpy.core.multiarray.int_asbuffer(base_vol, sizevol * disp_unit), dtype="f4"
+    # )
+    ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
+    volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
     volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
     if Blockdata["myid_on_node"] == 0:
         numpy.copyto(volbuf, ndo)
@@ -5334,10 +5402,17 @@ def ali3D_primary_local_polar(
         if Blockdata["myid_on_node"] != 0:
             base_volinit, = mpi.mpi_win_shared_query(win_volinit, mpi.MPI_PROC_NULL)
 
-        volbufinit = numpy.frombuffer(
-            numpy.core.multiarray.int_asbuffer(base_volinit, sizevol * disp_unit),
-            dtype="f4",
-        )
+        """
+        Comments from Adnan:
+        numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
+        """
+        # volbufinit = numpy.frombuffer(
+        #     numpy.core.multiarray.int_asbuffer(base_volinit, sizevol * disp_unit),
+        #     dtype="f4",
+        # )
+        ptr = ctypes.cast(base_volinit, ctypes.POINTER(ctypes.c_int * sizevol))
+        volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
+
         volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
         if Blockdata["myid_on_node"] == 0:
             numpy.copyto(volbufinit, ndoinit)
@@ -5580,9 +5655,15 @@ def ali3D_primary_local_polar(
     if Blockdata["myid_on_node"] != 0:
         base_ptr, = mpi.mpi_win_shared_query(win_sm, mpi.MPI_PROC_NULL)
 
-    buffer = numpy.frombuffer(
-        numpy.core.multiarray.int_asbuffer(base_ptr, size * disp_unit), dtype="f4"
-    )
+    """
+    Comments from Adnan:
+    numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
+    """
+    # buffer = numpy.frombuffer(
+    #     numpy.core.multiarray.int_asbuffer(base_ptr, size * disp_unit), dtype="f4"
+    # )
+    ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+    buffer = numpy.frombuffer(ptr.contents, dtype="f4")
     buffer = buffer.reshape(lenbigbuf, size_of_one_image)
     # bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
 
@@ -6687,9 +6768,15 @@ def ali3D_local_polar(
     if Blockdata["myid_on_node"] != 0:
         base_vol, = mpi.mpi_win_shared_query(win_vol, mpi.MPI_PROC_NULL)
 
-    volbuf = numpy.frombuffer(
-        numpy.core.multiarray.int_asbuffer(base_vol, sizevol * disp_unit), dtype="f4"
-    )
+    """
+    Comments from Adnan:
+    numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
+    """
+    # volbuf = numpy.frombuffer(
+    #     numpy.core.multiarray.int_asbuffer(base_vol, sizevol * disp_unit), dtype="f4"
+    # )
+    ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
+    volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
     volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
     if Blockdata["myid_on_node"] == 0:
         numpy.copyto(volbuf, ndo)
@@ -6783,10 +6870,17 @@ def ali3D_local_polar(
         if Blockdata["myid_on_node"] != 0:
             base_volinit, = mpi.mpi_win_shared_query(win_volinit, mpi.MPI_PROC_NULL)
 
-        volbufinit = numpy.frombuffer(
-            numpy.core.multiarray.int_asbuffer(base_volinit, sizevol * disp_unit),
-            dtype="f4",
-        )
+        """
+        Comments from Adnan:
+        numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
+        """
+        # volbufinit = numpy.frombuffer(
+        #     numpy.core.multiarray.int_asbuffer(base_volinit, sizevol * disp_unit),
+        #     dtype="f4",
+        # )
+        ptr = ctypes.cast(base_volinit, ctypes.POINTER(ctypes.c_int * sizevol))
+        volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
+
         volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
         if Blockdata["myid_on_node"] == 0:
             numpy.copyto(volbufinit, ndoinit)
@@ -7031,9 +7125,15 @@ def ali3D_local_polar(
     if Blockdata["myid_on_node"] != 0:
         base_ptr, = mpi.mpi_win_shared_query(win_sm, mpi.MPI_PROC_NULL)
 
-    buffer = numpy.frombuffer(
-        numpy.core.multiarray.int_asbuffer(base_ptr, size * disp_unit), dtype="f4"
-    )
+    """
+    Comments from Adnan:
+    numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
+    """
+    # buffer = numpy.frombuffer(
+    #     numpy.core.multiarray.int_asbuffer(base_ptr, size * disp_unit), dtype="f4"
+    # )
+    ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+    buffer = numpy.frombuffer(ptr.contents, dtype="f4")
     buffer = buffer.reshape(lenbigbuf, size_of_one_image)
     # bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
 

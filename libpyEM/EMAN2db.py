@@ -1422,7 +1422,7 @@ class DBDict(object):
                         pass
             return ret
         except:
-            if getattr(attr, '__iter__', False):
+            if getattr(attr, '__iter__', False) and not isinstance(attr, str):
                 # d=loads(self.bdb.get(dumps(n,-1),txn=self.txn))
                 d = self.load_item(n, txn=self.txn)
 

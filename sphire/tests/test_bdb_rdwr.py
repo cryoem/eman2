@@ -196,6 +196,12 @@ class Test_functions_outside_class(unittest.TestCase):
         print(type(atr))
         print(type(atr[0]))
 
+    def test_db_get_all_attributes(self):
+        fsp = "bdb:/home/adnan/DemoResults/06_SUBSTACK_ANO#isac_substack"
+        atr = EMAN2db.db_get_all_attributes(fsp, 'ctf')
+        print(atr)
+        print(type(atr))
+        print(type(atr[0]))
         # attr_list = [{'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}]
         # self.assertEqual(atr, attr_list)
 
