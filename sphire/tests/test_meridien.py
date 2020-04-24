@@ -38,7 +38,7 @@ import subprocess
 import os
 
 
-MPI_PATH = "/home/adnan/applications/sphire/miniconda3/envs/py3_v5/bin/mpirun" #"/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
+MPI_PATH = "/home/adnan/applications/sphire/miniconda3/envs/py3_v6/bin/mpirun" #"/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
 NUM_PROC = 8
 
 """

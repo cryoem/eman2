@@ -54,6 +54,7 @@ import sp_global_def
 import past
 from past.utils import old_div
 import numpy
+import EMAN2_cppwrap
 
 
 def do_volume_mask(ref_data):
