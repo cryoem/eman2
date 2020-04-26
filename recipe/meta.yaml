@@ -1,6 +1,6 @@
 package:
     name: eman2
-    version: 2.31
+    version: {{ environ.get('EMAN_VERSION', '') }}
 
 source:
     - path: {{ RECIPE_DIR }}/..

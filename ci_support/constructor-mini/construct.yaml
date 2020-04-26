@@ -19,19 +19,13 @@ keep_pkgs: False
 ignore_duplicate_files: True
 
 specs:
-  - eman2 2.31
-  - conda 4.6.14 py27*
-  - conda-build 3.17.8
+  - eman2        2.39
+  - python       3.7.*
+  - conda
+  - conda-build
   - pip
   - console_shortcut  # [win]
   - menuinst          # [win]
-
-exclude:
-  - hdf5      # [not win]
-  - jpeg      # [not win]
-  - libpng    # [not win]
-  - libtiff   # [not win]
-  - freetype  # [osx]
 
 welcome_image: ../../images/EMAN2Icon.png      # [win]
 icon_image:    ../../images/eman.ico           # [win]

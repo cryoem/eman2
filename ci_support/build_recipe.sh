@@ -30,10 +30,4 @@ conda list --explicit
 conda render ${recipe_dir}
 conda build purge-all
 
-if [ "$AGENT_OS_NAME" == "win" ];then
-    CONDA_BUILD_TEST="--no-test"
-else
-    CONDA_BUILD_TEST=""
-fi
-
-conda build ${recipe_dir} -c cryoem -c defaults -c conda-forge ${CONDA_BUILD_TEST}
+conda build ${recipe_dir} -c cryoem -c defaults -c conda-forge
